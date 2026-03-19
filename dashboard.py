@@ -1,0 +1,1466 @@
+#!/usr/bin/env python3
+"""
+Simple Web Dashboard for SF Beach Water Quality
+
+Run with: python dashboard.py
+Then open http://localhost:8080 in your browser
+
+This dashboard combines real-time SFPUC data (CSO events, posted status)
+with SF Gov API bacteria data for a comprehensive view.
+"""
+
+import http.server
+import socketserver
+import json
+import os
+import xml.etree.ElementTree as ET
+from datetime import datetime
+from urllib.parse import parse_qs, urlparse
+
+from core.cso_alerts import (
+    SimulatedCSOStore,
+    apply_simulated_cso,
+    dispatch_subscription_alerts,
+    get_cso_eligible_stations,
+)
+from core.monitoring import CombinedWaterQualityMonitor, STANDARDS
+from core.sfpuc_api import SFPUCRealTimeAPI
+from core.subscriptions import SubscriptionStore
+
+# Optional weather/tides integration
+try:
+    from core.weather_tides import EnvironmentalContext
+    HAS_WEATHER = True
+except ImportError:
+    HAS_WEATHER = False
+
+PORT = 8080
+CARRIER_OPTIONS = [
+    ("verizon", "Verizon"),
+    ("att", "AT&T"),
+    ("tmobile", "T-Mobile"),
+    ("sprint", "Sprint"),
+    ("cricket", "Cricket"),
+    ("metropcs", "MetroPCS"),
+    ("uscellular", "US Cellular"),
+]
+
+
+class ReusableTCPServer(socketserver.TCPServer):
+    allow_reuse_address = True
+
+
+class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
+    """HTTP request handler for water quality dashboard"""
+    
+    def __init__(self, *args, **kwargs):
+        self.combined_monitor = CombinedWaterQualityMonitor()
+        self.sfpuc_api = SFPUCRealTimeAPI()
+        self.subscription_store = SubscriptionStore()
+        self.simulated_cso_store = SimulatedCSOStore()
+        self.env_context = EnvironmentalContext() if HAS_WEATHER else None
+        super().__init__(*args, **kwargs)
+    
+    def do_GET(self):
+        parsed = urlparse(self.path)
+        
+        if parsed.path == "/" or parsed.path == "/index.html":
+            self.send_dashboard()
+        elif parsed.path == "/api/status":
+            self.send_api_status()
+        elif parsed.path == "/api/alerts":
+            self.send_api_alerts()
+        elif parsed.path == "/api/realtime":
+            self.send_api_realtime()
+        elif parsed.path == "/api/weather":
+            self.send_api_weather()
+        elif parsed.path == "/api/subscriptions":
+            self.send_api_subscriptions()
+        elif parsed.path == "/api/simulations/cso":
+            self.send_api_simulated_cso()
+        elif parsed.path == "/api/debug/sfpuc":
+            self.send_api_debug_sfpuc()
+        else:
+            self.send_error(404, "Not Found")
+
+    def do_POST(self):
+        parsed = urlparse(self.path)
+
+        if parsed.path == "/api/subscriptions":
+            self.save_subscription()
+        elif parsed.path == "/api/simulations/cso":
+            self.save_simulated_cso()
+        elif parsed.path == "/api/simulations/cso/clear":
+            self.clear_simulated_cso()
+        elif parsed.path == "/api/dispatch-cso-alerts":
+            self.dispatch_cso_site_alerts()
+        else:
+            self.send_error(404, "Not Found")
+
+    def _send_json(self, payload, status=200):
+        data = json.dumps(payload, default=str)
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", len(data.encode()))
+        self.end_headers()
+        self.wfile.write(data.encode())
+
+    def _read_request_data(self):
+        content_length = int(self.headers.get("Content-Length", "0"))
+        raw_body = self.rfile.read(content_length).decode() if content_length else ""
+        content_type = self.headers.get("Content-Type", "")
+
+        if "application/json" in content_type:
+            return json.loads(raw_body or "{}")
+
+        form_data = parse_qs(raw_body, keep_blank_values=True)
+        return {
+            key: values if len(values) > 1 else values[0]
+            for key, values in form_data.items()
+        }
+
+    def _get_dashboard_stations(self):
+        live_stations = self.sfpuc_api.fetch_stations()
+        simulated_station_ids = self.simulated_cso_store.get_station_ids()
+        stations = apply_simulated_cso(live_stations, simulated_station_ids)
+        return stations, simulated_station_ids
+    
+    def send_dashboard(self):
+        """Send the main dashboard HTML page"""
+        html = self.generate_dashboard_html()
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", len(html.encode()))
+        self.end_headers()
+        self.wfile.write(html.encode())
+    
+    def send_api_status(self):
+        """Send JSON status data"""
+        try:
+            stations, simulated_station_ids = self._get_dashboard_stations()
+            cso_events = [s for s in stations if s.has_cso]
+            status = {
+                "stations": [{
+                    "id": s.station_id,
+                    "name": s.station_name,
+                    "status": s.status.value,
+                    "has_cso": s.has_cso,
+                    "simulated_cso": s.station_id in set(simulated_station_ids),
+                    "sample_date": s.sample_date.isoformat() if s.sample_date else None,
+                    "latitude": s.latitude,
+                    "longitude": s.longitude
+                } for s in stations],
+                "summary": {
+                    "timestamp": datetime.now().isoformat(),
+                    "total_stations": len(stations),
+                    "safe_count": len([s for s in stations if s.status.value == "safe"]),
+                    "posted_count": len([s for s in stations if s.status.value == "posted"]),
+                    "not_sampled_count": len([s for s in stations if s.status.value in ("not_sampled", "not_routinely_sampled")]),
+                    "cso_active_count": len(cso_events),
+                    "simulated_station_ids": simulated_station_ids,
+                }
+            }
+        except Exception as e:
+            status = {"error": str(e)}
+        self._send_json(status)
+    
+    def send_api_alerts(self):
+        """Send JSON alerts data"""
+        try:
+            alerts = self.combined_monitor.get_combined_alerts()
+            payload = [{
+                "type": a.alert_type,
+                "station_id": a.station_id,
+                "station_name": a.station_name,
+                "message": a.message,
+                "severity": a.severity,
+                "sample_date": a.sample_date.isoformat() if a.sample_date else None,
+                "details": a.details
+            } for a in alerts]
+        except Exception as e:
+            payload = {"error": str(e)}
+        self._send_json(payload)
+    
+    def send_api_realtime(self):
+        """Send real-time SFPUC data"""
+        try:
+            stations, simulated_station_ids = self._get_dashboard_stations()
+            cso_events = [s for s in stations if s.has_cso]
+
+            payload = {
+                "cso_events": [{
+                    "station_id": station.station_id,
+                    "station_name": station.station_name,
+                    "cso_station_id": station.cso_station_id,
+                    "latitude": station.latitude,
+                    "longitude": station.longitude,
+                    "simulated": station.station_id in set(simulated_station_ids),
+                } for station in cso_events],
+                "stations": [{
+                    "id": s.station_id,
+                    "name": s.station_name,
+                    "status": s.status.value,
+                    "has_cso": s.has_cso,
+                    "simulated_cso": s.station_id in set(simulated_station_ids),
+                    "sample_date": s.sample_date.isoformat() if s.sample_date else None
+                } for s in stations]
+            }
+        except Exception as e:
+            payload = {"error": str(e)}
+        self._send_json(payload)
+    
+    def send_api_weather(self):
+        """Send weather and tide data as JSON"""
+        if not self.env_context:
+            payload = {"error": "Weather module not available"}
+        else:
+            try:
+                context = self.env_context.get_full_context()
+                payload = context
+            except Exception as e:
+                payload = {"error": str(e)}
+        self._send_json(payload)
+
+    def send_api_subscriptions(self):
+        try:
+            subscriptions = self.subscription_store.list_subscriptions()
+            payload = [{
+                "phone_number": subscription.phone_number,
+                "carrier": subscription.carrier,
+                "station_ids": subscription.station_ids,
+                "created_at": subscription.created_at,
+                "updated_at": subscription.updated_at,
+            } for subscription in subscriptions]
+        except Exception as e:
+            payload = {"error": str(e)}
+        self._send_json(payload)
+
+    def send_api_simulated_cso(self):
+        try:
+            payload = {
+                "station_ids": self.simulated_cso_store.get_station_ids(),
+            }
+        except Exception as e:
+            payload = {"error": str(e)}
+        self._send_json(payload)
+
+    def send_api_debug_sfpuc(self):
+        """Return the raw current SFPUC getBeaches payload for browser inspection."""
+        try:
+            response = self.sfpuc_api.session.get(self.sfpuc_api.API_URL, timeout=30)
+            response.raise_for_status()
+            root = ET.fromstring(response.content)
+            raw_text = root.text or "[]"
+            raw_rows = json.loads(raw_text)
+            payload = {
+                "source_url": self.sfpuc_api.API_URL,
+                "fetched_at": datetime.now().isoformat(),
+                "count": len(raw_rows),
+                "rows": raw_rows,
+            }
+        except Exception as e:
+            payload = {
+                "source_url": self.sfpuc_api.API_URL,
+                "error": str(e),
+            }
+        self._send_json(payload)
+
+    def save_subscription(self):
+        try:
+            data = self._read_request_data()
+            phone_number = data.get("phone_number", "")
+            carrier = data.get("carrier", "")
+            station_ids = data.get("station_ids", [])
+            if isinstance(station_ids, str):
+                station_ids = [station_ids]
+
+            stations, _ = self._get_dashboard_stations()
+            eligible_station_ids = {station.station_id for station in get_cso_eligible_stations(stations)}
+            selected_station_ids = [station_id for station_id in station_ids if station_id in eligible_station_ids]
+            subscription = self.subscription_store.upsert_subscription(phone_number, carrier, selected_station_ids)
+            self._send_json({
+                "ok": True,
+                "subscription": {
+                    "phone_number": subscription.phone_number,
+                    "carrier": subscription.carrier,
+                    "station_ids": subscription.station_ids,
+                }
+            })
+        except Exception as e:
+            self._send_json({"ok": False, "error": str(e)}, status=400)
+
+    def save_simulated_cso(self):
+        try:
+            data = self._read_request_data()
+            station_ids = data.get("station_ids", [])
+            if isinstance(station_ids, str):
+                station_ids = [station_ids]
+
+            stations, _ = self._get_dashboard_stations()
+            available_station_ids = {station.station_id for station in get_cso_eligible_stations(stations)}
+            selected_station_ids = [station_id for station_id in station_ids if station_id in available_station_ids]
+            saved_station_ids = self.simulated_cso_store.set_station_ids(selected_station_ids)
+            self._send_json({"ok": True, "station_ids": saved_station_ids})
+        except Exception as e:
+            self._send_json({"ok": False, "error": str(e)}, status=400)
+
+    def clear_simulated_cso(self):
+        self.simulated_cso_store.clear()
+        self._send_json({"ok": True, "station_ids": []})
+
+    def dispatch_cso_site_alerts(self):
+        try:
+            stations, simulated_station_ids = self._get_dashboard_stations()
+            subscriptions = self.subscription_store.list_subscriptions()
+            results = dispatch_subscription_alerts(
+                subscriptions=subscriptions,
+                stations=stations,
+                simulated_station_ids=simulated_station_ids,
+            )
+            self._send_json({
+                "ok": True,
+                "results": results,
+                "twilio_configured": bool(
+                    os.environ.get("TWILIO_ACCOUNT_SID")
+                    and os.environ.get("TWILIO_AUTH_TOKEN")
+                    and os.environ.get("TWILIO_FROM_NUMBER")
+                ),
+            })
+        except Exception as e:
+            self._send_json({"ok": False, "error": str(e)}, status=500)
+    
+    def generate_dashboard_html(self):
+        """Generate the dashboard HTML with combined data"""
+        
+        # Fetch weather/tide data
+        rain_html = ""
+        tide_html = ""
+        if self.env_context:
+            try:
+                rain_advisory = self.env_context.weather.get_rain_advisory()
+                if rain_advisory.is_active:
+                    rain_html = f"""
+                    <div class="cso-banner" style="background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);">
+                        <div class="cso-icon">🌧️</div>
+                        <div class="cso-content">
+                            <div class="cso-title">RAIN ADVISORY ACTIVE</div>
+                            <div class="cso-message">{rain_advisory.message}</div>
+                            <div class="cso-warning">
+                                CSO Risk: <strong>{rain_advisory.cso_risk.upper()}</strong> |
+                                Total rainfall: {rain_advisory.total_recent_inches:.2f} inches |
+                                Advisory until: {rain_advisory.advisory_until.strftime('%m/%d %I:%M %p') if rain_advisory.advisory_until else 'N/A'}
+                            </div>
+                        </div>
+                    </div>
+                    """
+                elif rain_advisory.upcoming_rain:
+                    forecasts = "<br>".join(f"• {e.description}" for e in rain_advisory.upcoming_rain[:3])
+                    rain_html = f"""
+                    <div class="error-banner" style="border-left-color: #3498db; background: #e8f4f8;">
+                        🌦️ <strong>Rain in Forecast:</strong><br>{forecasts}
+                        <br><small>SFPUC advises avoiding water contact during and 72 hours after rain.</small>
+                    </div>
+                    """
+            except Exception as e:
+                rain_html = f'<div class="error-banner">⚠️ Weather data unavailable: {e}</div>'
+            
+            try:
+                tide_info = self.env_context.tides.get_tide_info()
+                if tide_info:
+                    trend_icon = "📈" if tide_info.current_trend == "rising" else "📉"
+                    trend_label = tide_info.current_trend.capitalize()
+                    next_high_str = f"{tide_info.next_high.time.strftime('%I:%M %p')} ({tide_info.next_high.height_ft:.1f} ft)" if tide_info.next_high else "N/A"
+                    next_low_str = f"{tide_info.next_low.time.strftime('%I:%M %p')} ({tide_info.next_low.height_ft:.1f} ft)" if tide_info.next_low else "N/A"
+                    
+                    tide_html = f"""
+                    <div class="summary-card total" style="border-top-color: #1abc9c; grid-column: span 1;">
+                        <div class="summary-number" style="font-size: 1.5em;">{trend_icon} {trend_label}</div>
+                        <div class="summary-label">🌊 Tide</div>
+                        <div style="font-size: 0.8em; color: #666; margin-top: 8px;">
+                            Next High: {next_high_str}<br>
+                            Next Low: {next_low_str}
+                        </div>
+                    </div>
+                    """
+            except Exception:
+                pass
+        
+        subscriptions = self.subscription_store.list_subscriptions()
+
+        # Fetch real-time SFPUC data
+        try:
+            stations, simulated_station_ids = self._get_dashboard_stations()
+            simulated_station_id_set = set(simulated_station_ids)
+            cso_events = [station for station in stations if station.has_cso]
+            posted_stations = [station for station in stations if station.status.value == "posted"]
+            safe_stations = [station for station in stations if station.status.value == "safe"]
+            not_sampled_stations = [
+                station for station in stations
+                if station.status.value in ("not_sampled", "not_routinely_sampled")
+            ]
+            eligible_cso_stations = get_cso_eligible_stations(stations)
+            sfpuc_error = None
+        except Exception as e:
+            stations = []
+            cso_events = []
+            posted_stations = []
+            safe_stations = []
+            not_sampled_stations = []
+            eligible_cso_stations = []
+            simulated_station_ids = []
+            simulated_station_id_set = set()
+            sfpuc_error = str(e)
+        
+        # Fetch combined alerts
+        try:
+            alerts = self.combined_monitor.get_combined_alerts()
+        except Exception as e:
+            alerts = []
+
+        try:
+            lab_results_lookup = self.combined_monitor.sf_gov_monitor.get_latest_lab_results_for_sfpuc_stations()
+        except Exception:
+            lab_results_lookup = {}
+        
+        # Count statistics
+        cso_count = len(cso_events)
+        posted_count = len(posted_stations)
+        safe_count = len(safe_stations)
+        not_sampled_count = len(not_sampled_stations)
+        total_stations = len(stations)
+        
+        # Generate CSO alert banner
+        cso_banner = ""
+        if cso_events:
+            cso_locations = ", ".join([e.station_name for e in cso_events])
+            cso_banner = f"""
+            <div class="cso-banner">
+                <div class="cso-icon">🚨</div>
+                <div class="cso-content">
+                    <div class="cso-title">ACTIVE COMBINED SEWER OVERFLOW</div>
+                    <div class="cso-message">
+                        CSO detected at: <strong>{cso_locations}</strong>
+                    </div>
+                    <div class="cso-warning">
+                        Sewage discharge has occurred within the last 24-72 hours. Avoid water contact at affected beaches.
+                    </div>
+                </div>
+            </div>
+            """
+        
+        # Generate station cards - sorted by severity
+        station_cards = ""
+        
+        # Track which stations we've already added
+        added_station_ids = set()
+        
+        # CSO stations (highest priority) - use has_cso flag directly
+        for station in stations:
+            if station.has_cso:
+                station_cards += self._generate_station_card(
+                    station,
+                    "cso",
+                    station.station_id in simulated_station_id_set,
+                    lab_results_lookup.get(station.station_name),
+                )
+                added_station_ids.add(station.station_id)
+        
+        # Posted stations (without CSO)
+        for station in posted_stations:
+            if station.station_id not in added_station_ids:
+                station_cards += self._generate_station_card(
+                    station,
+                    "posted",
+                    station.station_id in simulated_station_id_set,
+                    lab_results_lookup.get(station.station_name),
+                )
+                added_station_ids.add(station.station_id)
+        
+        # Safe stations
+        for station in safe_stations:
+            if station.station_id not in added_station_ids:
+                station_cards += self._generate_station_card(
+                    station,
+                    "safe",
+                    station.station_id in simulated_station_id_set,
+                    lab_results_lookup.get(station.station_name),
+                )
+                added_station_ids.add(station.station_id)
+        
+        # Not sampled stations
+        for station in not_sampled_stations:
+            if station.station_id not in added_station_ids:
+                station_cards += self._generate_station_card(
+                    station,
+                    "not_sampled",
+                    station.station_id in simulated_station_id_set,
+                    lab_results_lookup.get(station.station_name),
+                )
+                added_station_ids.add(station.station_id)
+        
+        # Generate alerts section
+        alerts_html = ""
+        if alerts:
+            for alert in alerts:
+                severity_class = "critical" if alert.severity == "critical" else "warning" if alert.severity == "warning" else "advisory"
+                icon = "🚨" if alert.severity == "critical" else "⚠️" if alert.severity == "warning" else "ℹ️"
+                alerts_html += f"""
+                    <div class="alert {severity_class}">
+                        <span class="alert-icon">{icon}</span>
+                        <div class="alert-content">
+                            <div class="alert-message">{alert.message}</div>
+                            <div class="alert-meta">
+                                <span class="alert-station">{alert.station_name}</span>
+                                {f'<span class="alert-date">Sample: {alert.sample_date.strftime("%m/%d/%Y")}</span>' if alert.sample_date else ''}
+                            </div>
+                        </div>
+                    </div>
+                """
+        else:
+            alerts_html = '<div class="no-alerts">✅ No active alerts</div>'
+        
+        # Error message if SFPUC API failed
+        error_html = ""
+        if sfpuc_error:
+            error_html = f"""
+            <div class="error-banner">
+                ⚠️ Could not fetch real-time data: {sfpuc_error}
+            </div>
+            """
+
+        subscription_site_options = "".join(
+            f"""
+            <label class="checkbox-option">
+                <input type="checkbox" name="station_ids" value="{station.station_id}">
+                <span>{station.station_name}</span>
+            </label>
+            """
+            for station in eligible_cso_stations
+        ) or '<div class="empty-state">No CSO-eligible sites are available right now.</div>'
+
+        simulation_site_options = "".join(
+            f"""
+            <label class="checkbox-option">
+                <input type="checkbox" name="station_ids" value="{station.station_id}" {'checked' if station.station_id in simulated_station_id_set else ''}>
+                <span>{station.station_name}</span>
+            </label>
+            """
+            for station in eligible_cso_stations
+        ) or '<div class="empty-state">No CSO-eligible sites are available right now.</div>'
+
+        station_name_by_id = {
+            station.station_id: station.station_name
+            for station in eligible_cso_stations
+        }
+
+        current_subscription_html = "".join(
+            f"""
+            <div class="subscription-item">
+                <div class="subscription-phone">{subscription.phone_number}</div>
+                <div class="subscription-sites">Carrier: {dict(CARRIER_OPTIONS).get(subscription.carrier, subscription.carrier or 'preview only')}</div>
+                <div class="subscription-sites">{", ".join(station_name_by_id.get(station_id, station_id) for station_id in subscription.station_ids)}</div>
+            </div>
+            """
+            for subscription in subscriptions
+        ) or '<div class="empty-state">No phone subscriptions saved yet.</div>'
+
+        carrier_options_html = "".join(
+            f'<option value="{value}">{label}</option>'
+            for value, label in CARRIER_OPTIONS
+        )
+
+        simulated_site_names = [
+            station.station_name
+            for station in eligible_cso_stations
+            if station.station_id in simulated_station_id_set
+        ]
+        simulated_sites_html = (
+            ", ".join(simulated_site_names)
+            if simulated_site_names else
+            "None"
+        )
+        
+        return f"""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="300">
+    <title>SF Beach Water Quality Dashboard</title>
+    <style>
+        * {{
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }}
+        
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a5276 0%, #2980b9 100%);
+            min-height: 100vh;
+            color: #333;
+        }}
+        
+        .container {{
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }}
+        
+        header {{
+            background: rgba(255,255,255,0.95);
+            border-radius: 12px;
+            padding: 20px 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }}
+        
+        header h1 {{
+            color: #1a5276;
+            font-size: 1.8em;
+            margin-bottom: 5px;
+        }}
+        
+        header .subtitle {{
+            color: #666;
+            font-size: 0.95em;
+        }}
+        
+        .header-row {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }}
+        
+        .data-source {{
+            background: #e8f4f8;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            color: #1a5276;
+        }}
+        
+        .data-source.live {{
+            background: #d4edda;
+            color: #155724;
+        }}
+        
+        .data-source.live::before {{
+            content: "●";
+            margin-right: 5px;
+            animation: pulse 2s infinite;
+        }}
+        
+        @keyframes pulse {{
+            0%, 100% {{ opacity: 1; }}
+            50% {{ opacity: 0.5; }}
+        }}
+        
+        /* CSO Banner */
+        .cso-banner {{
+            background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            box-shadow: 0 4px 15px rgba(192, 57, 43, 0.4);
+            animation: cso-pulse 3s infinite;
+        }}
+        
+        @keyframes cso-pulse {{
+            0%, 100% {{ box-shadow: 0 4px 15px rgba(192, 57, 43, 0.4); }}
+            50% {{ box-shadow: 0 4px 25px rgba(192, 57, 43, 0.6); }}
+        }}
+        
+        .cso-icon {{
+            font-size: 2.5em;
+        }}
+        
+        .cso-title {{
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }}
+        
+        .cso-message {{
+            margin-bottom: 8px;
+        }}
+        
+        .cso-warning {{
+            font-size: 0.9em;
+            opacity: 0.9;
+        }}
+        
+        /* Error Banner */
+        .error-banner {{
+            background: #fff3cd;
+            color: #856404;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ffc107;
+        }}
+        
+        /* Summary Cards */
+        .summary {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }}
+        
+        .summary-card {{
+            background: rgba(255,255,255,0.95);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }}
+        
+        .summary-card.safe {{
+            border-top: 4px solid #27ae60;
+        }}
+        
+        .summary-card.posted {{
+            border-top: 4px solid #f39c12;
+        }}
+        
+        .summary-card.cso {{
+            border-top: 4px solid #e74c3c;
+        }}
+        
+        .summary-card.total {{
+            border-top: 4px solid #3498db;
+        }}
+        
+        .summary-number {{
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #1a5276;
+        }}
+        
+        .summary-card.cso .summary-number {{
+            color: #e74c3c;
+        }}
+        
+        .summary-label {{
+            color: #666;
+            margin-top: 5px;
+            font-size: 0.9em;
+        }}
+        
+        /* Alerts Section */
+        .alerts-section {{
+            background: rgba(255,255,255,0.95);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }}
+        
+        .section-title {{
+            color: #1a5276;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }}
+        
+        .alert {{
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }}
+        
+        .alert:last-child {{
+            margin-bottom: 0;
+        }}
+        
+        .alert.critical {{
+            background: #fdecea;
+            border-left: 4px solid #e74c3c;
+        }}
+        
+        .alert.warning {{
+            background: #fef5e7;
+            border-left: 4px solid #f39c12;
+        }}
+        
+        .alert.advisory {{
+            background: #e8f4f8;
+            border-left: 4px solid #3498db;
+        }}
+        
+        .alert-icon {{
+            font-size: 1.3em;
+        }}
+        
+        .alert-message {{
+            font-weight: 500;
+        }}
+        
+        .alert-meta {{
+            display: flex;
+            gap: 15px;
+            color: #666;
+            font-size: 0.85em;
+            margin-top: 5px;
+        }}
+        
+        .no-alerts {{
+            color: #27ae60;
+            padding: 20px;
+            text-align: center;
+            font-size: 1.1em;
+        }}
+
+        .control-panels {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }}
+
+        .panel {{
+            background: rgba(255,255,255,0.95);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }}
+
+        .panel h3 {{
+            color: #1a5276;
+            margin-bottom: 10px;
+        }}
+
+        .panel p {{
+            color: #556;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }}
+
+        .stack {{
+            display: grid;
+            gap: 10px;
+        }}
+
+        .form-input {{
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cfd8dc;
+            border-radius: 8px;
+            font-size: 0.95em;
+        }}
+
+        .checkbox-grid {{
+            display: grid;
+            gap: 8px;
+            max-height: 220px;
+            overflow-y: auto;
+            padding: 8px;
+            border: 1px solid #dce6eb;
+            border-radius: 10px;
+            background: #f8fbfd;
+        }}
+
+        .checkbox-option {{
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+            font-size: 0.92em;
+        }}
+
+        .button-row {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }}
+
+        .action-btn {{
+            border: none;
+            border-radius: 8px;
+            padding: 10px 14px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 600;
+        }}
+
+        .action-btn.primary {{
+            background: #1a5276;
+            color: white;
+        }}
+
+        .action-btn.secondary {{
+            background: #eef5f8;
+            color: #1a5276;
+        }}
+
+        .action-btn.danger {{
+            background: #fdecea;
+            color: #a93226;
+        }}
+
+        .subscription-list {{
+            display: grid;
+            gap: 8px;
+        }}
+
+        .subscription-item {{
+            border: 1px solid #e4ecef;
+            border-radius: 8px;
+            padding: 10px;
+            background: #fafcfd;
+        }}
+
+        .subscription-phone {{
+            font-weight: 700;
+            color: #1a5276;
+            margin-bottom: 4px;
+        }}
+
+        .subscription-sites {{
+            font-size: 0.85em;
+            color: #667;
+        }}
+
+        .helper-note {{
+            font-size: 0.85em;
+            color: #667;
+        }}
+
+        .action-result {{
+            margin-top: 12px;
+            border-radius: 8px;
+            padding: 12px;
+            display: none;
+            font-size: 0.9em;
+            white-space: pre-wrap;
+        }}
+
+        .action-result.success {{
+            display: block;
+            background: #eaf7ee;
+            color: #1b5e20;
+        }}
+
+        .action-result.error {{
+            display: block;
+            background: #fdecea;
+            color: #a93226;
+        }}
+
+        .empty-state {{
+            color: #667;
+            font-size: 0.9em;
+        }}
+
+        .simulation-pill {{
+            display: inline-block;
+            margin-top: 8px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: #fff3cd;
+            color: #856404;
+            font-size: 0.75em;
+            font-weight: 700;
+            text-transform: uppercase;
+        }}
+        
+        /* Stations Section */
+        .stations-section {{
+            margin-bottom: 20px;
+        }}
+        
+        .stations-section h2 {{
+            color: white;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }}
+        
+        .stations-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+        }}
+        
+        .station-card {{
+            background: rgba(255,255,255,0.95);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }}
+        
+        .station-card:hover {{
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }}
+        
+        .station-card.safe {{
+            border-left: 4px solid #27ae60;
+        }}
+        
+        .station-card.posted {{
+            border-left: 4px solid #f39c12;
+        }}
+        
+        .station-card.cso {{
+            border-left: 4px solid #e74c3c;
+            background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(253, 236, 234, 0.95) 100%);
+        }}
+        
+        .station-card.not_sampled {{
+            border-left: 4px solid #95a5a6;
+            opacity: 0.8;
+        }}
+        
+        .station-header {{
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }}
+        
+        .station-header h3 {{
+            font-size: 1em;
+            color: #1a5276;
+            flex: 1;
+        }}
+        
+        .status-badge {{
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }}
+        
+        .status-badge.safe {{
+            background: #d4edda;
+            color: #155724;
+        }}
+        
+        .status-badge.posted {{
+            background: #fff3cd;
+            color: #856404;
+        }}
+        
+        .status-badge.cso {{
+            background: #f8d7da;
+            color: #721c24;
+            animation: badge-pulse 2s infinite;
+        }}
+        
+        .status-badge.not_sampled {{
+            background: #e9ecef;
+            color: #6c757d;
+        }}
+        
+        @keyframes badge-pulse {{
+            0%, 100% {{ opacity: 1; }}
+            50% {{ opacity: 0.7; }}
+        }}
+        
+        .station-meta {{
+            display: flex;
+            justify-content: space-between;
+            color: #888;
+            font-size: 0.85em;
+            gap: 10px;
+        }}
+
+        .station-meta + .station-meta {{
+            margin-top: 6px;
+        }}
+
+        .lab-link {{
+            color: #1a5276;
+            text-decoration: none;
+            font-weight: 600;
+        }}
+
+        .lab-link:hover {{
+            text-decoration: underline;
+        }}
+        
+        .station-warning {{
+            color: #e74c3c;
+            font-size: 0.85em;
+            margin-top: 8px;
+            padding: 8px;
+            background: #fdecea;
+            border-radius: 6px;
+        }}
+        
+        /* Footer */
+        footer {{
+            background: rgba(255,255,255,0.95);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }}
+        
+        footer p {{
+            margin-bottom: 8px;
+            color: #666;
+        }}
+        
+        footer a {{
+            color: #1a5276;
+            text-decoration: none;
+        }}
+        
+        footer a:hover {{
+            text-decoration: underline;
+        }}
+        
+        .hotline {{
+            font-size: 1.1em;
+            color: #1a5276;
+            font-weight: 500;
+        }}
+        
+        .refresh-btn {{
+            background: #1a5276;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }}
+        
+        .refresh-btn:hover {{
+            background: #154360;
+        }}
+        
+        @media (max-width: 600px) {{
+            .header-row {{
+                flex-direction: column;
+                align-items: flex-start;
+            }}
+            
+            .summary {{
+                grid-template-columns: repeat(2, 1fr);
+            }}
+            
+            .stations-grid {{
+                grid-template-columns: 1fr;
+            }}
+            
+            .cso-banner {{
+                flex-direction: column;
+                text-align: center;
+            }}
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-row">
+                <div>
+                    <h1>🏖️ SF Beach Water Quality Dashboard</h1>
+                    <div class="subtitle">
+                        Surfrider SF Blue Water Task Force | {datetime.now().strftime('%B %d, %Y at %I:%M %p')}
+                    </div>
+                </div>
+                <div>
+                    <span class="data-source live">Real-time SFPUC Data</span>
+                    <button class="refresh-btn" onclick="location.reload()">🔄 Refresh</button>
+                </div>
+            </div>
+        </header>
+        
+        {error_html}
+        {rain_html}
+        {cso_banner}
+        
+        <div class="summary">
+            <div class="summary-card cso">
+                <div class="summary-number">{cso_count}</div>
+                <div class="summary-label">🚨 Active CSO</div>
+            </div>
+            <div class="summary-card posted">
+                <div class="summary-number">{posted_count}</div>
+                <div class="summary-label">⚠️ Posted</div>
+            </div>
+            <div class="summary-card safe">
+                <div class="summary-number">{safe_count}</div>
+                <div class="summary-label">✅ Safe</div>
+            </div>
+            <div class="summary-card total">
+                <div class="summary-number">{total_stations}</div>
+                <div class="summary-label">📍 Total Stations</div>
+            </div>
+            {tide_html}
+        </div>
+
+        <div class="control-panels">
+            <section class="panel">
+                <h3>SMS Site Alerts</h3>
+                <p>Choose the CSO-eligible sites you care about, and the system will send texts only for matching CSO events.</p>
+                <form id="subscription-form" class="stack">
+                    <input class="form-input" type="tel" name="phone_number" placeholder="Phone number (e.g. 4155551234)" required>
+                    <select class="form-input" name="carrier" required>
+                        <option value="">Choose carrier for free email-to-SMS</option>
+                        {carrier_options_html}
+                    </select>
+                    <div class="checkbox-grid">
+                        {subscription_site_options}
+                    </div>
+                    <div class="button-row">
+                        <button class="action-btn primary" type="submit">Save Subscription</button>
+                    </div>
+                </form>
+                <div class="helper-note">Only sites mapped to CSO outfalls are available for selection. Free SMS uses your carrier gateway.</div>
+                <div class="action-result" id="subscription-result"></div>
+            </section>
+
+            <section class="panel">
+                <h3>Simulator</h3>
+                <p>Inject a simulated CSO event, then send a test dispatch through the same matching logic the real alert flow uses.</p>
+                <form id="simulation-form" class="stack">
+                    <div class="checkbox-grid">
+                        {simulation_site_options}
+                    </div>
+                    <div class="button-row">
+                        <button class="action-btn secondary" type="submit">Save Simulated CSO</button>
+                        <button class="action-btn danger" type="button" onclick="clearSimulation()">Clear Simulation</button>
+                    </div>
+                </form>
+                <div class="helper-note">Currently simulated sites: {simulated_sites_html}</div>
+                <div class="button-row" style="margin-top: 12px;">
+                    <button class="action-btn primary" type="button" onclick="dispatchSubscriptionAlerts()">Send Matching Alerts</button>
+                </div>
+                <div class="helper-note">If SMTP or carrier info is missing, dispatch returns a preview instead of sending SMS.</div>
+                <div class="action-result" id="simulation-result"></div>
+            </section>
+
+            <section class="panel">
+                <h3>Saved Subscribers</h3>
+                <p>Current phone subscriptions stored on disk for the dashboard.</p>
+                <div class="subscription-list">
+                    {current_subscription_html}
+                </div>
+            </section>
+        </div>
+        
+        <div class="alerts-section">
+            <h2 class="section-title">⚠️ Active Alerts</h2>
+            {alerts_html}
+        </div>
+        
+        <div class="stations-section">
+            <h2>📍 Beach Stations</h2>
+            <div class="stations-grid">
+                {station_cards}
+            </div>
+        </div>
+        
+        <footer>
+            <p class="hotline">📞 Beach Hotline: 1-877-SFBEACH (1-877-732-3224) or 415-242-2214</p>
+            <p style="color: #e74c3c; font-weight: 500;">⚠️ Avoid water contact during and 72 hours after rain events</p>
+            <p>
+                <a href="https://webapps.sfpuc.org/sapps/beachesandbay.html" target="_blank">SFPUC Beach Map</a> | 
+                <a href="https://sf.surfrider.org/blue-water-task-force/" target="_blank">Surfrider BWTF</a> |
+                <a href="https://data.sfgov.org/Energy-and-Environment/Beach-Water-Quality-Monitoring/v3fv-x3ux" target="_blank">SF Gov Data</a> |
+                <a href="https://www.sfpuc.gov/programs/ocean-and-beach-monitoring" target="_blank">SFPUC Monitoring Program</a> |
+                <a href="/api/debug/sfpuc" target="_blank">Debug SFPUC Payload</a>
+            </p>
+            <p style="margin-top: 15px; font-size: 0.85em; color: #888;">
+                Data refreshes automatically every 5 minutes. Sources: SFPUC LIMS API, SF Gov Open Data, NWS Weather, NOAA Tides.
+            </p>
+        </footer>
+    </div>
+    <script>
+        function setResult(id, message, isError = false) {{
+            const element = document.getElementById(id);
+            element.className = 'action-result ' + (isError ? 'error' : 'success');
+            element.textContent = message;
+        }}
+
+        async function postJson(url, payload) {{
+            const response = await fetch(url, {{
+                method: 'POST',
+                headers: {{ 'Content-Type': 'application/json' }},
+                body: JSON.stringify(payload)
+            }});
+            const data = await response.json();
+            if (!response.ok || data.ok === false) {{
+                throw new Error(data.error || 'Request failed');
+            }}
+            return data;
+        }}
+
+        document.getElementById('subscription-form').addEventListener('submit', async (event) => {{
+            event.preventDefault();
+            const form = event.currentTarget;
+            const payload = {{
+                phone_number: form.phone_number.value,
+                carrier: form.carrier.value,
+                station_ids: Array.from(form.querySelectorAll('input[name="station_ids"]:checked')).map((input) => input.value)
+            }};
+            try {{
+                const data = await postJson('/api/subscriptions', payload);
+                setResult('subscription-result', `Saved ${{data.subscription.phone_number}} (${{data.subscription.carrier}}) for ${{data.subscription.station_ids.length}} site(s).`);
+                window.setTimeout(() => window.location.reload(), 700);
+            }} catch (error) {{
+                setResult('subscription-result', error.message, true);
+            }}
+        }});
+
+        document.getElementById('simulation-form').addEventListener('submit', async (event) => {{
+            event.preventDefault();
+            const form = event.currentTarget;
+            const payload = {{
+                station_ids: Array.from(form.querySelectorAll('input[name="station_ids"]:checked')).map((input) => input.value)
+            }};
+            try {{
+                const data = await postJson('/api/simulations/cso', payload);
+                setResult('simulation-result', `Saved ${{data.station_ids.length}} simulated CSO site(s).`);
+                window.setTimeout(() => window.location.reload(), 700);
+            }} catch (error) {{
+                setResult('simulation-result', error.message, true);
+            }}
+        }});
+
+        async function clearSimulation() {{
+            try {{
+                await postJson('/api/simulations/cso/clear', {{}});
+                setResult('simulation-result', 'Cleared simulated CSO events.');
+                window.setTimeout(() => window.location.reload(), 700);
+            }} catch (error) {{
+                setResult('simulation-result', error.message, true);
+            }}
+        }}
+
+        async function dispatchSubscriptionAlerts() {{
+            try {{
+                const data = await postJson('/api/dispatch-cso-alerts', {{}});
+                const summary = data.results.length
+                    ? data.results.map((result) => `${{result.phone_number}}: ${{result.station_names.join(', ')}} [${{result.delivery}}]`).join('\\n')
+                    : 'No matching subscriptions for current/simulated CSO sites.';
+                setResult('simulation-result', summary);
+            }} catch (error) {{
+                setResult('simulation-result', error.message, true);
+            }}
+        }}
+    </script>
+</body>
+</html>
+"""
+    
+    def _generate_station_card(self, station, status_type, is_simulated=False, lab_result=None):
+        """Generate HTML for a single station card"""
+        status_icon = {
+            "cso": "🚨",
+            "posted": "⚠️",
+            "safe": "✅",
+            "not_sampled": "⚪"
+        }.get(status_type, "ℹ️")
+        
+        status_label = {
+            "cso": "CSO ALERT",
+            "posted": "Posted",
+            "safe": "Safe",
+            "not_sampled": "No Data"
+        }.get(status_type, "Unknown")
+        
+        status_feed_date = station.sample_date.strftime('%m/%d/%Y') if station.sample_date else "N/A"
+        if lab_result:
+            lab_sample_date = lab_result["sample_date"].strftime('%m/%d/%Y')
+            lab_details_html = f"""
+                <div class="station-meta">
+                    <span>Latest SF Gov lab sample: {lab_sample_date}</span>
+                    <a class="lab-link" href="{lab_result['results_url']}" target="_blank" rel="noopener noreferrer">View results</a>
+                </div>
+            """
+        else:
+            lab_details_html = """
+                <div class="station-meta">
+                    <span>Latest SF Gov lab sample: N/A</span>
+                    <span></span>
+                </div>
+            """
+        
+        warning_html = ""
+        if status_type == "cso":
+            warning_html = """
+                <div class="station-warning">
+                    ⚠️ Combined sewer discharge detected. Avoid water contact for 72 hours.
+                </div>
+            """
+        elif status_type == "posted":
+            warning_html = """
+                <div class="station-warning" style="background: #fff3cd; color: #856404;">
+                    ⚠️ Elevated bacteria levels. Water contact not recommended.
+                </div>
+            """
+        elif status_type == "not_sampled":
+            warning_html = """
+                <div class="station-warning" style="background: #f5f5f5; color: #666;">
+                    ℹ️ This location is not routinely sampled. No data available.
+                </div>
+            """
+
+        if is_simulated:
+            warning_html += """
+                <div class="simulation-pill">
+                    Simulated for testing
+                </div>
+            """
+        
+        # Add CSS class for not_sampled cards
+        card_class = status_type
+        
+        return f"""
+            <div class="station-card {card_class}">
+                <div class="station-header">
+                    <h3>{station.station_name}</h3>
+                    <span class="status-badge {status_type}">{status_icon} {status_label}</span>
+                </div>
+                <div class="station-meta">
+                    <span>SFPUC status feed date: {status_feed_date}</span>
+                    <span>ID: {station.station_id}</span>
+                </div>
+                {lab_details_html}
+                {warning_html}
+            </div>
+        """
+
+
+def main():
+    print(f"""
+╔══════════════════════════════════════════════════════════════╗
+║  SF Beach Water Quality Dashboard                            ║
+║  Surfrider SF Blue Water Task Force                          ║
+╠══════════════════════════════════════════════════════════════╣
+║  🌐 Open in browser: http://localhost:{PORT}                   ║
+║  📡 Real-time data from SFPUC LIMS API                       ║
+║  🔄 Auto-refresh every 5 minutes                             ║
+║                                                              ║
+║  Press Ctrl+C to stop                                        ║
+╚══════════════════════════════════════════════════════════════╝
+""")
+    
+    with ReusableTCPServer(("", PORT), WaterQualityHandler) as httpd:
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            print("\n👋 Shutting down dashboard...")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,599 @@
+#!/usr/bin/env python3
+"""
+Notification handlers for SF Water Quality Alerts
+
+Supports multiple notification channels:
+- Console output
+- Email (via SMTP)
+- Slack webhook
+- SMS (via Twilio)
+- Discord webhook
+
+Configure via environment variables or pass credentials directly.
+"""
+
+import os
+import json
+import smtplib
+import sys
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from abc import ABC, abstractmethod
+from typing import Optional
+from datetime import datetime
+from pathlib import Path
+import requests
+
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from core.monitoring import Alert
+
+
+class Notifier(ABC):
+    """Base class for notification handlers"""
+    
+    @abstractmethod
+    def send(self, alerts: list[Alert], report: str) -> bool:
+        """
+        Send notification with alerts.
+        
+        Args:
+            alerts: List of Alert objects
+            report: Formatted status report string
+            
+        Returns:
+            True if notification sent successfully
+        """
+        pass
+    
+    def format_alert_summary(self, alerts: list[Alert]) -> str:
+        """Format alerts into a summary string"""
+        if not alerts:
+            return "✅ No active water quality alerts"
+        
+        # Group alerts by type for clearer presentation
+        rain_alerts = [a for a in alerts if a.alert_type == "rain_advisory"]
+        cso_alerts = [a for a in alerts if a.alert_type == "cso_discharge"]
+        bacteria_alerts = [a for a in alerts if a.alert_type == "elevated_bacteria"]
+        other_alerts = [a for a in alerts if a.alert_type not in ("rain_advisory", "cso_discharge", "elevated_bacteria")]
+        
+        lines = [f"🚨 {len(alerts)} Water Quality Alert(s):"]
+        
+        if rain_alerts:
+            lines.append("\n🌧️ Rain Advisory:")
+            for alert in rain_alerts:
+                lines.append(f"  • {alert.message}")
+        
+        if cso_alerts:
+            lines.append("\n🚨 CSO (Sewer Overflow) Alerts:")
+            for alert in cso_alerts:
+                lines.append(f"  • {alert.message}")
+        
+        if bacteria_alerts:
+            lines.append("\n⚠️ Elevated Bacteria:")
+            for alert in bacteria_alerts:
+                lines.append(f"  • {alert.message}")
+        
+        for alert in other_alerts:
+            lines.append(f"\n• {alert.message}")
+        
+        return "\n".join(lines)
+
+
+class ConsoleNotifier(Notifier):
+    """Print alerts to console"""
+    
+    def send(self, alerts: list[Alert], report: str) -> bool:
+        print("\n" + "=" * 60)
+        print("WATER QUALITY ALERT NOTIFICATION")
+        print("=" * 60)
+        print(report)
+        return True
+
+
+class EmailNotifier(Notifier):
+    """Send alerts via email"""
+    
+    def __init__(
+        self,
+        smtp_server: Optional[str] = None,
+        smtp_port: int = 587,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        from_email: Optional[str] = None,
+        to_emails: Optional[list[str]] = None
+    ):
+        self.smtp_server = smtp_server or os.environ.get("SMTP_SERVER", "smtp.gmail.com")
+        self.smtp_port = smtp_port or int(os.environ.get("SMTP_PORT", "587"))
+        self.username = username or os.environ.get("SMTP_USERNAME")
+        self.password = password or os.environ.get("SMTP_PASSWORD")
+        self.from_email = from_email or os.environ.get("ALERT_FROM_EMAIL")
+        
+        to_env = os.environ.get("ALERT_TO_EMAILS", "")
+        self.to_emails = to_emails or [e.strip() for e in to_env.split(",") if e.strip()]
+    
+    def send(self, alerts: list[Alert], report: str) -> bool:
+        if not all([self.smtp_server, self.username, self.password, self.from_email, self.to_emails]):
+            print("Email notifier not configured. Set SMTP_* and ALERT_* environment variables.")
+            return False
+        
+        # Determine subject based on alert severity
+        if any(a.severity == "warning" for a in alerts):
+            subject = "🚨 URGENT: SF Beach Water Quality Warning"
+        elif alerts:
+            subject = "⚠️ SF Beach Water Quality Advisory"
+        else:
+            subject = "✅ SF Beach Water Quality - All Clear"
+        
+        # Create message
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"] = self.from_email
+        msg["To"] = ", ".join(self.to_emails)
+        
+        # Plain text version
+        text_content = f"""
+SF Beach Water Quality Alert
+Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}
+
+{self.format_alert_summary(alerts)}
+
+FULL REPORT:
+{report}
+
+---
+Surfrider SF Blue Water Task Force
+https://sf.surfrider.org/blue-water-task-force/
+"""
+        
+        # HTML version
+        html_content = f"""
+<html>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    <div style="background: #0077be; color: white; padding: 20px; text-align: center;">
+        <h1>🏖️ SF Beach Water Quality Alert</h1>
+        <p>Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}</p>
+    </div>
+    
+    <div style="padding: 20px;">
+        <h2>Alert Summary</h2>
+        <div style="background: {'#ffebee' if alerts else '#e8f5e9'}; padding: 15px; border-radius: 5px;">
+            {self._format_alerts_html(alerts)}
+        </div>
+        
+        <h2>Full Report</h2>
+        <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto;">
+{report}
+        </pre>
+        
+        <hr style="margin: 20px 0;">
+        <p style="color: #666; font-size: 12px;">
+            Surfrider SF Blue Water Task Force<br>
+            <a href="https://sf.surfrider.org/blue-water-task-force/">Learn more about our water quality testing</a>
+        </p>
+    </div>
+</body>
+</html>
+"""
+        
+        msg.attach(MIMEText(text_content, "plain"))
+        msg.attach(MIMEText(html_content, "html"))
+        
+        try:
+            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+                server.starttls()
+                server.login(self.username, self.password)
+                server.sendmail(self.from_email, self.to_emails, msg.as_string())
+            print(f"Email sent to {len(self.to_emails)} recipient(s)")
+            return True
+        except Exception as e:
+            print(f"Failed to send email: {e}")
+            return False
+    
+    def _format_alerts_html(self, alerts: list[Alert]) -> str:
+        if not alerts:
+            return "<p style='color: green;'>✅ No active water quality alerts</p>"
+        
+        html = "<ul>"
+        for alert in alerts:
+            color = "#d32f2f" if alert.severity == "warning" else "#f57c00"
+            html += f"<li style='color: {color}; margin: 10px 0;'>{alert.message}</li>"
+        html += "</ul>"
+        return html
+
+
+class SlackNotifier(Notifier):
+    """Send alerts to Slack via webhook"""
+    
+    def __init__(self, webhook_url: Optional[str] = None):
+        self.webhook_url = webhook_url or os.environ.get("SLACK_WEBHOOK_URL")
+    
+    def send(self, alerts: list[Alert], report: str) -> bool:
+        if not self.webhook_url:
+            print("Slack notifier not configured. Set SLACK_WEBHOOK_URL environment variable.")
+            return False
+        
+        # Build Slack message blocks
+        blocks = [
+            {
+                "type": "header",
+                "text": {
+                    "type": "plain_text",
+                    "text": "🏖️ SF Beach Water Quality Update",
+                    "emoji": True
+                }
+            },
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"*Generated:* {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+                }
+            },
+            {"type": "divider"}
+        ]
+        
+        # Add alerts
+        if alerts:
+            for alert in alerts:
+                emoji = "🚨" if alert.severity == "warning" else "⚠️"
+                blocks.append({
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": f"{emoji} *{alert.station_name}*\n{alert.message}\n_Sample Date: {alert.sample_date.strftime('%Y-%m-%d')}_"
+                    }
+                })
+        else:
+            blocks.append({
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": "✅ *All stations within water quality standards*"
+                }
+            })
+        
+        # Add link to full report
+        blocks.extend([
+            {"type": "divider"},
+            {
+                "type": "context",
+                "elements": [
+                    {
+                        "type": "mrkdwn",
+                        "text": "📞 Current conditions: 1-877-SFBEACH | 🌐 <https://webapps.sfpuc.org/sapps/beachesandbay.html|SFPUC Beach Map>"
+                    }
+                ]
+            }
+        ])
+        
+        payload = {"blocks": blocks}
+        
+        try:
+            response = requests.post(self.webhook_url, json=payload)
+            response.raise_for_status()
+            print("Slack notification sent")
+            return True
+        except Exception as e:
+            print(f"Failed to send Slack notification: {e}")
+            return False
+
+
+class DiscordNotifier(Notifier):
+    """Send alerts to Discord via webhook"""
+    
+    def __init__(self, webhook_url: Optional[str] = None):
+        self.webhook_url = webhook_url or os.environ.get("DISCORD_WEBHOOK_URL")
+    
+    def send(self, alerts: list[Alert], report: str) -> bool:
+        if not self.webhook_url:
+            print("Discord notifier not configured. Set DISCORD_WEBHOOK_URL environment variable.")
+            return False
+        
+        # Determine embed color
+        if any(a.severity == "warning" for a in alerts):
+            color = 0xd32f2f  # Red
+        elif alerts:
+            color = 0xf57c00  # Orange
+        else:
+            color = 0x4caf50  # Green
+        
+        # Build Discord embed
+        embed = {
+            "title": "🏖️ SF Beach Water Quality Update",
+            "description": self.format_alert_summary(alerts),
+            "color": color,
+            "timestamp": datetime.utcnow().isoformat(),
+            "footer": {
+                "text": "Surfrider SF Blue Water Task Force"
+            },
+            "fields": []
+        }
+        
+        # Add alert details
+        for alert in alerts[:5]:  # Limit to 5 to avoid hitting embed limits
+            embed["fields"].append({
+                "name": alert.station_name,
+                "value": f"{alert.message}\nSample: {alert.sample_date.strftime('%Y-%m-%d')}",
+                "inline": False
+            })
+        
+        if len(alerts) > 5:
+            embed["fields"].append({
+                "name": "Additional Alerts",
+                "value": f"...and {len(alerts) - 5} more alerts",
+                "inline": False
+            })
+        
+        payload = {
+            "embeds": [embed],
+            "content": "📢 **Water Quality Alert**" if alerts else None
+        }
+        
+        try:
+            response = requests.post(self.webhook_url, json=payload)
+            response.raise_for_status()
+            print("Discord notification sent")
+            return True
+        except Exception as e:
+            print(f"Failed to send Discord notification: {e}")
+            return False
+
+
+class TwilioSMSNotifier(Notifier):
+    """Send SMS alerts via Twilio"""
+    
+    def __init__(
+        self,
+        account_sid: Optional[str] = None,
+        auth_token: Optional[str] = None,
+        from_number: Optional[str] = None,
+        to_numbers: Optional[list[str]] = None
+    ):
+        self.account_sid = account_sid or os.environ.get("TWILIO_ACCOUNT_SID")
+        self.auth_token = auth_token or os.environ.get("TWILIO_AUTH_TOKEN")
+        self.from_number = from_number or os.environ.get("TWILIO_FROM_NUMBER")
+        
+        to_env = os.environ.get("TWILIO_TO_NUMBERS", "")
+        self.to_numbers = to_numbers or [n.strip() for n in to_env.split(",") if n.strip()]
+    
+    def send(self, alerts: list[Alert], report: str) -> bool:
+        if not all([self.account_sid, self.auth_token, self.from_number, self.to_numbers]):
+            print("Twilio notifier not configured. Set TWILIO_* environment variables.")
+            return False
+        
+        # SMS should be concise
+        if not alerts:
+            message = "✅ SF Beach Water Quality: All stations within standards. Check https://webapps.sfpuc.org/sapps/beachesandbay.html"
+        else:
+            message = f"🚨 SF Beach Alert: {len(alerts)} station(s) with elevated bacteria. "
+            # Add first alert location
+            message += f"Including: {alerts[0].station_name}. "
+            message += "Call 1-877-SFBEACH for details."
+        
+        # Truncate if too long
+        if len(message) > 160:
+            message = message[:157] + "..."
+        
+        url = f"https://api.twilio.com/2010-04-01/Accounts/{self.account_sid}/Messages.json"
+        
+        success = True
+        for to_number in self.to_numbers:
+            try:
+                self._send_to_number(to_number, message)
+                print(f"SMS sent to {to_number}")
+            except Exception as e:
+                print(f"Failed to send SMS to {to_number}: {e}")
+                success = False
+        
+        return success
+
+    def send_message(self, message: str) -> bool:
+        """Send a custom SMS message to the configured recipient list."""
+        if not all([self.account_sid, self.auth_token, self.from_number, self.to_numbers]):
+            print("Twilio notifier not configured. Set TWILIO_* environment variables.")
+            return False
+
+        success = True
+        for to_number in self.to_numbers:
+            try:
+                self._send_to_number(to_number, message)
+                print(f"SMS sent to {to_number}")
+            except Exception as e:
+                print(f"Failed to send SMS to {to_number}: {e}")
+                success = False
+
+        return success
+
+    def _send_to_number(self, to_number: str, message: str) -> None:
+        url = f"https://api.twilio.com/2010-04-01/Accounts/{self.account_sid}/Messages.json"
+        response = requests.post(
+            url,
+            auth=(self.account_sid, self.auth_token),
+            data={
+                "From": self.from_number,
+                "To": to_number,
+                "Body": message,
+            }
+        )
+        response.raise_for_status()
+
+
+class EmailToSMSNotifier(Notifier):
+    """
+    Send SMS alerts via email-to-SMS gateways (FREE!)
+    
+    Carrier gateways:
+    - Verizon: number@vtext.com
+    - AT&T: number@txt.att.net
+    - T-Mobile: number@tmomail.net
+    - Sprint: number@messaging.sprintpcs.com
+    
+    Requires Gmail (or other SMTP) credentials.
+    """
+    
+    CARRIER_GATEWAYS = {
+        "verizon": "vtext.com",
+        "att": "txt.att.net",
+        "tmobile": "tmomail.net",
+        "sprint": "messaging.sprintpcs.com",
+        "cricket": "sms.cricketwireless.net",
+        "metropcs": "mymetropcs.com",
+        "uscellular": "email.uscc.net",
+    }
+    
+    def __init__(
+        self,
+        smtp_server: Optional[str] = None,
+        smtp_port: int = 587,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        from_email: Optional[str] = None,
+        to_sms_emails: Optional[list[str]] = None
+    ):
+        self.smtp_server = smtp_server or os.environ.get("SMTP_SERVER", "smtp.gmail.com")
+        self.smtp_port = smtp_port or int(os.environ.get("SMTP_PORT", "587"))
+        self.username = username or os.environ.get("SMTP_USERNAME")
+        self.password = password or os.environ.get("SMTP_PASSWORD")
+        self.from_email = from_email or os.environ.get("SMTP_USERNAME")  # Usually same as username for Gmail
+        
+        # SMS gateway emails (e.g., "9166226075@vtext.com")
+        to_env = os.environ.get("SMS_GATEWAY_EMAILS", "")
+        self.to_sms_emails = to_sms_emails or [e.strip() for e in to_env.split(",") if e.strip()]
+    
+    @classmethod
+    def phone_to_gateway(cls, phone: str, carrier: str) -> str:
+        """Convert phone number and carrier to gateway email"""
+        # Strip non-digits
+        phone = ''.join(c for c in phone if c.isdigit())
+        # Remove leading 1 if present
+        if phone.startswith('1') and len(phone) == 11:
+            phone = phone[1:]
+        
+        carrier = carrier.lower().replace("-", "").replace(" ", "")
+        gateway = cls.CARRIER_GATEWAYS.get(carrier)
+        
+        if not gateway:
+            raise ValueError(f"Unknown carrier: {carrier}. Supported: {list(cls.CARRIER_GATEWAYS.keys())}")
+        
+        return f"{phone}@{gateway}"
+    
+    def send(self, alerts: list[Alert], report: str) -> bool:
+        if not all([self.smtp_server, self.username, self.password, self.to_sms_emails]):
+            print("Email-to-SMS notifier not configured.")
+            print("Set SMTP_USERNAME, SMTP_PASSWORD, and SMS_GATEWAY_EMAILS environment variables.")
+            return False
+        
+        # Build message with CSO sites and rain advisory
+        if not alerts:
+            message = "SF Beach: All clear! No water quality alerts."
+        else:
+            rain_alerts = [a for a in alerts if a.alert_type == "rain_advisory"]
+            cso_alerts = [a for a in alerts if "CSO" in a.message.upper() or "sewer" in a.message.lower()]
+            
+            if cso_alerts:
+                cso_sites = [a.station_name for a in cso_alerts]
+                message = f"🚨 SF Beach CSO Alert ({len(cso_sites)} sites):\n"
+                message += "\n".join(f"• {site}" for site in cso_sites)
+                message += "\n\nAvoid water contact. 1-877-SFBEACH"
+            elif rain_alerts:
+                message = f"🌧️ SF Beach Rain Advisory: Avoid water contact 72hrs after rain. "
+                cso_risk = rain_alerts[0].details.get("cso_risk", "unknown")
+                message += f"CSO risk: {cso_risk}. 1-877-SFBEACH"
+            else:
+                message = f"SF Beach Alert: {len(alerts)} station(s) with high bacteria. 1-877-SFBEACH"
+        
+        # Create simple plain text message (SMS gateways don't support HTML)
+        msg = MIMEText(message)
+        msg["From"] = self.from_email
+        msg["Subject"] = ""  # Keep subject empty for cleaner SMS
+        
+        success = True
+        for sms_email in self.to_sms_emails:
+            try:
+                self._send_to_email(sms_email, message)
+                print(f"SMS sent to {sms_email}")
+            except Exception as e:
+                print(f"Failed to send SMS to {sms_email}: {e}")
+                success = False
+        
+        return success
+
+    def send_message(self, message: str) -> bool:
+        """Send a custom plain-text message to the configured gateway recipients."""
+        if not all([self.smtp_server, self.username, self.password, self.to_sms_emails]):
+            print("Email-to-SMS notifier not configured.")
+            print("Set SMTP_USERNAME, SMTP_PASSWORD, and SMS_GATEWAY_EMAILS environment variables.")
+            return False
+
+        success = True
+        for sms_email in self.to_sms_emails:
+            try:
+                self._send_to_email(sms_email, message)
+                print(f"SMS sent to {sms_email}")
+            except Exception as e:
+                print(f"Failed to send SMS to {sms_email}: {e}")
+                success = False
+
+        return success
+
+    def _send_to_email(self, sms_email: str, message: str) -> None:
+        msg = MIMEText(message)
+        msg["From"] = self.from_email
+        msg["To"] = sms_email
+        msg["Subject"] = ""
+        with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+            server.starttls()
+            server.login(self.username, self.password)
+            server.sendmail(self.from_email, [sms_email], msg.as_string())
+
+
+class MultiNotifier(Notifier):
+    """Send alerts through multiple notification channels"""
+    
+    def __init__(self, notifiers: list[Notifier]):
+        self.notifiers = notifiers
+    
+    def send(self, alerts: list[Alert], report: str) -> bool:
+        results = []
+        for notifier in self.notifiers:
+            try:
+                result = notifier.send(alerts, report)
+                results.append(result)
+            except Exception as e:
+                print(f"Error with {notifier.__class__.__name__}: {e}")
+                results.append(False)
+        
+        return all(results)
+
+
+def create_notifier_from_env() -> Notifier:
+    """
+    Create a multi-notifier based on available environment variables.
+    
+    Returns a MultiNotifier with all configured notification channels.
+    """
+    notifiers = [ConsoleNotifier()]  # Always include console
+    
+    # Check for Slack
+    if os.environ.get("SLACK_WEBHOOK_URL"):
+        notifiers.append(SlackNotifier())
+    
+    # Check for Discord
+    if os.environ.get("DISCORD_WEBHOOK_URL"):
+        notifiers.append(DiscordNotifier())
+    
+    # Check for Email
+    if os.environ.get("SMTP_USERNAME") and os.environ.get("ALERT_TO_EMAILS"):
+        notifiers.append(EmailNotifier())
+    
+    # Check for Twilio
+    if os.environ.get("TWILIO_ACCOUNT_SID") and os.environ.get("TWILIO_TO_NUMBERS"):
+        notifiers.append(TwilioSMSNotifier())
+    
+    # Check for Email-to-SMS (free!)
+    if os.environ.get("SMTP_USERNAME") and os.environ.get("SMS_GATEWAY_EMAILS"):
+        notifiers.append(EmailToSMSNotifier())
+    
+    return MultiNotifier(notifiers)
