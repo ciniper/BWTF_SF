@@ -225,6 +225,7 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
         try:
             subscriptions = self.subscription_store.list_subscriptions()
             payload = [{
+                "email": subscription.email,
                 "phone_number": subscription.phone_number,
                 "carrier": subscription.carrier,
                 "station_ids": subscription.station_ids,
@@ -268,6 +269,7 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
     def save_subscription(self):
         try:
             data = self._read_request_data()
+            email = data.get("email", "")
             phone_number = data.get("phone_number", "")
             carrier = data.get("carrier", "")
             station_ids = data.get("station_ids", [])
@@ -277,10 +279,16 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
             stations, _ = self._get_dashboard_stations()
             eligible_station_ids = {station.station_id for station in get_cso_eligible_stations(stations)}
             selected_station_ids = [station_id for station_id in station_ids if station_id in eligible_station_ids]
-            subscription = self.subscription_store.upsert_subscription(phone_number, carrier, selected_station_ids)
+            subscription = self.subscription_store.upsert_subscription(
+                email=email,
+                station_ids=selected_station_ids,
+                phone_number=phone_number,
+                carrier=carrier,
+            )
             self._send_json({
                 "ok": True,
                 "subscription": {
+                    "email": subscription.email,
                     "phone_number": subscription.phone_number,
                     "carrier": subscription.carrier,
                     "station_ids": subscription.station_ids,
@@ -310,20 +318,28 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
 
     def dispatch_cso_site_alerts(self):
         try:
+            data = self._read_request_data()
+            channel = data.get("channel", "email")
             stations, simulated_station_ids = self._get_dashboard_stations()
             subscriptions = self.subscription_store.list_subscriptions()
             results = dispatch_subscription_alerts(
                 subscriptions=subscriptions,
                 stations=stations,
                 simulated_station_ids=simulated_station_ids,
+                channel=channel,
             )
             self._send_json({
                 "ok": True,
+                "channel": channel,
                 "results": results,
                 "twilio_configured": bool(
                     os.environ.get("TWILIO_ACCOUNT_SID")
                     and os.environ.get("TWILIO_AUTH_TOKEN")
                     and os.environ.get("TWILIO_FROM_NUMBER")
+                ),
+                "smtp_configured": bool(
+                    os.environ.get("SMTP_USERNAME")
+                    and os.environ.get("SMTP_PASSWORD")
                 ),
             })
         except Exception as e:
@@ -556,13 +572,15 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
         current_subscription_html = "".join(
             f"""
             <div class="subscription-item">
-                <div class="subscription-phone">{subscription.phone_number}</div>
-                <div class="subscription-sites">Carrier: {dict(CARRIER_OPTIONS).get(subscription.carrier, subscription.carrier or 'preview only')}</div>
+                <div class="subscription-phone">{subscription.email or 'No email set'}</div>
+                <div class="subscription-sites">Email: {subscription.email or 'not configured'}</div>
+                <div class="subscription-sites">SMS: {subscription.phone_number or 'not configured'}</div>
+                <div class="subscription-sites">Carrier: {dict(CARRIER_OPTIONS).get(subscription.carrier, subscription.carrier or 'not configured')}</div>
                 <div class="subscription-sites">{", ".join(station_name_by_id.get(station_id, station_id) for station_id in subscription.station_ids)}</div>
             </div>
             """
             for subscription in subscriptions
-        ) or '<div class="empty-state">No phone subscriptions saved yet.</div>'
+        ) or '<div class="empty-state">No subscriptions saved yet.</div>'
 
         carrier_options_html = "".join(
             f'<option value="{value}">{label}</option>'
@@ -1209,12 +1227,13 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
 
         <div class="control-panels">
             <section class="panel">
-                <h3>SMS Site Alerts</h3>
-                <p>Choose the CSO-eligible sites you care about, and the system will send texts only for matching CSO events.</p>
+                <h3>Email + Optional SMS Alerts</h3>
+                <p>Choose the CSO-eligible sites you care about. Email is the primary free alert path, and SMS via carrier gateway is optional.</p>
                 <form id="subscription-form" class="stack">
-                    <input class="form-input" type="tel" name="phone_number" placeholder="Phone number (e.g. 4155551234)" required>
-                    <select class="form-input" name="carrier" required>
-                        <option value="">Choose carrier for free email-to-SMS</option>
+                    <input class="form-input" type="email" name="email" placeholder="Email address" required>
+                    <input class="form-input" type="tel" name="phone_number" placeholder="Phone number for optional SMS (e.g. 4155551234)">
+                    <select class="form-input" name="carrier">
+                        <option value="">Skip SMS / email only</option>
                         {carrier_options_html}
                     </select>
                     <div class="checkbox-grid">
@@ -1224,7 +1243,7 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
                         <button class="action-btn primary" type="submit">Save Subscription</button>
                     </div>
                 </form>
-                <div class="helper-note">Only sites mapped to CSO outfalls are available for selection. Free SMS uses your carrier gateway.</div>
+                <div class="helper-note">Only sites mapped to CSO outfalls are available for selection. Leave carrier blank if you only want email alerts.</div>
                 <div class="action-result" id="subscription-result"></div>
             </section>
 
@@ -1242,15 +1261,16 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
                 </form>
                 <div class="helper-note">Currently simulated sites: {simulated_sites_html}</div>
                 <div class="button-row" style="margin-top: 12px;">
-                    <button class="action-btn primary" type="button" onclick="dispatchSubscriptionAlerts()">Send Matching Alerts</button>
+                    <button class="action-btn primary" type="button" onclick="dispatchSubscriptionAlerts('email')">Send Email Alerts</button>
+                    <button class="action-btn secondary" type="button" onclick="dispatchSubscriptionAlerts('sms')">Send SMS Alerts</button>
                 </div>
-                <div class="helper-note">If SMTP or carrier info is missing, dispatch returns a preview instead of sending SMS.</div>
+                <div class="helper-note">Email uses SMTP. SMS uses carrier gateway if phone + carrier are set, otherwise it falls back to preview. These buttons send for all currently matching subscriptions.</div>
                 <div class="action-result" id="simulation-result"></div>
             </section>
 
             <section class="panel">
                 <h3>Saved Subscribers</h3>
-                <p>Current phone subscriptions stored on disk for the dashboard.</p>
+                <p>Current email/SMS subscriptions stored on disk for the dashboard.</p>
                 <div class="subscription-list">
                     {current_subscription_html}
                 </div>
@@ -1308,13 +1328,17 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
             event.preventDefault();
             const form = event.currentTarget;
             const payload = {{
+                email: form.email.value,
                 phone_number: form.phone_number.value,
                 carrier: form.carrier.value,
                 station_ids: Array.from(form.querySelectorAll('input[name="station_ids"]:checked')).map((input) => input.value)
             }};
             try {{
                 const data = await postJson('/api/subscriptions', payload);
-                setResult('subscription-result', `Saved ${{data.subscription.phone_number}} (${{data.subscription.carrier}}) for ${{data.subscription.station_ids.length}} site(s).`);
+                const smsSummary = data.subscription.phone_number
+                    ? ` SMS: ${{data.subscription.phone_number}} (${{data.subscription.carrier || 'no carrier'}}).`
+                    : ' Email only.';
+                setResult('subscription-result', `Saved ${{data.subscription.email}} for ${{data.subscription.station_ids.length}} site(s).${{smsSummary}}`);
                 window.setTimeout(() => window.location.reload(), 700);
             }} catch (error) {{
                 setResult('subscription-result', error.message, true);
@@ -1346,12 +1370,17 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
             }}
         }}
 
-        async function dispatchSubscriptionAlerts() {{
+        async function dispatchSubscriptionAlerts(channel) {{
             try {{
-                const data = await postJson('/api/dispatch-cso-alerts', {{}});
+                const data = await postJson('/api/dispatch-cso-alerts', {{ channel }});
                 const summary = data.results.length
-                    ? data.results.map((result) => `${{result.phone_number}}: ${{result.station_names.join(', ')}} [${{result.delivery}}]`).join('\\n')
-                    : 'No matching subscriptions for current/simulated CSO sites.';
+                    ? data.results.map((result) => {{
+                        const destination = channel === 'email'
+                            ? (result.email || 'no email')
+                            : (result.phone_number || result.email || 'no destination');
+                        return `${{destination}}: ${{result.station_names.join(', ')}} [${{result.delivery}}]`;
+                    }}).join('\\n')
+                    : `No matching subscriptions for current/simulated CSO sites on ${{channel}}.`;
                 setResult('simulation-result', summary);
             }} catch (error) {{
                 setResult('simulation-result', error.message, true);

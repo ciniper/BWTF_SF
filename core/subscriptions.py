@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Persistence for phone-based site alert subscriptions."""
+"""Persistence for site alert subscriptions."""
 
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ SUBSCRIPTIONS_PATH = DATA_DIR / "subscriptions.json"
 
 @dataclass
 class SiteSubscription:
+    email: str
     phone_number: str
     carrier: str
     station_ids: list[str]
@@ -22,7 +23,16 @@ class SiteSubscription:
     updated_at: str
 
 
+def normalize_email(email: str) -> str:
+    value = email.strip().lower()
+    if not value or "@" not in value:
+        raise ValueError("Enter a valid email address.")
+    return value
+
+
 def normalize_phone_number(phone_number: str) -> str:
+    if not phone_number.strip():
+        return ""
     digits = "".join(ch for ch in phone_number if ch.isdigit())
     if len(digits) == 11 and digits.startswith("1"):
         digits = digits[1:]
@@ -51,7 +61,8 @@ class SubscriptionStore:
         rows = self._load_raw()
         subscriptions = [
             SiteSubscription(
-                phone_number=row["phone_number"],
+                email=row.get("email", ""),
+                phone_number=row.get("phone_number", ""),
                 carrier=row.get("carrier", ""),
                 station_ids=sorted(set(row.get("station_ids", []))),
                 created_at=row.get("created_at", ""),
@@ -59,11 +70,20 @@ class SubscriptionStore:
             )
             for row in rows
         ]
-        return sorted(subscriptions, key=lambda item: item.phone_number)
+        return sorted(subscriptions, key=lambda item: (item.email or item.phone_number, item.phone_number))
 
-    def upsert_subscription(self, phone_number: str, carrier: str, station_ids: list[str]) -> SiteSubscription:
+    def upsert_subscription(
+        self,
+        email: str,
+        station_ids: list[str],
+        phone_number: str = "",
+        carrier: str = "",
+    ) -> SiteSubscription:
+        normalized_email = normalize_email(email)
         normalized_phone = normalize_phone_number(phone_number)
         normalized_carrier = carrier.strip().lower().replace("-", "").replace(" ", "")
+        if normalized_carrier and not normalized_phone:
+            raise ValueError("Add a phone number before choosing an SMS carrier.")
         normalized_station_ids = sorted({station_id for station_id in station_ids if station_id})
         if not normalized_station_ids:
             raise ValueError("Select at least one site.")
@@ -74,11 +94,16 @@ class SubscriptionStore:
         subscription = None
 
         for row in rows:
-            if row.get("phone_number") == normalized_phone:
+            row_email = row.get("email", "")
+            row_phone = row.get("phone_number", "")
+            if row_email == normalized_email or (normalized_phone and row_phone == normalized_phone):
+                row["email"] = normalized_email
+                row["phone_number"] = normalized_phone
                 row["carrier"] = normalized_carrier
                 row["station_ids"] = normalized_station_ids
                 row["updated_at"] = now
                 subscription = SiteSubscription(
+                    email=normalized_email,
                     phone_number=normalized_phone,
                     carrier=normalized_carrier,
                     station_ids=normalized_station_ids,
@@ -89,6 +114,7 @@ class SubscriptionStore:
 
         if subscription is None:
             subscription = SiteSubscription(
+                email=normalized_email,
                 phone_number=normalized_phone,
                 carrier=normalized_carrier,
                 station_ids=normalized_station_ids,
@@ -100,9 +126,9 @@ class SubscriptionStore:
         self._save_raw(updated_rows)
         return subscription
 
-    def delete_subscription(self, phone_number: str) -> bool:
-        normalized_phone = normalize_phone_number(phone_number)
+    def delete_subscription(self, email: str) -> bool:
+        normalized_email = normalize_email(email)
         rows = self._load_raw()
-        filtered = [row for row in rows if row.get("phone_number") != normalized_phone]
+        filtered = [row for row in rows if row.get("email") != normalized_email]
         self._save_raw(filtered)
         return len(filtered) != len(rows)
