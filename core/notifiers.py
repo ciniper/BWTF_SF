@@ -108,7 +108,7 @@ class EmailNotifier(Notifier):
         self.smtp_port = smtp_port or int(os.environ.get("SMTP_PORT", "587"))
         self.username = username or os.environ.get("SMTP_USERNAME")
         self.password = password or os.environ.get("SMTP_PASSWORD")
-        self.from_email = from_email or os.environ.get("ALERT_FROM_EMAIL")
+        self.from_email = from_email or os.environ.get("ALERT_FROM_EMAIL") or self.username
         
         to_env = os.environ.get("ALERT_TO_EMAILS", "")
         self.to_emails = to_emails or [e.strip() for e in to_env.split(",") if e.strip()]
@@ -181,10 +181,7 @@ https://sf.surfrider.org/blue-water-task-force/
         msg.attach(MIMEText(html_content, "html"))
         
         try:
-            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
-                server.starttls()
-                server.login(self.username, self.password)
-                server.sendmail(self.from_email, self.to_emails, msg.as_string())
+            self._send_message(msg, self.to_emails)
             print(f"Email sent to {len(self.to_emails)} recipient(s)")
             return True
         except Exception as e:
@@ -201,6 +198,34 @@ https://sf.surfrider.org/blue-water-task-force/
             html += f"<li style='color: {color}; margin: 10px 0;'>{alert.message}</li>"
         html += "</ul>"
         return html
+
+    def send_message(self, subject: str, text_content: str, to_emails: list[str], html_content: str | None = None) -> bool:
+        """Send a custom email message to the provided recipients."""
+        if not all([self.smtp_server, self.username, self.password, self.from_email, to_emails]):
+            print("Email notifier not configured. Set SMTP_* and ALERT_* environment variables.")
+            return False
+
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"] = self.from_email
+        msg["To"] = ", ".join(to_emails)
+        msg.attach(MIMEText(text_content, "plain"))
+        if html_content:
+            msg.attach(MIMEText(html_content, "html"))
+
+        try:
+            self._send_message(msg, to_emails)
+            print(f"Email sent to {len(to_emails)} recipient(s)")
+            return True
+        except Exception as e:
+            print(f"Failed to send email: {e}")
+            return False
+
+    def _send_message(self, msg: MIMEMultipart, recipients: list[str]) -> None:
+        with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+            server.starttls()
+            server.login(self.username, self.password)
+            server.sendmail(self.from_email, recipients, msg.as_string())
 
 
 class SlackNotifier(Notifier):
