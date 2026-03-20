@@ -126,9 +126,19 @@ class SubscriptionStore:
         self._save_raw(updated_rows)
         return subscription
 
-    def delete_subscription(self, email: str) -> bool:
-        normalized_email = normalize_email(email)
+    def delete_subscription(self, email: str = "", phone_number: str = "") -> bool:
+        normalized_email = normalize_email(email) if email.strip() else ""
+        normalized_phone = normalize_phone_number(phone_number) if phone_number.strip() else ""
+        if not normalized_email and not normalized_phone:
+            raise ValueError("Provide an email or phone number to delete a subscription.")
+
         rows = self._load_raw()
-        filtered = [row for row in rows if row.get("email") != normalized_email]
+        filtered = []
+        for row in rows:
+            email_matches = normalized_email and row.get("email", "") == normalized_email
+            phone_matches = normalized_phone and row.get("phone_number", "") == normalized_phone
+            if email_matches or phone_matches:
+                continue
+            filtered.append(row)
         self._save_raw(filtered)
         return len(filtered) != len(rows)

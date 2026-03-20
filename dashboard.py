@@ -88,6 +88,8 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
 
         if parsed.path == "/api/subscriptions":
             self.save_subscription()
+        elif parsed.path == "/api/subscriptions/delete":
+            self.delete_subscription()
         elif parsed.path == "/api/simulations/cso":
             self.save_simulated_cso()
         elif parsed.path == "/api/simulations/cso/clear":
@@ -294,6 +296,20 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
                     "station_ids": subscription.station_ids,
                 }
             })
+        except Exception as e:
+            self._send_json({"ok": False, "error": str(e)}, status=400)
+
+    def delete_subscription(self):
+        try:
+            data = self._read_request_data()
+            removed = self.subscription_store.delete_subscription(
+                email=data.get("email", ""),
+                phone_number=data.get("phone_number", ""),
+            )
+            if not removed:
+                self._send_json({"ok": False, "error": "Subscription not found."}, status=404)
+                return
+            self._send_json({"ok": True})
         except Exception as e:
             self._send_json({"ok": False, "error": str(e)}, status=400)
 
@@ -577,6 +593,9 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
                 <div class="subscription-sites">SMS: {subscription.phone_number or 'not configured'}</div>
                 <div class="subscription-sites">Carrier: {dict(CARRIER_OPTIONS).get(subscription.carrier, subscription.carrier or 'not configured')}</div>
                 <div class="subscription-sites">{", ".join(station_name_by_id.get(station_id, station_id) for station_id in subscription.station_ids)}</div>
+                <div class="subscription-actions">
+                    <button class="action-btn danger small" type="button" onclick='deleteSubscription({json.dumps(subscription.email)}, {json.dumps(subscription.phone_number)})'>Clear Subscriber</button>
+                </div>
             </div>
             """
             for subscription in subscriptions
@@ -928,6 +947,11 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
             color: #a93226;
         }}
 
+        .action-btn.small {{
+            padding: 8px 10px;
+            font-size: 0.82em;
+        }}
+
         .subscription-list {{
             display: grid;
             gap: 8px;
@@ -938,6 +962,10 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
             border-radius: 8px;
             padding: 10px;
             background: #fafcfd;
+        }}
+
+        .subscription-actions {{
+            margin-top: 10px;
         }}
 
         .subscription-phone {{
@@ -1344,6 +1372,27 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
                 setResult('subscription-result', error.message, true);
             }}
         }});
+
+        async function deleteSubscription(email, phoneNumber) {{
+            const target = email || phoneNumber;
+            if (!target) {{
+                setResult('subscription-result', 'This subscriber record is missing both email and phone.', true);
+                return;
+            }}
+            if (!window.confirm(`Clear subscriber ${{target}}?`)) {{
+                return;
+            }}
+            try {{
+                await postJson('/api/subscriptions/delete', {{
+                    email: email || '',
+                    phone_number: phoneNumber || ''
+                }});
+                setResult('subscription-result', `Cleared subscriber ${{target}}.`);
+                window.setTimeout(() => window.location.reload(), 500);
+            }} catch (error) {{
+                setResult('subscription-result', error.message, true);
+            }}
+        }}
 
         document.getElementById('simulation-form').addEventListener('submit', async (event) => {{
             event.preventDefault();
