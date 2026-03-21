@@ -20,6 +20,8 @@ from core.subscriptions import SiteSubscription
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 SIMULATED_CSO_PATH = DATA_DIR / "simulated_cso_events.json"
+BWTF_LOGO_URL = "https://bwtf.surfrider.org/images/BWTF-Logo_White.png"
+SURFRIDER_LOGO_URL = "https://f.hubspotusercontent20.net/hubfs/20811975/SF-Horizontal-Logo_RGB_Black_crop_small.png"
 
 
 class SimulatedCSOStore:
@@ -103,13 +105,36 @@ def format_cso_email_body(stations: list[SFPUCStation], simulated: bool = False)
     )
     html_items = "".join(f"<li>{station.station_name}</li>" for station in stations)
     html = (
-        "<html><body style=\"font-family: Arial, sans-serif;\">"
-        f"<h2>{prefix}SF Beach CSO Alert</h2>"
-        "<p>Combined sewer overflow conditions are active for your selected sites:</p>"
-        f"<ul>{html_items}</ul>"
-        "<p>Avoid water contact and check the latest map status here: "
-        "<a href=\"https://webapps.sfpuc.org/sapps/beachesandbay.html\">SFPUC Beach Map</a></p>"
-        "</body></html>"
+        "<html>"
+        "<body style=\"margin:0; padding:24px; background:#f5f6f7; font-family:'Avenir Next','Trebuchet MS','Segoe UI',sans-serif; color:#26272a;\">"
+        "<div style=\"max-width:680px; margin:0 auto; background:#ffffff; border-radius:28px; overflow:hidden; box-shadow:0 18px 40px rgba(38,39,42,0.12);\">"
+        "<div style=\"background:linear-gradient(135deg, #26272a 0%, #317fb2 100%); padding:24px;\">"
+        "<div style=\"display:flex; gap:12px; flex-wrap:wrap; align-items:center; justify-content:space-between;\">"
+        "<div style=\"display:inline-block; background:rgba(255,255,255,0.12); color:#ffffff; border:1px solid rgba(255,255,255,0.16); border-radius:999px; padding:8px 12px; font-size:12px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase;\">"
+        "Surfrider SF Blue Water Task Force"
+        "</div>"
+        f"<img src=\"{BWTF_LOGO_URL}\" alt=\"Blue Water Task Force\" style=\"display:block; width:180px; max-width:100%; height:auto;\">"
+        "</div>"
+        f"<h1 style=\"margin:18px 0 8px; color:#ffffff; font-size:30px; line-height:1; text-transform:uppercase; letter-spacing:0.03em;\">{prefix}SF Beach CSO Alert</h1>"
+        "<p style=\"margin:0; color:rgba(255,255,255,0.84); font-size:15px;\">Combined sewer overflow conditions are active for one or more of your selected sites.</p>"
+        "</div>"
+        "<div style=\"padding:24px;\">"
+        f"<img src=\"{SURFRIDER_LOGO_URL}\" alt=\"Surfrider Foundation\" style=\"display:block; width:240px; max-width:100%; height:auto; margin-bottom:16px;\">"
+        "<div style=\"background:rgba(255,65,0,0.10); border-radius:18px; padding:16px 18px; margin-bottom:18px;\">"
+        "<p style=\"margin:0 0 10px; color:#26272a; font-weight:700;\">Affected sites</p>"
+        f"<ul style=\"margin:0; padding-left:18px; color:#26272a; line-height:1.6;\">{html_items}</ul>"
+        "</div>"
+        "<div style=\"background:#f7fafb; border:1px solid #d9e4e8; border-radius:18px; padding:16px 18px;\">"
+        "<p style=\"margin:0 0 10px; color:#26272a; font-weight:700;\">What to do</p>"
+        "<p style=\"margin:0; color:#5e6a71; line-height:1.6;\">Avoid water contact and check the live map before heading out.</p>"
+        "</div>"
+        "<div style=\"margin-top:22px;\">"
+        "<a href=\"https://webapps.sfpuc.org/sapps/beachesandbay.html\" style=\"display:inline-block; background:#317fb2; color:#ffffff; text-decoration:none; padding:12px 18px; border-radius:999px; font-weight:700;\">View SFPUC Beach Map</a>"
+        "</div>"
+        "</div>"
+        "</div>"
+        "</body>"
+        "</html>"
     )
     return text, html
 

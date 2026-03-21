@@ -44,6 +44,9 @@ CARRIER_OPTIONS = [
     ("metropcs", "MetroPCS"),
     ("uscellular", "US Cellular"),
 ]
+BWTF_LOGO_URL = "https://bwtf.surfrider.org/images/BWTF-Logo_White.png"
+SURFRIDER_LOGO_URL = "https://f.hubspotusercontent20.net/hubfs/20811975/SF-Horizontal-Logo_RGB_Black_crop_small.png"
+SURFRIDER_HERO_IMAGE_URL = "https://sf.surfrider.org/hubfs/IMG_8857.jpg"
 
 
 class ReusableTCPServer(socketserver.TCPServer):
@@ -626,6 +629,21 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
     <meta http-equiv="refresh" content="300">
     <title>SF Beach Water Quality Dashboard</title>
     <style>
+        :root {{
+            --surf-blue: #317fb2;
+            --surf-blue-bright: #3d9fdf;
+            --surf-aqua: #88c8d2;
+            --surf-ink: #26272a;
+            --surf-sand: #f5f6f7;
+            --surf-paper: #ffffff;
+            --surf-muted: #5e6a71;
+            --surf-border: #d9e4e8;
+            --surf-danger: #ff4100;
+            --surf-warning: #fbc02d;
+            --surf-success: #25d670;
+            --surf-shadow: 0 18px 40px rgba(38, 39, 42, 0.12);
+        }}
+
         * {{
             box-sizing: border-box;
             margin: 0;
@@ -633,56 +651,144 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
         }}
         
         body {{
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #1a5276 0%, #2980b9 100%);
+            font-family: "Avenir Next", "Trebuchet MS", "Segoe UI", sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(136, 200, 210, 0.38), transparent 28%),
+                radial-gradient(circle at top right, rgba(61, 159, 223, 0.20), transparent 22%),
+                linear-gradient(180deg, #f5f6f7 0%, #e8f0f2 100%);
             min-height: 100vh;
-            color: #333;
+            color: var(--surf-ink);
         }}
         
         .container {{
-            max-width: 1200px;
+            max-width: 1280px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 24px;
         }}
         
         header {{
-            background: rgba(255,255,255,0.95);
-            border-radius: 12px;
-            padding: 20px 30px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+            border-radius: 28px;
+            padding: 32px;
+            margin-bottom: 24px;
+            box-shadow: var(--surf-shadow);
+            background:
+                linear-gradient(115deg, rgba(38, 39, 42, 0.92), rgba(49, 127, 178, 0.84)),
+                url('{SURFRIDER_HERO_IMAGE_URL}') center/cover;
+            color: white;
+            border: 1px solid rgba(255,255,255,0.16);
+        }}
+
+        header::after {{
+            content: "";
+            position: absolute;
+            inset: auto -80px -100px auto;
+            width: 320px;
+            height: 320px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(136, 200, 210, 0.34) 0%, rgba(136, 200, 210, 0) 72%);
         }}
         
         header h1 {{
-            color: #1a5276;
-            font-size: 1.8em;
-            margin-bottom: 5px;
+            color: white;
+            font-size: clamp(2rem, 4vw, 3.3rem);
+            line-height: 0.95;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+            max-width: 10ch;
         }}
         
         header .subtitle {{
-            color: #666;
-            font-size: 0.95em;
+            color: rgba(255,255,255,0.82);
+            font-size: 0.98em;
+            max-width: 48rem;
         }}
         
         .header-row {{
             display: flex;
             justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 24px;
+            position: relative;
+            z-index: 1;
+        }}
+
+        .hero-copy {{
+            display: grid;
+            gap: 12px;
+            max-width: 720px;
+        }}
+
+        .hero-kicker {{
+            display: inline-flex;
             align-items: center;
+            gap: 10px;
+            width: fit-content;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.14);
+            border: 1px solid rgba(255,255,255,0.18);
+            color: white;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }}
+
+        .hero-logos {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            justify-content: flex-end;
+            max-width: 360px;
+        }}
+
+        .hero-logo {{
+            border-radius: 18px;
+            padding: 12px 14px;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.16);
+        }}
+
+        .hero-logo img {{
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }}
+
+        .hero-logo.bwtf {{
+            background: rgba(49, 127, 178, 0.90);
+            border: 1px solid rgba(255,255,255,0.18);
+            width: 220px;
+        }}
+
+        .hero-logo.surfrider {{
+            background: rgba(255,255,255,0.96);
+            width: 280px;
+        }}
+
+        .hero-meta {{
+            display: flex;
             flex-wrap: wrap;
             gap: 10px;
+            margin-top: 6px;
         }}
         
         .data-source {{
-            background: #e8f4f8;
-            padding: 5px 12px;
-            border-radius: 20px;
+            padding: 8px 14px;
+            border-radius: 999px;
             font-size: 0.8em;
-            color: #1a5276;
+            color: white;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.16);
         }}
         
         .data-source.live {{
-            background: #d4edda;
-            color: #155724;
+            background: rgba(136, 200, 210, 0.24);
+            color: white;
         }}
         
         .data-source.live::before {{
@@ -753,11 +859,12 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
         }}
         
         .summary-card {{
-            background: rgba(255,255,255,0.95);
-            border-radius: 12px;
-            padding: 20px;
+            background: rgba(255,255,255,0.94);
+            border-radius: 24px;
+            padding: 22px 20px;
             text-align: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: var(--surf-shadow);
+            border: 1px solid rgba(38, 39, 42, 0.06);
         }}
         
         .summary-card.safe {{
@@ -779,7 +886,7 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
         .summary-number {{
             font-size: 2.5em;
             font-weight: bold;
-            color: #1a5276;
+            color: var(--surf-ink);
         }}
         
         .summary-card.cso .summary-number {{
@@ -787,27 +894,32 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
         }}
         
         .summary-label {{
-            color: #666;
+            color: var(--surf-muted);
             margin-top: 5px;
             font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
         }}
         
         /* Alerts Section */
         .alerts-section {{
             background: rgba(255,255,255,0.95);
-            border-radius: 12px;
-            padding: 20px;
+            border-radius: 24px;
+            padding: 24px;
             margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: var(--surf-shadow);
+            border: 1px solid rgba(38, 39, 42, 0.06);
         }}
         
         .section-title {{
-            color: #1a5276;
+            color: var(--surf-ink);
             margin-bottom: 15px;
-            font-size: 1.2em;
+            font-size: 1.1em;
             display: flex;
             align-items: center;
             gap: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
         }}
         
         .alert {{
@@ -824,18 +936,18 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
         }}
         
         .alert.critical {{
-            background: #fdecea;
-            border-left: 4px solid #e74c3c;
+            background: rgba(255, 65, 0, 0.10);
+            border-left: 4px solid var(--surf-danger);
         }}
         
         .alert.warning {{
-            background: #fef5e7;
-            border-left: 4px solid #f39c12;
+            background: rgba(251, 192, 45, 0.14);
+            border-left: 4px solid var(--surf-warning);
         }}
         
         .alert.advisory {{
-            background: #e8f4f8;
-            border-left: 4px solid #3498db;
+            background: rgba(136, 200, 210, 0.18);
+            border-left: 4px solid var(--surf-blue-bright);
         }}
         
         .alert-icon {{
@@ -869,19 +981,23 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
         }}
 
         .panel {{
-            background: rgba(255,255,255,0.95);
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            background: rgba(255,255,255,0.96);
+            border-radius: 24px;
+            padding: 22px;
+            box-shadow: var(--surf-shadow);
+            border: 1px solid rgba(38, 39, 42, 0.06);
         }}
 
         .panel h3 {{
-            color: #1a5276;
+            color: var(--surf-ink);
             margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-size: 0.98rem;
         }}
 
         .panel p {{
-            color: #556;
+            color: var(--surf-muted);
             margin-bottom: 12px;
             line-height: 1.4;
         }}
@@ -894,9 +1010,11 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
         .form-input {{
             width: 100%;
             padding: 12px;
-            border: 1px solid #cfd8dc;
-            border-radius: 8px;
+            border: 1px solid var(--surf-border);
+            border-radius: 14px;
             font-size: 0.95em;
+            background: rgba(255,255,255,0.96);
+            color: var(--surf-ink);
         }}
 
         .checkbox-grid {{
@@ -904,10 +1022,10 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
             gap: 8px;
             max-height: 220px;
             overflow-y: auto;
-            padding: 8px;
-            border: 1px solid #dce6eb;
-            border-radius: 10px;
-            background: #f8fbfd;
+            padding: 10px;
+            border: 1px solid var(--surf-border);
+            border-radius: 18px;
+            background: linear-gradient(180deg, #f8fbfd 0%, #eef5f6 100%);
         }}
 
         .checkbox-option {{
@@ -925,25 +1043,31 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
 
         .action-btn {{
             border: none;
-            border-radius: 8px;
-            padding: 10px 14px;
+            border-radius: 999px;
+            padding: 11px 16px;
             cursor: pointer;
             font-size: 0.9em;
             font-weight: 600;
+            transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+            box-shadow: 0 10px 18px rgba(38, 39, 42, 0.12);
+        }}
+
+        .action-btn:hover {{
+            transform: translateY(-1px);
         }}
 
         .action-btn.primary {{
-            background: #1a5276;
+            background: var(--surf-blue);
             color: white;
         }}
 
         .action-btn.secondary {{
-            background: #eef5f8;
-            color: #1a5276;
+            background: rgba(136, 200, 210, 0.26);
+            color: var(--surf-ink);
         }}
 
         .action-btn.danger {{
-            background: #fdecea;
+            background: rgba(255, 65, 0, 0.14);
             color: #a93226;
         }}
 
@@ -958,10 +1082,10 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
         }}
 
         .subscription-item {{
-            border: 1px solid #e4ecef;
-            border-radius: 8px;
-            padding: 10px;
-            background: #fafcfd;
+            border: 1px solid var(--surf-border);
+            border-radius: 18px;
+            padding: 14px;
+            background: linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
         }}
 
         .subscription-actions {{
@@ -970,18 +1094,18 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
 
         .subscription-phone {{
             font-weight: 700;
-            color: #1a5276;
+            color: var(--surf-ink);
             margin-bottom: 4px;
         }}
 
         .subscription-sites {{
             font-size: 0.85em;
-            color: #667;
+            color: var(--surf-muted);
         }}
 
         .helper-note {{
             font-size: 0.85em;
-            color: #667;
+            color: var(--surf-muted);
         }}
 
         .action-result {{
@@ -995,13 +1119,13 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
 
         .action-result.success {{
             display: block;
-            background: #eaf7ee;
-            color: #1b5e20;
+            background: rgba(37, 214, 112, 0.12);
+            color: #146b37;
         }}
 
         .action-result.error {{
             display: block;
-            background: #fdecea;
+            background: rgba(255, 65, 0, 0.10);
             color: #a93226;
         }}
 
@@ -1028,9 +1152,11 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
         }}
         
         .stations-section h2 {{
-            color: white;
+            color: var(--surf-ink);
             margin-bottom: 15px;
-            font-size: 1.2em;
+            font-size: 1.1em;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
         }}
         
         .stations-grid {{
@@ -1040,11 +1166,12 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
         }}
         
         .station-card {{
-            background: rgba(255,255,255,0.95);
-            border-radius: 12px;
-            padding: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            background: rgba(255,255,255,0.96);
+            border-radius: 22px;
+            padding: 18px;
+            box-shadow: var(--surf-shadow);
             transition: transform 0.2s, box-shadow 0.2s;
+            border: 1px solid rgba(38, 39, 42, 0.06);
         }}
         
         .station-card:hover {{
@@ -1061,8 +1188,8 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
         }}
         
         .station-card.cso {{
-            border-left: 4px solid #e74c3c;
-            background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(253, 236, 234, 0.95) 100%);
+            border-left: 4px solid var(--surf-danger);
+            background: linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(255, 238, 229, 0.96) 100%);
         }}
         
         .station-card.not_sampled {{
@@ -1079,7 +1206,7 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
         
         .station-header h3 {{
             font-size: 1em;
-            color: #1a5276;
+            color: var(--surf-ink);
             flex: 1;
         }}
         
@@ -1130,7 +1257,7 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
         }}
 
         .lab-link {{
-            color: #1a5276;
+            color: var(--surf-blue);
             text-decoration: none;
             font-weight: 600;
         }}
@@ -1150,20 +1277,20 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
         
         /* Footer */
         footer {{
-            background: rgba(255,255,255,0.95);
-            border-radius: 12px;
-            padding: 20px;
+            background: linear-gradient(180deg, rgba(38, 39, 42, 0.98) 0%, rgba(38, 39, 42, 0.94) 100%);
+            border-radius: 24px;
+            padding: 24px;
             text-align: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: var(--surf-shadow);
         }}
         
         footer p {{
             margin-bottom: 8px;
-            color: #666;
+            color: rgba(255,255,255,0.76);
         }}
         
         footer a {{
-            color: #1a5276;
+            color: white;
             text-decoration: none;
         }}
         
@@ -1173,28 +1300,42 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
         
         .hotline {{
             font-size: 1.1em;
-            color: #1a5276;
+            color: white;
             font-weight: 500;
         }}
         
         .refresh-btn {{
-            background: #1a5276;
+            background: rgba(255,255,255,0.14);
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
+            padding: 12px 18px;
+            border-radius: 999px;
             cursor: pointer;
             font-size: 0.9em;
+            border: 1px solid rgba(255,255,255,0.18);
         }}
         
         .refresh-btn:hover {{
-            background: #154360;
+            background: rgba(255,255,255,0.22);
         }}
         
         @media (max-width: 600px) {{
+            header {{
+                padding: 24px 20px;
+            }}
+
             .header-row {{
                 flex-direction: column;
                 align-items: flex-start;
+            }}
+
+            .hero-logos {{
+                justify-content: flex-start;
+            }}
+
+            .hero-logo.bwtf,
+            .hero-logo.surfrider {{
+                width: min(100%, 280px);
             }}
             
             .summary {{
@@ -1216,14 +1357,24 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
     <div class="container">
         <header>
             <div class="header-row">
-                <div>
-                    <h1>🏖️ SF Beach Water Quality Dashboard</h1>
+                <div class="hero-copy">
+                    <div class="hero-kicker">Surfrider Foundation • Blue Water Task Force</div>
+                    <h1>SF Beach Water Quality Dashboard</h1>
                     <div class="subtitle">
-                        Surfrider SF Blue Water Task Force | {datetime.now().strftime('%B %d, %Y at %I:%M %p')}
+                        Live SFPUC status, SF Gov lab results, and subscriber alert testing for the Surfrider San Francisco Blue Water Task Force.
+                    </div>
+                    <div class="hero-meta">
+                        <span class="data-source live">Real-time SFPUC Data</span>
+                        <span class="data-source">Updated {datetime.now().strftime('%B %d, %Y at %I:%M %p')}</span>
                     </div>
                 </div>
-                <div>
-                    <span class="data-source live">Real-time SFPUC Data</span>
+                <div class="hero-logos">
+                    <div class="hero-logo bwtf">
+                        <img src="{BWTF_LOGO_URL}" alt="Blue Water Task Force logo">
+                    </div>
+                    <div class="hero-logo surfrider">
+                        <img src="{SURFRIDER_LOGO_URL}" alt="Surfrider Foundation logo">
+                    </div>
                     <button class="refresh-btn" onclick="location.reload()">🔄 Refresh</button>
                 </div>
             </div>

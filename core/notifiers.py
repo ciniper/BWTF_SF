@@ -29,6 +29,9 @@ if __package__ in (None, ""):
 
 from core.monitoring import Alert
 
+BWTF_LOGO_URL = "https://bwtf.surfrider.org/images/BWTF-Logo_White.png"
+SURFRIDER_LOGO_URL = "https://f.hubspotusercontent20.net/hubfs/20811975/SF-Horizontal-Logo_RGB_Black_crop_small.png"
+
 
 class Notifier(ABC):
     """Base class for notification handlers"""
@@ -148,30 +151,48 @@ https://sf.surfrider.org/blue-water-task-force/
 """
         
         # HTML version
+        summary_background = "rgba(255, 65, 0, 0.10)" if alerts else "rgba(37, 214, 112, 0.12)"
         html_content = f"""
 <html>
-<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-    <div style="background: #0077be; color: white; padding: 20px; text-align: center;">
-        <h1>🏖️ SF Beach Water Quality Alert</h1>
-        <p>Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}</p>
-    </div>
-    
-    <div style="padding: 20px;">
-        <h2>Alert Summary</h2>
-        <div style="background: {'#ffebee' if alerts else '#e8f5e9'}; padding: 15px; border-radius: 5px;">
-            {self._format_alerts_html(alerts)}
+<body style="margin:0; padding:24px; background:#f5f6f7; font-family:'Avenir Next','Trebuchet MS','Segoe UI',sans-serif; color:#26272a;">
+    <div style="max-width:680px; margin:0 auto; background:#ffffff; border-radius:28px; overflow:hidden; box-shadow:0 18px 40px rgba(38,39,42,0.12);">
+        <div style="background:linear-gradient(135deg, #26272a 0%, #317fb2 100%); padding:24px;">
+            <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; justify-content:space-between;">
+                <div style="display:inline-block; background:rgba(255,255,255,0.12); color:#ffffff; border:1px solid rgba(255,255,255,0.16); border-radius:999px; padding:8px 12px; font-size:12px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase;">
+                    Surfrider SF Blue Water Task Force
+                </div>
+                <img src="{BWTF_LOGO_URL}" alt="Blue Water Task Force" style="display:block; width:180px; max-width:100%; height:auto;">
+            </div>
+            <h1 style="margin:18px 0 8px; color:#ffffff; font-size:32px; line-height:1; text-transform:uppercase; letter-spacing:0.03em;">SF Beach Water Quality Alert</h1>
+            <p style="margin:0; color:rgba(255,255,255,0.82); font-size:15px;">Generated {datetime.now().strftime('%Y-%m-%d %H:%M')}</p>
         </div>
-        
-        <h2>Full Report</h2>
-        <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto;">
-{report}
-        </pre>
-        
-        <hr style="margin: 20px 0;">
-        <p style="color: #666; font-size: 12px;">
-            Surfrider SF Blue Water Task Force<br>
-            <a href="https://sf.surfrider.org/blue-water-task-force/">Learn more about our water quality testing</a>
-        </p>
+
+        <div style="padding:24px;">
+            <div style="background:#ffffff; border:1px solid #d9e4e8; border-radius:18px; padding:16px 18px; margin-bottom:20px;">
+                <img src="{SURFRIDER_LOGO_URL}" alt="Surfrider Foundation" style="display:block; width:240px; max-width:100%; height:auto; margin-bottom:14px;">
+                <p style="margin:0; color:#5e6a71; font-size:15px; line-height:1.5;">
+                    Live status and bacteria reporting from the San Francisco Blue Water Task Force monitoring dashboard.
+                </p>
+            </div>
+
+            <h2 style="margin:0 0 10px; color:#26272a; font-size:15px; letter-spacing:0.1em; text-transform:uppercase;">Alert Summary</h2>
+            <div style="background:{summary_background}; border-radius:18px; padding:16px 18px; margin-bottom:20px;">
+                {self._format_alerts_html(alerts)}
+            </div>
+
+            <h2 style="margin:0 0 10px; color:#26272a; font-size:15px; letter-spacing:0.1em; text-transform:uppercase;">Full Report</h2>
+            <pre style="margin:0; background:#f7fafb; border:1px solid #d9e4e8; border-radius:18px; padding:18px; overflow-x:auto; white-space:pre-wrap; color:#26272a; font-size:13px; line-height:1.55;">{report}</pre>
+
+            <div style="margin-top:22px; padding-top:18px; border-top:1px solid #d9e4e8;">
+                <a href="https://sf.surfrider.org/blue-water-task-force/" style="display:inline-block; background:#317fb2; color:#ffffff; text-decoration:none; padding:12px 18px; border-radius:999px; font-weight:700;">
+                    View Program Page
+                </a>
+                <p style="margin:16px 0 0; color:#5e6a71; font-size:12px; line-height:1.5;">
+                    Surfrider SF Blue Water Task Force<br>
+                    https://sf.surfrider.org/blue-water-task-force/
+                </p>
+            </div>
+        </div>
     </div>
 </body>
 </html>
@@ -190,12 +211,12 @@ https://sf.surfrider.org/blue-water-task-force/
     
     def _format_alerts_html(self, alerts: list[Alert]) -> str:
         if not alerts:
-            return "<p style='color: green;'>✅ No active water quality alerts</p>"
+            return "<p style='margin:0; color:#146b37; font-weight:700;'>No active water quality alerts</p>"
         
         html = "<ul>"
         for alert in alerts:
-            color = "#d32f2f" if alert.severity == "warning" else "#f57c00"
-            html += f"<li style='color: {color}; margin: 10px 0;'>{alert.message}</li>"
+            color = "#ff4100" if alert.severity == "warning" else "#317fb2"
+            html += f"<li style='color:{color}; margin:10px 0; line-height:1.5;'>{alert.message}</li>"
         html += "</ul>"
         return html
 
