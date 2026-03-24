@@ -1677,6 +1677,7 @@ def main():
 ║  Surfrider SF Blue Water Task Force                          ║
 ╠══════════════════════════════════════════════════════════════╣
 ║  🌐 Open in browser: http://localhost:{PORT}                   ║
+║  🏠 Local network:   http://192.168.68.56:{PORT}               ║
 ║  📡 Real-time data from SFPUC LIMS API                       ║
 ║  🔄 Auto-refresh every 5 minutes                             ║
 ║                                                              ║
@@ -1684,7 +1685,7 @@ def main():
 ╚══════════════════════════════════════════════════════════════╝
 """)
     
-    with ReusableTCPServer(("", PORT), WaterQualityHandler) as httpd:
+    with ReusableTCPServer(("0.0.0.0", PORT), WaterQualityHandler) as httpd:
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
