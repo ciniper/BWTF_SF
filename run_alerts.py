@@ -34,8 +34,8 @@ import argparse
 import sys
 from datetime import datetime
 
-from core.monitoring import SFWaterQualityMonitor, CombinedWaterQualityMonitor
-from core.notifiers import create_notifier_from_env, ConsoleNotifier
+from features.alerts.monitoring import SFWaterQualityMonitor, CombinedWaterQualityMonitor
+from features.alerts.notifiers import create_notifier_from_env, ConsoleNotifier
 
 
 def main():
@@ -107,7 +107,7 @@ def main():
     # Optionally include weather/tide data
     if args.weather:
         try:
-            from core.weather_tides import EnvironmentalContext
+            from shared.weather_tides import EnvironmentalContext
             env = EnvironmentalContext()
             weather_report = env.format_environmental_report()
             report = weather_report + "\n\n" + report

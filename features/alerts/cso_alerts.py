@@ -11,14 +11,15 @@ from datetime import datetime
 from pathlib import Path
 
 if __package__ in (None, ""):
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from core.notifiers import EmailNotifier, EmailToSMSNotifier, TwilioSMSNotifier
-from core.sfpuc_api import SFPUCStation
-from core.subscriptions import SiteSubscription
+from features.alerts.notifiers import EmailNotifier, EmailToSMSNotifier, TwilioSMSNotifier
+from shared.sfpuc_api import SFPUCStation
+from features.alerts.subscriptions import SiteSubscription
 
 
-DATA_DIR = Path(__file__).resolve().parents[1] / "data"
+from shared.paths import DATA_DIR
+
 SIMULATED_CSO_PATH = DATA_DIR / "simulated_cso_events.json"
 BWTF_LOGO_URL = "https://bwtf.surfrider.org/images/BWTF-Logo_White.png"
 SURFRIDER_LOGO_URL = "https://f.hubspotusercontent20.net/hubfs/20811975/SF-Horizontal-Logo_RGB_Black_crop_small.png"

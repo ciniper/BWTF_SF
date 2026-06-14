@@ -8,8 +8,8 @@ from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
 
+from shared.paths import DATA_DIR
 
-DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 SUBSCRIPTIONS_PATH = DATA_DIR / "subscriptions.json"
 
 

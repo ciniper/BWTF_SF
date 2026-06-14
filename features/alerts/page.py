@@ -1,40 +1,22 @@
-#!/usr/bin/env python3
+"""Alert dashboard page — live SFPUC status, bacteria, subscriptions, simulations.
+
+Owns /alerts and the alert APIs/POST actions. Implemented as a mixin on the
+unified server handler (app/server.py), which supplies the HTTP helpers
+(self._send_json, self._read_request_data) and shared clients
+(self.combined_monitor, self.sfpuc_api, self.subscription_store,
+self.simulated_cso_store, self.env_context).
 """
-Simple Web Dashboard for SF Beach Water Quality
-
-Run with: python dashboard.py
-Then open http://localhost:8080 in your browser
-
-This dashboard combines real-time SFPUC data (CSO events, posted status)
-with SF Gov API bacteria data for a comprehensive view.
-"""
-
-import http.server
-import socketserver
 import json
 import os
 import xml.etree.ElementTree as ET
 from datetime import datetime
-from urllib.parse import parse_qs, urlparse
 
-from core.cso_alerts import (
-    SimulatedCSOStore,
+from features.alerts.cso_alerts import (
     apply_simulated_cso,
     dispatch_subscription_alerts,
     get_cso_eligible_stations,
 )
-from core.monitoring import CombinedWaterQualityMonitor, STANDARDS
-from core.sfpuc_api import SFPUCRealTimeAPI
-from core.subscriptions import SubscriptionStore
 
-# Optional weather/tides integration
-try:
-    from core.weather_tides import EnvironmentalContext
-    HAS_WEATHER = True
-except ImportError:
-    HAS_WEATHER = False
-
-PORT = 8080
 CARRIER_OPTIONS = [
     ("verizon", "Verizon"),
     ("att", "AT&T"),
@@ -49,80 +31,8 @@ SURFRIDER_LOGO_URL = "https://f.hubspotusercontent20.net/hubfs/20811975/SF-Horiz
 SURFRIDER_HERO_IMAGE_URL = "https://sf.surfrider.org/hubfs/IMG_8857.jpg"
 
 
-class ReusableTCPServer(socketserver.TCPServer):
-    allow_reuse_address = True
-
-
-class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
-    """HTTP request handler for water quality dashboard"""
-    
-    def __init__(self, *args, **kwargs):
-        self.combined_monitor = CombinedWaterQualityMonitor()
-        self.sfpuc_api = SFPUCRealTimeAPI()
-        self.subscription_store = SubscriptionStore()
-        self.simulated_cso_store = SimulatedCSOStore()
-        self.env_context = EnvironmentalContext() if HAS_WEATHER else None
-        super().__init__(*args, **kwargs)
-    
-    def do_GET(self):
-        parsed = urlparse(self.path)
-        
-        if parsed.path == "/" or parsed.path == "/index.html":
-            self.send_dashboard()
-        elif parsed.path == "/api/status":
-            self.send_api_status()
-        elif parsed.path == "/api/alerts":
-            self.send_api_alerts()
-        elif parsed.path == "/api/realtime":
-            self.send_api_realtime()
-        elif parsed.path == "/api/weather":
-            self.send_api_weather()
-        elif parsed.path == "/api/subscriptions":
-            self.send_api_subscriptions()
-        elif parsed.path == "/api/simulations/cso":
-            self.send_api_simulated_cso()
-        elif parsed.path == "/api/debug/sfpuc":
-            self.send_api_debug_sfpuc()
-        else:
-            self.send_error(404, "Not Found")
-
-    def do_POST(self):
-        parsed = urlparse(self.path)
-
-        if parsed.path == "/api/subscriptions":
-            self.save_subscription()
-        elif parsed.path == "/api/subscriptions/delete":
-            self.delete_subscription()
-        elif parsed.path == "/api/simulations/cso":
-            self.save_simulated_cso()
-        elif parsed.path == "/api/simulations/cso/clear":
-            self.clear_simulated_cso()
-        elif parsed.path == "/api/dispatch-cso-alerts":
-            self.dispatch_cso_site_alerts()
-        else:
-            self.send_error(404, "Not Found")
-
-    def _send_json(self, payload, status=200):
-        data = json.dumps(payload, default=str)
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", len(data.encode()))
-        self.end_headers()
-        self.wfile.write(data.encode())
-
-    def _read_request_data(self):
-        content_length = int(self.headers.get("Content-Length", "0"))
-        raw_body = self.rfile.read(content_length).decode() if content_length else ""
-        content_type = self.headers.get("Content-Type", "")
-
-        if "application/json" in content_type:
-            return json.loads(raw_body or "{}")
-
-        form_data = parse_qs(raw_body, keep_blank_values=True)
-        return {
-            key: values if len(values) > 1 else values[0]
-            for key, values in form_data.items()
-        }
+class AlertsRoutes:
+    """Alert-dashboard routes, mixed into the unified server handler."""
 
     def _get_dashboard_stations(self):
         live_stations = self.sfpuc_api.fetch_stations()
@@ -138,7 +48,7 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header("Content-Length", len(html.encode()))
         self.end_headers()
         self.wfile.write(html.encode())
-    
+
     def send_api_status(self):
         """Send JSON status data"""
         try:
@@ -1366,6 +1276,7 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
                     <div class="hero-meta">
                         <span class="data-source live">Real-time SFPUC Data</span>
                         <span class="data-source">Updated {datetime.now().strftime('%B %d, %Y at %I:%M %p')}</span>
+                        <a class="data-source" href="/compare" style="text-decoration:none; background:#317fb2; color:#fff; font-weight:700;">⚖️ Compare BWTF vs. City data →</a>
                     </div>
                 </div>
                 <div class="hero-logos">
@@ -1670,26 +1581,3 @@ class WaterQualityHandler(http.server.SimpleHTTPRequestHandler):
         """
 
 
-def main():
-    print(f"""
-╔══════════════════════════════════════════════════════════════╗
-║  SF Beach Water Quality Dashboard                            ║
-║  Surfrider SF Blue Water Task Force                          ║
-╠══════════════════════════════════════════════════════════════╣
-║  🌐 Open in browser: http://localhost:{PORT}                   ║
-║  📡 Real-time data from SFPUC LIMS API                       ║
-║  🔄 Auto-refresh every 5 minutes                             ║
-║                                                              ║
-║  Press Ctrl+C to stop                                        ║
-╚══════════════════════════════════════════════════════════════╝
-""")
-    
-    with ReusableTCPServer(("", PORT), WaterQualityHandler) as httpd:
-        try:
-            httpd.serve_forever()
-        except KeyboardInterrupt:
-            print("\n👋 Shutting down dashboard...")
-
-
-if __name__ == "__main__":
-    main()
