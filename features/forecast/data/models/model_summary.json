@@ -1,0 +1,200 @@
+{
+  "trained_at": "2026-03-28T21:26:34.580959",
+  "citywide": {
+    "auc": 0.8699781801068177,
+    "f1": 0.7183683647156134,
+    "optimal_threshold": 0.24194455418684727,
+    "top_features": [
+      [
+        "rain_2d_cum",
+        0.47911507261415837
+      ],
+      [
+        "peak_3d",
+        0.08225208283035275
+      ],
+      [
+        "rain_14d_cum",
+        0.06465301192819532
+      ],
+      [
+        "antecedent_moisture",
+        0.05989421040825648
+      ],
+      [
+        "rain_5d_cum",
+        0.05387121196474043
+      ],
+      [
+        "rain_lag1d",
+        0.05347748201462559
+      ],
+      [
+        "rain_30d_cum",
+        0.03570697948284896
+      ],
+      [
+        "rain_lag2d",
+        0.03156672673256044
+      ],
+      [
+        "rain_7d_cum",
+        0.028824579414823658
+      ],
+      [
+        "precip_avg",
+        0.025557581824015567
+      ]
+    ]
+  },
+  "basins": {
+    "Westside": {
+      "auc": 0.8766573671691973,
+      "positive_rate": 0.15047021943573669,
+      "top_features": [
+        [
+          "rain_2d_cum",
+          0.4241633185840574
+        ],
+        [
+          "peak_3d",
+          0.08291456773609018
+        ],
+        [
+          "antecedent_moisture",
+          0.06914798757441615
+        ],
+        [
+          "rain_14d_cum",
+          0.06639603126698153
+        ],
+        [
+          "precip_avg",
+          0.049614659047866654
+        ]
+      ]
+    },
+    "North Shore": {
+      "auc": 0.6832147963352008,
+      "positive_rate": 0.21,
+      "top_features": [
+        [
+          "precip_avg",
+          0.4791274854134617
+        ],
+        [
+          "rain_2d_cum",
+          0.11158133601355226
+        ],
+        [
+          "rain_30d_cum",
+          0.08224563007403134
+        ],
+        [
+          "rain_lag3d",
+          0.05225598321592848
+        ],
+        [
+          "rain_14d_cum",
+          0.05218721946111102
+        ]
+      ]
+    },
+    "Southeast": {
+      "auc": 0.8928223305272486,
+      "positive_rate": 0.37755102040816324,
+      "top_features": [
+        [
+          "rain_3d_cum",
+          0.32679287516465066
+        ],
+        [
+          "peak_3d",
+          0.12449577315515725
+        ],
+        [
+          "rain_2d_cum",
+          0.11702857177606858
+        ],
+        [
+          "rain_5d_cum",
+          0.10570270234074312
+        ],
+        [
+          "dry_spell_days",
+          0.05920325072578073
+        ]
+      ]
+    }
+  },
+  "thresholds": {
+    "Westside": {
+      "precip_avg": {
+        "caution": 0.0,
+        "moderate": 0.05,
+        "high": 0.05
+      },
+      "rain_2d_cum": {
+        "caution": 0.0,
+        "moderate": 0.05,
+        "high": 0.1
+      },
+      "rain_3d_cum": {
+        "caution": 0.0,
+        "moderate": 0.05,
+        "high": 0.25
+      }
+    },
+    "North Shore": {
+      "precip_avg": {
+        "caution": 0.05,
+        "moderate": 0.05,
+        "high": 0.4
+      },
+      "rain_2d_cum": {
+        "caution": 0.05,
+        "moderate": 0.35,
+        "high": 1.65
+      },
+      "rain_3d_cum": {
+        "caution": 0.05,
+        "moderate": 0.65,
+        "high": 2.1
+      }
+    },
+    "Southeast": {
+      "precip_avg": {
+        "caution": 0.0,
+        "moderate": 0.05,
+        "high": 0.05
+      },
+      "rain_2d_cum": {
+        "caution": 0.0,
+        "moderate": 0.05,
+        "high": 0.05
+      },
+      "rain_3d_cum": {
+        "caution": 0.0,
+        "moderate": 0.05,
+        "high": 0.15
+      }
+    },
+    "City-wide": {
+      "precip_avg": {
+        "caution": 0.05,
+        "moderate": 0.2,
+        "high": 0.5
+      },
+      "rain_2d_cum": {
+        "caution": 0.05,
+        "moderate": 0.35,
+        "high": 0.85
+      },
+      "rain_3d_cum": {
+        "caution": 0.05,
+        "moderate": 0.6,
+        "high": 1.4
+      }
+    }
+  }
+}

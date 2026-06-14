@@ -10,7 +10,7 @@ import argparse
 import json
 from datetime import datetime
 
-from core.monitoring import (
+from features.alerts.monitoring import (
     BWTF_PRIORITY_SITES,
     GEOMETRIC_MEAN_WINDOW_DAYS,
     SFWaterQualityMonitor,

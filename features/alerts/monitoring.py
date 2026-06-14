@@ -27,7 +27,7 @@ from typing import Optional
 from urllib.parse import urlencode
 
 if __package__ in (None, ""):
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import requests
 
@@ -630,7 +630,7 @@ class CombinedWaterQualityMonitor:
         
         # Import SFPUC scraper
         try:
-            from core.sfpuc_api import SFPUCRealTimeAPI
+            from shared.sfpuc_api import SFPUCRealTimeAPI
             self.sfpuc_api = SFPUCRealTimeAPI()
             self.has_sfpuc = True
         except ImportError:
@@ -639,7 +639,7 @@ class CombinedWaterQualityMonitor:
         
         # Import weather/tides integration
         try:
-            from core.weather_tides import EnvironmentalContext
+            from shared.weather_tides import EnvironmentalContext
             self.env_context = EnvironmentalContext()
             self.has_weather = True
         except ImportError:
@@ -705,7 +705,7 @@ class CombinedWaterQualityMonitor:
                         ))
                 
                 # Posted station alerts (elevated bacteria)
-                from core.sfpuc_api import StationStatus
+                from shared.sfpuc_api import StationStatus
                 for station in stations:
                     if station.status == StationStatus.POSTED and not station.has_cso:
                         alerts.append(Alert(
@@ -780,7 +780,7 @@ class CombinedWaterQualityMonitor:
         # ── SFPUC Real-time data (more current) ──
         if self.has_sfpuc:
             try:
-                from core.sfpuc_api import StationStatus
+                from shared.sfpuc_api import StationStatus
                 stations = self.sfpuc_api.fetch_stations()
                 cso_stations = [s for s in stations if s.has_cso]
                 posted_stations = [s for s in stations if s.status == StationStatus.POSTED]

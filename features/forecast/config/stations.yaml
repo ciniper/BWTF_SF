@@ -1,0 +1,90 @@
+# Rain gauge stations for SF sewage overflow forecasting
+#
+# Priority: stations closest to CSO outfalls and in different drainage basins
+# We want coverage across Westside, North Shore, and Southeast basins
+
+# ─── Weather Underground Personal Weather Stations ────────────────────────────
+# These are the stations Rubin recommended. WU can export as txt.
+# Access: https://www.wunderground.com/dashboard/pws/{station_id}
+
+wunderground_stations:
+  - id: KCASANFR2075
+    name: "Marina Blvd & Fillmore"
+    location: "Marina District"
+    basin_relevance: "North Shore"
+    lat: 37.8035
+    lon: -122.4370
+    notes: "Primary reference station from Rubin's analysis"
+
+  - id: KCASANFR1851
+    name: "1762 North Point"
+    location: "Marina"
+    basin_relevance: "North Shore"
+    lat: 37.804
+    lon: -122.432
+    notes: "Secondary Marina station"
+
+  - id: KCASANFR2077
+    name: "Casa Sanchez"
+    location: "Mission/SOMA"
+    basin_relevance: "Southeast"
+    lat: 37.762
+    lon: -122.409
+    notes: "Good for Southeast basin / Islais Creek correlation"
+
+  - id: KCASANFR1317
+    name: "Outer Sunset"
+    location: "Sunset District"
+    basin_relevance: "Westside"
+    lat: 37.753
+    lon: -122.497
+    notes: "Good for Ocean Beach / Westside basin correlation"
+
+# ─── NOAA / NWS Stations ─────────────────────────────────────────────────────
+# Professional stations with reliable, long-term data
+# Access: MesoWest API or NWS API
+
+noaa_stations:
+  - id: SFOC1
+    name: "San Francisco (MesoWest)"
+    source: "mesowest"
+    lat: 37.770
+    lon: -122.390
+    notes: "NWS cooperative station, good baseline"
+
+  - id: "9414290"
+    name: "San Francisco (NOAA Tides & Currents)"
+    source: "noaa_coops"
+    lat: 37.8067
+    lon: -122.4650
+    notes: "Includes met observations with precipitation"
+
+  - id: KSFO
+    name: "SFO Airport"
+    source: "nws"
+    lat: 37.619
+    lon: -122.375
+    notes: "NWS station, reliable but south of city"
+
+# ─── Windy / ECMWF ───────────────────────────────────────────────────────────
+# Forecast model data — ECMWF is most reliable at 3-7 days
+# NOTE: Windy license does NOT allow API access to ECMWF data
+# Must scrape or use alternative ECMWF access
+
+windy_stations:
+  - id: f07ed4a1
+    name: "Meadowlark"
+    source: "windy_pws"
+    lat: 37.803
+    lon: -122.437
+    notes: "Rubin's reference point for ECMWF forecasts"
+
+# ─── SFPUC Rain Gauges ───────────────────────────────────────────────────────
+# 21 gauges citywide — best data but NOT publicly shared in useful format
+# May need FOIA / public records request
+# Placeholder entries — fill in if/when access is obtained
+
+sfpuc_gauges:
+  note: "SFPUC operates 21 rain gauges across SF. Data not publicly accessible in real-time."
+  access_method: "Public records request or partnership with SFPUC"
+  stations: []

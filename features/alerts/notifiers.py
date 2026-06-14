@@ -25,9 +25,9 @@ from pathlib import Path
 import requests
 
 if __package__ in (None, ""):
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from core.monitoring import Alert
+from features.alerts.monitoring import Alert
 
 BWTF_LOGO_URL = "https://bwtf.surfrider.org/images/BWTF-Logo_White.png"
 SURFRIDER_LOGO_URL = "https://f.hubspotusercontent20.net/hubfs/20811975/SF-Horizontal-Logo_RGB_Black_crop_small.png"

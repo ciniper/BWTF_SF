@@ -1,0 +1,467 @@
+{
+  "passed": false,
+  "reasons": [
+    "1 critical false negatives (rain present, event predicted <10%)",
+    "1 dry-day false positives (no recent rain, predicted \u226525%)"
+  ],
+  "total_days": 704,
+  "total_flags": 45,
+  "critical_false_negatives": 1,
+  "marginal_false_negatives": 5,
+  "dry_weather_exceedances": 30,
+  "dry_day_false_positives": 1,
+  "moderate_false_negatives": 4,
+  "moderate_false_positives": 4,
+  "flags": [
+    {
+      "type": "DRY_WEATHER_EXCEEDANCE",
+      "model": "citywide",
+      "date": "2022-08-08",
+      "prediction": 0.039,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.0,
+      "rain_3d_cum": 0.0
+    },
+    {
+      "type": "DRY_WEATHER_EXCEEDANCE",
+      "model": "westside",
+      "date": "2020-09-01",
+      "prediction": 0.045,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.0,
+      "rain_3d_cum": 0.0
+    },
+    {
+      "type": "DRY_WEATHER_EXCEEDANCE",
+      "model": "westside",
+      "date": "2020-09-14",
+      "prediction": 0.072,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.0,
+      "rain_3d_cum": 0.0
+    },
+    {
+      "type": "DRY_WEATHER_EXCEEDANCE",
+      "model": "westside",
+      "date": "2020-09-28",
+      "prediction": 0.011,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.0,
+      "rain_3d_cum": 0.0
+    },
+    {
+      "type": "DRY_WEATHER_EXCEEDANCE",
+      "model": "westside",
+      "date": "2020-10-13",
+      "prediction": 0.059,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.0,
+      "rain_3d_cum": 0.0
+    },
+    {
+      "type": "DRY_WEATHER_EXCEEDANCE",
+      "model": "westside",
+      "date": "2020-11-09",
+      "prediction": 0.04,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.0,
+      "rain_3d_cum": 0.0
+    },
+    {
+      "type": "DRY_WEATHER_EXCEEDANCE",
+      "model": "westside",
+      "date": "2023-08-28",
+      "prediction": 0.075,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.0,
+      "rain_3d_cum": 0.0
+    },
+    {
+      "type": "DRY_WEATHER_EXCEEDANCE",
+      "model": "westside",
+      "date": "2023-09-25",
+      "prediction": 0.053,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.0,
+      "rain_3d_cum": 0.0
+    },
+    {
+      "type": "DRY_WEATHER_EXCEEDANCE",
+      "model": "westside",
+      "date": "2024-10-15",
+      "prediction": 0.075,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.0,
+      "rain_3d_cum": 0.005
+    },
+    {
+      "type": "MARGINAL_FALSE_NEGATIVE",
+      "model": "westside",
+      "date": "2025-03-31",
+      "prediction": 0.008,
+      "actual": 1,
+      "rain_today": 0.205,
+      "rain_2d_cum": 0.25,
+      "rain_3d_cum": 0.25
+    },
+    {
+      "type": "DRY_WEATHER_EXCEEDANCE",
+      "model": "westside",
+      "date": "2025-10-06",
+      "prediction": 0.0,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.0,
+      "rain_3d_cum": 0.0
+    },
+    {
+      "type": "DRY_WEATHER_EXCEEDANCE",
+      "model": "westside",
+      "date": "2025-11-03",
+      "prediction": 0.0,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.0,
+      "rain_3d_cum": 0.0
+    },
+    {
+      "type": "DRY_WEATHER_EXCEEDANCE",
+      "model": "north_shore",
+      "date": "2020-08-03",
+      "prediction": 0.014,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.0,
+      "rain_3d_cum": 0.0
+    },
+    {
+      "type": "FALSE_NEGATIVE",
+      "model": "north_shore",
+      "date": "2020-11-17",
+      "prediction": 0.187,
+      "actual": 1,
+      "rain_today": 0.38,
+      "rain_2d_cum": 0.38,
+      "rain_3d_cum": 0.38
+    },
+    {
+      "type": "DRY_WEATHER_EXCEEDANCE",
+      "model": "north_shore",
+      "date": "2021-02-08",
+      "prediction": 0.0,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.0,
+      "rain_3d_cum": 0.0
+    },
+    {
+      "type": "DRY_WEATHER_EXCEEDANCE",
+      "model": "north_shore",
+      "date": "2021-04-05",
+      "prediction": 0.032,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.0,
+      "rain_3d_cum": 0.0
+    },
+    {
+      "type": "DRY_WEATHER_EXCEEDANCE",
+      "model": "north_shore",
+      "date": "2021-10-12",
+      "prediction": 0.0,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.0,
+      "rain_3d_cum": 0.0
+    },
+    {
+      "type": "DRY_WEATHER_EXCEEDANCE",
+      "model": "north_shore",
+      "date": "2022-01-31",
+      "prediction": 0.073,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.0,
+      "rain_3d_cum": 0.0
+    },
+    {
+      "type": "MARGINAL_FALSE_NEGATIVE",
+      "model": "north_shore",
+      "date": "2022-03-28",
+      "prediction": 0.065,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.18,
+      "rain_3d_cum": 0.18
+    },
+    {
+      "type": "FALSE_POSITIVE",
+      "model": "north_shore",
+      "date": "2023-01-11",
+      "prediction": 0.789,
+      "actual": 0,
+      "rain_today": 0.94,
+      "rain_2d_cum": 2.16,
+      "rain_3d_cum": 3.36
+    },
+    {
+      "type": "CRITICAL_FALSE_NEGATIVE",
+      "model": "north_shore",
+      "date": "2023-02-06",
+      "prediction": 0.051,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.21,
+      "rain_3d_cum": 0.52
+    },
+    {
+      "type": "DRY_WEATHER_EXCEEDANCE",
+      "model": "north_shore",
+      "date": "2023-04-10",
+      "prediction": 0.083,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.0,
+      "rain_3d_cum": 0.0
+    },
+    {
+      "type": "FALSE_NEGATIVE",
+      "model": "north_shore",
+      "date": "2025-10-14",
+      "prediction": 0.12,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.685,
+      "rain_3d_cum": 0.685
+    },
+    {
+      "type": "MARGINAL_FALSE_NEGATIVE",
+      "model": "north_shore",
+      "date": "2025-11-05",
+      "prediction": 0.063,
+      "actual": 1,
+      "rain_today": 0.07,
+      "rain_2d_cum": 0.07,
+      "rain_3d_cum": 0.07
+    },
+    {
+      "type": "DRY_WEATHER_EXCEEDANCE",
+      "model": "southeast",
+      "date": "2020-08-17",
+      "prediction": 0.0,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.02,
+      "rain_3d_cum": 0.02
+    },
+    {
+      "type": "FALSE_NEGATIVE",
+      "model": "southeast",
+      "date": "2021-03-15",
+      "prediction": 0.1,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.125,
+      "rain_3d_cum": 0.125
+    },
+    {
+      "type": "DRY_WEATHER_EXCEEDANCE",
+      "model": "southeast",
+      "date": "2021-06-21",
+      "prediction": 0.0,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.0,
+      "rain_3d_cum": 0.0
+    },
+    {
+      "type": "DRY_WEATHER_EXCEEDANCE",
+      "model": "southeast",
+      "date": "2022-01-10",
+      "prediction": 0.081,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.0,
+      "rain_3d_cum": 0.0
+    },
+    {
+      "type": "DRY_WEATHER_EXCEEDANCE",
+      "model": "southeast",
+      "date": "2022-01-18",
+      "prediction": 0.0,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.0,
+      "rain_3d_cum": 0.0
+    },
+    {
+      "type": "FALSE_NEGATIVE",
+      "model": "southeast",
+      "date": "2022-09-20",
+      "prediction": 0.22,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.0,
+      "rain_3d_cum": 0.33
+    },
+    {
+      "type": "FALSE_POSITIVE",
+      "model": "southeast",
+      "date": "2022-12-02",
+      "prediction": 0.751,
+      "actual": 0,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.84,
+      "rain_3d_cum": 0.84
+    },
+    {
+      "type": "DRY_WEATHER_EXCEEDANCE",
+      "model": "southeast",
+      "date": "2023-08-07",
+      "prediction": 0.085,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.0,
+      "rain_3d_cum": 0.0
+    },
+    {
+      "type": "DRY_WEATHER_EXCEEDANCE",
+      "model": "southeast",
+      "date": "2023-09-11",
+      "prediction": 0.02,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.0,
+      "rain_3d_cum": 0.0
+    },
+    {
+      "type": "MARGINAL_FALSE_NEGATIVE",
+      "model": "southeast",
+      "date": "2023-10-23",
+      "prediction": 0.05,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.145,
+      "rain_3d_cum": 0.145
+    },
+    {
+      "type": "FALSE_POSITIVE",
+      "model": "southeast",
+      "date": "2024-03-02",
+      "prediction": 0.758,
+      "actual": 0,
+      "rain_today": 0.275,
+      "rain_2d_cum": 1.265,
+      "rain_3d_cum": 1.38
+    },
+    {
+      "type": "DRY_WEATHER_EXCEEDANCE",
+      "model": "southeast",
+      "date": "2024-04-22",
+      "prediction": 0.0,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.0,
+      "rain_3d_cum": 0.0
+    },
+    {
+      "type": "DRY_WEATHER_EXCEEDANCE",
+      "model": "southeast",
+      "date": "2024-05-20",
+      "prediction": 0.0,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.0,
+      "rain_3d_cum": 0.0
+    },
+    {
+      "type": "DRY_WEATHER_EXCEEDANCE",
+      "model": "southeast",
+      "date": "2024-06-17",
+      "prediction": 0.0,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.0,
+      "rain_3d_cum": 0.0
+    },
+    {
+      "type": "DRY_WEATHER_EXCEEDANCE",
+      "model": "southeast",
+      "date": "2025-03-10",
+      "prediction": 0.0,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.0,
+      "rain_3d_cum": 0.0
+    },
+    {
+      "type": "MARGINAL_FALSE_NEGATIVE",
+      "model": "southeast",
+      "date": "2025-04-07",
+      "prediction": 0.01,
+      "actual": 1,
+      "rain_today": 0.075,
+      "rain_2d_cum": 0.075,
+      "rain_3d_cum": 0.075
+    },
+    {
+      "type": "DRY_DAY_FALSE_POSITIVE",
+      "model": "southeast",
+      "date": "2025-08-15",
+      "prediction": 0.258,
+      "actual": 0,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.0,
+      "rain_3d_cum": 0.01
+    },
+    {
+      "type": "DRY_WEATHER_EXCEEDANCE",
+      "model": "southeast",
+      "date": "2025-11-03",
+      "prediction": 0.066,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.0,
+      "rain_3d_cum": 0.0
+    },
+    {
+      "type": "DRY_WEATHER_EXCEEDANCE",
+      "model": "southeast",
+      "date": "2025-12-15",
+      "prediction": 0.0,
+      "actual": 1,
+      "rain_today": 0.0,
+      "rain_2d_cum": 0.0,
+      "rain_3d_cum": 0.0
+    },
+    {
+      "type": "FALSE_POSITIVE",
+      "model": "southeast",
+      "date": "2026-01-02",
+      "prediction": 0.75,
+      "actual": 0,
+      "rain_today": 0.22,
+      "rain_2d_cum": 0.865,
+      "rain_3d_cum": 1.57
+    },
+    {
+      "type": "DRY_WEATHER_EXCEEDANCE",
+      "model": "southeast",
+      "date": "2026-02-23",
+      "prediction": 0.049,
+      "actual": 1,
+      "rain_today": 0.005,
+      "rain_2d_cum": 0.005,
+      "rain_3d_cum": 0.005
+    }
+  ]
+}

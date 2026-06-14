@@ -1,0 +1,143 @@
+# SF Combined Sewer System — Drainage Basin Configuration
+#
+# San Francisco has 3 major drainage basins, each with different
+# overflow characteristics based on pipe capacity, storage, and geography.
+#
+# Key insight from Rubin (Feb 2025 storm observation):
+#   ~1.0" NE, ~1.3" SE, ~1.5" west → OB & Islais discharging,
+#   but North Shore & Southeast main outfalls NOT discharging.
+#   This means Westside has a LOWER overflow threshold.
+
+system_capacity:
+  total_storage_gallons: 200_000_000  # 200 million gallons underground storage
+  treatment_plants:
+    - name: "Oceanside Water Pollution Control Plant"
+      basin: "Westside"
+      capacity_mgd: 43  # million gallons per day (dry weather)
+      peak_capacity_mgd: 65
+    - name: "Southeast Water Pollution Control Plant"
+      basin: "Southeast"
+      capacity_mgd: 85
+      peak_capacity_mgd: 150
+  cso_composition:
+    stormwater_pct: 94
+    sanitary_pct: 6
+    note: "Discharges receive equivalent of primary treatment (trash/debris removal) but are NOT disinfected"
+
+basins:
+  westside:
+    name: "Westside"
+    description: "Drains western SF to Pacific Ocean via Oceanside WPCP"
+    outfalls:
+      - id: CSD-001
+        name: "Westside CSO #1"
+        discharge_to: "Pacific Ocean (Ocean Beach south)"
+      - id: CSD-002
+        name: "Westside CSO #2"
+        discharge_to: "Pacific Ocean (Ocean Beach central)"
+      - id: CSD-003
+        name: "Westside CSO #3"
+        discharge_to: "Pacific Ocean (Ocean Beach north)"
+      - id: CSD-004
+        name: "Westside CSO #4"
+        discharge_to: "Pacific Ocean (Fort Funston / south Ocean Beach)"
+      - id: CSD-005
+        name: "China Beach CSO"
+        discharge_to: "China Beach"
+      - id: CSD-006
+        name: "Baker Beach CSO #1"
+        discharge_to: "Baker Beach (Lobos Creek)"
+      - id: CSD-007
+        name: "Baker Beach CSO #2"
+        discharge_to: "Baker Beach (east)"
+    affected_beaches:
+      - "Ocean Beach"
+      - "Fort Funston"
+      - "China Beach"
+      - "Baker Beach"
+    reference_rain_gauges:
+      - KCASANFR1317  # Outer Sunset
+    # Preliminary thresholds (to be refined with data)
+    # Based on Rubin's observations — Westside overflows at LOWER rainfall
+    estimated_thresholds:
+      running_24hr_inches:
+        caution: 0.5
+        likely_overflow: 0.75
+        certain_overflow: 1.0
+      three_hour_inches:
+        with_antecedent_rain: 0.3
+        dry_conditions: 0.5
+      notes: >
+        Westside appears to have lower overflow threshold than other basins.
+        Orographic lifting over Seacliff headlands increases local rainfall
+        beyond what models predict. Winds from west = more impact.
+
+  north_shore:
+    name: "North Shore"
+    description: "Drains northern SF waterfront to SF Bay"
+    outfalls:
+      - id: NSB-001
+        name: "North Shore Basin Outfall"
+        discharge_to: "SF Bay (northern waterfront)"
+    affected_beaches:
+      - "Aquatic Park"
+      - "Crissy Field"
+      - "Crane Cove Park"
+      - "Mission Creek"
+    reference_rain_gauges:
+      - KCASANFR2075  # Marina Blvd & Fillmore
+      - KCASANFR1851  # 1762 North Point
+    # North Shore has higher capacity — didn't overflow in Feb 2025 storm
+    estimated_thresholds:
+      running_24hr_inches:
+        caution: 0.75
+        likely_overflow: 1.0
+        certain_overflow: 1.5
+      three_hour_inches:
+        with_antecedent_rain: 0.5
+        dry_conditions: 0.75
+      notes: >
+        Higher overflow threshold than Westside. Did not discharge during
+        Feb 2025 storm (~1.0" in NE). Likely needs sustained heavy rain.
+
+  southeast:
+    name: "Southeast"
+    description: "Drains SE SF to SF Bay via Southeast WPCP"
+    outfalls:
+      - id: SEB-001
+        name: "Southeast Basin Outfall"
+        discharge_to: "SF Bay (Islais Creek / Candlestick)"
+    affected_beaches:
+      - "Islais Creek"
+      - "Candlestick Point"
+    reference_rain_gauges:
+      - KCASANFR2077  # Casa Sanchez (Mission/SOMA)
+    # Southeast has largest treatment plant but Islais/Mission Creek overflow
+    # at moderate levels
+    estimated_thresholds:
+      running_24hr_inches:
+        caution: 0.75
+        likely_overflow: 1.0
+        certain_overflow: 1.3
+      three_hour_inches:
+        with_antecedent_rain: 0.4
+        dry_conditions: 0.6
+      notes: >
+        Islais Creek and Mission Creek discharged during Feb 2025 storm
+        (~1.3" in SE). Southeast WPCP has highest capacity but creek
+        outfalls overflow at moderate rainfall levels.
+
+# Wind direction effects on rainfall distribution
+wind_effects:
+  south:
+    impact: "reduced"
+    notes: "Rain shadow effect — less rainfall reaches coastal areas"
+  west:
+    impact: "increased"
+    notes: >
+      Orographic lifting over Twin Peaks, Mt. Davidson, Seacliff headlands.
+      Pacific storms are relatively low elevation — even low hills increase
+      local rainfall totals MORE than models predict.
+  southwest:
+    impact: "variable"
+    notes: "Depends on storm track and intensity"

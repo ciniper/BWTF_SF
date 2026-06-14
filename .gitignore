@@ -8,3 +8,11 @@ venv/
 data/*.json
 !data/.gitkeep
 token.txt
+
+# Forecast feature: large, regenerable training data.
+# Trained models (features/forecast/data/models/*.pkl + *.json) ARE committed
+# so /forecast works on a fresh clone.
+features/forecast/data/raw/
+features/forecast/data/processed/
+!features/forecast/data/raw/.gitkeep
+!features/forecast/data/processed/.gitkeep

@@ -5,13 +5,13 @@ import argparse
 import json
 from datetime import datetime
 
-from core.cso_alerts import (
+from features.alerts.cso_alerts import (
     SimulatedCSOStore,
     apply_simulated_cso,
     dispatch_subscription_alerts,
 )
-from core.sfpuc_api import SFPUCRealTimeAPI
-from core.subscriptions import SubscriptionStore
+from shared.sfpuc_api import SFPUCRealTimeAPI
+from features.alerts.subscriptions import SubscriptionStore
 
 
 def main() -> int:
