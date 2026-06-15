@@ -2,15 +2,15 @@
 """
 Compare SF beach water-quality results from two independent sources.
 
-  • Surfrider Blue Water Task Force (BWTF) volunteer lab  -> core/bwtf_api.py
+  • Surfrider Blue Water Task Force (BWTF) volunteer lab
   • Public city data -> SF Gov Open Data (Socrata) + SFPUC real-time status
 
-Both programs measure **Enterococcus** (MPN/100mL) and grade it against the
-California single-sample maximum of 104 MPN/100mL, which is what makes the two
-directly comparable. They sample independently — on different days and at
-slightly different points — so this module pairs each BWTF site with its
-nearest city station and lays the two latest results side by side, flagging
-where they agree or disagree on whether the water meets the standard.
+The bacteria analyte is selectable. BWTF measures only **Enterococcus**; the
+city (SF Gov) feed also publishes Total and Fecal coliform for these marine/bay
+sites (E. coli is a freshwater indicator and isn't sampled here). For
+Enterococcus the two sources compare head-to-head; for the coliforms only the
+city has data, so BWTF shows "not measured". Each analyte is graded against its
+own California single-sample maximum.
 """
 from __future__ import annotations
 
@@ -29,9 +29,21 @@ from features.comparison.bwtf_api import SFBWTFClient, parse_datetime, parse_res
 from features.alerts.monitoring import STANDARDS, SFPUC_TO_SFGOV_SOURCES, SFWaterQualityMonitor
 from shared.sfpuc_api import SFPUCRealTimeAPI
 
-# California single-sample maximum for Enterococcus (MPN/100mL) — same line both
-# sources are graded against.
-ENTERO_SINGLE_SAMPLE_MAX = STANDARDS["ENTERO"]["single_sample_max"]  # 104
+# Selectable analytes for these sites. dict key = SF Gov `analyte` code; each maps
+# to the BWTF substance name, a display label, and the CA single-sample maximum.
+# BWTF only reports Enterococcus, so the coliforms are city-only here.
+ANALYTES = {
+    "ENTERO":     {"label": "Enterococcus",   "bwtf_substance": "Enterococcus",   "limit": STANDARDS["ENTERO"]["single_sample_max"]},
+    "COLI_FECAL": {"label": "Fecal coliform", "bwtf_substance": "Fecal Coliform", "limit": STANDARDS["COLI_FECAL"]["single_sample_max"]},
+    "COLI_TOTAL": {"label": "Total coliform", "bwtf_substance": "Total Coliform", "limit": STANDARDS["COLI_TOTAL"]["single_sample_max"]},
+}
+DEFAULT_ANALYTE = "ENTERO"
+
+
+def resolve_analyte(code: Optional[str]) -> str:
+    """Return a valid analyte code, falling back to the default."""
+    return code if code in ANALYTES else DEFAULT_ANALYTE
+
 
 # BWTF site name (lab 76) -> the SFPUC station name used as the city counterpart.
 # All but one match verbatim; SFPUC spells out "Street".
@@ -78,14 +90,22 @@ class ComparisonRow:
         return asdict(self)
 
 
-def _exceeds(value: Optional[float]) -> Optional[bool]:
+def _exceeds(value: Optional[float], limit: float) -> Optional[bool]:
     if value is None:
         return None
-    return value > ENTERO_SINGLE_SAMPLE_MAX
+    return value > limit
 
 
-def _fetch_city_entero(monitor: SFWaterQualityMonitor, sources: list[str], days: int) -> dict:
-    """Latest city Enterococcus result per SF Gov source id (raw + parsed)."""
+def _bwtf_sample_for(site, substance: str):
+    """Latest BWTF (raw, value, datetime) for a substance on this site, else (None, None, None)."""
+    for sample in site.samples:
+        if sample.substance == substance:
+            return sample.result_raw, sample.result_value, sample.collection_time
+    return None, None, None
+
+
+def _fetch_city_latest(monitor: SFWaterQualityMonitor, sources: list[str], days: int, analyte: str) -> dict:
+    """Latest city result for `analyte` per SF Gov source id (raw + parsed)."""
     if not sources:
         return {}
     start = datetime.now() - timedelta(days=days)
@@ -93,7 +113,7 @@ def _fetch_city_entero(monitor: SFWaterQualityMonitor, sources: list[str], days:
     params = {
         "$select": "source,sample_date,analyte,data,data_as_of",
         "$where": (
-            f"analyte='ENTERO' AND sample_date >= '{start.strftime('%Y-%m-%dT00:00:00')}' "
+            f"analyte='{analyte}' AND sample_date >= '{start.strftime('%Y-%m-%dT00:00:00')}' "
             f"AND ({source_filter})"
         ),
         "$order": "sample_date DESC",
@@ -104,7 +124,7 @@ def _fetch_city_entero(monitor: SFWaterQualityMonitor, sources: list[str], days:
         response.raise_for_status()
         records = response.json()
     except requests.RequestException as exc:
-        print(f"Error fetching city Enterococcus data: {exc}")
+        print(f"Error fetching city {analyte} data: {exc}")
         return {}
 
     latest: dict[str, dict] = {}
@@ -121,8 +141,8 @@ def _fetch_city_entero(monitor: SFWaterQualityMonitor, sources: list[str], days:
     return latest
 
 
-def _fetch_city_entero_series(monitor: SFWaterQualityMonitor, sources: list[str], days: int) -> dict:
-    """All city Enterococcus results per source over `days`, ascending by date."""
+def _fetch_city_series(monitor: SFWaterQualityMonitor, sources: list[str], days: int, analyte: str) -> dict:
+    """All city results for `analyte` per source over `days`, ascending by date."""
     if not sources:
         return {}
     start = datetime.now() - timedelta(days=days)
@@ -130,7 +150,7 @@ def _fetch_city_entero_series(monitor: SFWaterQualityMonitor, sources: list[str]
     params = {
         "$select": "source,sample_date,data",
         "$where": (
-            f"analyte='ENTERO' AND sample_date >= '{start.strftime('%Y-%m-%dT00:00:00')}' "
+            f"analyte='{analyte}' AND sample_date >= '{start.strftime('%Y-%m-%dT00:00:00')}' "
             f"AND ({source_filter})"
         ),
         "$order": "sample_date ASC",
@@ -141,7 +161,7 @@ def _fetch_city_entero_series(monitor: SFWaterQualityMonitor, sources: list[str]
         response.raise_for_status()
         records = response.json()
     except requests.RequestException as exc:
-        print(f"Error fetching city Enterococcus series: {exc}")
+        print(f"Error fetching city {analyte} series: {exc}")
         return {}
 
     by_source: dict[str, list] = {}
@@ -179,11 +199,16 @@ def build_comparison(
     sf_gov_monitor: Optional[SFWaterQualityMonitor] = None,
     sfpuc_api: Optional[SFPUCRealTimeAPI] = None,
     city_days: int = 60,
+    analyte: str = DEFAULT_ANALYTE,
 ) -> dict:
-    """Build the BWTF-vs-city comparison payload (JSON-serializable)."""
+    """Build the BWTF-vs-city comparison payload for one analyte (JSON-serializable)."""
     bwtf_client = bwtf_client or SFBWTFClient()
     sf_gov_monitor = sf_gov_monitor or SFWaterQualityMonitor()
     sfpuc_api = sfpuc_api or SFPUCRealTimeAPI()
+
+    analyte = resolve_analyte(analyte)
+    cfg = ANALYTES[analyte]
+    limit = cfg["limit"]
 
     lab = bwtf_client.fetch_lab()
 
@@ -193,7 +218,7 @@ def build_comparison(
         for sfpuc_name in BWTF_TO_SFPUC_NAME.values()
         for src in SFPUC_TO_SFGOV_SOURCES.get(sfpuc_name, [])
     })
-    city_latest = _fetch_city_entero(sf_gov_monitor, needed_sources, city_days)
+    city_latest = _fetch_city_latest(sf_gov_monitor, needed_sources, city_days, analyte)
     sfpuc_status = _sfpuc_status_by_name(sfpuc_api)
 
     rows: list[ComparisonRow] = []
@@ -211,26 +236,29 @@ def build_comparison(
             if city is None or candidate["date"] > city["date"]:
                 city = {**candidate, "source": src}
 
-        bwtf_exceeds = _exceeds(site.entero_value)
+        # BWTF value for the selected analyte (only Enterococcus is reported here).
+        bwtf_raw, bwtf_value, bwtf_time = _bwtf_sample_for(site, cfg["bwtf_substance"])
+        bwtf_exceeds = _exceeds(bwtf_value, limit)
+
         city_value = city["value"] if city else None
-        city_exceeds = _exceeds(city_value)
-        both_have = site.entero_value is not None and city_value is not None
+        city_exceeds = _exceeds(city_value, limit)
+        both_have = bwtf_value is not None and city_value is not None
 
         agree = value_delta = day_gap = None
         if both_have:
             agree = bwtf_exceeds == city_exceeds
-            value_delta = round(abs(site.entero_value - city_value), 1)
-            if site.latest_time and city["date"]:
-                day_gap = abs((site.latest_time.date() - city["date"].date()).days)
+            value_delta = round(abs(bwtf_value - city_value), 1)
+            if bwtf_time and city["date"]:
+                day_gap = abs((bwtf_time.date() - city["date"].date()).days)
 
         rows.append(ComparisonRow(
             site_name=site.name,
             latitude=site.latitude,
             longitude=site.longitude,
-            bwtf_date=site.latest_time.strftime("%Y-%m-%d") if site.latest_time else None,
-            bwtf_time=site.latest_time.strftime("%-I:%M %p") if site.latest_time else None,
-            bwtf_raw=site.entero_raw,
-            bwtf_value=site.entero_value,
+            bwtf_date=bwtf_time.strftime("%Y-%m-%d") if bwtf_time else None,
+            bwtf_time=bwtf_time.strftime("%-I:%M %p") if bwtf_time else None,
+            bwtf_raw=bwtf_raw,
+            bwtf_value=bwtf_value,
             bwtf_exceeds=bwtf_exceeds,
             city_source=city["source"] if city else None,
             city_date=city["date"].strftime("%Y-%m-%d") if city and city["date"] else None,
@@ -257,7 +285,9 @@ def build_comparison(
 
     return {
         "generated_at": datetime.now().isoformat(),
-        "standard": {"analyte": "Enterococcus", "single_sample_max": ENTERO_SINGLE_SAMPLE_MAX, "units": "MPN/100mL"},
+        "standard": {"analyte": cfg["label"], "code": analyte, "single_sample_max": limit, "units": "MPN/100mL"},
+        "analytes": [{"code": code, "label": meta["label"]} for code, meta in ANALYTES.items()],
+        "bwtf_measures": analyte == "ENTERO",   # whether BWTF has data for this analyte
         "bwtf_available": lab is not None,
         "lab_name": lab.name if lab else None,
         "summary": summary,
@@ -280,19 +310,22 @@ def build_site_history(
     bwtf_client: Optional[SFBWTFClient] = None,
     sf_gov_monitor: Optional[SFWaterQualityMonitor] = None,
     days: int = 540,
+    analyte: str = DEFAULT_ANALYTE,
 ) -> dict:
-    """Per-site Enterococcus time series for both sources (JSON-serializable).
+    """Per-site time series for one analyte from both sources (JSON-serializable).
 
-    Returns ascending-by-date point lists for the BWTF volunteer lab and the
-    city's published lab results (SF Gov Open Data). Point: {date, ts, value, raw}.
+    BWTF only reports Enterococcus, so its series is empty for the coliforms.
+    Point: {date, ts, value, raw}.
     """
     bwtf_client = bwtf_client or SFBWTFClient()
     sf_gov_monitor = sf_gov_monitor or SFWaterQualityMonitor()
+    analyte = resolve_analyte(analyte)
+    cfg = ANALYTES[analyte]
     since = datetime.now() - timedelta(days=days)
 
     bwtf_series = []
     for rec in bwtf_client.fetch_history(since=since):
-        if rec["site_name"] != site_name or rec["substance"] != "Enterococcus":
+        if rec["site_name"] != site_name or rec["substance"] != cfg["bwtf_substance"]:
             continue
         when, value = rec["collection_time"], rec["result_value"]
         if when is None or value is None:
@@ -307,7 +340,7 @@ def build_site_history(
 
     sfpuc_name = BWTF_TO_SFPUC_NAME.get(site_name)
     sources = SFPUC_TO_SFGOV_SOURCES.get(sfpuc_name, []) if sfpuc_name else []
-    by_source = _fetch_city_entero_series(sf_gov_monitor, sources, days)
+    by_source = _fetch_city_series(sf_gov_monitor, sources, days, analyte)
     # Use the single city station with the most data so the line stays continuous.
     city_source = max(by_source, key=lambda s: len(by_source[s]), default=None)
     city_series = by_source.get(city_source, []) if city_source else []
@@ -327,7 +360,9 @@ def build_site_history(
 
     return {
         "site": site_name,
-        "standard": ENTERO_SINGLE_SAMPLE_MAX,
+        "analyte": cfg["label"],
+        "code": analyte,
+        "standard": cfg["limit"],
         "units": "MPN/100mL",
         "days": days,
         "city_source": city_source,
@@ -339,11 +374,17 @@ def build_site_history(
 
 def main():
     """Print the comparison as a text table."""
-    data = build_comparison()
+    import argparse
+    parser = argparse.ArgumentParser(description="BWTF vs city comparison")
+    parser.add_argument("--analyte", default=DEFAULT_ANALYTE, choices=list(ANALYTES))
+    args = parser.parse_args()
+
+    data = build_comparison(analyte=args.analyte)
+    std = data["standard"]
     s = data["summary"]
-    print(f"BWTF ({data['lab_name']}) vs City — Enterococcus (limit {data['standard']['single_sample_max']} MPN/100mL)")
-    print(f"Generated {data['generated_at'][:19]} | BWTF available: {data['bwtf_available']}\n")
-    print(f"{'Site':32s} {'BWTF':>14s} {'City (SF Gov)':>16s} {'SFPUC':>8s}  Agree")
+    print(f"BWTF ({data['lab_name']}) vs City — {std['analyte']} (limit {std['single_sample_max']} MPN/100mL)")
+    print(f"Generated {data['generated_at'][:19]} | BWTF measures this: {data['bwtf_measures']}\n")
+    print(f"{'Site':32s} {'BWTF':>14s} {'City (SFPUC)':>16s} {'Posting':>8s}  Agree")
     print("-" * 82)
     for r in data["rows"]:
         bwtf = f"{r['bwtf_raw'] or '—'} ({r['bwtf_date'] or '—'})"
