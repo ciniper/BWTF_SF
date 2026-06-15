@@ -94,36 +94,39 @@ def render_landing(sfpuc_api, env_context=None) -> str:
 <title>SF Beach Water Quality — Surfrider SF Blue Water Task Force</title>
 <style>
   *{{box-sizing:border-box}}
-  body{{margin:0;background:#f5f6f7;color:#26272a;font-family:'Avenir Next','Trebuchet MS','Segoe UI',sans-serif}}
+  body{{margin:0;background:#e2e8ee;color:#26272a;font-family:'Avenir Next','Trebuchet MS','Segoe UI',sans-serif}}
   .wrap{{max-width:1040px;margin:0 auto;padding:24px}}
-  .hero{{background:linear-gradient(135deg,#26272a 0%,#317fb2 100%);color:#fff;border-radius:24px;padding:30px 28px}}
-  .kicker{{display:inline-block;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:7px 12px;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}}
-  .hero h1{{margin:14px 0 6px;font-size:30px;letter-spacing:.02em}}
+  .hero{{background:#1f6fb0;color:#fff;border-radius:24px;padding:30px 28px}}
+  .kicker{{display:inline-block;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);border-radius:999px;padding:7px 12px;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}}
+  .hero h1{{margin:14px 0 6px;font-size:30px;letter-spacing:.02em;color:#fff;-webkit-text-stroke:2px #26272a;paint-order:stroke fill}}
   .hero .sub{{margin:0;color:rgba(255,255,255,.85);font-size:15px}}
   .hero-logos{{float:right;display:flex;gap:12px;align-items:center}}
-  .hero-logos img{{height:40px;width:auto;opacity:.95}}
+  .hero-logos img{{height:80px;width:auto;opacity:.95}}
   .status{{margin:18px 0 0;border-radius:16px;padding:16px 18px;font-weight:600;font-size:15px;line-height:1.45}}
-  .status.ok{{background:rgba(37,214,112,.16);color:#0c5b2e}}
-  .status.warn{{background:rgba(251,192,45,.20);color:#7a5a00}}
-  .status.danger{{background:rgba(255,65,0,.16);color:#fff;background:#b5310a}}
+  .status.ok{{background:#3c9160;color:#fff}}
+  .status.warn{{background:#b97e00;color:#fff}}
+  .status.danger{{background:#d15c5c;color:#fff}}
   .conditions{{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 0}}
   .conditions span{{background:rgba(255,255,255,.14);border-radius:999px;padding:7px 13px;font-size:13px;color:#fff}}
   .cards{{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:22px}}
   .card{{display:block;background:#fff;border:1px solid #d9e4e8;border-radius:20px;padding:22px;text-decoration:none;color:#26272a;transition:transform .12s ease,box-shadow .12s ease}}
-  .card:hover{{transform:translateY(-3px);box-shadow:0 14px 30px rgba(38,39,42,.12);border-color:#317fb2}}
+  .card:hover{{transform:translateY(-3px);box-shadow:0 14px 30px rgba(38,39,42,.12);border-color:#3d9fdf}}
   .card-icon{{font-size:34px}}
   .card-title{{font-size:19px;font-weight:800;margin:10px 0 6px}}
   .card-blurb{{color:#5e6a71;font-size:14px;line-height:1.5}}
-  .card-go{{margin-top:14px;color:#317fb2;font-weight:700;font-size:14px}}
-  .foot{{color:#8a949b;font-size:12px;margin-top:22px;line-height:1.6}}
-  .foot a{{color:#317fb2}}
+  .card-go{{margin-top:14px;color:#2b7fbf;font-weight:700;font-size:14px}}
+  .site-footer{{background:#343b44;border-radius:24px;padding:24px;text-align:center;margin-top:22px;color:rgba(255,255,255,.78);font-size:14px;line-height:1.7}}
+  .site-footer .hotline{{color:#fff;font-weight:700;margin:0 0 6px}}
+  .site-footer .advisory{{color:#ff8a66;font-weight:600;margin:0 0 10px}}
+  .site-footer a{{color:#7ab8e0;text-decoration:none}}
+  .site-footer a:hover{{text-decoration:underline}}
+  .site-footer .sources{{margin-top:12px;font-size:12px;color:#8a949b}}
 </style></head>
 <body><div class="wrap">
   <div class="hero">
     <div class="hero-logos"><img src="{BWTF_LOGO_URL}" alt="Blue Water Task Force"></div>
-    <span class="kicker">Surfrider Foundation • Blue Water Task Force</span>
-    <h1>San Francisco Beach Water Quality</h1>
-    <p class="sub">Real-time sewage-overflow status, forecasting, and monitoring for SF beaches.</p>
+    <span class="kicker">Blue Water Task Force • Surfrider SF</span>
+    <h1>Data Tools Dashboard</h1>
     <div class="status {tone}">{message}</div>
     {cond_html}
   </div>
@@ -131,9 +134,15 @@ def render_landing(sfpuc_api, env_context=None) -> str:
   <div class="cards">{cards}
   </div>
 
-  <p class="foot">
-    Updated {generated}. Beach hotline: 1-877-SFBEACH (1-877-732-3224).<br>
-    <a href="https://webapps.sfpuc.org/sapps/beachesandbay.html" target="_blank" rel="noopener">SFPUC Beach Map</a> ·
-    <a href="https://sf.surfrider.org/programs/blue-water-task-force" target="_blank" rel="noopener">Surfrider SF BWTF</a>
-  </p>
+  <div class="site-footer">
+    <p class="hotline">📞 Beach Hotline: 1-877-SFBEACH (1-877-732-3224) or 415-242-2214</p>
+    <p class="advisory">⚠️ Avoid water contact during and 72 hours after rain events</p>
+    <p>
+      <a href="https://webapps.sfpuc.org/sapps/beachesandbay.html" target="_blank" rel="noopener">SFPUC Beach Map</a> ·
+      <a href="https://data.sfgov.org/Energy-and-Environment/Beach-Water-Quality-Monitoring/v3fv-x3ux" target="_blank" rel="noopener">SF Gov Data</a> ·
+      <a href="/api/debug/sfpuc" target="_blank" rel="noopener">Debug SFPUC Payload</a> ·
+      <a href="https://sf.surfrider.org/programs/blue-water-task-force" target="_blank" rel="noopener">Surfrider BWTF</a>
+    </p>
+    <p class="sources">Updated {generated}. Data refreshes automatically. Sources: SFPUC LIMS API, SF Gov Open Data, NWS Weather, NOAA Tides.</p>
+  </div>
 </div></body></html>"""

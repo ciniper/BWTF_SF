@@ -28,6 +28,7 @@ import sys
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 from typing import Optional
 
 if __package__ in (None, ""):
@@ -71,17 +72,26 @@ def parse_result(raw) -> tuple[str, Optional[float]]:
 
 
 def parse_datetime(value: Optional[str]) -> Optional[datetime]:
-    """Parse a BWTF ISO collectionTime (e.g. '2026-06-12T01:10:00.000Z')."""
+    """Parse an ISO timestamp to naive San Francisco local time.
+
+    BWTF collectionTimes are UTC (trailing 'Z') and get converted to
+    America/Los_Angeles so the date and hour reflect when the sample was
+    actually taken locally (e.g. 2026-06-12T01:10Z is really 2026-06-11
+    6:10 PM PDT — otherwise evening samples show a day late). City
+    sample_dates are naive (date-only) and pass through unchanged.
+    """
     if not value:
         return None
     try:
         dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
-        return dt.replace(tzinfo=None)  # normalize to naive for easy comparison
     except ValueError:
         try:
             return datetime.strptime(value[:19], "%Y-%m-%dT%H:%M:%S")
         except ValueError:
             return None
+    if dt.tzinfo is not None:
+        dt = dt.astimezone(ZoneInfo("America/Los_Angeles"))
+    return dt.replace(tzinfo=None)
 
 
 @dataclass

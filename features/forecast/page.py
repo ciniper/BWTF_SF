@@ -109,7 +109,16 @@ def _render_page() -> str:
         .replace("__DEFAULT_DATE__", today)
     )
     # Namespace the page's API calls under /forecast/api/ (all fetches are single-quoted).
-    return html.replace("'/api/", "'/forecast/api/")
+    html = html.replace("'/api/", "'/forecast/api/")
+    # Inject the unified back-to-dashboard button (kept here so live_dashboard.py stays untouched).
+    back_css = (
+        "<style>.back-to-dash{display:inline-block;margin:0 0 14px;padding:8px 14px;"
+        "background:#343b44;color:#fff;border-radius:999px;text-decoration:none;font-weight:700;"
+        "font-size:13px}.back-to-dash:hover{background:#26272a}</style>"
+    )
+    html = html.replace("</head>", back_css + "</head>")
+    html = html.replace('<div class="container">', '<div class="container"><a class="back-to-dash" href="/">← Dashboard</a>', 1)
+    return html
 
 
 # ─── route handlers ──────────────────────────────────────────────────────────

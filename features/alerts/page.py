@@ -562,10 +562,7 @@ class AlertsRoutes:
         
         body {{
             font-family: "Avenir Next", "Trebuchet MS", "Segoe UI", sans-serif;
-            background:
-                radial-gradient(circle at top left, rgba(136, 200, 210, 0.38), transparent 28%),
-                radial-gradient(circle at top right, rgba(61, 159, 223, 0.20), transparent 22%),
-                linear-gradient(180deg, #f5f6f7 0%, #e8f0f2 100%);
+            background: #e2e8ee;
             min-height: 100vh;
             color: var(--surf-ink);
         }}
@@ -576,6 +573,9 @@ class AlertsRoutes:
             padding: 24px;
         }}
         
+        .back-to-dash {{ display:inline-block; margin:0 0 14px; padding:8px 14px; background:#343b44; color:#fff; border-radius:999px; text-decoration:none; font-weight:700; font-size:13px; }}
+        .back-to-dash:hover {{ background:#26272a; }}
+
         header {{
             position: relative;
             overflow: hidden;
@@ -583,9 +583,7 @@ class AlertsRoutes:
             padding: 32px;
             margin-bottom: 24px;
             box-shadow: var(--surf-shadow);
-            background:
-                linear-gradient(115deg, rgba(38, 39, 42, 0.92), rgba(49, 127, 178, 0.84)),
-                url('{SURFRIDER_HERO_IMAGE_URL}') center/cover;
+            background: #1f6fb0;
             color: white;
             border: 1px solid rgba(255,255,255,0.16);
         }}
@@ -602,6 +600,8 @@ class AlertsRoutes:
         
         header h1 {{
             color: white;
+            -webkit-text-stroke: 2px #26272a;
+            paint-order: stroke fill;
             font-size: clamp(2rem, 4vw, 3.3rem);
             line-height: 0.95;
             letter-spacing: 0.02em;
@@ -1265,18 +1265,18 @@ class AlertsRoutes:
 </head>
 <body>
     <div class="container">
+        <a class="back-to-dash" href="/">← Dashboard</a>
         <header>
             <div class="header-row">
                 <div class="hero-copy">
-                    <div class="hero-kicker">Surfrider Foundation • Blue Water Task Force</div>
-                    <h1>SF Beach Water Quality Dashboard</h1>
+                    <div class="hero-kicker">Blue Water Task Force • Surfrider SF</div>
+                    <h1>SF Sewage Alerts Dashboard</h1>
                     <div class="subtitle">
                         Live SFPUC status, SF Gov lab results, and subscriber alert testing for the Surfrider San Francisco Blue Water Task Force.
                     </div>
                     <div class="hero-meta">
                         <span class="data-source live">Real-time SFPUC Data</span>
                         <span class="data-source">Updated {datetime.now().strftime('%B %d, %Y at %I:%M %p')}</span>
-                        <a class="data-source" href="/compare" style="text-decoration:none; background:#317fb2; color:#fff; font-weight:700;">⚖️ Compare BWTF vs. City data →</a>
                     </div>
                 </div>
                 <div class="hero-logos">
@@ -1379,20 +1379,6 @@ class AlertsRoutes:
             </div>
         </div>
         
-        <footer>
-            <p class="hotline">📞 Beach Hotline: 1-877-SFBEACH (1-877-732-3224) or 415-242-2214</p>
-            <p style="color: #e74c3c; font-weight: 500;">⚠️ Avoid water contact during and 72 hours after rain events</p>
-            <p>
-                <a href="https://webapps.sfpuc.org/sapps/beachesandbay.html" target="_blank">SFPUC Beach Map</a> | 
-                <a href="https://sf.surfrider.org/blue-water-task-force/" target="_blank">Surfrider BWTF</a> |
-                <a href="https://data.sfgov.org/Energy-and-Environment/Beach-Water-Quality-Monitoring/v3fv-x3ux" target="_blank">SF Gov Data</a> |
-                <a href="https://www.sfpuc.gov/programs/ocean-and-beach-monitoring" target="_blank">SFPUC Monitoring Program</a> |
-                <a href="/api/debug/sfpuc" target="_blank">Debug SFPUC Payload</a>
-            </p>
-            <p style="margin-top: 15px; font-size: 0.85em; color: #888;">
-                Data refreshes automatically every 5 minutes. Sources: SFPUC LIMS API, SF Gov Open Data, NWS Weather, NOAA Tides.
-            </p>
-        </footer>
     </div>
     <script>
         function setResult(id, message, isError = false) {{
