@@ -36,7 +36,8 @@ function openSite(site){
   document.getElementById('hist-title').textContent=site;
   document.getElementById('hist-note').textContent='Loading…';
   modal.classList.add('open');
-  fetch('/api/site-history?site='+encodeURIComponent(site))
+  var bt=document.getElementById('bacteria-type');
+  fetch('/api/site-history?site='+encodeURIComponent(site)+'&analyte='+(bt?bt.value:'ENTERO'))
     .then(r=>r.json()).then(renderHist)
     .catch(e=>{document.getElementById('hist-note').textContent='Could not load history: '+e;});
 }
@@ -63,7 +64,7 @@ function renderHist(d){
       interaction:{mode:'nearest',intersect:false},
       scales:{
         x:{type:'linear',ticks:{maxRotation:0,autoSkip:true,maxTicksLimit:7,callback:v=>new Date(v).toLocaleDateString(undefined,{month:'short',year:'2-digit'})}},
-        y:{type:'logarithmic',title:{display:true,text:'Enterococcus (MPN/100mL), log scale'}}
+        y:{type:'logarithmic',title:{display:true,text:(d.analyte||'Result')+' (MPN/100mL), log scale'}}
       },
       plugins:{legend:{position:'top'},tooltip:{callbacks:{
         title:items=>items.length?new Date(items[0].parsed.x).toLocaleDateString():'',
@@ -85,7 +86,7 @@ function renderHist(d){
         {type:'line',label:'CA limit ('+std+')',data:paired.map(()=>std),borderColor:'#ff4100',borderDash:[6,5],borderWidth:1.5,pointRadius:0}
       ]},
       options:{responsive:true,maintainAspectRatio:false,
-        scales:{y:{beginAtZero:true,title:{display:true,text:'Enterococcus (MPN/100mL)'}}},
+        scales:{y:{beginAtZero:true,title:{display:true,text:(d.analyte||'Result')+' (MPN/100mL)'}}},
         plugins:{legend:{position:'top'},tooltip:{callbacks:{
           label:it=>{ if(it.dataset.type==='line') return it.dataset.label;
             const raw=it.dataset.label.indexOf('BWTF')===0?paired[it.dataIndex].bwtf_raw:paired[it.dataIndex].city_raw;
@@ -108,17 +109,21 @@ document.querySelectorAll('.row-click').forEach(function(el){
 class ComparisonRoutes:
     """Comparison-page routes, mixed into the unified server handler."""
 
-    def _compare_data(self):
+    def _analyte_param(self):
+        return (parse_qs(urlparse(self.path).query).get("analyte") or ["ENTERO"])[0]
+
+    def _compare_data(self, analyte="ENTERO"):
         """Build the BWTF-vs-city comparison, reusing this handler's API clients."""
         return build_comparison(
             sf_gov_monitor=self.combined_monitor.sf_gov_monitor,
             sfpuc_api=self.sfpuc_api,
+            analyte=analyte,
         )
 
     def send_api_compare(self):
         """Send the source-comparison data as JSON."""
         try:
-            self._send_json(self._compare_data())
+            self._send_json(self._compare_data(self._analyte_param()))
         except Exception as e:
             self._send_json({"ok": False, "error": str(e)}, status=500)
 
@@ -126,11 +131,12 @@ class ComparisonRoutes:
         """Send a single site's BWTF + city Enterococcus time series as JSON."""
         params = parse_qs(urlparse(self.path).query)
         site = (params.get("site") or [""])[0].strip()
+        analyte = (params.get("analyte") or ["ENTERO"])[0]
         if not site:
             self._send_json({"ok": False, "error": "missing 'site' parameter"}, status=400)
             return
         try:
-            data = build_site_history(site, sf_gov_monitor=self.combined_monitor.sf_gov_monitor)
+            data = build_site_history(site, sf_gov_monitor=self.combined_monitor.sf_gov_monitor, analyte=analyte)
             self._send_json(data)
         except Exception as e:
             self._send_json({"ok": False, "error": str(e)}, status=500)
@@ -138,7 +144,7 @@ class ComparisonRoutes:
     def send_comparison_page(self):
         """Send the BWTF-vs-city comparison dashboard page."""
         try:
-            html = self.generate_comparison_html(self._compare_data())
+            html = self.generate_comparison_html(self._compare_data(self._analyte_param()))
         except Exception as e:
             html = f"<!doctype html><meta charset='utf-8'><h1>Comparison unavailable</h1><pre>{e}</pre>"
         encoded = html.encode()
@@ -153,6 +159,17 @@ class ComparisonRoutes:
         std = data["standard"]
         s = data["summary"]
         limit = std["single_sample_max"]
+        analyte_label = std["analyte"]
+        analyte_code = std["code"]
+        bwtf_measures = data.get("bwtf_measures", True)
+        analyte_options = "".join(
+            f'<option value="{a["code"]}"{" selected" if a["code"] == analyte_code else ""}>{a["label"]}</option>'
+            for a in data.get("analytes", [])
+        )
+        bwtf_note = (
+            f'<p class="note-info">ℹ︎ BWTF measures Enterococcus only — showing the SFPUC {analyte_label} '
+            f'readings (graded against {limit} MPN/100mL). Switch to Enterococcus for the head-to-head comparison.</p>'
+        ) if not bwtf_measures else ""
 
         def pill(exceeds, raw):
             if raw is None:
@@ -173,6 +190,8 @@ class ComparisonRoutes:
 
         def agreement_cell(r):
             if not r["both_have"]:
+                if r["city_value"] is not None and r["bwtf_value"] is None:
+                    return '<span class="agree agree--na">SFPUC only</span>'
                 return '<span class="agree agree--na">— incomplete</span>'
             sub = []
             if r["value_delta"] is not None:
@@ -187,24 +206,19 @@ class ComparisonRoutes:
 
         rows_html = ""
         for r in data["rows"]:
+            if r['bwtf_raw'] is None:
+                bwtf_html = '<span class="pill pill--na">not measured</span>'
+            else:
+                bwtf_html = (f"{pill(r['bwtf_exceeds'], r['bwtf_raw'])}"
+                             f"<small class=\"date\">{r['bwtf_date'] or '—'}{(' · ' + r['bwtf_time']) if r['bwtf_time'] else ''}</small>")
             rows_html += f"""
               <tr class="row-click" data-site="{r['site_name']}" tabindex="0" role="button" aria-label="Show history for {r['site_name']}">
                 <td class="site"><strong>{r['site_name']}</strong><span class="go">📈 view history →</span></td>
-                <td>{pill(r['bwtf_exceeds'], r['bwtf_raw'])}<small class="date">{r['bwtf_date'] or '—'}{(' · ' + r['bwtf_time']) if r['bwtf_time'] else ''}</small></td>
+                <td>{bwtf_html}</td>
                 <td>{pill(r['city_exceeds'], r['city_raw'])}<small class="date">{r['city_date'] or '—'}{(' · ' + r['city_source']) if r['city_source'] else ''}</small></td>
                 <td>{sfpuc_pill(r['sfpuc_status'])}</td>
                 <td>{agreement_cell(r)}</td>
               </tr>"""
-
-        if not data["bwtf_available"]:
-            banner = ('<div class="banner banner--warn">⚠ The Surfrider BWTF data source could not be reached right '
-                      'now, so only city columns may be populated. Try again shortly.</div>')
-        elif s["disagree_count"]:
-            banner = (f'<div class="banner banner--warn">⚠ {s["disagree_count"]} site(s) where the two sources '
-                      f'disagree on whether the water meets the {limit} MPN/100mL standard.</div>')
-        else:
-            banner = (f'<div class="banner banner--ok">✓ Across {s["comparable_count"]} comparable site(s), both '
-                      f'sources agree on whether the water meets the {limit} MPN/100mL standard.</div>')
 
         css = """
           *{box-sizing:border-box}
@@ -228,6 +242,7 @@ class ComparisonRoutes:
           .banner{border-radius:14px;padding:12px 16px;margin-bottom:18px;font-weight:600;font-size:14px}
           .banner--ok{background:rgba(37,214,112,.12);color:#146b37}
           .banner--warn{background:rgba(255,65,0,.10);color:#b5310a}
+          .note-info{background:#e3eefb;color:#1f5e8f;border-radius:14px;padding:12px 16px;margin:0 0 16px;font-weight:600;font-size:14px}
           table{width:100%;border-collapse:separate;border-spacing:0;background:#fff;border:1px solid #d9e4e8;border-radius:18px;overflow:hidden}
           th,td{padding:13px 14px;text-align:left;border-bottom:1px solid #eef2f4;vertical-align:top}
           th{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#5e6a71;background:#f7fafb}
@@ -273,7 +288,7 @@ class ComparisonRoutes:
   <a class="back-to-dash" href="/">← Dashboard</a>
   <div class="hero">
     <h1>Source Comparison</h1>
-    <p>Independent <b>Enterococcus</b> results for the same San Francisco beaches, measured by:</p>
+    <p>Independent <b>{analyte_label}</b> results for the same San Francisco beaches, measured by:</p>
     <ul class="sources">
       <li><b>Surfrider SF Blue Water Task Force (BWTF)</b></li>
       <li><b>San Francisco Public Utilities Commission (SFPUC)</b></li>
@@ -289,17 +304,16 @@ class ComparisonRoutes:
     <div class="card"><div class="n">{('—' if s['max_day_gap'] is None else str(s['max_day_gap']) + 'd')}</div><div class="l">Max sampling gap</div></div>
   </div>
 
-  <p class="hint">📈 Click any site below for its Enterococcus history — BWTF vs. SFPUC, over time.</p>
+  <p class="hint">📈 Click any site below for its {analyte_label} history — BWTF vs. SFPUC, over time.</p>
 
   <div class="bacteria-select">
     <label for="bacteria-type">Bacteria type</label>
-    <select id="bacteria-type" aria-label="Bacteria type">
-      <option selected>Enterococcus</option>
-      <option disabled>E. coli — coming soon</option>
-      <option disabled>Fecal coliform — coming soon</option>
-      <option disabled>Total coliform — coming soon</option>
+    <select id="bacteria-type" aria-label="Bacteria type" onchange="location.href='/compare?analyte='+this.value">
+      {analyte_options}
     </select>
   </div>
+
+  {bwtf_note}
 
   <table>
     <thead><tr>
@@ -314,7 +328,7 @@ class ComparisonRoutes:
   </table>
 
   <p class="foot">
-    Generated {generated}. Both sources grade Enterococcus against the CA single-sample max ({limit} MPN/100mL);
+    Generated {generated}. Both sources grade {analyte_label} against the CA single-sample max ({limit} MPN/100mL);
     "&lt;10" means below the lab's detection limit. Agreement compares whether each source's latest result meets
     that standard — not the exact numbers, which differ because sampling days and exact sample points differ.<br>
     Sources: <a href="https://bwtf.surfrider.org/explore/76" target="_blank" rel="noopener">Surfrider BWTF (SF)</a> ·

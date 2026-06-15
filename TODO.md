@@ -132,7 +132,7 @@ This roadmap has four parts:
 - [ ] Quantify agreement over time (correlation, % of weeks both agree, typical value gap) instead of only the latest sample.
 - [ ] Validate the BWTF↔city site pairings (same name-based caveat as B3).
 - [ ] Cache BWTF responses and add the same schema/heartbeat guards as the rest of the system (another undocumented endpoint).
-- [ ] **Bacteria-type selector (compare)** — add a "Bacteria: [Enterococcus ▾]" dropdown to switch the analyte. Data is lopsided: BWTF SF reports **only Enterococcus**; the SFPUC (lab) side (SF Gov) also has E. coli, Fecal coliform, and Total coliform. So Enterococcus = full head-to-head; the others = SFPUC-only (BWTF shows "not measured", no agreement/exceed). Touches `comparison.py` (parameterize analyte + per-analyte CA limits from `STANDARDS`), the table, and the history modal.
+- [x] **Bacteria-type selector (compare) — shipped** — the hero/table/history modal now switch analyte via a real dropdown (`/compare?analyte=…`). `comparison.py` is analyte-aware (`ANALYTES` map + per-analyte CA limits from `STANDARDS`: Enterococcus 104, Fecal coliform 400, Total coliform 10000). Marine sites carry no E. coli, so the three live analytes are ENTERO / COLI_FECAL / COLI_TOTAL. Data is lopsided as expected: BWTF reports **only Enterococcus** (full head-to-head, 6/6), while Fecal/Total are SFPUC-only — BWTF cells show "not measured", agreement shows "SFPUC only", and a note explains it. The history modal labels its axis + CA-limit line per analyte.
 - [ ] Feed this comparison into the A2 central dashboard.
 
 ---
