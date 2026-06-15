@@ -53,6 +53,7 @@ class ComparisonRow:
 
     # Surfrider BWTF (volunteer lab)
     bwtf_date: Optional[str]
+    bwtf_time: Optional[str]
     bwtf_raw: Optional[str]
     bwtf_value: Optional[float]
     bwtf_exceeds: Optional[bool]
@@ -227,6 +228,7 @@ def build_comparison(
             latitude=site.latitude,
             longitude=site.longitude,
             bwtf_date=site.latest_time.strftime("%Y-%m-%d") if site.latest_time else None,
+            bwtf_time=site.latest_time.strftime("%-I:%M %p") if site.latest_time else None,
             bwtf_raw=site.entero_raw,
             bwtf_value=site.entero_value,
             bwtf_exceeds=bwtf_exceeds,

@@ -20,7 +20,7 @@ COMPARISON_MODAL_SCRIPT = """
     <h3 class="modal__h3">Same-day samples — head to head</h3>
     <p class="modal__note" id="bar-note"></p>
     <div class="chart-wrap"><canvas id="hist-bar"></canvas></div>
-    <p class="modal__note">BWTF = Surfrider volunteer lab · City = SF Gov Open Data (the city/SFPUC published lab results). SFPUC's real-time feed is status-only, so it has no historical numbers to plot. Dashed line = CA single-sample max; the same-day chart uses the worst (max) reading when a source sampled more than once that day.</p>
+    <p class="modal__note">BWTF = Surfrider volunteer lab · SFPUC = monitoring lab results, published via SF Gov Open Data. The real-time posting feed is status-only, so it has no historical numbers to plot. Dashed line = CA single-sample max; the same-day chart uses the worst (max) reading when a source sampled more than once that day.</p>
   </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
@@ -56,7 +56,7 @@ function renderHist(d){
     type:'line',
     data:{datasets:[
       {label:'BWTF (Surfrider)',data:bwtf,borderColor:'#317fb2',backgroundColor:'#317fb2',borderWidth:2,tension:0,spanGaps:true,pointRadius:3},
-      {label:'City (SF Gov)',data:city,borderColor:'#26272a',backgroundColor:'#26272a',borderWidth:2,tension:0,spanGaps:true,pointRadius:2},
+      {label:'SFPUC',data:city,borderColor:'#26272a',backgroundColor:'#26272a',borderWidth:2,tension:0,spanGaps:true,pointRadius:2},
       {label:'CA limit ('+std+')',data:thresh,borderColor:'#ff4100',borderDash:[6,5],borderWidth:1.5,pointRadius:0}
     ]},
     options:{parsing:false,responsive:true,maintainAspectRatio:false,
@@ -81,7 +81,7 @@ function renderHist(d){
     histBar=new Chart(document.getElementById('hist-bar'),{
       data:{labels:paired.map(p=>p.date),datasets:[
         {type:'bar',label:'BWTF (Surfrider)',data:paired.map(p=>p.bwtf),backgroundColor:'#317fb2'},
-        {type:'bar',label:'City (SF Gov)',data:paired.map(p=>p.city),backgroundColor:'#26272a'},
+        {type:'bar',label:'SFPUC',data:paired.map(p=>p.city),backgroundColor:'#26272a'},
         {type:'line',label:'CA limit ('+std+')',data:paired.map(()=>std),borderColor:'#ff4100',borderDash:[6,5],borderWidth:1.5,pointRadius:0}
       ]},
       options:{responsive:true,maintainAspectRatio:false,
@@ -190,7 +190,7 @@ class ComparisonRoutes:
             rows_html += f"""
               <tr class="row-click" data-site="{r['site_name']}" tabindex="0" role="button" aria-label="Show history for {r['site_name']}">
                 <td class="site"><strong>{r['site_name']}</strong><span class="go">📈 view history →</span></td>
-                <td>{pill(r['bwtf_exceeds'], r['bwtf_raw'])}<small class="date">{r['bwtf_date'] or '—'}</small></td>
+                <td>{pill(r['bwtf_exceeds'], r['bwtf_raw'])}<small class="date">{r['bwtf_date'] or '—'}{(' · ' + r['bwtf_time']) if r['bwtf_time'] else ''}</small></td>
                 <td>{pill(r['city_exceeds'], r['city_raw'])}<small class="date">{r['city_date'] or '—'}{(' · ' + r['city_source']) if r['city_source'] else ''}</small></td>
                 <td>{sfpuc_pill(r['sfpuc_status'])}</td>
                 <td>{agreement_cell(r)}</td>
@@ -208,13 +208,16 @@ class ComparisonRoutes:
 
         css = """
           *{box-sizing:border-box}
-          body{margin:0;background:#f5f6f7;color:#26272a;font-family:'Avenir Next','Trebuchet MS','Segoe UI',sans-serif;}
+          body{margin:0;background:#e2e8ee;color:#26272a;font-family:'Avenir Next','Trebuchet MS','Segoe UI',sans-serif;}
           a{color:#317fb2}
           .wrap{max-width:1040px;margin:0 auto;padding:24px}
-          .hero{background:linear-gradient(135deg,#26272a 0%,#317fb2 100%);color:#fff;border-radius:24px;padding:28px;margin-bottom:22px}
-          .hero h1{margin:6px 0 6px;font-size:28px;text-transform:uppercase;letter-spacing:.03em}
+          .hero{background:#1f6fb0;color:#fff;border-radius:24px;padding:28px;margin-bottom:22px}
+          .hero h1{margin:6px 0 6px;font-size:28px;text-transform:uppercase;letter-spacing:.03em;color:#fff;-webkit-text-stroke:2px #26272a;paint-order:stroke fill}
           .hero p{margin:0;color:rgba(255,255,255,.85);font-size:15px;line-height:1.5;max-width:70ch}
-          .back{display:inline-block;margin-bottom:8px;color:rgba(255,255,255,.9);text-decoration:none;font-weight:700;font-size:13px}
+          .hero ul{margin:8px 0 10px;padding-left:22px;color:rgba(255,255,255,.88);font-size:15px;line-height:1.55}
+          .hero li{margin:2px 0}
+          .back-to-dash{display:inline-block;margin:0 0 12px;padding:8px 14px;background:#343b44;color:#fff;border-radius:999px;text-decoration:none;font-weight:700;font-size:13px}
+          .back-to-dash:hover{background:#26272a}
           .legend{display:flex;flex-wrap:wrap;gap:14px;margin:0 0 18px}
           .legend div{background:#fff;border:1px solid #d9e4e8;border-radius:14px;padding:10px 14px;font-size:13px;color:#5e6a71}
           .legend b{color:#26272a}
@@ -232,9 +235,9 @@ class ComparisonRoutes:
           td.site{min-width:180px}
           .pill{display:inline-flex;align-items:baseline;gap:6px;padding:5px 10px;border-radius:999px;font-weight:700;font-size:14px}
           .pill small{font-weight:600;font-size:11px;opacity:.8;text-transform:uppercase;letter-spacing:.04em}
-          .pill--ok{background:rgba(37,214,112,.15);color:#146b37}
-          .pill--bad{background:rgba(255,65,0,.14);color:#b5310a}
-          .pill--warn{background:rgba(251,192,45,.20);color:#8a6d00}
+          .pill--ok{background:#3c9160;color:#fff}
+          .pill--bad{background:#d15c5c;color:#fff}
+          .pill--warn{background:#b97e00;color:#fff}
           .pill--na{background:#eef2f4;color:#8a949b}
           .date{display:block;color:#8a949b;font-size:11px;margin-top:5px}
           .agree{font-weight:700;font-size:13px}
@@ -242,6 +245,9 @@ class ComparisonRoutes:
           .agree small{display:block;color:#8a949b;font-weight:600;margin-top:3px}
           .foot{color:#5e6a71;font-size:12px;line-height:1.6;margin-top:18px}
           .hint{display:flex;align-items:center;gap:6px;color:#5e6a71;font-size:13px;margin:0 0 10px}
+          .bacteria-select{display:flex;align-items:center;gap:10px;margin:0 0 12px}
+          .bacteria-select label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#5e6a71;font-weight:700}
+          .bacteria-select select{font-size:14px;padding:8px 12px;border:1px solid #d9e4e8;border-radius:10px;background:#fff;color:#26272a;font-weight:600;cursor:pointer}
           tr.row-click{cursor:pointer}
           tr.row-click:hover{background:#f3f8fb}
           tr.row-click:focus{outline:2px solid #317fb2;outline-offset:-2px}
@@ -261,42 +267,46 @@ class ComparisonRoutes:
         page = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Source Comparison — BWTF vs. City | SF Beach Water Quality</title>
+<title>Source Comparison — BWTF vs. SFPUC | SF Beach Water Quality</title>
 <style>{css}</style></head>
 <body><div class="wrap">
+  <a class="back-to-dash" href="/">← Dashboard</a>
   <div class="hero">
-    <a class="back" href="/">← Back to dashboard</a>
     <h1>Source Comparison</h1>
-    <p>Independent <b>Enterococcus</b> results for the same San Francisco beaches, measured by the volunteer
-    <b>Surfrider Blue Water Task Force</b> lab and by <b>public city data</b> (SF Gov Open Data + SFPUC).
-    Both are graded against the California single-sample maximum of <b>{limit} MPN/100mL</b>. The two programs
-    sample on different days, so dates won't line up exactly.</p>
+    <p>Independent <b>Enterococcus</b> results for the same San Francisco beaches, measured by:</p>
+    <ul class="sources">
+      <li><b>Surfrider SF Blue Water Task Force (BWTF)</b></li>
+      <li><b>San Francisco Public Utilities Commission (SFPUC)</b></li>
+    </ul>
+    <p>Both are graded against the California single-sample maximum of <b>{limit} MPN/100mL</b>.</p>
   </div>
-
-  <div class="legend">
-    <div><b>BWTF</b> — Surfrider SF volunteer lab (bwtf.surfrider.org, lab&nbsp;#76)</div>
-    <div><b>City — SF Gov</b> — official lab results, data.sfgov.org</div>
-    <div><b>SFPUC</b> — official real-time posted/CSO status</div>
-  </div>
-
-  {banner}
-
-  <p class="hint">📈 Click any site below for its Enterococcus history — BWTF vs. city, over time.</p>
 
   <div class="cards">
     <div class="card"><div class="n">{s['comparable_count']}/{s['site_count']}</div><div class="l">Sites compared</div></div>
     <div class="card"><div class="n">{s['agree_count']}</div><div class="l">Sources agree</div></div>
     <div class="card"><div class="n">{s['disagree_count']}</div><div class="l">Sources differ</div></div>
-    <div class="card"><div class="n">{s['bwtf_exceed_count']} / {s['city_exceed_count']}</div><div class="l">BWTF / city exceed</div></div>
+    <div class="card"><div class="n">{s['bwtf_exceed_count']} / {s['city_exceed_count']}</div><div class="l">BWTF / SFPUC exceed</div></div>
     <div class="card"><div class="n">{('—' if s['max_day_gap'] is None else str(s['max_day_gap']) + 'd')}</div><div class="l">Max sampling gap</div></div>
+  </div>
+
+  <p class="hint">📈 Click any site below for its Enterococcus history — BWTF vs. SFPUC, over time.</p>
+
+  <div class="bacteria-select">
+    <label for="bacteria-type">Bacteria type</label>
+    <select id="bacteria-type" aria-label="Bacteria type">
+      <option selected>Enterococcus</option>
+      <option disabled>E. coli — coming soon</option>
+      <option disabled>Fecal coliform — coming soon</option>
+      <option disabled>Total coliform — coming soon</option>
+    </select>
   </div>
 
   <table>
     <thead><tr>
       <th>Site</th>
-      <th>BWTF — Enterococcus<br><small>MPN/100mL</small></th>
-      <th>City (SF Gov)<br><small>MPN/100mL</small></th>
-      <th>SFPUC status</th>
+      <th>BWTF<br><small>MPN/100mL</small></th>
+      <th>SFPUC<br><small>MPN/100mL</small></th>
+      <th>Beach posting</th>
       <th>Agreement</th>
     </tr></thead>
     <tbody>{rows_html}
