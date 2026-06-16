@@ -10,7 +10,7 @@ the rest of the app runs even when those heavy deps aren't installed; the
 forecast page then degrades to an "unavailable" notice.
 
 Each route handler returns ``(status, content_type, body_bytes)`` — the simple
-response contract ``app/server.py`` dispatches.
+response contract ``app/wsgi.py`` dispatches.
 """
 from __future__ import annotations
 

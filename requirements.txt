@@ -1,6 +1,12 @@
 # Core (landing, alerts, comparison pages) — lightweight
 requests>=2.28.0
 
+# Web server. Flask serves every page (via app/wsgi.py); gunicorn is the
+# production WSGI server the Procfile launches. The stdlib app/server.py still
+# runs without these, but hosting uses Flask + gunicorn.
+Flask>=3.0.0
+gunicorn>=21.2.0
+
 # Forecast feature (features/forecast) — ML + data stack.
 # Only needed to run the /forecast page; the other pages work without these.
 pandas>=2.0.0

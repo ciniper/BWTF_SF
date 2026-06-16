@@ -105,7 +105,7 @@ python run_alerts.py --priority-only --dry-run
 python run_alerts.py --json
 
 # Launch the unified web dashboard
-python -m app.server
+python -m app.wsgi
 ```
 
 ## Project structure
@@ -114,8 +114,8 @@ The app is organized as feature packages behind one web server, so the three
 pages can be worked on independently:
 
 ```
-app/                 one threaded server + the landing page
-  server.py          routes "/" + every feature's endpoints (run: python -m app.server)
+app/                 the web server (Flask) + the landing page
+  wsgi.py            Flask app: routes "/" + every feature's endpoint (run: python -m app.wsgi)
   landing.py         current conditions + CSO status + links to the 3 pages
 features/
   alerts/            sewage alert system  (/alerts + alert APIs)
@@ -129,8 +129,12 @@ run_*.py             CLI entry points (alerts, subscription dispatch, geo-mean r
 ## Web Dashboard
 
 ```bash
-python -m app.server
+# Local dev (Flask's built-in server)
+python -m app.wsgi
 # Open http://localhost:8080
+
+# Production (what a PaaS host runs via the Procfile)
+gunicorn -w 1 --threads 8 -b 0.0.0.0:$PORT app.wsgi:app
 ```
 
 Pages:

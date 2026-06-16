@@ -2,9 +2,11 @@
 
 Reuses the shared SFPUC client (status summary) and the optional weather/tide
 context. Everything is wrapped defensively so a flaky upstream never blanks the
-hub page.
+hub page. The markup lives in ``app/templates/landing.html`` (Jinja2).
 """
 from datetime import datetime
+
+from flask import render_template
 
 BWTF_LOGO_URL = "https://bwtf.surfrider.org/images/BWTF-Logo_White.png"
 SURFRIDER_LOGO_URL = "https://f.hubspotusercontent20.net/hubfs/20811975/SF-Horizontal-Logo_RGB_Black_crop_small.png"
@@ -20,7 +22,7 @@ PAGES = [
 ]
 
 
-def _status_banner(summary: dict) -> str:
+def _status_banner(summary: dict) -> tuple[str, str]:
     cso = summary.get("cso_active_count", 0)
     posted = summary.get("posted_count", 0)
     safe = summary.get("safe_count", 0)
@@ -71,78 +73,14 @@ def render_landing(sfpuc_api, env_context=None) -> str:
 
     tone, message = _status_banner(summary)
     conditions = _conditions_lines(env_context)
-    cond_html = (
-        "<div class='conditions'>" + "".join(f"<span>{c}</span>" for c in conditions) + "</div>"
-        if conditions else ""
-    )
-
-    cards = ""
-    for href, icon, title, blurb in PAGES:
-        cards += f"""
-        <a class="card" href="{href}">
-          <div class="card-icon">{icon}</div>
-          <div class="card-title">{title}</div>
-          <div class="card-blurb">{blurb}</div>
-          <div class="card-go">Open →</div>
-        </a>"""
-
     generated = datetime.now().strftime("%B %-d, %Y at %-I:%M %p")
 
-    return f"""<!doctype html>
-<html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SF Beach Water Quality — Surfrider SF Blue Water Task Force</title>
-<style>
-  *{{box-sizing:border-box}}
-  body{{margin:0;background:#e2e8ee;color:#26272a;font-family:'Avenir Next','Trebuchet MS','Segoe UI',sans-serif}}
-  .wrap{{max-width:1040px;margin:0 auto;padding:24px}}
-  .hero{{background:#1f6fb0;color:#fff;border-radius:24px;padding:30px 28px}}
-  .kicker{{display:inline-block;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);border-radius:999px;padding:7px 12px;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}}
-  .hero h1{{margin:14px 0 6px;font-size:30px;letter-spacing:.02em;color:#fff;-webkit-text-stroke:2px #26272a;paint-order:stroke fill}}
-  .hero .sub{{margin:0;color:rgba(255,255,255,.85);font-size:15px}}
-  .hero-logos{{float:right;display:flex;gap:12px;align-items:center}}
-  .hero-logos img{{height:80px;width:auto;opacity:.95}}
-  .status{{margin:18px 0 0;border-radius:16px;padding:16px 18px;font-weight:600;font-size:15px;line-height:1.45}}
-  .status.ok{{background:#3c9160;color:#fff}}
-  .status.warn{{background:#b97e00;color:#fff}}
-  .status.danger{{background:#d15c5c;color:#fff}}
-  .conditions{{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 0}}
-  .conditions span{{background:rgba(255,255,255,.14);border-radius:999px;padding:7px 13px;font-size:13px;color:#fff}}
-  .cards{{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:22px}}
-  .card{{display:block;background:#fff;border:1px solid #d9e4e8;border-radius:20px;padding:22px;text-decoration:none;color:#26272a;transition:transform .12s ease,box-shadow .12s ease}}
-  .card:hover{{transform:translateY(-3px);box-shadow:0 14px 30px rgba(38,39,42,.12);border-color:#3d9fdf}}
-  .card-icon{{font-size:34px}}
-  .card-title{{font-size:19px;font-weight:800;margin:10px 0 6px}}
-  .card-blurb{{color:#5e6a71;font-size:14px;line-height:1.5}}
-  .card-go{{margin-top:14px;color:#2b7fbf;font-weight:700;font-size:14px}}
-  .site-footer{{background:#343b44;border-radius:24px;padding:24px;text-align:center;margin-top:22px;color:rgba(255,255,255,.78);font-size:14px;line-height:1.7}}
-  .site-footer .hotline{{color:#fff;font-weight:700;margin:0 0 6px}}
-  .site-footer .advisory{{color:#ff8a66;font-weight:600;margin:0 0 10px}}
-  .site-footer a{{color:#7ab8e0;text-decoration:none}}
-  .site-footer a:hover{{text-decoration:underline}}
-  .site-footer .sources{{margin-top:12px;font-size:12px;color:#8a949b}}
-</style></head>
-<body><div class="wrap">
-  <div class="hero">
-    <div class="hero-logos"><img src="{BWTF_LOGO_URL}" alt="Blue Water Task Force"></div>
-    <span class="kicker">Blue Water Task Force • Surfrider SF</span>
-    <h1>Data Tools Dashboard</h1>
-    <div class="status {tone}">{message}</div>
-    {cond_html}
-  </div>
-
-  <div class="cards">{cards}
-  </div>
-
-  <div class="site-footer">
-    <p class="hotline">📞 Beach Hotline: 1-877-SFBEACH (1-877-732-3224) or 415-242-2214</p>
-    <p class="advisory">⚠️ Avoid water contact during and 72 hours after rain events</p>
-    <p>
-      <a href="https://webapps.sfpuc.org/sapps/beachesandbay.html" target="_blank" rel="noopener">SFPUC Beach Map</a> ·
-      <a href="https://data.sfgov.org/Energy-and-Environment/Beach-Water-Quality-Monitoring/v3fv-x3ux" target="_blank" rel="noopener">SF Gov Data</a> ·
-      <a href="/api/debug/sfpuc" target="_blank" rel="noopener">Debug SFPUC Payload</a> ·
-      <a href="https://sf.surfrider.org/programs/blue-water-task-force" target="_blank" rel="noopener">Surfrider BWTF</a>
-    </p>
-    <p class="sources">Updated {generated}. Data refreshes automatically. Sources: SFPUC LIMS API, SF Gov Open Data, NWS Weather, NOAA Tides.</p>
-  </div>
-</div></body></html>"""
+    return render_template(
+        "landing.html",
+        bwtf_logo=BWTF_LOGO_URL,
+        tone=tone,
+        message=message,
+        conditions=conditions,
+        pages=PAGES,
+        generated=generated,
+    )

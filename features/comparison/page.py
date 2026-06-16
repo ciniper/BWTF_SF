@@ -1,7 +1,7 @@
 """Comparison page — Surfrider BWTF vs. public city water-quality data.
 
 Owns /compare, /api/compare, /api/site-history. Implemented as a mixin on the
-unified server handler (app/server.py), which supplies the HTTP helpers
+request handler in the Flask app (app/wsgi.py), which supplies the HTTP helpers
 (self._send_json) and shared clients (self.combined_monitor, self.sfpuc_api).
 """
 from urllib.parse import parse_qs, urlparse
