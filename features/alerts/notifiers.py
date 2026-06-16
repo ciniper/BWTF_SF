@@ -25,9 +25,9 @@ from pathlib import Path
 import requests
 
 if __package__ in (None, ""):
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from core.monitoring import Alert
+from features.alerts.monitoring import Alert
 
 BWTF_LOGO_URL = "https://bwtf.surfrider.org/images/BWTF-Logo_White.png"
 SURFRIDER_LOGO_URL = "https://f.hubspotusercontent20.net/hubfs/20811975/SF-Horizontal-Logo_RGB_Black_crop_small.png"
@@ -147,7 +147,7 @@ FULL REPORT:
 
 ---
 Surfrider SF Blue Water Task Force
-https://sf.surfrider.org/blue-water-task-force/
+https://sf.surfrider.org/programs/blue-water-task-force
 """
         
         # HTML version
@@ -184,12 +184,12 @@ https://sf.surfrider.org/blue-water-task-force/
             <pre style="margin:0; background:#f7fafb; border:1px solid #d9e4e8; border-radius:18px; padding:18px; overflow-x:auto; white-space:pre-wrap; color:#26272a; font-size:13px; line-height:1.55;">{report}</pre>
 
             <div style="margin-top:22px; padding-top:18px; border-top:1px solid #d9e4e8;">
-                <a href="https://sf.surfrider.org/blue-water-task-force/" style="display:inline-block; background:#317fb2; color:#ffffff; text-decoration:none; padding:12px 18px; border-radius:999px; font-weight:700;">
+                <a href="https://sf.surfrider.org/programs/blue-water-task-force" style="display:inline-block; background:#317fb2; color:#ffffff; text-decoration:none; padding:12px 18px; border-radius:999px; font-weight:700;">
                     View Program Page
                 </a>
                 <p style="margin:16px 0 0; color:#5e6a71; font-size:12px; line-height:1.5;">
                     Surfrider SF Blue Water Task Force<br>
-                    https://sf.surfrider.org/blue-water-task-force/
+                    https://sf.surfrider.org/programs/blue-water-task-force
                 </p>
             </div>
         </div>

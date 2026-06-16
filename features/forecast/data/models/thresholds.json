@@ -1,0 +1,70 @@
+{
+  "Westside": {
+    "precip_avg": {
+      "caution": 0.0,
+      "moderate": 0.05,
+      "high": 0.05
+    },
+    "rain_2d_cum": {
+      "caution": 0.0,
+      "moderate": 0.05,
+      "high": 0.1
+    },
+    "rain_3d_cum": {
+      "caution": 0.0,
+      "moderate": 0.05,
+      "high": 0.25
+    }
+  },
+  "North Shore": {
+    "precip_avg": {
+      "caution": 0.05,
+      "moderate": 0.05,
+      "high": 0.4
+    },
+    "rain_2d_cum": {
+      "caution": 0.05,
+      "moderate": 0.35,
+      "high": 1.65
+    },
+    "rain_3d_cum": {
+      "caution": 0.05,
+      "moderate": 0.65,
+      "high": 2.1
+    }
+  },
+  "Southeast": {
+    "precip_avg": {
+      "caution": 0.0,
+      "moderate": 0.05,
+      "high": 0.05
+    },
+    "rain_2d_cum": {
+      "caution": 0.0,
+      "moderate": 0.05,
+      "high": 0.05
+    },
+    "rain_3d_cum": {
+      "caution": 0.0,
+      "moderate": 0.05,
+      "high": 0.15
+    }
+  },
+  "City-wide": {
+    "precip_avg": {
+      "caution": 0.05,
+      "moderate": 0.2,
+      "high": 0.5
+    },
+    "rain_2d_cum": {
+      "caution": 0.05,
+      "moderate": 0.35,
+      "high": 0.85
+    },
+    "rain_3d_cum": {
+      "caution": 0.05,
+      "moderate": 0.6,
+      "high": 1.4
+    }
+  }
+}

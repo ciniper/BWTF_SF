@@ -104,30 +104,52 @@ python run_alerts.py --priority-only --dry-run
 # Output as JSON
 python run_alerts.py --json
 
-# Launch web dashboard
-python dashboard.py
+# Launch the unified web dashboard
+python -m app.wsgi
+```
+
+## Project structure
+
+The app is organized as feature packages behind one web server, so the three
+pages can be worked on independently:
+
+```
+app/                 the web server (Flask) + the landing page
+  wsgi.py            Flask app: routes "/" + every feature's endpoint (run: python -m app.wsgi)
+  landing.py         current conditions + CSO status + links to the 3 pages
+features/
+  alerts/            sewage alert system  (/alerts + alert APIs)
+  forecast/          ML CSO forecaster    (/forecast)  — self-contained, lazy-loaded
+  comparison/        BWTF vs. city data   (/compare + history charts)
+shared/              data clients used by >1 feature (sfpuc_api, weather_tides, paths)
+data/                runtime state (subscriptions, simulated CSO events)
+run_*.py             CLI entry points (alerts, subscription dispatch, geo-mean report)
 ```
 
 ## Web Dashboard
 
 ```bash
-python dashboard.py
+# Local dev (Flask's built-in server)
+python -m app.wsgi
 # Open http://localhost:8080
+
+# Production (what a PaaS host runs via the Procfile)
+gunicorn -w 1 --threads 8 -b 0.0.0.0:$PORT app.wsgi:app
 ```
 
-The dashboard shows:
-- 🌧️ Rain advisory banner (when active)
-- 🚨 CSO alert banner with outfall/drainage basin info
-- 🌊 Tide information (current trend, next high/low)
-- 📊 Summary cards (safe/posted/CSO counts)
-- 📍 Station cards with status and sample dates
-- ⚠️ Active alerts from all data sources
+Pages:
+- **`/`** — landing: current conditions, overall CSO status, and links to the three tools
+- **`/alerts`** — rain advisory + CSO banners, tide info, summary cards, station cards, subscriber alerts
+- **`/forecast`** — machine-learning CSO-risk forecast (requires the ML extras in `requirements.txt`)
+- **`/compare`** — Surfrider BWTF vs. city lab results per site, with history charts
 
 API endpoints:
 - `GET /api/status` — Station status (JSON)
 - `GET /api/alerts` — Active alerts (JSON)
 - `GET /api/realtime` — SFPUC real-time data (JSON)
 - `GET /api/weather` — Weather and tide data (JSON)
+- `GET /api/compare` · `GET /api/site-history?site=<name>` — comparison data
+- `GET /forecast/api/data` — current forecast snapshot
 
 ## Notification Channels
 
