@@ -13,7 +13,7 @@ This roadmap has four parts:
 
 ## Shipped — infrastructure overhaul (one repo · feature packages · landing page)
 - [x] Brought the forecaster (was a separate repo) into this repo under `features/forecast/`.
-- [x] Restructured into `app/` (one threaded server + landing) · `features/{alerts,forecast,comparison}/` · `shared/` (sfpuc_api, weather_tides, paths) so the three pages are cleanly separated for collaboration. Run with `python -m app.server`.
+- [x] Restructured into `app/` (Flask server + landing) · `features/{alerts,forecast,comparison}/` · `shared/` (sfpuc_api, weather_tides, paths) so the three pages are cleanly separated for collaboration. Run with `python -m app.wsgi` (gunicorn in prod).
 - [x] Landing page (`/`) shows current conditions + overall CSO status with buttons to the alert, forecast, and comparison pages — a within-repo version of the A2 central dashboard.
 - [x] Forecast is lazy-loaded with graceful degradation: the alert & comparison pages run without the ML deps installed.
 - [ ] A1/A2 below remain for the *cross-repo* portfolio (a registry + aggregator spanning multiple projects).
@@ -118,7 +118,7 @@ This roadmap has four parts:
 ## Shipped (v1)
 - `features/comparison/bwtf_api.py` — client for the public BWTF database (AWS AppSync GraphQL; SF chapter = **lab 76**). Pulls each site's latest Enterococcus result + CA thresholds, and exposes a historical series (`fetch_history`).
 - `features/comparison/comparison.py` — pairs each BWTF site with its city counterpart (reusing `SFPUC_TO_SFGOV_SOURCES`), grades both against the CA single-sample max (104 MPN/100mL), and computes agreement, value delta, and sampling-day gap.
-- `features/comparison/page.py` — `/compare` page + `/api/compare` + `/api/site-history`, served by the unified `app/server.py` and linked from the landing page.
+- `features/comparison/page.py` — `/compare` page + `/api/compare` + `/api/site-history`, served by the Flask app (`app/wsgi.py`) and linked from the landing page.
 - Compares the **6** sites BWTF currently publishes for SF: Aquatic Park, Baker Beach at Lobos Creek, China Beach, Crissy Field East, Ocean Beach at Lincoln Way, Ocean Beach at Vicente St.
 
 ## Next steps

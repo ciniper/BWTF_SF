@@ -1,7 +1,7 @@
 """Alert dashboard page — live SFPUC status, bacteria, subscriptions, simulations.
 
 Owns /alerts and the alert APIs/POST actions. Implemented as a mixin on the
-unified server handler (app/server.py), which supplies the HTTP helpers
+request handler in the Flask app (app/wsgi.py), which supplies the HTTP helpers
 (self._send_json, self._read_request_data) and shared clients
 (self.combined_monitor, self.sfpuc_api, self.subscription_store,
 self.simulated_cso_store, self.env_context).
