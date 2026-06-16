@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SF CSO Live Forecast</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Avenir Next','Trebuchet MS','Segoe UI', Roboto, sans-serif; background: #e2e8ee; color: #26272a; min-height: 100vh; }
+.container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+header { background: #1f6fb0; color: #fff; border-radius: 18px; padding: 28px 32px; margin-bottom: 20px; text-align: center; }
+header h1 { font-size: 1.8em; color: #fff; -webkit-text-stroke: 2px #26272a; paint-order: stroke fill; }
+header .subtitle { color: rgba(255,255,255,0.85); font-size: 0.9em; margin-top: 4px; }
+header .live-dot { display: inline-block; width: 8px; height: 8px; background: #3c9160; border-radius: 50%; margin-right: 6px; animation: blink 2s infinite; }
+
+.mode-bar { display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+.mode-btn { padding: 8px 20px; border-radius: 8px; border: 2px solid #dfe5ea; background: #ffffff; color: #5e6a71; cursor: pointer; font-size: 0.9em; font-weight: 600; transition: all 0.2s; }
+.mode-btn.active { border-color: #1f6fb0; color: #fff; background: #1f6fb0; }
+.mode-btn:hover { border-color: #2b7fbf; }
+.date-picker { background: #ffffff; border: 2px solid #dfe5ea; border-radius: 8px; padding: 8px 14px; color: #26272a; font-size: 0.9em; cursor: pointer; }
+.date-picker:focus { border-color: #2b7fbf; outline: none; }
+.historical-label { color: #b97e00; font-size: 0.85em; font-weight: 600; }
+
+.risk-banner { text-align: center; padding: 16px 22px; border-radius: 14px; margin-bottom: 20px; font-size: 1.2em; font-weight: 600; }
+.risk-none { background: #3c9160; color: #fff; }
+.risk-low { background: #b97e00; color: #fff; }
+.risk-moderate { background: #d4763a; color: #fff; }
+.risk-high { background: #d15c5c; color: #fff; }
+.risk-extreme { background: #b5310a; color: #fff; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.7;} }
+
+/* Forecast timeline */
+.timeline { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-bottom: 20px; }
+@media (max-width: 800px) { .timeline { grid-template-columns: repeat(4, 1fr); } }
+.day-card { background: #ffffff; border-radius: 12px; padding: 14px; text-align: center; border: 2px solid transparent; transition: border-color 0.3s, transform 0.2s; cursor: pointer; }
+.day-card.today { border-color: #2b7fbf; }
+.day-card.selected { border-color: #b97e00; background: #fff7e6; }
+.day-card:hover { transform: translateY(-2px); border-color: #8a949b; }
+.day-card.selected:hover { border-color: #b97e00; }
+.day-label { font-size: 0.8em; color: #5e6a71; margin-bottom: 4px; }
+.day-label.today-label { color: #2b7fbf; font-weight: 700; }
+.day-rain { font-size: 0.85em; color: #8a949b; margin-bottom: 8px; }
+.day-rain .amount { color: #2b7fbf; font-weight: 600; }
+.day-prob { font-size: 2em; font-weight: 700; }
+.day-risk { font-size: 0.7em; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+.day-bar { height: 4px; border-radius: 2px; background: #dfe5ea; margin-top: 8px; overflow: hidden; }
+.day-bar-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
+.day-source { font-size: 0.65em; color: #8a949b; margin-top: 6px; }
+
+/* Basin detail */
+.basins { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+@media (max-width: 700px) { .basins { grid-template-columns: 1fr; } }
+.basin-card { background: #ffffff; border-radius: 12px; padding: 16px; border-left: 4px solid #dfe5ea; }
+.basin-name { font-size: 0.9em; color: #5e6a71; margin-bottom: 6px; }
+.basin-prob { font-size: 1.8em; font-weight: 700; }
+.basin-bar { height: 6px; border-radius: 3px; background: #dfe5ea; margin-top: 8px; overflow: hidden; }
+.basin-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+.basin-detail { font-size: 0.8em; color: #8a949b; margin-top: 8px; }
+
+/* Beach status */
+.beach-section { background: #ffffff; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+.beach-section h2 { color: #2b7fbf; font-size: 1.1em; margin-bottom: 12px; }
+.beach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.beach-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px; font-size: 0.85em; background: #eef1f4; }
+.beach-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.beach-dot.safe { background: #3c9160; }
+.beach-dot.posted { background: #d4763a; }
+.beach-dot.cso { background: #d15c5c; animation: blink 1.5s infinite; }
+.beach-dot.not_sampled { background: #8a949b; }
+
+/* Ground truth overlay (historical mode) */
+.ground-truth { background: #ffffff; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 2px solid #dfe5ea; }
+.ground-truth.has-cso { border-color: #d15c5c; }
+.ground-truth h2 { color: #b97e00; font-size: 1.1em; margin-bottom: 4px; }
+.ground-truth .gt-subtitle { color: #5e6a71; font-size: 0.85em; margin-bottom: 14px; }
+.ground-truth .gt-verdict { padding: 10px 16px; border-radius: 8px; margin-bottom: 14px; font-weight: 600; font-size: 0.95em; }
+.gt-verdict.cso-yes { background: #d15c5c; color: #fff; }
+.gt-verdict.cso-no { background: #3c9160; color: #fff; }
+.gt-verdict.no-data { background: #eef1f4; color: #5e6a71; border: 1px dashed #dfe5ea; }
+
+.gt-day-tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+.gt-day-tab { padding: 6px 14px; border-radius: 6px; background: #eef1f4; color: #5e6a71; cursor: pointer; font-size: 0.8em; border: 1px solid #dfe5ea; transition: all 0.2s; }
+.gt-day-tab:hover { border-color: #b97e00; }
+.gt-day-tab.active { background: #e3eefb; color: #1f6fb0; border-color: #1f6fb0; }
+.gt-day-tab .tab-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 4px; }
+
+.gt-basin-group { margin-bottom: 12px; }
+.gt-basin-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid #dfe5ea; }
+.gt-basin-name { font-size: 0.9em; font-weight: 600; color: #26272a; }
+.gt-basin-count { font-size: 0.75em; color: #5e6a71; }
+.gt-basin-model { font-size: 0.75em; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+
+.gt-station-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 6px; }
+.gt-station { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px; background: #eef1f4; font-size: 0.82em; }
+.gt-station-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.gt-station-dot.elevated { background: #d15c5c; }
+.gt-station-dot.clean { background: #3c9160; }
+.gt-station-name { flex: 1; color: #3a4a52; }
+.gt-station-value { color: #8a949b; font-size: 0.9em; }
+.gt-station-value.over { color: #d15c5c; font-weight: 600; }
+
+.gt-no-samples { color: #8a949b; font-style: italic; font-size: 0.85em; padding: 10px; }
+
+footer { text-align: center; padding: 20px; color: #8a949b; font-size: 0.8em; }
+footer a { color: #2b7fbf; text-decoration: none; }
+.refresh-info { font-size: 0.8em; color: #8a949b; text-align: center; margin-bottom: 15px; }
+</style>
+<style>.back-to-dash{display:inline-block;margin:0 0 14px;padding:8px 14px;background:#343b44;color:#fff;border-radius:999px;text-decoration:none;font-weight:700;font-size:13px}.back-to-dash:hover{background:#26272a}</style></head>
+<body>
+<div class="container"><a class="back-to-dash" href="/">← Dashboard</a>
+<header>
+    <h1><span class="live-dot"></span> SF CSO Live Forecast</h1>
+    <div class="subtitle">Combined Sewer Overflow risk — updated every 30 minutes</div>
+</header>
+
+<div class="mode-bar">
+    <button class="mode-btn active" id="btnLive" onclick="setMode('live')">📡 Live Forecast</button>
+    <button class="mode-btn" id="btnHistorical" onclick="setMode('historical')">📅 Historical</button>
+    <div id="datePickerWrap" style="display:none;">
+        <input type="date" class="date-picker" id="datePicker" min="{{ min_date }}" max="{{ max_date }}" value="{{ default_date }}">
+        <span class="historical-label" id="histLabel"></span>
+    </div>
+</div>
+
+<div id="riskBanner" class="risk-banner risk-none">Loading...</div>
+<div class="refresh-info" id="refreshInfo"></div>
+
+<!-- 7-day timeline (yesterday + today + 5 forecast days) -->
+<div class="timeline" id="timeline"></div>
+
+<!-- Basin detail for today -->
+<div class="basins" id="basins"></div>
+
+<!-- Ground truth overlay (historical mode only) -->
+<div id="groundTruth" class="ground-truth" style="display:none;">
+    <h2>🔬 Ground Truth — Actual Bacteria Results</h2>
+    <div class="gt-subtitle">SF Gov water quality samples compared to model predictions</div>
+    <div id="gtVerdict" class="gt-verdict no-data"></div>
+    <div class="gt-day-tabs" id="gtDayTabs"></div>
+    <div id="gtContent"></div>
+</div>
+
+<!-- Current beach status -->
+<div class="beach-section">
+    <h2>🏖️ Current Beach Status (SFPUC Real-Time)</h2>
+    <div class="beach-grid" id="beachGrid"></div>
+</div>
+
+<footer>
+    <p>📞 1-877-SFBEACH (1-877-732-3224) or 415-242-2214</p>
+    <p>⚠️ Avoid water contact during and 72 hours after rain</p>
+    <p style="margin-top:8px;">
+        <a href="https://webapps.sfpuc.org/sapps/beachesandbay.html">SFPUC Beach Map</a> ·
+        Model: GBM trained on 6 years of rain + bacteria data (AUC 0.870)
+    </p>
+</footer>
+</div>
+
+<script>
+function riskInfo(prob) {
+    if (prob >= 0.75) return { label: 'EXTREME', color: '#d15c5c', bg: '#fbe0e0', cls: 'extreme' };
+    if (prob >= 0.50) return { label: 'HIGH', color: '#c2521a', bg: '#fbe9dd', cls: 'high' };
+    if (prob >= 0.25) return { label: 'MODERATE', color: '#b97e00', bg: '#fbf0d6', cls: 'moderate' };
+    if (prob >= 0.10) return { label: 'LOW', color: '#6b8e23', bg: '#eef6dc', cls: 'low' };
+    return { label: 'MINIMAL', color: '#3c9160', bg: '#e3f2ea', cls: 'none' };
+}
+
+const basinLabels = {
+    citywide: { icon: '🏙️', name: 'City-wide CSO', desc: '3+ stations elevated across 2+ basins' },
+    westside: { icon: '🌊', name: 'Westside', desc: 'Ocean Beach, Baker Beach, China Beach' },
+    north_shore: { icon: '🏖️', name: 'North Shore', desc: 'Crissy Field, Aquatic Park' },
+    southeast: { icon: '⚓', name: 'Southeast', desc: 'Islais Creek, Candlestick Point' },
+};
+
+let currentMode = 'live';
+let currentData = null;  // Store last rendered data for day selection
+
+function setMode(mode) {
+    currentMode = mode;
+    document.getElementById('btnLive').className = 'mode-btn' + (mode === 'live' ? ' active' : '');
+    document.getElementById('btnHistorical').className = 'mode-btn' + (mode === 'historical' ? ' active' : '');
+    document.getElementById('datePickerWrap').style.display = mode === 'historical' ? 'inline-flex' : 'none';
+    loadData();
+}
+
+document.getElementById('datePicker').addEventListener('change', () => { if (currentMode === 'historical') loadData(); });
+
+async function loadData() {
+    try {
+        let data;
+        if (currentMode === 'historical') {
+            const date = document.getElementById('datePicker').value;
+            if (!date) return;
+            document.getElementById('histLabel').textContent = '⏳ Loading...';
+
+            // Fetch predictions and bacteria data in parallel
+            const [predResp, bacteriaResp] = await Promise.all([
+                fetch('/forecast/api/historical?date=' + date),
+                fetch('/forecast/api/bacteria?date=' + date),
+            ]);
+            const predData = await predResp.json();
+            const bacteriaData = await bacteriaResp.json();
+
+            if (predData.error) {
+                document.getElementById('riskBanner').textContent = '⚠️ ' + predData.error;
+                document.getElementById('histLabel').textContent = '❌ ' + predData.error;
+                return;
+            }
+            // Wrap in same format as live data
+            data = {
+                predictions: predData.predictions,
+                beach_status: [],
+                historical_date: date,
+                bacteria: bacteriaData,
+            };
+            document.getElementById('histLabel').textContent = '📅 Showing ' + date;
+        } else {
+            const resp = await fetch('/forecast/api/data');
+            data = await resp.json();
+        }
+        render(data);
+    } catch(e) {
+        document.getElementById('riskBanner').textContent = '⚠️ Error loading data: ' + e.message;
+    }
+}
+
+function render(data) {
+    const preds = data.predictions || {};
+    const beaches = data.beach_status || [];
+    const isHistorical = !!data.historical_date;
+
+    // Sort days
+    const days = Object.values(preds).sort((a, b) => a.day_offset - b.day_offset);
+
+    // Find today
+    const today = days.find(d => d.is_today);
+    const todayMax = today ? Math.max(...Object.values(today.predictions)) : 0;
+    const overallMax = Math.max(...days.map(d => Math.max(...Object.values(d.predictions))));
+
+    // Risk banner
+    const banner = document.getElementById('riskBanner');
+    const bannerRisk = riskInfo(todayMax);
+    banner.className = 'risk-banner risk-' + bannerRisk.cls;
+    const prefix = isHistorical ? '📅 ' + data.historical_date + ': ' : '';
+    if (todayMax >= 0.50) {
+        banner.innerHTML = prefix + '🚨 ' + bannerRisk.label + ' CSO RISK — Avoid water contact at affected beaches';
+    } else if (todayMax >= 0.25) {
+        banner.innerHTML = prefix + '⚠️ ' + bannerRisk.label + ' CSO RISK — Monitor conditions closely';
+    } else if (todayMax >= 0.10) {
+        banner.innerHTML = prefix + '🟡 ' + bannerRisk.label + ' CSO RISK — Some rain, worth watching';
+    } else {
+        banner.innerHTML = prefix + '✅ MINIMAL CSO RISK — Conditions favorable for beach recreation';
+    }
+
+    if (!isHistorical) {
+        // Check if any forecast day is worse
+        const futureDays = days.filter(d => d.is_forecast);
+        if (futureDays.length > 0) {
+            const futureMax = Math.max(...futureDays.map(d => Math.max(...Object.values(d.predictions))));
+            if (futureMax > todayMax + 0.15 && futureMax >= 0.25) {
+                const futureRisk = riskInfo(futureMax);
+                banner.innerHTML += '<br><span style="font-size:0.8em;opacity:0.9;">⚠️ Higher risk coming: ' + futureRisk.label + ' (' + Math.round(futureMax*100) + '%) in forecast</span>';
+            }
+        }
+    }
+
+    // Refresh info
+    const refreshEl = document.getElementById('refreshInfo');
+    if (data.last_refresh) {
+        const t = new Date(data.last_refresh);
+        refreshEl.textContent = 'Last updated: ' + t.toLocaleTimeString() + ' · Auto-refreshes every 30 min';
+    }
+
+    // Store data for day selection
+    currentData = { days, preds, isHistorical, data };
+
+    // Timeline
+    const timeline = document.getElementById('timeline');
+    timeline.innerHTML = '';
+    days.forEach(day => {
+        const maxProb = Math.max(...Object.values(day.predictions));
+        const risk = riskInfo(maxProb);
+        const pct = Math.round(maxProb * 100);
+
+        const card = document.createElement('div');
+        card.className = 'day-card' + (day.is_today ? ' today' : '');
+        card.dataset.date = day.date;
+        card.innerHTML = `
+            <div class="day-label ${day.is_today ? 'today-label' : ''}">${day.label}</div>
+            <div class="day-rain">☔ <span class="amount">${day.rain_inches.toFixed(2)}"</span></div>
+            <div class="day-prob" style="color:${risk.color}">${pct}%</div>
+            <div class="day-risk" style="color:${risk.color}">${risk.label}</div>
+            <div class="day-bar"><div class="day-bar-fill" style="width:${pct}%;background:${risk.color}"></div></div>
+            <div class="day-source">${day.is_forecast ? '📡 forecast' : '📊 observed'}</div>
+        `;
+        card.onclick = () => selectDay(day);
+        timeline.appendChild(card);
+    });
+
+    // Show basin detail for "today" by default
+    selectDay(today || days[0]);
+
+    // Beach status
+    const beachGrid = document.getElementById('beachGrid');
+    beachGrid.innerHTML = '';
+    if (isHistorical) {
+        beachGrid.innerHTML = '<div style="color:#8a949b;">Real-time beach status not available for historical dates — see Ground Truth section below for actual bacteria results</div>';
+    } else if (beaches.length === 0) {
+        beachGrid.innerHTML = '<div style="color:#8a949b;">Unable to fetch beach status</div>';
+    }
+    // Sort: CSO first, then posted, then safe
+    const order = { cso: 0, posted: 1, safe: 2, not_sampled: 3, unknown: 4 };
+    beaches.sort((a, b) => (order[a.status] || 9) - (order[b.status] || 9));
+    beaches.forEach(b => {
+        const item = document.createElement('div');
+        item.className = 'beach-item';
+        const statusLabel = b.status === 'cso' ? '🚨 CSO' : b.status === 'posted' ? '⚠️ Posted' : b.status === 'safe' ? '✅ Safe' : '⚪ No data';
+        item.innerHTML = `<span class="beach-dot ${b.status}"></span><span>${b.name}</span><span style="margin-left:auto;font-size:0.75em;color:#8a949b;">${statusLabel}</span>`;
+        beachGrid.appendChild(item);
+    });
+
+    // Ground truth overlay (historical mode only)
+    renderGroundTruth(data, preds);
+}
+
+function selectDay(day) {
+    if (!day || !currentData) return;
+
+    // Update timeline selection highlight
+    document.querySelectorAll('.day-card').forEach(c => {
+        c.classList.remove('selected');
+        if (c.dataset.date === day.date) c.classList.add('selected');
+    });
+
+    // Update basin detail for selected day
+    const basinsEl = document.getElementById('basins');
+    basinsEl.innerHTML = '';
+    for (const [key, prob] of Object.entries(day.predictions)) {
+        const info = basinLabels[key] || { icon: '📍', name: key, desc: '' };
+        const risk = riskInfo(prob);
+        const pct = Math.round(prob * 100);
+
+        const card = document.createElement('div');
+        card.className = 'basin-card';
+        card.style.borderLeftColor = risk.color;
+        card.innerHTML = `
+            <div class="basin-name">${info.icon} ${info.name}</div>
+            <div class="basin-prob" style="color:${risk.color}">${pct}%</div>
+            <div class="basin-bar"><div class="basin-bar-fill" style="width:${pct}%;background:${risk.color}"></div></div>
+            <div class="basin-detail">${info.desc} · 2d rain: ${day.rain_2d_cum.toFixed(2)}" · 3d: ${day.rain_3d_cum.toFixed(2)}"</div>
+        `;
+        basinsEl.appendChild(card);
+    }
+
+    // Update ground truth to show the selected day's bacteria data
+    if (currentData.isHistorical && currentData.data.bacteria && currentData.data.bacteria.has_data) {
+        const bDays = currentData.data.bacteria.days;
+        if (bDays[day.date]) {
+            // Auto-click the matching ground truth tab
+            document.querySelectorAll('.gt-day-tab').forEach(tab => {
+                if (tab.textContent.includes(day.date)) tab.click();
+            });
+        }
+    }
+}
+
+// Basin key mapping for matching predictions to ground truth
+const basinKeyMap = { 'Westside': 'westside', 'North Shore': 'north_shore', 'Southeast': 'southeast' };
+
+function renderGroundTruth(data, preds) {
+    const gtEl = document.getElementById('groundTruth');
+    const gtVerdict = document.getElementById('gtVerdict');
+    const gtTabs = document.getElementById('gtDayTabs');
+    const gtContent = document.getElementById('gtContent');
+
+    if (!data.bacteria || !data.bacteria.has_data || !data.historical_date) {
+        gtEl.style.display = data.historical_date ? 'block' : 'none';
+        if (data.historical_date) {
+            gtEl.className = 'ground-truth';
+            gtVerdict.className = 'gt-verdict no-data';
+            gtVerdict.textContent = '📭 No bacteria samples found for this date range — SFPUC samples weekly, so data may not be available for every day.';
+            gtTabs.innerHTML = '';
+            gtContent.innerHTML = '';
+        }
+        return;
+    }
+
+    gtEl.style.display = 'block';
+    const bacteria = data.bacteria;
+    const bDays = bacteria.days;
+    const sortedDates = Object.keys(bDays).sort();
+
+    // Find the target date's data (or closest)
+    const targetDate = data.historical_date;
+    let hasCso = false;
+    for (const d of sortedDates) {
+        if (bDays[d].summary.likely_cso) hasCso = true;
+    }
+    gtEl.className = 'ground-truth' + (hasCso ? ' has-cso' : '');
+
+    // Verdict banner
+    const targetDay = bDays[targetDate];
+    if (targetDay) {
+        const s = targetDay.summary;
+        if (s.likely_cso) {
+            gtVerdict.className = 'gt-verdict cso-yes';
+            gtVerdict.innerHTML = '🚨 CSO EVENT CONFIRMED — ' + s.elevated_stations + '/' + s.total_stations +
+                ' stations elevated across ' + s.elevated_basins + ' basin(s) · ' +
+                s.elevated_samples + '/' + s.total_samples + ' samples exceeded standards';
+        } else if (s.elevated_stations > 0) {
+            gtVerdict.className = 'gt-verdict cso-no';
+            gtVerdict.innerHTML = '⚠️ Some elevated readings — ' + s.elevated_stations + '/' + s.total_stations +
+                ' stations elevated, but not enough for CSO classification (' + s.elevated_basins + ' basin)';
+        } else {
+            gtVerdict.className = 'gt-verdict cso-no';
+            gtVerdict.innerHTML = '✅ All clear — 0/' + s.total_stations + ' stations exceeded standards';
+        }
+    } else {
+        // No samples on exact target date, show closest
+        const closestDate = sortedDates.length > 0 ? sortedDates[0] : null;
+        if (closestDate) {
+            const s = bDays[closestDate].summary;
+            const label = s.likely_cso ? '🚨 CSO EVENT' : s.elevated_stations > 0 ? '⚠️ Elevated' : '✅ Clear';
+            gtVerdict.className = 'gt-verdict' + (s.likely_cso ? ' cso-yes' : ' cso-no');
+            gtVerdict.innerHTML = label + ' on nearest sample date (' + closestDate + ') — ' +
+                s.elevated_stations + '/' + s.total_stations + ' stations elevated · No samples on ' + targetDate;
+        } else {
+            gtVerdict.className = 'gt-verdict no-data';
+            gtVerdict.textContent = '📭 No samples found near ' + targetDate;
+        }
+    }
+
+    // Day tabs
+    gtTabs.innerHTML = '';
+    let activeDate = sortedDates.includes(targetDate) ? targetDate : (sortedDates[0] || null);
+    sortedDates.forEach(d => {
+        const s = bDays[d].summary;
+        const dotColor = s.likely_cso ? '#d15c5c' : s.elevated_stations > 0 ? '#b97e00' : '#3c9160';
+        const isTarget = d === targetDate;
+        const tab = document.createElement('div');
+        tab.className = 'gt-day-tab' + (d === activeDate ? ' active' : '');
+        tab.innerHTML = '<span class="tab-dot" style="background:' + dotColor + '"></span>' +
+            d + (isTarget ? ' ★' : '') +
+            ' <span style="color:#8a949b;">(' + s.elevated_stations + '/' + s.total_stations + ')</span>';
+        tab.onclick = () => {
+            document.querySelectorAll('.gt-day-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            renderGroundTruthDay(bDays[d], d, preds);
+        };
+        gtTabs.appendChild(tab);
+    });
+
+    // Render the active day
+    if (activeDate) {
+        renderGroundTruthDay(bDays[activeDate], activeDate, preds);
+    }
+}
+
+function renderGroundTruthDay(dayData, dateStr, preds) {
+    const gtContent = document.getElementById('gtContent');
+    const summary = dayData.summary;
+    const basins = summary.basins;
+
+    // Get model prediction for this date if available
+    const dayPred = preds[dateStr];
+
+    let html = '';
+
+    // Order basins: Westside, North Shore, Southeast
+    const basinOrder = ['Westside', 'North Shore', 'Southeast'];
+    for (const basinName of basinOrder) {
+        const basin = basins[basinName];
+        if (!basin) continue;
+
+        const basinKey = basinKeyMap[basinName];
+        const modelProb = dayPred ? dayPred.predictions[basinKey] : null;
+
+        html += '<div class="gt-basin-group">';
+        html += '<div class="gt-basin-header">';
+        html += '<span class="gt-basin-name">' + basinName + '</span>';
+        html += '<span class="gt-basin-count">' + basin.elevated + '/' + basin.total + ' stations elevated</span>';
+
+        // Model prediction badge
+        if (modelProb !== null && modelProb !== undefined) {
+            const pct = Math.round(modelProb * 100);
+            const risk = riskInfo(modelProb);
+            const actual = basin.elevated > 0;
+            const predicted = modelProb >= 0.10;
+            const match = actual === predicted;
+            html += '<span class="gt-basin-model" style="background:' + risk.bg + ';color:' + risk.color + ';">' +
+                'Model: ' + pct + '%</span>';
+            html += '<span style="font-size:0.75em;">' + (match ? '✅' : '❌') + '</span>';
+        }
+
+        html += '</div>';
+
+        // Station grid
+        html += '<div class="gt-station-grid">';
+        // Sort: elevated first
+        const stations = basin.stations.sort((a, b) => (b.elevated ? 1 : 0) - (a.elevated ? 1 : 0));
+        for (const st of stations) {
+            const dotClass = st.elevated ? 'elevated' : 'clean';
+            const enteroStr = st.max_entero !== null ?
+                (st.max_entero > 104 ?
+                    '<span class="gt-station-value over">Entero: ' + Math.round(st.max_entero) + '</span>' :
+                    '<span class="gt-station-value">Entero: ' + Math.round(st.max_entero) + '</span>') :
+                '<span class="gt-station-value">—</span>';
+            const countStr = '<span class="gt-station-value">' + st.exceedance_count + '/' + st.sample_count + '</span>';
+
+            html += '<div class="gt-station">' +
+                '<span class="gt-station-dot ' + dotClass + '"></span>' +
+                '<span class="gt-station-name">' + st.name + '</span>' +
+                enteroStr + countStr +
+                '</div>';
+        }
+        html += '</div></div>';
+    }
+
+    gtContent.innerHTML = html;
+}
+
+// Initial load
+loadData();
+
+// Auto-refresh every 5 minutes (data itself refreshes every 30 min server-side)
+setInterval(loadData, 300000);
+</script>
+</body>
+</html>

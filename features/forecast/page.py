@@ -20,6 +20,8 @@ import threading
 from datetime import datetime
 from pathlib import Path
 
+from flask import render_template
+
 # Treat this directory as the forecaster's project root (preserves its
 # `from src.models...` imports and __file__-relative data/config paths).
 _FORECAST_ROOT = Path(__file__).resolve().parent
@@ -102,23 +104,16 @@ def _render_page() -> str:
     if _engine is None:
         return _unavailable_html()
     today = datetime.now().strftime("%Y-%m-%d")
-    html = (
-        _engine.HTML_TEMPLATE
-        .replace("__MIN_DATE__", "2020-07-27")   # earliest SF Gov bacteria data
-        .replace("__MAX_DATE__", today)
-        .replace("__DEFAULT_DATE__", today)
+    # The page shell lives in app/templates/forecast/page.html (extracted from the
+    # engine's HTML_TEMPLATE with the /forecast/api namespacing + back-to-dashboard
+    # button baked in); live_dashboard.py is left untouched. Predictions load
+    # client-side via the /forecast/api/* endpoints.
+    return render_template(
+        "forecast/page.html",
+        min_date="2020-07-27",   # earliest SF Gov bacteria data
+        max_date=today,
+        default_date=today,
     )
-    # Namespace the page's API calls under /forecast/api/ (all fetches are single-quoted).
-    html = html.replace("'/api/", "'/forecast/api/")
-    # Inject the unified back-to-dashboard button (kept here so live_dashboard.py stays untouched).
-    back_css = (
-        "<style>.back-to-dash{display:inline-block;margin:0 0 14px;padding:8px 14px;"
-        "background:#343b44;color:#fff;border-radius:999px;text-decoration:none;font-weight:700;"
-        "font-size:13px}.back-to-dash:hover{background:#26272a}</style>"
-    )
-    html = html.replace("</head>", back_css + "</head>")
-    html = html.replace('<div class="container">', '<div class="container"><a class="back-to-dash" href="/">← Dashboard</a>', 1)
-    return html
 
 
 # ─── route handlers ──────────────────────────────────────────────────────────
