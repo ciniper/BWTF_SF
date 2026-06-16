@@ -16,6 +16,8 @@ This roadmap has four parts:
 - [x] Restructured into `app/` (Flask server + landing) · `features/{alerts,forecast,comparison}/` · `shared/` (sfpuc_api, weather_tides, paths) so the three pages are cleanly separated for collaboration. Run with `python -m app.wsgi` (gunicorn in prod).
 - [x] Landing page (`/`) shows current conditions + overall CSO status with buttons to the alert, forecast, and comparison pages — a within-repo version of the A2 central dashboard.
 - [x] Forecast is lazy-loaded with graceful degradation: the alert & comparison pages run without the ML deps installed.
+- [x] **Web layer → Flask + gunicorn (deployable).** Retired the stdlib `http.server`; `app/wsgi.py` is the single entrypoint (`Procfile`: `gunicorn -w 1 --threads 8 … app.wsgi:app`). A thin adapter subclasses the existing alert/comparison route mixins so all page + API logic runs unchanged; one worker keeps the forecast refresh thread singular. Reads `$PORT` for PaaS hosts.
+- [x] **HTML → Jinja2 templates** (`app/templates/`). Landing, alerts (`alerts/dashboard.html`), and comparison (`comparison/page.html`) render from templates instead of inline Python f-strings — removes the `{{ }}` brace-escaping footguns. Each verified byte-identical to the prior f-string output. The forecast page keeps its HTML in the vendored `live_dashboard.py` (left intact by design).
 - [ ] A1/A2 below remain for the *cross-repo* portfolio (a registry + aggregator spanning multiple projects).
 
 ### A1. Establish a multi-project structure
