@@ -1,0 +1,67 @@
+# Deploying the dashboard
+
+The app is a Flask + gunicorn web server (`app/wsgi.py`). It runs anywhere that
+runs Python — these notes cover **Railway**, but Render / Fly / a VPS are the
+same idea.
+
+## What's already in the repo for hosting
+
+- `requirements.txt` — all deps (Flask, gunicorn, scikit-learn, pandas, …).
+- `Procfile` — the start command: `gunicorn -w 1 --threads 8 --timeout 120 -b 0.0.0.0:$PORT app.wsgi:app`.
+- `.python-version` — pins Python `3.12` so the build is reproducible (the
+  forecast models need `scikit-learn==1.8.0`, which has wheels there).
+- The trained forecast models (`features/forecast/data/models/*.pkl` +
+  `thresholds.json`) are committed, so `/forecast` works on a fresh clone.
+- The server binds `0.0.0.0:$PORT` — hosts inject `$PORT` automatically.
+
+## Railway — from GitHub (auto-deploys on push)
+
+1. Push the repo to GitHub.
+2. [railway.app](https://railway.app) → **New Project** → **Deploy from GitHub repo** → pick the repo.
+3. Railway auto-detects Python (Nixpacks), runs `pip install -r requirements.txt`,
+   and uses the `Procfile`. First build takes a few minutes (scipy/sklearn/pandas).
+4. Open the **service** → **Settings → Networking** → **Generate Domain**
+   (it's per-service, not in project settings) → you get a `*.up.railway.app` URL.
+   Watch the spelling of the generated subdomain.
+
+## Railway — from the CLI (no GitHub needed)
+
+```bash
+npm i -g @railway/cli
+railway login
+railway init
+railway up          # uploads + builds + deploys the current dir
+railway domain      # generate the public URL
+```
+
+## Local
+
+```bash
+pip install -r requirements.txt
+python -m app.wsgi              # dev server; reads $PORT (default 8080)
+# or, exactly like prod:
+gunicorn -w 1 --threads 8 -b 0.0.0.0:8090 app.wsgi:app
+```
+
+## Optional env vars (only to actually send alerts)
+
+| Var | Purpose |
+|-----|---------|
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` | SMS dispatch |
+| `SMTP_USERNAME`, `SMTP_PASSWORD` | Email dispatch |
+
+Without them the app runs fine — the alert dispatch just previews instead of sending.
+
+## Gotchas
+
+- **One worker on purpose** (`-w 1`): the forecast engine runs a single background
+  refresh thread; multiple workers would each spawn their own.
+- **Memory**: the forecast feature (pandas + sklearn + models) is the heavy part.
+  Railway's Hobby plan handles it; a 503 on `/forecast` at boot usually means OOM.
+- **Build fails on sklearn?** Confirm `.python-version` is being respected — a
+  too-new Python may lack a `scikit-learn==1.8.0` wheel.
+
+## Verify after deploy
+
+Hit `/`, `/alerts`, `/compare`, `/forecast`. The forecast page takes a few
+seconds after boot to populate (the refresh thread runs once on startup).
