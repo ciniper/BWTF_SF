@@ -47,6 +47,7 @@ from features.alerts.subscriptions import SubscriptionStore
 from features.alerts.cso_alerts import SimulatedCSOStore
 from shared.sfpuc_api import SFPUCRealTimeAPI
 from app.landing import render_landing
+from features.bwtf_history.page import render_bwtf_history
 
 try:
     from shared.weather_tides import EnvironmentalContext
@@ -172,12 +173,23 @@ def _landing_view():
     return Response(html, content_type="text/html; charset=utf-8")
 
 
+def _bwtf_view():
+    try:
+        html = render_bwtf_history()
+    except Exception as e:  # never blank the page on a flaky upstream
+        html = f"<!doctype html><meta charset='utf-8'><h1>BWTF Sample Log unavailable</h1><pre>{e}</pre>"
+    return Response(html, content_type="text/html; charset=utf-8")
+
+
 def create_app():
     app = Flask(__name__)
 
     # Landing
     app.add_url_rule("/", "landing", _landing_view, methods=["GET"])
     app.add_url_rule("/index.html", "landing_index", _landing_view, methods=["GET"])
+
+    # BWTF Sample Log
+    app.add_url_rule("/bwtf", "bwtf", _bwtf_view, methods=["GET"])
 
     # Alerts page + its GET/POST APIs
     app.add_url_rule("/alerts", "alerts", _mixin_view("send_dashboard"), methods=["GET"])

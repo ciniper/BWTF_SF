@@ -19,6 +19,8 @@ PAGES = [
      "Machine-learning forecast of combined-sewer-overflow risk from rainfall — a warning before discharges happen."),
     ("/compare", "⚖️", "Source Comparison",
      "Surfrider volunteer-lab results vs. official city data for the same beaches, with full history."),
+    ("/bwtf", "🔬", "BWTF Sample Log",
+     "Every Surfrider volunteer sample — tester, field conditions (weather, tide, waves), and notes."),
 ]
 
 

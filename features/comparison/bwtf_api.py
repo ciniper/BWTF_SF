@@ -172,6 +172,30 @@ query History($lab: Int, $sort: ModelSortDirection, $limit: Int, $nextToken: Str
 }
 """
 
+# Full per-event detail (tester, field conditions/weather, comments) for the
+# BWTF Sample Log page. WaterQualityData carries the metadata getLab omits.
+_EVENT_HISTORY_QUERY = """
+query History($lab: Int, $sort: ModelSortDirection, $limit: Int, $nextToken: String) {
+  waterQualityDataByLabAndCollectionTime(
+    lab: $lab, sortDirection: $sort, limit: $limit, nextToken: $nextToken
+  ) {
+    items {
+      collectionTime
+      testedBy
+      comments
+      volume
+      location { name }
+      weather {
+        airTemperature waterTemperature currentWeather precipitation tide waveHeight
+        wind { direction speed }
+      }
+      samples { substance result units method modifier }
+    }
+    nextToken
+  }
+}
+"""
+
 
 class SFBWTFClient:
     """Fetches San Francisco Blue Water Task Force results from the public API."""
@@ -294,6 +318,74 @@ class SFBWTFClient:
             if reached_cutoff or not next_token:
                 break
         return history
+
+    def fetch_event_history(self, since: Optional[datetime] = None,
+                            page_size: int = 200, max_pages: int = 5) -> list[dict]:
+        """Return BWTF sampling *events* (newest first) with full field metadata.
+
+        Each event carries the per-collection context the comparison page omits —
+        ``tested_by``, ``comments``, ``volume``, and a normalized ``weather`` block —
+        plus its analyte ``samples`` (substance/result/units/method/modifier).
+        """
+        events: list[dict] = []
+        next_token = None
+        for _ in range(max_pages):
+            variables = {"lab": self.lab_id, "sort": "DESC", "limit": page_size, "nextToken": next_token}
+            data = self._graphql(_EVENT_HISTORY_QUERY, variables)
+            if not data:
+                break
+            conn = data.get("waterQualityDataByLabAndCollectionTime") or {}
+            reached_cutoff = False
+            for it in conn.get("items", []):
+                if not it:
+                    continue
+                when = parse_datetime(it.get("collectionTime"))
+                if since and when and when < since:
+                    reached_cutoff = True
+                    continue
+                weather = it.get("weather") or {}
+                wind = weather.get("wind") or {}
+                samples = []
+                for s in it.get("samples") or []:
+                    raw, value = parse_result(s.get("result"))
+                    modifier = s.get("modifier") or ""
+                    display = f"{modifier}{raw}" if modifier in ("<", ">") else raw
+                    samples.append({
+                        "substance": s.get("substance", ""),
+                        "result_raw": raw,
+                        "result_display": display,
+                        "result_value": value,
+                        "units": s.get("units") or "",
+                        "method": s.get("method") or "",
+                        "modifier": modifier,
+                    })
+                events.append({
+                    "collection_time": when,
+                    "site_name": (it.get("location") or {}).get("name", ""),
+                    "tested_by": it.get("testedBy") or "",
+                    "comments": it.get("comments") or "",
+                    "volume": it.get("volume") or "",
+                    "weather": {
+                        "air_temp": weather.get("airTemperature"),
+                        "water_temp": weather.get("waterTemperature"),
+                        "current_weather": _clean_enum(weather.get("currentWeather")),
+                        "precipitation": weather.get("precipitation"),
+                        "tide": weather.get("tide") or "",
+                        "wave_height": weather.get("waveHeight") or "",
+                        "wind_direction": wind.get("direction") or "",
+                        "wind_speed": wind.get("speed"),
+                    },
+                    "samples": samples,
+                })
+            next_token = conn.get("nextToken")
+            if reached_cutoff or not next_token:
+                break
+        return events
+
+
+def _clean_enum(value: Optional[str]) -> str:
+    """'Partly_Cloudy' -> 'Partly Cloudy' for display."""
+    return value.replace("_", " ") if value else ""
 
 
 def _as_float(value) -> Optional[float]:
