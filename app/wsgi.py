@@ -65,6 +65,7 @@ _ALERT_GET = {
     "/api/subscriptions": "send_api_subscriptions",
     "/api/simulations/cso": "send_api_simulated_cso",
     "/api/debug/sfpuc": "send_api_debug_sfpuc",
+    "/api/watcher": "send_api_watcher",
 }
 # Alert-page POST endpoints -> AlertsRoutes method names.
 _ALERT_POST = {
@@ -211,6 +212,10 @@ def create_app():
     # Kick the forecast background refresh once (no-op if ML deps are missing).
     if forecast_page.is_available():
         forecast_page.start_refresh()
+
+    # Start the automatic alert watcher (poll → edge-triggered dispatch).
+    from features.alerts.watcher import start_watcher
+    start_watcher()
 
     return app
 

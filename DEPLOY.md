@@ -49,8 +49,13 @@ gunicorn -w 1 --threads 8 -b 0.0.0.0:8090 app.wsgi:app
 |-----|---------|
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` | SMS dispatch |
 | `SMTP_USERNAME`, `SMTP_PASSWORD` | Email dispatch |
+| `ALERT_WATCHER_INTERVAL` | Auto-alert poll interval in seconds (default `120`; `off` disables the watcher) |
 
-Without them the app runs fine — the alert dispatch just previews instead of sending.
+Without the SMTP/Twilio creds the app runs fine — dispatches (manual *and* the
+automatic watcher's) are recorded as previews instead of sending. The watcher
+auto-emails/texts subscribers when a site is newly posted or has a CSO; check
+its last run at `/api/watcher`. Its state file lives in `data/` (ephemeral on
+PaaS — each deploy silently re-baselines, never re-alerts standing events).
 
 ## Gotchas
 

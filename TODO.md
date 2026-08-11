@@ -81,12 +81,11 @@ This roadmap has four parts:
 ## Additional suggestions
 
 ### B5. Detection → dispatch automation — *the real-time core*
-- [ ] Stand up a scheduled poller that fetches SFPUC on an interval and **auto-dispatches** to matching subscribers. Today only `run_alerts.py` is in the README cron, and it uses global env channels — not the per-subscriber `run_subscription_alerts.py`. *(overlaps the prior "automate subscription dispatch" TODO)*
-- [ ] Wire the poller to the existing `dispatch_subscription_alerts()` so detection and notification become one unattended loop.
+- [x] **Shipped: the alert watcher** (`features/alerts/watcher.py`). A daemon thread in the web app polls SFPUC every 2 min (`ALERT_WATCHER_INTERVAL` overrides; `off` disables) and auto-dispatches email + SMS to subscribers of affected stations. Alerts fire for **both bacteria postings and CSO discharges**, labeled by type; subscriptions now cover all monitored sites (not just CSO-eligible). Run status at `/api/watcher`. Simulated CSO events flow through the same path (TEST-prefixed) — that's the end-to-end test. Needs `SMTP_USERNAME`/`SMTP_PASSWORD` (and optionally Twilio) set on the host to actually send; otherwise deliveries are recorded as previews.
 
 ### B6. Alert state, edge-triggering & dedup
-- [ ] Persist last-known CSO state; alert only on **new** transitions (off→on), not every poll — otherwise a multi-day event re-texts everyone each cycle. *(overlaps the prior "dedup repeated alerts" TODO)*
-- [ ] Add throttling / quiet hours, and an explicit "all-clear" message when an event ends.
+- [x] **Shipped with the watcher**: last-known state persists in `data/alert_watcher_state.json`; alerts fire only on transitions to a *more severe* state (safe→posted, safe→CSO, posted→CSO), once per event. Never-seen stations (first boot / fresh deploy — the state file is ephemeral on PaaS) baseline silently, so a deploy can't re-alert standing conditions.
+- [ ] Add throttling / quiet hours, and an explicit "all-clear" message when an event ends (recoveries currently just update state silently).
 
 ### B7. Delivery log & uptime/observability
 - [ ] Persist delivery history — which alerts were sent / previewed / failed, per recipient and channel. *(carried from prior TODO)*

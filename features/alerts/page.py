@@ -162,6 +162,11 @@ class AlertsRoutes:
             payload = {"error": str(e)}
         self._send_json(payload)
 
+    def send_api_watcher(self):
+        """Report the auto-alert watcher's last poll: transitions + dispatches."""
+        from features.alerts.watcher import get_last_run
+        self._send_json(get_last_run())
+
     def send_api_debug_sfpuc(self):
         """Return the raw current SFPUC getBeaches payload for browser inspection."""
         try:
@@ -194,8 +199,8 @@ class AlertsRoutes:
                 station_ids = [station_ids]
 
             stations, _ = self._get_dashboard_stations()
-            eligible_station_ids = {station.station_id for station in get_cso_eligible_stations(stations)}
-            selected_station_ids = [station_id for station_id in station_ids if station_id in eligible_station_ids]
+            valid_station_ids = {station.station_id for station in stations}
+            selected_station_ids = [station_id for station_id in station_ids if station_id in valid_station_ids]
             subscription = self.subscription_store.upsert_subscription(
                 email=email,
                 station_ids=selected_station_ids,
@@ -475,6 +480,9 @@ class AlertsRoutes:
             </div>
             """
 
+        # Subscriptions cover every monitored site: the watcher alerts on
+        # bacteria postings as well as CSO discharges, so no site is excluded.
+        subscribable_stations = sorted(stations, key=lambda s: s.station_name)
         subscription_site_options = "".join(
             f"""
             <label class="checkbox-option">
@@ -482,8 +490,8 @@ class AlertsRoutes:
                 <span>{station.station_name}</span>
             </label>
             """
-            for station in eligible_cso_stations
-        ) or '<div class="empty-state">No CSO-eligible sites are available right now.</div>'
+            for station in subscribable_stations
+        ) or '<div class="empty-state">No sites are available right now.</div>'
 
         simulation_site_options = "".join(
             f"""
@@ -497,7 +505,7 @@ class AlertsRoutes:
 
         station_name_by_id = {
             station.station_id: station.station_name
-            for station in eligible_cso_stations
+            for station in subscribable_stations
         }
 
         current_subscription_html = "".join(
