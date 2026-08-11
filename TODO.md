@@ -58,13 +58,14 @@ This roadmap has four parts:
 - [ ] Add a health-check endpoint + auto-restart.
 
 ### B2. Better dashboard UI
-- [ ] Break up the ~1,695-line `dashboard.py` — separate HTML/CSS/JS from Python (templates + static assets) for maintainability.
+- [x] ~~Break up the ~1,695-line `dashboard.py`~~ — done via the feature-package restructure + Jinja2 templates (`app/templates/`).
 - [ ] In-dashboard lab-results view instead of opening the raw SF Gov query in a new tab. *(carried from prior TODO)*
 - [ ] Add a real map view — station lat/lon is already in the data — so CSO/posted sites are visual.
 - [ ] Subscriber self-service (edit/unsubscribe) in the UI *(see B4)*.
 - [ ] Mobile-friendly layout with a clear "current status" hero state.
 
 ### B3. Validation of locations & alert logic ("the product")
+- [ ] **Region-based alert areas** — let subscribers pick regions (e.g. Ocean Beach, Baker/China, Aquatic Park–Bayside) instead of individual stations: group the ~20 stations into named zones, alert when *any* station in a subscribed zone goes problematic, and show the zone in the alert copy. Keeps the subscribe form simple as the station roster grows, and matches how people actually think about beaches. (Longer-term; per-site stays as an "advanced" option.)
 - [ ] Resolve the open mystery: the SFPUC map only draws CSO triangles for ~13 station IDs — confirm whether that's a map/coordinate limit or a deeper data/model constraint. *(carried from prior TODO)* This directly bounds which sites can ever fire an alert.
 - [ ] Validate the hand-built mappings — `CSO_OUTFALLS` / `BEACH_CSO_OUTFALLS` (`sfpuc_api.py`) and `SFPUC_TO_SFGOV_SOURCES` (`monitoring.py`) are explicitly "best-effort." Check each beach → outfall → drainage-basin link against an authoritative SFPUC / EPA NPDES source.
 - [ ] Verify the station roster & names against the current SFPUC list (code targets a 2025 snapshot).
@@ -77,6 +78,7 @@ This roadmap has four parts:
 - [ ] Unsubscribe/edit controls for saved phone subscriptions. *(carried from prior TODO)*
 - [ ] Workshop alert copy across SMS / email / dashboard so it reads naturally and explains preview/failure states in plain English. *(carried from prior TODO)*
 - [ ] Keep a provider abstraction so Twilio / gateway / future providers swap without touching dispatch logic.
+- [ ] **Outgrow Gmail SMTP when the list grows** — the sending account is a plain Gmail, capped at ~500 recipients/day (and email-to-SMS texts count against it). If the subscriber list gets big, switch to a transactional email provider (Resend / Brevo / SES etc.): same `SMTP_*` env vars, different values, plus real deliverability (SPF/DKIM) and send logs.
 
 ## Additional suggestions
 
