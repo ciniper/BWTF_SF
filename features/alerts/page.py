@@ -573,11 +573,22 @@ class AlertsRoutes:
         status_feed_date = station.sample_date.strftime('%m/%d/%Y') if station.sample_date else "N/A"
         if lab_result:
             lab_sample_date = lab_result["sample_date"].strftime('%m/%d/%Y')
+            # The status feed reports a newer sample than SF Gov has published:
+            # lab numbers take ~24h incubation + a nightly load, so postings can
+            # lead the published results by days. Say so instead of confusing.
+            pending_html = ""
+            if station.sample_date and station.sample_date.date() > lab_result["sample_date"].date():
+                pending_html = f"""
+                <div class="station-meta">
+                    <span class="lab-pending">⏳ Lab numbers for the {status_feed_date} sample not yet published</span>
+                </div>
+                """
             lab_details_html = f"""
                 <div class="station-meta">
                     <span>Latest SF Gov lab sample: {lab_sample_date}</span>
                     <a class="lab-link" href="{lab_result['results_url']}" target="_blank" rel="noopener noreferrer">View results</a>
                 </div>
+                {pending_html}
             """
         else:
             lab_details_html = """
