@@ -194,6 +194,8 @@ def dispatch_subscription_alerts(
                     notifier = EmailNotifier(to_emails=[subscription.email])
                     delivered = notifier.send_message(subject, text_body, [subscription.email], html_body)
                     delivery = "email" if delivered else "failed"
+                    if not delivered:
+                        error = notifier.last_error
                 except Exception as exc:  # pragma: no cover
                     delivery = "failed"
                     error = str(exc)

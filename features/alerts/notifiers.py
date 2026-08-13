@@ -117,6 +117,7 @@ class EmailNotifier(Notifier):
         self.username = username or os.environ.get("SMTP_USERNAME")
         self.password = password or os.environ.get("SMTP_PASSWORD")
         self.from_email = from_email or os.environ.get("ALERT_FROM_EMAIL") or self.username
+        self.last_error: Optional[str] = None  # set when send_message returns False
         
         to_env = os.environ.get("ALERT_TO_EMAILS", "")
         self.to_emails = to_emails or [e.strip() for e in to_env.split(",") if e.strip()]
@@ -242,9 +243,11 @@ https://sf.surfrider.org/programs/blue-water-task-force
         try:
             self._send_message(msg, to_emails)
             print(f"Email sent to {len(to_emails)} recipient(s)")
+            self.last_error = None
             return True
         except Exception as e:
             print(f"Failed to send email: {e}")
+            self.last_error = f"{type(e).__name__}: {e}"
             return False
 
     def _send_message(self, msg: MIMEMultipart, recipients: list[str]) -> None:

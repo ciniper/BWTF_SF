@@ -182,8 +182,12 @@ def dispatch_transition_alerts(subscriptions, transitions: list[dict]) -> list[d
         if sub.email:
             if smtp_configured:
                 try:
-                    ok = EmailNotifier(to_emails=[sub.email]).send_message(subject, text_body, [sub.email], html_body)
-                    deliveries.append({"channel": "email", "delivery": "email" if ok else "failed"})
+                    notifier = EmailNotifier(to_emails=[sub.email])
+                    ok = notifier.send_message(subject, text_body, [sub.email], html_body)
+                    entry = {"channel": "email", "delivery": "email" if ok else "failed"}
+                    if not ok and notifier.last_error:
+                        entry["error"] = notifier.last_error
+                    deliveries.append(entry)
                 except Exception as exc:
                     deliveries.append({"channel": "email", "delivery": "failed", "error": str(exc)})
             else:
