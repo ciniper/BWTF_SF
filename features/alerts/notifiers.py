@@ -32,6 +32,11 @@ from features.alerts.monitoring import Alert
 BWTF_LOGO_URL = "https://bwtf.surfrider.org/images/BWTF-Logo_White.png"
 SURFRIDER_LOGO_URL = "https://f.hubspotusercontent20.net/hubfs/20811975/SF-Horizontal-Logo_RGB_Black_crop_small.png"
 
+# Cap every SMTP connection. Hosts that firewall outbound SMTP (e.g. Railway
+# trial plans) DROP packets silently; without a timeout that hangs the sender
+# thread forever — which froze the alert watcher in production.
+SMTP_TIMEOUT_SECONDS = int(os.environ.get("SMTP_TIMEOUT", "20"))
+
 
 class Notifier(ABC):
     """Base class for notification handlers"""
@@ -243,7 +248,10 @@ https://sf.surfrider.org/programs/blue-water-task-force
             return False
 
     def _send_message(self, msg: MIMEMultipart, recipients: list[str]) -> None:
-        with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+        # timeout is load-bearing: smtplib's default is wait-forever, and a
+        # host that firewalls outbound SMTP (silent packet drop) would hang
+        # the calling thread — for the alert watcher, permanently.
+        with smtplib.SMTP(self.smtp_server, self.smtp_port, timeout=SMTP_TIMEOUT_SECONDS) as server:
             server.starttls()
             server.login(self.username, self.password)
             server.sendmail(self.from_email, recipients, msg.as_string())
@@ -589,7 +597,7 @@ class EmailToSMSNotifier(Notifier):
         msg["From"] = self.from_email
         msg["To"] = sms_email
         msg["Subject"] = ""
-        with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+        with smtplib.SMTP(self.smtp_server, self.smtp_port, timeout=SMTP_TIMEOUT_SECONDS) as server:
             server.starttls()
             server.login(self.username, self.password)
             server.sendmail(self.from_email, [sms_email], msg.as_string())
