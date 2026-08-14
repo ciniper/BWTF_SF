@@ -52,6 +52,8 @@ gunicorn -w 1 --threads 8 -b 0.0.0.0:8090 app.wsgi:app
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` | SMS via Twilio (paid, more reliable than carrier gateways) |
 | `ALERT_WATCHER_INTERVAL` | Auto-alert poll interval in seconds (default `120`; `off` disables the watcher) |
 | `ALERT_FROM_NAME` | Display name on alert emails (default "SF BWTF Alerts") |
+| `ALERTS_PASSPHRASE` | Passphrase gating the /alerts page + its write APIs (default `snowy plover` — override it if the repo is public, since the default is in source) |
+| `FLASK_SECRET_KEY` | Signs the "alerts unlocked" session cookie. Optional: without it a random key is generated per boot, so everyone re-enters the passphrase after each deploy. |
 
 Without the SMTP/Twilio creds the app runs fine — dispatches (manual *and* the
 automatic watcher's) are recorded as previews instead of sending. The watcher

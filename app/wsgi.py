@@ -32,12 +32,14 @@ retired. The per-request client construction + the ``_send_json`` /
 ``_read_request_data`` helpers below are what the alert/comparison mixins call
 on their handler — they previously lived on the stdlib ``UnifiedHandler``.
 """
+import hmac
 import io
 import json
 import os
+import secrets
 from urllib.parse import parse_qs, urlparse
 
-from flask import Flask, Response, request
+from flask import Flask, Response, redirect, render_template, request, session
 
 import features.forecast.page as forecast_page
 from features.alerts.page import AlertsRoutes
@@ -81,6 +83,52 @@ _COMPARE_GET = {
     "/api/compare": "send_api_compare",
     "/api/site-history": "send_api_site_history",
 }
+
+# ── Alerts access gate ────────────────────────────────────────────────────────
+# The alerts page manages live subscriptions and its simulator can send real
+# email, so it sits behind a shared passphrase. Besides the page itself, every
+# state-changing action and the endpoints that expose subscriber contact info
+# are gated; public-data reads (/api/status, /api/debug/sfpuc, …) stay open so
+# other pages and the landing footer keep working.
+ALERTS_PASSPHRASE = os.environ.get("ALERTS_PASSPHRASE", "snowy plover")
+_GATED_API_GET = {"/api/subscriptions", "/api/watcher"}
+
+
+def _normalize_passphrase(value: str) -> str:
+    return " ".join((value or "").split()).casefold()
+
+
+def _alerts_unlocked() -> bool:
+    return session.get("alerts_unlocked") is True
+
+
+def _gated_page(inner_view):
+    """Show the unlock page instead of the wrapped page until the session is unlocked."""
+    def view(**kwargs):
+        if _alerts_unlocked():
+            return inner_view(**kwargs)
+        return Response(render_template("alerts/unlock.html", error=None),
+                        status=200, content_type="text/html; charset=utf-8")
+    return view
+
+
+def _gated_api(inner_view):
+    """401-JSON instead of the wrapped API until the session is unlocked."""
+    def view(**kwargs):
+        if _alerts_unlocked():
+            return inner_view(**kwargs)
+        return Response(json.dumps({"ok": False, "error": "Locked — open /alerts and enter the passphrase."}),
+                        status=401, content_type="application/json")
+    return view
+
+
+def _unlock_submit():
+    supplied = _normalize_passphrase(request.form.get("passphrase", ""))
+    if hmac.compare_digest(supplied, _normalize_passphrase(ALERTS_PASSPHRASE)):
+        session["alerts_unlocked"] = True
+        return redirect("/alerts")
+    return Response(render_template("alerts/unlock.html", error="That's not it — check with the coordinator and try again."),
+                    status=401, content_type="text/html; charset=utf-8")
 
 
 class _RequestAdapter(AlertsRoutes, ComparisonRoutes):
@@ -184,6 +232,10 @@ def _bwtf_view():
 
 def create_app():
     app = Flask(__name__)
+    # Signs the session cookie that remembers an unlocked alerts gate. Without
+    # FLASK_SECRET_KEY set, a random key is generated per boot — everything
+    # works, but everyone re-enters the passphrase after each deploy/restart.
+    app.secret_key = os.environ.get("FLASK_SECRET_KEY") or secrets.token_hex(32)
 
     # Landing
     app.add_url_rule("/", "landing", _landing_view, methods=["GET"])
@@ -192,12 +244,16 @@ def create_app():
     # BWTF Sample Log
     app.add_url_rule("/bwtf", "bwtf", _bwtf_view, methods=["GET"])
 
-    # Alerts page + its GET/POST APIs
-    app.add_url_rule("/alerts", "alerts", _mixin_view("send_dashboard"), methods=["GET"])
+    # Alerts page (passphrase-gated) + its GET/POST APIs
+    app.add_url_rule("/alerts", "alerts", _gated_page(_mixin_view("send_dashboard")), methods=["GET"])
+    app.add_url_rule("/alerts/unlock", "alerts-unlock", _unlock_submit, methods=["POST"])
     for path, method_name in _ALERT_GET.items():
-        app.add_url_rule(path, f"alert-get:{path}", _mixin_view(method_name), methods=["GET"])
+        view = _mixin_view(method_name)
+        if path in _GATED_API_GET:
+            view = _gated_api(view)
+        app.add_url_rule(path, f"alert-get:{path}", view, methods=["GET"])
     for path, method_name in _ALERT_POST.items():
-        app.add_url_rule(path, f"alert-post:{path}", _mixin_view(method_name), methods=["POST"])
+        app.add_url_rule(path, f"alert-post:{path}", _gated_api(_mixin_view(method_name)), methods=["POST"])
 
     # Comparison page + its GET APIs
     for path, method_name in _COMPARE_GET.items():
