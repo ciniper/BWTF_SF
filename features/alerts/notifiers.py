@@ -37,6 +37,49 @@ SURFRIDER_LOGO_URL = "https://f.hubspotusercontent20.net/hubfs/20811975/SF-Horiz
 # thread forever — which froze the alert watcher in production.
 SMTP_TIMEOUT_SECONDS = int(os.environ.get("SMTP_TIMEOUT", "20"))
 
+# ── HTTP email transport (Brevo) ─────────────────────────────────────────────
+# Railway blocks outbound SMTP on every plan below Pro, so the preferred email
+# path is Brevo's HTTPS API (port 443 — never blocked). Set BREVO_API_KEY and
+# ALERT_FROM_EMAIL (a sender verified in the Brevo account). When the key is
+# present, EmailNotifier and EmailToSMSNotifier send over HTTP; otherwise they
+# fall back to SMTP.
+BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
+HTTP_EMAIL_TIMEOUT_SECONDS = int(os.environ.get("HTTP_EMAIL_TIMEOUT", "20"))
+
+
+def brevo_api_key() -> Optional[str]:
+    return os.environ.get("BREVO_API_KEY") or None
+
+
+def email_transport_configured() -> bool:
+    """True when some way to send email exists: Brevo HTTP API or SMTP creds."""
+    if brevo_api_key():
+        return True
+    return all(os.environ.get(key) for key in ("SMTP_USERNAME", "SMTP_PASSWORD"))
+
+
+def _send_via_brevo(from_email: str, to_email: str, subject: str,
+                    text_content: str, html_content: Optional[str] = None) -> None:
+    """Send one email through Brevo's transactional API. Raises on failure."""
+    if not from_email:
+        raise RuntimeError("No sender address — set ALERT_FROM_EMAIL to a Brevo-verified sender")
+    payload = {
+        "sender": {"name": os.environ.get("ALERT_FROM_NAME", "SF BWTF Alerts"), "email": from_email},
+        "to": [{"email": to_email}],
+        "subject": subject or "SF Beach Alert",
+        "textContent": text_content,
+    }
+    if html_content:
+        payload["htmlContent"] = html_content
+    response = requests.post(
+        BREVO_API_URL,
+        json=payload,
+        headers={"api-key": brevo_api_key(), "accept": "application/json"},
+        timeout=HTTP_EMAIL_TIMEOUT_SECONDS,
+    )
+    if response.status_code >= 300:
+        raise RuntimeError(f"Brevo API {response.status_code}: {response.text[:200]}")
+
 
 class Notifier(ABC):
     """Base class for notification handlers"""
@@ -227,22 +270,32 @@ https://sf.surfrider.org/programs/blue-water-task-force
         return html
 
     def send_message(self, subject: str, text_content: str, to_emails: list[str], html_content: str | None = None) -> bool:
-        """Send a custom email message to the provided recipients."""
-        if not all([self.smtp_server, self.username, self.password, self.from_email, to_emails]):
-            print("Email notifier not configured. Set SMTP_* and ALERT_* environment variables.")
+        """Send a custom email message to the provided recipients.
+
+        Uses the Brevo HTTP API when BREVO_API_KEY is set (works on hosts that
+        block SMTP); otherwise falls back to SMTP.
+        """
+        use_brevo = bool(brevo_api_key())
+        if not to_emails:
+            return False
+        if not use_brevo and not all([self.smtp_server, self.username, self.password, self.from_email]):
+            print("Email notifier not configured. Set BREVO_API_KEY or SMTP_* environment variables.")
             return False
 
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = subject
-        msg["From"] = self.from_email
-        msg["To"] = ", ".join(to_emails)
-        msg.attach(MIMEText(text_content, "plain"))
-        if html_content:
-            msg.attach(MIMEText(html_content, "html"))
-
         try:
-            self._send_message(msg, to_emails)
-            print(f"Email sent to {len(to_emails)} recipient(s)")
+            if use_brevo:
+                for to_email in to_emails:
+                    _send_via_brevo(self.from_email, to_email, subject, text_content, html_content)
+            else:
+                msg = MIMEMultipart("alternative")
+                msg["Subject"] = subject
+                msg["From"] = self.from_email
+                msg["To"] = ", ".join(to_emails)
+                msg.attach(MIMEText(text_content, "plain"))
+                if html_content:
+                    msg.attach(MIMEText(html_content, "html"))
+                self._send_message(msg, to_emails)
+            print(f"Email sent to {len(to_emails)} recipient(s) via {'brevo' if use_brevo else 'smtp'}")
             self.last_error = None
             return True
         except Exception as e:
@@ -513,8 +566,9 @@ class EmailToSMSNotifier(Notifier):
         self.smtp_port = smtp_port or int(os.environ.get("SMTP_PORT", "587"))
         self.username = username or os.environ.get("SMTP_USERNAME")
         self.password = password or os.environ.get("SMTP_PASSWORD")
-        self.from_email = from_email or os.environ.get("SMTP_USERNAME")  # Usually same as username for Gmail
-        
+        self.from_email = from_email or os.environ.get("ALERT_FROM_EMAIL") or os.environ.get("SMTP_USERNAME")
+        self.last_error: Optional[str] = None  # set when send_message returns False
+
         # SMS gateway emails (e.g., "9166226075@vtext.com")
         to_env = os.environ.get("SMS_GATEWAY_EMAILS", "")
         self.to_sms_emails = to_sms_emails or [e.strip() for e in to_env.split(",") if e.strip()]
@@ -579,9 +633,12 @@ class EmailToSMSNotifier(Notifier):
 
     def send_message(self, message: str) -> bool:
         """Send a custom plain-text message to the configured gateway recipients."""
-        if not all([self.smtp_server, self.username, self.password, self.to_sms_emails]):
+        use_brevo = bool(brevo_api_key())
+        if not self.to_sms_emails:
+            return False
+        if not use_brevo and not all([self.smtp_server, self.username, self.password]):
             print("Email-to-SMS notifier not configured.")
-            print("Set SMTP_USERNAME, SMTP_PASSWORD, and SMS_GATEWAY_EMAILS environment variables.")
+            print("Set BREVO_API_KEY or SMTP_USERNAME/SMTP_PASSWORD environment variables.")
             return False
 
         success = True
@@ -589,13 +646,19 @@ class EmailToSMSNotifier(Notifier):
             try:
                 self._send_to_email(sms_email, message)
                 print(f"SMS sent to {sms_email}")
+                self.last_error = None
             except Exception as e:
                 print(f"Failed to send SMS to {sms_email}: {e}")
+                self.last_error = f"{type(e).__name__}: {e}"
                 success = False
 
         return success
 
     def _send_to_email(self, sms_email: str, message: str) -> None:
+        if brevo_api_key():
+            # Carrier gateways render the subject inline, so keep it blank-ish.
+            _send_via_brevo(self.from_email, sms_email, " ", message)
+            return
         msg = MIMEText(message)
         msg["From"] = self.from_email
         msg["To"] = sms_email

@@ -18,6 +18,7 @@ from features.alerts.cso_alerts import (
     dispatch_subscription_alerts,
     get_cso_eligible_stations,
 )
+from features.alerts.notifiers import email_transport_configured
 
 CARRIER_OPTIONS = [
     ("verizon", "Verizon"),
@@ -273,10 +274,7 @@ class AlertsRoutes:
                     and os.environ.get("TWILIO_AUTH_TOKEN")
                     and os.environ.get("TWILIO_FROM_NUMBER")
                 ),
-                "smtp_configured": bool(
-                    os.environ.get("SMTP_USERNAME")
-                    and os.environ.get("SMTP_PASSWORD")
-                ),
+                "smtp_configured": email_transport_configured(),
             })
         except Exception as e:
             self._send_json({"ok": False, "error": str(e)}, status=500)

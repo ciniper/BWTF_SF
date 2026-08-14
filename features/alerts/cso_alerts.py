@@ -13,7 +13,12 @@ from pathlib import Path
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from features.alerts.notifiers import EmailNotifier, EmailToSMSNotifier, TwilioSMSNotifier
+from features.alerts.notifiers import (
+    EmailNotifier,
+    EmailToSMSNotifier,
+    TwilioSMSNotifier,
+    email_transport_configured,
+)
 from shared.sfpuc_api import SFPUCStation
 from features.alerts.subscriptions import SiteSubscription
 
@@ -156,14 +161,9 @@ def dispatch_subscription_alerts(
     simulated_station_id_set = set(simulated_station_ids)
 
     results = []
-    smtp_email_configured = all(
-        os.environ.get(key)
-        for key in ("SMTP_USERNAME", "SMTP_PASSWORD")
-    )
-    smtp_gateway_configured = all(
-        os.environ.get(key)
-        for key in ("SMTP_USERNAME", "SMTP_PASSWORD")
-    )
+    # Brevo HTTP API or SMTP creds — either enables the email-based channels.
+    smtp_email_configured = email_transport_configured()
+    smtp_gateway_configured = email_transport_configured()
     twilio_configured = all(
         os.environ.get(key)
         for key in ("TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_FROM_NUMBER")

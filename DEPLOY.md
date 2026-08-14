@@ -47,9 +47,11 @@ gunicorn -w 1 --threads 8 -b 0.0.0.0:8090 app.wsgi:app
 
 | Var | Purpose |
 |-----|---------|
-| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` | SMS dispatch |
-| `SMTP_USERNAME`, `SMTP_PASSWORD` | Email dispatch |
+| `BREVO_API_KEY`, `ALERT_FROM_EMAIL` | **Preferred email path** — Brevo's HTTPS API (port 443, works on every host). `ALERT_FROM_EMAIL` must be a sender verified in the Brevo account. Also powers the free email-to-SMS gateway. |
+| `SMTP_USERNAME`, `SMTP_PASSWORD` | Email via SMTP — fallback only. **Railway blocks outbound SMTP on all plans below Pro**, so use Brevo there. |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` | SMS via Twilio (paid, more reliable than carrier gateways) |
 | `ALERT_WATCHER_INTERVAL` | Auto-alert poll interval in seconds (default `120`; `off` disables the watcher) |
+| `ALERT_FROM_NAME` | Display name on alert emails (default "SF BWTF Alerts") |
 
 Without the SMTP/Twilio creds the app runs fine — dispatches (manual *and* the
 automatic watcher's) are recorded as previews instead of sending. The watcher

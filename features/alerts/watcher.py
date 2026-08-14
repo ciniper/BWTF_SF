@@ -35,7 +35,12 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from features.alerts.cso_alerts import SimulatedCSOStore, apply_simulated_cso
-from features.alerts.notifiers import EmailNotifier, EmailToSMSNotifier, TwilioSMSNotifier
+from features.alerts.notifiers import (
+    EmailNotifier,
+    EmailToSMSNotifier,
+    TwilioSMSNotifier,
+    email_transport_configured,
+)
 from features.alerts.subscriptions import SubscriptionStore
 from shared.paths import DATA_DIR
 from shared.sfpuc_api import SFPUCRealTimeAPI
@@ -167,7 +172,7 @@ def dispatch_transition_alerts(subscriptions, transitions: list[dict]) -> list[d
     whichever the subscriber configured. Falls back to preview when the
     sending credentials aren't set (recorded, not raised)."""
     by_station_id = {t["station"].station_id: t for t in transitions}
-    smtp_configured = all(os.environ.get(k) for k in ("SMTP_USERNAME", "SMTP_PASSWORD"))
+    smtp_configured = email_transport_configured()  # Brevo HTTP API or SMTP creds
     twilio_configured = all(os.environ.get(k) for k in ("TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_FROM_NUMBER"))
 
     results = []
@@ -196,8 +201,12 @@ def dispatch_transition_alerts(subscriptions, transitions: list[dict]) -> list[d
             if sub.carrier and smtp_configured:
                 try:
                     gateway = EmailToSMSNotifier.phone_to_gateway(sub.phone_number, sub.carrier)
-                    ok = EmailToSMSNotifier(to_sms_emails=[gateway]).send_message(sms_text)
-                    deliveries.append({"channel": "sms", "delivery": "email_to_sms" if ok else "failed"})
+                    gw_notifier = EmailToSMSNotifier(to_sms_emails=[gateway])
+                    ok = gw_notifier.send_message(sms_text)
+                    entry = {"channel": "sms", "delivery": "email_to_sms" if ok else "failed"}
+                    if not ok and gw_notifier.last_error:
+                        entry["error"] = gw_notifier.last_error
+                    deliveries.append(entry)
                 except Exception as exc:
                     deliveries.append({"channel": "sms", "delivery": "failed", "error": str(exc)})
             elif twilio_configured:

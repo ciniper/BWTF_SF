@@ -78,7 +78,7 @@ This roadmap has four parts:
 - [ ] Unsubscribe/edit controls for saved phone subscriptions. *(carried from prior TODO)*
 - [ ] Workshop alert copy across SMS / email / dashboard so it reads naturally and explains preview/failure states in plain English. *(carried from prior TODO)*
 - [ ] Keep a provider abstraction so Twilio / gateway / future providers swap without touching dispatch logic.
-- [ ] **Outgrow Gmail SMTP when the list grows** — the sending account is a plain Gmail, capped at ~500 recipients/day (and email-to-SMS texts count against it). If the subscriber list gets big, switch to a transactional email provider (Resend / Brevo / SES etc.): same `SMTP_*` env vars, different values, plus real deliverability (SPF/DKIM) and send logs.
+- [x] **Shipped: Brevo HTTP email transport.** Railway blocks outbound SMTP on every plan below Pro (we measured the silent packet drop in prod), so email now sends via Brevo's HTTPS API when `BREVO_API_KEY` + `ALERT_FROM_EMAIL` are set — SMTP remains the fallback. The email-to-SMS gateway routes over Brevo too. Free tier: 300 emails/day; upgrade the Brevo plan (or swap providers at the same seam) if the list outgrows that.
 
 ## Additional suggestions
 
