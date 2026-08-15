@@ -19,6 +19,7 @@ from features.alerts.notifiers import (
     TwilioSMSNotifier,
     email_transport_configured,
 )
+from shared import supabase as sb
 from shared.sfpuc_api import SFPUCStation
 from features.alerts.subscriptions import SiteSubscription
 
@@ -31,11 +32,21 @@ SURFRIDER_LOGO_URL = "https://f.hubspotusercontent20.net/hubfs/20811975/SF-Horiz
 
 
 class SimulatedCSOStore:
+    """Simulated-CSO station ids. Supabase-backed (``simulated_cso`` table) so
+    the in-process watcher AND the Phase 2 pg_cron shadow path see the same
+    simulations; falls back to the legacy JSON file when Supabase env is
+    absent. An explicit ``path`` forces JSON mode (tests)."""
+
     def __init__(self, path: Path | None = None):
+        self._remote = path is None and sb.is_configured()
         self.path = path or SIMULATED_CSO_PATH
-        self.path.parent.mkdir(parents=True, exist_ok=True)
+        if not self._remote:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
 
     def get_station_ids(self) -> list[str]:
+        if self._remote:
+            rows = sb.select("simulated_cso", {"select": "station_id"})
+            return sorted({row["station_id"] for row in rows})
         if not self.path.exists():
             return []
         try:
@@ -46,6 +57,11 @@ class SimulatedCSOStore:
 
     def set_station_ids(self, station_ids: list[str]) -> list[str]:
         normalized = sorted({station_id for station_id in station_ids if station_id})
+        if self._remote:
+            sb.delete("simulated_cso", {"station_id": "neq."})  # all rows
+            if normalized:
+                sb.insert("simulated_cso", [{"station_id": sid} for sid in normalized])
+            return normalized
         payload = {
             "station_ids": normalized,
             "updated_at": datetime.utcnow().isoformat(),

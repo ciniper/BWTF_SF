@@ -58,6 +58,22 @@ instance with `.env` shares the production database — set
 `ALERT_WATCHER_INTERVAL=off` locally while developing so a second watcher
 doesn't write state/logs alongside prod's.
 
+## Phase 2: pg shadow watcher (pg_cron + pg_net)
+
+`db/migrations/002_phase2_shadow_watcher.sql` runs the poll→detect loop inside
+Postgres every minute in **shadow mode** — it logs would-send decisions to
+`alert_log` (`source='pg_shadow'`) and sends nothing; the in-process watcher
+keeps sending during the parallel run. Controlled by `watcher_config.mode`
+(`shadow` | `live` | `off`). The dead-man's switch pings
+`watcher_config.healthchecks_ping_url` only after a fresh SFPUC payload is
+parsed and processed, so a dead cron, broken feed, or schema change all stop
+the pings and healthchecks.io emails.
+
+Scripts: `db/scripts/setup_phase2.py` (seed ping URL from `.env`
+`HEALTHCHECKS_PING_URL` + verify ticking) · `test_phase2_shadow.py`
+(behavioral suite + live thread-vs-pg parity) · `compare_shadow.py`
+(parallel-run log diff; run before the flip).
+
 ## Optional env vars (only to actually send alerts)
 
 | Var | Purpose |
