@@ -79,7 +79,16 @@ alter table public.subscribers   enable row level security;
 alter table public.watcher_state enable row level security;
 alter table public.alert_log     enable row level security;
 -- No policies created: anon/authenticated are denied by RLS even before grants.
--- Revoke the default grants too (defense in depth).
+-- Revoke any default grants too (defense in depth; a no-op on new-model
+-- projects created with "Automatically expose new tables" unchecked).
 revoke all on public.subscribers,  public.watcher_state, public.alert_log
   from anon, authenticated;
 revoke usage on all sequences in schema public from anon, authenticated;
+
+-- Under the 2026 opt-in exposure model, nothing is granted automatically —
+-- including to the service role — so grant it explicitly. service_role also
+-- bypasses RLS, making it the only identity that can touch these tables.
+grant usage on schema public to service_role;
+grant all on public.subscribers, public.watcher_state, public.alert_log
+  to service_role;
+grant usage, select on all sequences in schema public to service_role;
