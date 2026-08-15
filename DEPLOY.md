@@ -43,6 +43,21 @@ python -m app.wsgi              # dev server; reads $PORT (default 8080)
 gunicorn -w 1 --threads 8 -b 0.0.0.0:8090 app.wsgi:app
 ```
 
+## Supabase (subscribers + alert state + delivery log)
+
+| Var | Purpose |
+|-----|---------|
+| `SUPABASE_URL` | The dedicated BWTF Supabase project URL |
+| `SUPABASE_SERVICE_KEY` | Its service/secret key (server-side only; bypasses RLS) |
+
+With these set, subscribers, watcher state, and the alert delivery log live in
+Supabase (`db/migrations/`) and **survive redeploys**; without them the app
+falls back to the legacy `data/` JSON files (fine for a bare dev checkout).
+Local dev: put both in `.env` at the repo root (gitignored). ⚠️ A local
+instance with `.env` shares the production database — set
+`ALERT_WATCHER_INTERVAL=off` locally while developing so a second watcher
+doesn't write state/logs alongside prod's.
+
 ## Optional env vars (only to actually send alerts)
 
 | Var | Purpose |

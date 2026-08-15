@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
-"""Persistence for site alert subscriptions."""
+"""Persistence for site alert subscriptions.
+
+Primary backend is Supabase (``subscribers`` table — survives redeploys);
+when Supabase env isn't configured, falls back to the legacy ``data/`` JSON
+file so a bare dev checkout still works. Passing an explicit ``path`` forces
+the JSON backend (used by tests).
+
+Deletes are soft (``active=false``) so the row history survives; upserting a
+matching email/phone reactivates the row.
+"""
 
 from __future__ import annotations
 
@@ -8,6 +17,7 @@ from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
 
+from shared import supabase as sb
 from shared.paths import DATA_DIR
 
 SUBSCRIPTIONS_PATH = DATA_DIR / "subscriptions.json"
@@ -43,8 +53,34 @@ def normalize_phone_number(phone_number: str) -> str:
 
 class SubscriptionStore:
     def __init__(self, path: Path | None = None):
+        # Explicit path -> JSON backend (tests); otherwise Supabase when configured.
+        self._remote = path is None and sb.is_configured()
         self.path = path or SUBSCRIPTIONS_PATH
-        self.path.parent.mkdir(parents=True, exist_ok=True)
+        if not self._remote:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+
+    @staticmethod
+    def _from_row(row: dict) -> SiteSubscription:
+        return SiteSubscription(
+            email=row.get("email", ""),
+            phone_number=row.get("phone_number", ""),
+            carrier=row.get("carrier", ""),
+            station_ids=sorted(set(row.get("station_ids", []))),
+            created_at=row.get("created_at", ""),
+            updated_at=row.get("updated_at", ""),
+        )
+
+    def _remote_candidates(self, email: str, phone: str) -> list[dict]:
+        """Rows matching the email OR the phone (regardless of active flag),
+        mirroring the JSON upsert's match rule."""
+        rows: dict[str, dict] = {}
+        if email:
+            for row in sb.select("subscribers", {"select": "*", "email": f"eq.{email}"}):
+                rows[row["id"]] = row
+        if phone:
+            for row in sb.select("subscribers", {"select": "*", "phone_number": f"eq.{phone}"}):
+                rows[row["id"]] = row
+        return list(rows.values())
 
     def _load_raw(self) -> list[dict]:
         if not self.path.exists():
@@ -58,18 +94,11 @@ class SubscriptionStore:
         self.path.write_text(json.dumps(payload, indent=2))
 
     def list_subscriptions(self) -> list[SiteSubscription]:
-        rows = self._load_raw()
-        subscriptions = [
-            SiteSubscription(
-                email=row.get("email", ""),
-                phone_number=row.get("phone_number", ""),
-                carrier=row.get("carrier", ""),
-                station_ids=sorted(set(row.get("station_ids", []))),
-                created_at=row.get("created_at", ""),
-                updated_at=row.get("updated_at", ""),
-            )
-            for row in rows
-        ]
+        if self._remote:
+            rows = sb.select("subscribers", {"select": "*", "active": "eq.true"})
+        else:
+            rows = self._load_raw()
+        subscriptions = [self._from_row(row) for row in rows]
         return sorted(subscriptions, key=lambda item: (item.email or item.phone_number, item.phone_number))
 
     def upsert_subscription(
@@ -87,6 +116,24 @@ class SubscriptionStore:
         normalized_station_ids = sorted({station_id for station_id in station_ids if station_id})
         if not normalized_station_ids:
             raise ValueError("Select at least one site.")
+
+        if self._remote:
+            candidates = self._remote_candidates(normalized_email, normalized_phone)
+            patch = {
+                "email": normalized_email,
+                "phone_number": normalized_phone,
+                "carrier": normalized_carrier,
+                "station_ids": normalized_station_ids,
+                "active": True,
+            }
+            if candidates:
+                updated = []
+                for row in candidates:
+                    updated.extend(sb.update("subscribers", {"id": f"eq.{row['id']}"}, patch))
+                row = updated[0]
+            else:
+                row = sb.insert("subscribers", [patch], returning=True)[0]
+            return self._from_row(row)
 
         now = datetime.utcnow().isoformat()
         rows = self._load_raw()
@@ -131,6 +178,22 @@ class SubscriptionStore:
         normalized_phone = normalize_phone_number(phone_number) if phone_number.strip() else ""
         if not normalized_email and not normalized_phone:
             raise ValueError("Provide an email or phone number to delete a subscription.")
+
+        if self._remote:
+            deactivated = 0
+            if normalized_email:
+                deactivated += len(sb.update(
+                    "subscribers",
+                    {"email": f"eq.{normalized_email}", "active": "eq.true"},
+                    {"active": False},
+                ))
+            if normalized_phone:
+                deactivated += len(sb.update(
+                    "subscribers",
+                    {"phone_number": f"eq.{normalized_phone}", "active": "eq.true"},
+                    {"active": False},
+                ))
+            return deactivated > 0
 
         rows = self._load_raw()
         filtered = []

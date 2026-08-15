@@ -34,6 +34,7 @@ from pathlib import Path
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
+from features.alerts.alert_log import record_dispatch
 from features.alerts.cso_alerts import SimulatedCSOStore, apply_simulated_cso
 from features.alerts.notifiers import (
     EmailNotifier,
@@ -42,6 +43,7 @@ from features.alerts.notifiers import (
     email_transport_configured,
 )
 from features.alerts.subscriptions import SubscriptionStore
+from shared import supabase as sb
 from shared.paths import DATA_DIR
 from shared.sfpuc_api import SFPUCRealTimeAPI
 
@@ -81,6 +83,10 @@ def classify(station) -> str:
 
 
 def load_state() -> dict:
+    """Last observed status per station — Supabase when configured, else JSON."""
+    if sb.is_configured():
+        rows = sb.select("watcher_state", {"select": "station_id,status"})
+        return {row["station_id"]: row["status"] for row in rows}
     if not STATE_PATH.exists():
         return {}
     try:
@@ -90,7 +96,15 @@ def load_state() -> dict:
     return payload.get("statuses", {}) or {}
 
 
-def save_state(statuses: dict) -> None:
+def save_state(statuses: dict, names: dict | None = None) -> None:
+    if sb.is_configured():
+        names = names or {}
+        sb.upsert("watcher_state", [
+            {"station_id": station_id, "status": status,
+             "station_name": names.get(station_id, "")}
+            for station_id, status in statuses.items()
+        ], on_conflict="station_id")
+        return
     STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
     STATE_PATH.write_text(json.dumps({
         "statuses": statuses,
@@ -264,8 +278,21 @@ def check_and_dispatch(api=None) -> dict:
     if transitions:
         subscriptions = SubscriptionStore().list_subscriptions()
         info["dispatch_results"] = dispatch_transition_alerts(subscriptions, transitions)
+        record_dispatch(
+            source="watcher",
+            event_type="cso" if any(t["to"] == "cso" for t in transitions) else "posted",
+            station_ids=[t["station"].station_id for t in transitions],
+            station_names=[t["station"].station_name for t in transitions],
+            recipient_count=len(info["dispatch_results"]),
+            channel="mixed",
+            simulated=any(t.get("simulated") for t in transitions),
+            results=info["dispatch_results"],
+        )
 
-    save_state({station.station_id: classify(station) for station in stations})
+    save_state(
+        {station.station_id: classify(station) for station in stations},
+        names={station.station_id: station.station_name for station in stations},
+    )
 
     info["transitions"] = [{
         "station_id": t["station"].station_id,

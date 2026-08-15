@@ -265,6 +265,19 @@ class AlertsRoutes:
                 simulated_station_ids=simulated_station_ids,
                 channel=channel,
             )
+            from features.alerts.alert_log import record_dispatch
+            affected = sorted({sid for r in results for sid in r["station_ids"]})
+            affected_names = sorted({n for r in results for n in r["station_names"]})
+            record_dispatch(
+                source="manual",
+                event_type="manual_dispatch",
+                station_ids=affected,
+                station_names=affected_names,
+                recipient_count=len(results),
+                channel=channel,
+                simulated=any(r.get("simulated") for r in results),
+                results=results,
+            )
             self._send_json({
                 "ok": True,
                 "channel": channel,
