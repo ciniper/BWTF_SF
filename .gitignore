@@ -16,3 +16,6 @@ features/forecast/data/raw/
 features/forecast/data/processed/
 !features/forecast/data/raw/.gitkeep
 !features/forecast/data/processed/.gitkeep
+
+# Local secrets (Supabase service key etc.) — never commit
+.env
