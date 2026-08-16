@@ -52,7 +52,12 @@ class SupabaseError(RuntimeError):
 
 
 def _base_url() -> str:
-    return os.environ.get("SUPABASE_URL", "").rstrip("/")
+    """The project origin. Tolerates the dashboard's Data API display value,
+    which appends /rest/v1/ — we add that path ourselves per request."""
+    url = os.environ.get("SUPABASE_URL", "").rstrip("/")
+    if url.endswith("/rest/v1"):
+        url = url[: -len("/rest/v1")]
+    return url
 
 
 def _service_key() -> str:
