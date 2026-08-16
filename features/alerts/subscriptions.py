@@ -82,6 +82,31 @@ class SubscriptionStore:
                 rows[row["id"]] = row
         return list(rows.values())
 
+    def _mirror_to_json(self) -> None:
+        """Warm-backup shadow: after every remote write, snapshot the active
+        subscriber list to the legacy JSON file (on the Railway volume).
+
+        Required for the free-tier period (decision 2026-08-15): the free plan
+        has no database backups and subscribers are PII, so the JSON file
+        stays a restorable copy — and the JSON fallback path can read it
+        as-is. Best-effort by design: a mirror failure must never break a
+        subscription write. Retire when BWTF's project moves to the Pro org.
+        """
+        try:
+            rows = sb.select("subscribers", {"select": "*", "active": "eq.true"})
+            snapshot = [{
+                "email": row.get("email", ""),
+                "phone_number": row.get("phone_number", ""),
+                "carrier": row.get("carrier", ""),
+                "station_ids": sorted(set(row.get("station_ids", []))),
+                "created_at": row.get("created_at", ""),
+                "updated_at": row.get("updated_at", ""),
+            } for row in rows]
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            self.path.write_text(json.dumps(snapshot, indent=2))
+        except Exception as exc:
+            print(f"[subscriptions] JSON mirror failed (non-fatal): {exc}")
+
     def _load_raw(self) -> list[dict]:
         if not self.path.exists():
             return []
@@ -133,6 +158,7 @@ class SubscriptionStore:
                 row = updated[0]
             else:
                 row = sb.insert("subscribers", [patch], returning=True)[0]
+            self._mirror_to_json()
             return self._from_row(row)
 
         now = datetime.utcnow().isoformat()
@@ -193,6 +219,8 @@ class SubscriptionStore:
                     {"phone_number": f"eq.{normalized_phone}", "active": "eq.true"},
                     {"active": False},
                 ))
+            if deactivated:
+                self._mirror_to_json()
             return deactivated > 0
 
         rows = self._load_raw()
