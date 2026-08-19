@@ -61,6 +61,7 @@ _EVENT_ADVICE = {
 _started = False
 _run_lock = threading.Lock()
 _last_run: dict = {
+    "mode": os.environ.get("ALERT_WATCHER_MODE", "send").strip().lower() or "send",
     "enabled": False,
     "interval_seconds": None,
     "poll_count": 0,
@@ -181,10 +182,15 @@ def _format_messages(matching: list[dict], simulated: bool) -> tuple[str, str, s
     return subject, sms_text, text_body, html_body
 
 
-def dispatch_transition_alerts(subscriptions, transitions: list[dict]) -> list[dict]:
+def dispatch_transition_alerts(subscriptions, transitions: list[dict],
+                               dry_run: bool = False) -> list[dict]:
     """Alert each subscriber whose stations transitioned — email and SMS both,
     whichever the subscriber configured. Falls back to preview when the
-    sending credentials aren't set (recorded, not raised)."""
+    sending credentials aren't set (recorded, not raised).
+
+    ``dry_run=True`` (observer mode): identical matching and message build,
+    but nothing is sent — deliveries are recorded as 'would_send'. Used while
+    the pg path is the live sender and this thread is the reference shadow."""
     by_station_id = {t["station"].station_id: t for t in transitions}
     smtp_configured = email_transport_configured()  # Brevo HTTP API or SMTP creds
     twilio_configured = all(os.environ.get(k) for k in ("TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_FROM_NUMBER"))
@@ -196,6 +202,23 @@ def dispatch_transition_alerts(subscriptions, transitions: list[dict]) -> list[d
             continue
         simulated = any(t.get("simulated") for t in matching)
         subject, sms_text, text_body, html_body = _format_messages(matching, simulated)
+
+        if dry_run:
+            deliveries = []
+            if sub.email:
+                deliveries.append({"channel": "email", "delivery": "would_send"})
+            if sub.phone_number:
+                deliveries.append({"channel": "sms", "delivery": "would_send"})
+            results.append({
+                "email": sub.email,
+                "phone_number": sub.phone_number,
+                "station_names": [t["station"].station_name for t in matching],
+                "events": [{"station": t["station"].station_name, "from": t["from"], "to": t["to"]} for t in matching],
+                "message": sms_text,
+                "simulated": simulated,
+                "deliveries": deliveries,
+            })
+            continue
 
         deliveries = []
         if sub.email:
@@ -276,15 +299,18 @@ def check_and_dispatch(api=None) -> dict:
             t["simulated"] = t["station"].station_id in simulated_set
 
     if transitions:
+        # observer mode: the pg path is the live sender; this thread detects
+        # and logs identical would-send decisions as the reference shadow.
+        observe = os.environ.get("ALERT_WATCHER_MODE", "send").strip().lower() == "observe"
         subscriptions = SubscriptionStore().list_subscriptions()
-        info["dispatch_results"] = dispatch_transition_alerts(subscriptions, transitions)
+        info["dispatch_results"] = dispatch_transition_alerts(subscriptions, transitions, dry_run=observe)
         record_dispatch(
-            source="watcher",
+            source="thread_shadow" if observe else "watcher",
             event_type="cso" if any(t["to"] == "cso" for t in transitions) else "posted",
             station_ids=[t["station"].station_id for t in transitions],
             station_names=[t["station"].station_name for t in transitions],
             recipient_count=len(info["dispatch_results"]),
-            channel="mixed",
+            channel="shadow" if observe else "mixed",
             simulated=any(t.get("simulated") for t in transitions),
             results=info["dispatch_results"],
         )

@@ -72,7 +72,20 @@ the pings and healthchecks.io emails.
 Scripts: `db/scripts/setup_phase2.py` (seed ping URL from `.env`
 `HEALTHCHECKS_PING_URL` + verify ticking) · `test_phase2_shadow.py`
 (behavioral suite + live thread-vs-pg parity) · `compare_shadow.py`
-(parallel-run log diff; run before the flip).
+(parallel-run log diff — handles both eras) · `setup_live_flip.py`
+(seed Brevo config for pg dispatch + flip-readiness checklist).
+
+**Role reversal (pg sends, thread shadows)** — after `004`:
+`watcher_config` gains `brevo_api_key`/`alert_from_email` (seeded from
+`.env` by `setup_live_flip.py`). Flip order: set Railway env
+`ALERT_WATCHER_MODE=observe` (thread detects + logs `thread_shadow`,
+sends nothing, keeps its 2-min reads as the free-tier keep-alive) →
+redeploy → set `watcher_config.mode='live'` → pg dispatches via Brevo
+(`source='pg_live'`; missing config logs `channel='config_missing'`
+rather than dropping the event). Rollback = `mode='shadow'` + remove
+the env var. An hourly `bwtf-keepalive` cron pings
+`watcher_config.keepalive_url` when set (only needed if the observer
+thread ever retires).
 
 ## Optional env vars (only to actually send alerts)
 
