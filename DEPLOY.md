@@ -50,9 +50,10 @@ gunicorn -w 1 --threads 8 -b 0.0.0.0:8090 app.wsgi:app
 | `SUPABASE_URL` | The dedicated BWTF Supabase project URL |
 | `SUPABASE_SERVICE_KEY` | Its service/secret key (server-side only; bypasses RLS) |
 
-With these set, subscribers, watcher state, and the alert delivery log live in
-Supabase (`db/migrations/`) and **survive redeploys**; without them the app
-falls back to the legacy `data/` JSON files (fine for a bare dev checkout).
+With these set, subscribers, watcher state, the alert delivery log, and the
+forecast snapshot cache live in Supabase (`db/migrations/`) and **survive
+redeploys**; without them the app falls back to the legacy `data/` JSON files
+and in-memory forecasts (fine for a bare dev checkout).
 Local dev: put both in `.env` at the repo root (gitignored). ⚠️ A local
 instance with `.env` shares the production database — set
 `ALERT_WATCHER_INTERVAL=off` locally while developing so a second watcher
@@ -87,6 +88,19 @@ the env var. An hourly `bwtf-keepalive` cron pings
 `watcher_config.keepalive_url` when set (only needed if the observer
 thread ever retires).
 
+## Forecast: compute-on-visit (no thread, serverless-ready)
+
+After `db/migrations/005_forecast_predictions.sql`, predictions live in a
+single-row Supabase cache. `/forecast/api/data` serves the stored snapshot
+while it's **younger than 30 min**; the visit that finds it stale recomputes
+(~5–20 s) and stores. `refresh_started_at` is a claim guard so concurrent
+visitors never double-compute — losers serve the stale snapshot with a
+`refreshing` flag. A failed refresh never overwrites a good snapshot. There is
+no background refresh thread anymore, which is what makes the app fit
+serverless hosts (Vercel). If scheduled freshness is ever wanted, point a
+pg_cron `net.http_get` at `/forecast/api/refresh` — no new entities.
+Verify: `venv/bin/python db/scripts/test_forecast_cache.py` (needs 005 applied).
+
 ## Optional env vars (only to actually send alerts)
 
 | Var | Purpose |
@@ -107,8 +121,9 @@ PaaS — each deploy silently re-baselines, never re-alerts standing events).
 
 ## Gotchas
 
-- **One worker on purpose** (`-w 1`): the forecast engine runs a single background
-  refresh thread; multiple workers would each spawn their own.
+- **One worker on purpose** (`-w 1`): the alert watcher runs as a single
+  background thread; multiple workers would each spawn their own. (The forecast
+  refresh thread is gone — see compute-on-visit above.)
 - **Memory**: the forecast feature (pandas + sklearn + models) is the heavy part.
   Railway's Hobby plan handles it; a 503 on `/forecast` at boot usually means OOM.
 - **Build fails on sklearn?** Confirm `.python-version` is being respected — a
@@ -116,5 +131,6 @@ PaaS — each deploy silently re-baselines, never re-alerts standing events).
 
 ## Verify after deploy
 
-Hit `/`, `/alerts`, `/compare`, `/forecast`. The forecast page takes a few
-seconds after boot to populate (the refresh thread runs once on startup).
+Hit `/`, `/alerts`, `/compare`, `/forecast`. The first `/forecast` visit after
+a deploy (or after 30 quiet minutes) takes ~5–20 s while that visit recomputes;
+subsequent visits serve the stored snapshot instantly.

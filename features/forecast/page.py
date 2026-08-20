@@ -9,6 +9,13 @@ The ML engine (pandas/scikit-learn + the pickled models) is imported lazily so
 the rest of the app runs even when those heavy deps aren't installed; the
 forecast page then degrades to an "unavailable" notice.
 
+Predictions are compute-on-visit: the latest snapshot lives in Supabase
+(``forecast_predictions``, single row) and ``/forecast/api/data`` serves it
+directly while it's fresh (<30 min). A stale/missing snapshot is recomputed by
+the visit that finds it stale — ``refresh_started_at`` is a claim guard so
+concurrent visitors never double-compute. There is no background refresh
+thread anymore, which is what lets this run on serverless hosts.
+
 Each route handler returns ``(status, content_type, body_bytes)`` — the simple
 response contract ``app/wsgi.py`` dispatches.
 """
@@ -16,11 +23,13 @@ from __future__ import annotations
 
 import json
 import sys
-import threading
-from datetime import datetime
+import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from flask import render_template
+
+from shared import supabase as sb
 
 # Treat this directory as the forecaster's project root (preserves its
 # `from src.models...` imports and __file__-relative data/config paths).
@@ -30,7 +39,6 @@ if str(_FORECAST_ROOT) not in sys.path:
 
 _engine = None            # the imported live_dashboard module (holds LIVE + HTML_TEMPLATE)
 _engine_error = None      # human-readable reason the engine couldn't load
-_refresh_started = False
 
 
 def _load_engine():
@@ -45,24 +53,113 @@ def _load_engine():
         _engine_error = f"{type(exc).__name__}: {exc}"
 
 
-def start_refresh(interval_seconds: int = 1800):
-    """Start the engine's background refresh loop once (called at server startup)."""
-    global _refresh_started
-    if _refresh_started:
-        return
-    _load_engine()
-    if _engine is None:
-        return
-    thread = threading.Thread(
-        target=_engine.refresh_loop, args=(_engine.LIVE, interval_seconds), daemon=True
-    )
-    thread.start()
-    _refresh_started = True
-
-
 def is_available() -> bool:
     _load_engine()
     return _engine is not None
+
+
+# ─── Supabase-cached predictions (compute-on-visit) ──────────────────────────
+
+_TABLE = "forecast_predictions"
+FRESH_SECONDS = 30 * 60   # a snapshot younger than this is served as-is
+GUARD_SECONDS = 3 * 60    # a refresh claim older than this is abandoned (crashed worker)
+_COLD_WAIT_SECONDS = 24   # how long a guard-losing visitor waits when there's NO snapshot yet
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _iso(dt: datetime) -> str:
+    return dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _parse_ts(value):
+    if not value:
+        return None
+    dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
+
+def _read_row():
+    """The single cache row, or None (missing table / network hiccup / no row)."""
+    if not sb.is_configured():
+        return None
+    try:
+        rows = sb.select(_TABLE, {"select": "*", "id": "eq.1"})
+        return rows[0] if rows else None
+    except Exception:
+        return None
+
+
+def _claim_refresh(now: datetime) -> bool:
+    """Atomically claim the right to recompute. False = someone else owns it."""
+    abandoned = _iso(now - timedelta(seconds=GUARD_SECONDS))
+    try:
+        won = sb.update(_TABLE, {
+            "id": "eq.1",
+            "or": f"(refresh_started_at.is.null,refresh_started_at.lt.{abandoned})",
+        }, {"refresh_started_at": _iso(now)})
+        return bool(won)
+    except Exception:
+        return False
+
+
+def _release_claim() -> None:
+    try:
+        sb.update(_TABLE, {"id": "eq.1"}, {"refresh_started_at": None})
+    except Exception:
+        pass
+
+
+def _store_snapshot(snap: dict, now: datetime) -> bool:
+    try:
+        clean = json.loads(json.dumps(snap, default=str))
+        sb.update(_TABLE, {"id": "eq.1"},
+                  {"snapshot": clean, "generated_at": _iso(now), "refresh_started_at": None})
+        return True
+    except Exception:
+        _release_claim()
+        return False
+
+
+def _with_meta(snap: dict | None, generated_at: datetime | None,
+               refreshing: bool = False, stale_note: str | None = None) -> dict:
+    out = dict(snap or {"last_refresh": None, "predictions": {},
+                        "beach_status": [], "error": None, "thresholds": {}})
+    out["generated_at"] = _iso(generated_at) if generated_at else None
+    out["refreshing"] = refreshing
+    if stale_note:
+        out["stale_note"] = stale_note
+    return out
+
+
+def _memory_snapshot_fresh() -> bool:
+    """True when the in-process engine already computed within the window
+    (covers Supabase-less checkouts and the just-computed case)."""
+    last = _engine.LIVE.last_refresh  # naive local time, set by the engine
+    return bool(last) and (datetime.now() - last).total_seconds() < FRESH_SECONDS
+
+
+def _compute_and_store(row, now: datetime):
+    """Run the engine once; persist only a successful result. Returns a response."""
+    _engine.LIVE.refresh()  # network pulls + model inference (~5–20 s)
+    snap = _engine.LIVE.get_snapshot()
+    stored_snap = row.get("snapshot") if row else None
+    stored_at = _parse_ts(row.get("generated_at")) if row else None
+
+    if snap.get("error") and not snap.get("predictions"):
+        # Failed refresh: keep the stored snapshot, free the claim for a retry.
+        if row is not None:
+            _release_claim()
+        if stored_snap:
+            return _json(_with_meta(stored_snap, stored_at,
+                                    stale_note=f"refresh failed: {snap['error']}"))
+        return _json(_with_meta(snap, None))
+
+    if row is not None:
+        _store_snapshot(snap, now)
+    return _json(_with_meta(snap, now))
 
 
 # ─── response helpers ────────────────────────────────────────────────────────
@@ -101,7 +198,7 @@ def _unavailable_html() -> str:
 
 def _render_page() -> str:
     _load_engine()
-    if _engine is None:
+    if _engine is None and _read_row() is None:
         return _unavailable_html()
     today = datetime.now().strftime("%Y-%m-%d")
     # The page shell lives in app/templates/forecast/page.html (extracted from the
@@ -130,16 +227,62 @@ def _require_engine():
 
 
 def handle_data(query, body):
-    err = _require_engine()
-    return err or _json(_engine.LIVE.get_snapshot())
+    now = _utcnow()
+    row = _read_row()
+    stored_snap = row.get("snapshot") if row else None
+    stored_at = _parse_ts(row.get("generated_at")) if row else None
+
+    # 1. Fresh stored snapshot → serve instantly, no engine work at all.
+    if stored_snap and stored_at and (now - stored_at).total_seconds() < FRESH_SECONDS:
+        return _json(_with_meta(stored_snap, stored_at))
+
+    # 2. Stale or missing → the engine has to run. An engine-less host can
+    #    still serve whatever snapshot another host stored.
+    _load_engine()
+    if _engine is None:
+        if stored_snap:
+            return _json(_with_meta(stored_snap, stored_at,
+                                    stale_note="forecast engine unavailable on this host; "
+                                               "showing the last stored forecast"))
+        return _json({"error": _engine_error or "forecast engine unavailable"}, status=503)
+
+    # 3. This process computed recently (Supabase-less checkout, or the row
+    #    vanished mid-flight) → serve memory rather than recompute per visit.
+    if row is None and _memory_snapshot_fresh():
+        # _iso() treats naive datetimes as local time, matching how the engine
+        # stamps last_refresh.
+        return _json(_with_meta(_engine.LIVE.get_snapshot(), _engine.LIVE.last_refresh))
+
+    # 4. Claim the guard (only meaningful when the cache row exists).
+    if row is not None and not _claim_refresh(now):
+        if stored_snap:
+            # Another visitor is computing; stale data now beats a spinner.
+            return _json(_with_meta(stored_snap, stored_at, refreshing=True))
+        # Cold start with a concurrent computer: briefly wait for their result.
+        deadline = time.monotonic() + _COLD_WAIT_SECONDS
+        while time.monotonic() < deadline:
+            time.sleep(2)
+            retry = _read_row()
+            if retry and retry.get("snapshot"):
+                return _json(_with_meta(retry["snapshot"], _parse_ts(retry.get("generated_at"))))
+        return _json(_with_meta(None, None, refreshing=True))
+
+    # 5. We own the refresh: compute once, store, serve.
+    return _compute_and_store(row, now)
 
 
 def handle_refresh(query, body):
+    """Force a recompute (manual button today; the pg_cron ping target later).
+    Still honors the claim guard so a stampede can't double-compute."""
     err = _require_engine()
     if err:
         return err
-    _engine.LIVE.refresh()
-    return _json(_engine.LIVE.get_snapshot())
+    now = _utcnow()
+    row = _read_row()
+    if row is not None and not _claim_refresh(now):
+        return _json(_with_meta(row.get("snapshot"), _parse_ts(row.get("generated_at")),
+                                refreshing=True))
+    return _compute_and_store(row, now)
 
 
 def handle_historical(query, body):

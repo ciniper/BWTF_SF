@@ -23,9 +23,10 @@ Run locally (Flask dev server):
 Run in production (what a host runs via the Procfile):
     gunicorn -w 1 --threads 8 -b 0.0.0.0:$PORT app.wsgi:app
 
-ONE worker on purpose: the forecast engine runs a single background refresh
-thread, so multiple workers would each spawn their own (N weather pulls + N
-model loads). One worker with threads serves this dashboard's load fine.
+ONE worker on purpose: the alert watcher runs as a single background thread,
+so multiple workers would each spawn their own. (The forecast refresh thread
+is gone — predictions are compute-on-visit, cached in Supabase.) One worker
+with threads serves this dashboard's load fine.
 
 This is the single web entrypoint; the old stdlib ``app/server.py`` has been
 retired. The per-request client construction + the ``_send_json`` /
@@ -265,9 +266,8 @@ def create_app():
     for path, handler in forecast_page.POST_ROUTES.items():
         app.add_url_rule(path, f"forecast-post:{path}", _forecast_view(handler), methods=["POST"])
 
-    # Kick the forecast background refresh once (no-op if ML deps are missing).
-    if forecast_page.is_available():
-        forecast_page.start_refresh()
+    # No forecast refresh thread: predictions are compute-on-visit, cached in
+    # Supabase (forecast_predictions) — /forecast/api/data refreshes on staleness.
 
     # Start the automatic alert watcher (poll → edge-triggered dispatch).
     from features.alerts.watcher import start_watcher
