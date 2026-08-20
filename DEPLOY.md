@@ -34,6 +34,41 @@ railway up          # uploads + builds + deploys the current dir
 railway domain      # generate the public URL
 ```
 
+## Vercel (Phase 3 — serverless)
+
+The same repo deploys to Vercel with **no shim**: Vercel auto-detects the
+Flask `app` instance at `app/wsgi.py` (a supported entrypoint location),
+respects `.python-version` (3.12), installs `requirements.txt`, and runs the
+whole app as one Fluid function. `vercel.json` sets `maxDuration: 60` so a
+compute-on-visit forecast refresh (~5–20 s) never gets cut off. The ~310 MB
+dependency bundle fits the 500 MB Python limit (raised from 250 MB in
+Feb 2026).
+
+Setup: vercel.com → **Add New Project** → import the GitHub repo → set the
+env vars below → Deploy. Pushes to `main` then auto-deploy (same as Railway).
+
+| Env var (Vercel dashboard) | Why |
+|-----|-----|
+| `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` | Everything stateful lives in Supabase |
+| `FLASK_SECRET_KEY` | **Required here** (any long random string): serverless instances each generate a random key otherwise, so the alerts passphrase cookie would bounce between instances |
+| `BREVO_API_KEY`, `ALERT_FROM_EMAIL` | Only for manual sends from the /alerts simulator — automatic alerts are dispatched by Postgres, not the web app |
+| `ALERTS_PASSPHRASE`, `ALERT_FROM_NAME` | Optional overrides, same as Railway |
+
+What deliberately does **not** run on Vercel:
+
+- **The watcher thread** — `start_watcher()` sees Vercel's built-in `VERCEL`
+  env var and refuses to start (no persistent process; pg_cron is the sender).
+- **The subscriber JSON mirror** — the filesystem is read-only, so the
+  best-effort mirror silently skips. Railway keeps mirroring while it runs;
+  once Railway retires, the warm backup is gone until the Pro-org transfer
+  (acceptable pre-launch with test accounts only).
+
+Transition plan: run Vercel **alongside** Railway (nothing depends on Vercel
+until you point people at it). Before retiring Railway: seed
+`watcher_config.keepalive_url` so the hourly pg cron takes over the free-tier
+keep-alive from the thread's 2-min reads, and accept that `thread_shadow`
+comparator rows stop.
+
 ## Local
 
 ```bash

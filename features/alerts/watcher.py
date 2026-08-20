@@ -369,6 +369,12 @@ def start_watcher(interval_seconds: int | None = None) -> bool:
     global _started
     if _started:
         return False
+    if os.environ.get("VERCEL"):
+        # Serverless: no persistent process to host the thread — and an
+        # unconfigured instance would default to SEND mode beside pg_live.
+        # Postgres (pg_cron) is the sender; nothing here to replace.
+        print("[watcher] disabled on Vercel (pg_cron is the sender)")
+        return False
     raw = os.environ.get("ALERT_WATCHER_INTERVAL", "").strip().lower()
     if raw in {"0", "off", "false", "disabled"}:
         print("[watcher] disabled via ALERT_WATCHER_INTERVAL")

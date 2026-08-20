@@ -50,6 +50,11 @@ def get_row() -> dict:
     return sb.select(page._TABLE, {"select": "*", "id": "eq.1"})[0]
 
 
+def same_ts(a, b) -> bool:
+    """Compare timestamps by value — PostgREST says +00:00, _iso() says Z."""
+    return page._parse_ts(a) == page._parse_ts(b)
+
+
 def main() -> int:
     if not sb.is_configured():
         print("Supabase env missing — aborting."); return 1
@@ -80,7 +85,7 @@ def main() -> int:
     stale_ts = page._iso(page._utcnow() - timedelta(seconds=page.FRESH_SECONDS + 60))
     set_row(generated_at=stale_ts)
     data, took = call_data()
-    check("stale visit recomputes", get_row()["generated_at"] != stale_ts, f"{took:.1f}s")
+    check("stale visit recomputes", not same_ts(get_row()["generated_at"], stale_ts), f"{took:.1f}s")
     check("recompute is fresh in the response", data.get("refreshing") is False)
 
     print("— guard held by a peer —")
@@ -88,14 +93,14 @@ def main() -> int:
     data, took = call_data()
     check("loser serves stale instantly", took < 2.0, f"{took:.2f}s")
     check("loser flags refreshing=true", data.get("refreshing") is True)
-    check("loser did not recompute", get_row()["generated_at"] == stale_ts)
+    check("loser did not recompute", same_ts(get_row()["generated_at"], stale_ts))
 
     print("— abandoned guard —")
     set_row(generated_at=stale_ts,
             refresh_started_at=page._iso(page._utcnow() - timedelta(seconds=page.GUARD_SECONDS + 60)))
     data, took = call_data()
-    check("abandoned claim is stolen + recomputed", get_row()["generated_at"] != stale_ts,
-          f"{took:.1f}s")
+    check("abandoned claim is stolen + recomputed",
+          not same_ts(get_row()["generated_at"], stale_ts), f"{took:.1f}s")
 
     print("— engine-less host with a stored snapshot —")
     set_row(generated_at=stale_ts)  # stale, so step 1 can't satisfy it
