@@ -71,8 +71,12 @@ STATION_BASINS = {
 }
 
 
-def fetch_historical_rain(start_date: str = "2020-07-01",
+def fetch_historical_rain(start_date: str = "2016-01-01",
                            end_date: str = None) -> pd.DataFrame:
+    # Start 2016-01-01: ground-truth CSD labels (data/csd/) begin Oct 2016 and
+    # the 30-day antecedent windows need runway. ACIS has both gauges well
+    # before this. Bacteria (SF Gov) still starts 2020-07 — that's the source's
+    # own start, not ours.
     """
     Fetch daily precipitation from ACIS for all configured stations.
     

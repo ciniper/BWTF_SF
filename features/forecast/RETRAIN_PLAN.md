@@ -1,6 +1,13 @@
 # Forecast v2: retraining on ground-truth CSD events
 
-**Status: planned** — data landed 2026-08-21 (`data/csd/`), retrain not yet implemented.
+**Status: Stage 1 trained** (2026-08-21) — rain data extended to 2016,
+`src/models/train_v2.py` trains on ground truth, artifacts + eval in
+`data/models/v2/` (production pkls untouched pending dashboard integration).
+Chronological-holdout PR-AUC vs the proxy-trained production models:
+citywide 0.87 vs 0.56, Westside 0.77 vs 0.54, Southeast 0.80 vs 0.28,
+North Shore 0.78 vs 0.91* (*v1 scored in-sample on this window; v2's Brier
+is 3× better there). Remaining: hourly-intensity features, dashboard
+integration of the Stage-2 impact table, promotion of v2 pkls.
 
 ## Why
 

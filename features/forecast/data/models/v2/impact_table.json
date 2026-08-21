@@ -1,0 +1,153 @@
+{
+  "Westside": {
+    "median_event_volume_mg": 3.7,
+    "buckets": {
+      "baseline_no_recent_discharge": {
+        "p_elevated": 0.388,
+        "n": 441
+      },
+      "d0_large": {
+        "p_elevated": 1.0,
+        "n": 15
+      },
+      "d0_small": {
+        "p_elevated": 1.0,
+        "n": 11
+      },
+      "d1_large": {
+        "p_elevated": 1.0,
+        "n": 14
+      },
+      "d1_small": {
+        "p_elevated": 0.727,
+        "n": 11
+      },
+      "d2_large": {
+        "p_elevated": 0.846,
+        "n": 13
+      },
+      "d2_small": {
+        "p_elevated": 0.25,
+        "n": 8
+      },
+      "d3_large": {
+        "p_elevated": 0.909,
+        "n": 11
+      },
+      "d3_small": {
+        "p_elevated": 1.0,
+        "n": 3
+      },
+      "d4-5_large": {
+        "p_elevated": 0.6,
+        "n": 20
+      },
+      "d4-5_small": {
+        "p_elevated": 0.778,
+        "n": 9
+      },
+      "d6-7_large": {
+        "p_elevated": 0.769,
+        "n": 13
+      },
+      "d6-7_small": {
+        "p_elevated": 0.5,
+        "n": 8
+      }
+    }
+  },
+  "North Shore": {
+    "median_event_volume_mg": 7.25,
+    "buckets": {
+      "baseline_no_recent_discharge": {
+        "p_elevated": 0.144,
+        "n": 305
+      },
+      "d0_large": {
+        "p_elevated": 1.0,
+        "n": 10
+      },
+      "d0_small": {
+        "p_elevated": 0.833,
+        "n": 12
+      },
+      "d1_large": {
+        "p_elevated": 0.375,
+        "n": 8
+      },
+      "d1_small": {
+        "p_elevated": 0.3,
+        "n": 10
+      },
+      "d3_large": {
+        "p_elevated": 0.0,
+        "n": 3
+      },
+      "d4-5_small": {
+        "p_elevated": 0.25,
+        "n": 8
+      },
+      "d6-7_large": {
+        "p_elevated": 0.0,
+        "n": 4
+      }
+    }
+  },
+  "Southeast": {
+    "median_event_volume_mg": 26.77,
+    "buckets": {
+      "baseline_no_recent_discharge": {
+        "p_elevated": 0.145,
+        "n": 289
+      },
+      "d0_large": {
+        "p_elevated": 1.0,
+        "n": 19
+      },
+      "d0_small": {
+        "p_elevated": 0.923,
+        "n": 13
+      },
+      "d1_large": {
+        "p_elevated": 1.0,
+        "n": 18
+      },
+      "d1_small": {
+        "p_elevated": 1.0,
+        "n": 11
+      },
+      "d2_large": {
+        "p_elevated": 0.889,
+        "n": 18
+      },
+      "d2_small": {
+        "p_elevated": 0.9,
+        "n": 10
+      },
+      "d3_large": {
+        "p_elevated": 0.8,
+        "n": 15
+      },
+      "d3_small": {
+        "p_elevated": 0.625,
+        "n": 8
+      },
+      "d4-5_large": {
+        "p_elevated": 0.556,
+        "n": 18
+      },
+      "d4-5_small": {
+        "p_elevated": 0.3,
+        "n": 10
+      },
+      "d6-7_large": {
+        "p_elevated": 0.375,
+        "n": 8
+      },
+      "d6-7_small": {
+        "p_elevated": 0.0,
+        "n": 4
+      }
+    }
+  }
+}
