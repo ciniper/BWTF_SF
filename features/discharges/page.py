@@ -82,6 +82,15 @@ def handle_events(query, body):
         return _json({"error": f"CSD dataset unavailable: {exc}"}, status=500)
 
 
+def handle_csv(query, body):
+    """The raw dataset file, verbatim — feeds the in-page record browser and
+    doubles as the download link."""
+    try:
+        return 200, "text/csv; charset=utf-8", _CSV.read_bytes()
+    except Exception as exc:
+        return _json({"error": f"CSD dataset unavailable: {exc}"}, status=500)
+
+
 def handle_page(query, body):
     return 200, "text/html; charset=utf-8", render_template("discharges/page.html").encode()
 
@@ -89,5 +98,6 @@ def handle_page(query, body):
 GET_ROUTES = {
     "/discharges": handle_page,
     "/discharges/api/events": handle_events,
+    "/discharges/api/csv": handle_csv,
 }
 POST_ROUTES = {}

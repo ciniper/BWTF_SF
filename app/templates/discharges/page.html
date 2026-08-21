@@ -50,7 +50,24 @@
   .note{background:#fdf6ec;border:1px solid #ecd9b8;border-radius:12px;padding:12px 16px;font-size:13px;margin:0 0 16px;color:#5a4f3d}
   .foot{color:#8a949b;font-size:12px;margin-top:8px}
   .loading{padding:40px;text-align:center;color:#5e6a71;font-weight:600}
-</style></head>
+
+  .chart-wrap{position:relative;height:380px}
+  .picker{position:relative}
+  .picker summary{list-style:none;cursor:pointer;padding:8px 16px;border-radius:999px;border:2px solid #d9e4e8;background:#fff;color:#5e6a71;font-size:13px;font-weight:700}
+  .picker[open] summary{border-color:#1f6fb0;color:#1f6fb0}
+  .picker .panel{position:absolute;z-index:30;top:110%;left:0;background:#fff;border:1px solid #d9e4e8;border-radius:12px;box-shadow:0 8px 24px rgba(38,39,42,.15);padding:10px 14px;max-height:300px;overflow-y:auto;min-width:320px}
+  .picker label{display:block;font-size:13px;padding:3px 0;white-space:nowrap;cursor:pointer}
+  .picker .grp{font-weight:700;color:#1f6fb0;margin:8px 0 2px;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+  .seg-toggle{display:inline-flex;border:2px solid #d9e4e8;border-radius:999px;overflow:hidden;background:#fff}
+  .seg-btn{padding:8px 16px;border:0;background:transparent;color:#5e6a71;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
+  .seg-btn.active{background:#1f6fb0;color:#fff}
+  input[type=search]{padding:8px 12px;border:2px solid #d9e4e8;border-radius:10px;font-family:inherit;font-size:13px;min-width:220px}
+  #rawTbl th{cursor:pointer;user-select:none}
+  #rawTbl th .dir{color:#1f6fb0}
+  .dl{padding:8px 16px;border-radius:999px;background:#1f6fb0;color:#fff;text-decoration:none;font-size:13px;font-weight:700}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+</head>
 <body><div class="wrap">
   <a class="back-to-dash" href="/">← Dashboard</a>
   <div class="hero">
@@ -99,9 +116,37 @@
   </div>
 
   <div class="board">
+    <h2>Plot it yourself <span style="font-weight:600;color:#5e6a71;font-size:12.5px">— volume per year for any outfalls or waters (respects the date range above)</span></h2>
+    <div class="controls" style="margin-bottom:10px">
+      <div class="seg-toggle" id="chartType">
+        <button class="seg-btn active" data-type="scatter">Scatter</button>
+        <button class="seg-btn" data-type="bar">Bar</button>
+      </div>
+      <details class="picker" id="seriesPicker">
+        <summary id="pickerSummary">Choose series…</summary>
+        <div class="panel" id="pickerPanel"></div>
+      </details>
+      <button class="group-btn" id="clearSeries">Clear</button>
+    </div>
+    <div class="chart-wrap"><canvas id="chart"></canvas></div>
+    <p style="font-size:12px;color:#8a949b;margin:8px 0 0">Years where a system filed no per-event reports are omitted (not zero):
+    Oceanside/Pacific outfalls have no data before 2018; 2016 and 2025 are partial years for everyone.</p>
+  </div>
+
+  <div class="board">
     <h2>Largest single discharges</h2>
     <table><thead><tr><th>Date</th><th>Outfall</th><th>Receiving water</th><th class="num">volume</th><th class="num">duration</th></tr></thead>
     <tbody id="biggest"></tbody></table>
+  </div>
+
+  <div class="board">
+    <h2>Raw records <span style="font-weight:600;color:#5e6a71;font-size:12.5px">— the dataset itself, every column · click headers to sort</span></h2>
+    <div class="controls" style="margin-bottom:10px">
+      <input type="search" id="rawSearch" placeholder="Filter (outfall, water, date, document…)">
+      <span class="legend" id="rawMeta"></span>
+      <a class="dl" href="/discharges/api/csv" download="sf_csd_events.csv">⬇ Download CSV</a>
+    </div>
+    <table id="rawTbl"><thead><tr></tr></thead><tbody></tbody></table>
   </div>
 
   <div class="foot" id="foot"></div>
@@ -198,13 +243,159 @@ function render() {
   const rangeTxt = (STATE.start || COV.bayside_from) + " → " + (STATE.end || COV.through);
   document.getElementById("metaLine").textContent =
     `${R.length.toLocaleString()} of ${EV.length.toLocaleString()} events shown · ${rangeTxt}`;
+  updateChart();
+}
+
+// ─── Plot-it-yourself chart ──────────────────────────────────────────────────
+let CHART = null, chartKind = "scatter";
+const SELECTED = new Set();          // "W:<water>" or "O:<outfall id>"
+const PALETTE = ["#1f6fb0","#b5310a","#d4763a","#3c9160","#7b5cb8","#0e8a8a","#c23d80","#5e6a71","#8a6d3b","#356a9e"];
+const OFAC = {};                     // outfall id -> facility
+
+function coveredYears(fac) {         // years a system filed per-event reports
+  const from = fac === "Oceanside" ? 2018 : 2016;
+  const out = [];
+  for (let y = from; y <= 2025; y++) out.push(y);
+  return out;
+}
+
+function buildPicker() {
+  for (const e of EV) OFAC[e.oid] = e.fac;
+  const byWater = {};
+  for (const e of EV) {
+    const w = (byWater[e.water] ??= {});
+    const o = (w[e.oid] ??= {name:e.oname, mg:0});
+    o.mg += e.mg||0;
+  }
+  const panel = document.getElementById("pickerPanel");
+  let html = '<div class="grp">Whole receiving waters</div>';
+  for (const w of Object.keys(byWater))
+    html += `<label><input type="checkbox" value="W:${w}"> ${w}</label>`;
+  for (const [w, outs] of Object.entries(byWater)) {
+    html += `<div class="grp">${w} outfalls</div>`;
+    for (const [oid, o] of Object.entries(outs).sort((a,b)=>b[1].mg-a[1].mg))
+      html += `<label><input type="checkbox" value="O:${oid}"> ${oid} — ${o.name}</label>`;
+  }
+  panel.innerHTML = html;
+  // default: the three biggest outfalls, so the chart isn't empty
+  const top = Object.values(byWater).flatMap(o => Object.entries(o))
+    .sort((a,b)=>b[1].mg-a[1].mg).slice(0,3).map(([oid]) => "O:"+oid);
+  for (const key of top) {
+    SELECTED.add(key);
+    panel.querySelector(`input[value="${key}"]`).checked = true;
+  }
+  panel.addEventListener("change", e => {
+    const cb = e.target;
+    cb.checked ? SELECTED.add(cb.value) : SELECTED.delete(cb.value);
+    updateChart();
+  });
+  document.getElementById("clearSeries").addEventListener("click", () => {
+    SELECTED.clear();
+    panel.querySelectorAll("input").forEach(cb => cb.checked = false);
+    updateChart();
+  });
+  document.getElementById("chartType").addEventListener("click", e => {
+    const b = e.target.closest(".seg-btn"); if (!b) return;
+    document.querySelectorAll("#chartType .seg-btn").forEach(x => x.classList.toggle("active", x===b));
+    chartKind = b.dataset.type;
+    updateChart();
+  });
+}
+
+function updateChart() {
+  if (!document.getElementById("chart") || !window.Chart) return;
+  document.getElementById("pickerSummary").textContent =
+    SELECTED.size ? `${SELECTED.size} series selected` : "Choose series…";
+  const D = dateRows();
+  const series = [...SELECTED].map(key => {
+    const isW = key.startsWith("W:");
+    const val = key.slice(2);
+    const evs = D.filter(e => isW ? e.water === val : e.oid === val);
+    const fac = isW ? (val === "Pacific Ocean" ? "Oceanside" : "Bayside") : (OFAC[val] || "Bayside");
+    const label = isW ? val : `${val} — ${(evs[0]||EV.find(e=>e.oid===val)||{}).oname||""}`;
+    const perYear = {};
+    for (const e of evs) { const y = +e.date.slice(0,4); perYear[y] = (perYear[y]||0) + (e.mg||0); }
+    return { label, fac, perYear };
+  });
+  // x axis: union of covered years across selections, clipped to the date range
+  const y0 = STATE.start ? +STATE.start.slice(0,4) : 2016;
+  const y1 = STATE.end ? +STATE.end.slice(0,4) : 2025;
+  const yearSet = new Set();
+  for (const s of series) for (const y of coveredYears(s.fac)) if (y >= y0 && y <= y1) yearSet.add(y);
+  const years = [...yearSet].sort();
+  const datasets = series.map((s, i) => ({
+    label: s.label,
+    data: years.map(y => coveredYears(s.fac).includes(y) ? +(s.perYear[y]||0).toFixed(1) : null),
+    backgroundColor: PALETTE[i % PALETTE.length],
+    borderColor: PALETTE[i % PALETTE.length],
+    ...(chartKind === "scatter" ? {showLine:false, pointRadius:6, pointHoverRadius:8, type:"line"} : {}),
+  }));
+  if (CHART) CHART.destroy();
+  CHART = new Chart(document.getElementById("chart"), {
+    type: chartKind === "bar" ? "bar" : "line",
+    data: { labels: years.map(String), datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { y: { beginAtZero: true, title: {display:true, text:"million gallons discharged"} } },
+      plugins: { legend: { position: "bottom" } },
+    },
+  });
+}
+
+// ─── Raw record browser ──────────────────────────────────────────────────────
+let RAW = {header: [], rows: []}, rawSort = {col: 0, dir: -1};
+const NUMERIC_COLS = new Set(["duration_min", "volume_MG"]);
+
+function parseCSV(text) {            // quote-aware, minimal
+  const rows = [];
+  let row = [], field = "", inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQ) {
+      if (ch === '"') { if (text[i+1] === '"') { field += '"'; i++; } else inQ = false; }
+      else field += ch;
+    } else if (ch === '"') inQ = true;
+    else if (ch === ",") { row.push(field); field = ""; }
+    else if (ch === "\n") { row.push(field); if (row.some(f=>f!=="")) rows.push(row); row = []; field = ""; }
+    else if (ch !== "\r") field += ch;
+  }
+  if (field !== "" || row.length) { row.push(field); if (row.some(f=>f!=="")) rows.push(row); }
+  return rows;
+}
+
+function renderRaw() {
+  const q = document.getElementById("rawSearch").value.trim().toLowerCase();
+  let rows = q ? RAW.rows.filter(r => r.join(" ").toLowerCase().includes(q)) : [...RAW.rows];
+  const c = rawSort.col, numeric = NUMERIC_COLS.has(RAW.header[c]);
+  rows.sort((a,b) => rawSort.dir * (numeric ? ((+a[c]||0) - (+b[c]||0)) : String(a[c]).localeCompare(String(b[c]))));
+  document.querySelector("#rawTbl thead tr").innerHTML = RAW.header.map((h,i) =>
+    `<th data-col="${i}"${NUMERIC_COLS.has(h)?' class="num"':''}>${h}${i===rawSort.col?` <span class="dir">${rawSort.dir>0?"▲":"▼"}</span>`:""}</th>`).join("");
+  document.querySelector("#rawTbl tbody").innerHTML = rows.map(r =>
+    "<tr>" + r.map((v,i) => `<td${NUMERIC_COLS.has(RAW.header[i])?' class="num"':''}>${v}</td>`).join("") + "</tr>").join("");
+  document.getElementById("rawMeta").textContent = `${rows.length.toLocaleString()} of ${RAW.rows.length.toLocaleString()} records`;
+}
+
+async function initRaw() {
+  const text = await (await fetch("/discharges/api/csv")).text();
+  const all = parseCSV(text);
+  RAW.header = all[0];
+  RAW.rows = all.slice(1);
+  rawSort = {col: 0, dir: -1};   // newest first
+  document.getElementById("rawSearch").addEventListener("input", renderRaw);
+  document.querySelector("#rawTbl thead").addEventListener("click", e => {
+    const th = e.target.closest("th"); if (!th) return;
+    const col = +th.dataset.col;
+    rawSort = {col, dir: col === rawSort.col ? -rawSort.dir : 1};
+    renderRaw();
+  });
+  renderRaw();
 }
 
 async function load() {
   const d = await (await fetch("/discharges/api/events")).json();
   if (d.error) { document.getElementById("years").textContent = d.error; return; }
-  const [DATE,,OID,ONAME,WATER,DUR_,MG_] = [0,1,2,3,4,5,6];
-  EV = d.events.map(r => ({date:r[DATE], oid:r[OID], oname:r[ONAME], water:r[WATER], dur:r[DUR_], mg:r[MG_]}));
+  const [DATE,FAC,OID,ONAME,WATER,DUR_,MG_] = [0,1,2,3,4,5,6];
+  EV = d.events.map(r => ({date:r[DATE], fac:r[FAC], oid:r[OID], oname:r[ONAME], water:r[WATER], dur:r[DUR_], mg:r[MG_]}));
   COV = d.coverage;
   document.getElementById("covNote").textContent = "⚠️ Coverage: " + COV.note;
   document.getElementById("foot").textContent = "Source: " + d.source +
@@ -246,7 +437,9 @@ async function load() {
       render();
     });
   }
+  buildPicker();
   render();
+  initRaw();
 }
 load();
 </script>
