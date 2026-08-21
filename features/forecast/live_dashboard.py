@@ -309,7 +309,11 @@ class LiveData:
             transitions = results.get("transitions") if isinstance(results, dict) else None
             transitions = transitions or []
             for t in transitions:
-                if isinstance(t, dict) and t.get("to") == "cso":
+                # belt-and-braces: the row-level simulated=eq.false filter
+                # already excludes any row containing a simulated transition
+                # (it's bool_or over transitions), but skip per-transition
+                # simulated flags too in case that semantic ever changes
+                if isinstance(t, dict) and t.get("to") == "cso" and not t.get("simulated"):
                     station_ids.append(t.get("station_id", ""))
             if not station_ids:
                 station_ids = row.get("station_ids") or []
