@@ -67,6 +67,16 @@
   .dl{padding:8px 16px;border-radius:999px;background:#1f6fb0;color:#fff;text-decoration:none;font-size:13px;font-weight:700}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  #map{height:520px;border-radius:12px}
+  .of-label{background:rgba(255,255,255,.92);border:1px solid #b9c6cd;border-radius:6px;
+    padding:1px 5px;font:700 10.5px 'Avenir Next','Segoe UI',sans-serif;color:#26272a;
+    box-shadow:none;white-space:nowrap}
+  .of-label::before{display:none}
+  .leaflet-popup-content{font-family:'Avenir Next','Segoe UI',sans-serif;font-size:13px}
+</style>
 </head>
 <body><div class="wrap">
   <a class="back-to-dash" href="/">← Dashboard</a>
@@ -97,6 +107,14 @@
   </div>
 
   <div class="note" id="covNote"></div>
+
+  <div class="board">
+    <h2>Outfall map <span style="font-weight:600;color:#5e6a71;font-size:12.5px">— circle size = volume in the selected range · click a marker for details</span></h2>
+    <div id="map"></div>
+    <p style="font-size:12px;color:#8a949b;margin:8px 0 0">Locations from the NPDES permits' discharge-point tables
+    (Oceanside R2-2019, Bayside R2-2013-0029). CSD-043 (Sunnydale) is approximate — the permit table misprints its
+    coordinates — and CSD-119 is plotted with CSD-009 (Baker Street), whose id it duplicates in some monthly reports.</p>
+  </div>
 
   <div class="board">
     <h2>Volume discharged per year <span style="font-weight:600;color:#5e6a71;font-size:12.5px">(million gallons — hatched years have incomplete coverage)</span></h2>
@@ -244,6 +262,46 @@ function render() {
   document.getElementById("metaLine").textContent =
     `${R.length.toLocaleString()} of ${EV.length.toLocaleString()} events shown · ${rangeTxt}`;
   updateChart();
+  updateMap();
+}
+
+// ─── Outfall map ─────────────────────────────────────────────────────────────
+let MAP = null, LOCS = {}, markerLayer = null;
+const ONAMES = {}, OWATER = {};
+
+function initMap() {
+  MAP = L.map("map", {scrollWheelZoom: false}).setView([37.762, -122.443], 12);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  }).addTo(MAP);
+  markerLayer = L.layerGroup().addTo(MAP);
+}
+
+function updateMap() {
+  if (!MAP) return;
+  const D = dateRows();
+  const totals = {};
+  for (const e of D) { const t = (totals[e.oid] ??= {n:0, mg:0}); t.n++; t.mg += e.mg||0; }
+  const maxMG = Math.max(...Object.values(totals).map(t=>t.mg), 1);
+  markerLayer.clearLayers();
+  for (const [oid, loc] of Object.entries(LOCS)) {
+    const t = totals[oid] || {n:0, mg:0};
+    const dimmed = STATE.water && OWATER[oid] !== STATE.water;
+    const r = 4 + 24 * Math.sqrt(t.mg / maxMG);
+    const m = L.circleMarker([loc.lat, loc.lon], {
+      radius: dimmed ? Math.min(r, 6) : r,
+      color: dimmed ? "#98a3ab" : (t.mg === 0 ? "#8a949b" : "#b5310a"),
+      fillColor: dimmed ? "#c4ccd2" : (t.mg === 0 ? "#c4ccd2" : "#d4763a"),
+      fillOpacity: dimmed ? 0.25 : 0.55, weight: 2,
+    });
+    m.bindTooltip(oid.replace("CSD-", ""), {permanent: true, direction: "right",
+                                            offset: [r > 8 ? r - 2 : 6, 0], className: "of-label"});
+    m.bindPopup(`<b>${oid} — ${ONAMES[oid] || ""}</b><br>` +
+      `Discharges to: ${loc.water}<br>` +
+      `In selected range: <b>${t.n} events · ${MGshort(t.mg)}</b>` +
+      (loc.note ? `<br><i>${loc.note}</i>` : ""));
+    markerLayer.addLayer(m);
+  }
 }
 
 // ─── Plot-it-yourself chart ──────────────────────────────────────────────────
@@ -397,6 +455,9 @@ async function load() {
   const [DATE,FAC,OID,ONAME,WATER,DUR_,MG_] = [0,1,2,3,4,5,6];
   EV = d.events.map(r => ({date:r[DATE], fac:r[FAC], oid:r[OID], oname:r[ONAME], water:r[WATER], dur:r[DUR_], mg:r[MG_]}));
   COV = d.coverage;
+  LOCS = d.locations || {};
+  for (const e of EV) { ONAMES[e.oid] = e.oname; OWATER[e.oid] = e.water; }
+  initMap();
   document.getElementById("covNote").textContent = "⚠️ Coverage: " + COV.note;
   document.getElementById("foot").textContent = "Source: " + d.source +
     " · Compiled 2026-08 · Full provenance, schema, and gaps: features/forecast/data/csd/NOTES.md · MG = million gallons (≈1.5 Olympic pools).";

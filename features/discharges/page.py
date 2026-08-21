@@ -30,6 +30,11 @@ from pathlib import Path
 from flask import render_template
 
 _CSV = Path(__file__).resolve().parents[1] / "forecast" / "data" / "csd" / "sf_csd_events.csv"
+# Outfall coordinates transcribed from the NPDES permits' discharge-location
+# tables (Oceanside R2-2019 Table 2; Bayside R2-2013-0029 Table 2), with two
+# flagged exceptions documented in the CSV's note column (CSD-043 approximate,
+# CSD-119 co-located with CSD-009).
+_LOCATIONS_CSV = Path(__file__).resolve().parent / "outfall_locations.csv"
 
 # Compact wire format: list of rows in this column order (keeps the payload
 # ~half the size of a dict-per-event).
@@ -55,9 +60,17 @@ def _load() -> dict:
                 float(r["duration_min"]) if r["duration_min"] else None,
                 float(r["volume_MG"]) if r["volume_MG"] else None,
             ])
+    locations = {}
+    with open(_LOCATIONS_CSV, newline="") as fh:
+        for r in csv.DictReader(fh):
+            locations[r["outfall_id"]] = {
+                "lat": float(r["lat"]), "lon": float(r["lon"]),
+                "water": r["permit_receiving_water"], "note": r["note"],
+            }
     _payload_cache = {
         "columns": COLUMNS,
         "events": events,
+        "locations": locations,
         "coverage": {
             "bayside_from": "2016-10",
             "oceanside_from": "2018-01",
