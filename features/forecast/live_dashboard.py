@@ -68,6 +68,8 @@ class LiveData:
         self.error = None
         self.models = self._load_models()
         self.thresholds = self._load_thresholds()
+        self.volume_models = self._load_volume_models()
+        self.impact_table = self._load_impact_table()
 
     def _load_models(self):
         models = {}
@@ -77,6 +79,28 @@ class LiveData:
                 with open(path, "rb") as f:
                     models[name] = pickle.load(f)
         return models
+
+    def _load_volume_models(self):
+        """Per-basin expected-discharge-volume regressors (log1p MG), from the
+        v2 retrain on SFPUC-reported events. Used to pick the right
+        persistence curve (big discharges keep beaches posted longer)."""
+        models = {}
+        for name in ["westside", "north_shore", "southeast"]:
+            path = MODEL_DIR / f"{name}_volume.pkl"
+            if path.exists():
+                with open(path, "rb") as f:
+                    models[name] = pickle.load(f)
+        return models
+
+    def _load_impact_table(self):
+        """Empirical P(basin bacteria elevated | days since discharge, size),
+        measured from beach samples joined to SFPUC-reported discharges
+        (see train_v2.fit_impact_table)."""
+        path = MODEL_DIR / "impact_table.json"
+        if path.exists():
+            with open(path) as f:
+                return json.load(f)
+        return {}
 
     def _predict_calibrated(self, features: dict) -> dict:
         """
@@ -111,6 +135,101 @@ class LiveData:
             with open(path) as f:
                 return json.load(f)
         return {}
+
+    # ── Discharge → beach-impact composition ────────────────────────────────
+    #
+    # The v2 models predict P(discharge TODAY). Beaches stay contaminated for
+    # days after a discharge, so the displayed risk for day D composes the
+    # discharge probabilities of D and the prior week with how often beaches
+    # were still elevated k days after a discharge of that size:
+    #
+    #   risk(D) = 1 - ∏_{k=0..7} (1 - p_discharge(D-k) · x(k, size(D-k)))
+    #
+    # x(k, size) is the discharge-ATTRIBUTABLE elevation probability, i.e. the
+    # impact table's P(elevated) with the dry-weather background removed via
+    # the independent-OR identity  p = 1-(1-baseline)(1-x)  →
+    # x = (p - baseline)/(1 - baseline). That keeps dry days at ~0 like before.
+
+    _IMPACT_BASIN_TITLES = {"westside": "Westside", "north_shore": "North Shore",
+                            "southeast": "Southeast"}
+
+    def _impact_fraction(self, basin_key: str, days_since: int, volume_mg: float) -> float:
+        """x(k, size): attributable P(beach elevated) k days after a discharge
+        of `volume_mg`, blending the small/large curves by predicted size."""
+        table = self.impact_table.get(self._IMPACT_BASIN_TITLES.get(basin_key, ""), {})
+        buckets = table.get("buckets", {})
+        if not buckets:
+            return 1.0 if days_since == 0 else 0.0  # degraded: same-day only
+        baseline = buckets.get("baseline_no_recent_discharge", {}).get("p_elevated", 0.0)
+        bucket = str(days_since) if days_since <= 3 else ("4-5" if days_since <= 5 else "6-7")
+
+        def attributable(size):
+            p = buckets.get(f"d{bucket}_{size}", {}).get("p_elevated")
+            if p is None:
+                return None
+            return max(0.0, (p - baseline) / (1 - baseline)) if baseline < 1 else 0.0
+
+        x_small, x_large = attributable("small"), attributable("large")
+        if x_small is None and x_large is None:
+            return 0.0
+        if x_small is None:
+            return x_large
+        if x_large is None:
+            return x_small
+        median = table.get("median_event_volume_mg", 1.0) or 1.0
+        w_large = volume_mg / (volume_mg + median)  # 0.5 at the median event size
+        return w_large * x_large + (1 - w_large) * x_small
+
+    def _predict_expected_volumes(self, features: dict) -> dict:
+        """Expected discharge volume (MG) per basin if a discharge happens."""
+        out = {}
+        for name, md in self.volume_models.items():
+            X = pd.DataFrame([{f: features.get(f, 0) for f in md["features"]}])
+            out[name] = max(0.0, float(np.expm1(md["model"].predict(X)[0])))
+        return out
+
+    def _compose_impact(self, day_probs: list, day_volumes: list, idx: int) -> dict:
+        """Composed beach-impact risk for daily-table row `idx`, per basin,
+        from that day's and the prior 7 days' discharge probabilities."""
+        composed = {}
+        for basin_key in ["westside", "north_shore", "southeast"]:
+            no_impact = 1.0
+            for k in range(0, 8):
+                j = idx - k
+                if j < 0 or j >= len(day_probs):
+                    continue
+                p = day_probs[j].get(basin_key)
+                if not p:
+                    continue
+                vol = day_volumes[j].get(basin_key, 0.0)
+                no_impact *= 1.0 - p * self._impact_fraction(basin_key, k, vol)
+            composed[basin_key] = round(1.0 - no_impact, 3)
+        composed["citywide"] = max(composed.values()) if composed else 0.0
+        return composed
+
+    @staticmethod
+    def _features_from_row(row) -> dict:
+        """Model features from one row of the daily rain table (shared by the
+        live and historical paths — keep in lockstep with train_v2)."""
+        return {
+            "precip_avg": row.get("precip_inches", 0) or 0,
+            "precip_max": row.get("precip_max_hourly", 0) or 0,
+            "rain_2d_cum": row.get("rain_2d_cum", 0) or 0,
+            "rain_3d_cum": row.get("rain_3d_cum", 0) or 0,
+            "rain_5d_cum": row.get("rain_5d_cum", 0) or 0,
+            "rain_7d_cum": row.get("rain_7d_cum", 0) or 0,
+            "rain_14d_cum": row.get("rain_14d_cum", 0) or 0,
+            "rain_30d_cum": row.get("rain_30d_cum", 0) or 0,
+            "rain_lag1d": row.get("rain_lag1d", 0) or 0,
+            "rain_lag2d": row.get("rain_lag2d", 0) or 0,
+            "rain_lag3d": row.get("rain_lag3d", 0) or 0,
+            "rain_lag5d": row.get("rain_lag5d", 0) or 0,
+            "rain_lag7d": row.get("rain_lag7d", 0) or 0,
+            "antecedent_moisture": row.get("antecedent_moisture", 0) or 0,
+            "wet_prior_3d": int(row.get("wet_prior_3d", 0) or 0),
+            "peak_3d": row.get("peak_3d", 0) or 0,
+            "dry_spell_days": row.get("dry_spell_days", 0) or 0,
+        }
 
     def refresh(self):
         """Fetch all live data and run predictions"""
@@ -247,38 +366,25 @@ class LiveData:
         groups = is_dry.ne(is_dry.shift()).cumsum()
         daily["dry_spell_days"] = is_dry.groupby(groups).cumsum()
 
-        # Run predictions for today + next 5 days
+        # Score EVERY row of the daily table (the display days need the prior
+        # week's discharge probabilities for the persistence composition)
+        row_features = [self._features_from_row(row) for _, row in daily.iterrows()]
+        day_probs = [self._predict_calibrated(f) for f in row_features]
+        day_volumes = [self._predict_expected_volumes(f) for f in row_features]
+
+        # Emit today + next 5 days (plus yesterday) with composed impact risk
         results = {}
         for day_offset in range(-1, 6):
             target_date = (today + timedelta(days=day_offset)).date()
-            row = daily[daily["date"].dt.date == target_date]
-
-            if row.empty:
+            match = daily.index[daily["date"].dt.date == target_date]
+            if len(match) == 0:
                 continue
+            idx = daily.index.get_loc(match[0])
+            features = row_features[idx]
 
-            row = row.iloc[0]
-
-            features = {
-                "precip_avg": row.get("precip_inches", 0) or 0,
-                "precip_max": row.get("precip_max_hourly", 0) or 0,
-                "rain_2d_cum": row.get("rain_2d_cum", 0) or 0,
-                "rain_3d_cum": row.get("rain_3d_cum", 0) or 0,
-                "rain_5d_cum": row.get("rain_5d_cum", 0) or 0,
-                "rain_7d_cum": row.get("rain_7d_cum", 0) or 0,
-                "rain_14d_cum": row.get("rain_14d_cum", 0) or 0,
-                "rain_30d_cum": row.get("rain_30d_cum", 0) or 0,
-                "rain_lag1d": row.get("rain_lag1d", 0) or 0,
-                "rain_lag2d": row.get("rain_lag2d", 0) or 0,
-                "rain_lag3d": row.get("rain_lag3d", 0) or 0,
-                "rain_lag5d": row.get("rain_lag5d", 0) or 0,
-                "rain_lag7d": row.get("rain_lag7d", 0) or 0,
-                "antecedent_moisture": row.get("antecedent_moisture", 0) or 0,
-                "wet_prior_3d": int(row.get("wet_prior_3d", 0) or 0),
-                "peak_3d": row.get("peak_3d", 0) or 0,
-                "dry_spell_days": row.get("dry_spell_days", 0) or 0,
-            }
-
-            day_predictions = self._predict_calibrated(features)
+            # predictions = beach-impact risk (discharge + persistence);
+            # discharge_probs = same-day P(discharge) for transparency
+            day_predictions = self._compose_impact(day_probs, day_volumes, idx)
 
             is_forecast = day_offset > 0
             is_today = day_offset == 0
@@ -301,6 +407,7 @@ class LiveData:
                 "rain_2d_cum": round(features["rain_2d_cum"], 3),
                 "rain_3d_cum": round(features["rain_3d_cum"], 3),
                 "predictions": day_predictions,
+                "discharge_probs": day_probs[idx],
                 "features": features,
             }
 
@@ -394,37 +501,23 @@ class LiveData:
         groups = is_dry.ne(is_dry.shift()).cumsum()
         daily["dry_spell_days"] = is_dry.groupby(groups).cumsum()
 
-        # Run predictions for target ± days
+        # Score every row (prior week feeds the persistence composition),
+        # then emit target ± days with composed impact risk
+        row_features = [self._features_from_row(row) for _, row in daily.iterrows()]
+        day_probs = [self._predict_calibrated(f) for f in row_features]
+        day_volumes = [self._predict_expected_volumes(f) for f in row_features]
+
         target_date = target.date()
         filtered = {}
 
-        for _, row in daily.iterrows():
+        for idx, (_, row) in enumerate(daily.iterrows()):
             row_date = row["date"].date()
             offset = (row_date - target_date).days
             if offset < -2 or offset > 5:
                 continue
 
-            features = {
-                "precip_avg": row.get("precip_inches", 0) or 0,
-                "precip_max": row.get("precip_max_hourly", 0) or 0,
-                "rain_2d_cum": row.get("rain_2d_cum", 0) or 0,
-                "rain_3d_cum": row.get("rain_3d_cum", 0) or 0,
-                "rain_5d_cum": row.get("rain_5d_cum", 0) or 0,
-                "rain_7d_cum": row.get("rain_7d_cum", 0) or 0,
-                "rain_14d_cum": row.get("rain_14d_cum", 0) or 0,
-                "rain_30d_cum": row.get("rain_30d_cum", 0) or 0,
-                "rain_lag1d": row.get("rain_lag1d", 0) or 0,
-                "rain_lag2d": row.get("rain_lag2d", 0) or 0,
-                "rain_lag3d": row.get("rain_lag3d", 0) or 0,
-                "rain_lag5d": row.get("rain_lag5d", 0) or 0,
-                "rain_lag7d": row.get("rain_lag7d", 0) or 0,
-                "antecedent_moisture": row.get("antecedent_moisture", 0) or 0,
-                "wet_prior_3d": int(row.get("wet_prior_3d", 0) or 0),
-                "peak_3d": row.get("peak_3d", 0) or 0,
-                "dry_spell_days": row.get("dry_spell_days", 0) or 0,
-            }
-
-            day_predictions = self._predict_calibrated(features)
+            features = row_features[idx]
+            day_predictions = self._compose_impact(day_probs, day_volumes, idx)
 
             label = row_date.strftime("%a %b %d")
             if offset == 0:
@@ -440,6 +533,7 @@ class LiveData:
                 "rain_2d_cum": round(features["rain_2d_cum"], 3),
                 "rain_3d_cum": round(features["rain_3d_cum"], 3),
                 "predictions": day_predictions,
+                "discharge_probs": day_probs[idx],
                 "features": features,
             }
 
@@ -901,7 +995,8 @@ footer a { color: #2b7fbf; text-decoration: none; }
     <p>⚠️ Avoid water contact during and 72 hours after rain</p>
     <p style="margin-top:8px;">
         <a href="https://webapps.sfpuc.org/sapps/beachesandbay.html">SFPUC Beach Map</a> ·
-        Model: GBM trained on 6 years of rain + bacteria data (AUC 0.870)
+        Model: trained on SFPUC-reported discharge events 2016–2025 (holdout PR-AUC 0.87);
+        shown risk = P(discharge) × measured beach-impact persistence by discharge size
     </p>
 </footer>
 </div>
@@ -916,7 +1011,7 @@ function riskInfo(prob) {
 }
 
 const basinLabels = {
-    citywide: { icon: '🏙️', name: 'City-wide CSO', desc: '3+ stations elevated across 2+ basins' },
+    citywide: { icon: '🏙️', name: 'City-wide', desc: 'Worst basin: sewage discharge impact' },
     westside: { icon: '🌊', name: 'Westside', desc: 'Ocean Beach, Baker Beach, China Beach' },
     north_shore: { icon: '🏖️', name: 'North Shore', desc: 'Crissy Field, Aquatic Park' },
     southeast: { icon: '⚓', name: 'Southeast', desc: 'Islais Creek, Candlestick Point' },
