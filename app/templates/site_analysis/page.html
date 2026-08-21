@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Site Report Card — Surfrider SF Blue Water Task Force</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#e2e8ee;color:#26272a;font-family:'Avenir Next','Trebuchet MS','Segoe UI',sans-serif}
+  a{color:#317fb2}
+  .wrap{max-width:1100px;margin:0 auto;padding:24px}
+  .back-to-dash{display:inline-block;margin:0 0 12px;padding:8px 14px;background:#343b44;color:#fff;border-radius:999px;text-decoration:none;font-weight:700;font-size:13px}
+  .back-to-dash:hover{background:#26272a}
+  .hero{background:#1f6fb0;color:#fff;border-radius:24px;padding:28px;margin-bottom:20px}
+  .hero h1{margin:6px 0 6px;font-size:28px;text-transform:uppercase;letter-spacing:.03em;color:#fff;-webkit-text-stroke:2px #26272a;paint-order:stroke fill}
+  .hero p{margin:0;color:rgba(255,255,255,.88);font-size:15px;line-height:1.5;max-width:78ch}
+
+  .controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:0 0 14px}
+  .group-btn{padding:8px 16px;border-radius:999px;border:2px solid #d9e4e8;background:#fff;color:#5e6a71;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
+  .group-btn.active{border-color:#1f6fb0;background:#1f6fb0;color:#fff}
+  .legend{margin-left:auto;font-size:13px;font-weight:600;color:#5e6a71}
+
+  .board{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:6px 18px 14px;overflow-x:auto}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:760px}
+  th{text-align:left;color:#5e6a71;font-weight:700;padding:10px 10px 8px;border-bottom:2px solid #d9e4e8;white-space:nowrap}
+  th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
+  td{padding:9px 10px;border-bottom:1px solid #eef2f4;vertical-align:middle}
+  tr.site{cursor:pointer}
+  tr.site:hover td{background:#f6f9fb}
+  tr.sporadic td{color:#98a3ab}
+  .name{font-weight:700;white-space:nowrap}
+  .chip{display:inline-block;margin-left:8px;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;vertical-align:1px}
+  .chip.east{background:#fdeee2;color:#b25b1e}
+  .chip.ocean{background:#e3f1fa;color:#1f6fb0}
+  .chip.north{background:#e8f4ea;color:#2f7d4c}
+  .chip.sporadic{background:#eef1f3;color:#98a3ab}
+  .barcell{min-width:190px}
+  .bar{display:inline-block;height:13px;border-radius:4px;background:#1f6fb0;vertical-align:middle;margin-right:8px}
+  .bar.bad{background:#b5310a}
+  .bar.warn{background:#d4763a}
+  tr.sporadic .bar{background:#c4ccd2}
+  .pct{font-weight:700;font-variant-numeric:tabular-nums}
+  tr.detail td{background:#f6f9fb;padding:12px 16px 14px;border-bottom:1px solid #d9e4e8}
+  .years{display:flex;gap:8px;flex-wrap:wrap}
+  .yr{background:#fff;border:1px solid #d9e4e8;border-radius:10px;padding:7px 11px;text-align:center;min-width:74px}
+  .yr b{display:block;font-size:15px}
+  .yr span{font-size:11px;color:#5e6a71}
+  .detail-meta{margin:0 0 10px;font-size:12.5px;color:#5e6a71}
+
+  .notes{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:16px 20px;margin-top:18px;font-size:13.5px;color:#3f474d;line-height:1.55}
+  .notes h2{font-size:15px;margin:0 0 8px;color:#26272a}
+  .foot{color:#8a949b;font-size:12px;margin-top:16px}
+  .loading{padding:40px;text-align:center;color:#5e6a71;font-weight:600}
+</style></head>
+<body><div class="wrap">
+  <a class="back-to-dash" href="/">← Dashboard</a>
+  <div class="hero">
+    <h1>📊 Site Report Card</h1>
+    <p>How often each shoreline monitoring site fails the state bacteria standard
+    (Enterococcus single-sample max, 104&nbsp;MPN/100mL — the same standard BWTF grading
+    and the city's beach postings use), from the city's published lab results.
+    Click a site for its year-by-year trend.</p>
+  </div>
+
+  <div class="controls" id="groupBtns">
+    <button class="group-btn active" data-group="">All sites</button>
+    <button class="group-btn" data-group="East Bayshore">East Bayshore</button>
+    <button class="group-btn" data-group="Ocean">Ocean</button>
+    <button class="group-btn" data-group="North Shore">North Shore</button>
+    <span class="legend" id="metaLine"></span>
+  </div>
+
+  <div class="board">
+    <div class="loading" id="loading">Loading the city's lab data…</div>
+    <table id="tbl" style="display:none">
+      <thead><tr>
+        <th>Site</th>
+        <th class="barcell">% bad — last 2 yrs</th>
+        <th class="num">full record</th>
+        <th class="num">wet season</th>
+        <th class="num">dry season</th>
+        <th class="num">samples</th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+
+  <div class="notes">
+    <h2>Reading these numbers</h2>
+    <b>"Bad" = a sample at or over the state single-sample limit</b> (Enterococcus 104 MPN/100mL);
+    the wet season is November–April.
+    The city resamples after exceedances, which nudges absolute percentages up a little — it
+    affects every site similarly, so the <i>ranking</i> is robust.
+    Sites marked <span class="chip sporadic">sporadic</span> are sampled only occasionally or
+    reactively (often during storm events), so their raw rates aren't comparable to the
+    weekly-sampled sites and they're listed separately at the bottom, unranked.
+    Also worth knowing: <b>the city samples no station at India Basin</b> — the largest
+    unsampled gap on the east shoreline, between Islais Creek and Sunnydale Cove.
+  </div>
+  <div class="foot" id="foot">Source: DataSF “Beach Water Quality” lab results (SFPUC shoreline
+  monitoring program), fetched live.</div>
+</div>
+
+<script>
+let DATA = null, activeGroup = "";
+
+const groupChip = g => g === "East Bayshore" ? '<span class="chip east">East</span>'
+                    : g === "Ocean"          ? '<span class="chip ocean">Ocean</span>'
+                    :                          '<span class="chip north">North</span>';
+const pctTxt = p => p === null || p === undefined ? "—" : p.toFixed(1) + "%";
+
+function barCell(p, sporadic) {
+  if (p === null || p === undefined) return "—";
+  const w = Math.round(p * 4);   // 50% -> 200px
+  const cls = sporadic ? "" : p >= 25 ? " bad" : p >= 12 ? " warn" : "";
+  return `<span class="bar${cls}" style="width:${w}px"></span><span class="pct">${p.toFixed(1)}%</span>`;
+}
+
+function render() {
+  const tb = document.getElementById("rows");
+  tb.innerHTML = "";
+  const sites = DATA.sites.filter(s => !activeGroup || s.group === activeGroup);
+  for (const s of sites) {
+    const tr = document.createElement("tr");
+    tr.className = "site" + (s.routine ? "" : " sporadic");
+    tr.innerHTML = `
+      <td class="name">${s.name}${groupChip(s.group)}${s.routine ? "" : '<span class="chip sporadic">sporadic</span>'}</td>
+      <td class="barcell">${barCell(s.recent.pct, !s.routine)}</td>
+      <td class="num">${pctTxt(s.exceed_pct)}</td>
+      <td class="num">${pctTxt(s.wet.pct)}</td>
+      <td class="num">${pctTxt(s.dry.pct)}</td>
+      <td class="num">${s.samples}</td>`;
+    const detail = document.createElement("tr");
+    detail.className = "detail";
+    detail.style.display = "none";
+    detail.innerHTML = `<td colspan="6">
+      <p class="detail-meta">${s.name} — sampled ${s.first} → ${s.last} ·
+        median ${s.median} MPN · worst reading ${Math.round(s.max).toLocaleString()} MPN ·
+        ≥36 (caution) in ${pctTxt(s.caution_pct)} of samples</p>
+      <div class="years">${s.yearly.map(y =>
+        `<div class="yr"><b>${pctTxt(y.pct)}</b><span>${y.year} · ${y.n} samples</span></div>`).join("")}
+      </div></td>`;
+    tr.addEventListener("click", () => {
+      detail.style.display = detail.style.display === "none" ? "" : "none";
+    });
+    tb.appendChild(tr);
+    tb.appendChild(detail);
+  }
+}
+
+async function load() {
+  const resp = await fetch("/analysis/api/summary");
+  DATA = await resp.json();
+  if (DATA.error) {
+    document.getElementById("loading").textContent = "Couldn't load the city dataset: " + DATA.error;
+    return;
+  }
+  document.getElementById("loading").style.display = "none";
+  document.getElementById("tbl").style.display = "";
+  document.getElementById("metaLine").textContent =
+    `${DATA.total_samples.toLocaleString()} lab results · newest sample ${DATA.newest_sample}` +
+    (DATA.stale_note ? " · ⚠ cached (" + DATA.stale_note + ")" : "");
+  render();
+}
+
+document.getElementById("groupBtns").addEventListener("click", e => {
+  const btn = e.target.closest(".group-btn");
+  if (!btn) return;
+  document.querySelectorAll(".group-btn").forEach(b => b.classList.toggle("active", b === btn));
+  activeGroup = btn.dataset.group;
+  render();
+});
+
+load();
+</script>
+</body></html>

@@ -44,6 +44,7 @@ from flask import Flask, Response, redirect, render_template, request, session
 
 import features.cso_history.page as cso_history_page
 import features.forecast.page as forecast_page
+import features.site_analysis.page as site_analysis_page
 from features.alerts.page import AlertsRoutes
 from features.comparison.page import ComparisonRoutes
 from features.alerts.monitoring import CombinedWaterQualityMonitor
@@ -271,6 +272,10 @@ def create_app():
     # CSO event timeline (public read-only; recipient data never leaves the DB)
     for path, handler in cso_history_page.GET_ROUTES.items():
         app.add_url_rule(path, f"cso-history-get:{path}", _forecast_view(handler), methods=["GET"])
+
+    # Site report card (public read-only; DataSF lab-data analysis)
+    for path, handler in site_analysis_page.GET_ROUTES.items():
+        app.add_url_rule(path, f"site-analysis-get:{path}", _forecast_view(handler), methods=["GET"])
 
     # No forecast refresh thread: predictions are compute-on-visit, cached in
     # Supabase (forecast_predictions) — /forecast/api/data refreshes on staleness.

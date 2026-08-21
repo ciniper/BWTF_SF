@@ -23,6 +23,8 @@ PAGES = [
      "Every Surfrider volunteer sample — tester, field conditions (weather, tide, waves), and notes."),
     ("/cso-history", "📈", "CSO Event Timeline",
      "Every posting and sewage-overflow event our real-time watcher has detected, plotted per station."),
+    ("/analysis", "📊", "Site Report Card",
+     "How often each shoreline site fails the state bacteria standard — rankings, storm-season effect, and year-by-year trends from the city's lab data."),
 ]
 
 
