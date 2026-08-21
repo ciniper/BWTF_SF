@@ -18,6 +18,7 @@ Open: http://localhost:8091
 
 import json
 import pickle
+import sys
 import time
 import traceback
 import http.server
@@ -30,9 +31,46 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 from threading import Thread, Lock
+from zoneinfo import ZoneInfo
+
+# Supabase (observed CSO flags from the pg_cron watcher's alert_log).
+# Optional: everything degrades to model-only composition without it.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+try:
+    from shared import supabase as _supabase
+except Exception:
+    _supabase = None
 
 MODEL_DIR = Path(__file__).parent / "data" / "models"
 PORT = 8091
+LOCAL_TZ = ZoneInfo("America/Los_Angeles")
+
+# SFPUC LIMS numeric station id (what the watcher stores in alert_log
+# station_ids) → forecast basin, by which combined-sewer system's outfalls
+# affect that beach. 4618 Mission Creek is deliberately unmapped: its
+# discharges come from the Central (Mission Creek) basin, which has no
+# serving model or bacteria stations in this app.
+OBSERVED_STATION_BASIN = {
+    "4601": "westside",     # Fort Funston
+    "4602": "westside",     # Ocean Beach at Sloat
+    "4603": "westside",     # Ocean Beach at Vicente
+    "4604": "westside",     # Ocean Beach at Balboa
+    "4605": "westside",     # Ocean Beach at Lincoln
+    "4606": "westside",     # Ocean Beach at Pacheco
+    "4607": "westside",     # China Beach
+    "4608": "westside",     # Baker Beach West
+    "4609": "westside",     # Baker Beach East
+    "4610": "westside",     # Baker Beach at Lobos Creek
+    "4611": "north_shore",  # Crissy Field West
+    "4612": "north_shore",  # Crissy Field East
+    "4613": "north_shore",  # Aquatic Park
+    "4614": "north_shore",  # Hyde Street Pier
+    "4615": "southeast",    # Jackrabbit Beach (Candlestick)
+    "4616": "southeast",    # Windsurfer Circle (Candlestick)
+    "4617": "southeast",    # Sunnydale Cove
+    "4619": "southeast",    # Islais Creek
+    "4620": "southeast",    # Crane Cove Park (Central waterfront)
+}
 
 # ─── Data source URLs ────────────────────────────────────────────────────────
 
@@ -68,6 +106,8 @@ class LiveData:
         self.error = None
         self.models = self._load_models()
         self.thresholds = self._load_thresholds()
+        self.volume_models = self._load_volume_models()
+        self.impact_table = self._load_impact_table()
 
     def _load_models(self):
         models = {}
@@ -77,6 +117,70 @@ class LiveData:
                 with open(path, "rb") as f:
                     models[name] = pickle.load(f)
         return models
+
+    def _load_volume_models(self):
+        """Per-basin expected-discharge-volume regressors (log1p MG), from the
+        v2 retrain on SFPUC-reported events. Used to pick the right
+        persistence curve (big discharges keep beaches posted longer)."""
+        models = {}
+        for name in ["westside", "north_shore", "southeast"]:
+            path = MODEL_DIR / f"{name}_volume.pkl"
+            if path.exists():
+                with open(path, "rb") as f:
+                    models[name] = pickle.load(f)
+        return models
+
+    def _load_impact_table(self):
+        """Empirical P(basin bacteria elevated | days since discharge, size),
+        measured from beach samples joined to SFPUC-reported discharges
+        (see train_v2.fit_impact_table).
+
+        The raw table has small-n buckets (down to n=3) whose sampling noise
+        makes the decay non-monotonic (e.g. Westside day-3-small reads higher
+        than day-1). Contamination physically decays, so we enforce a
+        non-increasing curve over days-since-discharge per size class with
+        weighted isotonic regression (PAVA), weighting each bucket by its
+        sample count."""
+        path = MODEL_DIR / "impact_table.json"
+        if not path.exists():
+            return {}
+        with open(path) as f:
+            table = json.load(f)
+
+        def pava_nonincreasing(values, weights):
+            # pool-adjacent-violators for a non-increasing fit
+            blocks = [[v, w] for v, w in zip(values, weights)]
+            i = 0
+            while i < len(blocks) - 1:
+                if blocks[i][0] < blocks[i + 1][0] - 1e-12:  # violation
+                    v1, w1 = blocks[i]
+                    v2, w2 = blocks[i + 1]
+                    blocks[i] = [(v1 * w1 + v2 * w2) / (w1 + w2), w1 + w2]
+                    del blocks[i + 1]
+                    i = max(i - 1, 0)
+                else:
+                    i += 1
+            out, bi = [], 0
+            consumed = 0
+            for v, w in zip(values, weights):
+                out.append(blocks[bi][0])
+                consumed += w
+                if consumed >= blocks[bi][1] - 1e-9:
+                    bi, consumed = bi + 1, 0
+            return out
+
+        order = ["0", "1", "2", "3", "4-5", "6-7"]
+        for basin, data in table.items():
+            buckets = data.get("buckets", {})
+            for size in ("small", "large"):
+                keys = [f"d{k}_{size}" for k in order if f"d{k}_{size}" in buckets]
+                if len(keys) < 2:
+                    continue
+                vals = [buckets[k]["p_elevated"] for k in keys]
+                wts = [max(buckets[k].get("n", 1), 1) for k in keys]
+                for k, v in zip(keys, pava_nonincreasing(vals, wts)):
+                    buckets[k]["p_elevated"] = round(v, 3)
+        return table
 
     def _predict_calibrated(self, features: dict) -> dict:
         """
@@ -111,6 +215,166 @@ class LiveData:
             with open(path) as f:
                 return json.load(f)
         return {}
+
+    # ── Discharge → beach-impact composition ────────────────────────────────
+    #
+    # The v2 models predict P(discharge TODAY). Beaches stay contaminated for
+    # days after a discharge, so the displayed risk for day D composes the
+    # discharge probabilities of D and the prior week with how often beaches
+    # were still elevated k days after a discharge of that size:
+    #
+    #   risk(D) = 1 - ∏_{k=0..7} (1 - p_discharge(D-k) · x(k, size(D-k)))
+    #
+    # x(k, size) is the discharge-ATTRIBUTABLE elevation probability, i.e. the
+    # impact table's P(elevated) with the dry-weather background removed via
+    # the independent-OR identity  p = 1-(1-baseline)(1-x)  →
+    # x = (p - baseline)/(1 - baseline). That keeps dry days at ~0 like before.
+
+    _IMPACT_BASIN_TITLES = {"westside": "Westside", "north_shore": "North Shore",
+                            "southeast": "Southeast"}
+
+    def _impact_fraction(self, basin_key: str, days_since: int, volume_mg: float) -> float:
+        """x(k, size): attributable P(beach elevated) k days after a discharge
+        of `volume_mg`, blending the small/large curves by predicted size."""
+        table = self.impact_table.get(self._IMPACT_BASIN_TITLES.get(basin_key, ""), {})
+        buckets = table.get("buckets", {})
+        if not buckets:
+            return 1.0 if days_since == 0 else 0.0  # degraded: same-day only
+        baseline = buckets.get("baseline_no_recent_discharge", {}).get("p_elevated", 0.0)
+        bucket = str(days_since) if days_since <= 3 else ("4-5" if days_since <= 5 else "6-7")
+
+        def attributable(size):
+            p = buckets.get(f"d{bucket}_{size}", {}).get("p_elevated")
+            if p is None:
+                return None
+            return max(0.0, (p - baseline) / (1 - baseline)) if baseline < 1 else 0.0
+
+        x_small, x_large = attributable("small"), attributable("large")
+        if x_small is None and x_large is None:
+            return 0.0
+        if x_small is None:
+            return x_large
+        if x_large is None:
+            return x_small
+        median = table.get("median_event_volume_mg", 1.0) or 1.0
+        w_large = volume_mg / (volume_mg + median)  # 0.5 at the median event size
+        return w_large * x_large + (1 - w_large) * x_small
+
+    def _predict_expected_volumes(self, features: dict) -> dict:
+        """Expected discharge volume (MG) per basin if a discharge happens."""
+        out = {}
+        for name, md in self.volume_models.items():
+            X = pd.DataFrame([{f: features.get(f, 0) for f in md["features"]}])
+            out[name] = max(0.0, float(np.expm1(md["model"].predict(X)[0])))
+        return out
+
+    def _fetch_observed_cso(self, window_start) -> dict:
+        """Observed CSO onsets from the Supabase alert_log the pg_cron watcher
+        writes (one row per escalation; edge-triggered, so a row marks the
+        ONSET day — exactly what the persistence composition needs).
+
+        Returns {date: {basin_key, ...}}. Empty dict when Supabase is not
+        configured, the query fails, or nothing was observed — absence of a
+        row means "not observed", never "no discharge", so callers fall back
+        to model probabilities.
+        """
+        if _supabase is None or not _supabase.is_configured():
+            return {}
+        try:
+            rows = _supabase.select("alert_log", {
+                "select": "created_at,event_type,station_ids,simulated,results",
+                "event_type": "eq.cso",
+                "simulated": "eq.false",
+                "created_at": f"gte.{window_start.isoformat()}T00:00:00+00:00",
+                "order": "created_at.asc",
+                "limit": "500",
+            })
+        except Exception as e:
+            print(f"observed-CSO fetch failed (composition falls back to model): {e}")
+            return {}
+
+        observed = {}
+        for row in rows:
+            try:
+                ts = datetime.fromisoformat(row["created_at"].replace("Z", "+00:00"))
+                local_date = ts.astimezone(LOCAL_TZ).date()
+            except (KeyError, ValueError):
+                continue
+            # Prefer per-station transitions (a mixed dispatch can bundle
+            # 'posted' escalations with the 'cso' ones); fall back to the
+            # row-level station list. `results` is an object in pg_live rows
+            # but a bare list in older watcher rows — tolerate both.
+            station_ids = []
+            results = row.get("results")
+            transitions = results.get("transitions") if isinstance(results, dict) else None
+            transitions = transitions or []
+            for t in transitions:
+                # belt-and-braces: the row-level simulated=eq.false filter
+                # already excludes any row containing a simulated transition
+                # (it's bool_or over transitions), but skip per-transition
+                # simulated flags too in case that semantic ever changes
+                if isinstance(t, dict) and t.get("to") == "cso" and not t.get("simulated"):
+                    station_ids.append(t.get("station_id", ""))
+            if not station_ids:
+                station_ids = row.get("station_ids") or []
+            for sid in station_ids:
+                basin = OBSERVED_STATION_BASIN.get(sid)
+                if basin:
+                    observed.setdefault(local_date, set()).add(basin)
+        return observed
+
+    def _compose_impact(self, day_probs: list, day_volumes: list, idx: int,
+                        day_dates: list = None, observed: dict = None) -> dict:
+        """Composed beach-impact risk for daily-table row `idx`, per basin,
+        from that day's and the prior 7 days' discharge probabilities.
+
+        Where the SFPUC watcher OBSERVED a CSO onset (via `observed`,
+        {date: {basin_key}}), that day's discharge probability is replaced
+        with certainty (p=1) — measured persistence applied to a known event
+        instead of a prediction stacked on a prediction.
+        """
+        observed = observed or {}
+        composed = {}
+        for basin_key in ["westside", "north_shore", "southeast"]:
+            no_impact = 1.0
+            for k in range(0, 8):
+                j = idx - k
+                if j < 0 or j >= len(day_probs):
+                    continue
+                p = day_probs[j].get(basin_key)
+                if day_dates is not None and basin_key in observed.get(day_dates[j], ()):
+                    p = 1.0
+                if not p:
+                    continue
+                vol = day_volumes[j].get(basin_key, 0.0)
+                no_impact *= 1.0 - p * self._impact_fraction(basin_key, k, vol)
+            composed[basin_key] = round(1.0 - no_impact, 3)
+        composed["citywide"] = max(composed.values()) if composed else 0.0
+        return composed
+
+    @staticmethod
+    def _features_from_row(row) -> dict:
+        """Model features from one row of the daily rain table (shared by the
+        live and historical paths — keep in lockstep with train_v2)."""
+        return {
+            "precip_avg": row.get("precip_inches", 0) or 0,
+            "precip_max": row.get("precip_max_hourly", 0) or 0,
+            "rain_2d_cum": row.get("rain_2d_cum", 0) or 0,
+            "rain_3d_cum": row.get("rain_3d_cum", 0) or 0,
+            "rain_5d_cum": row.get("rain_5d_cum", 0) or 0,
+            "rain_7d_cum": row.get("rain_7d_cum", 0) or 0,
+            "rain_14d_cum": row.get("rain_14d_cum", 0) or 0,
+            "rain_30d_cum": row.get("rain_30d_cum", 0) or 0,
+            "rain_lag1d": row.get("rain_lag1d", 0) or 0,
+            "rain_lag2d": row.get("rain_lag2d", 0) or 0,
+            "rain_lag3d": row.get("rain_lag3d", 0) or 0,
+            "rain_lag5d": row.get("rain_lag5d", 0) or 0,
+            "rain_lag7d": row.get("rain_lag7d", 0) or 0,
+            "antecedent_moisture": row.get("antecedent_moisture", 0) or 0,
+            "wet_prior_3d": int(row.get("wet_prior_3d", 0) or 0),
+            "peak_3d": row.get("peak_3d", 0) or 0,
+            "dry_spell_days": row.get("dry_spell_days", 0) or 0,
+        }
 
     def refresh(self):
         """Fetch all live data and run predictions"""
@@ -247,38 +511,28 @@ class LiveData:
         groups = is_dry.ne(is_dry.shift()).cumsum()
         daily["dry_spell_days"] = is_dry.groupby(groups).cumsum()
 
-        # Run predictions for today + next 5 days
+        # Score EVERY row of the daily table (the display days need the prior
+        # week's discharge probabilities for the persistence composition)
+        row_features = [self._features_from_row(row) for _, row in daily.iterrows()]
+        day_probs = [self._predict_calibrated(f) for f in row_features]
+        day_volumes = [self._predict_expected_volumes(f) for f in row_features]
+        day_dates = [d.date() for d in daily["date"]]
+        observed = self._fetch_observed_cso(min(day_dates)) if day_dates else {}
+
+        # Emit today + next 5 days (plus yesterday) with composed impact risk
         results = {}
         for day_offset in range(-1, 6):
             target_date = (today + timedelta(days=day_offset)).date()
-            row = daily[daily["date"].dt.date == target_date]
-
-            if row.empty:
+            match = daily.index[daily["date"].dt.date == target_date]
+            if len(match) == 0:
                 continue
+            idx = daily.index.get_loc(match[0])
+            features = row_features[idx]
 
-            row = row.iloc[0]
-
-            features = {
-                "precip_avg": row.get("precip_inches", 0) or 0,
-                "precip_max": row.get("precip_max_hourly", 0) or 0,
-                "rain_2d_cum": row.get("rain_2d_cum", 0) or 0,
-                "rain_3d_cum": row.get("rain_3d_cum", 0) or 0,
-                "rain_5d_cum": row.get("rain_5d_cum", 0) or 0,
-                "rain_7d_cum": row.get("rain_7d_cum", 0) or 0,
-                "rain_14d_cum": row.get("rain_14d_cum", 0) or 0,
-                "rain_30d_cum": row.get("rain_30d_cum", 0) or 0,
-                "rain_lag1d": row.get("rain_lag1d", 0) or 0,
-                "rain_lag2d": row.get("rain_lag2d", 0) or 0,
-                "rain_lag3d": row.get("rain_lag3d", 0) or 0,
-                "rain_lag5d": row.get("rain_lag5d", 0) or 0,
-                "rain_lag7d": row.get("rain_lag7d", 0) or 0,
-                "antecedent_moisture": row.get("antecedent_moisture", 0) or 0,
-                "wet_prior_3d": int(row.get("wet_prior_3d", 0) or 0),
-                "peak_3d": row.get("peak_3d", 0) or 0,
-                "dry_spell_days": row.get("dry_spell_days", 0) or 0,
-            }
-
-            day_predictions = self._predict_calibrated(features)
+            # predictions = beach-impact risk (discharge + persistence);
+            # discharge_probs = same-day P(discharge) for transparency
+            day_predictions = self._compose_impact(day_probs, day_volumes, idx,
+                                                   day_dates, observed)
 
             is_forecast = day_offset > 0
             is_today = day_offset == 0
@@ -301,6 +555,8 @@ class LiveData:
                 "rain_2d_cum": round(features["rain_2d_cum"], 3),
                 "rain_3d_cum": round(features["rain_3d_cum"], 3),
                 "predictions": day_predictions,
+                "discharge_probs": day_probs[idx],
+                "observed_cso": sorted(observed.get(target_date, ())),
                 "features": features,
             }
 
@@ -394,37 +650,28 @@ class LiveData:
         groups = is_dry.ne(is_dry.shift()).cumsum()
         daily["dry_spell_days"] = is_dry.groupby(groups).cumsum()
 
-        # Run predictions for target ± days
+        # Score every row (prior week feeds the persistence composition),
+        # then emit target ± days with composed impact risk. Observed CSO
+        # onsets from the alert_log override model probabilities for any
+        # dates the watcher was live for (older dates simply return no rows).
+        row_features = [self._features_from_row(row) for _, row in daily.iterrows()]
+        day_probs = [self._predict_calibrated(f) for f in row_features]
+        day_volumes = [self._predict_expected_volumes(f) for f in row_features]
+        day_dates = [d.date() for d in daily["date"]]
+        observed = self._fetch_observed_cso(min(day_dates)) if day_dates else {}
+
         target_date = target.date()
         filtered = {}
 
-        for _, row in daily.iterrows():
+        for idx, (_, row) in enumerate(daily.iterrows()):
             row_date = row["date"].date()
             offset = (row_date - target_date).days
             if offset < -2 or offset > 5:
                 continue
 
-            features = {
-                "precip_avg": row.get("precip_inches", 0) or 0,
-                "precip_max": row.get("precip_max_hourly", 0) or 0,
-                "rain_2d_cum": row.get("rain_2d_cum", 0) or 0,
-                "rain_3d_cum": row.get("rain_3d_cum", 0) or 0,
-                "rain_5d_cum": row.get("rain_5d_cum", 0) or 0,
-                "rain_7d_cum": row.get("rain_7d_cum", 0) or 0,
-                "rain_14d_cum": row.get("rain_14d_cum", 0) or 0,
-                "rain_30d_cum": row.get("rain_30d_cum", 0) or 0,
-                "rain_lag1d": row.get("rain_lag1d", 0) or 0,
-                "rain_lag2d": row.get("rain_lag2d", 0) or 0,
-                "rain_lag3d": row.get("rain_lag3d", 0) or 0,
-                "rain_lag5d": row.get("rain_lag5d", 0) or 0,
-                "rain_lag7d": row.get("rain_lag7d", 0) or 0,
-                "antecedent_moisture": row.get("antecedent_moisture", 0) or 0,
-                "wet_prior_3d": int(row.get("wet_prior_3d", 0) or 0),
-                "peak_3d": row.get("peak_3d", 0) or 0,
-                "dry_spell_days": row.get("dry_spell_days", 0) or 0,
-            }
-
-            day_predictions = self._predict_calibrated(features)
+            features = row_features[idx]
+            day_predictions = self._compose_impact(day_probs, day_volumes, idx,
+                                                   day_dates, observed)
 
             label = row_date.strftime("%a %b %d")
             if offset == 0:
@@ -440,6 +687,8 @@ class LiveData:
                 "rain_2d_cum": round(features["rain_2d_cum"], 3),
                 "rain_3d_cum": round(features["rain_3d_cum"], 3),
                 "predictions": day_predictions,
+                "discharge_probs": day_probs[idx],
+                "observed_cso": sorted(observed.get(row_date, ())),
                 "features": features,
             }
 
@@ -901,7 +1150,8 @@ footer a { color: #2b7fbf; text-decoration: none; }
     <p>⚠️ Avoid water contact during and 72 hours after rain</p>
     <p style="margin-top:8px;">
         <a href="https://webapps.sfpuc.org/sapps/beachesandbay.html">SFPUC Beach Map</a> ·
-        Model: GBM trained on 6 years of rain + bacteria data (AUC 0.870)
+        Model: trained on SFPUC-reported discharge events 2016–2025 (holdout PR-AUC 0.87);
+        shown risk = P(discharge) × measured beach-impact persistence by discharge size
     </p>
 </footer>
 </div>
@@ -916,7 +1166,7 @@ function riskInfo(prob) {
 }
 
 const basinLabels = {
-    citywide: { icon: '🏙️', name: 'City-wide CSO', desc: '3+ stations elevated across 2+ basins' },
+    citywide: { icon: '🏙️', name: 'City-wide', desc: 'Worst basin: sewage discharge impact' },
     westside: { icon: '🌊', name: 'Westside', desc: 'Ocean Beach, Baker Beach, China Beach' },
     north_shore: { icon: '🏖️', name: 'North Shore', desc: 'Crissy Field, Aquatic Park' },
     southeast: { icon: '⚓', name: 'Southeast', desc: 'Islais Creek, Candlestick Point' },

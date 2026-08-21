@@ -295,8 +295,8 @@ class MLModel:
     Phase 2: Machine learning CSO prediction model.
     
     Trained on historical rainfall → CSO event correlations.
-    Requires the CSO event log from cso_events.py collector
-    and aligned rainfall data.
+    Superseded by train_v2.py, which trains on the ground-truth CSD
+    event dataset (data/csd/); kept for the rule-based fallback path.
     
     Uses Gradient Boosting (good for tabular data with mixed features).
     
@@ -318,7 +318,7 @@ class MLModel:
         
         Args:
             rain_df: Rainfall data with computed features (from cumulative_rain.py)
-            cso_df: CSO event log (from cso_events.py)
+            cso_df: CSD event log (data/csd/sf_csd_events.csv or Supabase alert_log)
             basin: Which basin to train for
             
         Returns:

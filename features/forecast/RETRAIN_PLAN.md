@@ -1,6 +1,15 @@
 # Forecast v2: retraining on ground-truth CSD events
 
-**Status: planned** — data landed 2026-08-21 (`data/csd/`), retrain not yet implemented.
+**Status: deployed on this branch** (2026-08-21) — rain data extended to
+2016, `src/models/train_v2.py` trained on ground truth, v2 pkls promoted to
+production paths, dashboard shows composed risk (P(discharge) × isotonic-
+smoothed persistence by discharge size), and observed SFPUC CSO onsets from
+the Supabase alert_log override model probabilities for past days.
+Chronological-holdout PR-AUC vs the proxy-trained v1 models: citywide 0.87
+vs 0.56, Westside 0.77 vs 0.54, Southeast 0.80 vs 0.28, North Shore 0.78 vs
+0.91* (*v1 scored in-sample on this window; v2's Brier is 3× better there).
+Remaining: hourly-intensity features, per-site impact curves, and the rest
+of the v3 list below.
 
 ## Why
 
@@ -101,6 +110,66 @@ during rollout; the bacteria samples remain the *impact* ground truth.
   N% of the time" — a defensible, sourced claim.
 - Simulator (`simulator.py`) can replay actual storm dates against reported
   event volumes.
+
+## v3 ideas (from the "Model Overview to Share" design doc, Aug 2026)
+
+Distilled from the nowcasting design review; ordered by value-for-effort.
+The doc's core recommendations that v2 already satisfies: threshold/regime
+framing (flat-then-cliff — our empirical curve confirms), antecedent
+precipitation index + days-since-rain, time-aware validation, decay/lag
+terms, per-system (Westside vs Bayside) feature separation, and assembling
+the historical CSD event series (done, better than hoped).
+
+1. **DONE (2026-08-21) — SFPUC's observed CSD flags in the composition.**
+   The Supabase watcher (db/migrations/001+004) already polls SFPUC every
+   tick: `watcher_state` holds the current ok/posted/cso status per station
+   and `alert_log` durably records every observed CSO onset (event_type=
+   'cso', station_ids, created_at; exclude simulated=true). For PAST days
+   in the persistence composition, map alert-log stations → basins and set
+   P(discharge)=1 on observed basin-days; keep model probabilities for
+   forecast days and for past days with no observation (absence of a row
+   means "not observed," not "no discharge" — don't force to zero).
+   Cheapest, highest-value upgrade — the doc is right that
+   "hours-since-CSD will always be one of the strongest predictors."
+   History accrues from Phase-1 go-live onward (log is all-simulated as of
+   Aug 2026; first real wet-season events will flow in automatically).
+   cso_events.py retired. Note: alert_log station_ids are NUMERIC LIMS ids
+   (4601-4620), mapped in live_dashboard.OBSERVED_STATION_BASIN. The impact
+   table is now isotonic-smoothed (weighted PAVA, non-increasing over
+   days-since) at load — raw small-n buckets made the decay jagged once
+   observed events exposed the curve directly.
+2. **Split the Westside impact table by site group.** Baker/China get
+   vigorous Golden Gate tidal flushing → much faster post-discharge decay
+   than Ocean Beach. One Westside-wide persistence curve overstates
+   Baker/China and may understate Ocean Beach. Fit impact curves per site
+   group (Ocean Beach | Baker/China | Crissy/Aquatic Park | Southeast).
+3. **Stage-2 environmental modifiers: tide, swell, solar/UV.** Discharge
+   prediction (stage 1) is hydraulics and stays rain-only; persistence
+   (stage 2) is where tide stage (NOAA CO-OPS 9414290), wave height (NDBC
+   46026/46237), and insolation (CIMIS/NSRDB) belong — flushing and UV
+   inactivation set decay speed. Fold into the impact model as features
+   when moving from the empirical table to a small logistic model.
+4. **Aquatic Park dry-weather baseline.** Enclosed, poorly flushed cove
+   with a bird/boat-driven floor — the doc flags it as the site most
+   likely to underperform. Model its non-CSD baseline explicitly (or at
+   minimum surface the measured baseline in the UI as background risk).
+5. **Persistence-baseline benchmark** (today = yesterday's measured value)
+   in eval_report — the field's standard null model (Virtual Beach
+   convention); makes our numbers legible to EPA/Surfrider reviewers.
+6. **Per-indicator log-concentration targets** (entero / E. coli / total
+   coliform as three responses; total coliform is noisiest) once stage 2
+   graduates from exceedance table to regression — enables predicted
+   MPN/100ml against the Title-17 thresholds instead of binary risk.
+7. Rain inputs: Greg's Wunderground PWS list (Outer Sunset, Marina, etc.)
+   could give basin-specific real-time rain (collectors/wunderground.py
+   already stubs this); SFPUC's 21-gauge network isn't public.
+
+Reference anchors from the doc worth keeping: Hart et al. 2020 (12-h
+antecedent rain r=0.57 with entero — supports the planned hourly-intensity
+features), Hynes et al. 2024 (outfall-proximity mapping — validates the
+per-outfall dataset design), Gonzalez & Noble 2012/2014 (multi-day
+antecedent windows; dry-weather exceedances at enclosed sites), PLOS One
+2021 review (MLR/PLS/GBM as the accepted toolkit).
 
 ## Keeping labels fresh
 
