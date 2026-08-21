@@ -1,4 +1,4 @@
-"""Landing page — current conditions + overall CSO status + links to the 3 pages.
+"""Landing page — current conditions + overall CSO status + links to the feature pages.
 
 Reuses the shared SFPUC client (status summary) and the optional weather/tide
 context. Everything is wrapped defensively so a flaky upstream never blanks the
@@ -21,6 +21,8 @@ PAGES = [
      "Surfrider volunteer-lab results vs. official city data for the same beaches, with full history."),
     ("/bwtf", "🔬", "BWTF Sample Log",
      "Every Surfrider volunteer sample — tester, field conditions (weather, tide, waves), and notes."),
+    ("/cso-history", "📈", "CSO Event Timeline",
+     "Every posting and sewage-overflow event our real-time watcher has detected, plotted per station."),
 ]
 
 

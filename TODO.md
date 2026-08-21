@@ -90,6 +90,7 @@ This roadmap has four parts:
 - [ ] Add throttling / quiet hours, and an explicit "all-clear" message when an event ends (recoveries currently just update state silently).
 
 ### B7. Delivery log & uptime/observability
+- [x] **CSO event timeline (shipped)** — `/cso-history` plots our own real-time detections per station from `alert_log` (detection minute → clear minute), public read-only; the API selects `results->transitions` only, so recipient data never leaves the DB. Migration 006 extends `bwtf_process_payload` to also log downgrades (`event_type='cleared'`, `channel='log'`, recipient_count=0, no dispatch) so event windows have ends; pre-006 events render "end not recorded". Sources: `watcher`/`pg_shadow`/`pg_live`, simulated excluded; empty state shows the live station roster + clean-water streak.
 - [ ] Persist delivery history — which alerts were sent / previewed / failed, per recipient and channel. *(carried from prior TODO)*
 - [ ] Add a heartbeat / dead-man's switch: a silent failure in a *safety* alert system is the worst case — page an admin if the poller stops or the SFPUC feed breaks.
 
