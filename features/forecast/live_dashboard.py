@@ -18,6 +18,7 @@ Open: http://localhost:8091
 
 import json
 import pickle
+import sys
 import time
 import traceback
 import http.server
@@ -30,9 +31,46 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 from threading import Thread, Lock
+from zoneinfo import ZoneInfo
+
+# Supabase (observed CSO flags from the pg_cron watcher's alert_log).
+# Optional: everything degrades to model-only composition without it.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+try:
+    from shared import supabase as _supabase
+except Exception:
+    _supabase = None
 
 MODEL_DIR = Path(__file__).parent / "data" / "models"
 PORT = 8091
+LOCAL_TZ = ZoneInfo("America/Los_Angeles")
+
+# SFPUC LIMS numeric station id (what the watcher stores in alert_log
+# station_ids) → forecast basin, by which combined-sewer system's outfalls
+# affect that beach. 4618 Mission Creek is deliberately unmapped: its
+# discharges come from the Central (Mission Creek) basin, which has no
+# serving model or bacteria stations in this app.
+OBSERVED_STATION_BASIN = {
+    "4601": "westside",     # Fort Funston
+    "4602": "westside",     # Ocean Beach at Sloat
+    "4603": "westside",     # Ocean Beach at Vicente
+    "4604": "westside",     # Ocean Beach at Balboa
+    "4605": "westside",     # Ocean Beach at Lincoln
+    "4606": "westside",     # Ocean Beach at Pacheco
+    "4607": "westside",     # China Beach
+    "4608": "westside",     # Baker Beach West
+    "4609": "westside",     # Baker Beach East
+    "4610": "westside",     # Baker Beach at Lobos Creek
+    "4611": "north_shore",  # Crissy Field West
+    "4612": "north_shore",  # Crissy Field East
+    "4613": "north_shore",  # Aquatic Park
+    "4614": "north_shore",  # Hyde Street Pier
+    "4615": "southeast",    # Jackrabbit Beach (Candlestick)
+    "4616": "southeast",    # Windsurfer Circle (Candlestick)
+    "4617": "southeast",    # Sunnydale Cove
+    "4619": "southeast",    # Islais Creek
+    "4620": "southeast",    # Crane Cove Park (Central waterfront)
+}
 
 # ─── Data source URLs ────────────────────────────────────────────────────────
 
@@ -95,12 +133,54 @@ class LiveData:
     def _load_impact_table(self):
         """Empirical P(basin bacteria elevated | days since discharge, size),
         measured from beach samples joined to SFPUC-reported discharges
-        (see train_v2.fit_impact_table)."""
+        (see train_v2.fit_impact_table).
+
+        The raw table has small-n buckets (down to n=3) whose sampling noise
+        makes the decay non-monotonic (e.g. Westside day-3-small reads higher
+        than day-1). Contamination physically decays, so we enforce a
+        non-increasing curve over days-since-discharge per size class with
+        weighted isotonic regression (PAVA), weighting each bucket by its
+        sample count."""
         path = MODEL_DIR / "impact_table.json"
-        if path.exists():
-            with open(path) as f:
-                return json.load(f)
-        return {}
+        if not path.exists():
+            return {}
+        with open(path) as f:
+            table = json.load(f)
+
+        def pava_nonincreasing(values, weights):
+            # pool-adjacent-violators for a non-increasing fit
+            blocks = [[v, w] for v, w in zip(values, weights)]
+            i = 0
+            while i < len(blocks) - 1:
+                if blocks[i][0] < blocks[i + 1][0] - 1e-12:  # violation
+                    v1, w1 = blocks[i]
+                    v2, w2 = blocks[i + 1]
+                    blocks[i] = [(v1 * w1 + v2 * w2) / (w1 + w2), w1 + w2]
+                    del blocks[i + 1]
+                    i = max(i - 1, 0)
+                else:
+                    i += 1
+            out, bi = [], 0
+            consumed = 0
+            for v, w in zip(values, weights):
+                out.append(blocks[bi][0])
+                consumed += w
+                if consumed >= blocks[bi][1] - 1e-9:
+                    bi, consumed = bi + 1, 0
+            return out
+
+        order = ["0", "1", "2", "3", "4-5", "6-7"]
+        for basin, data in table.items():
+            buckets = data.get("buckets", {})
+            for size in ("small", "large"):
+                keys = [f"d{k}_{size}" for k in order if f"d{k}_{size}" in buckets]
+                if len(keys) < 2:
+                    continue
+                vals = [buckets[k]["p_elevated"] for k in keys]
+                wts = [max(buckets[k].get("n", 1), 1) for k in keys]
+                for k, v in zip(keys, pava_nonincreasing(vals, wts)):
+                    buckets[k]["p_elevated"] = round(v, 3)
+        return table
 
     def _predict_calibrated(self, features: dict) -> dict:
         """
@@ -188,9 +268,68 @@ class LiveData:
             out[name] = max(0.0, float(np.expm1(md["model"].predict(X)[0])))
         return out
 
-    def _compose_impact(self, day_probs: list, day_volumes: list, idx: int) -> dict:
+    def _fetch_observed_cso(self, window_start) -> dict:
+        """Observed CSO onsets from the Supabase alert_log the pg_cron watcher
+        writes (one row per escalation; edge-triggered, so a row marks the
+        ONSET day — exactly what the persistence composition needs).
+
+        Returns {date: {basin_key, ...}}. Empty dict when Supabase is not
+        configured, the query fails, or nothing was observed — absence of a
+        row means "not observed", never "no discharge", so callers fall back
+        to model probabilities.
+        """
+        if _supabase is None or not _supabase.is_configured():
+            return {}
+        try:
+            rows = _supabase.select("alert_log", {
+                "select": "created_at,event_type,station_ids,simulated,results",
+                "event_type": "eq.cso",
+                "simulated": "eq.false",
+                "created_at": f"gte.{window_start.isoformat()}T00:00:00+00:00",
+                "order": "created_at.asc",
+                "limit": "500",
+            })
+        except Exception as e:
+            print(f"observed-CSO fetch failed (composition falls back to model): {e}")
+            return {}
+
+        observed = {}
+        for row in rows:
+            try:
+                ts = datetime.fromisoformat(row["created_at"].replace("Z", "+00:00"))
+                local_date = ts.astimezone(LOCAL_TZ).date()
+            except (KeyError, ValueError):
+                continue
+            # Prefer per-station transitions (a mixed dispatch can bundle
+            # 'posted' escalations with the 'cso' ones); fall back to the
+            # row-level station list. `results` is an object in pg_live rows
+            # but a bare list in older watcher rows — tolerate both.
+            station_ids = []
+            results = row.get("results")
+            transitions = results.get("transitions") if isinstance(results, dict) else None
+            transitions = transitions or []
+            for t in transitions:
+                if isinstance(t, dict) and t.get("to") == "cso":
+                    station_ids.append(t.get("station_id", ""))
+            if not station_ids:
+                station_ids = row.get("station_ids") or []
+            for sid in station_ids:
+                basin = OBSERVED_STATION_BASIN.get(sid)
+                if basin:
+                    observed.setdefault(local_date, set()).add(basin)
+        return observed
+
+    def _compose_impact(self, day_probs: list, day_volumes: list, idx: int,
+                        day_dates: list = None, observed: dict = None) -> dict:
         """Composed beach-impact risk for daily-table row `idx`, per basin,
-        from that day's and the prior 7 days' discharge probabilities."""
+        from that day's and the prior 7 days' discharge probabilities.
+
+        Where the SFPUC watcher OBSERVED a CSO onset (via `observed`,
+        {date: {basin_key}}), that day's discharge probability is replaced
+        with certainty (p=1) — measured persistence applied to a known event
+        instead of a prediction stacked on a prediction.
+        """
+        observed = observed or {}
         composed = {}
         for basin_key in ["westside", "north_shore", "southeast"]:
             no_impact = 1.0
@@ -199,6 +338,8 @@ class LiveData:
                 if j < 0 or j >= len(day_probs):
                     continue
                 p = day_probs[j].get(basin_key)
+                if day_dates is not None and basin_key in observed.get(day_dates[j], ()):
+                    p = 1.0
                 if not p:
                     continue
                 vol = day_volumes[j].get(basin_key, 0.0)
@@ -371,6 +512,8 @@ class LiveData:
         row_features = [self._features_from_row(row) for _, row in daily.iterrows()]
         day_probs = [self._predict_calibrated(f) for f in row_features]
         day_volumes = [self._predict_expected_volumes(f) for f in row_features]
+        day_dates = [d.date() for d in daily["date"]]
+        observed = self._fetch_observed_cso(min(day_dates)) if day_dates else {}
 
         # Emit today + next 5 days (plus yesterday) with composed impact risk
         results = {}
@@ -384,7 +527,8 @@ class LiveData:
 
             # predictions = beach-impact risk (discharge + persistence);
             # discharge_probs = same-day P(discharge) for transparency
-            day_predictions = self._compose_impact(day_probs, day_volumes, idx)
+            day_predictions = self._compose_impact(day_probs, day_volumes, idx,
+                                                   day_dates, observed)
 
             is_forecast = day_offset > 0
             is_today = day_offset == 0
@@ -408,6 +552,7 @@ class LiveData:
                 "rain_3d_cum": round(features["rain_3d_cum"], 3),
                 "predictions": day_predictions,
                 "discharge_probs": day_probs[idx],
+                "observed_cso": sorted(observed.get(target_date, ())),
                 "features": features,
             }
 
@@ -502,10 +647,14 @@ class LiveData:
         daily["dry_spell_days"] = is_dry.groupby(groups).cumsum()
 
         # Score every row (prior week feeds the persistence composition),
-        # then emit target ± days with composed impact risk
+        # then emit target ± days with composed impact risk. Observed CSO
+        # onsets from the alert_log override model probabilities for any
+        # dates the watcher was live for (older dates simply return no rows).
         row_features = [self._features_from_row(row) for _, row in daily.iterrows()]
         day_probs = [self._predict_calibrated(f) for f in row_features]
         day_volumes = [self._predict_expected_volumes(f) for f in row_features]
+        day_dates = [d.date() for d in daily["date"]]
+        observed = self._fetch_observed_cso(min(day_dates)) if day_dates else {}
 
         target_date = target.date()
         filtered = {}
@@ -517,7 +666,8 @@ class LiveData:
                 continue
 
             features = row_features[idx]
-            day_predictions = self._compose_impact(day_probs, day_volumes, idx)
+            day_predictions = self._compose_impact(day_probs, day_volumes, idx,
+                                                   day_dates, observed)
 
             label = row_date.strftime("%a %b %d")
             if offset == 0:
@@ -534,6 +684,7 @@ class LiveData:
                 "rain_3d_cum": round(features["rain_3d_cum"], 3),
                 "predictions": day_predictions,
                 "discharge_probs": day_probs[idx],
+                "observed_cso": sorted(observed.get(row_date, ())),
                 "features": features,
             }
 

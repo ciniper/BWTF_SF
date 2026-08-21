@@ -129,7 +129,8 @@ sf_sewage_forecast/
 │   │   ├── wunderground.py    # Weather Underground PWS scraper
 │   │   ├── noaa_met.py        # NOAA met observations (precip)
 │   │   ├── forecast_models.py # GFS/ECMWF forecast data
-│   │   └── cso_events.py      # CSO event logger (from BWTF/SFPUC)
+│   │   ├── csd_labels.py      # Ground-truth CSD daily labels (data/csd/)
+│   │   └── csd_ciwqs/         # CIWQS SMR scraping pipeline (see its README)
 │   ├── models/
 │   │   ├── cumulative_rain.py # Cumulative rainfall calculator
 │   │   ├── threshold_model.py # Basin-specific CSO threshold model
@@ -158,7 +159,8 @@ pip install -r requirements.txt
 python -m src.collectors.nws_rain
 
 # Collect CSO events from SFPUC
-python -m src.collectors.cso_events
+# CSO events now come from data/csd/ (historical) and the Supabase
+# alert_log written by the pg_cron watcher (live) — no polling script needed
 
 # Run prediction for next 48 hours
 python -m src.api.predict

@@ -118,7 +118,7 @@ precipitation index + days-since-rain, time-aware validation, decay/lag
 terms, per-system (Westside vs Bayside) feature separation, and assembling
 the historical CSD event series (done, better than hoped).
 
-1. **Use SFPUC's live CSD flags as observed truth in the composition.**
+1. **DONE (2026-08-21) — SFPUC's observed CSD flags in the composition.**
    The Supabase watcher (db/migrations/001+004) already polls SFPUC every
    tick: `watcher_state` holds the current ok/posted/cso status per station
    and `alert_log` durably records every observed CSO onset (event_type=
@@ -129,8 +129,13 @@ the historical CSD event series (done, better than hoped).
    means "not observed," not "no discharge" — don't force to zero).
    Cheapest, highest-value upgrade — the doc is right that
    "hours-since-CSD will always be one of the strongest predictors."
-   History accrues from Phase-1 go-live onward. Side effect: the
-   cso_events.py CSV logger is redundant with the watcher — retire it.
+   History accrues from Phase-1 go-live onward (log is all-simulated as of
+   Aug 2026; first real wet-season events will flow in automatically).
+   cso_events.py retired. Note: alert_log station_ids are NUMERIC LIMS ids
+   (4601-4620), mapped in live_dashboard.OBSERVED_STATION_BASIN. The impact
+   table is now isotonic-smoothed (weighted PAVA, non-increasing over
+   days-since) at load — raw small-n buckets made the decay jagged once
+   observed events exposed the curve directly.
 2. **Split the Westside impact table by site group.** Baker/China get
    vigorous Golden Gate tidal flushing → much faster post-discharge decay
    than Ocean Beach. One Westside-wide persistence curve overstates
