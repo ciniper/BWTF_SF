@@ -22,6 +22,8 @@
   .group-btn{padding:8px 16px;border-radius:999px;border:2px solid #d9e4e8;background:#fff;color:#5e6a71;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
   .group-btn.active{border-color:#1f6fb0;background:#1f6fb0;color:#fff}
   .legend{margin-left:auto;font-size:13px;font-weight:600;color:#5e6a71}
+  .ctl-label{font-size:13px;font-weight:700;color:#5e6a71}
+  input[type=date]{padding:7px 10px;border:2px solid #d9e4e8;border-radius:10px;font-family:inherit;font-size:13px;color:#26272a;background:#fff}
 
   .board{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:16px 18px;margin-bottom:16px;overflow-x:auto}
   .board h2{font-size:16px;margin:2px 0 12px;color:#26272a}
@@ -30,6 +32,13 @@
   th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
   td{padding:8px 10px;border-bottom:1px solid #eef2f4}
   .name{font-weight:700;white-space:nowrap}
+  tr.outfall{cursor:pointer}
+  tr.outfall:hover td{background:#f6f9fb}
+  tr.detail td{background:#f6f9fb;padding:12px 16px 14px;border-bottom:1px solid #d9e4e8}
+  .years-cards{display:flex;gap:8px;flex-wrap:wrap}
+  .yc{background:#fff;border:1px solid #d9e4e8;border-radius:10px;padding:7px 11px;text-align:center;min-width:86px}
+  .yc b{display:block;font-size:14px;font-variant-numeric:tabular-nums}
+  .yc span{font-size:11px;color:#5e6a71}
 
   .yrrow{display:flex;align-items:center;gap:10px;height:32px;font-size:13px}
   .yrrow .yl{width:44px;font-weight:700}
@@ -60,6 +69,16 @@
     <span class="legend" id="metaLine"></span>
   </div>
 
+  <div class="controls">
+    <span class="ctl-label">Range:</span>
+    <input type="date" id="startDate" min="2016-10-01">
+    <span style="color:#5e6a71">→</span>
+    <input type="date" id="endDate" min="2016-10-01">
+    <button class="group-btn preset active" data-days="">Full record</button>
+    <button class="group-btn preset" data-days="1826">Last 5 yrs</button>
+    <button class="group-btn preset" data-days="1096">Last 3 yrs</button>
+  </div>
+
   <div class="note" id="covNote"></div>
 
   <div class="board">
@@ -74,8 +93,8 @@
   </div>
 
   <div class="board">
-    <h2>Top outfalls by volume</h2>
-    <table><thead><tr><th>Outfall</th><th>Receiving water</th><th class="num">events</th><th class="num">total volume</th></tr></thead>
+    <h2>All outfalls <span style="font-weight:600;color:#5e6a71;font-size:12.5px">— click one for its year-by-year trend</span></h2>
+    <table><thead><tr><th>Outfall</th><th>Receiving water</th><th class="num">events</th><th class="num">total volume</th><th class="num">largest event</th></tr></thead>
     <tbody id="outfalls"></tbody></table>
   </div>
 
@@ -89,16 +108,28 @@
 </div>
 
 <script>
-let EV = [], COV = null, water = "";
+let EV = [], COV = null;
+const STATE = { water: "", start: "", end: "" };
 const MG = v => v == null ? "—"
   : v >= 1000 ? (v/1000).toFixed(2) + " billion gal"
   : v >= 1    ? Math.round(v).toLocaleString() + " MG"
   : (v*1e6).toLocaleString(undefined,{maximumFractionDigits:0}) + " gal";
-const MGshort = v => v == null ? "—" : v >= 1000 ? (v/1000).toFixed(1)+"B gal" : Math.round(v).toLocaleString()+" MG";
+const MGshort = v => v == null ? "—" : v >= 1000 ? (v/1000).toFixed(1)+"B gal" : v >= 10 ? Math.round(v).toLocaleString()+" MG" : v.toFixed(1)+" MG";
 const DUR = m => m == null ? "—" : m >= 60 ? (m/60).toFixed(1) + " h" : Math.round(m) + " min";
 const median = a => { const s=[...a].sort((x,y)=>x-y); return s.length ? s[Math.floor(s.length/2)] : null; };
 
-function rows() { return water ? EV.filter(e => e.water === water) : EV; }
+function inRange(e) {
+  return (!STATE.start || e.date >= STATE.start) && (!STATE.end || e.date <= STATE.end);
+}
+function dateRows() { return EV.filter(inRange); }                     // date filter only
+function rows() { return dateRows().filter(e => !STATE.water || e.water === STATE.water); }
+
+function yearCards(list) {
+  const ys = {};
+  for (const e of list) { const y = e.date.slice(0,4); (ys[y] ??= {n:0, mg:0}).n++; ys[y].mg += e.mg||0; }
+  return Object.keys(ys).sort().map(y =>
+    `<div class="yc"><b>${MGshort(ys[y].mg)}</b><span>${y} · ${ys[y].n} ev</span></div>`).join("");
+}
 
 function render() {
   const R = rows();
@@ -110,46 +141,63 @@ function render() {
   const biggest = R.reduce((a,e) => (e.mg||0) > (a.mg||0) ? e : a, {});
   const wettest = Object.entries(years).sort((a,b)=>b[1].mg-a[1].mg)[0];
   document.getElementById("tiles").innerHTML = `
-    <div class="tile"><b>${MG(totMG)}</b><span>total reported discharge${water?" — "+water:""}</span></div>
+    <div class="tile"><b>${MG(totMG)}</b><span>total reported discharge${STATE.water?" — "+STATE.water:""}</span></div>
     <div class="tile"><b>${R.length.toLocaleString()}</b><span>discharge events</span></div>
     <div class="tile"><b>${MGshort(biggest.mg)}</b><span>largest single event (${biggest.date||"—"})</span></div>
-    <div class="tile"><b>${wettest?wettest[0]:"—"}</b><span>biggest year (${wettest?MGshort(wettest[1].mg):"—"})</span></div>`;
+    <div class="tile"><b>${wettest?wettest[0]:"—"}</b><span>biggest year in range (${wettest?MGshort(wettest[1].mg):"—"})</span></div>`;
 
   // yearly bars
   const maxMG = Math.max(...Object.values(years).map(y=>y.mg), 1);
-  document.getElementById("years").className = "";
-  document.getElementById("years").innerHTML = Object.keys(years).sort().map(y => {
-    const partial = (y <= "2017" && (!water || water === "Pacific Ocean")) || y === "2025";
+  const el = document.getElementById("years");
+  el.className = "";
+  el.innerHTML = Object.keys(years).sort().map(y => {
+    const partial = y === "2016" || y === "2025" || (y === "2017" && (!STATE.water || STATE.water === "Pacific Ocean"));
     return `<div class="yrrow"><span class="yl">${y}</span>
       <span class="track"><span class="vol${partial?" partial":""}" style="width:${Math.max(1,100*years[y].mg/maxMG)}%"></span></span>
       <span class="val">${MGshort(years[y].mg)} · ${years[y].n} events</span></div>`;
-  }).join("");
+  }).join("") || '<div class="loading">No events in the selected range.</div>';
 
-  // by receiving water (always ALL waters, highlight filter)
+  // by receiving water — date-filtered, all waters shown, active filter highlighted
+  const D = dateRows();
   const byW = {};
-  for (const e of EV) { const w = (byW[e.water] ??= {n:0, mg:0, durs:[], big:{}}); w.n++; w.mg += e.mg||0;
+  for (const e of D) { const w = (byW[e.water] ??= {n:0, mg:0, durs:[], big:{}}); w.n++; w.mg += e.mg||0;
     if (e.dur != null) w.durs.push(e.dur);
     if ((e.mg||0) > (w.big.mg||0)) w.big = e; }
-  const allMG = EV.reduce((a,e)=>a+(e.mg||0),0);
+  const allMG = D.reduce((a,e)=>a+(e.mg||0),0) || 1;
   document.getElementById("waters").innerHTML = Object.entries(byW).sort((a,b)=>b[1].mg-a[1].mg).map(([w,d]) => `
-    <tr${water===w?' style="background:#f0f7fc"':''}><td class="name">${w}</td><td class="num">${d.n}</td>
+    <tr${STATE.water===w?' style="background:#f0f7fc"':''}><td class="name">${w}</td><td class="num">${d.n}</td>
     <td class="num"><span class="bar" style="width:${Math.round(90*d.mg/Math.max(allMG*0.4,1))}px"></span>${MGshort(d.mg)}</td>
     <td class="num">${(100*d.mg/allMG).toFixed(0)}%</td>
     <td class="num">${MGshort(d.big.mg)} (${d.big.date||"—"})</td><td class="num">${DUR(median(d.durs))}</td></tr>`).join("");
 
-  // top outfalls (respects filter)
+  // ALL outfalls (respects both filters), expandable per-year trend
   const byO = {};
-  for (const e of R) { const o = (byO[e.oid] ??= {name:e.oname, water:e.water, n:0, mg:0}); o.n++; o.mg += e.mg||0; }
-  document.getElementById("outfalls").innerHTML = Object.entries(byO).sort((a,b)=>b[1].mg-a[1].mg).slice(0,10).map(([id,o]) => `
-    <tr><td class="name">${id} — ${o.name}</td><td>${o.water}</td><td class="num">${o.n}</td><td class="num">${MGshort(o.mg)}</td></tr>`).join("");
+  for (const e of R) { const o = (byO[e.oid] ??= {name:e.oname, water:e.water, n:0, mg:0, big:{}, evs:[]});
+    o.n++; o.mg += e.mg||0; o.evs.push(e);
+    if ((e.mg||0) > (o.big.mg||0)) o.big = e; }
+  const ot = document.getElementById("outfalls");
+  ot.innerHTML = "";
+  for (const [id, o] of Object.entries(byO).sort((a,b)=>b[1].mg-a[1].mg)) {
+    const tr = document.createElement("tr");
+    tr.className = "outfall";
+    tr.innerHTML = `<td class="name">${id} — ${o.name}</td><td>${o.water}</td>
+      <td class="num">${o.n}</td><td class="num">${MGshort(o.mg)}</td>
+      <td class="num">${MGshort(o.big.mg)} (${o.big.date||"—"})</td>`;
+    const detail = document.createElement("tr");
+    detail.className = "detail"; detail.style.display = "none";
+    detail.innerHTML = `<td colspan="5"><div class="years-cards">${yearCards(o.evs)}</div></td>`;
+    tr.addEventListener("click", () => { detail.style.display = detail.style.display === "none" ? "" : "none"; });
+    ot.appendChild(tr); ot.appendChild(detail);
+  }
 
-  // biggest events (respects filter)
+  // biggest events (respects both filters)
   document.getElementById("biggest").innerHTML = [...R].sort((a,b)=>(b.mg||0)-(a.mg||0)).slice(0,10).map(e => `
     <tr><td class="num">${e.date}</td><td class="name">${e.oid} — ${e.oname}</td><td>${e.water}</td>
     <td class="num">${MGshort(e.mg)}</td><td class="num">${DUR(e.dur)}</td></tr>`).join("");
 
+  const rangeTxt = (STATE.start || COV.bayside_from) + " → " + (STATE.end || COV.through);
   document.getElementById("metaLine").textContent =
-    `${EV.length.toLocaleString()} events on record · ${COV.bayside_from} → ${COV.through}`;
+    `${R.length.toLocaleString()} of ${EV.length.toLocaleString()} events shown · ${rangeTxt}`;
 }
 
 async function load() {
@@ -162,6 +210,10 @@ async function load() {
   document.getElementById("foot").textContent = "Source: " + d.source +
     " · Compiled 2026-08 · Full provenance, schema, and gaps: features/forecast/data/csd/NOTES.md · MG = million gallons (≈1.5 Olympic pools).";
 
+  const newest = EV.reduce((a,e) => e.date > a ? e.date : a, "");
+  const sd = document.getElementById("startDate"), ed = document.getElementById("endDate");
+  sd.max = ed.max = newest;
+
   const waters = [...new Set(EV.map(e=>e.water))];
   const btns = document.getElementById("waterBtns");
   const meta = document.getElementById("metaLine");
@@ -173,8 +225,27 @@ async function load() {
   btns.addEventListener("click", e => {
     const b = e.target.closest(".group-btn"); if (!b) return;
     btns.querySelectorAll(".group-btn").forEach(x => x.classList.toggle("active", x===b));
-    water = b.dataset.water; render();
+    STATE.water = b.dataset.water; render();
   });
+
+  document.querySelectorAll(".preset").forEach(btn => btn.addEventListener("click", () => {
+    document.querySelectorAll(".preset").forEach(x => x.classList.toggle("active", x===btn));
+    const days = btn.dataset.days;
+    if (!days) { STATE.start = sd.value = ""; STATE.end = ed.value = ""; }
+    else {
+      const from = new Date(new Date(newest) - days * 864e5);
+      STATE.start = sd.value = from.toISOString().slice(0,10);
+      STATE.end = ed.value = "";
+    }
+    render();
+  }));
+  for (const [el, key] of [[sd, "start"], [ed, "end"]]) {
+    el.addEventListener("change", e => {
+      STATE[key] = e.target.value;
+      document.querySelectorAll(".preset").forEach(x => x.classList.remove("active"));
+      render();
+    });
+  }
   render();
 }
 load();
