@@ -1,0 +1,1008 @@
+event_date,facility,outfall_id,outfall_name,basin,receiving_water,start_time,duration_min,duration_flag,volume_MG,volume_qualifier,source_document,ciwqs_document_id,report_period
+2016-10-16,Southeast/Bayside (CA0037664),CSD-031,Third Street North,Central (Islais Creek),Islais Creek,12:48 PM,22.0,,0.02,,2016-10 FINAL WW Summary 2023Sep Revision.pdf,1348870,2016-10
+2016-10-16,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,12:23 PM,575.0,,27.95,,2016-10 FINAL WW Summary 2023Sep Revision.pdf,1348870,2016-10
+2016-10-16,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,12:22 PM,353.0,,3.4,,2016-10 FINAL WW Summary 2023Sep Revision.pdf,1348870,2016-10
+2016-10-16,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,12:22 PM,313.0,,4.84,,2016-10 FINAL WW Summary 2023Sep Revision.pdf,1348870,2016-10
+2016-10-16,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,12:20 PM,597.0,,9.94,,2016-10 FINAL WW Summary 2023Sep Revision.pdf,1348870,2016-10
+2016-10-28,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,3:49 AM,202.0,,6.24,,2016-10 FINAL WW Summary 2023Sep Revision.pdf,1348870,2016-10
+2016-10-28,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,3:50 AM,133.0,,0.6,,2016-10 FINAL WW Summary 2023Sep Revision.pdf,1348870,2016-10
+2016-10-28,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,3:51 AM,127.0,,0.76,,2016-10 FINAL WW Summary 2023Sep Revision.pdf,1348870,2016-10
+2016-10-28,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,3:45 AM,308.0,,3.07,,2016-10 FINAL WW Summary 2023Sep Revision.pdf,1348870,2016-10
+2016-11-20,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,11:18 AM,18.0,,0.94,,2016-11 FINAL WW Summary 2023Sep Revision.pdf,1348871,2016-11
+2016-11-20,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,11:17 AM,23.0,,2.45,,2016-11 FINAL WW Summary 2023Sep Revision.pdf,1348871,2016-11
+2016-11-20,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,11:12 AM,15.0,,0.07,,2016-11 FINAL WW Summary 2023Sep Revision.pdf,1348871,2016-11
+2016-11-20,Southeast/Bayside (CA0037664),CSD-027,Sixth Street South,Central (Mission Creek),Mission Creek / China Basin,11:08 AM,21.0,,0.02,,2016-11 FINAL WW Summary 2023Sep Revision.pdf,1348871,2016-11
+2016-11-20,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,11:24 AM,12.0,,0.14,,2016-11 FINAL WW Summary 2023Sep Revision.pdf,1348871,2016-11
+2016-12-08,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,5:55,240,manual_transcription,4.4,,December Bayside Drainage 2016.pdf (scanned; manually transcribed from CIWQS attachment 1883351),1348872,2016-12
+2016-12-08,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,6:10,60,manual_transcription,0.01,,December Bayside Drainage 2016.pdf (scanned; manually transcribed from CIWQS attachment 1883351),1348872,2016-12
+2016-12-08,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,5:50,280,manual_transcription,3.3,,December Bayside Drainage 2016.pdf (scanned; manually transcribed from CIWQS attachment 1883351),1348872,2016-12
+2016-12-10,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,12:30,110,manual_transcription,7.0,,December Bayside Drainage 2016.pdf (scanned; manually transcribed from CIWQS attachment 1883351),1348872,2016-12
+2016-12-10,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,12:30,150,manual_transcription,17.3,,December Bayside Drainage 2016.pdf (scanned; manually transcribed from CIWQS attachment 1883351),1348872,2016-12
+2016-12-10,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,12:35,10,manual_transcription,5.8,,December Bayside Drainage 2016.pdf (scanned; manually transcribed from CIWQS attachment 1883351),1348872,2016-12
+2016-12-10,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,12:45,170,manual_transcription,12.1,,December Bayside Drainage 2016.pdf (scanned; manually transcribed from CIWQS attachment 1883351),1348872,2016-12
+2016-12-10,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,12:45,140,manual_transcription,1.0,,December Bayside Drainage 2016.pdf (scanned; manually transcribed from CIWQS attachment 1883351),1348872,2016-12
+2016-12-10,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,12:45,140,manual_transcription,1.3,,December Bayside Drainage 2016.pdf (scanned; manually transcribed from CIWQS attachment 1883351),1348872,2016-12
+2016-12-10,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,12:45,205,manual_transcription,4.0,,December Bayside Drainage 2016.pdf (scanned; manually transcribed from CIWQS attachment 1883351),1348872,2016-12
+2016-12-15,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,15:00,220,manual_transcription,6.1,,December Bayside Drainage 2016.pdf (scanned; manually transcribed from CIWQS attachment 1883351),1348872,2016-12
+2016-12-15,Southeast/Bayside (CA0037664),CSD-010,Pierce Street,North Shore,SF Bay - North Shore waterfront,15:00,135,manual_transcription,3.6,,December Bayside Drainage 2016.pdf (scanned; manually transcribed from CIWQS attachment 1883351),1348872,2016-12
+2016-12-15,Southeast/Bayside (CA0037664),CSD-013,Beach Street,North Shore,SF Bay - North Shore waterfront,15:00,115,manual_transcription,5.6,,December Bayside Drainage 2016.pdf (scanned; manually transcribed from CIWQS attachment 1883351),1348872,2016-12
+2016-12-15,Southeast/Bayside (CA0037664),CSD-015,Sansome Street,North Shore,SF Bay - North Shore waterfront,15:00,260,manual_transcription,43.9,,December Bayside Drainage 2016.pdf (scanned; manually transcribed from CIWQS attachment 1883351),1348872,2016-12
+2016-12-15,Southeast/Bayside (CA0037664),CSD-017,Jackson Street,North Shore,SF Bay - North Shore waterfront,15:00,90,manual_transcription,1.5,,December Bayside Drainage 2016.pdf (scanned; manually transcribed from CIWQS attachment 1883351),1348872,2016-12
+2016-12-15,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,15:05,145,manual_transcription,8.5,,December Bayside Drainage 2016.pdf (scanned; manually transcribed from CIWQS attachment 1883351),1348872,2016-12
+2016-12-15,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,15:05,185,manual_transcription,19.8,,December Bayside Drainage 2016.pdf (scanned; manually transcribed from CIWQS attachment 1883351),1348872,2016-12
+2016-12-15,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,15:05,80,manual_transcription,55.5,,December Bayside Drainage 2016.pdf (scanned; manually transcribed from CIWQS attachment 1883351),1348872,2016-12
+2016-12-15,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,15:45,25,manual_transcription,0.1,,December Bayside Drainage 2016.pdf (scanned; manually transcribed from CIWQS attachment 1883351),1348872,2016-12
+2016-12-15,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,15:45,365,manual_transcription,29.4,,December Bayside Drainage 2016.pdf (scanned; manually transcribed from CIWQS attachment 1883351),1348872,2016-12
+2016-12-15,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,15:45,295,manual_transcription,3.6,,December Bayside Drainage 2016.pdf (scanned; manually transcribed from CIWQS attachment 1883351),1348872,2016-12
+2016-12-15,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,15:45,295,manual_transcription,4.9,,December Bayside Drainage 2016.pdf (scanned; manually transcribed from CIWQS attachment 1883351),1348872,2016-12
+2016-12-15,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,15:45,440,manual_transcription,10.3,,December Bayside Drainage 2016.pdf (scanned; manually transcribed from CIWQS attachment 1883351),1348872,2016-12
+2017-01-08,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,6:51 AM,77.0,,0.12,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-08,Southeast/Bayside (CA0037664),CSD-022,Third Street,Central (Mission Creek),Mission Creek / China Basin,6:50 AM,94.0,,0.05,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-08,Southeast/Bayside (CA0037664),CSD-023,Fourth Street North,Central (Mission Creek),Mission Creek / China Basin,6:51 AM,71.0,,0.07,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-08,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,2:35 AM,241.0,,12.22,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-08,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,2:35 AM,258.0,,25.46,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-08,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,2:37 AM,241.0,,114.86,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-08,Southeast/Bayside (CA0037664),CSD-027,Sixth Street South,Central (Mission Creek),Mission Creek / China Basin,6:49 AM,104.0,,0.09,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-08,Southeast/Bayside (CA0037664),CSD-031,Third Street North,Central (Islais Creek),Islais Creek,6:32 AM,68.0,,0.12,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-08,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,2:55 AM,673.0,,47.89,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-08,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,2:55 AM,557.0,,5.57,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-08,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,2:55 AM,539.0,,8.27,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-08,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,2:51 AM,838.0,,20.77,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-10,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,6:55 PM,144.0,,4.32,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-10,Southeast/Bayside (CA0037664),CSD-010,Pierce Street,North Shore,SF Bay - North Shore waterfront,6:55 PM,128.0,,5.57,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-10,Southeast/Bayside (CA0037664),CSD-013,Beach Street,North Shore,SF Bay - North Shore waterfront,7:04 PM,69.0,,1.49,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-10,Southeast/Bayside (CA0037664),CSD-015,Sansome Street,North Shore,SF Bay - North Shore waterfront,7:12 PM,13.0,,0.05,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-10,Southeast/Bayside (CA0037664),CSD-017,Jackson Street,North Shore,SF Bay - North Shore waterfront,7:11 PM,23.0,,0.11,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-10,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,6:35 PM,96.0,,4.81,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-10,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,6:35 PM,120.0,,11.88,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-10,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,6:40 PM,395.0,,47.09,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-10,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,7:06 PM,37.0,,0.07,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-10,Southeast/Bayside (CA0037664),CSD-031,Third Street North,Central (Islais Creek),Islais Creek,6:32 PM,83.0,,0.89,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-10,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,1:38 PM,623.0,,78.36,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-10,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,1:37 PM,579.0,,8.96,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-10,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,1:37 PM,561.0,,15.68,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-10,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,1:36 PM,722.0,,23.29,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-10,Southeast/Bayside (CA0037664),CSD-037,Evans Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),11:48 PM,17.0,,0.61,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-10,Southeast/Bayside (CA0037664),CSD-040,Griffith Street,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),6:59 PM,37.0,,0.72,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-10,Southeast/Bayside (CA0037664),CSD-041,Yosemite Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),7:00 PM,26.0,,0.35,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-10,Southeast/Bayside (CA0037664),CSD-042,Fitch Street,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),7:00 PM,26.0,,0.08,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-10,Southeast/Bayside (CA0037664),CSD-043,Sunnydale Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),7:37 PM,116.0,,2.33,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-18,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,10:58 PM,21.0,,0.12,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-18,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,7:43 PM,4.0,,0.01,<,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-18,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,7:50 PM,36.0,,2.79,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-18,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,7:46 PM,32.0,,0.38,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-18,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,7:47 PM,30.0,,0.49,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-18,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,7:51 PM,65.0,,0.57,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-20,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,4:14 AM,74.0,,1.88,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-20,Southeast/Bayside (CA0037664),CSD-010,Pierce Street,North Shore,SF Bay - North Shore waterfront,4:14 AM,74.0,,3.06,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-20,Southeast/Bayside (CA0037664),CSD-013,Beach Street,North Shore,SF Bay - North Shore waterfront,4:15 AM,44.0,,2.45,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-20,Southeast/Bayside (CA0037664),CSD-015,Sansome Street,North Shore,SF Bay - North Shore waterfront,4:22 AM,21.0,,0.25,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-20,Southeast/Bayside (CA0037664),CSD-017,Jackson Street,North Shore,SF Bay - North Shore waterfront,4:22 AM,23.0,,0.48,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-20,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,7:50 AM,126.0,,5.01,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-20,Southeast/Bayside (CA0037664),CSD-022,Third Street,Central (Mission Creek),Mission Creek / China Basin,4:18 AM,11.0,,0.02,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-20,Southeast/Bayside (CA0037664),CSD-023,Fourth Street North,Central (Mission Creek),Mission Creek / China Basin,4:19 AM,9.0,,0.05,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-20,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,4:16 AM,138.0,,5.22,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-20,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,4:16 AM,139.0,,10.51,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-20,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,3:37 AM,266.0,,91.54,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-20,Southeast/Bayside (CA0037664),CSD-027,Sixth Street South,Central (Mission Creek),Mission Creek / China Basin,4:19 AM,14.0,,0.02,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-20,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,4:19 AM,19.0,,0.37,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-20,Southeast/Bayside (CA0037664),CSD-030,20th Street,Central (Islais Creek),Islais Creek,4:31 AM,22.0,,0.22,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-20,Southeast/Bayside (CA0037664),CSD-030A,22nd Street,Central (Islais Creek),Islais Creek,4:32 AM,16.0,,0.03,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-20,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,4:29 AM,343.0,,17.51,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-20,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,4:24 AM,227.0,,2.31,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-20,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,4:25 AM,195.0,,3.59,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-20,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,4:24 AM,416.0,,12.28,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-20,Southeast/Bayside (CA0037664),CSD-037,Evans Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),4:16 AM,12.0,,0.08,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-20,Southeast/Bayside (CA0037664),CSD-040,Griffith Street,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),4:30 AM,12.0,,0.26,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-20,Southeast/Bayside (CA0037664),CSD-041,Yosemite Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),4:30 AM,9.0,,0.07,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-20,Southeast/Bayside (CA0037664),CSD-042,Fitch Street,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),4:30 AM,9.0,,0.02,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-22,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,5:57 AM,251.0,,7.45,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-22,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,4:56 AM,139.0,,6.98,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-22,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,4:54 AM,124.0,,0.77,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-22,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,4:54 AM,119.0,,0.98,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-01-22,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,4:56 AM,191.0,,2.9,,2017-01 FINAL WW Summary 2023Sep Revision.pdf,2019055,2017-01
+2017-02-03,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,5:48 AM,7.0,,0.01,<,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-07,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,8:57 AM,57.0,,0.44,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-07,Southeast/Bayside (CA0037664),CSD-010,Pierce Street,North Shore,SF Bay - North Shore waterfront,8:58 AM,53.0,,0.39,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-07,Southeast/Bayside (CA0037664),CSD-022,Third Street,Central (Mission Creek),Mission Creek / China Basin,8:02 AM,36.0,,0.01,<,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-07,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,5:40 AM,206.0,,8.99,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-07,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,5:40 AM,206.0,,17.96,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-07,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,2:14 AM,310.0,,192.95,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-07,Southeast/Bayside (CA0037664),CSD-027,Sixth Street South,Central (Mission Creek),Mission Creek / China Basin,7:49 AM,79.0,,0.01,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-07,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,6:12 AM,302.0,,25.86,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-07,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,6:11 AM,268.0,,3.27,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-07,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,6:11 AM,268.0,,4.64,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-07,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,6:08 AM,346.0,,10.0,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-09,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,2:52 PM,50.0,,0.75,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-09,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,2:55 PM,35.0,,0.03,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-09,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,2:55 PM,35.0,,0.05,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-09,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,2:47 PM,63.0,,0.22,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-17,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,5:43 PM,154.0,,6.38,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-17,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,5:43 PM,133.0,,0.67,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-17,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,5:43 PM,133.0,,0.96,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-17,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,5:41 PM,212.0,,3.35,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-20,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,4:11 AM,207.0,,3.66,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-20,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,4:50 PM,101.0,,2.0,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-20,Southeast/Bayside (CA0037664),CSD-010,Pierce Street,North Shore,SF Bay - North Shore waterfront,4:11 AM,218.0,,10.41,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-20,Southeast/Bayside (CA0037664),CSD-010,Pierce Street,North Shore,SF Bay - North Shore waterfront,4:48 PM,108.0,,5.46,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-20,Southeast/Bayside (CA0037664),CSD-013,Beach Street,North Shore,SF Bay - North Shore waterfront,4:32 AM,126.0,,4.14,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-20,Southeast/Bayside (CA0037664),CSD-013,Beach Street,North Shore,SF Bay - North Shore waterfront,4:58 PM,57.0,,2.02,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-20,Southeast/Bayside (CA0037664),CSD-015,Sansome Street,North Shore,SF Bay - North Shore waterfront,5:16 PM,8.0,,0.01,<,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-20,Southeast/Bayside (CA0037664),CSD-017,Jackson Street,North Shore,SF Bay - North Shore waterfront,4:43 AM,9.0,,0.01,<,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-20,Southeast/Bayside (CA0037664),CSD-017,Jackson Street,North Shore,SF Bay - North Shore waterfront,5:16 PM,8.0,,0.01,<,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-20,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,3:59 AM,176.0,,8.76,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-20,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,3:15 PM,124.0,,6.58,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-20,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,3:59 AM,201.0,,19.92,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-20,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,3:15 PM,148.0,,15.48,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-20,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,3:59 AM,81.0,,39.53,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-20,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,4:15 PM,40.0,,20.42,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-20,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,3:54 AM,69.0,,0.06,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-20,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,4:50 PM,36.0,,0.01,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-20,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,4:15 AM,857.0,,65.47,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-20,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,4:13 AM,759.0,,8.04,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-20,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,4:13 AM,759.0,,11.41,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-02-20,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,4:13 AM,1024.0,,28.09,,2017-02 FINAL WW Summary 2023Sep Revision.pdf,1348874,2017-02
+2017-03-04,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,8:35 PM,97.0,,5.09,,2017-03 FINAL WW Summary 2023Sep Revision.pdf,1348875,2017-03
+2017-03-04,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,8:35 PM,124.0,,12.73,,2017-03 FINAL WW Summary 2023Sep Revision.pdf,1348875,2017-03
+2017-03-04,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,8:35 PM,33.0,,24.15,,2017-03 FINAL WW Summary 2023Sep Revision.pdf,1348875,2017-03
+2017-03-04,Southeast/Bayside (CA0037664),CSD-027,Sixth Street South,Central (Mission Creek),Mission Creek / China Basin,8:42 PM,3.0,,0.01,<,2017-03 FINAL WW Summary 2023Sep Revision.pdf,1348875,2017-03
+2017-03-04,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,8:52 PM,6.0,,0.01,,2017-03 FINAL WW Summary 2023Sep Revision.pdf,1348875,2017-03
+2017-03-04,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,9:29 PM,155.0,,11.96,,2017-03 FINAL WW Summary 2023Sep Revision.pdf,1348875,2017-03
+2017-03-04,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,9:28 PM,135.0,,1.4,,2017-03 FINAL WW Summary 2023Sep Revision.pdf,1348875,2017-03
+2017-03-04,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,9:23 PM,238.0,,6.33,,2017-03 FINAL WW Summary 2023Sep Revision.pdf,1348875,2017-03
+2017-03-20,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,11:19 PM,75.0,,0.42,,2017-03 FINAL WW Summary 2023Sep Revision.pdf,1348875,2017-03
+2017-03-20,Southeast/Bayside (CA0037664),CSD-010,Pierce Street,North Shore,SF Bay - North Shore waterfront,11:19 PM,75.0,,0.85,,2017-03 FINAL WW Summary 2023Sep Revision.pdf,1348875,2017-03
+2017-03-20,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,10:53 PM,48.0,,2.39,,2017-03 FINAL WW Summary 2023Sep Revision.pdf,1348875,2017-03
+2017-03-20,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,10:53 PM,62.0,,6.27,,2017-03 FINAL WW Summary 2023Sep Revision.pdf,1348875,2017-03
+2017-03-20,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,10:54 PM,53.0,,21.72,,2017-03 FINAL WW Summary 2023Sep Revision.pdf,1348875,2017-03
+2017-03-20,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,11:00 PM,288.0,,23.47,,2017-03 FINAL WW Summary 2023Sep Revision.pdf,1348875,2017-03
+2017-03-20,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,10:58 PM,255.0,,2.89,,2017-03 FINAL WW Summary 2023Sep Revision.pdf,1348875,2017-03
+2017-03-20,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,10:58 PM,255.0,,4.11,,2017-03 FINAL WW Summary 2023Sep Revision.pdf,1348875,2017-03
+2017-03-20,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,10:59 PM,420.0,,10.7,,2017-03 FINAL WW Summary 2023Sep Revision.pdf,1348875,2017-03
+2017-04-06,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,10:33 PM,110.0,,1.95,,2017-04 FINAL WW Summary 2023Sep Revision.pdf,1348876,2017-04
+2017-04-06,Southeast/Bayside (CA0037664),CSD-010,Pierce Street,North Shore,SF Bay - North Shore waterfront,10:33 PM,110.0,,3.48,,2017-04 FINAL WW Summary 2023Sep Revision.pdf,1348876,2017-04
+2017-04-06,Southeast/Bayside (CA0037664),CSD-013,Beach Street,North Shore,SF Bay - North Shore waterfront,11:45 PM,38.0,,0.79,,2017-04 FINAL WW Summary 2023Sep Revision.pdf,1348876,2017-04
+2017-04-06,Southeast/Bayside (CA0037664),CSD-015,Sansome Street,North Shore,SF Bay - North Shore waterfront,11:58 PM,11.0,,0.05,,2017-04 FINAL WW Summary 2023Sep Revision.pdf,1348876,2017-04
+2017-04-06,Southeast/Bayside (CA0037664),CSD-017,Jackson Street,North Shore,SF Bay - North Shore waterfront,11:57 PM,15.0,,0.1,,2017-04 FINAL WW Summary 2023Sep Revision.pdf,1348876,2017-04
+2017-04-06,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,11:18 PM,11.0,,0.43,,2017-04 FINAL WW Summary 2023Sep Revision.pdf,1348876,2017-04
+2017-04-06,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,11:18 PM,12.0,,0.94,,2017-04 FINAL WW Summary 2023Sep Revision.pdf,1348876,2017-04
+2017-04-06,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,11:21 PM,59.0,,20.71,,2017-04 FINAL WW Summary 2023Sep Revision.pdf,1348876,2017-04
+2017-04-06,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,11:32 PM,113.0,,11.41,,2017-04 FINAL WW Summary 2023Sep Revision.pdf,1348876,2017-04
+2017-04-06,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,11:31 PM,107.0,,1.44,,2017-04 FINAL WW Summary 2023Sep Revision.pdf,1348876,2017-04
+2017-04-06,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,11:31 PM,107.0,,2.05,,2017-04 FINAL WW Summary 2023Sep Revision.pdf,1348876,2017-04
+2017-04-06,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,11:29 PM,129.0,,4.67,,2017-04 FINAL WW Summary 2023Sep Revision.pdf,1348876,2017-04
+2017-11-16,Southeast/Bayside (CA0037664),CSD-010,Pierce Street,North Shore,SF Bay - North Shore waterfront,7:15,15.0,,0.0554,,NOVEMBER BAYSIDE DRAINAGE REPORT 2017.pdf,1348883,2017-11
+2017-11-16,Southeast/Bayside (CA0037664),CSD-119,Baker Street,North Shore,SF Bay - North Shore waterfront,7:15,25.0,,0.0246,,NOVEMBER BAYSIDE DRAINAGE REPORT 2017.pdf,1348883,2017-11
+2018-01-08,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,8:38 AM,893.0,,13.84,,OSP 1-18 SMR.pdf,2019036,2018-01
+2018-01-08,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,9:14 AM,1154.0,,73.23,,OSP 1-18 SMR.pdf,2019036,2018-01
+2018-01-08,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,9:14 AM,1154.0,,157.43,,OSP 1-18 SMR.pdf,2019036,2018-01
+2018-01-08,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,7:16 AM,828.0,,16.52,,SEP-01-2018_SMR_Final.pdf,2019060,2018-01
+2018-01-08,Southeast/Bayside (CA0037664),CSD-010,Pierce Street,North Shore,SF Bay - North Shore waterfront,9:26 AM,739.0,,15.5,,SEP-01-2018_SMR_Final.pdf,2019060,2018-01
+2018-01-08,Southeast/Bayside (CA0037664),CSD-013,Beach Street,North Shore,SF Bay - North Shore waterfront,12:27 PM,444.0,,10.41,,SEP-01-2018_SMR_Final.pdf,2019060,2018-01
+2018-01-08,Southeast/Bayside (CA0037664),CSD-015,Sansome Street,North Shore,SF Bay - North Shore waterfront,1:45 PM,96.0,,0.3,,SEP-01-2018_SMR_Final.pdf,2019060,2018-01
+2018-01-08,Southeast/Bayside (CA0037664),CSD-017,Jackson Street,North Shore,SF Bay - North Shore waterfront,1:44 PM,168.0,,0.83,,SEP-01-2018_SMR_Final.pdf,2019060,2018-01
+2018-01-08,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,7:21 AM,1401.0,,95.14,,SEP-01-2018_SMR_Final.pdf,2019060,2018-01
+2018-01-08,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,7:45 AM,719.0,,39.02,,SEP-01-2018_SMR_Final.pdf,2019060,2018-01
+2018-01-08,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,7:45 AM,819.0,,88.36,,SEP-01-2018_SMR_Final.pdf,2019060,2018-01
+2018-01-08,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,1:56 PM,109.0,,50.09,,SEP-01-2018_SMR_Final.pdf,2019060,2018-01
+2018-01-08,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,9:29 PM,79.0,,0.11,,SEP-01-2018_SMR_Final.pdf,2019060,2018-01
+2018-01-08,Southeast/Bayside (CA0037664),CSD-030,20th Street,Central (Islais Creek),Islais Creek,11:12 PM,40.0,,0.33,,SEP-01-2018_SMR_Final.pdf,2019060,2018-01
+2018-01-08,Southeast/Bayside (CA0037664),CSD-030A,22nd Street,Central (Islais Creek),Islais Creek,11:15 PM,31.0,,0.03,,SEP-01-2018_SMR_Final.pdf,2019060,2018-01
+2018-01-08,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,7:50 AM,1237.0,,161.95,,SEP-01-2018_SMR_Final.pdf,2019060,2018-01
+2018-01-08,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,7:50 AM,1225.0,,21.04,,SEP-01-2018_SMR_Final.pdf,2019060,2018-01
+2018-01-08,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,7:50 AM,1210.0,,29.84,,SEP-01-2018_SMR_Final.pdf,2019060,2018-01
+2018-01-08,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,7:48 AM,1283.0,,84.23,,SEP-01-2018_SMR_Final.pdf,2019060,2018-01
+2018-01-08,Southeast/Bayside (CA0037664),CSD-040,Griffith Street,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),10:36 PM,70.0,,1.25,,SEP-01-2018_SMR_Final.pdf,2019060,2018-01
+2018-01-08,Southeast/Bayside (CA0037664),CSD-041,Yosemite Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),10:37 PM,58.0,,1.08,,SEP-01-2018_SMR_Final.pdf,2019060,2018-01
+2018-01-08,Southeast/Bayside (CA0037664),CSD-042,Fitch Street,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),10:37 PM,58.0,,0.26,,SEP-01-2018_SMR_Final.pdf,2019060,2018-01
+2018-01-08,Southeast/Bayside (CA0037664),CSD-043,Sunnydale Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),11:41 PM,20.0,,0.15,,SEP-01-2018_SMR_Final.pdf,2019060,2018-01
+2018-01-24,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,2:11 PM,15.0,,0.13,,OSP 1-18 SMR.pdf,2019036,2018-01
+2018-03-01,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,9:53 AM,13.0,,0.1,,2018-03 OSP SMR CL Amend Final_v3.pdf,2019038,2018-03
+2018-04-06,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,7:40 PM,506.0,,4.77,,OSP-04-2018_SMR_Final.pdf,2019039,2018-04
+2018-04-06,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,7:49 PM,325.0,,7.08,,OSP-04-2018_SMR_Final.pdf,2019039,2018-04
+2018-04-06,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,7:49 PM,325.0,,15.23,,OSP-04-2018_SMR_Final.pdf,2019039,2018-04
+2018-04-06,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,6:49 PM,,unparsed,,,OSP-04-2018_SMR_Final.pdf,2019039,2018-04
+2018-04-06,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,6:07 PM,391.0,,9.17,,SEP-04-2018_SMR_Final.pdf,2019063,2018-04
+2018-04-06,Southeast/Bayside (CA0037664),CSD-010,Pierce Street,North Shore,SF Bay - North Shore waterfront,6:11 PM,335.0,,8.57,,SEP-04-2018_SMR_Final.pdf,2019063,2018-04
+2018-04-06,Southeast/Bayside (CA0037664),CSD-013,Beach Street,North Shore,SF Bay - North Shore waterfront,6:21 PM,142.0,,4.62,,SEP-04-2018_SMR_Final.pdf,2019063,2018-04
+2018-04-06,Southeast/Bayside (CA0037664),CSD-015,Sansome Street,North Shore,SF Bay - North Shore waterfront,6:45 PM,385.0,,19.13,,SEP-04-2018_SMR_Final.pdf,2019063,2018-04
+2018-04-06,Southeast/Bayside (CA0037664),CSD-017,Jackson Street,North Shore,SF Bay - North Shore waterfront,6:41 PM,68.0,,1.03,,SEP-04-2018_SMR_Final.pdf,2019063,2018-04
+2018-04-06,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,12:11 PM,1223.0,,84.15,,SEP-04-2018_SMR_Final.pdf,2019063,2018-04
+2018-04-06,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,12:16 PM,703.0,,54.49,,SEP-04-2018_SMR_Final.pdf,2019063,2018-04
+2018-04-06,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,12:16 PM,706.0,,107.0,,SEP-04-2018_SMR_Final.pdf,2019063,2018-04
+2018-04-06,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,6:14 PM,145.0,,69.66,,SEP-04-2018_SMR_Final.pdf,2019063,2018-04
+2018-04-06,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,7:46 PM,15.0,,0.02,,SEP-04-2018_SMR_Final.pdf,2019063,2018-04
+2018-04-06,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,5:41 PM,882.0,,132.54,,SEP-04-2018_SMR_Final.pdf,2019063,2018-04
+2018-04-06,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,5:40 PM,876.0,,17.64,,SEP-04-2018_SMR_Final.pdf,2019063,2018-04
+2018-04-06,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,5:40 PM,862.0,,25.6,,SEP-04-2018_SMR_Final.pdf,2019063,2018-04
+2018-04-06,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,5:34 PM,912.0,,67.55,,SEP-04-2018_SMR_Final.pdf,2019063,2018-04
+2018-04-06,Southeast/Bayside (CA0037664),CSD-040,Griffith Street,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),7:08 PM,81.0,,1.01,,SEP-04-2018_SMR_Final.pdf,2019063,2018-04
+2018-04-06,Southeast/Bayside (CA0037664),CSD-041,Yosemite Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),7:10 PM,60.0,,0.4,,SEP-04-2018_SMR_Final.pdf,2019063,2018-04
+2018-04-06,Southeast/Bayside (CA0037664),CSD-042,Fitch Street,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),7:10 PM,60.0,,0.09,,SEP-04-2018_SMR_Final.pdf,2019063,2018-04
+2018-04-07,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,1:28 AM,,unparsed,,,OSP-04-2018_SMR_Final.pdf,2019039,2018-04
+2018-04-07,Southeast/Bayside (CA0037664),CSD-043,Sunnydale Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),4:20 AM,85.0,,1.8,,SEP-04-2018_SMR_Final.pdf,2019063,2018-04
+2018-11-21,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,1:02 PM,14.0,,0.01,<,2018-11 FINAL OSP TSS 2019.02.14.pdf,2019046,2018-11
+2018-11-21,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,12:12 PM,114.0,,2.05,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-21,Southeast/Bayside (CA0037664),CSD-010,Pierce Street,North Shore,SF Bay - North Shore waterfront,12:14 PM,102.0,,1.55,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-21,Southeast/Bayside (CA0037664),CSD-013,Beach Street,North Shore,SF Bay - North Shore waterfront,12:42 PM,58.0,,2.32,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-21,Southeast/Bayside (CA0037664),CSD-015,Sansome Street,North Shore,SF Bay - North Shore waterfront,12:51 PM,36.0,,0.12,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-21,Southeast/Bayside (CA0037664),CSD-017,Jackson Street,North Shore,SF Bay - North Shore waterfront,12:51 PM,37.0,,0.13,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-21,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,12:04 PM,266.0,,18.21,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-21,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,12:02 PM,149.0,,13.31,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-21,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,12:02 PM,149.0,,25.03,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-21,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,12:52 PM,25.0,,12.17,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-21,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,1:12 PM,21.0,,0.05,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-21,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,1:03 PM,150.0,,13.66,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-21,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,1:01 PM,115.0,,1.87,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-21,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,1:01 PM,115.0,,2.65,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-21,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,1:00 PM,170.0,,9.58,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-22,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,10:44 PM,35.0,,0.05,,2018-11 FINAL OSP TSS 2019.02.14.pdf,2019046,2018-11
+2018-11-22,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,10:38 PM,45.0,,0.37,,2018-11 FINAL OSP TSS 2019.02.14.pdf,2019046,2018-11
+2018-11-22,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,10:52 PM,63.0,,3.13,,2018-11 FINAL OSP TSS 2019.02.14.pdf,2019046,2018-11
+2018-11-22,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,10:07 PM,16.0,,0.15,,2018-11 FINAL OSP TSS 2019.02.14.pdf,2019046,2018-11
+2018-11-22,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,9:23 PM,305.0,,19.79,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-22,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,9:23 PM,220.0,,15.85,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-22,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,9:23 PM,220.0,,31.0,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-22,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,10:48 PM,47.0,,3.78,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-22,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,10:47 PM,37.0,,0.49,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-22,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,10:47 PM,37.0,,0.69,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-22,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,10:44 PM,77.0,,3.64,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-28,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,10:04 PM,22.0,,0.19,,2018-11 FINAL OSP TSS 2019.02.14.pdf,2019046,2018-11
+2018-11-28,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,11:34 PM,42.0,,0.18,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-28,Southeast/Bayside (CA0037664),CSD-010,Pierce Street,North Shore,SF Bay - North Shore waterfront,11:36 PM,17.0,,0.04,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-28,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,10:39 PM,259.0,,17.88,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-28,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,10:31 PM,179.0,,14.75,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-28,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,10:31 PM,180.0,,28.68,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-28,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,10:33 PM,20.0,,8.13,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-28,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,10:21 PM,43.0,,0.31,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-28,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,10:45 PM,165.0,,16.23,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-28,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,10:44 PM,146.0,,2.04,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-28,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,10:45 PM,144.0,,2.82,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-28,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,10:45 PM,222.0,,14.63,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-28,Southeast/Bayside (CA0037664),CSD-040,Griffith Street,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),10:52 PM,15.0,,0.24,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-28,Southeast/Bayside (CA0037664),CSD-041,Yosemite Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),10:54 PM,11.0,,0.12,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-28,Southeast/Bayside (CA0037664),CSD-042,Fitch Street,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),10:54 PM,11.0,,0.03,,2018-11 SEP SMR FINAL.pdf,2019070,2018-11
+2018-11-29,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,12:24 AM,27.0,,0.09,,2018-11 FINAL OSP TSS 2019.02.14.pdf,2019046,2018-11
+2018-11-29,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,12:20 AM,38.0,,0.09,,2018-11 FINAL OSP TSS 2019.02.14.pdf,2019046,2018-11
+2018-11-29,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,12:34 AM,52.0,,2.09,,2018-11 FINAL OSP TSS 2019.02.14.pdf,2019046,2018-11
+2018-12-16,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,8:30 PM,10.0,,0.08,,2018-12 OSP SMR CL FINAL.pdf,2019047,2018-12
+2018-12-16,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,9:00 PM,160.0,,10.9,,2018-12 SEP SMR FINAL.pdf,2019071,2018-12
+2018-12-16,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,8:56 PM,72.0,,5.59,,2018-12 SEP SMR FINAL.pdf,2019071,2018-12
+2018-12-16,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,8:56 PM,73.0,,10.91,,2018-12 SEP SMR FINAL.pdf,2019071,2018-12
+2018-12-16,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,10:02 PM,1.0,,0.01,<,2018-12 SEP SMR FINAL.pdf,2019071,2018-12
+2018-12-16,Southeast/Bayside (CA0037664),CSD-040,Griffith Street,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),9:03 PM,11.0,,0.11,,2018-12 SEP SMR FINAL.pdf,2019071,2018-12
+2018-12-16,Southeast/Bayside (CA0037664),CSD-041,Yosemite Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),9:05 PM,6.0,,0.01,,2018-12 SEP SMR FINAL.pdf,2019071,2018-12
+2018-12-16,Southeast/Bayside (CA0037664),CSD-042,Fitch Street,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),9:05 PM,6.0,,0.01,<,2018-12 SEP SMR FINAL.pdf,2019071,2018-12
+2019-01-06,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,2:32 PM,225.0,,0.79,,2019-01 OSP SMR CL FINAL.pdf,2019051,2019-01
+2019-01-06,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,3:13 PM,246.0,,12.06,,2019-01 OSP SMR CL FINAL.pdf,2019051,2019-01
+2019-01-06,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,3:13 PM,246.0,,25.93,,2019-01 OSP SMR CL FINAL.pdf,2019051,2019-01
+2019-01-06,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,2:28 PM,233.0,,4.48,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-06,Southeast/Bayside (CA0037664),CSD-010,Pierce Street,North Shore,SF Bay - North Shore waterfront,2:30 PM,214.0,,3.61,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-06,Southeast/Bayside (CA0037664),CSD-013,Beach Street,North Shore,SF Bay - North Shore waterfront,2:55 PM,102.0,,2.27,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-06,Southeast/Bayside (CA0037664),CSD-015,Sansome Street,North Shore,SF Bay - North Shore waterfront,2:57 PM,31.0,,0.24,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-06,Southeast/Bayside (CA0037664),CSD-017,Jackson Street,North Shore,SF Bay - North Shore waterfront,4:13 PM,24.0,,0.22,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-06,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,1:18 PM,628.0,,45.12,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-06,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,1:19 PM,333.0,,29.35,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-06,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,1:19 PM,333.0,,56.91,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-06,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,1:50 PM,30.0,,13.62,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-06,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,1:54 PM,312.0,,35.99,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-06,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,1:53 PM,306.0,,4.56,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-06,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,1:54 PM,300.0,,6.28,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-06,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,1:52 PM,336.0,,22.12,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-15,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,6:30 PM,172.0,,10.31,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-15,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,6:29 PM,76.0,,5.56,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-15,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,6:29 PM,77.0,,11.21,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-16,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,7:40 PM,94.2,,3.6,,2019-01 OSP SMR CL FINAL.pdf,2019051,2019-01
+2019-01-16,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,7:50 PM,119.8,,7.06,,2019-01 OSP SMR CL FINAL.pdf,2019051,2019-01
+2019-01-16,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,8:00 PM,165.4,,14.51,,2019-01 OSP SMR CL FINAL.pdf,2019051,2019-01
+2019-01-16,Oceanside (CA0037681),CSD-005,Sea Cliff #1,Oceanside,Pacific Ocean,8:43 PM,1.0,,0.01,<,2019-01 OSP SMR CL FINAL.pdf,2019051,2019-01
+2019-01-16,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,7:24 PM,79.0,,0.76,,2019-01 OSP SMR CL FINAL.pdf,2019051,2019-01
+2019-01-16,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,2:47 PM,449.0,,29.5,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-16,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,2:46 PM,243.0,,16.9,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-16,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,2:46 PM,244.0,,33.53,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-16,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,2:51 PM,74.0,,22.19,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-16,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,8:21 PM,14.0,,0.02,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-16,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,7:41 PM,218.0,,26.61,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-16,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,7:39 PM,191.0,,3.62,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-16,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,7:40 PM,185.0,,5.35,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-16,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,7:38 PM,295.0,,17.83,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-16,Southeast/Bayside (CA0037664),CSD-040,Griffith Street,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),8:25 PM,13.0,,0.15,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-16,Southeast/Bayside (CA0037664),CSD-041,Yosemite Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),8:27 PM,9.0,,0.1,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-16,Southeast/Bayside (CA0037664),CSD-042,Fitch Street,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),8:27 PM,9.0,,0.02,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-17,Oceanside (CA0037681),CSD-005,Sea Cliff #1,Oceanside,Pacific Ocean,7:22 AM,12.0,,0.01,<,2019-01 OSP SMR CL FINAL.pdf,2019051,2019-01
+2019-01-17,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,7:27 AM,41.0,,0.37,,2019-01 OSP SMR CL FINAL.pdf,2019051,2019-01
+2019-01-17,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,8:44 AM,228.0,,15.19,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-17,Southeast/Bayside (CA0037664),CSD-022,Third Street,Central (Mission Creek),Mission Creek / China Basin,8:54 AM,1.0,,0.01,<,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-17,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,8:43 AM,138.0,,15.14,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-17,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,8:43 AM,139.0,,27.1,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-17,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,8:53 AM,86.0,,27.55,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-17,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,8:51 AM,40.0,,0.43,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-17,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,9:02 AM,163.0,,30.34,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-17,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,8:59 AM,206.0,,4.2,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-17,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,9:00 AM,134.0,,6.66,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-17,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,9:00 AM,289.0,,12.11,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-31,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,1:48 AM,167.0,,11.19,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-31,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,1:46 AM,53.0,,3.4,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-01-31,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,1:46 AM,53.0,,6.79,,2019-01 SEP SMR FINAL.pdf,2019076,2019-01
+2019-02-02,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,3:51 AM,13.0,,0.11,,2019-02 OSP SMR CL FINAL.pdf,2170290,2019-02
+2019-02-13,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,6:56 AM,111.0,,4.93,,2019-02 OSP SMR CL FINAL.pdf,2170290,2019-02
+2019-02-13,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,7:03 AM,349.0,,16.69,,2019-02 OSP SMR CL FINAL.pdf,2170290,2019-02
+2019-02-13,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,7:06 AM,438.0,,62.2,,2019-02 OSP SMR CL FINAL.pdf,2170290,2019-02
+2019-02-13,Oceanside (CA0037681),CSD-005,Sea Cliff #1,Oceanside,Pacific Ocean,6:58 AM,30.0,,0.02,,2019-02 OSP SMR CL FINAL.pdf,2170290,2019-02
+2019-02-13,Oceanside (CA0037681),CSD-006,Sea Cliff Brick Sewer,Oceanside,Pacific Ocean,11:10 AM,98.0,,3.51,,2019-02 OSP SMR CL FINAL.pdf,2170290,2019-02
+2019-02-13,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,6:57 AM,95.0,,0.93,,2019-02 OSP SMR CL FINAL.pdf,2170290,2019-02
+2019-02-13,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,7:04 AM,369.0,,11.99,,2019-02 SEP SMR CL Final.pdf,2019077,2019-02
+2019-02-13,Southeast/Bayside (CA0037664),CSD-010,Pierce Street,North Shore,SF Bay - North Shore waterfront,7:05 AM,356.0,,11.56,,2019-02 SEP SMR CL Final.pdf,2019077,2019-02
+2019-02-13,Southeast/Bayside (CA0037664),CSD-011,Laguna Street,North Shore,SF Bay - North Shore waterfront,7:07 AM,38.0,,0.19,,2019-02 SEP SMR CL Final.pdf,2019077,2019-02
+2019-02-13,Southeast/Bayside (CA0037664),CSD-013,Beach Street,North Shore,SF Bay - North Shore waterfront,8:14 AM,257.0,,7.33,,2019-02 SEP SMR CL Final.pdf,2019077,2019-02
+2019-02-13,Southeast/Bayside (CA0037664),CSD-015,Sansome Street,North Shore,SF Bay - North Shore waterfront,8:39 AM,164.0,,10.86,,2019-02 SEP SMR CL Final.pdf,2019077,2019-02
+2019-02-13,Southeast/Bayside (CA0037664),CSD-017,Jackson Street,North Shore,SF Bay - North Shore waterfront,8:35 AM,97.0,,0.41,,2019-02 SEP SMR CL Final.pdf,2019077,2019-02
+2019-02-13,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,5:33 AM,1684.0,,146.16,,2019-02 SEP SMR CL Final.pdf,2019077,2019-02
+2019-02-13,Southeast/Bayside (CA0037664),CSD-022,Third Street,Central (Mission Creek),Mission Creek / China Basin,11:09 AM,9.0,,0.01,<,2019-02 SEP SMR CL Final.pdf,2019077,2019-02
+2019-02-13,Southeast/Bayside (CA0037664),CSD-023,Fourth Street North,Central (Mission Creek),Mission Creek / China Basin,11:11 AM,4.0,,0.01,<,2019-02 SEP SMR CL Final.pdf,2019077,2019-02
+2019-02-13,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,5:31 AM,534.0,,56.67,,2019-02 SEP SMR CL Final.pdf,2019077,2019-02
+2019-02-13,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,10:57 PM,807.0,,91.96,,2019-02 SEP SMR CL Final.pdf,2019077,2019-02
+2019-02-13,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,5:31 AM,534.0,,103.37,,2019-02 SEP SMR CL Final.pdf,2019077,2019-02
+2019-02-13,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,10:57 PM,807.0,,164.59,,2019-02 SEP SMR CL Final.pdf,2019077,2019-02
+2019-02-13,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,6:19 AM,209.0,,111.99,,2019-02 SEP SMR CL Final.pdf,2019077,2019-02
+2019-02-13,Southeast/Bayside (CA0037664),CSD-027,Sixth Street South,Central (Mission Creek),Mission Creek / China Basin,11:08 AM,14.0,,0.01,,2019-02 SEP SMR CL Final.pdf,2019077,2019-02
+2019-02-13,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,9:20 AM,121.0,,1.2,,2019-02 SEP SMR CL Final.pdf,2019077,2019-02
+2019-02-13,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,6:48 AM,1391.0,,165.51,,2019-02 SEP SMR CL Final.pdf,2019077,2019-02
+2019-02-13,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,6:46 AM,1285.0,,20.5,,2019-02 SEP SMR CL Final.pdf,2019077,2019-02
+2019-02-13,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,6:47 AM,1212.0,,30.9,,2019-02 SEP SMR CL Final.pdf,2019077,2019-02
+2019-02-13,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,6:46 AM,1673.0,,92.31,,2019-02 SEP SMR CL Final.pdf,2019077,2019-02
+2019-02-13,Southeast/Bayside (CA0037664),CSD-037,Evans Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),11:03 AM,28.0,,1.0,,2019-02 SEP SMR CL Final.pdf,2019077,2019-02
+2019-02-13,Southeast/Bayside (CA0037664),CSD-040,Griffith Street,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),11:05 AM,58.0,,1.67,,2019-02 SEP SMR CL Final.pdf,2019077,2019-02
+2019-02-13,Southeast/Bayside (CA0037664),CSD-041,Yosemite Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),11:06 AM,37.0,,0.52,,2019-02 SEP SMR CL Final.pdf,2019077,2019-02
+2019-02-13,Southeast/Bayside (CA0037664),CSD-042,Fitch Street,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),11:06 AM,37.0,,0.12,,2019-02 SEP SMR CL Final.pdf,2019077,2019-02
+2019-02-13,Southeast/Bayside (CA0037664),CSD-043,Sunnydale Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),11:04 AM,149.0,,8.21,,2019-02 SEP SMR CL Final.pdf,2019077,2019-02
+2019-02-14,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,12:33 AM,145.0,,1.82,,2019-02 OSP SMR CL FINAL.pdf,2170290,2019-02
+2019-02-14,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,12:32 AM,193.0,,16.42,,2019-02 OSP SMR CL FINAL.pdf,2170290,2019-02
+2019-02-14,Oceanside (CA0037681),CSD-005,Sea Cliff #1,Oceanside,Pacific Ocean,1:27 AM,5.0,,0.01,<,2019-02 OSP SMR CL FINAL.pdf,2170290,2019-02
+2019-02-14,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,1:43 AM,10.0,,0.06,,2019-02 OSP SMR CL FINAL.pdf,2170290,2019-02
+2019-02-14,Southeast/Bayside (CA0037664),CSD-022,Third Street,Central (Mission Creek),Mission Creek / China Basin,6:05 AM,5.0,,0.01,<,2019-02 SEP SMR CL Final.pdf,2019077,2019-02
+2019-02-14,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,5:07 AM,244.0,,143.64,,2019-02 SEP SMR CL Final.pdf,2019077,2019-02
+2019-02-14,Southeast/Bayside (CA0037664),CSD-027,Sixth Street South,Central (Mission Creek),Mission Creek / China Basin,5:24 AM,101.0,,0.01,,2019-02 SEP SMR CL Final.pdf,2019077,2019-02
+2019-02-27,Oceanside (CA0037681),CSD-005,Sea Cliff #1,Oceanside,Pacific Ocean,3:45 AM,12.0,,0.01,<,2019-02 OSP SMR CL FINAL.pdf,2170290,2019-02
+2019-02-27,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,3:49 AM,14.0,,0.12,,2019-02 OSP SMR CL FINAL.pdf,2170290,2019-02
+2019-02-27,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,4:54 AM,32.0,,1.53,,2019-02 SEP SMR CL Final.pdf,2019077,2019-02
+2019-02-27,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,4:52 AM,27.0,,0.17,,2019-02 SEP SMR CL Final.pdf,2019077,2019-02
+2019-02-27,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,4:54 AM,25.0,,0.21,,2019-02 SEP SMR CL Final.pdf,2019077,2019-02
+2019-02-27,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,4:53 AM,51.0,,1.04,,2019-02 SEP SMR CL Final.pdf,2019077,2019-02
+2019-03-06,Oceanside (CA0037681),CSD-005,Sea Cliff #1,Oceanside,Pacific Ocean,2:58 AM,11.0,,0.01,<,2019-03 OSP SMR CL FINAL.pdf,2172637,2019-03
+2019-03-06,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,2:55 AM,13.0,,0.09,,2019-03 OSP SMR CL FINAL.pdf,2172637,2019-03
+2019-03-06,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,5:22 AM,616.0,,46.28,,2019-03 SEP SMR CL Final.pdf,2172898,2019-03
+2019-03-06,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,5:19 AM,417.0,,37.32,,2019-03 SEP SMR CL Final.pdf,2172898,2019-03
+2019-03-06,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,5:19 AM,417.0,,68.88,,2019-03 SEP SMR CL Final.pdf,2172898,2019-03
+2019-03-06,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,5:01 AM,169.0,,13.55,,2019-03 SEP SMR CL Final.pdf,2172898,2019-03
+2019-03-06,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,4:58 AM,140.0,,1.64,,2019-03 SEP SMR CL Final.pdf,2172898,2019-03
+2019-03-06,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,5:00 AM,134.0,,2.28,,2019-03 SEP SMR CL Final.pdf,2172898,2019-03
+2019-03-06,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,5:01 AM,278.0,,8.25,,2019-03 SEP SMR CL Final.pdf,2172898,2019-03
+2019-03-20,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,7:31 AM,202.0,,11.24,,2019-03 SEP SMR CL Final.pdf,2172898,2019-03
+2019-03-20,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,7:32 AM,54.0,,3.35,,2019-03 SEP SMR CL Final.pdf,2172898,2019-03
+2019-03-20,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,7:32 AM,54.0,,6.69,,2019-03 SEP SMR CL Final.pdf,2172898,2019-03
+2019-05-18,Southeast/Bayside (CA0037664),CSD-040,Griffith Street,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),10:27 PM,98.0,,1.52,,2019-05 SEP SMR CL FINAL.pdf,2184937,2019-05
+2019-05-18,Southeast/Bayside (CA0037664),CSD-041,Yosemite Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),10:29 PM,44.0,,0.56,,2019-05 SEP SMR CL FINAL.pdf,2184937,2019-05
+2019-05-18,Southeast/Bayside (CA0037664),CSD-042,Fitch Street,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),10:29 PM,44.0,,0.13,,2019-05 SEP SMR CL FINAL.pdf,2184937,2019-05
+2019-05-19,Southeast/Bayside (CA0037664),CSD-040,Griffith Street,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),6:33 AM,343.0,,4.02,,2019-05 SEP SMR CL FINAL.pdf,2184937,2019-05
+2019-05-19,Southeast/Bayside (CA0037664),CSD-041,Yosemite Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),6:37 AM,137.0,,0.85,,2019-05 SEP SMR CL FINAL.pdf,2184937,2019-05
+2019-05-19,Southeast/Bayside (CA0037664),CSD-042,Fitch Street,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),6:37 AM,137.0,,0.2,,2019-05 SEP SMR CL FINAL.pdf,2184937,2019-05
+2019-11-26,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,7:04 PM,64.0,from_monthly_total,2.64,,2019-11 OSP SMR CL Final.pdf,2249916,2019-11
+2019-11-26,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,7:16 PM,38.0,from_monthly_total,0.43,,2019-11 OSP SMR CL Final.pdf,2249916,2019-11
+2019-11-26,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,7:31 PM,13.0,,0.1,,2019-11 OSP SMR CL Final.pdf,2249916,2019-11
+2019-11-26,Oceanside (CA0037681),CSD-005,Sea Cliff #1,Oceanside,Pacific Ocean,6:45 PM,3.0,,0.01,<,2019-11 OSP SMR CL Final.pdf,2249916,2019-11
+2019-11-26,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,6:47 PM,8.0,,0.07,,2019-11 OSP SMR CL Final.pdf,2249916,2019-11
+2019-11-26,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,7:09 PM,179.0,,11.89,,2019-11 SEP SMR CL Final.pdf,2249984,2019-11
+2019-11-26,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,7:03 PM,80.0,,11.15,,2019-11 SEP SMR CL Final.pdf,2249984,2019-11
+2019-11-26,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,7:03 PM,27.0,,14.24,,2019-11 SEP SMR CL Final.pdf,2249984,2019-11
+2019-11-26,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,6:59 PM,53.0,,1.55,,2019-11 SEP SMR CL Final.pdf,2249984,2019-11
+2019-11-26,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,7:14 PM,97.0,,11.61,,2019-11 SEP SMR CL Final.pdf,2249984,2019-11
+2019-11-26,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,7:09 PM,78.0,,1.75,,2019-11 SEP SMR CL Final.pdf,2249984,2019-11
+2019-11-26,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,7:10 PM,101.0,,3.28,,2019-11 SEP SMR CL Final.pdf,2249984,2019-11
+2019-11-26,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,7:10 PM,257.0,,12.92,,2019-11 SEP SMR CL Final.pdf,2249984,2019-11
+2019-12-07,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,2:59 PM,86.0,,3.1,,2019-12 OSP SMR CL Final_v2.pdf,2257796,2019-12
+2019-12-07,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,3:30 PM,42.0,,2.89,,2019-12 OSP SMR CL Final_v2.pdf,2257796,2019-12
+2019-12-07,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,3:30 PM,40.0,,2.83,,2019-12 OSP SMR CL Final_v2.pdf,2257796,2019-12
+2019-12-07,Oceanside (CA0037681),CSD-004,Mile Rock,Oceanside,Pacific Ocean,3:28 PM,40.0,,3.96,,2019-12 OSP SMR CL Final_v2.pdf,2257796,2019-12
+2019-12-07,Oceanside (CA0037681),CSD-005,Sea Cliff #1,Oceanside,Pacific Ocean,3:23 PM,30.0,,0.02,,2019-12 OSP SMR CL Final_v2.pdf,2257796,2019-12
+2019-12-07,Oceanside (CA0037681),CSD-006,Sea Cliff Brick Sewer,Oceanside,Pacific Ocean,3:33 PM,29.0,,1.25,,2019-12 OSP SMR CL Final_v2.pdf,2257796,2019-12
+2019-12-07,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,3:31 PM,19.0,,0.18,,2019-12 OSP SMR CL Final_v2.pdf,2257796,2019-12
+2019-12-07,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,3:26 PM,49.0,,1.31,,2019-12 SEP SMR CL final.pdf,2257863,2019-12
+2019-12-07,Southeast/Bayside (CA0037664),CSD-010,Pierce Street,North Shore,SF Bay - North Shore waterfront,3:26 PM,49.0,,1.83,,2019-12 SEP SMR CL final.pdf,2257863,2019-12
+2019-12-07,Southeast/Bayside (CA0037664),CSD-011,Laguna Street,North Shore,SF Bay - North Shore waterfront,3:32 PM,5.0,,0.01,<,2019-12 SEP SMR CL final.pdf,2257863,2019-12
+2019-12-07,Southeast/Bayside (CA0037664),CSD-013,Beach Street,North Shore,SF Bay - North Shore waterfront,3:30 PM,9.0,,0.05,,2019-12 SEP SMR CL final.pdf,2257863,2019-12
+2019-12-07,Southeast/Bayside (CA0037664),CSD-015,Sansome Street,North Shore,SF Bay - North Shore waterfront,3:37 PM,5.0,,0.02,,2019-12 SEP SMR CL final.pdf,2257863,2019-12
+2019-12-07,Southeast/Bayside (CA0037664),CSD-017,Jackson Street,North Shore,SF Bay - North Shore waterfront,3:37 PM,5.0,,0.02,,2019-12 SEP SMR CL final.pdf,2257863,2019-12
+2019-12-07,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,3:21 PM,214.0,,14.18,,2019-12 SEP SMR CL final.pdf,2257863,2019-12
+2019-12-07,Southeast/Bayside (CA0037664),CSD-022,Third Street,Central (Mission Creek),Mission Creek / China Basin,3:27 PM,10.0,,0.01,<,2019-12 SEP SMR CL final.pdf,2257863,2019-12
+2019-12-07,Southeast/Bayside (CA0037664),CSD-023,Fourth Street North,Central (Mission Creek),Mission Creek / China Basin,3:27 PM,9.0,,0.02,,2019-12 SEP SMR CL final.pdf,2257863,2019-12
+2019-12-07,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,3:23 PM,25.0,,1.03,,2019-12 SEP SMR CL final.pdf,2257863,2019-12
+2019-12-07,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,3:15 PM,100.0,,15.52,,2019-12 SEP SMR CL final.pdf,2257863,2019-12
+2019-12-07,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,3:10 PM,48.0,,32.41,,2019-12 SEP SMR CL final.pdf,2257863,2019-12
+2019-12-07,Southeast/Bayside (CA0037664),CSD-027,Sixth Street South,Central (Mission Creek),Mission Creek / China Basin,3:27 PM,12.0,,0.01,,2019-12 SEP SMR CL final.pdf,2257863,2019-12
+2019-12-07,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,3:02 PM,56.0,,4.53,,2019-12 SEP SMR CL final.pdf,2257863,2019-12
+2019-12-07,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,3:24 PM,102.0,,7.27,,2019-12 SEP SMR CL final.pdf,2257863,2019-12
+2019-12-07,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,3:20 PM,85.0,,0.96,,2019-12 SEP SMR CL final.pdf,2257863,2019-12
+2019-12-07,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,3:21 PM,99.0,,1.9,,2019-12 SEP SMR CL final.pdf,2257863,2019-12
+2019-12-07,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,3:26 PM,160.0,,6.83,,2019-12 SEP SMR CL final.pdf,2257863,2019-12
+2019-12-18,Oceanside (CA0037681),CSD-004,Mile Rock,Oceanside,Pacific Ocean,5:05 AM,21.0,,1.12,,2019-12 OSP SMR CL Final_v2.pdf,2257796,2019-12
+2019-12-18,Oceanside (CA0037681),CSD-005,Sea Cliff #1,Oceanside,Pacific Ocean,4:17 AM,4.0,,0.01,<,2019-12 OSP SMR CL Final_v2.pdf,2257796,2019-12
+2019-12-18,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,4:19 AM,9.0,,0.08,,2019-12 OSP SMR CL Final_v2.pdf,2257796,2019-12
+2019-12-22,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,10:11 AM,64.0,,3.32,,2019-12 SEP SMR CL final.pdf,2257863,2019-12
+2020-01-16,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,8:50 AM,193.0,,7.04,,2020-01 OSP SMR CL Final.pdf,2287794,2020-01
+2020-01-16,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,10:04 AM,100.0,,1.32,,2020-01 OSP SMR CL Final.pdf,2287794,2020-01
+2020-01-16,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,10:11 AM,71.0,,0.97,,2020-01 OSP SMR CL Final.pdf,2287794,2020-01
+2020-01-16,Oceanside (CA0037681),CSD-004,Mile Rock,Oceanside,Pacific Ocean,0.42,43.0,,2.13,,2020-01 OSP SMR CL Final.pdf,2287794,2020-01
+2020-01-16,Oceanside (CA0037681),CSD-005,Sea Cliff #1,Oceanside,Pacific Ocean,8:28 AM,6.0,,0.01,<,2020-01 OSP SMR CL Final.pdf,2287794,2020-01
+2020-01-16,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,10:20 AM,92.0,,0.59,,2020-01 SEP SMR CL Final.pdf,2288698,2020-01
+2020-01-16,Southeast/Bayside (CA0037664),CSD-010,Pierce Street,North Shore,SF Bay - North Shore waterfront,10:22 AM,48.0,,0.23,,2020-01 SEP SMR CL Final.pdf,2288698,2020-01
+2020-01-16,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,9:30 AM,448.0,,28.68,,2020-01 SEP SMR CL Final.pdf,2288698,2020-01
+2020-01-16,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,9:32 AM,204.0,,15.23,,2020-01 SEP SMR CL Final.pdf,2288698,2020-01
+2020-01-16,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,9:32 AM,205.0,,30.47,,2020-01 SEP SMR CL Final.pdf,2288698,2020-01
+2020-01-16,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,9:46 AM,41.0,,20.53,,2020-01 SEP SMR CL Final.pdf,2288698,2020-01
+2020-01-16,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,9:47 AM,231.0,,35.15,,2020-01 SEP SMR CL Final.pdf,2288698,2020-01
+2020-01-16,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,9:45 AM,194.0,,4.59,,2020-01 SEP SMR CL Final.pdf,2288698,2020-01
+2020-01-16,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,9:46 AM,191.0,,5.75,,2020-01 SEP SMR CL Final.pdf,2288698,2020-01
+2020-01-16,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,9:45 AM,355.0,,21.4,,2020-01 SEP SMR CL Final.pdf,2288698,2020-01
+2020-12-17,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,12:49 AM,33.0,,2.18,,2020-12 SEP SMR CL Final.pdf,2384527,2020-12
+2021-01-27,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,12:36 AM,24.0,,0.37,,2021-01 OSP SMR CL.pdf,2326474,2021-01
+2021-01-27,Oceanside (CA0037681),CSD-004,Mile Rock,Oceanside,Pacific Ocean,1:41 AM,19.0,,0.95,,2021-01 OSP SMR CL.pdf,2326474,2021-01
+2021-01-27,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,1:26 AM,57.0,,2.17,,2021-01 SEP SMR CL Final_v2.pdf,2416007,2021-01
+2021-01-27,Southeast/Bayside (CA0037664),CSD-013,Beach Street,North Shore,SF Bay - North Shore waterfront,1:34 AM,14.0,,0.29,,2021-01 SEP SMR CL Final_v2.pdf,2416007,2021-01
+2021-01-27,Southeast/Bayside (CA0037664),CSD-017,Jackson Street,North Shore,SF Bay - North Shore waterfront,1:45 AM,1.0,,0.01,<,2021-01 SEP SMR CL Final_v2.pdf,2416007,2021-01
+2021-01-27,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,12:46 AM,213.0,,14.21,,2021-01 SEP SMR CL Final_v2.pdf,2416007,2021-01
+2021-01-27,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,12:50 AM,79.0,,5.1,,2021-01 SEP SMR CL Final_v2.pdf,2416007,2021-01
+2021-01-27,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,12:50 AM,80.0,,10.29,,2021-01 SEP SMR CL Final_v2.pdf,2416007,2021-01
+2021-01-27,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,1:49 AM,16.0,,8.3,,2021-01 SEP SMR CL Final_v2.pdf,2416007,2021-01
+2021-01-28,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,1:25 AM,160.0,,10.73,,2021-01 SEP SMR CL Final_v2.pdf,2416007,2021-01
+2021-01-29,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,2:16 AM,139.0,,9.26,,2021-01 SEP SMR CL Final_v2.pdf,2416007,2021-01
+2021-01-29,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,2:21 AM,35.0,,2.09,,2021-01 SEP SMR CL Final_v2.pdf,2416007,2021-01
+2021-01-29,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,2:21 AM,35.0,,4.19,,2021-01 SEP SMR CL Final_v2.pdf,2416007,2021-01
+2021-10-21,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,8:36 AM,26.0,,0.08,,2021-10 OSP CL.pdf,2326483,2021-10
+2021-10-21,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,8:49 AM,3.0,,0.01,<,2021-10 OSP CL.pdf,2326483,2021-10
+2021-10-21,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,8:25 AM,213.0,,11.65,,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-21,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,8:28 AM,62.0,,4.01,,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-21,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,8:28 AM,62.0,,8.02,,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-21,Southeast/Bayside (CA0037664),CSD-031,Third Street North,Central (Islais Creek),Islais Creek,8:14 AM,2.0,,0.02,,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-21,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,8:10 AM,132.0,,8.3,,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-21,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,8:09 AM,115.0,,1.1,,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-21,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,8:09 AM,115.0,,1.56,,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-21,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,8:09 AM,115.0,,0.93,,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-22,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,4:06 AM,13.0,,0.12,,2021-10 OSP CL.pdf,2326483,2021-10
+2021-10-22,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,6:09 AM,227.0,,15.32,,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-22,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,7:54 AM,1.0,,0.02,,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-22,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,5:44 AM,98.0,,3.39,,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-22,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,5:43 AM,93.0,,0.48,,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-22,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,5:43 AM,93.0,,0.69,,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-23,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,11:40 PM,1313.0,,52.86,,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-23,Southeast/Bayside (CA0037664),CSD-011,Laguna Street,North Shore,SF Bay - North Shore waterfront,11:43 PM,391.0,,4.42,,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-23,Southeast/Bayside (CA0037664),CSD-013,Beach Street,North Shore,SF Bay - North Shore waterfront,11:50 PM,459.0,,18.47,,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-23,Southeast/Bayside (CA0037664),CSD-015,Sansome Street,North Shore,SF Bay - North Shore waterfront,11:50 PM,1019.0,,20.29,,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-23,Southeast/Bayside (CA0037664),CSD-017,Jackson Street,North Shore,SF Bay - North Shore waterfront,11:52 PM,373.0,,4.86,,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-23,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,11:26 PM,1931.0,,132.86,,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-23,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,11:27 PM,1550.0,,119.23,,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-23,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,11:27 PM,1551.0,,229.07,,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-23,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,11:36 PM,465.0,,220.49,,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-23,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,11:36 PM,148.0,,8.12,,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-24,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,2:19 AM,1298.0,,60.47,,2021-10 OSP CL.pdf,2326483,2021-10
+2021-10-24,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,2:30 AM,1219.0,,42.72,,2021-10 OSP CL.pdf,2326483,2021-10
+2021-10-24,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,2:38 AM,1300.0,,51.27,,2021-10 OSP CL.pdf,2326483,2021-10
+2021-10-24,Oceanside (CA0037681),CSD-004,Mile Rock,Oceanside,Pacific Ocean,2:37 AM,764.0,,53.65,,2021-10 OSP CL.pdf,2326483,2021-10
+2021-10-24,Oceanside (CA0037681),CSD-005,Sea Cliff #1,Oceanside,Pacific Ocean,3:02 PM,44.0,,0.04,,2021-10 OSP CL.pdf,2326483,2021-10
+2021-10-24,Oceanside (CA0037681),CSD-006,Sea Cliff Brick Sewer,Oceanside,Pacific Ocean,3:08 PM,205.0,,7.53,,2021-10 OSP CL.pdf,2326483,2021-10
+2021-10-24,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,3:06 PM,68.0,,0.7,,2021-10 OSP CL.pdf,2326483,2021-10
+2021-10-24,Southeast/Bayside (CA0037664),CSD-011,Laguna Street,North Shore,SF Bay - North Shore waterfront,2:33 AM,391.0,,4.42,,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-24,Southeast/Bayside (CA0037664),CSD-030A,22nd Street,Central (Islais Creek),Islais Creek,2:12 PM,3.0,,0.01,<,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-24,Southeast/Bayside (CA0037664),CSD-031,Third Street North,Central (Islais Creek),Islais Creek,2:32 AM,510.0,,1.59,,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-24,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,1:20 AM,1717.0,,321.63,,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-24,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,1:20 AM,1679.0,,49.42,,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-24,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,1:20 AM,1679.0,,70.12,,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-24,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,1:20 AM,1679.0,,41.69,,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-24,Southeast/Bayside (CA0037664),CSD-037,Evans Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),7:05 PM,1.0,,0.01,<,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-24,Southeast/Bayside (CA0037664),CSD-040,Griffith Street,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),2:41 PM,224.0,,4.78,,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-24,Southeast/Bayside (CA0037664),CSD-041,Yosemite Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),3:15 PM,145.0,,1.52,,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-24,Southeast/Bayside (CA0037664),CSD-042,Fitch Street,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),3:15 PM,145.0,,0.36,,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-10-24,Southeast/Bayside (CA0037664),CSD-043,Sunnydale Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),2:49 PM,574.0,,24.06,,2021-10 SEP Final CL.pdf,2505923,2021-10
+2021-11-08,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,11:48 PM,10.0,,0.13,,2021-11 OSP Final CL.pdf,2326484,2021-11
+2021-11-08,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,11:54 PM,259.0,,15.14,,2021-11 SEP Final CL.pdf,2516206,2021-11
+2021-11-08,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,11:57 PM,28.0,,1.61,,2021-11 SEP Final CL.pdf,2516206,2021-11
+2021-11-08,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,11:57 PM,28.0,,3.22,,2021-11 SEP Final CL.pdf,2516206,2021-11
+2021-12-13,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,2:35 AM,732.0,,26.18,,2021-12 OSP CL.pdf,2326485,2021-12
+2021-12-13,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,2:48 AM,564.0,,13.02,,2021-12 OSP CL.pdf,2326485,2021-12
+2021-12-13,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,2:59 AM,677.0,,18.46,,2021-12 OSP CL.pdf,2326485,2021-12
+2021-12-13,Oceanside (CA0037681),CSD-004,Mile Rock,Oceanside,Pacific Ocean,4:13 AM,332.0,,18.92,,2021-12 OSP CL.pdf,2326485,2021-12
+2021-12-13,Oceanside (CA0037681),CSD-005,Sea Cliff #1,Oceanside,Pacific Ocean,1:35 PM,90.0,,0.06,,2021-12 OSP CL.pdf,2326485,2021-12
+2021-12-13,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,2:07 PM,18.0,,0.17,,2021-12 OSP CL.pdf,2326485,2021-12
+2021-12-13,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,2:44 AM,463.0,,15.51,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-13,Southeast/Bayside (CA0037664),CSD-011,Laguna Street,North Shore,SF Bay - North Shore waterfront,4:11 AM,17.0,,0.01,<,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-13,Southeast/Bayside (CA0037664),CSD-013,Beach Street,North Shore,SF Bay - North Shore waterfront,3:10 AM,345.0,,7.13,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-13,Southeast/Bayside (CA0037664),CSD-015,Sansome Street,North Shore,SF Bay - North Shore waterfront,3:15 AM,328.0,,2.88,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-13,Southeast/Bayside (CA0037664),CSD-017,Jackson Street,North Shore,SF Bay - North Shore waterfront,7:55 AM,23.0,,0.04,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-13,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,2:00 AM,1329.0,,90.01,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-13,Southeast/Bayside (CA0037664),CSD-022,Third Street,Central (Mission Creek),Mission Creek / China Basin,2:24 AM,284.0,,0.41,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-13,Southeast/Bayside (CA0037664),CSD-023,Fourth Street North,Central (Mission Creek),Mission Creek / China Basin,2:27 AM,222.0,,1.17,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-13,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,2:01 AM,665.0,,52.09,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-13,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,2:01 AM,666.0,,99.63,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-13,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,2:35 AM,239.0,,81.99,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-13,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,2:02 AM,425.0,,23.95,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-13,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,2:35 AM,925.0,,100.16,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-13,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,2:33 AM,848.0,,11.76,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-13,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,2:34 AM,914.0,,23.28,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-13,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,2:33 AM,992.0,,15.75,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-13,Southeast/Bayside (CA0037664),CSD-040,Griffith Street,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),8:51 AM,27.0,,0.35,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-13,Southeast/Bayside (CA0037664),CSD-041,Yosemite Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),8:53 AM,14.0,,0.13,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-13,Southeast/Bayside (CA0037664),CSD-042,Fitch Street,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),8:53 AM,14.0,,0.03,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-15,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,11:41 PM,60.0,,3.0,,2021-12 OSP CL.pdf,2326485,2021-12
+2021-12-15,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,11:26 PM,3.0,,0.01,<,2021-12 OSP CL.pdf,2326485,2021-12
+2021-12-15,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,11:59 PM,172.0,,11.48,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-16,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,12:03 AM,38.0,,2.26,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-16,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,12:03 AM,38.0,,4.52,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-16,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,12:02 AM,146.0,,8.21,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-16,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,12:01 AM,129.0,,0.74,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-16,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,12:02 AM,144.0,,1.71,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-16,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,12:04 AM,153.0,,1.68,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-23,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,8:02 AM,93.0,,2.54,,2021-12 OSP CL.pdf,2326485,2021-12
+2021-12-23,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,8:22 AM,45.0,,0.43,,2021-12 OSP CL.pdf,2326485,2021-12
+2021-12-23,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,8:28 AM,50.0,,0.88,,2021-12 OSP CL.pdf,2326485,2021-12
+2021-12-23,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,8:40 AM,28.0,,0.15,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-23,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,8:34 AM,8.0,,0.03,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-23,Southeast/Bayside (CA0037664),CSD-022,Third Street,Central (Mission Creek),Mission Creek / China Basin,8:32 AM,10.0,,0.01,<,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-23,Southeast/Bayside (CA0037664),CSD-023,Fourth Street North,Central (Mission Creek),Mission Creek / China Basin,8:34 AM,8.0,,0.02,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-23,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,6:44 AM,190.0,,13.53,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-23,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,6:44 AM,191.0,,27.06,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-23,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,8:41 AM,11.0,,4.68,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-23,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,6:32 AM,239.0,,22.62,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-23,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,6:30 AM,201.0,,2.52,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-23,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,6:31 AM,236.0,,5.17,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2021-12-23,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,6:28 AM,292.0,,4.32,,2021-12 SEP Final CL.pdf,2524068,2021-12
+2022-12-01,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,8:26 AM,22.0,,0.2,,2022-12 OSP CL.pdf,2326500,2022-12
+2022-12-01,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,10:04 AM,95.0,,1.42,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-01,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,9:13 AM,249.0,,16.95,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-01,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,9:11 AM,135.0,,9.52,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-01,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,9:11 AM,135.0,,19.04,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-01,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,9:14 AM,32.0,,1.01,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-01,Southeast/Bayside (CA0037664),CSD-037,Evans Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),12:09 AM,47.0,,0.52,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-27,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,2:10 AM,318.0,,10.77,,2022-12 OSP CL.pdf,2326500,2022-12
+2022-12-27,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,2:23 AM,265.0,,4.92,,2022-12 OSP CL.pdf,2326500,2022-12
+2022-12-27,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,2:24 AM,217.0,,10.6,,2022-12 OSP CL.pdf,2326500,2022-12
+2022-12-27,Oceanside (CA0037681),CSD-004,Mile Rock,Oceanside,Pacific Ocean,2:08 AM,197.0,,11.1,,2022-12 OSP CL.pdf,2326500,2022-12
+2022-12-27,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,1:26 AM,15.0,,0.11,,2022-12 OSP CL.pdf,2326500,2022-12
+2022-12-27,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,1:38 AM,395.0,,14.35,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-27,Southeast/Bayside (CA0037664),CSD-011,Laguna Street,North Shore,SF Bay - North Shore waterfront,1:54 AM,79.0,,0.6,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-27,Southeast/Bayside (CA0037664),CSD-013,Beach Street,North Shore,SF Bay - North Shore waterfront,2:20 AM,285.0,,5.6,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-27,Southeast/Bayside (CA0037664),CSD-015,Sansome Street,North Shore,SF Bay - North Shore waterfront,1:53 AM,274.0,,12.2,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-27,Southeast/Bayside (CA0037664),CSD-017,Jackson Street,North Shore,SF Bay - North Shore waterfront,1:57 AM,26.0,,0.37,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-27,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,1:54 AM,627.0,,41.92,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-27,Southeast/Bayside (CA0037664),CSD-022,Third Street,Central (Mission Creek),Mission Creek / China Basin,2:03 AM,57.0,,0.07,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-27,Southeast/Bayside (CA0037664),CSD-023,Fourth Street North,Central (Mission Creek),Mission Creek / China Basin,2:03 AM,34.0,,0.19,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-27,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,1:56 AM,366.0,,25.32,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-27,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,1:56 AM,366.0,,49.87,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-27,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,1:55 AM,205.0,,51.28,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-27,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,2:14 AM,189.0,,2.0,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-27,Southeast/Bayside (CA0037664),CSD-030,20th Street,Central (Islais Creek),Islais Creek,2:15 AM,185.0,,0.3,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-27,Southeast/Bayside (CA0037664),CSD-030A,22nd Street,Central (Islais Creek),Islais Creek,2:15 AM,23.0,,0.01,<,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-27,Southeast/Bayside (CA0037664),CSD-031,Third Street North,Central (Islais Creek),Islais Creek,2:00 AM,350.0,,1.6,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-27,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,2:18 AM,420.0,,60.21,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-27,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,2:16 AM,389.0,,8.64,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-27,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,2:16 AM,396.0,,12.26,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-27,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,2:16 AM,396.0,,7.3,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-27,Southeast/Bayside (CA0037664),CSD-037,Evans Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),6:35 AM,221.0,,5.26,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-31,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,3:28 AM,832.0,,59.58,,2022-12 OSP CL.pdf,2326500,2022-12
+2022-12-31,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,3:25 AM,820.0,,119.6,,2022-12 OSP CL.pdf,2326500,2022-12
+2022-12-31,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,3:40 AM,835.0,,247.8,,2022-12 OSP CL.pdf,2326500,2022-12
+2022-12-31,Oceanside (CA0037681),CSD-004,Mile Rock,Oceanside,Pacific Ocean,4:36 AM,633.0,,53.13,,2022-12 OSP CL.pdf,2326500,2022-12
+2022-12-31,Oceanside (CA0037681),CSD-006,Sea Cliff Brick Sewer,Oceanside,Pacific Ocean,6:19 AM,249.0,,9.34,,2022-12 OSP CL.pdf,2326500,2022-12
+2022-12-31,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,6:16 AM,149.0,,1.75,,2022-12 OSP CL.pdf,2326500,2022-12
+2022-12-31,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,3:46 AM,599.0,,36.03,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-31,Southeast/Bayside (CA0037664),CSD-011,Laguna Street,North Shore,SF Bay - North Shore waterfront,4:05 AM,507.0,,11.91,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-31,Southeast/Bayside (CA0037664),CSD-013,Beach Street,North Shore,SF Bay - North Shore waterfront,3:46 AM,878.0,,113.46,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-31,Southeast/Bayside (CA0037664),CSD-015,Sansome Street,North Shore,SF Bay - North Shore waterfront,1:31 PM,534.0,,11.81,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-31,Southeast/Bayside (CA0037664),CSD-017,Jackson Street,North Shore,SF Bay - North Shore waterfront,4:17 AM,133.0,,1.16,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-31,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,12:17 AM,664.0,,46.62,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-31,Southeast/Bayside (CA0037664),CSD-022,Third Street,Central (Mission Creek),Mission Creek / China Basin,3:41 AM,465.0,,2.45,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-31,Southeast/Bayside (CA0037664),CSD-023,Fourth Street North,Central (Mission Creek),Mission Creek / China Basin,3:42 AM,430.0,,8.63,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-31,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,3:30 AM,819.0,,86.89,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-31,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,3:30 AM,819.0,,152.61,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-31,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,11:58 PM,636.0,,333.21,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-31,Southeast/Bayside (CA0037664),CSD-027,Sixth Street South,Central (Mission Creek),Mission Creek / China Basin,10:13 AM,153.0,,0.47,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-31,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,3:58 AM,739.0,,16.6,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-31,Southeast/Bayside (CA0037664),CSD-030,20th Street,Central (Islais Creek),Islais Creek,7:43 AM,307.0,,4.85,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-31,Southeast/Bayside (CA0037664),CSD-030A,22nd Street,Central (Islais Creek),Islais Creek,7:47 AM,260.0,,0.86,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-31,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,2:59 AM,1091.0,,370.44,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-31,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,3:03 AM,884.0,,30.62,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-31,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,2:58 AM,862.0,,43.44,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-31,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,2:58 AM,862.0,,25.74,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-31,Southeast/Bayside (CA0037664),CSD-037,Evans Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),9:18 AM,248.0,,7.99,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-31,Southeast/Bayside (CA0037664),CSD-040,Griffith Street,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),4:47 AM,491.0,,15.45,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-31,Southeast/Bayside (CA0037664),CSD-041,Yosemite Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),4:48 AM,299.0,,4.45,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-31,Southeast/Bayside (CA0037664),CSD-042,Fitch Street,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),4:48 AM,299.0,,1.06,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2022-12-31,Southeast/Bayside (CA0037664),CSD-043,Sunnydale Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),5:47 AM,647.0,,49.58,,2022-12 SEP Final CL.pdf,2644145,2022-12
+2023-01-04,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,6:24 PM,225.0,,14.11,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-04,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,6:24 PM,226.0,,28.21,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-04,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,5:51 PM,30.0,,0.37,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-04,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,6:10 PM,19.0,,0.08,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-04,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,5:37 PM,389.0,,35.58,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-04,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,5:36 PM,381.0,,5.65,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-04,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,5:36 PM,381.0,,8.02,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-04,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,5:36 PM,381.0,,4.77,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-09,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,2:09 AM,242.0,,9.4,,2023-01 OSP SMR.pdf,2326504,2023-01
+2023-01-09,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,4:43 AM,91.0,,1.63,,2023-01 OSP SMR.pdf,2326504,2023-01
+2023-01-09,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,4:43 AM,91.0,,3.51,,2023-01 OSP SMR.pdf,2326504,2023-01
+2023-01-09,Oceanside (CA0037681),CSD-004,Mile Rock,Oceanside,Pacific Ocean,6:57 AM,56.0,,3.55,,2023-01 OSP SMR.pdf,2326504,2023-01
+2023-01-09,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,1:18 AM,39.0,,0.34,,2023-01 OSP SMR.pdf,2326504,2023-01
+2023-01-09,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,2:49 AM,384.0,,11.88,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-09,Southeast/Bayside (CA0037664),CSD-011,Laguna Street,North Shore,SF Bay - North Shore waterfront,4:26 AM,48.0,,0.31,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-09,Southeast/Bayside (CA0037664),CSD-013,Beach Street,North Shore,SF Bay - North Shore waterfront,3:56 AM,216.0,,9.82,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-09,Southeast/Bayside (CA0037664),CSD-015,Sansome Street,North Shore,SF Bay - North Shore waterfront,3:39 AM,219.0,,3.13,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-09,Southeast/Bayside (CA0037664),CSD-017,Jackson Street,North Shore,SF Bay - North Shore waterfront,4:31 AM,10.0,,0.07,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-09,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,1:42 AM,893.0,,57.93,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-09,Southeast/Bayside (CA0037664),CSD-022,Third Street,Central (Mission Creek),Mission Creek / China Basin,4:38 AM,23.0,,0.02,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-09,Southeast/Bayside (CA0037664),CSD-023,Fourth Street North,Central (Mission Creek),Mission Creek / China Basin,4:39 AM,23.0,,0.06,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-09,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,1:39 AM,571.0,,43.65,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-09,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,1:39 AM,572.0,,83.25,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-09,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,1:49 AM,401.0,,137.5,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-09,Southeast/Bayside (CA0037664),CSD-027,Sixth Street South,Central (Mission Creek),Mission Creek / China Basin,4:37 AM,24.0,,0.04,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-09,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,2:15 AM,310.0,,0.53,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-09,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,1:46 AM,650.0,,72.71,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-09,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,1:45 AM,626.0,,10.46,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-09,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,1:45 AM,626.0,,14.84,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-09,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,1:45 AM,626.0,,8.83,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-09,Southeast/Bayside (CA0037664),CSD-043,Sunnydale Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),6:57 AM,36.0,,0.79,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-10,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,12:46 PM,116.0,,4.72,,2023-01 OSP SMR.pdf,2326504,2023-01
+2023-01-10,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,1:03 PM,27.0,,0.9,,2023-01 OSP SMR.pdf,2326504,2023-01
+2023-01-10,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,1:04 PM,27.0,,1.93,,2023-01 OSP SMR.pdf,2326504,2023-01
+2023-01-10,Oceanside (CA0037681),CSD-004,Mile Rock,Oceanside,Pacific Ocean,12:58 PM,79.0,,3.93,,2023-01 OSP SMR.pdf,2326504,2023-01
+2023-01-10,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,2:07 AM,36.0,,0.29,,2023-01 OSP SMR.pdf,2326504,2023-01
+2023-01-10,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,12:54 PM,178.0,,4.8,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-10,Southeast/Bayside (CA0037664),CSD-011,Laguna Street,North Shore,SF Bay - North Shore waterfront,12:56 PM,11.0,,0.05,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-10,Southeast/Bayside (CA0037664),CSD-013,Beach Street,North Shore,SF Bay - North Shore waterfront,12:59 PM,53.0,,2.91,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-10,Southeast/Bayside (CA0037664),CSD-015,Sansome Street,North Shore,SF Bay - North Shore waterfront,1:03 PM,113.0,,1.54,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-10,Southeast/Bayside (CA0037664),CSD-017,Jackson Street,North Shore,SF Bay - North Shore waterfront,1:04 PM,3.0,,0.04,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-10,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,11:52 AM,616.0,,41.59,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-10,Southeast/Bayside (CA0037664),CSD-022,Third Street,Central (Mission Creek),Mission Creek / China Basin,1:01 PM,11.0,,0.01,<,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-10,Southeast/Bayside (CA0037664),CSD-023,Fourth Street North,Central (Mission Creek),Mission Creek / China Basin,1:02 PM,9.0,,0.01,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-10,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,11:52 AM,340.0,,28.25,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-10,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,11:52 AM,340.0,,52.53,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-10,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,11:58 AM,237.0,,75.08,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-10,Southeast/Bayside (CA0037664),CSD-027,Sixth Street South,Central (Mission Creek),Mission Creek / China Basin,1:02 PM,11.0,,0.01,<,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-10,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,12:45 PM,49.0,,1.21,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-10,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,12:55 PM,245.0,,22.74,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-10,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,12:52 PM,237.0,,3.19,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-10,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,12:52 PM,237.0,,4.53,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-10,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,12:52 PM,237.0,,2.69,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-11,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,3:14 PM,62.0,,1.62,,2023-01 OSP SMR.pdf,2326504,2023-01
+2023-01-11,Oceanside (CA0037681),CSD-004,Mile Rock,Oceanside,Pacific Ocean,2:58 PM,56.0,,2.22,,2023-01 OSP SMR.pdf,2326504,2023-01
+2023-01-11,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,3:02 PM,5.0,,0.02,,2023-01 OSP SMR.pdf,2326504,2023-01
+2023-01-11,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,2:57 PM,122.0,,3.41,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-11,Southeast/Bayside (CA0037664),CSD-013,Beach Street,North Shore,SF Bay - North Shore waterfront,3:19 PM,24.0,,0.02,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-11,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,2:30 PM,290.0,,19.55,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-11,Southeast/Bayside (CA0037664),CSD-022,Third Street,Central (Mission Creek),Mission Creek / China Basin,2:54 PM,42.0,,0.02,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-11,Southeast/Bayside (CA0037664),CSD-023,Fourth Street North,Central (Mission Creek),Mission Creek / China Basin,2:57 PM,29.0,,0.03,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-11,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,2:37 PM,140.0,,10.73,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-11,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,2:37 PM,140.0,,21.14,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-11,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,2:25 PM,39.0,,5.08,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-11,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,3:30 PM,113.0,,9.74,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-11,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,3:29 PM,109.0,,1.5,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-11,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,3:29 PM,109.0,,2.13,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-11,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,3:29 PM,109.0,,1.27,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-14,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,7:50 AM,62.0,,0.67,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-14,Southeast/Bayside (CA0037664),CSD-015,Sansome Street,North Shore,SF Bay - North Shore waterfront,8:14 AM,9.0,,0.01,<,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-14,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,6:23 AM,289.0,,19.52,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-14,Southeast/Bayside (CA0037664),CSD-022,Third Street,Central (Mission Creek),Mission Creek / China Basin,6:42 AM,12.0,,0.01,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-14,Southeast/Bayside (CA0037664),CSD-023,Fourth Street North,Central (Mission Creek),Mission Creek / China Basin,6:43 AM,9.0,,0.02,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-14,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,6:29 AM,156.0,,10.14,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-14,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,6:29 AM,157.0,,20.26,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-14,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,6:27 AM,85.0,,9.39,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-14,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,6:58 AM,165.0,,13.61,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-14,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,6:57 AM,161.0,,2.17,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-14,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,6:57 AM,161.0,,3.08,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-14,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,6:57 AM,161.0,,1.83,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-15,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,10:13 PM,770.0,,52.96,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-15,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,10:19 PM,598.0,,47.55,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-15,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,10:19 PM,598.0,,89.19,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-15,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,9:55 PM,133.0,,14.77,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-15,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,9:34 PM,507.0,,63.23,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-15,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,9:33 PM,505.0,,10.13,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-15,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,9:33 PM,505.0,,14.37,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-15,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,9:33 PM,505.0,,8.55,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-16,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,12:26 AM,207.0,,8.23,,2023-01 OSP SMR.pdf,2326504,2023-01
+2023-01-16,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,12:33 AM,97.0,,2.51,,2023-01 OSP SMR.pdf,2326504,2023-01
+2023-01-16,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,12:33 AM,97.0,,5.4,,2023-01 OSP SMR.pdf,2326504,2023-01
+2023-01-16,Oceanside (CA0037681),CSD-004,Mile Rock,Oceanside,Pacific Ocean,1:30 AM,54.0,,2.65,,2023-01 OSP SMR.pdf,2326504,2023-01
+2023-01-16,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,1:12 AM,176.0,,4.98,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-16,Southeast/Bayside (CA0037664),CSD-013,Beach Street,North Shore,SF Bay - North Shore waterfront,1:29 AM,72.0,,3.6,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-16,Southeast/Bayside (CA0037664),CSD-015,Sansome Street,North Shore,SF Bay - North Shore waterfront,1:12 AM,124.0,,1.37,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-16,Southeast/Bayside (CA0037664),CSD-022,Third Street,Central (Mission Creek),Mission Creek / China Basin,1:05 AM,225.0,,0.6,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-01-16,Southeast/Bayside (CA0037664),CSD-023,Fourth Street North,Central (Mission Creek),Mission Creek / China Basin,1:06 AM,205.0,,1.9,,2023-01 SEP Final CL.pdf,2673079,2023-01
+2023-02-23,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,11:57 PM,414.0,,15.64,,2023-02 SEP Final CL_v2.pdf,2673080,2023-02
+2023-02-23,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,11:57 PM,414.0,,31.28,,2023-02 SEP Final CL_v2.pdf,2673080,2023-02
+2023-02-23,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,11:45 PM,30.0,,0.3,,2023-02 SEP Final CL_v2.pdf,2673080,2023-02
+2023-02-24,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,5:11 AM,70.0,,0.32,,2023-02 OSP Final CL.pdf,2326505,2023-02
+2023-02-24,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,5:56 AM,31.0,,0.11,,2023-02 SEP Final CL_v2.pdf,2673080,2023-02
+2023-02-24,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,4:34 AM,174.0,,14.67,,2023-02 SEP Final CL_v2.pdf,2673080,2023-02
+2023-02-24,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,4:33 AM,171.0,,2.24,,2023-02 SEP Final CL_v2.pdf,2673080,2023-02
+2023-02-24,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,4:33 AM,171.0,,3.18,,2023-02 SEP Final CL_v2.pdf,2673080,2023-02
+2023-02-24,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,4:33 AM,231.0,,2.3,,2023-02 SEP Final CL_v2.pdf,2673080,2023-02
+2023-03-09,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,8:51 PM,895.0,,55.13,,2023-03 SEP Final CL3.pdf,2673081,2023-03
+2023-03-09,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,8:56 PM,232.0,,6.81,,2023-03 SEP Final CL3.pdf,2673081,2023-03
+2023-03-09,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,8:56 PM,232.0,,13.62,,2023-03 SEP Final CL3.pdf,2673081,2023-03
+2023-03-10,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,1:01 AM,109.0,,36.91,,2023-03 SEP Final CL3.pdf,2673081,2023-03
+2023-03-10,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,1:10 AM,91.0,,7.96,,2023-03 SEP Final CL3.pdf,2673081,2023-03
+2023-03-10,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,1:08 AM,91.0,,1.31,,2023-03 SEP Final CL3.pdf,2673081,2023-03
+2023-03-10,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,1:08 AM,91.0,,1.86,,2023-03 SEP Final CL3.pdf,2673081,2023-03
+2023-03-10,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,1:10 AM,149.0,,1.8,,2023-03 SEP Final CL3.pdf,2673081,2023-03
+2023-03-14,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,7:50 AM,52.0,,1.86,,2023-03 OSP CL.pdf,2326506,2023-03
+2023-03-14,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,8:05 AM,27.0,,0.16,,2023-03 OSP CL.pdf,2326506,2023-03
+2023-03-14,Oceanside (CA0037681),CSD-004,Mile Rock,Oceanside,Pacific Ocean,8:08 AM,21.0,,0.48,,2023-03 OSP CL.pdf,2326506,2023-03
+2023-03-14,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,7:59 AM,77.0,,1.12,,2023-03 SEP Final CL3.pdf,2673081,2023-03
+2023-03-14,Southeast/Bayside (CA0037664),CSD-015,Sansome Street,North Shore,SF Bay - North Shore waterfront,8:23 AM,7.0,,0.01,<,2023-03 SEP Final CL3.pdf,2673081,2023-03
+2023-03-14,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,7:56 AM,295.0,,19.83,,2023-03 SEP Final CL3.pdf,2673081,2023-03
+2023-03-14,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,7:55 AM,87.0,,3.36,,2023-03 SEP Final CL3.pdf,2673081,2023-03
+2023-03-14,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,7:55 AM,87.0,,6.72,,2023-03 SEP Final CL3.pdf,2673081,2023-03
+2023-03-14,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,8:02 AM,14.0,,6.3,,2023-03 SEP Final CL3.pdf,2673081,2023-03
+2023-03-14,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,7:52 AM,65.0,,8.28,,2023-03 SEP Final CL3.pdf,2673081,2023-03
+2023-03-14,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,7:59 AM,166.0,,16.09,,2023-03 SEP Final CL3.pdf,2673081,2023-03
+2023-03-14,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,7:57 AM,166.0,,2.56,,2023-03 SEP Final CL3.pdf,2673081,2023-03
+2023-03-14,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,7:57 AM,166.0,,3.63,,2023-03 SEP Final CL3.pdf,2673081,2023-03
+2023-03-14,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,7:57 AM,198.0,,4.14,,2023-03 SEP Final CL3.pdf,2673081,2023-03
+2023-03-21,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,9:33 PM,580.0,,39.84,,2023-03 SEP Final CL3.pdf,2673081,2023-03
+2023-03-21,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,9:36 PM,358.0,,12.68,,2023-03 SEP Final CL3.pdf,2673081,2023-03
+2023-03-21,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,9:36 PM,359.0,,25.4,,2023-03 SEP Final CL3.pdf,2673081,2023-03
+2023-03-21,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,11:54 PM,161.0,,44.18,,2023-03 SEP Final CL3.pdf,2673081,2023-03
+2023-03-21,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,8:40 PM,747.0,,48.06,,2023-03 SEP Final CL3.pdf,2673081,2023-03
+2023-03-21,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,8:40 PM,743.0,,7.44,,2023-03 SEP Final CL3.pdf,2673081,2023-03
+2023-03-21,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,8:40 PM,743.0,,10.55,,2023-03 SEP Final CL3.pdf,2673081,2023-03
+2023-03-28,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,2:26 PM,157.0,,10.32,,2023-03 SEP Final CL3.pdf,2673081,2023-03
+2023-03-28,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,2:33 PM,33.0,,1.45,,2023-03 SEP Final CL3.pdf,2673081,2023-03
+2023-03-28,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,2:32 PM,32.0,,0.22,,2023-03 SEP Final CL3.pdf,2673081,2023-03
+2023-03-28,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,2:32 PM,32.0,,0.31,,2023-03 SEP Final CL3.pdf,2673081,2023-03
+2023-03-28,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,2:32 PM,33.0,,0.19,,2023-03 SEP Final CL3.pdf,2673081,2023-03
+2023-11-18,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,4:46 AM,48.0,,0.68,,2023-11 OSP Final.pdf,2326514,2023-11
+2023-11-18,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,4:51 AM,44.0,,0.22,,2023-11 OSP Final.pdf,2326514,2023-11
+2023-11-18,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,4:51 AM,44.0,,0.48,,2023-11 OSP Final.pdf,2326514,2023-11
+2023-11-18,Oceanside (CA0037681),CSD-004,Mile Rock,Oceanside,Pacific Ocean,4:33 AM,42.0,,2.2,,2023-11 OSP Final.pdf,2326514,2023-11
+2023-11-18,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,3:30 AM,3.0,,0.01,<,2023-11 OSP Final.pdf,2326514,2023-11
+2023-11-18,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,4:32 AM,225.0,,14.42,,2023-11 SEP SMR Final.pdf,2756347,2023-11
+2023-11-18,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,4:48 AM,18.0,,0.85,,2023-11 SEP SMR Final.pdf,2756347,2023-11
+2023-11-18,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,4:48 AM,19.0,,1.79,,2023-11 SEP SMR Final.pdf,2756347,2023-11
+2023-11-18,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,4:59 AM,24.0,,6.13,,2023-11 SEP SMR Final.pdf,2756347,2023-11
+2023-11-18,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,4:39 AM,11.0,,0.04,,2023-11 SEP SMR Final.pdf,2756347,2023-11
+2023-11-18,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,4:37 AM,56.0,,3.23,,2023-11 SEP SMR Final.pdf,2756347,2023-11
+2023-11-18,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,4:35 AM,56.0,,0.46,,2023-11 SEP SMR Final.pdf,2756347,2023-11
+2023-11-18,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,4:35 AM,56.0,,0.66,,2023-11 SEP SMR Final.pdf,2756347,2023-11
+2023-11-18,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,4:37 AM,57.0,,0.48,,2023-11 SEP SMR Final.pdf,2756347,2023-11
+2023-12-18,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,2:06 PM,35.0,,1.79,,2023-12 OSP Final.pdf,2326515,2023-12
+2023-12-18,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,5:20 AM,17.0,,0.13,,2023-12 OSP Final.pdf,2326515,2023-12
+2023-12-18,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,2:30 PM,21.0,,0.07,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-18,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,1:58 PM,321.0,,21.63,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-18,Southeast/Bayside (CA0037664),CSD-022,Third Street,Central (Mission Creek),Mission Creek / China Basin,2:01 PM,24.0,,0.05,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-18,Southeast/Bayside (CA0037664),CSD-023,Fourth Street North,Central (Mission Creek),Mission Creek / China Basin,2:01 PM,23.0,,0.15,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-18,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,1:55 PM,51.0,,2.81,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-18,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,1:55 PM,52.0,,5.69,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-18,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,1:54 PM,187.0,,61.23,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-18,Southeast/Bayside (CA0037664),CSD-027,Sixth Street South,Central (Mission Creek),Mission Creek / China Basin,2:05 PM,20.0,,0.03,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-18,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,5:49 AM,86.0,,2.25,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-18,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,2:08 PM,136.0,,18.05,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-18,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,2:07 PM,129.0,,2.76,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-18,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,2:07 PM,129.0,,3.92,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-18,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,2:07 PM,139.0,,2.47,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-19,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,1:21 AM,236.0,,12.39,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-19,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,1:34 AM,25.0,,1.38,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-19,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,1:34 AM,25.0,,2.76,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-19,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,1:37 AM,34.0,,1.04,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-19,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,1:36 AM,33.0,,0.15,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-19,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,1:36 AM,33.0,,0.22,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-19,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,1:37 AM,36.0,,0.16,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-20,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,8:52 AM,131.0,,2.36,,2023-12 OSP Final.pdf,2326515,2023-12
+2023-12-20,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,9:01 AM,105.0,,0.56,,2023-12 OSP Final.pdf,2326515,2023-12
+2023-12-20,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,9:01 AM,105.0,,1.21,,2023-12 OSP Final.pdf,2326515,2023-12
+2023-12-20,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,9:13 AM,119.0,,3.77,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-20,Southeast/Bayside (CA0037664),CSD-013,Beach Street,North Shore,SF Bay - North Shore waterfront,9:20 AM,105.0,,7.36,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-20,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,7:54 AM,347.0,,23.95,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-20,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,8:10 AM,129.0,,7.45,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-20,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,8:10 AM,133.0,,15.33,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-20,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,8:20 AM,48.0,,17.7,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-20,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,8:27 AM,142.0,,2.0,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-20,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,7:33 AM,287.0,,40.33,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-20,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,7:32 AM,233.0,,5.28,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-20,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,7:32 AM,233.0,,7.49,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-20,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,7:33 AM,293.0,,5.69,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-29,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,7:53 PM,251.0,,16.95,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-29,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,8:21 PM,51.0,,2.82,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-29,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,8:21 PM,52.0,,5.74,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-29,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,8:45 PM,6.0,,0.21,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-29,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,8:06 PM,117.0,,8.18,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-29,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,8:05 PM,115.0,,1.24,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-29,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,8:05 PM,115.0,,1.75,,2023-12 SEP Final.pdf,2762730,2023-12
+2023-12-29,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,8:06 PM,118.0,,1.2,,2023-12 SEP Final.pdf,2762730,2023-12
+2024-01-13,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,8:29 PM,127.0,,4.09,,2024-01 OSP Final.pdf,2326519,2024-01
+2024-01-13,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,8:59 PM,68.0,,0.91,,2024-01 OSP Final.pdf,2326519,2024-01
+2024-01-13,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,9:08 PM,69.0,,2.16,,2024-01 OSP Final.pdf,2326519,2024-01
+2024-01-13,Oceanside (CA0037681),CSD-004,Mile Rock,Oceanside,Pacific Ocean,9:11 PM,33.0,,0.84,,2024-01 OSP Final.pdf,2326519,2024-01
+2024-01-13,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,8:36 PM,386.0,,24.28,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-13,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,8:49 PM,77.0,,4.33,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-13,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,8:49 PM,83.0,,9.25,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-13,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,9:00 PM,17.0,,7.5,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-13,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,9:00 PM,223.0,,18.84,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-13,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,8:58 PM,204.0,,3.01,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-13,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,8:58 PM,204.0,,4.27,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-13,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,9:00 PM,226.0,,2.72,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-22,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,1:17 AM,554.0,,36.72,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-22,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,2:04 AM,185.0,,9.22,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-22,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,2:04 AM,187.0,,18.57,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-22,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,8:48 AM,139.0,,47.65,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-22,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,1:23 AM,318.0,,24.63,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-22,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,3:14 AM,101.0,,0.35,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-22,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,3:14 AM,101.0,,0.49,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-22,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,1:23 AM,325.0,,3.56,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-31,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,7:32 PM,307.0,,17.45,,2024-01 OSP Final.pdf,2326519,2024-01
+2024-01-31,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,7:41 PM,275.0,,10.55,,2024-01 OSP Final.pdf,2326519,2024-01
+2024-01-31,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,7:48 PM,277.0,,18.34,,2024-01 OSP Final.pdf,2326519,2024-01
+2024-01-31,Oceanside (CA0037681),CSD-004,Mile Rock,Oceanside,Pacific Ocean,7:41 PM,100.0,,7.25,,2024-01 OSP Final.pdf,2326519,2024-01
+2024-01-31,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,7:29 PM,6.0,,0.02,,2024-01 OSP Final.pdf,2326519,2024-01
+2024-01-31,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,7:57 PM,62.0,,1.91,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-31,Southeast/Bayside (CA0037664),CSD-011,Laguna Street,North Shore,SF Bay - North Shore waterfront,7:57 PM,34.0,,0.47,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-31,Southeast/Bayside (CA0037664),CSD-013,Beach Street,North Shore,SF Bay - North Shore waterfront,8:02 PM,56.0,,4.3,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-31,Southeast/Bayside (CA0037664),CSD-015,Sansome Street,North Shore,SF Bay - North Shore waterfront,8:04 PM,147.0,,5.32,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-31,Southeast/Bayside (CA0037664),CSD-017,Jackson Street,North Shore,SF Bay - North Shore waterfront,8:04 PM,7.0,,0.06,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-31,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,7:41 PM,259.0,,55.87,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-31,Southeast/Bayside (CA0037664),CSD-022,Third Street,Central (Mission Creek),Mission Creek / China Basin,7:44 PM,41.0,,0.1,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-31,Southeast/Bayside (CA0037664),CSD-023,Fourth Street North,Central (Mission Creek),Mission Creek / China Basin,7:44 PM,40.0,,0.3,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-31,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,7:39 PM,109.0,,7.09,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-31,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,7:39 PM,279.0,,30.13,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-31,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,7:40 PM,200.0,,83.49,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-31,Southeast/Bayside (CA0037664),CSD-027,Sixth Street South,Central (Mission Creek),Mission Creek / China Basin,7:44 PM,42.0,,0.09,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-31,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,7:45 PM,26.0,,0.04,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-31,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,7:42 PM,552.0,,82.29,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-31,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,7:42 PM,429.0,,10.82,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-31,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,7:42 PM,429.0,,15.36,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-31,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,7:42 PM,569.0,,10.6,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-31,Southeast/Bayside (CA0037664),CSD-040,Griffith Street,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),8:43 PM,17.0,,0.2,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-31,Southeast/Bayside (CA0037664),CSD-041,Yosemite Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),8:45 PM,10.0,,0.1,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-01-31,Southeast/Bayside (CA0037664),CSD-042,Fitch Street,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),8:45 PM,10.0,,0.02,,2024-01 SEP Final.pdf,2788057,2024-01
+2024-02-01,Oceanside (CA0037681),CSD-004,Mile Rock,Oceanside,Pacific Ocean,6:18 AM,32.0,,3.07,,2024-02 OSP Final.pdf,2326520,2024-02
+2024-02-01,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,3:38 AM,13.0,,0.1,,2024-02 OSP Final.pdf,2326520,2024-02
+2024-02-01,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,6:33 AM,51.0,,1.5,,2024-02 SEP Final.pdf,2788058,2024-02
+2024-02-01,Southeast/Bayside (CA0037664),CSD-011,Laguna Street,North Shore,SF Bay - North Shore waterfront,6:27 AM,22.0,,0.21,,2024-02 SEP Final.pdf,2788058,2024-02
+2024-02-01,Southeast/Bayside (CA0037664),CSD-013,Beach Street,North Shore,SF Bay - North Shore waterfront,6:32 AM,51.0,,2.74,,2024-02 SEP Final.pdf,2788058,2024-02
+2024-02-01,Southeast/Bayside (CA0037664),CSD-015,Sansome Street,North Shore,SF Bay - North Shore waterfront,7:00 AM,19.0,,0.07,,2024-02 SEP Final.pdf,2788058,2024-02
+2024-02-01,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,3:51 AM,158.0,,7.43,,2024-02 SEP Final.pdf,2788058,2024-02
+2024-02-04,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,7:40 PM,219.0,,9.02,,2024-02 OSP Final.pdf,2326520,2024-02
+2024-02-04,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,7:15 PM,244.0,,4.68,,2024-02 OSP Final.pdf,2326520,2024-02
+2024-02-04,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,7:50 PM,45.0,,0.23,,2024-02 OSP Final.pdf,2326520,2024-02
+2024-02-04,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,1:43 AM,1076.0,,72.39,,2024-02 SEP Final.pdf,2788058,2024-02
+2024-02-04,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,2:14 AM,438.0,,19.29,,2024-02 SEP Final.pdf,2788058,2024-02
+2024-02-04,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,2:14 AM,442.0,,38.93,,2024-02 SEP Final.pdf,2788058,2024-02
+2024-02-04,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,9:24 AM,51.0,,18.41,,2024-02 SEP Final.pdf,2788058,2024-02
+2024-02-04,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,3:30 AM,43.0,,1.58,,2024-02 SEP Final.pdf,2788058,2024-02
+2024-02-04,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,1:07 AM,730.0,,75.46,,2024-02 SEP Final.pdf,2788058,2024-02
+2024-02-04,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,1:06 AM,747.0,,12.77,,2024-02 SEP Final.pdf,2788058,2024-02
+2024-02-04,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,1:06 AM,747.0,,18.12,,2024-02 SEP Final.pdf,2788058,2024-02
+2024-02-04,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,1:06 AM,747.0,,10.78,,2024-02 SEP Final.pdf,2788058,2024-02
+2024-02-20,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,2:25 PM,80.0,,1.53,,2024-02 SEP Final.pdf,2788058,2024-02
+2024-02-20,Southeast/Bayside (CA0037664),CSD-013,Beach Street,North Shore,SF Bay - North Shore waterfront,2:36 PM,63.0,,3.97,,2024-02 SEP Final.pdf,2788058,2024-02
+2024-02-20,Southeast/Bayside (CA0037664),CSD-015,Sansome Street,North Shore,SF Bay - North Shore waterfront,2:57 PM,25.0,,0.05,,2024-02 SEP Final.pdf,2788058,2024-02
+2024-02-20,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,1:36 PM,276.0,,18.91,,2024-02 SEP Final.pdf,2788058,2024-02
+2024-02-20,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,1:43 PM,106.0,,6.26,,2024-02 SEP Final.pdf,2788058,2024-02
+2024-02-20,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,1:43 PM,112.0,,13.16,,2024-02 SEP Final.pdf,2788058,2024-02
+2024-02-20,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,1:47 PM,27.0,,12.27,,2024-02 SEP Final.pdf,2788058,2024-02
+2024-02-20,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,2:03 PM,101.0,,3.49,,2024-02 SEP Final.pdf,2788058,2024-02
+2024-02-20,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,2:39 PM,111.0,,7.77,,2024-02 SEP Final.pdf,2788058,2024-02
+2024-02-20,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,2:39 PM,115.0,,1.34,,2024-02 SEP Final.pdf,2788058,2024-02
+2024-02-20,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,2:39 PM,115.0,,1.91,,2024-02 SEP Final.pdf,2788058,2024-02
+2024-02-20,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,2:39 PM,115.0,,1.13,,2024-02 SEP Final.pdf,2788058,2024-02
+2024-03-01,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,5:08 PM,452.0,,29.88,,2024-03 SEP Final.pdf,2788059,2024-03
+2024-03-01,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,5:19 PM,32.0,,1.73,,2024-03 SEP Final.pdf,2788059,2024-03
+2024-03-01,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,5:19 PM,33.0,,3.57,,2024-03 SEP Final.pdf,2788059,2024-03
+2024-03-01,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,5:21 PM,39.0,,23.27,,2024-03 SEP Final.pdf,2788059,2024-03
+2024-05-04,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,11:51 AM,105.0,,5.93,,2024-05 SEP Final.pdf,2819060,2024-05
+2024-05-04,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,11:51 AM,112.0,,12.45,,2024-05 SEP Final.pdf,2819060,2024-05
+2024-05-04,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,11:14 AM,2.0,,0.08,,2024-05 SEP Final.pdf,2819060,2024-05
+2024-05-04,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,11:58 AM,113.0,,8.86,,2024-05 SEP Final.pdf,2819060,2024-05
+2024-05-04,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,11:57 AM,113.0,,1.45,,2024-05 SEP Final.pdf,2819060,2024-05
+2024-05-04,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,11:57 AM,113.0,,2.06,,2024-05 SEP Final.pdf,2819060,2024-05
+2024-05-04,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,11:58 AM,114.0,,1.3,,2024-05 SEP Final.pdf,2819060,2024-05
+2024-11-22,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,11:50 AM,505.0,,27.69,,Final_SMR Westside_Ver17_11 November.pdf,2896193,2024-11
+2024-11-22,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,1:10 PM,435.0,,19.95,,Final_SMR Westside_Ver17_11 November.pdf,2896193,2024-11
+2024-11-22,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,1:13 PM,416.0,,31.37,,Final_SMR Westside_Ver17_11 November.pdf,2896193,2024-11
+2024-11-22,Oceanside (CA0037681),CSD-004,Mile Rock,Oceanside,Pacific Ocean,0.56,216.0,,16.29,,Final_SMR Westside_Ver17_11 November.pdf,2896193,2024-11
+2024-11-22,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,1:17 PM,245.0,,7.77,,Final_SMR Bayside_Ver17_11 November.pdf,2896083,2024-11
+2024-11-22,Southeast/Bayside (CA0037664),CSD-011,Laguna Street,North Shore,SF Bay - North Shore waterfront,1:17 PM,192.0,,3.0,,Final_SMR Bayside_Ver17_11 November.pdf,2896083,2024-11
+2024-11-22,Southeast/Bayside (CA0037664),CSD-013,Beach Street,North Shore,SF Bay - North Shore waterfront,1:22 PM,283.0,,14.34,,Final_SMR Bayside_Ver17_11 November.pdf,2896083,2024-11
+2024-11-22,Southeast/Bayside (CA0037664),CSD-015,Sansome Street,North Shore,SF Bay - North Shore waterfront,1:26 PM,498.0,,25.94,,Final_SMR Bayside_Ver17_11 November.pdf,2896083,2024-11
+2024-11-22,Southeast/Bayside (CA0037664),CSD-017,Jackson Street,North Shore,SF Bay - North Shore waterfront,1:27 PM,68.0,,0.44,,Final_SMR Bayside_Ver17_11 November.pdf,2896083,2024-11
+2024-11-22,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,1:34 PM,69.0,,0.79,,Final_SMR Bayside_Ver17_11 November.pdf,2896083,2024-11
+2024-11-22,Southeast/Bayside (CA0037664),CSD-022,Third Street,Central (Mission Creek),Mission Creek / China Basin,1:34 PM,73.0,,0.18,,Final_SMR Bayside_Ver17_11 November.pdf,2896083,2024-11
+2024-11-22,Southeast/Bayside (CA0037664),CSD-023,Fourth Street North,Central (Mission Creek),Mission Creek / China Basin,1:34 PM,68.0,,0.55,,Final_SMR Bayside_Ver17_11 November.pdf,2896083,2024-11
+2024-11-22,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,11:50 AM,405.0,,24.31,,Final_SMR Bayside_Ver17_11 November.pdf,2896083,2024-11
+2024-11-22,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,11:50 AM,423.0,,50.53,,Final_SMR Bayside_Ver17_11 November.pdf,2896083,2024-11
+2024-11-22,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,11:53 AM,268.0,,163.57,,Final_SMR Bayside_Ver17_11 November.pdf,2896083,2024-11
+2024-11-22,Southeast/Bayside (CA0037664),CSD-027,Sixth Street South,Central (Mission Creek),Mission Creek / China Basin,1:35 PM,73.0,,0.15,,Final_SMR Bayside_Ver17_11 November.pdf,2896083,2024-11
+2024-11-22,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,1:39 PM,318.0,,17.98,,Final_SMR Bayside_Ver17_11 November.pdf,2896083,2024-11
+2024-11-22,Southeast/Bayside (CA0037664),CSD-030,20th Street,Central (Islais Creek),Islais Creek,2:50 PM,194.0,,5.51,,Final_SMR Bayside_Ver17_11 November.pdf,2896083,2024-11
+2024-11-22,Southeast/Bayside (CA0037664),CSD-030A,22nd Street,Central (Islais Creek),Islais Creek,2:52 PM,158.0,,1.28,,Final_SMR Bayside_Ver17_11 November.pdf,2896083,2024-11
+2024-11-22,Southeast/Bayside (CA0037664),CSD-031,Third Street North,Central (Islais Creek),Islais Creek,4:30 PM,1.0,,0.01,<,Final_SMR Bayside_Ver17_11 November.pdf,2896083,2024-11
+2024-11-22,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,1:07 PM,570.0,,165.88,,Final_SMR Bayside_Ver17_11 November.pdf,2896083,2024-11
+2024-11-22,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,1:07 PM,568.0,,25.05,,Final_SMR Bayside_Ver17_11 November.pdf,2896083,2024-11
+2024-11-22,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,1:07 PM,568.0,,35.54,,Final_SMR Bayside_Ver17_11 November.pdf,2896083,2024-11
+2024-11-22,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,1:07 PM,568.0,,18.46,,Final_SMR Bayside_Ver17_11 November.pdf,2896083,2024-11
+2024-11-22,Southeast/Bayside (CA0037664),CSD-037,Evans Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),1:49 PM,112.0,,2.22,,Final_SMR Bayside_Ver17_11 November.pdf,2896083,2024-11
+2024-11-22,Southeast/Bayside (CA0037664),CSD-040,Griffith Street,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),1:59 PM,105.0,,3.33,,Final_SMR Bayside_Ver17_11 November.pdf,2896083,2024-11
+2024-11-22,Southeast/Bayside (CA0037664),CSD-041,Yosemite Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),2:20 PM,66.0,,0.94,,Final_SMR Bayside_Ver17_11 November.pdf,2896083,2024-11
+2024-11-22,Southeast/Bayside (CA0037664),CSD-042,Fitch Street,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),2:11 PM,44.0,,0.09,,Final_SMR Bayside_Ver17_11 November.pdf,2896083,2024-11
+2024-11-22,Southeast/Bayside (CA0037664),CSD-043,Sunnydale Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),2:22 PM,282.0,,15.34,,Final_SMR Bayside_Ver17_11 November.pdf,2896083,2024-11
+2024-12-12,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,2:45 AM,87.0,,4.85,,FINAL_SMR Bayside_Ver17_12_December.pdf,2903771,2024-12
+2024-12-12,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,2:45 AM,90.0,,10.01,,FINAL_SMR Bayside_Ver17_12_December.pdf,2903771,2024-12
+2024-12-12,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,3:12 AM,56.0,,4.93,,FINAL_SMR Bayside_Ver17_12_December.pdf,2903771,2024-12
+2024-12-12,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,3:11 AM,56.0,,0.79,,FINAL_SMR Bayside_Ver17_12_December.pdf,2903771,2024-12
+2024-12-12,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,3:11 AM,56.0,,1.12,,FINAL_SMR Bayside_Ver17_12_December.pdf,2903771,2024-12
+2024-12-12,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,3:12 AM,49.0,,0.36,,FINAL_SMR Bayside_Ver17_12_December.pdf,2903771,2024-12
+2024-12-14,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,5:10 AM,104.0,,6.26,,FINAL_SMR Westside_Ver17_12 December_v2.pdf,2903885,2024-12
+2024-12-14,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,5:28 AM,81.0,,5.54,,FINAL_SMR Westside_Ver17_12 December_v2.pdf,2903885,2024-12
+2024-12-14,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,5:28 AM,81.0,,11.9,,FINAL_SMR Westside_Ver17_12 December_v2.pdf,2903885,2024-12
+2024-12-14,Oceanside (CA0037681),CSD-004,Mile Rock,Oceanside,Pacific Ocean,5:40 AM,65.0,,5.38,,FINAL_SMR Westside_Ver17_12 December_v2.pdf,2903885,2024-12
+2024-12-14,Oceanside (CA0037681),CSD-005,Sea Cliff #1,Oceanside,Pacific Ocean,⑤,,unparsed,,,FINAL_SMR Westside_Ver17_12 December_v2.pdf,2903885,2024-12
+2024-12-14,Oceanside (CA0037681),CSD-006,Sea Cliff Brick Sewer,Oceanside,Pacific Ocean,6:10 AM,,unparsed,,,FINAL_SMR Westside_Ver17_12 December_v2.pdf,2903885,2024-12
+2024-12-14,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,5:35,,unparsed,,,FINAL_SMR Westside_Ver17_12 December_v2.pdf,2903885,2024-12
+2024-12-14,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,5:41 AM,88.0,,2.07,,FINAL_SMR Bayside_Ver17_12_December.pdf,2903771,2024-12
+2024-12-14,Southeast/Bayside (CA0037664),CSD-011,Laguna Street,North Shore,SF Bay - North Shore waterfront,5:49 AM,30.0,,0.18,,FINAL_SMR Bayside_Ver17_12_December.pdf,2903771,2024-12
+2024-12-14,Southeast/Bayside (CA0037664),CSD-013,Beach Street,North Shore,SF Bay - North Shore waterfront,5:49 AM,61.0,,5.83,,FINAL_SMR Bayside_Ver17_12_December.pdf,2903771,2024-12
+2024-12-14,Southeast/Bayside (CA0037664),CSD-015,Sansome Street,North Shore,SF Bay - North Shore waterfront,5:50 AM,50.0,,2.55,,FINAL_SMR Bayside_Ver17_12_December.pdf,2903771,2024-12
+2024-12-14,Southeast/Bayside (CA0037664),CSD-017,Jackson Street,North Shore,SF Bay - North Shore waterfront,6:14 AM,3.0,,0.03,,FINAL_SMR Bayside_Ver17_12_December.pdf,2903771,2024-12
+2024-12-14,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,4:55 AM,46.0,,2.39,,FINAL_SMR Bayside_Ver17_12_December.pdf,2903771,2024-12
+2024-12-14,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,4:55 AM,50.0,,5.14,,FINAL_SMR Bayside_Ver17_12_December.pdf,2903771,2024-12
+2024-12-14,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,4:59 AM,104.0,,46.45,,FINAL_SMR Bayside_Ver17_12_December.pdf,2903771,2024-12
+2024-12-14,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,5:17 AM,81.0,,4.39,,FINAL_SMR Bayside_Ver17_12_December.pdf,2903771,2024-12
+2024-12-14,Southeast/Bayside (CA0037664),CSD-031,Third Street North,Central (Islais Creek),Islais Creek,9:18 AM,87.0,,0.25,,FINAL_SMR Bayside_Ver17_12_December.pdf,2903771,2024-12
+2024-12-14,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,5:04 AM,482.0,,76.21,,FINAL_SMR Bayside_Ver17_12_December.pdf,2903771,2024-12
+2024-12-14,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,5:02 AM,436.0,,8.82,,FINAL_SMR Bayside_Ver17_12_December.pdf,2903771,2024-12
+2024-12-14,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,5:02 AM,436.0,,12.52,,FINAL_SMR Bayside_Ver17_12_December.pdf,2903771,2024-12
+2024-12-14,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,5:04 AM,433.0,,7.17,,FINAL_SMR Bayside_Ver17_12_December.pdf,2903771,2024-12
+2024-12-14,Southeast/Bayside (CA0037664),CSD-040,Griffith Street,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),6:06 AM,12.0,,0.26,,FINAL_SMR Bayside_Ver17_12_December.pdf,2903771,2024-12
+2024-12-14,Southeast/Bayside (CA0037664),CSD-041,Yosemite Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),6:05 AM,11.0,,0.2,,FINAL_SMR Bayside_Ver17_12_December.pdf,2903771,2024-12
+2024-12-16,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,12:56 PM,21.0,,0.85,,FINAL_SMR Bayside_Ver17_12_December.pdf,2903771,2024-12
+2024-12-16,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,12:56 PM,21.0,,1.71,,FINAL_SMR Bayside_Ver17_12_December.pdf,2903771,2024-12
+2024-12-16,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,12:58 PM,36.0,,9.47,,FINAL_SMR Bayside_Ver17_12_December.pdf,2903771,2024-12
+2025-02-04,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,12:46 AM,519.0,,21.44,,FINAL_SMR Westside_Ver17_02 February 2025.pdf,2938235,2025-02
+2025-02-04,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,12:54 AM,442.0,,16.54,,FINAL_SMR Westside_Ver17_02 February 2025.pdf,2938235,2025-02
+2025-02-04,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,1:05 AM,480.0,,29.48,,FINAL_SMR Westside_Ver17_02 February 2025.pdf,2938235,2025-02
+2025-02-04,Oceanside (CA0037681),CSD-004,Mile Rock,Oceanside,Pacific Ocean,12:52 AM,314.0,,18.87,,FINAL_SMR Westside_Ver17_02 February 2025.pdf,2938235,2025-02
+2025-02-04,Oceanside (CA0037681),CSD-005,Sea Cliff #1,Oceanside,Pacific Ocean,3:03 PM,266.0,,0.21,,FINAL_SMR Westside_Ver17_02 February 2025.pdf,2938235,2025-02
+2025-02-04,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,12:44 AM,7.0,,0.03,,FINAL_SMR Westside_Ver17_02 February 2025.pdf,2938235,2025-02
+2025-02-04,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,1:39 AM,333.0,,11.49,,FINAL_SMR Bayside_Ver17_02 February 2025.pdf,2936135,2025-02
+2025-02-04,Southeast/Bayside (CA0037664),CSD-011,Laguna Street,North Shore,SF Bay - North Shore waterfront,1:55 AM,190.0,,1.83,,FINAL_SMR Bayside_Ver17_02 February 2025.pdf,2936135,2025-02
+2025-02-04,Southeast/Bayside (CA0037664),CSD-013,Beach Street,North Shore,SF Bay - North Shore waterfront,1:46 AM,331.0,,15.51,,FINAL_SMR Bayside_Ver17_02 February 2025.pdf,2936135,2025-02
+2025-02-04,Southeast/Bayside (CA0037664),CSD-017,Jackson Street,North Shore,SF Bay - North Shore waterfront,4:24 PM,1.0,,0.01,<,FINAL_SMR Bayside_Ver17_02 February 2025.pdf,2936135,2025-02
+2025-02-04,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,12:46 AM,454.0,,21.39,,FINAL_SMR Bayside_Ver17_02 February 2025.pdf,2936135,2025-02
+2025-02-04,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,12:46 AM,460.0,,43.41,,FINAL_SMR Bayside_Ver17_02 February 2025.pdf,2936135,2025-02
+2025-02-04,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,12:46 AM,430.0,,148.85,,FINAL_SMR Bayside_Ver17_02 February 2025.pdf,2936135,2025-02
+2025-02-04,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,1:58 AM,192.0,,8.58,,FINAL_SMR Bayside_Ver17_02 February 2025.pdf,2936135,2025-02
+2025-02-04,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,2:31 AM,997.0,,121.32,,FINAL_SMR Bayside_Ver17_02 February 2025.pdf,2936135,2025-02
+2025-02-04,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,2:30 AM,938.0,,16.11,,FINAL_SMR Bayside_Ver17_02 February 2025.pdf,2936135,2025-02
+2025-02-04,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,2:30 AM,938.0,,22.85,,FINAL_SMR Bayside_Ver17_02 February 2025.pdf,2936135,2025-02
+2025-02-04,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,2:35 AM,968.0,,9.27,,FINAL_SMR Bayside_Ver17_02 February 2025.pdf,2936135,2025-02
+2025-02-04,Southeast/Bayside (CA0037664),CSD-040,Griffith Street,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),3:30 AM,10.0,,0.13,,FINAL_SMR Bayside_Ver17_02 February 2025.pdf,2936135,2025-02
+2025-02-04,Southeast/Bayside (CA0037664),CSD-041,Yosemite Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),3:32 AM,8.0,,0.05,,FINAL_SMR Bayside_Ver17_02 February 2025.pdf,2936135,2025-02
+2025-02-04,Southeast/Bayside (CA0037664),CSD-043,Sunnydale Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),9:15 AM,17.0,,0.08,,FINAL_SMR Bayside_Ver17_02 February 2025.pdf,2936135,2025-02
+2025-02-13,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,2:04 AM,211.0,,7.79,,FINAL_SMR Westside_Ver17_02 February 2025.pdf,2938235,2025-02
+2025-02-13,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,2:20 AM,147.0,,2.11,,FINAL_SMR Westside_Ver17_02 February 2025.pdf,2938235,2025-02
+2025-02-13,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,2:26 AM,155.0,,4.45,,FINAL_SMR Westside_Ver17_02 February 2025.pdf,2938235,2025-02
+2025-02-13,Oceanside (CA0037681),CSD-004,Mile Rock,Oceanside,Pacific Ocean,2:56 AM,60.0,,1.8,,FINAL_SMR Westside_Ver17_02 February 2025.pdf,2938235,2025-02
+2025-02-13,Southeast/Bayside (CA0037664),CSD-009,Baker Street,North Shore,SF Bay - North Shore waterfront,2:47 AM,133.0,,3.41,,FINAL_SMR Bayside_Ver17_02 February 2025.pdf,2936135,2025-02
+2025-02-13,Southeast/Bayside (CA0037664),CSD-011,Laguna Street,North Shore,SF Bay - North Shore waterfront,3:08 AM,6.0,,0.01,<,FINAL_SMR Bayside_Ver17_02 February 2025.pdf,2936135,2025-02
+2025-02-13,Southeast/Bayside (CA0037664),CSD-013,Beach Street,North Shore,SF Bay - North Shore waterfront,3:02 AM,49.0,,0.41,,FINAL_SMR Bayside_Ver17_02 February 2025.pdf,2936135,2025-02
+2025-02-13,Southeast/Bayside (CA0037664),CSD-024,Fifth Street North,Central (Mission Creek),Mission Creek / China Basin,2:02 AM,319.0,,16.33,,FINAL_SMR Bayside_Ver17_02 February 2025.pdf,2936135,2025-02
+2025-02-13,Southeast/Bayside (CA0037664),CSD-025,Sixth Street North,Central (Mission Creek),Mission Creek / China Basin,2:02 AM,326.0,,33.16,,FINAL_SMR Bayside_Ver17_02 February 2025.pdf,2936135,2025-02
+2025-02-13,Southeast/Bayside (CA0037664),CSD-026,Division Street,Central (Mission Creek),Mission Creek / China Basin,2:05 AM,233.0,,82.71,,FINAL_SMR Bayside_Ver17_02 February 2025.pdf,2936135,2025-02
+2025-02-13,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,2:13 AM,134.0,,4.91,,FINAL_SMR Bayside_Ver17_02 February 2025.pdf,2936135,2025-02
+2025-02-13,Southeast/Bayside (CA0037664),CSD-031A,Islais Creek North,Central (Islais Creek),Islais Creek,2:14 AM,594.0,,64.65,,FINAL_SMR Bayside_Ver17_02 February 2025.pdf,2936135,2025-02
+2025-02-13,Southeast/Bayside (CA0037664),CSD-032,Marin Street,Central (Islais Creek),Islais Creek,2:12 AM,568.0,,8.92,,FINAL_SMR Bayside_Ver17_02 February 2025.pdf,2936135,2025-02
+2025-02-13,Southeast/Bayside (CA0037664),CSD-033,Selby Street,Central (Islais Creek),Islais Creek,2:12 AM,568.0,,12.66,,FINAL_SMR Bayside_Ver17_02 February 2025.pdf,2936135,2025-02
+2025-02-13,Southeast/Bayside (CA0037664),CSD-035,Third Street South,Central (Islais Creek),Islais Creek,2:12 AM,670.0,,5.73,,FINAL_SMR Bayside_Ver17_02 February 2025.pdf,2936135,2025-02
+2025-02-13,Southeast/Bayside (CA0037664),CSD-037,Evans Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),2:28 AM,9.0,,0.04,,FINAL_SMR Bayside_Ver17_02 February 2025.pdf,2936135,2025-02
+2025-02-13,Southeast/Bayside (CA0037664),CSD-040,Griffith Street,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),2:36 AM,12.0,,0.22,,FINAL_SMR Bayside_Ver17_02 February 2025.pdf,2936135,2025-02
+2025-02-13,Southeast/Bayside (CA0037664),CSD-041,Yosemite Avenue,Southeast,SF Bay - Southeast (Yosemite Slough / Candlestick),2:37 AM,9.0,,0.14,,FINAL_SMR Bayside_Ver17_02 February 2025.pdf,2936135,2025-02
+2025-10-13,Oceanside (CA0037681),CSD-005,Sea Cliff #1,Oceanside,Pacific Ocean,3:42 PM,5.0,,0.01,<,FINAL_Monthly_FLow_Summary_Westside_Ver18_10 October 2025.pdf,3018740,2025-10
+2025-10-13,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,3:43 PM,27.0,,0.35,,FINAL_Monthly_FLow_Summary_Westside_Ver18_10 October 2025.pdf,3018740,2025-10
+2025-10-13,Southeast/Bayside (CA0037664),CSD-018,Howard Street,Central (Mission Creek),Mission Creek / China Basin,4:59 PM,13.0,,0.04,,FINAL_Monthly_Flow_Summary_Bayside_Ver18_10 October 2025.pdf,3018618,2025-10
+2025-10-13,Southeast/Bayside (CA0037664),CSD-029,Mariposa Street,Central (Islais Creek),Islais Creek,4:12 PM,33.0,,1.1,,FINAL_Monthly_Flow_Summary_Bayside_Ver18_10 October 2025.pdf,3018618,2025-10
