@@ -119,14 +119,18 @@ terms, per-system (Westside vs Bayside) feature separation, and assembling
 the historical CSD event series (done, better than hoped).
 
 1. **Use SFPUC's live CSD flags as observed truth in the composition.**
-   The dashboard already fetches the "Beaches and Bay" API (`has_cso` per
-   station) but only displays it. For PAST days in the persistence
-   composition, replace *predicted* P(discharge) with the observed flag
-   (p→1 where SFPUC reported a discharge, damp toward 0 where they
-   affirmatively didn't). Cheapest, highest-value upgrade — the doc is
-   right that "hours-since-CSD will always be one of the strongest
-   predictors." Needs a small log of daily has_cso snapshots (the
-   cso_events.py collector already exists for this).
+   The Supabase watcher (db/migrations/001+004) already polls SFPUC every
+   tick: `watcher_state` holds the current ok/posted/cso status per station
+   and `alert_log` durably records every observed CSO onset (event_type=
+   'cso', station_ids, created_at; exclude simulated=true). For PAST days
+   in the persistence composition, map alert-log stations → basins and set
+   P(discharge)=1 on observed basin-days; keep model probabilities for
+   forecast days and for past days with no observation (absence of a row
+   means "not observed," not "no discharge" — don't force to zero).
+   Cheapest, highest-value upgrade — the doc is right that
+   "hours-since-CSD will always be one of the strongest predictors."
+   History accrues from Phase-1 go-live onward. Side effect: the
+   cso_events.py CSV logger is redundant with the watcher — retire it.
 2. **Split the Westside impact table by site group.** Baker/China get
    vigorous Golden Gate tidal flushing → much faster post-discharge decay
    than Ocean Beach. One Westside-wide persistence curve overstates
