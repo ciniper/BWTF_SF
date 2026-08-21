@@ -1,0 +1,99 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>East-Side Shoreline Water Quality — City Data Analysis (Aug 2026)</title>
+<style>
+  body{margin:0;background:#f8fafc;color:#0f172a;font-family:-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.5}
+  .wrap{max-width:760px;margin:0 auto;padding:36px 24px}
+  h1{font-size:1.45em;margin:0 0 4px} h2{font-size:1.05em;margin:28px 0 8px;color:#0369a1}
+  .sub{color:#64748b;font-size:.9em;margin-bottom:20px}
+  table{border-collapse:collapse;width:100%;font-size:.92em}
+  th{text-align:left;color:#64748b;font-weight:600;padding:6px 10px;border-bottom:2px solid #e2e8f0}
+  td{padding:6px 10px;border-bottom:1px solid #e2e8f0}
+  .bar{display:inline-block;height:12px;background:#0ea5e9;border-radius:3px;vertical-align:middle;margin-right:8px}
+  .bad .bar{background:#e11d48}.warn .bar{background:#f59e0b}
+  .num{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .note{background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px 16px;font-size:.9em;margin:16px 0}
+  .key{background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:12px 16px;font-size:.9em;margin:16px 0}
+  .foot{color:#94a3b8;font-size:.8em;margin-top:28px}
+</style></head><body><div class="wrap">
+<h1>East-Side Shoreline Water Quality</h1>
+<div class="sub">Analysis of SF's public lab data (DataSF, SFPUC shoreline monitoring) · Jul 2020 – Aug 2026 · 21,004 lab results ·
+"Bad" = Enterococcus ≥ 104 MPN/100 mL (the state single-sample standard — the same one BWTF grading uses) ·
+Live interactive version: the dashboard's <b>Site Report Card</b> page (/analysis)</div>
+
+<div class="key"><b>Bottom line:</b> Week by week, <b>Sunnydale Cove and Islais Creek</b> are the east side's
+worst sites (roughly 1 in 5 routine weekly samples bad over the last two years, 1 in 3 during storm
+season), and Sunnydale has been worsening every year. Mission Creek's contamination is <i>episodic</i> —
+moderate week-to-week, but its bad stretches persist for days. <b>India Basin — sitting between Islais
+Creek and Sunnydale Cove — is not sampled by the city at all.</b> It's bracketed by the two worst
+east-side sites and is a genuine data gap that volunteer testing would uniquely fill.</div>
+
+<h2>East-side sites, ranked — routine weekly samples, last 2 years</h2>
+<table>
+<tr><th>Site</th><th>% of weeks bad</th><th class="num">incl. resamples*</th></tr>
+<tr class="bad"><td>Sunnydale Cove</td><td><span class="bar" style="width:115px"></span><span class="num">23.1%</span></td><td class="num">30.8%</td></tr>
+<tr class="bad"><td>Islais Creek</td><td><span class="bar" style="width:92px"></span><span class="num">18.3%</span></td><td class="num">33.0%</td></tr>
+<tr class="warn"><td>Windsurfer Circle</td><td><span class="bar" style="width:68px"></span><span class="num">13.5%</span></td><td class="num">18.9%</td></tr>
+<tr class="warn"><td>Mission Creek</td><td><span class="bar" style="width:63px"></span><span class="num">12.5%</span></td><td class="num">32.7%</td></tr>
+<tr><td>Jackrabbit Beach</td><td><span class="bar" style="width:34px"></span><span class="num">6.7%</span></td><td class="num">11.1%</td></tr>
+<tr><td>Crane Cove Park</td><td><span class="bar" style="width:24px"></span><span class="num">4.8%</span></td><td class="num">13.3%</td></tr>
+</table>
+<p style="font-size:.88em;color:#64748b">Weekly = the first sample of each site-week (the city's routine
+Monday cadence), which is apples-to-apples with BWTF's own weekly volunteer sampling. *"Incl. resamples"
+adds the city's follow-up samples after exceedances; those cluster around contamination events, so they
+measure how often <i>tests</i> failed rather than how often <i>weeks</i> were bad. For scale, the west-side
+beaches BWTF currently covers run roughly 2–12% week-by-week (China Beach lowest; Baker Beach at Lobos
+Creek, ~12%, highest).</p>
+
+<div class="note"><b>The Mission Creek nuance:</b> including resamples, Mission Creek looks co-worst
+(32.7%); week-by-week it's mid-pack (12.5%). The gap is the signature of <i>episodic</i> contamination —
+when Mission goes bad, it stays bad for days and racks up failing follow-up tests before clearing. Its
+week-to-week base rate is moderate but rising (17.3% in 2025). Both views are true; they answer
+different questions.</div>
+
+<h2>It's a storm-season problem (weekly samples, last 2 years)</h2>
+<table>
+<tr><th>Site</th><th>Dry season (May–Oct)</th><th>Wet season (Nov–Apr)</th></tr>
+<tr><td>Sunnydale Cove</td><td class="num">7.7%</td><td class="num"><b>38.5%</b></td></tr>
+<tr><td>Islais Creek</td><td class="num">5.8%</td><td class="num"><b>30.8%</b></td></tr>
+<tr><td>Windsurfer Circle</td><td class="num">7.7%</td><td class="num"><b>19.2%</b></td></tr>
+<tr><td>Mission Creek</td><td class="num">11.5%</td><td class="num"><b>13.5%</b></td></tr>
+<tr><td>Jackrabbit Beach</td><td class="num">3.8%</td><td class="num"><b>9.6%</b></td></tr>
+<tr><td>Crane Cove Park</td><td class="num">0.0%</td><td class="num"><b>9.6%</b></td></tr>
+</table>
+<p style="font-size:.88em;color:#64748b">Rain-driven discharge (combined-sewer + stormwater) dominates:
+in storm season Sunnydale and Islais fail roughly <b>1 in 3 weeks</b>. Note the exception — Mission Creek
+is nearly as bad in the dry season as the wet, pointing to a non-storm source as well. That also speaks
+to the lead's storm-season staffing concern: the east side is worst exactly when volunteer capacity is
+tightest.</p>
+
+<h2>Trends (weekly samples, % of weeks bad per year)</h2>
+<table>
+<tr><th>Site</th><th class="num">2020</th><th class="num">2021</th><th class="num">2022</th><th class="num">2023</th><th class="num">2024</th><th class="num">2025</th></tr>
+<tr><td>Sunnydale Cove</td><td class="num">4%</td><td class="num">14%</td><td class="num">14%</td><td class="num">10%</td><td class="num">19%</td><td class="num"><b>27%</b></td></tr>
+<tr><td>Islais Creek</td><td class="num">9%</td><td class="num">8%</td><td class="num">12%</td><td class="num">19%</td><td class="num">23%</td><td class="num">21%</td></tr>
+<tr><td>Mission Creek</td><td class="num">0%</td><td class="num">8%</td><td class="num">2%</td><td class="num">10%</td><td class="num">13%</td><td class="num"><b>17%</b></td></tr>
+</table>
+<p style="font-size:.88em;color:#64748b"><b>Sunnydale Cove is worsening steadily</b> — from 4% of weeks
+(2020) to 27% (2025), across both wet and dry years. Islais stepped up in the 2023 storm year and has
+stayed elevated; Mission Creek is lower but climbing. All of these sites have recorded readings maxing
+out the lab assay (&gt;24,196 MPN — 230× the standard).</p>
+
+<h2>The India Basin answer</h2>
+<p>The city's monitoring network has <b>no station at India Basin</b> — it is the largest unsampled gap
+on the east shoreline, sitting directly between Islais Creek and Sunnydale Cove, the two worst east-side
+sites week-by-week. The city's data cannot answer "how bad is India Basin" — but both neighbors say the
+stretch it sits on fails ~1 in 5 routine weekly samples, concentrated in storm season. That's a strong,
+evidence-based case that volunteer testing there would produce information nobody currently has.</p>
+
+<div class="note"><b>Methodology:</b> (1) Enterococcus vs the CA single-sample maximum (104 MPN/100mL);
+fecal coliform tells the same story. (2) "Weekly" keeps the first sample of each site-week — the routine
+schedule — and excludes post-exceedance resamples, which otherwise roughly double event-heavy sites'
+rates. (3) A few Ocean Beach stations (Vicente, Pacheco, Fort Funston) show higher raw rates but are
+sampled only sporadically/reactively (~50 samples vs ~400+ routine), so they're excluded from ranking
+claims. (4) The city's published dataset begins 2020-07-27; nothing earlier exists in it.</div>
+
+<div class="foot">Prepared by the Surfrider SF Data Analytics team, 2026-08-21 · Source: DataSF "Beach
+Water Quality" lab results (SFPUC shoreline monitoring program, dataset v3fv-x3ux) · Interactive version
+with date-range and sampling-mode controls: the dashboard's /analysis page</div>
+</div></body></html>
