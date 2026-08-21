@@ -17,6 +17,11 @@
   .group-btn{padding:8px 16px;border-radius:999px;border:2px solid #d9e4e8;background:#fff;color:#5e6a71;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
   .group-btn.active{border-color:#1f6fb0;background:#1f6fb0;color:#fff}
   .legend{margin-left:auto;font-size:13px;font-weight:600;color:#5e6a71}
+  .ctl-label{font-size:13px;font-weight:700;color:#5e6a71}
+  .seg-toggle{display:inline-flex;border:2px solid #d9e4e8;border-radius:999px;overflow:hidden;background:#fff}
+  .seg-btn{padding:8px 16px;border:0;background:transparent;color:#5e6a71;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
+  .seg-btn.active{background:#1f6fb0;color:#fff}
+  input[type=date]{padding:7px 10px;border:2px solid #d9e4e8;border-radius:10px;font-family:inherit;font-size:13px;color:#26272a;background:#fff}
 
   .board{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:6px 18px 14px;overflow-x:auto}
   table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:760px}
@@ -68,13 +73,28 @@
     <span class="legend" id="metaLine"></span>
   </div>
 
+  <div class="controls">
+    <span class="ctl-label">Sampling:</span>
+    <div class="seg-toggle" id="modeToggle">
+      <button class="seg-btn active" data-mode="weekly" title="First sample of each site-week — the city's scheduled cadence, excluding follow-up resamples that cluster around contamination events">Weekly regime</button>
+      <button class="seg-btn" data-mode="all" title="Every published sample, including post-exceedance resamples">All samples</button>
+    </div>
+    <span class="ctl-label">Range:</span>
+    <input type="date" id="startDate" min="2020-07-27">
+    <span style="color:#5e6a71">→</span>
+    <input type="date" id="endDate" min="2020-07-27">
+    <button class="group-btn preset" data-days="">Full record</button>
+    <button class="group-btn preset" data-days="730">Last 2 yrs</button>
+    <button class="group-btn preset" data-days="365">Last 12 mo</button>
+  </div>
+
   <div class="board">
     <div class="loading" id="loading">Loading the city's lab data…</div>
     <table id="tbl" style="display:none">
       <thead><tr>
         <th>Site</th>
-        <th class="barcell">% bad — last 2 yrs</th>
-        <th class="num">full record</th>
+        <th class="barcell" id="mainCol">% bad — selected range</th>
+        <th class="num">caution (≥36)</th>
         <th class="num">wet season</th>
         <th class="num">dry season</th>
         <th class="num">samples</th>
@@ -86,11 +106,16 @@
   <div class="notes">
     <h2>Reading these numbers</h2>
     <b>"Bad" = a sample at or over the state single-sample limit</b> (Enterococcus 104 MPN/100mL);
-    the wet season is November–April.
-    The city resamples after exceedances, which nudges absolute percentages up a little — it
-    affects every site similarly, so the <i>ranking</i> is robust.
+    the wet season is November–April. The dataset begins 2020-07-27 — the city publishes nothing earlier.
+    <br><br>
+    <b>Weekly regime</b> keeps only the first sample of each site-week (the city's scheduled Monday
+    cadence) — the true week-by-week base rate, and the apples-to-apples comparison with BWTF's own
+    weekly sampling. <b>All samples</b> adds the city's follow-up resamples, which cluster around
+    contamination events and can roughly double a site's rate (Islais Creek: ~16% weekly vs ~30%
+    all-samples over the full record) — it answers "how often did tests fail", not "how often were
+    weeks bad".
     Sites marked <span class="chip sporadic">sporadic</span> are sampled only occasionally or
-    reactively (often during storm events), so their raw rates aren't comparable to the
+    reactively (often during storm events), so their rates aren't comparable to the
     weekly-sampled sites and they're listed separately at the bottom, unranked.
     Also worth knowing: <b>the city samples no station at India Basin</b> — the largest
     unsampled gap on the east shoreline, between Islais Creek and Sunnydale Cove.
@@ -101,6 +126,7 @@
 
 <script>
 let DATA = null, activeGroup = "";
+const STATE = { mode: "weekly", start: "", end: "" };
 
 const groupChip = g => g === "East Bayshore" ? '<span class="chip east">East</span>'
                     : g === "Ocean"          ? '<span class="chip ocean">Ocean</span>'
@@ -123,18 +149,19 @@ function render() {
     tr.className = "site" + (s.routine ? "" : " sporadic");
     tr.innerHTML = `
       <td class="name">${s.name}${groupChip(s.group)}${s.routine ? "" : '<span class="chip sporadic">sporadic</span>'}</td>
-      <td class="barcell">${barCell(s.recent.pct, !s.routine)}</td>
-      <td class="num">${pctTxt(s.exceed_pct)}</td>
+      <td class="barcell">${barCell(s.exceed_pct, !s.routine)}</td>
+      <td class="num">${pctTxt(s.caution_pct)}</td>
       <td class="num">${pctTxt(s.wet.pct)}</td>
       <td class="num">${pctTxt(s.dry.pct)}</td>
       <td class="num">${s.samples}</td>`;
     const detail = document.createElement("tr");
     detail.className = "detail";
     detail.style.display = "none";
-    detail.innerHTML = `<td colspan="6">
-      <p class="detail-meta">${s.name} — sampled ${s.first} → ${s.last} ·
-        median ${s.median} MPN · worst reading ${Math.round(s.max).toLocaleString()} MPN ·
-        ≥36 (caution) in ${pctTxt(s.caution_pct)} of samples</p>
+    detail.innerHTML = s.samples === 0
+      ? `<td colspan="6"><p class="detail-meta">${s.name} — no samples in the selected range/mode.</p></td>`
+      : `<td colspan="6">
+      <p class="detail-meta">${s.name} — ${s.first} → ${s.last} ·
+        median ${s.median} MPN · worst reading ${Math.round(s.max).toLocaleString()} MPN</p>
       <div class="years">${s.yearly.map(y =>
         `<div class="yr"><b>${pctTxt(y.pct)}</b><span>${y.year} · ${y.n} samples</span></div>`).join("")}
       </div></td>`;
@@ -147,7 +174,10 @@ function render() {
 }
 
 async function load() {
-  const resp = await fetch("/analysis/api/summary");
+  const q = new URLSearchParams({ mode: STATE.mode });
+  if (STATE.start) q.set("start", STATE.start);
+  if (STATE.end) q.set("end", STATE.end);
+  const resp = await fetch("/analysis/api/summary?" + q);
   DATA = await resp.json();
   if (DATA.error) {
     document.getElementById("loading").textContent = "Couldn't load the city dataset: " + DATA.error;
@@ -155,19 +185,55 @@ async function load() {
   }
   document.getElementById("loading").style.display = "none";
   document.getElementById("tbl").style.display = "";
+  const rangeTxt = (DATA.start || DATA.dataset_floor) + " → " + (DATA.end || DATA.newest_sample);
+  document.getElementById("mainCol").textContent =
+    "% bad — " + (STATE.mode === "weekly" ? "weekly regime" : "all samples");
   document.getElementById("metaLine").textContent =
-    `${DATA.total_samples.toLocaleString()} lab results · newest sample ${DATA.newest_sample}` +
+    `${DATA.total_samples.toLocaleString()} samples · ${rangeTxt}` +
     (DATA.stale_note ? " · ⚠ cached (" + DATA.stale_note + ")" : "");
+  const sd = document.getElementById("startDate"), ed = document.getElementById("endDate");
+  sd.max = ed.max = DATA.newest_sample;
+  if (!sd.value && DATA.start) sd.value = DATA.start;
+  if (!ed.value && DATA.end) ed.value = DATA.end;
   render();
 }
 
 document.getElementById("groupBtns").addEventListener("click", e => {
   const btn = e.target.closest(".group-btn");
   if (!btn) return;
-  document.querySelectorAll(".group-btn").forEach(b => b.classList.toggle("active", b === btn));
+  document.querySelectorAll("#groupBtns .group-btn").forEach(b => b.classList.toggle("active", b === btn));
   activeGroup = btn.dataset.group;
   render();
 });
+
+document.getElementById("modeToggle").addEventListener("click", e => {
+  const btn = e.target.closest(".seg-btn");
+  if (!btn || btn.dataset.mode === STATE.mode) return;
+  document.querySelectorAll(".seg-btn").forEach(b => b.classList.toggle("active", b === btn));
+  STATE.mode = btn.dataset.mode;
+  load();
+});
+
+document.querySelectorAll(".preset").forEach(btn => btn.addEventListener("click", () => {
+  const days = btn.dataset.days;
+  const sd = document.getElementById("startDate"), ed = document.getElementById("endDate");
+  if (!days) { sd.value = ""; ed.value = ""; STATE.start = ""; STATE.end = ""; }
+  else {
+    const newest = new Date(DATA ? DATA.newest_sample : Date.now());
+    const from = new Date(newest - days * 864e5);
+    STATE.start = sd.value = from.toISOString().slice(0, 10);
+    STATE.end = ed.value = "";
+    ed.value = "";
+  }
+  load();
+}));
+
+for (const id of ["startDate", "endDate"]) {
+  document.getElementById(id).addEventListener("change", e => {
+    STATE[id === "startDate" ? "start" : "end"] = e.target.value;
+    load();
+  });
+}
 
 load();
 </script>
