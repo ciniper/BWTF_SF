@@ -297,20 +297,34 @@ def fit_volume_heads(df: pd.DataFrame, features: list) -> dict:
 
 
 def fit_impact_table(df: pd.DataFrame) -> dict:
-    """Stage 2: P(basin bacteria elevated | days since discharge, size).
+    """Stage 2: P(beach-group bacteria elevated | days since discharge, size).
 
-    Empirical table from sample days (bacteria data starts 2020-07).
-    Buckets: days since last discharge in basin 0,1,2,3,4-5,6-7 vs none
-    within 7d; discharge size small/large split at the basin median volume.
+    Fit per SITE GROUP, not per basin: Baker/China get vigorous Golden Gate
+    tidal flushing and clear much faster than Ocean Beach; Aquatic Park is an
+    enclosed cove with a high dry-weather baseline. One basin-wide curve
+    blurred those regimes. Discharge events/volumes still come from the
+    group's parent basin (stage 1 is hydraulics); only the beach response is
+    group-specific. Empirical buckets; the dashboard applies isotonic
+    smoothing at load.
     """
+    SITE_GROUPS = {
+        "Ocean Beach": ("Westside", ["OCEAN#15_SL", "OCEAN#15EAST_SL", "OCEAN#16_SL",
+                                     "OCEAN#17_SL", "OCEAN#18_SL", "OCEAN#19_SL",
+                                     "OCEAN#20_SL", "OCEAN#21_SL", "OCEAN#21.1_SL",
+                                     "OCEAN#22_SL"]),
+        "Baker-China": ("Westside", ["BAY#220_SL", "BAY#230_SL"]),
+        "Crissy Field": ("North Shore", ["BAY#202.4_SL", "BAY#202.5_SL"]),
+        "Aquatic Park": ("North Shore", ["BAY#210.1_SL", "BAY#211_SL"]),
+        "Southeast": ("Southeast", ["BAY#320_SL", "BAY#315_SL"]),
+    }
     bact = pd.read_csv(RAW_DIR / "historical_bacteria.csv", parse_dates=["sample_date"])
     table = {}
-    for basin in APP_BASINS:
+    for group, (basin, stations) in SITE_GROUPS.items():
         sub = df[df[f"{basin}_covered"] == 1][["date", f"{basin}_csd", f"{basin}_volume_mg"]]
         events = sub[sub[f"{basin}_csd"] == 1].set_index("date")[f"{basin}_volume_mg"]
         med = float(events.median()) if len(events) else 0.0
 
-        b = bact[bact["basin"] == basin]
+        b = bact[bact["station"].isin(stations)]
         daily = b.groupby("sample_date").agg(elevated=("exceeds_standard", "max")).reset_index()
         daily = daily[(daily["sample_date"] >= sub["date"].min()) &
                       (daily["sample_date"] <= sub["date"].max())]
@@ -348,7 +362,8 @@ def fit_impact_table(df: pd.DataFrame) -> dict:
                 if len(g) >= 3:
                     out[f"d{buck}_{size}"] = {
                         "p_elevated": round(float(g["elevated"].mean()), 3), "n": len(g)}
-        table[basin] = {"median_event_volume_mg": round(med, 2), "buckets": out}
+        table[group] = {"basin": basin, "stations": stations,
+                        "median_event_volume_mg": round(med, 2), "buckets": out}
     return table
 
 

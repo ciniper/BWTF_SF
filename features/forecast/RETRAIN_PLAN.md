@@ -5,11 +5,13 @@
 production paths, dashboard shows composed risk (P(discharge) × isotonic-
 smoothed persistence by discharge size), and observed SFPUC CSO onsets from
 the Supabase alert_log override model probabilities for past days.
-Chronological-holdout PR-AUC vs the proxy-trained v1 models: citywide 0.87
-vs 0.56, Westside 0.77 vs 0.54, Southeast 0.80 vs 0.28, North Shore 0.78 vs
-0.91* (*v1 scored in-sample on this window; v2's Brier is 3× better there).
-Remaining: hourly-intensity features, per-site impact curves, and the rest
-of the v3 list below.
+Now at **v2.1**: hourly peak-intensity features (holdout PR-AUC citywide
+0.911, Westside 0.828, North Shore 0.790, Southeast 0.812; zero critical
+FNs) and per-site-group impact curves (basin display = worst group,
+per-group in `predictions.groups`). Historical baselines: v2 holdout PR-AUC
+was 0.87/0.77/0.78/0.80; proxy-trained v1 scored 0.56/0.54/0.91*/0.28
+(*in-sample); persistence null recalls 0.08–0.15. Remaining: the v3 list
+below (tide/swell/UV, concentration targets, housekeeping).
 
 ## Why
 
@@ -138,11 +140,15 @@ the historical CSD event series (done, better than hoped).
    table is now isotonic-smoothed (weighted PAVA, non-increasing over
    days-since) at load — raw small-n buckets made the decay jagged once
    observed events exposed the curve directly.
-2. **Split the Westside impact table by site group.** Baker/China get
-   vigorous Golden Gate tidal flushing → much faster post-discharge decay
-   than Ocean Beach. One Westside-wide persistence curve overstates
-   Baker/China and may understate Ocean Beach. Fit impact curves per site
-   group (Ocean Beach | Baker/China | Crissy/Aquatic Park | Southeast).
+2. **DONE (2026-08-21) — per-site-group impact curves.** Fit per group
+   (Ocean Beach | Baker-China | Crissy Field | Aquatic Park | Southeast);
+   basin display = worst group, per-group values in the payload
+   (`predictions.groups`). **The data reversed the doc's expectation:**
+   Ocean Beach disperses fastest (day-1 ≈ 0.45, gone by day 4-5 — Pacific
+   surf), while Baker/China (day-3 ≈ 0.73) and Southeast (day-2 ≈ 0.89)
+   hold contamination. Aquatic Park's feared bird baseline doesn't show
+   (4.7%, the lowest). Group baselines (5-19%) are far cleaner than the
+   old basin-wide 39%, improving attributable-excess calibration.
 3. **Stage-2 environmental modifiers: tide, swell, solar/UV.** Discharge
    prediction (stage 1) is hydraulics and stays rain-only; persistence
    (stage 2) is where tide stage (NOAA CO-OPS 9414290), wave height (NDBC

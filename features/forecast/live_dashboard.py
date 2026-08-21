@@ -230,24 +230,37 @@ class LiveData:
     # the independent-OR identity  p = 1-(1-baseline)(1-x)  →
     # x = (p - baseline)/(1 - baseline). That keeps dry days at ~0 like before.
 
-    _IMPACT_BASIN_TITLES = {"westside": "Westside", "north_shore": "North Shore",
-                            "southeast": "Southeast"}
+    # Site groups per basin: beaches within one basin respond very
+    # differently (measured: Ocean Beach disperses in ~1-2 days via Pacific
+    # surf; Baker/China and especially Southeast hold contamination for
+    # days). Basin display = worst group; per-group values in the payload.
+    BASIN_IMPACT_GROUPS = {
+        "westside": ["Ocean Beach", "Baker-China"],
+        "north_shore": ["Crissy Field", "Aquatic Park"],
+        "southeast": ["Southeast"],
+    }
+    _BUCKET_ORDER = ["0", "1", "2", "3", "4-5", "6-7"]
 
-    def _impact_fraction(self, basin_key: str, days_since: int, volume_mg: float) -> float:
-        """x(k, size): attributable P(beach elevated) k days after a discharge
-        of `volume_mg`, blending the small/large curves by predicted size."""
-        table = self.impact_table.get(self._IMPACT_BASIN_TITLES.get(basin_key, ""), {})
+    def _impact_fraction(self, group: str, days_since: int, volume_mg: float) -> float:
+        """x(k, size): attributable P(group's beaches elevated) k days after a
+        discharge of `volume_mg`, blending small/large curves by predicted
+        size. Sparse groups can miss a bucket entirely — hold the nearest
+        EARLIER bucket's value (curve is non-increasing, so this errs high,
+        the safe direction)."""
+        table = self.impact_table.get(group, {})
         buckets = table.get("buckets", {})
         if not buckets:
             return 1.0 if days_since == 0 else 0.0  # degraded: same-day only
         baseline = buckets.get("baseline_no_recent_discharge", {}).get("p_elevated", 0.0)
-        bucket = str(days_since) if days_since <= 3 else ("4-5" if days_since <= 5 else "6-7")
+        bi = min(days_since if days_since <= 3 else (4 if days_since <= 5 else 5),
+                 len(self._BUCKET_ORDER) - 1)
 
         def attributable(size):
-            p = buckets.get(f"d{bucket}_{size}", {}).get("p_elevated")
-            if p is None:
-                return None
-            return max(0.0, (p - baseline) / (1 - baseline)) if baseline < 1 else 0.0
+            for j in range(bi, -1, -1):  # requested bucket, else nearest earlier
+                p = buckets.get(f"d{self._BUCKET_ORDER[j]}_{size}", {}).get("p_elevated")
+                if p is not None:
+                    return max(0.0, (p - baseline) / (1 - baseline)) if baseline < 1 else 0.0
+            return None
 
         x_small, x_large = attributable("small"), attributable("large")
         if x_small is None and x_large is None:
@@ -334,22 +347,27 @@ class LiveData:
         instead of a prediction stacked on a prediction.
         """
         observed = observed or {}
-        composed = {}
-        for basin_key in ["westside", "north_shore", "southeast"]:
-            no_impact = 1.0
-            for k in range(0, 8):
-                j = idx - k
-                if j < 0 or j >= len(day_probs):
-                    continue
-                p = day_probs[j].get(basin_key)
-                if day_dates is not None and basin_key in observed.get(day_dates[j], ()):
-                    p = 1.0
-                if not p:
-                    continue
-                vol = day_volumes[j].get(basin_key, 0.0)
-                no_impact *= 1.0 - p * self._impact_fraction(basin_key, k, vol)
-            composed[basin_key] = round(1.0 - no_impact, 3)
+        composed, groups_out = {}, {}
+        for basin_key, groups in self.BASIN_IMPACT_GROUPS.items():
+            per_group = {}
+            for group in groups:
+                no_impact = 1.0
+                for k in range(0, 8):
+                    j = idx - k
+                    if j < 0 or j >= len(day_probs):
+                        continue
+                    p = day_probs[j].get(basin_key)
+                    if day_dates is not None and basin_key in observed.get(day_dates[j], ()):
+                        p = 1.0
+                    if not p:
+                        continue
+                    vol = day_volumes[j].get(basin_key, 0.0)
+                    no_impact *= 1.0 - p * self._impact_fraction(group, k, vol)
+                per_group[group] = round(1.0 - no_impact, 3)
+            composed[basin_key] = max(per_group.values()) if per_group else 0.0
+            groups_out.update(per_group)
         composed["citywide"] = max(composed.values()) if composed else 0.0
+        composed["groups"] = groups_out
         return composed
 
     @staticmethod

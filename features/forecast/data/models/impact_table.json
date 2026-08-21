@@ -1,17 +1,88 @@
 {
-  "Westside": {
+  "Ocean Beach": {
+    "basin": "Westside",
+    "stations": [
+      "OCEAN#15_SL",
+      "OCEAN#15EAST_SL",
+      "OCEAN#16_SL",
+      "OCEAN#17_SL",
+      "OCEAN#18_SL",
+      "OCEAN#19_SL",
+      "OCEAN#20_SL",
+      "OCEAN#21_SL",
+      "OCEAN#21.1_SL",
+      "OCEAN#22_SL"
+    ],
     "median_event_volume_mg": 3.7,
     "buckets": {
       "baseline_no_recent_discharge": {
-        "p_elevated": 0.388,
-        "n": 441
+        "p_elevated": 0.186,
+        "n": 318
+      },
+      "d0_large": {
+        "p_elevated": 0.929,
+        "n": 14
+      },
+      "d0_small": {
+        "p_elevated": 0.636,
+        "n": 11
+      },
+      "d1_large": {
+        "p_elevated": 0.429,
+        "n": 14
+      },
+      "d1_small": {
+        "p_elevated": 0.4,
+        "n": 10
+      },
+      "d2_large": {
+        "p_elevated": 0.5,
+        "n": 6
+      },
+      "d2_small": {
+        "p_elevated": 0.0,
+        "n": 4
+      },
+      "d3_large": {
+        "p_elevated": 0.4,
+        "n": 5
+      },
+      "d4-5_large": {
+        "p_elevated": 0.0,
+        "n": 4
+      },
+      "d4-5_small": {
+        "p_elevated": 0.0,
+        "n": 3
+      },
+      "d6-7_large": {
+        "p_elevated": 0.25,
+        "n": 4
+      },
+      "d6-7_small": {
+        "p_elevated": 0.333,
+        "n": 3
+      }
+    }
+  },
+  "Baker-China": {
+    "basin": "Westside",
+    "stations": [
+      "BAY#220_SL",
+      "BAY#230_SL"
+    ],
+    "median_event_volume_mg": 3.7,
+    "buckets": {
+      "baseline_no_recent_discharge": {
+        "p_elevated": 0.15,
+        "n": 301
       },
       "d0_large": {
         "p_elevated": 1.0,
         "n": 15
       },
       "d0_small": {
-        "p_elevated": 1.0,
+        "p_elevated": 0.909,
         "n": 11
       },
       "d1_large": {
@@ -19,8 +90,8 @@
         "n": 14
       },
       "d1_small": {
-        "p_elevated": 0.727,
-        "n": 11
+        "p_elevated": 0.7,
+        "n": 10
       },
       "d2_large": {
         "p_elevated": 0.846,
@@ -31,7 +102,7 @@
         "n": 8
       },
       "d3_large": {
-        "p_elevated": 0.909,
+        "p_elevated": 0.727,
         "n": 11
       },
       "d3_small": {
@@ -39,45 +110,50 @@
         "n": 3
       },
       "d4-5_large": {
-        "p_elevated": 0.6,
-        "n": 20
+        "p_elevated": 0.562,
+        "n": 16
       },
       "d4-5_small": {
-        "p_elevated": 0.778,
-        "n": 9
+        "p_elevated": 0.286,
+        "n": 7
       },
       "d6-7_large": {
-        "p_elevated": 0.769,
-        "n": 13
+        "p_elevated": 0.25,
+        "n": 8
       },
       "d6-7_small": {
-        "p_elevated": 0.5,
-        "n": 8
+        "p_elevated": 0.0,
+        "n": 3
       }
     }
   },
-  "North Shore": {
+  "Crissy Field": {
+    "basin": "North Shore",
+    "stations": [
+      "BAY#202.4_SL",
+      "BAY#202.5_SL"
+    ],
     "median_event_volume_mg": 7.25,
     "buckets": {
       "baseline_no_recent_discharge": {
-        "p_elevated": 0.144,
-        "n": 305
+        "p_elevated": 0.117,
+        "n": 291
       },
       "d0_large": {
         "p_elevated": 1.0,
         "n": 10
       },
       "d0_small": {
-        "p_elevated": 0.833,
+        "p_elevated": 0.667,
         "n": 12
       },
       "d1_large": {
-        "p_elevated": 0.375,
+        "p_elevated": 0.25,
         "n": 8
       },
       "d1_small": {
-        "p_elevated": 0.3,
-        "n": 10
+        "p_elevated": 0.333,
+        "n": 9
       },
       "d3_large": {
         "p_elevated": 0.0,
@@ -93,7 +169,50 @@
       }
     }
   },
+  "Aquatic Park": {
+    "basin": "North Shore",
+    "stations": [
+      "BAY#210.1_SL",
+      "BAY#211_SL"
+    ],
+    "median_event_volume_mg": 7.25,
+    "buckets": {
+      "baseline_no_recent_discharge": {
+        "p_elevated": 0.047,
+        "n": 274
+      },
+      "d0_large": {
+        "p_elevated": 0.7,
+        "n": 10
+      },
+      "d0_small": {
+        "p_elevated": 0.455,
+        "n": 11
+      },
+      "d1_large": {
+        "p_elevated": 0.429,
+        "n": 7
+      },
+      "d1_small": {
+        "p_elevated": 0.167,
+        "n": 6
+      },
+      "d4-5_small": {
+        "p_elevated": 0.0,
+        "n": 5
+      },
+      "d6-7_large": {
+        "p_elevated": 0.0,
+        "n": 4
+      }
+    }
+  },
   "Southeast": {
+    "basin": "Southeast",
+    "stations": [
+      "BAY#320_SL",
+      "BAY#315_SL"
+    ],
     "median_event_volume_mg": 26.77,
     "buckets": {
       "baseline_no_recent_discharge": {
