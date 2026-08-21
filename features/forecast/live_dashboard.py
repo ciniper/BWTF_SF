@@ -367,7 +367,11 @@ class LiveData:
             composed[basin_key] = max(per_group.values()) if per_group else 0.0
             groups_out.update(per_group)
         composed["citywide"] = max(composed.values()) if composed else 0.0
-        composed["groups"] = groups_out
+        # NOTE: keep `composed` flat floats only — the frontend takes
+        # Math.max(Object.values(predictions)) and renders a card per key.
+        # Per-group values ride along under a key the call sites pop out
+        # into the sibling `impact_groups` payload field.
+        composed["_groups"] = groups_out
         return composed
 
     @staticmethod
@@ -560,6 +564,7 @@ class LiveData:
             # discharge_probs = same-day P(discharge) for transparency
             day_predictions = self._compose_impact(day_probs, day_volumes, idx,
                                                    day_dates, observed)
+            impact_groups = day_predictions.pop("_groups", {})
 
             is_forecast = day_offset > 0
             is_today = day_offset == 0
@@ -582,6 +587,7 @@ class LiveData:
                 "rain_2d_cum": round(features["rain_2d_cum"], 3),
                 "rain_3d_cum": round(features["rain_3d_cum"], 3),
                 "predictions": day_predictions,
+                "impact_groups": impact_groups,
                 "discharge_probs": day_probs[idx],
                 "observed_cso": sorted(observed.get(target_date, ())),
                 "features": features,
@@ -703,6 +709,7 @@ class LiveData:
             features = row_features[idx]
             day_predictions = self._compose_impact(day_probs, day_volumes, idx,
                                                    day_dates, observed)
+            impact_groups = day_predictions.pop("_groups", {})
 
             label = row_date.strftime("%a %b %d")
             if offset == 0:
@@ -718,6 +725,7 @@ class LiveData:
                 "rain_2d_cum": round(features["rain_2d_cum"], 3),
                 "rain_3d_cum": round(features["rain_3d_cum"], 3),
                 "predictions": day_predictions,
+                "impact_groups": impact_groups,
                 "discharge_probs": day_probs[idx],
                 "observed_cso": sorted(observed.get(row_date, ())),
                 "features": features,
