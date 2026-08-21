@@ -43,6 +43,7 @@ from urllib.parse import parse_qs, urlparse
 from flask import Flask, Response, redirect, render_template, request, session
 
 import features.cso_history.page as cso_history_page
+import features.discharges.page as discharges_page
 import features.forecast.page as forecast_page
 import features.site_analysis.page as site_analysis_page
 from features.alerts.page import AlertsRoutes
@@ -276,6 +277,10 @@ def create_app():
     # Site report card (public read-only; DataSF lab-data analysis)
     for path, handler in site_analysis_page.GET_ROUTES.items():
         app.add_url_rule(path, f"site-analysis-get:{path}", _forecast_view(handler), methods=["GET"])
+
+    # Discharge ledger (public read-only; static CSD dataset from CIWQS SMRs)
+    for path, handler in discharges_page.GET_ROUTES.items():
+        app.add_url_rule(path, f"discharges-get:{path}", _forecast_view(handler), methods=["GET"])
 
     # No forecast refresh thread: predictions are compute-on-visit, cached in
     # Supabase (forecast_predictions) — /forecast/api/data refreshes on staleness.

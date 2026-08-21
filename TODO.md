@@ -156,6 +156,9 @@ This roadmap has four parts:
 - Lazy-loaded: needs the ML extras in `requirements.txt`; without them the page shows an install notice and the rest of the app is unaffected.
 
 ## Next steps
+- [x] **Ground-truth CSD event dataset acquired (2026-08-21)** — 1,007 per-event discharge records (Oct 2016 – Oct 2025) scraped from SFPUC monthly SMRs on CIWQS, with a monthly coverage grid and 2013–16 Bayside legacy hours: `features/forecast/data/csd/` (see NOTES.md for schema/gaps + `records_request_draft.md` for extending it). Measured against it, the old bacteria proxy label was **79% precision / 50% recall** — it missed half of real events.
+- [ ] **Promote forecast v2** — retrained on the real events (worktree `busy-neumann-c3b33c`, commit `6d20a62`: holdout PR-AUC citywide 0.87 vs 0.56, Southeast 0.80 vs 0.28; artifacts in `data/models/v2/`, production pkls untouched; plan in `RETRAIN_PLAN.md`). Verify the eval, merge, then promote — the worktree also holds *uncommitted* stage-2 work (volume-regression heads + live_dashboard changes) that needs review before anything ships.
+- [x] **Discharge Ledger page (shipped)** — `/discharges` analyzes the CSD record: totals by receiving water and year, top outfalls, largest single events, coverage caveats surfaced (pre-2018 has no Westside data). Mission Creek/China Basin receives 52% of all reported discharge volume — corroborating the Site Report Card's "episodic Mission Creek" finding.
 - [ ] Validate the moved forecaster end-to-end with deps installed (predictions render, refresh loop runs, historical + bacteria views work).
 - [ ] Surface forecast risk on the landing page's conditions banner (currently SFPUC status + weather only).
 - [ ] Feed forecast output into the alert system (B5) as an *upcoming-CSO* alert, not just current-event.

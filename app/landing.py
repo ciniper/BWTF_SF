@@ -25,6 +25,8 @@ PAGES = [
      "Every posting and sewage-overflow event our real-time watcher has detected, plotted per station."),
     ("/analysis", "📊", "Site Report Card",
      "How often each shoreline site fails the state bacteria standard — rankings, storm-season effect, and year-by-year trends from the city's lab data."),
+    ("/discharges", "🧾", "Discharge Ledger",
+     "Every combined-sewer discharge SFPUC reported to regulators since 2016 — outfall, duration, and gallons — by location and year."),
 ]
 
 

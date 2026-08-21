@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Discharge Ledger — Surfrider SF Blue Water Task Force</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#e2e8ee;color:#26272a;font-family:'Avenir Next','Trebuchet MS','Segoe UI',sans-serif}
+  a{color:#317fb2}
+  .wrap{max-width:1100px;margin:0 auto;padding:24px}
+  .back-to-dash{display:inline-block;margin:0 0 12px;padding:8px 14px;background:#343b44;color:#fff;border-radius:999px;text-decoration:none;font-weight:700;font-size:13px}
+  .back-to-dash:hover{background:#26272a}
+  .hero{background:#1f6fb0;color:#fff;border-radius:24px;padding:28px;margin-bottom:20px}
+  .hero h1{margin:6px 0 6px;font-size:28px;text-transform:uppercase;letter-spacing:.03em;color:#fff;-webkit-text-stroke:2px #26272a;paint-order:stroke fill}
+  .hero p{margin:0;color:rgba(255,255,255,.88);font-size:15px;line-height:1.5;max-width:78ch}
+
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:0 0 16px}
+  .tile{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:14px 18px}
+  .tile b{display:block;font-size:24px;font-variant-numeric:tabular-nums}
+  .tile span{font-size:12.5px;color:#5e6a71;font-weight:600}
+
+  .controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:0 0 14px}
+  .group-btn{padding:8px 16px;border-radius:999px;border:2px solid #d9e4e8;background:#fff;color:#5e6a71;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
+  .group-btn.active{border-color:#1f6fb0;background:#1f6fb0;color:#fff}
+  .legend{margin-left:auto;font-size:13px;font-weight:600;color:#5e6a71}
+
+  .board{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:16px 18px;margin-bottom:16px;overflow-x:auto}
+  .board h2{font-size:16px;margin:2px 0 12px;color:#26272a}
+  table{border-collapse:collapse;width:100%;font-size:13.5px}
+  th{text-align:left;color:#5e6a71;font-weight:700;padding:8px 10px;border-bottom:2px solid #d9e4e8;white-space:nowrap}
+  th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
+  td{padding:8px 10px;border-bottom:1px solid #eef2f4}
+  .name{font-weight:700;white-space:nowrap}
+
+  .yrrow{display:flex;align-items:center;gap:10px;height:32px;font-size:13px}
+  .yrrow .yl{width:44px;font-weight:700}
+  .yrrow .track{flex:1;position:relative;height:16px}
+  .yrrow .vol{position:absolute;top:1px;height:14px;border-radius:4px;background:#1f6fb0}
+  .yrrow .vol.partial{background:repeating-linear-gradient(135deg,#7fa8c9 0 6px,#9dbdd8 6px 12px)}
+  .yrrow .val{width:170px;text-align:right;font-variant-numeric:tabular-nums;color:#3f474d;white-space:nowrap}
+  .bar{display:inline-block;height:13px;border-radius:4px;background:#1f6fb0;vertical-align:middle;margin-right:8px}
+  .note{background:#fdf6ec;border:1px solid #ecd9b8;border-radius:12px;padding:12px 16px;font-size:13px;margin:0 0 16px;color:#5a4f3d}
+  .foot{color:#8a949b;font-size:12px;margin-top:8px}
+  .loading{padding:40px;text-align:center;color:#5e6a71;font-weight:600}
+</style></head>
+<body><div class="wrap">
+  <a class="back-to-dash" href="/">← Dashboard</a>
+  <div class="hero">
+    <h1>🧾 Discharge Ledger</h1>
+    <p>Every combined-sewer discharge into San Francisco waters that SFPUC reported to state
+    regulators — outfall, start, duration, and volume — extracted from monthly self-monitoring
+    reports filed under the city's two sewer permits. This is the official record of what was
+    actually discharged, alongside our real-time detections (<a href="/cso-history" style="color:#cfe6f6">CSO Event Timeline</a>)
+    and the bacteria outcomes (<a href="/analysis" style="color:#cfe6f6">Site Report Card</a>).</p>
+  </div>
+
+  <div class="tiles" id="tiles"></div>
+
+  <div class="controls" id="waterBtns">
+    <button class="group-btn active" data-water="">All waters</button>
+    <span class="legend" id="metaLine"></span>
+  </div>
+
+  <div class="note" id="covNote"></div>
+
+  <div class="board">
+    <h2>Volume discharged per year <span style="font-weight:600;color:#5e6a71;font-size:12.5px">(million gallons — hatched years have incomplete coverage)</span></h2>
+    <div id="years" class="loading">Loading the discharge record…</div>
+  </div>
+
+  <div class="board">
+    <h2>By receiving water</h2>
+    <table><thead><tr><th>Receiving water</th><th class="num">events</th><th class="num">total volume</th><th class="num">share</th><th class="num">largest single event</th><th class="num">median duration</th></tr></thead>
+    <tbody id="waters"></tbody></table>
+  </div>
+
+  <div class="board">
+    <h2>Top outfalls by volume</h2>
+    <table><thead><tr><th>Outfall</th><th>Receiving water</th><th class="num">events</th><th class="num">total volume</th></tr></thead>
+    <tbody id="outfalls"></tbody></table>
+  </div>
+
+  <div class="board">
+    <h2>Largest single discharges</h2>
+    <table><thead><tr><th>Date</th><th>Outfall</th><th>Receiving water</th><th class="num">volume</th><th class="num">duration</th></tr></thead>
+    <tbody id="biggest"></tbody></table>
+  </div>
+
+  <div class="foot" id="foot"></div>
+</div>
+
+<script>
+let EV = [], COV = null, water = "";
+const MG = v => v == null ? "—"
+  : v >= 1000 ? (v/1000).toFixed(2) + " billion gal"
+  : v >= 1    ? Math.round(v).toLocaleString() + " MG"
+  : (v*1e6).toLocaleString(undefined,{maximumFractionDigits:0}) + " gal";
+const MGshort = v => v == null ? "—" : v >= 1000 ? (v/1000).toFixed(1)+"B gal" : Math.round(v).toLocaleString()+" MG";
+const DUR = m => m == null ? "—" : m >= 60 ? (m/60).toFixed(1) + " h" : Math.round(m) + " min";
+const median = a => { const s=[...a].sort((x,y)=>x-y); return s.length ? s[Math.floor(s.length/2)] : null; };
+
+function rows() { return water ? EV.filter(e => e.water === water) : EV; }
+
+function render() {
+  const R = rows();
+  const totMG = R.reduce((a,e) => a + (e.mg||0), 0);
+  const years = {};
+  for (const e of R) { const y = e.date.slice(0,4); (years[y] ??= {n:0, mg:0}).n++; years[y].mg += e.mg||0; }
+
+  // tiles
+  const biggest = R.reduce((a,e) => (e.mg||0) > (a.mg||0) ? e : a, {});
+  const wettest = Object.entries(years).sort((a,b)=>b[1].mg-a[1].mg)[0];
+  document.getElementById("tiles").innerHTML = `
+    <div class="tile"><b>${MG(totMG)}</b><span>total reported discharge${water?" — "+water:""}</span></div>
+    <div class="tile"><b>${R.length.toLocaleString()}</b><span>discharge events</span></div>
+    <div class="tile"><b>${MGshort(biggest.mg)}</b><span>largest single event (${biggest.date||"—"})</span></div>
+    <div class="tile"><b>${wettest?wettest[0]:"—"}</b><span>biggest year (${wettest?MGshort(wettest[1].mg):"—"})</span></div>`;
+
+  // yearly bars
+  const maxMG = Math.max(...Object.values(years).map(y=>y.mg), 1);
+  document.getElementById("years").className = "";
+  document.getElementById("years").innerHTML = Object.keys(years).sort().map(y => {
+    const partial = (y <= "2017" && (!water || water === "Pacific Ocean")) || y === "2025";
+    return `<div class="yrrow"><span class="yl">${y}</span>
+      <span class="track"><span class="vol${partial?" partial":""}" style="width:${Math.max(1,100*years[y].mg/maxMG)}%"></span></span>
+      <span class="val">${MGshort(years[y].mg)} · ${years[y].n} events</span></div>`;
+  }).join("");
+
+  // by receiving water (always ALL waters, highlight filter)
+  const byW = {};
+  for (const e of EV) { const w = (byW[e.water] ??= {n:0, mg:0, durs:[], big:{}}); w.n++; w.mg += e.mg||0;
+    if (e.dur != null) w.durs.push(e.dur);
+    if ((e.mg||0) > (w.big.mg||0)) w.big = e; }
+  const allMG = EV.reduce((a,e)=>a+(e.mg||0),0);
+  document.getElementById("waters").innerHTML = Object.entries(byW).sort((a,b)=>b[1].mg-a[1].mg).map(([w,d]) => `
+    <tr${water===w?' style="background:#f0f7fc"':''}><td class="name">${w}</td><td class="num">${d.n}</td>
+    <td class="num"><span class="bar" style="width:${Math.round(90*d.mg/Math.max(allMG*0.4,1))}px"></span>${MGshort(d.mg)}</td>
+    <td class="num">${(100*d.mg/allMG).toFixed(0)}%</td>
+    <td class="num">${MGshort(d.big.mg)} (${d.big.date||"—"})</td><td class="num">${DUR(median(d.durs))}</td></tr>`).join("");
+
+  // top outfalls (respects filter)
+  const byO = {};
+  for (const e of R) { const o = (byO[e.oid] ??= {name:e.oname, water:e.water, n:0, mg:0}); o.n++; o.mg += e.mg||0; }
+  document.getElementById("outfalls").innerHTML = Object.entries(byO).sort((a,b)=>b[1].mg-a[1].mg).slice(0,10).map(([id,o]) => `
+    <tr><td class="name">${id} — ${o.name}</td><td>${o.water}</td><td class="num">${o.n}</td><td class="num">${MGshort(o.mg)}</td></tr>`).join("");
+
+  // biggest events (respects filter)
+  document.getElementById("biggest").innerHTML = [...R].sort((a,b)=>(b.mg||0)-(a.mg||0)).slice(0,10).map(e => `
+    <tr><td class="num">${e.date}</td><td class="name">${e.oid} — ${e.oname}</td><td>${e.water}</td>
+    <td class="num">${MGshort(e.mg)}</td><td class="num">${DUR(e.dur)}</td></tr>`).join("");
+
+  document.getElementById("metaLine").textContent =
+    `${EV.length.toLocaleString()} events on record · ${COV.bayside_from} → ${COV.through}`;
+}
+
+async function load() {
+  const d = await (await fetch("/discharges/api/events")).json();
+  if (d.error) { document.getElementById("years").textContent = d.error; return; }
+  const [DATE,,OID,ONAME,WATER,DUR_,MG_] = [0,1,2,3,4,5,6];
+  EV = d.events.map(r => ({date:r[DATE], oid:r[OID], oname:r[ONAME], water:r[WATER], dur:r[DUR_], mg:r[MG_]}));
+  COV = d.coverage;
+  document.getElementById("covNote").textContent = "⚠️ Coverage: " + COV.note;
+  document.getElementById("foot").textContent = "Source: " + d.source +
+    " · Compiled 2026-08 · Full provenance, schema, and gaps: features/forecast/data/csd/NOTES.md · MG = million gallons (≈1.5 Olympic pools).";
+
+  const waters = [...new Set(EV.map(e=>e.water))];
+  const btns = document.getElementById("waterBtns");
+  const meta = document.getElementById("metaLine");
+  for (const w of waters) {
+    const b = document.createElement("button");
+    b.className = "group-btn"; b.dataset.water = w; b.textContent = w.replace("SF Bay - ","");
+    btns.insertBefore(b, meta);
+  }
+  btns.addEventListener("click", e => {
+    const b = e.target.closest(".group-btn"); if (!b) return;
+    btns.querySelectorAll(".group-btn").forEach(x => x.classList.toggle("active", x===b));
+    water = b.dataset.water; render();
+  });
+  render();
+}
+load();
+</script>
+</body></html>
