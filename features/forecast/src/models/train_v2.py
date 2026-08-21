@@ -69,6 +69,34 @@ def get_feature_columns() -> list:
     ]
 
 
+INTENSITY_FEATURES = ["rain_max1h", "rain_max3h", "rain_max6h"]
+
+
+def get_feature_columns_v21() -> list:
+    """v2 features + Open-Meteo hourly intensity maxima. The intensity
+    features come from the SAME source at train and inference time
+    (Open-Meteo hourly), avoiding v1's precip_max scale-mismatch trap."""
+    return get_feature_columns() + INTENSITY_FEATURES
+
+
+def build_hourly_features() -> pd.DataFrame:
+    """Per-date peak-intensity features from Open-Meteo hourly rain.
+    Rolling sums run across the continuous hourly series (so windows span
+    midnight), then take each calendar day's max — the dashboard computes
+    the identical transform on its live hourly series."""
+    h = pd.read_csv(RAW_DIR / "hourly_rain_openmeteo.csv", parse_dates=["timestamp"])
+    h = h.sort_values("timestamp").reset_index(drop=True)
+    for w in (3, 6):
+        h[f"roll{w}h"] = h["precip_inches"].rolling(w, min_periods=1).sum()
+    h["date"] = h["timestamp"].dt.normalize()
+    daily = h.groupby("date").agg(
+        rain_max1h=("precip_inches", "max"),
+        rain_max3h=("roll3h", "max"),
+        rain_max6h=("roll6h", "max"),
+    ).reset_index()
+    return daily
+
+
 def build_rain_features() -> pd.DataFrame:
     rain_df = pd.read_csv(RAW_DIR / "historical_rain.csv", parse_dates=["date"])
     rp = rain_df.pivot_table(index="date", columns="rain_station_name",
@@ -104,8 +132,11 @@ def wet_season(dates: pd.Series) -> pd.Series:
 
 def build_dataset() -> pd.DataFrame:
     feats = build_rain_features()
+    hourly = build_hourly_features()
     labels = build_daily_labels()
     df = labels.merge(feats, on="date", how="inner")
+    df = df.merge(hourly, on="date", how="left")
+    df[INTENSITY_FEATURES] = df[INTENSITY_FEATURES].fillna(0)
     df = df[df["date"] <= TRAIN_END].reset_index(drop=True)
     df["season"] = wet_season(df["date"])
     return df
@@ -167,6 +198,23 @@ def holdout_scores(sub: pd.DataFrame, features: list) -> dict:
         "roc_auc": roc_auc_score(te["y"], p),
         "pr_auc": average_precision_score(te["y"], p),
         "brier": brier_score_loss(te["y"], p),
+    }
+
+
+def persistence_baseline(sub: pd.DataFrame) -> dict:
+    """Field-standard null model: predict today = yesterday's label
+    (Virtual Beach convention). The bar any real model must clear."""
+    te = sub[sub["date"] >= HOLDOUT_START].sort_values("date")
+    y, yprev = te["y"].values[1:], te["y"].values[:-1]
+    if y.sum() == 0:
+        return {}
+    tp = int(((yprev == 1) & (y == 1)).sum())
+    fp = int(((yprev == 1) & (y == 0)).sum())
+    fn = int(((yprev == 0) & (y == 1)).sum())
+    return {
+        "brier": brier_score_loss(y, yprev.astype(float)),
+        "precision": tp / (tp + fp) if tp + fp else None,
+        "recall": tp / (tp + fn) if tp + fn else None,
     }
 
 
@@ -339,15 +387,20 @@ def backtest(df: pd.DataFrame, finals: dict, features: list) -> dict:
     return out
 
 
-def main():
+def main(feature_set: str = "v21"):
+    """feature_set: 'v2' (daily only) or 'v21' (+ hourly intensity). Both are
+    evaluated side by side regardless; `feature_set` picks the final fit."""
     print("=" * 64)
     print("FORECAST v2 TRAINING — ground-truth CSD labels")
     print("=" * 64)
     df = build_dataset()
-    features = get_feature_columns()
+    feat_sets = {"v2": get_feature_columns(), "v21": get_feature_columns_v21()}
+    features = feat_sets[feature_set]
     print(f"dataset: {len(df)} days {df['date'].min().date()} → {df['date'].max().date()}")
+    print(f"final-fit feature set: {feature_set}")
 
     report = {"trained_at": datetime.now().isoformat(),
+              "feature_set": feature_set,
               "train_window": [str(df['date'].min().date()), str(df['date'].max().date())],
               "targets": {}}
     finals = {}
@@ -358,23 +411,34 @@ def main():
     for basin, key, v1_name in targets:
         sub = target_frame(df, basin)
         print(f"\n── {basin}: {len(sub)} covered days, {int(sub['y'].sum())} event days")
-        cv = season_cv_scores(sub, features)
-        ho = holdout_scores(sub, features)
-        v1 = v1_baseline_scores(sub, v1_name)
-        print(f"   season-CV : ROC {cv['roc_auc']:.3f}  PR {cv['pr_auc']:.3f}  Brier {cv['brier']:.4f}")
-        if ho:
-            print(f"   holdout   : ROC {ho['roc_auc']:.3f}  PR {ho['pr_auc']:.3f}  Brier {ho['brier']:.4f}"
-                  f"  ({ho['pos_test']} events / {ho['n_test']} days)")
-        if v1:
-            print(f"   v1 (proxy): ROC {v1['roc_auc']:.3f}  PR {v1['pr_auc']:.3f}  Brier {v1['brier']:.4f}"
-                  f"   ← in-sample-advantaged baseline")
+        evals = {}
+        for fs_name, fs in feat_sets.items():
+            cv = season_cv_scores(sub, fs)
+            ho = holdout_scores(sub, fs)
+            evals[fs_name] = {"season_cv": cv, "holdout": ho}
+            print(f"   [{fs_name:>3}] season-CV: ROC {cv['roc_auc']:.3f}  PR {cv['pr_auc']:.3f}  "
+                  f"Brier {cv['brier']:.4f}" +
+                  (f" | holdout: ROC {ho['roc_auc']:.3f}  PR {ho['pr_auc']:.3f}  "
+                   f"Brier {ho['brier']:.4f}" if ho else ""))
+        # NOTE: the one-time v1 (proxy-model) comparison was removed after
+        # v2 was promoted over the v1 pkls it loaded (it began comparing the
+        # production model against itself in-sample). The recorded v1
+        # numbers live in RETRAIN_PLAN.md: holdout PR-AUC citywide 0.56,
+        # Westside 0.54, North Shore 0.91*, Southeast 0.28.
+        pers = persistence_baseline(sub)
+        if pers:
+            print(f"   persistence (y=yesterday): Brier {pers['brier']:.4f}  "
+                  f"precision {pers['precision']:.2f}  recall {pers['recall']:.2f}")
         final = fit_final(sub, features)
         finals[key] = final
         print(f"   final fit : dry-day offset {final['calibration_offset']:.4f}; "
               f"top: {', '.join(f for f, _ in final['importances'][:4])}")
         report["targets"][key] = {
             "n_days": len(sub), "n_events": int(sub["y"].sum()),
-            "season_cv": cv, "holdout": ho, "v1_baseline_on_holdout": v1,
+            "feature_set_evals": evals,
+            "season_cv": evals[feature_set]["season_cv"],
+            "holdout": evals[feature_set]["holdout"],
+            "persistence_baseline_on_holdout": pers,
             "calibration_offset": final["calibration_offset"],
             "top_features": final["importances"][:8],
         }

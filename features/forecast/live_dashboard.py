@@ -359,6 +359,9 @@ class LiveData:
         return {
             "precip_avg": row.get("precip_inches", 0) or 0,
             "precip_max": row.get("precip_max_hourly", 0) or 0,
+            "rain_max1h": row.get("precip_max_hourly", 0) or 0,
+            "rain_max3h": row.get("rain_max3h", 0) or 0,
+            "rain_max6h": row.get("rain_max6h", 0) or 0,
             "rain_2d_cum": row.get("rain_2d_cum", 0) or 0,
             "rain_3d_cum": row.get("rain_3d_cum", 0) or 0,
             "rain_5d_cum": row.get("rain_5d_cum", 0) or 0,
@@ -477,12 +480,18 @@ class LiveData:
         now = datetime.now()
         today = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
-        # Aggregate to daily totals
-        rain_df = rain_df.copy()
+        # Aggregate to daily totals. Rolling 3h/6h sums run across the
+        # continuous hourly series (windows span midnight) BEFORE the daily
+        # max — identical to train_v2.build_hourly_features().
+        rain_df = rain_df.copy().sort_values("timestamp").reset_index(drop=True)
+        for w in (3, 6):
+            rain_df[f"roll{w}h"] = rain_df["precip_inches"].rolling(w, min_periods=1).sum()
         rain_df["date"] = rain_df["timestamp"].dt.date
         daily = rain_df.groupby("date").agg(
             precip_inches=("precip_inches", "sum"),
             precip_max_hourly=("precip_inches", "max"),
+            rain_max3h=("roll3h", "max"),
+            rain_max6h=("roll6h", "max"),
             wind_dir_avg=("wind_dir_deg", "mean"),
         ).reset_index()
         daily["date"] = pd.to_datetime(daily["date"])
@@ -623,11 +632,15 @@ class LiveData:
 
         # Compute daily features and predictions directly (not using _compute_predictions
         # which is tied to datetime.now())
-        rain_df = rain_df.copy()
+        rain_df = rain_df.copy().sort_values("timestamp").reset_index(drop=True)
+        for w in (3, 6):
+            rain_df[f"roll{w}h"] = rain_df["precip_inches"].rolling(w, min_periods=1).sum()
         rain_df["date"] = rain_df["timestamp"].dt.date
         daily = rain_df.groupby("date").agg(
             precip_inches=("precip_inches", "sum"),
             precip_max_hourly=("precip_inches", "max"),
+            rain_max3h=("roll3h", "max"),
+            rain_max6h=("roll6h", "max"),
         ).reset_index()
         daily["date"] = pd.to_datetime(daily["date"])
         daily = daily.sort_values("date").reset_index(drop=True)

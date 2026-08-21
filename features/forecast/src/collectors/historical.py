@@ -141,6 +141,39 @@ def fetch_historical_rain(start_date: str = "2016-01-01",
     return df
 
 
+def fetch_hourly_rain(start_date: str = "2016-01-01") -> pd.DataFrame:
+    """Hourly precipitation from the Open-Meteo archive (ERA5), for the
+    peak-intensity features (train_v2.build_hourly_features). Same source
+    family the dashboard uses at inference — keep it that way (the v1
+    precip_max lesson). Saves to data/raw/hourly_rain_openmeteo.csv."""
+    frames = []
+    start = pd.Timestamp(start_date)
+    end_all = pd.Timestamp.now() - pd.Timedelta(days=6)  # archive lags ~5 days
+    for y0 in range(start.year, end_all.year + 1, 3):
+        chunk_start = max(start, pd.Timestamp(f"{y0}-01-01"))
+        chunk_end = min(pd.Timestamp(f"{y0 + 2}-12-31"), end_all)
+        if chunk_start > chunk_end:
+            continue
+        r = requests.get("https://archive-api.open-meteo.com/v1/archive", params={
+            "latitude": 37.7749, "longitude": -122.4194,
+            "hourly": "precipitation",
+            "start_date": chunk_start.strftime("%Y-%m-%d"),
+            "end_date": chunk_end.strftime("%Y-%m-%d"),
+            "timezone": "America/Los_Angeles",
+        }, timeout=120)
+        r.raise_for_status()
+        h = r.json()["hourly"]
+        frames.append(pd.DataFrame({"timestamp": pd.to_datetime(h["time"]),
+                                    "precip_mm": h["precipitation"]}))
+        print(f"  hourly chunk {chunk_start.date()} → {chunk_end.date()}: {len(frames[-1])} hours")
+        time.sleep(1)
+    df = pd.concat(frames).drop_duplicates("timestamp").sort_values("timestamp")
+    df["precip_inches"] = df["precip_mm"] / 25.4
+    RAW_DIR.mkdir(parents=True, exist_ok=True)
+    df.to_csv(RAW_DIR / "hourly_rain_openmeteo.csv", index=False)
+    return df
+
+
 def fetch_historical_bacteria(start_date: str = "2020-07-01",
                                 end_date: str = None) -> pd.DataFrame:
     """
