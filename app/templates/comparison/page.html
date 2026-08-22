@@ -2,37 +2,40 @@
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Source Comparison — BWTF vs. SFPUC | SF Beach Water Quality</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
           *{box-sizing:border-box}
-          body{margin:0;background:#e2e8ee;color:#26272a;font-family:'Avenir Next','Trebuchet MS','Segoe UI',sans-serif;}
-          a{color:#317fb2}
+          body{margin:0;background:#E3EBF2;color:#26272a;font-family:'Roboto','Segoe UI',Arial,sans-serif;}
+          a{color:#0072BC}
           .wrap{max-width:1040px;margin:0 auto;padding:24px}
-          .hero{background:#1f6fb0;color:#fff;border-radius:24px;padding:28px;margin-bottom:22px}
-          .hero h1{margin:6px 0 6px;font-size:28px;text-transform:uppercase;letter-spacing:.03em;color:#fff;-webkit-text-stroke:2px #26272a;paint-order:stroke fill}
+          .hero{background:#0072BC;color:#fff;border-radius:24px;padding:28px;margin-bottom:22px}
+          .hero h1{margin:6px 0 6px;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:38px;text-transform:uppercase;letter-spacing:.06em;color:#fff}
           .hero p{margin:0;color:rgba(255,255,255,.85);font-size:15px;line-height:1.5;max-width:70ch}
           .hero ul{margin:8px 0 10px;padding-left:22px;color:rgba(255,255,255,.88);font-size:15px;line-height:1.55}
           .hero li{margin:2px 0}
           .back-to-dash{display:inline-block;margin:0 0 12px;padding:8px 14px;background:#343b44;color:#fff;border-radius:999px;text-decoration:none;font-weight:700;font-size:13px}
           .back-to-dash:hover{background:#26272a}
           .legend{display:flex;flex-wrap:wrap;gap:14px;margin:0 0 18px}
-          .legend div{background:#fff;border:1px solid #d9e4e8;border-radius:14px;padding:10px 14px;font-size:13px;color:#5e6a71}
+          .legend div{background:#fff;border:1px solid #d9e4e8;border-radius:14px;padding:10px 14px;font-size:13px;color:#54576F}
           .legend b{color:#26272a}
           .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
           .card{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:16px}
           .card .n{font-size:28px;font-weight:800;color:#26272a}
-          .card .l{font-size:12px;color:#5e6a71;text-transform:uppercase;letter-spacing:.08em;margin-top:4px}
+          .card .l{font-size:12px;color:#54576F;text-transform:uppercase;letter-spacing:.08em;margin-top:4px}
           .banner{border-radius:14px;padding:12px 16px;margin-bottom:18px;font-weight:600;font-size:14px}
           .banner--ok{background:rgba(37,214,112,.12);color:#146b37}
           .banner--warn{background:rgba(255,65,0,.10);color:#b5310a}
           .note-info{background:#e3eefb;color:#1f5e8f;border-radius:14px;padding:12px 16px;margin:0 0 16px;font-weight:600;font-size:14px}
           table{width:100%;border-collapse:separate;border-spacing:0;background:#fff;border:1px solid #d9e4e8;border-radius:18px;overflow:hidden}
           th,td{padding:13px 14px;text-align:left;border-bottom:1px solid #eef2f4;vertical-align:top}
-          th{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#5e6a71;background:#f7fafb}
+          th{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#54576F;background:#f7fafb}
           tr:last-child td{border-bottom:none}
           td.site{min-width:180px}
           .pill{display:inline-flex;align-items:baseline;gap:6px;padding:5px 10px;border-radius:999px;font-weight:700;font-size:14px}
           .pill small{font-weight:600;font-size:11px;opacity:.8;text-transform:uppercase;letter-spacing:.04em}
-          .pill--ok{background:#3c9160;color:#fff}
+          .pill--ok{background:#237059;color:#fff}
           .pill--bad{background:#d15c5c;color:#fff}
           .pill--warn{background:#b97e00;color:#fff}
           .pill--na{background:#eef2f4;color:#8a949b}
@@ -40,15 +43,15 @@
           .agree{font-weight:700;font-size:13px}
           .agree--yes{color:#146b37}.agree--no{color:#b5310a}.agree--na{color:#8a949b}
           .agree small{display:block;color:#8a949b;font-weight:600;margin-top:3px}
-          .foot{color:#5e6a71;font-size:12px;line-height:1.6;margin-top:18px}
-          .hint{display:flex;align-items:center;gap:6px;color:#5e6a71;font-size:13px;margin:0 0 10px}
+          .foot{color:#54576F;font-size:12px;line-height:1.6;margin-top:18px}
+          .hint{display:flex;align-items:center;gap:6px;color:#54576F;font-size:13px;margin:0 0 10px}
           .bacteria-select{display:flex;align-items:center;gap:10px;margin:0 0 12px}
-          .bacteria-select label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#5e6a71;font-weight:700}
+          .bacteria-select label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#54576F;font-weight:700}
           .bacteria-select select{font-size:14px;padding:8px 12px;border:1px solid #d9e4e8;border-radius:10px;background:#fff;color:#26272a;font-weight:600;cursor:pointer}
           tr.row-click{cursor:pointer}
           tr.row-click:hover{background:#f3f8fb}
-          tr.row-click:focus{outline:2px solid #317fb2;outline-offset:-2px}
-          td.site .go{display:block;color:#317fb2;font-size:11px;font-weight:700;margin-top:5px}
+          tr.row-click:focus{outline:2px solid #0072BC;outline-offset:-2px}
+          td.site .go{display:block;color:#0072BC;font-size:11px;font-weight:700;margin-top:5px}
           .modal{position:fixed;inset:0;background:rgba(38,39,42,.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:50}
           .modal.open{display:flex}
           .modal__box{background:#fff;border-radius:20px;max-width:780px;width:100%;padding:22px 24px;box-shadow:0 24px 60px rgba(0,0,0,.3);max-height:90vh;overflow:auto}

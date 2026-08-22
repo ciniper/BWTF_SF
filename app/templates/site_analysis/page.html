@@ -2,30 +2,33 @@
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Site Report Card — Surfrider SF Blue Water Task Force</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box}
-  body{margin:0;background:#e2e8ee;color:#26272a;font-family:'Avenir Next','Trebuchet MS','Segoe UI',sans-serif}
-  a{color:#317fb2}
+  body{margin:0;background:#E3EBF2;color:#26272a;font-family:'Roboto','Segoe UI',Arial,sans-serif}
+  a{color:#0072BC}
   .wrap{max-width:1100px;margin:0 auto;padding:24px}
   .back-to-dash{display:inline-block;margin:0 0 12px;padding:8px 14px;background:#343b44;color:#fff;border-radius:999px;text-decoration:none;font-weight:700;font-size:13px}
   .back-to-dash:hover{background:#26272a}
-  .hero{background:#1f6fb0;color:#fff;border-radius:24px;padding:28px;margin-bottom:20px}
-  .hero h1{margin:6px 0 6px;font-size:28px;text-transform:uppercase;letter-spacing:.03em;color:#fff;-webkit-text-stroke:2px #26272a;paint-order:stroke fill}
+  .hero{background:#0072BC;color:#fff;border-radius:24px;padding:28px;margin-bottom:20px}
+  .hero h1{margin:6px 0 6px;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:38px;text-transform:uppercase;letter-spacing:.06em;color:#fff}
   .hero p{margin:0;color:rgba(255,255,255,.88);font-size:15px;line-height:1.5;max-width:78ch}
 
   .controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:0 0 14px}
-  .group-btn{padding:8px 16px;border-radius:999px;border:2px solid #d9e4e8;background:#fff;color:#5e6a71;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
-  .group-btn.active{border-color:#1f6fb0;background:#1f6fb0;color:#fff}
-  .legend{margin-left:auto;font-size:13px;font-weight:600;color:#5e6a71}
-  .ctl-label{font-size:13px;font-weight:700;color:#5e6a71}
+  .group-btn{padding:8px 16px;border-radius:999px;border:2px solid #d9e4e8;background:#fff;color:#54576F;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
+  .group-btn.active{border-color:#0072BC;background:#0072BC;color:#fff}
+  .legend{margin-left:auto;font-size:13px;font-weight:600;color:#54576F}
+  .ctl-label{font-size:13px;font-weight:700;color:#54576F}
   .seg-toggle{display:inline-flex;border:2px solid #d9e4e8;border-radius:999px;overflow:hidden;background:#fff}
-  .seg-btn{padding:8px 16px;border:0;background:transparent;color:#5e6a71;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
-  .seg-btn.active{background:#1f6fb0;color:#fff}
+  .seg-btn{padding:8px 16px;border:0;background:transparent;color:#54576F;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
+  .seg-btn.active{background:#0072BC;color:#fff}
   input[type=date]{padding:7px 10px;border:2px solid #d9e4e8;border-radius:10px;font-family:inherit;font-size:13px;color:#26272a;background:#fff}
 
   .board{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:6px 18px 14px;overflow-x:auto}
   table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:760px}
-  th{text-align:left;color:#5e6a71;font-weight:700;padding:10px 10px 8px;border-bottom:2px solid #d9e4e8;white-space:nowrap}
+  th{text-align:left;color:#54576F;font-weight:700;padding:10px 10px 8px;border-bottom:2px solid #d9e4e8;white-space:nowrap}
   th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
   td{padding:9px 10px;border-bottom:1px solid #eef2f4;vertical-align:middle}
   tr.site{cursor:pointer}
@@ -34,11 +37,11 @@
   .name{font-weight:700;white-space:nowrap}
   .chip{display:inline-block;margin-left:8px;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;vertical-align:1px}
   .chip.east{background:#fdeee2;color:#b25b1e}
-  .chip.ocean{background:#e3f1fa;color:#1f6fb0}
+  .chip.ocean{background:#e3f1fa;color:#0072BC}
   .chip.north{background:#e8f4ea;color:#2f7d4c}
   .chip.sporadic{background:#eef1f3;color:#98a3ab}
   .barcell{min-width:190px}
-  .bar{display:inline-block;height:13px;border-radius:4px;background:#1f6fb0;vertical-align:middle;margin-right:8px}
+  .bar{display:inline-block;height:13px;border-radius:4px;background:#0072BC;vertical-align:middle;margin-right:8px}
   .bar.bad{background:#b5310a}
   .bar.warn{background:#d4763a}
   tr.sporadic .bar{background:#c4ccd2}
@@ -47,18 +50,18 @@
   .years{display:flex;gap:8px;flex-wrap:wrap}
   .yr{background:#fff;border:1px solid #d9e4e8;border-radius:10px;padding:7px 11px;text-align:center;min-width:74px}
   .yr b{display:block;font-size:15px}
-  .yr span{font-size:11px;color:#5e6a71}
-  .detail-meta{margin:0 0 10px;font-size:12.5px;color:#5e6a71}
+  .yr span{font-size:11px;color:#54576F}
+  .detail-meta{margin:0 0 10px;font-size:12.5px;color:#54576F}
 
   .notes{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:16px 20px;margin-top:18px;font-size:13.5px;color:#3f474d;line-height:1.55}
   .notes h2{font-size:15px;margin:0 0 8px;color:#26272a}
   .foot{color:#8a949b;font-size:12px;margin-top:16px}
-  .loading{padding:40px;text-align:center;color:#5e6a71;font-weight:600}
+  .loading{padding:40px;text-align:center;color:#54576F;font-weight:600}
 </style></head>
 <body><div class="wrap">
   <a class="back-to-dash" href="/">← Dashboard</a>
   <div class="hero">
-    <h1>📊 Site Report Card</h1>
+    <h1>Site Report Card</h1>
     <p>How often each shoreline monitoring site fails the state bacteria standard
     (Enterococcus single-sample max, 104&nbsp;MPN/100mL — the same standard BWTF grading
     and the city's beach postings use), from the city's published lab results.
@@ -81,7 +84,7 @@
     </div>
     <span class="ctl-label">Range:</span>
     <input type="date" id="startDate" min="2020-07-27">
-    <span style="color:#5e6a71">→</span>
+    <span style="color:#54576F">→</span>
     <input type="date" id="endDate" min="2020-07-27">
     <button class="group-btn preset" data-days="">Full record</button>
     <button class="group-btn preset" data-days="730">Last 2 yrs</button>

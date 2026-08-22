@@ -2,21 +2,24 @@
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CSO Event Timeline — Surfrider SF Blue Water Task Force</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box}
-  body{margin:0;background:#e2e8ee;color:#26272a;font-family:'Avenir Next','Trebuchet MS','Segoe UI',sans-serif}
-  a{color:#317fb2}
+  body{margin:0;background:#E3EBF2;color:#26272a;font-family:'Roboto','Segoe UI',Arial,sans-serif}
+  a{color:#0072BC}
   .wrap{max-width:1100px;margin:0 auto;padding:24px}
   .back-to-dash{display:inline-block;margin:0 0 12px;padding:8px 14px;background:#343b44;color:#fff;border-radius:999px;text-decoration:none;font-weight:700;font-size:13px}
   .back-to-dash:hover{background:#26272a}
-  .hero{background:#1f6fb0;color:#fff;border-radius:24px;padding:28px;margin-bottom:20px}
-  .hero h1{margin:6px 0 6px;font-size:28px;text-transform:uppercase;letter-spacing:.03em;color:#fff;-webkit-text-stroke:2px #26272a;paint-order:stroke fill}
+  .hero{background:#0072BC;color:#fff;border-radius:24px;padding:28px;margin-bottom:20px}
+  .hero h1{margin:6px 0 6px;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:38px;text-transform:uppercase;letter-spacing:.06em;color:#fff}
   .hero p{margin:0;color:rgba(255,255,255,.88);font-size:15px;line-height:1.5;max-width:78ch}
 
   .controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:0 0 14px}
-  .range-btn{padding:8px 16px;border-radius:999px;border:2px solid #d9e4e8;background:#fff;color:#5e6a71;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
-  .range-btn.active{border-color:#1f6fb0;background:#1f6fb0;color:#fff}
-  .legend{display:flex;gap:16px;align-items:center;margin-left:auto;font-size:13px;font-weight:600;color:#5e6a71}
+  .range-btn{padding:8px 16px;border-radius:999px;border:2px solid #d9e4e8;background:#fff;color:#54576F;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
+  .range-btn.active{border-color:#0072BC;background:#0072BC;color:#fff}
+  .legend{display:flex;gap:16px;align-items:center;margin-left:auto;font-size:13px;font-weight:600;color:#54576F}
   .legend .key{display:inline-flex;align-items:center;gap:6px}
   .swatch{display:inline-block;width:22px;height:12px;border-radius:4px}
   .swatch.posted{background:#d4763a}
@@ -32,7 +35,7 @@
   .row .name{width:200px;min-width:200px;font-size:13px;font-weight:700;color:#26272a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:10px}
   .row .track{position:relative;flex:1;height:100%}
   .row .nowdot{width:9px;height:9px;border-radius:50%;margin-left:10px;flex:none;background:#d9e4e8}
-  .nowdot.ok{background:#3c9160}
+  .nowdot.ok{background:#237059}
   .nowdot.posted{background:#d4763a}
   .nowdot.cso{background:#b5310a;animation:blink 1.5s infinite}
   @keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
@@ -46,23 +49,23 @@
 
   .axis{position:relative;height:26px;margin-left:200px;margin-right:19px;font-size:11px;color:#8a949b}
   .tick{position:absolute;top:6px;transform:translateX(-50%);white-space:nowrap}
-  .tick.now-label{color:#5e6a71;font-weight:700;transform:translateX(-100%)}
+  .tick.now-label{color:#54576F;font-weight:700;transform:translateX(-100%)}
 
   .banner{border-radius:16px;padding:18px 20px;margin:0 0 14px;font-size:14px;line-height:1.55;background:#fff;border:1px solid #d9e4e8}
   .banner.clean{background:rgba(60,145,96,.10);border-color:rgba(60,145,96,.35)}
   .banner b{color:#26272a}
-  .muted{color:#5e6a71}
+  .muted{color:#54576F}
 
   .tooltip{position:fixed;z-index:10;pointer-events:none;background:#26272a;color:#fff;border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.5;max-width:280px;box-shadow:0 6px 18px rgba(0,0,0,.25);display:none}
   .tooltip b{font-size:13px}
 
   details.tableview{margin-top:16px}
-  details.tableview summary{cursor:pointer;font-size:13px;font-weight:700;color:#5e6a71}
+  details.tableview summary{cursor:pointer;font-size:13px;font-weight:700;color:#54576F}
   details.tableview table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px;background:#fff;border:1px solid #d9e4e8;border-radius:12px;overflow:hidden}
   details.tableview th,details.tableview td{text-align:left;padding:8px 12px;border-bottom:1px solid #eef2f4}
-  details.tableview th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#5e6a71;background:#f7fafb}
+  details.tableview th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#54576F;background:#f7fafb}
 
-  .foot{color:#5e6a71;font-size:12px;line-height:1.6;margin-top:16px}
+  .foot{color:#54576F;font-size:12px;line-height:1.6;margin-top:16px}
   .loading{padding:48px;text-align:center;color:#8a949b}
 </style></head>
 <body><div class="wrap">

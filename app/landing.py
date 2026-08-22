@@ -11,21 +11,23 @@ from flask import render_template
 BWTF_LOGO_URL = "https://bwtf.surfrider.org/images/BWTF-Logo_White.png"
 SURFRIDER_LOGO_URL = "https://f.hubspotusercontent20.net/hubfs/20811975/SF-Horizontal-Logo_RGB_Black_crop_small.png"
 
-# (href, icon, title, blurb) for the three feature cards
+# (href, icon key, title, blurb) for the feature cards. Icon keys map to the
+# inline SVG sprite in landing.html — SVGs render identically on every OS,
+# unlike emoji (Apple/Segoe/Noto each draw their own artwork).
 PAGES = [
-    ("/alerts", "🚨", "Sewage Alert System",
+    ("/alerts", "bell", "Sewage Alert System",
      "Live SFPUC status, bacteria readings, and real-time CSO alerts you can subscribe to by text or email."),
-    ("/forecast", "🔮", "CSO Forecast",
+    ("/forecast", "cloud-rain", "CSO Forecast",
      "Machine-learning forecast of combined-sewer-overflow risk from rainfall — a warning before discharges happen."),
-    ("/compare", "⚖️", "Source Comparison",
+    ("/compare", "scales", "Source Comparison",
      "Surfrider volunteer-lab results vs. official city data for the same beaches, with full history."),
-    ("/bwtf", "🔬", "BWTF Sample Log",
+    ("/bwtf", "flask", "BWTF Sample Log",
      "Every Surfrider volunteer sample — tester, field conditions (weather, tide, waves), and notes."),
-    ("/cso-history", "📈", "CSO Event Timeline",
+    ("/cso-history", "pulse", "CSO Event Timeline",
      "Every posting and sewage-overflow event our real-time watcher has detected, plotted per station."),
-    ("/analysis", "📊", "Site Report Card",
+    ("/analysis", "chart", "Site Report Card",
      "How often each shoreline site fails the state bacteria standard — rankings, storm-season effect, and year-by-year trends from the city's lab data."),
-    ("/discharges", "🧾", "Discharge Ledger",
+    ("/discharges", "receipt", "Discharge Ledger",
      "Every combined-sewer discharge SFPUC reported to regulators since 2016 — outfall, duration, and gallons — by location and year."),
 ]
 
