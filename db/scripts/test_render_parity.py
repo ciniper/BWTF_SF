@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Parity test: the pg renderer (bwtf_render_alert, migration 007) must match
+"""Parity test: the pg renderer (bwtf_render_alert, migration 008) must match
 the Python fallback byte-for-byte — subject, sms_text, text_body, html_body.
 
 If this fails after a format change, update whichever side lagged (format
@@ -18,14 +18,20 @@ from features.alerts.render import _fallback
 from shared import supabase as sb
 
 CASES = [
-    ("single cso", [{"station_id": "4619", "station_name": "Islais Creek", "to": "cso"}], False),
-    ("single posted", [{"station_id": "4616", "station_name": "Windsurfer Circle", "to": "posted"}], False),
-    ("single cso simulated", [{"station_id": "4618", "station_name": "Mission Creek", "to": "cso"}], True),
+    ("single cso", [{"station_id": "4619", "station_name": "Islais Creek", "to": "cso"}], False, None),
+    ("single cso + zone", [{"station_id": "4619", "station_name": "Islais Creek", "to": "cso"}], False, "East Beaches"),
+    ("single posted", [{"station_id": "4616", "station_name": "Windsurfer Circle", "to": "posted"}], False, None),
+    ("single cso simulated + zone", [{"station_id": "4618", "station_name": "Mission Creek", "to": "cso"}], True, "East Beaches"),
     ("multi mixed", [
         {"station_id": "4605", "station_name": "Ocean Beach at Lincoln Way", "to": "posted"},
         {"station_id": "4610", "station_name": "Baker Beach at Lobos Creek", "to": "cso"},
         {"station_id": "4613", "station_name": "Aquatic Park", "to": "posted"},
-    ], True),
+    ], True, None),
+    ("multi + zone", [
+        {"station_id": "4601", "station_name": "Fort Funston", "to": "posted"},
+        {"station_id": "4602", "station_name": "Ocean Beach at Sloat", "to": "cso"},
+    ], False, "Ocean Beach"),
+    ("blank zone equals none", [{"station_id": "4613", "station_name": "Aquatic Park", "to": "posted"}], False, "  "),
 ]
 
 FIELDS = ("subject", "sms_text", "text_body", "html_body")
@@ -35,15 +41,17 @@ def main() -> int:
     if not sb.is_configured():
         print("Supabase env missing — aborting."); return 1
     try:
-        sb.rpc("bwtf_render_alert", {"p_transitions": CASES[0][1], "p_simulated": False})
+        sb.rpc("bwtf_render_alert", {"p_transitions": CASES[0][1],
+                                     "p_simulated": False, "p_zone": None})
     except Exception as exc:
-        print(f"bwtf_render_alert RPC unavailable ({exc}) — paste db/migrations/007 first.")
+        print(f"bwtf_render_alert RPC unavailable ({exc}) — paste db/migrations/008 first.")
         return 1
 
     failures = 0
-    for label, transitions, simulated in CASES:
-        pg = sb.rpc("bwtf_render_alert", {"p_transitions": transitions, "p_simulated": simulated})
-        py = _fallback(transitions, simulated)
+    for label, transitions, simulated, zone in CASES:
+        pg = sb.rpc("bwtf_render_alert", {"p_transitions": transitions,
+                                          "p_simulated": simulated, "p_zone": zone})
+        py = _fallback(transitions, simulated, zone)
         for f in FIELDS:
             if pg.get(f) == py[f]:
                 print(f"PASS {label} · {f}")
