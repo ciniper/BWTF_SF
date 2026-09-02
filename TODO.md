@@ -95,6 +95,29 @@ This roadmap has four parts:
 - [ ] **Alert-type preferences** (from Kyle's mockup's "ALERT ME WHEN"): today every subscriber gets bad-news-only (posted + CSO escalations), by design. Future options: "all-clear when it recovers" and a caution tier — each is a subscriber field + a filter in the pg dispatch recipient query, so changes touch the frozen path and get the behavioral-test treatment.
 - [ ] **Test-alert mirror (REQUIRED before real subscribers — also on the B10 launch checklist):** simulations currently alert every real subscriber of the simulated station (TEST-prefixed but real email). Design: add `subscribers.test_only boolean default false`, flag Chase's test accounts, and add one filter to `bwtf_dispatch_live`'s recipient query — simulated transitions go ONLY to `test_only` subscribers; real transitions go to everyone. Sims become harmless at any list size; the e2e test path stays identical to production.
 - [ ] **At public launch, delete the legacy Python send path** (the `/api/dispatch-cso-alerts` endpoint, the watcher thread's send mode, and the Brevo/SMTP plumbing in `notifiers.py` they use). Until then it stays as the only emergency-fallback sender we own — unreachable in prod (VERCEL guard, UI buttons removed 2026-09-02), retired for real once the pg sender has survived a wet season.
+- [ ] **Email redesign (migration 008 when ready)** — the alert email predates the site's brand
+  adoption and still wears the old design. One SQL edit updates every sender (the 007 payoff);
+  remember the fallback port in `features/alerts/render.py` + `test_render_parity.py` must follow.
+  Callouts from the 2026-09-02 design review:
+  - [ ] Brand palette (#0072BC header, #E3EBF2 surface) + the white BWTF flask logo in the header.
+    (Webfonts get stripped by most email clients — brand colors/logo/layout yes, Bebas headline
+    renders as a bold system-font fallback; that's normal for email.)
+  - [ ] Disclaimer line in every alert: community-science tool, not an official advisory — posted
+    signs and SFPUC/health-department notices always win (same wording as /signup).
+  - [ ] Unsubscribe instruction in the footer ("reply to this email to unsubscribe" now; a real
+    one-click link is on the B10 launch checklist).
+  - [ ] Zone name in the copy ("New events in East Beaches") via `subscribers.region_zone`.
+  - [ ] Severity-colored callout: amber for bacteria postings, red for CSO discharges (currently
+    one red-tinted box for both).
+  - [ ] Second CTA linking to our own dashboard alongside the SFPUC map button.
+  - [ ] **Map image showing the alert location.** Email clients run no JS (no Leaflet) — it must
+    be an `<img>`. Recommended approach: pre-generate 20 per-station + 4 per-zone map PNGs once
+    (OSM tiles + marker, attribution baked in), serve them from the app (e.g. /emailmaps/4619.png),
+    and the renderer just adds an img tag per affected station. Zero third-party runtime
+    dependency, zero send-path risk: rendering stays a pure string builder, and if the image host
+    is ever down the email still delivers (broken-image icon, text intact). Avoid live static-map
+    APIs (Mapbox/Google/Geoapify) — they add a keyed external dependency to every render for no
+    benefit over fixed monitoring points that never move.
 - [ ] **Simplify the alert-rendering/sending pipeline** (Chase, 2026-09-02: "seems a bit complicated" — he's right). Current shape: pg detects + renders (`bwtf_render_alert`, 007) + sends; Python paths render via RPC with a byte-identical local fallback (`features/alerts/render.py`), policed by `db/scripts/test_render_parity.py`. Most of the complexity is scaffolding for the legacy path and dies with it at launch: deleting the Python senders also deletes the fallback port and the parity test, collapsing to ONE renderer (SQL), one sender (pg), zero ports. Audit then; also consider whether rendering should move from a SQL function to a template row in `watcher_config` (editable without a migration) — only worth it if format edits become frequent.
 
 ### B7. Delivery log & uptime/observability
