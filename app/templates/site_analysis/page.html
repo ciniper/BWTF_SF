@@ -5,6 +5,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
   *{box-sizing:border-box}
   body{margin:0;background:#E3EBF2;color:#26272a;font-family:'Roboto','Segoe UI',Arial,sans-serif}
@@ -53,6 +55,14 @@
   .yr span{font-size:11px;color:#54576F}
   .detail-meta{margin:0 0 10px;font-size:12.5px;color:#54576F}
 
+  .map-board{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:16px 18px;margin:0 0 16px}
+  .map-board h2{font-size:16px;margin:2px 0 12px;color:#26272a}
+  #map{height:480px;border-radius:12px}
+  .st-label{background:rgba(255,255,255,.92);border:1px solid #b9c6cd;border-radius:6px;
+    padding:1px 5px;font:700 10.5px 'Roboto','Segoe UI',Arial,sans-serif;color:#26272a;
+    box-shadow:none;white-space:nowrap}
+  .st-label::before{display:none}
+  .leaflet-popup-content{font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:13px}
   .notes{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:16px 20px;margin-top:18px;font-size:13.5px;color:#3f474d;line-height:1.55}
   .notes h2{font-size:15px;margin:0 0 8px;color:#26272a}
   .foot{color:#8a949b;font-size:12px;margin-top:16px}
@@ -89,6 +99,11 @@
     <button class="group-btn preset" data-days="">Full record</button>
     <button class="group-btn preset" data-days="730">Last 2 yrs</button>
     <button class="group-btn preset" data-days="365">Last 12 mo</button>
+  </div>
+
+  <div class="map-board">
+    <h2>Site map <span style="font-weight:600;color:#54576F;font-size:12.5px">— circle size &amp; color = % of samples failing the standard in the current view · click a marker for details</span></h2>
+    <div id="map"></div>
   </div>
 
   <div class="board">
@@ -130,6 +145,46 @@
 <script>
 let DATA = null, activeGroup = "";
 const STATE = { mode: "weekly", start: "", end: "" };
+
+// ─── Site map ────────────────────────────────────────────────────────────────
+let MAP = null, markerLayer = null;
+const shortName = n => n.replace("Ocean Beach at ", "OB ").replace("Baker Beach at Lobos Creek", "Baker Lobos")
+  .replace("Baker Beach ", "Baker ").replace("Crissy Field ", "Crissy ").replace(" Street Pier", " St Pier");
+
+function initMap() {
+  if (MAP) return;
+  MAP = L.map("map", {scrollWheelZoom: false}).setView([37.762, -122.443], 12);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  }).addTo(MAP);
+  markerLayer = L.layerGroup().addTo(MAP);
+}
+
+function updateMap() {
+  if (!MAP || !DATA) return;
+  markerLayer.clearLayers();
+  for (const s of DATA.sites) {
+    const p = s.exceed_pct;
+    const dimmed = activeGroup && s.group !== activeGroup;
+    const grey = !s.routine || p === null;
+    const color = grey ? "#8a949b" : p >= 25 ? "#b5310a" : p >= 12 ? "#d4763a" : "#0072BC";
+    const r = grey ? 6 : 6 + Math.min(p, 40) * 0.5;
+    const m = L.circleMarker([s.lat, s.lon], {
+      radius: dimmed ? Math.min(r, 5) : r,
+      color: dimmed ? "#98a3ab" : color,
+      fillColor: dimmed ? "#c4ccd2" : color,
+      fillOpacity: dimmed ? 0.2 : 0.45, weight: 2,
+    });
+    m.bindTooltip(shortName(s.name), {permanent: true, direction: "right",
+                                      offset: [r > 8 ? r - 2 : 6, 0], className: "st-label"});
+    m.bindPopup(`<b>${s.name}</b> (${s.group})<br>` +
+      (s.samples ? `${pctTxt(p)} of ${s.samples} samples ≥ ${DATA.ssm} MPN in this view<br>` +
+                   `wet ${pctTxt(s.wet.pct)} · dry ${pctTxt(s.dry.pct)}` +
+                   (s.routine ? "" : "<br><i>sporadically sampled — not rankable</i>")
+                 : "no samples in the selected range/mode"));
+    markerLayer.addLayer(m);
+  }
+}
 
 const groupChip = g => g === "East Bayshore" ? '<span class="chip east">East</span>'
                     : g === "Ocean"          ? '<span class="chip ocean">Ocean</span>'
@@ -174,6 +229,7 @@ function render() {
     tb.appendChild(tr);
     tb.appendChild(detail);
   }
+  updateMap();
 }
 
 async function load() {
@@ -198,6 +254,7 @@ async function load() {
   sd.max = ed.max = DATA.newest_sample;
   if (!sd.value && DATA.start) sd.value = DATA.start;
   if (!ed.value && DATA.end) ed.value = DATA.end;
+  initMap();
   render();
 }
 
