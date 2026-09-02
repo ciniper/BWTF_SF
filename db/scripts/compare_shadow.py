@@ -68,6 +68,9 @@ def main() -> int:
         "source": "in.(watcher,pg_shadow,pg_live,thread_shadow)",
         "order": "created_at.asc",
     })
+    # 'cleared' rows (event_type added by migration 006) are pg-only log
+    # entries — the thread never logged downgrades, so they can't match.
+    rows = [r for r in rows if r["event_type"] != "cleared"]
     by_source: dict[str, list[dict]] = {}
     for r in rows:
         by_source.setdefault(r["source"], []).append(r)

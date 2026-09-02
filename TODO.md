@@ -59,6 +59,9 @@ This roadmap has four parts:
 
 ### B2. Better dashboard UI
 - [x] ~~Break up the ~1,695-line `dashboard.py`~~ — done via the feature-package restructure + Jinja2 templates (`app/templates/`).
+- [x] **Brand design system adopted (2026-09, from Kyle's mockup)** — Surfrider blue #0072BC, Bebas Neue + Roboto, SVG icon sprite replacing emoji (emoji render per-OS — the iPhone/PC inconsistency), consistent chrome across all pages except /forecast (own branch's surface).
+- [ ] **Design-branch workflow for future visual changes**: cut `design/*` branches so Vercel builds preview deployments — a shareable before/after URL while prod keeps the current look. Needs Deployment Protection relaxed for previews in the Vercel project settings; note Railway only deploys `main`. Use for the next design round (Kyle's product concepts).
+- [ ] **Kyle's mockup product concepts** (design doc, ~/Downloads/SF Beach Safety Dashboard.html — see the unpack recipe in the design commit): "About the System" explainer, "How the Model Works", per-Beach Detail pages, "Report What You See" crowdsourcing, "Can I Swim in SF Today?" one-answer page (a natural HubSpot embed), 7-day day-by-day map view.
 - [ ] In-dashboard lab-results view instead of opening the raw SF Gov query in a new tab. *(carried from prior TODO)*
 - [ ] Add a real map view — station lat/lon is already in the data — so CSO/posted sites are visual.
 - [ ] Subscriber self-service (edit/unsubscribe) in the UI *(see B4)*.
