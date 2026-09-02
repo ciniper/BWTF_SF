@@ -15,6 +15,8 @@ SURFRIDER_LOGO_URL = "https://f.hubspotusercontent20.net/hubfs/20811975/SF-Horiz
 # inline SVG sprite in landing.html — SVGs render identically on every OS,
 # unlike emoji (Apple/Segoe/Noto each draw their own artwork).
 PAGES = [
+    ("/signup", "mail", "Get Beach Alerts",
+     "Pick your beach areas and get one email when the water turns bad — a new posting or an active sewage discharge. Nothing else, ever."),
     ("/alerts", "bell", "Sewage Alert System",
      "Live SFPUC status, bacteria readings, and real-time CSO alerts you can subscribe to by text or email."),
     ("/forecast", "cloud-rain", "CSO Forecast",

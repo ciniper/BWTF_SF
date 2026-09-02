@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Get Beach Alerts — Surfrider SF Blue Water Task Force</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#E3EBF2;color:#26272A;font-family:'Roboto','Segoe UI',Arial,sans-serif}
+  .wrap{max-width:1100px;margin:0 auto;padding:24px}
+  .back-to-dash{display:inline-block;margin:0 0 12px;padding:8px 14px;background:#343b44;color:#fff;border-radius:999px;text-decoration:none;font-weight:700;font-size:13px}
+  .back-to-dash:hover{background:#26272A}
+
+  .panel{display:grid;grid-template-columns:5fr 6fr;background:#fff;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(38,39,42,.08)}
+  @media (max-width:840px){.panel{grid-template-columns:1fr}}
+  .left{background:linear-gradient(160deg,#0072BC 0%,#005a96 70%,#00456f 100%);color:#fff;padding:34px 30px;display:flex;flex-direction:column}
+  .kicker{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#85BFDF}
+  .left h1{margin:10px 0 12px;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:52px;line-height:.95;text-transform:uppercase;letter-spacing:.04em}
+  .left p{margin:0 0 8px;font-size:15.5px;line-height:1.55;color:rgba(255,255,255,.9)}
+  .disclaimer{margin-top:auto;padding-top:24px;font-size:12.5px;color:#85BFDF;line-height:1.5;border-top:1px solid rgba(255,255,255,.18)}
+  .left img{height:56px;width:auto;align-self:flex-start;margin-bottom:18px;opacity:.95}
+
+  .right{padding:30px}
+  .flabel{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#54576F;margin:0 0 8px}
+  .flabel .count{float:right;font-weight:600;text-transform:none;letter-spacing:0}
+  input[type=email]{width:100%;padding:13px 14px;border:2px solid #d9e4e8;border-radius:12px;font-family:inherit;font-size:15px;margin-bottom:20px}
+  input[type=email]:focus{outline:none;border-color:#0072BC}
+  .hp{position:absolute;left:-6000px;top:-6000px}
+
+  .zones{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+  @media (max-width:520px){.zones{grid-template-columns:1fr}}
+  .zone{display:block;border:2px solid #d9e4e8;border-radius:14px;padding:12px 14px;cursor:pointer;background:#fff;transition:border-color .1s,background .1s}
+  .zone.on{border-color:#0072BC;background:#eef6fc}
+  .zone input{accent-color:#0072BC;width:17px;height:17px;vertical-align:-3px;margin-right:8px}
+  .zone .zname{font-weight:700;font-size:14.5px}
+  .zone .zsites{margin:5px 0 0 25px;font-size:11.5px;color:#54576F;line-height:1.45}
+
+  #map{height:240px;border-radius:14px;margin-bottom:16px;border:1px solid #d9e4e8}
+  .maphint{font-size:11.5px;color:#8a949b;margin:-10px 0 16px}
+
+  .note{font-size:12.5px;color:#54576F;line-height:1.5;margin:0 0 16px}
+  button.go{width:100%;padding:15px;border:0;border-radius:12px;background:#0072BC;color:#fff;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer}
+  button.go:hover{background:#005a96}
+  button.go:disabled{background:#9db8c9;cursor:default}
+  .msg{margin-top:12px;padding:12px 14px;border-radius:12px;font-size:14px;display:none}
+  .msg.ok{display:block;background:#e6f2ec;color:#237059;font-weight:600}
+  .msg.err{display:block;background:#fdeceb;color:#a63a30;font-weight:600}
+  .st-label{background:rgba(255,255,255,.92);border:1px solid #b9c6cd;border-radius:6px;padding:0 4px;font:700 10px 'Roboto',sans-serif;color:#26272A;white-space:nowrap;box-shadow:none}
+  .st-label::before{display:none}
+</style></head>
+<body><div class="wrap">
+  <a class="back-to-dash" href="/">← Dashboard</a>
+  <div class="panel">
+    <div class="left">
+      <img src="https://bwtf.surfrider.org/images/BWTF-Logo_White.png" alt="Blue Water Task Force">
+      <span class="kicker">Email Alerts</span>
+      <h1>Know Before<br>You Go</h1>
+      <p>One email when a beach you follow is posted for bacteria or has a sewage discharge.</p>
+      <p>No daily digest, no marketing. Reply to any alert to unsubscribe.</p>
+      <div class="disclaimer">🛡 Alerts are a community-science tool, not an official advisory.
+      Posted signs and SFPUC or health-department notices always win.</div>
+    </div>
+    <div class="right">
+      <form id="f" autocomplete="off">
+        <p class="flabel">Your email</p>
+        <input type="email" id="email" placeholder="you@example.com" required>
+        <input class="hp" type="text" id="website" name="website" tabindex="-1" aria-hidden="true">
+
+        <p class="flabel">Which areas? <span class="count" id="selCount">0 selected</span></p>
+        <div class="zones" id="zones"></div>
+        <div id="map"></div>
+        <p class="maphint">Selected areas light up — each dot is a city monitoring station your alerts will cover.</p>
+
+        <p class="note">You'll get an email only when a site in your areas turns <b>bad</b> — a new
+        bacteria posting or an active sewage discharge. All-clear and caution notes are on the roadmap.</p>
+        <button class="go" id="go" type="submit">Sign up</button>
+        <div class="msg" id="msg"></div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+const ZONES = {{ zones_json | safe }};
+const selected = new Set();
+
+const zonesEl = document.getElementById("zones");
+for (const z of ZONES) {
+  const lab = document.createElement("label");
+  lab.className = "zone";
+  lab.innerHTML = `<span class="zname"><input type="checkbox" value="${z.key}">${z.label}</span>
+    <div class="zsites">${z.stations.map(s => s.name).join(" · ")}</div>`;
+  zonesEl.appendChild(lab);
+}
+
+const MAP = L.map("map", {scrollWheelZoom: false, zoomControl: false}).setView([37.765, -122.45], 11);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+  {maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(MAP);
+const markers = {};
+for (const z of ZONES) for (const s of z.stations) {
+  markers[s.id] = {zone: z.key, name: s.name,
+    m: L.circleMarker([s.lat, s.lon], {radius: 5, color: "#98a3ab", fillColor: "#c4ccd2",
+                                       fillOpacity: .5, weight: 2}).addTo(MAP).bindTooltip(s.name)};
+}
+
+function refresh() {
+  document.getElementById("selCount").textContent = selected.size + " selected";
+  document.querySelectorAll(".zone").forEach(el =>
+    el.classList.toggle("on", selected.has(el.querySelector("input").value)));
+  const bounds = [];
+  for (const info of Object.values(markers)) {
+    const on = selected.has(info.zone);
+    info.m.setStyle(on ? {color: "#0072BC", fillColor: "#0072BC", fillOpacity: .75, radius: 7}
+                       : {color: "#98a3ab", fillColor: "#c4ccd2", fillOpacity: .5, radius: 5});
+    if (on) bounds.push(info.m.getLatLng());
+  }
+  if (bounds.length) MAP.fitBounds(L.latLngBounds(bounds).pad(0.35));
+  else MAP.setView([37.765, -122.45], 11);
+}
+zonesEl.addEventListener("change", e => {
+  const cb = e.target;
+  cb.checked ? selected.add(cb.value) : selected.delete(cb.value);
+  refresh();
+});
+
+document.getElementById("f").addEventListener("submit", async e => {
+  e.preventDefault();
+  const go = document.getElementById("go"), msg = document.getElementById("msg");
+  msg.className = "msg";
+  go.disabled = true; go.textContent = "Signing up…";
+  try {
+    const resp = await fetch("/signup/api/subscribe", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({email: document.getElementById("email").value,
+                            zones: [...selected],
+                            website: document.getElementById("website").value}),
+    });
+    const d = await resp.json();
+    if (d.ok) {
+      msg.className = "msg ok";
+      msg.textContent = `✔ You're signed up for ${d.zones} — ${d.station_count} monitoring sites covered. ` +
+                        `You'll only hear from us when one of them turns bad.`;
+      go.textContent = "Signed up ✔";
+    } else {
+      msg.className = "msg err"; msg.textContent = d.error || "Something went wrong.";
+      go.disabled = false; go.textContent = "Sign up";
+    }
+  } catch {
+    msg.className = "msg err"; msg.textContent = "Network hiccup — try again.";
+    go.disabled = false; go.textContent = "Sign up";
+  }
+});
+refresh();
+</script>
+</body></html>

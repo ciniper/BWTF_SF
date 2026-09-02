@@ -45,6 +45,7 @@ from flask import Flask, Response, redirect, render_template, request, session
 import features.cso_history.page as cso_history_page
 import features.discharges.page as discharges_page
 import features.forecast.page as forecast_page
+import features.signup.page as signup_page
 import features.site_analysis.page as site_analysis_page
 from features.alerts.page import AlertsRoutes
 from features.comparison.page import ComparisonRoutes
@@ -212,7 +213,7 @@ def _forecast_view(handler):
     (the functional contract the forecast and cso-history features use)."""
     def view(**kwargs):
         params = parse_qs(urlparse(request.full_path).query)
-        status, content_type, body = handler(params, None)
+        status, content_type, body = handler(params, request.get_data())
         return Response(body, status=status, content_type=content_type)
     return view
 
@@ -281,6 +282,14 @@ def create_app():
     # Discharge ledger (public read-only; static CSD dataset from CIWQS SMRs)
     for path, handler in discharges_page.GET_ROUTES.items():
         app.add_url_rule(path, f"discharges-get:{path}", _forecast_view(handler), methods=["GET"])
+
+    # Alert signup — deliberately UNGATED, including its POST: this is the one
+    # alerts surface meant for the public (zone subscribe, email only; the
+    # endpoint does its own validation + honeypot — hardening list in TODO B10).
+    for path, handler in signup_page.GET_ROUTES.items():
+        app.add_url_rule(path, f"signup-get:{path}", _forecast_view(handler), methods=["GET"])
+    for path, handler in signup_page.POST_ROUTES.items():
+        app.add_url_rule(path, f"signup-post:{path}", _forecast_view(handler), methods=["POST"])
 
     # No forecast refresh thread: predictions are compute-on-visit, cached in
     # Supabase (forecast_predictions) — /forecast/api/data refreshes on staleness.
