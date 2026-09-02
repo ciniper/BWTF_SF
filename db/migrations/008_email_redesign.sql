@@ -1,5 +1,7 @@
 -- 008: email redesign — brand header + logo, per-station map thumbnails,
--- severity colors, zone name, disclaimer, second CTA, unsubscribe footer.
+-- severity colors, zone name, disclaimer, unsubscribe footer.
+-- (A second CTA to our /forecast page was built then pulled 2026-09-02 —
+-- Chase wants the alert to stay single-purpose for now.)
 --
 -- Design notes (2026-09-02 email design review):
 --   * Table-based layout, inline styles only — email clients strip <style>
@@ -76,8 +78,7 @@ begin
          string_agg('- ' || (t->>'station_name') || ': ' ||
            case t->>'to' when 'cso' then 'CSO discharge — avoid water contact for 72 hours.'
                          else 'bacteria posting — water contact not recommended.' end, E'\n')
-         || E'\n\nLive map: https://webapps.sfpuc.org/sapps/beachesandbay.html'
-         || E'\nForecast: https://bwtf-sf.vercel.app/forecast\n\n'
+         || E'\n\nLive map: https://webapps.sfpuc.org/sapps/beachesandbay.html\n\n'
          || E'Alerts are a community-science tool, not an official advisory. Posted signs and SFPUC or health-department notices always win.\n\n'
          || 'You subscribed to SF beach alerts (Surfrider SF Blue Water Task Force). Reply "unsubscribe" to stop.'
     into text_body
@@ -128,10 +129,7 @@ begin
       || '<p style="margin:18px 0 0;">'
       || '<a href="https://webapps.sfpuc.org/sapps/beachesandbay.html" '
       || 'style="display:inline-block;background:#0072BC;color:#ffffff;text-decoration:none;'
-      || 'padding:11px 18px;border-radius:999px;font-weight:700;font-size:14px;">View SFPUC Beach Map</a>'
-      || '&nbsp; <a href="https://bwtf-sf.vercel.app/forecast" '
-      || 'style="display:inline-block;background:#ffffff;color:#0072BC;border:2px solid #0072BC;'
-      || 'text-decoration:none;padding:9px 18px;border-radius:999px;font-weight:700;font-size:14px;">SF Beach Forecast</a></p>'
+      || 'padding:11px 18px;border-radius:999px;font-weight:700;font-size:14px;">View SFPUC Beach Map</a></p>'
       || '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
       || 'style="margin:18px 0 0;background:#E3EBF2;border-radius:12px;"><tr>'
       || '<td style="padding:12px 14px;font-size:12.5px;color:#54576F;line-height:1.5;">'

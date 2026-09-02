@@ -25,7 +25,6 @@ from __future__ import annotations
 from shared import supabase as sb
 
 MAP_URL = "https://webapps.sfpuc.org/sapps/beachesandbay.html"
-FORECAST_URL = "https://bwtf-sf.vercel.app/forecast"
 THUMB_BASE = "https://bwtf-sf.vercel.app/static/emailmaps"
 LOGO_URL = "https://bwtf.surfrider.org/images/BWTF-Logo_White.png"
 _LABEL = {"cso": "CSO discharge", "posted": "bacteria posting"}
@@ -75,8 +74,7 @@ def _fallback(transitions: list[dict], simulated: bool, zone: str | None = None)
         + "\n\nNew events at your selected sites:\n"
         + "\n".join(f"- {t['station_name']}: {_LINE_ADVICE.get(t['to'], _LINE_ADVICE['posted'])}"
                     for t in transitions)
-        + f"\n\nLive map: {MAP_URL}"
-        + f"\nForecast: {FORECAST_URL}\n\n"
+        + f"\n\nLive map: {MAP_URL}\n\n"
         + "Alerts are a community-science tool, not an official advisory. "
         + "Posted signs and SFPUC or health-department notices always win.\n\n"
         + 'You subscribed to SF beach alerts (Surfrider SF Blue Water Task Force). Reply "unsubscribe" to stop.'
@@ -127,10 +125,7 @@ def _fallback(transitions: list[dict], simulated: bool, zone: str | None = None)
         '<p style="margin:18px 0 0;">'
         f'<a href="{MAP_URL}" '
         'style="display:inline-block;background:#0072BC;color:#ffffff;text-decoration:none;'
-        'padding:11px 18px;border-radius:999px;font-weight:700;font-size:14px;">View SFPUC Beach Map</a>'
-        f'&nbsp; <a href="{FORECAST_URL}" '
-        'style="display:inline-block;background:#ffffff;color:#0072BC;border:2px solid #0072BC;'
-        'text-decoration:none;padding:9px 18px;border-radius:999px;font-weight:700;font-size:14px;">SF Beach Forecast</a></p>'
+        'padding:11px 18px;border-radius:999px;font-weight:700;font-size:14px;">View SFPUC Beach Map</a></p>'
         '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
         'style="margin:18px 0 0;background:#E3EBF2;border-radius:12px;"><tr>'
         '<td style="padding:12px 14px;font-size:12.5px;color:#54576F;line-height:1.5;">'
