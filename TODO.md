@@ -93,6 +93,8 @@ This roadmap has four parts:
 - [x] **Shipped with the watcher**: last-known state persists in `data/alert_watcher_state.json`; alerts fire only on transitions to a *more severe* state (safe→posted, safe→CSO, posted→CSO), once per event. Never-seen stations (first boot / fresh deploy — the state file is ephemeral on PaaS) baseline silently, so a deploy can't re-alert standing conditions.
 - [ ] Add throttling / quiet hours, and an explicit "all-clear" message when an event ends (recoveries currently just update state silently — the data for it exists since migration 006 logs `cleared` transitions).
 - [ ] **Alert-type preferences** (from Kyle's mockup's "ALERT ME WHEN"): today every subscriber gets bad-news-only (posted + CSO escalations), by design. Future options: "all-clear when it recovers" and a caution tier — each is a subscriber field + a filter in the pg dispatch recipient query, so changes touch the frozen path and get the behavioral-test treatment.
+- [ ] **Test-alert mirror (REQUIRED before real subscribers — also on the B10 launch checklist):** simulations currently alert every real subscriber of the simulated station (TEST-prefixed but real email). Design: add `subscribers.test_only boolean default false`, flag Chase's test accounts, and add one filter to `bwtf_dispatch_live`'s recipient query — simulated transitions go ONLY to `test_only` subscribers; real transitions go to everyone. Sims become harmless at any list size; the e2e test path stays identical to production.
+- [ ] **At public launch, delete the legacy Python send path** (old email template in `notifiers.py`/`cso_alerts.py`, the `/api/dispatch-cso-alerts` endpoint, and the watcher thread's send mode). Until then it stays as the only emergency-fallback sender we own — unreachable in prod (VERCEL guard, UI buttons removed 2026-09-02), retired for real once the pg sender has survived a wet season.
 
 ### B7. Delivery log & uptime/observability
 - [x] **CSO event timeline (shipped)** — `/cso-history` plots our own real-time detections per station from `alert_log` (detection minute → clear minute), public read-only; the API selects `results->transitions` only, so recipient data never leaves the DB. Migration 006 extends `bwtf_process_payload` to also log downgrades (`event_type='cleared'`, `channel='log'`, recipient_count=0, no dispatch) so event windows have ends; pre-006 events render "end not recorded". Sources: `watcher`/`pg_shadow`/`pg_live`, simulated excluded; empty state shows the live station roster + clean-water streak.
@@ -114,6 +116,8 @@ Publicizing that page IS the public launch, which trips all of the following at 
 - [ ] Privacy policy for storing emails (and phone numbers, if SMS ever moves to the public form).
 - [ ] Explicit opt-in consent capture + one-click unsubscribe link in every alert email (B4).
 - [ ] **Supabase Pro-org transfer** (real DB backups for subscriber PII — the standing trigger: first real subscriber).
+- [ ] **Test-alert mirror** (see B6) — must land before the list has real people on it, or every simulation spams them.
+- [ ] Delete the legacy Python send path once the pg sender has survived a wet season (see B6).
 - [ ] Consider a custom domain + the HubSpot embed conversation (see /pers).
 
 ## Open decisions (these shape the sewage-alert work above)
