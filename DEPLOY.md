@@ -1,8 +1,15 @@
 # Deploying the dashboard
 
+**Current hosting (since 2026-09-02): Vercel only** — `bwtf-sf.vercel.app`,
+auto-deploying `main`. The Railway deployment was retired 2026-09-02 after a
+two-week parallel run (its last jobs — the observer thread's keep-alive reads
+and the subscriber JSON mirror — were handed to the hourly pg keep-alive ping
+and accepted as a pre-launch gap respectively). The Railway/gunicorn sections
+below are kept for reference: the app still runs anywhere Python runs.
+
 The app is a Flask + gunicorn web server (`app/wsgi.py`). It runs anywhere that
-runs Python — these notes cover **Railway**, but Render / Fly / a VPS are the
-same idea.
+runs Python — these notes cover **Railway** (retired), but Render / Fly / a VPS
+are the same idea.
 
 ## What's already in the repo for hosting
 
@@ -63,11 +70,11 @@ What deliberately does **not** run on Vercel:
   once Railway retires, the warm backup is gone until the Pro-org transfer
   (acceptable pre-launch with test accounts only).
 
-Transition plan: run Vercel **alongside** Railway (nothing depends on Vercel
-until you point people at it). Before retiring Railway: seed
-`watcher_config.keepalive_url` so the hourly pg cron takes over the free-tier
-keep-alive from the thread's 2-min reads, and accept that `thread_shadow`
-comparator rows stop.
+Transition: DONE. Vercel ran alongside Railway 2026-08-20 → 09-02; the final
+comparator run was clean (including a real event on 2026-09-01 handled
+end-to-end), `watcher_config.keepalive_url` now points the hourly pg cron at
+`/forecast/api/data` (Supabase gateway activity + keeps the forecast warm —
+verified firing), and Railway was deleted. `thread_shadow` rows ended with it.
 
 ## Local
 
