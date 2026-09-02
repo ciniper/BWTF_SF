@@ -13,6 +13,7 @@ from pathlib import Path
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
+from features.alerts.render import render_alert
 from features.alerts.notifiers import (
     EmailNotifier,
     EmailToSMSNotifier,
@@ -98,69 +99,6 @@ def apply_simulated_cso(stations: list[SFPUCStation], simulated_station_ids: lis
     return updated
 
 
-def format_cso_subscription_message(stations: list[SFPUCStation], simulated: bool = False) -> str:
-    site_names = [station.station_name for station in stations]
-    prefix = "TEST CSO alert" if simulated else "CSO alert"
-    message = f"🚨 SF Beach {prefix}: " + ", ".join(site_names)
-    message += ". Avoid water contact. Map: https://webapps.sfpuc.org/sapps/beachesandbay.html"
-    if len(message) > 320:
-        message = message[:317] + "..."
-    return message
-
-
-def format_cso_email_subject(stations: list[SFPUCStation], simulated: bool = False) -> str:
-    prefix = "TEST " if simulated else ""
-    if len(stations) == 1:
-        return f"{prefix}SF Beach CSO Alert: {stations[0].station_name}"
-    return f"{prefix}SF Beach CSO Alert: {len(stations)} selected sites"
-
-
-def format_cso_email_body(stations: list[SFPUCStation], simulated: bool = False) -> tuple[str, str]:
-    site_lines = "\n".join(f"- {station.station_name}" for station in stations)
-    prefix = "TEST " if simulated else ""
-    text = (
-        f"{prefix}SF Beach CSO Alert\n\n"
-        "Combined sewer overflow conditions are active for your selected sites:\n"
-        f"{site_lines}\n\n"
-        "Avoid water contact and check the SFPUC map for the latest status:\n"
-        "https://webapps.sfpuc.org/sapps/beachesandbay.html\n"
-    )
-    html_items = "".join(f"<li>{station.station_name}</li>" for station in stations)
-    html = (
-        "<html>"
-        "<body style=\"margin:0; padding:24px; background:#f5f6f7; font-family:'Avenir Next','Trebuchet MS','Segoe UI',sans-serif; color:#26272a;\">"
-        "<div style=\"max-width:680px; margin:0 auto; background:#ffffff; border-radius:28px; overflow:hidden; box-shadow:0 18px 40px rgba(38,39,42,0.12);\">"
-        "<div style=\"background:linear-gradient(135deg, #26272a 0%, #317fb2 100%); padding:24px;\">"
-        "<div style=\"display:flex; gap:12px; flex-wrap:wrap; align-items:center; justify-content:space-between;\">"
-        "<div style=\"display:inline-block; background:rgba(255,255,255,0.12); color:#ffffff; border:1px solid rgba(255,255,255,0.16); border-radius:999px; padding:8px 12px; font-size:12px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase;\">"
-        "Surfrider SF Blue Water Task Force"
-        "</div>"
-        f"<img src=\"{BWTF_LOGO_URL}\" alt=\"Blue Water Task Force\" style=\"display:block; width:180px; max-width:100%; height:auto;\">"
-        "</div>"
-        f"<h1 style=\"margin:18px 0 8px; color:#ffffff; font-size:30px; line-height:1; text-transform:uppercase; letter-spacing:0.03em;\">{prefix}SF Beach CSO Alert</h1>"
-        "<p style=\"margin:0; color:rgba(255,255,255,0.84); font-size:15px;\">Combined sewer overflow conditions are active for one or more of your selected sites.</p>"
-        "</div>"
-        "<div style=\"padding:24px;\">"
-        f"<img src=\"{SURFRIDER_LOGO_URL}\" alt=\"Surfrider Foundation\" style=\"display:block; width:240px; max-width:100%; height:auto; margin-bottom:16px;\">"
-        "<div style=\"background:rgba(255,65,0,0.10); border-radius:18px; padding:16px 18px; margin-bottom:18px;\">"
-        "<p style=\"margin:0 0 10px; color:#26272a; font-weight:700;\">Affected sites</p>"
-        f"<ul style=\"margin:0; padding-left:18px; color:#26272a; line-height:1.6;\">{html_items}</ul>"
-        "</div>"
-        "<div style=\"background:#f7fafb; border:1px solid #d9e4e8; border-radius:18px; padding:16px 18px;\">"
-        "<p style=\"margin:0 0 10px; color:#26272a; font-weight:700;\">What to do</p>"
-        "<p style=\"margin:0; color:#5e6a71; line-height:1.6;\">Avoid water contact and check the live map before heading out.</p>"
-        "</div>"
-        "<div style=\"margin-top:22px;\">"
-        "<a href=\"https://webapps.sfpuc.org/sapps/beachesandbay.html\" style=\"display:inline-block; background:#317fb2; color:#ffffff; text-decoration:none; padding:12px 18px; border-radius:999px; font-weight:700;\">View SFPUC Beach Map</a>"
-        "</div>"
-        "</div>"
-        "</div>"
-        "</body>"
-        "</html>"
-    )
-    return text, html
-
-
 def dispatch_subscription_alerts(
     subscriptions: list[SiteSubscription],
     stations: list[SFPUCStation],
@@ -196,7 +134,14 @@ def dispatch_subscription_alerts(
 
         station_ids = [station.station_id for station in matching_stations]
         is_simulated = any(station_id in simulated_station_id_set for station_id in station_ids)
-        message = format_cso_subscription_message(matching_stations, simulated=is_simulated)
+        # Shared renderer (same output as the production pg sender) — manual
+        # dispatches are indistinguishable from automatic ones in the inbox.
+        rendered = render_alert(
+            [{"station_id": s.station_id, "station_name": s.station_name, "to": "cso"}
+             for s in matching_stations],
+            is_simulated,
+        )
+        message = rendered["sms_text"]
 
         delivery = "preview"
         delivered = False
@@ -205,10 +150,9 @@ def dispatch_subscription_alerts(
         if channel == "email":
             if smtp_email_configured and subscription.email:
                 try:
-                    subject = format_cso_email_subject(matching_stations, simulated=is_simulated)
-                    text_body, html_body = format_cso_email_body(matching_stations, simulated=is_simulated)
                     notifier = EmailNotifier(to_emails=[subscription.email])
-                    delivered = notifier.send_message(subject, text_body, [subscription.email], html_body)
+                    delivered = notifier.send_message(rendered["subject"], rendered["text_body"],
+                                                      [subscription.email], rendered["html_body"])
                     delivery = "email" if delivered else "failed"
                     if not delivered:
                         error = notifier.last_error

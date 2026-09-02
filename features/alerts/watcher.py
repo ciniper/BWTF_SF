@@ -46,17 +46,12 @@ from features.alerts.subscriptions import SubscriptionStore
 from shared import supabase as sb
 from shared.paths import DATA_DIR
 from shared.sfpuc_api import SFPUCRealTimeAPI
+from features.alerts.render import render_alert
 
 STATE_PATH = DATA_DIR / "alert_watcher_state.json"
 DEFAULT_INTERVAL_SECONDS = 120
-SFPUC_MAP_URL = "https://webapps.sfpuc.org/sapps/beachesandbay.html"
 
 _SEVERITY = {"ok": 0, "posted": 1, "cso": 2}
-_EVENT_LABEL = {"posted": "bacteria posting", "cso": "CSO discharge"}
-_EVENT_ADVICE = {
-    "posted": "Elevated bacteria levels — water contact not recommended.",
-    "cso": "Combined sewer overflow — avoid water contact for 72 hours.",
-}
 
 _started = False
 _run_lock = threading.Lock()
@@ -130,56 +125,16 @@ def detect_transitions(previous: dict, stations) -> list[dict]:
 
 
 def _format_messages(matching: list[dict], simulated: bool) -> tuple[str, str, str, str]:
-    """(subject, sms_text, text_body, html_body) for one subscriber's events."""
-    prefix = "TEST " if simulated else ""
-    names = [t["station"].station_name for t in matching]
-    if len(matching) == 1:
-        t = matching[0]
-        subject = f"{prefix}SF Beach Alert: {_EVENT_LABEL[t['to']]} at {t['station'].station_name}"
-    else:
-        subject = f"{prefix}SF Beach Alert: {len(matching)} sites affected"
+    """(subject, sms_text, text_body, html_body) for one subscriber's events.
 
-    lines = [f"- {t['station'].station_name}: {_EVENT_LABEL[t['to']]}" for t in matching]
-    sms_text = f"🚨 {prefix}SF Beach alert: " + "; ".join(
-        f"{t['station'].station_name} ({_EVENT_LABEL[t['to']]})" for t in matching
-    ) + f". Avoid water contact. Map: {SFPUC_MAP_URL}"
-    if len(sms_text) > 320:
-        sms_text = sms_text[:317] + "..."
-
-    advice = sorted({_EVENT_ADVICE[t["to"]] for t in matching})
-    text_body = (
-        f"{prefix}SF Beach Water Quality Alert\n\n"
-        "New events at your selected sites:\n" + "\n".join(lines) + "\n\n"
-        + "\n".join(advice) + "\n\n"
-        f"Live map: {SFPUC_MAP_URL}\n\n"
-        "You are receiving this because you subscribed on the Surfrider SF BWTF dashboard."
-    )
-
-    html_items = "".join(
-        f"<li><b>{t['station'].station_name}</b> — {_EVENT_LABEL[t['to']]}</li>" for t in matching
-    )
-    html_advice = "".join(f"<p style=\"margin:0 0 6px; color:#5e6a71; line-height:1.6;\">{a}</p>" for a in advice)
-    html_body = (
-        "<html><body style=\"margin:0; padding:24px; background:#e2e8ee; "
-        "font-family:'Avenir Next','Trebuchet MS','Segoe UI',sans-serif; color:#26272a;\">"
-        "<div style=\"max-width:640px; margin:0 auto; background:#ffffff; border-radius:24px; overflow:hidden;\">"
-        "<div style=\"background:#1f6fb0; padding:22px 24px;\">"
-        "<div style=\"color:rgba(255,255,255,0.85); font-size:12px; font-weight:700; "
-        "letter-spacing:0.12em; text-transform:uppercase;\">Blue Water Task Force • Surfrider SF</div>"
-        f"<h1 style=\"margin:10px 0 0; color:#ffffff; font-size:26px;\">{prefix}Beach Water Quality Alert</h1>"
-        "</div>"
-        "<div style=\"padding:22px 24px;\">"
-        "<div style=\"background:rgba(209,92,92,0.10); border-radius:16px; padding:14px 16px; margin-bottom:16px;\">"
-        "<p style=\"margin:0 0 8px; font-weight:700;\">New events at your sites</p>"
-        f"<ul style=\"margin:0; padding-left:18px; line-height:1.6;\">{html_items}</ul>"
-        "</div>"
-        f"{html_advice}"
-        f"<p style=\"margin:16px 0 0;\"><a href=\"{SFPUC_MAP_URL}\" "
-        "style=\"display:inline-block; background:#317fb2; color:#ffffff; text-decoration:none; "
-        "padding:11px 16px; border-radius:999px; font-weight:700;\">View SFPUC Beach Map</a></p>"
-        "</div></div></body></html>"
-    )
-    return subject, sms_text, text_body, html_body
+    Rendering is delegated to the shared renderer (bwtf_render_alert via RPC,
+    with a byte-identical local fallback) so this path can never drift from
+    the production pg sender's format — see features/alerts/render.py."""
+    payload = [{"station_id": t["station"].station_id,
+                "station_name": t["station"].station_name,
+                "to": t["to"]} for t in matching]
+    r = render_alert(payload, simulated)
+    return r["subject"], r["sms_text"], r["text_body"], r["html_body"]
 
 
 def dispatch_transition_alerts(subscriptions, transitions: list[dict],

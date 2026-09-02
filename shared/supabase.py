@@ -116,6 +116,11 @@ def update(table: str, filters: dict, patch: dict) -> list[dict]:
     return response.json()
 
 
+def rpc(function: str, payload: dict):
+    """POST /rest/v1/rpc/<function> — call a Postgres function; returns its JSON."""
+    return _request("POST", f"rpc/{function}", json_body=payload).json()
+
+
 def delete(table: str, filters: dict) -> int:
     """DELETE matching rows; returns how many were removed."""
     response = _request("DELETE", table, params=dict(filters),
