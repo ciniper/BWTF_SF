@@ -31,6 +31,12 @@ if __package__ in (None, ""):
 
 import requests
 
+from shared.stations import (  # noqa: E402 — needs the sys.path bootstrap above
+    SFPUC_TO_SFGOV_SOURCES,
+    STATION_BASINS as STATION_DRAINAGE_BASINS,
+    STATION_NAMES,
+)
+
 # California State Standards for Beach Water Quality (per 100mL)
 # Based on AB 411 / California Code of Regulations, Title 17, Section 7958
 #
@@ -69,97 +75,20 @@ STANDARDS = {
 GEOMETRIC_MEAN_MIN_SAMPLES = 5
 GEOMETRIC_MEAN_WINDOW_DAYS = 30
 
-# Station name mappings for human-readable output
-# Updated from SFPUC website (17 monitored sites as of 2025):
-#   https://www.sfpuc.gov/programs/ocean-and-beach-monitoring
-STATION_NAMES = {
-    # Bay stations - Aquatic Park
-    "BAY#202.4_SL": "Aquatic Park - Hyde Street Pier",
-    "BAY#202.5_SL": "Aquatic Park - Municipal Pier",
-    # Bay stations - Crissy Field
-    "BAY#210.1_SL": "Crissy Field - East Beach",
-    "BAY#211_SL": "Crissy Field - West Beach",
-    # Bay stations - Baker Beach
-    "BAY#220_SL": "Baker Beach - East",
-    "BAY#230_SL": "Baker Beach - Central",
-    "BAY#300.1_SL": "China Beach",
-    "BAY#301.1_SL": "Baker Beach - West (Lobos Creek)",
-    "BAY#301.2_SL": "Baker Beach - West",
-    # Bay stations - Candlestick Point State Recreation Area (3 sites per SFPUC)
-    "BAY#320_SL": "Candlestick Point - Sunnydale Cove",
-    "BAY#320.1_SL": "Candlestick Point - Windsurfer Circle",
-    "BAY#320.2_SL": "Candlestick Point - Jackrabbit Beach",
-    # Bay stations - Southeast waterfront (newer monitoring sites)
-    "BAY#315_SL": "Islais Creek - Islais Landing",
-    "BAY#310_SL": "Crane Cove Park",
-    "BAY#305_SL": "Mission Creek - Berry Street at Kayak Pier",
-    # Ocean Beach stations
-    "OCEAN#15EAST_SL": "Ocean Beach - North (Balboa St East)",
-    "OCEAN#15_SL": "Ocean Beach - North (Balboa St)",
-    "OCEAN#16_SL": "Ocean Beach - Lincoln Way",
-    "OCEAN#17_SL": "Ocean Beach - Judah St",
-    "OCEAN#18_SL": "Ocean Beach - Noriega St",
-    "OCEAN#19_SL": "Ocean Beach - Sloat Blvd",
-    "OCEAN#20_SL": "Ocean Beach - Fort Funston North",
-    "OCEAN#21.1_SL": "Ocean Beach - Fort Funston",
-    "OCEAN#21_SL": "Ocean Beach - Fort Funston South",
-    "OCEAN#22_SL": "Ocean Beach - Thornton Beach",
-}
+# Station names, drainage basins (for CSO risk assessment), and the SFPUC
+# live-map name → SF Gov lab source mapping all come from the canonical
+# registry in shared/stations.py — imported above.
 
-# Drainage basin assignments for each station (for CSO risk assessment)
-STATION_DRAINAGE_BASINS = {
-    # Westside basin → Pacific Ocean
-    "OCEAN#15EAST_SL": "Westside", "OCEAN#15_SL": "Westside",
-    "OCEAN#16_SL": "Westside", "OCEAN#17_SL": "Westside",
-    "OCEAN#18_SL": "Westside", "OCEAN#19_SL": "Westside",
-    "OCEAN#20_SL": "Westside", "OCEAN#21.1_SL": "Westside",
-    "OCEAN#21_SL": "Westside", "OCEAN#22_SL": "Westside",
-    "BAY#300.1_SL": "Westside",  # China Beach
-    "BAY#220_SL": "Westside", "BAY#230_SL": "Westside",  # Baker Beach
-    "BAY#301.1_SL": "Westside", "BAY#301.2_SL": "Westside",
-    # North Shore basin → SF Bay (north waterfront)
-    "BAY#202.4_SL": "North Shore", "BAY#202.5_SL": "North Shore",
-    "BAY#210.1_SL": "North Shore", "BAY#211_SL": "North Shore",
-    "BAY#310_SL": "North Shore", "BAY#305_SL": "North Shore",
-    # Southeast basin → SF Bay (southeast)
-    "BAY#315_SL": "Southeast",
-    "BAY#320_SL": "Southeast", "BAY#320.1_SL": "Southeast", "BAY#320.2_SL": "Southeast",
-}
-
-# Surfrider BWTF monitoring sites (subset of stations)
+# City lab stations nearest the six sites BWTF's volunteer lab monitors
+# (the BWTF site names live in BWTF_TO_SFPUC_NAME, features/comparison).
 BWTF_PRIORITY_SITES = [
-    "OCEAN#15_SL",      # Ocean Beach North
-    "OCEAN#16_SL",      # Ocean Beach Lincoln
-    "OCEAN#19_SL",      # Ocean Beach Sloat
-    "BAY#210.1_SL",     # Crissy Field East
-    "BAY#220_SL",       # Baker Beach
+    "OCEAN#15_SL",      # Baker Beach at Lobos Creek
+    "OCEAN#17_SL",      # China Beach
+    "OCEAN#19_SL",      # Ocean Beach at Lincoln
+    "OCEAN#21_SL",      # Ocean Beach at Vicente
+    "BAY#202.4_SL",     # Crissy Field East
+    "BAY#211_SL",       # Aquatic Park
 ]
-
-# Best-effort mapping from SFPUC live map station names to SF Gov lab sources.
-# Some SFPUC sites correspond to a small cluster of nearby SF Gov lab stations,
-# so the dashboard uses the freshest related lab sample for display/linking.
-SFPUC_TO_SFGOV_SOURCES = {
-    "Fort Funston": ["OCEAN#20_SL", "OCEAN#21_SL", "OCEAN#21.1_SL", "OCEAN#22_SL"],
-    "Ocean Beach at Sloat Boulevard": ["OCEAN#19_SL"],
-    "Ocean Beach at Vicente Street": ["OCEAN#18_SL", "OCEAN#19_SL"],
-    "Ocean Beach at Balboa Street": ["OCEAN#15_SL", "OCEAN#15EAST_SL"],
-    "Ocean Beach at Lincoln Way": ["OCEAN#16_SL"],
-    "Ocean Beach at Pacheco Street": ["OCEAN#17_SL", "OCEAN#18_SL"],
-    "China Beach": ["BAY#300.1_SL"],
-    "Baker Beach West": ["BAY#301.2_SL"],
-    "Baker Beach East": ["BAY#220_SL"],
-    "Baker Beach at Lobos Creek": ["BAY#301.1_SL"],
-    "Crissy Field Beach West": ["BAY#211_SL"],
-    "Crissy Field Beach East": ["BAY#210.1_SL"],
-    "Aquatic Park": ["BAY#202.5_SL"],
-    "Hyde Street Pier": ["BAY#202.4_SL"],
-    "Jackrabbit Beach": ["BAY#320.2_SL"],
-    "Windsurfer Circle": ["BAY#320.1_SL"],
-    "Sunnydale Cove": ["BAY#320_SL"],
-    "Mission Creek": ["BAY#305_SL"],
-    "Islais Creek": ["BAY#315_SL"],
-    "Crane Cove Park": ["BAY#310_SL"],
-}
 
 
 @dataclass

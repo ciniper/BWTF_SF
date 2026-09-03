@@ -47,6 +47,8 @@ from datetime import datetime, timedelta
 import requests
 from flask import render_template
 
+from shared.stations import STATIONS as _CANONICAL_STATIONS
+
 SOCRATA_URL = "https://data.sfgov.org/resource/v3fv-x3ux.json"
 ANALYTE = "ENTERO"
 SSM = 104          # CA single-sample maximum, Enterococcus (MPN/100mL)
@@ -60,30 +62,11 @@ DATASET_FLOOR = "2020-07-27"  # the city publishes nothing earlier
 _CACHE_TTL_SECONDS = 6 * 3600
 _cache: dict = {"at": 0.0, "rows": None}
 
-# station id -> (display name, shoreline group, lat, lon)
-# Coordinates from SFPUC's getBeaches feed (fetched 2026-09-02; stations are
-# fixed monitoring points, so they're embedded rather than fetched live).
+# station id -> (display name, shoreline group, lat, lon), from the canonical
+# registry in shared/stations.py (coordinates are SFPUC's fixed monitoring
+# points, embedded there rather than fetched live).
 STATIONS = {
-    "BAY#202.4_SL": ("Crissy Field East", "North Shore", 37.8066, -122.4519),
-    "BAY#202.5_SL": ("Crissy Field West", "North Shore", 37.8069, -122.4683),
-    "BAY#210.1_SL": ("Hyde Street Pier", "North Shore", 37.8089, -122.4212),
-    "BAY#211_SL": ("Aquatic Park", "North Shore", 37.8076, -122.4221),
-    "BAY#220_SL": ("Mission Creek", "East Bayshore", 37.7716, -122.397),
-    "BAY#230_SL": ("Crane Cove Park", "East Bayshore", 37.7634, -122.3868),
-    "BAY#300.1_SL": ("Sunnydale Cove", "East Bayshore", 37.7096, -122.3899),
-    "BAY#301.1_SL": ("Windsurfer Circle", "East Bayshore", 37.7091, -122.3823),
-    "BAY#301.2_SL": ("Jackrabbit Beach", "East Bayshore", 37.7114, -122.3801),
-    "BAY#320_SL": ("Islais Creek", "East Bayshore", 37.74703, -122.38793),
-    "OCEAN#15_SL": ("Baker Beach at Lobos Creek", "Ocean", 37.79088, -122.48594),
-    "OCEAN#15EAST_SL": ("Baker Beach East", "Ocean", 37.79258, -122.48465),
-    "OCEAN#16_SL": ("Baker Beach West", "Ocean", 37.78977, -122.48741),
-    "OCEAN#17_SL": ("China Beach", "Ocean", 37.78816, -122.49136),
-    "OCEAN#18_SL": ("Ocean Beach at Balboa", "Ocean", 37.77492, -122.51351),
-    "OCEAN#19_SL": ("Ocean Beach at Lincoln", "Ocean", 37.7638, -122.511),
-    "OCEAN#20_SL": ("Ocean Beach at Pacheco", "Ocean", 37.74891, -122.50996),
-    "OCEAN#21_SL": ("Ocean Beach at Vicente", "Ocean", 37.73782, -122.50825),
-    "OCEAN#21.1_SL": ("Ocean Beach at Sloat", "Ocean", 37.73567, -122.50769),
-    "OCEAN#22_SL": ("Fort Funston", "Ocean", 37.71526, -122.50476),
+    sid: (s.name, s.group, s.lat, s.lon) for sid, s in _CANONICAL_STATIONS.items()
 }
 
 

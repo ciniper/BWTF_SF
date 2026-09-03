@@ -36,6 +36,7 @@ from zoneinfo import ZoneInfo
 # Supabase (observed CSO flags from the pg_cron watcher's alert_log).
 # Optional: everything degrades to model-only composition without it.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from shared.stations import STATION_BASINS, STATION_NAMES  # noqa: E402
 try:
     from shared import supabase as _supabase
 except Exception:
@@ -753,44 +754,7 @@ class LiveData:
         start = (target - timedelta(days=2)).strftime("%Y-%m-%dT00:00:00")
         end = (target + timedelta(days=5)).strftime("%Y-%m-%dT23:59:59")
 
-        # Station metadata
-        STATION_NAMES = {
-            "OCEAN#15_SL": "Ocean Beach - Pacheco St",
-            "OCEAN#15EAST_SL": "Ocean Beach - Pacheco East",
-            "OCEAN#16_SL": "Ocean Beach - Rivera St",
-            "OCEAN#17_SL": "Ocean Beach - Taraval St",
-            "OCEAN#18_SL": "Ocean Beach - Sloat Blvd",
-            "OCEAN#19_SL": "Ocean Beach - Zoo",
-            "OCEAN#20_SL": "Fort Funston - North",
-            "OCEAN#21_SL": "Fort Funston - South",
-            "OCEAN#21.1_SL": "Thornton Beach",
-            "OCEAN#22_SL": "Mussel Rock",
-            "BAY#220_SL": "Baker Beach",
-            "BAY#230_SL": "China Beach",
-            "BAY#300.1_SL": "Candlestick Point SRA",
-            "BAY#301.1_SL": "Windsurfer Circle",
-            "BAY#301.2_SL": "Jackrabbit Beach",
-            "BAY#202.4_SL": "Crissy Field - East",
-            "BAY#202.5_SL": "Crissy Field - West",
-            "BAY#210.1_SL": "Aquatic Park",
-            "BAY#211_SL": "Hyde Street Pier",
-            "BAY#320_SL": "Islais Creek / India Basin",
-        }
-
-        STATION_BASINS = {
-            "OCEAN#15_SL": "Westside", "OCEAN#15EAST_SL": "Westside",
-            "OCEAN#16_SL": "Westside", "OCEAN#17_SL": "Westside",
-            "OCEAN#18_SL": "Westside", "OCEAN#19_SL": "Westside",
-            "OCEAN#20_SL": "Westside", "OCEAN#21_SL": "Westside",
-            "OCEAN#21.1_SL": "Westside", "OCEAN#22_SL": "Westside",
-            "BAY#220_SL": "Westside", "BAY#230_SL": "Westside",
-            "BAY#300.1_SL": "Westside", "BAY#301.1_SL": "Westside",
-            "BAY#301.2_SL": "Westside",
-            "BAY#202.4_SL": "North Shore", "BAY#202.5_SL": "North Shore",
-            "BAY#210.1_SL": "North Shore", "BAY#211_SL": "North Shore",
-            "BAY#320_SL": "Southeast",
-        }
-
+        # Station names/basins come from shared.stations (module import).
         THRESHOLDS = {
             "ENTERO": 104,
             "COLI_E": 235,
