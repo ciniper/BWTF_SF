@@ -86,9 +86,16 @@ def handle_subscribe(query, body):
     except ValueError:
         return _json({"ok": False, "error": "Bad request."}, status=400)
 
-    # Honeypot: bots fill every field; humans never see this one.
-    if (data.get("website") or "").strip():
-        return _json({"ok": True})  # pretend success, store nothing
+    # Honeypot: bots fill every field; humans never see this one. The field
+    # must not be named "website"/"url" — Chrome autofill fills offscreen
+    # inputs with those names and bot-flags real people (hit 2026-09-02).
+    # The fake success carries the same fields as the real one so neither a
+    # bot nor a false-positived human can tell the difference.
+    if (data.get("hp-extra") or data.get("website") or "").strip():
+        fake_zones = [z for z in (data.get("zones") or []) if z in ZONES]
+        return _json({"ok": True,
+                      "zones": ", ".join(ZONES[z][0] for z in fake_zones) or "your selected areas",
+                      "station_count": len({sid for z in fake_zones for sid, *_ in ZONES[z][1]})})
 
     email = (data.get("email") or "").strip()
     zone_keys = [z for z in (data.get("zones") or []) if z in ZONES]

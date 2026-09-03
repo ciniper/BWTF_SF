@@ -68,7 +68,10 @@
       <form id="f" autocomplete="off">
         <p class="flabel">Your email</p>
         <input type="email" id="email" placeholder="you@example.com" required>
-        <input class="hp" type="text" id="website" name="website" tabindex="-1" aria-hidden="true">
+        <!-- Honeypot. Deliberately NOT named "website"/"url"/etc: Chrome
+             autofill fills offscreen fields with those names from the user's
+             saved profile, silently bot-flagging real signups (hit 2026-09-02). -->
+        <input class="hp" type="text" id="hp-extra" name="hp-extra" tabindex="-1" aria-hidden="true" autocomplete="off">
 
         <p class="flabel">Which areas? <span class="count" id="selCount">0 selected</span></p>
         <div class="zones" id="zones"></div>
@@ -137,12 +140,14 @@ document.getElementById("f").addEventListener("submit", async e => {
       method: "POST", headers: {"Content-Type": "application/json"},
       body: JSON.stringify({email: document.getElementById("email").value,
                             zones: [...selected],
-                            website: document.getElementById("website").value}),
+                            "hp-extra": document.getElementById("hp-extra").value}),
     });
     const d = await resp.json();
     if (d.ok) {
       msg.className = "msg ok";
-      msg.textContent = `✔ You're signed up for ${d.zones} — ${d.station_count} monitoring sites covered. ` +
+      const zones = d.zones || "your selected areas";
+      const count = d.station_count ? ` — ${d.station_count} monitoring sites covered` : "";
+      msg.textContent = `✔ You're signed up for ${zones}${count}. ` +
                         `You'll only hear from us when one of them turns bad.`;
       go.textContent = "Signed up ✔";
     } else {
