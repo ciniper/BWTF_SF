@@ -15,6 +15,7 @@ Key design decisions (from data analysis):
 
 import json
 import pickle
+import sys
 import numpy as np
 import pandas as pd
 from datetime import datetime
@@ -30,27 +31,19 @@ from sklearn.metrics import (
 from sklearn.calibration import calibration_curve
 from scipy.special import expit  # sigmoid
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
+from shared.stations import STATION_BASINS  # noqa: E402
+
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 RAW_DIR = DATA_DIR / "raw"
 PROCESSED_DIR = DATA_DIR / "processed"
 MODEL_DIR = DATA_DIR / "models"
 
-# Basin assignments for bacteria stations
-STATION_BASINS = {
-    "OCEAN#15_SL": "Westside", "OCEAN#15EAST_SL": "Westside",
-    "OCEAN#16_SL": "Westside", "OCEAN#17_SL": "Westside",
-    "OCEAN#18_SL": "Westside", "OCEAN#19_SL": "Westside",
-    "OCEAN#20_SL": "Westside", "OCEAN#21_SL": "Westside",
-    "OCEAN#21.1_SL": "Westside", "OCEAN#22_SL": "Westside",
-    "BAY#300.1_SL": "Westside", "BAY#220_SL": "Westside",
-    "BAY#230_SL": "Westside", "BAY#301.1_SL": "Westside",
-    "BAY#301.2_SL": "Westside",
-    "BAY#202.4_SL": "North Shore", "BAY#202.5_SL": "North Shore",
-    "BAY#210.1_SL": "North Shore", "BAY#211_SL": "North Shore",
-    "BAY#310_SL": "North Shore", "BAY#305_SL": "North Shore",
-    "BAY#320_SL": "Southeast", "BAY#320.1_SL": "Southeast",
-    "BAY#320.2_SL": "Southeast", "BAY#315_SL": "Southeast",
-}
+# Station→basin assignments come from the canonical registry
+# (shared/stations.py). The pkls this legacy proxy-label script produced were
+# trained on an older hand-typed table (which also listed phantom station ids
+# like BAY#315/320.x) — they were superseded by the v2 retrain (train_v2.py),
+# so runs of this script no longer reproduce the retired v1 artifacts.
 
 BACTERIA_THRESHOLDS = {
     "ENTERO": 104,

@@ -2,10 +2,6 @@
   "Ocean Beach": {
     "basin": "Westside",
     "stations": [
-      "OCEAN#15_SL",
-      "OCEAN#15EAST_SL",
-      "OCEAN#16_SL",
-      "OCEAN#17_SL",
       "OCEAN#18_SL",
       "OCEAN#19_SL",
       "OCEAN#20_SL",
@@ -16,36 +12,36 @@
     "median_event_volume_mg": 3.7,
     "buckets": {
       "baseline_no_recent_discharge": {
-        "p_elevated": 0.186,
-        "n": 318
+        "p_elevated": 0.049,
+        "n": 265
       },
       "d0_large": {
         "p_elevated": 0.929,
         "n": 14
       },
       "d0_small": {
-        "p_elevated": 0.636,
-        "n": 11
+        "p_elevated": 0.6,
+        "n": 10
       },
       "d1_large": {
         "p_elevated": 0.429,
         "n": 14
       },
       "d1_small": {
-        "p_elevated": 0.4,
-        "n": 10
+        "p_elevated": 0.222,
+        "n": 9
       },
       "d2_large": {
-        "p_elevated": 0.5,
+        "p_elevated": 0.333,
         "n": 6
       },
       "d2_small": {
         "p_elevated": 0.0,
-        "n": 4
+        "n": 3
       },
       "d3_large": {
-        "p_elevated": 0.4,
-        "n": 5
+        "p_elevated": 0.5,
+        "n": 4
       },
       "d4-5_large": {
         "p_elevated": 0.0,
@@ -68,61 +64,51 @@
   "Baker-China": {
     "basin": "Westside",
     "stations": [
-      "BAY#220_SL",
-      "BAY#230_SL"
+      "OCEAN#15_SL",
+      "OCEAN#15EAST_SL",
+      "OCEAN#16_SL",
+      "OCEAN#17_SL"
     ],
     "median_event_volume_mg": 3.7,
     "buckets": {
       "baseline_no_recent_discharge": {
-        "p_elevated": 0.15,
-        "n": 301
+        "p_elevated": 0.16,
+        "n": 307
       },
       "d0_large": {
-        "p_elevated": 1.0,
-        "n": 15
+        "p_elevated": 0.714,
+        "n": 7
       },
       "d0_small": {
-        "p_elevated": 0.909,
-        "n": 11
+        "p_elevated": 0.571,
+        "n": 7
       },
       "d1_large": {
-        "p_elevated": 1.0,
-        "n": 14
+        "p_elevated": 0.333,
+        "n": 9
       },
       "d1_small": {
-        "p_elevated": 0.7,
-        "n": 10
+        "p_elevated": 0.333,
+        "n": 6
       },
       "d2_large": {
-        "p_elevated": 0.846,
-        "n": 13
-      },
-      "d2_small": {
-        "p_elevated": 0.25,
-        "n": 8
+        "p_elevated": 0.5,
+        "n": 4
       },
       "d3_large": {
-        "p_elevated": 0.727,
-        "n": 11
-      },
-      "d3_small": {
-        "p_elevated": 1.0,
-        "n": 3
-      },
-      "d4-5_large": {
-        "p_elevated": 0.562,
-        "n": 16
+        "p_elevated": 0.0,
+        "n": 4
       },
       "d4-5_small": {
-        "p_elevated": 0.286,
-        "n": 7
+        "p_elevated": 0.0,
+        "n": 3
       },
       "d6-7_large": {
         "p_elevated": 0.25,
-        "n": 8
+        "n": 4
       },
       "d6-7_small": {
-        "p_elevated": 0.0,
+        "p_elevated": 0.333,
         "n": 3
       }
     }
@@ -210,30 +196,33 @@
   "Southeast": {
     "basin": "Southeast",
     "stations": [
-      "BAY#320_SL",
-      "BAY#315_SL"
+      "BAY#230_SL",
+      "BAY#300.1_SL",
+      "BAY#301.1_SL",
+      "BAY#301.2_SL",
+      "BAY#320_SL"
     ],
     "median_event_volume_mg": 26.77,
     "buckets": {
       "baseline_no_recent_discharge": {
-        "p_elevated": 0.145,
-        "n": 289
+        "p_elevated": 0.353,
+        "n": 388
       },
       "d0_large": {
         "p_elevated": 1.0,
         "n": 19
       },
       "d0_small": {
-        "p_elevated": 0.923,
-        "n": 13
+        "p_elevated": 0.929,
+        "n": 14
       },
       "d1_large": {
         "p_elevated": 1.0,
         "n": 18
       },
       "d1_small": {
-        "p_elevated": 1.0,
-        "n": 11
+        "p_elevated": 0.917,
+        "n": 12
       },
       "d2_large": {
         "p_elevated": 0.889,
@@ -244,28 +233,28 @@
         "n": 10
       },
       "d3_large": {
-        "p_elevated": 0.8,
+        "p_elevated": 0.867,
         "n": 15
       },
       "d3_small": {
-        "p_elevated": 0.625,
+        "p_elevated": 0.75,
         "n": 8
       },
       "d4-5_large": {
-        "p_elevated": 0.556,
-        "n": 18
+        "p_elevated": 0.65,
+        "n": 20
       },
       "d4-5_small": {
-        "p_elevated": 0.3,
-        "n": 10
+        "p_elevated": 0.615,
+        "n": 13
       },
       "d6-7_large": {
-        "p_elevated": 0.375,
-        "n": 8
+        "p_elevated": 0.833,
+        "n": 12
       },
       "d6-7_small": {
-        "p_elevated": 0.0,
-        "n": 4
+        "p_elevated": 0.286,
+        "n": 7
       }
     }
   }

@@ -33,6 +33,8 @@ from enum import Enum
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from shared.stations import STATIONS
+
 
 # ─── CSO Outfall-to-Beach Mapping ────────────────────────────────────────────
 # Source: EPA NPDES Permit, SFPUC Combined Sewer System documentation
@@ -90,10 +92,20 @@ CSO_OUTFALLS = {
             "Aquatic Park",
             "Hyde Street Pier",
             "Crissy Field",
+        ],
+        "description": "Discharges to SF Bay along the northern waterfront (Marina/Aquatic Park/piers)"
+    },
+    # Central Drainage Basin → SF Bay (Mission Creek / central waterfront).
+    # The app folds the Central bayside basin into Southeast for display
+    # (shared/stations.py), hence basin="Southeast" here.
+    "CEN-001": {
+        "name": "Central Basin Outfalls (Mission Creek)",
+        "basin": "Southeast",
+        "affected_beaches": [
             "Mission Creek",
             "Crane Cove Park",
         ],
-        "description": "Discharges to SF Bay along the northern waterfront, including Mission Creek and Crane Cove Park"
+        "description": "Discharges to Mission Creek and the central bayfront near Crane Cove Park"
     },
     # Southeast / Islais Creek Drainage Basin → SF Bay (southeast)
     "SEB-001": {
@@ -118,18 +130,28 @@ for outfall_id, info in CSO_OUTFALLS.items():
             BEACH_CSO_OUTFALLS[beach] = []
         BEACH_CSO_OUTFALLS[beach].append(outfall_id)
 
-# Map beach name keywords to drainage basins
+# Exact feed station name → basin, from the canonical registry
+# (shared/stations.py covers all 20 getBeaches stations).
+STATION_NAME_BASINS = {s.sfpuc_name: s.basin for s in STATIONS.values()}
+
+# Keyword fallback for names that don't match a feed string exactly.
+# Mission Creek and Crane Cove sit on the Central bayside waterfront, which
+# the app folds into Southeast (they were wrongly North Shore before 2026-09).
 BEACH_DRAINAGE_BASINS = {
     "Ocean Beach": "Westside",
     "Fort Funston": "Westside",
     "China Beach": "Westside",
     "Baker Beach": "Westside",
     "Aquatic Park": "North Shore",
+    "Hyde Street": "North Shore",
     "Crissy Field": "North Shore",
-    "Crane Cove": "North Shore",
-    "Mission Creek": "North Shore",
+    "Crane Cove": "Southeast",
+    "Mission Creek": "Southeast",
     "Islais": "Southeast",
     "Candlestick": "Southeast",
+    "Sunnydale": "Southeast",
+    "Windsurfer": "Southeast",
+    "Jackrabbit": "Southeast",
 }
 
 
@@ -255,6 +277,9 @@ class SFPUCRealTimeAPI:
     
     def _get_drainage_basin(self, station_name: str) -> Optional[str]:
         """Determine which drainage basin a station belongs to based on name"""
+        exact = STATION_NAME_BASINS.get(station_name)
+        if exact:
+            return exact
         for keyword, basin in BEACH_DRAINAGE_BASINS.items():
             if keyword.lower() in station_name.lower():
                 return basin

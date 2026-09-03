@@ -10,10 +10,12 @@ basins") that train.py used before ground truth was available.
 Basin mapping (CSD report basins → forecast app basins):
     Oceanside                → Westside     (CSD-001..007; Ocean Beach, Mile Rock, Sea Cliff)
     North Shore              → North Shore  (CSD-009..017; Marina/Aquatic Park/piers)
-    Central (Islais Creek)   → Southeast    (CSD-029..035; Islais Creek — nearest
-    Southeast                → Southeast     bacteria stations are BAY#315/320.x)
-    Central (Mission Creek)  → Mission Creek (CSD-018..028; no BWTF bacteria
-                                              stations — citywide label only)
+    Central (Islais Creek)   → Southeast    (CSD-029..035; nearest bacteria stations
+    Southeast                → Southeast     are BAY#320 Islais, BAY#230 Crane Cove,
+                                             and the Candlestick trio BAY#300.1/301.1/301.2)
+    Central (Mission Creek)  → Mission Creek (CSD-018..028; BAY#220 Mission Creek sits
+                                              here but has no serving model —
+                                              citywide label only)
 
 Coverage: Bayside Oct 2016 – Oct 2025, Oceanside Jan 2018 – Oct 2025.
 Use load_coverage() to distinguish verified-zero months from no-data months —

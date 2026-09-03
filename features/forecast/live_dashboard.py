@@ -232,9 +232,13 @@ class LiveData:
     # x = (p - baseline)/(1 - baseline). That keeps dry days at ~0 like before.
 
     # Site groups per basin: beaches within one basin respond very
-    # differently (measured: Ocean Beach disperses in ~1-2 days via Pacific
-    # surf; Baker/China and especially Southeast hold contamination for
-    # days). Basin display = worst group; per-group values in the payload.
+    # differently (measured, 2026-09 retrain on the corrected station
+    # registry: Ocean Beach and Baker/China both disperse in ~1-2 days —
+    # Pacific surf and Golden Gate flushing — while Southeast beaches
+    # (Islais, Crane Cove, Candlestick) hold contamination most of a week.
+    # The pre-registry "Baker/China holds to day 3" curve was actually
+    # Mission Creek/Crane Cove data under mislabeled ids). Basin display =
+    # worst group; per-group values in the payload.
     BASIN_IMPACT_GROUPS = {
         "westside": ["Ocean Beach", "Baker-China"],
         "north_shore": ["Crissy Field", "Aquatic Park"],

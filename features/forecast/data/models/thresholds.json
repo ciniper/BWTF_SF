@@ -1,70 +1,178 @@
 {
-  "Westside": {
-    "precip_avg": {
-      "caution": 0.0,
-      "moderate": 0.05,
-      "high": 0.05
+  "Westside": [
+    {
+      "rain_lo": 0.0,
+      "rain_hi": 0.1,
+      "n_days": 2590,
+      "p_discharge": 0.0
     },
-    "rain_2d_cum": {
-      "caution": 0.0,
-      "moderate": 0.05,
-      "high": 0.1
+    {
+      "rain_lo": 0.1,
+      "rain_hi": 0.25,
+      "n_days": 118,
+      "p_discharge": 0.008
     },
-    "rain_3d_cum": {
-      "caution": 0.0,
-      "moderate": 0.05,
-      "high": 0.25
+    {
+      "rain_lo": 0.25,
+      "rain_hi": 0.5,
+      "n_days": 92,
+      "p_discharge": 0.054
+    },
+    {
+      "rain_lo": 0.5,
+      "rain_hi": 0.75,
+      "n_days": 43,
+      "p_discharge": 0.349
+    },
+    {
+      "rain_lo": 0.75,
+      "rain_hi": 1.0,
+      "n_days": 22,
+      "p_discharge": 0.409
+    },
+    {
+      "rain_lo": 1.0,
+      "rain_hi": 1.5,
+      "n_days": 16,
+      "p_discharge": 0.625
+    },
+    {
+      "rain_lo": 1.5,
+      "rain_hi": 99.0,
+      "n_days": 11,
+      "p_discharge": 1.0
     }
-  },
-  "North Shore": {
-    "precip_avg": {
-      "caution": 0.05,
-      "moderate": 0.05,
-      "high": 0.4
+  ],
+  "North Shore": [
+    {
+      "rain_lo": 0.0,
+      "rain_hi": 0.1,
+      "n_days": 2950,
+      "p_discharge": 0.0
     },
-    "rain_2d_cum": {
-      "caution": 0.05,
-      "moderate": 0.35,
-      "high": 1.65
+    {
+      "rain_lo": 0.1,
+      "rain_hi": 0.25,
+      "n_days": 137,
+      "p_discharge": 0.0
     },
-    "rain_3d_cum": {
-      "caution": 0.05,
-      "moderate": 0.65,
-      "high": 2.1
+    {
+      "rain_lo": 0.25,
+      "rain_hi": 0.5,
+      "n_days": 116,
+      "p_discharge": 0.009
+    },
+    {
+      "rain_lo": 0.5,
+      "rain_hi": 0.75,
+      "n_days": 47,
+      "p_discharge": 0.128
+    },
+    {
+      "rain_lo": 0.75,
+      "rain_hi": 1.0,
+      "n_days": 34,
+      "p_discharge": 0.294
+    },
+    {
+      "rain_lo": 1.0,
+      "rain_hi": 1.5,
+      "n_days": 21,
+      "p_discharge": 0.476
+    },
+    {
+      "rain_lo": 1.5,
+      "rain_hi": 99.0,
+      "n_days": 13,
+      "p_discharge": 1.0
     }
-  },
-  "Southeast": {
-    "precip_avg": {
-      "caution": 0.0,
-      "moderate": 0.05,
-      "high": 0.05
+  ],
+  "Southeast": [
+    {
+      "rain_lo": 0.0,
+      "rain_hi": 0.1,
+      "n_days": 2950,
+      "p_discharge": 0.0
     },
-    "rain_2d_cum": {
-      "caution": 0.0,
-      "moderate": 0.05,
-      "high": 0.05
+    {
+      "rain_lo": 0.1,
+      "rain_hi": 0.25,
+      "n_days": 137,
+      "p_discharge": 0.015
     },
-    "rain_3d_cum": {
-      "caution": 0.0,
-      "moderate": 0.05,
-      "high": 0.15
+    {
+      "rain_lo": 0.25,
+      "rain_hi": 0.5,
+      "n_days": 116,
+      "p_discharge": 0.103
+    },
+    {
+      "rain_lo": 0.5,
+      "rain_hi": 0.75,
+      "n_days": 47,
+      "p_discharge": 0.255
+    },
+    {
+      "rain_lo": 0.75,
+      "rain_hi": 1.0,
+      "n_days": 34,
+      "p_discharge": 0.618
+    },
+    {
+      "rain_lo": 1.0,
+      "rain_hi": 1.5,
+      "n_days": 21,
+      "p_discharge": 0.905
+    },
+    {
+      "rain_lo": 1.5,
+      "rain_hi": 99.0,
+      "n_days": 13,
+      "p_discharge": 0.923
     }
-  },
-  "City-wide": {
-    "precip_avg": {
-      "caution": 0.05,
-      "moderate": 0.2,
-      "high": 0.5
+  ],
+  "citywide": [
+    {
+      "rain_lo": 0.0,
+      "rain_hi": 0.1,
+      "n_days": 2590,
+      "p_discharge": 0.0
     },
-    "rain_2d_cum": {
-      "caution": 0.05,
-      "moderate": 0.35,
-      "high": 0.85
+    {
+      "rain_lo": 0.1,
+      "rain_hi": 0.25,
+      "n_days": 118,
+      "p_discharge": 0.025
     },
-    "rain_3d_cum": {
-      "caution": 0.05,
-      "moderate": 0.6,
-      "high": 1.4
+    {
+      "rain_lo": 0.25,
+      "rain_hi": 0.5,
+      "n_days": 92,
+      "p_discharge": 0.152
+    },
+    {
+      "rain_lo": 0.5,
+      "rain_hi": 0.75,
+      "n_days": 43,
+      "p_discharge": 0.419
+    },
+    {
+      "rain_lo": 0.75,
+      "rain_hi": 1.0,
+      "n_days": 22,
+      "p_discharge": 0.773
+    },
+    {
+      "rain_lo": 1.0,
+      "rain_hi": 1.5,
+      "n_days": 16,
+      "p_discharge": 0.938
+    },
+    {
+      "rain_lo": 1.5,
+      "rain_hi": 99.0,
+      "n_days": 11,
+      "p_discharge": 1.0
     }
-  }
+  ]
 }

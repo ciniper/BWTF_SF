@@ -118,6 +118,63 @@ def test_consumers_use_the_registry():
     }
 
 
+def test_forecast_training_tables_use_the_registry():
+    # The forecast v3 retrain (2026-09) rebuilt these from the registry —
+    # before that they carried the same wrong basins the app did (BAY#220
+    # Mission Creek as "Baker Beach"/Westside, phantom ids like BAY#315_SL).
+    forecast_src = Path(__file__).resolve().parents[1] / "features" / "forecast" / "src"
+    sys.path.insert(0, str(forecast_src / "collectors"))
+    sys.path.insert(0, str(forecast_src / "models"))
+    import historical
+    import train
+    import train_v2
+
+    assert historical.STATION_BASINS is STATION_BASINS
+    assert train.STATION_BASINS is STATION_BASINS
+
+    # Stage-2 site groups: every member must exist in the registry with the
+    # group's parent basin, and together the groups cover every station
+    # except BAY#220_SL — Mission Creek drains the Central basin, which has
+    # no stage-1 model (its SFPUC id 4618 is likewise unmapped below).
+    covered = set()
+    for group, (basin, sids) in train_v2.SITE_GROUPS.items():
+        for sid in sids:
+            assert STATIONS[sid].basin == basin, (group, sid)
+        covered.update(sids)
+    assert covered == set(STATIONS) - {"BAY#220_SL"}
+
+
+def test_forecast_observed_station_basins_match_registry():
+    from features.forecast import live_dashboard
+
+    key = {"Westside": "westside", "North Shore": "north_shore",
+           "Southeast": "southeast"}
+    expected = {s.sfpuc_id: key[s.basin]
+                for s in STATIONS.values() if s.sfpuc_id != "4618"}
+    assert live_dashboard.OBSERVED_STATION_BASIN == expected
+
+    # The composition's group names must exist in the trained impact table.
+    table_groups = set(live_dashboard.LIVE.impact_table)
+    for groups in live_dashboard.LiveData.BASIN_IMPACT_GROUPS.values():
+        assert set(groups) <= table_groups, (groups, table_groups)
+
+
+def test_sfpuc_api_basins_match_registry():
+    from shared import sfpuc_api
+
+    assert sfpuc_api.STATION_NAME_BASINS == {
+        s.sfpuc_name: s.basin for s in STATIONS.values()
+    }
+    api = sfpuc_api.SFPUCRealTimeAPI()
+    for s in STATIONS.values():
+        assert api._get_drainage_basin(s.sfpuc_name) == s.basin, s.sfpuc_name
+    # Keyword fallbacks must never contradict the registry for feed names.
+    for kw, basin in sfpuc_api.BEACH_DRAINAGE_BASINS.items():
+        matched = {s.basin for s in STATIONS.values()
+                   if kw.lower() in s.sfpuc_name.lower()}
+        assert matched <= {basin}, kw
+
+
 def main() -> int:
     failures = 0
     for name, fn in sorted(globals().items()):

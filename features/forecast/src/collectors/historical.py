@@ -19,10 +19,11 @@ Key finding from exploratory analysis:
 - Dry periods: ~3% of samples exceed Enterococcus standard
 - After heavy rain (>1"): 50-90%+ of samples exceed standards
 - Elevated readings persist 3-5 days after heavy rain
-- Baker Beach (BAY#220) and Candlestick (BAY#320) are most sensitive
+- Mission Creek (BAY#220) and Islais Creek (BAY#320) are most sensitive
 """
 
 import json
+import sys
 import time
 import requests
 import pandas as pd
@@ -30,6 +31,9 @@ import numpy as np
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
+from shared.stations import STATION_BASINS  # noqa: E402
 
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 RAW_DIR = DATA_DIR / "raw"
@@ -55,20 +59,8 @@ BACTERIA_THRESHOLDS = {
     "COLI_TOTAL": 10000,
 }
 
-# Basin assignments for bacteria stations
-STATION_BASINS = {
-    "OCEAN#15_SL": "Westside", "OCEAN#15EAST_SL": "Westside",
-    "OCEAN#16_SL": "Westside", "OCEAN#17_SL": "Westside",
-    "OCEAN#18_SL": "Westside", "OCEAN#19_SL": "Westside",
-    "OCEAN#20_SL": "Westside", "OCEAN#21_SL": "Westside",
-    "OCEAN#21.1_SL": "Westside", "OCEAN#22_SL": "Westside",
-    "BAY#300.1_SL": "Westside", "BAY#220_SL": "Westside",
-    "BAY#230_SL": "Westside", "BAY#301.1_SL": "Westside",
-    "BAY#301.2_SL": "Westside",
-    "BAY#202.4_SL": "North Shore", "BAY#202.5_SL": "North Shore",
-    "BAY#210.1_SL": "North Shore", "BAY#211_SL": "North Shore",
-    "BAY#320_SL": "Southeast",
-}
+# Basin assignments for bacteria stations come from the canonical registry
+# (shared/stations.py) — imported above as STATION_BASINS.
 
 
 def fetch_historical_rain(start_date: str = "2016-01-01",

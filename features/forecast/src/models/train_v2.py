@@ -34,7 +34,9 @@ from sklearn.metrics import average_precision_score, brier_score_loss, roc_auc_s
 
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent / "collectors"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 from csd_labels import APP_BASINS, build_daily_labels  # noqa: E402
+from shared.stations import STATIONS  # noqa: E402
 
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 RAW_DIR = DATA_DIR / "raw"
@@ -55,6 +57,32 @@ MARQUEE_STORMS = [
 
 BASIN_KEYS = {"Westside": "westside", "North Shore": "north_shore",
               "Southeast": "southeast"}
+
+# Stage-2 site groups: beaches within one basin respond differently to a
+# discharge, so the impact table is fit per group (basin display = worst
+# group). Membership is validated against the canonical registry
+# (shared/stations.py) — before 2026-09 this table carried the same
+# mislabeled ids the app did ("Baker-China" actually pointed at Mission
+# Creek/Crane Cove, "Southeast" at a phantom BAY#315_SL). BAY#220_SL
+# (Mission Creek) is deliberately excluded: its discharges come from the
+# Central (Mission Creek) basin, which has no stage-1 model — mirrors
+# OBSERVED_STATION_BASIN in live_dashboard.py leaving id 4618 unmapped.
+SITE_GROUPS = {
+    "Ocean Beach": ("Westside", ["OCEAN#18_SL", "OCEAN#19_SL", "OCEAN#20_SL",
+                                 "OCEAN#21_SL", "OCEAN#21.1_SL", "OCEAN#22_SL"]),
+    "Baker-China": ("Westside", ["OCEAN#15_SL", "OCEAN#15EAST_SL",
+                                 "OCEAN#16_SL", "OCEAN#17_SL"]),
+    "Crissy Field": ("North Shore", ["BAY#202.4_SL", "BAY#202.5_SL"]),
+    "Aquatic Park": ("North Shore", ["BAY#210.1_SL", "BAY#211_SL"]),
+    "Southeast": ("Southeast", ["BAY#230_SL", "BAY#300.1_SL", "BAY#301.1_SL",
+                                "BAY#301.2_SL", "BAY#320_SL"]),
+}
+assert all(STATIONS[sid].basin == basin
+           for basin, sids in SITE_GROUPS.values() for sid in sids), \
+    "SITE_GROUPS disagrees with the shared/stations.py registry"
+assert {sid for _, sids in SITE_GROUPS.values() for sid in sids} \
+    == set(STATIONS) - {"BAY#220_SL"}, \
+    "SITE_GROUPS must cover every registry station except Mission Creek"
 
 
 # ── Features (formulas copied from v1 train.py — keep in lockstep) ──────────
@@ -299,24 +327,13 @@ def fit_volume_heads(df: pd.DataFrame, features: list) -> dict:
 def fit_impact_table(df: pd.DataFrame) -> dict:
     """Stage 2: P(beach-group bacteria elevated | days since discharge, size).
 
-    Fit per SITE GROUP, not per basin: Baker/China get vigorous Golden Gate
-    tidal flushing and clear much faster than Ocean Beach; Aquatic Park is an
-    enclosed cove with a high dry-weather baseline. One basin-wide curve
-    blurred those regimes. Discharge events/volumes still come from the
-    group's parent basin (stage 1 is hydraulics); only the beach response is
-    group-specific. Empirical buckets; the dashboard applies isotonic
+    Fit per SITE GROUP (module-level SITE_GROUPS), not per basin: different
+    beaches in one basin sit in different flushing regimes, and one
+    basin-wide curve blurred them. Discharge events/volumes still come from
+    the group's parent basin (stage 1 is hydraulics); only the beach response
+    is group-specific. Empirical buckets; the dashboard applies isotonic
     smoothing at load.
     """
-    SITE_GROUPS = {
-        "Ocean Beach": ("Westside", ["OCEAN#15_SL", "OCEAN#15EAST_SL", "OCEAN#16_SL",
-                                     "OCEAN#17_SL", "OCEAN#18_SL", "OCEAN#19_SL",
-                                     "OCEAN#20_SL", "OCEAN#21_SL", "OCEAN#21.1_SL",
-                                     "OCEAN#22_SL"]),
-        "Baker-China": ("Westside", ["BAY#220_SL", "BAY#230_SL"]),
-        "Crissy Field": ("North Shore", ["BAY#202.4_SL", "BAY#202.5_SL"]),
-        "Aquatic Park": ("North Shore", ["BAY#210.1_SL", "BAY#211_SL"]),
-        "Southeast": ("Southeast", ["BAY#320_SL", "BAY#315_SL"]),
-    }
     bact = pd.read_csv(RAW_DIR / "historical_bacteria.csv", parse_dates=["sample_date"])
     table = {}
     for group, (basin, stations) in SITE_GROUPS.items():

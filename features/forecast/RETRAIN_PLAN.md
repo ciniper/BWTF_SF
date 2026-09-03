@@ -1,17 +1,34 @@
 # Forecast v2: retraining on ground-truth CSD events
 
-**Status: deployed on this branch** (2026-08-21) — rain data extended to
-2016, `src/models/train_v2.py` trained on ground truth, v2 pkls promoted to
-production paths, dashboard shows composed risk (P(discharge) × isotonic-
-smoothed persistence by discharge size), and observed SFPUC CSO onsets from
-the Supabase alert_log override model probabilities for past days.
-Now at **v2.1**: hourly peak-intensity features (holdout PR-AUC citywide
+**Status: v3 deployed on this branch** (2026-09-02) — the training basin
+tables now come from the canonical station registry (`shared/stations.py`);
+before, the stage-2 "Baker-China" group actually pointed at Mission
+Creek/Crane Cove (BAY#220/230) and "Southeast" at a phantom BAY#315_SL.
+Stage 1 (rain→discharge) never used station basins: retrained on refreshed
+2016→present data, metrics reproduce v2.1 exactly (holdout PR-AUC citywide
 0.911, Westside 0.828, North Shore 0.790, Southeast 0.812; zero critical
-FNs) and per-site-group impact curves (basin display = worst group,
-per-group in `predictions.groups`). Historical baselines: v2 holdout PR-AUC
-was 0.87/0.77/0.78/0.80; proxy-trained v1 scored 0.56/0.54/0.91*/0.28
-(*in-sample); persistence null recalls 0.08–0.15. Remaining: the v3 list
-below (tide/swell/UV, concentration targets, housekeeping).
+FNs). Stage 2 impact curves were refit on the corrected memberships and
+changed materially: Ocean Beach's baseline fell 0.19→0.05 (it had absorbed
+Baker/China), Baker-China (now truly OCEAN#15/15E/16/17) disperses in ~1-2
+days, and the real Southeast group (Islais + Crane Cove + Candlestick trio)
+holds contamination through day 6-7 (d6-7 large 0.83 over a 0.35 baseline).
+BAY#220 Mission Creek is excluded from stage 2 — Central-basin discharges,
+no stage-1 model (matches OBSERVED_STATION_BASIN leaving 4618 unmapped).
+Production `thresholds.json` is now the v2 empirical P(discharge|rain)
+table (the old v1-format file was read by no frontend; the simulator's
+threshold display is hard-coded HTML).
+
+v2.1 history (2026-08-21): rain data extended to 2016,
+`src/models/train_v2.py` trained on ground truth, v2 pkls promoted to
+production paths, dashboard shows composed risk (P(discharge) × isotonic-
+smoothed persistence by discharge size), observed SFPUC CSO onsets from
+the Supabase alert_log override model probabilities for past days, hourly
+peak-intensity features, per-site-group impact curves (basin display =
+worst group, per-group in `predictions.groups`). Historical baselines: v2
+holdout PR-AUC was 0.87/0.77/0.78/0.80; proxy-trained v1 scored
+0.56/0.54/0.91*/0.28 (*in-sample); persistence null recalls 0.08–0.15.
+Remaining: the v3 list below (tide/swell/UV, concentration targets,
+housekeeping).
 
 ## Why
 
@@ -143,12 +160,15 @@ the historical CSD event series (done, better than hoped).
 2. **DONE (2026-08-21) — per-site-group impact curves.** Fit per group
    (Ocean Beach | Baker-China | Crissy Field | Aquatic Park | Southeast);
    basin display = worst group, per-group values in the payload
-   (`predictions.groups`). **The data reversed the doc's expectation:**
-   Ocean Beach disperses fastest (day-1 ≈ 0.45, gone by day 4-5 — Pacific
-   surf), while Baker/China (day-3 ≈ 0.73) and Southeast (day-2 ≈ 0.89)
-   hold contamination. Aquatic Park's feared bird baseline doesn't show
-   (4.7%, the lowest). Group baselines (5-19%) are far cleaner than the
-   old basin-wide 39%, improving attributable-excess calibration.
+   (`predictions.groups`). **CORRECTION (2026-09-02):** the original
+   "data reversed the doc's expectation" finding — Baker/China holding
+   contamination to day 3 while Ocean Beach cleared — was an artifact of
+   mislabeled station ids: that "Baker-China" curve was fit on Mission
+   Creek/Crane Cove samples (BAY#220/230). On the corrected registry the
+   doc's physical intuition stands: Ocean Beach AND Baker/China (Golden
+   Gate flushing) both disperse in ~1-2 days, and it's the Southeast
+   group that holds contamination most of a week. Aquatic Park's feared
+   bird baseline still doesn't show (4.7%, the lowest).
 3. **Stage-2 environmental modifiers: tide, swell, solar/UV.** Discharge
    prediction (stage 1) is hydraulics and stays rain-only; persistence
    (stage 2) is where tide stage (NOAA CO-OPS 9414290), wave height (NDBC
