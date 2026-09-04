@@ -69,7 +69,7 @@ This roadmap has four parts:
 
 ### B3. Validation of locations & alert logic ("the product")
 - [x] **Region-based alert areas (shipped 2026-09 as the /signup page)** — four zones (Ocean Beach incl. Fort Funston · Baker & China Beach · North Beaches = Crissy/Aquatic/Hyde · East Beaches = Mission Creek→Candlestick), expanded to station-id lists at signup time so the pg dispatcher is untouched; zone label stored in `subscribers.region_zone`. Per-site stays available on the (gated) /alerts dashboard. Tradeoff accepted: zone membership changes don't retro-update existing subscribers (trivial to fix by hand pre-launch).
-- [ ] Show the subscribed zone name in the alert copy (`region_zone` is stored but the pg dispatch template doesn't use it yet).
+- [x] Show the subscribed zone name in the alert copy — shipped in migration 008 (2026-09-02): the dispatcher looks up `subscribers.region_zone` per recipient and the email shows "Your zone: …".
 - [ ] Resolve the open mystery: the SFPUC map only draws CSO triangles for ~13 station IDs — confirm whether that's a map/coordinate limit or a deeper data/model constraint. *(carried from prior TODO)* This directly bounds which sites can ever fire an alert.
 - [ ] Validate the hand-built mappings — `CSO_OUTFALLS` / `BEACH_CSO_OUTFALLS` (`sfpuc_api.py`) and `SFPUC_TO_SFGOV_SOURCES` (`monitoring.py`) are explicitly "best-effort." Check each beach → outfall → drainage-basin link against an authoritative SFPUC / EPA NPDES source.
 - [ ] Verify the station roster & names against the current SFPUC list (code targets a 2025 snapshot).
