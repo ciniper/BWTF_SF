@@ -276,6 +276,11 @@ function render(data) {
     currentData = { days, preds, isHistorical, data };
 
     // Timeline
+    const rainSourceLabel = day => {
+        const src = day.rain_source || (day.is_forecast ? 'forecast' : 'model');
+        return {observed: '📊 SFO gauge', mixed: '📊 gauge + 📡 ECMWF',
+                model: '📡 model hindcast', forecast: '📡 ECMWF forecast'}[src] || src;
+    };
     const timeline = document.getElementById('timeline');
     timeline.innerHTML = '';
     days.forEach(day => {
@@ -292,7 +297,7 @@ function render(data) {
             <div class="day-prob" style="color:${risk.color}">${pct}%</div>
             <div class="day-risk" style="color:${risk.color}">${risk.label}</div>
             <div class="day-bar"><div class="day-bar-fill" style="width:${pct}%;background:${risk.color}"></div></div>
-            <div class="day-source">${day.is_forecast ? '📡 forecast' : '📊 observed'}</div>
+            <div class="day-source">${rainSourceLabel(day)}</div>
         `;
         card.onclick = () => selectDay(day);
         timeline.appendChild(card);
