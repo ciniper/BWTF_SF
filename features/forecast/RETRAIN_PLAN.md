@@ -197,6 +197,22 @@ per-outfall dataset design), Gonzalez & Noble 2012/2014 (multi-day
 antecedent windows; dry-weather exceedances at enclosed sites), PLOS One
 2021 review (MLR/PLS/GBM as the accepted toolkit).
 
+## Inference rain source (changed 2026-09-04)
+
+Live dashboard now uses ECMWF IFS (`models=ecmwf_ifs025`) instead of
+Open-Meteo `best_match` (GFS/HRRR blend) — like-for-like with the ERA5
+training data, and best_match reported 0.0 mm for 2026-09-03 while SF gauges
+logged light rain that IFS did forecast. Past hours are overridden with KSFO
+gauge observations (`_overlay_observed_rain`), so past days are measured,
+not hindcast; the day cards say which (`rain_source`).
+
+Open item: Open-Meteo interpolates IFS's 3-hourly precipitation to hourly,
+so rain_max1h/3h from FORECAST hours are smoother than ERA5's native hourly.
+Check at the next recalibration: compare the rain_max1h distribution of IFS
+forecast days against ERA5 for the same dates; if forecast-day risk runs
+systematically low, either scale the intensity features or fit the
+calibrator on IFS-forecast inputs.
+
 ## Keeping labels fresh
 
 CIWQS exposes monthly SMR attachments ~2–3 months after filing (Nov 2025+

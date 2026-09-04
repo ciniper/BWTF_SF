@@ -80,7 +80,17 @@ NWS_FORECAST_URL = "https://api.weather.gov/gridpoints/MTR/88,126/forecast/hourl
 OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 SFPUC_API_URL = "https://infrastructure.sfwater.org/lims.asmx/getBeaches"
 
-# Open-Meteo params for SF
+# Open-Meteo params for SF.
+# Model: ECMWF IFS rather than Open-Meteo's default "best_match" (a GFS/HRRR
+# blend in North America). Two reasons (2026-09-04): the stage-1 model was
+# trained on ERA5 — ECMWF's reanalysis — so IFS is the like-for-like
+# inference source; and best_match reported 0.0 mm for 2026-09-03 while SF
+# gauges logged an evening of light rain that IFS did forecast (~5 mm).
+# Caveat: Open-Meteo interpolates IFS's 3-hourly precipitation to hourly, so
+# the peak-intensity features (rain_max1h/3h) from FORECAST hours are
+# smoother than ERA5's native hourly — revisit if a recalibration shows
+# forecast-day risk running low. Past hours are overridden with gauge
+# observations (see _overlay_observed_rain), so this only affects future days.
 METEO_PARAMS = {
     "latitude": 37.7749,
     "longitude": -122.4194,
@@ -88,7 +98,47 @@ METEO_PARAMS = {
     "past_days": 7,
     "forecast_days": 6,
     "timezone": "America/Los_Angeles",
+    "models": "ecmwf_ifs025",
 }
+
+# Observed rain for past hours: NWS hourly gauge observations at SFO (KSFO —
+# the nearest ASOS gauge to the city; there is none downtown). Weather-model
+# output for past days is a hindcast, not a measurement, and it missed real
+# rain (2026-09-03) — the dashboard labelled it "observed" anyway.
+NWS_HEADERS = {"User-Agent": "bwtf-sf forecast (https://bwtf-sf.vercel.app)",
+               "Accept": "application/geo+json"}
+NWS_MIN_OBS_PER_DAY = 12   # fewer than this and the gauge day is treated as unknown
+
+
+def _now_local() -> datetime:
+    """Naive local (America/Los_Angeles) 'now', matching Open-Meteo's local
+    timestamps. datetime.now() is UTC on Vercel, which is 7-8 hours off."""
+    return datetime.now(LOCAL_TZ).replace(tzinfo=None)
+
+
+def observed_hourly_from_features(features: list) -> dict:
+    """{naive local hour -> mm} from NWS observation GeoJSON features.
+
+    precipitationLastHour at an observation time T covers (T-1h, T]; it's
+    bucketed to the hour ENDING at or after T so it lines up with Open-Meteo's
+    convention (the value at hour H is the sum over the preceding hour).
+    Specials and the routine hourly METAR can both report the same water, so
+    the max per bucket is kept rather than the sum. KSFO reports null (not 0)
+    when dry — callers fill 0 for covered hours with no value.
+    """
+    out: dict = {}
+    for feat in features or []:
+        props = feat.get("properties") or {}
+        val = (props.get("precipitationLastHour") or {}).get("value")
+        ts = props.get("timestamp")
+        if val is None or not ts:
+            continue
+        t = datetime.fromisoformat(ts.replace("Z", "+00:00")).astimezone(LOCAL_TZ).replace(tzinfo=None)
+        bucket = t.replace(minute=0, second=0, microsecond=0)
+        if bucket != t:
+            bucket += timedelta(hours=1)
+        out[bucket] = max(out.get(bucket, 0.0), float(val))
+    return out
 
 # ─── Cached data with thread-safe refresh ─────────────────────────────────────
 
@@ -409,8 +459,9 @@ class LiveData:
     def refresh(self):
         """Fetch all live data and run predictions"""
         try:
-            # 1. Fetch hourly rain (past 7 days + next 6 days) from Open-Meteo
-            rain_df = self._fetch_open_meteo()
+            # 1. Fetch hourly rain (past 7 days + next 6 days) from Open-Meteo,
+            #    then replace past hours with SFO gauge observations
+            rain_df = self._overlay_observed_rain(self._fetch_open_meteo())
 
             # 2. Fetch SFPUC beach status
             beach_status = self._fetch_sfpuc()
@@ -418,9 +469,10 @@ class LiveData:
             # 3. Compute features and run model for each day
             predictions = self._compute_predictions(rain_df)
 
+            now_local = _now_local()
             with self.lock:
-                self.rain_history = rain_df[rain_df["timestamp"] <= datetime.now()].to_dict("records") if rain_df is not None else []
-                self.rain_forecast = rain_df[rain_df["timestamp"] > datetime.now()].to_dict("records") if rain_df is not None else []
+                self.rain_history = rain_df[rain_df["timestamp"] <= now_local].to_dict("records") if rain_df is not None else []
+                self.rain_forecast = rain_df[rain_df["timestamp"] > now_local].to_dict("records") if rain_df is not None else []
                 self.predictions = predictions
                 self.beach_status = beach_status
                 self.last_refresh = datetime.now()
@@ -453,6 +505,86 @@ class LiveData:
         })
         df["precip_inches"] = df["precip_mm"] / 25.4
         return df
+
+    def _fetch_nws_observed_rain(self, start_local: datetime, end_local: datetime) -> pd.Series:
+        """Hourly observed precipitation (mm) at KSFO for every COMPLETE local
+        hour in [start_local, end_local], indexed by naive local hour.
+
+        Days are fetched in parallel (one request per local day, ~300
+        five-minute observations each). A day whose fetch fails or returns
+        fewer than NWS_MIN_OBS_PER_DAY observations is left out entirely, so
+        its hours stay NaN and the caller keeps the model's values for them —
+        a gauge outage must never zero out a real storm.
+        """
+        from concurrent.futures import ThreadPoolExecutor
+
+        days = pd.date_range(start_local.date(), end_local.date(), freq="D")
+
+        def fetch_day(day):
+            d0 = datetime.combine(day.date(), datetime.min.time()).replace(tzinfo=LOCAL_TZ)
+            d1 = d0 + timedelta(days=1)
+            url, params = NWS_OBS_URL, {
+                "start": d0.astimezone(ZoneInfo("UTC")).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "end": d1.astimezone(ZoneInfo("UTC")).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "limit": 500,
+            }
+            feats, pages = [], 0
+            try:
+                while url and pages < 4:
+                    r = requests.get(url, params=params if pages == 0 else None,
+                                     headers=NWS_HEADERS, timeout=15)
+                    r.raise_for_status()
+                    j = r.json()
+                    feats += j.get("features", [])
+                    url = (j.get("pagination") or {}).get("next")
+                    pages += 1
+            except Exception as exc:  # pragma: no cover - network
+                print(f"NWS observations unavailable for {day.date()}: {exc}")
+                return day, None
+            return day, feats
+
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            fetched = list(pool.map(fetch_day, days))
+
+        hourly: dict = {}
+        for day, feats in fetched:
+            if feats is None or len(feats) < NWS_MIN_OBS_PER_DAY:
+                continue
+            observed = observed_hourly_from_features(feats)
+            first = datetime.combine(day.date(), datetime.min.time()) + timedelta(hours=1)
+            for h in pd.date_range(first, first + timedelta(hours=23), freq="h"):
+                h = h.to_pydatetime()
+                if h < start_local or h > end_local:
+                    continue          # outside the window, or the hour isn't complete yet
+                hourly[h] = observed.get(h, 0.0)
+        return pd.Series(hourly, dtype="float64")
+
+    def _overlay_observed_rain(self, rain_df: pd.DataFrame) -> pd.DataFrame:
+        """Replace past hours' model precipitation with gauge observations.
+
+        Adds a ``rain_source`` column: 'observed' (gauge), 'model' (past hour
+        with no usable observation — hindcast), or 'forecast' (future hour).
+        Any failure leaves the model data intact and logs.
+        """
+        if rain_df is None or rain_df.empty:
+            return rain_df
+        rain_df = rain_df.copy()
+        now_local = _now_local()
+        past = rain_df["timestamp"] <= now_local
+        rain_df["rain_source"] = np.where(past, "model", "forecast")
+        try:
+            obs = self._fetch_nws_observed_rain(rain_df["timestamp"].min().to_pydatetime(), now_local)
+        except Exception as exc:  # pragma: no cover - network
+            print(f"Observed-rain overlay skipped: {exc}")
+            return rain_df
+        if obs is None or obs.empty:
+            return rain_df
+        matched = rain_df["timestamp"].map(obs)
+        have = past & matched.notna()
+        rain_df.loc[have, "precip_mm"] = matched[have].astype(float).values
+        rain_df.loc[have, "precip_inches"] = rain_df.loc[have, "precip_mm"] / 25.4
+        rain_df.loc[have, "rain_source"] = "observed"
+        return rain_df
 
     def _fetch_sfpuc(self) -> list:
         """Fetch current beach status from SFPUC"""
@@ -504,7 +636,7 @@ class LiveData:
         if rain_df is None or rain_df.empty:
             return {}
 
-        now = datetime.now()
+        now = _now_local()
         today = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
         # Aggregate to daily totals. Rolling 3h/6h sums run across the
@@ -523,6 +655,13 @@ class LiveData:
         ).reset_index()
         daily["date"] = pd.to_datetime(daily["date"])
         daily = daily.sort_values("date").reset_index(drop=True)
+
+        # Where each day's rain came from, for the UI's source label
+        def _day_source(sources):
+            kinds = set(sources)
+            return kinds.pop() if len(kinds) == 1 else "mixed"
+        day_source = (rain_df.groupby("date")["rain_source"].agg(_day_source).to_dict()
+                      if "rain_source" in rain_df else {})
 
         # Compute cumulative features
         for w in [2, 3, 5, 7, 14, 30]:
@@ -589,6 +728,7 @@ class LiveData:
                 "is_forecast": is_forecast,
                 "is_today": is_today,
                 "rain_inches": round(features["precip_avg"], 3),
+                "rain_source": day_source.get(target_date, "forecast" if is_forecast else "model"),
                 "rain_2d_cum": round(features["rain_2d_cum"], 3),
                 "rain_3d_cum": round(features["rain_3d_cum"], 3),
                 "predictions": day_predictions,
@@ -630,6 +770,7 @@ class LiveData:
                 url = "https://archive-api.open-meteo.com/v1/archive"
             else:
                 url = OPEN_METEO_URL
+                params["models"] = METEO_PARAMS["models"]
                 params["past_days"] = (datetime.now() - start).days
                 params["forecast_days"] = max(1, (end - datetime.now()).days + 1)
                 del params["start_date"]
@@ -1282,6 +1423,11 @@ function render(data) {
     currentData = { days, preds, isHistorical, data };
 
     // Timeline
+    const rainSourceLabel = day => {
+        const src = day.rain_source || (day.is_forecast ? 'forecast' : 'model');
+        return {observed: '📊 SFO gauge', mixed: '📊 gauge + 📡 ECMWF',
+                model: '📡 model hindcast', forecast: '📡 ECMWF forecast'}[src] || src;
+    };
     const timeline = document.getElementById('timeline');
     timeline.innerHTML = '';
     days.forEach(day => {
@@ -1298,7 +1444,7 @@ function render(data) {
             <div class="day-prob" style="color:${risk.color}">${pct}%</div>
             <div class="day-risk" style="color:${risk.color}">${risk.label}</div>
             <div class="day-bar"><div class="day-bar-fill" style="width:${pct}%;background:${risk.color}"></div></div>
-            <div class="day-source">${day.is_forecast ? '📡 forecast' : '📊 observed'}</div>
+            <div class="day-source">${rainSourceLabel(day)}</div>
         `;
         card.onclick = () => selectDay(day);
         timeline.appendChild(card);
