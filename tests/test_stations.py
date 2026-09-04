@@ -175,6 +175,21 @@ def test_sfpuc_api_basins_match_registry():
         assert matched <= {basin}, kw
 
 
+def test_signup_zones_cover_every_station_once_from_registry():
+    """/signup's four zones are the product decision; each station's name and
+    coordinates must be the registry's, and every SFPUC id must appear in
+    exactly one zone (zones expand to subscriber station_ids at signup, and the
+    alert-email thumbnails are keyed by the same ids)."""
+    from features.signup.page import ZONES
+
+    by_id = {s.sfpuc_id: s for s in STATIONS.values()}
+    seen = [sid for _, sts in ZONES.values() for sid, *_ in sts]
+    assert sorted(seen) == sorted(by_id), "zones must cover all 20 stations exactly once"
+    for label, sts in ZONES.values():
+        for sid, name, lat, lon in sts:
+            assert (name, lat, lon) == (by_id[sid].name, by_id[sid].lat, by_id[sid].lon), (label, sid)
+
+
 def main() -> int:
     failures = 0
     for name, fn in sorted(globals().items()):

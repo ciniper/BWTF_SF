@@ -29,39 +29,27 @@ from flask import render_template
 
 from features.alerts.subscriptions import SubscriptionStore
 from shared import supabase as sb
+from shared.stations import STATIONS
 
 # zone key -> (label, [(station_id, station_name, lat, lon), ...])
-# Station ids are SFPUC LIMS ids (what subscriptions + the pg dispatcher use);
-# coordinates from the getBeaches feed (fixed monitoring points).
+# Station ids are SFPUC LIMS ids (what subscriptions + the pg dispatcher use).
+# Names and coordinates come from the canonical registry (shared/stations.py)
+# — this table used to be hand-typed, the last copy not built from it. Which
+# stations form a zone is the product decision kept here; everything about a
+# station is looked up by id.
+_BY_SFPUC_ID = {s.sfpuc_id: s for s in STATIONS.values()}
+
+
+def _stations(*sfpuc_ids: str) -> list[tuple[str, str, float, float]]:
+    return [(sid, _BY_SFPUC_ID[sid].name, _BY_SFPUC_ID[sid].lat, _BY_SFPUC_ID[sid].lon)
+            for sid in sfpuc_ids]
+
+
 ZONES = {
-    "ocean": ("Ocean Beach", [
-        ("4601", "Fort Funston", 37.71526, -122.50476),
-        ("4602", "Ocean Beach at Sloat", 37.73567, -122.50769),
-        ("4603", "Ocean Beach at Vicente", 37.73782, -122.50825),
-        ("4604", "Ocean Beach at Balboa", 37.77492, -122.51351),
-        ("4605", "Ocean Beach at Lincoln", 37.7638, -122.511),
-        ("4606", "Ocean Beach at Pacheco", 37.74891, -122.50996),
-    ]),
-    "baker_china": ("Baker & China Beach", [
-        ("4607", "China Beach", 37.78816, -122.49136),
-        ("4608", "Baker Beach West", 37.78977, -122.48741),
-        ("4609", "Baker Beach East", 37.79258, -122.48465),
-        ("4610", "Baker Beach at Lobos Creek", 37.79088, -122.48594),
-    ]),
-    "north": ("North Beaches", [
-        ("4611", "Crissy Field West", 37.8069, -122.4683),
-        ("4612", "Crissy Field East", 37.8066, -122.4519),
-        ("4613", "Aquatic Park", 37.8076, -122.4221),
-        ("4614", "Hyde Street Pier", 37.8089, -122.4212),
-    ]),
-    "east": ("East Beaches", [
-        ("4615", "Jackrabbit Beach", 37.7114, -122.3801),
-        ("4616", "Windsurfer Circle", 37.7091, -122.3823),
-        ("4617", "Sunnydale Cove", 37.7096, -122.3899),
-        ("4618", "Mission Creek", 37.7716, -122.397),
-        ("4619", "Islais Creek", 37.74703, -122.38793),
-        ("4620", "Crane Cove Park", 37.7634, -122.3868),
-    ]),
+    "ocean": ("Ocean Beach", _stations("4601", "4602", "4603", "4604", "4605", "4606")),
+    "baker_china": ("Baker & China Beach", _stations("4607", "4608", "4609", "4610")),
+    "north": ("North Beaches", _stations("4611", "4612", "4613", "4614")),
+    "east": ("East Beaches", _stations("4615", "4616", "4617", "4618", "4619", "4620")),
 }
 
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]{2,}$")

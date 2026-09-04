@@ -134,7 +134,7 @@ Publicizing that page IS the public launch, which trips all of the following at 
 - [ ] **Test-alert mirror** (see B6) — must land before the list has real people on it, or every simulation spams them.
 - [ ] Delete the legacy Python send path once the pg sender has survived a wet season (see B6).
 - [ ] Consider a custom domain + the HubSpot embed conversation (see /pers).
-- [ ] **Derive /signup ZONES from the station registry.** `features/signup/page.py` still hand-types each station's (id, name, lat, lon) — the last table not built from `shared/stations.py` (found 2026-09-04; currently correct, not test-pinned). Keep the four zone memberships as lists of `sfpuc_id`s, pull name/coords from the registry, and add a test that the zones cover all 20 stations exactly once. The email thumbnails (`app/static/emailmaps/<id>.jpg`) and alert zone labels sit downstream of this table.
+- [x] **/signup ZONES derived from the station registry** (2026-09-04): zone membership stays a list of `sfpuc_id`s in `features/signup/page.py`; names/coords come from `shared/stations.py`; `tests/test_stations.py` asserts the zones cover all 20 stations exactly once. No hand-typed station table remains anywhere in the app.
 
 ## Open decisions (these shape the sewage-alert work above)
 
