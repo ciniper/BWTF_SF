@@ -9,6 +9,12 @@
 .badge.warn{background:#fbe9d9;color:#9a5313}
 .badge.ok{background:#e0f0ea;color:#237059}
 .badge.muted{background:#e9edf2;color:#54576F}
+/* semantic colours for icons that carry meaning (severity, brand accent) */
+.ic.danger{color:#b5310a}
+.ic.warn{color:#d4763a}
+.ic.ok{color:#237059}
+.ic.brand{color:#0072BC}
+.ic.muted{color:#8a93a3}
 .ictile{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:11px;background:#E3EBF2;color:#0072BC;flex:none}
 .ictile .ic{width:20px;height:20px}
 .illus{width:38px;height:38px;flex:none;display:inline-block;vertical-align:middle}

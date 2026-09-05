@@ -463,7 +463,7 @@ async function load() {
   LOCS = d.locations || {};
   for (const e of EV) { ONAMES[e.oid] = e.oname; OWATER[e.oid] = e.water; }
   initMap();
-  document.getElementById("covNote").innerHTML = '<svg class="ic"><use href="#i-triangle-alert"/></svg> Coverage: ' + COV.note;
+  document.getElementById("covNote").innerHTML = '<svg class="ic warn"><use href="#i-triangle-alert"/></svg> Coverage: ' + COV.note;
   document.getElementById("foot").textContent = "Source: " + d.source +
     " · Compiled 2026-08 · Full provenance, schema, and gaps: features/forecast/data/csd/NOTES.md · MG = million gallons (≈1.5 Olympic pools).";
 

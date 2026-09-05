@@ -320,17 +320,17 @@ class AlertsRoutes:
                     forecasts = "<br>".join(f"• {e.description}" for e in rain_advisory.upcoming_rain[:3])
                     rain_html = f"""
                     <div class="error-banner" style="border-left-color: #3498db; background: #e8f4f8;">
-                        <svg class="ic"><use href="#i-cloud-sun-rain"/></svg> <strong>Rain in Forecast:</strong><br>{forecasts}
+                        <svg class="ic brand"><use href="#i-cloud-sun-rain"/></svg> <strong>Rain in Forecast:</strong><br>{forecasts}
                         <br><small>SFPUC advises avoiding water contact during and 72 hours after rain.</small>
                     </div>
                     """
             except Exception as e:
-                rain_html = f'<div class="error-banner"><svg class="ic"><use href="#i-triangle-alert"/></svg> Weather data unavailable: {e}</div>'
+                rain_html = f'<div class="error-banner"><svg class="ic warn"><use href="#i-triangle-alert"/></svg> Weather data unavailable: {e}</div>'
             
             try:
                 tide_info = self.env_context.tides.get_tide_info()
                 if tide_info:
-                    trend_icon = '<svg class="ic"><use href="#i-trending-up"/></svg>' if tide_info.current_trend == "rising" else '<svg class="ic"><use href="#i-trending-down"/></svg>'
+                    trend_icon = '<svg class="ic brand"><use href="#i-trending-up"/></svg>' if tide_info.current_trend == "rising" else '<svg class="ic brand"><use href="#i-trending-down"/></svg>'
                     trend_label = tide_info.current_trend.capitalize()
                     next_high_str = f"{tide_info.next_high.time.strftime('%I:%M %p')} ({tide_info.next_high.height_ft:.1f} ft)" if tide_info.next_high else "N/A"
                     next_low_str = f"{tide_info.next_low.time.strftime('%I:%M %p')} ({tide_info.next_low.height_ft:.1f} ft)" if tide_info.next_low else "N/A"
@@ -338,7 +338,7 @@ class AlertsRoutes:
                     tide_html = f"""
                     <div class="summary-card total" style="border-top-color: #1abc9c; grid-column: span 1;">
                         <div class="summary-number" style="font-size: 1.5em;">{trend_icon} {trend_label}</div>
-                        <div class="summary-label"><svg class="ic"><use href="#i-waves"/></svg> Tide</div>
+                        <div class="summary-label"><svg class="ic brand"><use href="#i-waves"/></svg> Tide</div>
                         <div style="font-size: 0.8em; color: #666; margin-top: 8px;">
                             Next High: {next_high_str}<br>
                             Next Low: {next_low_str}
@@ -466,7 +466,7 @@ class AlertsRoutes:
         if alerts:
             for alert in alerts:
                 severity_class = "critical" if alert.severity == "critical" else "warning" if alert.severity == "warning" else "advisory"
-                icon = '<svg class="ic"><use href="#i-octagon-alert"/></svg>' if alert.severity == "critical" else '<svg class="ic"><use href="#i-triangle-alert"/></svg>' if alert.severity == "warning" else '<svg class="ic"><use href="#i-info"/></svg>'
+                icon = '<svg class="ic danger"><use href="#i-octagon-alert"/></svg>' if alert.severity == "critical" else '<svg class="ic warn"><use href="#i-triangle-alert"/></svg>' if alert.severity == "warning" else '<svg class="ic brand"><use href="#i-info"/></svg>'
                 alerts_html += f"""
                     <div class="alert {severity_class}">
                         <span class="alert-icon">{icon}</span>
@@ -480,14 +480,14 @@ class AlertsRoutes:
                     </div>
                 """
         else:
-            alerts_html = '<div class="no-alerts"><svg class="ic"><use href="#i-circle-check"/></svg> No active alerts</div>'
+            alerts_html = '<div class="no-alerts"><svg class="ic ok"><use href="#i-circle-check"/></svg> No active alerts</div>'
         
         # Error message if SFPUC API failed
         error_html = ""
         if sfpuc_error:
             error_html = f"""
             <div class="error-banner">
-                <svg class="ic"><use href="#i-triangle-alert"/></svg> Could not fetch real-time data: {sfpuc_error}
+                <svg class="ic warn"><use href="#i-triangle-alert"/></svg> Could not fetch real-time data: {sfpuc_error}
             </div>
             """
 
@@ -599,7 +599,7 @@ class AlertsRoutes:
             if station.sample_date and station.sample_date.date() > lab_result["sample_date"].date():
                 pending_html = f"""
                 <div class="station-meta">
-                    <span class="lab-pending"><svg class="ic"><use href="#i-hourglass"/></svg> Lab numbers for the {status_feed_date} sample not yet published</span>
+                    <span class="lab-pending"><svg class="ic warn"><use href="#i-hourglass"/></svg> Lab numbers for the {status_feed_date} sample not yet published</span>
                 </div>
                 """
             lab_details_html = f"""

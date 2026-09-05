@@ -761,19 +761,19 @@
         <div class="summary">
             <div class="summary-card cso">
                 <div class="summary-number">{{ cso_count }}</div>
-                <div class="summary-label"><svg class="ic"><use href="#i-octagon-alert"/></svg> Active CSO</div>
+                <div class="summary-label"><svg class="ic danger"><use href="#i-octagon-alert"/></svg> Active CSO</div>
             </div>
             <div class="summary-card posted">
                 <div class="summary-number">{{ posted_count }}</div>
-                <div class="summary-label"><svg class="ic"><use href="#i-triangle-alert"/></svg> Posted</div>
+                <div class="summary-label"><svg class="ic warn"><use href="#i-triangle-alert"/></svg> Posted</div>
             </div>
             <div class="summary-card safe">
                 <div class="summary-number">{{ safe_count }}</div>
-                <div class="summary-label"><svg class="ic"><use href="#i-circle-check"/></svg> Safe</div>
+                <div class="summary-label"><svg class="ic ok"><use href="#i-circle-check"/></svg> Safe</div>
             </div>
             <div class="summary-card total">
                 <div class="summary-number">{{ total_stations }}</div>
-                <div class="summary-label"><svg class="ic"><use href="#i-map-pin"/></svg> Total Stations</div>
+                <div class="summary-label"><svg class="ic brand"><use href="#i-map-pin"/></svg> Total Stations</div>
             </div>
             {{ tide_html|safe }}
         </div>
@@ -813,7 +813,7 @@
                     </div>
                 </form>
                 <div class="helper-note">Currently simulated sites: {{ simulated_sites_html }}</div>
-                <div class="helper-note" style="margin-top: 12px;"><svg class="ic"><use href="#i-info"/></svg> Saving a simulation is the whole test:
+                <div class="helper-note" style="margin-top: 12px;"><svg class="ic brand"><use href="#i-info"/></svg> Saving a simulation is the whole test:
                 the <b>automatic sender (Postgres) detects it and emails matching subscribers within
                 a minute</b> — the same path a real event takes. The old manual send buttons were
                 removed because they used the legacy in-app sender and produced a duplicate,
