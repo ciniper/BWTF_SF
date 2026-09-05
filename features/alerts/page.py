@@ -304,7 +304,7 @@ class AlertsRoutes:
                 if rain_advisory.is_active:
                     rain_html = f"""
                     <div class="cso-banner" style="background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);">
-                        <div class="cso-icon">🌧️</div>
+                        <div class="cso-icon"><img src="/static/brand/droplet.png" alt="" style="width:56px;height:56px;background:#fff;border-radius:12px;padding:4px;display:block;"></div>
                         <div class="cso-content">
                             <div class="cso-title">RAIN ADVISORY ACTIVE</div>
                             <div class="cso-message">{rain_advisory.message}</div>
@@ -320,17 +320,17 @@ class AlertsRoutes:
                     forecasts = "<br>".join(f"• {e.description}" for e in rain_advisory.upcoming_rain[:3])
                     rain_html = f"""
                     <div class="error-banner" style="border-left-color: #3498db; background: #e8f4f8;">
-                        🌦️ <strong>Rain in Forecast:</strong><br>{forecasts}
+                        <svg class="ic"><use href="#i-cloud-sun-rain"/></svg> <strong>Rain in Forecast:</strong><br>{forecasts}
                         <br><small>SFPUC advises avoiding water contact during and 72 hours after rain.</small>
                     </div>
                     """
             except Exception as e:
-                rain_html = f'<div class="error-banner">⚠️ Weather data unavailable: {e}</div>'
+                rain_html = f'<div class="error-banner"><svg class="ic"><use href="#i-triangle-alert"/></svg> Weather data unavailable: {e}</div>'
             
             try:
                 tide_info = self.env_context.tides.get_tide_info()
                 if tide_info:
-                    trend_icon = "📈" if tide_info.current_trend == "rising" else "📉"
+                    trend_icon = '<svg class="ic"><use href="#i-trending-up"/></svg>' if tide_info.current_trend == "rising" else '<svg class="ic"><use href="#i-trending-down"/></svg>'
                     trend_label = tide_info.current_trend.capitalize()
                     next_high_str = f"{tide_info.next_high.time.strftime('%I:%M %p')} ({tide_info.next_high.height_ft:.1f} ft)" if tide_info.next_high else "N/A"
                     next_low_str = f"{tide_info.next_low.time.strftime('%I:%M %p')} ({tide_info.next_low.height_ft:.1f} ft)" if tide_info.next_low else "N/A"
@@ -338,7 +338,7 @@ class AlertsRoutes:
                     tide_html = f"""
                     <div class="summary-card total" style="border-top-color: #1abc9c; grid-column: span 1;">
                         <div class="summary-number" style="font-size: 1.5em;">{trend_icon} {trend_label}</div>
-                        <div class="summary-label">🌊 Tide</div>
+                        <div class="summary-label"><svg class="ic"><use href="#i-waves"/></svg> Tide</div>
                         <div style="font-size: 0.8em; color: #666; margin-top: 8px;">
                             Next High: {next_high_str}<br>
                             Next Low: {next_low_str}
@@ -398,7 +398,7 @@ class AlertsRoutes:
             cso_locations = ", ".join([e.station_name for e in cso_events])
             cso_banner = f"""
             <div class="cso-banner">
-                <div class="cso-icon">🚨</div>
+                <div class="cso-icon"><svg class="ic" style="width:48px;height:48px"><use href="#i-octagon-alert"/></svg></div>
                 <div class="cso-content">
                     <div class="cso-title">ACTIVE COMBINED SEWER OVERFLOW</div>
                     <div class="cso-message">
@@ -466,7 +466,7 @@ class AlertsRoutes:
         if alerts:
             for alert in alerts:
                 severity_class = "critical" if alert.severity == "critical" else "warning" if alert.severity == "warning" else "advisory"
-                icon = "🚨" if alert.severity == "critical" else "⚠️" if alert.severity == "warning" else "ℹ️"
+                icon = '<svg class="ic"><use href="#i-octagon-alert"/></svg>' if alert.severity == "critical" else '<svg class="ic"><use href="#i-triangle-alert"/></svg>' if alert.severity == "warning" else '<svg class="ic"><use href="#i-info"/></svg>'
                 alerts_html += f"""
                     <div class="alert {severity_class}">
                         <span class="alert-icon">{icon}</span>
@@ -480,14 +480,14 @@ class AlertsRoutes:
                     </div>
                 """
         else:
-            alerts_html = '<div class="no-alerts">✅ No active alerts</div>'
+            alerts_html = '<div class="no-alerts"><svg class="ic"><use href="#i-circle-check"/></svg> No active alerts</div>'
         
         # Error message if SFPUC API failed
         error_html = ""
         if sfpuc_error:
             error_html = f"""
             <div class="error-banner">
-                ⚠️ Could not fetch real-time data: {sfpuc_error}
+                <svg class="ic"><use href="#i-triangle-alert"/></svg> Could not fetch real-time data: {sfpuc_error}
             </div>
             """
 
@@ -576,11 +576,11 @@ class AlertsRoutes:
     def _generate_station_card(self, station, status_type, is_simulated=False, lab_result=None):
         """Generate HTML for a single station card"""
         status_icon = {
-            "cso": "🚨",
-            "posted": "⚠️",
-            "safe": "✅",
-            "not_sampled": "⚪"
-        }.get(status_type, "ℹ️")
+            "cso": '<svg class="ic"><use href="#i-octagon-alert"/></svg>',
+            "posted": '<svg class="ic"><use href="#i-triangle-alert"/></svg>',
+            "safe": '<svg class="ic"><use href="#i-circle-check"/></svg>',
+            "not_sampled": '<svg class="ic"><use href="#i-circle-dashed"/></svg>'
+        }.get(status_type, '<svg class="ic"><use href="#i-info"/></svg>')
         
         status_label = {
             "cso": "CSO ALERT",
@@ -599,7 +599,7 @@ class AlertsRoutes:
             if station.sample_date and station.sample_date.date() > lab_result["sample_date"].date():
                 pending_html = f"""
                 <div class="station-meta">
-                    <span class="lab-pending">⏳ Lab numbers for the {status_feed_date} sample not yet published</span>
+                    <span class="lab-pending"><svg class="ic"><use href="#i-hourglass"/></svg> Lab numbers for the {status_feed_date} sample not yet published</span>
                 </div>
                 """
             lab_details_html = f"""
@@ -621,13 +621,13 @@ class AlertsRoutes:
         if status_type == "cso":
             warning_html = """
                 <div class="station-warning">
-                    ⚠️ Combined sewer discharge detected. Avoid water contact for 72 hours.
+                    <svg class="ic"><use href="#i-octagon-alert"/></svg> Combined sewer discharge detected. Avoid water contact for 72 hours.
                 </div>
             """
         elif status_type == "posted":
             warning_html = """
                 <div class="station-warning" style="background: #fff3cd; color: #856404;">
-                    ⚠️ Elevated bacteria levels. Water contact not recommended.
+                    <svg class="ic"><use href="#i-triangle-alert"/></svg> Elevated bacteria levels. Water contact not recommended.
                 </div>
             """
         elif status_type == "not_sampled":

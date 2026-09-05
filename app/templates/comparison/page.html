@@ -61,8 +61,10 @@
           .modal__close{border:none;background:#eef2f4;border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:700;color:#26272a;font-size:14px}
           .modal__note{color:#8a949b;font-size:12px;margin:6px 0 12px;line-height:1.5}
           .chart-wrap{position:relative;height:360px}
-        </style></head>
-<body><div class="wrap">
+        </style><link rel="stylesheet" href="/static/brand.css">
+</head>
+<body>
+{% include "_icons.html" %}<div class="wrap">
   <a class="back-to-dash" href="/">← Dashboard</a>
   <div class="hero">
     <h1>Source Comparison</h1>
@@ -82,7 +84,7 @@
     <div class="card"><div class="n">{{ max_gap_display }}</div><div class="l">Max sampling gap</div></div>
   </div>
 
-  <p class="hint">📈 Click any site below for its {{ analyte_label }} history — BWTF vs. SFPUC, over time.</p>
+  <p class="hint"><svg class="ic"><use href="#i-chart-line"/></svg> Click any site below for its {{ analyte_label }} history — BWTF vs. SFPUC, over time.</p>
 
   <div class="bacteria-select">
     <label for="bacteria-type">Bacteria type</label>

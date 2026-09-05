@@ -67,8 +67,10 @@
 
   .foot{color:#54576F;font-size:12px;line-height:1.6;margin-top:16px}
   .loading{padding:48px;text-align:center;color:#8a949b}
-</style></head>
-<body><div class="wrap">
+</style><link rel="stylesheet" href="/static/brand.css">
+</head>
+<body>
+{% include "_icons.html" %}<div class="wrap">
   <a class="back-to-dash" href="/">← Dashboard</a>
   <div class="hero">
     <h1>CSO Event Timeline</h1>
@@ -84,8 +86,8 @@
       <button class="range-btn" data-days="30">30 days</button>
       <button class="range-btn active" data-days="all">All</button>
       <div class="legend">
-        <span class="key"><span class="swatch posted"></span>⚠️ Posted (bacteria)</span>
-        <span class="key"><span class="swatch cso"></span>🚨 CSO discharge</span>
+        <span class="key"><span class="swatch posted"></span>Posted (bacteria)</span>
+        <span class="key"><span class="swatch cso"></span>CSO discharge</span>
       </div>
     </div>
     <div class="board">
@@ -104,7 +106,7 @@
 <script>
 (function(){
   var DATA = null, RANGE = 'all';
-  var SEV_LABEL = {posted:'⚠️ Posted — elevated bacteria', cso:'🚨 CSO discharge'};
+  var SEV_LABEL = {posted:'Posted — elevated bacteria', cso:'CSO discharge'};
   var STUB_MS = 45*60*1000; // visual stub for windows whose end was never logged
   var fmtOpts = {timeZone:'America/Los_Angeles', month:'short', day:'numeric', hour:'numeric', minute:'2-digit'};
   function fmt(iso){ return iso ? new Date(iso).toLocaleString('en-US', fmtOpts) : '—'; }
@@ -230,7 +232,7 @@
       banner.style.display = ''; banner.textContent = data.note;
     } else if (data.event_count === 0) {
       banner.style.display = ''; banner.className = 'banner clean';
-      banner.innerHTML = '🌊 <b>No posting or CSO events detected</b>' +
+      banner.innerHTML = '<svg class="ic" style="color:#237059"><use href="#i-circle-check"/></svg> <b>No posting or CSO events detected</b>' +
         (data.monitoring_since ? ' since real-time monitoring began on <b>' + fmt(data.monitoring_since) + '</b>' : ' yet') +
         ' — a clean-water stretch. The watcher checks every station once a minute; the first real event will appear here automatically.';
     }

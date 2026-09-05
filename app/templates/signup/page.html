@@ -20,7 +20,8 @@
   .kicker{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#85BFDF}
   .left h1{margin:10px 0 12px;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:52px;line-height:.95;text-transform:uppercase;letter-spacing:.04em}
   .left p{margin:0 0 8px;font-size:15.5px;line-height:1.55;color:rgba(255,255,255,.9)}
-  .disclaimer{margin-top:auto;padding-top:24px;font-size:12.5px;color:#85BFDF;line-height:1.5;border-top:1px solid rgba(255,255,255,.18)}
+  .disclaimer{margin-top:auto;padding-top:24px;font-size:12.5px;color:#85BFDF;line-height:1.5;border-top:1px solid rgba(255,255,255,.18);display:flex;gap:12px;align-items:flex-start}
+  .disclaimer .illus{background:#fff;border-radius:10px;padding:3px;width:44px;height:44px}
   .left img{height:56px;width:auto;align-self:flex-start;margin-bottom:18px;opacity:.95}
 
   .right{padding:30px}
@@ -50,8 +51,10 @@
   .msg.err{display:block;background:#fdeceb;color:#a63a30;font-weight:600}
   .st-label{background:rgba(255,255,255,.92);border:1px solid #b9c6cd;border-radius:6px;padding:0 4px;font:700 10px 'Roboto',sans-serif;color:#26272A;white-space:nowrap;box-shadow:none}
   .st-label::before{display:none}
-</style></head>
-<body><div class="wrap">
+</style><link rel="stylesheet" href="/static/brand.css">
+</head>
+<body>
+{% include "_icons.html" %}<div class="wrap">
   <a class="back-to-dash" href="/">← Dashboard</a>
   <div class="panel">
     <div class="left">
@@ -61,8 +64,8 @@
       <p>One email when a beach you follow is posted for bacteria or has a sewage discharge.</p>
       <p>No daily digest, no marketing. Reply to any alert to unsubscribe.</p>
       <p>Changing beaches? Sign up again with the same email — the new zones replace the old ones.</p>
-      <div class="disclaimer">🛡 Alerts are a community-science tool, not an official advisory.
-      Posted signs and SFPUC or health-department notices always win.</div>
+      <div class="disclaimer"><img class="illus" src="/static/brand/shield-flask.png" alt=""><div>Alerts are a community-science tool, not an official advisory.
+      Posted signs and SFPUC or health-department notices always win.</div></div>
     </div>
     <div class="right">
       <form id="f" autocomplete="off">
@@ -147,9 +150,9 @@ document.getElementById("f").addEventListener("submit", async e => {
       msg.className = "msg ok";
       const zones = d.zones || "your selected areas";
       const count = d.station_count ? ` — ${d.station_count} monitoring sites covered` : "";
-      msg.textContent = `✔ You're signed up for ${zones}${count}. ` +
+      msg.innerHTML = `<svg class="ic"><use href="#i-circle-check"/></svg> You're signed up for ${zones}${count}. ` +
                         `You'll only hear from us when one of them turns bad.`;
-      go.textContent = "Signed up ✔";
+      go.innerHTML = 'Signed up <svg class="ic"><use href="#i-check"/></svg>';
     } else {
       msg.className = "msg err"; msg.textContent = d.error || "Something went wrong.";
       go.disabled = false; go.textContent = "Sign up";

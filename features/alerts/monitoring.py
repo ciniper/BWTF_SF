@@ -389,7 +389,7 @@ class SFWaterQualityMonitor:
                     alert_type="elevated_bacteria",
                     station_id=station_id,
                     station_name=sample.station_name,
-                    message=f"⚠️ ELEVATED {standard_info.get('description', analyte)} at {sample.station_name}: "
+                    message=f"ELEVATED {standard_info.get('description', analyte)} at {sample.station_name}: "
                            f"{sample.value:.0f} MPN/100mL (Standard: {sample.standard_value:.0f})",
                     severity=severity,
                     sample_date=sample.sample_date,
@@ -417,7 +417,7 @@ class SFWaterQualityMonitor:
                     alert_type="elevated_bacteria",
                     station_id=station_id,
                     station_name=station_name,
-                    message=f"⚠️ COLIFORM RATIO EXCEEDANCE at {station_name}: "
+                    message=f"COLIFORM RATIO EXCEEDANCE at {station_name}: "
                            f"Total Coliform {total_val:.0f} MPN/100mL exceeds conditional limit of 1,000 "
                            f"(fecal/total ratio: {ratio:.2f} > 0.1)",
                     severity="advisory",
@@ -451,7 +451,7 @@ class SFWaterQualityMonitor:
                 alert_type="potential_cso",
                 station_id="MULTIPLE",
                 station_name="Bay Area Stations",
-                message=f"🚨 POTENTIAL CSO EVENT: Multiple bay stations showing elevated bacteria.{basin_info} "
+                message=f"POTENTIAL CSO EVENT: Multiple bay stations showing elevated bacteria.{basin_info} "
                        f"Call 1-877-SFBEACH (1-877-732-3224) or 415-242-2214 for current conditions.",
                 severity="warning",
                 sample_date=datetime.now(),
@@ -621,7 +621,7 @@ class CombinedWaterQualityMonitor:
                             alert_type="cso_discharge",
                             station_id=station.cso_station_id or station.station_id,
                             station_name=station.station_name,
-                            message=f"🚨 CSO ALERT: Combined Sewer Discharge at {station.station_name}. "
+                            message=f"CSO ALERT: Combined Sewer Discharge at {station.station_name}. "
                                    f"Avoid water contact. Call 1-877-SFBEACH for details.",
                             severity="warning",
                             sample_date=station.sample_date or datetime.now(),
@@ -641,7 +641,7 @@ class CombinedWaterQualityMonitor:
                             alert_type="elevated_bacteria",
                             station_id=station.posted_station_id or station.station_id,
                             station_name=station.station_name,
-                            message=f"⚠️ POSTED: {station.station_name} - Elevated bacteria levels. "
+                            message=f"POSTED: {station.station_name} - Elevated bacteria levels. "
                                    f"Avoid water contact.",
                             severity="advisory",
                             sample_date=station.sample_date or datetime.now(),

@@ -67,8 +67,10 @@
   .notes h2{font-size:15px;margin:0 0 8px;color:#26272a}
   .foot{color:#8a949b;font-size:12px;margin-top:16px}
   .loading{padding:40px;text-align:center;color:#54576F;font-weight:600}
-</style></head>
-<body><div class="wrap">
+</style><link rel="stylesheet" href="/static/brand.css">
+</head>
+<body>
+{% include "_icons.html" %}<div class="wrap">
   <a class="back-to-dash" href="/">← Dashboard</a>
   <div class="hero">
     <h1>Site Report Card</h1>
@@ -249,7 +251,7 @@ async function load() {
     "% bad — " + (STATE.mode === "weekly" ? "weekly regime" : "all samples");
   document.getElementById("metaLine").textContent =
     `${DATA.total_samples.toLocaleString()} samples · ${rangeTxt}` +
-    (DATA.stale_note ? " · ⚠ cached (" + DATA.stale_note + ")" : "");
+    (DATA.stale_note ? " · cached (" + DATA.stale_note + ")" : "");
   const sd = document.getElementById("startDate"), ed = document.getElementById("endDate");
   sd.max = ed.max = DATA.newest_sample;
   if (!sd.value && DATA.start) sd.value = DATA.start;

@@ -273,8 +273,7 @@
             color: #e74c3c;
         }
         
-        .summary-label {
-            color: var(--surf-muted);
+        .summary-label { display: flex; justify-content: center; align-items: center; gap: 6px; color: var(--surf-muted);
             margin-top: 5px;
             font-size: 0.9em;
             text-transform: uppercase;
@@ -299,8 +298,7 @@
             align-items: center;
             gap: 8px;
             text-transform: uppercase;
-            letter-spacing: 0.1em;
-        }
+            letter-spacing: 0.1em; display: flex; align-items: center; gap: 10px; }
         
         .alert {
             display: flex;
@@ -590,34 +588,22 @@
             flex: 1;
         }
         
-        .status-badge {
-            padding: 3px 10px;
+        .status-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px;
             border-radius: 20px;
             font-size: 0.75em;
             font-weight: 600;
             text-transform: uppercase;
         }
         
-        .status-badge.safe {
-            background: #d4edda;
-            color: #155724;
-        }
+        .status-badge.safe { background: #e0f0ea; color: #237059; }
         
-        .status-badge.posted {
-            background: #fff3cd;
-            color: #856404;
-        }
+        .status-badge.posted { background: #fbe9d9; color: #9a5313; }
         
-        .status-badge.cso {
-            background: #f8d7da;
-            color: #721c24;
+        .status-badge.cso { background: #f8dcd6; color: #b5310a;
             animation: badge-pulse 2s infinite;
         }
         
-        .status-badge.not_sampled {
-            background: #e9ecef;
-            color: #6c757d;
-        }
+        .status-badge.not_sampled { background: #e9edf2; color: #54576F; }
         
         @keyframes badge-pulse {
             0%, 100% { opacity: 1; }
@@ -737,8 +723,10 @@
             }
         }
     </style>
+<link rel="stylesheet" href="/static/brand.css">
 </head>
 <body>
+{% include "_icons.html" %}
     <div class="container">
         <a class="back-to-dash" href="/">← Dashboard</a>
         <header>
@@ -761,7 +749,7 @@
                     <div class="hero-logo surfrider">
                         <img src="{{ surfrider_logo }}" alt="Surfrider Foundation logo">
                     </div>
-                    <button class="refresh-btn" onclick="location.reload()">🔄 Refresh</button>
+                    <button class="refresh-btn" onclick="location.reload()"><svg class="ic"><use href="#i-refresh-cw"/></svg> Refresh</button>
                 </div>
             </div>
         </header>
@@ -773,19 +761,19 @@
         <div class="summary">
             <div class="summary-card cso">
                 <div class="summary-number">{{ cso_count }}</div>
-                <div class="summary-label">🚨 Active CSO</div>
+                <div class="summary-label"><svg class="ic"><use href="#i-octagon-alert"/></svg> Active CSO</div>
             </div>
             <div class="summary-card posted">
                 <div class="summary-number">{{ posted_count }}</div>
-                <div class="summary-label">⚠️ Posted</div>
+                <div class="summary-label"><svg class="ic"><use href="#i-triangle-alert"/></svg> Posted</div>
             </div>
             <div class="summary-card safe">
                 <div class="summary-number">{{ safe_count }}</div>
-                <div class="summary-label">✅ Safe</div>
+                <div class="summary-label"><svg class="ic"><use href="#i-circle-check"/></svg> Safe</div>
             </div>
             <div class="summary-card total">
                 <div class="summary-number">{{ total_stations }}</div>
-                <div class="summary-label">📍 Total Stations</div>
+                <div class="summary-label"><svg class="ic"><use href="#i-map-pin"/></svg> Total Stations</div>
             </div>
             {{ tide_html|safe }}
         </div>
@@ -825,7 +813,7 @@
                     </div>
                 </form>
                 <div class="helper-note">Currently simulated sites: {{ simulated_sites_html }}</div>
-                <div class="helper-note" style="margin-top: 12px;">📮 Saving a simulation is the whole test:
+                <div class="helper-note" style="margin-top: 12px;"><svg class="ic"><use href="#i-info"/></svg> Saving a simulation is the whole test:
                 the <b>automatic sender (Postgres) detects it and emails matching subscribers within
                 a minute</b> — the same path a real event takes. The old manual send buttons were
                 removed because they used the legacy in-app sender and produced a duplicate,
@@ -846,12 +834,12 @@
         </div>
         
         <div class="alerts-section">
-            <h2 class="section-title">⚠️ Active Alerts</h2>
+            <h2 class="section-title"><span class="ictile"><svg class="ic"><use href="#i-bell"/></svg></span> Active Alerts</h2>
             {{ alerts_html|safe }}
         </div>
         
         <div class="stations-section">
-            <h2>📍 Beach Stations</h2>
+            <h2><span class="ictile"><svg class="ic"><use href="#i-map-pin"/></svg></span> Beach Stations</h2>
             <div class="stations-grid">
                 {{ station_cards|safe }}
             </div>

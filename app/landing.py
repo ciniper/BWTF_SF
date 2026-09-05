@@ -6,6 +6,7 @@ hub page. The markup lives in ``app/templates/landing.html`` (Jinja2).
 """
 from datetime import datetime
 
+from html import escape as _esc
 from flask import render_template
 
 BWTF_LOGO_URL = "https://bwtf.surfrider.org/images/BWTF-Logo_White.png"
@@ -40,12 +41,12 @@ def _status_banner(summary: dict) -> tuple[str, str]:
     safe = summary.get("safe_count", 0)
     cso_locs = summary.get("cso_locations", [])
     if cso:
-        sites = ", ".join(cso_locs) if cso_locs else f"{cso} site(s)"
-        return ("danger", f"🚨 Active combined-sewer-overflow discharge at: {sites}. Avoid water contact.")
+        sites = _esc(", ".join(cso_locs)) if cso_locs else f"{cso} site(s)"
+        return ("danger", f'<svg class="ic"><use href="#i-octagon-alert"/></svg> Active combined-sewer-overflow discharge at: {sites}. Avoid water contact.')
     if posted:
-        return ("warn", f"⚠️ {posted} site(s) posted for elevated bacteria. {safe} site(s) currently meeting standards.")
+        return ("warn", f'<svg class="ic"><use href="#i-triangle-alert"/></svg> {posted} site(s) posted for elevated bacteria. {safe} site(s) currently meeting standards.')
     if safe:
-        return ("ok", f"✅ No active CSO discharge. {safe} site(s) meeting California water-quality standards.")
+        return ("ok", f'<svg class="ic"><use href="#i-circle-check"/></svg> No active CSO discharge. {safe} site(s) meeting California water-quality standards.')
     return ("warn", "Status is loading or temporarily unavailable — open the alert page for details.")
 
 
@@ -56,22 +57,22 @@ def _conditions_lines(env_context) -> list[str]:
     try:
         rain = env_context.weather.get_rain_advisory()
         if rain.is_active:
-            lines.append(f"🌧️ Rain advisory active — CSO risk {rain.cso_risk.upper()} "
+            lines.append(f'<svg class="ic"><use href="#i-cloud-rain"/></svg> Rain advisory active — CSO risk {rain.cso_risk.upper()} '
                          f"({rain.total_recent_inches:.2f}\" recent)")
         elif rain.upcoming_rain:
-            lines.append("🌦️ Rain in the forecast — watch for elevated CSO risk")
+            lines.append('<svg class="ic"><use href="#i-cloud-sun-rain"/></svg> Rain in the forecast — watch for elevated CSO risk')
         else:
-            lines.append("☀️ No recent or forecast rain — conditions favorable")
+            lines.append('<svg class="ic"><use href="#i-circle-check"/></svg> No recent or forecast rain — conditions favorable')
     except Exception:
         pass
     try:
         tide = env_context.tides.get_tide_info()
         if tide:
-            arrow = "📈 rising" if tide.current_trend == "rising" else "📉 falling"
+            arrow = '<svg class="ic"><use href="#i-trending-up"/></svg> rising' if tide.current_trend == "rising" else '<svg class="ic"><use href="#i-trending-down"/></svg> falling'
             nxt = ""
             if tide.next_high:
-                nxt = f" · next high {tide.next_high.time.strftime('%-I:%M %p')}"
-            lines.append(f"🌊 Tide {arrow}{nxt}")
+                nxt = f" · next high {_esc(tide.next_high.time.strftime('%-I:%M %p'))}"
+            lines.append(f'<svg class="ic"><use href="#i-waves"/></svg> Tide {arrow}{nxt}')
     except Exception:
         pass
     return lines

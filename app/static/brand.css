@@ -1,0 +1,15 @@
+/* BWTF brand helpers shared by every page (2026-09-04).
+   .ic   — inline Lucide icon from the sprite in templates/_icons.html; sized by font-size.
+   .badge — the one status/severity badge: colour + word + small glyph (Kyle's mockup uses
+           word + colour; the glyph is added for colour-blind readers). */
+.ic{display:inline-block;width:1em;height:1em;vertical-align:-.15em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 7px;border-radius:999px;font-weight:700;font-size:12px;line-height:1.4;white-space:nowrap}
+.badge .ic{width:14px;height:14px}
+.badge.danger{background:#f8dcd6;color:#b5310a}
+.badge.warn{background:#fbe9d9;color:#9a5313}
+.badge.ok{background:#e0f0ea;color:#237059}
+.badge.muted{background:#e9edf2;color:#54576F}
+.ictile{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:11px;background:#E3EBF2;color:#0072BC;flex:none}
+.ictile .ic{width:20px;height:20px}
+.illus{width:38px;height:38px;flex:none;display:inline-block;vertical-align:middle}
+.with-ic{display:inline-flex;align-items:center;gap:7px}

@@ -290,18 +290,18 @@ class WeatherAPI:
         # Build message
         if is_active:
             message = (
-                f"🌧️ RAIN ADVISORY: Recent rainfall detected ({total_recent_inches:.2f} inches). "
+                f"RAIN ADVISORY: Recent rainfall detected ({total_recent_inches:.2f} inches). "
                 f"SFPUC advises avoiding water contact during and 72 hours after rain. "
                 f"Advisory active until {advisory_until.strftime('%m/%d %I:%M %p') if advisory_until else 'unknown'}."
             )
         elif upcoming_rain:
             next_rain = upcoming_rain[0]
             message = (
-                f"🌦️ RAIN FORECAST: {next_rain.description}. "
+                f"RAIN FORECAST: {next_rain.description}. "
                 f"Plan accordingly — SFPUC advises avoiding water contact during and 72 hours after rain."
             )
         else:
-            message = "☀️ No rain detected or forecasted. Conditions favorable for beach recreation."
+            message = "No rain detected or forecasted. Conditions favorable for beach recreation."
         
         return RainAdvisory(
             is_active=is_active,

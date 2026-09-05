@@ -4,110 +4,122 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SF CSO Live Forecast</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Avenir Next','Trebuchet MS','Segoe UI', Roboto, sans-serif; background: #e2e8ee; color: #26272a; min-height: 100vh; }
-.container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; color: #26272a; min-height: 100vh; }
+.container { max-width: 1100px; margin: 0 auto; padding: 20px; }
 
-header { background: #1f6fb0; color: #fff; border-radius: 18px; padding: 28px 32px; margin-bottom: 20px; text-align: center; }
-header h1 { font-size: 1.8em; color: #fff; -webkit-text-stroke: 2px #26272a; paint-order: stroke fill; }
-header .subtitle { color: rgba(255,255,255,0.85); font-size: 0.9em; margin-top: 4px; }
-header .live-dot { display: inline-block; width: 8px; height: 8px; background: #3c9160; border-radius: 50%; margin-right: 6px; animation: blink 2s infinite; }
+header { background: #0072BC; color: #fff; border-radius: 24px; padding: 28px 32px; margin-bottom: 20px; }
+header h1 { font-family: 'Bebas Neue', sans-serif; font-weight: 400; font-size: 38px; text-transform: uppercase; letter-spacing: .06em; color: #fff; display: flex; align-items: center; gap: 12px; }
+header .subtitle { color: rgba(255,255,255,0.88); font-size: 15px; margin-top: 4px; }
+header .live-dot { display: inline-block; width: 8px; height: 8px; background: #237059; border-radius: 50%; margin-right: 6px; animation: blink 2s infinite; }
 
 .mode-bar { display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
-.mode-btn { padding: 8px 20px; border-radius: 8px; border: 2px solid #dfe5ea; background: #ffffff; color: #5e6a71; cursor: pointer; font-size: 0.9em; font-weight: 600; transition: all 0.2s; }
-.mode-btn.active { border-color: #1f6fb0; color: #fff; background: #1f6fb0; }
-.mode-btn:hover { border-color: #2b7fbf; }
-.date-picker { background: #ffffff; border: 2px solid #dfe5ea; border-radius: 8px; padding: 8px 14px; color: #26272a; font-size: 0.9em; cursor: pointer; }
-.date-picker:focus { border-color: #2b7fbf; outline: none; }
+.mode-btn { font-family: inherit; padding: 8px 18px; border-radius: 999px; border: 2px solid #d9e4e8; background: #ffffff; color: #54576F; cursor: pointer; font-size: 0.9em; font-weight: 600; transition: all 0.2s; }
+.mode-btn.active { border-color: #0072BC; color: #fff; background: #0072BC; }
+.mode-btn:hover { border-color: #0072BC; }
+.date-picker { font-family: inherit; background: #ffffff; border: 2px solid #d9e4e8; border-radius: 10px; padding: 8px 14px; color: #26272a; font-size: 0.9em; cursor: pointer; }
+.date-picker:focus { border-color: #0072BC; outline: none; }
 .historical-label { color: #b97e00; font-size: 0.85em; font-weight: 600; }
 
 .risk-banner { text-align: center; padding: 16px 22px; border-radius: 14px; margin-bottom: 20px; font-size: 1.2em; font-weight: 600; }
-.risk-none { background: #3c9160; color: #fff; }
+.risk-none { background: #237059; color: #fff; }
 .risk-low { background: #b97e00; color: #fff; }
 .risk-moderate { background: #d4763a; color: #fff; }
-.risk-high { background: #d15c5c; color: #fff; }
-.risk-extreme { background: #b5310a; color: #fff; animation: pulse 2s infinite; }
+.risk-high { background: #b5310a; color: #fff; }
+.risk-extreme { background: #8f2508; color: #fff; animation: pulse 2s infinite; }
 @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.7;} }
 
 /* Forecast timeline */
 .timeline { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-bottom: 20px; }
 @media (max-width: 800px) { .timeline { grid-template-columns: repeat(4, 1fr); } }
-.day-card { background: #ffffff; border-radius: 12px; padding: 14px; text-align: center; border: 2px solid transparent; transition: border-color 0.3s, transform 0.2s; cursor: pointer; }
-.day-card.today { border-color: #2b7fbf; }
+.day-card { background: #ffffff; border-radius: 16px; padding: 14px; text-align: center; border: 2px solid transparent; transition: border-color 0.3s, transform 0.2s; cursor: pointer; }
+.day-card.today { border-color: #0072BC; }
 .day-card.selected { border-color: #b97e00; background: #fff7e6; }
-.day-card:hover { transform: translateY(-2px); border-color: #8a949b; }
+.day-card:hover { transform: translateY(-2px); border-color: #8a93a3; }
 .day-card.selected:hover { border-color: #b97e00; }
-.day-label { font-size: 0.8em; color: #5e6a71; margin-bottom: 4px; }
-.day-label.today-label { color: #2b7fbf; font-weight: 700; }
-.day-rain { font-size: 0.85em; color: #8a949b; margin-bottom: 8px; }
-.day-rain .amount { color: #2b7fbf; font-weight: 600; }
+.day-label { font-size: 0.8em; color: #54576F; margin-bottom: 4px; }
+.day-label.today-label { color: #0072BC; font-weight: 700; }
+.day-rain { font-size: 0.85em; color: #8a93a3; margin-bottom: 8px; }
+.day-rain .amount { color: #0072BC; font-weight: 600; }
 .day-prob { font-size: 2em; font-weight: 700; }
 .day-risk { font-size: 0.7em; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
-.day-bar { height: 4px; border-radius: 2px; background: #dfe5ea; margin-top: 8px; overflow: hidden; }
+.day-bar { height: 4px; border-radius: 2px; background: #d9e4e8; margin-top: 8px; overflow: hidden; }
 .day-bar-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
-.day-source { font-size: 0.65em; color: #8a949b; margin-top: 6px; }
+.day-source { font-size: 0.65em; color: #8a93a3; margin-top: 6px; }
 
 /* Basin detail */
 .basins { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
 @media (max-width: 700px) { .basins { grid-template-columns: 1fr; } }
-.basin-card { background: #ffffff; border-radius: 12px; padding: 16px; border-left: 4px solid #dfe5ea; }
-.basin-name { font-size: 0.9em; color: #5e6a71; margin-bottom: 6px; }
+.basin-card { background: #ffffff; border-radius: 16px; padding: 16px; border-left: 4px solid #d9e4e8; }
+.basin-name { font-size: 0.9em; color: #54576F; margin-bottom: 6px; }
 .basin-prob { font-size: 1.8em; font-weight: 700; }
-.basin-bar { height: 6px; border-radius: 3px; background: #dfe5ea; margin-top: 8px; overflow: hidden; }
+.basin-bar { height: 6px; border-radius: 3px; background: #d9e4e8; margin-top: 8px; overflow: hidden; }
 .basin-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
-.basin-detail { font-size: 0.8em; color: #8a949b; margin-top: 8px; }
+.basin-detail { font-size: 0.8em; color: #8a93a3; margin-top: 8px; }
 
 /* Beach status */
-.beach-section { background: #ffffff; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
-.beach-section h2 { color: #2b7fbf; font-size: 1.1em; margin-bottom: 12px; }
+.beach-section { background: #ffffff; border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+.beach-section h2 { color: #26272a; font-size: 1.05em; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
 .beach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
-.beach-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px; font-size: 0.85em; background: #eef1f4; }
+.beach-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px; font-size: 0.85em; background: #f3f6f9; }
 .beach-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-.beach-dot.safe { background: #3c9160; }
+.beach-dot.safe { background: #237059; }
 .beach-dot.posted { background: #d4763a; }
-.beach-dot.cso { background: #d15c5c; animation: blink 1.5s infinite; }
-.beach-dot.not_sampled { background: #8a949b; }
+.beach-dot.cso { background: #b5310a; animation: blink 1.5s infinite; }
+.beach-dot.not_sampled { background: #8a93a3; }
 
 /* Ground truth overlay (historical mode) */
-.ground-truth { background: #ffffff; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 2px solid #dfe5ea; }
-.ground-truth.has-cso { border-color: #d15c5c; }
-.ground-truth h2 { color: #b97e00; font-size: 1.1em; margin-bottom: 4px; }
-.ground-truth .gt-subtitle { color: #5e6a71; font-size: 0.85em; margin-bottom: 14px; }
-.ground-truth .gt-verdict { padding: 10px 16px; border-radius: 8px; margin-bottom: 14px; font-weight: 600; font-size: 0.95em; }
-.gt-verdict.cso-yes { background: #d15c5c; color: #fff; }
-.gt-verdict.cso-no { background: #3c9160; color: #fff; }
-.gt-verdict.no-data { background: #eef1f4; color: #5e6a71; border: 1px dashed #dfe5ea; }
+.ground-truth { background: #ffffff; border-radius: 16px; padding: 20px; margin-bottom: 20px; border: 2px solid #d9e4e8; }
+.ground-truth.has-cso { border-color: #b5310a; }
+.ground-truth h2 { color: #26272a; font-size: 1.05em; margin-bottom: 4px; display: flex; align-items: center; gap: 10px; }
+.ground-truth .gt-subtitle { color: #54576F; font-size: 0.85em; margin-bottom: 14px; }
+.ground-truth .gt-verdict { padding: 10px 16px; border-radius: 999px; margin-bottom: 14px; font-weight: 600; font-size: 0.95em; }
+.gt-verdict.cso-yes { background: #b5310a; color: #fff; }
+.gt-verdict.cso-no { background: #237059; color: #fff; }
+.gt-verdict.no-data { background: #f3f6f9; color: #54576F; border: 1px dashed #d9e4e8; }
 
 .gt-day-tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
-.gt-day-tab { padding: 6px 14px; border-radius: 6px; background: #eef1f4; color: #5e6a71; cursor: pointer; font-size: 0.8em; border: 1px solid #dfe5ea; transition: all 0.2s; }
+.gt-day-tab { padding: 6px 14px; border-radius: 6px; background: #f3f6f9; color: #54576F; cursor: pointer; font-size: 0.8em; border: 1px solid #d9e4e8; transition: all 0.2s; }
 .gt-day-tab:hover { border-color: #b97e00; }
-.gt-day-tab.active { background: #e3eefb; color: #1f6fb0; border-color: #1f6fb0; }
+.gt-day-tab.active { background: #e3eefb; color: #0072BC; border-color: #0072BC; }
 .gt-day-tab .tab-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 4px; }
 
 .gt-basin-group { margin-bottom: 12px; }
-.gt-basin-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid #dfe5ea; }
+.gt-basin-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid #d9e4e8; }
 .gt-basin-name { font-size: 0.9em; font-weight: 600; color: #26272a; }
-.gt-basin-count { font-size: 0.75em; color: #5e6a71; }
+.gt-basin-count { font-size: 0.75em; color: #54576F; }
 .gt-basin-model { font-size: 0.75em; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
 
 .gt-station-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 6px; }
-.gt-station { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px; background: #eef1f4; font-size: 0.82em; }
+.gt-station { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px; background: #f3f6f9; font-size: 0.82em; }
 .gt-station-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-.gt-station-dot.elevated { background: #d15c5c; }
-.gt-station-dot.clean { background: #3c9160; }
+.gt-station-dot.elevated { background: #b5310a; }
+.gt-station-dot.clean { background: #237059; }
 .gt-station-name { flex: 1; color: #3a4a52; }
-.gt-station-value { color: #8a949b; font-size: 0.9em; }
-.gt-station-value.over { color: #d15c5c; font-weight: 600; }
+.gt-station-value { color: #8a93a3; font-size: 0.9em; }
+.gt-station-value.over { color: #b5310a; font-weight: 600; }
 
-.gt-no-samples { color: #8a949b; font-style: italic; font-size: 0.85em; padding: 10px; }
+.gt-no-samples { color: #8a93a3; font-style: italic; font-size: 0.85em; padding: 10px; }
 
-footer { text-align: center; padding: 20px; color: #8a949b; font-size: 0.8em; }
-footer a { color: #2b7fbf; text-decoration: none; }
-.refresh-info { font-size: 0.8em; color: #8a949b; text-align: center; margin-bottom: 15px; }
+footer { text-align: center; padding: 20px; color: #54576F; font-size: 0.85em; }
+footer p { display: flex; justify-content: center; align-items: center; gap: 7px; flex-wrap: wrap; }
+footer a { color: #0072BC; text-decoration: none; }
+.refresh-info { font-size: 0.8em; color: #8a93a3; text-align: center; margin-bottom: 15px; }
+.mode-btn .ic, .risk-banner .ic { width: 1.15em; height: 1.15em; }
+.basin-name { display: flex; align-items: center; gap: 6px; }
+.basin-name .ic { color: #0072BC; font-size: 1.15em; }
+.day-rain, .day-source { display: flex; justify-content: center; align-items: center; gap: 4px; }
+.risk-banner { display: flex; justify-content: center; align-items: center; gap: 10px; }
+.historical-label { display: inline-flex; align-items: center; gap: 5px; }
 </style>
-<style>.back-to-dash{display:inline-block;margin:0 0 14px;padding:8px 14px;background:#343b44;color:#fff;border-radius:999px;text-decoration:none;font-weight:700;font-size:13px}.back-to-dash:hover{background:#26272a}</style></head>
+<style>.back-to-dash{display:inline-block;margin:0 0 14px;padding:8px 14px;background:#343b44;color:#fff;border-radius:999px;text-decoration:none;font-weight:700;font-size:13px}.back-to-dash:hover{background:#26272a}</style><link rel="stylesheet" href="/static/brand.css">
+</head>
 <body>
+{% include "_icons.html" %}
 <div class="container"><a class="back-to-dash" href="/">← Dashboard</a>
 <header>
     <h1><span class="live-dot"></span> SF CSO Live Forecast</h1>
@@ -115,8 +127,8 @@ footer a { color: #2b7fbf; text-decoration: none; }
 </header>
 
 <div class="mode-bar">
-    <button class="mode-btn active" id="btnLive" onclick="setMode('live')">📡 Live Forecast</button>
-    <button class="mode-btn" id="btnHistorical" onclick="setMode('historical')">📅 Historical</button>
+    <button class="mode-btn active" id="btnLive" onclick="setMode('live')"><svg class="ic"><use href="#i-satellite-dish"/></svg> Live Forecast</button>
+    <button class="mode-btn" id="btnHistorical" onclick="setMode('historical')"><svg class="ic"><use href="#i-calendar"/></svg> Historical</button>
     <div id="datePickerWrap" style="display:none;">
         <input type="date" class="date-picker" id="datePicker" min="{{ min_date }}" max="{{ max_date }}" value="{{ default_date }}">
         <span class="historical-label" id="histLabel"></span>
@@ -134,7 +146,7 @@ footer a { color: #2b7fbf; text-decoration: none; }
 
 <!-- Ground truth overlay (historical mode only) -->
 <div id="groundTruth" class="ground-truth" style="display:none;">
-    <h2>🔬 Ground Truth — Actual Bacteria Results</h2>
+    <h2><img class="illus" src="/static/brand/beaker.png" alt=""> Ground Truth — Actual Bacteria Results</h2>
     <div class="gt-subtitle">SF Gov water quality samples compared to model predictions</div>
     <div id="gtVerdict" class="gt-verdict no-data"></div>
     <div class="gt-day-tabs" id="gtDayTabs"></div>
@@ -143,13 +155,13 @@ footer a { color: #2b7fbf; text-decoration: none; }
 
 <!-- Current beach status -->
 <div class="beach-section">
-    <h2>🏖️ Current Beach Status (SFPUC Real-Time)</h2>
+    <h2><span class="ictile"><svg class="ic"><use href="#i-umbrella"/></svg></span> Current Beach Status (SFPUC Real-Time)</h2>
     <div class="beach-grid" id="beachGrid"></div>
 </div>
 
 <footer>
-    <p>📞 1-877-SFBEACH (1-877-732-3224) or 415-242-2214</p>
-    <p>⚠️ Avoid water contact during and 72 hours after rain</p>
+    <p><svg class="ic"><use href="#i-phone"/></svg> 1-877-SFBEACH (1-877-732-3224) or 415-242-2214</p>
+    <p style="color:#9a5313"><svg class="ic"><use href="#i-triangle-alert"/></svg> Avoid water contact during and 72 hours after rain</p>
     <p style="margin-top:8px;">
         <a href="https://webapps.sfpuc.org/sapps/beachesandbay.html">SFPUC Beach Map</a> ·
         Model: GBM trained on 6 years of rain + bacteria data (AUC 0.870)
@@ -158,19 +170,24 @@ footer a { color: #2b7fbf; text-decoration: none; }
 </div>
 
 <script>
+// Sprite icon + escaped text helpers (icons live in templates/_icons.html)
+const ic = name => `<svg class="ic"><use href="#i-${name}"/></svg>`;
+const esc = v => String(v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const badge = (kind, icon, label) => `<span class="badge ${kind}">${ic(icon)}${label}</span>`;
+
 function riskInfo(prob) {
-    if (prob >= 0.75) return { label: 'EXTREME', color: '#d15c5c', bg: '#fbe0e0', cls: 'extreme' };
-    if (prob >= 0.50) return { label: 'HIGH', color: '#c2521a', bg: '#fbe9dd', cls: 'high' };
-    if (prob >= 0.25) return { label: 'MODERATE', color: '#b97e00', bg: '#fbf0d6', cls: 'moderate' };
-    if (prob >= 0.10) return { label: 'LOW', color: '#6b8e23', bg: '#eef6dc', cls: 'low' };
-    return { label: 'MINIMAL', color: '#3c9160', bg: '#e3f2ea', cls: 'none' };
+    if (prob >= 0.75) return { label: 'EXTREME', color: '#8f2508', bg: '#f8dcd6', cls: 'extreme' };
+    if (prob >= 0.50) return { label: 'HIGH', color: '#b5310a', bg: '#f8dcd6', cls: 'high' };
+    if (prob >= 0.25) return { label: 'MODERATE', color: '#d4763a', bg: '#fbe9d9', cls: 'moderate' };
+    if (prob >= 0.10) return { label: 'LOW', color: '#b97e00', bg: '#fbf0d6', cls: 'low' };
+    return { label: 'MINIMAL', color: '#237059', bg: '#e0f0ea', cls: 'none' };
 }
 
 const basinLabels = {
-    citywide: { icon: '🏙️', name: 'City-wide CSO', desc: '3+ stations elevated across 2+ basins' },
-    westside: { icon: '🌊', name: 'Westside', desc: 'Ocean Beach, Baker Beach, China Beach' },
-    north_shore: { icon: '🏖️', name: 'North Shore', desc: 'Crissy Field, Aquatic Park' },
-    southeast: { icon: '⚓', name: 'Southeast', desc: 'Islais Creek, Candlestick Point' },
+    citywide: { icon: ic('building-2'), name: 'City-wide CSO', desc: '3+ stations elevated across 2+ basins' },
+    westside: { icon: ic('waves'), name: 'Westside', desc: 'Ocean Beach, Baker Beach, China Beach' },
+    north_shore: { icon: ic('umbrella'), name: 'North Shore', desc: 'Crissy Field, Aquatic Park' },
+    southeast: { icon: ic('anchor'), name: 'Southeast', desc: 'Islais Creek, Candlestick Point' },
 };
 
 let currentMode = 'live';
@@ -192,7 +209,7 @@ async function loadData() {
         if (currentMode === 'historical') {
             const date = document.getElementById('datePicker').value;
             if (!date) return;
-            document.getElementById('histLabel').textContent = '⏳ Loading...';
+            document.getElementById('histLabel').innerHTML = ic('hourglass') + ' Loading...';
 
             // Fetch predictions and bacteria data in parallel
             const [predResp, bacteriaResp] = await Promise.all([
@@ -203,8 +220,8 @@ async function loadData() {
             const bacteriaData = await bacteriaResp.json();
 
             if (predData.error) {
-                document.getElementById('riskBanner').textContent = '⚠️ ' + predData.error;
-                document.getElementById('histLabel').textContent = '❌ ' + predData.error;
+                document.getElementById('riskBanner').innerHTML = ic('triangle-alert') + ' ' + esc(predData.error);
+                document.getElementById('histLabel').innerHTML = ic('circle-x') + ' ' + esc(predData.error);
                 return;
             }
             // Wrap in same format as live data
@@ -214,14 +231,14 @@ async function loadData() {
                 historical_date: date,
                 bacteria: bacteriaData,
             };
-            document.getElementById('histLabel').textContent = '📅 Showing ' + date;
+            document.getElementById('histLabel').innerHTML = ic('calendar') + ' Showing ' + esc(date);
         } else {
             const resp = await fetch('/forecast/api/data');
             data = await resp.json();
         }
         render(data);
     } catch(e) {
-        document.getElementById('riskBanner').textContent = '⚠️ Error loading data: ' + e.message;
+        document.getElementById('riskBanner').innerHTML = ic('triangle-alert') + ' Error loading data: ' + esc(e.message);
     }
 }
 
@@ -242,15 +259,15 @@ function render(data) {
     const banner = document.getElementById('riskBanner');
     const bannerRisk = riskInfo(todayMax);
     banner.className = 'risk-banner risk-' + bannerRisk.cls;
-    const prefix = isHistorical ? '📅 ' + data.historical_date + ': ' : '';
+    const prefix = isHistorical ? ic('calendar') + ' ' + esc(data.historical_date) + ': ' : '';
     if (todayMax >= 0.50) {
-        banner.innerHTML = prefix + '🚨 ' + bannerRisk.label + ' CSO RISK — Avoid water contact at affected beaches';
+        banner.innerHTML = prefix + ic('octagon-alert') + ' ' + bannerRisk.label + ' CSO RISK — Avoid water contact at affected beaches';
     } else if (todayMax >= 0.25) {
-        banner.innerHTML = prefix + '⚠️ ' + bannerRisk.label + ' CSO RISK — Monitor conditions closely';
+        banner.innerHTML = prefix + ic('triangle-alert') + ' ' + bannerRisk.label + ' CSO RISK — Monitor conditions closely';
     } else if (todayMax >= 0.10) {
-        banner.innerHTML = prefix + '🟡 ' + bannerRisk.label + ' CSO RISK — Some rain, worth watching';
+        banner.innerHTML = prefix + ic('circle-alert') + ' ' + bannerRisk.label + ' CSO RISK — Some rain, worth watching';
     } else {
-        banner.innerHTML = prefix + '✅ MINIMAL CSO RISK — Conditions favorable for beach recreation';
+        banner.innerHTML = prefix + ic('circle-check') + ' MINIMAL CSO RISK — Conditions favorable for beach recreation';
     }
 
     if (!isHistorical) {
@@ -260,7 +277,7 @@ function render(data) {
             const futureMax = Math.max(...futureDays.map(d => Math.max(...Object.values(d.predictions))));
             if (futureMax > todayMax + 0.15 && futureMax >= 0.25) {
                 const futureRisk = riskInfo(futureMax);
-                banner.innerHTML += '<br><span style="font-size:0.8em;opacity:0.9;">⚠️ Higher risk coming: ' + futureRisk.label + ' (' + Math.round(futureMax*100) + '%) in forecast</span>';
+                banner.innerHTML += '<br><span style="font-size:0.8em;opacity:0.9;">' + ic('triangle-alert') + ' Higher risk coming: ' + futureRisk.label + ' (' + Math.round(futureMax*100) + '%) in forecast</span>';
             }
         }
     }
@@ -278,8 +295,8 @@ function render(data) {
     // Timeline
     const rainSourceLabel = day => {
         const src = day.rain_source || (day.is_forecast ? 'forecast' : 'model');
-        return {observed: '📊 SFO gauge', mixed: '📊 gauge + 📡 ECMWF',
-                model: '📡 model hindcast', forecast: '📡 ECMWF forecast'}[src] || src;
+        return {observed: ic('gauge') + ' SFO gauge', mixed: ic('gauge') + ' gauge + ' + ic('satellite-dish') + ' ECMWF',
+                model: ic('satellite-dish') + ' model hindcast', forecast: ic('satellite-dish') + ' ECMWF forecast'}[src] || src;
     };
     const timeline = document.getElementById('timeline');
     timeline.innerHTML = '';
@@ -293,7 +310,7 @@ function render(data) {
         card.dataset.date = day.date;
         card.innerHTML = `
             <div class="day-label ${day.is_today ? 'today-label' : ''}">${day.label}</div>
-            <div class="day-rain">☔ <span class="amount">${day.rain_inches.toFixed(2)}"</span></div>
+            <div class="day-rain">${ic('droplets')} <span class="amount">${day.rain_inches.toFixed(2)}"</span></div>
             <div class="day-prob" style="color:${risk.color}">${pct}%</div>
             <div class="day-risk" style="color:${risk.color}">${risk.label}</div>
             <div class="day-bar"><div class="day-bar-fill" style="width:${pct}%;background:${risk.color}"></div></div>
@@ -320,8 +337,8 @@ function render(data) {
     beaches.forEach(b => {
         const item = document.createElement('div');
         item.className = 'beach-item';
-        const statusLabel = b.status === 'cso' ? '🚨 CSO' : b.status === 'posted' ? '⚠️ Posted' : b.status === 'safe' ? '✅ Safe' : '⚪ No data';
-        item.innerHTML = `<span class="beach-dot ${b.status}"></span><span>${b.name}</span><span style="margin-left:auto;font-size:0.75em;color:#8a949b;">${statusLabel}</span>`;
+        const statusLabel = b.status === 'cso' ? badge('danger', 'octagon-alert', 'CSO') : b.status === 'posted' ? badge('warn', 'triangle-alert', 'Posted') : b.status === 'safe' ? badge('ok', 'circle-check', 'Safe') : badge('muted', 'circle-dashed', 'No data');
+        item.innerHTML = `<span class="beach-dot ${b.status}"></span><span>${b.name}</span><span style="margin-left:auto;">${statusLabel}</span>`;
         beachGrid.appendChild(item);
     });
 
@@ -342,7 +359,7 @@ function selectDay(day) {
     const basinsEl = document.getElementById('basins');
     basinsEl.innerHTML = '';
     for (const [key, prob] of Object.entries(day.predictions)) {
-        const info = basinLabels[key] || { icon: '📍', name: key, desc: '' };
+        const info = basinLabels[key] || { icon: ic('map-pin'), name: key, desc: '' };
         const risk = riskInfo(prob);
         const pct = Math.round(prob * 100);
 
@@ -384,7 +401,7 @@ function renderGroundTruth(data, preds) {
         if (data.historical_date) {
             gtEl.className = 'ground-truth';
             gtVerdict.className = 'gt-verdict no-data';
-            gtVerdict.textContent = '📭 No bacteria samples found for this date range — SFPUC samples weekly, so data may not be available for every day.';
+            gtVerdict.innerHTML = ic('inbox') + ' No bacteria samples found for this date range — SFPUC samples weekly, so data may not be available for every day.';
             gtTabs.innerHTML = '';
             gtContent.innerHTML = '';
         }
@@ -410,29 +427,29 @@ function renderGroundTruth(data, preds) {
         const s = targetDay.summary;
         if (s.likely_cso) {
             gtVerdict.className = 'gt-verdict cso-yes';
-            gtVerdict.innerHTML = '🚨 CSO EVENT CONFIRMED — ' + s.elevated_stations + '/' + s.total_stations +
+            gtVerdict.innerHTML = ic('octagon-alert') + ' CSO EVENT CONFIRMED — ' + s.elevated_stations + '/' + s.total_stations +
                 ' stations elevated across ' + s.elevated_basins + ' basin(s) · ' +
                 s.elevated_samples + '/' + s.total_samples + ' samples exceeded standards';
         } else if (s.elevated_stations > 0) {
             gtVerdict.className = 'gt-verdict cso-no';
-            gtVerdict.innerHTML = '⚠️ Some elevated readings — ' + s.elevated_stations + '/' + s.total_stations +
+            gtVerdict.innerHTML = ic('triangle-alert') + ' Some elevated readings — ' + s.elevated_stations + '/' + s.total_stations +
                 ' stations elevated, but not enough for CSO classification (' + s.elevated_basins + ' basin)';
         } else {
             gtVerdict.className = 'gt-verdict cso-no';
-            gtVerdict.innerHTML = '✅ All clear — 0/' + s.total_stations + ' stations exceeded standards';
+            gtVerdict.innerHTML = ic('circle-check') + ' All clear — 0/' + s.total_stations + ' stations exceeded standards';
         }
     } else {
         // No samples on exact target date, show closest
         const closestDate = sortedDates.length > 0 ? sortedDates[0] : null;
         if (closestDate) {
             const s = bDays[closestDate].summary;
-            const label = s.likely_cso ? '🚨 CSO EVENT' : s.elevated_stations > 0 ? '⚠️ Elevated' : '✅ Clear';
+            const label = s.likely_cso ? ic('octagon-alert') + ' CSO EVENT' : s.elevated_stations > 0 ? ic('triangle-alert') + ' Elevated' : ic('circle-check') + ' Clear';
             gtVerdict.className = 'gt-verdict' + (s.likely_cso ? ' cso-yes' : ' cso-no');
             gtVerdict.innerHTML = label + ' on nearest sample date (' + closestDate + ') — ' +
                 s.elevated_stations + '/' + s.total_stations + ' stations elevated · No samples on ' + targetDate;
         } else {
             gtVerdict.className = 'gt-verdict no-data';
-            gtVerdict.textContent = '📭 No samples found near ' + targetDate;
+            gtVerdict.innerHTML = ic('inbox') + ' No samples found near ' + esc(targetDate);
         }
     }
 
@@ -495,7 +512,7 @@ function renderGroundTruthDay(dayData, dateStr, preds) {
             const match = actual === predicted;
             html += '<span class="gt-basin-model" style="background:' + risk.bg + ';color:' + risk.color + ';">' +
                 'Model: ' + pct + '%</span>';
-            html += '<span style="font-size:0.75em;">' + (match ? '✅' : '❌') + '</span>';
+            html += (match ? '<span style="color:#237059">' + ic('circle-check') : '<span style="color:#b5310a">' + ic('circle-x')) + '</span>';
         }
 
         html += '</div>';

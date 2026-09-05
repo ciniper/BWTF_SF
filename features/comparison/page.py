@@ -15,7 +15,7 @@ COMPARISON_MODAL_SCRIPT = """
   <div class="modal__box">
     <div class="modal__head">
       <h2 id="hist-title">Site history</h2>
-      <button class="modal__close" type="button" onclick="closeSite()">Close ✕</button>
+      <button class="modal__close" type="button" onclick="closeSite()">Close &times;</button>
     </div>
     <p class="modal__note" id="hist-note">Loading…</p>
     <div class="chart-wrap"><canvas id="hist-canvas"></canvas></div>
@@ -203,8 +203,8 @@ class ComparisonRoutes:
             subline = f"<small>{' · '.join(sub)}</small>" if sub else ""
             if r["agree"]:
                 txt = "Both exceed" if r["bwtf_exceeds"] else "Both within standard"
-                return f'<span class="agree agree--yes">✓ {txt}</span>{subline}'
-            return f'<span class="agree agree--no">⚠ Sources differ</span>{subline}'
+                return f'<span class="agree agree--yes"><svg class="ic"><use href="#i-circle-check"/></svg> {txt}</span>{subline}'
+            return f'<span class="agree agree--no"><svg class="ic"><use href="#i-triangle-alert"/></svg> Sources differ</span>{subline}'
 
         rows_html = ""
         for r in data["rows"]:
@@ -215,7 +215,7 @@ class ComparisonRoutes:
                              f"<small class=\"date\">{r['bwtf_date'] or '—'}{(' · ' + r['bwtf_time']) if r['bwtf_time'] else ''}</small>")
             rows_html += f"""
               <tr class="row-click" data-site="{r['site_name']}" tabindex="0" role="button" aria-label="Show history for {r['site_name']}">
-                <td class="site"><strong>{r['site_name']}</strong><span class="go">📈 view history →</span></td>
+                <td class="site"><strong>{r['site_name']}</strong><span class="go"><svg class="ic"><use href="#i-chart-line"/></svg> view history →</span></td>
                 <td>{bwtf_html}</td>
                 <td>{pill(r['city_exceeds'], r['city_raw'])}<small class="date">{r['city_date'] or '—'}{(' · ' + r['city_source']) if r['city_source'] else ''}</small></td>
                 <td>{sfpuc_pill(r['sfpuc_status'])}</td>
