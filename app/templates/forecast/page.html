@@ -118,63 +118,94 @@ footer a { color: #0072BC; text-decoration: none; }
 .historical-label { display: inline-flex; align-items: center; gap: 5px; }
 </style>
 <style>.back-to-dash{display:inline-block;margin:0 0 14px;padding:8px 14px;background:#343b44;color:#fff;border-radius:999px;text-decoration:none;font-weight:700;font-size:13px}.back-to-dash:hover{background:#26272a}</style><link rel="stylesheet" href="/static/brand.css">
+<style>
+.view-toggle { display: inline-flex; border: 2px solid #d9e4e8; border-radius: 999px; overflow: hidden; background: #fff; }
+.view-toggle button { font-family: inherit; border: 0; background: transparent; padding: 7px 14px; color: #54576F; cursor: pointer; font-weight: 600; font-size: 0.85em; display: inline-flex; align-items: center; gap: 5px; }
+.view-toggle button.active { background: #E3EBF2; color: #0072BC; }
+.zone-stations { font-size: 0.78em; color: #8a93a3; margin-top: 6px; line-height: 1.45; }
+.card-badges { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; margin-top: 8px; min-height: 22px; }
+.card-badges .badge { font-size: 0.72em; }
+.day-card.bad { border-color: #b5310a; } .day-card.clear { border-color: #237059; } .day-card.unknown { border-color: transparent; }
+.status-line { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+.tbl th { text-align: left; font-size: 0.75em; letter-spacing: .08em; text-transform: uppercase; color: #54576F; padding: 6px 8px; border-bottom: 1px solid #d9e4e8; }
+.tbl td { padding: 7px 8px; border-bottom: 1px solid #eef2f5; vertical-align: top; }
+.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.subhead { font-size: 0.8em; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #54576F; margin: 16px 0 8px; display: flex; align-items: center; gap: 6px; }
+.subhead:first-child { margin-top: 0; }
+.scorecard { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+.score { background: #f3f6f9; border-radius: 12px; padding: 12px 14px; font-size: 0.85em; }
+.score b { display: block; font-size: 1.05em; color: #26272a; margin-bottom: 4px; }
+.score .row { display: flex; justify-content: space-between; color: #54576F; padding: 2px 0; }
+.score .row span:last-child { font-weight: 700; color: #26272a; font-variant-numeric: tabular-nums; }
+.sources { font-size: 0.78em; color: #8a93a3; line-height: 1.5; margin-top: 12px; }
+.pill-line { display: inline-flex; align-items: center; gap: 4px; }
+.mute { color: #8a93a3; }
+</style>
 </head>
 <body>
 {% include "_icons.html" %}
 <div class="container"><a class="back-to-dash" href="/">← Dashboard</a>
 <header>
     <h1><span class="live-dot"></span> SF CSO Live Forecast</h1>
-    <div class="subtitle">Combined Sewer Overflow risk — updated every 30 minutes</div>
+    <div class="subtitle">Sewage-overflow risk for San Francisco's beaches — by zone, updated every 30 minutes</div>
 </header>
 
 <div class="mode-bar">
-    <button class="mode-btn active" id="btnLive" onclick="setMode('live')"><svg class="ic"><use href="#i-satellite-dish"/></svg> Live Forecast</button>
-    <button class="mode-btn" id="btnHistorical" onclick="setMode('historical')"><svg class="ic"><use href="#i-calendar"/></svg> Historical</button>
-    <div id="datePickerWrap" style="display:none;">
+    <button class="mode-btn active" id="btnLive" onclick="setMode('live')"><svg class="ic"><use href="#i-pulse"/></svg> Live forecast</button>
+    <button class="mode-btn" id="btnActual" onclick="setMode('actual')"><svg class="ic"><use href="#i-calendar"/></svg> What happened</button>
+    <button class="mode-btn" id="btnCheck" onclick="setMode('check')"><svg class="ic"><use href="#i-scales"/></svg> Model check</button>
+    <span id="datePickerWrap" style="display:none; align-items:center; gap:8px;">
         <input type="date" class="date-picker" id="datePicker" min="{{ min_date }}" max="{{ max_date }}" value="{{ default_date }}">
-        <span class="historical-label" id="histLabel"></span>
-    </div>
+    </span>
+    <span class="view-toggle" id="viewToggle">
+        <button id="viewZones" class="active" onclick="setView('zones')"><svg class="ic"><use href="#i-map-pin"/></svg> Zones</button>
+        <button id="viewBasins" onclick="setView('basins')"><svg class="ic"><use href="#i-building-2"/></svg> Basins</button>
+    </span>
+    <span class="historical-label" id="histLabel"></span>
 </div>
 
-<div id="riskBanner" class="risk-banner risk-none">Loading...</div>
+<div class="risk-banner risk-none" id="riskBanner"><svg class="ic"><use href="#i-hourglass"/></svg> Loading…</div>
 <div class="refresh-info" id="refreshInfo"></div>
 
-<!-- 7-day timeline (yesterday + today + 5 forecast days) -->
 <div class="timeline" id="timeline"></div>
+<div class="basins" id="detail"></div>
 
-<!-- Basin detail for today -->
-<div class="basins" id="basins"></div>
+<div class="beach-section" id="checkPanel" style="display:none;"></div>
+<div class="beach-section" id="actualPanel" style="display:none;"></div>
 
-<!-- Ground truth overlay (historical mode only) -->
-<div id="groundTruth" class="ground-truth" style="display:none;">
-    <h2><img class="illus" src="/static/brand/beaker.png" alt=""> Ground Truth — Actual Bacteria Results</h2>
-    <div class="gt-subtitle">SF Gov water quality samples compared to model predictions</div>
-    <div id="gtVerdict" class="gt-verdict no-data"></div>
-    <div class="gt-day-tabs" id="gtDayTabs"></div>
-    <div id="gtContent"></div>
-</div>
-
-<!-- Current beach status -->
-<div class="beach-section">
-    <h2><span class="ictile"><svg class="ic"><use href="#i-umbrella"/></svg></span> Current Beach Status (SFPUC Real-Time)</h2>
+<div class="beach-section" id="beachSection">
+    <h2><svg class="ic"><use href="#i-waves"/></svg> Current SFPUC Beach Status</h2>
     <div class="beach-grid" id="beachGrid"></div>
 </div>
 
 <footer>
-    <p><svg class="ic"><use href="#i-phone"/></svg> 1-877-SFBEACH (1-877-732-3224) or 415-242-2214</p>
-    <p style="color:#9a5313"><svg class="ic"><use href="#i-triangle-alert"/></svg> Avoid water contact during and 72 hours after rain</p>
-    <p style="margin-top:8px;">
-        <a href="https://webapps.sfpuc.org/sapps/beachesandbay.html">SFPUC Beach Map</a> ·
-        Model: GBM trained on 6 years of rain + bacteria data (AUC 0.870)
-    </p>
+    <p><svg class="ic"><use href="#i-info"/></svg> Rain: NOAA gauges (Downtown 047772, Oceanside 047767), KSFO hourly, ECMWF forecast · Discharges: SFPUC CIWQS reports · Beach status: SFPUC · Bacteria: DataSF</p>
+    <p>Community-science tool, not an official advisory — posted signs and SFPUC or health-department notices always win. <a href="/">Back to dashboard</a></p>
 </footer>
 </div>
 
 <script>
-// Sprite icon + escaped text helpers (icons live in templates/_icons.html)
+const ZONES = {{ zones_json | safe }};          // [{key,label,stations[],basins[],gauge}]
+const ZONE_GROUPS = {{ groups_json | safe }};   // {zoneKey: [group,...]}
+const ZONE_ICON = { ocean: 'waves', baker_china: 'umbrella', north: 'anchor', east: 'building-2' };
+const ZONE_BASINS = { ocean: ['westside'], baker_china: ['westside'], north: ['north_shore'], east: ['southeast', 'central'] };
+const ZONE_ORDER = ['ocean', 'baker_china', 'north', 'east'];
+const BASIN_META = {
+    westside:    { icon: 'waves',      name: 'Westside',               desc: 'Ocean Beach, Baker Beach, China Beach outfalls' },
+    north_shore: { icon: 'umbrella',   name: 'North Shore',            desc: 'Marina, Aquatic Park, Embarcadero outfalls' },
+    central:     { icon: 'building-2', name: 'Central (Mission Creek)', desc: 'Mission Creek outfalls, Division to Fifth St' },
+    southeast:   { icon: 'anchor',     name: 'Southeast',              desc: 'Islais Creek, Yosemite, Sunnydale outfalls' },
+    citywide:    { icon: 'map-pin',    name: 'City-wide',              desc: 'any basin discharging' },
+};
+const BASIN_ORDER = ['westside', 'north_shore', 'central', 'southeast', 'citywide'];
+const RISK_THRESHOLD = 0.25;   // "MODERATE" — the line the model check scores hits and misses on
+
 const ic = name => `<svg class="ic"><use href="#i-${name}"/></svg>`;
-const esc = v => String(v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const badge = (kind, icon, label) => `<span class="badge ${kind}">${ic(icon)}${label}</span>`;
+const esc = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const badge = (kind, icon, label) => `<span class="badge ${kind}">${ic(icon)}${esc(label)}</span>`;
+const pct = p => Math.round((p || 0) * 100);
+const fmtIn = v => (v == null || isNaN(v)) ? '—' : Number(v).toFixed(2) + '"';
 
 function riskInfo(prob) {
     if (prob >= 0.75) return { label: 'EXTREME', color: '#8f2508', bg: '#f8dcd6', cls: 'extreme' };
@@ -184,370 +215,436 @@ function riskInfo(prob) {
     return { label: 'MINIMAL', color: '#237059', bg: '#e0f0ea', cls: 'none' };
 }
 
-const basinLabels = {
-    citywide: { icon: ic('building-2'), name: 'City-wide CSO', desc: '3+ stations elevated across 2+ basins' },
-    westside: { icon: ic('waves'), name: 'Westside', desc: 'Ocean Beach, Baker Beach, China Beach' },
-    north_shore: { icon: ic('umbrella'), name: 'North Shore', desc: 'Crissy Field, Aquatic Park' },
-    southeast: { icon: ic('anchor'), name: 'Southeast', desc: 'Islais Creek, Candlestick Point' },
+// Zone risk for a prediction day: server field, else worst of its groups,
+// else worst of its basins (old cached snapshots).
+function zonesOf(day) {
+    if (day.zones && Object.keys(day.zones).length) return day.zones;
+    const out = {};
+    for (const zk of ZONE_ORDER) {
+        const groups = (ZONE_GROUPS[zk] || []).map(g => (day.impact_groups || {})[g]).filter(v => v != null);
+        if (groups.length) out[zk] = Math.max(...groups);
+        else out[zk] = Math.max(...ZONE_BASINS[zk].map(b => (day.predictions || {})[b] || 0));
+    }
+    return out;
+}
+const worstZone = day => Math.max(0, ...Object.values(zonesOf(day)));
+const zoneRain = (day, zk) => {
+    const z = ZONES.find(z => z.key === zk);
+    const g = day.rain_by_gauge && z && day.rain_by_gauge[z.gauge];
+    return g != null ? g : day.rain_inches;
 };
+function rainSourceLabel(day) {
+    const src = day.rain_source || (day.is_forecast ? 'forecast' : 'model');
+    return { gauges: ic('gauge') + ' NOAA gauges', observed: ic('gauge') + ' KSFO gauge',
+             mixed: ic('gauge') + ' gauge + ' + ic('satellite-dish') + ' ECMWF',
+             model: ic('satellite-dish') + ' model hindcast', forecast: ic('satellite-dish') + ' ECMWF forecast' }[src] || esc(src);
+}
 
-let currentMode = 'live';
-let currentData = null;  // Store last rendered data for day selection
+// ─── state / mode / view ────────────────────────────────────────────────────
+let currentMode = 'live', currentView = 'zones', current = null;
 
 function setMode(mode) {
     currentMode = mode;
-    document.getElementById('btnLive').className = 'mode-btn' + (mode === 'live' ? ' active' : '');
-    document.getElementById('btnHistorical').className = 'mode-btn' + (mode === 'historical' ? ' active' : '');
-    document.getElementById('datePickerWrap').style.display = mode === 'historical' ? 'inline-flex' : 'none';
+    for (const [id, m] of [['btnLive', 'live'], ['btnActual', 'actual'], ['btnCheck', 'check']])
+        document.getElementById(id).className = 'mode-btn' + (mode === m ? ' active' : '');
+    document.getElementById('datePickerWrap').style.display = mode === 'live' ? 'none' : 'inline-flex';
+    document.getElementById('viewToggle').style.display = mode === 'actual' ? 'none' : 'inline-flex';
+    document.getElementById('histLabel').innerHTML = '';
     loadData();
 }
+function setView(view) {
+    currentView = view;
+    document.getElementById('viewZones').className = view === 'zones' ? 'active' : '';
+    document.getElementById('viewBasins').className = view === 'basins' ? 'active' : '';
+    if (current && current.selected) selectDay(current.selected);
+}
+document.getElementById('datePicker').addEventListener('change', () => { if (currentMode !== 'live') loadData(); });
 
-document.getElementById('datePicker').addEventListener('change', () => { if (currentMode === 'historical') loadData(); });
+async function getJSON(url) { const r = await fetch(url); return r.json(); }
 
 async function loadData() {
+    const banner = document.getElementById('riskBanner');
     try {
-        let data;
-        if (currentMode === 'historical') {
+        if (currentMode === 'live') {
+            const data = await getJSON('/forecast/api/data');
+            if (data.error) throw new Error(data.error);
+            renderLive(data);
+        } else {
             const date = document.getElementById('datePicker').value;
             if (!date) return;
-            document.getElementById('histLabel').innerHTML = ic('hourglass') + ' Loading...';
-
-            // Fetch predictions and bacteria data in parallel
-            const [predResp, bacteriaResp] = await Promise.all([
-                fetch('/forecast/api/historical?date=' + date),
-                fetch('/forecast/api/bacteria?date=' + date),
-            ]);
-            const predData = await predResp.json();
-            const bacteriaData = await bacteriaResp.json();
-
-            if (predData.error) {
-                document.getElementById('riskBanner').innerHTML = ic('triangle-alert') + ' ' + esc(predData.error);
-                document.getElementById('histLabel').innerHTML = ic('circle-x') + ' ' + esc(predData.error);
-                return;
+            document.getElementById('histLabel').innerHTML = ic('hourglass') + ' Loading ' + esc(date) + '…';
+            if (currentMode === 'actual') {
+                const a = await getJSON('/forecast/api/actuals?date=' + date);
+                if (a.error) throw new Error(a.error);
+                renderActual(a);
+            } else {
+                const [h, a, sc] = await Promise.all([
+                    getJSON('/forecast/api/historical?date=' + date),
+                    getJSON('/forecast/api/actuals?date=' + date),
+                    getJSON('/forecast/api/scorecard?date=' + date)]);
+                if (h.error) throw new Error(h.error);
+                renderCheck(h, a.error ? { days: {} } : a, sc.error ? {} : sc, date);
             }
-            // Wrap in same format as live data
-            data = {
-                predictions: predData.predictions,
-                beach_status: [],
-                historical_date: date,
-                bacteria: bacteriaData,
-            };
-            document.getElementById('histLabel').innerHTML = ic('calendar') + ' Showing ' + esc(date);
-        } else {
-            const resp = await fetch('/forecast/api/data');
-            data = await resp.json();
+            document.getElementById('histLabel').innerHTML = ic('calendar') + ' ' + esc(date);
         }
-        render(data);
-    } catch(e) {
-        document.getElementById('riskBanner').innerHTML = ic('triangle-alert') + ' Error loading data: ' + esc(e.message);
+    } catch (e) {
+        banner.className = 'risk-banner risk-low';
+        banner.innerHTML = ic('triangle-alert') + ' ' + esc(e.message || e);
+        document.getElementById('histLabel').innerHTML = ic('circle-x') + ' ' + esc(e.message || e);
     }
 }
 
-function render(data) {
-    const preds = data.predictions || {};
-    const beaches = data.beach_status || [];
-    const isHistorical = !!data.historical_date;
+function showPanels({ check = false, actual = false, beaches = false }) {
+    document.getElementById('checkPanel').style.display = check ? 'block' : 'none';
+    document.getElementById('actualPanel').style.display = actual ? 'block' : 'none';
+    document.getElementById('beachSection').style.display = beaches ? 'block' : 'none';
+}
 
-    // Sort days
-    const days = Object.values(preds).sort((a, b) => a.day_offset - b.day_offset);
-
-    // Find today
-    const today = days.find(d => d.is_today);
-    const todayMax = today ? Math.max(...Object.values(today.predictions)) : 0;
-    const overallMax = Math.max(...days.map(d => Math.max(...Object.values(d.predictions))));
-
-    // Risk banner
+function setBanner(maxRisk, prefix) {
     const banner = document.getElementById('riskBanner');
-    const bannerRisk = riskInfo(todayMax);
-    banner.className = 'risk-banner risk-' + bannerRisk.cls;
-    const prefix = isHistorical ? ic('calendar') + ' ' + esc(data.historical_date) + ': ' : '';
-    if (todayMax >= 0.50) {
-        banner.innerHTML = prefix + ic('octagon-alert') + ' ' + bannerRisk.label + ' CSO RISK — Avoid water contact at affected beaches';
-    } else if (todayMax >= 0.25) {
-        banner.innerHTML = prefix + ic('triangle-alert') + ' ' + bannerRisk.label + ' CSO RISK — Monitor conditions closely';
-    } else if (todayMax >= 0.10) {
-        banner.innerHTML = prefix + ic('circle-alert') + ' ' + bannerRisk.label + ' CSO RISK — Some rain, worth watching';
-    } else {
-        banner.innerHTML = prefix + ic('circle-check') + ' MINIMAL CSO RISK — Conditions favorable for beach recreation';
-    }
+    const r = riskInfo(maxRisk);
+    banner.className = 'risk-banner risk-' + r.cls;
+    const msg = maxRisk >= 0.50 ? ic('octagon-alert') + ' ' + r.label + ' SEWAGE RISK — avoid water contact at affected beaches'
+              : maxRisk >= 0.25 ? ic('triangle-alert') + ' ' + r.label + ' SEWAGE RISK — monitor conditions closely'
+              : maxRisk >= 0.10 ? ic('circle-alert') + ' ' + r.label + ' SEWAGE RISK — some rain, worth watching'
+              : ic('circle-check') + ' MINIMAL SEWAGE RISK — conditions favorable for beach recreation';
+    banner.innerHTML = (prefix || '') + msg;
+}
 
-    if (!isHistorical) {
-        // Check if any forecast day is worse
-        const futureDays = days.filter(d => d.is_forecast);
-        if (futureDays.length > 0) {
-            const futureMax = Math.max(...futureDays.map(d => Math.max(...Object.values(d.predictions))));
-            if (futureMax > todayMax + 0.15 && futureMax >= 0.25) {
-                const futureRisk = riskInfo(futureMax);
-                banner.innerHTML += '<br><span style="font-size:0.8em;opacity:0.9;">' + ic('triangle-alert') + ' Higher risk coming: ' + futureRisk.label + ' (' + Math.round(futureMax*100) + '%) in forecast</span>';
-            }
+// ─── LIVE ───────────────────────────────────────────────────────────────────
+function renderLive(data) {
+    const preds = data.predictions || {};
+    const days = Object.values(preds).sort((a, b) => a.day_offset - b.day_offset);
+    if (!days.length) { setBanner(0, ic('hourglass') + ' Forecast is being computed — '); return; }
+    const today = days.find(d => d.is_today) || days[0];
+    const todayMax = worstZone(today);
+    setBanner(todayMax, '');
+    const future = days.filter(d => d.is_forecast);
+    if (future.length) {
+        const futureMax = Math.max(...future.map(worstZone));
+        if (futureMax > todayMax + 0.15 && futureMax >= 0.25) {
+            document.getElementById('riskBanner').innerHTML += '<br><span style="font-size:0.8em;opacity:0.9;">' + ic('trending-up') +
+                ' Higher risk coming: ' + riskInfo(futureMax).label + ' (' + pct(futureMax) + '%) in the forecast</span>';
         }
     }
-
-    // Refresh info
     const refreshEl = document.getElementById('refreshInfo');
-    if (data.last_refresh) {
-        const t = new Date(data.last_refresh);
-        refreshEl.textContent = 'Last updated: ' + t.toLocaleTimeString() + ' · Auto-refreshes every 30 min';
-    }
+    refreshEl.textContent = data.last_refresh ? 'Last updated: ' + new Date(data.last_refresh).toLocaleTimeString() + ' · auto-refreshes every 30 min'
+                          + (data.stale_note ? ' · ' + data.stale_note : '') : '';
+    showPanels({ beaches: true });
 
-    // Store data for day selection
-    currentData = { days, preds, isHistorical, data };
-
-    // Timeline
-    const rainSourceLabel = day => {
-        const src = day.rain_source || (day.is_forecast ? 'forecast' : 'model');
-        return {observed: ic('gauge') + ' SFO gauge', mixed: ic('gauge') + ' gauge + ' + ic('satellite-dish') + ' ECMWF',
-                model: ic('satellite-dish') + ' model hindcast', forecast: ic('satellite-dish') + ' ECMWF forecast'}[src] || src;
-    };
+    current = { mode: 'live', days, byDate: preds };
     const timeline = document.getElementById('timeline');
     timeline.innerHTML = '';
     days.forEach(day => {
-        const maxProb = Math.max(...Object.values(day.predictions));
-        const risk = riskInfo(maxProb);
-        const pct = Math.round(maxProb * 100);
-
+        const m = worstZone(day), r = riskInfo(m);
         const card = document.createElement('div');
         card.className = 'day-card' + (day.is_today ? ' today' : '');
         card.dataset.date = day.date;
         card.innerHTML = `
-            <div class="day-label ${day.is_today ? 'today-label' : ''}">${day.label}</div>
-            <div class="day-rain">${ic('droplets')} <span class="amount">${day.rain_inches.toFixed(2)}"</span></div>
-            <div class="day-prob" style="color:${risk.color}">${pct}%</div>
-            <div class="day-risk" style="color:${risk.color}">${risk.label}</div>
-            <div class="day-bar"><div class="day-bar-fill" style="width:${pct}%;background:${risk.color}"></div></div>
-            <div class="day-source">${rainSourceLabel(day)}</div>
-        `;
+            <div class="day-label ${day.is_today ? 'today-label' : ''}">${esc(day.label)}</div>
+            <div class="day-rain">${ic('droplets')} <span class="amount">${fmtIn(day.rain_inches)}</span></div>
+            <div class="day-prob" style="color:${r.color}">${pct(m)}%</div>
+            <div class="day-risk" style="color:${r.color}">${r.label}</div>
+            <div class="day-bar"><div class="day-bar-fill" style="width:${pct(m)}%;background:${r.color}"></div></div>
+            <div class="day-source">${rainSourceLabel(day)}</div>`;
         card.onclick = () => selectDay(day);
         timeline.appendChild(card);
     });
+    selectDay(today);
+    renderBeaches(data.beach_status || []);
+}
 
-    // Show basin detail for "today" by default
-    selectDay(today || days[0]);
+function highlight(date) {
+    document.querySelectorAll('.day-card').forEach(c => c.classList.toggle('selected', c.dataset.date === date));
+}
 
-    // Beach status
-    const beachGrid = document.getElementById('beachGrid');
-    beachGrid.innerHTML = '';
-    if (isHistorical) {
-        beachGrid.innerHTML = '<div style="color:#8a949b;">Real-time beach status not available for historical dates — see Ground Truth section below for actual bacteria results</div>';
-    } else if (beaches.length === 0) {
-        beachGrid.innerHTML = '<div style="color:#8a949b;">Unable to fetch beach status</div>';
+function selectDay(day) {
+    if (!day || !current) return;
+    current.selected = day;
+    highlight(day.date);
+    if (current.mode === 'actual') return renderActualDetail(day);
+    if (current.mode === 'check') return renderCheckDetail(day);
+    renderPredictionCards(day, null);
+}
+
+// Zone (or basin) cards for one prediction day; `actual` (model check) adds
+// the verdict badge.
+function renderPredictionCards(day, actual) {
+    const el = document.getElementById('detail');
+    el.innerHTML = '';
+    if (currentView === 'zones') {
+        const zr = zonesOf(day);
+        for (const zk of ZONE_ORDER) {
+            const z = ZONES.find(z => z.key === zk); if (!z) continue;
+            const p = zr[zk] || 0, r = riskInfo(p);
+            const card = document.createElement('div');
+            card.className = 'basin-card'; card.style.borderLeftColor = r.color;
+            card.innerHTML = `
+                <div class="basin-name">${ic(ZONE_ICON[zk])} ${esc(z.label)}</div>
+                <div class="basin-prob" style="color:${r.color}">${pct(p)}% <span style="font-size:.45em;font-weight:600;letter-spacing:.05em">${r.label}</span></div>
+                <div class="basin-bar"><div class="basin-bar-fill" style="width:${pct(p)}%;background:${r.color}"></div></div>
+                <div class="basin-detail">${ic('droplets')} ${fmtIn(zoneRain(day, zk))} today · 3d ${fmtIn(day.rain_3d_cum)} · ${esc(z.gauge)} gauge</div>
+                <div class="zone-stations">${z.stations.map(esc).join(' · ')}</div>
+                ${actual ? verdictLine(p, actual.zones && actual.zones[zk]) : ''}`;
+            el.appendChild(card);
+        }
+    } else {
+        const dp = day.discharge_probs || {};
+        for (const key of BASIN_ORDER) {
+            if (!(key in (day.predictions || {}))) continue;
+            const meta = BASIN_META[key] || { icon: 'map-pin', name: key, desc: '' };
+            const p = day.predictions[key], r = riskInfo(p);
+            const groups = Object.entries(day.impact_groups || {}).filter(([g]) => (ZONE_GROUPS_BY_BASIN[key] || []).includes(g));
+            const observed = (day.observed_cso || []).includes(key);
+            const card = document.createElement('div');
+            card.className = 'basin-card'; card.style.borderLeftColor = r.color;
+            card.innerHTML = `
+                <div class="basin-name">${ic(meta.icon)} ${esc(meta.name)}</div>
+                <div class="basin-prob" style="color:${r.color}">${pct(p)}%</div>
+                <div class="basin-bar"><div class="basin-bar-fill" style="width:${pct(p)}%;background:${r.color}"></div></div>
+                <div class="basin-detail">${esc(meta.desc)}${key !== 'citywide' && dp[key] != null ? ' · same-day discharge ' + pct(dp[key]) + '%' : ''}${observed ? ' · ' + badge('danger', 'octagon-alert', 'discharge observed') : ''}</div>
+                ${groups.length ? '<div class="status-line">' + groups.map(([g, v]) => `<span class="badge muted">${esc(g)} ${pct(v)}%</span>`).join('') + '</div>' : ''}`;
+            el.appendChild(card);
+        }
     }
-    // Sort: CSO first, then posted, then safe
+}
+// basin key → groups (inverse of ZONE_GROUPS with zone→basin knowledge)
+const ZONE_GROUPS_BY_BASIN = { westside: [...(ZONE_GROUPS.ocean || []), ...(ZONE_GROUPS.baker_china || [])],
+                               north_shore: ZONE_GROUPS.north || [], southeast: ['Southeast'], central: ['Mission Creek'] };
+
+function renderBeaches(beaches) {
+    const grid = document.getElementById('beachGrid');
+    grid.innerHTML = '';
+    if (!beaches.length) { grid.innerHTML = '<div class="mute">Unable to fetch beach status</div>'; return; }
     const order = { cso: 0, posted: 1, safe: 2, not_sampled: 3, unknown: 4 };
     beaches.sort((a, b) => (order[a.status] || 9) - (order[b.status] || 9));
     beaches.forEach(b => {
         const item = document.createElement('div');
         item.className = 'beach-item';
-        const statusLabel = b.status === 'cso' ? badge('danger', 'octagon-alert', 'CSO') : b.status === 'posted' ? badge('warn', 'triangle-alert', 'Posted') : b.status === 'safe' ? badge('ok', 'circle-check', 'Safe') : badge('muted', 'circle-dashed', 'No data');
-        item.innerHTML = `<span class="beach-dot ${b.status}"></span><span>${b.name}</span><span style="margin-left:auto;">${statusLabel}</span>`;
-        beachGrid.appendChild(item);
+        const label = b.status === 'cso' ? badge('danger', 'octagon-alert', 'CSO') : b.status === 'posted' ? badge('warn', 'triangle-alert', 'Posted')
+                    : b.status === 'safe' ? badge('ok', 'circle-check', 'Safe') : badge('muted', 'circle-dashed', 'No data');
+        item.innerHTML = `<span class="beach-dot ${esc(b.status)}"></span><span>${esc(b.name)}</span><span style="margin-left:auto;">${label}</span>`;
+        grid.appendChild(item);
     });
-
-    // Ground truth overlay (historical mode only)
-    renderGroundTruth(data, preds);
 }
 
-function selectDay(day) {
-    if (!day || !currentData) return;
+// ─── WHAT HAPPENED ──────────────────────────────────────────────────────────
+function zoneActualStatus(z) {
+    if (!z) return { cls: 'unknown', badges: [badge('muted', 'circle-dashed', 'no data')] };
+    const b = [];
+    if (z.discharge) b.push(badge('danger', 'octagon-alert', 'discharge'));
+    if (z.posted) b.push(badge('warn', 'triangle-alert', 'posted'));
+    if (z.elevated) b.push(badge('warn', 'microscope', 'elevated bacteria'));
+    if (!b.length) {
+        if (z.bad === false) b.push(badge('ok', 'circle-check', z.n_samples ? 'clear (sampled)' : 'no discharge'));
+        else b.push(badge('muted', 'circle-dashed', z.discharge == null ? 'no discharge records' : 'not sampled'));
+    }
+    return { cls: z.bad ? 'bad' : z.bad === false ? 'clear' : 'unknown', badges: b };
+}
 
-    // Update timeline selection highlight
-    document.querySelectorAll('.day-card').forEach(c => {
-        c.classList.remove('selected');
-        if (c.dataset.date === day.date) c.classList.add('selected');
-    });
+function renderActual(a) {
+    const days = Object.values(a.days || {}).sort((x, y) => x.date.localeCompare(y.date));
+    const target = a.target_date;
+    current = { mode: 'actual', days, actual: a };
+    const tday = days.find(d => d.date === target);
+    const anyBad = tday && Object.values(tday.zones).some(z => z.bad);
+    const allKnown = tday && Object.values(tday.zones).every(z => z.bad != null);
+    const banner = document.getElementById('riskBanner');
+    banner.className = 'risk-banner ' + (anyBad ? 'risk-high' : allKnown ? 'risk-none' : 'risk-low');
+    banner.innerHTML = ic('calendar') + ' ' + esc(target) + ': ' + (anyBad
+        ? ic('octagon-alert') + ' ' + Object.entries(tday.zones).filter(([, z]) => z.bad).map(([zk]) => esc((ZONES.find(z => z.key === zk) || {}).label)).join(', ') + ' had a bad day'
+        : allKnown ? ic('circle-check') + ' no discharges, no elevated samples at any zone'
+        : ic('circle-dashed') + ' partial records for this date — see zones below');
+    document.getElementById('refreshInfo').textContent = '';
+    showPanels({ actual: true });
 
-    // Update basin detail for selected day
-    const basinsEl = document.getElementById('basins');
-    basinsEl.innerHTML = '';
-    for (const [key, prob] of Object.entries(day.predictions)) {
-        const info = basinLabels[key] || { icon: ic('map-pin'), name: key, desc: '' };
-        const risk = riskInfo(prob);
-        const pct = Math.round(prob * 100);
-
+    const timeline = document.getElementById('timeline');
+    timeline.innerHTML = '';
+    days.forEach(day => {
+        const bads = Object.values(day.zones).filter(z => z.bad).length;
+        const known = Object.values(day.zones).every(z => z.bad != null);
+        const dis = day.discharges.length, el = Object.values(day.zones).reduce((n, z) => n + (z.elevated_stations || []).length, 0);
+        const cls = bads ? 'bad' : known ? 'clear' : 'unknown';
         const card = document.createElement('div');
-        card.className = 'basin-card';
-        card.style.borderLeftColor = risk.color;
+        card.className = 'day-card ' + cls + (day.date === target ? ' today' : '');
+        card.dataset.date = day.date;
+        const rd = day.rain['SF Downtown'], ro = day.rain['SF Oceanside'];
         card.innerHTML = `
-            <div class="basin-name">${info.icon} ${info.name}</div>
-            <div class="basin-prob" style="color:${risk.color}">${pct}%</div>
-            <div class="basin-bar"><div class="basin-bar-fill" style="width:${pct}%;background:${risk.color}"></div></div>
-            <div class="basin-detail">${info.desc} · 2d rain: ${day.rain_2d_cum.toFixed(2)}" · 3d: ${day.rain_3d_cum.toFixed(2)}"</div>
-        `;
-        basinsEl.appendChild(card);
-    }
-
-    // Update ground truth to show the selected day's bacteria data
-    if (currentData.isHistorical && currentData.data.bacteria && currentData.data.bacteria.has_data) {
-        const bDays = currentData.data.bacteria.days;
-        if (bDays[day.date]) {
-            // Auto-click the matching ground truth tab
-            document.querySelectorAll('.gt-day-tab').forEach(tab => {
-                if (tab.textContent.includes(day.date)) tab.click();
-            });
-        }
-    }
-}
-
-// Basin key mapping for matching predictions to ground truth
-const basinKeyMap = { 'Westside': 'westside', 'North Shore': 'north_shore', 'Southeast': 'southeast' };
-
-function renderGroundTruth(data, preds) {
-    const gtEl = document.getElementById('groundTruth');
-    const gtVerdict = document.getElementById('gtVerdict');
-    const gtTabs = document.getElementById('gtDayTabs');
-    const gtContent = document.getElementById('gtContent');
-
-    if (!data.bacteria || !data.bacteria.has_data || !data.historical_date) {
-        gtEl.style.display = data.historical_date ? 'block' : 'none';
-        if (data.historical_date) {
-            gtEl.className = 'ground-truth';
-            gtVerdict.className = 'gt-verdict no-data';
-            gtVerdict.innerHTML = ic('inbox') + ' No bacteria samples found for this date range — SFPUC samples weekly, so data may not be available for every day.';
-            gtTabs.innerHTML = '';
-            gtContent.innerHTML = '';
-        }
-        return;
-    }
-
-    gtEl.style.display = 'block';
-    const bacteria = data.bacteria;
-    const bDays = bacteria.days;
-    const sortedDates = Object.keys(bDays).sort();
-
-    // Find the target date's data (or closest)
-    const targetDate = data.historical_date;
-    let hasCso = false;
-    for (const d of sortedDates) {
-        if (bDays[d].summary.likely_cso) hasCso = true;
-    }
-    gtEl.className = 'ground-truth' + (hasCso ? ' has-cso' : '');
-
-    // Verdict banner
-    const targetDay = bDays[targetDate];
-    if (targetDay) {
-        const s = targetDay.summary;
-        if (s.likely_cso) {
-            gtVerdict.className = 'gt-verdict cso-yes';
-            gtVerdict.innerHTML = ic('octagon-alert') + ' CSO EVENT CONFIRMED — ' + s.elevated_stations + '/' + s.total_stations +
-                ' stations elevated across ' + s.elevated_basins + ' basin(s) · ' +
-                s.elevated_samples + '/' + s.total_samples + ' samples exceeded standards';
-        } else if (s.elevated_stations > 0) {
-            gtVerdict.className = 'gt-verdict cso-no';
-            gtVerdict.innerHTML = ic('triangle-alert') + ' Some elevated readings — ' + s.elevated_stations + '/' + s.total_stations +
-                ' stations elevated, but not enough for CSO classification (' + s.elevated_basins + ' basin)';
-        } else {
-            gtVerdict.className = 'gt-verdict cso-no';
-            gtVerdict.innerHTML = ic('circle-check') + ' All clear — 0/' + s.total_stations + ' stations exceeded standards';
-        }
-    } else {
-        // No samples on exact target date, show closest
-        const closestDate = sortedDates.length > 0 ? sortedDates[0] : null;
-        if (closestDate) {
-            const s = bDays[closestDate].summary;
-            const label = s.likely_cso ? ic('octagon-alert') + ' CSO EVENT' : s.elevated_stations > 0 ? ic('triangle-alert') + ' Elevated' : ic('circle-check') + ' Clear';
-            gtVerdict.className = 'gt-verdict' + (s.likely_cso ? ' cso-yes' : ' cso-no');
-            gtVerdict.innerHTML = label + ' on nearest sample date (' + closestDate + ') — ' +
-                s.elevated_stations + '/' + s.total_stations + ' stations elevated · No samples on ' + targetDate;
-        } else {
-            gtVerdict.className = 'gt-verdict no-data';
-            gtVerdict.innerHTML = ic('inbox') + ' No samples found near ' + esc(targetDate);
-        }
-    }
-
-    // Day tabs
-    gtTabs.innerHTML = '';
-    let activeDate = sortedDates.includes(targetDate) ? targetDate : (sortedDates[0] || null);
-    sortedDates.forEach(d => {
-        const s = bDays[d].summary;
-        const dotColor = s.likely_cso ? '#d15c5c' : s.elevated_stations > 0 ? '#b97e00' : '#3c9160';
-        const isTarget = d === targetDate;
-        const tab = document.createElement('div');
-        tab.className = 'gt-day-tab' + (d === activeDate ? ' active' : '');
-        tab.innerHTML = '<span class="tab-dot" style="background:' + dotColor + '"></span>' +
-            d + (isTarget ? ' ★' : '') +
-            ' <span style="color:#8a949b;">(' + s.elevated_stations + '/' + s.total_stations + ')</span>';
-        tab.onclick = () => {
-            document.querySelectorAll('.gt-day-tab').forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            renderGroundTruthDay(bDays[d], d, preds);
-        };
-        gtTabs.appendChild(tab);
+            <div class="day-label ${day.date === target ? 'today-label' : ''}">${esc(fmtDate(day.date))}${day.date === target ? ' ★' : ''}</div>
+            <div class="day-rain">${ic('droplets')} <span class="amount">${fmtIn(rd != null ? rd : ro)}</span></div>
+            <div class="day-source">${ro != null && rd != null && Math.abs(ro - rd) >= 0.05 ? 'Oceanside ' + fmtIn(ro) : (rd == null && ro == null ? 'gauge n/a' : 'NOAA gauge')}</div>
+            <div class="card-badges">
+                ${dis ? badge('danger', 'octagon-alert', dis + ' outfall' + (dis > 1 ? 's' : '')) : ''}
+                ${day.postings.length ? badge('warn', 'triangle-alert', day.postings.length + ' posting' + (day.postings.length > 1 ? 's' : '')) : ''}
+                ${el ? badge('warn', 'microscope', el + ' elevated') : ''}
+                ${!dis && !day.postings.length && !el ? (known ? badge('ok', 'circle-check', 'clear') : badge('muted', 'circle-dashed', day.samples.length ? 'sampled, clear' : 'no records')) : ''}
+            </div>`;
+        card.onclick = () => selectDay(day);
+        timeline.appendChild(card);
     });
-
-    // Render the active day
-    if (activeDate) {
-        renderGroundTruthDay(bDays[activeDate], activeDate, preds);
-    }
+    selectDay(tday || days[0]);
 }
 
-function renderGroundTruthDay(dayData, dateStr, preds) {
-    const gtContent = document.getElementById('gtContent');
-    const summary = dayData.summary;
-    const basins = summary.basins;
+function fmtDate(s) { const d = new Date(s + 'T12:00:00'); return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }); }
 
-    // Get model prediction for this date if available
-    const dayPred = preds[dateStr];
+function renderActualDetail(day) {
+    const el = document.getElementById('detail');
+    el.innerHTML = '';
+    for (const zk of ZONE_ORDER) {
+        const z = ZONES.find(z => z.key === zk), za = day.zones[zk];
+        const st = zoneActualStatus(za);
+        const color = st.cls === 'bad' ? '#b5310a' : st.cls === 'clear' ? '#237059' : '#d9e4e8';
+        const card = document.createElement('div');
+        card.className = 'basin-card'; card.style.borderLeftColor = color;
+        const lines = [];
+        if (za && za.discharge_stations.length) lines.push(ic('octagon-alert') + ' Discharge would post: ' + za.discharge_stations.map(esc).join(', '));
+        if (za && za.posted_stations.length) lines.push(ic('triangle-alert') + ' Posted by SFPUC: ' + za.posted_stations.map(esc).join(', '));
+        if (za && za.elevated_stations.length) lines.push(ic('microscope') + ' Elevated samples: ' + za.elevated_stations.map(esc).join(', '));
+        if (za && za.n_samples && !za.elevated_stations.length) lines.push(ic('microscope') + ' ' + za.n_samples + ' sample' + (za.n_samples > 1 ? 's' : '') + ', all under standard');
+        card.innerHTML = `
+            <div class="basin-name">${ic(ZONE_ICON[zk])} ${esc(z.label)}</div>
+            <div class="status-line">${st.badges.join('')}</div>
+            <div class="basin-detail">${lines.length ? lines.join('<br>') : '<span class="mute">Nothing recorded for this zone on this day.</span>'}</div>
+            <div class="zone-stations">${z.stations.map(esc).join(' · ')}</div>`;
+        el.appendChild(card);
+    }
+    const panel = document.getElementById('actualPanel');
+    let html = `<h2>${ic('receipt')} Records for ${esc(fmtDate(day.date))}</h2>`;
+    html += `<div class="subhead">${ic('droplets')} Rain (NOAA daily gauges)</div><div class="mute" style="font-size:.85em">` +
+        Object.entries(day.rain).map(([g, v]) => esc(g) + ': ' + fmtIn(v)).join(' · ') + (Object.keys(day.rain).length ? '' : 'not available') + '</div>';
+    html += `<div class="subhead">${ic('octagon-alert')} Reported discharges</div>`;
+    if (day.discharges.length) {
+        html += '<table class="tbl"><tr><th>Outfall</th><th>Basin</th><th class="num">Volume (MG)</th><th>Beaches it posts</th><th>Source</th></tr>' +
+            day.discharges.map(d => `<tr><td><b>${esc(d.outfall_id)}</b> ${esc(d.name)}</td><td>${esc(d.basin || '')}</td><td class="num">${d.volume_mg != null ? Number(d.volume_mg).toFixed(2) : '—'}</td><td>${d.stations.map(esc).join(', ')}</td><td class="mute">${esc(d.source)}</td></tr>`).join('') + '</table>';
+    } else {
+        html += `<div class="mute" style="font-size:.85em">${day.coverage.oceanside || day.coverage.bayside || day.coverage.watcher ? 'None reported.' : 'No discharge records cover this date (CIWQS reports span Oct 2016 – Oct 2025; the SFPUC feed archive Mar 2016 – Jan 2017; the BWTF watcher Aug 2026 →).'}</div>`;
+    }
+    if (day.postings.length) {
+        html += `<div class="subhead">${ic('triangle-alert')} SFPUC postings seen by the BWTF watcher</div><div style="font-size:.85em">` +
+            day.postings.map(p => badge(p.to === 'cso' ? 'danger' : 'warn', p.to === 'cso' ? 'octagon-alert' : 'triangle-alert', p.station_name + ' — ' + (p.to === 'cso' ? 'CSO' : 'posted'))).join(' ') + '</div>';
+    }
+    html += `<div class="subhead">${ic('microscope')} Bacteria samples</div>`;
+    const smp = day.samples.filter(s => s.analyte === 'ENTERO');
+    const rows = (smp.length ? smp : day.samples).sort((a, b) => (b.exceeds - a.exceeds) || String(a.station_name).localeCompare(b.station_name));
+    if (rows.length) {
+        html += '<table class="tbl"><tr><th>Station</th><th>Zone</th><th>Analyte</th><th class="num">Result</th><th></th></tr>' +
+            rows.map(s => `<tr><td>${esc(s.station_name)}</td><td class="mute">${esc((ZONES.find(z => z.key === s.zone) || {}).label || '')}</td><td class="mute">${esc(s.analyte)}</td><td class="num" style="${s.exceeds ? 'color:#b5310a;font-weight:700' : ''}">${esc(s.value_raw)}</td><td>${s.exceeds ? badge('danger', 'triangle-alert', 'over standard') : ''}</td></tr>`).join('') + '</table>';
+    } else {
+        html += '<div class="mute" style="font-size:.85em">No samples this day (SFPUC samples weekly).</div>';
+    }
+    html += `<div class="sources">${esc(current.actual.sources.rain)} · ${esc(current.actual.sources.discharges)} · ${esc(current.actual.sources.bacteria)}</div>`;
+    panel.innerHTML = html;
+}
 
-    let html = '';
+// ─── MODEL CHECK ────────────────────────────────────────────────────────────
+function verdict(p, za) {
+    const pred = p >= RISK_THRESHOLD;
+    if (!za || za.bad == null) return { kind: 'muted', icon: 'circle-dashed', label: 'no ground truth' };
+    if (pred && za.bad) return { kind: 'ok', icon: 'circle-check', label: 'hit' };
+    if (!pred && !za.bad) return { kind: 'ok', icon: 'check', label: 'quiet, correct' };
+    if (pred && !za.bad) return { kind: 'warn', icon: 'triangle-alert', label: 'false alarm' };
+    return { kind: 'danger', icon: 'circle-x', label: 'miss' };
+}
+function verdictLine(p, za) {
+    const v = verdict(p, za), st = zoneActualStatus(za);
+    return `<div class="status-line">${badge(v.kind, v.icon, v.label)} ${st.badges.join('')}</div>`;
+}
 
-    // Order basins: Westside, North Shore, Southeast
-    const basinOrder = ['Westside', 'North Shore', 'Southeast'];
-    for (const basinName of basinOrder) {
-        const basin = basins[basinName];
-        if (!basin) continue;
+function renderCheck(h, a, sc, target) {
+    const preds = h.predictions || {};
+    const days = Object.values(preds).sort((x, y) => x.day_offset - y.day_offset);
+    current = { mode: 'check', days, byDate: preds, actual: a, scorecard: sc, target };
+    const tday = preds[target] || days[0];
+    if (!tday) { setBanner(0, ic('calendar') + ' ' + esc(target) + ': no hindcast — '); return; }
+    const m = worstZone(tday);
+    setBanner(m, ic('calendar') + ' ' + esc(target) + ' hindcast: ');
+    document.getElementById('refreshInfo').textContent = 'Hindcast = today\'s models scored on the rain that actually fell. Verdicts use the ' + pct(RISK_THRESHOLD) + '% (MODERATE) line.';
+    showPanels({ check: true });
 
-        const basinKey = basinKeyMap[basinName];
-        const modelProb = dayPred ? dayPred.predictions[basinKey] : null;
+    const timeline = document.getElementById('timeline');
+    timeline.innerHTML = '';
+    days.forEach(day => {
+        const mz = worstZone(day), r = riskInfo(mz);
+        const ad = (a.days || {})[day.date];
+        const verdicts = ad ? ZONE_ORDER.map(zk => verdict(zonesOf(day)[zk] || 0, ad.zones[zk])) : [];
+        const miss = verdicts.filter(v => v.label === 'miss').length, fa = verdicts.filter(v => v.label === 'false alarm').length, hit = verdicts.filter(v => v.label === 'hit').length;
+        const card = document.createElement('div');
+        card.className = 'day-card' + (day.date === target ? ' today' : '');
+        card.dataset.date = day.date;
+        card.innerHTML = `
+            <div class="day-label ${day.date === target ? 'today-label' : ''}">${esc(day.label)}</div>
+            <div class="day-rain">${ic('droplets')} <span class="amount">${fmtIn(day.rain_inches)}</span></div>
+            <div class="day-prob" style="color:${r.color}">${pct(mz)}%</div>
+            <div class="day-risk" style="color:${r.color}">${r.label}</div>
+            <div class="day-bar"><div class="day-bar-fill" style="width:${pct(mz)}%;background:${r.color}"></div></div>
+            <div class="card-badges">${hit ? badge('ok', 'circle-check', hit + ' hit') : ''}${miss ? badge('danger', 'circle-x', miss + ' miss') : ''}${fa ? badge('warn', 'triangle-alert', fa + ' false alarm') : ''}${!verdicts.length || (!hit && !miss && !fa) ? badge('muted', verdicts.length ? 'check' : 'circle-dashed', verdicts.length ? 'quiet' : 'no truth') : ''}</div>`;
+        card.onclick = () => selectDay(day);
+        timeline.appendChild(card);
+    });
+    selectDay(tday);
+}
 
-        html += '<div class="gt-basin-group">';
-        html += '<div class="gt-basin-header">';
-        html += '<span class="gt-basin-name">' + basinName + '</span>';
-        html += '<span class="gt-basin-count">' + basin.elevated + '/' + basin.total + ' stations elevated</span>';
-
-        // Model prediction badge
-        if (modelProb !== null && modelProb !== undefined) {
-            const pct = Math.round(modelProb * 100);
-            const risk = riskInfo(modelProb);
-            const actual = basin.elevated > 0;
-            const predicted = modelProb >= 0.10;
-            const match = actual === predicted;
-            html += '<span class="gt-basin-model" style="background:' + risk.bg + ';color:' + risk.color + ';">' +
-                'Model: ' + pct + '%</span>';
-            html += (match ? '<span style="color:#237059">' + ic('circle-check') : '<span style="color:#b5310a">' + ic('circle-x')) + '</span>';
+function renderCheckDetail(day) {
+    const ad = (current.actual.days || {})[day.date];
+    renderPredictionCards(day, ad);
+    const sc = current.scorecard || {};
+    const scDay = (sc.days || {})[day.date];
+    const panel = document.getElementById('checkPanel');
+    let html = `<h2>${ic('scales')} Model vs what happened — ${esc(fmtDate(day.date))}</h2>`;
+    html += '<table class="tbl"><tr><th>Zone</th><th class="num">Today\'s models</th><th class="num">At training time</th><th>Discharge</th><th>Bacteria</th><th>Verdict</th></tr>';
+    const zr = zonesOf(day);
+    for (const zk of ZONE_ORDER) {
+        const z = ZONES.find(z => z.key === zk), za = ad && ad.zones[zk];
+        const p = zr[zk] || 0, v = verdict(p, za);
+        const sz = scDay && scDay.zones && scDay.zones[zk];
+        const trained = sz ? (sz.risk_h != null ? pct(sz.risk_h) + '% <span class="mute">holdout</span>' : pct(sz.risk) + '% <span class="mute">in-sample</span>') : '<span class="mute">—</span>';
+        const dis = !za ? '<span class="mute">—</span>' : za.discharge == null ? '<span class="mute">no records</span>' : za.discharge ? badge('danger', 'octagon-alert', za.discharge_stations.length ? za.discharge_stations.length + ' beach' + (za.discharge_stations.length > 1 ? 'es' : '') : 'yes') : badge('ok', 'check', 'none');
+        const bac = !za ? '<span class="mute">—</span>' : za.elevated == null ? '<span class="mute">not sampled</span>' : za.elevated ? badge('warn', 'microscope', za.elevated_stations.length + ' elevated') : badge('ok', 'check', za.n_samples + ' clear');
+        html += `<tr><td><b>${esc(z.label)}</b></td><td class="num" style="color:${riskInfo(p).color};font-weight:700">${pct(p)}%</td><td class="num">${trained}</td><td>${dis}</td><td>${bac}</td><td>${badge(v.kind, v.icon, v.label)}</td></tr>`;
+    }
+    html += '</table>';
+    if (scDay && scDay.basins) {
+        html += `<div class="subhead">${ic('chart')} Stage 1 — discharge probability by basin (training-time hindcast vs reported)</div><table class="tbl"><tr><th>Basin</th><th class="num">P(discharge)</th><th>Reported</th><th class="num">Volume (MG)</th><th>Label source</th></tr>`;
+        for (const key of ['westside', 'north_shore', 'central', 'southeast']) {
+            const b = scDay.basins[key]; if (!b) continue;
+            const p = b.ph != null ? b.ph : b.p;
+            html += `<tr><td>${esc(BASIN_META[key].name)}</td><td class="num" style="color:${riskInfo(p).color};font-weight:700">${pct(p)}%${b.ph != null ? '' : ' <span class="mute">in-sample</span>'}</td><td>${b.y == null ? '<span class="mute">no records</span>' : b.y ? badge('danger', 'octagon-alert', 'discharge') : badge('ok', 'check', 'none')}</td><td class="num">${b.vol != null && b.y ? Number(b.vol).toFixed(1) : '—'}</td><td class="mute">${esc(b.src || '')}</td></tr>`;
         }
-
+        html += '</table>';
+    }
+    // season scorecard
+    if (sc.zone_confusion_holdout) {
+        const from = sc.holdout_start, to = sc.span ? sc.span[1] : '';
+        html += `<div class="subhead">${ic('chart-line')} Season scorecard — holdout ${esc(from)} → ${esc(to)}, models fit on data before ${esc(from)}, ${pct(RISK_THRESHOLD)}% line</div><div class="scorecard">`;
+        for (const zk of ZONE_ORDER) {
+            const c = sc.zone_confusion_holdout[zk]; if (!c) continue;
+            const d = c['0.25'].vs_discharge_posting, b = c['0.25'].vs_bacteria_elevated;
+            const rec = d.tp + d.fn ? d.tp / (d.tp + d.fn) : null, far = d.fp + d.tn ? d.fp / (d.fp + d.tn) : null, brec = b.tp + b.fn ? b.tp / (b.tp + b.fn) : null, bfa = b.fp + b.tn ? b.fp / (b.fp + b.tn) : null;
+            const f = v => v == null ? '—' : pct(v) + '%';
+            html += `<div class="score"><b>${ic(ZONE_ICON[zk])} ${esc((ZONES.find(z => z.key === zk) || {}).label)}</b>
+                <div class="row"><span>Discharge days caught</span><span>${f(rec)} <span class="mute">(${d.tp}/${d.tp + d.fn})</span></span></div>
+                <div class="row"><span>False alarms (of quiet days)</span><span>${f(far)}</span></div>
+                <div class="row"><span>Elevated-sample days caught</span><span>${f(brec)} <span class="mute">(${b.tp}/${b.tp + b.fn})</span></span></div>
+                <div class="row"><span>Alarms on clean sample days</span><span>${f(bfa)}</span></div></div>`;
+        }
         html += '</div>';
-
-        // Station grid
-        html += '<div class="gt-station-grid">';
-        // Sort: elevated first
-        const stations = basin.stations.sort((a, b) => (b.elevated ? 1 : 0) - (a.elevated ? 1 : 0));
-        for (const st of stations) {
-            const dotClass = st.elevated ? 'elevated' : 'clean';
-            const enteroStr = st.max_entero !== null ?
-                (st.max_entero > 104 ?
-                    '<span class="gt-station-value over">Entero: ' + Math.round(st.max_entero) + '</span>' :
-                    '<span class="gt-station-value">Entero: ' + Math.round(st.max_entero) + '</span>') :
-                '<span class="gt-station-value">—</span>';
-            const countStr = '<span class="gt-station-value">' + st.exceedance_count + '/' + st.sample_count + '</span>';
-
-            html += '<div class="gt-station">' +
-                '<span class="gt-station-dot ' + dotClass + '"></span>' +
-                '<span class="gt-station-name">' + st.name + '</span>' +
-                enteroStr + countStr +
-                '</div>';
+        if (sc.targets) {
+            html += `<div class="subhead">${ic('gauge')} Stage 1 holdout, by basin model</div><table class="tbl"><tr><th>Model</th><th>Rain source</th><th class="num">Events</th><th class="num">PR-AUC</th><th class="num">ROC-AUC</th><th class="num">Brier</th></tr>`;
+            for (const key of BASIN_ORDER) {
+                const t = sc.targets[key]; if (!t || !t.holdout) continue;
+                html += `<tr><td>${esc(BASIN_META[key].name)}</td><td class="mute">${esc(t.rain_source === 'avg' ? 'Downtown + Oceanside mean' : t.rain_source)}</td><td class="num">${t.n_events}</td><td class="num">${t.holdout.pr_auc.toFixed(3)}</td><td class="num">${t.holdout.roc_auc.toFixed(3)}</td><td class="num">${t.holdout.brier.toFixed(4)}</td></tr>`;
+            }
+            html += '</table>';
         }
-        html += '</div></div>';
+    } else if (sc.in_span === false) {
+        html += `<div class="mute" style="font-size:.85em;margin-top:10px">This date is outside the training scorecard (${esc((sc.span || []).join(' → '))}); the hindcast above is today's models on archived rain.</div>`;
     }
-
-    gtContent.innerHTML = html;
+    html += `<div class="sources">"Today's models" = the served v4 models scored on the rain that fell (NOAA gauges for totals, Open-Meteo archive for hourly intensity). "At training time" = the same models' probabilities recorded when they were trained; holdout = from a model that never saw that season. A discharge that posts a zone's beach, an SFPUC posting, or a sample over standard makes a "bad" day.</div>`;
+    panel.innerHTML = html;
 }
 
-// Initial load
+// ─── boot ───────────────────────────────────────────────────────────────────
 loadData();
-
-// Auto-refresh every 5 minutes (data itself refreshes every 30 min server-side)
-setInterval(loadData, 300000);
+setInterval(() => { if (currentMode === 'live') loadData(); }, 300000);
 </script>
-</body>
-</html>
+</body></html>

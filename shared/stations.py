@@ -28,17 +28,16 @@ class Station:
     sfpuc_id: str    # numeric station id in SFPUC's getBeaches feed
     sfpuc_name: str  # exact station name string in that feed
     group: str       # shoreline group for public pages: Ocean / North Shore / East Bayshore
-    basin: str       # combined-sewer drainage basin: Westside / North Shore / Southeast
+    basin: str       # combined-sewer drainage basin: Westside / North Shore / Central / Southeast
     lat: float       # SFPUC's coordinates (fixed monitoring points, embedded
     lon: float       # rather than fetched live)
 
 
 # Basins: the ocean-facing stations (Ocean Beach, Fort Funston, China, Baker)
-# drain Westside; Crissy/Aquatic/Hyde drain North Shore; the bayshore
-# stations from Mission Creek south drain Southeast. Mission Creek's
-# discharges actually come from the Central basin, which this app folds into
-# Southeast for display — the forecast model keeps it unmapped instead (see
-# OBSERVED_STATION_BASIN in features/forecast/live_dashboard.py).
+# drain Westside; Crissy/Aquatic/Hyde drain North Shore; Mission Creek drains
+# the Central basin (its own stage-1 forecast model since v4, 2026-09); the
+# bayshore stations from Crane Cove south drain Southeast. Which outfalls post
+# which station lives in shared/outfalls.py.
 STATIONS = {
     "OCEAN#22_SL": Station("Fort Funston", "4601", "Fort Funston", "Ocean", "Westside", 37.71526, -122.50476),
     "OCEAN#21.1_SL": Station("Ocean Beach at Sloat", "4602", "Ocean Beach at Sloat Boulevard", "Ocean", "Westside", 37.73567, -122.50769),
@@ -57,7 +56,7 @@ STATIONS = {
     "BAY#301.2_SL": Station("Jackrabbit Beach", "4615", "Jackrabbit Beach", "East Bayshore", "Southeast", 37.7114, -122.3801),
     "BAY#301.1_SL": Station("Windsurfer Circle", "4616", "Windsurfer Circle", "East Bayshore", "Southeast", 37.7091, -122.3823),
     "BAY#300.1_SL": Station("Sunnydale Cove", "4617", "Sunnydale Cove", "East Bayshore", "Southeast", 37.7096, -122.3899),
-    "BAY#220_SL": Station("Mission Creek", "4618", "Mission Creek", "East Bayshore", "Southeast", 37.7716, -122.397),
+    "BAY#220_SL": Station("Mission Creek", "4618", "Mission Creek", "East Bayshore", "Central", 37.7716, -122.397),
     "BAY#320_SL": Station("Islais Creek", "4619", "Islais Creek", "East Bayshore", "Southeast", 37.74703, -122.38793),
     "BAY#230_SL": Station("Crane Cove Park", "4620", "Crane Cove Park", "East Bayshore", "Southeast", 37.7634, -122.3868),
 }

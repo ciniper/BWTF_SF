@@ -29,27 +29,16 @@ from flask import render_template
 
 from features.alerts.subscriptions import SubscriptionStore
 from shared import supabase as sb
-from shared.stations import STATIONS
+from shared.zones import ZONES as SHARED_ZONES
 
 # zone key -> (label, [(station_id, station_name, lat, lon), ...])
 # Station ids are SFPUC LIMS ids (what subscriptions + the pg dispatcher use).
-# Names and coordinates come from the canonical registry (shared/stations.py)
-# — this table used to be hand-typed, the last copy not built from it. Which
-# stations form a zone is the product decision kept here; everything about a
-# station is looked up by id.
-_BY_SFPUC_ID = {s.sfpuc_id: s for s in STATIONS.values()}
-
-
-def _stations(*sfpuc_ids: str) -> list[tuple[str, str, float, float]]:
-    return [(sid, _BY_SFPUC_ID[sid].name, _BY_SFPUC_ID[sid].lat, _BY_SFPUC_ID[sid].lon)
-            for sid in sfpuc_ids]
-
-
+# Which stations form a zone is the product decision in shared/zones.py (the
+# forecast presents the same zones); everything about a station comes from
+# the registry. No hand-typed station tables remain.
 ZONES = {
-    "ocean": ("Ocean Beach", _stations("4601", "4602", "4603", "4604", "4605", "4606")),
-    "baker_china": ("Baker & China Beach", _stations("4607", "4608", "4609", "4610")),
-    "north": ("North Beaches", _stations("4611", "4612", "4613", "4614")),
-    "east": ("East Beaches", _stations("4615", "4616", "4617", "4618", "4619", "4620")),
+    key: (z.label, [(s.sfpuc_id, s.name, s.lat, s.lon) for s in z.stations])
+    for key, z in SHARED_ZONES.items()
 }
 
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]{2,}$")

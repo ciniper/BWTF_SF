@@ -75,7 +75,7 @@ BEACH_DRAINAGE_BASINS = {
     "Hyde Street": "North Shore",
     "Crissy Field": "North Shore",
     "Crane Cove": "Southeast",
-    "Mission Creek": "Southeast",
+    "Mission Creek": "Central",
     "Islais": "Southeast",
     "Candlestick": "Southeast",
     "Sunnydale": "Southeast",

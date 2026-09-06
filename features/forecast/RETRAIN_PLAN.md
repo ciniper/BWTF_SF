@@ -220,3 +220,64 @@ not yet public as of Aug 2026). Re-run `src/collectors/csd_ciwqs/` quarterly
 (see its README) and append to `data/csd/sf_csd_events.csv`. The gap that
 needs a records request (drafted in `data/csd/records_request_draft.md`):
 per-event Westside data 2013–2017.
+
+## v4 (2026-09-05): four basins · regional rain · Poo Bot archive · scorecard
+
+`src/models/train_v4.py` (imports the shared formulas from train_v2.py, which
+stays as the reference implementation). Artifacts `data/models/v4/`, promoted
+into `data/models/` with `--promote`. Full write-up with the numbers:
+`reports/2026-09_forecast_v4.html` (regenerate with `src/models/report_v4.py`).
+
+What changed:
+
+- **Central basin model.** Mission Creek's outfalls (CSD-018..027) are the
+  city's largest discharge source and had no model; BAY#220 Mission Creek is
+  now served (stage-1 `central_model.pkl`, stage-2 group "Mission Creek").
+  The station registry says its basin is Central; the outfall registry
+  (`shared/outfalls.py`) is the source of truth for report basin → app basin.
+- **Discharge day = bad day.** `x(0,·) ≡ 1` in the composition; the decay
+  applies from day 1. One implementation for training and serving:
+  `src/models/impact.py` (PAVA smoothing, impact fraction, compose).
+- **Regional rain.** Each basin is evaluated on the two-gauge mean and on its
+  local NOAA gauge (Westside ← Oceanside 047767; bay basins ← Downtown
+  047772); it keeps the local gauge only if the holdout PR-AUC improves by
+  ≥0.01 without a Brier regression. Result: North Shore and Central use
+  Downtown; Westside and Southeast keep the mean. The model pickle records
+  `rain_source`; serving builds one daily frame per source and re-bases
+  complete past days onto the ACIS daily totals for those gauges (before,
+  observed rain came only from KSFO, 12 miles south of the city).
+- **Poo Bot archive** (`src/collectors/poobot_archive.py` → `data/poobot/`):
+  SFPUC's getCSV feed, 552 snapshots Mar 2016 – Jan 2017. Gate: the feed
+  must show ≥75% of CIWQS Bayside event-days in the window (it shows 87%).
+  Used for coverage (the 2016-17 season becomes labelled), stage-2 samples
+  (1,097 ENTERO + coliforms, Dec 2015 – Jan 2017) and the "what happened"
+  view. Per-basin ablation on the holdout decides whether stage 1 trains on
+  archive-labelled days: Westside DROPS them (the feed flags Westside
+  structures 1–2 days after the rain — several onsets sit on 0.00" days —
+  and the holdout PR-AUC fell 0.828 → 0.748 with them); the bay basins keep
+  them.
+- **Volume-unknown events** (archive) use the volume head's prediction in
+  stage 2 and are excluded from fitting the heads.
+- **Scorecard artifact** `scorecard.json.gz`: every day of the span with
+  per-basin P (final model and holdout-fit model), composed group and zone
+  risk, the labels, reported volume, and bacteria exceedances; plus zone
+  confusion matrices on the holdout at 10/25/50%. Feeds `/forecast/api/scorecard`.
+- **Geography module** `src/models/groups.py`: basins ↔ groups ↔ zones,
+  validated against the registries at import; `shared/zones.py` is the
+  canonical zone list (signup imports it too).
+
+Holdout (2023-07 → 2025-10), PR-AUC v3 → v4: Westside 0.828 → 0.828 (avg
+rain, CIWQS labels only), North Shore 0.790 → 0.953 (Downtown), Central — →
+0.967 (Downtown), Southeast 0.812 → 0.835 (avg), citywide 0.911 → 0.911.
+
+Open items:
+- The archive onset dating. A better rule than "morning snapshot → previous
+  rainy day" (e.g. snap to the nearest preceding day with ≥0.25") might
+  rescue the Westside 2016-17 labels; evaluate against the same ablation.
+- Regional inference for today/forecast days is still one series (ECMWF
+  0.25° = one grid cell for the whole city); only complete past days differ
+  by gauge. Sunset/Bayview/Dogpatch CoCoRaHS gauges exist in ACIS from
+  2019–2021 — too short for training, usable as a live sanity check.
+- Bacteria recall at Baker & China (~10%) is dry-weather creek runoff, not
+  sewage; the forecast is a sewage-risk forecast and the alerts cover the
+  rest via the SFPUC posting feed.

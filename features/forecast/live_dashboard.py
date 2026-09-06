@@ -17,6 +17,7 @@ Open: http://localhost:8091
 """
 
 import json
+import re
 import pickle
 import sys
 import time
@@ -36,7 +37,14 @@ from zoneinfo import ZoneInfo
 # Supabase (observed CSO flags from the pg_cron watcher's alert_log).
 # Optional: everything degrades to model-only composition without it.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from shared.stations import STATION_BASINS, STATION_NAMES  # noqa: E402
+# This module is imported both as the forecaster's root module (page.py puts
+# this directory on sys.path) and as features.forecast.live_dashboard (tests);
+# the `src.*` imports below need this directory either way.
+if str(Path(__file__).resolve().parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+from shared.stations import STATION_BASINS, STATION_NAMES, STATIONS  # noqa: E402
+from shared.zones import ZONES, ZONE_OF_SOURCE, ZONE_OF_STATION  # noqa: E402
+from shared.outfalls import FEED_NAME_TO_OUTFALLS, OUTFALLS  # noqa: E402
 try:
     from shared import supabase as _supabase
 except Exception:
@@ -46,36 +54,25 @@ MODEL_DIR = Path(__file__).parent / "data" / "models"
 PORT = 8091
 LOCAL_TZ = ZoneInfo("America/Los_Angeles")
 
-# SFPUC LIMS numeric station id (what the watcher stores in alert_log
-# station_ids) → forecast basin, by which combined-sewer system's outfalls
-# affect that beach. 4618 Mission Creek is deliberately unmapped: its
-# discharges come from the Central (Mission Creek) basin, which has no
-# serving model or bacteria stations in this app.
-OBSERVED_STATION_BASIN = {
-    "4601": "westside",     # Fort Funston
-    "4602": "westside",     # Ocean Beach at Sloat
-    "4603": "westside",     # Ocean Beach at Vicente
-    "4604": "westside",     # Ocean Beach at Balboa
-    "4605": "westside",     # Ocean Beach at Lincoln
-    "4606": "westside",     # Ocean Beach at Pacheco
-    "4607": "westside",     # China Beach
-    "4608": "westside",     # Baker Beach West
-    "4609": "westside",     # Baker Beach East
-    "4610": "westside",     # Baker Beach at Lobos Creek
-    "4611": "north_shore",  # Crissy Field West
-    "4612": "north_shore",  # Crissy Field East
-    "4613": "north_shore",  # Aquatic Park
-    "4614": "north_shore",  # Hyde Street Pier
-    "4615": "southeast",    # Jackrabbit Beach (Candlestick)
-    "4616": "southeast",    # Windsurfer Circle (Candlestick)
-    "4617": "southeast",    # Sunnydale Cove
-    "4619": "southeast",    # Islais Creek
-    "4620": "southeast",    # Crane Cove Park (Central waterfront)
-}
+# Basin / group / zone geography is shared with training (src/models/groups.py)
+# so serving can never disagree with what the models were fit on. Every
+# registry station maps to a basin model — including 4618 Mission Creek,
+# served by the Central model since v4 (2026-09).
+from src.models.groups import (  # noqa: E402
+    GROUPS_BY_BASIN, OBSERVED_STATION_BASIN, ZONE_GROUPS, zone_risks,
+)
+from src.models.impact import compose as _compose_risk  # noqa: E402
+from src.models.impact import impact_fraction as _impact_fraction  # noqa: E402
+from src.models.impact import smooth_table as _smooth_table  # noqa: E402
 
 # ─── Data source URLs ────────────────────────────────────────────────────────
 
 NWS_OBS_URL = "https://api.weather.gov/stations/KSFO/observations"
+# The two NOAA daily gauges the models were TRAINED on (data/raw/historical_rain.csv
+# is these exact series). Past complete days are re-based onto them so
+# serving sees the same rain the training labels were matched to.
+ACIS_URL = "https://data.rcc-acis.org/StnData"
+ACIS_GAUGES = {"SF Downtown": "047772", "SF Oceanside": "047767"}
 NWS_FORECAST_URL = "https://api.weather.gov/gridpoints/MTR/88,126/forecast/hourly"
 OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 SFPUC_API_URL = "https://infrastructure.sfwater.org/lims.asmx/getBeaches"
@@ -162,7 +159,7 @@ class LiveData:
 
     def _load_models(self):
         models = {}
-        for name in ["citywide", "westside", "north_shore", "southeast"]:
+        for name in ["citywide", "westside", "north_shore", "central", "southeast"]:
             path = MODEL_DIR / f"{name}_model.pkl"
             if path.exists():
                 with open(path, "rb") as f:
@@ -174,7 +171,7 @@ class LiveData:
         v2 retrain on SFPUC-reported events. Used to pick the right
         persistence curve (big discharges keep beaches posted longer)."""
         models = {}
-        for name in ["westside", "north_shore", "southeast"]:
+        for name in ["westside", "north_shore", "central", "southeast"]:
             path = MODEL_DIR / f"{name}_volume.pkl"
             if path.exists():
                 with open(path, "rb") as f:
@@ -182,60 +179,29 @@ class LiveData:
         return models
 
     def _load_impact_table(self):
-        """Empirical P(basin bacteria elevated | days since discharge, size),
-        measured from beach samples joined to SFPUC-reported discharges
-        (see train_v2.fit_impact_table).
-
-        The raw table has small-n buckets (down to n=3) whose sampling noise
-        makes the decay non-monotonic (e.g. Westside day-3-small reads higher
-        than day-1). Contamination physically decays, so we enforce a
-        non-increasing curve over days-since-discharge per size class with
-        weighted isotonic regression (PAVA), weighting each bucket by its
-        sample count."""
+        """Empirical P(group bacteria elevated | days since discharge, size),
+        measured from beach samples joined to reported discharges
+        (train_v4.fit_impact_table), smoothed to a non-increasing decay per
+        size class by the shared src/models/impact.smooth_table."""
         path = MODEL_DIR / "impact_table.json"
         if not path.exists():
             return {}
         with open(path) as f:
-            table = json.load(f)
+            return _smooth_table(json.load(f))
 
-        def pava_nonincreasing(values, weights):
-            # pool-adjacent-violators for a non-increasing fit
-            blocks = [[v, w] for v, w in zip(values, weights)]
-            i = 0
-            while i < len(blocks) - 1:
-                if blocks[i][0] < blocks[i + 1][0] - 1e-12:  # violation
-                    v1, w1 = blocks[i]
-                    v2, w2 = blocks[i + 1]
-                    blocks[i] = [(v1 * w1 + v2 * w2) / (w1 + w2), w1 + w2]
-                    del blocks[i + 1]
-                    i = max(i - 1, 0)
-                else:
-                    i += 1
-            out, bi = [], 0
-            consumed = 0
-            for v, w in zip(values, weights):
-                out.append(blocks[bi][0])
-                consumed += w
-                if consumed >= blocks[bi][1] - 1e-9:
-                    bi, consumed = bi + 1, 0
-            return out
+    @property
+    def rain_sources(self) -> set:
+        """Rain series the loaded models were trained on ('avg' or a gauge)."""
+        return {md.get("rain_source", "avg") for md in self.models.values()} | \
+               {md.get("rain_source", "avg") for md in self.volume_models.values()} | {"avg"} | set(ACIS_GAUGES)
 
-        order = ["0", "1", "2", "3", "4-5", "6-7"]
-        for basin, data in table.items():
-            buckets = data.get("buckets", {})
-            for size in ("small", "large"):
-                keys = [f"d{k}_{size}" for k in order if f"d{k}_{size}" in buckets]
-                if len(keys) < 2:
-                    continue
-                vals = [buckets[k]["p_elevated"] for k in keys]
-                wts = [max(buckets[k].get("n", 1), 1) for k in keys]
-                for k, v in zip(keys, pava_nonincreasing(vals, wts)):
-                    buckets[k]["p_elevated"] = round(v, 3)
-        return table
-
-    def _predict_calibrated(self, features: dict) -> dict:
+    def _predict_calibrated(self, features_by_source: dict) -> dict:
         """
         Run model prediction with rain-weighted calibration offset.
+
+        ``features_by_source`` maps a rain source ('avg', 'SF Oceanside', ...)
+        to that day's feature dict built from that series; each model is
+        scored on the source it was trained on (v4 regional models).
         
         The offset removes the model's dry-day noise floor. But when rain IS
         present, the model's prediction is real signal — so we scale the offset
@@ -245,11 +211,12 @@ class LiveData:
           - 0.5"+ rain → no offset (trust the model)
         """
         results = {}
-        rain_3d = features.get("rain_3d_cum", 0) or 0
-        # Scale: full offset at 0", zero at 0.5"+
-        rain_factor = max(0.0, 1.0 - rain_3d * 2.0)
-        
+        if not isinstance(features_by_source, dict) or "avg" not in features_by_source:
+            features_by_source = {"avg": features_by_source}  # legacy single-dict callers
         for name, model_data in self.models.items():
+            features = features_by_source.get(model_data.get("rain_source", "avg"), features_by_source["avg"])
+            rain_3d = features.get("rain_3d_cum", 0) or 0
+            rain_factor = max(0.0, 1.0 - rain_3d * 2.0)  # full offset at 0", zero at 0.5"+
             model = model_data["model"]
             feat_names = model_data["features"]
             offset = model_data.get("calibration_offset", 0)
@@ -294,49 +261,20 @@ class LiveData:
     # The pre-registry "Baker/China holds to day 3" curve was actually
     # Mission Creek/Crane Cove data under mislabeled ids). Basin display =
     # worst group; per-group values in the payload.
-    BASIN_IMPACT_GROUPS = {
-        "westside": ["Ocean Beach", "Baker-China"],
-        "north_shore": ["Crissy Field", "Aquatic Park"],
-        "southeast": ["Southeast"],
-    }
+    BASIN_IMPACT_GROUPS = GROUPS_BY_BASIN
     _BUCKET_ORDER = ["0", "1", "2", "3", "4-5", "6-7"]
 
     def _impact_fraction(self, group: str, days_since: int, volume_mg: float) -> float:
-        """x(k, size): attributable P(group's beaches elevated) k days after a
-        discharge of `volume_mg`, blending small/large curves by predicted
-        size. Sparse groups can miss a bucket entirely — hold the nearest
-        EARLIER bucket's value (curve is non-increasing, so this errs high,
-        the safe direction)."""
-        table = self.impact_table.get(group, {})
-        buckets = table.get("buckets", {})
-        if not buckets:
-            return 1.0 if days_since == 0 else 0.0  # degraded: same-day only
-        baseline = buckets.get("baseline_no_recent_discharge", {}).get("p_elevated", 0.0)
-        bi = min(days_since if days_since <= 3 else (4 if days_since <= 5 else 5),
-                 len(self._BUCKET_ORDER) - 1)
+        """x(k, size) — see src/models/impact.impact_fraction (shared with training)."""
+        return _impact_fraction(self.impact_table, group, days_since, volume_mg)
 
-        def attributable(size):
-            for j in range(bi, -1, -1):  # requested bucket, else nearest earlier
-                p = buckets.get(f"d{self._BUCKET_ORDER[j]}_{size}", {}).get("p_elevated")
-                if p is not None:
-                    return max(0.0, (p - baseline) / (1 - baseline)) if baseline < 1 else 0.0
-            return None
-
-        x_small, x_large = attributable("small"), attributable("large")
-        if x_small is None and x_large is None:
-            return 0.0
-        if x_small is None:
-            return x_large
-        if x_large is None:
-            return x_small
-        median = table.get("median_event_volume_mg", 1.0) or 1.0
-        w_large = volume_mg / (volume_mg + median)  # 0.5 at the median event size
-        return w_large * x_large + (1 - w_large) * x_small
-
-    def _predict_expected_volumes(self, features: dict) -> dict:
+    def _predict_expected_volumes(self, features_by_source: dict) -> dict:
         """Expected discharge volume (MG) per basin if a discharge happens."""
         out = {}
+        if not isinstance(features_by_source, dict) or "avg" not in features_by_source:
+            features_by_source = {"avg": features_by_source}
         for name, md in self.volume_models.items():
+            features = features_by_source.get(md.get("rain_source", "avg"), features_by_source["avg"])
             X = pd.DataFrame([{f: features.get(f, 0) for f in md["features"]}])
             out[name] = max(0.0, float(np.expm1(md["model"].predict(X)[0])))
         return out
@@ -398,44 +336,15 @@ class LiveData:
 
     def _compose_impact(self, day_probs: list, day_volumes: list, idx: int,
                         day_dates: list = None, observed: dict = None) -> dict:
-        """Composed beach-impact risk for daily-table row `idx`, per basin,
-        from that day's and the prior 7 days' discharge probabilities.
-
-        Where the SFPUC watcher OBSERVED a CSO onset (via `observed`,
-        {date: {basin_key}}), that day's discharge probability is replaced
-        with certainty (p=1) — measured persistence applied to a known event
-        instead of a prediction stacked on a prediction.
-        """
-        observed = observed or {}
-        composed, groups_out = {}, {}
-        for basin_key, groups in self.BASIN_IMPACT_GROUPS.items():
-            per_group = {}
-            for group in groups:
-                no_impact = 1.0
-                for k in range(0, 8):
-                    j = idx - k
-                    if j < 0 or j >= len(day_probs):
-                        continue
-                    p = day_probs[j].get(basin_key)
-                    if day_dates is not None and basin_key in observed.get(day_dates[j], ()):
-                        p = 1.0
-                    if not p:
-                        continue
-                    vol = day_volumes[j].get(basin_key, 0.0)
-                    # A discharge day IS a bad day: raw sewage is entering the
-                    # water, so the impact fraction is 1 on k=0 regardless of
-                    # what the samples later showed. Follow-up days (k>=1) use
-                    # the measured stage-2 decay curve (Chase, 2026-09-05).
-                    x = 1.0 if k == 0 else self._impact_fraction(group, k, vol)
-                    no_impact *= 1.0 - p * x
-                per_group[group] = round(1.0 - no_impact, 3)
-            composed[basin_key] = max(per_group.values()) if per_group else 0.0
-            groups_out.update(per_group)
-        composed["citywide"] = max(composed.values()) if composed else 0.0
+        """Composed beach-impact risk for daily-table row `idx`, per basin
+        (worst group) plus per-group values under "_groups". Where the
+        watcher OBSERVED a CSO onset that day's discharge probability is
+        replaced with certainty. Implementation shared with training:
+        src/models/impact.compose."""
+        composed, groups_out = _compose_risk(self.impact_table, self.BASIN_IMPACT_GROUPS,
+                                             day_probs, day_volumes, idx, day_dates, observed)
         # NOTE: keep `composed` flat floats only — the frontend takes
         # Math.max(Object.values(predictions)) and renders a card per key.
-        # Per-group values ride along under a key the call sites pop out
-        # into the sibling `impact_groups` payload field.
         composed["_groups"] = groups_out
         return composed
 
@@ -636,146 +545,193 @@ class LiveData:
             print(f"SFPUC fetch error: {e}")
             return []
 
-    def _compute_predictions(self, rain_df: pd.DataFrame) -> dict:
+    # ── Rain → daily features, per rain source ─────────────────────────────
+
+    def _fetch_acis_daily(self, start, end) -> pd.DataFrame:
+        """Daily precipitation (inches) for the training gauges over
+        [start, end] (dates). Missing/suppressed values are NaN, trace is 0.
+        Any failure returns an empty frame — callers keep the hourly series."""
+        out = pd.DataFrame({"date": pd.date_range(start, end)})
+        for name, sid in ACIS_GAUGES.items():
+            try:
+                r = requests.post(ACIS_URL, json={"sid": sid, "sdate": str(start), "edate": str(end),
+                                                  "elems": [{"name": "pcpn"}]}, timeout=20)
+                r.raise_for_status()
+                rows = r.json().get("data", [])
+            except Exception as exc:  # pragma: no cover - network
+                print(f"ACIS {name} unavailable: {exc}")
+                rows = []
+            vals = {}
+            for d, v in rows:
+                v = str(v).strip()
+                if v in ("M", "S", ""):
+                    continue
+                if v == "T":
+                    vals[pd.Timestamp(d)] = 0.0
+                    continue
+                m = re.match(r"^([\d.]+)", v)
+                if m:
+                    vals[pd.Timestamp(d)] = float(m.group(1))
+            out[name] = out["date"].map(vals)
+        return out
+
+    @staticmethod
+    def _add_daily_features(daily: pd.DataFrame) -> pd.DataFrame:
+        """Cumulative / lag / antecedent features from `precip_inches`
+        (identical to train_v4.rain_features — keep in lockstep)."""
+        daily = daily.copy()
+        for w in [2, 3, 5, 7, 14, 30]:
+            daily[f"rain_{w}d_cum"] = daily["precip_inches"].rolling(window=w, min_periods=1).sum()
+        for lag in [1, 2, 3, 5, 7]:
+            daily[f"rain_lag{lag}d"] = daily["precip_inches"].shift(lag).fillna(0)
+        weights = np.exp(-np.log(2) / 3 * np.arange(14))
+        daily["antecedent_moisture"] = (
+            daily["precip_inches"].rolling(window=14, min_periods=1)
+            .apply(lambda x: np.sum(x * weights[:len(x)][::-1]) / np.sum(weights[:len(x)]), raw=True)
+        )
+        daily["wet_prior_3d"] = (daily["rain_3d_cum"].shift(1).fillna(0) > 0.1).astype(int)
+        daily["peak_3d"] = daily["precip_inches"].rolling(window=3, min_periods=1).max()
+        is_dry = (daily["precip_inches"] < 0.05).astype(int)
+        daily["dry_spell_days"] = is_dry.groupby(is_dry.ne(is_dry.shift()).cumsum()).cumsum()
+        return daily
+
+    def _daily_frames(self, rain_df: pd.DataFrame, today) -> dict:
+        """{rain source: daily feature frame} from the hourly series.
+
+        The hourly series (Open-Meteo model + KSFO gauge overlay + ECMWF
+        forecast) supplies every day's intensity features and the totals for
+        today and the forecast days. COMPLETE past days are re-based onto the
+        NOAA daily gauges the models were trained on: 'avg' = mean of Downtown
+        and Oceanside, a gauge source = that gauge (falling back to the other
+        one, then to the hourly total — the same fill training used). Each
+        day carries a ``rain_source`` label: gauges / observed / mixed /
+        model / forecast.
         """
-        Compute CSO predictions for today and next 5 days.
-
-        For each day, aggregate hourly rain into daily features,
-        compute cumulative windows, and run the trained model.
-        """
-        if rain_df is None or rain_df.empty:
-            return {}
-
-        now = _now_local()
-        today = now.replace(hour=0, minute=0, second=0, microsecond=0)
-
-        # Aggregate to daily totals. Rolling 3h/6h sums run across the
-        # continuous hourly series (windows span midnight) BEFORE the daily
-        # max — identical to train_v2.build_hourly_features().
         rain_df = rain_df.copy().sort_values("timestamp").reset_index(drop=True)
         for w in (3, 6):
             rain_df[f"roll{w}h"] = rain_df["precip_inches"].rolling(w, min_periods=1).sum()
         rain_df["date"] = rain_df["timestamp"].dt.date
-        daily = rain_df.groupby("date").agg(
-            precip_inches=("precip_inches", "sum"),
-            precip_max_hourly=("precip_inches", "max"),
-            rain_max3h=("roll3h", "max"),
-            rain_max6h=("roll6h", "max"),
-            wind_dir_avg=("wind_dir_deg", "mean"),
-        ).reset_index()
-        daily["date"] = pd.to_datetime(daily["date"])
-        daily = daily.sort_values("date").reset_index(drop=True)
+        agg = dict(precip_inches=("precip_inches", "sum"), precip_max_hourly=("precip_inches", "max"),
+                   rain_max3h=("roll3h", "max"), rain_max6h=("roll6h", "max"))
+        if "wind_dir_deg" in rain_df:
+            agg["wind_dir_avg"] = ("wind_dir_deg", "mean")
+        base = rain_df.groupby("date").agg(**agg).reset_index()
+        base["date"] = pd.to_datetime(base["date"])
+        base = base.sort_values("date").reset_index(drop=True)
 
-        # Where each day's rain came from, for the UI's source label
         def _day_source(sources):
             kinds = set(sources)
             return kinds.pop() if len(kinds) == 1 else "mixed"
-        day_source = (rain_df.groupby("date")["rain_source"].agg(_day_source).to_dict()
-                      if "rain_source" in rain_df else {})
+        if "rain_source" in rain_df:
+            base["rain_source"] = base["date"].dt.date.map(rain_df.groupby("date")["rain_source"].agg(_day_source))
+        else:
+            base["rain_source"] = np.where(base["date"].dt.date < today, "model", "forecast")
 
-        # Compute cumulative features
-        for w in [2, 3, 5, 7, 14, 30]:
-            daily[f"rain_{w}d_cum"] = daily["precip_inches"].rolling(window=w, min_periods=1).sum()
+        past = base["date"].dt.date < today
+        acis = pd.DataFrame()
+        if past.any():
+            acis = self._fetch_acis_daily(base.loc[past, "date"].min().date(), base.loc[past, "date"].max().date())
+        gauges = {}
+        if not acis.empty:
+            for name in ACIS_GAUGES:
+                if name in acis:
+                    gauges[name] = base["date"].map(acis.set_index("date")[name])
 
-        for lag in [1, 2, 3, 5, 7]:
-            daily[f"rain_lag{lag}d"] = daily["precip_inches"].shift(lag).fillna(0)
+        frames = {}
+        for source in self.rain_sources:
+            daily = base.copy()
+            if gauges:
+                if source == "avg":
+                    g = pd.concat(gauges.values(), axis=1).mean(axis=1)
+                else:
+                    g = gauges.get(source, pd.Series(np.nan, index=daily.index))
+                    for other in gauges:
+                        if other != source:
+                            g = g.fillna(gauges[other])
+                have = past & g.notna()
+                daily.loc[have, "precip_inches"] = g[have].astype(float).values
+                daily.loc[have, "rain_source"] = "gauges"
+            frames[source] = self._add_daily_features(daily)
+        return frames
 
-        # Antecedent moisture
-        half_life = 3
-        weights = np.exp(-np.log(2) / half_life * np.arange(14))
-        daily["antecedent_moisture"] = (
-            daily["precip_inches"]
-            .rolling(window=14, min_periods=1)
-            .apply(lambda x: np.sum(x * weights[:len(x)][::-1]) / np.sum(weights[:len(x)]), raw=True)
-        )
+    def _score_frames(self, frames: dict) -> tuple:
+        """Per-day (features_by_source, probs, volumes, dates) over the daily table."""
+        n = len(frames["avg"])
+        feats = [{src: self._features_from_row(frames[src].iloc[i]) for src in frames} for i in range(n)]
+        probs = [self._predict_calibrated(f) for f in feats]
+        vols = [self._predict_expected_volumes(f) for f in feats]
+        dates = [d.date() for d in frames["avg"]["date"]]
+        return feats, probs, vols, dates
 
-        daily["wet_prior_3d"] = (daily["rain_3d_cum"].shift(1).fillna(0) > 0.1).astype(int)
-        daily["peak_3d"] = daily["precip_inches"].rolling(window=3, min_periods=1).max()
+    def _day_payload(self, frames: dict, idx: int, feats: list, probs: list, vols: list,
+                     dates: list, observed: dict) -> dict:
+        day_predictions = self._compose_impact(probs, vols, idx, dates, observed)
+        impact_groups = day_predictions.pop("_groups", {})
+        f = feats[idx]["avg"]
+        row = frames["avg"].iloc[idx]
+        return {
+            "rain_inches": round(f["precip_avg"], 3),
+            "rain_by_gauge": {src: round(float(frames[src].iloc[idx]["precip_inches"]), 3)
+                              for src in frames if src != "avg"},
+            "rain_source": row.get("rain_source", "model"),
+            "rain_2d_cum": round(f["rain_2d_cum"], 3),
+            "rain_3d_cum": round(f["rain_3d_cum"], 3),
+            "predictions": day_predictions,
+            "impact_groups": impact_groups,
+            "zones": zone_risks(impact_groups),
+            "discharge_probs": probs[idx],
+            "observed_cso": sorted(observed.get(dates[idx], ())),
+            "features": f,
+        }
 
-        is_dry = (daily["precip_inches"] < 0.05).astype(int)
-        groups = is_dry.ne(is_dry.shift()).cumsum()
-        daily["dry_spell_days"] = is_dry.groupby(groups).cumsum()
+    def _compute_predictions(self, rain_df: pd.DataFrame) -> dict:
+        """CSO / beach-impact predictions for yesterday, today and the next 5 days."""
+        if rain_df is None or rain_df.empty:
+            return {}
+        now = _now_local()
+        today = now.date()
+        frames = self._daily_frames(rain_df, today)
+        feats, probs, vols, dates = self._score_frames(frames)
+        observed = self._fetch_observed_cso(min(dates)) if dates else {}
 
-        # Score EVERY row of the daily table (the display days need the prior
-        # week's discharge probabilities for the persistence composition)
-        row_features = [self._features_from_row(row) for _, row in daily.iterrows()]
-        day_probs = [self._predict_calibrated(f) for f in row_features]
-        day_volumes = [self._predict_expected_volumes(f) for f in row_features]
-        day_dates = [d.date() for d in daily["date"]]
-        observed = self._fetch_observed_cso(min(day_dates)) if day_dates else {}
-
-        # Emit today + next 5 days (plus yesterday) with composed impact risk
         results = {}
         for day_offset in range(-1, 6):
-            target_date = (today + timedelta(days=day_offset)).date()
-            match = daily.index[daily["date"].dt.date == target_date]
-            if len(match) == 0:
+            target_date = today + timedelta(days=day_offset)
+            if target_date not in dates:
                 continue
-            idx = daily.index.get_loc(match[0])
-            features = row_features[idx]
-
-            # predictions = beach-impact risk (discharge + persistence);
-            # discharge_probs = same-day P(discharge) for transparency
-            day_predictions = self._compose_impact(day_probs, day_volumes, idx,
-                                                   day_dates, observed)
-            impact_groups = day_predictions.pop("_groups", {})
-
-            is_forecast = day_offset > 0
-            is_today = day_offset == 0
-
+            idx = dates.index(target_date)
             label = target_date.strftime("%a %b %d")
-            if is_today:
+            if day_offset == 0:
                 label = "Today"
             elif day_offset == 1:
                 label = "Tomorrow"
             elif day_offset == -1:
                 label = "Yesterday"
-
-            results[str(target_date)] = {
-                "label": label,
-                "date": str(target_date),
-                "day_offset": day_offset,
-                "is_forecast": is_forecast,
-                "is_today": is_today,
-                "rain_inches": round(features["precip_avg"], 3),
-                "rain_source": day_source.get(target_date, "forecast" if is_forecast else "model"),
-                "rain_2d_cum": round(features["rain_2d_cum"], 3),
-                "rain_3d_cum": round(features["rain_3d_cum"], 3),
-                "predictions": day_predictions,
-                "impact_groups": impact_groups,
-                "discharge_probs": day_probs[idx],
-                "observed_cso": sorted(observed.get(target_date, ())),
-                "features": features,
-            }
-
+            payload = self._day_payload(frames, idx, feats, probs, vols, dates, observed)
+            payload.update({"label": label, "date": str(target_date), "day_offset": day_offset,
+                            "is_forecast": day_offset > 0, "is_today": day_offset == 0})
+            results[str(target_date)] = payload
         return results
 
     def get_historical(self, date_str: str) -> dict:
-        """
-        Get predictions for a historical date ± 5 days.
-        Uses Open-Meteo archive API for past weather data.
-        """
+        """Hindcast for a historical date ± 5 days: what the CURRENT models say
+        given the rain that fell (Open-Meteo archive hourly for intensity,
+        NOAA daily gauges for totals). Compare with get_actuals() for what
+        actually happened."""
         try:
             target = datetime.strptime(date_str, "%Y-%m-%d")
         except ValueError:
             return {"error": f"Invalid date: {date_str}"}
 
-        # Need 14 days before target for antecedent features, plus 5 days after
         start = target - timedelta(days=14)
         end = min(target + timedelta(days=5), datetime.now())
-
-        # Fetch from Open-Meteo archive
         params = {
-            "latitude": 37.7749,
-            "longitude": -122.4194,
+            "latitude": 37.7749, "longitude": -122.4194,
             "hourly": "precipitation,temperature_2m,wind_speed_10m,wind_direction_10m",
-            "start_date": start.strftime("%Y-%m-%d"),
-            "end_date": end.strftime("%Y-%m-%d"),
+            "start_date": start.strftime("%Y-%m-%d"), "end_date": end.strftime("%Y-%m-%d"),
             "timezone": "America/Los_Angeles",
         }
-
         try:
-            # Use archive API for dates > 5 days ago, forecast API for recent
             if (datetime.now() - end).days > 5:
                 url = "https://archive-api.open-meteo.com/v1/archive"
             else:
@@ -785,7 +741,6 @@ class LiveData:
                 params["forecast_days"] = max(1, (end - datetime.now()).days + 1)
                 del params["start_date"]
                 del params["end_date"]
-
             r = requests.get(url, params=params, timeout=30)
             r.raise_for_status()
             data = r.json()
@@ -793,104 +748,264 @@ class LiveData:
             return {"error": f"Failed to fetch weather data: {e}"}
 
         hourly = data.get("hourly", {})
-        times = hourly.get("time", [])
-        precip = hourly.get("precipitation", [])
-
+        times, precip = hourly.get("time", []), hourly.get("precipitation", [])
         if not times:
             return {"error": "No weather data returned"}
-
-        rain_df = pd.DataFrame({
-            "timestamp": pd.to_datetime(times),
-            "precip_mm": precip,
-        })
+        rain_df = pd.DataFrame({"timestamp": pd.to_datetime(times), "precip_mm": precip})
         rain_df["precip_inches"] = rain_df["precip_mm"] / 25.4
+        rain_df["rain_source"] = "model"
 
-        # Add missing columns that the archive API might not return
-        for col in ["wind_dir_deg", "wind_speed_kmh", "temp_c"]:
-            if col not in rain_df.columns:
-                rain_df[col] = 0
-
-        # Compute daily features and predictions directly (not using _compute_predictions
-        # which is tied to datetime.now())
-        rain_df = rain_df.copy().sort_values("timestamp").reset_index(drop=True)
-        for w in (3, 6):
-            rain_df[f"roll{w}h"] = rain_df["precip_inches"].rolling(w, min_periods=1).sum()
-        rain_df["date"] = rain_df["timestamp"].dt.date
-        daily = rain_df.groupby("date").agg(
-            precip_inches=("precip_inches", "sum"),
-            precip_max_hourly=("precip_inches", "max"),
-            rain_max3h=("roll3h", "max"),
-            rain_max6h=("roll6h", "max"),
-        ).reset_index()
-        daily["date"] = pd.to_datetime(daily["date"])
-        daily = daily.sort_values("date").reset_index(drop=True)
-
-        for w in [2, 3, 5, 7, 14, 30]:
-            daily[f"rain_{w}d_cum"] = daily["precip_inches"].rolling(window=w, min_periods=1).sum()
-        for lag in [1, 2, 3, 5, 7]:
-            daily[f"rain_lag{lag}d"] = daily["precip_inches"].shift(lag).fillna(0)
-
-        half_life = 3
-        weights = np.exp(-np.log(2) / half_life * np.arange(14))
-        daily["antecedent_moisture"] = (
-            daily["precip_inches"]
-            .rolling(window=14, min_periods=1)
-            .apply(lambda x: np.sum(x * weights[:len(x)][::-1]) / np.sum(weights[:len(x)]), raw=True)
-        )
-        daily["wet_prior_3d"] = (daily["rain_3d_cum"].shift(1).fillna(0) > 0.1).astype(int)
-        daily["peak_3d"] = daily["precip_inches"].rolling(window=3, min_periods=1).max()
-        is_dry = (daily["precip_inches"] < 0.05).astype(int)
-        groups = is_dry.ne(is_dry.shift()).cumsum()
-        daily["dry_spell_days"] = is_dry.groupby(groups).cumsum()
-
-        # Score every row (prior week feeds the persistence composition),
-        # then emit target ± days with composed impact risk. Observed CSO
-        # onsets from the alert_log override model probabilities for any
-        # dates the watcher was live for (older dates simply return no rows).
-        row_features = [self._features_from_row(row) for _, row in daily.iterrows()]
-        day_probs = [self._predict_calibrated(f) for f in row_features]
-        day_volumes = [self._predict_expected_volumes(f) for f in row_features]
-        day_dates = [d.date() for d in daily["date"]]
-        observed = self._fetch_observed_cso(min(day_dates)) if day_dates else {}
+        frames = self._daily_frames(rain_df, _now_local().date())
+        feats, probs, vols, dates = self._score_frames(frames)
+        observed = self._fetch_observed_cso(min(dates)) if dates else {}
 
         target_date = target.date()
         filtered = {}
-
-        for idx, (_, row) in enumerate(daily.iterrows()):
-            row_date = row["date"].date()
+        for idx, row_date in enumerate(dates):
             offset = (row_date - target_date).days
             if offset < -2 or offset > 5:
                 continue
+            payload = self._day_payload(frames, idx, feats, probs, vols, dates, observed)
+            payload.update({"label": row_date.strftime("%a %b %d") + (" ★" if offset == 0 else ""),
+                            "date": str(row_date), "day_offset": offset, "is_today": offset == 0,
+                            "is_forecast": False})
+            filtered[str(row_date)] = payload
+        return {"target_date": date_str, "predictions": filtered}
 
-            features = row_features[idx]
-            day_predictions = self._compose_impact(day_probs, day_volumes, idx,
-                                                   day_dates, observed)
-            impact_groups = day_predictions.pop("_groups", {})
+    # ── What happened (actuals) and model check (scorecard) ────────────────
 
-            label = row_date.strftime("%a %b %d")
-            if offset == 0:
-                label += " ★"
+    _CSD_DIR = Path(__file__).parent / "data" / "csd"
+    _POOBOT_DIR = Path(__file__).parent / "data" / "poobot"
+    DATASF_FLOOR = "2020-07-27"   # earliest DataSF bacteria sample
 
-            filtered[str(row_date)] = {
-                "label": label,
-                "date": str(row_date),
-                "day_offset": offset,
-                "is_today": offset == 0,
-                "is_forecast": False,
-                "rain_inches": round(features["precip_avg"], 3),
-                "rain_2d_cum": round(features["rain_2d_cum"], 3),
-                "rain_3d_cum": round(features["rain_3d_cum"], 3),
-                "predictions": day_predictions,
-                "impact_groups": impact_groups,
-                "discharge_probs": day_probs[idx],
-                "observed_cso": sorted(observed.get(row_date, ())),
-                "features": features,
-            }
+    def _events_table(self) -> pd.DataFrame:
+        """Reported discharges with the beaches they post (via the outfall
+        registry): CIWQS self-monitoring events (Oct 2016 – Oct 2025) plus
+        SFPUC feed onsets from the 2016-17 Poo Bot archive. Cached."""
+        if getattr(self, "_events_cache", None) is not None:
+            return self._events_cache
+        by_sfpuc = {s.sfpuc_id: sid for sid, s in STATIONS.items()}
+        rows = []
+        ev_path = self._CSD_DIR / "sf_csd_events.csv"
+        if ev_path.exists():
+            ev = pd.read_csv(ev_path, parse_dates=["event_date"])
+            for _, r in ev.iterrows():
+                o = OUTFALLS.get(r["outfall_id"])
+                sids = [by_sfpuc[x] for x in (o.stations if o else ()) if x in by_sfpuc]
+                rows.append({"date": r["event_date"].normalize(), "outfall_id": r["outfall_id"],
+                             "name": o.name if o else r.get("outfall_name", ""),
+                             "basin": o.basin if o else None, "volume_mg": float(r["volume_MG"]) if pd.notna(r["volume_MG"]) else None,
+                             "duration_min": float(r["duration_min"]) if pd.notna(r.get("duration_min")) else None,
+                             "stations": sids, "source": "CIWQS report"})
+        on_path = self._POOBOT_DIR / "discharge_onsets.csv"
+        if on_path.exists():
+            on = pd.read_csv(on_path, parse_dates=["date"])
+            for _, r in on[on["mapped"] == True].iterrows():  # noqa: E712
+                oids = [x for x in str(r["outfall_ids"]).split("|") if x in OUTFALLS]
+                sids = sorted({by_sfpuc[x] for oid in oids for x in OUTFALLS[oid].stations if x in by_sfpuc})
+                rows.append({"date": r["date"].normalize(), "outfall_id": "|".join(oids), "name": r["structure"].title(),
+                             "basin": OUTFALLS[oids[0]].basin if oids else None, "volume_mg": None, "duration_min": None,
+                             "stations": sids, "source": "SFPUC feed (Poo Bot archive)"})
+        self._events_cache = pd.DataFrame(rows)
+        return self._events_cache
 
-        return {
-            "target_date": date_str,
-            "predictions": filtered,
-        }
+    def _coverage(self) -> dict:
+        """{facility prefix: set of (year, month)} with trustworthy CIWQS labels."""
+        if getattr(self, "_coverage_cache", None) is not None:
+            return self._coverage_cache
+        out = {"Oceanside": set(), "Southeast": set()}
+        path = self._CSD_DIR / "sf_csd_monthly_coverage.csv"
+        if path.exists():
+            cov = pd.read_csv(path)
+            ok = cov["status"].isin({"events_parsed", "table_present_zero_events", "no_table_stated_no_discharge"})
+            for _, r in cov[ok].iterrows():
+                for k in out:
+                    if str(r["facility"]).startswith(k):
+                        out[k].add((int(r["year"]), int(r["month"])))
+        # the 2016-17 feed archive covers both facilities
+        for d in pd.date_range("2016-03-19", "2017-01-10", freq="MS"):
+            out["Oceanside"].add((d.year, d.month)); out["Southeast"].add((d.year, d.month))
+        self._coverage_cache = out
+        return out
+
+    def _alert_log_transitions(self, start_date, end_date) -> list:
+        """Per-station escalations the watcher logged (posted / cso), by local date."""
+        if _supabase is None or not _supabase.is_configured():
+            return []
+        try:
+            rows = _supabase.select("alert_log", {
+                "select": "created_at,event_type,station_ids,simulated,results",
+                "simulated": "eq.false",
+                "created_at": f"gte.{start_date.isoformat()}T00:00:00+00:00",
+                "order": "created_at.asc", "limit": "500"})
+        except Exception as e:
+            print(f"alert_log fetch failed: {e}")
+            return []
+        out = []
+        for row in rows:
+            try:
+                d = datetime.fromisoformat(row["created_at"].replace("Z", "+00:00")).astimezone(LOCAL_TZ).date()
+            except (KeyError, ValueError):
+                continue
+            if d > end_date:
+                continue
+            results = row.get("results")
+            trans = (results.get("transitions") if isinstance(results, dict) else None) or []
+            if not trans:
+                trans = [{"station_id": sid, "to": row.get("event_type")} for sid in (row.get("station_ids") or [])]
+            for t in trans:
+                if not isinstance(t, dict) or t.get("simulated"):
+                    continue
+                sid = str(t.get("station_id", ""))
+                st = next((s for s in STATIONS.values() if s.sfpuc_id == sid), None)
+                out.append({"date": str(d), "station_id": sid, "station_name": st.name if st else t.get("station_name", sid),
+                            "zone": ZONE_OF_STATION.get(sid), "to": t.get("to")})
+        return out
+
+    def _samples_window(self, start_date, end_date) -> list:
+        """Per-sample bacteria results in [start, end]: DataSF for dates from
+        2020-07-27, the Poo Bot archive (Dec 2015 – Jan 2017) before that."""
+        thresholds = {"ENTERO": 104, "COLI_E": 235, "COLI_FECAL": 400, "COLI_TOTAL": 10000}
+
+        def parse(v):
+            v = str(v or "").strip()
+            try:
+                if v.startswith("<"):
+                    return float(v[1:]) / 2
+                if v.startswith(">"):
+                    return float(v[1:])
+                return float(v)
+            except ValueError:
+                return None
+
+        recs = []
+        if str(end_date) >= self.DATASF_FLOOR:
+            try:
+                r = requests.get("https://data.sfgov.org/resource/v3fv-x3ux.json", params={
+                    "$limit": 5000, "$order": "sample_date ASC",
+                    "$where": f"sample_date >= '{start_date}T00:00:00' AND sample_date <= '{end_date}T23:59:59' AND analyte IS NOT NULL",
+                }, timeout=30)
+                r.raise_for_status()
+                for rec in r.json():
+                    recs.append((rec.get("source", ""), rec.get("sample_date", "")[:10], rec.get("analyte", ""), rec.get("data", "")))
+            except Exception as e:
+                print(f"DataSF samples fetch failed: {e}")
+        if str(start_date) < self.DATASF_FLOOR:
+            path = self._POOBOT_DIR / "samples.csv"
+            if path.exists():
+                pb = pd.read_csv(path, dtype=str)
+                pb = pb[(pb["sample_date"] >= str(start_date)) & (pb["sample_date"] <= str(end_date))]
+                for _, r in pb.iterrows():
+                    recs.append((r["source"], r["sample_date"], r["analyte"], r["data"]))
+        out, seen = [], set()
+        for station, d, analyte, raw in recs:
+            if station not in STATIONS or analyte not in thresholds or (station, d, analyte) in seen:
+                continue
+            seen.add((station, d, analyte))
+            val = parse(raw)
+            out.append({"date": d, "station": station, "station_name": STATION_NAMES[station],
+                        "zone": ZONE_OF_SOURCE[station], "analyte": analyte, "value": val, "value_raw": raw,
+                        "exceeds": bool(val is not None and val > thresholds[analyte])})
+        return out
+
+    def get_actuals(self, date_str: str) -> dict:
+        """What actually happened around a date (−2 … +5 days), per zone:
+        gauge rain, reported discharges and the beaches they post, watcher-
+        logged postings, and bacteria samples."""
+        try:
+            target = datetime.strptime(date_str, "%Y-%m-%d").date()
+        except ValueError:
+            return {"error": f"Invalid date: {date_str}"}
+        start, end = target - timedelta(days=2), min(target + timedelta(days=5), _now_local().date())
+        dates = [start + timedelta(days=i) for i in range((end - start).days + 1)]
+
+        acis = self._fetch_acis_daily(start, end)
+        ev = self._events_table()
+        ev = ev[(ev["date"] >= pd.Timestamp(start)) & (ev["date"] <= pd.Timestamp(end))] if not ev.empty else ev
+        postings = self._alert_log_transitions(start, end) if str(end) >= "2026-08-01" else []
+        samples = self._samples_window(start, end)
+        cov = self._coverage()
+
+        days = {}
+        for d in dates:
+            key = str(d)
+            rain = {}
+            if not acis.empty:
+                row = acis[acis["date"] == pd.Timestamp(d)]
+                if len(row):
+                    rain = {g: (round(float(row.iloc[0][g]), 2) if pd.notna(row.iloc[0][g]) else None) for g in ACIS_GAUGES}
+            dis = [] if ev.empty else [
+                {"outfall_id": r["outfall_id"], "name": r["name"], "basin": r["basin"], "volume_mg": r["volume_mg"],
+                 "duration_min": r["duration_min"], "source": r["source"],
+                 "stations": [STATION_NAMES[x] for x in r["stations"]],
+                 "zones": sorted({ZONE_OF_SOURCE[x] for x in r["stations"]})}
+                for _, r in ev[ev["date"] == pd.Timestamp(d)].iterrows()]
+            posts = [p for p in postings if p["date"] == key]
+            smp = [x for x in samples if x["date"] == key]
+            ocean_cov = (d.year, d.month) in cov["Oceanside"]
+            bay_cov = (d.year, d.month) in cov["Southeast"]
+            watcher_live = key >= "2026-08-20"
+            zones = {}
+            for zk, z in ZONES.items():
+                covered = (ocean_cov if zk in ("ocean", "baker_china") else bay_cov) or watcher_live
+                z_dis = [x for x in dis if zk in x["zones"]]
+                z_cso_posts = [p for p in posts if p["zone"] == zk and p["to"] == "cso"]
+                z_posts = [p for p in posts if p["zone"] == zk and p["to"] == "posted"]
+                z_smp = [x for x in smp if x["zone"] == zk]
+                elevated = sorted({x["station_name"] for x in z_smp if x["exceeds"]})
+                discharge = bool(z_dis or z_cso_posts) if covered else None
+                zones[zk] = {"discharge": discharge,
+                             "discharge_stations": sorted({n for x in z_dis for n in x["stations"] if n in [STATIONS[s].name for s in z.source_ids]} | {p["station_name"] for p in z_cso_posts}),
+                             "posted": bool(z_posts) if watcher_live else None,
+                             "posted_stations": sorted({p["station_name"] for p in z_posts}),
+                             "elevated": (bool(elevated) if z_smp else None), "elevated_stations": elevated,
+                             "n_samples": len(z_smp),
+                             "bad": (True if (discharge or elevated or z_posts) else (False if (discharge is False and (z_smp or not watcher_live)) else None))}
+            days[key] = {"date": key, "rain": rain, "discharges": dis, "postings": posts, "samples": smp, "zones": zones,
+                         "coverage": {"oceanside": ocean_cov, "bayside": bay_cov, "watcher": watcher_live}}
+        return {"target_date": date_str, "days": days,
+                "sources": {"rain": "NOAA daily gauges (Downtown 047772, Oceanside 047767) via ACIS",
+                            "discharges": "SFPUC CIWQS self-monitoring reports (Oct 2016 – Oct 2025); SFPUC feed archive (Mar 2016 – Jan 2017); BWTF watcher (Aug 2026 →)",
+                            "bacteria": "DataSF beach samples (Jul 2020 →); SFPUC feed archive (Dec 2015 – Jan 2017)"}}
+
+    def _scorecard(self) -> dict:
+        if getattr(self, "_scorecard_cache", None) is None:
+            import gzip
+            path = MODEL_DIR / "scorecard.json.gz"
+            if not path.exists():
+                self._scorecard_cache = {}
+            else:
+                with gzip.open(path, "rt") as f:
+                    sc = json.load(f)
+                sc["_by_date"] = {d["date"]: d for d in sc.get("days", [])}
+                self._scorecard_cache = sc
+        return self._scorecard_cache
+
+    def get_scorecard(self, date_str: str) -> dict:
+        """Model check: the training-time hindcast (final model and the
+        holdout-fit model) next to the labels, for −2 … +5 days around a date,
+        plus the season-level scorecard."""
+        try:
+            target = datetime.strptime(date_str, "%Y-%m-%d").date()
+        except ValueError:
+            return {"error": f"Invalid date: {date_str}"}
+        sc = self._scorecard()
+        if not sc:
+            return {"error": "scorecard artifact missing (run train_v4.py)"}
+        window = {}
+        for i in range(-2, 6):
+            k = str(target + timedelta(days=i))
+            if k in sc["_by_date"]:
+                window[k] = sc["_by_date"][k]
+        eval_path = MODEL_DIR / "eval_report.json"
+        ev = json.loads(eval_path.read_text()) if eval_path.exists() else {}
+        targets = {k: {"n_events": t.get("n_events"), "holdout": t.get("holdout"), "rain_source": t.get("rain_source")}
+                   for k, t in ev.get("targets", {}).items()}
+        return {"target_date": date_str, "in_span": bool(window), "span": sc.get("span"),
+                "holdout_start": sc.get("holdout_start"), "trained_at": sc.get("trained_at"),
+                "basins": sc.get("basins"), "zones": sc.get("zones"), "groups": sc.get("groups"),
+                "days": window, "zone_confusion_holdout": sc.get("zone_confusion_holdout"),
+                "targets": targets, "backtest": ev.get("backtest")}
 
     def get_bacteria_ground_truth(self, date_str: str) -> dict:
         """

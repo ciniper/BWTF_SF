@@ -96,12 +96,13 @@ def test_sfpuc_to_sfgov_mapping_is_one_to_one_over_feed_names():
 def test_groups_and_basins():
     for sid, s in STATIONS.items():
         assert s.group in {"Ocean", "North Shore", "East Bayshore"}, sid
-        assert s.basin in {"Westside", "North Shore", "Southeast"}, sid
+        assert s.basin in {"Westside", "North Shore", "Central", "Southeast"}, sid
         # Ocean-facing stations drain Westside; bay stations never do.
         if sid.startswith("OCEAN#"):
             assert s.group == "Ocean" and s.basin == "Westside", sid
         else:
             assert s.group != "Ocean" and s.basin != "Westside", sid
+    assert STATIONS["BAY#220_SL"].basin == "Central"  # Mission Creek outfalls, own model since v4
     assert STATION_BASINS == {sid: s.basin for sid, s in STATIONS.items()}
 
 
@@ -132,25 +133,27 @@ def test_forecast_training_tables_use_the_registry():
     assert historical.STATION_BASINS is STATION_BASINS
     assert train.STATION_BASINS is STATION_BASINS
 
-    # Stage-2 site groups: every member must exist in the registry with the
-    # group's parent basin, and together the groups cover every station
-    # except BAY#220_SL — Mission Creek drains the Central basin, which has
-    # no stage-1 model (its SFPUC id 4618 is likewise unmapped below).
-    covered = set()
-    for group, (basin, sids) in train_v2.SITE_GROUPS.items():
+    # Stage-2 site groups (src/models/groups.py, shared by train_v4 and the
+    # dashboard): every member exists in the registry with the group's parent
+    # basin, and together the groups cover every station exactly once.
+    import groups
+    covered = []
+    for group, (basin, sids) in groups.SITE_GROUPS.items():
         for sid in sids:
             assert STATIONS[sid].basin == basin, (group, sid)
-        covered.update(sids)
-    assert covered == set(STATIONS) - {"BAY#220_SL"}
+        covered += sids
+    assert sorted(covered) == sorted(STATIONS)
+    # legacy v2/v3 trainer still validates against the registry (minus Mission Creek)
+    assert {sid for _, sids in train_v2.SITE_GROUPS.values() for sid in sids} == set(STATIONS) - {"BAY#220_SL"}
 
 
 def test_forecast_observed_station_basins_match_registry():
     from features.forecast import live_dashboard
 
     key = {"Westside": "westside", "North Shore": "north_shore",
-           "Southeast": "southeast"}
-    expected = {s.sfpuc_id: key[s.basin]
-                for s in STATIONS.values() if s.sfpuc_id != "4618"}
+           "Central": "central", "Southeast": "southeast"}
+    # every station, including 4618 Mission Creek (Central model since v4)
+    expected = {s.sfpuc_id: key[s.basin] for s in STATIONS.values()}
     assert live_dashboard.OBSERVED_STATION_BASIN == expected
 
     # The composition's group names must exist in the trained impact table.

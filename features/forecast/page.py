@@ -207,10 +207,34 @@ def _render_page() -> str:
     # client-side via the /forecast/api/* endpoints.
     return render_template(
         "forecast/page.html",
-        min_date="2020-07-27",   # earliest SF Gov bacteria data
+        min_date="2016-03-19",   # Poo Bot archive floor (discharges + samples); DataSF bacteria from 2020-07-27
         max_date=today,
         default_date=today,
+        zones_json=json.dumps(_zones_for_template()),
+        groups_json=json.dumps(_groups_for_template()),
     )
+
+
+def _zones_for_template() -> list:
+    """Zone cards' metadata from the shared registries (no hand-typed names)."""
+    from shared.zones import ZONES
+    gauge = {"Westside": "SF Oceanside", "North Shore": "SF Downtown",
+             "Central": "SF Downtown", "Southeast": "SF Downtown"}
+    return [{"key": z.key, "label": z.label,
+             "stations": [s.name for s in z.stations],
+             "basins": list(z.basins),
+             "gauge": gauge[z.basins[0]]} for z in ZONES.values()]
+
+
+def _groups_for_template() -> dict:
+    """zone key → stage-2 group names, so old cached snapshots without a
+    `zones` field can still be presented by zone."""
+    try:
+        from src.models.groups import ZONE_GROUPS
+        return dict(ZONE_GROUPS)
+    except Exception:
+        return {"ocean": ["Ocean Beach"], "baker_china": ["Baker-China"],
+                "north": ["Crissy Field", "Aquatic Park"], "east": ["Southeast", "Mission Creek"]}
 
 
 # ─── route handlers ──────────────────────────────────────────────────────────
@@ -305,11 +329,37 @@ def handle_bacteria(query, body):
     return _json(_engine.LIVE.get_bacteria_ground_truth(date_str))
 
 
+def handle_actuals(query, body):
+    """What happened around a date: gauge rain, reported discharges + the
+    beaches they post, watcher postings, bacteria samples — per zone."""
+    err = _require_engine()
+    if err:
+        return err
+    date_str = (query.get("date") or [""])[0]
+    if not date_str:
+        return _json({"error": "Missing ?date=YYYY-MM-DD parameter"})
+    return _json(_engine.LIVE.get_actuals(date_str))
+
+
+def handle_scorecard(query, body):
+    """Model check: training-time hindcast vs labels around a date, plus the
+    season scorecard (train_v4 artifact)."""
+    err = _require_engine()
+    if err:
+        return err
+    date_str = (query.get("date") or [""])[0]
+    if not date_str:
+        return _json({"error": "Missing ?date=YYYY-MM-DD parameter"})
+    return _json(_engine.LIVE.get_scorecard(date_str))
+
+
 GET_ROUTES = {
     "/forecast": handle_page,
     "/forecast/api/data": handle_data,
     "/forecast/api/refresh": handle_refresh,
     "/forecast/api/historical": handle_historical,
     "/forecast/api/bacteria": handle_bacteria,
+    "/forecast/api/actuals": handle_actuals,
+    "/forecast/api/scorecard": handle_scorecard,
 }
 POST_ROUTES = {}

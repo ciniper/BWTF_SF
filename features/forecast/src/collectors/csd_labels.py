@@ -13,9 +13,8 @@ Basin mapping (CSD report basins → forecast app basins):
     Central (Islais Creek)   → Southeast    (CSD-029..035; nearest bacteria stations
     Southeast                → Southeast     are BAY#320 Islais, BAY#230 Crane Cove,
                                              and the Candlestick trio BAY#300.1/301.1/301.2)
-    Central (Mission Creek)  → Mission Creek (CSD-018..028; BAY#220 Mission Creek sits
-                                              here but has no serving model —
-                                              citywide label only)
+    Central (Mission Creek)  → Central      (CSD-018..028; BAY#220 Mission Creek —
+                                             own stage-1 model since v4, 2026-09)
 
 Coverage: Bayside Oct 2016 – Oct 2025, Oceanside Jan 2018 – Oct 2025.
 Use load_coverage() to distinguish verified-zero months from no-data months —
@@ -30,30 +29,21 @@ CSD_DIR = Path(__file__).parent.parent.parent / "data" / "csd"
 EVENTS_CSV = CSD_DIR / "sf_csd_events.csv"
 COVERAGE_CSV = CSD_DIR / "sf_csd_monthly_coverage.csv"
 
-# CSD report basin -> forecast app basin
-BASIN_MAP = {
-    "Oceanside": "Westside",
-    "North Shore": "North Shore",
-    "Central (Islais Creek)": "Southeast",
-    "Southeast": "Southeast",
-    "Central (Mission Creek)": "Mission Creek",
-}
+# CSD report basin -> forecast app basin. The outfall registry
+# (shared/outfalls.py) is the single source of truth; "Central" is the
+# Mission Creek basin (CSD-018..028), which has had its own stage-1 model
+# since v4 (2026-09). Islais Creek outfalls report under "Central (Islais
+# Creek)" but post the Southeast beaches, so they are Southeast here.
+import sys as _sys
+from pathlib import Path as _Path
+_sys.path.insert(0, str(_Path(__file__).resolve().parents[4]))
+from shared.outfalls import APP_BASINS as _APP_BASINS, REPORT_BASIN_TO_APP  # noqa: E402
 
-# The registry (shared/outfalls.py) is the source of truth for report-basin →
-# app-basin; it calls the Mission Creek basin "Central". Keep this table in
-# lockstep (the alias below is only until the Central model lands).
-try:
-    import sys as _sys
-    from pathlib import Path as _Path
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[4]))
-    from shared.outfalls import REPORT_BASIN_TO_APP as _REGISTRY_BASINS
-    assert {k: ("Mission Creek" if v == "Central" else v) for k, v in _REGISTRY_BASINS.items()} == BASIN_MAP, \
-        "csd_labels.BASIN_MAP disagrees with shared/outfalls.py"
-except ImportError:  # standalone use without the app package on sys.path
-    pass
+BASIN_MAP = dict(REPORT_BASIN_TO_APP)
 
-# Basins with BWTF bacteria stations (targets the beach-risk models serve)
-APP_BASINS = ["Westside", "North Shore", "Southeast"]
+# Basins the beach-risk models serve — all four; every one has at least one
+# BWTF bacteria station (Central = BAY#220 Mission Creek).
+APP_BASINS = list(_APP_BASINS)
 
 # Coverage grid statuses that mean "we affirmatively know whether events occurred"
 _COVERED_STATUSES = {
@@ -93,7 +83,7 @@ def build_daily_labels() -> pd.DataFrame:
     """
     One row per calendar day over the covered span, with per-basin ground truth.
 
-    Columns per app basin B in {Westside, North Shore, Southeast, Mission Creek}:
+    Columns per app basin B in APP_BASINS (Westside, North Shore, Central, Southeast):
         {B}_csd          1 if any discharge event started in basin that day
         {B}_volume_mg    total reported discharge volume that day (MG)
         {B}_outfalls     number of distinct outfalls that discharged
@@ -103,7 +93,7 @@ def build_daily_labels() -> pd.DataFrame:
         csd_any, csd_volume_mg, csd_outfalls  (over covered basins that day)
     """
     ev = load_events()
-    all_basins = APP_BASINS + ["Mission Creek"]
+    all_basins = list(APP_BASINS)
 
     start = ev["event_date"].min().replace(day=1)
     end = pd.Timestamp(2025, 10, 31)  # public CIWQS coverage ends Oct 2025
@@ -142,7 +132,7 @@ if __name__ == "__main__":
           f"({labels['date'].min().date()} → {labels['date'].max().date()})")
     print(f"Fully covered days (both facilities): {len(covered)}")
     print(f"Citywide event days (covered span): {covered['csd_any'].sum()}")
-    for basin in APP_BASINS + ["Mission Creek"]:
+    for basin in APP_BASINS:
         sub = labels[labels[f"{basin}_covered"] == 1]
         n = sub[f"{basin}_csd"].sum()
         vol = sub[f"{basin}_volume_mg"].sum()

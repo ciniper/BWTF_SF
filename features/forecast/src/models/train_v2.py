@@ -57,6 +57,9 @@ MARQUEE_STORMS = [
 
 BASIN_KEYS = {"Westside": "westside", "North Shore": "north_shore",
               "Southeast": "southeast"}
+# Superseded by train_v4.py (2026-09), which adds the Central basin. Kept as
+# the reference implementation; restrict to the basins this script models.
+APP_BASINS = [b for b in APP_BASINS if b in BASIN_KEYS]
 
 # Stage-2 site groups: beaches within one basin respond differently to a
 # discharge, so the impact table is fit per group (basin display = worst
