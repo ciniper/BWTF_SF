@@ -34,7 +34,7 @@ header .live-dot { display: inline-block; width: 8px; height: 8px; background: #
 @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.7;} }
 
 /* Forecast timeline */
-.timeline { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-bottom: 20px; }
+.timeline { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 10px; margin-bottom: 20px; }  /* 7 live days or 8 hindcast days on one row */
 @media (max-width: 800px) { .timeline { grid-template-columns: repeat(4, 1fr); } }
 .day-card { background: #ffffff; border-radius: 16px; padding: 14px; text-align: center; border: 2px solid transparent; transition: border-color 0.3s, transform 0.2s; cursor: pointer; }
 .day-card.today { border-color: #0072BC; }
