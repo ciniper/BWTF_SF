@@ -34,101 +34,30 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from shared.stations import STATIONS
+from shared.outfalls import OUTFALLS, STATION_OUTFALLS
 
 
 # ─── CSO Outfall-to-Beach Mapping ────────────────────────────────────────────
-# Source: EPA NPDES Permit, SFPUC Combined Sewer System documentation
-# Maps CSO discharge points to affected beach areas and drainage basins.
-
+# CSO outfall → affected stations, from the canonical registry (shared/outfalls.py —
+# station mapping measured from SFPUC's own 2016-17 feed flags, coordinates from
+# the NPDES permits). Kept in the shapes older callers expect.
 CSO_OUTFALLS = {
-    # Westside Drainage Basin → Pacific Ocean
-    "CSD-001": {
-        "name": "Westside CSO Outfall #1",
-        "basin": "Westside",
-        "affected_beaches": ["Ocean Beach"],
-        "description": "Discharges to Pacific Ocean along Ocean Beach (southern section)"
-    },
-    "CSD-002": {
-        "name": "Westside CSO Outfall #2",
-        "basin": "Westside",
-        "affected_beaches": ["Ocean Beach"],
-        "description": "Discharges to Pacific Ocean along Ocean Beach (central section)"
-    },
-    "CSD-003": {
-        "name": "Westside CSO Outfall #3",
-        "basin": "Westside",
-        "affected_beaches": ["Ocean Beach"],
-        "description": "Discharges to Pacific Ocean along Ocean Beach (northern section)"
-    },
-    "CSD-004": {
-        "name": "Westside CSO Outfall #4",
-        "basin": "Westside",
-        "affected_beaches": ["Ocean Beach", "Fort Funston"],
-        "description": "Discharges to Pacific Ocean near Fort Funston / southern Ocean Beach"
-    },
-    "CSD-005": {
-        "name": "China Beach CSO Outfall",
-        "basin": "Westside",
-        "affected_beaches": ["China Beach"],
-        "description": "Discharges at China Beach"
-    },
-    "CSD-006": {
-        "name": "Baker Beach CSO Outfall #1",
-        "basin": "Westside",
-        "affected_beaches": ["Baker Beach"],
-        "description": "Discharges at Baker Beach (Lobos Creek area)"
-    },
-    "CSD-007": {
-        "name": "Baker Beach CSO Outfall #2",
-        "basin": "Westside",
-        "affected_beaches": ["Baker Beach"],
-        "description": "Discharges at Baker Beach (east section)"
-    },
-    # North Shore Drainage Basin → San Francisco Bay (north waterfront)
-    "NSB-001": {
-        "name": "North Shore Basin Outfall",
-        "basin": "North Shore",
-        "affected_beaches": [
-            "Aquatic Park",
-            "Hyde Street Pier",
-            "Crissy Field",
-        ],
-        "description": "Discharges to SF Bay along the northern waterfront (Marina/Aquatic Park/piers)"
-    },
-    # Central Drainage Basin → SF Bay (Mission Creek / central waterfront).
-    # The app folds the Central bayside basin into Southeast for display
-    # (shared/stations.py), hence basin="Southeast" here.
-    "CEN-001": {
-        "name": "Central Basin Outfalls (Mission Creek)",
-        "basin": "Southeast",
-        "affected_beaches": [
-            "Mission Creek",
-            "Crane Cove Park",
-        ],
-        "description": "Discharges to Mission Creek and the central bayfront near Crane Cove Park"
-    },
-    # Southeast / Islais Creek Drainage Basin → SF Bay (southeast)
-    "SEB-001": {
-        "name": "Southeast Basin Outfall",
-        "basin": "Southeast",
-        "affected_beaches": [
-            "Islais Creek",
-            "Candlestick Point",
-            "Sunnydale Cove",
-            "Windsurfer Circle",
-            "Jackrabbit Beach",
-        ],
-        "description": "Discharges to SF Bay near Islais Creek and Candlestick Point State Recreation Area"
-    },
+    o.id: {
+        "name": o.name,
+        "feed_name": o.feed_name,
+        "basin": o.basin,
+        "affected_beaches": o.station_names,
+        "affected_station_ids": list(o.stations),
+        "description": f"{o.receiving_water} — {o.evidence}",
+    }
+    for o in OUTFALLS.values()
 }
 
-# Map beach names to their associated CSO outfalls
+# Beach display name → outfall ids whose discharge gets it posted
 BEACH_CSO_OUTFALLS = {}
 for outfall_id, info in CSO_OUTFALLS.items():
     for beach in info["affected_beaches"]:
-        if beach not in BEACH_CSO_OUTFALLS:
-            BEACH_CSO_OUTFALLS[beach] = []
-        BEACH_CSO_OUTFALLS[beach].append(outfall_id)
+        BEACH_CSO_OUTFALLS.setdefault(beach, []).append(outfall_id)
 
 # Exact feed station name → basin, from the canonical registry
 # (shared/stations.py covers all 20 getBeaches stations).
@@ -286,12 +215,12 @@ class SFPUCRealTimeAPI:
         return None
     
     def _get_cso_outfalls(self, station_name: str) -> List[str]:
-        """Get list of CSO outfall IDs that could affect a given beach"""
-        outfalls = []
-        for beach_keyword, outfall_ids in BEACH_CSO_OUTFALLS.items():
-            if beach_keyword.lower() in station_name.lower():
-                outfalls.extend(outfall_ids)
-        return list(set(outfalls))  # Deduplicate
+        """CSO outfall ids whose discharge gets this station posted (registry:
+        shared/outfalls.py). Exact match on the feed's station name string."""
+        for st in STATIONS.values():
+            if st.sfpuc_name == station_name or st.name == station_name:
+                return sorted(STATION_OUTFALLS.get(st.sfpuc_id, []))
+        return []
     
     def fetch_stations(self) -> List[SFPUCStation]:
         """

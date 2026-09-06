@@ -276,6 +276,11 @@ class LiveData:
     #
     #   risk(D) = 1 - ∏_{k=0..7} (1 - p_discharge(D-k) · x(k, size(D-k)))
     #
+    # with x(0, ·) ≡ 1: a discharge on day D is itself a "stay out" day (the
+    # alert system treats an active CSO exactly like a posting), so the
+    # same-day term is the discharge probability itself; only k ≥ 1 uses the
+    # bacteria-measured decay.
+    #
     # x(k, size) is the discharge-ATTRIBUTABLE elevation probability, i.e. the
     # impact table's P(elevated) with the dry-weather background removed via
     # the independent-OR identity  p = 1-(1-baseline)(1-x)  →
@@ -417,7 +422,12 @@ class LiveData:
                     if not p:
                         continue
                     vol = day_volumes[j].get(basin_key, 0.0)
-                    no_impact *= 1.0 - p * self._impact_fraction(group, k, vol)
+                    # A discharge day IS a bad day: raw sewage is entering the
+                    # water, so the impact fraction is 1 on k=0 regardless of
+                    # what the samples later showed. Follow-up days (k>=1) use
+                    # the measured stage-2 decay curve (Chase, 2026-09-05).
+                    x = 1.0 if k == 0 else self._impact_fraction(group, k, vol)
+                    no_impact *= 1.0 - p * x
                 per_group[group] = round(1.0 - no_impact, 3)
             composed[basin_key] = max(per_group.values()) if per_group else 0.0
             groups_out.update(per_group)

@@ -301,8 +301,10 @@ function updateMap() {
     });
     m.bindTooltip(oid.replace("CSD-", ""), {permanent: true, direction: "right",
                                             offset: [r > 8 ? r - 2 : 6, 0], className: "of-label"});
-    m.bindPopup(`<b>${oid} — ${ONAMES[oid] || ""}</b><br>` +
+    m.bindPopup(`<b>${oid} — ${ONAMES[oid] || loc.name || ""}</b><br>` +
       `Discharges to: ${loc.water}<br>` +
+      (loc.stations && loc.stations.length ? `Beaches SFPUC posts: ${loc.stations.join(", ")}<br>` : "") +
+      (loc.feed_name ? `Feed name when active: <code>${loc.feed_name}</code><br>` : "") +
       `In selected range: <b>${t.n} events · ${MGshort(t.mg)}</b>` +
       (loc.note ? `<br><i>${loc.note}</i>` : ""));
     markerLayer.addLayer(m);

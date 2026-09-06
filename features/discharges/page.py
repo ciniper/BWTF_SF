@@ -30,11 +30,9 @@ from pathlib import Path
 from flask import render_template
 
 _CSV = Path(__file__).resolve().parents[1] / "forecast" / "data" / "csd" / "sf_csd_events.csv"
-# Outfall coordinates transcribed from the NPDES permits' discharge-location
-# tables (Oceanside R2-2019 Table 2; Bayside R2-2013-0029 Table 2), with two
-# flagged exceptions documented in the CSV's note column (CSD-043 approximate,
-# CSD-119 co-located with CSD-009).
-_LOCATIONS_CSV = Path(__file__).resolve().parent / "outfall_locations.csv"
+# Outfall coordinates, basin and the stations SFPUC posts per structure come
+# from the canonical registry (shared/outfalls.py); the map popups show them.
+from shared.outfalls import OUTFALLS  # noqa: E402
 
 # Compact wire format: list of rows in this column order (keeps the payload
 # ~half the size of a dict-per-event).
@@ -60,13 +58,14 @@ def _load() -> dict:
                 float(r["duration_min"]) if r["duration_min"] else None,
                 float(r["volume_MG"]) if r["volume_MG"] else None,
             ])
-    locations = {}
-    with open(_LOCATIONS_CSV, newline="") as fh:
-        for r in csv.DictReader(fh):
-            locations[r["outfall_id"]] = {
-                "lat": float(r["lat"]), "lon": float(r["lon"]),
-                "water": r["permit_receiving_water"], "note": r["note"],
-            }
+    locations = {
+        o.id: {
+            "lat": o.lat, "lon": o.lon, "water": o.receiving_water, "note": o.note,
+            "name": o.name, "basin": o.basin, "feed_name": o.feed_name,
+            "stations": o.station_names, "evidence": o.evidence,
+        }
+        for o in OUTFALLS.values()
+    }
     _payload_cache = {
         "columns": COLUMNS,
         "events": events,

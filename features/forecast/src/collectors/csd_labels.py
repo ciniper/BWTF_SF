@@ -39,6 +39,19 @@ BASIN_MAP = {
     "Central (Mission Creek)": "Mission Creek",
 }
 
+# The registry (shared/outfalls.py) is the source of truth for report-basin →
+# app-basin; it calls the Mission Creek basin "Central". Keep this table in
+# lockstep (the alias below is only until the Central model lands).
+try:
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[4]))
+    from shared.outfalls import REPORT_BASIN_TO_APP as _REGISTRY_BASINS
+    assert {k: ("Mission Creek" if v == "Central" else v) for k, v in _REGISTRY_BASINS.items()} == BASIN_MAP, \
+        "csd_labels.BASIN_MAP disagrees with shared/outfalls.py"
+except ImportError:  # standalone use without the app package on sys.path
+    pass
+
 # Basins with BWTF bacteria stations (targets the beach-risk models serve)
 APP_BASINS = ["Westside", "North Shore", "Southeast"]
 
