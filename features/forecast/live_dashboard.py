@@ -828,21 +828,21 @@ class LiveData:
         self._coverage_cache = out
         return out
 
-    def _alert_log_transitions(self, start_date, end_date) -> list:
-        """Per-station escalations the watcher logged (posted / cso), by local date."""
-        if _supabase is None or not _supabase.is_configured():
-            return []
-        try:
-            rows = _supabase.select("alert_log", {
-                "select": "created_at,event_type,station_ids,simulated,results",
-                "simulated": "eq.false",
-                "created_at": f"gte.{start_date.isoformat()}T00:00:00+00:00",
-                "order": "created_at.asc", "limit": "500"})
-        except Exception as e:
-            print(f"alert_log fetch failed: {e}")
-            return []
+    ESCALATIONS = ("posted", "cso")
+
+    @staticmethod
+    def _escalations_from_rows(rows: list, end_date) -> list:
+        """Per-station ESCALATIONS (→ posted / → cso) from alert_log rows, by
+        local date. Everything else is dropped: clear-downs (→ ok), and any
+        transition flagged simulated. Note the dispatcher logs the clear-down
+        of a simulated event with simulated=false (there is nothing simulated
+        about the feed going back to green), so filtering on the row flag
+        alone would still surface a "simulation" as activity — hence the
+        direction filter here."""
         out = []
         for row in rows:
+            if row.get("event_type") not in LiveData.ESCALATIONS:
+                continue
             try:
                 d = datetime.fromisoformat(row["created_at"].replace("Z", "+00:00")).astimezone(LOCAL_TZ).date()
             except (KeyError, ValueError):
@@ -854,13 +854,28 @@ class LiveData:
             if not trans:
                 trans = [{"station_id": sid, "to": row.get("event_type")} for sid in (row.get("station_ids") or [])]
             for t in trans:
-                if not isinstance(t, dict) or t.get("simulated"):
+                if not isinstance(t, dict) or t.get("simulated") or t.get("to") not in LiveData.ESCALATIONS:
                     continue
                 sid = str(t.get("station_id", ""))
                 st = next((s for s in STATIONS.values() if s.sfpuc_id == sid), None)
                 out.append({"date": str(d), "station_id": sid, "station_name": st.name if st else t.get("station_name", sid),
                             "zone": ZONE_OF_STATION.get(sid), "to": t.get("to")})
         return out
+
+    def _alert_log_transitions(self, start_date, end_date) -> list:
+        """Real (non-simulated) posted / CSO escalations the watcher logged."""
+        if _supabase is None or not _supabase.is_configured():
+            return []
+        try:
+            rows = _supabase.select("alert_log", {
+                "select": "created_at,event_type,station_ids,simulated,results",
+                "simulated": "eq.false",
+                "created_at": f"gte.{start_date.isoformat()}T00:00:00+00:00",
+                "order": "created_at.asc", "limit": "500"})
+        except Exception as e:
+            print(f"alert_log fetch failed: {e}")
+            return []
+        return self._escalations_from_rows(rows, end_date)
 
     def _samples_window(self, start_date, end_date) -> list:
         """Per-sample bacteria results in [start, end]: DataSF for dates from

@@ -444,6 +444,7 @@ function zoneActualStatus(z) {
 
 function renderActual(a) {
     const days = Object.values(a.days || {}).sort((x, y) => x.date.localeCompare(y.date));
+    days.forEach(d => { d.postings = (d.postings || []).filter(p => p.to === 'posted' || p.to === 'cso'); });  // escalations only, never clear-downs
     const target = a.target_date;
     current = { mode: 'actual', days, actual: a };
     const tday = days.find(d => d.date === target);

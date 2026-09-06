@@ -77,6 +77,26 @@ def test_compose_treats_a_discharge_day_as_bad_and_decays_after():
     assert g["G"] >= 0.5
 
 
+def test_actuals_ignore_simulations_and_clear_downs():
+    """2026-09-05: a simulated CSO at Aquatic Park (14:19, simulated=true) and
+    the dispatcher's clear-down of it at 14:30 — logged simulated=FALSE with a
+    cso→ok transition. Neither is a real posting; 'What happened' must show
+    nothing for that day."""
+    sys.path.insert(0, str(ROOT / "features" / "forecast"))
+    import live_dashboard as ld
+    rows = [
+        {"created_at": "2026-09-05T14:19:00.013025+00:00", "event_type": "cso", "station_ids": ["4613"], "simulated": True,
+         "results": {"transitions": [{"to": "cso", "from": "ok", "simulated": True, "station_id": "4613", "station_name": "Aquatic Park"}]}},
+        {"created_at": "2026-09-05T14:30:00.013662+00:00", "event_type": "cleared", "station_ids": ["4613"], "simulated": False,
+         "results": {"transitions": [{"to": "ok", "from": "cso", "simulated": False, "station_id": "4613", "station_name": "Aquatic Park"}]}},
+        {"created_at": "2026-09-05T15:00:00+00:00", "event_type": "posted", "station_ids": ["4616"], "simulated": False,
+         "results": {"transitions": [{"to": "posted", "from": "ok", "simulated": False, "station_id": "4616", "station_name": "Windsurfer Circle"}]}},
+    ]
+    import datetime as dt
+    out = ld.LiveData._escalations_from_rows(rows, dt.date(2026, 9, 5))
+    assert out == [{"date": "2026-09-05", "station_id": "4616", "station_name": "Windsurfer Circle", "zone": "east", "to": "posted"}]
+
+
 def test_zone_risk_is_the_worst_group():
     r = groups.zone_risks({"Ocean Beach": .3, "Baker-China": .1, "Crissy Field": .2,
                            "Aquatic Park": .05, "Mission Creek": .6, "Southeast": .4})
