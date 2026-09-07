@@ -314,7 +314,8 @@ function setBanner(maxRisk, prefix) {
 // ─── LIVE ───────────────────────────────────────────────────────────────────
 function renderLive(data) {
     const preds = data.predictions || {};
-    const days = Object.values(preds).sort((a, b) => a.day_offset - b.day_offset);
+    // forecast only: a cached snapshot from before 2026-09-06 may still carry yesterday
+    const days = Object.values(preds).filter(d => d.day_offset >= 0).sort((a, b) => a.day_offset - b.day_offset);
     if (!days.length) { setBanner(0, ic('hourglass') + ' Forecast is being computed — '); return; }
     const today = days.find(d => d.is_today) || days[0];
     const todayMax = worstZone(today);

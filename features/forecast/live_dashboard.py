@@ -685,7 +685,9 @@ class LiveData:
         }
 
     def _compute_predictions(self, rain_df: pd.DataFrame) -> dict:
-        """CSO / beach-impact predictions for yesterday, today and the next 5 days."""
+        """CSO / beach-impact predictions for today and the next 5 days. (Past
+        days still feed the persistence composition; they are just not
+        emitted — the live view is a forecast, "What happened" is the past.)"""
         if rain_df is None or rain_df.empty:
             return {}
         now = _now_local()
@@ -695,7 +697,7 @@ class LiveData:
         observed = self._fetch_observed_cso(min(dates)) if dates else {}
 
         results = {}
-        for day_offset in range(-1, 6):
+        for day_offset in range(0, 6):
             target_date = today + timedelta(days=day_offset)
             if target_date not in dates:
                 continue
@@ -705,8 +707,6 @@ class LiveData:
                 label = "Today"
             elif day_offset == 1:
                 label = "Tomorrow"
-            elif day_offset == -1:
-                label = "Yesterday"
             payload = self._day_payload(frames, idx, feats, probs, vols, dates, observed)
             payload.update({"label": label, "date": str(target_date), "day_offset": day_offset,
                             "is_forecast": day_offset > 0, "is_today": day_offset == 0})
