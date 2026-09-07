@@ -318,16 +318,6 @@ function renderLive(data) {
     const days = Object.values(preds).filter(d => d.day_offset >= 0).sort((a, b) => a.day_offset - b.day_offset);
     if (!days.length) { setBanner(0, ic('hourglass') + ' Forecast is being computed — '); return; }
     const today = days.find(d => d.is_today) || days[0];
-    const todayMax = worstZone(today);
-    setBanner(todayMax, '');
-    const future = days.filter(d => d.is_forecast);
-    if (future.length) {
-        const futureMax = Math.max(...future.map(worstZone));
-        if (futureMax > todayMax + 0.15 && futureMax >= 0.25) {
-            document.getElementById('riskBanner').innerHTML += '<br><span style="font-size:0.8em;opacity:0.9;">' + ic('trending-up') +
-                ' Higher risk coming: ' + riskInfo(futureMax).label + ' (' + pct(futureMax) + '%) in the forecast</span>';
-        }
-    }
     const refreshEl = document.getElementById('refreshInfo');
     refreshEl.textContent = data.last_refresh ? 'Last updated: ' + new Date(data.last_refresh).toLocaleTimeString() + ' · auto-refreshes every 30 min'
                           + (data.stale_note ? ' · ' + data.stale_note : '') : '';
@@ -363,9 +353,54 @@ function selectDay(day) {
     if (!day || !current) return;
     current.selected = day;
     highlight(day.date);
+    renderBanner(day);
     if (current.mode === 'actual') return renderActualDetail(day);
     if (current.mode === 'check') return renderCheckDetail(day);
     renderPredictionCards(day, null);
+}
+
+// The banner always describes the SELECTED day, in every mode.
+function dayTitle(day) {
+    if (current.mode === 'live') return esc(day.label);
+    const target = current.mode === 'check' ? current.target : (current.actual && current.actual.target_date);
+    return esc(fmtDate(day.date)) + (day.date === target ? ' ★' : '');
+}
+function renderBanner(day) {
+    const banner = document.getElementById('riskBanner');
+    if (current.mode === 'actual') {
+        const zones = day.zones || {};
+        const bad = Object.entries(zones).filter(([, z]) => z.bad).map(([zk]) => (ZONES.find(z => z.key === zk) || {}).label);
+        const allKnown = Object.values(zones).length && Object.values(zones).every(z => z.bad != null);
+        banner.className = 'risk-banner ' + (bad.length ? 'risk-high' : allKnown ? 'risk-none' : 'risk-low');
+        banner.innerHTML = ic('calendar') + ' ' + dayTitle(day) + ': ' + (bad.length
+            ? ic('octagon-alert') + ' ' + bad.map(esc).join(', ') + (bad.length > 1 ? ' had bad days' : ' had a bad day')
+            : allKnown ? ic('circle-check') + ' no discharges, no elevated samples at any zone'
+            : ic('circle-dashed') + ' partial records — see zones below');
+        return;
+    }
+    const m = worstZone(day);
+    if (current.mode === 'check') {
+        setBanner(m, ic('calendar') + ' ' + dayTitle(day) + ' hindcast: ');
+        const ad = (current.actual.days || {})[day.date];
+        if (ad) {
+            const counts = {};
+            ZONE_ORDER.forEach(zk => { const v = verdict(zonesOf(day)[zk] || 0, ad.zones[zk]).label; counts[v] = (counts[v] || 0) + 1; });
+            const parts = ['hit', 'miss', 'false alarm', 'quiet, correct', 'no ground truth'].filter(k => counts[k]).map(k => counts[k] + ' ' + k);
+            banner.innerHTML += '<br><span style="font-size:0.8em;opacity:0.9;">vs what happened: ' + parts.join(' · ') + '</span>';
+        }
+        return;
+    }
+    setBanner(m, dayTitle(day) + ': ');
+    if (day.is_today) {
+        const future = current.days.filter(d => d.is_forecast);
+        if (future.length) {
+            const futureMax = Math.max(...future.map(worstZone));
+            if (futureMax > m + 0.15 && futureMax >= 0.25) {
+                banner.innerHTML += '<br><span style="font-size:0.8em;opacity:0.9;">' + ic('trending-up') +
+                    ' Higher risk coming: ' + riskInfo(futureMax).label + ' (' + pct(futureMax) + '%) in the forecast</span>';
+            }
+        }
+    }
 }
 
 // Zone (or basin) cards for one prediction day; `actual` (model check) adds
@@ -449,14 +484,6 @@ function renderActual(a) {
     const target = a.target_date;
     current = { mode: 'actual', days, actual: a };
     const tday = days.find(d => d.date === target);
-    const anyBad = tday && Object.values(tday.zones).some(z => z.bad);
-    const allKnown = tday && Object.values(tday.zones).every(z => z.bad != null);
-    const banner = document.getElementById('riskBanner');
-    banner.className = 'risk-banner ' + (anyBad ? 'risk-high' : allKnown ? 'risk-none' : 'risk-low');
-    banner.innerHTML = ic('calendar') + ' ' + esc(target) + ': ' + (anyBad
-        ? ic('octagon-alert') + ' ' + Object.entries(tday.zones).filter(([, z]) => z.bad).map(([zk]) => esc((ZONES.find(z => z.key === zk) || {}).label)).join(', ') + ' had a bad day'
-        : allKnown ? ic('circle-check') + ' no discharges, no elevated samples at any zone'
-        : ic('circle-dashed') + ' partial records for this date — see zones below');
     document.getElementById('refreshInfo').textContent = '';
     showPanels({ actual: true });
 
@@ -558,8 +585,6 @@ function renderCheck(h, a, sc, target) {
     current = { mode: 'check', days, byDate: preds, actual: a, scorecard: sc, target };
     const tday = preds[target] || days[0];
     if (!tday) { setBanner(0, ic('calendar') + ' ' + esc(target) + ': no hindcast — '); return; }
-    const m = worstZone(tday);
-    setBanner(m, ic('calendar') + ' ' + esc(target) + ' hindcast: ');
     document.getElementById('refreshInfo').textContent = 'Hindcast = today\'s models scored on the rain that actually fell. Verdicts use the ' + pct(RISK_THRESHOLD) + '% (MODERATE) line.';
     showPanels({ check: true });
 
