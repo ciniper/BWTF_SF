@@ -97,6 +97,27 @@ def test_actuals_ignore_simulations_and_clear_downs():
     assert out == [{"date": "2026-09-05", "station_id": "4616", "station_name": "Windsurfer Circle", "zone": "east", "to": "posted"}]
 
 
+def test_forecast_beach_status_uses_the_shared_classification():
+    """Islais Creek on 2026-09-09: feed row posted='BAY#320_SL', p_color='G'.
+    The pg watcher and shared/sfpuc_api call that POSTED; the forecast page
+    used to call it safe."""
+    sys.path.insert(0, str(ROOT / "features" / "forecast"))
+    import live_dashboard as ld
+    from shared.sfpuc_api import SFPUCRealTimeAPI, StationStatus
+    api = SFPUCRealTimeAPI()
+    row = {"stationid": "4619", "stationname": "Islais Creek", "cso": None, "s_color": None,
+           "posted": "BAY#320_SL", "p_color": "G", "sample_date": "08/31/26", "lat": "37.747", "lon": "-122.388"}
+    assert api._parse_station_status(row) == StationStatus.POSTED
+
+    class St:  # the fields _beach_status reads
+        def __init__(self, status, has_cso=False):
+            self.status, self.has_cso = status, has_cso
+    assert ld.LiveData._beach_status(St(StationStatus.POSTED)) == "posted"
+    assert ld.LiveData._beach_status(St(StationStatus.SAFE)) == "safe"
+    assert ld.LiveData._beach_status(St(StationStatus.NOT_ROUTINELY_SAMPLED)) == "not_sampled"
+    assert ld.LiveData._beach_status(St(StationStatus.POSTED, has_cso=True)) == "cso"
+
+
 def test_zone_risk_is_the_worst_group():
     r = groups.zone_risks({"Ocean Beach": .3, "Baker-China": .1, "Crissy Field": .2,
                            "Aquatic Park": .05, "Mission Creek": .6, "Southeast": .4})

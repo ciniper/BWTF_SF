@@ -505,45 +505,32 @@ class LiveData:
         rain_df.loc[have, "rain_source"] = "observed"
         return rain_df
 
+    @staticmethod
+    def _beach_status(station) -> str:
+        """Forecast-page vocabulary (cso / posted / safe / not_sampled / unknown)
+        from a shared.sfpuc_api Station. The CLASSIFICATION itself is the
+        shared one — the same rules the pg watcher uses (bwtf_classify) — so
+        this page can never disagree with the alerts about who is posted.
+        Before 2026-09-09 this module had its own colour logic that read a
+        posted station with p_color 'G' (e.g. Islais Creek) as "safe"."""
+        if station.has_cso:
+            return "cso"
+        value = getattr(station.status, "value", str(station.status))
+        return {"posted": "posted", "safe": "safe", "not_sampled": "not_sampled",
+                "not_routinely_sampled": "not_sampled"}.get(value, "unknown")
+
     def _fetch_sfpuc(self) -> list:
-        """Fetch current beach status from SFPUC"""
+        """Current beach status from SFPUC via the shared client."""
         try:
-            r = requests.get(SFPUC_API_URL, timeout=15,
-                             headers={"User-Agent": "SFSewageForecast/1.0"})
-            r.raise_for_status()
-            root = ET.fromstring(r.content)
-            json_str = root.text
-            if not json_str:
-                return []
-            data = json.loads(json_str)
-
-            stations = []
-            for item in data:
-                p_color = item.get("p_color")
-                cso_field = item.get("cso")
-                has_cso = bool(cso_field and p_color and p_color.upper() == "R")
-
-                if p_color is None:
-                    status = "not_sampled"
-                elif p_color.upper() == "G":
-                    status = "safe"
-                elif p_color.upper() == "R":
-                    status = "cso" if has_cso else "posted"
-                elif p_color.upper() == "Y":
-                    status = "not_sampled"
-                else:
-                    status = "unknown"
-
-                stations.append({
-                    "name": item.get("stationname", ""),
-                    "status": status,
-                    "has_cso": has_cso,
-                    "sample_date": item.get("sample_date"),
-                })
-            return stations
+            from shared.sfpuc_api import SFPUCRealTimeAPI
+            stations = SFPUCRealTimeAPI().fetch_stations()
         except Exception as e:
             print(f"SFPUC fetch error: {e}")
             return []
+        return [{"name": st.station_name, "status": self._beach_status(st),
+                 "has_cso": bool(st.has_cso),
+                 "sample_date": st.sample_date.strftime("%m/%d/%y") if getattr(st, "sample_date", None) else None}
+                for st in stations]
 
     # ── Rain → daily features, per rain source ─────────────────────────────
 
