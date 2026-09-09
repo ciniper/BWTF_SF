@@ -896,7 +896,7 @@ class LiveData:
         recs = []
         if str(end_date) >= self.DATASF_FLOOR:
             try:
-                r = requests.get("https://data.sfgov.org/resource/v3fv-x3ux.json", params={
+                r = requests.get("https://data.sf.gov/resource/v3fv-x3ux.json", params={
                     "$limit": 5000, "$order": "sample_date ASC",
                     "$where": f"sample_date >= '{start_date}T00:00:00' AND sample_date <= '{end_date}T23:59:59' AND analyte IS NOT NULL",
                 }, timeout=30)
@@ -1053,7 +1053,7 @@ class LiveData:
                 "$order": "sample_date ASC",
                 "$where": f"sample_date >= '{start}' AND sample_date <= '{end}' AND analyte IS NOT NULL",
             }
-            r = requests.get("https://data.sfgov.org/resource/v3fv-x3ux.json",
+            r = requests.get("https://data.sf.gov/resource/v3fv-x3ux.json",
                              params=params, timeout=30)
             r.raise_for_status()
             raw = r.json()

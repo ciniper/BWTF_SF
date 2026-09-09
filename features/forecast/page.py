@@ -174,6 +174,7 @@ def _json(obj, status: int = 200):
 
 def _unavailable_html() -> str:
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
+<link rel="icon" href="/static/brand/favicon.ico">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Forecast unavailable</title>
 <style>

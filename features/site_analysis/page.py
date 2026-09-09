@@ -49,7 +49,7 @@ from flask import render_template
 
 from shared.stations import STATIONS as _CANONICAL_STATIONS
 
-SOCRATA_URL = "https://data.sfgov.org/resource/v3fv-x3ux.json"
+SOCRATA_URL = "https://data.sf.gov/resource/v3fv-x3ux.json"
 ANALYTE = "ENTERO"
 SSM = 104          # CA single-sample maximum, Enterococcus (MPN/100mL)
 CAUTION = 36       # BWTF/state caution tier

@@ -246,6 +246,10 @@ def create_app():
     # Landing
     app.add_url_rule("/", "landing", _landing_view, methods=["GET"])
     app.add_url_rule("/index.html", "landing_index", _landing_view, methods=["GET"])
+    # Browsers ask for /favicon.ico regardless of <link> tags; the BWTF icon
+    # (Surfrider's own favicon + manifest PNGs) lives with the brand assets.
+    app.add_url_rule("/favicon.ico", "favicon",
+                     lambda: redirect("/static/brand/favicon.ico", code=302), methods=["GET"])
 
     # BWTF Sample Log
     app.add_url_rule("/bwtf", "bwtf", _bwtf_view, methods=["GET"])

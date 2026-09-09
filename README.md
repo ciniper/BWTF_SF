@@ -18,7 +18,7 @@ This system monitors water quality data from multiple sources and sends alerts w
 | Source | Description | Freshness | URL |
 |--------|-------------|-----------|-----|
 | **SFPUC Real-Time API** | Live station status & CSO alerts | Real-time | Internal API used by SFPUC map |
-| **SF Gov Open Data** | Detailed bacteria measurements | 1-2 day delay | [data.sfgov.org](https://data.sfgov.org/Energy-and-Environment/Beach-Water-Quality-Monitoring/v3fv-x3ux) |
+| **SF Gov Open Data** | Detailed bacteria measurements | 1-2 day delay | [data.sfgov.org](https://data.sf.gov/Energy-and-Environment/Beach-Water-Quality-Monitoring/v3fv-x3ux) |
 | **NWS Weather API** | Rainfall observations & forecasts | Real-time | [api.weather.gov](https://api.weather.gov/gridpoints/MTR/88,126/forecast) |
 | **NOAA CO-OPS API** | Tide predictions (SF Station 9414290) | Real-time | [tidesandcurrents.noaa.gov](https://api.tidesandcurrents.noaa.gov/api/prod/) |
 | **SFPUC Website** | Beach Water Quality Map | Real-time | [webapps.sfpuc.org](https://webapps.sfpuc.org/sapps/beachesandbay.html) |

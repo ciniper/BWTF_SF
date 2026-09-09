@@ -8,7 +8,7 @@ Monitors SF beach water quality data and sends alerts when:
 2. Combined Sewer Overflow (CSO) events are detected
 
 Data Sources:
-- SF Gov Open Data: https://data.sfgov.org/resource/v3fv-x3ux.json
+- SF Gov Open Data: https://data.sf.gov/resource/v3fv-x3ux.json
 - SFPUC Beach Water Quality: https://webapps.sfpuc.org/sapps/beachesandbay.html
 
 Note on Data Freshness:
@@ -119,7 +119,7 @@ class Alert:
 class SFWaterQualityMonitor:
     """Monitors SF beach water quality and generates alerts"""
     
-    API_URL = "https://data.sfgov.org/resource/v3fv-x3ux.json"
+    API_URL = "https://data.sf.gov/resource/v3fv-x3ux.json"
     
     def __init__(self, app_token: Optional[str] = None):
         """
