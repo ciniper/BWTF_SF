@@ -46,6 +46,7 @@ from shared.stations import STATION_BASINS, STATION_NAMES, STATIONS  # noqa: E40
 from shared.zones import ZONES, ZONE_OF_SOURCE, ZONE_OF_STATION  # noqa: E402
 from shared.outfalls import FEED_NAME_TO_OUTFALLS, OUTFALLS  # noqa: E402
 from shared.datasf import BEACH_SAMPLES_URL  # noqa: E402
+from shared.alert_log import ESCALATIONS as _ESCALATIONS, REALTIME_SOURCES  # noqa: E402
 try:
     from shared import supabase as _supabase
 except Exception:
@@ -299,6 +300,7 @@ class LiveData:
                 "select": "created_at,event_type,station_ids,simulated,results",
                 "event_type": "eq.cso",
                 "simulated": "eq.false",
+                "source": f"in.({','.join(REALTIME_SOURCES)})",
                 "created_at": f"gte.{window_start.isoformat()}T00:00:00+00:00",
                 "order": "created_at.asc",
                 "limit": "500",
@@ -804,7 +806,7 @@ class LiveData:
         self._coverage_cache = out
         return out
 
-    ESCALATIONS = ("posted", "cso")
+    ESCALATIONS = _ESCALATIONS
 
     @staticmethod
     def _escalations_from_rows(rows: list, end_date) -> list:
@@ -815,10 +817,12 @@ class LiveData:
         about the feed going back to green), so filtering on the row flag
         alone would still surface a "simulation" as activity — hence the
         direction filter here."""
-        out = []
+        out, seen = [], set()
         for row in rows:
             if row.get("event_type") not in LiveData.ESCALATIONS:
                 continue
+            if row.get("source") is not None and row["source"] not in REALTIME_SOURCES:
+                continue  # manual button dispatches / the retired observer thread
             try:
                 d = datetime.fromisoformat(row["created_at"].replace("Z", "+00:00")).astimezone(LOCAL_TZ).date()
             except (KeyError, ValueError):
@@ -833,6 +837,9 @@ class LiveData:
                 if not isinstance(t, dict) or t.get("simulated") or t.get("to") not in LiveData.ESCALATIONS:
                     continue
                 sid = str(t.get("station_id", ""))
+                if (str(d), sid, t.get("to")) in seen:
+                    continue  # two writers logged the same escalation (parallel-run era)
+                seen.add((str(d), sid, t.get("to")))
                 st = next((s for s in STATIONS.values() if s.sfpuc_id == sid), None)
                 out.append({"date": str(d), "station_id": sid, "station_name": st.name if st else t.get("station_name", sid),
                             "zone": ZONE_OF_STATION.get(sid), "to": t.get("to")})
@@ -844,8 +851,9 @@ class LiveData:
             return []
         try:
             rows = _supabase.select("alert_log", {
-                "select": "created_at,event_type,station_ids,simulated,results",
+                "select": "created_at,event_type,station_ids,simulated,results,source",
                 "simulated": "eq.false",
+                "source": f"in.({','.join(REALTIME_SOURCES)})",
                 "created_at": f"gte.{start_date.isoformat()}T00:00:00+00:00",
                 "order": "created_at.asc", "limit": "500"})
         except Exception as e:

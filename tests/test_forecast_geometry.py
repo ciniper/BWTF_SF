@@ -89,8 +89,14 @@ def test_actuals_ignore_simulations_and_clear_downs():
          "results": {"transitions": [{"to": "cso", "from": "ok", "simulated": True, "station_id": "4613", "station_name": "Aquatic Park"}]}},
         {"created_at": "2026-09-05T14:30:00.013662+00:00", "event_type": "cleared", "station_ids": ["4613"], "simulated": False,
          "results": {"transitions": [{"to": "ok", "from": "cso", "simulated": False, "station_id": "4613", "station_name": "Aquatic Park"}]}},
-        {"created_at": "2026-09-05T15:00:00+00:00", "event_type": "posted", "station_ids": ["4616"], "simulated": False,
+        {"created_at": "2026-09-05T15:00:00+00:00", "event_type": "posted", "station_ids": ["4616"], "simulated": False, "source": "pg_live",
          "results": {"transitions": [{"to": "posted", "from": "ok", "simulated": False, "station_id": "4616", "station_name": "Windsurfer Circle"}]}},
+        # the retired observer thread double-logging the same posting two minutes earlier (2026-09-01 shape)
+        {"created_at": "2026-09-05T14:58:00+00:00", "event_type": "posted", "station_ids": ["4616"], "simulated": False, "source": "thread_shadow",
+         "results": {"transitions": [{"to": "posted", "from": "ok", "simulated": False, "station_id": "4616", "station_name": "Windsurfer Circle"}]}},
+        # a manual button dispatch is not a detection
+        {"created_at": "2026-09-05T16:00:00+00:00", "event_type": "posted", "station_ids": ["4601"], "simulated": False, "source": "manual",
+         "results": {"transitions": [{"to": "posted", "from": "ok", "simulated": False, "station_id": "4601", "station_name": "Fort Funston"}]}},
     ]
     import datetime as dt
     out = ld.LiveData._escalations_from_rows(rows, dt.date(2026, 9, 5))

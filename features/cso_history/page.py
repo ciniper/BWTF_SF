@@ -26,10 +26,7 @@ from flask import render_template
 
 from shared import supabase as sb
 
-# alert_log sources that are OUR real-time detections. 'manual' (button
-# dispatches) and 'thread_shadow' (the observer thread double-logging what
-# pg_live already logs) would duplicate or pollute the record.
-_SOURCES = ("watcher", "pg_shadow", "pg_live")
+from shared.alert_log import REALTIME_SOURCES as _SOURCES  # our real-time detections only
 _SEVERITY = {"ok": 0, "posted": 1, "cso": 2}
 _ROW_LIMIT = 5000
 # An open window with no clear record and no live roster to consult is shown
