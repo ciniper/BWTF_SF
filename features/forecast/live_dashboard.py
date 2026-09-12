@@ -45,6 +45,7 @@ if str(Path(__file__).resolve().parent) not in sys.path:
 from shared.stations import STATION_BASINS, STATION_NAMES, STATIONS  # noqa: E402
 from shared.zones import ZONES, ZONE_OF_SOURCE, ZONE_OF_STATION  # noqa: E402
 from shared.outfalls import FEED_NAME_TO_OUTFALLS, OUTFALLS  # noqa: E402
+from shared.datasf import BEACH_SAMPLES_URL  # noqa: E402
 try:
     from shared import supabase as _supabase
 except Exception:
@@ -64,6 +65,8 @@ from src.models.groups import (  # noqa: E402
 from src.models.impact import compose as _compose_risk  # noqa: E402
 from src.models.impact import impact_fraction as _impact_fraction  # noqa: E402
 from src.models.impact import smooth_table as _smooth_table  # noqa: E402
+from src.models.rain_features import add_daily_features as _add_daily_features  # noqa: E402
+from src.models.rain_features import hourly_intensity as _hourly_intensity  # noqa: E402
 
 # ─── Data source URLs ────────────────────────────────────────────────────────
 
@@ -564,23 +567,9 @@ class LiveData:
 
     @staticmethod
     def _add_daily_features(daily: pd.DataFrame) -> pd.DataFrame:
-        """Cumulative / lag / antecedent features from `precip_inches`
-        (identical to train_v4.rain_features — keep in lockstep)."""
-        daily = daily.copy()
-        for w in [2, 3, 5, 7, 14, 30]:
-            daily[f"rain_{w}d_cum"] = daily["precip_inches"].rolling(window=w, min_periods=1).sum()
-        for lag in [1, 2, 3, 5, 7]:
-            daily[f"rain_lag{lag}d"] = daily["precip_inches"].shift(lag).fillna(0)
-        weights = np.exp(-np.log(2) / 3 * np.arange(14))
-        daily["antecedent_moisture"] = (
-            daily["precip_inches"].rolling(window=14, min_periods=1)
-            .apply(lambda x: np.sum(x * weights[:len(x)][::-1]) / np.sum(weights[:len(x)]), raw=True)
-        )
-        daily["wet_prior_3d"] = (daily["rain_3d_cum"].shift(1).fillna(0) > 0.1).astype(int)
-        daily["peak_3d"] = daily["precip_inches"].rolling(window=3, min_periods=1).max()
-        is_dry = (daily["precip_inches"] < 0.05).astype(int)
-        daily["dry_spell_days"] = is_dry.groupby(is_dry.ne(is_dry.shift()).cumsum()).cumsum()
-        return daily
+        """Cumulative / lag / antecedent features from `precip_inches` — the
+        shared implementation training uses (src/models/rain_features.py)."""
+        return _add_daily_features(daily)
 
     def _daily_frames(self, rain_df: pd.DataFrame, today) -> dict:
         """{rain source: daily feature frame} from the hourly series.
@@ -595,15 +584,15 @@ class LiveData:
         model / forecast.
         """
         rain_df = rain_df.copy().sort_values("timestamp").reset_index(drop=True)
-        for w in (3, 6):
-            rain_df[f"roll{w}h"] = rain_df["precip_inches"].rolling(w, min_periods=1).sum()
         rain_df["date"] = rain_df["timestamp"].dt.date
-        agg = dict(precip_inches=("precip_inches", "sum"), precip_max_hourly=("precip_inches", "max"),
-                   rain_max3h=("roll3h", "max"), rain_max6h=("roll6h", "max"))
+        agg = dict(precip_inches=("precip_inches", "sum"))
         if "wind_dir_deg" in rain_df:
             agg["wind_dir_avg"] = ("wind_dir_deg", "mean")
         base = rain_df.groupby("date").agg(**agg).reset_index()
         base["date"] = pd.to_datetime(base["date"])
+        # peak 1h/3h/6h per day — the shared implementation (windows span midnight)
+        base = base.merge(_hourly_intensity(rain_df), on="date", how="left")
+        base["precip_max_hourly"] = base["rain_max1h"]
         base = base.sort_values("date").reset_index(drop=True)
 
         def _day_source(sources):
@@ -883,7 +872,7 @@ class LiveData:
         recs = []
         if str(end_date) >= self.DATASF_FLOOR:
             try:
-                r = requests.get("https://data.sf.gov/resource/v3fv-x3ux.json", params={
+                r = requests.get(BEACH_SAMPLES_URL, params={
                     "$limit": 5000, "$order": "sample_date ASC",
                     "$where": f"sample_date >= '{start_date}T00:00:00' AND sample_date <= '{end_date}T23:59:59' AND analyte IS NOT NULL",
                 }, timeout=30)
@@ -1040,7 +1029,7 @@ class LiveData:
                 "$order": "sample_date ASC",
                 "$where": f"sample_date >= '{start}' AND sample_date <= '{end}' AND analyte IS NOT NULL",
             }
-            r = requests.get("https://data.sf.gov/resource/v3fv-x3ux.json",
+            r = requests.get(BEACH_SAMPLES_URL,
                              params=params, timeout=30)
             r.raise_for_status()
             raw = r.json()

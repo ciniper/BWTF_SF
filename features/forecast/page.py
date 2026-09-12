@@ -22,6 +22,7 @@ response contract ``app/wsgi.py`` dispatches.
 from __future__ import annotations
 
 import json
+import os
 import sys
 import time
 from datetime import datetime, timedelta, timezone
@@ -68,6 +69,27 @@ _COLD_WAIT_SECONDS = 24   # how long a guard-losing visitor waits when there's N
 
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _cache_writable() -> bool:
+    """Only the PRODUCTION host may write the shared cache row.
+
+    Any machine with the Supabase key can read it, but a laptop running
+    older (or newer, unreleased) code must never publish its snapshot to real
+    visitors — it happened 2026-09-09. Vercel sets VERCEL_ENV=production on
+    the deployed site; FORECAST_CACHE_WRITE=1 forces it (the cache tests).
+    Everyone else computes in memory and serves that, leaving the row alone.
+    """
+    return os.environ.get("FORECAST_CACHE_WRITE") == "1" or os.environ.get("VERCEL_ENV") == "production"
+
+
+def _serve_from_memory():
+    """Compute in-process (if the engine hasn't within the window) and serve
+    it without touching the shared row."""
+    if not _memory_snapshot_fresh():
+        _engine.LIVE.refresh()
+    return _json(_with_meta(_engine.LIVE.get_snapshot(), _engine.LIVE.last_refresh,
+                            stale_note="computed on this host; the shared cache is only written from production"))
 
 
 def _iso(dt: datetime) -> str:
@@ -278,6 +300,10 @@ def handle_data(query, body):
         # stamps last_refresh.
         return _json(_with_meta(_engine.LIVE.get_snapshot(), _engine.LIVE.last_refresh))
 
+    # 3b. Not the production host → never claim, never store; memory only.
+    if not _cache_writable():
+        return _serve_from_memory()
+
     # 4. Claim the guard (only meaningful when the cache row exists).
     if row is not None and not _claim_refresh(now):
         if stored_snap:
@@ -302,6 +328,9 @@ def handle_refresh(query, body):
     err = _require_engine()
     if err:
         return err
+    if not _cache_writable():
+        _engine.LIVE.refresh()
+        return _serve_from_memory()
     now = _utcnow()
     row = _read_row()
     if row is not None and not _claim_refresh(now):

@@ -88,72 +88,37 @@ assert {sid for _, sids in SITE_GROUPS.values() for sid in sids} \
     "SITE_GROUPS must cover every registry station except Mission Creek"
 
 
-# ── Features (formulas copied from v1 train.py — keep in lockstep) ──────────
+# ── Features — ONE implementation, shared with serving: rain_features.py ────
+from rain_features import DAILY_FEATURES, INTENSITY_FEATURES, add_daily_features, hourly_intensity  # noqa: E402
+
 
 def get_feature_columns() -> list:
-    return [
-        "precip_avg",
-        "rain_2d_cum", "rain_3d_cum", "rain_5d_cum", "rain_7d_cum",
-        "rain_14d_cum", "rain_30d_cum",
-        "rain_lag1d", "rain_lag2d", "rain_lag3d", "rain_lag5d", "rain_lag7d",
-        "antecedent_moisture", "wet_prior_3d", "peak_3d", "dry_spell_days",
-    ]
-
-
-INTENSITY_FEATURES = ["rain_max1h", "rain_max3h", "rain_max6h"]
+    return list(DAILY_FEATURES)
 
 
 def get_feature_columns_v21() -> list:
     """v2 features + Open-Meteo hourly intensity maxima. The intensity
     features come from the SAME source at train and inference time
     (Open-Meteo hourly), avoiding v1's precip_max scale-mismatch trap."""
-    return get_feature_columns() + INTENSITY_FEATURES
+    return get_feature_columns() + list(INTENSITY_FEATURES)
 
 
 def build_hourly_features() -> pd.DataFrame:
-    """Per-date peak-intensity features from Open-Meteo hourly rain.
-    Rolling sums run across the continuous hourly series (so windows span
-    midnight), then take each calendar day's max — the dashboard computes
-    the identical transform on its live hourly series."""
+    """Per-date peak-intensity features from Open-Meteo hourly rain."""
     h = pd.read_csv(RAW_DIR / "hourly_rain_openmeteo.csv", parse_dates=["timestamp"])
-    h = h.sort_values("timestamp").reset_index(drop=True)
-    for w in (3, 6):
-        h[f"roll{w}h"] = h["precip_inches"].rolling(w, min_periods=1).sum()
-    h["date"] = h["timestamp"].dt.normalize()
-    daily = h.groupby("date").agg(
-        rain_max1h=("precip_inches", "max"),
-        rain_max3h=("roll3h", "max"),
-        rain_max6h=("roll6h", "max"),
-    ).reset_index()
-    return daily
+    return hourly_intensity(h)
 
 
 def build_rain_features() -> pd.DataFrame:
+    """Daily features from the two-gauge mean (SF Downtown + SF Oceanside)."""
     rain_df = pd.read_csv(RAW_DIR / "historical_rain.csv", parse_dates=["date"])
     rp = rain_df.pivot_table(index="date", columns="rain_station_name",
                              values="precip_inches", aggfunc="first").reset_index()
     rp.columns.name = None
     precip_cols = [c for c in rp.columns if c != "date"]
-    rp["precip_avg"] = rp[precip_cols].mean(axis=1).fillna(0)
-    rp = rp.sort_values("date").reset_index(drop=True)
-
-    for w in [2, 3, 5, 7, 14, 30]:
-        rp[f"rain_{w}d_cum"] = rp["precip_avg"].rolling(window=w, min_periods=1).sum()
-    for lag in [1, 2, 3, 5, 7]:
-        rp[f"rain_lag{lag}d"] = rp["precip_avg"].shift(lag).fillna(0)
-
-    half_life = 3
-    weights = np.exp(-np.log(2) / half_life * np.arange(14))
-    rp["antecedent_moisture"] = (
-        rp["precip_avg"].rolling(window=14, min_periods=1)
-        .apply(lambda x: np.sum(x * weights[:len(x)][::-1]) / np.sum(weights[:len(x)]), raw=True)
-    )
-    rp["wet_prior_3d"] = (rp["rain_3d_cum"].shift(1).fillna(0) > 0.1).astype(int)
-    rp["peak_3d"] = rp["precip_avg"].rolling(window=3, min_periods=1).max()
-    is_dry = (rp["precip_avg"] < 0.05).astype(int)
-    groups = is_dry.ne(is_dry.shift()).cumsum()
-    rp["dry_spell_days"] = is_dry.groupby(groups).cumsum()
-    return rp[["date", "precip_avg"] + [c for c in get_feature_columns() if c != "precip_avg"]]
+    rp["precip_inches"] = rp[precip_cols].mean(axis=1).fillna(0)
+    rp = add_daily_features(rp.sort_values("date").reset_index(drop=True))
+    return rp[["date"] + get_feature_columns()]
 
 
 def wet_season(dates: pd.Series) -> pd.Series:

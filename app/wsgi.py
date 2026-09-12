@@ -49,6 +49,7 @@ import features.signup.page as signup_page
 import features.site_analysis.page as site_analysis_page
 from features.alerts.page import AlertsRoutes
 from features.comparison.page import ComparisonRoutes
+from shared.datasf import DATASET_PAGE_URL
 from features.alerts.monitoring import CombinedWaterQualityMonitor
 from features.alerts.subscriptions import SubscriptionStore
 from features.alerts.cso_alerts import SimulatedCSOStore
@@ -238,6 +239,7 @@ def _bwtf_view():
 
 def create_app():
     app = Flask(__name__)
+    app.jinja_env.globals["DATASF_DATASET_URL"] = DATASET_PAGE_URL  # shared/datasf.py
     # Signs the session cookie that remembers an unlocked alerts gate. Without
     # FLASK_SECRET_KEY set, a random key is generated per boot — everything
     # works, but everyone re-enters the passphrase after each deploy/restart.

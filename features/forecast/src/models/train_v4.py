@@ -96,21 +96,11 @@ def rain_series(source: str) -> tuple:
 
 
 def rain_features(source: str) -> pd.DataFrame:
-    """v2's feature formulas over an arbitrary daily series (kept in lockstep
-    with train_v2.build_rain_features and live_dashboard._compute_predictions)."""
+    """Daily features over an arbitrary daily series — the shared formula
+    (src/models/rain_features.py), the same one serving applies."""
+    from rain_features import add_daily_features
     s, _ = rain_series(source)
-    rp = pd.DataFrame({"date": s.index, "precip_avg": s.values})
-    for w in [2, 3, 5, 7, 14, 30]:
-        rp[f"rain_{w}d_cum"] = rp["precip_avg"].rolling(window=w, min_periods=1).sum()
-    for lag in [1, 2, 3, 5, 7]:
-        rp[f"rain_lag{lag}d"] = rp["precip_avg"].shift(lag).fillna(0)
-    weights = np.exp(-np.log(2) / 3 * np.arange(14))
-    rp["antecedent_moisture"] = rp["precip_avg"].rolling(window=14, min_periods=1).apply(
-        lambda x: np.sum(x * weights[:len(x)][::-1]) / np.sum(weights[:len(x)]), raw=True)
-    rp["wet_prior_3d"] = (rp["rain_3d_cum"].shift(1).fillna(0) > 0.1).astype(int)
-    rp["peak_3d"] = rp["precip_avg"].rolling(window=3, min_periods=1).max()
-    is_dry = (rp["precip_avg"] < 0.05).astype(int)
-    rp["dry_spell_days"] = is_dry.groupby(is_dry.ne(is_dry.shift()).cumsum()).cumsum()
+    rp = add_daily_features(pd.DataFrame({"date": s.index, "precip_inches": s.values}))
     return rp[["date"] + get_feature_columns()]
 
 

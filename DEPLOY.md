@@ -65,6 +65,12 @@ What deliberately does **not** run on Vercel:
 
 - **The watcher thread** — `start_watcher()` sees Vercel's built-in `VERCEL`
   env var and refuses to start (no persistent process; pg_cron is the sender).
+- **Forecast cache writes from anywhere else** — the compute-on-visit
+  snapshot (`forecast_predictions`, one row) is WRITTEN only where
+  `VERCEL_ENV=production` (set by Vercel) or `FORECAST_CACHE_WRITE=1`. Any
+  other host with the Supabase key reads the row but computes in memory when
+  it is stale, so a laptop on old code can't publish its forecast to visitors
+  (it did, 2026-09-09). `db/scripts/test_forecast_cache.py` sets the flag itself.
 - **The subscriber JSON mirror** — the filesystem is read-only, so the
   best-effort mirror silently skips. Railway keeps mirroring while it runs;
   once Railway retires, the warm backup is gone until the Pro-org transfer

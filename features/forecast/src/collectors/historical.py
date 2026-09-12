@@ -12,7 +12,7 @@ which is more than enough to train the CSO threshold model.
 Data sources:
 - ACIS (Applied Climate Information System): https://data.rcc-acis.org
   Free, no API key, daily precip going back decades
-- SF Gov Open Data: https://data.sf.gov/resource/v3fv-x3ux.json
+- SF Gov Open Data: shared/datasf.py BEACH_SAMPLES_URL (dataset v3fv-x3ux)
   Free, 19,840 bacteria samples from 2020-present
 
 Key finding from exploratory analysis:
@@ -33,6 +33,7 @@ from pathlib import Path
 from typing import Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
+from shared.datasf import BEACH_SAMPLES_URL  # noqa: E402
 from shared.stations import STATION_BASINS  # noqa: E402
 
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
@@ -43,7 +44,7 @@ PROCESSED_DIR = DATA_DIR / "processed"
 ACIS_URL = "https://data.rcc-acis.org/StnData"
 
 # SF Gov API
-SFGOV_URL = "https://data.sf.gov/resource/v3fv-x3ux.json"
+SFGOV_URL = BEACH_SAMPLES_URL  # shared/datasf.py
 
 # Rain stations to collect (covering different basins)
 RAIN_STATIONS = {

@@ -49,7 +49,9 @@ from flask import render_template
 
 from shared.stations import STATIONS as _CANONICAL_STATIONS
 
-SOCRATA_URL = "https://data.sf.gov/resource/v3fv-x3ux.json"
+from shared.datasf import BEACH_SAMPLES_URL  # noqa: E402
+
+SOCRATA_URL = BEACH_SAMPLES_URL  # shared/datasf.py
 ANALYTE = "ENTERO"
 SSM = 104          # CA single-sample maximum, Enterococcus (MPN/100mL)
 CAUTION = 36       # BWTF/state caution tier

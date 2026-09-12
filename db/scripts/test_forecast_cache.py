@@ -21,6 +21,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
+# These tests exercise the WRITE path against the real cache row on purpose;
+# outside production that path is disabled unless this flag is set.
+import os  # noqa: E402
+os.environ.setdefault("FORECAST_CACHE_WRITE", "1")
+
 from shared import supabase as sb
 import features.forecast.page as page
 
