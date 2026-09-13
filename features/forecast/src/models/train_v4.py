@@ -76,7 +76,7 @@ RAIN_SOURCES = ["avg", "SF Oceanside", "SF Downtown"]
 # adopt the local gauge only if it clearly wins on the holdout
 ADOPT_PR_GAIN, ADOPT_BRIER_SLACK = 0.01, 0.0005
 
-THRESHOLDS = {"ENTERO": 104, "COLI_E": 235, "COLI_FECAL": 400, "COLI_TOTAL": 10000}
+from shared.standards import STANDARDS, flag_exceedances, parse_result  # noqa: E402  (one source for 'over standard')
 
 
 # ── Rain features, per source ───────────────────────────────────────────────
@@ -314,16 +314,28 @@ def _parse_value(raw) -> float | None:
 
 def load_samples() -> pd.DataFrame:
     """Per-sample exceedances: DataSF (2020-07 →) plus the Poo Bot archive
-    (2015-12 → 2017-01), same thresholds, deduplicated on (station, date, analyte)."""
+    (2015-12 → 2017-01), deduplicated on (station, date, analyte). "Over
+    standard" is recomputed here from the raw values with the shared rule
+    (shared/standards.py, including the total-coliform ratio rule) rather
+    than trusted from the collector's stored column."""
     b = pd.read_csv(RAW_DIR / "historical_bacteria.csv", parse_dates=["sample_date"])
-    b = b[["station", "sample_date", "analyte", "exceeds_standard"]].assign(source="datasf")
+    b = b[["station", "sample_date", "analyte", "value_raw"]].rename(columns={"value_raw": "data"}).assign(source="datasf")
     p = pd.read_csv(POOBOT_DIR / "samples.csv", parse_dates=["sample_date"])
-    p = p[p["source"].isin(STATIONS) & p["analyte"].isin(THRESHOLDS)].copy()
-    p["value"] = p["data"].map(_parse_value)
-    p["exceeds_standard"] = p.apply(lambda r: r["value"] is not None and r["value"] > THRESHOLDS[r["analyte"]], axis=1)
-    p = p.rename(columns={"source": "station"})[["station", "sample_date", "analyte", "exceeds_standard"]].assign(source="poobot")
-    allrows = pd.concat([b, p]).sort_values("source")  # 'datasf' sorts before 'poobot' → kept on dedupe
-    return allrows.drop_duplicates(["station", "sample_date", "analyte"], keep="first").reset_index(drop=True)
+    p = p[p["source"].isin(STATIONS) & p["analyte"].isin(STANDARDS)].rename(columns={"source": "station"})
+    p = p[["station", "sample_date", "analyte", "data"]].assign(source="poobot")
+    allrows = pd.concat([b, p])
+    allrows = allrows[allrows["analyte"].isin(STANDARDS)].copy()
+    allrows["value"] = allrows["data"].map(parse_result)
+    # Same-day resamples exist (e.g. two fecal results for one station and
+    # day). Keep the HIGHEST per (station, date, analyte): stage 2 asks "was
+    # the beach elevated that day", so any exceedance must survive the dedupe.
+    # DataSF wins ties over the archive.
+    allrows = allrows.sort_values(["value", "source"], ascending=[False, True], na_position="last")
+    allrows = allrows.drop_duplicates(["station", "sample_date", "analyte"], keep="first").reset_index(drop=True)
+    recs = allrows.rename(columns={"sample_date": "date"}).to_dict("records")
+    flag_exceedances(recs)
+    allrows["exceeds_standard"] = [r["exceeds"] for r in recs]
+    return allrows[["station", "sample_date", "analyte", "exceeds_standard", "source", "value"]]
 
 
 def fit_impact_table(frames: dict, chosen: dict, heads: dict, samples: pd.DataFrame) -> tuple:

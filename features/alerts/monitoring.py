@@ -46,31 +46,9 @@ from shared.stations import (  # noqa: E402 — needs the sys.path bootstrap abo
 #   - BUT if fecal-to-total coliform ratio > 0.1, limit drops to 1,000 MPN/100mL
 #   This ratio test is a critical posting criterion often missed.
 #
-# Geometric mean standards require at least 5 weekly samples over 30 days.
-STANDARDS = {
-    "ENTERO": {
-        "single_sample_max": 104,  # Enterococcus single sample max (MPN/100mL)
-        "geometric_mean": 35,       # 30-day geometric mean
-        "description": "Enterococcus"
-    },
-    "COLI_E": {
-        "single_sample_max": 235,   # E. coli single sample max (MPN/100mL)
-        "geometric_mean": 126,      # 30-day geometric mean  
-        "description": "E. coli"
-    },
-    "COLI_FECAL": {
-        "single_sample_max": 400,   # Fecal coliform single sample max
-        "geometric_mean": 200,
-        "description": "Fecal Coliform"
-    },
-    "COLI_TOTAL": {
-        "single_sample_max": 10000, # Total coliform single sample max (default)
-        "single_sample_max_ratio": 1000,  # Limit when fecal/total ratio > 0.1
-        "ratio_threshold": 0.1,     # Fecal-to-total coliform ratio threshold
-        "geometric_mean": 1000,
-        "description": "Total Coliform"
-    }
-}
+# Bacteria standards live in shared/standards.py (one source; the ratio rule
+# and the parse rule travel with the numbers).
+from shared.standards import STANDARDS  # noqa: E402
 
 # Minimum number of weekly samples required for geometric mean calculation (AB 411)
 GEOMETRIC_MEAN_MIN_SAMPLES = 5

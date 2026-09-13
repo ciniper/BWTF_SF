@@ -1,5 +1,5 @@
 {
-  "trained_at": "2026-09-05T22:44:37.054102",
+  "trained_at": "2026-09-12T18:37:47.815374",
   "version": "v4",
   "feature_set": "v21",
   "train_window": [
@@ -1615,7 +1615,7 @@
         "n": 17
       },
       "multi_outfall": {
-        "p_elevated": 0.531,
+        "p_elevated": 0.571,
         "n": 49
       }
     },
@@ -1635,7 +1635,7 @@
         "n": 9
       },
       "multi_outfall": {
-        "p_elevated": 0.559,
+        "p_elevated": 0.588,
         "n": 34
       }
     },
@@ -1661,7 +1661,7 @@
     },
     "Southeast": {
       "single_outfall": {
-        "p_elevated": 0.571,
+        "p_elevated": 0.714,
         "n": 7
       },
       "multi_outfall": {
@@ -1689,8 +1689,8 @@
           "tn": 773
         },
         "vs_bacteria_elevated": {
-          "tp": 15,
-          "fp": 17,
+          "tp": 16,
+          "fp": 16,
           "fn": 11,
           "tn": 114
         }
@@ -1698,29 +1698,29 @@
       "0.25": {
         "vs_discharge_posting": {
           "tp": 9,
-          "fp": 33,
+          "fp": 36,
           "fn": 1,
-          "tn": 811
+          "tn": 808
         },
         "vs_bacteria_elevated": {
-          "tp": 15,
+          "tp": 16,
           "fp": 11,
           "fn": 11,
-          "tn": 120
+          "tn": 119
         }
       },
       "0.5": {
         "vs_discharge_posting": {
           "tp": 9,
-          "fp": 15,
+          "fp": 17,
           "fn": 1,
-          "tn": 829
+          "tn": 827
         },
         "vs_bacteria_elevated": {
-          "tp": 10,
-          "fp": 3,
+          "tp": 11,
+          "fp": 4,
           "fn": 16,
-          "tn": 128
+          "tn": 126
         }
       }
     },
@@ -1777,8 +1777,8 @@
           "tn": 791
         },
         "vs_bacteria_elevated": {
-          "tp": 15,
-          "fp": 15,
+          "tp": 16,
+          "fp": 14,
           "fn": 12,
           "tn": 115
         }
@@ -1786,15 +1786,15 @@
       "0.25": {
         "vs_discharge_posting": {
           "tp": 9,
-          "fp": 23,
+          "fp": 26,
           "fn": 0,
-          "tn": 822
+          "tn": 819
         },
         "vs_bacteria_elevated": {
-          "tp": 14,
+          "tp": 16,
           "fp": 7,
-          "fn": 13,
-          "tn": 123
+          "fn": 12,
+          "tn": 122
         }
       },
       "0.5": {
@@ -1807,8 +1807,8 @@
         "vs_bacteria_elevated": {
           "tp": 10,
           "fp": 1,
-          "fn": 17,
-          "tn": 129
+          "fn": 18,
+          "tn": 128
         }
       }
     },

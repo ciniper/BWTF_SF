@@ -50,11 +50,12 @@ from flask import render_template
 from shared.stations import STATIONS as _CANONICAL_STATIONS
 
 from shared.datasf import BEACH_SAMPLES_URL  # noqa: E402
+from shared.standards import ENTERO_CAUTION, STANDARDS  # noqa: E402
 
 SOCRATA_URL = BEACH_SAMPLES_URL  # shared/datasf.py
 ANALYTE = "ENTERO"
-SSM = 104          # CA single-sample maximum, Enterococcus (MPN/100mL)
-CAUTION = 36       # BWTF/state caution tier
+SSM = STANDARDS["ENTERO"]["single_sample_max"]   # CA single-sample maximum, Enterococcus (shared/standards.py)
+CAUTION = ENTERO_CAUTION                        # BWTF/state caution tier
 ROUTINE_MIN = 300  # fewer full-record samples than this = sporadic/reactive
 WET_MONTHS = {11, 12, 1, 2, 3, 4}
 DATASET_FLOOR = "2020-07-27"  # the city publishes nothing earlier

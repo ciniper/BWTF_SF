@@ -68,6 +68,29 @@ def test_rain_arithmetic_is_not_reimplemented():
     assert not offenders, f"rain features re-implemented outside rain_features.py: {offenders}"
 
 
+def test_bacteria_standards_have_one_home():
+    """The AB 411 limits (104 / 235 / 400 / 10,000, ratio 1,000) live in
+    shared/standards.py; a literal next to an analyte code anywhere else is a
+    private copy waiting to drift."""
+    from shared import standards
+    from features.alerts import monitoring
+    from features.site_analysis import page as site_analysis
+    import historical
+    assert monitoring.STANDARDS is standards.STANDARDS
+    assert site_analysis.SSM == standards.STANDARDS["ENTERO"]["single_sample_max"]
+    assert site_analysis.CAUTION == standards.ENTERO_CAUTION
+    assert historical.BACTERIA_THRESHOLDS == {k: v["single_sample_max"] for k, v in standards.STANDARDS.items()}
+    pat = re.compile(r"(ENTERO|COLI_E|COLI_FECAL|COLI_TOTAL)\W{0,12}(104|235|400|10000|10,000)\b|\b(104|235|400|10000)\W{0,12}(ENTERO|COLI_E|COLI_FECAL|COLI_TOTAL)")
+    offenders = []
+    for p in _source_files():
+        if p.suffix != ".py" or p.name in ("standards.py", "test_single_source.py") or p.name == "train.py" and "models" in p.parts:
+            continue
+        for i, line in enumerate(p.read_text(errors="ignore").splitlines(), 1):
+            if pat.search(line) and not line.lstrip().startswith("#"):
+                offenders.append(f"{p.relative_to(ROOT)}:{i}")
+    assert not offenders, f"bacteria limits copied outside shared/standards.py: {offenders}"
+
+
 if __name__ == "__main__":
     failures = 0
     for name, fn in sorted(globals().items()):

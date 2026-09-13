@@ -47,6 +47,7 @@ from shared.zones import ZONES, ZONE_OF_SOURCE, ZONE_OF_STATION  # noqa: E402
 from shared.outfalls import FEED_NAME_TO_OUTFALLS, OUTFALLS  # noqa: E402
 from shared.datasf import BEACH_SAMPLES_URL  # noqa: E402
 from shared.alert_log import ESCALATIONS as _ESCALATIONS, REALTIME_SOURCES  # noqa: E402
+from shared.standards import STANDARDS, flag_exceedances, parse_result, single_sample_max  # noqa: E402
 try:
     from shared import supabase as _supabase
 except Exception:
@@ -864,19 +865,6 @@ class LiveData:
     def _samples_window(self, start_date, end_date) -> list:
         """Per-sample bacteria results in [start, end]: DataSF for dates from
         2020-07-27, the Poo Bot archive (Dec 2015 – Jan 2017) before that."""
-        thresholds = {"ENTERO": 104, "COLI_E": 235, "COLI_FECAL": 400, "COLI_TOTAL": 10000}
-
-        def parse(v):
-            v = str(v or "").strip()
-            try:
-                if v.startswith("<"):
-                    return float(v[1:]) / 2
-                if v.startswith(">"):
-                    return float(v[1:])
-                return float(v)
-            except ValueError:
-                return None
-
         recs = []
         if str(end_date) >= self.DATASF_FLOOR:
             try:
@@ -898,14 +886,12 @@ class LiveData:
                     recs.append((r["source"], r["sample_date"], r["analyte"], r["data"]))
         out, seen = [], set()
         for station, d, analyte, raw in recs:
-            if station not in STATIONS or analyte not in thresholds or (station, d, analyte) in seen:
+            if station not in STATIONS or analyte not in STANDARDS or (station, d, analyte) in seen:
                 continue
             seen.add((station, d, analyte))
-            val = parse(raw)
             out.append({"date": d, "station": station, "station_name": STATION_NAMES[station],
-                        "zone": ZONE_OF_SOURCE[station], "analyte": analyte, "value": val, "value_raw": raw,
-                        "exceeds": bool(val is not None and val > thresholds[analyte])})
-        return out
+                        "zone": ZONE_OF_SOURCE[station], "analyte": analyte, "value": parse_result(raw), "value_raw": raw})
+        return flag_exceedances(out)  # shared rule, incl. the total-coliform ratio
 
     def get_actuals(self, date_str: str) -> dict:
         """What actually happened around a date (−2 … +5 days), per zone:
@@ -1023,14 +1009,7 @@ class LiveData:
         start = (target - timedelta(days=2)).strftime("%Y-%m-%dT00:00:00")
         end = (target + timedelta(days=5)).strftime("%Y-%m-%dT23:59:59")
 
-        # Station names/basins come from shared.stations (module import).
-        THRESHOLDS = {
-            "ENTERO": 104,
-            "COLI_E": 235,
-            "COLI_FECAL": 400,
-            "COLI_TOTAL": 10000,
-        }
-
+        # Station names/basins come from shared.stations; standards from shared.standards.
         try:
             params = {
                 "$limit": 5000,
@@ -1052,50 +1031,25 @@ class LiveData:
                 "days": {},
             }
 
-        # Parse into structured records
+        # Parse into structured records; "over standard" via the shared rule
         records = []
         for rec in raw:
             station = rec.get("source", "")
             analyte = rec.get("analyte", "")
             value_str = rec.get("data", "")
             sample_date = rec.get("sample_date", "")[:10]
-
             if not station or not analyte or not sample_date:
                 continue
-
-            # Parse value
-            if not value_str:
-                value = None
-            elif value_str.startswith("<"):
-                try:
-                    value = float(value_str[1:]) / 2
-                except ValueError:
-                    value = None
-            elif value_str.startswith(">"):
-                try:
-                    value = float(value_str[1:])
-                except ValueError:
-                    value = None
-            else:
-                try:
-                    value = float(value_str)
-                except ValueError:
-                    value = None
-
-            threshold = THRESHOLDS.get(analyte)
-            exceeds = value > threshold if value is not None and threshold else False
-
             records.append({
                 "date": sample_date,
                 "station": station,
                 "station_name": STATION_NAMES.get(station, station),
                 "basin": STATION_BASINS.get(station, "Unknown"),
                 "analyte": analyte,
-                "value": value,
+                "value": parse_result(value_str),
                 "value_raw": value_str,
-                "exceeds": exceeds,
-                "threshold": threshold,
             })
+        flag_exceedances(records)
 
         # Group by date → basin → station
         days = {}

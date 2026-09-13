@@ -52,13 +52,9 @@ RAIN_STATIONS = {
     "047772": {"name": "SF Downtown", "basin": "North Shore / Southeast"},
 }
 
-# AB 411 single sample maximums
-BACTERIA_THRESHOLDS = {
-    "ENTERO": 104,
-    "COLI_E": 235,
-    "COLI_FECAL": 400,
-    "COLI_TOTAL": 10000,
-}
+# AB 411 single sample maximums — shared/standards.py is the source
+from shared.standards import STANDARDS as _STANDARDS  # noqa: E402
+BACTERIA_THRESHOLDS = {k: v["single_sample_max"] for k, v in _STANDARDS.items()}
 
 # Basin assignments for bacteria stations come from the canonical registry
 # (shared/stations.py) — imported above as STATION_BASINS.

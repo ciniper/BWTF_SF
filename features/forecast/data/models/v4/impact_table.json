@@ -25,7 +25,7 @@
         "n": 13
       },
       "d1_large": {
-        "p_elevated": 0.429,
+        "p_elevated": 0.571,
         "n": 14
       },
       "d1_small": {
@@ -145,7 +145,7 @@
         "n": 9
       },
       "d1_small": {
-        "p_elevated": 0.333,
+        "p_elevated": 0.444,
         "n": 9
       },
       "d3_large": {
@@ -292,7 +292,7 @@
         "n": 21
       },
       "d1_small": {
-        "p_elevated": 0.938,
+        "p_elevated": 1.0,
         "n": 16
       },
       "d2_large": {
