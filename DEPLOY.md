@@ -65,6 +65,9 @@ What deliberately does **not** run on Vercel:
 
 - **The watcher thread** — `start_watcher()` sees Vercel's built-in `VERCEL`
   env var and refuses to start (no persistent process; pg_cron is the sender).
+  Since 2026-09-12 it is opt-in everywhere: it only runs when
+  `ALERT_WATCHER_INTERVAL=<seconds>` is set, so a local checkout no longer
+  double-logs detections beside pg_live.
 - **Forecast cache writes from anywhere else** — the compute-on-visit
   snapshot (`forecast_predictions`, one row) is WRITTEN only where
   `VERCEL_ENV=production` (set by Vercel) or `FORECAST_CACHE_WRITE=1`. Any

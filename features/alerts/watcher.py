@@ -331,8 +331,13 @@ def start_watcher(interval_seconds: int | None = None) -> bool:
         print("[watcher] disabled on Vercel (pg_cron is the sender)")
         return False
     raw = os.environ.get("ALERT_WATCHER_INTERVAL", "").strip().lower()
-    if raw in {"0", "off", "false", "disabled"}:
-        print("[watcher] disabled via ALERT_WATCHER_INTERVAL")
+    if not raw or raw in {"0", "off", "false", "disabled"}:
+        # Opt-in only since 2026-09-12: Postgres (pg_cron) is the sender
+        # everywhere, and a local checkout running this thread in shadow mode
+        # double-logged the 2026-09-01 Windsurfer posting into alert_log
+        # (source='thread_shadow'). Set ALERT_WATCHER_INTERVAL=<seconds> to run
+        # it deliberately — it remains the emergency fallback sender we own.
+        print("[watcher] not started (opt-in: set ALERT_WATCHER_INTERVAL=<seconds>)")
         return False
     interval = interval_seconds or (int(raw) if raw.isdigit() and int(raw) > 0 else DEFAULT_INTERVAL_SECONDS)
     thread = threading.Thread(target=_watch_loop, args=(interval,), daemon=True, name="alert-watcher")
