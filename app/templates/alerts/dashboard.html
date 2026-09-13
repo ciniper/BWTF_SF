@@ -353,6 +353,15 @@
             font-size: 1.1em;
         }
 
+        .view-tabs { display: flex; gap: 8px; margin: 4px 0 18px; }
+        .view-tab { font-family: inherit; display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 999px; border: 2px solid #d9e4e8; background: #fff; color: #54576F; font-weight: 700; cursor: pointer; }
+        .view-tab small { font-weight: 500; color: #8a93a3; }
+        .view-tab.active { background: #0072BC; border-color: #0072BC; color: #fff; }
+        .view-tab.active small { color: rgba(255,255,255,.8); }
+        .view-badge { background: #b5310a; color: #fff; border-radius: 999px; padding: 2px 9px; font-size: .78em; }
+        .view-note { margin: 0 0 14px; }
+        .radio-row { display: flex; gap: 14px; flex-wrap: wrap; }
+        .mute { color: #8a93a3; }
         .control-panels {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -758,26 +767,103 @@
         
         {{ error_html|safe }}
         {{ rain_html|safe }}
-        {{ cso_banner|safe }}
-        
-        <div class="summary">
-            <div class="summary-card cso">
-                <div class="summary-number">{{ cso_count }}</div>
-                <div class="summary-label"><svg class="ic danger"><use href="#i-octagon-alert"/></svg> Active CSO</div>
+        <div class="view-tabs" role="tablist">
+            <button class="view-tab active" data-view="real" onclick="showView('real')"><svg class="ic"><use href="#i-waves"/></svg> Real <small>SFPUC feed as published</small></button>
+            <button class="view-tab" data-view="sim" onclick="showView('sim')"><svg class="ic"><use href="#i-flask"/></svg> Simulation {% if simulation_count %}<span class="view-badge">{{ simulation_count }} active</span>{% endif %}</button>
+        </div>
+
+        <div id="view-real" class="view">
+            {{ real.cso_banner|safe }}
+            <div class="summary">
+                <div class="summary-card cso">
+                    <div class="summary-number">{{ real.cso_count }}</div>
+                    <div class="summary-label"><svg class="ic danger"><use href="#i-octagon-alert"/></svg> Active CSO</div>
+                </div>
+                <div class="summary-card posted">
+                    <div class="summary-number">{{ real.posted_count }}</div>
+                    <div class="summary-label"><svg class="ic warn"><use href="#i-triangle-alert"/></svg> Posted</div>
+                </div>
+                <div class="summary-card safe">
+                    <div class="summary-number">{{ real.safe_count }}</div>
+                    <div class="summary-label"><svg class="ic ok"><use href="#i-circle-check"/></svg> Safe</div>
+                </div>
+                <div class="summary-card total">
+                    <div class="summary-number">{{ real.total_stations }}</div>
+                    <div class="summary-label"><svg class="ic brand"><use href="#i-map-pin"/></svg> Total Stations</div>
+                </div>
+                {{ tide_html|safe }}
             </div>
-            <div class="summary-card posted">
-                <div class="summary-number">{{ posted_count }}</div>
-                <div class="summary-label"><svg class="ic warn"><use href="#i-triangle-alert"/></svg> Posted</div>
+        <div class="alerts-section">
+            <h2 class="section-title"><span class="ictile"><svg class="ic"><use href="#i-bell"/></svg></span> Active Alerts</h2>
+            {{ alerts_html|safe }}
+        </div>
+
+            <div class="stations-section">
+                <h2><span class="ictile"><svg class="ic"><use href="#i-map-pin"/></svg></span> Beach Stations</h2>
+                <div class="stations-grid">
+                    {{ real.station_cards|safe }}
+                </div>
             </div>
-            <div class="summary-card safe">
-                <div class="summary-number">{{ safe_count }}</div>
-                <div class="summary-label"><svg class="ic ok"><use href="#i-circle-check"/></svg> Safe</div>
+        </div>
+
+        <div id="view-sim" class="view" hidden>
+            <div class="helper-note view-note"><svg class="ic brand"><use href="#i-info"/></svg> This view overlays the active simulations on the live feed — it is what subscribers' TEST alerts describe. Since migration 009 the watcher records simulated and real events separately, so nothing here can leak into the real record.</div>
+            {{ sim.cso_banner|safe }}
+            <div class="summary">
+                <div class="summary-card cso">
+                    <div class="summary-number">{{ sim.cso_count }}</div>
+                    <div class="summary-label"><svg class="ic danger"><use href="#i-octagon-alert"/></svg> Active CSO</div>
+                </div>
+                <div class="summary-card posted">
+                    <div class="summary-number">{{ sim.posted_count }}</div>
+                    <div class="summary-label"><svg class="ic warn"><use href="#i-triangle-alert"/></svg> Posted</div>
+                </div>
+                <div class="summary-card safe">
+                    <div class="summary-number">{{ sim.safe_count }}</div>
+                    <div class="summary-label"><svg class="ic ok"><use href="#i-circle-check"/></svg> Safe</div>
+                </div>
+                <div class="summary-card total">
+                    <div class="summary-number">{{ sim.total_stations }}</div>
+                    <div class="summary-label"><svg class="ic brand"><use href="#i-map-pin"/></svg> Total Stations</div>
+                </div>
+                
             </div>
-            <div class="summary-card total">
-                <div class="summary-number">{{ total_stations }}</div>
-                <div class="summary-label"><svg class="ic brand"><use href="#i-map-pin"/></svg> Total Stations</div>
+            <div class="control-panels">
+            <section class="panel">
+                <h3>Simulator</h3>
+                <p>Inject a simulated event at the chosen sites. The automatic sender treats it exactly like the real thing, prefixed TEST.</p>
+                <form id="simulation-form" class="stack">
+                    <div class="radio-row">
+                        <label class="checkbox-option"><input type="radio" name="kind" value="cso" {% if active_kind == 'cso' %}checked{% endif %}><span><svg class="ic danger"><use href="#i-octagon-alert"/></svg> CSO discharge</span></label>
+                        <label class="checkbox-option"><input type="radio" name="kind" value="posted" {% if active_kind == 'posted' %}checked{% endif %}><span><svg class="ic warn"><use href="#i-triangle-alert"/></svg> Bacteria posting</span></label>
+                    </div>
+                    <div class="checkbox-grid">
+                        {{ simulation_site_options|safe }}
+                    </div>
+                    <div class="button-row">
+                        <button class="action-btn secondary" type="submit">Save Simulation</button>
+                        <button class="action-btn danger" type="button" onclick="clearSimulation()">Clear Simulation</button>
+                    </div>
+                </form>
+                <div class="helper-note">Currently simulated sites: {{ simulated_sites_html }}</div>
+                <div class="helper-note" style="margin-top: 12px;"><svg class="ic brand"><use href="#i-info"/></svg> Saving a simulation is the whole test:
+                the <b>automatic sender (Postgres) detects it and emails matching subscribers within
+                a minute</b> — the same path a real event takes. The old manual send buttons were
+                removed because they used the legacy in-app sender and produced a duplicate,
+                differently-styled email alongside the automatic one. (The gated
+                <code>POST /api/dispatch-cso-alerts</code> endpoint still exists for deliberately
+                testing that legacy path.) Remember to clear the simulation — it shows as a real
+                CSO on the public pages until cleared.</div>
+                <div class="action-result" id="simulation-result"></div>
+            </section>
+
             </div>
-            {{ tide_html|safe }}
+            <div class="stations-section">
+                <h2><span class="ictile"><svg class="ic"><use href="#i-flask"/></svg></span> Beach Stations — with simulations</h2>
+                <div class="stations-grid">
+                    {{ sim.station_cards|safe }}
+                </div>
+            </div>
         </div>
 
         <div class="control-panels">
@@ -803,30 +889,6 @@
             </section>
 
             <section class="panel">
-                <h3>Simulator</h3>
-                <p>Inject a simulated CSO event, then send a test dispatch through the same matching logic the real alert flow uses.</p>
-                <form id="simulation-form" class="stack">
-                    <div class="checkbox-grid">
-                        {{ simulation_site_options|safe }}
-                    </div>
-                    <div class="button-row">
-                        <button class="action-btn secondary" type="submit">Save Simulated CSO</button>
-                        <button class="action-btn danger" type="button" onclick="clearSimulation()">Clear Simulation</button>
-                    </div>
-                </form>
-                <div class="helper-note">Currently simulated sites: {{ simulated_sites_html }}</div>
-                <div class="helper-note" style="margin-top: 12px;"><svg class="ic brand"><use href="#i-info"/></svg> Saving a simulation is the whole test:
-                the <b>automatic sender (Postgres) detects it and emails matching subscribers within
-                a minute</b> — the same path a real event takes. The old manual send buttons were
-                removed because they used the legacy in-app sender and produced a duplicate,
-                differently-styled email alongside the automatic one. (The gated
-                <code>POST /api/dispatch-cso-alerts</code> endpoint still exists for deliberately
-                testing that legacy path.) Remember to clear the simulation — it shows as a real
-                CSO on the public pages until cleared.</div>
-                <div class="action-result" id="simulation-result"></div>
-            </section>
-
-            <section class="panel">
                 <h3>Saved Subscribers</h3>
                 <p>Current email/SMS subscriptions stored on disk for the dashboard.</p>
                 <div class="subscription-list">
@@ -834,21 +896,15 @@
                 </div>
             </section>
         </div>
-        
-        <div class="alerts-section">
-            <h2 class="section-title"><span class="ictile"><svg class="ic"><use href="#i-bell"/></svg></span> Active Alerts</h2>
-            {{ alerts_html|safe }}
-        </div>
-        
-        <div class="stations-section">
-            <h2><span class="ictile"><svg class="ic"><use href="#i-map-pin"/></svg></span> Beach Stations</h2>
-            <div class="stations-grid">
-                {{ station_cards|safe }}
-            </div>
-        </div>
-        
     </div>
     <script>
+        function showView(name) {
+            document.querySelectorAll('.view').forEach((el) => { el.hidden = el.id !== 'view-' + name; });
+            document.querySelectorAll('.view-tab').forEach((el) => el.classList.toggle('active', el.dataset.view === name));
+            if (history.replaceState) history.replaceState(null, '', '#' + name);
+        }
+        showView(location.hash === '#sim' ? 'sim' : 'real');
+
         function setResult(id, message, isError = false) {
             const element = document.getElementById(id);
             element.className = 'action-result ' + (isError ? 'error' : 'success');
@@ -913,12 +969,15 @@
         document.getElementById('simulation-form').addEventListener('submit', async (event) => {
             event.preventDefault();
             const form = event.currentTarget;
+            const kindInput = form.querySelector('input[name="kind"]:checked');
             const payload = {
+                kind: kindInput ? kindInput.value : 'cso',
                 station_ids: Array.from(form.querySelectorAll('input[name="station_ids"]:checked')).map((input) => input.value)
             };
             try {
                 const data = await postJson('/api/simulations/cso', payload);
-                setResult('simulation-result', `Saved ${data.station_ids.length} simulated CSO site(s).`);
+                setResult('simulation-result', `Saved ${data.station_ids.length} simulated ${data.kind === 'posted' ? 'bacteria posting' : 'CSO'} site(s).`);
+                window.location.hash = 'sim';
                 window.setTimeout(() => window.location.reload(), 700);
             } catch (error) {
                 setResult('simulation-result', error.message, true);
@@ -928,7 +987,8 @@
         async function clearSimulation() {
             try {
                 await postJson('/api/simulations/cso/clear', {});
-                setResult('simulation-result', 'Cleared simulated CSO events.');
+                setResult('simulation-result', 'Cleared all simulations.');
+                window.location.hash = 'sim';
                 window.setTimeout(() => window.location.reload(), 700);
             } catch (error) {
                 setResult('simulation-result', error.message, true);

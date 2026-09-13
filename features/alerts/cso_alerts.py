@@ -21,7 +21,7 @@ from features.alerts.notifiers import (
     email_transport_configured,
 )
 from shared import supabase as sb
-from shared.sfpuc_api import SFPUCStation
+from shared.sfpuc_api import StationStatus, SFPUCStation
 from features.alerts.subscriptions import SiteSubscription
 
 
@@ -32,11 +32,16 @@ BWTF_LOGO_URL = "https://bwtf.surfrider.org/images/BWTF-Logo_White.png"
 SURFRIDER_LOGO_URL = "https://f.hubspotusercontent20.net/hubfs/20811975/SF-Horizontal-Logo_RGB_Black_crop_small.png"
 
 
+SIM_KINDS = ("cso", "posted")
+
+
 class SimulatedCSOStore:
-    """Simulated-CSO station ids. Supabase-backed (``simulated_cso`` table) so
-    the in-process watcher AND the Phase 2 pg_cron shadow path see the same
-    simulations; falls back to the legacy JSON file when Supabase env is
-    absent. An explicit ``path`` forces JSON mode (tests)."""
+    """Simulations: station id → kind ('cso' | 'posted'). Supabase-backed
+    (``simulated_cso`` table, ``kind`` column since migration 010) so the
+    dashboard and the pg_cron watcher see the same simulations; falls back to
+    the legacy JSON file when Supabase env is absent. An explicit ``path``
+    forces JSON mode (tests). ``get_station_ids``/``set_station_ids`` remain
+    for callers that only know about CSO simulations."""
 
     def __init__(self, path: Path | None = None):
         self._remote = path is None and sb.is_configured()
@@ -44,34 +49,54 @@ class SimulatedCSOStore:
         if not self._remote:
             self.path.parent.mkdir(parents=True, exist_ok=True)
 
-    def get_station_ids(self) -> list[str]:
+    def get_simulations(self) -> dict[str, str]:
         if self._remote:
-            rows = sb.select("simulated_cso", {"select": "station_id"})
-            return sorted({row["station_id"] for row in rows})
+            try:
+                rows = sb.select("simulated_cso", {"select": "station_id,kind"})
+            except sb.SupabaseError as exc:
+                if "kind" not in str(exc):
+                    raise
+                # migration 010 not applied yet: every simulation is a CSO
+                rows = [{**row, "kind": "cso"} for row in sb.select("simulated_cso", {"select": "station_id"})]
+            return {row["station_id"]: (row.get("kind") or "cso") for row in rows}
         if not self.path.exists():
-            return []
+            return {}
         try:
             payload = json.loads(self.path.read_text() or "{}")
         except json.JSONDecodeError:
-            return []
-        return sorted(set(payload.get("station_ids", [])))
+            return {}
+        kinds = payload.get("kinds") or {}
+        return {sid: kinds.get(sid, "cso") for sid in payload.get("station_ids", [])}
 
-    def set_station_ids(self, station_ids: list[str]) -> list[str]:
-        normalized = sorted({station_id for station_id in station_ids if station_id})
+    def set_simulations(self, simulations: dict[str, str]) -> dict[str, str]:
+        normalized = {sid: (kind if kind in SIM_KINDS else "cso")
+                      for sid, kind in sorted(simulations.items()) if sid}
         if self._remote:
             sb.delete("simulated_cso", {"station_id": "neq."})  # all rows
             if normalized:
-                sb.insert("simulated_cso", [{"station_id": sid} for sid in normalized])
+                try:
+                    sb.insert("simulated_cso", [{"station_id": sid, "kind": kind} for sid, kind in normalized.items()])
+                except sb.SupabaseError as exc:
+                    if "kind" not in str(exc):
+                        raise
+                    if any(kind != "cso" for kind in normalized.values()):
+                        raise RuntimeError("Bacteria-posting simulations need migration 010 (db/migrations/010_simulation_kind.sql) applied first.") from exc
+                    sb.insert("simulated_cso", [{"station_id": sid} for sid in normalized])
             return normalized
-        payload = {
-            "station_ids": normalized,
+        self.path.write_text(json.dumps({
+            "station_ids": sorted(normalized), "kinds": normalized,
             "updated_at": datetime.utcnow().isoformat(),
-        }
-        self.path.write_text(json.dumps(payload, indent=2))
+        }, indent=2))
         return normalized
 
+    def get_station_ids(self) -> list[str]:
+        return sorted(self.get_simulations())
+
+    def set_station_ids(self, station_ids: list[str], kind: str = "cso") -> list[str]:
+        return sorted(self.set_simulations({sid: kind for sid in station_ids if sid}))
+
     def clear(self) -> None:
-        self.set_station_ids([])
+        self.set_simulations({})
 
 
 def get_cso_eligible_stations(stations: list[SFPUCStation]) -> list[SFPUCStation]:
@@ -81,22 +106,29 @@ def get_cso_eligible_stations(stations: list[SFPUCStation]) -> list[SFPUCStation
     )
 
 
-def apply_simulated_cso(stations: list[SFPUCStation], simulated_station_ids: list[str]) -> list[SFPUCStation]:
-    if not simulated_station_ids:
+def apply_simulated_cso(stations: list[SFPUCStation], simulations) -> list[SFPUCStation]:
+    """Overlay simulations on the live stations. ``simulations`` is either a
+    {station_id: kind} mapping or a plain list of ids (all treated as CSO).
+    A 'cso' simulation sets the CSO flag; a 'posted' simulation raises the
+    station to POSTED. Neither ever lowers a real status."""
+    if not simulations:
         return stations
-
-    simulated_set = set(simulated_station_ids)
+    kinds = simulations if isinstance(simulations, dict) else {sid: "cso" for sid in simulations}
     updated = []
     for station in stations:
-        if station.station_id in simulated_set:
+        kind = kinds.get(station.station_id)
+        if kind == "cso":
             updated.append(replace(
                 station,
                 has_cso=True,
                 cso_station_id=station.cso_station_id or f"SIM-{station.station_id}",
             ))
+        elif kind == "posted" and station.status.value in ("safe", "not_sampled", "not_routinely_sampled", "unknown"):
+            updated.append(replace(station, status=StationStatus.POSTED))
         else:
             updated.append(station)
     return updated
+
 
 
 def dispatch_subscription_alerts(

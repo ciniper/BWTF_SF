@@ -13,7 +13,10 @@ from datetime import datetime
 
 from flask import render_template
 
+from shared.outfalls import OBSERVED, OUTFALLS, STATION_OUTFALLS
+
 from features.alerts.cso_alerts import (
+    SIM_KINDS,
     apply_simulated_cso,
     dispatch_subscription_alerts,
     get_cso_eligible_stations,
@@ -38,10 +41,47 @@ class AlertsRoutes:
     """Alert-dashboard routes, mixed into the unified server handler."""
 
     def _get_dashboard_stations(self):
+        """(stations with the simulation overlay applied, simulated station ids)."""
         live_stations = self.sfpuc_api.fetch_stations()
-        simulated_station_ids = self.simulated_cso_store.get_station_ids()
-        stations = apply_simulated_cso(live_stations, simulated_station_ids)
-        return stations, simulated_station_ids
+        simulations = self.simulated_cso_store.get_simulations()
+        stations = apply_simulated_cso(live_stations, simulations)
+        return stations, sorted(simulations)
+
+    def _status_view(self, stations, simulations, lab_results_lookup):
+        """Counts, CSO banner and station cards for one view of the stations —
+        the real feed, or the feed with simulations overlaid. Since migration
+        009 the watcher keeps those two apart; the dashboard shows them as
+        two tabs so a simulation never reads as a real event."""
+        cso_events = [st for st in stations if st.has_cso]
+        posted = [st for st in stations if st.status.value == "posted"]
+        safe = [st for st in stations if st.status.value == "safe"]
+        not_sampled = [st for st in stations if st.status.value in ("not_sampled", "not_routinely_sampled")]
+        banner = ""
+        if cso_events:
+            names = ", ".join(e.station_name for e in cso_events)
+            simulated_note = " (simulated)" if all(e.station_id in simulations for e in cso_events) else ""
+            banner = f"""
+            <div class="cso-banner">
+                <div class="cso-icon"><svg class="ic" style="width:48px;height:48px"><use href="#i-octagon-alert"/></svg></div>
+                <div class="cso-content">
+                    <div class="cso-title">ACTIVE COMBINED SEWER OVERFLOW{simulated_note.upper()}</div>
+                    <div class="cso-message">CSO detected at: <strong>{names}</strong></div>
+                    <div class="cso-warning">Sewage discharge has occurred within the last 24-72 hours. Avoid water contact at affected beaches.</div>
+                </div>
+            </div>
+            """
+        cards, added = "", set()
+        for group, kind in ((cso_events, "cso"), (posted, "posted"), (safe, "safe"), (not_sampled, "not_sampled")):
+            for st in group:
+                if st.station_id in added:
+                    continue
+                cards += self._generate_station_card(st, kind, st.station_id in simulations,
+                                                     lab_results_lookup.get(st.station_name))
+                added.add(st.station_id)
+        return {"cso_count": len(cso_events), "posted_count": len(posted), "safe_count": len(safe),
+                "not_sampled_count": len(not_sampled), "total_stations": len(stations),
+                "cso_banner": banner, "station_cards": cards, "cso_events": cso_events,
+                "posted_stations": posted, "safe_stations": safe, "not_sampled_stations": not_sampled}
     
     def send_dashboard(self):
         """Send the main dashboard HTML page"""
@@ -154,11 +194,10 @@ class AlertsRoutes:
             payload = {"error": str(e)}
         self._send_json(payload)
 
-    def send_api_simulated_cso(self):
+    def send_api_simulated_cso(self):  # ids + kinds of the active simulations
         try:
-            payload = {
-                "station_ids": self.simulated_cso_store.get_station_ids(),
-            }
+            simulations = self.simulated_cso_store.get_simulations()
+            payload = {"station_ids": sorted(simulations), "simulations": simulations}
         except Exception as e:
             payload = {"error": str(e)}
         self._send_json(payload)
@@ -241,11 +280,14 @@ class AlertsRoutes:
             if isinstance(station_ids, str):
                 station_ids = [station_ids]
 
+            kind = data.get("kind") or "cso"
+            if kind not in SIM_KINDS:
+                raise ValueError(f"kind must be one of {SIM_KINDS}")
             stations, _ = self._get_dashboard_stations()
             available_station_ids = {station.station_id for station in get_cso_eligible_stations(stations)}
             selected_station_ids = [station_id for station_id in station_ids if station_id in available_station_ids]
-            saved_station_ids = self.simulated_cso_store.set_station_ids(selected_station_ids)
-            self._send_json({"ok": True, "station_ids": saved_station_ids})
+            saved = self.simulated_cso_store.set_simulations({sid: kind for sid in selected_station_ids})
+            self._send_json({"ok": True, "station_ids": sorted(saved), "kind": kind, "simulations": saved})
         except Exception as e:
             self._send_json({"ok": False, "error": str(e)}, status=400)
 
@@ -350,30 +392,25 @@ class AlertsRoutes:
         
         subscriptions = self.subscription_store.list_subscriptions()
 
-        # Fetch real-time SFPUC data
+        # Fetch real-time SFPUC data — the real feed and the simulation overlay
+        # are rendered as two views (tabs)
         try:
-            stations, simulated_station_ids = self._get_dashboard_stations()
-            simulated_station_id_set = set(simulated_station_ids)
-            cso_events = [station for station in stations if station.has_cso]
-            posted_stations = [station for station in stations if station.status.value == "posted"]
-            safe_stations = [station for station in stations if station.status.value == "safe"]
-            not_sampled_stations = [
-                station for station in stations
-                if station.status.value in ("not_sampled", "not_routinely_sampled")
-            ]
-            eligible_cso_stations = get_cso_eligible_stations(stations)
+            live_stations = self.sfpuc_api.fetch_stations()
+            simulations = self.simulated_cso_store.get_simulations()
+            sim_stations = apply_simulated_cso(live_stations, simulations)
+            stations = live_stations
+            simulated_station_ids = sorted(simulations)
+            simulated_station_id_set = set(simulations)
+            eligible_cso_stations = get_cso_eligible_stations(live_stations)
             sfpuc_error = None
         except Exception as e:
-            stations = []
-            cso_events = []
-            posted_stations = []
-            safe_stations = []
-            not_sampled_stations = []
+            live_stations, sim_stations, stations = [], [], []
+            simulations = {}
             eligible_cso_stations = []
             simulated_station_ids = []
             simulated_station_id_set = set()
             sfpuc_error = str(e)
-        
+
         # Fetch combined alerts
         try:
             alerts = self.combined_monitor.get_combined_alerts()
@@ -385,82 +422,9 @@ class AlertsRoutes:
         except Exception:
             lab_results_lookup = {}
         
-        # Count statistics
-        cso_count = len(cso_events)
-        posted_count = len(posted_stations)
-        safe_count = len(safe_stations)
-        not_sampled_count = len(not_sampled_stations)
-        total_stations = len(stations)
-        
-        # Generate CSO alert banner
-        cso_banner = ""
-        if cso_events:
-            cso_locations = ", ".join([e.station_name for e in cso_events])
-            cso_banner = f"""
-            <div class="cso-banner">
-                <div class="cso-icon"><svg class="ic" style="width:48px;height:48px"><use href="#i-octagon-alert"/></svg></div>
-                <div class="cso-content">
-                    <div class="cso-title">ACTIVE COMBINED SEWER OVERFLOW</div>
-                    <div class="cso-message">
-                        CSO detected at: <strong>{cso_locations}</strong>
-                    </div>
-                    <div class="cso-warning">
-                        Sewage discharge has occurred within the last 24-72 hours. Avoid water contact at affected beaches.
-                    </div>
-                </div>
-            </div>
-            """
-        
-        # Generate station cards - sorted by severity
-        station_cards = ""
-        
-        # Track which stations we've already added
-        added_station_ids = set()
-        
-        # CSO stations (highest priority) - use has_cso flag directly
-        for station in stations:
-            if station.has_cso:
-                station_cards += self._generate_station_card(
-                    station,
-                    "cso",
-                    station.station_id in simulated_station_id_set,
-                    lab_results_lookup.get(station.station_name),
-                )
-                added_station_ids.add(station.station_id)
-        
-        # Posted stations (without CSO)
-        for station in posted_stations:
-            if station.station_id not in added_station_ids:
-                station_cards += self._generate_station_card(
-                    station,
-                    "posted",
-                    station.station_id in simulated_station_id_set,
-                    lab_results_lookup.get(station.station_name),
-                )
-                added_station_ids.add(station.station_id)
-        
-        # Safe stations
-        for station in safe_stations:
-            if station.station_id not in added_station_ids:
-                station_cards += self._generate_station_card(
-                    station,
-                    "safe",
-                    station.station_id in simulated_station_id_set,
-                    lab_results_lookup.get(station.station_name),
-                )
-                added_station_ids.add(station.station_id)
-        
-        # Not sampled stations
-        for station in not_sampled_stations:
-            if station.station_id not in added_station_ids:
-                station_cards += self._generate_station_card(
-                    station,
-                    "not_sampled",
-                    station.station_id in simulated_station_id_set,
-                    lab_results_lookup.get(station.station_name),
-                )
-                added_station_ids.add(station.station_id)
-        
+        real = self._status_view(live_stations, {}, lab_results_lookup)
+        sim = self._status_view(sim_stations, simulations, lab_results_lookup)
+
         # Generate alerts section
         alerts_html = ""
         if alerts:
@@ -504,15 +468,22 @@ class AlertsRoutes:
             for station in subscribable_stations
         ) or '<div class="empty-state">No sites are available right now.</div>'
 
+        # Every station has at least one registry outfall, but SFPUC's own feed
+        # only ever POSTED 18 of 20 during the 2016-17 discharges (never China
+        # Beach or Crane Cove) — say so on the form rather than hard-exclude.
+        observed_cso_stations = {
+            sid for sid, oids in STATION_OUTFALLS.items()
+            if any(OUTFALLS[o].evidence == OBSERVED for o in oids)
+        }
         simulation_site_options = "".join(
             f"""
             <label class="checkbox-option">
                 <input type="checkbox" name="station_ids" value="{station.station_id}" {'checked' if station.station_id in simulated_station_id_set else ''}>
-                <span>{station.station_name}</span>
+                <span>{station.station_name}{'' if station.station_id in observed_cso_stations else ' <small class="mute">(never seen posted for a discharge)</small>'}</span>
             </label>
             """
             for station in eligible_cso_stations
-        ) or '<div class="empty-state">No CSO-eligible sites are available right now.</div>'
+        ) or '<div class="empty-state">No sites are available right now.</div>'
 
         station_name_by_id = {
             station.station_id: station.station_name
@@ -540,16 +511,14 @@ class AlertsRoutes:
             for value, label in CARRIER_OPTIONS
         )
 
+        kind_label = {"cso": "CSO", "posted": "bacteria posting"}
         simulated_site_names = [
-            station.station_name
+            f"{station.station_name} ({kind_label.get(simulations.get(station.station_id), 'CSO')})"
             for station in eligible_cso_stations
             if station.station_id in simulated_station_id_set
         ]
-        simulated_sites_html = (
-            ", ".join(simulated_site_names)
-            if simulated_site_names else
-            "None"
-        )
+        simulated_sites_html = ", ".join(simulated_site_names) if simulated_site_names else "None"
+        active_kind = next(iter(simulations.values()), "cso") if simulations else "cso"
         
         return render_template(
             "alerts/dashboard.html",
@@ -558,19 +527,17 @@ class AlertsRoutes:
             surfrider_logo=SURFRIDER_LOGO_URL,
             error_html=error_html,
             rain_html=rain_html,
-            cso_banner=cso_banner,
             tide_html=tide_html,
-            cso_count=cso_count,
-            posted_count=posted_count,
-            safe_count=safe_count,
-            total_stations=total_stations,
+            real=real,
+            sim=sim,
+            simulation_count=len(simulations),
+            active_kind=active_kind,
             carrier_options_html=carrier_options_html,
             subscription_site_options=subscription_site_options,
             simulation_site_options=simulation_site_options,
             simulated_sites_html=simulated_sites_html,
             current_subscription_html=current_subscription_html,
             alerts_html=alerts_html,
-            station_cards=station_cards,
         )
     
     def _generate_station_card(self, station, status_type, is_simulated=False, lab_result=None):
