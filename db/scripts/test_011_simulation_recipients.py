@@ -69,9 +69,10 @@ def cleanup() -> None:
 def main() -> int:
     assert sb.is_configured()
     cleanup()
+    # PostgREST bulk inserts need identical keys on every row
     sb.insert("subscribers", [
-        {"email": EA, "station_ids": [S], "active": True},
-        {"email": EB, "station_ids": [S], "active": True},
+        {"email": EA, "phone_number": "", "carrier": "", "station_ids": [S], "active": True},
+        {"email": EB, "phone_number": "", "carrier": "", "station_ids": [S], "active": True},
         {"email": "", "phone_number": PHONE, "carrier": "tmobile", "station_ids": [S], "active": True},
     ])
     try:
