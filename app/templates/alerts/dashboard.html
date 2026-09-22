@@ -468,7 +468,14 @@
         .subscription-list {
             display: grid;
             gap: 8px;
+            max-height: 440px;          /* scrolls instead of growing the page */
+            overflow-y: auto;
+            padding-right: 6px;
+            scrollbar-gutter: stable;
         }
+        .recipients-block { border: 1px dashed var(--surf-border); border-radius: 14px; padding: 10px 12px; }
+        .recipients-block .checkbox-grid { max-height: 180px; overflow-y: auto; }
+        .recipients-title { font-size: .85em; font-weight: 700; color: #54576F; margin: 0 0 6px; }
 
         .subscription-item {
             border: 1px solid var(--surf-border);
@@ -840,6 +847,13 @@
                     <div class="checkbox-grid">
                         {{ simulation_site_options|safe }}
                     </div>
+                    <div class="recipients-block">
+                        <p class="recipients-title"><svg class="ic brand"><use href="#i-mail"/></svg> Send TEST alerts to</p>
+                        <div class="checkbox-grid">
+                            {{ recipient_options_html|safe }}
+                        </div>
+                        <div class="helper-note" style="margin-top:8px">Nothing ticked = every subscriber of the selected sites, exactly like a real event. Tick names to limit the test to them — they still have to be subscribed to a selected site to receive it.</div>
+                    </div>
                     <div class="button-row">
                         <button class="action-btn secondary" type="submit">Save Simulation</button>
                         <button class="action-btn danger" type="button" onclick="clearSimulation()">Clear Simulation</button>
@@ -889,8 +903,8 @@
             </section>
 
             <section class="panel">
-                <h3>Saved Subscribers</h3>
-                <p>Current email/SMS subscriptions stored on disk for the dashboard.</p>
+                <h3>Saved Subscribers <small class="mute">({{ subscriber_count }})</small></h3>
+                <p>Active email/SMS subscriptions. Scrolls after a handful.</p>
                 <div class="subscription-list">
                     {{ current_subscription_html|safe }}
                 </div>
@@ -972,11 +986,13 @@
             const kindInput = form.querySelector('input[name="kind"]:checked');
             const payload = {
                 kind: kindInput ? kindInput.value : 'cso',
-                station_ids: Array.from(form.querySelectorAll('input[name="station_ids"]:checked')).map((input) => input.value)
+                station_ids: Array.from(form.querySelectorAll('input[name="station_ids"]:checked')).map((input) => input.value),
+                recipients: Array.from(form.querySelectorAll('input[name="recipients"]:checked')).map((input) => input.value)
             };
             try {
                 const data = await postJson('/api/simulations/cso', payload);
-                setResult('simulation-result', `Saved ${data.station_ids.length} simulated ${data.kind === 'posted' ? 'bacteria posting' : 'CSO'} site(s).`);
+                const who = data.recipients && data.recipients.length ? `TEST alerts limited to ${data.recipients.join(', ')}.` : 'TEST alerts go to every subscriber of those sites.';
+                setResult('simulation-result', `Saved ${data.station_ids.length} simulated ${data.kind === 'posted' ? 'bacteria posting' : 'CSO'} site(s). ${who}`);
                 window.location.hash = 'sim';
                 window.setTimeout(() => window.location.reload(), 700);
             } catch (error) {

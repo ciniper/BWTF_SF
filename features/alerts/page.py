@@ -197,7 +197,8 @@ class AlertsRoutes:
     def send_api_simulated_cso(self):  # ids + kinds of the active simulations
         try:
             simulations = self.simulated_cso_store.get_simulations()
-            payload = {"station_ids": sorted(simulations), "simulations": simulations}
+            payload = {"station_ids": sorted(simulations), "simulations": simulations,
+                       "recipients": self.simulated_cso_store.get_recipients()}
         except Exception as e:
             payload = {"error": str(e)}
         self._send_json(payload)
@@ -286,8 +287,12 @@ class AlertsRoutes:
             stations, _ = self._get_dashboard_stations()
             available_station_ids = {station.station_id for station in get_cso_eligible_stations(stations)}
             selected_station_ids = [station_id for station_id in station_ids if station_id in available_station_ids]
-            saved = self.simulated_cso_store.set_simulations({sid: kind for sid in selected_station_ids})
-            self._send_json({"ok": True, "station_ids": sorted(saved), "kind": kind, "simulations": saved})
+            recipients = data.get("recipients") or []
+            if isinstance(recipients, str):
+                recipients = [recipients]
+            saved = self.simulated_cso_store.set_simulations({sid: kind for sid in selected_station_ids}, recipients)
+            self._send_json({"ok": True, "station_ids": sorted(saved), "kind": kind, "simulations": saved,
+                             "recipients": self.simulated_cso_store.get_recipients()})
         except Exception as e:
             self._send_json({"ok": False, "error": str(e)}, status=400)
 
@@ -519,6 +524,24 @@ class AlertsRoutes:
         ]
         simulated_sites_html = ", ".join(simulated_site_names) if simulated_site_names else "None"
         active_kind = next(iter(simulations.values()), "cso") if simulations else "cso"
+        try:
+            sim_recipients = self.simulated_cso_store.get_recipients() or []
+        except Exception:
+            sim_recipients = []
+        if simulations:
+            simulated_sites_html += (" — TEST alerts limited to " + ", ".join(sim_recipients)) if sim_recipients \
+                else " — TEST alerts go to every subscriber of those sites"
+        # Who a simulation may reach. Default (nothing ticked) = every subscriber
+        # of the simulated sites, the real path; ticking names narrows it.
+        recipient_options_html = "".join(
+            f"""
+            <label class="checkbox-option">
+                <input type="checkbox" name="recipients" value="{(sub.email or sub.phone_number).lower()}" {'checked' if (sub.email or sub.phone_number).lower() in sim_recipients else ''}>
+                <span>{sub.email or sub.phone_number} <small class="mute">· {len(sub.station_ids)} site{'s' if len(sub.station_ids) != 1 else ''}</small></span>
+            </label>
+            """
+            for sub in subscriptions if (sub.email or sub.phone_number)
+        ) or '<div class="empty-state">No subscribers yet.</div>'
         
         return render_template(
             "alerts/dashboard.html",
@@ -536,6 +559,8 @@ class AlertsRoutes:
             subscription_site_options=subscription_site_options,
             simulation_site_options=simulation_site_options,
             simulated_sites_html=simulated_sites_html,
+            recipient_options_html=recipient_options_html,
+            subscriber_count=len(subscriptions),
             current_subscription_html=current_subscription_html,
             alerts_html=alerts_html,
         )

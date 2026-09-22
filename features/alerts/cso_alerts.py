@@ -49,16 +49,20 @@ class SimulatedCSOStore:
         if not self._remote:
             self.path.parent.mkdir(parents=True, exist_ok=True)
 
+    def _rows(self) -> list[dict]:
+        """Live simulation rows, tolerating a table that predates 010 (kind)
+        or 011 (recipients)."""
+        for select in ("station_id,kind,recipients", "station_id,kind", "station_id"):
+            try:
+                return sb.select("simulated_cso", {"select": select})
+            except sb.SupabaseError as exc:
+                if not any(col in str(exc) for col in ("kind", "recipients")):
+                    raise
+        return []
+
     def get_simulations(self) -> dict[str, str]:
         if self._remote:
-            try:
-                rows = sb.select("simulated_cso", {"select": "station_id,kind"})
-            except sb.SupabaseError as exc:
-                if "kind" not in str(exc):
-                    raise
-                # migration 010 not applied yet: every simulation is a CSO
-                rows = [{**row, "kind": "cso"} for row in sb.select("simulated_cso", {"select": "station_id"})]
-            return {row["station_id"]: (row.get("kind") or "cso") for row in rows}
+            return {row["station_id"]: (row.get("kind") or "cso") for row in self._rows()}
         if not self.path.exists():
             return {}
         try:
@@ -68,23 +72,48 @@ class SimulatedCSOStore:
         kinds = payload.get("kinds") or {}
         return {sid: kinds.get(sid, "cso") for sid in payload.get("station_ids", [])}
 
-    def set_simulations(self, simulations: dict[str, str]) -> dict[str, str]:
+    def get_recipients(self) -> list[str] | None:
+        """Emails / phone numbers the TEST alerts are limited to; None = every
+        subscriber of the simulated sites (the pre-011 behaviour)."""
+        if self._remote:
+            for row in self._rows():
+                if row.get("recipients"):
+                    return sorted(row["recipients"])
+            return None
+        if not self.path.exists():
+            return None
+        try:
+            payload = json.loads(self.path.read_text() or "{}")
+        except json.JSONDecodeError:
+            return None
+        return sorted(payload["recipients"]) if payload.get("recipients") else None
+
+    def set_simulations(self, simulations: dict[str, str], recipients: list[str] | None = None) -> dict[str, str]:
         normalized = {sid: (kind if kind in SIM_KINDS else "cso")
                       for sid, kind in sorted(simulations.items()) if sid}
+        targets = sorted({r.strip().lower() for r in (recipients or []) if r and r.strip()}) or None
         if self._remote:
             sb.delete("simulated_cso", {"station_id": "neq."})  # all rows
             if normalized:
+                rows = [{"station_id": sid, "kind": kind, "recipients": targets} for sid, kind in normalized.items()]
                 try:
-                    sb.insert("simulated_cso", [{"station_id": sid, "kind": kind} for sid, kind in normalized.items()])
+                    sb.insert("simulated_cso", rows)
                 except sb.SupabaseError as exc:
-                    if "kind" not in str(exc):
+                    msg = str(exc)
+                    if "recipients" in msg:
+                        if targets:
+                            raise RuntimeError("Targeting specific subscribers needs migration 011 (db/migrations/011_simulation_recipients.sql) applied first.") from exc
+                        rows = [{"station_id": sid, "kind": kind} for sid, kind in normalized.items()]
+                    elif "kind" in msg:
+                        if any(kind != "cso" for kind in normalized.values()):
+                            raise RuntimeError("Bacteria-posting simulations need migration 010 (db/migrations/010_simulation_kind.sql) applied first.") from exc
+                        rows = [{"station_id": sid} for sid in normalized]
+                    else:
                         raise
-                    if any(kind != "cso" for kind in normalized.values()):
-                        raise RuntimeError("Bacteria-posting simulations need migration 010 (db/migrations/010_simulation_kind.sql) applied first.") from exc
-                    sb.insert("simulated_cso", [{"station_id": sid} for sid in normalized])
+                    sb.insert("simulated_cso", rows)
             return normalized
         self.path.write_text(json.dumps({
-            "station_ids": sorted(normalized), "kinds": normalized,
+            "station_ids": sorted(normalized), "kinds": normalized, "recipients": targets,
             "updated_at": datetime.utcnow().isoformat(),
         }, indent=2))
         return normalized
