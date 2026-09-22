@@ -342,9 +342,8 @@ class AlertsRoutes:
     def generate_dashboard_html(self):
         """Generate the dashboard HTML with combined data"""
         
-        # Fetch weather/tide data
+        # Rain advisory banner (tide tile retired 2026-09-22)
         rain_html = ""
-        tide_html = ""
         if self.env_context:
             try:
                 rain_advisory = self.env_context.weather.get_rain_advisory()
@@ -374,26 +373,6 @@ class AlertsRoutes:
             except Exception as e:
                 rain_html = f'<div class="error-banner"><svg class="ic warn"><use href="#i-triangle-alert"/></svg> Weather data unavailable: {e}</div>'
             
-            try:
-                tide_info = self.env_context.tides.get_tide_info()
-                if tide_info:
-                    trend_icon = '<svg class="ic brand"><use href="#i-trending-up"/></svg>' if tide_info.current_trend == "rising" else '<svg class="ic brand"><use href="#i-trending-down"/></svg>'
-                    trend_label = tide_info.current_trend.capitalize()
-                    next_high_str = f"{tide_info.next_high.time.strftime('%I:%M %p')} ({tide_info.next_high.height_ft:.1f} ft)" if tide_info.next_high else "N/A"
-                    next_low_str = f"{tide_info.next_low.time.strftime('%I:%M %p')} ({tide_info.next_low.height_ft:.1f} ft)" if tide_info.next_low else "N/A"
-                    
-                    tide_html = f"""
-                    <div class="summary-card total" style="border-top-color: #1abc9c; grid-column: span 1;">
-                        <div class="summary-number" style="font-size: 1.5em;">{trend_icon} {trend_label}</div>
-                        <div class="summary-label"><svg class="ic brand"><use href="#i-waves"/></svg> Tide</div>
-                        <div style="font-size: 0.8em; color: #666; margin-top: 8px;">
-                            Next High: {next_high_str}<br>
-                            Next Low: {next_low_str}
-                        </div>
-                    </div>
-                    """
-            except Exception:
-                pass
         
         subscriptions = self.subscription_store.list_subscriptions()
 
@@ -429,6 +408,18 @@ class AlertsRoutes:
         
         real = self._status_view(live_stations, {}, lab_results_lookup)
         sim = self._status_view(sim_stations, simulations, lab_results_lookup)
+
+        # One feed date for the whole station grid instead of one per card.
+        # Stations are sampled on different days, so show the newest and, when
+        # they differ, the oldest too.
+        feed_dates = sorted({st.sample_date.date() for st in live_stations if st.sample_date})
+        if not feed_dates:
+            feed_date_html = "SFPUC status feed · no sample dates published"
+        elif feed_dates[0] == feed_dates[-1]:
+            feed_date_html = f"SFPUC status feed · samples {feed_dates[-1].strftime('%m/%d/%Y')}"
+        else:
+            feed_date_html = (f"SFPUC status feed · latest samples {feed_dates[-1].strftime('%m/%d/%Y')}"
+                              f" <small>(oldest {feed_dates[0].strftime('%m/%d/%Y')})</small>")
 
         # Generate alerts section
         alerts_html = ""
@@ -547,10 +538,8 @@ class AlertsRoutes:
             "alerts/dashboard.html",
             generated=datetime.now().strftime('%B %d, %Y at %I:%M %p'),
             bwtf_logo=BWTF_LOGO_URL,
-            surfrider_logo=SURFRIDER_LOGO_URL,
             error_html=error_html,
             rain_html=rain_html,
-            tide_html=tide_html,
             real=real,
             sim=sim,
             simulation_count=len(simulations),
@@ -563,6 +552,7 @@ class AlertsRoutes:
             subscriber_count=len(subscriptions),
             current_subscription_html=current_subscription_html,
             alerts_html=alerts_html,
+            feed_date_html=feed_date_html,
         )
     
     def _generate_station_card(self, station, status_type, is_simulated=False, lab_result=None):
@@ -596,16 +586,16 @@ class AlertsRoutes:
                 """
             lab_details_html = f"""
                 <div class="station-meta">
-                    <span>Latest SF Gov lab sample: {lab_sample_date}</span>
-                    <a class="lab-link" href="{lab_result['results_url']}" target="_blank" rel="noopener noreferrer">View results</a>
+                    <span>Latest sample data: <a class="lab-link" href="{lab_result['results_url']}" target="_blank" rel="noopener noreferrer" title="Open the lab results on SF Gov Open Data">{lab_sample_date}</a></span>
+                    <span>ID: {station.station_id}</span>
                 </div>
                 {pending_html}
             """
         else:
-            lab_details_html = """
+            lab_details_html = f"""
                 <div class="station-meta">
-                    <span>Latest SF Gov lab sample: N/A</span>
-                    <span></span>
+                    <span>Latest sample data: N/A</span>
+                    <span>ID: {station.station_id}</span>
                 </div>
             """
         
@@ -644,10 +634,6 @@ class AlertsRoutes:
                 <div class="station-header">
                     <h3>{station.station_name}</h3>
                     <span class="status-badge {status_type}">{status_icon} {status_label}</span>
-                </div>
-                <div class="station-meta">
-                    <span>SFPUC status feed date: {status_feed_date}</span>
-                    <span>ID: {station.station_id}</span>
                 </div>
                 {lab_details_html}
                 {warning_html}

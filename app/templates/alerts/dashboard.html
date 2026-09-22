@@ -555,6 +555,17 @@
             letter-spacing: 0.1em;
         }
         
+        .stations-section h2 .feed-date {
+            display: inline-block;
+            margin-left: 12px;
+            font-weight: 500;
+            font-size: 0.8em;
+            letter-spacing: 0;
+            text-transform: none;
+            color: #54576F;
+        }
+        .stations-section h2 .feed-date small { color: #8a93a3; }
+
         .stations-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -764,9 +775,6 @@
                     <div class="hero-logo bwtf">
                         <img src="{{ bwtf_logo }}" alt="Blue Water Task Force logo">
                     </div>
-                    <div class="hero-logo surfrider">
-                        <img src="{{ surfrider_logo }}" alt="Surfrider Foundation logo">
-                    </div>
                     <button class="refresh-btn" onclick="location.reload()"><svg class="ic"><use href="#i-refresh-cw"/></svg> Refresh</button>
                 </div>
             </div>
@@ -798,7 +806,6 @@
                     <div class="summary-number">{{ real.total_stations }}</div>
                     <div class="summary-label"><svg class="ic brand"><use href="#i-map-pin"/></svg> Total Stations</div>
                 </div>
-                {{ tide_html|safe }}
             </div>
         <div class="alerts-section">
             <h2 class="section-title"><span class="ictile"><svg class="ic"><use href="#i-bell"/></svg></span> Active Alerts</h2>
@@ -806,7 +813,7 @@
         </div>
 
             <div class="stations-section">
-                <h2><span class="ictile"><svg class="ic"><use href="#i-map-pin"/></svg></span> Beach Stations</h2>
+                <h2><span class="ictile"><svg class="ic"><use href="#i-map-pin"/></svg></span> Beach Stations <span class="feed-date">{{ feed_date_html|safe }}</span></h2>
                 <div class="stations-grid">
                     {{ real.station_cards|safe }}
                 </div>
@@ -873,7 +880,7 @@
 
             </div>
             <div class="stations-section">
-                <h2><span class="ictile"><svg class="ic"><use href="#i-flask"/></svg></span> Beach Stations — with simulations</h2>
+                <h2><span class="ictile"><svg class="ic"><use href="#i-flask"/></svg></span> Beach Stations — with simulations <span class="feed-date">{{ feed_date_html|safe }}</span></h2>
                 <div class="stations-grid">
                     {{ sim.station_cards|safe }}
                 </div>
