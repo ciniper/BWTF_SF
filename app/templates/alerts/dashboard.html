@@ -59,15 +59,6 @@
             border: 1px solid rgba(255,255,255,0.16);
         }
 
-        header::after {
-            content: "";
-            position: absolute;
-            inset: auto -80px -100px auto;
-            width: 320px;
-            height: 320px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(136, 200, 210, 0.34) 0%, rgba(136, 200, 210, 0) 72%);
-        }
         
         header h1 {
             color: white;
@@ -118,37 +109,20 @@
             text-transform: uppercase;
         }
 
+        /* Logo sits directly on the hero blue, as on the landing page; the
+           refresh button hangs beneath it. */
         .hero-logos {
             display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            align-items: center;
-            justify-content: flex-end;
-            max-width: 360px;
-        }
-
-        .hero-logo {
-            border-radius: 18px;
-            padding: 12px 14px;
-            backdrop-filter: blur(4px);
-            box-shadow: 0 12px 24px rgba(0,0,0,0.16);
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 14px;
         }
 
         .hero-logo img {
             display: block;
-            max-width: 100%;
-            height: auto;
-        }
-
-        .hero-logo.bwtf {
-            background: rgba(49, 127, 178, 0.90);
-            border: 1px solid rgba(255,255,255,0.18);
-            width: 220px;
-        }
-
-        .hero-logo.surfrider {
-            background: rgba(255,255,255,0.96);
-            width: 280px;
+            height: 80px;
+            width: auto;
+            opacity: .95;
         }
 
         .hero-meta {
@@ -730,12 +704,7 @@
             }
 
             .hero-logos {
-                justify-content: flex-start;
-            }
-
-            .hero-logo.bwtf,
-            .hero-logo.surfrider {
-                width: min(100%, 280px);
+                align-items: flex-start;
             }
             
             .summary {
@@ -772,7 +741,7 @@
                     </div>
                 </div>
                 <div class="hero-logos">
-                    <div class="hero-logo bwtf">
+                    <div class="hero-logo">
                         <img src="{{ bwtf_logo }}" alt="Blue Water Task Force logo">
                     </div>
                     <button class="refresh-btn" onclick="location.reload()"><svg class="ic"><use href="#i-refresh-cw"/></svg> Refresh</button>
