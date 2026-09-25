@@ -140,6 +140,8 @@ def load_model_set(name: str | None) -> tuple[dict, dict, dict]:
         meta = {"name": name, "label": f"{name} (candidate, not served)", "served": False, "version": name,
                 "trained_at": manifest.get("created_at"), "train_window": ev.get("train_window"), "feature_set": ev.get("feature_set"),
                 "note": manifest.get("note"), "family": manifest.get("family"), "C_grid": manifest.get("C_grid"),
+                "stage1_from": (manifest.get("stage1") or {}).get("from", "fit"),
+                "stage2": candidates.load_stage2(name),   # None = served v4 stage 2
                 "scorecard": candidates.candidate_dir(name) / "scorecard.json.gz"}
     for m in models.values():
         assert m["features"] == features, "feature contract drifted"
@@ -209,6 +211,13 @@ def main(model_name: str | None = None) -> None:
                           "target": h.get("target"), "rain_source": h.get("rain_source")}
     ev = json.loads((SERVE_DIR / "eval_report.json").read_text())
     impact_raw = json.loads((SERVE_DIR / "impact_table.json").read_text())
+    # a set's stage 2: the served v4 table and no split, or its variant's refit table + outfall shares
+    s2 = meta.get("stage2")
+    if s2 and s2.get("impact_table"):
+        impact_raw = s2["impact_table"]
+    stage2_out = {"variant": (s2 or {}).get("variant", "v4"), "impact_table_refit": bool(s2 and s2.get("impact_table"))}
+    if s2 and s2.get("variant", "v4") != "v4":
+        stage2_out.update({k: s2.get(k) for k in ("shares", "group_outfalls", "median_event_volume_mg", "definition", "fitted_at", "impact_table_note")})
     with gzip.open(meta["scorecard"], "rt") as f:
         sc = json.load(f)
     sc_by_date = {d["date"]: d for d in sc["days"]}
@@ -260,8 +269,10 @@ def main(model_name: str | None = None) -> None:
     data = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "model_set": {"name": meta["name"], "label": meta["label"], "served": meta["served"], "note": meta.get("note"),
-                      "families": families, "C_grid": meta.get("C_grid"),
-                      "stage2_from": "v4 (served) — volume heads and impact table are shared by every model set"},
+                      "families": families, "C_grid": meta.get("C_grid"), "stage1_from": meta.get("stage1_from", "v4" if meta["served"] else "fit"),
+                      "stage2": stage2_out,
+                      "stage2_from": "volume heads: served v4, shared by every set; impact table and split: this set's stage 2 variant"},
+        "stage2": stage2_out,
         "trained_at": meta.get("trained_at"), "version": meta.get("version"), "feature_set": meta.get("feature_set"),
         "train_window": meta.get("train_window"), "holdout_start": sc.get("holdout_start"),
         "trained_through": sc.get("trained_through") or sc["span"][1], "rescored_at": sc.get("rescored_at"), "span": sc["span"],

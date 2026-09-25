@@ -102,13 +102,17 @@ def impact_fraction(table: dict, group: str, days_since: int, volume_mg: float) 
 
 
 def compose(table: dict, groups_by_basin: dict, day_probs: list, day_volumes: list, idx: int,
-            day_dates: list = None, observed: dict = None) -> tuple:
+            day_dates: list = None, observed: dict = None, split=None) -> tuple:
     """Composed beach-impact risk for day `idx` of a daily table.
 
     day_probs[j]   {basin_key: P(discharge on day j)}
     day_volumes[j] {basin_key: expected discharge volume (MG) on day j}
     observed       {date: {basin_key}} — days a discharge was OBSERVED there;
                    certainty (p=1) replaces the prediction for those days.
+    split          optional callable (group, p_basin, volume) → p_group: a
+                   stage 2 variant's way of turning the basin probability into
+                   the group's (src/models/stage2.py). None = the served v4
+                   composition, byte-identical to before this hook existed.
 
     Returns (per_basin, per_group): per_basin[basin_key] = worst group in the
     basin, plus "citywide" = worst basin.
@@ -129,6 +133,8 @@ def compose(table: dict, groups_by_basin: dict, day_probs: list, day_volumes: li
                 if not p:
                     continue
                 vol = day_volumes[j].get(basin_key, 0.0) if j < len(day_volumes) else 0.0
+                if split is not None:
+                    p = split(group, p, vol)
                 x = 1.0 if k == 0 else impact_fraction(table, group, k, vol)
                 no_impact *= 1.0 - p * x
             vals[group] = round(1.0 - no_impact, 3)

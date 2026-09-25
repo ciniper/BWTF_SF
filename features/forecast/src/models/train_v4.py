@@ -375,15 +375,22 @@ def load_samples() -> pd.DataFrame:
     return allrows[["station", "sample_date", "analyte", "exceeds_standard", "source", "value"]]
 
 
-def fit_impact_table(frames: dict, chosen: dict, heads: dict, samples: pd.DataFrame) -> tuple:
+def fit_impact_table(frames: dict, chosen: dict, heads: dict, samples: pd.DataFrame,
+                     event_days: dict | None = None) -> tuple:
     """P(group's beaches elevated | days since the basin's last discharge, size).
     Unknown volumes (archive events) use the volume head's prediction — the
-    same thing serving does. Also returns the outfall-count diagnostic."""
+    same thing serving does. Also returns the outfall-count diagnostic.
+    ``event_days`` ({group: set of dates}) restricts a group's "discharge
+    days" to those attributed to it — the outfall-split stage 2 variant fits
+    its table that way (src/models/stage2.group_event_days); None = the
+    basin's every discharge day, as v4 was fit."""
     table, outfall_diag = {}, {}
     for group, (basin, stations) in SITE_GROUPS.items():
         df = frames[chosen[basin]]
         sub = df[df[f"{basin}_covered"] == 1]
         ev = sub[sub[f"{basin}_csd"] == 1].copy()
+        if event_days is not None and group in event_days:
+            ev = ev[ev["date"].isin(event_days[group])]
         if basin in heads:
             pred = predicted_volume(heads[basin], ev)
             ev["vol"] = np.where(ev[f"{basin}_volume_known"] == 1, ev[f"{basin}_volume_mg"], pred)
@@ -458,8 +465,13 @@ def posted_stations_by_day(frames: dict, arch: dict, archive_used: bool) -> dict
 
 
 def build_scorecard(frames: dict, chosen: dict, finals: dict, holdout_models: dict, heads: dict,
-                    impact_raw: dict, samples: pd.DataFrame, arch: dict, archive_used: bool, features: list) -> dict:
-    table = smooth_table(impact_raw)
+                    impact_raw: dict, samples: pd.DataFrame, arch: dict, archive_used: bool, features: list,
+                    stage2: dict | None = None) -> dict:
+    """``stage2`` = a fitted variant spec (src/models/stage2.py) with an optional
+    refit ``impact_table``; None = the served v4 composition."""
+    import stage2 as _s2
+    table = smooth_table(stage2["impact_table"]) if stage2 and stage2.get("impact_table") else smooth_table(impact_raw)
+    split = _s2.make_split(stage2)
     base = frames["avg"]
     n = len(base)
     dates = list(base["date"])
@@ -491,10 +503,10 @@ def build_scorecard(frames: dict, chosen: dict, finals: dict, holdout_models: di
     days = []
     for i, d in enumerate(dates):
         row = base.iloc[i]
-        per_basin, per_group = compose(table, GROUPS_BY_BASIN, day_probs, day_vols, i)
+        per_basin, per_group = compose(table, GROUPS_BY_BASIN, day_probs, day_vols, i, split=split)
         if day_probs_h[i]:
             probs_h = [day_probs_h[j] if day_probs_h[j] else day_probs[j] for j in range(n)]
-            _, per_group_h = compose(table, GROUPS_BY_BASIN, probs_h, day_vols, i)
+            _, per_group_h = compose(table, GROUPS_BY_BASIN, probs_h, day_vols, i, split=split)
         else:
             per_group_h = None
         basins = {}
@@ -536,7 +548,8 @@ def build_scorecard(frames: dict, chosen: dict, finals: dict, holdout_models: di
             "basins": {BASIN_KEYS[b]: {"name": b, "rain_source": chosen[b]} for b in APP_BASINS},
             "groups": {g: {"basin": BASIN_KEYS[b], "stations": sids} for g, (b, sids) in SITE_GROUPS.items()},
             "zones": {zk: {"label": ZONES[zk].label, "groups": gs} for zk, gs in ZONE_GROUPS.items()},
-            "zone_confusion_holdout": confusion, "days": days}
+            "zone_confusion_holdout": confusion, "days": days,
+            "stage2": {"variant": (stage2 or {}).get("variant", "v4"), "impact_table_refit": bool(stage2 and stage2.get("impact_table"))}}
 
 
 # ── Backtest ────────────────────────────────────────────────────────────────

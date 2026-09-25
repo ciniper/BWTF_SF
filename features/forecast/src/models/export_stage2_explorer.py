@@ -69,8 +69,10 @@ def load_sets() -> list[dict]:
         except Exception as exc:  # noqa: BLE001
             print(f"candidate {name}: cannot unpickle ({exc}); skipped")
             continue
+        s2 = candidates.load_stage2(name)
         sets.append({"name": name, "label": f"{name} (candidate)", "served": False, "models": models,
-                     "scorecard": candidates.load_scorecard(name), "note": man.get("note"), "family": man.get("family")})
+                     "scorecard": candidates.load_scorecard(name), "note": man.get("note"), "family": man.get("family"),
+                     "stage2": s2, "stage1_from": (man.get("stage1") or {}).get("from", "fit")})
     return sets
 
 
@@ -108,7 +110,7 @@ def main() -> None:
             vol_pred[key] = [0.0] * n
 
     # per model set: stage-1 probabilities per basin per day (exactly as build_scorecard computes them)
-    model_sets = []
+    model_sets, stage2_variants = [], {}
     for s in sets:
         probs, spec = {}, {}
         for basin in T.APP_BASINS:
@@ -123,9 +125,25 @@ def main() -> None:
         sc = s["scorecard"]
         by_date = {d["date"]: d for d in sc.get("days", [])}
         stored_groups = {g: [_r((by_date.get(d, {}).get("groups", {}).get(g) or {}).get("risk"), 3) for d in dates] for g in SITE_GROUPS}
+        s2 = s.get("stage2")
+        refit = bool(s2 and s2.get("impact_table"))
+        stage2_out = {"variant": (s2 or {}).get("variant", "v4"), "impact_table_refit": refit}
+        if s2 and s2.get("variant", "v4") != "v4":
+            stage2_out.update({"shares": s2["shares"], "group_outfalls": s2["group_outfalls"],
+                               "median_event_volume_mg": s2["median_event_volume_mg"], "definition": s2.get("definition"),
+                               "fitted_at": s2.get("fitted_at"), "impact_table_note": s2.get("impact_table_note")})
+            if s2["variant"] not in stage2_variants:
+                stage2_variants[s2["variant"]] = {"impact_raw": s2.get("impact_table"), "impact_smoothed": smooth_table(s2["impact_table"]) if refit else None,
+                                                  "shares": s2["shares"], "group_outfalls": s2["group_outfalls"],
+                                                  "median_event_volume_mg": s2["median_event_volume_mg"], "definition": s2.get("definition"),
+                                                  "impact_table_note": s2.get("impact_table_note"), "train_window": s2.get("train_window")}
         model_sets.append({"name": s["name"], "label": s["label"], "served": s["served"], "note": s["note"], "family": s["family"],
+                           "stage1_from": s.get("stage1_from", "v4" if s["served"] else "fit"),
                            "trained_through": sc.get("trained_through") or (sc.get("span") or [None, None])[1],
-                           "span": sc.get("span"), "probs": probs, "spec": spec, "stored_groups": stored_groups})
+                           "span": sc.get("span"), "probs": probs, "spec": spec, "stored_groups": stored_groups,
+                           "stage2": stage2_out,
+                           # the table this set composes with (smoothed, as serving/build_scorecard do); None = the served one
+                           "impact_table": smooth_table(s2["impact_table"]) if refit else None})
 
     # labels straight from the served artifact (identical across sets)
     labels = {"basin_y": {}, "basin_vol": {}, "group_elevated": {}, "group_n": {}, "zone_discharge": {}}
@@ -172,7 +190,7 @@ def main() -> None:
         "zones": {zk: {"label": ZONES[zk].label, "groups": gs} for zk, gs in ZONE_GROUPS.items()},
         "volume_heads": vol_heads,
         "dates": dates, "rain": rain, "post_training": post_training, "vol_pred": vol_pred, "labels": labels,
-        "model_sets": model_sets,
+        "model_sets": model_sets, "stage2_variants": stage2_variants,
         "live_override": "Live serving adds one input the hindcast does not have: a day the watcher saw a CSO onset in a basin gets p = 1 for that basin (live_dashboard._fetch_observed_cso → impact.compose observed=…). A day with no flag keeps the model's probability — absence of a flag is never treated as 'no discharge' (see TODO: discount by the feed's miss rate).",
     }
     html = TEMPLATE.read_text().replace("__DATA__", json.dumps(data, separators=(",", ":"), default=str))

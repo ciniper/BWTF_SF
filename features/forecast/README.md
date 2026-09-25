@@ -177,6 +177,8 @@ against scikit-learn / the stored scorecard artifact.
 venv/bin/python features/forecast/src/models/export_model_explorer.py                  # served v4: trees
 venv/bin/python features/forecast/src/models/export_model_explorer.py --model logit_v1 # a candidate: weights
 venv/bin/python features/forecast/src/models/export_stage2_explorer.py                 # stage 2, all model sets
+venv/bin/python features/forecast/src/models/stage2_variants.py fit                 # fit a stage 2 variant (outfall split)
+venv/bin/python features/forecast/src/models/stage2_variants.py save --stage1 v4 --variant outfall_split_v1 --name v4_split
 ```
 
 Re-run after `train_v4.py` / `--rescore` / `leaderboard.py --save`.

@@ -233,7 +233,8 @@ def test_model_sets_are_selectable_but_never_served():
     from features.forecast import live_dashboard as ld
     eng = ld.LiveData.__new__(ld.LiveData)
     models = eng.list_models()
-    assert models[0] == {"key": "", "label": "v4 (served)", "family": "gb", "served": True}
+    assert models[0] == {"key": "", "label": "v4 (served)", "family": "gb", "served": True, "stage1": "v4", "stage2": "v4"}
+    assert all(m.get("stage2") in ("v4", "outfall_split_v1") for m in models), [m.get("stage2") for m in models]
     assert all(m["served"] is False for m in models[1:])
     assert "error" in eng.get_scorecard("2024-01-13", model="../x")
     assert "error" in eng.get_scorecard("2024-01-13", model="doesnotexist")
@@ -283,6 +284,67 @@ def test_candidate_models_unpickle_anywhere_and_explorers_are_built():
         text = p.read_text()
         assert "__DATA__" not in text and ('"model_sets"' in text or '"models"' in text), f"{name}: data not injected"
         print(f"   report {name}: {p.stat().st_size / 1e6:.2f} MB")
+
+
+def test_stage2_variants_pair_with_any_stage1_and_v4_is_untouched():
+    """A stage 2 variant is a fitted spec; a candidate may carry one. v4's
+    composition must be byte-identical with the hook in place (split=None);
+    the outfall shares must be probabilities and the identity for groups whose
+    outfalls are the whole basin; a candidate whose stage 1 is v4's must carry
+    v4's exact stage-1 probabilities and a faithful holdout refit."""
+    root = Path(__file__).resolve().parents[1] / "features" / "forecast"
+    sys.path.insert(0, str(root / "src" / "models"))
+    import candidates as C
+    import stage2 as S2
+    from impact import compose
+    # 1. the hook: split=None composes exactly as before
+    table = {"G": {"basin": "Westside", "median_event_volume_mg": 3.7, "buckets": {
+        "baseline_no_recent_discharge": {"p_elevated": 0.04, "n": 100}, "d0_large": {"p_elevated": 0.9, "n": 10},
+        "d1_large": {"p_elevated": 0.5, "n": 10}, "d1_small": {"p_elevated": 0.3, "n": 10}}}}
+    probs = [{"westside": 0.9}, {"westside": 0.001}]
+    vols = [{"westside": 50.0}, {"westside": 1.0}]
+    a = compose(table, {"westside": ["G"]}, probs, vols, 1)
+    b = compose(table, {"westside": ["G"]}, probs, vols, 1, split=None)
+    assert a == b, (a, b)
+    halve = compose(table, {"westside": ["G"]}, probs, vols, 1, split=lambda g, p, v: p * 0.5)
+    assert halve[1]["G"] < a[1]["G"], "a split below 1 must lower the group risk"
+    # 2. the fitted variant on disk
+    spec = S2.load_variant("outfall_split_v1")
+    assert spec["variant"] == "outfall_split_v1" and spec.get("impact_table"), "variant file incomplete"
+    for g, sh in spec["shares"].items():
+        for size in ("large", "small", "all"):
+            p = sh[size]["p"]
+            assert p is None or 0.0 <= p <= 1.0, (g, size, p)
+        assert set(spec["group_outfalls"][g]) == set(S2.outfalls_posting(g)), g
+    for g in ("Mission Creek", "Southeast"):
+        assert spec["shares"][g]["all"]["p"] == 1.0, f"{g}: its outfalls are the whole basin, the split must be the identity"
+    assert spec["shares"]["Ocean Beach"]["all"]["p"] < 1.0 and spec["shares"]["Baker-China"]["all"]["p"] < 1.0, "Westside groups must split"
+    print(f"   outfall_split_v1: " + ", ".join(f"{g} {sh['all']['p']:.2f}" for g, sh in spec["shares"].items()))
+    # 3. candidates carrying it
+    root_sc = json.load(gzip.open(root / "data" / "models" / "scorecard.json.gz"))
+    served = {d["date"]: d for d in root_sc["days"]}
+    n_variant = 0
+    for m in C.list_candidates():
+        s2 = m.get("stage2") or {}
+        sc = C.load_scorecard(m["name"])
+        assert (sc.get("stage2") or {}).get("variant", "v4") == s2.get("variant", "v4"), m["name"]
+        if s2.get("variant", "v4") == "v4":
+            continue
+        n_variant += 1
+        assert C.load_stage2(m["name"]), f"{m['name']}: stage2.json missing"
+        hold = [d for d in sc["days"] if d["basins"]["westside"].get("ph") is not None]
+        assert hold, f"{m['name']}: no holdout probabilities — the holdout siblings were not refit"
+        if (m.get("stage1") or {}).get("from") == "v4":
+            worst_p = max(abs(d["basins"][k]["p"] - served[d["date"]]["basins"][k]["p"]) for d in sc["days"] for k in d["basins"] if d["date"] in served)
+            worst_ph = max(abs(d["basins"][k]["ph"] - served[d["date"]]["basins"][k]["ph"]) for d in hold for k in d["basins"]
+                           if d["date"] in served and d["basins"][k].get("ph") is not None and served[d["date"]]["basins"][k].get("ph") is not None)
+            assert worst_p == 0.0, f"{m['name']}: stage 1 is v4's, probabilities must be identical (worst {worst_p})"
+            assert worst_ph <= 0.001, f"{m['name']}: holdout refit drifted from v4's stored ph (worst {worst_ph})"
+            # and the composition differs only where the split bites (Westside / North Shore groups)
+            east_same = all(d["groups"]["Southeast"]["risk"] == served[d["date"]]["groups"]["Southeast"]["risk"] for d in sc["days"] if d["date"] in served)
+            assert east_same, f"{m['name']}: Southeast group must be unchanged by the split"
+            print(f"   {m['name']}: stage 1 identical to v4, holdout refit within {worst_ph:.4f}, Southeast untouched")
+    assert n_variant >= 1, "expected at least one candidate on a stage 2 variant"
 
 
 if __name__ == "__main__":

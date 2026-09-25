@@ -134,7 +134,8 @@ a{color:#0072BC}
 <p class="lead">A discharge contaminates beaches for days. The impact table is empirical: for each beach group, how often its samples were over standard k days after a discharge, split by discharge size, with the dry-weather background removed. The displayed risk composes the last 8 days of discharge probabilities with that decay. A discharge day itself is always a stay-out day (x(0) = 1).</p>
 <div class="formula">risk(D) = 1 − ∏<sub>k=0..7</sub> ( 1 − p<sub>discharge</sub>(D−k) · x(k, size(D−k)) )      with x(0, ·) = 1
 x(k, size) = attributable P(elevated) = (p<sub>table</sub> − baseline) / (1 − baseline), blended small↔large by volume / (volume + median event)</div>
-<div class="controls" style="margin-top:12px"><label>Table <select id="impactMode"><option value="impact_smoothed">smoothed (served)</option><option value="impact_raw">raw fit</option></select></label><span class="fine">Smoothing = weighted pool-adjacent-violators: each curve is forced non-increasing over days since discharge, because contamination decays.</span></div>
+<div id="splitInfo"></div>
+<div class="controls" style="margin-top:12px"><label>Table <select id="impactMode"><option value="impact_smoothed">smoothed (as composed)</option><option value="impact_raw">raw fit</option></select></label><span class="fine">Smoothing = weighted pool-adjacent-violators: each curve is forced non-increasing over days since discharge, because contamination decays.</span></div>
 <div id="impactTables" class="grid g2"></div>
 <h3>Walk through today's composition</h3>
 <div class="controls"><label>Group <select id="walkGroup"></select></label></div>
@@ -182,7 +183,7 @@ document.title = 'How the SF CSO forecast works — ' + MS.name + ' model explor
 document.getElementById('title').textContent = 'How the SF CSO forecast works' + (MS.served ? '' : ' — ' + MS.name + ' candidate');
 document.getElementById('sub').textContent = MS.served
   ? 'The served v4 models, opened up: where the rain numbers come from, what the models are given, the trees they are made of, and how a discharge probability becomes a beach-risk percentage. Everything on this page is computed from the deployed model files — the page runs the real trees in your browser.'
-  : `The ${MS.name} candidate set, opened up — a ${FAMILY_LABEL}. It is NOT what the live forecast runs; it exists to be compared with v4 in the Model check. Same rain sources, same 19 features, same stage 2 (the served volume heads and impact table); only the stage-1 arithmetic differs, and the page runs that arithmetic from the candidate's own weights. ${MS.note ? MS.note : ''}`;
+  : `The ${MS.name} candidate set, opened up — stage 1 is a ${FAMILY_LABEL}${MS.stage1_from && MS.stage1_from !== 'fit' ? ' taken from ' + MS.stage1_from : ''}; stage 2 is ${MS.stage2 && MS.stage2.variant !== 'v4' ? 'the ' + MS.stage2.variant + ' variant (outfall shares' + (MS.stage2.impact_table_refit ? ', impact table refit' : '') + ')' : 'the served v4 composition'}. It is NOT what the live forecast runs; it exists to be compared with v4 in the Model check on identical days and labels. Same rain gauges, same 19 features, same volume heads; the page runs this set's own arithmetic. ${MS.note ? MS.note : ''}`;
 const nHinge = ANY_LOGIT ? (Object.values(D.models).find(m => famOf(m) === 'logit').coef.length - D.features.all.length) : 0;
 document.getElementById('meta').innerHTML = [
   (MS.served ? 'served models ' : 'candidate ') + esc(D.version) + ' · fit ' + esc((D.trained_at||'').slice(0,10)),
@@ -190,7 +191,7 @@ document.getElementById('meta').innerHTML = [
   'holdout from ' + esc(D.holdout_start),
   D.rescored_at ? 'scorecard rescored through ' + esc(D.span[1]) : '',
   ANY_LOGIT ? esc(D.features.all.length) + ' features + ' + nHinge + ' hinge terms · L2 logistic, C per basin' : esc(D.features.all.length) + ' features · ' + esc(D.model_params.n_estimators) + ' trees × depth ' + esc(D.model_params.max_depth) + ' per model',
-  MS.served ? '' : 'stage 2 shared with v4',
+  MS.served ? '' : (MS.stage2 && MS.stage2.variant !== 'v4' ? 'stage 2: ' + esc(MS.stage2.variant) + (MS.stage2.impact_table_refit ? ' (impact table refit)' : '') : 'stage 2: v4 (served composition)'),
 ].filter(Boolean).map(t => '<span>' + t + '</span>').join('');
 document.getElementById('genAt').textContent = D.generated_at;
 document.getElementById('setName').textContent = MS.label;
@@ -319,12 +320,23 @@ function impactFraction(table, group, k, vol) {
   const med = gt.median_event_volume_mg || 1, wl = vol / (vol + med);
   return wl * xl + (1 - wl) * xs;
 }
+// stage 2 variant (port of src/models/stage2.group_share): p_group = p_basin × blended outfall share
+const SPLIT = (D.stage2 && D.stage2.variant && D.stage2.variant !== 'v4') ? D.stage2 : null;
+function shareOf(spec, g, vol) {
+  const s = (spec.shares || {})[g]; if (!s) return 1;
+  const med = (spec.median_event_volume_mg || {})[g] || 1;
+  let gl = (s.large || {}).p, gs = (s.small || {}).p; const ga = (s.all || {}).p;
+  if (gl == null && gs == null) return ga == null ? 1 : ga;
+  if (gl == null) gl = gs; if (gs == null) gs = gl;
+  const w = vol / (vol + med); return w * gl + (1 - w) * gs;
+}
 function compose(table, probs, vols, idx) {
   const perGroup = {}, perBasin = {}, terms = {};
   for (const bk of BASINS) { let best = 0;
     for (const g of D.basins[bk].groups) { let ni = 1; terms[g] = [];
-      for (let k = 0; k < 8; k++) { const j = idx - k; if (j < 0) continue; const p = probs[j][bk]; const vol = (vols[j] || {})[bk] || 0; const x = k === 0 ? 1 : impactFraction(table, g, k, vol);
-        terms[g].push({k, j, p, vol, x, factor: p ? 1 - p * x : 1}); if (!p) continue; ni *= 1 - p * x; }
+      for (let k = 0; k < 8; k++) { const j = idx - k; if (j < 0) continue; const pb = probs[j][bk]; const vol = (vols[j] || {})[bk] || 0; const x = k === 0 ? 1 : impactFraction(table, g, k, vol);
+        const share = (pb && SPLIT) ? shareOf(SPLIT, g, vol) : 1, p = pb * share;
+        terms[g].push({k, j, pb, share, p, vol, x, factor: p ? 1 - p * x : 1}); if (!p) continue; ni *= 1 - p * x; }
       const r = Math.round((1 - ni) * 1000) / 1000; perGroup[g] = r; best = Math.max(best, r); }
     perBasin[bk] = best; }
   return {perGroup, perBasin, terms};
@@ -558,13 +570,23 @@ function renderImpact() {
 }
 document.getElementById('impactMode').addEventListener('change', renderImpact);
 renderImpact();
+(function splitInfo() {
+  const el = document.getElementById('splitInfo');
+  if (!SPLIT) { el.innerHTML = `<p class="fine" style="margin-top:10px">Stage 2 variant: <b>v4</b> — every beach group in a basin composes the basin's whole probability. (The stage 2 explorer shows the outfall-split alternative.)</p>`; return; }
+  const rows = Object.keys(D.groups).map(g => { const sh = (SPLIT.shares || {})[g] || {}, outs = (SPLIT.group_outfalls || {})[g] || [], med = (SPLIT.median_event_volume_mg || {})[g];
+    const c = s => s && s.p != null ? `${(s.p*100).toFixed(0)}% <span class="fine">(${s.n})</span>` : '—';
+    return `<tr><td><b>${esc(g)}</b></td><td class="fine"><code>${outs.map(esc).join('</code> <code>')}</code></td><td class="num">${c(sh.large)}</td><td class="num">${c(sh.small)}</td><td class="num">${c(sh.all)}</td></tr>`; }).join('');
+  el.innerHTML = `<div class="card" style="margin-top:12px"><b class="t">Stage 2 variant: ${esc(SPLIT.variant)}${D.stage2.impact_table_refit ? ' <span class="badge info">impact table refit on group-attributed days</span>' : ''}</b>
+    <p class="fine" style="margin:0 0 8px">${esc(SPLIT.definition || '')}. The share is the fraction of the basin's CIWQS discharge days (by size class; n in brackets) on which at least one outfall posting the group's beaches discharged. Where the group's outfalls are the whole basin the share is 1.</p>
+    <table><tr><th>Group</th><th>posted by</th><th class="num">large</th><th class="num">small</th><th class="num">all</th></tr>${rows}</table></div>`;
+})();
 (function walkInit() { const sel = document.getElementById('walkGroup'); sel.innerHTML = Object.keys(D.groups).map(g => `<option value="${esc(g)}">${esc(g)}</option>`).join(''); sel.addEventListener('change', renderWalk); })();
 function renderWalk() {
   if (!CURRENT) return;
   const g = document.getElementById('walkGroup').value, bk = D.groups[g].basin, terms = CURRENT.comp.terms[g] || [];
-  let prod = 1; const rows = ['<tr><th>k</th><th>day</th><th class="num">P(discharge) ' + esc(nameOf(bk)) + '</th><th class="num">expected MG</th><th class="num">x(k, size)</th><th class="num">1 − p·x</th><th class="num">running ∏</th></tr>'];
-  for (const t of terms) { prod *= t.factor; rows.push(`<tr><td>${t.k}</td><td>${t.k === 0 ? 'today' : esc(S.dates[t.j].slice(5))}</td><td class="num">${pct(t.p)}</td><td class="num">${t.vol ? f2(t.vol) : '—'}</td><td class="num">${t.k === 0 ? '1 (discharge day)' : f3(t.x)}</td><td class="num">${f3(t.factor)}</td><td class="num">${f3(prod)}</td></tr>`); }
-  rows.push(`<tr><td colspan="6"><b>${esc(g)} risk = 1 − ∏</b></td><td class="num"><b style="color:${riskColor(1-prod)}">${pct(1 - prod)}</b></td></tr>`);
+  let prod = 1; const rows = ['<tr><th>k</th><th>day</th><th class="num">P(discharge) ' + esc(nameOf(bk)) + '</th>' + (SPLIT ? '<th class="num">× outfall share</th><th class="num">= p<sub>group</sub></th>' : '') + '<th class="num">expected MG</th><th class="num">x(k, size)</th><th class="num">1 − p·x</th><th class="num">running ∏</th></tr>'];
+  for (const t of terms) { prod *= t.factor; rows.push(`<tr><td>${t.k}</td><td>${t.k === 0 ? 'today' : esc(S.dates[t.j].slice(5))}</td><td class="num">${pct(t.pb)}</td>${SPLIT ? `<td class="num">${t.share.toFixed(2)}</td><td class="num">${(t.p*100).toFixed(1)}%</td>` : ''}<td class="num">${t.vol ? f2(t.vol) : '—'}</td><td class="num">${t.k === 0 ? '1 (discharge day)' : f3(t.x)}</td><td class="num">${f3(t.factor)}</td><td class="num">${f3(prod)}</td></tr>`); }
+  rows.push(`<tr><td colspan="${SPLIT ? 8 : 6}"><b>${esc(g)} risk = 1 − ∏</b></td><td class="num"><b style="color:${riskColor(1-prod)}">${pct(1 - prod)}</b></td></tr>`);
   document.getElementById('walkTable').innerHTML = rows.join('');
 }
 

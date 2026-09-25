@@ -988,10 +988,11 @@ class LiveData:
 
     def list_models(self) -> list:
         """The served set first, then every candidate set on disk."""
-        out = [{"key": "", "label": "v4 (served)", "family": "gb", "served": True}]
+        out = [{"key": "", "label": "v4 (served)", "family": "gb", "served": True, "stage1": "v4", "stage2": "v4"}]
         for m in _cand.list_candidates():
             out.append({"key": m["name"], "label": m["name"], "family": m.get("family"), "note": m.get("note", ""),
-                        "created_at": m.get("created_at"), "rain_sources": m.get("rain_sources"), "served": False})
+                        "created_at": m.get("created_at"), "rain_sources": m.get("rain_sources"), "served": False,
+                        "stage1": (m.get("stage1") or {}).get("from"), "stage2": (m.get("stage2") or {}).get("variant", "v4")})
         return out
 
     def get_scorecard(self, date_str: str, start: str | None = None, end: str | None = None,
@@ -1062,6 +1063,7 @@ class LiveData:
                 "model": model or "", "models": self.list_models(),
                 "holdout_start": holdout_start, "trained_at": sc.get("trained_at"),
                 "trained_through": trained_through, "post_start": post_start, "rescored_at": sc.get("rescored_at"),
+                "stage2": (sc.get("stage2") or {}).get("variant", "v4"),
                 "basins": sc.get("basins"), "zones": sc.get("zones"), "groups": sc.get("groups"),
                 "days": around, "zone_confusion_holdout": sc.get("zone_confusion_holdout"),
                 "window": window, "seasons": _sc.seasons_in(span, holdout_start, trained_through),

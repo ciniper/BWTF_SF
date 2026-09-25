@@ -336,6 +336,19 @@ labels; promotion into `data/models/` is a separate, human decision.
   Southeast head Downtown-only features). Candidate pickles reference
   `leaderboard.add_hinges` (the script dispatches through the module) so
   `candidates.load_models` can open them anywhere.
+- Stage 2 variants (`src/models/stage2.py`, 2026-09-25): stage 2 is a named
+  layer a candidate pairs with its stage 1. `v4` = compose the basin
+  probability directly. `outfall_split_v1` = multiply it by the share of the
+  basin's CIWQS discharge days (by size) on which the group's own outfalls
+  took part, blended by V/(V+median), and refit the impact table on
+  group-attributed days; identity where a group's outfalls are the whole
+  basin. `stage2_variants.py fit` → `data/models/stage2/<variant>.json`;
+  `stage2_variants.py save --stage1 v4|<candidate> --variant <v> --name <n>`
+  → a candidate set with `stage2.json`, holdout siblings refit exactly as the
+  source fit them (checked against the source artifact before writing).
+  Sets on disk: `v4_split`, `logit_v1_split`. Serving still composes with v4;
+  promotion = ship the spec next to the served pickles and pass
+  `split=stage2.make_split(spec)` in `live_dashboard._compose_impact`.
 - `logit_v1` on the post-training window (Nov 2025 → Aug 2026, untouched):
   Westside 0.766 vs v4 0.716 (Ocean Beach 5/6 caught, 14 false alarms vs
   4/6 and 18); Central 0.734 vs 0.717 with a better Brier; North Shore equal

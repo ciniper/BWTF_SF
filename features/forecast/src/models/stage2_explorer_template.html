@@ -56,7 +56,7 @@ tr.dim td{color:#9aa0a6}
   <div class="meta" id="meta"></div>
 </header>
 <nav>
-  <a href="#what">The transformation</a><a href="#shared">Shared vs per model</a><a href="#impact">Impact table</a><a href="#volume">Volume heads</a><a href="#compose">Walk through any day</a><a href="#compare">Models side by side</a><a href="#check">Self-check</a>
+  <a href="#what">The transformation</a><a href="#shared">Shared vs per model</a><a href="#impact">Impact table</a><a href="#split">Outfall split</a><a href="#volume">Volume heads</a><a href="#compose">Walk through any day</a><a href="#compare">Models side by side</a><a href="#check">Self-check</a>
 </nav>
 
 <section id="what"><h2>The transformation</h2>
@@ -77,10 +77,16 @@ risk<sub>zone</sub>(D) = max over the zone's groups</div>
 
 <section id="impact"><h2>The impact table</h2>
 <p class="lead">Fitted once, at v4 training, from every sample day within a week of a CIWQS discharge: for each beach group, size class and days-since bucket, the share of sample days over standard, with the count behind it. Serving smooths each small/large curve to be non-increasing over days (weighted pool-adjacent-violators), because contamination decays and cells with 3–6 samples are noisy enough to read day 3 above day 1.</p>
-<div class="controls"><label>Table <select id="impactMode"><option value="impact_smoothed">smoothed (what serving uses)</option><option value="impact_raw">raw fit</option></select></label>
+<div class="controls"><label>Table <select id="impactMode"><option value="impact_smoothed">v4 fit, smoothed (what serving uses)</option><option value="impact_raw">v4 fit, raw</option></select></label>
   <label>Show the blend for a discharge of <input type="range" id="blendVol" min="0" max="150" step="1" value="30"> <span id="blendVolV" class="mono"></span></label>
   <span class="kbd">Cells: P(elevated) with n underneath; hover for the attributable value. Curves: attributable x(k) — solid large, dashed small, orange dots the blend at the chosen volume.</span></div>
 <div id="impactTables" class="grid g2"></div>
+</section>
+
+<section id="split"><h2>Outfall split: a stage 2 variant</h2>
+<p class="lead">Stage 1 predicts one probability per basin, but a basin's outfalls post different beaches: on the Westside, three outfalls post Ocean Beach and four post Baker and China Beach; in North Shore, four post Crissy Field and three post Aquatic Park. The v4 composition gives both groups the basin's whole probability, so a Sea Cliff discharge turns Ocean Beach red. The <b>outfall_split_v1</b> variant multiplies the basin probability by the share of that basin's CIWQS discharge days, by size class, on which at least one of the group's own outfalls discharged, and refits the impact table on those group-attributed days. Where a group's outfalls are the whole basin (Mission Creek, Southeast) the share is 1 and nothing changes.</p>
+<div id="splitCards" class="grid g2"></div>
+<p class="fine" id="splitNote"></p>
 </section>
 
 <section id="volume"><h2>Volume heads: the "size" input</h2>
@@ -145,9 +151,10 @@ const nameOf = k => D.basins[k].name;
 document.getElementById('meta').innerHTML = [
   'hindcast ' + esc(D.span[0]) + ' → ' + esc(D.span[1]) + ' (' + N + ' days)',
   'stage 1 trained through ' + esc(D.trained_through) + ' · holdout from ' + esc(D.holdout_start),
-  SETS.length + ' model set' + (SETS.length > 1 ? 's: ' : ': ') + SETS.map(s => s.name).join(', '),
-  'impact table + volume heads: served v4, shared',
-].map(t => '<span>' + t + '</span>').join('');
+  SETS.length + ' model set' + (SETS.length > 1 ? 's: ' : ': ') + SETS.map(s => s.name + (s.stage2 && s.stage2.variant !== 'v4' ? ' (stage 2 ' + s.stage2.variant + ')' : '')).join(', '),
+  'stage 2 variants on disk: v4' + Object.keys(D.stage2_variants || {}).map(v => ', ' + v).join(''),
+  'volume heads: served v4, shared by every set',
+].map(t => '<span>' + esc(t) + '</span>').join('');
 document.getElementById('genAt').textContent = D.generated_at;
 document.getElementById('liveNote').textContent = D.live_override;
 
@@ -167,37 +174,62 @@ function impactFraction(table, g, k, vol) {
   const med = gt.median_event_volume_mg || 1, w = vol / (vol + med);
   return w * xl + (1 - w) * xs;
 }
+// stage 2 variant "outfall_split_v1" (port of src/models/stage2.group_share):
+// p_group = p_basin × [w·g_large + (1−w)·g_small], w = V / (V + median event)
+function shareOf(spec, g, vol) {
+  const s = (spec.shares || {})[g]; if (!s) return 1;
+  const med = (spec.median_event_volume_mg || {})[g] || 1;
+  let gl = (s.large || {}).p, gs = (s.small || {}).p; const ga = (s.all || {}).p;
+  if (gl == null && gs == null) return ga == null ? 1 : ga;
+  if (gl == null) gl = gs; if (gs == null) gs = gl;
+  const w = vol / (vol + med); return w * gl + (1 - w) * gs;
+}
+const setTable = si => SETS[si].impact_table || D.impact_smoothed;
+const setSplit = si => (SETS[si].stage2 && SETS[si].stage2.variant !== 'v4') ? SETS[si].stage2 : null;
 function groupRisk(si, g, i, table) {
-  table = table || D.impact_smoothed;
+  table = table || setTable(si); const split = setSplit(si);
   const bk = D.groups[g].basin, probs = SETS[si].probs[bk], vols = D.vol_pred[bk];
   let ni = 1; const terms = [];
-  for (let k = 0; k < 8; k++) { const j = i - k; if (j < 0) break; const p = probs[j] || 0, vol = vols[j] || 0, x = impactFraction(table, g, k, vol);
-    terms.push({k, j, p, vol, x, factor: p ? 1 - p * x : 1}); if (!p) continue; ni *= 1 - p * x; }
+  for (let k = 0; k < 8; k++) { const j = i - k; if (j < 0) break; const pb = probs[j] || 0, vol = vols[j] || 0, x = impactFraction(table, g, k, vol);
+    const share = (pb && split) ? shareOf(split, g, vol) : 1, p = pb * share;
+    terms.push({k, j, pb, share, p, vol, x, factor: p ? 1 - p * x : 1}); if (!p) continue; ni *= 1 - p * x; }
   return {risk: Math.round((1 - ni) * 1000) / 1000, terms};
 }
 const zoneRisk = (si, zk, i) => Math.max(0, ...D.zones[zk].groups.map(g => groupRisk(si, g, i).risk));
 
 // ─── shared vs per model ──────────────────────────────────────────────────────
 (function shared() {
-  const head = ['<tr><th>Basin</th>'].concat(SETS.map(s => `<th>${esc(s.label)}<br><span class="fine" style="text-transform:none;letter-spacing:0">stage 1: rain source · family · dry-day offset</span></th>`), ['<th>Volume head <span class="badge shared">shared</span><br><span class="fine" style="text-transform:none;letter-spacing:0">reads its own rain source</span></th><th>Impact table <span class="badge shared">shared</span></th></tr>']);
+  const s2label = s => s.stage2 && s.stage2.variant !== 'v4' ? `<span class="badge diff">stage 2: ${esc(s.stage2.variant)}</span>${s.stage2.impact_table_refit ? ' <span class="fine">impact table refit</span>' : ''}` : '<span class="badge shared">stage 2: v4</span>';
+  const head = ['<tr><th>Basin</th>'].concat(SETS.map(s => `<th>${esc(s.label)}<br><span class="fine" style="text-transform:none;letter-spacing:0">stage 1${s.stage1_from && s.stage1_from !== 'fit' ? ' (from ' + esc(s.stage1_from) + ')' : ''}: rain source · family · dry-day offset</span><br>${s2label(s)}</th>`), ['<th>Volume head <span class="badge shared">shared</span><br><span class="fine" style="text-transform:none;letter-spacing:0">reads its own rain source</span></th><th>Impact table<br><span class="fine" style="text-transform:none;letter-spacing:0">served v4 fit (a variant may refit it)</span></th></tr>']);
   const rows = [head.join('')];
   for (const bk of BASINS) {
     const v4 = SETS[0].spec[bk];
     const cells = SETS.map((s, i) => { const sp = s.spec[bk]; const diff = i > 0 && (sp.rain_source !== v4.rain_source || sp.family !== v4.family || sp.calibration_offset !== v4.calibration_offset);
-      return `<td>${esc(sp.rain_source === 'avg' ? 'two-gauge mean' : sp.rain_source)} · ${sp.family === 'logit' ? 'weights' + (sp.C != null ? ` (C=${sp.C})` : '') : 'trees'} · offset ${(sp.calibration_offset*100).toFixed(2)} pts ${i > 0 ? (diff ? '<span class="badge diff">differs from v4</span>' : '<span class="badge shared">same as v4</span>') : ''}</td>`; });
+      const split = setSplit(i); const groupsTxt = split ? '<br><span class="fine">outfall shares: ' + D.basins[bk].groups.map(g => { const sh = (split.shares || {})[g] || {}; return `${esc(g)} large ${sh.large && sh.large.p != null ? sh.large.p.toFixed(2) : '—'} / small ${sh.small && sh.small.p != null ? sh.small.p.toFixed(2) : '—'}`; }).join(' · ') + '</span>' : '';
+      return `<td>${esc(sp.rain_source === 'avg' ? 'two-gauge mean' : sp.rain_source)} · ${sp.family === 'logit' ? 'weights' + (sp.C != null ? ` (C=${sp.C})` : '') : 'trees'} · offset ${(sp.calibration_offset*100).toFixed(2)} pts ${i > 0 ? (diff ? '<span class="badge diff">stage 1 differs from v4</span>' : '<span class="badge shared">stage 1 same as v4</span>') : ''}${groupsTxt}</td>`; });
     const h = D.volume_heads[bk];
     rows.push(`<tr><td><span class="pill" style="background:${COLORS[bk]}">${esc(nameOf(bk))}</span></td>${cells.join('')}<td>${h ? esc(h.rain_source === 'avg' ? 'two-gauge mean' : h.rain_source) + ' · ' + h.n_events + ' events' : 'none'}</td><td>${D.basins[bk].groups.map(g => esc(g) + ' (' + (D.impact_raw[g] || {}).n_sample_days + ' sample days)').join('<br>')}</td></tr>`);
   }
   document.getElementById('sharedTable').innerHTML = rows.join('');
-  document.getElementById('sharedNote').innerHTML = `Before 2026-09-25 a candidate's scorecard fed each volume head the <i>candidate's</i> rain source, which made stage 2 differ per model in one hidden way (a Southeast head trained on the two-gauge mean was reading Downtown-only features). <code>train_v4.build_scorecard</code> now reads the head's own source; candidate artifacts were regenerated. ` + SETS.slice(1).map(s => `<b>${esc(s.name)}</b>: ${esc(s.note || '')}`).join(' ');
+  const variants = Object.keys(D.stage2_variants || {});
+  document.getElementById('sharedNote').innerHTML = `Stage 2 comes in named variants (<code>src/models/stage2.py</code>): <b>v4</b> composes the basin probability directly; ${variants.length ? variants.map(v => `<b>${esc(v)}</b> multiplies it first by the share of the basin's discharge days on which the group's own outfalls took part (see “Outfall split” below)`).join('; ') : 'no other variant is on disk'}. A candidate set pairs one stage 1 with one stage 2; the served forecast uses v4 for both. Volume heads always read the rain source they were trained on (before 2026-09-25 a candidate's scorecard fed them the candidate's source — fixed, artifacts regenerated). ` + SETS.slice(1).map(s => `<b>${esc(s.name)}</b>: ${esc(s.note || '')}`).join(' ');
 })();
 
 // ─── impact tables + decay curves ──────────────────────────────────────────────
+(function impactModes() {
+  const sel = document.getElementById('impactMode');
+  for (const [v, spec] of Object.entries(D.stage2_variants || {})) if (spec.impact_smoothed) sel.insertAdjacentHTML('beforeend', `<option value="variant:${esc(v)}:impact_smoothed">${esc(v)} refit, smoothed</option><option value="variant:${esc(v)}:impact_raw">${esc(v)} refit, raw</option>`);
+})();
+function impactTableFor(mode) {
+  if (mode.startsWith('variant:')) { const [, v, which] = mode.split(':'); return (D.stage2_variants[v] || {})[which] || D.impact_smoothed; }
+  return D[mode];
+}
 function renderImpact() {
-  const mode = document.getElementById('impactMode').value, T = D[mode], vol = +document.getElementById('blendVol').value;
+  const mode = document.getElementById('impactMode').value, T = impactTableFor(mode), vol = +document.getElementById('blendVol').value;
   document.getElementById('blendVolV').textContent = vol + ' MG';
   let html = '';
-  for (const g of GROUPS) { const gt = T[g] || {}, b = gt.buckets || {}, base = (b.baseline_no_recent_discharge || {}), raw = (D.impact_raw[g] || {}).buckets || {};
+  const RAW = mode.startsWith('variant:') ? ((D.stage2_variants[mode.split(':')[1]] || {}).impact_raw || D.impact_raw) : D.impact_raw;
+  for (const g of GROUPS) { const gt = T[g] || {}, b = gt.buckets || {}, base = (b.baseline_no_recent_discharge || {}), raw = (RAW[g] || {}).buckets || {};
     const cell = key => { const c = b[key]; if (!c) return '<td class="mute">—</td>'; const p = c.p_elevated, a = Math.max(0, (p - (base.p_elevated||0)) / (1 - (base.p_elevated||0))); return `<td style="background:rgba(181,49,10,${(p*0.85).toFixed(2)});color:${p > .5 ? '#fff' : '#26272a'}" title="P(elevated) ${p}, n=${c.n}; attributable x = ${(a*100).toFixed(0)}%">${(p*100).toFixed(0)}%<br><span style="font-size:10px;opacity:.8">n=${c.n}</span></td>`; };
     // decay curve svg
     const W = 520, H = 150, pl = 34, pb = 26; const kx = [0,1,2,3,4.5,6.5]; const X = k => pl + k / 7 * (W - pl - 10), Y = v => 8 + (1 - v) * (H - pb - 8);
@@ -219,6 +251,25 @@ function renderImpact() {
 document.getElementById('impactMode').addEventListener('change', renderImpact);
 document.getElementById('blendVol').addEventListener('input', renderImpact);
 renderImpact();
+
+// ─── outfall split variant ────────────────────────────────────────────────────
+(function renderSplit() {
+  const variants = Object.entries(D.stage2_variants || {});
+  if (!variants.length) { document.getElementById('splitCards').innerHTML = '<div class="card"><span class="fine">No stage 2 variant on disk. Fit one with <code>stage2_variants.py fit</code> and pair it with a stage 1 via <code>stage2_variants.py save</code>.</span></div>'; return; }
+  let html = '';
+  for (const [v, spec] of variants) {
+    for (const g of GROUPS) { const sh = (spec.shares || {})[g] || {}, outs = (spec.group_outfalls || {})[g] || [], med = (spec.median_event_volume_mg || {})[g];
+      const cell = s => s && s.p != null ? `<b>${(s.p*100).toFixed(0)}%</b> <span class="fine">of ${s.n} days</span>` : '<span class="mute">—</span>';
+      const identity = sh.all && sh.all.p === 1;
+      html += `<div class="card"><b class="t">${esc(g)} <span class="fine">· ${esc(nameOf(D.groups[g].basin))} basin · ${esc(v)}</span></b>
+        <div class="fine" style="margin-bottom:6px">posted by ${outs.length} outfall${outs.length === 1 ? '' : 's'}: <code>${outs.map(esc).join('</code> <code>')}</code></div>
+        <table><tr><th>discharge days of the basin…</th><th class="num">large (≥ ${med} MG)</th><th class="num">small</th><th class="num">all</th></tr>
+        <tr><td>…on which one of these outfalls discharged</td><td class="num">${cell(sh.large)}</td><td class="num">${cell(sh.small)}</td><td class="num">${cell(sh.all)}</td></tr></table>
+        <div class="fine" style="margin-top:6px">${identity ? 'Every discharge in this basin involves this group\'s outfalls: the split is the identity here.' : `A basin probability p becomes p × ${sh.large && sh.large.p != null ? sh.large.p.toFixed(2) : '?'} for a large predicted volume and p × ${sh.small && sh.small.p != null ? sh.small.p.toFixed(2) : '?'} for a small one (blended by V/(V+${med})).`}</div></div>`; }
+  }
+  document.getElementById('splitCards').innerHTML = html;
+  document.getElementById('splitNote').innerHTML = variants.map(([v, spec]) => `<b>${esc(v)}</b> fitted ${esc((spec.train_window || []).join(' → '))} from CIWQS per-outfall rows (only CIWQS-labelled days carry outfall detail; the 2016-17 feed-archive days are excluded from the shares and kept, unattributed, for the impact refit). ${esc(spec.impact_table_note || '')} Sets using it: ${SETS.filter(s => s.stage2 && s.stage2.variant === v).map(s => '<b>' + esc(s.name) + '</b>').join(', ') || 'none'}.`).join('<br>');
+})();
 
 // ─── volume heads ─────────────────────────────────────────────────────────────
 (function volume() {
@@ -289,12 +340,12 @@ function renderWalk() {
   document.getElementById('weekChart').innerHTML = s;
   document.getElementById('weekLegend').innerHTML = `<span style="display:inline-block;width:12px;height:12px;background:#eb6834;vertical-align:-2px"></span> stage 1 P(discharge) for ${esc(nameOf(bk))} (${esc(SETS[si].label)}) · ` + SETS.map((st, k) => `<span style="display:inline-block;width:18px;border-top:${k ? '2px dashed' : '3px solid'} ${SET_COLORS[k % SET_COLORS.length]};vertical-align:middle"></span> ${esc(st.name)} composed ${esc(g)} risk`).join(' · ') + ` · <span style="color:#b5310a">— 25% line</span> · rows under the axis: rain, reported discharge (with volume), bacteria sample at these beaches, beach posting in the zone.`;
   // term table
-  const {risk, terms} = groupRisk(si, g, i); let prod = 1;
-  const rows = ['<tr><th>k</th><th>day D−k</th><th class="num">p(D−k)</th><th class="num">predicted V (MG)</th><th class="num">w = V/(V+median)</th><th class="num">x(k, V)</th><th class="num">1 − p·x</th><th class="num">running ∏</th></tr>'];
-  const med = (D.impact_smoothed[g] || {}).median_event_volume_mg || 1;
-  for (const t of terms) { prod *= t.factor; rows.push(`<tr class="${t.p < 0.0005 ? 'dim' : ''}"><td>${t.k}</td><td>${t.k === 0 ? 'today' : esc(D.dates[t.j].slice(5))}</td><td class="num">${(t.p*100).toFixed(1)}%</td><td class="num">${f2(t.vol)}</td><td class="num">${(t.vol/(t.vol+med)).toFixed(2)}</td><td class="num">${t.k === 0 ? '1 (discharge day)' : f3(t.x)}</td><td class="num">${f3(t.factor)}</td><td class="num">${f3(prod)}</td></tr>`); }
+  const {risk, terms} = groupRisk(si, g, i); let prod = 1; const hasSplit = !!setSplit(si);
+  const rows = ['<tr><th>k</th><th>day D−k</th><th class="num">p<sub>basin</sub>(D−k)</th>' + (hasSplit ? '<th class="num">× outfall share</th><th class="num">= p<sub>group</sub></th>' : '') + '<th class="num">predicted V (MG)</th><th class="num">w = V/(V+median)</th><th class="num">x(k, V)</th><th class="num">1 − p·x</th><th class="num">running ∏</th></tr>'];
+  const med = (setTable(si)[g] || {}).median_event_volume_mg || 1;
+  for (const t of terms) { prod *= t.factor; rows.push(`<tr class="${t.p < 0.0005 ? 'dim' : ''}"><td>${t.k}</td><td>${t.k === 0 ? 'today' : esc(D.dates[t.j].slice(5))}</td><td class="num">${(t.pb*100).toFixed(1)}%</td>${hasSplit ? `<td class="num">${t.share.toFixed(2)}</td><td class="num">${(t.p*100).toFixed(1)}%</td>` : ''}<td class="num">${f2(t.vol)}</td><td class="num">${(t.vol/(t.vol+med)).toFixed(2)}</td><td class="num">${t.k === 0 ? '1 (discharge day)' : f3(t.x)}</td><td class="num">${f3(t.factor)}</td><td class="num">${f3(prod)}</td></tr>`); }
   const stored = SETS[si].stored_groups[g][i];
-  rows.push(`<tr><td colspan="7"><b>${esc(g)} risk = 1 − ∏</b> <span class="fine">stored in the ${esc(SETS[si].name)} artifact: ${pct(stored)} ${stored == null ? '' : Math.abs(stored - risk) <= 0.0015 ? '<span class="ok-check">✓</span>' : '<span class="bad-check">≠</span>'}</span></td><td class="num"><b style="color:${riskColor(risk)}">${pct(risk)}</b></td></tr>`);
+  rows.push(`<tr><td colspan="${hasSplit ? 9 : 7}"><b>${esc(g)} risk = 1 − ∏</b> <span class="fine">stored in the ${esc(SETS[si].name)} artifact: ${pct(stored)} ${stored == null ? '' : Math.abs(stored - risk) <= 0.0015 ? '<span class="ok-check">✓</span>' : '<span class="bad-check">≠</span>'}</span></td><td class="num"><b style="color:${riskColor(risk)}">${pct(risk)}</b></td></tr>`);
   document.getElementById('walkTable').innerHTML = rows.join('');
   // every set on this day
   const srows = ['<tr><th>Model set</th><th class="num">p today</th><th class="num">' + esc(g) + ' risk</th><th class="num">zone ' + esc(D.zones[zk].label) + '</th><th class="num">stored</th></tr>'];
