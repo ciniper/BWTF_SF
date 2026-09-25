@@ -159,6 +159,41 @@ def zone_confusion(days: list[dict], zone_keys, start: str | None = None, end: s
     return out
 
 
+TAIL_DAYS = 7   # the composition holds risk up for a week after a discharge (impact.compose k = 1..7)
+
+
+def zone_fp_tail(days: list[dict], zone_keys, start: str | None = None, end: str | None = None,
+                 holdout_only: bool = False, thresholds=THRESHOLDS) -> dict:
+    """{zone: {"0.25": n, ...}} — how many of the window's false alarms (vs the
+    discharge label) fall within TAIL_DAYS after a day a discharge posted the
+    zone. Those are the composition doing what it is designed to do (the beach
+    is likely still dirty); the remainder are alarms on clean days. Postings
+    just before the window count, so a window's first days are judged fairly.
+    Kept apart from zone_confusion so the artifact's stored block stays as is."""
+    out = {}
+    subset = window_days(days, start, end)
+    for zk in zone_keys:
+        posted = sorted(d["date"] for d in days if zk in d["zones"] and d["zones"][zk]["discharge"])
+        posted_set = set(posted)
+
+        def in_tail(ds: str) -> bool:
+            d0 = datetime.strptime(ds, "%Y-%m-%d").date()
+            return any(str(d0 - timedelta(days=k)) in posted_set for k in range(1, TAIL_DAYS + 1))
+
+        out[zk] = {}
+        for thr in thresholds:
+            n = 0
+            for day in subset:
+                z = day["zones"][zk]
+                p = _prob(z, holdout_only)
+                if p is None or z["discharge"] is None or z["discharge"] or p < thr:
+                    continue
+                if in_tail(day["date"]):
+                    n += 1
+            out[zk][str(thr)] = n
+    return out
+
+
 # ── stage 1 per basin ──────────────────────────────────────────────────────
 
 def basin_metrics(days: list[dict], basin_keys=BASIN_KEYS, start: str | None = None, end: str | None = None,

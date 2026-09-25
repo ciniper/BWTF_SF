@@ -116,6 +116,23 @@ def test_zone_confusion_counts_only_known_labels_and_falls_back_in_sample():
     assert set(S.zone_confusion(days, ["z"])["z"]) == {"0.1", "0.25", "0.5"}
 
 
+def test_zone_fp_tail_counts_alarms_in_the_week_after_a_posting():
+    days = [
+        _day("2023-12-30", 0.9, 0.9, True, None),     # a posting just before the window
+        _day("2024-01-02", 0.9, 0.9, False, None),    # false alarm, 3 days after → tail
+        _day("2024-01-05", 0.9, 0.9, True, None),     # posting inside the window (a catch, not a false alarm)
+        _day("2024-01-09", 0.9, 0.9, False, None),    # false alarm, 4 days after → tail
+        _day("2024-01-20", 0.9, 0.9, False, None),    # false alarm, 15 days after → clean day
+        _day("2024-01-21", 0.1, 0.1, False, None),    # no alarm
+        _day("2024-01-22", 0.9, 0.9, None, None),     # label unknown → counts nowhere
+    ]
+    t = S.zone_fp_tail(days, ["z"], start="2024-01-01", end="2024-01-31")["z"]
+    assert t["0.25"] == 2 and t["0.5"] == 2, t
+    c = S.zone_confusion(days, ["z"], start="2024-01-01", end="2024-01-31")["z"]["0.25"]["vs_discharge_posting"]
+    assert c["fp"] == 3 and c["fp"] - t["0.25"] == 1        # 3 false alarms: 2 in a tail, 1 on a clean day
+    assert S.zone_fp_tail(days, ["z"], start="2024-01-15")["z"]["0.25"] == 0
+
+
 def test_basin_metrics_need_both_classes_for_auc():
     days = [_day("2024-01-01", .9, .9, True, None, y=1), _day("2024-01-02", .2, .2, False, None, y=0),
             _day("2024-01-03", .8, .1, True, None, y=1), _day("2024-01-04", .1, .1, None, None, y=None),

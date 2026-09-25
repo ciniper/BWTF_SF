@@ -137,7 +137,16 @@ footer a { color: #0072BC; text-decoration: none; }
 .scorecard { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
 .score { background: #f3f6f9; border-radius: 12px; padding: 12px 14px; font-size: 0.85em; }
 .score b { display: block; font-size: 1.05em; color: #26272a; margin-bottom: 4px; }
-.score .row { display: flex; justify-content: space-between; color: #54576F; padding: 2px 0; }
+.score .row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; color: #54576F; padding: 2px 0; }
+.score .row > span:first-child { flex: 1 1 auto; }
+.score .row > span:last-child { flex: 0 0 auto; text-align: right; white-space: nowrap; }
+.score .grp { margin: 10px 0 2px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #8a8d9b; }
+.score table.lines { width: 100%; font-size: 12px; border-collapse: collapse; margin-top: 2px; }
+.score table.lines th { font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: #8a8d9b; text-align: left; padding: 2px 4px; font-weight: 600; }
+.score table.lines td { padding: 2px 4px; border-top: 1px solid #e3ebf2; color: #54576F; }
+.score table.lines td.num, .score table.lines th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.score table.lines tr.cur td { font-weight: 700; color: #26272a; }
+.score table.lines tr.best td { background: #e0f0ea; }
 .score .row span:last-child { font-weight: 700; color: #26272a; font-variant-numeric: tabular-nums; }
 .sc-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 10px; font-size: 0.85em; }
 .sc-controls .date-picker { padding: 6px 10px; font-size: 0.95em; }
@@ -771,22 +780,36 @@ function renderScoreWindow(sc) {
         const cost = lineCost(d), best = cheapestLine(c);
         totalCost += cost;
         for (const t of Object.keys(c)) totalByLine[t] = (totalByLine[t] || 0) + lineCost(c[t].vs_discharge_posting);
-        const strip = Object.keys(c).map(Number).sort((a, b) => a - b).map(t => { const k = String(t), cc = lineCost(c[k].vs_discharge_posting); const cur = k === thr, isBest = best && t === best.line;
-            return `<span title="${pct(t)}% line: ${c[k].vs_discharge_posting.fp} false alarms, ${c[k].vs_discharge_posting.fn} misses" style="${cur ? 'font-weight:700;color:#26272a;' : ''}${isBest ? 'background:#e0f0ea;border-radius:6px;padding:0 4px;' : ''}">${pct(t)}%→${cc}${isBest ? '★' : ''}</span>`; }).join(' ');
+        const posted = d.tp + d.fn, quiet = d.fp + d.tn, sampled = b.tp + b.fn + b.fp + b.tn;
+        const tailN = (w.zone_fp_tail && w.zone_fp_tail[zk] && w.zone_fp_tail[zk][thr] != null) ? w.zone_fp_tail[zk][thr] : null;
+        const cleanN = tailN == null ? null : d.fp - tailN;
+        const tailDays = w.tail_days || 7;
+        const linesTable = `<table class="lines"><tr><th>line</th><th class="num">caught</th><th class="num">false alarms</th><th class="num">cost</th></tr>` +
+            Object.keys(c).map(Number).sort((a, b) => a - b).map(t => { const k = String(t), x = c[k].vs_discharge_posting, cc = lineCost(x), cur = k === thr, isBest = best && t === best.line;
+                return `<tr class="${cur ? 'cur' : ''}${isBest ? ' best' : ''}"><td>${pct(t)}%${cur ? ' <span class="mute">◂</span>' : ''}</td><td class="num">${x.tp}/${x.tp + x.fn}</td><td class="num">${x.fp}</td><td class="num">${cc}${isBest ? ' ★' : ''}</td></tr>`; }).join('') + '</table>';
         html += `<div class="score"><b>${ic(ZONE_ICON[zk])} ${esc((ZONES.find(z => z.key === zk) || {}).label)}</b>
-            <div class="row"><span>Discharge days caught</span><span>${f(rec)} <span class="mute">(${d.tp}/${d.tp + d.fn})</span></span></div>
-            <div class="row"><span>False alarms (of quiet days)</span><span>${f(far)} <span class="mute">(${d.fp}/${d.fp + d.tn})</span></span></div>
-            <div class="row"><span>False alarms per catch</span><span>${fapc} <span class="mute">(${d.fp}/${d.tp})</span></span></div>
-            <div class="row"><span>Cost at this line <span class="mute">(FP + ${costRatio}×FN)</span></span><span>${cost}${best ? ' <span class="mute">· cheapest ' + pct(best.line) + '% → ' + best.cost + '</span>' : ''}</span></div>
-            <div class="row"><span>Elevated-sample days caught</span><span>${f(brec)} <span class="mute">(${b.tp}/${b.tp + b.fn})</span></span></div>
-            <div class="row"><span>Alarms on clean sample days</span><span>${f(bfa)} <span class="mute">(${b.fp}/${b.fp + b.tn})</span></span></div>
-            <div class="fine" style="margin-top:6px;line-height:1.7">${strip}</div></div>`;
+            <div class="grp">Discharges · ${posted} day${posted === 1 ? '' : 's'} a discharge posted a beach here</div>
+            <div class="row"><span>Caught, risk at or above ${pct(RISK_THRESHOLD)}%</span><span><b>${d.tp} of ${posted}</b> <span class="mute">${f(rec)}</span></span></div>
+            <div class="row"><span>Missed</span><span><b>${d.fn}</b></span></div>
+            <div class="grp">False alarms · alarm days with no discharge posted (${quiet} quiet days)</div>
+            <div class="row"><span>Total</span><span><b>${d.fp}</b> <span class="mute">${f(far)}</span></span></div>
+            ${tailN != null ? `<div class="row"><span>· within ${tailDays} days after a real discharge <span class="mute">(beach likely still dirty)</span></span><span>${tailN}</span></div>
+            <div class="row"><span>· on clean days <span class="mute">(the model's own cost)</span></span><span><b>${cleanN}</b></span></div>` : ''}
+            <div class="row"><span>False alarms per caught discharge</span><span><b>${fapc}</b></span></div>
+            <div class="grp">Bacteria samples · ${sampled} sampled day${sampled === 1 ? '' : 's'}</div>
+            <div class="row"><span>Elevated-sample days caught</span><span><b>${b.tp} of ${b.tp + b.fn}</b> <span class="mute">${f(brec)}</span></span></div>
+            <div class="row"><span>Alarms on clean-sample days</span><span><b>${b.fp} of ${b.fp + b.tn}</b> <span class="mute">${f(bfa)}</span></span></div>
+            <div class="grp">Cost · one miss counts as ${costRatio} false alarm${costRatio == 1 ? '' : 's'}</div>
+            <div class="row"><span>At the ${pct(RISK_THRESHOLD)}% line <span class="mute">(${d.fp} + ${costRatio} × ${d.fn})</span></span><span><b>${cost}</b></span></div>
+            ${best ? `<div class="row"><span>Cheapest line for this zone</span><span><b>${pct(best.line)}%</b> <span class="mute">cost ${best.cost}</span></span></div>` : ''}
+            <div class="grp">Every line, same window</div>
+            ${linesTable}</div>`;
     }
     html += '</div>';
     const lines = Object.keys(totalByLine).map(Number).sort((a, b) => a - b);
     if (lines.length) {
         let bestT = lines[0]; for (const t of lines) if (totalByLine[String(t)] <= totalByLine[String(bestT)]) bestT = t;
-        html += `<div class="fine" style="margin-top:8px">All zones, one miss = ${costRatio} false alarms: cost <b>${totalCost}</b> at the ${pct(RISK_THRESHOLD)}% line · cheapest single line ${pct(bestT)}% → ${totalByLine[String(bestT)]}. Costs count the discharge label only; days in the decay tail after a real discharge count as false alarms here even when samples ran high.</div>`;
+        html += `<div class="fine" style="margin-top:8px">All four zones at the ${pct(RISK_THRESHOLD)}% line: cost <b>${totalCost}</b>, with one miss counted as ${costRatio} false alarm${costRatio == 1 ? '' : 's'}. Cheapest single line for all zones together: <b>${pct(bestT)}%</b>, cost ${totalByLine[String(bestT)]}. "Within ${w.tail_days || 7} days after a real discharge" is the model holding risk up while the beach is likely still dirty — by design; "on clean days" is the cost the model itself adds.</div>`;
     }
     if (w.basins) {
         const f3 = v => v == null ? '<span class="mute">—</span>' : Number(v).toFixed(3);

@@ -1054,6 +1054,8 @@ class LiveData:
         window = {"preset": preset, "season": _sc.season_of(lo) if preset == "season" else None,
                   "holdout_only": summary["grade"] == "holdout", **summary, "start": lo, "end": hi,
                   "zone_confusion": _sc.zone_confusion(days, zone_keys, lo, hi, holdout_only=False, thresholds=_sc.LINE_GRID),
+                  "zone_fp_tail": _sc.zone_fp_tail(days, zone_keys, lo, hi, holdout_only=False, thresholds=_sc.LINE_GRID),
+                  "tail_days": _sc.TAIL_DAYS,
                   "basins": _sc.basin_metrics(days, start=lo, end=hi)}
 
         eval_path = MODEL_DIR / "eval_report.json"
