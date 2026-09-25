@@ -37,10 +37,12 @@ import hmac
 import io
 import json
 import os
+import re
 import secrets
+from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-from flask import Flask, Response, redirect, render_template, request, session
+from flask import Flask, Response, abort, redirect, render_template, request, send_from_directory, session
 
 import features.cso_history.page as cso_history_page
 import features.discharges.page as discharges_page
@@ -238,6 +240,17 @@ def _bwtf_view():
     return Response(html, content_type="text/html; charset=utf-8")
 
 
+_REPORTS_DIR = Path(__file__).resolve().parents[1] / "reports"
+
+
+def _report_view(name: str):
+    """Static analyses under reports/ (e.g. the model explorer). HTML only,
+    plain file names only — nothing else in the repo is reachable here."""
+    if not re.fullmatch(r"[A-Za-z0-9._-]+\.html", name) or not (_REPORTS_DIR / name).is_file():
+        abort(404)
+    return send_from_directory(_REPORTS_DIR, name, mimetype="text/html")
+
+
 def create_app():
     app = Flask(__name__)
     app.jinja_env.globals["DATASF_DATASET_URL"] = DATASET_PAGE_URL  # shared/datasf.py
@@ -290,6 +303,9 @@ def create_app():
     # Discharge ledger (public read-only; static CSD dataset from CIWQS SMRs)
     for path, handler in discharges_page.GET_ROUTES.items():
         app.add_url_rule(path, f"discharges-get:{path}", _forecast_view(handler), methods=["GET"])
+
+    # Reports: static HTML analyses committed under reports/ (model explorer, v4 report …)
+    app.add_url_rule("/reports/<name>", "reports", _report_view, methods=["GET"])
 
     # Alert signup — deliberately UNGATED, including its POST: this is the one
     # alerts surface meant for the public (zone subscribe, email only; the

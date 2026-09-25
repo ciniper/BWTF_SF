@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How the SF CSO forecast works — v4 model explorer</title>
+<link rel="icon" href="/static/brand/favicon.ico">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#E3EBF2;color:#26272a;font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:15px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding:22px}
+header{background:#0072BC;color:#fff;border-radius:22px;padding:26px 28px;margin-bottom:16px}
+header h1{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:40px;letter-spacing:.05em;margin:0 0 6px}
+header .sub{opacity:.9;margin:0}
+header .meta{margin-top:12px;display:flex;flex-wrap:wrap;gap:8px}
+header .meta span{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);border-radius:999px;padding:5px 11px;font-size:12.5px}
+nav{position:sticky;top:0;z-index:5;background:#E3EBF2;padding:8px 0 10px;display:flex;flex-wrap:wrap;gap:6px}
+nav a{background:#fff;border:2px solid #d9e4e8;border-radius:999px;padding:6px 13px;font-size:13px;font-weight:600;color:#54576F;text-decoration:none}
+nav a:hover{border-color:#0072BC;color:#0072BC}
+section{background:#fff;border:1px solid #d9e4e8;border-radius:20px;padding:22px 24px;margin:14px 0}
+section h2{margin:0 0 6px;font-size:22px;font-weight:900}
+section h3{margin:18px 0 8px;font-size:15px;text-transform:uppercase;letter-spacing:.08em;color:#54576F}
+.lead{color:#54576F;margin:0 0 12px}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.card{background:#f3f6f9;border-radius:14px;padding:14px 16px}
+.card b.t{display:block;font-size:15px;margin-bottom:6px}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:6px 8px;border-bottom:1px solid #e3ebf2;text-align:left;vertical-align:top}
+th{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:#54576F}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;background:#eef3f7;padding:1px 5px;border-radius:5px}
+.mute{color:#54576F}
+.badge{display:inline-block;border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:700}
+.badge.ok{background:#e0f0ea;color:#237059}.badge.warn{background:#fbe9d9;color:#b5310a}.badge.info{background:#e3ebf2;color:#0072BC}.badge.bad{background:#f8dcd6;color:#8f2508}
+.bar{height:10px;background:#0072BC;border-radius:5px}
+.bars .row{display:grid;grid-template-columns:170px 1fr 52px;gap:8px;align-items:center;font-size:13px;padding:2px 0}
+.bars .row .num{text-align:right}
+svg text{font-family:'Roboto',sans-serif}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0 12px}
+select,input[type=number],button{font-family:inherit;font-size:13.5px;border:2px solid #d9e4e8;border-radius:10px;background:#fff;padding:6px 10px;color:#26272a}
+button{cursor:pointer;font-weight:600;color:#54576F}button:hover{border-color:#0072BC;color:#0072BC}
+input[type=range]{width:160px}
+.risk{font-weight:900;font-size:22px}
+.pill{display:inline-block;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:700;color:#fff}
+.kbd{font-size:12px;color:#54576F}
+.heat td{text-align:center;font-variant-numeric:tabular-nums}
+.tree-node{cursor:default}
+.formula{font-family:ui-monospace,Menlo,monospace;background:#26272a;color:#e3ebf2;border-radius:12px;padding:12px 14px;font-size:13px;overflow-x:auto}
+.fine{font-size:12.5px;color:#54576F}
+.ok-check{color:#237059;font-weight:700}.bad-check{color:#b5310a;font-weight:700}
+footer{color:#54576F;font-size:12.5px;text-align:center;padding:16px}
+a{color:#0072BC}
+</style></head>
+<body><div class="wrap">
+<header>
+  <h1>How the SF CSO forecast works</h1>
+  <p class="sub">The served v4 models, opened up: where the rain numbers come from, what the models are given, the trees they are made of, and how a discharge probability becomes a beach-risk percentage. Everything on this page is computed from the deployed model files — the page runs the real trees in your browser.</p>
+  <div class="meta" id="meta"></div>
+</header>
+<nav>
+  <a href="#pipeline">Pipeline</a><a href="#rain">Rain sources</a><a href="#inputs">Inputs & what-if</a><a href="#stage1">Stage 1 models</a><a href="#volume">Volume heads</a><a href="#stage2">Stage 2 impact</a><a href="#geo">Basins → groups → zones</a><a href="#check">Self-check</a>
+</nav>
+
+<section id="pipeline"><h2>Pipeline</h2>
+<p class="lead">Rain in, beach risk out. Click a box to jump to its section.</p>
+<div id="pipelineSvg"></div>
+</section>
+
+<section id="rain"><h2>Rain sources</h2>
+<p class="lead">Two NOAA daily gauges define "rain" for training and for every past day; live hours come from the SFO airport gauge and the ECMWF forecast. Each basin model was trained on one rain source and is served the same one.</p>
+<div class="grid g2">
+  <div class="card"><b class="t">The two gauges (NOAA COOP via ACIS)</b><table id="gaugeTable"></table></div>
+  <div class="card"><b class="t">Which rain each basin model sees</b><table id="basinSourceTable"></table>
+  <p class="fine" style="margin:8px 0 0">Chosen per basin at training time: the local gauge was adopted only where it beat the two-gauge mean on the chronological holdout by ≥ 0.01 PR-AUC without a worse Brier score. Fill rule when a gauge day is missing: the other gauge, then the hourly model total, then 0.</p></div>
+</div>
+<h3>Live feeds and their roles</h3>
+<table id="feedTable"></table>
+<h3>The two gauges, last 14 months</h3>
+<p class="fine">Daily totals in inches. Shaded spans: one gauge reported exactly 0.00 for ≥ 2 consecutive days while the other gauge totalled ≥ 0.5" — a dead gauge fed as zeros, not a dry spell. Westside and Southeast run on the two-gauge mean, so they see half the rain during an Oceanside outage.</p>
+<div id="gaugeChart"></div>
+<div id="outageList" class="fine"></div>
+</section>
+
+<section id="inputs"><h2>Inputs: the 19 features, and a what-if editor</h2>
+<p class="lead">Every model sees the same 19 numbers for a day, all derived from daily rain totals and hourly peak intensity. Nothing else — no tide, no season, no location. Edit the last two weeks of gauge rain below and watch the features, the basin probabilities and the zone risks respond; the arithmetic is the deployed models' own.</p>
+<div class="controls">
+  <label>Start from a real day <select id="sampleSel"></select></label>
+  <button id="resetBtn">Reset to the real rain</button>
+  <span class="kbd">Drag bars to change a day's rain. Today is the rightmost bar.</span>
+</div>
+<div id="editor"></div>
+<div class="controls">
+  <label>Today's peak 1h <input type="range" id="i1" min="0" max="1.5" step="0.01"> <span id="i1v" class="mono"></span></label>
+  <label>3h <input type="range" id="i3" min="0" max="2.5" step="0.01"> <span id="i3v" class="mono"></span></label>
+  <label>6h <input type="range" id="i6" min="0" max="3.5" step="0.01"> <span id="i6v" class="mono"></span></label>
+</div>
+<div class="grid g2" style="margin-top:10px">
+  <div class="card"><b class="t">Features for today, per rain source</b><table id="featTable"></table></div>
+  <div class="card"><b class="t">What the models say for today</b>
+    <div id="basinOut"></div>
+    <h3 style="margin-top:14px">Composed beach risk (stage 2 over the last 8 days)</h3>
+    <div id="zoneOut"></div>
+  </div>
+</div>
+<h3>Feature definitions</h3>
+<table id="featDefs"></table>
+</section>
+
+<section id="stage1"><h2>Stage 1: P(discharge today), one gradient-boosted model per basin</h2>
+<p class="lead">Each basin has its own model: <span id="gbDesc"></span>. A model is a sum of small decision trees. Each tree looks at a few features, walks to a leaf and adds that leaf's value; the sum is a log-odds score that a sigmoid turns into a probability, then a small dry-day offset is subtracted. Feature importance is how much of the trees' total split gain each feature earned.</p>
+<div class="formula" id="gbFormula"></div>
+<div class="grid g2" id="modelCards" style="margin-top:14px"></div>
+<h3>Response to today's rain</h3>
+<p class="fine">Today's total swept from 0 to 3" on both gauges (peak intensities scaled with it), every other feature held at the what-if state above. This is what each basin model "thinks" a wet day means given the antecedent conditions you set.</p>
+<div id="responseChart"></div>
+<h3>Look inside a tree</h3>
+<div class="controls">
+  <label>Model <select id="treeModel"></select></label>
+  <label>Tree <input type="range" id="treeIdx" min="0" max="199" step="1" value="0"> <span id="treeIdxV" class="mono"></span></label>
+  <span class="kbd">The highlighted path is the one today's what-if features take.</span>
+</div>
+<div id="treeSvg"></div>
+<p class="fine" id="treeNote"></p>
+</section>
+
+<section id="volume"><h2>Volume heads: how big would the discharge be?</h2>
+<p class="lead">A second gradient-boosted model per basin (a regressor on log(1+MG)) estimates the expected discharge volume from the same 19 features. Stage 2 uses it to pick between the "small" and "large" persistence curves. Trained only on events with a reported volume.</p>
+<div class="grid g2" id="volumeCards"></div>
+</section>
+
+<section id="stage2"><h2>Stage 2: from discharge probability to beach risk</h2>
+<p class="lead">A discharge contaminates beaches for days. The impact table is empirical: for each beach group, how often its samples were over standard k days after a discharge, split by discharge size, with the dry-weather background removed. The displayed risk composes the last 8 days of discharge probabilities with that decay. A discharge day itself is always a stay-out day (x(0) = 1).</p>
+<div class="formula">risk(D) = 1 − ∏<sub>k=0..7</sub> ( 1 − p<sub>discharge</sub>(D−k) · x(k, size(D−k)) )      with x(0, ·) = 1
+x(k, size) = attributable P(elevated) = (p<sub>table</sub> − baseline) / (1 − baseline), blended small↔large by volume / (volume + median event)</div>
+<div class="controls" style="margin-top:12px"><label>Table <select id="impactMode"><option value="impact_smoothed">smoothed (served)</option><option value="impact_raw">raw fit</option></select></label><span class="fine">Smoothing = weighted pool-adjacent-violators: each curve is forced non-increasing over days since discharge, because contamination decays.</span></div>
+<div id="impactTables" class="grid g2"></div>
+<h3>Walk through today's composition</h3>
+<div class="controls"><label>Group <select id="walkGroup"></select></label></div>
+<table id="walkTable"></table>
+</section>
+
+<section id="geo"><h2>Basins → groups → zones</h2>
+<p class="lead">Outfalls belong to a drainage basin (the model unit). Beaches are grouped by which outfalls post them (the impact-table unit). A zone, what subscribers pick and the forecast page leads with, is the worst of its groups.</p>
+<div class="grid g3" id="geoCards"></div>
+</section>
+
+<section id="check"><h2>Self-check: this page vs scikit-learn</h2>
+<p class="lead">For each real storm below, the exporter recorded the features and probabilities scikit-learn produced from the pickles. The page recomputes them from the raw daily rain with its own JavaScript and compares.</p>
+<table id="checkTable"></table>
+<p class="fine" id="checkSummary"></p>
+</section>
+
+<footer>Generated <span id="genAt"></span> by <code>features/forecast/src/models/export_model_explorer.py</code> from the served pickles, impact table, data/raw and the scorecard artifact. <a href="/forecast">Back to the forecast</a></footer>
+</div>
+
+<script>
+const D = __DATA__;
+const FEATS = D.features.all;
+const BASINS = ['westside','north_shore','central','southeast'];
+const MODEL_ORDER = BASINS.concat(['citywide']);
+const ZONE_ORDER = ['ocean','baker_china','north','east'];
+const SOURCES = ['avg','SF Downtown','SF Oceanside'];
+const COLORS = {westside:'#0072BC', north_shore:'#237059', central:'#7b4bb5', southeast:'#d4763a', citywide:'#54576F'};
+const nameOf = k => k === 'citywide' ? 'City-wide' : D.basins[k].name;
+const esc = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pct = p => Math.round(p * 100) + '%';
+const f2 = v => v == null ? '—' : Number(v).toFixed(2);
+const f3 = v => v == null ? '—' : Number(v).toFixed(3);
+const riskColor = p => p >= .75 ? '#8f2508' : p >= .5 ? '#b5310a' : p >= .25 ? '#d4763a' : p >= .1 ? '#b97e00' : '#237059';
+const fmtDate = s => new Date(s + 'T12:00:00').toLocaleDateString(undefined, {month:'short', day:'numeric', year:'numeric'});
+const fmtMon = s => new Date(s + 'T12:00:00').toLocaleDateString(undefined, {month:'short', year:'numeric'});
+
+// ─── header ────────────────────────────────────────────────────────────────
+document.getElementById('meta').innerHTML = [
+  'models ' + esc(D.version) + ' · trained ' + esc((D.trained_at||'').slice(0,10)),
+  'training window ' + esc((D.train_window||[]).join(' → ')),
+  'holdout from ' + esc(D.holdout_start),
+  D.rescored_at ? 'scorecard rescored through ' + esc(D.span[1]) : '',
+  esc(D.features.all.length) + ' features · ' + esc(D.model_params.n_estimators) + ' trees × depth ' + esc(D.model_params.max_depth) + ' per model',
+].filter(Boolean).map(t => '<span>' + t + '</span>').join('');
+document.getElementById('genAt').textContent = D.generated_at;
+
+// ─── pipeline diagram ───────────────────────────────────────────────────────
+(function pipeline() {
+  const boxes = [
+    {id:'g', x:10,  y:20,  w:150, h:56, t:['NOAA gauges','047772 · 047767'], href:'#rain'},
+    {id:'k', x:10,  y:92,  w:150, h:56, t:['KSFO hourly obs','recent hours'], href:'#rain'},
+    {id:'e', x:10,  y:164, w:150, h:56, t:['ECMWF IFS forecast','today + 5 days'], href:'#rain'},
+    {id:'h', x:10,  y:236, w:150, h:56, t:['Open-Meteo hourly','peak intensity'], href:'#rain'},
+    {id:'s', x:210, y:92,  w:170, h:90, t:['Daily rain per source','avg · Downtown · Oceanside'], href:'#rain'},
+    {id:'f', x:430, y:92,  w:150, h:90, t:['19 features','totals, lags, moisture,','peaks, dry spell'], href:'#inputs'},
+    {id:'m', x:630, y:40,  w:190, h:80, t:['Stage 1: 4 basin models','P(discharge today)','gradient boosting'], href:'#stage1'},
+    {id:'v', x:630, y:150, w:190, h:64, t:['Volume heads','expected MG'], href:'#volume'},
+    {id:'i', x:870, y:40,  w:190, h:80, t:['Stage 2: impact table','decay by days since,','small / large'], href:'#stage2'},
+    {id:'c', x:870, y:150, w:190, h:64, t:['Compose last 8 days','group risk'], href:'#stage2'},
+    {id:'z', x:1090,y:92,  w:80,  h:90, t:['Zone =','worst','group'], href:'#geo'},
+  ];
+  const arrows = [['g','s'],['k','s'],['e','s'],['h','f'],['s','f'],['f','m'],['f','v'],['m','c'],['v','c'],['i','c'],['c','z']];
+  const B = Object.fromEntries(boxes.map(b => [b.id, b]));
+  let svg = '<svg viewBox="0 0 1180 310" width="100%" style="max-width:1180px;display:block">';
+  svg += '<defs><marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#54576F"/></marker></defs>';
+  for (const [a, b] of arrows) {
+    const A = B[a], Z = B[b];
+    const x1 = A.x + A.w, y1 = A.y + A.h/2, x2 = Z.x, y2 = Z.y + Z.h/2;
+    svg += `<path d="M${x1},${y1} C${x1+30},${y1} ${x2-30},${y2} ${x2},${y2}" fill="none" stroke="#54576F" stroke-width="1.6" marker-end="url(#arr)"/>`;
+  }
+  for (const b of boxes) {
+    svg += `<a href="${b.href}"><rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="12" fill="${b.id==='m'||b.id==='i'?'#0072BC':'#f3f6f9'}" stroke="#d9e4e8"/>`;
+    b.t.forEach((line, i) => { svg += `<text x="${b.x + b.w/2}" y="${b.y + 20 + i*16}" text-anchor="middle" font-size="${i?11.5:13}" font-weight="${i?400:700}" fill="${b.id==='m'||b.id==='i'?'#fff':(i?'#54576F':'#26272a')}">${esc(line)}</text>`; });
+    svg += '</a>';
+  }
+  svg += '</svg>';
+  document.getElementById('pipelineSvg').innerHTML = svg;
+})();
+
+// ─── rain sources ───────────────────────────────────────────────────────────
+(function rain() {
+  const gt = ['<tr><th>Station</th><th>Name</th><th>Location</th><th class="num">Elev (ft)</th><th>Data through</th><th>Used by</th></tr>'];
+  for (const [sid, g] of Object.entries(D.gauges)) {
+    const users = MODEL_ORDER.filter(k => D.models[k].rain_source === 'avg' || D.models[k].rain_source === g.label).map(nameOf);
+    gt.push(`<tr><td><code>${esc(sid)}</code></td><td>${esc(g.label)}<br><span class="fine">${esc(g.name)}</span></td><td class="mono">${esc(g.lat)}, ${esc(g.lon)}</td><td class="num">${esc(g.elev_ft)}</td><td>${esc(g.valid_through || '?')}</td><td class="fine">${esc(users.join(', '))}</td></tr>`);
+  }
+  document.getElementById('gaugeTable').innerHTML = gt.join('');
+  const bt = ['<tr><th>Model</th><th>Rain source</th><th>Meaning</th></tr>'];
+  for (const k of MODEL_ORDER) {
+    const s = D.models[k].rain_source;
+    bt.push(`<tr><td><span class="pill" style="background:${COLORS[k]}">${esc(nameOf(k))}</span></td><td><b>${esc(s === 'avg' ? 'two-gauge mean' : s)}</b></td><td class="fine">${s === 'avg' ? 'mean of Downtown and Oceanside each day' : 'that gauge alone (other gauge as fallback)'}</td></tr>`);
+  }
+  document.getElementById('basinSourceTable').innerHTML = bt.join('');
+  document.getElementById('feedTable').innerHTML = '<tr><th style="width:24%">Role</th><th style="width:30%">Source</th><th>Detail</th></tr>' +
+    D.live_feeds.map(f => `<tr><td><b>${esc(f.role)}</b></td><td>${esc(f.source)}</td><td class="fine">${esc(f.detail)}</td></tr>`).join('');
+
+  // gauge chart: two small multiples
+  const gs = D.gauge_series, n = gs.dates.length, W = 1120, H = 120, pad = 36;
+  const maxv = Math.max(0.5, ...['SF Downtown','SF Oceanside'].flatMap(g => (gs[g]||[]).filter(v => v != null)));
+  const x = i => pad + i * (W - pad - 10) / n, bw = Math.max(1, (W - pad - 10) / n - 0.3);
+  let html = '';
+  for (const g of ['SF Downtown','SF Oceanside']) {
+    let s = `<svg viewBox="0 0 ${W} ${H+30}" width="100%" style="display:block;margin:6px 0">`;
+    for (const o of gs.outages.filter(o => o.gauge === g)) {
+      const i0 = gs.dates.indexOf(o.start), i1 = gs.dates.indexOf(o.end);
+      if (i0 >= 0) s += `<rect x="${x(i0)}" y="8" width="${x(i1 < 0 ? n-1 : i1) - x(i0) + bw}" height="${H-8}" fill="#f8dcd6"/>`;
+    }
+    (gs[g]||[]).forEach((v, i) => { if (v == null) s += `<rect x="${x(i)}" y="${H-3}" width="${bw}" height="3" fill="#b5310a" opacity=".5"><title>${gs.dates[i]}: missing</title></rect>`;
+      else if (v > 0) s += `<rect x="${x(i)}" y="${H - v/maxv*(H-14)}" width="${bw}" height="${v/maxv*(H-14)}" fill="${g==='SF Downtown'?'#0072BC':'#237059'}"><title>${gs.dates[i]}: ${v.toFixed(2)}"</title></rect>`; });
+    s += `<line x1="${pad}" y1="${H}" x2="${W-10}" y2="${H}" stroke="#d9e4e8"/>`;
+    s += `<text x="${pad-6}" y="14" text-anchor="end" font-size="11" fill="#54576F">${maxv.toFixed(1)}"</text><text x="${pad-6}" y="${H}" text-anchor="end" font-size="11" fill="#54576F">0</text>`;
+    s += `<text x="${pad}" y="${H+22}" font-size="12" font-weight="700" fill="#26272a">${esc(g)} (${esc(Object.entries(D.gauges).find(([,m]) => m.label === g)?.[0] || '')})</text>`;
+    let lastMon = '';
+    gs.dates.forEach((d, i) => { const m = d.slice(0, 7); if (m !== lastMon && d.slice(8) <= '07') { lastMon = m; s += `<text x="${x(i)}" y="${H+22}" font-size="10.5" fill="#54576F" text-anchor="middle">${fmtMon(d)}</text>`; } });
+    s += '</svg>';
+    html += s;
+  }
+  document.getElementById('gaugeChart').innerHTML = html;
+  document.getElementById('outageList').innerHTML = gs.outages.length ? '<b>Zero-runs during rain at the other gauge:</b> ' + gs.outages.map(o => `${esc(o.gauge)} ${fmtDate(o.start)} → ${fmtDate(o.end)} (${o.days} days; other gauge ${o.other_total}")`).join(' · ') : 'No zero-runs in this window.';
+})();
+
+// ─── feature arithmetic (port of src/models/rain_features.py) ───────────────
+const LN2_3 = Math.log(2) / 3;
+function dailyFeatures(r) {
+  const out = []; let dry = 0;
+  for (let i = 0; i < r.length; i++) {
+    const f = {precip_avg: r[i]};
+    for (const w of [2,3,5,7,14,30]) { let s = 0; for (let j = Math.max(0, i-w+1); j <= i; j++) s += r[j]; f[`rain_${w}d_cum`] = s; }
+    for (const lag of [1,2,3,5,7]) f[`rain_lag${lag}d`] = i - lag >= 0 ? r[i-lag] : 0;
+    let sw = 0, ww = 0; for (let j = Math.max(0, i-13); j <= i; j++) { const w = Math.exp(-LN2_3 * (i-j)); sw += r[j]*w; ww += w; } f.antecedent_moisture = sw / ww;
+    let p3 = 0; for (let j = Math.max(0, i-3); j <= i-1; j++) p3 += r[j]; f.wet_prior_3d = (i >= 1 && p3 > 0.1) ? 1 : 0;
+    let pk = 0; for (let j = Math.max(0, i-2); j <= i; j++) pk = Math.max(pk, r[j]); f.peak_3d = pk;
+    dry = r[i] < 0.05 ? dry + 1 : 0; f.dry_spell_days = dry;
+    out.push(f);
+  }
+  return out;
+}
+// ─── gradient boosting (exact walk of the exported trees) ───────────────────
+// scikit-learn casts the feature row to float32 before comparing with each
+// (float64) split threshold — Math.fround reproduces that exactly.
+function gbRaw(m, x, upto) {
+  let s = m.init_raw; const K = upto == null ? m.trees.length : upto; const x32 = x.map(Math.fround);
+  for (let k = 0; k < K; k++) { const t = m.trees[k]; let n = 0; while (t.l[n] !== -1) n = x32[t.f[n]] <= t.t[n] ? t.l[n] : t.r[n]; s += m.learning_rate * t.v[n]; }
+  return s;
+}
+const sigmoid = z => 1 / (1 + Math.exp(-z));
+const vec = f => FEATS.map(k => f[k]);
+function predictP(m, f) { const raw = sigmoid(gbRaw(m, vec(f))); const rf = Math.min(1, Math.max(0, 1 - f.rain_3d_cum * 2)); return Math.min(1, Math.max(0, raw - m.calibration_offset * rf)); }
+function predictVol(h, f) { return Math.max(0, Math.expm1(gbRaw(h, vec(f)))); }
+// ─── stage 2 (port of src/models/impact.py) ─────────────────────────────────
+const BUCKETS = ['0','1','2','3','4-5','6-7'];
+const bucketIndex = k => k <= 3 ? k : (k <= 5 ? 4 : 5);
+function impactFraction(table, group, k, vol) {
+  const gt = table[group] || {}, b = gt.buckets || {};
+  if (!Object.keys(b).length) return k === 0 ? 1 : 0;
+  const base = (b.baseline_no_recent_discharge || {}).p_elevated || 0, bi = bucketIndex(k);
+  const attr = size => { for (let j = bi; j >= 0; j--) { const p = (b[`d${BUCKETS[j]}_${size}`] || {}).p_elevated; if (p != null) return base < 1 ? Math.max(0, (p - base) / (1 - base)) : 0; } return null; };
+  const xs = attr('small'), xl = attr('large');
+  if (xs == null && xl == null) return 0; if (xs == null) return xl; if (xl == null) return xs;
+  const med = gt.median_event_volume_mg || 1, wl = vol / (vol + med);
+  return wl * xl + (1 - wl) * xs;
+}
+function compose(table, probs, vols, idx) {
+  const perGroup = {}, perBasin = {}, terms = {};
+  for (const bk of BASINS) { let best = 0;
+    for (const g of D.basins[bk].groups) { let ni = 1; terms[g] = [];
+      for (let k = 0; k < 8; k++) { const j = idx - k; if (j < 0) continue; const p = probs[j][bk]; const vol = (vols[j] || {})[bk] || 0; const x = k === 0 ? 1 : impactFraction(table, g, k, vol);
+        terms[g].push({k, j, p, vol, x, factor: p ? 1 - p * x : 1}); if (!p) continue; ni *= 1 - p * x; }
+      const r = Math.round((1 - ni) * 1000) / 1000; perGroup[g] = r; best = Math.max(best, r); }
+    perBasin[bk] = best; }
+  return {perGroup, perBasin, terms};
+}
+const zoneRisks = perGroup => Object.fromEntries(ZONE_ORDER.map(zk => [zk, Math.max(0, ...D.zones[zk].groups.map(g => perGroup[g] || 0))]));
+
+// ─── what-if state ──────────────────────────────────────────────────────────
+const S = {};
+function loadSample(i) {
+  const s = D.samples[i]; S.sample = s;
+  S.dates = s.history.dates.slice();
+  S.g = {'SF Downtown': s.history['SF Downtown'].slice(), 'SF Oceanside': s.history['SF Oceanside'].slice()};
+  S.intensity = {rain_max1h: s.history.intensity.rain_max1h.slice(), rain_max3h: s.history.intensity.rain_max3h.slice(), rain_max6h: s.history.intensity.rain_max6h.slice()};
+  const n = S.dates.length - 1;
+  for (const [id, f] of [['i1','rain_max1h'],['i3','rain_max3h'],['i6','rain_max6h']]) document.getElementById(id).value = S.intensity[f][n];
+  recompute();
+}
+function seriesFor(src) { if (src === 'avg') return S.g['SF Downtown'].map((v, i) => (v + S.g['SF Oceanside'][i]) / 2); return S.g[src]; }
+function featuresBySource(intensityOverride) {
+  const out = {};
+  for (const src of SOURCES) { const fs = dailyFeatures(seriesFor(src)); fs.forEach((f, i) => { for (const k of D.features.intensity) f[k] = S.intensity[k][i]; }); if (intensityOverride) Object.assign(fs[fs.length-1], intensityOverride); out[src] = fs; }
+  return out;
+}
+function scoreAll(fbs) {
+  const n = S.dates.length, probs = [], vols = [];
+  for (let j = 0; j < n; j++) { const p = {}, v = {};
+    for (const bk of MODEL_ORDER) { const m = D.models[bk]; p[bk] = predictP(m, fbs[m.rain_source][j]); const h = D.volume_heads[bk]; if (h) v[bk] = predictVol(h, fbs[h.rain_source || m.rain_source][j]); }
+    probs.push(p); vols.push(v); }
+  return {probs, vols};
+}
+let CURRENT = null;
+function recompute() {
+  const n = S.dates.length - 1;
+  for (const [id, f] of [['i1','rain_max1h'],['i3','rain_max3h'],['i6','rain_max6h']]) { S.intensity[f][n] = parseFloat(document.getElementById(id).value); document.getElementById(id + 'v').textContent = S.intensity[f][n].toFixed(2) + '"'; }
+  const fbs = featuresBySource();
+  const {probs, vols} = scoreAll(fbs);
+  const comp = compose(D.impact_smoothed, probs, vols, n);
+  CURRENT = {fbs, probs, vols, comp, zones: zoneRisks(comp.perGroup), n};
+  renderEditor(); renderFeatTable(); renderOutputs(); renderResponse(); renderTree(); renderWalk();
+}
+// editor: draggable bars for the last 14 days of each gauge
+const EDIT_DAYS = 14;
+function renderEditor() {
+  const n = S.dates.length, start = n - EDIT_DAYS, W = 1100, H = 110, pad = 90, colw = (W - pad - 10) / EDIT_DAYS, maxv = 3.0;
+  let html = '';
+  for (const g of ['SF Downtown','SF Oceanside']) {
+    let s = `<svg viewBox="0 0 ${W} ${H+26}" width="100%" style="display:block;touch-action:none;user-select:none" data-g="${esc(g)}">`;
+    s += `<text x="8" y="${H/2}" font-size="12.5" font-weight="700" fill="#26272a">${esc(g)}</text>`;
+    for (let i = 0; i < EDIT_DAYS; i++) { const j = start + i, v = S.g[g][j], x = pad + i * colw, hgt = Math.min(H-10, v / maxv * (H-10));
+      s += `<rect class="hit" data-j="${j}" x="${x}" y="0" width="${colw-4}" height="${H}" fill="transparent"/>`;
+      s += `<rect data-j="${j}" x="${x}" y="${H - hgt}" width="${colw-4}" height="${hgt}" rx="3" fill="${g==='SF Downtown'?'#0072BC':'#237059'}" opacity="${j===n-1?1:.75}" pointer-events="none"/>`;
+      s += `<text x="${x + (colw-4)/2}" y="${H - hgt - 4}" text-anchor="middle" font-size="10.5" fill="#26272a" pointer-events="none">${v.toFixed(2)}</text>`;
+      if (g === 'SF Oceanside') s += `<text x="${x + (colw-4)/2}" y="${H+18}" text-anchor="middle" font-size="10.5" fill="${j===n-1?'#0072BC':'#54576F'}" font-weight="${j===n-1?700:400}" pointer-events="none">${j===n-1 ? 'today' : S.dates[j].slice(5)}</text>`; }
+    s += '</svg>';
+    html += s;
+  }
+  const el = document.getElementById('editor'); el.innerHTML = html;
+  for (const svg of el.querySelectorAll('svg')) {
+    const g = svg.dataset.g; let down = false;
+    const setFromEvent = ev => { const t = ev.target.closest('rect[data-j]'); if (!t) return; const j = +t.dataset.j; const pt = svg.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY; const p = pt.matrixTransform(svg.getScreenCTM().inverse()); const v = Math.max(0, Math.min(maxv, (H - p.y) / (H-10) * maxv)); S.g[g][j] = Math.round(v * 100) / 100; recompute(); };
+    svg.addEventListener('pointerdown', ev => { down = true; setFromEvent(ev); });
+    svg.addEventListener('pointermove', ev => { if (down) setFromEvent(ev); });
+    window.addEventListener('pointerup', () => { down = false; });
+  }
+}
+function renderFeatTable() {
+  const n = CURRENT.n, rows = ['<tr><th>Feature</th>' + SOURCES.map(s => `<th class="num">${esc(s === 'avg' ? 'two-gauge mean' : s)}</th>`).join('') + '</tr>'];
+  for (const f of FEATS) rows.push(`<tr><td><code>${f}</code></td>` + SOURCES.map(s => `<td class="num">${Number(CURRENT.fbs[s][n][f]).toFixed(f === 'wet_prior_3d' || f === 'dry_spell_days' ? 0 : 3)}</td>`).join('') + '</tr>');
+  document.getElementById('featTable').innerHTML = rows.join('');
+}
+function renderOutputs() {
+  const n = CURRENT.n, p = CURRENT.probs[n], v = CURRENT.vols[n];
+  let html = '<div class="bars">';
+  for (const k of MODEL_ORDER) html += `<div class="row"><span><span class="pill" style="background:${COLORS[k]}">${esc(nameOf(k))}</span> <span class="fine">${esc(D.models[k].rain_source === 'avg' ? 'mean' : D.models[k].rain_source)}</span></span><span><span class="bar" style="width:${Math.max(1, p[k]*100)}%;background:${riskColor(p[k])}"></span></span><span class="num">${pct(p[k])}${v[k] != null ? ' <span class="fine">' + f2(v[k]) + ' MG</span>' : ''}</span></div>`;
+  html += '</div><p class="fine">P(discharge today) per basin, and the volume head\'s expected size if it happens. City-wide is a diagnostic model; the page and the alerts use the worst basin.</p>';
+  document.getElementById('basinOut').innerHTML = html;
+  let z = '<div class="grid g2">';
+  for (const zk of ZONE_ORDER) { const r = CURRENT.zones[zk]; z += `<div><div class="risk" style="color:${riskColor(r)}">${pct(r)}</div><b>${esc(D.zones[zk].label)}</b><div class="fine">${D.zones[zk].groups.map(g => `${esc(g)} ${pct(CURRENT.comp.perGroup[g] || 0)}`).join(' · ')}</div></div>`; }
+  z += '</div>';
+  document.getElementById('zoneOut').innerHTML = z;
+}
+// feature definitions
+(function featDefs() {
+  const defs = {precip_avg:"today's total (inches) from the model's rain source", rain_2d_cum:'trailing 2-day sum incl. today', rain_3d_cum:'trailing 3-day sum', rain_5d_cum:'trailing 5-day sum', rain_7d_cum:'trailing 7-day sum', rain_14d_cum:'trailing 14-day sum', rain_30d_cum:'trailing 30-day sum',
+    rain_lag1d:'total 1 day ago', rain_lag2d:'total 2 days ago', rain_lag3d:'total 3 days ago', rain_lag5d:'total 5 days ago', rain_lag7d:'total 7 days ago',
+    antecedent_moisture:'14-day exponentially weighted mean of daily totals, 3-day half-life (today weighs 1, 3 days ago ½, 6 days ago ¼ …)', wet_prior_3d:'1 if the three days before today summed > 0.1"', peak_3d:'largest daily total in the trailing 3 days', dry_spell_days:'consecutive days < 0.05" ending today (0 on a wet day)',
+    rain_max1h:"today's wettest single hour (Open-Meteo hourly)", rain_max3h:"today's wettest 3-hour window (may straddle midnight)", rain_max6h:"today's wettest 6-hour window"};
+  document.getElementById('featDefs').innerHTML = '<tr><th>Feature</th><th>Meaning</th><th class="num">Importance, Westside</th><th class="num">North Shore</th><th class="num">Central</th><th class="num">Southeast</th></tr>' +
+    FEATS.map(f => `<tr><td><code>${f}</code></td><td class="fine">${esc(defs[f] || '')}</td>` + BASINS.map(b => `<td class="num">${(D.models[b].importances[f]*100).toFixed(1)}%</td>`).join('') + '</tr>').join('');
+})();
+
+// ─── stage 1 cards ──────────────────────────────────────────────────────────
+(function stage1() {
+  const mp = D.model_params;
+  document.getElementById('gbDesc').textContent = `${mp.n_estimators} trees of depth ${mp.max_depth}, learning rate ${mp.learning_rate}, scikit-learn GradientBoostingClassifier` + (mp.min_samples_leaf ? `, ≥ ${mp.min_samples_leaf} training days per leaf` : '') + (mp.subsample && mp.subsample < 1 ? `, ${mp.subsample*100}% row subsampling` : '');
+  document.getElementById('gbFormula').innerHTML = `score(x) = init + ${mp.learning_rate} × Σ<sub>k=1..${mp.n_estimators}</sub> leaf<sub>k</sub>(x)        init = log-odds of the training discharge rate\nP<sub>raw</sub> = 1 / (1 + e<sup>−score</sup>)\nP = clip( P<sub>raw</sub> − offset × clip(1 − rain_3d_cum × 2, 0, 1), 0, 1 )      offset = mean P<sub>raw</sub> on dry training days (fades out as 3-day rain → 0.5")`;
+  let html = '';
+  for (const k of MODEL_ORDER) {
+    const m = D.models[k], h = D.holdout[k] || {};
+    const imps = Object.entries(m.importances).sort((a, b) => b[1] - a[1]).slice(0, 8);
+    html += `<div class="card"><b class="t"><span class="pill" style="background:${COLORS[k]}">${esc(nameOf(k))}</span></b>
+      <table><tr><td class="fine">rain source</td><td><b>${esc(m.rain_source === 'avg' ? 'two-gauge mean' : m.rain_source)}</b></td></tr>
+      <tr><td class="fine">prior (init)</td><td>log-odds ${m.init_raw.toFixed(3)} → ${(sigmoid(m.init_raw)*100).toFixed(2)}% of covered training days had a discharge</td></tr>
+      <tr><td class="fine">dry-day offset</td><td>${(m.calibration_offset*100).toFixed(2)} pts</td></tr>
+      <tr><td class="fine">training</td><td>${esc(h.n_days ?? '?')} covered days, ${esc(h.n_events ?? '?')} discharge days</td></tr>
+      <tr><td class="fine">holdout (Jul 2023 → Oct 2025)</td><td>PR-AUC ${f3(h.pr_auc)} · ROC-AUC ${f3(h.roc_auc)} · Brier ${h.brier == null ? '—' : h.brier.toFixed(4)} · ${esc(h.pos_test ?? '?')} events in ${esc(h.n_test ?? '?')} days</td></tr></table>
+      <div class="fine" style="margin:10px 0 4px">Feature importance (share of split gain)</div><div class="bars">` +
+      imps.map(([f, v]) => `<div class="row"><code>${f}</code><span><span class="bar" style="width:${Math.max(1, v*100)}%;background:${COLORS[k]}"></span></span><span class="num">${(v*100).toFixed(1)}%</span></div>`).join('') + '</div></div>';
+  }
+  document.getElementById('modelCards').innerHTML = html;
+  const sel = document.getElementById('treeModel'); sel.innerHTML = MODEL_ORDER.map(k => `<option value="${k}">${esc(nameOf(k))}</option>`).join('');
+  document.getElementById('treeIdx').max = D.model_params.n_estimators - 1;
+})();
+function renderResponse() {
+  if (!CURRENT) return;
+  const n = CURRENT.n, xs = []; for (let x = 0; x <= 3.0001; x += 0.05) xs.push(Math.round(x*100)/100);
+  const today = {'SF Downtown': S.g['SF Downtown'][n], 'SF Oceanside': S.g['SF Oceanside'][n]};
+  const inten = Object.fromEntries(D.features.intensity.map(f => [f, S.intensity[f][n]]));
+  const base = Math.max(today['SF Downtown'], today['SF Oceanside'], 0.01);
+  const curves = Object.fromEntries(MODEL_ORDER.map(k => [k, []]));
+  for (const x of xs) {
+    S.g['SF Downtown'][n] = x; S.g['SF Oceanside'][n] = x;
+    const scale = x / base, ov = {};
+    for (const f of D.features.intensity) ov[f] = inten[f] > 0 ? Math.min(x, inten[f] * scale) : Math.min(x, {rain_max1h:.2, rain_max3h:.45, rain_max6h:.7}[f] * x);
+    const fbs = featuresBySource(ov);
+    for (const k of MODEL_ORDER) curves[k].push(predictP(D.models[k], fbs[D.models[k].rain_source][n]));
+  }
+  S.g['SF Downtown'][n] = today['SF Downtown']; S.g['SF Oceanside'][n] = today['SF Oceanside'];
+  const W = 1100, H = 260, pl = 46, pb = 30;
+  const X = x => pl + x / 3 * (W - pl - 10), Y = p => 10 + (1 - p) * (H - pb - 10);
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block">`;
+  for (const p of [0, .25, .5, .75, 1]) s += `<line x1="${pl}" y1="${Y(p)}" x2="${W-10}" y2="${Y(p)}" stroke="#e3ebf2"/><text x="${pl-6}" y="${Y(p)+4}" text-anchor="end" font-size="11" fill="#54576F">${p*100}%</text>`;
+  for (const x of [0, .5, 1, 1.5, 2, 2.5, 3]) s += `<text x="${X(x)}" y="${H-8}" text-anchor="middle" font-size="11" fill="#54576F">${x.toFixed(1)}"</text>`;
+  s += `<line x1="${X(0.25)}" y1="10" x2="${X(0.25)}" y2="${H-pb}" stroke="#d9e4e8" stroke-dasharray="3 3"/>`;
+  for (const k of MODEL_ORDER) { s += `<path d="${curves[k].map((p, i) => (i ? 'L' : 'M') + X(xs[i]) + ',' + Y(p)).join(' ')}" fill="none" stroke="${COLORS[k]}" stroke-width="${k==='citywide'?1.5:2.5}" stroke-dasharray="${k==='citywide'?'4 3':''}"/>`; }
+  const tx = Math.max(today['SF Downtown'], today['SF Oceanside']); s += `<line x1="${X(Math.min(3, tx))}" y1="10" x2="${X(Math.min(3, tx))}" y2="${H-pb}" stroke="#26272a" stroke-dasharray="2 3"/><text x="${X(Math.min(3, tx))+4}" y="20" font-size="11" fill="#26272a">today ${tx.toFixed(2)}"</text>`;
+  MODEL_ORDER.forEach((k, i) => { s += `<rect x="${pl + 8 + i*150}" y="${H-pb-16}" width="12" height="12" fill="${COLORS[k]}"/><text x="${pl + 24 + i*150}" y="${H-pb-6}" font-size="11.5" fill="#26272a">${esc(nameOf(k))}</text>`; });
+  s += '</svg>';
+  document.getElementById('responseChart').innerHTML = s;
+}
+function renderTree() {
+  const k = document.getElementById('treeModel').value || MODEL_ORDER[0], ti = +document.getElementById('treeIdx').value;
+  document.getElementById('treeIdxV').textContent = '#' + ti;
+  const m = D.models[k], t = m.trees[ti];
+  const x = CURRENT ? vec(CURRENT.fbs[m.rain_source][CURRENT.n]) : null;
+  const path = new Set(); if (x) { let n = 0; path.add(0); while (t.l[n] !== -1) { n = Math.fround(x[t.f[n]]) <= t.t[n] ? t.l[n] : t.r[n]; path.add(n); } }
+  const depth = {}, pos = {}; const W = 1100, levelH = 78; let leafCount = 0;
+  (function walk(n, d) { depth[n] = d; if (t.l[n] === -1) { pos[n] = leafCount++; return; } walk(t.l[n], d+1); walk(t.r[n], d+1); pos[n] = (pos[t.l[n]] + pos[t.r[n]]) / 2; })(0, 0);
+  const maxD = Math.max(...Object.values(depth)), colw = W / Math.max(1, leafCount);
+  const X = n => colw * (pos[n] + 0.5), Y = n => 30 + depth[n] * levelH;
+  let s = `<svg viewBox="0 0 ${W} ${60 + maxD * levelH}" width="100%" style="display:block">`;
+  for (let n = 0; n < t.f.length; n++) if (t.l[n] !== -1) for (const c of [t.l[n], t.r[n]]) s += `<line x1="${X(n)}" y1="${Y(n)}" x2="${X(c)}" y2="${Y(c)}" stroke="${path.has(n) && path.has(c) ? '#0072BC' : '#c7d3da'}" stroke-width="${path.has(n) && path.has(c) ? 3 : 1.5}"/>`;
+  for (let n = 0; n < t.f.length; n++) {
+    const on = path.has(n), leaf = t.l[n] === -1;
+    if (leaf) { const v = t.v[n] * m.learning_rate; s += `<rect x="${X(n)-46}" y="${Y(n)-16}" width="92" height="32" rx="8" fill="${v > 0 ? '#f8dcd6' : '#e0f0ea'}" stroke="${on ? '#0072BC' : '#d9e4e8'}" stroke-width="${on?2.5:1}"/><text x="${X(n)}" y="${Y(n)+5}" text-anchor="middle" font-size="12" font-weight="700" fill="${v > 0 ? '#8f2508' : '#237059'}">${v >= 0 ? '+' : ''}${v.toFixed(4)}</text>`; }
+    else { const f = FEATS[t.f[n]], fv = x ? x[t.f[n]] : null; s += `<rect x="${X(n)-78}" y="${Y(n)-18}" width="156" height="36" rx="8" fill="#fff" stroke="${on ? '#0072BC' : '#d9e4e8'}" stroke-width="${on?2.5:1}"/><text x="${X(n)}" y="${Y(n)-3}" text-anchor="middle" font-size="11.5" font-weight="700" fill="#26272a">${esc(f)} ≤ ${t.t[n].toFixed(3)}</text><text x="${X(n)}" y="${Y(n)+12}" text-anchor="middle" font-size="10.5" fill="#54576F">${fv == null ? '' : 'today: ' + Number(fv).toFixed(3) + (fv <= t.t[n] ? ' → left' : ' → right')}</text>`; }
+  }
+  s += '</svg>';
+  document.getElementById('treeSvg').innerHTML = s;
+  if (x) { let leaf = 0; while (t.l[leaf] !== -1) leaf = Math.fround(x[t.f[leaf]]) <= t.t[leaf] ? t.l[leaf] : t.r[leaf];
+    const partial = gbRaw(m, x, ti + 1), full = gbRaw(m, x);
+    document.getElementById('treeNote').innerHTML = `Leaves add to the log-odds score; red raises the discharge odds, green lowers them. For today's what-if features this tree contributes <b>${(t.v[leaf]*m.learning_rate >= 0 ? '+' : '')}${(t.v[leaf]*m.learning_rate).toFixed(4)}</b>. Running total after trees 0–${ti}: ${partial.toFixed(3)} (P<sub>raw</sub> ${(sigmoid(partial)*100).toFixed(1)}%); after all ${m.trees.length}: ${full.toFixed(3)} → ${(sigmoid(full)*100).toFixed(1)}% before the dry-day offset.`; }
+}
+document.getElementById('treeModel').addEventListener('change', renderTree);
+document.getElementById('treeIdx').addEventListener('input', renderTree);
+
+// ─── volume heads ───────────────────────────────────────────────────────────
+(function volume() {
+  let html = '';
+  for (const k of BASINS) { const h = D.volume_heads[k]; if (!h) { html += `<div class="card"><b class="t">${esc(nameOf(k))}</b><span class="fine">no volume head (fewer than 20 events with a reported volume) — stage 2 uses the reported/median size</span></div>`; continue; }
+    const imps = Object.entries(h.importances).sort((a, b) => b[1] - a[1]).slice(0, 6);
+    html += `<div class="card"><b class="t"><span class="pill" style="background:${COLORS[k]}">${esc(nameOf(k))}</span></b><table>
+      <tr><td class="fine">model</td><td>GradientBoostingRegressor, ${h.n_estimators} trees × depth ${h.max_depth}, lr ${h.learning_rate}; target ${esc(h.target)}</td></tr>
+      <tr><td class="fine">fit on</td><td>${esc(h.n_events)} events with a reported volume · residual σ ${esc(h.resid_std)} (log scale)</td></tr>
+      <tr><td class="fine">prior</td><td>${Math.expm1(h.init_raw).toFixed(2)} MG (the mean event on the log scale)</td></tr></table>
+      <div class="fine" style="margin:10px 0 4px">Feature importance</div><div class="bars">` + imps.map(([f, v]) => `<div class="row"><code>${f}</code><span><span class="bar" style="width:${Math.max(1, v*100)}%;background:${COLORS[k]}"></span></span><span class="num">${(v*100).toFixed(1)}%</span></div>`).join('') + '</div></div>'; }
+  document.getElementById('volumeCards').innerHTML = html;
+})();
+
+// ─── stage 2 tables ─────────────────────────────────────────────────────────
+function renderImpact() {
+  const mode = document.getElementById('impactMode').value, T = D[mode];
+  let html = '';
+  for (const [g, gt] of Object.entries(T)) { const b = gt.buckets || {}, base = (b.baseline_no_recent_discharge || {});
+    const cell = (key) => { const c = b[key]; if (!c) return '<td class="mute">—</td>'; const p = c.p_elevated, a = Math.max(0, (p - (base.p_elevated||0)) / (1 - (base.p_elevated||0))); return `<td style="background:rgba(181,49,10,${(p*0.85).toFixed(2)});color:${p > .5 ? '#fff' : '#26272a'}" title="P(elevated) ${p}, n=${c.n}; attributable ${(a*100).toFixed(0)}%">${(p*100).toFixed(0)}%<br><span style="font-size:10px;opacity:.8">n=${c.n}</span></td>`; };
+    html += `<div class="card"><b class="t">${esc(g)} <span class="fine">· ${esc(nameOf(gt.basin === 'Central' ? 'central' : BASINS.find(k => D.basins[k].name === gt.basin) || 'central'))} · ${esc((D.groups[g]||{}).stations?.map(s => s.name).join(', ') || '')}</span></b>
+      <table class="heat"><tr><th>days since</th>${BUCKETS.map(k => `<th class="num">${k}</th>`).join('')}</tr>
+      <tr><td><b>large</b> <span class="fine">≥ median ${gt.median_event_volume_mg} MG</span></td>${BUCKETS.map(k => cell(`d${k}_large`)).join('')}</tr>
+      <tr><td><b>small</b></td>${BUCKETS.map(k => cell(`d${k}_small`)).join('')}</tr></table>
+      <div class="fine" style="margin-top:6px">baseline (no discharge in 7 days): ${((base.p_elevated||0)*100).toFixed(0)}% of ${base.n ?? '?'} sample days elevated · ${gt.n_sample_days} sample days fit</div></div>`; }
+  document.getElementById('impactTables').innerHTML = html;
+}
+document.getElementById('impactMode').addEventListener('change', renderImpact);
+renderImpact();
+(function walkInit() { const sel = document.getElementById('walkGroup'); sel.innerHTML = Object.keys(D.groups).map(g => `<option value="${esc(g)}">${esc(g)}</option>`).join(''); sel.addEventListener('change', renderWalk); })();
+function renderWalk() {
+  if (!CURRENT) return;
+  const g = document.getElementById('walkGroup').value, bk = D.groups[g].basin, terms = CURRENT.comp.terms[g] || [];
+  let prod = 1; const rows = ['<tr><th>k</th><th>day</th><th class="num">P(discharge) ' + esc(nameOf(bk)) + '</th><th class="num">expected MG</th><th class="num">x(k, size)</th><th class="num">1 − p·x</th><th class="num">running ∏</th></tr>'];
+  for (const t of terms) { prod *= t.factor; rows.push(`<tr><td>${t.k}</td><td>${t.k === 0 ? 'today' : esc(S.dates[t.j].slice(5))}</td><td class="num">${pct(t.p)}</td><td class="num">${t.vol ? f2(t.vol) : '—'}</td><td class="num">${t.k === 0 ? '1 (discharge day)' : f3(t.x)}</td><td class="num">${f3(t.factor)}</td><td class="num">${f3(prod)}</td></tr>`); }
+  rows.push(`<tr><td colspan="6"><b>${esc(g)} risk = 1 − ∏</b></td><td class="num"><b style="color:${riskColor(1-prod)}">${pct(1 - prod)}</b></td></tr>`);
+  document.getElementById('walkTable').innerHTML = rows.join('');
+}
+
+// ─── geography ──────────────────────────────────────────────────────────────
+(function geo() {
+  let html = '';
+  for (const zk of ZONE_ORDER) { const z = D.zones[zk];
+    html += `<div class="card"><b class="t">${esc(z.label)} <span class="fine">zone</span></b>` + z.groups.map(g => { const gr = D.groups[g], b = D.basins[gr.basin]; return `<div style="margin:6px 0"><span class="pill" style="background:${COLORS[gr.basin]}">${esc(b.name)}</span> → <b>${esc(g)}</b><div class="fine">${gr.stations.map(s => esc(s.name)).join(' · ')}</div><div class="fine">outfalls: ${b.outfalls.join(', ')}</div></div>`; }).join('') + '</div>'; }
+  document.getElementById('geoCards').innerHTML = html;
+})();
+
+// ─── self-check ─────────────────────────────────────────────────────────────
+function selfCheck() {
+  const rows = ['<tr><th>Storm day</th><th class="num">max |Δ feature| (3 sources)</th><th class="num">max |Δ P| (5 models)</th><th class="num">max |Δ volume| MG</th><th>zone risk vs stored scorecard</th><th>what happened</th></tr>'];
+  let worstF = 0, worstP = 0, worstZ = 0, n = 0;
+  const saved = {g: S.g, intensity: S.intensity, dates: S.dates, sample: S.sample};
+  for (const s of D.samples) {
+    S.dates = s.history.dates; S.g = {'SF Downtown': s.history['SF Downtown'], 'SF Oceanside': s.history['SF Oceanside']}; S.intensity = s.history.intensity;
+    const last = S.dates.length - 1, fbs = featuresBySource();
+    let dF = 0; for (const src of SOURCES) for (const f of FEATS) dF = Math.max(dF, Math.abs(fbs[src][last][f] - s.features[src][f]));
+    const {probs, vols} = scoreAll(fbs);
+    let dP = 0, dV = 0; for (const k of MODEL_ORDER) { dP = Math.max(dP, Math.abs(probs[last][k] - s.expected[k].p)); if (s.expected[k].volume_mg != null && vols[last][k] != null) dV = Math.max(dV, Math.abs(vols[last][k] - s.expected[k].volume_mg)); }
+    const comp = compose(D.impact_smoothed, probs, vols, last), z = zoneRisks(comp.perGroup);
+    let dZ = 0, zs = []; for (const zk of ZONE_ORDER) { const st = s.stored.zones[zk]; if (st != null) { dZ = Math.max(dZ, Math.abs(z[zk] - st)); zs.push(`${esc(D.zones[zk].label.split(' ')[0])} ${pct(z[zk])}${Math.abs(z[zk]-st) > 0.0015 ? ' <span class="bad-check">≠ ' + pct(st) + '</span>' : ''}`); } }
+    worstF = Math.max(worstF, dF); worstP = Math.max(worstP, dP); worstZ = Math.max(worstZ, dZ); n++;
+    const hap = BASINS.filter(b => s.labels[D.basins[b].name] && s.labels[D.basins[b].name].discharge).map(b => `${esc(nameOf(b))} ${s.labels[D.basins[b].name].volume_mg} MG`);
+    rows.push(`<tr><td><b>${fmtDate(s.date)}</b>${s.stored.post_training ? ' <span class="badge info">post-training</span>' : ''}</td><td class="num ${dF < 1e-4 ? 'ok-check' : 'bad-check'}">${dF.toExponential(1)}</td><td class="num ${dP < 1e-4 ? 'ok-check' : 'bad-check'}">${dP.toExponential(1)}</td><td class="num ${dV < 1e-2 ? 'ok-check' : 'bad-check'}">${dV.toExponential(1)}</td><td class="fine">${zs.join(' · ') || '—'}</td><td class="fine">${hap.length ? hap.join(', ') : 'no discharge reported'}</td></tr>`);
+  }
+  Object.assign(S, saved);
+  document.getElementById('checkTable').innerHTML = rows.join('');
+  const ok = worstF < 1e-4 && worstP < 1e-4 && worstZ < 0.0015;
+  document.getElementById('checkSummary').innerHTML = `${ok ? '<span class="ok-check">✓ PASS</span>' : '<span class="bad-check">✗ MISMATCH</span>'} — over ${n} storms: features within ${worstF.toExponential(1)}, probabilities within ${worstP.toExponential(1)}, zone risks within ${worstZ.toFixed(4)} of the scorecard artifact (which stores 3 decimals).`;
+}
+
+// ─── boot ───────────────────────────────────────────────────────────────────
+document.getElementById('sampleSel').innerHTML = D.samples.map((s, i) => `<option value="${i}">${fmtDate(s.date)}${s.stored.post_training ? ' · post-training' : ''}</option>`).join('');
+document.getElementById('sampleSel').addEventListener('change', e => loadSample(+e.target.value));
+document.getElementById('resetBtn').addEventListener('click', () => loadSample(+document.getElementById('sampleSel').value));
+for (const id of ['i1','i3','i6']) document.getElementById(id).addEventListener('input', recompute);
+loadSample(0);
+selfCheck();
+</script>
+</body></html>
