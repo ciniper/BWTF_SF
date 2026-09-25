@@ -58,6 +58,7 @@ from features.alerts.subscriptions import SubscriptionStore
 from features.alerts.cso_alerts import SimulatedCSOStore
 from shared.sfpuc_api import SFPUCRealTimeAPI
 from app.landing import render_landing
+from app.build_info import build_info
 from features.bwtf_history.page import render_bwtf_history
 
 try:
@@ -306,6 +307,9 @@ def create_app():
 
     # Reports: static HTML analyses committed under reports/ (model explorer, v4 report …)
     app.add_url_rule("/reports/<name>", "reports", _report_view, methods=["GET"])
+    # Which build is this? Every template gets `build` (footers show it); /api/build returns it as JSON.
+    app.context_processor(lambda: {"build": build_info()})
+    app.add_url_rule("/api/build", "build", lambda: Response(json.dumps(build_info()), mimetype="application/json"), methods=["GET"])
 
     # Alert signup — deliberately UNGATED, including its POST: this is the one
     # alerts surface meant for the public (zone subscribe, email only; the

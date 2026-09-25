@@ -90,6 +90,11 @@ verified firing), and Railway was deleted. `thread_shadow` rows ended with it.
 ```bash
 pip install -r requirements.txt
 python -m app.wsgi              # dev server; reads $PORT (default 8080)
+
+# Which build is live? Footers show `build <sha>`; the JSON is one curl:
+curl -s https://bwtf-sf.vercel.app/api/build
+# (sha comes from Vercel's VERCEL_GIT_COMMIT_SHA — needs "Automatically expose System
+#  Environment Variables" on in the project settings; locally it comes from git, '+' = uncommitted changes)
 # or, exactly like prod:
 gunicorn -w 1 --threads 8 -b 0.0.0.0:8090 app.wsgi:app
 ```
