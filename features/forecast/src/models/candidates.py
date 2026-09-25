@@ -64,6 +64,28 @@ def load_scorecard(name: str) -> dict:
         return json.load(f)
 
 
+def load_models(name: str) -> dict:
+    """Unpickle a candidate's stage-1 models: {key: {"model", "features",
+    "calibration_offset", "rain_source", "family", ...}}. Offline tooling only
+    (explorer exports, tests) — serving never calls this.
+
+    Logit pipelines reference their hinge transform as ``leaderboard.add_hinges``,
+    so the leaderboard module is imported first. Pickles written before the
+    leaderboard's entry point dispatched through the module reference
+    ``__main__.add_hinges`` instead; the alias below lets those load too."""
+    if str(HERE) not in sys.path:
+        sys.path.insert(0, str(HERE))
+    import leaderboard  # noqa: F401  (defines add_hinges at module level)
+    main_mod = sys.modules.get("__main__")
+    if main_mod is not None and not hasattr(main_mod, "add_hinges"):
+        main_mod.add_hinges = leaderboard.add_hinges
+    out = {}
+    for p in sorted(candidate_dir(name).glob("*_model.pkl")):
+        with open(p, "rb") as f:
+            out[p.name[: -len("_model.pkl")]] = pickle.load(f)
+    return out
+
+
 def build_candidate_scorecard(finals: dict, holdout_models: dict, chosen: dict, features: list) -> dict:
     """The trainer's scorecard for a candidate: its stage-1 models, the served
     stage-2 (volume heads + impact table — stage 2 is not what candidates

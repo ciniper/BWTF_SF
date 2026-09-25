@@ -166,6 +166,21 @@ python -m src.collectors.nws_rain
 python -m src.api.predict
 ```
 
+## Model explorers (how the forecast works, opened up)
+
+Static pages under `reports/`, served by the app at `/reports/<name>.html` and
+linked from the forecast page footer and the Model check. Every number on
+them is computed from the model files; each page ends with a self-check
+against scikit-learn / the stored scorecard artifact.
+
+```bash
+venv/bin/python features/forecast/src/models/export_model_explorer.py                  # served v4: trees
+venv/bin/python features/forecast/src/models/export_model_explorer.py --model logit_v1 # a candidate: weights
+venv/bin/python features/forecast/src/models/export_stage2_explorer.py                 # stage 2, all model sets
+```
+
+Re-run after `train_v4.py` / `--rescore` / `leaderboard.py --save`.
+
 ## References
 
 - [SFPUC Beach Water Quality Map](https://webapps.sfpuc.org/sapps/beachesandbay.html)

@@ -258,6 +258,33 @@ def test_model_sets_are_selectable_but_never_served():
         print(f"   candidate {m['key']}: {len(cs['days'])} days, {len(post)} post-training, labels identical to the served artifact")
 
 
+def test_candidate_models_unpickle_anywhere_and_explorers_are_built():
+    """A candidate's pickles must load from any module (they once referenced
+    __main__.add_hinges and only the leaderboard script could open them), and
+    the explorer pages that open the models up must exist with their data
+    injected. Serving never unpickles a candidate; offline tooling does."""
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "features" / "forecast" / "src" / "models"))
+    import candidates as C
+    for m in C.list_candidates():
+        models = C.load_models(m["name"])
+        assert set(models) >= {"westside", "north_shore", "central", "southeast", "citywide"}, sorted(models)
+        for key, pk in models.items():
+            assert hasattr(pk["model"], "predict_proba"), key
+            assert pk["features"], key
+            if pk.get("family") == "logit":
+                fn = pk["model"].named_steps["hinges"].func
+                assert fn.__module__ == "leaderboard", f"{key}: hinge transform pickled as {fn.__module__}.{fn.__name__}"
+        print(f"   candidate {m['name']}: {len(models)} models unpickle with a plain import")
+    reports = Path(__file__).resolve().parents[1] / "reports"
+    for name in ("2026-09_forecast_v4_model_explorer.html", "2026-09_forecast_stage2_explorer.html",
+                 *[f"2026-09_forecast_{m['name']}_model_explorer.html" for m in C.list_candidates()]):
+        p = reports / name
+        assert p.exists(), f"missing report {name} — run the exporter"
+        text = p.read_text()
+        assert "__DATA__" not in text and ('"model_sets"' in text or '"models"' in text), f"{name}: data not injected"
+        print(f"   report {name}: {p.stat().st_size / 1e6:.2f} MB")
+
+
 if __name__ == "__main__":
     failed = 0
     for name, fn in sorted(globals().items()):

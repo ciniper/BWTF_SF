@@ -54,8 +54,8 @@ a{color:#0072BC}
 </style></head>
 <body><div class="wrap">
 <header>
-  <h1>How the SF CSO forecast works</h1>
-  <p class="sub">The served v4 models, opened up: where the rain numbers come from, what the models are given, the trees they are made of, and how a discharge probability becomes a beach-risk percentage. Everything on this page is computed from the deployed model files — the page runs the real trees in your browser.</p>
+  <h1 id="title">How the SF CSO forecast works</h1>
+  <p class="sub" id="sub"></p>
   <div class="meta" id="meta"></div>
 </header>
 <nav>
@@ -107,18 +107,19 @@ a{color:#0072BC}
 <table id="featDefs"></table>
 </section>
 
-<section id="stage1"><h2>Stage 1: P(discharge today), one gradient-boosted model per basin</h2>
-<p class="lead">Each basin has its own model: <span id="gbDesc"></span>. A model is a sum of small decision trees. Each tree looks at a few features, walks to a leaf and adds that leaf's value; the sum is a log-odds score that a sigmoid turns into a probability, then a small dry-day offset is subtracted. Feature importance is how much of the trees' total split gain each feature earned.</p>
+<section id="stage1"><h2 id="stage1Title">Stage 1: P(discharge today), one model per basin</h2>
+<p class="lead" id="stage1Lead"></p>
 <div class="formula" id="gbFormula"></div>
 <div class="grid g2" id="modelCards" style="margin-top:14px"></div>
 <h3>Response to today's rain</h3>
 <p class="fine">Today's total swept from 0 to 3" on both gauges (peak intensities scaled with it), every other feature held at the what-if state above. This is what each basin model "thinks" a wet day means given the antecedent conditions you set.</p>
 <div id="responseChart"></div>
-<h3>Look inside a tree</h3>
+<h3 id="insideTitle">Look inside a tree</h3>
 <div class="controls">
   <label>Model <select id="treeModel"></select></label>
-  <label>Tree <input type="range" id="treeIdx" min="0" max="199" step="1" value="0"> <span id="treeIdxV" class="mono"></span></label>
-  <span class="kbd">The highlighted path is the one today's what-if features take.</span>
+  <span id="treeControls"><label>Tree <input type="range" id="treeIdx" min="0" max="199" step="1" value="0"> <span id="treeIdxV" class="mono"></span></label>
+  <span class="kbd">The highlighted path is the one today's what-if features take.</span></span>
+  <span id="weightsHint" class="kbd" style="display:none">Every term of the weights model for today's what-if features, largest contribution first. Red raises the discharge odds, green lowers them.</span>
 </div>
 <div id="treeSvg"></div>
 <p class="fine" id="treeNote"></p>
@@ -151,7 +152,7 @@ x(k, size) = attributable P(elevated) = (p<sub>table</sub> − baseline) / (1 �
 <p class="fine" id="checkSummary"></p>
 </section>
 
-<footer>Generated <span id="genAt"></span> by <code>features/forecast/src/models/export_model_explorer.py</code> from the served pickles, impact table, data/raw and the scorecard artifact. <a href="/forecast">Back to the forecast</a></footer>
+<footer>Generated <span id="genAt"></span> for model set <b id="setName"></b> by <code>features/forecast/src/models/export_model_explorer.py</code> from the model pickles, the served impact table, data/raw and the set's scorecard artifact. <a href="/forecast">Back to the forecast</a> · <a href="/reports/2026-09_forecast_stage2_explorer.html">Stage 2 explorer</a></footer>
 </div>
 
 <script>
@@ -162,6 +163,11 @@ const MODEL_ORDER = BASINS.concat(['citywide']);
 const ZONE_ORDER = ['ocean','baker_china','north','east'];
 const SOURCES = ['avg','SF Downtown','SF Oceanside'];
 const COLORS = {westside:'#0072BC', north_shore:'#237059', central:'#7b4bb5', southeast:'#d4763a', citywide:'#54576F'};
+const MS = D.model_set || {name:'v4', label:'v4 (served)', served:true, families:['gb']};
+const famOf = m => m.family || 'gb';
+const ANY_LOGIT = MODEL_ORDER.some(k => famOf(D.models[k]) === 'logit');
+const ALL_LOGIT = MODEL_ORDER.every(k => famOf(D.models[k]) === 'logit');
+const FAMILY_LABEL = ALL_LOGIT ? 'weights model (logistic regression with hinge terms)' : ANY_LOGIT ? 'mixed: gradient boosting and weights models' : 'gradient boosting';
 const nameOf = k => k === 'citywide' ? 'City-wide' : D.basins[k].name;
 const esc = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const pct = p => Math.round(p * 100) + '%';
@@ -172,14 +178,22 @@ const fmtDate = s => new Date(s + 'T12:00:00').toLocaleDateString(undefined, {mo
 const fmtMon = s => new Date(s + 'T12:00:00').toLocaleDateString(undefined, {month:'short', year:'numeric'});
 
 // ─── header ────────────────────────────────────────────────────────────────
+document.title = 'How the SF CSO forecast works — ' + MS.name + ' model explorer';
+document.getElementById('title').textContent = 'How the SF CSO forecast works' + (MS.served ? '' : ' — ' + MS.name + ' candidate');
+document.getElementById('sub').textContent = MS.served
+  ? 'The served v4 models, opened up: where the rain numbers come from, what the models are given, the trees they are made of, and how a discharge probability becomes a beach-risk percentage. Everything on this page is computed from the deployed model files — the page runs the real trees in your browser.'
+  : `The ${MS.name} candidate set, opened up — a ${FAMILY_LABEL}. It is NOT what the live forecast runs; it exists to be compared with v4 in the Model check. Same rain sources, same 19 features, same stage 2 (the served volume heads and impact table); only the stage-1 arithmetic differs, and the page runs that arithmetic from the candidate's own weights. ${MS.note ? MS.note : ''}`;
+const nHinge = ANY_LOGIT ? (Object.values(D.models).find(m => famOf(m) === 'logit').coef.length - D.features.all.length) : 0;
 document.getElementById('meta').innerHTML = [
-  'models ' + esc(D.version) + ' · trained ' + esc((D.trained_at||'').slice(0,10)),
+  (MS.served ? 'served models ' : 'candidate ') + esc(D.version) + ' · fit ' + esc((D.trained_at||'').slice(0,10)),
   'training window ' + esc((D.train_window||[]).join(' → ')),
   'holdout from ' + esc(D.holdout_start),
   D.rescored_at ? 'scorecard rescored through ' + esc(D.span[1]) : '',
-  esc(D.features.all.length) + ' features · ' + esc(D.model_params.n_estimators) + ' trees × depth ' + esc(D.model_params.max_depth) + ' per model',
+  ANY_LOGIT ? esc(D.features.all.length) + ' features + ' + nHinge + ' hinge terms · L2 logistic, C per basin' : esc(D.features.all.length) + ' features · ' + esc(D.model_params.n_estimators) + ' trees × depth ' + esc(D.model_params.max_depth) + ' per model',
+  MS.served ? '' : 'stage 2 shared with v4',
 ].filter(Boolean).map(t => '<span>' + t + '</span>').join('');
 document.getElementById('genAt').textContent = D.generated_at;
+document.getElementById('setName').textContent = MS.label;
 
 // ─── pipeline diagram ───────────────────────────────────────────────────────
 (function pipeline() {
@@ -190,7 +204,7 @@ document.getElementById('genAt').textContent = D.generated_at;
     {id:'h', x:10,  y:236, w:150, h:56, t:['Open-Meteo hourly','peak intensity'], href:'#rain'},
     {id:'s', x:210, y:92,  w:170, h:90, t:['Daily rain per source','avg · Downtown · Oceanside'], href:'#rain'},
     {id:'f', x:430, y:92,  w:150, h:90, t:['19 features','totals, lags, moisture,','peaks, dry spell'], href:'#inputs'},
-    {id:'m', x:630, y:40,  w:190, h:80, t:['Stage 1: 4 basin models','P(discharge today)','gradient boosting'], href:'#stage1'},
+    {id:'m', x:630, y:40,  w:190, h:80, t:['Stage 1: 4 basin models','P(discharge today)', ALL_LOGIT ? 'weights + hinge terms' : ANY_LOGIT ? 'trees / weights' : 'gradient boosting'], href:'#stage1'},
     {id:'v', x:630, y:150, w:190, h:64, t:['Volume heads','expected MG'], href:'#volume'},
     {id:'i', x:870, y:40,  w:190, h:80, t:['Stage 2: impact table','decay by days since,','small / large'], href:'#stage2'},
     {id:'c', x:870, y:150, w:190, h:64, t:['Compose last 8 days','group risk'], href:'#stage2'},
@@ -282,7 +296,15 @@ function gbRaw(m, x, upto) {
 }
 const sigmoid = z => 1 / (1 + Math.exp(-z));
 const vec = f => FEATS.map(k => f[k]);
-function predictP(m, f) { const raw = sigmoid(gbRaw(m, vec(f))); const rf = Math.min(1, Math.max(0, 1 - f.rain_3d_cum * 2)); return Math.min(1, Math.max(0, raw - m.calibration_offset * rf)); }
+// ─── weights model (port of leaderboard.add_hinges → StandardScaler → LogisticRegression) ──
+// columns = the 19 features, then max(0, x_f − knot) for every hinge knot in
+// m.hinges order; each column is standardised with the scaler's mean/sd and
+// multiplied by its weight; the intercept is added; sigmoid → P_raw.
+function hingeVec(m, x) { const out = x.slice(); for (const [f, ks] of Object.entries(m.hinges)) { const v = x[FEATS.indexOf(f)]; for (const k of ks) out.push(Math.max(0, v - k)); } return out; }
+function logitTerms(m, x) { const h = hingeVec(m, x); return h.map((v, i) => { const z = (v - m.means[i]) / (m.scales[i] || 1); return {name: m.names[i], value: v, mean: m.means[i], sd: m.scales[i], z, w: m.coef[i], contrib: m.coef[i] * z}; }); }
+function logitRaw(m, x) { let s = m.intercept; for (const t of logitTerms(m, x)) s += t.contrib; return s; }
+const rawScore = (m, x) => famOf(m) === 'logit' ? logitRaw(m, x) : gbRaw(m, x);
+function predictP(m, f) { const raw = sigmoid(rawScore(m, vec(f))); const rf = Math.min(1, Math.max(0, 1 - f.rain_3d_cum * 2)); return Math.min(1, Math.max(0, raw - m.calibration_offset * rf)); }
 function predictVol(h, f) { return Math.max(0, Math.expm1(gbRaw(h, vec(f)))); }
 // ─── stage 2 (port of src/models/impact.py) ─────────────────────────────────
 const BUCKETS = ['0','1','2','3','4-5','6-7'];
@@ -390,27 +412,45 @@ function renderOutputs() {
     rain_lag1d:'total 1 day ago', rain_lag2d:'total 2 days ago', rain_lag3d:'total 3 days ago', rain_lag5d:'total 5 days ago', rain_lag7d:'total 7 days ago',
     antecedent_moisture:'14-day exponentially weighted mean of daily totals, 3-day half-life (today weighs 1, 3 days ago ½, 6 days ago ¼ …)', wet_prior_3d:'1 if the three days before today summed > 0.1"', peak_3d:'largest daily total in the trailing 3 days', dry_spell_days:'consecutive days < 0.05" ending today (0 on a wet day)',
     rain_max1h:"today's wettest single hour (Open-Meteo hourly)", rain_max3h:"today's wettest 3-hour window (may straddle midnight)", rain_max6h:"today's wettest 6-hour window"};
-  document.getElementById('featDefs').innerHTML = '<tr><th>Feature</th><th>Meaning</th><th class="num">Importance, Westside</th><th class="num">North Shore</th><th class="num">Central</th><th class="num">Southeast</th></tr>' +
+  document.getElementById('featDefs').innerHTML = `<tr><th>Feature</th><th>Meaning</th><th class="num">${ALL_LOGIT ? 'Weight share' : ANY_LOGIT ? 'Importance / weight share' : 'Importance'}, Westside</th><th class="num">North Shore</th><th class="num">Central</th><th class="num">Southeast</th></tr>` +
     FEATS.map(f => `<tr><td><code>${f}</code></td><td class="fine">${esc(defs[f] || '')}</td>` + BASINS.map(b => `<td class="num">${(D.models[b].importances[f]*100).toFixed(1)}%</td>`).join('') + '</tr>').join('');
 })();
 
 // ─── stage 1 cards ──────────────────────────────────────────────────────────
 (function stage1() {
   const mp = D.model_params;
-  document.getElementById('gbDesc').textContent = `${mp.n_estimators} trees of depth ${mp.max_depth}, learning rate ${mp.learning_rate}, scikit-learn GradientBoostingClassifier` + (mp.min_samples_leaf ? `, ≥ ${mp.min_samples_leaf} training days per leaf` : '') + (mp.subsample && mp.subsample < 1 ? `, ${mp.subsample*100}% row subsampling` : '');
-  document.getElementById('gbFormula').innerHTML = `score(x) = init + ${mp.learning_rate} × Σ<sub>k=1..${mp.n_estimators}</sub> leaf<sub>k</sub>(x)        init = log-odds of the training discharge rate\nP<sub>raw</sub> = 1 / (1 + e<sup>−score</sup>)\nP = clip( P<sub>raw</sub> − offset × clip(1 − rain_3d_cum × 2, 0, 1), 0, 1 )      offset = mean P<sub>raw</sub> on dry training days (fades out as 3-day rain → 0.5")`;
+  const gbDesc = `${mp.n_estimators} trees of depth ${mp.max_depth}, learning rate ${mp.learning_rate}, scikit-learn GradientBoostingClassifier` + (mp.min_samples_leaf ? `, ≥ ${mp.min_samples_leaf} training days per leaf` : '') + (mp.subsample && mp.subsample < 1 ? `, ${mp.subsample*100}% row subsampling` : '');
+  const anyLogit = Object.values(D.models).find(m => famOf(m) === 'logit');
+  const gbText = `A gradient-boosted model is a sum of small decision trees. Each tree looks at a few features, walks to a leaf and adds that leaf's value; the sum is a log-odds score that a sigmoid turns into a probability, then a small dry-day offset is subtracted. Feature importance is how much of the trees' total split gain each feature earned.`;
+  const lgText = anyLogit ? `A weights model is one straight line in log-odds: every input column is standardised (subtract the training mean, divide by the training sd), multiplied by its weight, and the ${anyLogit.coef.length} products plus an intercept are summed; a sigmoid turns the sum into a probability. The columns are the 19 features plus ${anyLogit.coef.length - FEATS.length} hinge terms max(0, x − knot) at fixed rain knots, which let the line bend at the depths where the sewers start to overflow. The weights were fit by L2-penalised logistic regression (C chosen per basin by pre-holdout season cross-validation; smaller C = more shrinkage). "Weight share" below is each base feature's share of Σ|weight| over its column and its hinges.` : '';
+  document.getElementById('stage1Title').textContent = ALL_LOGIT ? 'Stage 1: P(discharge today), one weights model per basin' : ANY_LOGIT ? 'Stage 1: P(discharge today), one model per basin (mixed families)' : 'Stage 1: P(discharge today), one gradient-boosted model per basin';
+  document.getElementById('stage1Lead').innerHTML = ALL_LOGIT ? esc(lgText) : ANY_LOGIT ? esc(lgText) + ' ' + esc(gbText) : `Each basin has its own model: ${esc(gbDesc)}. ${esc(gbText)}`;
+  const gbFormula = `score(x) = init + ${mp.learning_rate} × Σ<sub>k=1..${mp.n_estimators}</sub> leaf<sub>k</sub>(x)        init = log-odds of the training discharge rate`;
+  const lgFormula = anyLogit ? `score(x) = b + Σ<sub>i=1..${anyLogit.coef.length}</sub> w<sub>i</sub> · ( h<sub>i</sub>(x) − μ<sub>i</sub> ) / σ<sub>i</sub>        h = the 19 features, then max(0, x<sub>f</sub> − knot) for each hinge; μ, σ = training mean and sd of that column` : '';
+  document.getElementById('gbFormula').innerHTML = (ALL_LOGIT ? lgFormula : ANY_LOGIT ? lgFormula + '\n' + gbFormula : gbFormula) + `\nP<sub>raw</sub> = 1 / (1 + e<sup>−score</sup>)\nP = clip( P<sub>raw</sub> − offset × clip(1 − rain_3d_cum × 2, 0, 1), 0, 1 )      offset = mean P<sub>raw</sub> on dry training days (fades out as 3-day rain → 0.5")` + (ALL_LOGIT && MODEL_ORDER.every(k => !D.models[k].calibration_offset) ? ' — 0 for this set: the weights models carry no dry-day offset' : '');
   let html = '';
   for (const k of MODEL_ORDER) {
-    const m = D.models[k], h = D.holdout[k] || {};
-    const imps = Object.entries(m.importances).sort((a, b) => b[1] - a[1]).slice(0, 8);
-    html += `<div class="card"><b class="t"><span class="pill" style="background:${COLORS[k]}">${esc(nameOf(k))}</span></b>
-      <table><tr><td class="fine">rain source</td><td><b>${esc(m.rain_source === 'avg' ? 'two-gauge mean' : m.rain_source)}</b></td></tr>
-      <tr><td class="fine">prior (init)</td><td>log-odds ${m.init_raw.toFixed(3)} → ${(sigmoid(m.init_raw)*100).toFixed(2)}% of covered training days had a discharge</td></tr>
-      <tr><td class="fine">dry-day offset</td><td>${(m.calibration_offset*100).toFixed(2)} pts</td></tr>
-      <tr><td class="fine">training</td><td>${esc(h.n_days ?? '?')} covered days, ${esc(h.n_events ?? '?')} discharge days</td></tr>
-      <tr><td class="fine">holdout (Jul 2023 → Oct 2025)</td><td>PR-AUC ${f3(h.pr_auc)} · ROC-AUC ${f3(h.roc_auc)} · Brier ${h.brier == null ? '—' : h.brier.toFixed(4)} · ${esc(h.pos_test ?? '?')} events in ${esc(h.n_test ?? '?')} days</td></tr></table>
-      <div class="fine" style="margin:10px 0 4px">Feature importance (share of split gain)</div><div class="bars">` +
-      imps.map(([f, v]) => `<div class="row"><code>${f}</code><span><span class="bar" style="width:${Math.max(1, v*100)}%;background:${COLORS[k]}"></span></span><span class="num">${(v*100).toFixed(1)}%</span></div>`).join('') + '</div></div>';
+    const m = D.models[k], h = D.holdout[k] || {}, isL = famOf(m) === 'logit';
+    let rows = `<tr><td class="fine">family</td><td><b>${isL ? 'weights (logistic + hinges)' : 'gradient boosting'}</b>${isL ? ` · C = ${esc(m.C)}` : ''}</td></tr>
+      <tr><td class="fine">rain source</td><td><b>${esc(m.rain_source === 'avg' ? 'two-gauge mean' : m.rain_source)}</b></td></tr>`;
+    if (isL) rows += `<tr><td class="fine">intercept b</td><td>log-odds ${m.intercept.toFixed(3)} → ${(sigmoid(m.intercept)*100).toFixed(2)}% for a day at the training mean of every column</td></tr>`;
+    else rows += `<tr><td class="fine">prior (init)</td><td>log-odds ${m.init_raw.toFixed(3)} → ${(sigmoid(m.init_raw)*100).toFixed(2)}% of covered training days had a discharge</td></tr>`;
+    rows += `<tr><td class="fine">dry-day offset</td><td>${(m.calibration_offset*100).toFixed(2)} pts</td></tr>
+      <tr><td class="fine">training</td><td>${h.n_days != null ? esc(h.n_days) + ' covered days, ' : ''}${esc(h.n_events ?? '?')} discharge days</td></tr>
+      <tr><td class="fine">holdout (Jul 2023 → Oct 2025)</td><td>PR-AUC ${f3(h.pr_auc)} · ROC-AUC ${f3(h.roc_auc)} · Brier ${h.brier == null ? '—' : h.brier.toFixed(4)} · ${esc(h.pos_test ?? '?')} events in ${esc(h.n_test ?? '?')} days</td></tr>`;
+    if (isL && h.season_cv) rows += `<tr><td class="fine">pre-holdout season CV</td><td>PR-AUC ${f3(h.season_cv.pr_auc)} · Brier ${h.season_cv.brier == null ? '—' : h.season_cv.brier.toFixed(4)} (${esc(h.season_cv.pos)} events in ${esc(h.season_cv.n)} days) — what chose C</td></tr>`;
+    let bars;
+    if (isL) {
+      const terms = m.names.map((n, i) => [n, m.coef[i]]).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])).slice(0, 10);
+      const mx = Math.max(...terms.map(t => Math.abs(t[1]))) || 1;
+      bars = `<div class="fine" style="margin:10px 0 4px">Largest weights (per sd of the column; red raises the discharge odds, green lowers them)</div><div class="bars">` +
+        terms.map(([n, w]) => `<div class="row"><code>${esc(n)}</code><span><span class="bar" style="width:${Math.max(1, Math.abs(w)/mx*100)}%;background:${w >= 0 ? '#b5310a' : '#237059'}"></span></span><span class="num">${w >= 0 ? '+' : ''}${w.toFixed(3)}</span></div>`).join('') + '</div>';
+    } else {
+      const imps = Object.entries(m.importances).sort((a, b) => b[1] - a[1]).slice(0, 8);
+      bars = `<div class="fine" style="margin:10px 0 4px">Feature importance (share of split gain)</div><div class="bars">` +
+        imps.map(([f, v]) => `<div class="row"><code>${f}</code><span><span class="bar" style="width:${Math.max(1, v*100)}%;background:${COLORS[k]}"></span></span><span class="num">${(v*100).toFixed(1)}%</span></div>`).join('') + '</div>';
+    }
+    html += `<div class="card"><b class="t"><span class="pill" style="background:${COLORS[k]}">${esc(nameOf(k))}</span></b><table>${rows}</table>${bars}</div>`;
   }
   document.getElementById('modelCards').innerHTML = html;
   const sel = document.getElementById('treeModel'); sel.innerHTML = MODEL_ORDER.map(k => `<option value="${k}">${esc(nameOf(k))}</option>`).join('');
@@ -443,10 +483,31 @@ function renderResponse() {
   s += '</svg>';
   document.getElementById('responseChart').innerHTML = s;
 }
+function renderWeights(k, m) {
+  document.getElementById('insideTitle').textContent = 'Look inside the weights';
+  document.getElementById('treeControls').style.display = 'none'; document.getElementById('weightsHint').style.display = '';
+  if (!CURRENT) return;
+  const x = vec(CURRENT.fbs[m.rain_source][CURRENT.n]);
+  const terms = logitTerms(m, x), score = logitRaw(m, x);
+  const order = terms.map((t, i) => i).sort((a, b) => Math.abs(terms[b].contrib) - Math.abs(terms[a].contrib));
+  const mx = Math.max(...terms.map(t => Math.abs(t.contrib)), 1e-9);
+  const rows = ['<tr><th>column</th><th class="num">today h(x)</th><th class="num">train μ</th><th class="num">train σ</th><th class="num">z = (h−μ)/σ</th><th class="num">weight w</th><th class="num">w · z</th><th style="width:26%"></th></tr>'];
+  for (const i of order) { const t = terms[i], on = Math.abs(t.contrib) > 1e-9;
+    rows.push(`<tr style="${on ? '' : 'color:#9aa0a6'}"><td><code>${esc(t.name)}</code></td><td class="num">${t.value.toFixed(3)}</td><td class="num">${t.mean.toFixed(3)}</td><td class="num">${t.sd.toFixed(3)}</td><td class="num">${t.z >= 0 ? '+' : ''}${t.z.toFixed(2)}</td><td class="num" style="color:${t.w >= 0 ? '#b5310a' : '#237059'}">${t.w >= 0 ? '+' : ''}${t.w.toFixed(3)}</td><td class="num"><b>${t.contrib >= 0 ? '+' : ''}${t.contrib.toFixed(3)}</b></td><td><span class="bar" style="display:inline-block;width:${Math.max(1, Math.abs(t.contrib)/mx*100)}%;background:${t.contrib >= 0 ? '#b5310a' : '#237059'};opacity:${on ? 1 : .35}"></span></td></tr>`); }
+  const f = CURRENT.fbs[m.rain_source][CURRENT.n], rf = Math.min(1, Math.max(0, 1 - f.rain_3d_cum * 2));
+  rows.push(`<tr><td colspan="6"><b>intercept b</b></td><td class="num"><b>${m.intercept >= 0 ? '+' : ''}${m.intercept.toFixed(3)}</b></td><td></td></tr>`);
+  rows.push(`<tr><td colspan="6"><b>score = b + Σ w·z</b></td><td class="num"><b>${score.toFixed(3)}</b></td><td class="fine">→ P<sub>raw</sub> = sigmoid(score) = <b>${(sigmoid(score)*100).toFixed(2)}%</b>${m.calibration_offset ? ` → minus offset ${(m.calibration_offset*100).toFixed(2)} × ${rf.toFixed(2)} = <b>${(predictP(m, f)*100).toFixed(2)}%</b>` : ' (no dry-day offset for this model)'}</td></tr>`);
+  document.getElementById('treeSvg').innerHTML = `<table>${rows.join('')}</table>`;
+  document.getElementById('treeNote').innerHTML = `Columns whose value today sits exactly at the training mean (z = 0) contribute nothing, however large their weight — that is what makes a hinge term <code>f&gt;knot</code> switch on only once today's value passes the knot. A column standardised to z = +1 (one training sd above the mean) moves the log-odds by exactly its weight.`;
+}
 function renderTree() {
   const k = document.getElementById('treeModel').value || MODEL_ORDER[0], ti = +document.getElementById('treeIdx').value;
+  const m = D.models[k];
+  if (famOf(m) === 'logit') return renderWeights(k, m);
+  document.getElementById('insideTitle').textContent = 'Look inside a tree';
+  document.getElementById('treeControls').style.display = ''; document.getElementById('weightsHint').style.display = 'none';
   document.getElementById('treeIdxV').textContent = '#' + ti;
-  const m = D.models[k], t = m.trees[ti];
+  const t = m.trees[ti];
   const x = CURRENT ? vec(CURRENT.fbs[m.rain_source][CURRENT.n]) : null;
   const path = new Set(); if (x) { let n = 0; path.add(0); while (t.l[n] !== -1) { n = Math.fround(x[t.f[n]]) <= t.t[n] ? t.l[n] : t.r[n]; path.add(n); } }
   const depth = {}, pos = {}; const W = 1100, levelH = 78; let leafCount = 0;

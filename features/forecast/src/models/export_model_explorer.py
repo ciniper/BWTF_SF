@@ -8,6 +8,9 @@ self-check that the in-page arithmetic matches scikit-learn on real storms.
 
     venv/bin/python features/forecast/src/models/export_model_explorer.py
     → reports/2026-09_forecast_v4_model_explorer.html  (served at /reports/…)
+    venv/bin/python features/forecast/src/models/export_model_explorer.py --model logit_v1
+    → reports/2026-09_forecast_logit_v1_model_explorer.html  (a candidate set: its
+      own stage-1 weights, the served stage 2; the page says so)
 
 Re-run after retraining or `train_v4.py --rescore` so the page matches the
 served pickles. Everything numeric on the page comes from the pickles, the
@@ -71,10 +74,76 @@ def export_gb(gb, features) -> dict:
     init = float(gb._raw_predict_init(X0[features].values)[0, 0]) if hasattr(gb, "_raw_predict_init") else None
     if init is None:  # regressor / older sklearn
         init = float(gb.init_.constant_[0, 0])
-    return {"n_estimators": int(gb.n_estimators), "max_depth": int(gb.max_depth), "learning_rate": float(gb.learning_rate),
+    return {"family": "gb", "n_estimators": int(gb.n_estimators), "max_depth": int(gb.max_depth), "learning_rate": float(gb.learning_rate),
             "init_raw": init, "trees": [export_tree(gb.estimators_[k, 0].tree_) for k in range(gb.n_estimators)],
             "importances": {f: round(float(i), 5) for f, i in zip(features, gb.feature_importances_)},
             "params": {k: v for k, v in gb.get_params().items() if k in ("min_samples_leaf", "subsample", "random_state", "loss")}}
+
+
+def export_logit(pipe, features, C=None) -> dict:
+    """The weights model as numbers the page can run: hinge knots (in the exact
+    column order leaderboard.add_hinges builds), the scaler's mean/sd per
+    column, one weight per standardised column, the intercept. Full precision.
+    ``importances`` is the analogue of the trees' split-gain share: each base
+    feature's share of Σ|weight per sd| over its own column and its hinges."""
+    import leaderboard as LB
+    lr, sc = pipe.named_steps["lr"], pipe.named_steps["scale"]
+    names = list(features) + LB.HINGE_NAMES
+    coef = [float(c) for c in lr.coef_[0]]
+    assert len(names) == len(coef) == len(sc.mean_), "column layout drifted from leaderboard.add_hinges"
+    agg = {f: 0.0 for f in features}
+    for n, c in zip(names, coef):
+        agg[n.split(">")[0]] += abs(c)
+    tot = sum(agg.values()) or 1.0
+    return {"family": "logit", "C": C if C is not None else float(lr.C), "intercept": float(lr.intercept_[0]),
+            "names": names, "coef": coef, "means": [float(v) for v in sc.mean_], "scales": [float(v) for v in sc.scale_],
+            "hinges": LB.HINGES, "importances": {f: round(v / tot, 5) for f, v in agg.items()},
+            "params": {"penalty": "l2", "max_iter": int(lr.max_iter), "n_hinge_terms": len(LB.HINGE_NAMES)}}
+
+
+def export_stage1(m: dict, features) -> dict:
+    """Dispatch on the pickle's family (v4 pickles predate the key → gb)."""
+    fam = m.get("family") or ("logit" if hasattr(m["model"], "named_steps") else "gb")
+    if fam == "logit":
+        return export_logit(m["model"], features, m.get("C"))
+    return export_gb(m["model"], features)
+
+
+def load_model_set(name: str | None) -> tuple[dict, dict, dict]:
+    """({key: pickle dict}, manifest-or-eval-report holdout block, meta) for the
+    served v4 set (name None) or a candidate under data/models/candidates/."""
+    features = T.get_feature_columns_v21()
+    if name is None:
+        ev = json.loads((SERVE_DIR / "eval_report.json").read_text())
+        models = {}
+        for basin in T.APP_BASINS + ["citywide"]:
+            key = BASIN_KEYS.get(basin, "citywide")
+            with open(SERVE_DIR / f"{key}_model.pkl", "rb") as f:
+                models[key] = pickle.load(f)
+        holdout = {k: {"pr_auc": t["holdout"].get("pr_auc"), "roc_auc": t["holdout"].get("roc_auc"), "brier": t["holdout"].get("brier"),
+                       "n_test": t["holdout"].get("n_test"), "pos_test": t["holdout"].get("pos_test"), "n_events": t.get("n_events"), "n_days": t.get("n_days")}
+                   for k, t in ev.get("targets", {}).items() if t.get("holdout")}
+        meta = {"name": "v4", "label": "v4 (served)", "served": True, "version": ev.get("version"), "trained_at": ev.get("trained_at"),
+                "train_window": ev.get("train_window"), "feature_set": ev.get("feature_set"), "note": None,
+                "scorecard": SERVE_DIR / "scorecard.json.gz"}
+    else:
+        import candidates
+        models = candidates.load_models(name)
+        manifest = json.loads((candidates.candidate_dir(name) / "manifest.json").read_text())
+        ev = json.loads((SERVE_DIR / "eval_report.json").read_text())
+        holdout = {}
+        for k, pb in manifest.get("per_basin", {}).items():
+            h = pb.get("holdout") or {}
+            holdout[k] = {"pr_auc": h.get("pr_auc"), "roc_auc": h.get("roc_auc"), "brier": h.get("brier"),
+                          "n_test": h.get("n"), "pos_test": h.get("pos"), "n_events": pb.get("n_events"), "n_days": None,
+                          "C": pb.get("C"), "season_cv": pb.get("season_cv_pre_holdout")}
+        meta = {"name": name, "label": f"{name} (candidate, not served)", "served": False, "version": name,
+                "trained_at": manifest.get("created_at"), "train_window": ev.get("train_window"), "feature_set": ev.get("feature_set"),
+                "note": manifest.get("note"), "family": manifest.get("family"), "C_grid": manifest.get("C_grid"),
+                "scorecard": candidates.candidate_dir(name) / "scorecard.json.gz"}
+    for m in models.values():
+        assert m["features"] == features, "feature contract drifted"
+    return models, holdout, meta
 
 
 def gauge_meta() -> dict:
@@ -120,18 +189,18 @@ def gauge_series(days: int = 420) -> dict:
     return series
 
 
-def main() -> None:
+def main(model_name: str | None = None) -> None:
     features = T.get_feature_columns_v21()
+    raw_models, holdout, meta = load_model_set(model_name)
     models, heads, rain_source = {}, {}, {}
     for basin in T.APP_BASINS + ["citywide"]:
         key = BASIN_KEYS.get(basin, "citywide")
-        with open(SERVE_DIR / f"{key}_model.pkl", "rb") as f:
-            m = pickle.load(f)
-        assert m["features"] == features, key
-        models[key] = {**export_gb(m["model"], features), "calibration_offset": float(m["calibration_offset"]),
+        m = raw_models[key]
+        models[key] = {**export_stage1(m, features), "calibration_offset": float(m["calibration_offset"]),
                        "rain_source": m.get("rain_source", "avg"), "trained_at": m.get("trained_at"), "version": m.get("version"),
                        "basin": basin}
         rain_source[key] = m.get("rain_source", "avg")
+        # stage 2 is the served one for every model set (volume heads + impact table)
         vp = SERVE_DIR / f"{key}_volume.pkl"
         if vp.exists():
             with open(vp, "rb") as f:
@@ -140,15 +209,16 @@ def main() -> None:
                           "target": h.get("target"), "rain_source": h.get("rain_source")}
     ev = json.loads((SERVE_DIR / "eval_report.json").read_text())
     impact_raw = json.loads((SERVE_DIR / "impact_table.json").read_text())
-    with gzip.open(SERVE_DIR / "scorecard.json.gz", "rt") as f:
+    with gzip.open(meta["scorecard"], "rt") as f:
         sc = json.load(f)
     sc_by_date = {d["date"]: d for d in sc["days"]}
+    families = sorted({m["family"] for m in models.values()})
+    out_path = OUT if model_name is None else REPO / "reports" / f"2026-09_forecast_{model_name}_model_explorer.html"
 
     # frames exactly as training/rescore builds them → sample days with history + sklearn answers
     end = pd.Timestamp(sc["span"][1])
-    frames, notes = T.build_dataset(end=end)
-    finals = {k: {"model": pickle.load(open(SERVE_DIR / f"{k}_model.pkl", "rb"))["model"], "features": features,
-                  "calibration_offset": models[k]["calibration_offset"]} for k in models}
+    frames, notes = T.build_dataset(end=end, sources=sorted(set(rain_source.values()) | set(T.RAIN_SOURCES)))
+    finals = {k: {"model": raw_models[k]["model"], "features": features, "calibration_offset": models[k]["calibration_offset"]} for k in models}
     head_objs = {b: pickle.load(open(SERVE_DIR / f"{BASIN_KEYS[b]}_volume.pkl", "rb")) for b in T.APP_BASINS
                  if (SERVE_DIR / f"{BASIN_KEYS[b]}_volume.pkl").exists()}
     base = frames["avg"]
@@ -189,15 +259,16 @@ def main() -> None:
     by_sfpuc = {s.sfpuc_id: sid for sid, s in STATIONS.items()}
     data = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
-        "trained_at": ev.get("trained_at"), "version": ev.get("version"), "feature_set": ev.get("feature_set"),
-        "train_window": ev.get("train_window"), "holdout_start": sc.get("holdout_start"),
+        "model_set": {"name": meta["name"], "label": meta["label"], "served": meta["served"], "note": meta.get("note"),
+                      "families": families, "C_grid": meta.get("C_grid"),
+                      "stage2_from": "v4 (served) — volume heads and impact table are shared by every model set"},
+        "trained_at": meta.get("trained_at"), "version": meta.get("version"), "feature_set": meta.get("feature_set"),
+        "train_window": meta.get("train_window"), "holdout_start": sc.get("holdout_start"),
         "trained_through": sc.get("trained_through") or sc["span"][1], "rescored_at": sc.get("rescored_at"), "span": sc["span"],
         "features": {"daily": DAILY_FEATURES, "intensity": INTENSITY_FEATURES, "all": features},
         "model_params": {k: v for k, v in T.MODEL_PARAMS.items()},
         "models": models, "volume_heads": heads,
-        "holdout": {k: {"pr_auc": t["holdout"].get("pr_auc"), "roc_auc": t["holdout"].get("roc_auc"), "brier": t["holdout"].get("brier"),
-                        "n_test": t["holdout"].get("n_test"), "pos_test": t["holdout"].get("pos_test"), "n_events": t.get("n_events"), "n_days": t.get("n_days")}
-                    for k, t in ev.get("targets", {}).items() if t.get("holdout")},
+        "holdout": holdout,
         "impact_raw": impact_raw, "impact_smoothed": smooth_table(impact_raw),
         "basins": {BASIN_KEYS[b]: {"name": b, "rain_source": rain_source[BASIN_KEYS[b]],
                                    "outfalls": sorted(o.id for o in OUTFALLS.values() if o.basin == b),
@@ -225,11 +296,15 @@ def main() -> None:
         "calibration": "p = clip(raw_p − offset × clip(1 − rain_3d_cum × 2, 0, 1), 0, 1): the dry-day offset (mean predicted probability on training days with < 0.01\" rain) is subtracted in full on dry days and fades out as the trailing 3-day rain approaches 0.5\".",
     }
     html = TEMPLATE.read_text().replace("__DATA__", json.dumps(data, separators=(",", ":"), default=str))
-    OUT.write_text(html)
-    n_nodes = sum(len(t["f"]) for m in models.values() for t in m["trees"]) + sum(len(t["f"]) for h in heads.values() for t in h["trees"])
-    print(f"wrote {OUT.relative_to(REPO)}: {OUT.stat().st_size / 1e6:.2f} MB, {len(models)} classifiers + {len(heads)} volume heads "
-          f"({n_nodes:,} tree nodes), {len(samples)} sample days, {len(data['gauge_series']['dates'])} gauge days")
+    out_path.write_text(html)
+    n_nodes = sum(len(t["f"]) for m in models.values() for t in m.get("trees", [])) + sum(len(t["f"]) for h in heads.values() for t in h["trees"])
+    n_w = sum(len(m.get("coef", [])) for m in models.values())
+    print(f"wrote {out_path.relative_to(REPO)}: {out_path.stat().st_size / 1e6:.2f} MB, model set {meta['name']} ({'/'.join(families)}): "
+          f"{len(models)} classifiers ({n_nodes:,} tree nodes, {n_w} weights) + {len(heads)} volume heads, "
+          f"{len(samples)} sample days, {len(data['gauge_series']['dates'])} gauge days")
 
 
 if __name__ == "__main__":
-    main()
+    # venv/bin/python features/forecast/src/models/export_model_explorer.py [--model <candidate name>]
+    name = sys.argv[sys.argv.index("--model") + 1] if "--model" in sys.argv else None
+    main(name)

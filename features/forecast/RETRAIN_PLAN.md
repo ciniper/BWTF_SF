@@ -318,7 +318,24 @@ labels; promotion into `data/models/` is a separate, human decision.
   `--rescore` does). First candidate: `logit_v1`.
 - Model check: model selector (`/forecast/api/scorecard?model=`,
   `/forecast/api/models`), threshold selector (10 / 25 / 50% line). The live
-  forecast, alerts and the explorer read only the served set.
+  forecast and the alerts read only the served set.
+- Explorers (static pages under `reports/`, served at `/reports/…`):
+  `export_model_explorer.py [--model NAME]` opens a model set up — trees for
+  the gb family, weights / hinge knots / scaler means and sds plus a
+  per-column contribution table for the logit family — with the same rain,
+  what-if editor, stage-2 walk-through and scikit-learn self-check for both.
+  `export_stage2_explorer.py` opens stage 2 itself up for every set at once:
+  impact table raw vs smoothed with counts, decay curves and the volume
+  blend, volume heads vs reported volumes, a composition walk-through for any
+  hindcast day with all sets overlaid, side-by-side confusion with the tail
+  after a real posting split out, and a self-check against each set's stored
+  artifact. Re-run all three after retraining, `--rescore`, or `--save`.
+- Stage 2 is shared by every set *including its inputs*: `build_scorecard`
+  feeds each volume head the rain source it was trained on, not the stage-1
+  model's (fixed 2026-09-25; the first `logit_v1` artifact had fed the
+  Southeast head Downtown-only features). Candidate pickles reference
+  `leaderboard.add_hinges` (the script dispatches through the module) so
+  `candidates.load_models` can open them anywhere.
 - `logit_v1` on the post-training window (Nov 2025 → Aug 2026, untouched):
   Westside 0.766 vs v4 0.716 (Ocean Beach 5/6 caught, 14 false alarms vs
   4/6 and 18); Central 0.734 vs 0.717 with a better Brier; North Shore equal

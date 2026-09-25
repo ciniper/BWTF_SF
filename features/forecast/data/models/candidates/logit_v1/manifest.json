@@ -1,8 +1,8 @@
 {
  "name": "logit_v1",
  "family": "logit",
- "note": "Weights model: 19 features + hinge terms, standardised, L2 logistic; per-basin rain source and C from the 2026-09-25 leaderboard (holdout PR-AUC). Stage 2 shared with v4. Not served.",
- "created_at": "2026-09-25T00:14:54",
+ "note": "Weights model: 19 features + hinge terms, standardised, L2 logistic; per-basin rain source and C from the 2026-09-25 leaderboard (holdout PR-AUC). Stage 2 shared with v4, inputs included (volume heads read their own rain source). Not served.",
+ "created_at": "2026-09-25T12:22:05",
  "trained_through": "2025-10-31",
  "span": [
   "2016-03-01",
@@ -245,28 +245,28 @@
    "0.25": {
     "vs_discharge_posting": {
      "tp": 20,
-     "fp": 85,
+     "fp": 83,
      "fn": 0,
-     "tn": 749
+     "tn": 751
     },
     "vs_bacteria_elevated": {
-     "tp": 70,
-     "fp": 14,
-     "fn": 67,
-     "tn": 108
+     "tp": 69,
+     "fp": 13,
+     "fn": 68,
+     "tn": 109
     }
    },
    "0.5": {
     "vs_discharge_posting": {
      "tp": 18,
-     "fp": 47,
+     "fp": 45,
      "fn": 2,
-     "tn": 787
+     "tn": 789
     },
     "vs_bacteria_elevated": {
-     "tp": 51,
+     "tp": 50,
      "fp": 9,
-     "fn": 86,
+     "fn": 87,
      "tn": 113
     }
    }

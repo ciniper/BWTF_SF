@@ -469,7 +469,11 @@ def build_scorecard(frames: dict, chosen: dict, finals: dict, holdout_models: di
         X = frames[chosen[basin]]
         p = calibrated(finals[key], X)
         ph = calibrated({**finals[key], "model": holdout_models[key]}, X) if holdout_models.get(key) is not None else None
-        v = predicted_volume(heads[basin], X) if basin in heads else np.zeros(n)
+        # stage 2 is shared by every model set, inputs included: a volume head
+        # reads the rain source it was trained on, not the stage-1 model's
+        # (they differ for a candidate whose basin picked another gauge)
+        Xv = frames.get(heads[basin].get("rain_source", chosen[basin]), X) if basin in heads else X
+        v = predicted_volume(heads[basin], Xv) if basin in heads else np.zeros(n)
         for i in range(n):
             day_probs[i][key] = float(p[i])
             day_vols[i][key] = float(v[i])

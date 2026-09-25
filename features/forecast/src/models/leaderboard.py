@@ -253,9 +253,14 @@ def save_best_logit(name: str, note: str = "") -> Path:
 
 
 if __name__ == "__main__":
+    # Dispatch through the importable module, not this __main__ namespace: a
+    # fitted logit pipeline pickles a reference to its hinge function by module
+    # + name, and `__main__.add_hinges` cannot be unpickled by anything except a
+    # rerun of this script. `leaderboard.add_hinges` can (candidates.load_models).
+    import leaderboard as _lb
     if "--save" in sys.argv:
         i = sys.argv.index("--save")
         note = sys.argv[sys.argv.index("--note") + 1] if "--note" in sys.argv else ""
-        save_best_logit(sys.argv[i + 1], note)
+        _lb.save_best_logit(sys.argv[i + 1], note)
     else:
-        main(quick="--quick" in sys.argv)
+        _lb.main(quick="--quick" in sys.argv)

@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stage 2 explorer — from discharge probability to beach risk</title>
+<link rel="icon" href="/static/brand/favicon.ico">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#E3EBF2;color:#26272a;font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:15px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding:22px}
+header{background:#0072BC;color:#fff;border-radius:22px;padding:26px 28px;margin-bottom:16px}
+header h1{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:40px;letter-spacing:.05em;margin:0 0 6px}
+header .sub{opacity:.9;margin:0}
+header .meta{margin-top:12px;display:flex;flex-wrap:wrap;gap:8px}
+header .meta span{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);border-radius:999px;padding:5px 11px;font-size:12.5px}
+nav{position:sticky;top:0;z-index:5;background:#E3EBF2;padding:8px 0 10px;display:flex;flex-wrap:wrap;gap:6px}
+nav a{background:#fff;border:2px solid #d9e4e8;border-radius:999px;padding:6px 13px;font-size:13px;font-weight:600;color:#54576F;text-decoration:none}
+nav a:hover{border-color:#0072BC;color:#0072BC}
+section{background:#fff;border:1px solid #d9e4e8;border-radius:20px;padding:22px 24px;margin:14px 0}
+section h2{margin:0 0 6px;font-size:22px;font-weight:900}
+section h3{margin:18px 0 8px;font-size:15px;text-transform:uppercase;letter-spacing:.08em;color:#54576F}
+.lead{color:#54576F;margin:0 0 12px}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.card{background:#f3f6f9;border-radius:14px;padding:14px 16px}
+.card b.t{display:block;font-size:15px;margin-bottom:6px}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:6px 8px;border-bottom:1px solid #e3ebf2;text-align:left;vertical-align:top}
+th{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:#54576F}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;background:#eef3f7;padding:1px 5px;border-radius:5px}
+.mute{color:#54576F}
+.badge{display:inline-block;border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:700}
+.badge.ok{background:#e0f0ea;color:#237059}.badge.warn{background:#fbe9d9;color:#b5310a}.badge.info{background:#e3ebf2;color:#0072BC}.badge.bad{background:#f8dcd6;color:#8f2508}.badge.shared{background:#e0f0ea;color:#237059}.badge.diff{background:#fbe9d9;color:#b5310a}
+svg text{font-family:'Roboto',sans-serif}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0 12px}
+select,input[type=number],input[type=date],button{font-family:inherit;font-size:13.5px;border:2px solid #d9e4e8;border-radius:10px;background:#fff;padding:6px 10px;color:#26272a}
+button{cursor:pointer;font-weight:600;color:#54576F}button:hover{border-color:#0072BC;color:#0072BC}
+input[type=range]{width:200px}
+.risk{font-weight:900;font-size:22px}
+.pill{display:inline-block;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:700;color:#fff}
+.kbd{font-size:12px;color:#54576F}
+.heat td{text-align:center;font-variant-numeric:tabular-nums}
+.formula{font-family:ui-monospace,Menlo,monospace;background:#26272a;color:#e3ebf2;border-radius:12px;padding:12px 14px;font-size:13px;overflow-x:auto;white-space:pre-wrap}
+.fine{font-size:12.5px;color:#54576F}
+.ok-check{color:#237059;font-weight:700}.bad-check{color:#b5310a;font-weight:700}
+footer{color:#54576F;font-size:12.5px;text-align:center;padding:16px}
+a{color:#0072BC}
+tr.dim td{color:#9aa0a6}
+</style></head>
+<body><div class="wrap">
+<header>
+  <h1>Stage 2: from discharge probability to beach risk</h1>
+  <p class="sub">Stage 1 says how likely each plant is to discharge today. Stage 2 turns that, and the past week of it, into the chance a beach group is fouled today — using how long beaches actually stayed dirty after real discharges. This page opens that layer up for the served v4 set and every candidate set: what every model shares, what differs, and a walk-through of any day in the hindcast.</p>
+  <div class="meta" id="meta"></div>
+</header>
+<nav>
+  <a href="#what">The transformation</a><a href="#shared">Shared vs per model</a><a href="#impact">Impact table</a><a href="#volume">Volume heads</a><a href="#compose">Walk through any day</a><a href="#compare">Models side by side</a><a href="#check">Self-check</a>
+</nav>
+
+<section id="what"><h2>The transformation</h2>
+<p class="lead">For a beach group on day D, take today's and each of the previous seven days' discharge probability for the group's basin. Multiply each by the impact fraction x(k, size): the share of sample days that were over standard k days after a discharge of that size, with the dry-weather background removed. Each product is "the chance that day's discharge is fouling the beach today". Assume independence, multiply the chances that each one is not, and take one minus the product. A discharge day itself is a stay-out day by rule, so x(0) = 1 and the group risk on a discharge day is never below the basin probability.</p>
+<div class="formula">risk<sub>group</sub>(D) = 1 − ∏<sub>k=0..7</sub> ( 1 − p<sub>basin</sub>(D−k) · x(k, size(D−k)) )          x(0, ·) = 1
+x(k, size)  = (p<sub>table</sub>(k, size) − baseline) / (1 − baseline)          attributable P(elevated), background removed
+size        = predicted discharge volume V (MG) from the basin's volume head → blend weight w = V / (V + median event)
+x(k, V)     = w · x<sub>large</sub>(k) + (1 − w) · x<sub>small</sub>(k)
+risk<sub>zone</sub>(D) = max over the zone's groups</div>
+<p class="fine" style="margin-top:10px" id="liveNote"></p>
+</section>
+
+<section id="shared"><h2>What is shared, and what differs per model</h2>
+<p class="lead">Every model set — the served v4 and each candidate — runs through the same stage 2: the same impact table, the same volume heads, the same composition code. What differs is what stage 1 feeds in: the daily probabilities, and the rain source each basin model reads. The volume heads read the rain source they were trained on regardless of which stage-1 set is in play.</p>
+<table id="sharedTable"></table>
+<p class="fine" id="sharedNote"></p>
+</section>
+
+<section id="impact"><h2>The impact table</h2>
+<p class="lead">Fitted once, at v4 training, from every sample day within a week of a CIWQS discharge: for each beach group, size class and days-since bucket, the share of sample days over standard, with the count behind it. Serving smooths each small/large curve to be non-increasing over days (weighted pool-adjacent-violators), because contamination decays and cells with 3–6 samples are noisy enough to read day 3 above day 1.</p>
+<div class="controls"><label>Table <select id="impactMode"><option value="impact_smoothed">smoothed (what serving uses)</option><option value="impact_raw">raw fit</option></select></label>
+  <label>Show the blend for a discharge of <input type="range" id="blendVol" min="0" max="150" step="1" value="30"> <span id="blendVolV" class="mono"></span></label>
+  <span class="kbd">Cells: P(elevated) with n underneath; hover for the attributable value. Curves: attributable x(k) — solid large, dashed small, orange dots the blend at the chosen volume.</span></div>
+<div id="impactTables" class="grid g2"></div>
+</section>
+
+<section id="volume"><h2>Volume heads: the "size" input</h2>
+<p class="lead">A gradient-boosted regressor per basin predicts log(1 + MG) from the same 19 rain features, trained only on events with a reported volume. Its only job in stage 2 is the blend weight w = V / (V + median event), which saturates fast: above a few times the median, every discharge is "large". Below, how well it predicts reported volumes on real events.</p>
+<div class="grid g2" id="volumeCards"></div>
+<h3>Blend weight by predicted volume, per group</h3>
+<div id="blendChart"></div>
+</section>
+
+<section id="compose"><h2>Walk through any day</h2>
+<p class="lead">Pick a beach group and a day. The bars are that basin's stage-1 probability from the selected model set; the lines are the composed group risk from every set (v4 solid). Below the axis: reported discharges (with volume), bacteria samples at the group's beaches, and whether one of the zone's beaches was posted. The table shows every term of the product for the selected set on the selected day.</p>
+<div class="controls">
+  <label>Group <select id="wGroup"></select></label>
+  <label>Model set <select id="wSet"></select></label>
+  <label>Day <input type="date" id="wDate"></label>
+  <button id="wPrev">◂ day</button><button id="wNext">day ▸</button>
+  <button id="wPrevEv">◂ previous discharge in this basin</button><button id="wNextEv">next discharge ▸</button>
+</div>
+<div id="weekChart"></div>
+<div id="weekLegend" class="fine"></div>
+<div class="grid g2" style="margin-top:12px">
+  <div class="card"><b class="t">Terms of the product, <span id="wTitle"></span></b><table id="walkTable"></table></div>
+  <div class="card"><b class="t">Every model set on this day</b><table id="setTable"></table><p class="fine" id="setNote"></p></div>
+</div>
+</section>
+
+<section id="compare"><h2>Models side by side</h2>
+<p class="lead">Stage 2 is identical, so any difference here is stage 1's. For a window, each zone's caught discharges and false alarms at the 25% line per model set — false alarms split into the seven days after a real posting (the beach really was dirty) and the rest — then the days where the sets disagree most on composed risk.</p>
+<div class="controls"><label>Window <select id="cWindow"></select></label><label>Line <select id="cLine"><option value="0.1">10%</option><option value="0.25" selected>25%</option><option value="0.5">50%</option></select></label></div>
+<table id="compareTable"></table>
+<h3>Largest disagreements vs v4 in this window</h3>
+<div id="disagree"></div>
+</section>
+
+<section id="check"><h2>Self-check: this page vs the stored artifacts</h2>
+<p class="lead">For every model set and every group, the page recomposes the group risk on every day of the hindcast from the exported stage-1 probabilities and shared volumes, and compares with the risk stored in that set's scorecard artifact (3 decimals). This is the same arithmetic the Model check page's numbers rest on.</p>
+<table id="checkTable"></table>
+<p class="fine" id="checkSummary"></p>
+</section>
+
+<footer>Generated <span id="genAt"></span> by <code>features/forecast/src/models/export_stage2_explorer.py</code> from the served impact table and volume heads, each set's model pickles and scorecard artifact. <a href="/forecast">Back to the forecast</a> · <a href="/reports/2026-09_forecast_v4_model_explorer.html">v4 model explorer</a></footer>
+</div>
+
+<script>
+const D = __DATA__;
+const BASINS = ['westside','north_shore','central','southeast'];
+const GROUPS = Object.keys(D.groups);
+const ZONE_ORDER = ['ocean','baker_china','north','east'];
+const SETS = D.model_sets;
+const N = D.dates.length;
+const COLORS = {westside:'#0072BC', north_shore:'#237059', central:'#7b4bb5', southeast:'#d4763a'};
+const SET_COLORS = ['#0072BC', '#b5310a', '#7b4bb5', '#237059', '#b97e00'];
+const esc = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pct = p => p == null ? '—' : Math.round(p * 100) + '%';
+const f2 = v => v == null ? '—' : Number(v).toFixed(2);
+const f3 = v => v == null ? '—' : Number(v).toFixed(3);
+const riskColor = p => p >= .75 ? '#8f2508' : p >= .5 ? '#b5310a' : p >= .25 ? '#d4763a' : p >= .1 ? '#b97e00' : '#237059';
+const fmtDate = s => new Date(s + 'T12:00:00').toLocaleDateString(undefined, {month:'short', day:'numeric', year:'numeric'});
+const dateIdx = Object.fromEntries(D.dates.map((d, i) => [d, i]));
+const nameOf = k => D.basins[k].name;
+
+document.getElementById('meta').innerHTML = [
+  'hindcast ' + esc(D.span[0]) + ' → ' + esc(D.span[1]) + ' (' + N + ' days)',
+  'stage 1 trained through ' + esc(D.trained_through) + ' · holdout from ' + esc(D.holdout_start),
+  SETS.length + ' model set' + (SETS.length > 1 ? 's: ' : ': ') + SETS.map(s => s.name).join(', '),
+  'impact table + volume heads: served v4, shared',
+].map(t => '<span>' + t + '</span>').join('');
+document.getElementById('genAt').textContent = D.generated_at;
+document.getElementById('liveNote').textContent = D.live_override;
+
+// ─── stage 2 port of src/models/impact.py ────────────────────────────────────
+const BUCKETS = ['0','1','2','3','4-5','6-7'];
+const bucketIndex = k => k <= 3 ? k : (k <= 5 ? 4 : 5);
+function attributable(table, g, k, size) {
+  const b = (table[g] || {}).buckets || {}, base = (b.baseline_no_recent_discharge || {}).p_elevated || 0;
+  for (let j = bucketIndex(k); j >= 0; j--) { const p = (b[`d${BUCKETS[j]}_${size}`] || {}).p_elevated; if (p != null) return base < 1 ? Math.max(0, (p - base) / (1 - base)) : 0; }
+  return null;
+}
+function impactFraction(table, g, k, vol) {
+  if (k === 0) return 1;
+  const gt = table[g] || {}; if (!Object.keys(gt.buckets || {}).length) return 0;
+  const xs = attributable(table, g, k, 'small'), xl = attributable(table, g, k, 'large');
+  if (xs == null && xl == null) return 0; if (xs == null) return xl; if (xl == null) return xs;
+  const med = gt.median_event_volume_mg || 1, w = vol / (vol + med);
+  return w * xl + (1 - w) * xs;
+}
+function groupRisk(si, g, i, table) {
+  table = table || D.impact_smoothed;
+  const bk = D.groups[g].basin, probs = SETS[si].probs[bk], vols = D.vol_pred[bk];
+  let ni = 1; const terms = [];
+  for (let k = 0; k < 8; k++) { const j = i - k; if (j < 0) break; const p = probs[j] || 0, vol = vols[j] || 0, x = impactFraction(table, g, k, vol);
+    terms.push({k, j, p, vol, x, factor: p ? 1 - p * x : 1}); if (!p) continue; ni *= 1 - p * x; }
+  return {risk: Math.round((1 - ni) * 1000) / 1000, terms};
+}
+const zoneRisk = (si, zk, i) => Math.max(0, ...D.zones[zk].groups.map(g => groupRisk(si, g, i).risk));
+
+// ─── shared vs per model ──────────────────────────────────────────────────────
+(function shared() {
+  const head = ['<tr><th>Basin</th>'].concat(SETS.map(s => `<th>${esc(s.label)}<br><span class="fine" style="text-transform:none;letter-spacing:0">stage 1: rain source · family · dry-day offset</span></th>`), ['<th>Volume head <span class="badge shared">shared</span><br><span class="fine" style="text-transform:none;letter-spacing:0">reads its own rain source</span></th><th>Impact table <span class="badge shared">shared</span></th></tr>']);
+  const rows = [head.join('')];
+  for (const bk of BASINS) {
+    const v4 = SETS[0].spec[bk];
+    const cells = SETS.map((s, i) => { const sp = s.spec[bk]; const diff = i > 0 && (sp.rain_source !== v4.rain_source || sp.family !== v4.family || sp.calibration_offset !== v4.calibration_offset);
+      return `<td>${esc(sp.rain_source === 'avg' ? 'two-gauge mean' : sp.rain_source)} · ${sp.family === 'logit' ? 'weights' + (sp.C != null ? ` (C=${sp.C})` : '') : 'trees'} · offset ${(sp.calibration_offset*100).toFixed(2)} pts ${i > 0 ? (diff ? '<span class="badge diff">differs from v4</span>' : '<span class="badge shared">same as v4</span>') : ''}</td>`; });
+    const h = D.volume_heads[bk];
+    rows.push(`<tr><td><span class="pill" style="background:${COLORS[bk]}">${esc(nameOf(bk))}</span></td>${cells.join('')}<td>${h ? esc(h.rain_source === 'avg' ? 'two-gauge mean' : h.rain_source) + ' · ' + h.n_events + ' events' : 'none'}</td><td>${D.basins[bk].groups.map(g => esc(g) + ' (' + (D.impact_raw[g] || {}).n_sample_days + ' sample days)').join('<br>')}</td></tr>`);
+  }
+  document.getElementById('sharedTable').innerHTML = rows.join('');
+  document.getElementById('sharedNote').innerHTML = `Before 2026-09-25 a candidate's scorecard fed each volume head the <i>candidate's</i> rain source, which made stage 2 differ per model in one hidden way (a Southeast head trained on the two-gauge mean was reading Downtown-only features). <code>train_v4.build_scorecard</code> now reads the head's own source; candidate artifacts were regenerated. ` + SETS.slice(1).map(s => `<b>${esc(s.name)}</b>: ${esc(s.note || '')}`).join(' ');
+})();
+
+// ─── impact tables + decay curves ──────────────────────────────────────────────
+function renderImpact() {
+  const mode = document.getElementById('impactMode').value, T = D[mode], vol = +document.getElementById('blendVol').value;
+  document.getElementById('blendVolV').textContent = vol + ' MG';
+  let html = '';
+  for (const g of GROUPS) { const gt = T[g] || {}, b = gt.buckets || {}, base = (b.baseline_no_recent_discharge || {}), raw = (D.impact_raw[g] || {}).buckets || {};
+    const cell = key => { const c = b[key]; if (!c) return '<td class="mute">—</td>'; const p = c.p_elevated, a = Math.max(0, (p - (base.p_elevated||0)) / (1 - (base.p_elevated||0))); return `<td style="background:rgba(181,49,10,${(p*0.85).toFixed(2)});color:${p > .5 ? '#fff' : '#26272a'}" title="P(elevated) ${p}, n=${c.n}; attributable x = ${(a*100).toFixed(0)}%">${(p*100).toFixed(0)}%<br><span style="font-size:10px;opacity:.8">n=${c.n}</span></td>`; };
+    // decay curve svg
+    const W = 520, H = 150, pl = 34, pb = 26; const kx = [0,1,2,3,4.5,6.5]; const X = k => pl + k / 7 * (W - pl - 10), Y = v => 8 + (1 - v) * (H - pb - 8);
+    let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;margin-top:8px">`;
+    for (const v of [0, .5, 1]) s += `<line x1="${pl}" y1="${Y(v)}" x2="${W-10}" y2="${Y(v)}" stroke="#e3ebf2"/><text x="${pl-5}" y="${Y(v)+4}" text-anchor="end" font-size="10.5" fill="#54576F">${v.toFixed(1)}</text>`;
+    BUCKETS.forEach((bk, i) => { s += `<text x="${X(kx[i])}" y="${H-8}" text-anchor="middle" font-size="10.5" fill="#54576F">${i ? bk + 'd' : 'day of'}</text>`; });
+    for (const size of ['large', 'small']) { const pts = BUCKETS.map((bk, i) => [kx[i], i === 0 ? 1 : attributable(T, g, i <= 3 ? i : (i === 4 ? 4 : 6), size)]).filter(p => p[1] != null);
+      s += `<path d="${pts.map((p, i) => (i ? 'L' : 'M') + X(p[0]) + ',' + Y(p[1])).join(' ')}" fill="none" stroke="${COLORS[gt.basin === undefined ? D.groups[g].basin : D.groups[g].basin]}" stroke-width="2" stroke-dasharray="${size === 'small' ? '5 4' : ''}"/>`;
+      BUCKETS.forEach((bk, i) => { const c = raw[`d${bk}_${size}`]; if (c && i) { const a = Math.max(0, (c.p_elevated - (base.p_elevated||0)) / (1 - (base.p_elevated||0))); s += `<circle cx="${X(kx[i])}" cy="${Y(a)}" r="${Math.min(7, 2 + Math.sqrt(c.n))}" fill="${COLORS[D.groups[g].basin]}" fill-opacity=".25" stroke="none"><title>raw ${size} ${bk}d: P(elevated) ${c.p_elevated} on n=${c.n} → attributable ${a.toFixed(2)}</title></circle>`; } }); }
+    for (let k = 1; k <= 7; k++) { const x = impactFraction(T, g, k, vol); s += `<circle cx="${X(k <= 3 ? k : (k <= 5 ? 4.5 : 6.5))}" cy="${Y(x)}" r="4" fill="#eb6834"><title>x(${k}, ${vol} MG) = ${x.toFixed(3)}</title></circle>`; }
+    s += '</svg>';
+    html += `<div class="card"><b class="t">${esc(g)} <span class="fine">· ${esc(nameOf(D.groups[g].basin))} basin · ${esc(D.groups[g].stations.map(x => x.name).join(', '))}</span></b>
+      <table class="heat"><tr><th>days since</th>${BUCKETS.map(k => `<th class="num">${k}</th>`).join('')}</tr>
+      <tr><td><b>large</b> <span class="fine">≥ median ${gt.median_event_volume_mg} MG</span></td>${BUCKETS.map(k => cell(`d${k}_large`)).join('')}</tr>
+      <tr><td><b>small</b></td>${BUCKETS.map(k => cell(`d${k}_small`)).join('')}</tr></table>
+      <div class="fine" style="margin-top:6px">baseline (no discharge in 7 days): ${((base.p_elevated||0)*100).toFixed(1)}% of ${base.n ?? '?'} sample days elevated · ${gt.n_sample_days} sample days in the fit · blend weight at ${vol} MG: w = ${(vol/(vol+(gt.median_event_volume_mg||1))).toFixed(2)}</div>${s}</div>`; }
+  document.getElementById('impactTables').innerHTML = html;
+}
+document.getElementById('impactMode').addEventListener('change', renderImpact);
+document.getElementById('blendVol').addEventListener('input', renderImpact);
+renderImpact();
+
+// ─── volume heads ─────────────────────────────────────────────────────────────
+(function volume() {
+  let html = '';
+  for (const bk of BASINS) { const h = D.volume_heads[bk]; if (!h) { html += `<div class="card"><b class="t">${esc(nameOf(bk))}</b><span class="fine">no volume head (fewer than 20 events with a reported volume)</span></div>`; continue; }
+    const imps = Object.entries(h.importances).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const pts = h.points, W = 520, H = 220, pl = 44, pb = 28; const lo = 0.1, hi = 1000;
+    const X = v => pl + (Math.log10(Math.max(lo, v)) - Math.log10(lo)) / 4 * (W - pl - 10), Y = v => 8 + (1 - (Math.log10(Math.max(lo, v)) - Math.log10(lo)) / 4) * (H - pb - 8);
+    let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;margin-top:8px">`;
+    for (const v of [0.1, 1, 10, 100, 1000]) { s += `<line x1="${X(v)}" y1="8" x2="${X(v)}" y2="${H-pb}" stroke="#e3ebf2"/><line x1="${pl}" y1="${Y(v)}" x2="${W-10}" y2="${Y(v)}" stroke="#e3ebf2"/><text x="${X(v)}" y="${H-10}" text-anchor="middle" font-size="10.5" fill="#54576F">${v}</text><text x="${pl-5}" y="${Y(v)+4}" text-anchor="end" font-size="10.5" fill="#54576F">${v}</text>`; }
+    s += `<line x1="${X(lo)}" y1="${Y(lo)}" x2="${X(hi)}" y2="${Y(hi)}" stroke="#54576F" stroke-dasharray="4 3"/>`;
+    let lg = 0, nn = 0; for (const p of pts) { const e = Math.log10(Math.max(lo, p.pred)) - Math.log10(Math.max(lo, p.actual)); lg += e * e; nn++; s += `<circle cx="${X(p.actual)}" cy="${Y(p.pred)}" r="4" fill="${p.holdout ? '#eb6834' : COLORS[bk]}" fill-opacity=".8"><title>${p.date}: reported ${p.actual} MG, predicted ${p.pred} MG, rain ${p.rain}"${p.holdout ? ' (holdout)' : ''}</title></circle>`; }
+    s += `<text x="${W-12}" y="${H-pb-6}" text-anchor="end" font-size="11" fill="#26272a">reported MG →</text><text x="${pl+4}" y="18" font-size="11" fill="#26272a">↑ predicted MG</text></svg>`;
+    const rms = nn ? Math.sqrt(lg / nn) : 0;
+    html += `<div class="card"><b class="t"><span class="pill" style="background:${COLORS[bk]}">${esc(nameOf(bk))}</span></b><table>
+      <tr><td class="fine">model</td><td>GradientBoostingRegressor, ${h.n_estimators} trees × depth ${h.max_depth}, lr ${h.learning_rate}; target ${esc(h.target)}; reads <b>${esc(h.rain_source === 'avg' ? 'two-gauge mean' : h.rain_source)}</b></td></tr>
+      <tr><td class="fine">fit on</td><td>${esc(h.n_events)} events with a reported volume · prior ${f2(h.prior_mg)} MG · residual σ ${esc(h.resid_std)} (log scale)</td></tr>
+      <tr><td class="fine">on those events</td><td>typical factor between predicted and reported: ×/÷ ${Math.pow(10, rms).toFixed(1)} (rms log₁₀ error ${rms.toFixed(2)}, in-sample for blue points; orange = holdout period)</td></tr>
+      <tr><td class="fine">drivers</td><td>${imps.map(([f, v]) => `<code>${f}</code> ${(v*100).toFixed(0)}%`).join(' · ')}</td></tr></table>${s}</div>`; }
+  document.getElementById('volumeCards').innerHTML = html;
+  // blend chart
+  const W = 1100, H = 200, pl = 44, pb = 30; const X = v => pl + v / 150 * (W - pl - 10), Y = w => 8 + (1 - w) * (H - pb - 8);
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block">`;
+  for (const w of [0, .25, .5, .75, 1]) s += `<line x1="${pl}" y1="${Y(w)}" x2="${W-10}" y2="${Y(w)}" stroke="#e3ebf2"/><text x="${pl-6}" y="${Y(w)+4}" text-anchor="end" font-size="11" fill="#54576F">${w.toFixed(2)}</text>`;
+  for (const v of [0, 25, 50, 75, 100, 125, 150]) s += `<text x="${X(v)}" y="${H-8}" text-anchor="middle" font-size="11" fill="#54576F">${v} MG</text>`;
+  GROUPS.forEach((g, gi) => { const med = (D.impact_smoothed[g] || {}).median_event_volume_mg || 1; const pts = []; for (let v = 0; v <= 150; v += 1) pts.push([v, v / (v + med)]);
+    s += `<path d="${pts.map((p, i) => (i ? 'L' : 'M') + X(p[0]) + ',' + Y(p[1])).join(' ')}" fill="none" stroke="${COLORS[D.groups[g].basin]}" stroke-width="2" stroke-dasharray="${gi % 2 ? '5 4' : ''}"/><text x="${X(150)-4}" y="${Y(150/(150+med))-4-gi*0}" text-anchor="end" font-size="10.5" fill="${COLORS[D.groups[g].basin]}">${esc(g)} (median ${med} MG)</text>`; });
+  s += `<line x1="${pl}" y1="${Y(.5)}" x2="${W-10}" y2="${Y(.5)}" stroke="#54576F" stroke-dasharray="2 3"/><text x="${pl+6}" y="${Y(.5)-4}" font-size="11" fill="#54576F">w = 0.5 at the group's median event</text></svg>`;
+  document.getElementById('blendChart').innerHTML = s;
+})();
+
+// ─── walk through any day ─────────────────────────────────────────────────────
+const W_ = {g: GROUPS[0], si: 0, i: N - 1};
+(function walkInit() {
+  document.getElementById('wGroup').innerHTML = GROUPS.map(g => `<option value="${esc(g)}">${esc(g)} (${esc(nameOf(D.groups[g].basin))})</option>`).join('');
+  document.getElementById('wSet').innerHTML = SETS.map((s, i) => `<option value="${i}">${esc(s.label)}</option>`).join('');
+  const di = document.getElementById('wDate'); di.min = D.dates[0]; di.max = D.dates[N-1];
+  // default: the most recent discharge day in the first group's basin
+  const bk = D.groups[W_.g].basin; for (let i = N - 1; i >= 0; i--) if (D.labels.basin_y[bk][i]) { W_.i = i; break; }
+  document.getElementById('wGroup').addEventListener('change', e => { W_.g = e.target.value; renderWalk(); });
+  document.getElementById('wSet').addEventListener('change', e => { W_.si = +e.target.value; renderWalk(); });
+  di.addEventListener('change', e => { if (dateIdx[e.target.value] != null) { W_.i = dateIdx[e.target.value]; renderWalk(); } });
+  document.getElementById('wPrev').addEventListener('click', () => { W_.i = Math.max(0, W_.i - 1); renderWalk(); });
+  document.getElementById('wNext').addEventListener('click', () => { W_.i = Math.min(N - 1, W_.i + 1); renderWalk(); });
+  const jump = dir => { const bk = D.groups[W_.g].basin; for (let i = W_.i + dir; i >= 0 && i < N; i += dir) if (D.labels.basin_y[bk][i]) { W_.i = i; break; } renderWalk(); };
+  document.getElementById('wPrevEv').addEventListener('click', () => jump(-1));
+  document.getElementById('wNextEv').addEventListener('click', () => jump(1));
+})();
+function renderWalk() {
+  const g = W_.g, si = W_.si, i = W_.i, bk = D.groups[g].basin, zk = ZONE_ORDER.find(z => D.zones[z].groups.includes(g));
+  document.getElementById('wDate').value = D.dates[i];
+  document.getElementById('wTitle').textContent = `${g}, ${fmtDate(D.dates[i])}, ${SETS[si].label}`;
+  // week chart
+  const lo = Math.max(0, i - 10), hi = Math.min(N - 1, i + 3), days = []; for (let j = lo; j <= hi; j++) days.push(j);
+  const W = 1100, H = 300, pl = 44, pb = 86, cw = (W - pl - 10) / days.length; const X = j => pl + (j - lo) * cw + cw / 2, Y = p => 10 + (1 - p) * (H - pb - 10);
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block">`;
+  for (const p of [0, .25, .5, .75, 1]) s += `<line x1="${pl}" y1="${Y(p)}" x2="${W-10}" y2="${Y(p)}" stroke="${p === .25 ? '#b5310a' : '#e3ebf2'}" stroke-dasharray="${p === .25 ? '4 3' : ''}"/><text x="${pl-6}" y="${Y(p)+4}" text-anchor="end" font-size="11" fill="#54576F">${p*100}%</text>`;
+  s += `<rect x="${X(i)-cw/2}" y="10" width="${cw}" height="${H-pb-10}" fill="#f3f6f9"/>`;
+  for (const j of days) { const p = SETS[si].probs[bk][j] || 0; s += `<rect x="${X(j)-cw*0.3}" y="${Y(p)}" width="${cw*0.6}" height="${Math.max(Y(0)-Y(p), p > 0 ? 1.5 : 0)}" fill="#eb6834" opacity=".85"><title>${D.dates[j]}: P(discharge, ${nameOf(bk)}) = ${(p*100).toFixed(1)}% · predicted volume ${f2(D.vol_pred[bk][j])} MG · rain ${f2(D.rain[j])}"</title></rect>`; }
+  SETS.forEach((st, k) => { const pts = days.map(j => [X(j), Y(groupRisk(k, g, j).risk)]); s += `<path d="${pts.map((p, n) => (n ? 'L' : 'M') + p[0] + ',' + p[1]).join(' ')}" fill="none" stroke="${SET_COLORS[k % SET_COLORS.length]}" stroke-width="${k ? 2 : 2.5}" stroke-dasharray="${k ? '6 4' : ''}"/>`; pts.forEach((p, n) => { s += `<circle cx="${p[0]}" cy="${p[1]}" r="${days[n] === i ? 5.5 : 3.5}" fill="${SET_COLORS[k % SET_COLORS.length]}" stroke="#fff" stroke-width="1.5"><title>${D.dates[days[n]]}: ${st.name} ${g} risk ${pct(groupRisk(k, g, days[n]).risk)}</title></circle>`; }); });
+  for (const j of days) { const y0 = Y(0);
+    s += `<text x="${X(j)}" y="${y0+16}" text-anchor="middle" font-size="11" fill="${j === i ? '#0072BC' : '#54576F'}" font-weight="${j === i ? 700 : 400}">${D.dates[j].slice(5)}</text>`;
+    s += `<text x="${X(j)}" y="${y0+30}" text-anchor="middle" font-size="10.5" fill="#54576F">${D.rain[j] > 0 ? D.rain[j].toFixed(2) + '"' : '·'}</text>`;
+    const y = D.labels.basin_y[bk][j]; if (y) s += `<text x="${X(j)}" y="${y0+46}" text-anchor="middle" font-size="10.5" font-weight="700" fill="#b5310a">discharge${D.labels.basin_vol[bk][j] != null ? ' ' + D.labels.basin_vol[bk][j] + ' MG' : ''}</text>`; else if (y === null) s += `<text x="${X(j)}" y="${y0+46}" text-anchor="middle" font-size="10.5" fill="#9aa0a6">no report</text>`;
+    const e = D.labels.group_elevated[g][j]; if (e != null) s += `<text x="${X(j)}" y="${y0+60}" text-anchor="middle" font-size="10.5" font-weight="700" fill="${e ? '#b5310a' : '#237059'}">${e ? 'sample elevated' : 'sample clean'}</text>`;
+    const z = D.labels.zone_discharge[zk][j]; if (z) s += `<text x="${X(j)}" y="${y0+74}" text-anchor="middle" font-size="10.5" fill="#8f2508">beach posted</text>`; }
+  s += '</svg>';
+  document.getElementById('weekChart').innerHTML = s;
+  document.getElementById('weekLegend').innerHTML = `<span style="display:inline-block;width:12px;height:12px;background:#eb6834;vertical-align:-2px"></span> stage 1 P(discharge) for ${esc(nameOf(bk))} (${esc(SETS[si].label)}) · ` + SETS.map((st, k) => `<span style="display:inline-block;width:18px;border-top:${k ? '2px dashed' : '3px solid'} ${SET_COLORS[k % SET_COLORS.length]};vertical-align:middle"></span> ${esc(st.name)} composed ${esc(g)} risk`).join(' · ') + ` · <span style="color:#b5310a">— 25% line</span> · rows under the axis: rain, reported discharge (with volume), bacteria sample at these beaches, beach posting in the zone.`;
+  // term table
+  const {risk, terms} = groupRisk(si, g, i); let prod = 1;
+  const rows = ['<tr><th>k</th><th>day D−k</th><th class="num">p(D−k)</th><th class="num">predicted V (MG)</th><th class="num">w = V/(V+median)</th><th class="num">x(k, V)</th><th class="num">1 − p·x</th><th class="num">running ∏</th></tr>'];
+  const med = (D.impact_smoothed[g] || {}).median_event_volume_mg || 1;
+  for (const t of terms) { prod *= t.factor; rows.push(`<tr class="${t.p < 0.0005 ? 'dim' : ''}"><td>${t.k}</td><td>${t.k === 0 ? 'today' : esc(D.dates[t.j].slice(5))}</td><td class="num">${(t.p*100).toFixed(1)}%</td><td class="num">${f2(t.vol)}</td><td class="num">${(t.vol/(t.vol+med)).toFixed(2)}</td><td class="num">${t.k === 0 ? '1 (discharge day)' : f3(t.x)}</td><td class="num">${f3(t.factor)}</td><td class="num">${f3(prod)}</td></tr>`); }
+  const stored = SETS[si].stored_groups[g][i];
+  rows.push(`<tr><td colspan="7"><b>${esc(g)} risk = 1 − ∏</b> <span class="fine">stored in the ${esc(SETS[si].name)} artifact: ${pct(stored)} ${stored == null ? '' : Math.abs(stored - risk) <= 0.0015 ? '<span class="ok-check">✓</span>' : '<span class="bad-check">≠</span>'}</span></td><td class="num"><b style="color:${riskColor(risk)}">${pct(risk)}</b></td></tr>`);
+  document.getElementById('walkTable').innerHTML = rows.join('');
+  // every set on this day
+  const srows = ['<tr><th>Model set</th><th class="num">p today</th><th class="num">' + esc(g) + ' risk</th><th class="num">zone ' + esc(D.zones[zk].label) + '</th><th class="num">stored</th></tr>'];
+  SETS.forEach((st, k) => { const r = groupRisk(k, g, i).risk, z = zoneRisk(k, zk, i), sv = st.stored_groups[g][i]; srows.push(`<tr><td><span style="display:inline-block;width:10px;height:10px;background:${SET_COLORS[k % SET_COLORS.length]};border-radius:2px;margin-right:6px"></span>${esc(st.label)}</td><td class="num">${((st.probs[bk][i]||0)*100).toFixed(1)}%</td><td class="num"><b style="color:${riskColor(r)}">${pct(r)}</b></td><td class="num">${pct(z)}</td><td class="num">${pct(sv)} ${sv == null ? '' : Math.abs(sv - r) <= 0.0015 ? '<span class="ok-check">✓</span>' : '<span class="bad-check">≠</span>'}</td></tr>`); });
+  document.getElementById('setTable').innerHTML = srows.join('');
+  const y = D.labels.basin_y[bk][i], e = D.labels.group_elevated[g][i];
+  document.getElementById('setNote').innerHTML = `What happened: ${y == null ? 'no discharge report covers this day' : y ? '<b>' + esc(nameOf(bk)) + ' discharged</b>' + (D.labels.basin_vol[bk][i] != null ? ' (' + D.labels.basin_vol[bk][i] + ' MG reported)' : '') : 'no discharge reported at ' + esc(nameOf(bk))}; ${e == null ? 'no sample at these beaches' : e ? '<b>a sample here was over standard</b>' : 'samples here were clean'}${D.post_training[i] ? ' · <span class="badge info">post-training day</span>' : i >= dateIdx[D.holdout_start] ? ' · <span class="badge info">holdout period</span>' : ' · <span class="badge warn">in-sample day</span>'}. Same volumes, same table, same code for every set — only p differs.`;
+}
+renderWalk();
+
+// ─── models side by side ──────────────────────────────────────────────────────
+(function compareInit() {
+  const seasonOf = d => { const y = +d.slice(0, 4), m = +d.slice(5, 7); return m >= 7 ? y : y - 1; };
+  const opts = [{label: 'Since training (' + D.trained_through + ' →)', lo: D.dates.findIndex(d => d > D.trained_through), hi: N - 1},
+                {label: 'Holdout period (' + D.holdout_start + ' → ' + D.trained_through + ')', lo: dateIdx[D.holdout_start] ?? 0, hi: D.dates.findIndex(d => d > D.trained_through) - 1},
+                {label: 'Everything', lo: 0, hi: N - 1}];
+  const seasons = [...new Set(D.dates.map(seasonOf))].sort((a, b) => b - a);
+  for (const s of seasons) { const lo = D.dates.findIndex(d => seasonOf(d) === s); let hi = lo; while (hi + 1 < N && seasonOf(D.dates[hi + 1]) === s) hi++; opts.push({label: `${s}–${String(s+1).slice(2)} season`, lo, hi}); }
+  const sel = document.getElementById('cWindow'); sel.innerHTML = opts.map((o, i) => `<option value="${i}">${esc(o.label)}</option>`).join('');
+  window.__cOpts = opts; sel.addEventListener('change', renderCompare); document.getElementById('cLine').addEventListener('change', renderCompare);
+})();
+function renderCompare() {
+  const o = window.__cOpts[+document.getElementById('cWindow').value], thr = +document.getElementById('cLine').value; if (o.lo < 0 || o.hi < o.lo) { document.getElementById('compareTable').innerHTML = '<tr><td class="fine">empty window</td></tr>'; return; }
+  const rows = ['<tr><th>Zone</th><th>Model set</th><th class="num">discharge days caught</th><th class="num">false alarms</th><th class="num">· within 7 days after a real posting</th><th class="num">· other</th><th class="num">quiet days (known)</th></tr>'];
+  const dis = [];
+  for (const zk of ZONE_ORDER) {
+    const lab = D.labels.zone_discharge[zk];
+    const post = new Set(); for (let i = o.lo; i <= o.hi; i++) if (lab[i]) post.add(i);
+    const tail = i => { for (let k = 1; k <= 7; k++) if (post.has(i - k)) return true; return false; };
+    const zr = SETS.map((s, k) => { const out = new Array(N); for (let i = o.lo; i <= o.hi; i++) out[i] = zoneRisk(k, zk, i); return out; });
+    SETS.forEach((s, k) => { let tp = 0, fn = 0, fp = 0, fpt = 0, tn = 0;
+      for (let i = o.lo; i <= o.hi; i++) { if (lab[i] == null) continue; const pred = zr[k][i] >= thr; if (lab[i]) { tp += pred; fn += !pred; } else if (pred) { fp++; if (tail(i)) fpt++; } else tn++; }
+      rows.push(`<tr>${k === 0 ? `<td rowspan="${SETS.length}"><b>${esc(D.zones[zk].label)}</b></td>` : ''}<td><span style="display:inline-block;width:10px;height:10px;background:${SET_COLORS[k % SET_COLORS.length]};border-radius:2px;margin-right:6px"></span>${esc(s.label)}</td><td class="num">${tp} / ${tp + fn}</td><td class="num"><b>${fp}</b></td><td class="num">${fpt}</td><td class="num">${fp - fpt}</td><td class="num">${tn + fp}</td></tr>`);
+      if (k > 0) for (let i = o.lo; i <= o.hi; i++) { const d = zr[k][i] - zr[0][i]; if (Math.abs(d) >= 0.2) dis.push({zk, i, k, v4: zr[0][i], cand: zr[k][i], d}); } });
+  }
+  document.getElementById('compareTable').innerHTML = rows.join('');
+  dis.sort((a, b) => Math.abs(b.d) - Math.abs(a.d));
+  const top = dis.slice(0, 15);
+  document.getElementById('disagree').innerHTML = SETS.length < 2 ? '<p class="fine">Only one model set on disk — nothing to disagree with.</p>' : !top.length ? '<p class="fine">No day in this window where a candidate and v4 differ by 20 points or more on zone risk.</p>' :
+    '<table><tr><th>Day</th><th>Zone</th><th>Set</th><th class="num">v4</th><th class="num">candidate</th><th class="num">Δ</th><th>what happened</th></tr>' + top.map(x => { const lab = D.labels.zone_discharge[x.zk][x.i]; const els = D.zones[x.zk].groups.map(g => D.labels.group_elevated[g][x.i]).filter(v => v != null);
+      return `<tr><td><a href="#compose" onclick="W_.i=${x.i};W_.g='${esc(D.zones[x.zk].groups[0])}';renderWalk()">${fmtDate(D.dates[x.i])}</a> <span class="fine">rain ${f2(D.rain[x.i])}"</span></td><td>${esc(D.zones[x.zk].label)}</td><td>${esc(SETS[x.k].name)}</td><td class="num">${pct(x.v4)}</td><td class="num">${pct(x.cand)}</td><td class="num" style="color:${x.d > 0 ? '#b5310a' : '#237059'}">${x.d > 0 ? '+' : ''}${Math.round(x.d*100)} pts</td><td class="fine">${lab == null ? 'no discharge report' : lab ? '<b>beach posted (discharge)</b>' : 'no discharge posted'}${els.length ? ' · sample ' + (els.some(Boolean) ? '<b>elevated</b>' : 'clean') : ''}</td></tr>`; }).join('') + '</table><p class="fine">Click a day to load it in the walk-through above (first group of the zone).</p>';
+}
+renderCompare();
+
+// ─── self-check ───────────────────────────────────────────────────────────────
+(function selfCheck() {
+  const rows = ['<tr><th>Model set</th><th>Group</th><th class="num">days compared</th><th class="num">max |Δ risk|</th><th class="num">days off by > 0.0015</th><th>verdict</th></tr>'];
+  let ok = true, worstAll = 0;
+  SETS.forEach((s, k) => { for (const g of GROUPS) { let n = 0, worst = 0, bad = 0; const stored = s.stored_groups[g];
+    for (let i = 0; i < N; i++) { if (stored[i] == null) continue; const d = Math.abs(groupRisk(k, g, i).risk - stored[i]); n++; if (d > worst) worst = d; if (d > 0.0015) bad++; }
+    worstAll = Math.max(worstAll, worst); if (bad) ok = false;
+    rows.push(`<tr><td>${esc(s.label)}</td><td>${esc(g)}</td><td class="num">${n}</td><td class="num ${worst <= 0.0015 ? 'ok-check' : 'bad-check'}">${worst.toFixed(4)}</td><td class="num">${bad}</td><td>${bad ? '<span class="badge bad">mismatch</span>' : '<span class="badge ok">matches</span>'}</td></tr>`); } });
+  document.getElementById('checkTable').innerHTML = rows.join('');
+  document.getElementById('checkSummary').innerHTML = `${ok ? '<span class="ok-check">✓ PASS</span>' : '<span class="bad-check">✗ MISMATCH</span>'} — the page's composition reproduces every stored group risk to within ${worstAll.toFixed(4)} (artifacts store 3 decimals; probabilities here carry 6).`;
+})();
+</script>
+</body></html>
