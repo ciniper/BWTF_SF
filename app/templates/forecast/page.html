@@ -212,7 +212,7 @@ const BASIN_META = {
     citywide:    { icon: 'map-pin',    name: 'City-wide',              desc: 'any basin discharging' },
 };
 const BASIN_ORDER = ['westside', 'north_shore', 'central', 'southeast', 'citywide'];
-let RISK_THRESHOLD = 0.25;   // "MODERATE" — the line the model check scores hits and misses on; the scorecard's selector moves it (10 / 25 / 50)
+let RISK_THRESHOLD = 0.5;   // "HIGH" — the line the model check scores hits and misses on by default (Chase, 2026-09-25); the scorecard's selector moves it (10 / 25 / 50)
 
 const ic = name => `<svg class="ic"><use href="#i-${name}"/></svg>`;
 const esc = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
