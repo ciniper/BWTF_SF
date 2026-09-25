@@ -19,7 +19,10 @@ from __future__ import annotations
 
 from datetime import date, datetime, timedelta
 
-THRESHOLDS = (0.10, 0.25, 0.50)
+THRESHOLDS = (0.10, 0.25, 0.50)   # the lines the trainer stores in the artifact's season block
+# the finer grid the served window is scored on, so "cheapest line" for a
+# cost ratio (false alarms + N × misses) has somewhere to land; includes THRESHOLDS
+LINE_GRID = (0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50, 0.60, 0.75)
 BASIN_KEYS = ("westside", "north_shore", "central", "southeast")
 
 

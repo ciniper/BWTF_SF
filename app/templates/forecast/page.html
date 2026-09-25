@@ -670,6 +670,20 @@ function renderCheckDetail(day) {
 // changes until "follow the date".
 let scoreRange = null;   // {preset, from, to} | null = follow the selected date
 let scoreModel = '';     // '' = the served v4 artifact; else a candidate set's name (scorecard only — the live forecast is always v4)
+let costRatio = 4;       // one missed discharge day is worth this many false alarms: cost(line) = FP + N × FN
+function setCostRatio(v) {
+    costRatio = Math.min(99, Math.max(1, parseInt(v, 10) || 1));
+    const el = document.getElementById('scoreWindow');
+    if (el && current && current.scorecard) el.outerHTML = renderScoreWindow(current.scorecard);
+}
+// cost of a line for one zone's discharge confusion, and the cheapest line on the grid
+const lineCost = d => d.fp + costRatio * d.fn;
+function cheapestLine(c) {
+    const lines = Object.keys(c).map(Number).sort((a, b) => a - b);
+    let best = null;
+    for (const t of lines) { const cost = lineCost(c[String(t)].vs_discharge_posting); if (best == null || cost < best.cost || (cost === best.cost && t > best.line)) best = { line: t, cost }; }
+    return best;
+}
 const scoreRangeQuery = () => (scoreRange ? '&from=' + encodeURIComponent(scoreRange.from) + '&to=' + encodeURIComponent(scoreRange.to) : '')
                             + (scoreModel ? '&model=' + encodeURIComponent(scoreModel) : '');
 function setScoreModel(v) {
@@ -743,19 +757,35 @@ function renderScoreWindow(sc) {
             ${models.length > 1 ? `<a class="mute" href="/reports/2026-09_model_leaderboard.html" title="How each candidate was fit and scored">leaderboard</a>` : ''}
             <span class="mute">${w.n_days} days · ${w.n_discharge_days} discharge day${w.n_discharge_days === 1 ? '' : 's'} · ${w.n_sampled_days} sampled</span>
             ${gradeBadge(w, sc)}
+            <label class="mute" title="Cost of a line = false alarms + N × missed discharge days, counted against the discharge label. Set N to how many false alarms you would trade to avoid one miss; the cheapest line on the grid is marked ★.">one miss = <input type="number" class="date-picker" style="width:64px;padding:4px 8px" min="1" max="99" value="${costRatio}" onchange="setCostRatio(this.value)"> false alarms</label>
         </div><div class="scorecard">`;
+    let totalCost = 0, totalByLine = {};
     for (const zk of ZONE_ORDER) {
         const c = w.zone_confusion[zk]; if (!c || !c[thr]) continue;
         const d = c[thr].vs_discharge_posting, b = c[thr].vs_bacteria_elevated;
         const rec = d.tp + d.fn ? d.tp / (d.tp + d.fn) : null, far = d.fp + d.tn ? d.fp / (d.fp + d.tn) : null, brec = b.tp + b.fn ? b.tp / (b.tp + b.fn) : null, bfa = b.fp + b.tn ? b.fp / (b.fp + b.tn) : null;
         const f = v => v == null ? '—' : pct(v) + '%';
+        const fapc = d.tp ? (d.fp / d.tp).toFixed(1) : (d.fp ? '∞' : '—');
+        const cost = lineCost(d), best = cheapestLine(c);
+        totalCost += cost;
+        for (const t of Object.keys(c)) totalByLine[t] = (totalByLine[t] || 0) + lineCost(c[t].vs_discharge_posting);
+        const strip = Object.keys(c).map(Number).sort((a, b) => a - b).map(t => { const k = String(t), cc = lineCost(c[k].vs_discharge_posting); const cur = k === thr, isBest = best && t === best.line;
+            return `<span title="${pct(t)}% line: ${c[k].vs_discharge_posting.fp} false alarms, ${c[k].vs_discharge_posting.fn} misses" style="${cur ? 'font-weight:700;color:#26272a;' : ''}${isBest ? 'background:#e0f0ea;border-radius:6px;padding:0 4px;' : ''}">${pct(t)}%→${cc}${isBest ? '★' : ''}</span>`; }).join(' ');
         html += `<div class="score"><b>${ic(ZONE_ICON[zk])} ${esc((ZONES.find(z => z.key === zk) || {}).label)}</b>
             <div class="row"><span>Discharge days caught</span><span>${f(rec)} <span class="mute">(${d.tp}/${d.tp + d.fn})</span></span></div>
             <div class="row"><span>False alarms (of quiet days)</span><span>${f(far)} <span class="mute">(${d.fp}/${d.fp + d.tn})</span></span></div>
+            <div class="row"><span>False alarms per catch</span><span>${fapc} <span class="mute">(${d.fp}/${d.tp})</span></span></div>
+            <div class="row"><span>Cost at this line <span class="mute">(FP + ${costRatio}×FN)</span></span><span>${cost}${best ? ' <span class="mute">· cheapest ' + pct(best.line) + '% → ' + best.cost + '</span>' : ''}</span></div>
             <div class="row"><span>Elevated-sample days caught</span><span>${f(brec)} <span class="mute">(${b.tp}/${b.tp + b.fn})</span></span></div>
-            <div class="row"><span>Alarms on clean sample days</span><span>${f(bfa)} <span class="mute">(${b.fp}/${b.fp + b.tn})</span></span></div></div>`;
+            <div class="row"><span>Alarms on clean sample days</span><span>${f(bfa)} <span class="mute">(${b.fp}/${b.fp + b.tn})</span></span></div>
+            <div class="fine" style="margin-top:6px;line-height:1.7">${strip}</div></div>`;
     }
     html += '</div>';
+    const lines = Object.keys(totalByLine).map(Number).sort((a, b) => a - b);
+    if (lines.length) {
+        let bestT = lines[0]; for (const t of lines) if (totalByLine[String(t)] <= totalByLine[String(bestT)]) bestT = t;
+        html += `<div class="fine" style="margin-top:8px">All zones, one miss = ${costRatio} false alarms: cost <b>${totalCost}</b> at the ${pct(RISK_THRESHOLD)}% line · cheapest single line ${pct(bestT)}% → ${totalByLine[String(bestT)]}. Costs count the discharge label only; days in the decay tail after a real discharge count as false alarms here even when samples ran high.</div>`;
+    }
     if (w.basins) {
         const f3 = v => v == null ? '<span class="mute">—</span>' : Number(v).toFixed(3);
         html += `<div class="subhead">${ic('gauge')} Stage 1 — discharge model by basin, ${fmtRange(w.start, w.end)}</div><table class="tbl"><tr><th>Model</th><th>Rain source</th><th class="num">Days</th><th class="num">Discharge days</th><th class="num">PR-AUC</th><th class="num">ROC-AUC</th><th class="num">Brier</th></tr>`;

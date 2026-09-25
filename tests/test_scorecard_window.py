@@ -189,6 +189,7 @@ def test_served_windows():
     assert set(w["zone_confusion"]) == set(sc["zone_confusion_holdout"])
     assert set(w["basins"]) == {"westside", "north_shore", "central", "southeast"}
     assert r["trained_through"] == trained_through
+    assert all(t in S.LINE_GRID for t in S.THRESHOLDS)   # every stored line is on the served grid
     assert [s["season"] for s in r["seasons"]][:2] == [S.season_of(sc["span"][1]), S.season_of(sc["span"][1]) - 1]
 
     # outside the artifact → the post-training stretch if there is one, else the whole holdout
@@ -201,8 +202,13 @@ def test_served_windows():
         assert w["preset"] == "holdout" and (w["start"], w["end"]) == (sc["holdout_start"], trained_through)
 
     # the explicit holdout window = the stored season block = the eval report
+    # (the served window is scored on the finer LINE_GRID; the artifact stores three of those lines)
     w = eng.get_scorecard("2024-01-13", sc["holdout_start"], trained_through)["window"]
-    assert w["grade"] == "holdout" and w["zone_confusion"] == sc["zone_confusion_holdout"]
+    assert w["grade"] == "holdout"
+    for zk, stored in sc["zone_confusion_holdout"].items():
+        assert set(w["zone_confusion"][zk]) == {str(t) for t in S.LINE_GRID}
+        assert {t: w["zone_confusion"][zk][t] for t in stored} == stored, zk
+    assert set(w["zone_confusion"]) == set(sc["zone_confusion_holdout"])
     ev = json.loads((MODEL_DIR / "eval_report.json").read_text())
     for key, b in w["basins"].items():
         h = ev["targets"][key]["holdout"]
@@ -237,6 +243,7 @@ def test_model_sets_are_selectable_but_never_served():
         r = eng.get_scorecard("2024-01-13", model=m["key"])
         assert r["model"] == m["key"] and r["window"]["preset"] == "season" and r["window"]["grade"] == "holdout"
         assert set(r["zone_confusion_holdout"]) == set(_artifact()["zone_confusion_holdout"])
+        assert set(r["window"]["zone_confusion"]["ocean"]) == {str(t) for t in S.LINE_GRID}
         cs = C.load_scorecard(m["key"])
         assert cs["trained_through"] == (_artifact().get("trained_through") or _artifact()["span"][1])
         # same days, same labels as the served artifact — only the probabilities may differ
