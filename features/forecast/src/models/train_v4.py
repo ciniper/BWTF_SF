@@ -468,7 +468,7 @@ def build_scorecard(frames: dict, chosen: dict, finals: dict, holdout_models: di
                     impact_raw: dict, samples: pd.DataFrame, arch: dict, archive_used: bool, features: list,
                     stage2: dict | None = None) -> dict:
     """``stage2`` = a fitted variant spec (src/models/stage2.py) with an optional
-    refit ``impact_table``; None = the served v4 composition."""
+    refit ``impact_table``; None = stage 2 v1, the served composition."""
     import stage2 as _s2
     table = smooth_table(stage2["impact_table"]) if stage2 and stage2.get("impact_table") else smooth_table(impact_raw)
     split = _s2.make_split(stage2)
@@ -549,7 +549,7 @@ def build_scorecard(frames: dict, chosen: dict, finals: dict, holdout_models: di
             "groups": {g: {"basin": BASIN_KEYS[b], "stations": sids} for g, (b, sids) in SITE_GROUPS.items()},
             "zones": {zk: {"label": ZONES[zk].label, "groups": gs} for zk, gs in ZONE_GROUPS.items()},
             "zone_confusion_holdout": confusion, "days": days,
-            "stage2": {"variant": (stage2 or {}).get("variant", "v4"), "impact_table_refit": bool(stage2 and stage2.get("impact_table"))}}
+            "stage2": {"variant": (stage2 or {}).get("variant", "v1"), "impact_table_refit": bool(stage2 and stage2.get("impact_table"))}}
 
 
 # ── Backtest ────────────────────────────────────────────────────────────────

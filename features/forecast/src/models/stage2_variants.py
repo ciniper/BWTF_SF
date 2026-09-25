@@ -2,13 +2,13 @@
 """Fit a stage 2 variant, and pair any stage 1 with it as a candidate set.
 
     venv/bin/python features/forecast/src/models/stage2_variants.py fit
-        → data/models/stage2/outfall_split_v1.json  (shares by group and size,
+        → data/models/stage2/v2.json  (stage 2 v2 = the outfall split: shares by group and size,
           plus the impact table refit on group-attributed discharge days)
 
     venv/bin/python features/forecast/src/models/stage2_variants.py save \
-        --stage1 v4 --variant outfall_split_v1 --name v4_split [--note "…"]
+        --stage1 v4 --variant v2 --name gb_v1_s2v2 [--note "…"]
     venv/bin/python features/forecast/src/models/stage2_variants.py save \
-        --stage1 logit_v1 --variant outfall_split_v1 --name logit_v1_split
+        --stage1 logit_v1 --variant v2 --name logit_v1_s2v2
         → data/models/candidates/<name>/ : the stage-1 pickles copied from the
           source set (served v4 or a candidate), stage2.json, and a scorecard
           composed with the variant. Holdout-fit siblings are refit on the
@@ -49,8 +49,8 @@ def _served_chosen() -> dict:
     return chosen
 
 
-def fit(variant: str = "outfall_split_v1") -> Path:
-    if variant != "outfall_split_v1":
+def fit(variant: str = "v2") -> Path:
+    if variant != "v2":
         raise SystemExit(f"no fitter for {variant!r}")
     heads, impact_raw = T.stage2_from_served()
     chosen = _served_chosen()
@@ -64,7 +64,7 @@ def fit(variant: str = "outfall_split_v1") -> Path:
     spec["impact_table_note"] = ("refit on group-attributed discharge days (CIWQS days where one of the group's outfalls "
                                  "discharged, plus the basin's 2016-17 feed-archive days, which carry no outfall detail)")
     spec["train_window"] = [str(frames["avg"]["date"].min().date()), str(frames["avg"]["date"].max().date())]
-    print(f"{variant}: shares by group (share of the basin's CIWQS discharge days on which the group's outfalls took part)")
+    print(f"stage 2 {variant} (outfall split): shares by group (share of the basin's CIWQS discharge days on which the group's outfalls took part)")
     for g, s in spec["shares"].items():
         print(f"   {g:14} outfalls {len(spec['group_outfalls'][g]):2}  large {s['large']['p']} (n={s['large']['n']})  small {s['small']['p']} (n={s['small']['n']})  all {s['all']['p']} (n={s['all']['n']})")
     print("impact table refit — sample days per group (v4 → split):")
@@ -75,8 +75,9 @@ def fit(variant: str = "outfall_split_v1") -> Path:
     return out
 
 
-def _load_stage1(source: str) -> tuple[dict, dict, str]:
-    """({key: pickle dict}, {key: stored scorecard days}, family)."""
+def _load_stage1(source: str) -> tuple[dict, dict, str, str]:
+    """({key: pickle dict}, source scorecard, family, stage-1 name). The served
+    v4 bundle's stage 1 is named gb_v1."""
     if source == "v4":
         models = {}
         for basin in T.APP_BASINS + ["citywide"]:
@@ -86,11 +87,11 @@ def _load_stage1(source: str) -> tuple[dict, dict, str]:
         import gzip
         with gzip.open(T.SERVE_DIR / "scorecard.json.gz", "rt") as f:
             sc = json.load(f)
-        return models, sc, "gb"
+        return models, sc, "gb", "gb_v1"
     models = candidates.load_models(source)
     sc = candidates.load_scorecard(source)
     man = json.loads((candidates.candidate_dir(source) / "manifest.json").read_text())
-    return models, sc, man.get("family", "gb")
+    return models, sc, man.get("family", "gb"), (man.get("stage1") or {}).get("name", source)
 
 
 def _refit_holdouts(models: dict, chosen: dict, frames: dict, features: list) -> dict:
@@ -124,7 +125,7 @@ def save(stage1: str, variant: str, name: str, note: str = "") -> Path:
     if not candidates.valid_name(name):
         raise SystemExit(f"bad candidate name {name!r}")
     spec = S2.load_variant(variant)
-    models, src_sc, family = _load_stage1(stage1)
+    models, src_sc, family, stage1_name = _load_stage1(stage1)
     features = T.get_feature_columns_v21()
     chosen = {b: models[BASIN_KEYS[b]].get("rain_source", "avg") for b in T.APP_BASINS}
     chosen["citywide"] = models["citywide"].get("rain_source", "avg")
@@ -160,9 +161,9 @@ def save(stage1: str, variant: str, name: str, note: str = "") -> Path:
     else:
         man = json.loads((candidates.candidate_dir(stage1) / "manifest.json").read_text())
         per_basin = man.get("per_basin", {})
-    note = note or f"Stage 1 of {stage1} composed with stage 2 variant {variant}: {spec.get('definition', '')}"
+    note = note or f"Stage 1 {stage1_name} (from {stage1}) composed with stage 2 {variant} ({spec.get('kind', '')}): {spec.get('definition', '')}"
     d = candidates.save_candidate(name, family, finals, holdouts, chosen, features, per_basin, note=note,
-                                  extra={"stage1_source": stage1}, stage2=spec, stage1_from=stage1)
+                                  extra={"stage1_source": stage1}, stage2=spec, stage1_from=stage1, stage1_name=stage1_name)
     print(f"candidate → {d.relative_to(REPO)} (pickles copied from {stage1}, stage2.json, manifest, scorecard)")
     return d
 
@@ -170,9 +171,9 @@ def save(stage1: str, variant: str, name: str, note: str = "") -> Path:
 if __name__ == "__main__":
     args = sys.argv[1:]
     if not args or args[0] == "fit":
-        fit(args[args.index("--variant") + 1] if "--variant" in args else "outfall_split_v1")
+        fit(args[args.index("--variant") + 1] if "--variant" in args else "v2")
     elif args[0] == "save":
         get = lambda flag, default=None: args[args.index(flag) + 1] if flag in args else default  # noqa: E731
-        save(get("--stage1", "v4"), get("--variant", "outfall_split_v1"), get("--name"), get("--note", ""))
+        save(get("--stage1", "v4"), get("--variant", "v2"), get("--name"), get("--note", ""))
     else:
         raise SystemExit(__doc__)

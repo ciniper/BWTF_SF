@@ -1,8 +1,8 @@
 {
- "name": "v4_split",
+ "name": "gb_v1_s2v2",
  "family": "gb",
- "note": "The served v4 stage 1, composed with the outfall-split stage 2: each beach group's probability is the basin's times the share of that basin's discharge days (by size) on which the group's own outfalls took part; impact table refit on group-attributed days. Not served.",
- "created_at": "2026-09-25T12:58:48",
+ "note": "gb_v1 (the served v4 trees) composed with stage 2 v2, the outfall split: each beach group's probability is the basin's times the share of that basin's discharge days (by size) on which the group's own outfalls took part; impact table refit on group-attributed days. Not served.",
+ "created_at": "2026-09-25T13:26:12",
  "trained_through": "2025-10-31",
  "span": [
   "2016-03-01",
@@ -74,13 +74,15 @@
   }
  },
  "stage1": {
+  "name": "gb_v1",
   "from": "v4",
   "family": "gb"
  },
  "stage2": {
-  "variant": "outfall_split_v1",
+  "variant": "v2",
+  "kind": "outfall_split",
   "impact_table_refit": true,
-  "fitted_at": "2026-09-25T12:58:21"
+  "fitted_at": "2026-09-25T13:26:04"
  },
  "zone_confusion_holdout": {
   "ocean": {

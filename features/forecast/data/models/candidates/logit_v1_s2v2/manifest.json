@@ -1,8 +1,8 @@
 {
- "name": "logit_v1_split",
+ "name": "logit_v1_s2v2",
  "family": "logit",
- "note": "The logit_v1 weights stage 1 (19 features + hinges, L2 logistic) composed with the outfall-split stage 2. Not served.",
- "created_at": "2026-09-25T12:58:51",
+ "note": "logit_v1 (weights: 19 features + hinges, L2 logistic) composed with stage 2 v2, the outfall split. Not served.",
+ "created_at": "2026-09-25T13:26:15",
  "trained_through": "2025-10-31",
  "span": [
   "2016-03-01",
@@ -95,13 +95,15 @@
   }
  },
  "stage1": {
+  "name": "logit_v1",
   "from": "logit_v1",
   "family": "logit"
  },
  "stage2": {
-  "variant": "outfall_split_v1",
+  "variant": "v2",
+  "kind": "outfall_split",
   "impact_table_refit": true,
-  "fitted_at": "2026-09-25T12:58:21"
+  "fitted_at": "2026-09-25T13:26:04"
  },
  "zone_confusion_holdout": {
   "ocean": {

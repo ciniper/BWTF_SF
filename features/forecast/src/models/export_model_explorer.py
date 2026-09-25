@@ -125,6 +125,7 @@ def load_model_set(name: str | None) -> tuple[dict, dict, dict]:
                    for k, t in ev.get("targets", {}).items() if t.get("holdout")}
         meta = {"name": "v4", "label": "v4 (served)", "served": True, "version": ev.get("version"), "trained_at": ev.get("trained_at"),
                 "train_window": ev.get("train_window"), "feature_set": ev.get("feature_set"), "note": None,
+                "stage1_name": "gb_v1", "stage1_from": "v4",
                 "scorecard": SERVE_DIR / "scorecard.json.gz"}
     else:
         import candidates
@@ -141,6 +142,7 @@ def load_model_set(name: str | None) -> tuple[dict, dict, dict]:
                 "trained_at": manifest.get("created_at"), "train_window": ev.get("train_window"), "feature_set": ev.get("feature_set"),
                 "note": manifest.get("note"), "family": manifest.get("family"), "C_grid": manifest.get("C_grid"),
                 "stage1_from": (manifest.get("stage1") or {}).get("from", "fit"),
+                "stage1_name": (manifest.get("stage1") or {}).get("name", name),
                 "stage2": candidates.load_stage2(name),   # None = served v4 stage 2
                 "scorecard": candidates.candidate_dir(name) / "scorecard.json.gz"}
     for m in models.values():
@@ -211,12 +213,13 @@ def main(model_name: str | None = None) -> None:
                           "target": h.get("target"), "rain_source": h.get("rain_source")}
     ev = json.loads((SERVE_DIR / "eval_report.json").read_text())
     impact_raw = json.loads((SERVE_DIR / "impact_table.json").read_text())
-    # a set's stage 2: the served v4 table and no split, or its variant's refit table + outfall shares
+    # a set's stage 2: v1 = the served table and no split; v2 = the outfall split's refit table + shares
     s2 = meta.get("stage2")
     if s2 and s2.get("impact_table"):
         impact_raw = s2["impact_table"]
-    stage2_out = {"variant": (s2 or {}).get("variant", "v4"), "impact_table_refit": bool(s2 and s2.get("impact_table"))}
-    if s2 and s2.get("variant", "v4") != "v4":
+    stage2_out = {"variant": (s2 or {}).get("variant", "v1"), "kind": (s2 or {}).get("kind", "basin composition"),
+                  "impact_table_refit": bool(s2 and s2.get("impact_table"))}
+    if s2 and s2.get("variant", "v1") != "v1":
         stage2_out.update({k: s2.get(k) for k in ("shares", "group_outfalls", "median_event_volume_mg", "definition", "fitted_at", "impact_table_note")})
     with gzip.open(meta["scorecard"], "rt") as f:
         sc = json.load(f)
@@ -270,6 +273,7 @@ def main(model_name: str | None = None) -> None:
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "model_set": {"name": meta["name"], "label": meta["label"], "served": meta["served"], "note": meta.get("note"),
                       "families": families, "C_grid": meta.get("C_grid"), "stage1_from": meta.get("stage1_from", "v4" if meta["served"] else "fit"),
+                      "stage1_name": meta.get("stage1_name", "gb_v1" if meta["served"] else meta["name"]),
                       "stage2": stage2_out,
                       "stage2_from": "volume heads: served v4, shared by every set; impact table and split: this set's stage 2 variant"},
         "stage2": stage2_out,

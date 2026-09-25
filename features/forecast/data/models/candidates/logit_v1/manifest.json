@@ -1,8 +1,8 @@
 {
  "name": "logit_v1",
  "family": "logit",
- "note": "Weights model: 19 features + hinge terms, standardised, L2 logistic; per-basin rain source and C from the 2026-09-25 leaderboard (holdout PR-AUC). Stage 2 shared with v4, inputs included (volume heads read their own rain source). Not served.",
- "created_at": "2026-09-25T12:22:05",
+ "note": "Weights model: 19 features + hinge terms, standardised, L2 logistic; per-basin rain source and C from the 2026-09-25 leaderboard (holdout PR-AUC). Stage 2 v1 (the served composition). Not served.",
+ "created_at": "2026-09-25T13:26:06",
  "trained_through": "2025-10-31",
  "span": [
   "2016-03-01",
@@ -93,6 +93,17 @@
    },
    "n_events": 78
   }
+ },
+ "stage1": {
+  "name": "logit_v1",
+  "from": "fit",
+  "family": "logit"
+ },
+ "stage2": {
+  "variant": "v1",
+  "kind": "basin composition",
+  "impact_table_refit": false,
+  "fitted_at": null
  },
  "zone_confusion_holdout": {
   "ocean": {

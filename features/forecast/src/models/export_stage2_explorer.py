@@ -61,7 +61,8 @@ def load_sets() -> list[dict]:
         sc = json.load(f)
     ev = json.loads((SERVE_DIR / "eval_report.json").read_text())
     sets = [{"name": "v4", "label": "v4 (served)", "served": True, "models": served, "scorecard": sc,
-             "note": f"the live forecast; trained {str(ev.get('trained_at', ''))[:10]}", "family": "gb"}]
+             "note": f"the live forecast; trained {str(ev.get('trained_at', ''))[:10]}", "family": "gb",
+             "stage1_name": "gb_v1", "stage1_from": "v4"}]
     for man in candidates.list_candidates():
         name = man["name"]
         try:
@@ -72,7 +73,8 @@ def load_sets() -> list[dict]:
         s2 = candidates.load_stage2(name)
         sets.append({"name": name, "label": f"{name} (candidate)", "served": False, "models": models,
                      "scorecard": candidates.load_scorecard(name), "note": man.get("note"), "family": man.get("family"),
-                     "stage2": s2, "stage1_from": (man.get("stage1") or {}).get("from", "fit")})
+                     "stage2": s2, "stage1_from": (man.get("stage1") or {}).get("from", "fit"),
+                     "stage1_name": (man.get("stage1") or {}).get("name", name)})
     return sets
 
 
@@ -127,8 +129,8 @@ def main() -> None:
         stored_groups = {g: [_r((by_date.get(d, {}).get("groups", {}).get(g) or {}).get("risk"), 3) for d in dates] for g in SITE_GROUPS}
         s2 = s.get("stage2")
         refit = bool(s2 and s2.get("impact_table"))
-        stage2_out = {"variant": (s2 or {}).get("variant", "v4"), "impact_table_refit": refit}
-        if s2 and s2.get("variant", "v4") != "v4":
+        stage2_out = {"variant": (s2 or {}).get("variant", "v1"), "kind": (s2 or {}).get("kind", "basin composition"), "impact_table_refit": refit}
+        if s2 and s2.get("variant", "v1") != "v1":
             stage2_out.update({"shares": s2["shares"], "group_outfalls": s2["group_outfalls"],
                                "median_event_volume_mg": s2["median_event_volume_mg"], "definition": s2.get("definition"),
                                "fitted_at": s2.get("fitted_at"), "impact_table_note": s2.get("impact_table_note")})
@@ -138,7 +140,7 @@ def main() -> None:
                                                   "median_event_volume_mg": s2["median_event_volume_mg"], "definition": s2.get("definition"),
                                                   "impact_table_note": s2.get("impact_table_note"), "train_window": s2.get("train_window")}
         model_sets.append({"name": s["name"], "label": s["label"], "served": s["served"], "note": s["note"], "family": s["family"],
-                           "stage1_from": s.get("stage1_from", "v4" if s["served"] else "fit"),
+                           "stage1_from": s.get("stage1_from", "v4" if s["served"] else "fit"), "stage1_name": s.get("stage1_name", s["name"]),
                            "trained_through": sc.get("trained_through") or (sc.get("span") or [None, None])[1],
                            "span": sc.get("span"), "probs": probs, "spec": spec, "stored_groups": stored_groups,
                            "stage2": stage2_out,

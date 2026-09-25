@@ -87,7 +87,7 @@ def load_models(name: str) -> dict:
 
 
 def load_stage2(name: str) -> dict | None:
-    """The candidate's stage 2 variant spec (stage2.json), or None = served v4."""
+    """The candidate's stage 2 variant spec (stage2.json), or None = stage 2 v1 (served)."""
     p = candidate_dir(name) / "stage2.json"
     return json.loads(p.read_text()) if p.exists() else None
 
@@ -95,7 +95,7 @@ def load_stage2(name: str) -> dict | None:
 def build_candidate_scorecard(finals: dict, holdout_models: dict, chosen: dict, features: list,
                               stage2: dict | None = None) -> dict:
     """The trainer's scorecard for a candidate: its stage-1 models and either
-    the served stage 2 (volume heads + impact table) or the given stage 2
+    stage 2 v1 (the served volume heads + impact table) or the given stage 2
     variant spec (src/models/stage2.py), over every day the refreshed inputs
     cover. Days after TRAIN_END are post-training: the candidate never saw
     them, so they get no holdout probability and are graded as the served
@@ -129,13 +129,15 @@ def build_candidate_scorecard(finals: dict, holdout_models: dict, chosen: dict, 
 
 def save_candidate(name: str, family: str, finals: dict, holdout_models: dict, chosen: dict, features: list,
                    per_basin: dict, note: str = "", extra: dict | None = None,
-                   stage2: dict | None = None, stage1_from: str = "fit") -> Path:
+                   stage2: dict | None = None, stage1_from: str = "fit", stage1_name: str | None = None) -> Path:
     """Write pickles + scorecard + manifest. `finals[key]` = {"model", "features",
     "calibration_offset"}; `chosen[basin name]` = rain source; `per_basin[key]`
     = anything worth keeping about how the model was picked (source, C, scores).
     `stage2` = a fitted variant spec to compose with (saved as stage2.json);
-    None = the served v4 stage 2. `stage1_from` names where the stage-1 models
-    came from ("fit", "v4", or another candidate's name)."""
+    None = stage 2 v1 (served). `stage1_from` names where the stage-1 models
+    came from ("fit", "v4", or another candidate's name); `stage1_name` is the
+    stage 1's own name (a freshly fit set is named after itself, e.g. logit_v1;
+    the served bundle's stage 1 is gb_v1)."""
     d = candidate_dir(name)
     d.mkdir(parents=True, exist_ok=True)
     if str(HERE) not in sys.path:
@@ -159,8 +161,8 @@ def save_candidate(name: str, family: str, finals: dict, holdout_models: dict, c
     manifest = {"name": name, "family": family, "note": note, "created_at": now,
                 "trained_through": sc["trained_through"], "span": sc["span"], "holdout_start": sc["holdout_start"],
                 "rain_sources": {BASIN_KEYS.get(b, b): s for b, s in chosen.items()}, "per_basin": per_basin,
-                "stage1": {"from": stage1_from, "family": family},
-                "stage2": {"variant": (stage2 or {}).get("variant", "v4"), "impact_table_refit": bool(stage2 and stage2.get("impact_table")),
+                "stage1": {"name": stage1_name or name, "from": stage1_from, "family": family},
+                "stage2": {"variant": (stage2 or {}).get("variant", "v1"), "kind": (stage2 or {}).get("kind", "basin composition"), "impact_table_refit": bool(stage2 and stage2.get("impact_table")),
                            "fitted_at": (stage2 or {}).get("fitted_at")},
                 "zone_confusion_holdout": sc["zone_confusion_holdout"], **(extra or {})}
     (d / "manifest.json").write_text(json.dumps(manifest, indent=1, default=str))

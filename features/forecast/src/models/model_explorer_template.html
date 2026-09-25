@@ -183,7 +183,7 @@ document.title = 'How the SF CSO forecast works — ' + MS.name + ' model explor
 document.getElementById('title').textContent = 'How the SF CSO forecast works' + (MS.served ? '' : ' — ' + MS.name + ' candidate');
 document.getElementById('sub').textContent = MS.served
   ? 'The served v4 models, opened up: where the rain numbers come from, what the models are given, the trees they are made of, and how a discharge probability becomes a beach-risk percentage. Everything on this page is computed from the deployed model files — the page runs the real trees in your browser.'
-  : `The ${MS.name} candidate set, opened up — stage 1 is a ${FAMILY_LABEL}${MS.stage1_from && MS.stage1_from !== 'fit' ? ' taken from ' + MS.stage1_from : ''}; stage 2 is ${MS.stage2 && MS.stage2.variant !== 'v4' ? 'the ' + MS.stage2.variant + ' variant (outfall shares' + (MS.stage2.impact_table_refit ? ', impact table refit' : '') + ')' : 'the served v4 composition'}. It is NOT what the live forecast runs; it exists to be compared with v4 in the Model check on identical days and labels. Same rain gauges, same 19 features, same volume heads; the page runs this set's own arithmetic. ${MS.note ? MS.note : ''}`;
+  : `The ${MS.name} candidate set, opened up — stage 1 is ${MS.stage1_name || MS.name}, a ${FAMILY_LABEL}${MS.stage1_from && MS.stage1_from !== 'fit' ? ' taken from ' + MS.stage1_from : ''}; stage 2 is ${MS.stage2 && MS.stage2.variant !== 'v1' ? MS.stage2.variant + ', the outfall split (outfall shares' + (MS.stage2.impact_table_refit ? ', impact table refit' : '') + ')' : 'v1, the basin composition v4 ships'}. It is NOT what the live forecast runs; it exists to be compared with v4 in the Model check on identical days and labels. Same rain gauges, same 19 features, same volume heads; the page runs this set's own arithmetic. ${MS.note ? MS.note : ''}`;
 const nHinge = ANY_LOGIT ? (Object.values(D.models).find(m => famOf(m) === 'logit').coef.length - D.features.all.length) : 0;
 document.getElementById('meta').innerHTML = [
   (MS.served ? 'served models ' : 'candidate ') + esc(D.version) + ' · fit ' + esc((D.trained_at||'').slice(0,10)),
@@ -191,7 +191,8 @@ document.getElementById('meta').innerHTML = [
   'holdout from ' + esc(D.holdout_start),
   D.rescored_at ? 'scorecard rescored through ' + esc(D.span[1]) : '',
   ANY_LOGIT ? esc(D.features.all.length) + ' features + ' + nHinge + ' hinge terms · L2 logistic, C per basin' : esc(D.features.all.length) + ' features · ' + esc(D.model_params.n_estimators) + ' trees × depth ' + esc(D.model_params.max_depth) + ' per model',
-  MS.served ? '' : (MS.stage2 && MS.stage2.variant !== 'v4' ? 'stage 2: ' + esc(MS.stage2.variant) + (MS.stage2.impact_table_refit ? ' (impact table refit)' : '') : 'stage 2: v4 (served composition)'),
+  'stage 1: ' + esc(MS.stage1_name || (MS.served ? 'gb_v1' : MS.name)),
+  MS.stage2 && MS.stage2.variant !== 'v1' ? 'stage 2: ' + esc(MS.stage2.variant) + ' (outfall split' + (MS.stage2.impact_table_refit ? ', impact table refit' : '') + ')' : 'stage 2: v1 (basin composition, as served)',
 ].filter(Boolean).map(t => '<span>' + t + '</span>').join('');
 document.getElementById('genAt').textContent = D.generated_at;
 document.getElementById('setName').textContent = MS.label;
@@ -321,7 +322,7 @@ function impactFraction(table, group, k, vol) {
   return wl * xl + (1 - wl) * xs;
 }
 // stage 2 variant (port of src/models/stage2.group_share): p_group = p_basin × blended outfall share
-const SPLIT = (D.stage2 && D.stage2.variant && D.stage2.variant !== 'v4') ? D.stage2 : null;
+const SPLIT = (D.stage2 && D.stage2.variant && D.stage2.variant !== 'v1') ? D.stage2 : null;
 function shareOf(spec, g, vol) {
   const s = (spec.shares || {})[g]; if (!s) return 1;
   const med = (spec.median_event_volume_mg || {})[g] || 1;
@@ -572,11 +573,11 @@ document.getElementById('impactMode').addEventListener('change', renderImpact);
 renderImpact();
 (function splitInfo() {
   const el = document.getElementById('splitInfo');
-  if (!SPLIT) { el.innerHTML = `<p class="fine" style="margin-top:10px">Stage 2 variant: <b>v4</b> — every beach group in a basin composes the basin's whole probability. (The stage 2 explorer shows the outfall-split alternative.)</p>`; return; }
+  if (!SPLIT) { el.innerHTML = `<p class="fine" style="margin-top:10px">Stage 2 <b>v1</b> — every beach group in a basin composes the basin's whole probability. (Stage 2 v2, the outfall split, is in the stage 2 explorer.)</p>`; return; }
   const rows = Object.keys(D.groups).map(g => { const sh = (SPLIT.shares || {})[g] || {}, outs = (SPLIT.group_outfalls || {})[g] || [], med = (SPLIT.median_event_volume_mg || {})[g];
     const c = s => s && s.p != null ? `${(s.p*100).toFixed(0)}% <span class="fine">(${s.n})</span>` : '—';
     return `<tr><td><b>${esc(g)}</b></td><td class="fine"><code>${outs.map(esc).join('</code> <code>')}</code></td><td class="num">${c(sh.large)}</td><td class="num">${c(sh.small)}</td><td class="num">${c(sh.all)}</td></tr>`; }).join('');
-  el.innerHTML = `<div class="card" style="margin-top:12px"><b class="t">Stage 2 variant: ${esc(SPLIT.variant)}${D.stage2.impact_table_refit ? ' <span class="badge info">impact table refit on group-attributed days</span>' : ''}</b>
+  el.innerHTML = `<div class="card" style="margin-top:12px"><b class="t">Stage 2 ${esc(SPLIT.variant)}: the outfall split${D.stage2.impact_table_refit ? ' <span class="badge info">impact table refit on group-attributed days</span>' : ''}</b>
     <p class="fine" style="margin:0 0 8px">${esc(SPLIT.definition || '')}. The share is the fraction of the basin's CIWQS discharge days (by size class; n in brackets) on which at least one outfall posting the group's beaches discharged. Where the group's outfalls are the whole basin the share is 1.</p>
     <table><tr><th>Group</th><th>posted by</th><th class="num">large</th><th class="num">small</th><th class="num">all</th></tr>${rows}</table></div>`;
 })();

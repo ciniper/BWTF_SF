@@ -338,7 +338,7 @@ labels; promotion into `data/models/` is a separate, human decision.
   `candidates.load_models` can open them anywhere.
 - Stage 2 variants (`src/models/stage2.py`, 2026-09-25): stage 2 is a named
   layer a candidate pairs with its stage 1. `v4` = compose the basin
-  probability directly. `outfall_split_v1` = multiply it by the share of the
+  probability directly. stage 2 `v2` (the outfall split) = multiply it by the share of the
   basin's CIWQS discharge days (by size) on which the group's own outfalls
   took part, blended by V/(V+median), and refit the impact table on
   group-attributed days; identity where a group's outfalls are the whole
@@ -346,9 +346,14 @@ labels; promotion into `data/models/` is a separate, human decision.
   `stage2_variants.py save --stage1 v4|<candidate> --variant <v> --name <n>`
   → a candidate set with `stage2.json`, holdout siblings refit exactly as the
   source fit them (checked against the source artifact before writing).
-  Sets on disk: `v4_split`, `logit_v1_split`. Serving still composes with v4;
+  Sets on disk: `gb_v1_s2v2`, `logit_v1_s2v2`. Serving still composes with v4;
   promotion = ship the spec next to the served pickles and pass
   `split=stage2.make_split(spec)` in `live_dashboard._compose_impact`.
+- Naming (2026-09-25): stage 1 sets `gb_v1` (the trees v4 ships) and
+  `logit_v1` (weights); stage 2 versions `v1` (basin composition, served)
+  and `v2` (outfall split). A set = its stage 1 name, plus `_s2v2` when it
+  uses stage 2 v2. "v4" is the release label of the served bundle
+  (gb_v1 + stage 2 v1).
 - `logit_v1` on the post-training window (Nov 2025 → Aug 2026, untouched):
   Westside 0.766 vs v4 0.716 (Ocean Beach 5/6 caught, 14 false alarms vs
   4/6 and 18); Central 0.734 vs 0.717 with a better Brier; North Shore equal

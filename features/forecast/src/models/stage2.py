@@ -3,10 +3,10 @@ candidate set can carry, selectable in the Model check next to its stage 1.
 Nothing here changes what is served: the live forecast composes with the v4
 impact table and no split until a variant is promoted.
 
-    v4                 group risk composes the BASIN discharge probability
-                       directly (impact.compose with split=None). Ocean Beach
-                       and Baker-China get the same p on every day.
-    outfall_split_v1   p_group(D−k) = p_basin(D−k) · g_group(size(D−k)) where
+    v1                 group risk composes the BASIN discharge probability
+                       directly (impact.compose with split=None) — what v4
+                       ships. Ocean Beach and Baker-China get the same p.
+    v2 (outfall split) p_group(D−k) = p_basin(D−k) · g_group(size(D−k)) where
                        g_group = share of the basin's CIWQS discharge days (by
                        size class) on which at least one outfall that posts
                        the group's beaches discharged; the impact table is
@@ -41,7 +41,8 @@ from shared.stations import STATIONS  # noqa: E402
 
 SERVE_DIR = HERE.parents[1] / "data" / "models"
 VARIANTS_DIR = SERVE_DIR / "stage2"
-VARIANTS = ("v4", "outfall_split_v1")
+VARIANTS = ("v1", "v2")
+KINDS = {"v1": "basin composition", "v2": "outfall split"}
 
 
 def outfalls_posting(group: str) -> list[str]:
@@ -78,7 +79,7 @@ def fit_outfall_split(frames: dict, chosen: dict, heads: dict, impact_raw: dict,
             n = int(mask.sum())
             row[size] = {"p": round(float(hit[mask].mean()), 4) if n else None, "n": n}
         shares[group] = row
-    return {"variant": "outfall_split_v1", "fitted_at": datetime.now().isoformat(timespec="seconds"),
+    return {"variant": "v2", "kind": "outfall_split", "fitted_at": datetime.now().isoformat(timespec="seconds"),
             "group_outfalls": group_outfalls, "shares": shares, "median_event_volume_mg": medians,
             "definition": "p_group(D−k) = p_basin(D−k) · [w·g_large + (1−w)·g_small], w = V/(V+median), "
                           "g_size = share of the basin's CIWQS discharge days of that size on which ≥1 of the group's outfalls discharged"}
@@ -120,10 +121,10 @@ def group_share(spec: dict, group: str, vol: float) -> float:
 
 
 def make_split(spec: dict | None):
-    """The `split` callable impact.compose takes, or None for the v4 composition."""
-    if not spec or spec.get("variant", "v4") == "v4":
+    """The `split` callable impact.compose takes, or None for stage 2 v1 (the v4 composition)."""
+    if not spec or spec.get("variant", "v1") == "v1":
         return None
-    if spec["variant"] != "outfall_split_v1":
+    if spec["variant"] != "v2":
         raise ValueError(f"unknown stage 2 variant {spec['variant']!r}")
 
     def split(group: str, p: float, vol: float) -> float:
@@ -132,7 +133,7 @@ def make_split(spec: dict | None):
 
 
 def variant_path(name: str) -> Path:
-    if name not in VARIANTS or name == "v4":
+    if name not in VARIANTS or name == "v1":
         raise ValueError(f"no fitted file for stage 2 variant {name!r}")
     return VARIANTS_DIR / f"{name}.json"
 

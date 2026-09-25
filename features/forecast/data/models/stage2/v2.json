@@ -1,6 +1,7 @@
 {
- "variant": "outfall_split_v1",
- "fitted_at": "2026-09-25T12:58:21",
+ "variant": "v2",
+ "kind": "outfall_split",
+ "fitted_at": "2026-09-25T13:26:04",
  "group_outfalls": {
   "Ocean Beach": [
    "CSD-001",

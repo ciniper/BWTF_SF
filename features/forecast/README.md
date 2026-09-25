@@ -178,10 +178,14 @@ venv/bin/python features/forecast/src/models/export_model_explorer.py           
 venv/bin/python features/forecast/src/models/export_model_explorer.py --model logit_v1 # a candidate: weights
 venv/bin/python features/forecast/src/models/export_stage2_explorer.py                 # stage 2, all model sets
 venv/bin/python features/forecast/src/models/stage2_variants.py fit                 # fit a stage 2 variant (outfall split)
-venv/bin/python features/forecast/src/models/stage2_variants.py save --stage1 v4 --variant outfall_split_v1 --name v4_split
+venv/bin/python features/forecast/src/models/stage2_variants.py save --stage1 v4 --variant v2 --name gb_v1_s2v2
 ```
 
 Re-run after `train_v4.py` / `--rescore` / `leaderboard.py --save`.
+
+Names: stage 1 sets `gb_v1` (the served trees) and `logit_v1` (weights);
+stage 2 versions `v1` (basin composition, served) and `v2` (outfall split);
+a candidate set is `<stage1>` or `<stage1>_s2v2`. "v4" = the served bundle.
 
 ## References
 

@@ -233,8 +233,8 @@ def test_model_sets_are_selectable_but_never_served():
     from features.forecast import live_dashboard as ld
     eng = ld.LiveData.__new__(ld.LiveData)
     models = eng.list_models()
-    assert models[0] == {"key": "", "label": "v4 (served)", "family": "gb", "served": True, "stage1": "v4", "stage2": "v4"}
-    assert all(m.get("stage2") in ("v4", "outfall_split_v1") for m in models), [m.get("stage2") for m in models]
+    assert models[0] == {"key": "", "label": "v4 (served)", "family": "gb", "served": True, "stage1": "gb_v1", "stage2": "v1"}
+    assert all(m.get("stage2") in ("v1", "v2") for m in models), [m.get("stage2") for m in models]
     assert all(m["served"] is False for m in models[1:])
     assert "error" in eng.get_scorecard("2024-01-13", model="../x")
     assert "error" in eng.get_scorecard("2024-01-13", model="doesnotexist")
@@ -309,8 +309,8 @@ def test_stage2_variants_pair_with_any_stage1_and_v4_is_untouched():
     halve = compose(table, {"westside": ["G"]}, probs, vols, 1, split=lambda g, p, v: p * 0.5)
     assert halve[1]["G"] < a[1]["G"], "a split below 1 must lower the group risk"
     # 2. the fitted variant on disk
-    spec = S2.load_variant("outfall_split_v1")
-    assert spec["variant"] == "outfall_split_v1" and spec.get("impact_table"), "variant file incomplete"
+    spec = S2.load_variant("v2")
+    assert spec["variant"] == "v2" and spec.get("kind") == "outfall_split" and spec.get("impact_table"), "variant file incomplete"
     for g, sh in spec["shares"].items():
         for size in ("large", "small", "all"):
             p = sh[size]["p"]
@@ -319,7 +319,7 @@ def test_stage2_variants_pair_with_any_stage1_and_v4_is_untouched():
     for g in ("Mission Creek", "Southeast"):
         assert spec["shares"][g]["all"]["p"] == 1.0, f"{g}: its outfalls are the whole basin, the split must be the identity"
     assert spec["shares"]["Ocean Beach"]["all"]["p"] < 1.0 and spec["shares"]["Baker-China"]["all"]["p"] < 1.0, "Westside groups must split"
-    print(f"   outfall_split_v1: " + ", ".join(f"{g} {sh['all']['p']:.2f}" for g, sh in spec["shares"].items()))
+    print(f"   stage 2 v2 (outfall split): " + ", ".join(f"{g} {sh['all']['p']:.2f}" for g, sh in spec["shares"].items()))
     # 3. candidates carrying it
     root_sc = json.load(gzip.open(root / "data" / "models" / "scorecard.json.gz"))
     served = {d["date"]: d for d in root_sc["days"]}
@@ -327,8 +327,8 @@ def test_stage2_variants_pair_with_any_stage1_and_v4_is_untouched():
     for m in C.list_candidates():
         s2 = m.get("stage2") or {}
         sc = C.load_scorecard(m["name"])
-        assert (sc.get("stage2") or {}).get("variant", "v4") == s2.get("variant", "v4"), m["name"]
-        if s2.get("variant", "v4") == "v4":
+        assert (sc.get("stage2") or {}).get("variant", "v1") == s2.get("variant", "v1"), m["name"]
+        if s2.get("variant", "v1") == "v1":
             continue
         n_variant += 1
         assert C.load_stage2(m["name"]), f"{m['name']}: stage2.json missing"

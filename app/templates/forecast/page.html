@@ -736,7 +736,7 @@ function renderScoreWindow(sc) {
     let html = `<div id="scoreWindow"><div class="subhead">${ic('chart-line')} Scorecard — ${esc(modelLabel)} — ${fmtRange(w.start, w.end)}, ${pct(RISK_THRESHOLD)}% line</div>
         <div class="sc-controls">
             ${models.length > 1 ? `<select class="date-picker" onchange="setScoreModel(this.value)" title="Which model set's stored hindcast to grade. Only the served v4 set drives the live forecast; candidates are scored here on the same days and labels.">
-                ${models.map(m => `<option value="${esc(m.key)}"${m.key === (sc.model || '') ? ' selected' : ''}>${esc(m.label)}${m.served ? '' : ' · ' + esc(m.family || 'candidate')}${m.stage2 && m.stage2 !== 'v4' ? ' · stage 2: ' + esc(m.stage2) : ''}</option>`).join('')}
+                ${models.map(m => `<option value="${esc(m.key)}"${m.key === (sc.model || '') ? ' selected' : ''}>${esc(m.label)} — stage 1 ${esc(m.stage1 || m.family || '?')} · stage 2 ${esc(m.stage2 || 'v1')}</option>`).join('')}
             </select>` : ''}
             <select class="date-picker" onchange="setRiskLine(this.value)" title="A day counts as predicted-bad when its risk reaches this line; hits, misses and false alarms everywhere on this view follow it">
                 ${[[0.1, '10% line (LOW)'], [0.25, '25% line (MODERATE)'], [0.5, '50% line (HIGH)']].map(([v, l]) => `<option value="${v}"${v === RISK_THRESHOLD ? ' selected' : ''}>${l}</option>`).join('')}
