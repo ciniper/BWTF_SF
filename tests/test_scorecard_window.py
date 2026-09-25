@@ -133,6 +133,56 @@ def test_zone_fp_tail_counts_alarms_in_the_week_after_a_posting():
     assert S.zone_fp_tail(days, ["z"], start="2024-01-15")["z"]["0.25"] == 0
 
 
+def test_gauge_outage_rule_masks_dead_gauge_runs_only():
+    """A run of ≥2 exactly-0.00 days at one gauge while the other totals ≥0.5"
+    is an outage → missing at the dead gauge (the other gauge stands in). A
+    single dry day, a run with a dry other gauge, or a genuinely wetter coast
+    must be left alone."""
+    import pandas as pd
+    from rain_features import GAUGE_OUTAGE_RULE, find_gauge_outages, mask_gauge_outages
+    dates = pd.date_range("2026-02-01", periods=10)
+    dtn = [0.3, 0.9, 0.7, 0.0, 0.0, 0.1, 0.0, 0.2, 0.0, 0.0]
+    ocn = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0]   # dead Feb 1–6 (downtown 2.0"), then alive
+    df = pd.DataFrame({"date": dates, "SF Downtown": dtn, "SF Oceanside": ocn})
+    runs = find_gauge_outages(df)
+    assert [(r["gauge"], r["start"], r["end"], r["days"]) for r in runs] == [("SF Oceanside", "2026-02-01", "2026-02-06", 6)], runs
+    assert runs[0]["other_total"] == 2.0
+    masked, _ = mask_gauge_outages(df)
+    assert masked["SF Oceanside"].isna().sum() == 6 and masked["SF Downtown"].isna().sum() == 0
+    assert masked.loc[6, "SF Oceanside"] == 0.5                       # the live reading survives
+    # Feb 8–10: Oceanside 0.00 for 3 days but downtown only 0.2" → not an outage
+    assert not any(r["start"] == "2026-02-08" for r in runs)
+    # a single 0.00 day never qualifies, whatever the other gauge did
+    one = pd.DataFrame({"date": dates[:3], "SF Downtown": [2.0, 0.0, 1.5], "SF Oceanside": [0.0, 1.0, 1.0]})
+    assert find_gauge_outages(one) == []
+    assert GAUGE_OUTAGE_RULE["name"] == "gauge_outage_v1"
+
+
+def test_gauge_outage_rule_in_the_record_and_the_rescored_post_training_days():
+    """The rule is opt-in for training frames (None = the record v4 was trained
+    on) and applied to the post-training block by --rescore --replace-post."""
+    import pandas as pd
+    sys.path.insert(0, str(ROOT / "features" / "forecast"))
+    import train_v4 as T
+    raw, _ = T.rain_series("avg")
+    fixed, note = T.rain_series("avg", ["gauge_outage_v1"])
+    feb16 = pd.Timestamp("2026-02-16")
+    assert abs(raw[feb16] - 0.535) < 0.01 and abs(fixed[feb16] - 1.07) < 0.01, (raw[feb16], fixed[feb16])
+    assert note["outage_runs_masked"] >= 10 and note["outage_days_masked"] > 300
+    assert (raw != fixed).sum() < 100, "the rule should move only storm days inside dead-gauge runs"
+    assert T.rain_series("avg")[1]["outage_runs_masked"] == 0                  # None = untouched record
+    sc = _artifact()
+    assert sc.get("input_rules_post") == ["gauge_outage_v1"], sc.get("input_rules_post")
+    day = {d["date"]: d for d in sc["days"]}
+    assert day["2026-02-16"]["post_training"] and day["2026-02-19"]["post_training"]
+    assert day["2026-02-16"]["basins"]["westside"]["p"] > 0.5, day["2026-02-16"]["basins"]["westside"]
+    # Feb 19: stage 1 stays low (0.08 on 0.77") but the corrected Feb 16–17 tail carries Ocean Beach over the line
+    assert day["2026-02-19"]["basins"]["westside"]["p"] > 0.05 and day["2026-02-19"]["zones"]["ocean"]["risk"] >= 0.25, day["2026-02-19"]["zones"]["ocean"]
+    # pre-training days are exactly as trained: no rule marker, holdout probabilities present
+    assert day["2024-01-13"]["basins"]["westside"]["ph"] is not None and not day["2024-01-13"].get("post_training")
+    print(f"   Feb 16 2026 Westside p {day['2026-02-16']['basins']['westside']['p']}, Feb 19 {day['2026-02-19']['basins']['westside']['p']} (were 0.24 / 0.01 on the raw record)")
+
+
 def test_basin_metrics_need_both_classes_for_auc():
     days = [_day("2024-01-01", .9, .9, True, None, y=1), _day("2024-01-02", .2, .2, False, None, y=0),
             _day("2024-01-03", .8, .1, True, None, y=1), _day("2024-01-04", .1, .1, None, None, y=None),

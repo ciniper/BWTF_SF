@@ -283,5 +283,8 @@
    }
   }
  },
- "stage1_source": "logit_v1"
+ "stage1_source": "logit_v1",
+ "input_rules_post": [
+  "gauge_outage_v1"
+ ]
 }

@@ -127,6 +127,65 @@ def build_candidate_scorecard(finals: dict, holdout_models: dict, chosen: dict, 
     return sc
 
 
+def rescore_post(name: str, input_rules: list | None = None) -> dict:
+    """Re-score a candidate's POST-TRAINING days with its own pickles and stage 2
+    on inputs treated by ``input_rules`` (default: what serving applies,
+    rain_features.INPUT_RULES_LIVE — the gauge-outage rule). Pre-training days
+    stay exactly as stored, so the holdout comparison across sets remains on
+    one input treatment and the post-training comparison on another, each
+    apples to apples. Mirrors train_v4.rescore(replace_post=True) for the
+    served set."""
+    if str(HERE) not in sys.path:
+        sys.path.insert(0, str(HERE))
+    import train_v4 as T
+    from rain_features import INPUT_RULES_LIVE
+    from groups import BASIN_KEYS
+    rules = list(input_rules or INPUT_RULES_LIVE)
+    models = load_models(name)
+    sc = load_scorecard(name)
+    stage2 = load_stage2(name)
+    trained_through = sc.get("trained_through") or str(T.TRAIN_END.date())
+    basin_of_key = {v: k for k, v in BASIN_KEYS.items()}
+    finals = {k: {"model": m["model"], "features": m["features"], "calibration_offset": m["calibration_offset"]} for k, m in models.items()}
+    chosen = {basin_of_key.get(k, "citywide"): m.get("rain_source", "avg") for k, m in models.items()}
+    heads, impact_raw = T.stage2_from_served()
+    end = min(T._inputs_reach().values())
+    sources = sorted(set(chosen.values()) | set(T.RAIN_SOURCES) | {h.get("rain_source", "avg") for h in heads.values()})
+    frames, notes = T.build_dataset(end=end, sources=sources, input_rules=rules)
+    fresh = T.build_scorecard(frames, chosen, finals, {}, heads, impact_raw, T.load_samples(),
+                              T.archive_tables(), notes["archive_used"], finals["citywide"]["features"], stage2=stage2)
+    old = {d["date"]: d for d in sc["days"]}
+    keep = [d for d in sc["days"] if d["date"] <= trained_through]
+    new_days = []
+    for d in fresh["days"]:
+        if d["date"] <= trained_through:
+            continue
+        d["post_training"] = True
+        for z in d["zones"].values():
+            z["risk_h"] = None
+        for g in d["groups"].values():
+            g["risk_h"] = None
+        for b in d["basins"].values():
+            b["ph"] = None
+        new_days.append(d)
+    moved = sum(1 for d in new_days if d["date"] in old for zk in d["zones"]
+                if abs(d["zones"][zk]["risk"] - old[d["date"]]["zones"][zk]["risk"]) >= 0.05)
+    sc["days"] = keep + new_days
+    sc["span"] = [sc["span"][0], sc["days"][-1]["date"]]
+    sc["input_rules_post"] = rules
+    sc["rescored_at"] = datetime.now().isoformat()
+    d = candidate_dir(name)
+    with gzip.open(d / "scorecard.json.gz", "wt") as f:
+        json.dump(sc, f, separators=(",", ":"), default=str)
+    mp = d / "manifest.json"
+    man = json.loads(mp.read_text())
+    man["input_rules_post"] = rules
+    man["span"] = sc["span"]
+    mp.write_text(json.dumps(man, indent=1, default=str))
+    print(f"{name}: {len(new_days)} post-training days re-scored with input rules {rules}; {moved} zone-days moved by ≥ 0.05")
+    return sc
+
+
 def save_candidate(name: str, family: str, finals: dict, holdout_models: dict, chosen: dict, features: list,
                    per_basin: dict, note: str = "", extra: dict | None = None,
                    stage2: dict | None = None, stage1_from: str = "fit", stage1_name: str | None = None) -> Path:

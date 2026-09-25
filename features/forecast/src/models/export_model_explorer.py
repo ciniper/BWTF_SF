@@ -174,22 +174,10 @@ def gauge_series(days: int = 420) -> dict:
     series = {"dates": [str(d.date()) for d in p.index]}
     for name in ACIS_GAUGES:
         series[name] = [None if pd.isna(v) else round(float(v), 2) for v in p[name]] if name in p else []
-    # outage runs: one gauge stuck at exactly 0.00 for ≥2 days while the other totals ≥0.5"
-    runs = []
-    for g, o in (("SF Oceanside", "SF Downtown"), ("SF Downtown", "SF Oceanside")):
-        z = (p[g] == 0)
-        start = None
-        for d, v in list(z.items()) + [(None, False)]:
-            if v and start is None:
-                start = d
-            if not v and start is not None:
-                end = (d - pd.Timedelta(days=1)) if d is not None else p.index[-1]
-                tot = float(p.loc[start:end, o].sum())
-                if (end - start).days + 1 >= 2 and tot >= 0.5:
-                    runs.append({"gauge": g, "start": str(start.date()), "end": str(end.date()),
-                                 "days": int((end - start).days + 1), "other_total": round(tot, 2)})
-                start = None
-    series["outages"] = runs
+    # outage runs by the shared rule (rain_features.GAUGE_OUTAGE_RULE) — the same
+    # detector serving and post-training rescoring apply
+    from rain_features import find_gauge_outages
+    series["outages"] = find_gauge_outages(p.reset_index(), gauges=tuple(n for n in ACIS_GAUGES if n in p))
     return series
 
 
@@ -227,9 +215,15 @@ def main(model_name: str | None = None) -> None:
     families = sorted({m["family"] for m in models.values()})
     out_path = OUT if model_name is None else REPO / "reports" / f"2026-09_forecast_{model_name}_model_explorer.html"
 
-    # frames exactly as training/rescore builds them → sample days with history + sklearn answers
+    # frames exactly as training/rescore builds them → sample days with history + sklearn answers.
+    # Pre-training days were scored on the raw record; post-training days on inputs treated by
+    # the artifact's input rules (--rescore --replace-post; today the gauge-outage rule) — so each
+    # sample day is rebuilt from the frame set its stored risks came from.
     end = pd.Timestamp(sc["span"][1])
-    frames, notes = T.build_dataset(end=end, sources=sorted(set(rain_source.values()) | set(T.RAIN_SOURCES)))
+    srcs = sorted(set(rain_source.values()) | set(T.RAIN_SOURCES))
+    frames, notes = T.build_dataset(end=end, sources=srcs)
+    rules_post = sc.get("input_rules_post") or []
+    frames_post = T.build_dataset(end=end, sources=srcs, input_rules=rules_post)[0] if rules_post else frames
     finals = {k: {"model": raw_models[k]["model"], "features": features, "calibration_offset": models[k]["calibration_offset"]} for k in models}
     head_objs = {b: pickle.load(open(SERVE_DIR / f"{BASIN_KEYS[b]}_volume.pkl", "rb")) for b in T.APP_BASINS
                  if (SERVE_DIR / f"{BASIN_KEYS[b]}_volume.pkl").exists()}
@@ -237,6 +231,8 @@ def main(model_name: str | None = None) -> None:
     samples = []
     for ds in SAMPLE_DAYS:
         d = pd.Timestamp(ds)
+        stored0 = sc_by_date.get(ds, {})
+        fr = frames_post if stored0.get("post_training") else frames        # the frame set this day's stored risks came from
         idx = base.index[base["date"] == d]
         if not len(idx):
             print("sample day outside frames:", ds)
@@ -247,13 +243,14 @@ def main(model_name: str | None = None) -> None:
         # full precision on purpose: a value rounded to 4 dp can sit on the other
         # side of a tree split and move a probability by whole points
         for src in T.RAIN_SOURCES:
-            hist[src] = [float(v) for v in frames[src]["precip_avg"].iloc[lo:i + 1]]   # the source's daily total
+            hist[src] = [float(v) for v in fr[src]["precip_avg"].iloc[lo:i + 1]]   # the source's daily total (rule-treated for post-training days)
         hist["intensity"] = {f: [float(v) for v in base[f].iloc[lo:i + 1]] for f in INTENSITY_FEATURES}
-        feats = {src: {f: float(frames[src].iloc[i][f]) for f in features} for src in T.RAIN_SOURCES}
+        hist["input_rules"] = rules_post if stored0.get("post_training") else []
+        feats = {src: {f: float(fr[src].iloc[i][f]) for f in features} for src in T.RAIN_SOURCES}
         expected = {}
         for basin in T.APP_BASINS + ["citywide"]:
             key = BASIN_KEYS.get(basin, "citywide")
-            X = frames[rain_source[key]].iloc[[i]]
+            X = fr[rain_source[key]].iloc[[i]]
             expected[key] = {"p": round(float(T.calibrated(finals[key], X)[0]), 6)}
             if basin in head_objs:
                 expected[key]["volume_mg"] = round(float(T.predicted_volume(head_objs[basin], X)[0]), 4)
@@ -280,6 +277,7 @@ def main(model_name: str | None = None) -> None:
         "trained_at": meta.get("trained_at"), "version": meta.get("version"), "feature_set": meta.get("feature_set"),
         "train_window": meta.get("train_window"), "holdout_start": sc.get("holdout_start"),
         "trained_through": sc.get("trained_through") or sc["span"][1], "rescored_at": sc.get("rescored_at"), "span": sc["span"],
+        "input_rules_post": rules_post,
         "features": {"daily": DAILY_FEATURES, "intensity": INTENSITY_FEATURES, "all": features},
         "model_params": {k: v for k, v in T.MODEL_PARAMS.items()},
         "models": models, "volume_heads": heads,

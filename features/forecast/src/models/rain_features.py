@@ -44,6 +44,67 @@ def _antecedent(x: np.ndarray) -> float:
     return float(np.sum(x * w) / np.sum(w))
 
 
+# ── gauge outage rule ────────────────────────────────────────────────────────
+# ACIS reports a dead NOAA gauge as 0.00, not "M": Oceanside 047767 sat at
+# exactly 0.00 from Jan 29 to Feb 25 2026 while Downtown 047772 accumulated
+# 4.37", and the record has eight such Oceanside runs and four Downtown runs
+# since 2018. Westside and Southeast run on the two-gauge mean, so they saw
+# half the rain (the Feb 16 and Feb 19 2026 Westside discharges scored 24%
+# and 1%). The rule: a run of ≥ MIN_RUN_DAYS consecutive exactly-0.00 days at
+# one gauge while the other gauge totals ≥ OTHER_GAUGE_MIN_IN over the run is
+# an outage → those days become missing at the dead gauge and the ordinary
+# fill (the other gauge) takes over. Single dry coastal days while downtown
+# is wet are real and are deliberately NOT touched.
+GAUGE_OUTAGE_RULE = {"name": "gauge_outage_v1", "min_run_days": 2, "other_gauge_min_in": 0.5}
+INPUT_RULES_LIVE = [GAUGE_OUTAGE_RULE["name"]]   # what serving and post-training rescoring apply
+
+
+def find_gauge_outages(daily: pd.DataFrame, gauges=("SF Downtown", "SF Oceanside"), date_col: str = "date",
+                       min_run_days: int = GAUGE_OUTAGE_RULE["min_run_days"],
+                       other_min: float = GAUGE_OUTAGE_RULE["other_gauge_min_in"]) -> list[dict]:
+    """Outage runs in a daily table with one column per gauge (NaN = missing).
+    Each run: {gauge, start, end, days, other_total}. Dates must be daily and
+    sorted; gaps end a run."""
+    df = daily.sort_values(date_col).reset_index(drop=True)
+    runs = []
+    for g in gauges:
+        if g not in df:
+            continue
+        others = [o for o in gauges if o != g and o in df]
+        if not others:
+            continue
+        start = None
+        prev_date = None
+        for i in range(len(df) + 1):
+            row = df.iloc[i] if i < len(df) else None
+            zero = row is not None and pd.notna(row[g]) and float(row[g]) == 0.0
+            contiguous = row is not None and (prev_date is None or (row[date_col] - prev_date).days == 1)
+            if zero and contiguous and start is not None:
+                pass                                        # run continues
+            else:
+                if start is not None:                       # a run just ended (at i-1)
+                    seg = df.iloc[start:i]
+                    tot = float(seg[others].sum(axis=1).sum())
+                    if len(seg) >= min_run_days and tot >= other_min:
+                        runs.append({"gauge": g, "start": str(seg[date_col].iloc[0].date()), "end": str(seg[date_col].iloc[-1].date()),
+                                     "days": int(len(seg)), "other_total": round(tot, 2)})
+                    start = None
+                if zero:
+                    start = i
+            prev_date = row[date_col] if row is not None else None
+    return sorted(runs, key=lambda r: (r["start"], r["gauge"]))
+
+
+def mask_gauge_outages(daily: pd.DataFrame, gauges=("SF Downtown", "SF Oceanside"), date_col: str = "date", **kw) -> tuple:
+    """(copy of `daily` with the dead gauge's run days set to NaN, the runs)."""
+    runs = find_gauge_outages(daily, gauges, date_col, **kw)
+    out = daily.copy()
+    for r in runs:
+        m = (out[date_col] >= pd.Timestamp(r["start"])) & (out[date_col] <= pd.Timestamp(r["end"]))
+        out.loc[m, r["gauge"]] = np.nan
+    return out, runs
+
+
 def add_daily_features(daily: pd.DataFrame, col: str = "precip_inches") -> pd.DataFrame:
     """Return a copy of `daily` (one row per consecutive calendar day, sorted,
     with a daily rain total in `col`) with every DAILY_FEATURES column added.

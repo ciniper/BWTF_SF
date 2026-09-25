@@ -768,6 +768,7 @@ function renderScoreWindow(sc) {
             <a class="mute" href="/reports/2026-09_forecast_stage2_explorer.html" title="How a discharge probability becomes beach risk — shared by every model set">stage 2</a>
             <span class="mute">${w.n_days} days · ${w.n_discharge_days} discharge day${w.n_discharge_days === 1 ? '' : 's'} · ${w.n_sampled_days} sampled</span>
             ${gradeBadge(w, sc)}
+            ${(sc.input_rules_post || []).length && w.n_post ? `<span class="mute" title="Days after the training data ended are scored on rain treated by the serving-side input rules: a NOAA gauge stuck at exactly 0.00 for 2+ days while the other gauge records 0.5&quot; or more is treated as dead and the other gauge stands in (Oceanside was dead Jan 29 → Feb 25 2026). Pre-training days are scored exactly as the models were trained, on the raw record.">· post-training rain: ${esc(sc.input_rules_post.map(r => r.replace(/_v\d+$/, '').replace(/_/g, ' ')).join(', '))} applied</span>` : ''}
             <label class="mute" title="Cost of a line = false alarms + N × missed discharge days, counted against the discharge label. Set N to how many false alarms you would trade to avoid one miss; the cheapest line on the grid is marked ★.">one miss = <input type="number" class="date-picker" style="width:64px;padding:4px 8px" min="1" max="99" value="${costRatio}" onchange="setCostRatio(this.value)"> false alarms</label>
         </div><div class="scorecard">`;
     let totalCost = 0, totalByLine = {};

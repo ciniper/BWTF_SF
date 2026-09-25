@@ -329,5 +329,8 @@
   1.0,
   3.0
  ],
- "leaderboard_generated_at": "2026-09-25T00:12:16"
+ "leaderboard_generated_at": "2026-09-25T00:12:16",
+ "input_rules_post": [
+  "gauge_outage_v1"
+ ]
 }

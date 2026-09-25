@@ -354,6 +354,12 @@ labels; promotion into `data/models/` is a separate, human decision.
   and `v2` (outfall split). A set = its stage 1 name, plus `_s2v2` when it
   uses stage 2 v2. "v4" is the release label of the served bundle
   (gb_v1 + stage 2 v1).
+- Input rules (2026-09-25): `rain_features.GAUGE_OUTAGE_RULE` masks a dead
+  gauge's 0.00 run (≥2 days while the other gauge totals ≥0.5") before
+  averaging/filling. Serving applies it; `--rescore --replace-post` and
+  `candidates.rescore_post` re-score post-training days with it; training
+  frames take it via `build_dataset(input_rules=…)` (default None = the raw
+  record the served models were trained on). No model changed.
 - `logit_v1` on the post-training window (Nov 2025 → Aug 2026, untouched):
   Westside 0.766 vs v4 0.716 (Ocean Beach 5/6 caught, 14 false alarms vs
   4/6 and 18); Central 0.734 vs 0.717 with a better Brier; North Shore equal

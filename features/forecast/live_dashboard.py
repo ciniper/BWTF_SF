@@ -67,6 +67,7 @@ from src.models.groups import (  # noqa: E402
 from src.models.impact import compose as _compose_risk  # noqa: E402
 from src.models.impact import impact_fraction as _impact_fraction  # noqa: E402
 from src.models.impact import smooth_table as _smooth_table  # noqa: E402
+from src.models.rain_features import INPUT_RULES_LIVE, mask_gauge_outages as _mask_gauge_outages  # noqa: E402
 from src.models.rain_features import add_daily_features as _add_daily_features  # noqa: E402
 from src.models.rain_features import hourly_intensity as _hourly_intensity  # noqa: E402
 from src.models import scorecard as _sc  # noqa: E402  (one rule for the model-check scorecard, shared with train_v4)
@@ -613,7 +614,16 @@ class LiveData:
         if past.any():
             acis = self._fetch_acis_daily(base.loc[past, "date"].min().date(), base.loc[past, "date"].max().date())
         gauges = {}
+        self._outage_days = {}
         if not acis.empty:
+            # gauge outage rule (rain_features.GAUGE_OUTAGE_RULE): a dead gauge's 0.00 run
+            # becomes missing so the other gauge stands in — the same rule post-training
+            # rescoring applies; the served models themselves are unchanged
+            acis, runs = _mask_gauge_outages(acis, gauges=tuple(n for n in ACIS_GAUGES if n in acis))
+            for r in runs:
+                print(f"gauge outage rule: {r['gauge']} 0.00 {r['start']} → {r['end']} ({r['days']} days) while the other gauge totalled {r['other_total']}\" — filled from the other gauge")
+                for d in pd.date_range(r["start"], r["end"]):
+                    self._outage_days.setdefault(str(d.date()), []).append(r["gauge"])
             for name in ACIS_GAUGES:
                 if name in acis:
                     gauges[name] = base["date"].map(acis.set_index("date")[name])
@@ -662,6 +672,8 @@ class LiveData:
             "zones": zone_risks(impact_groups),
             "discharge_probs": probs[idx],
             "observed_cso": sorted(observed.get(dates[idx], ())),
+            "gauge_outage": getattr(self, "_outage_days", {}).get(str(pd.Timestamp(dates[idx]).date()), []),
+            "input_rules": list(INPUT_RULES_LIVE),
             "features": f,
         }
 
@@ -1067,6 +1079,7 @@ class LiveData:
                 "holdout_start": holdout_start, "trained_at": sc.get("trained_at"),
                 "trained_through": trained_through, "post_start": post_start, "rescored_at": sc.get("rescored_at"),
                 "stage2": (sc.get("stage2") or {}).get("variant", "v1"),
+                "input_rules_post": sc.get("input_rules_post") or [],
                 "basins": sc.get("basins"), "zones": sc.get("zones"), "groups": sc.get("groups"),
                 "days": around, "zone_confusion_holdout": sc.get("zone_confusion_holdout"),
                 "window": window, "seasons": _sc.seasons_in(span, holdout_start, trained_through),

@@ -262,5 +262,8 @@
    }
   }
  },
- "stage1_source": "v4"
+ "stage1_source": "v4",
+ "input_rules_post": [
+  "gauge_outage_v1"
+ ]
 }

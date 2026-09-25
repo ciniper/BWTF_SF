@@ -97,6 +97,15 @@ def main() -> None:
         sources |= {m.get("rain_source", "avg") for m in s["models"].values()}
     sources |= {h.get("rain_source", "avg") for h in heads.values()}
     frames, notes = T.build_dataset(end=pd.Timestamp(dates[-1]), sources=sorted(sources))
+    # post-training days were re-scored on rule-treated inputs (input_rules_post); rebuild them from the same
+    rules_post = master.get("input_rules_post") or []
+    frames_post = T.build_dataset(end=pd.Timestamp(dates[-1]), sources=sorted(sources), input_rules=rules_post)[0] if rules_post else frames
+    trained_through = master.get("trained_through") or master["span"][1]
+    post_from = next((i for i, d in enumerate(dates) if d > trained_through), len(dates))
+    def spliced(src: str, fn):
+        """fn(frame) → per-day array; raw frame before post_from, rule-treated after."""
+        a, b = list(fn(frames[src])), list(fn(frames_post[src]))
+        return a[:post_from] + b[post_from:]
     base = frames["avg"]
     assert [str(d.date()) for d in base["date"]] == dates, "frame dates do not line up with the served artifact"
     n = len(dates)
@@ -106,8 +115,7 @@ def main() -> None:
     for basin in T.APP_BASINS:
         key = BASIN_KEYS[basin]
         if basin in heads:
-            X = frames[heads[basin].get("rain_source", "avg")]
-            vol_pred[key] = [_r(v, 3) for v in T.predicted_volume(heads[basin], X)]
+            vol_pred[key] = [_r(v, 3) for v in spliced(heads[basin].get("rain_source", "avg"), lambda X: T.predicted_volume(heads[basin], X))]
         else:
             vol_pred[key] = [0.0] * n
 
@@ -120,7 +128,7 @@ def main() -> None:
             m = s["models"][key]
             src = m.get("rain_source", "avg")
             fin = {"model": m["model"], "features": m["features"], "calibration_offset": m["calibration_offset"]}
-            probs[key] = [_r(v, 6) for v in T.calibrated(fin, frames[src])]
+            probs[key] = [_r(v, 6) for v in spliced(src, lambda X: T.calibrated(fin, X))]
             spec[key] = {"rain_source": src, "calibration_offset": _r(m["calibration_offset"], 5),
                          "family": m.get("family") or ("logit" if hasattr(m["model"], "named_steps") else "gb"),
                          "C": m.get("C")}
@@ -183,6 +191,7 @@ def main() -> None:
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "span": master["span"], "holdout_start": master.get("holdout_start"),
         "trained_through": master.get("trained_through") or master["span"][1], "rescored_at": master.get("rescored_at"),
+        "input_rules_post": rules_post,
         "impact_raw": impact_raw, "impact_smoothed": impact_smoothed,
         "impact_fitted_from": {"sample_days": {g: t.get("n_sample_days") for g, t in impact_raw.items()},
                                "note": "fit by train_v4.fit_impact_table at v4 training (2026-09-12) from DataSF + Poo Bot samples and CIWQS discharges; "

@@ -62,6 +62,7 @@ from train_v2 import (  # noqa: E402  — shared formulas, kept in lockstep
 )
 from csd_labels import APP_BASINS, build_daily_labels, load_events  # noqa: E402
 from impact import compose, smooth_table  # noqa: E402
+from rain_features import GAUGE_OUTAGE_RULE, INPUT_RULES_LIVE, mask_gauge_outages  # noqa: E402
 from shared.outfalls import FEED_NAME_TO_OUTFALLS, OUTFALLS  # noqa: E402
 from shared.stations import STATIONS  # noqa: E402
 from shared.zones import ZONES  # noqa: E402
@@ -91,8 +92,11 @@ from shared.standards import STANDARDS, flag_exceedances, parse_result  # noqa: 
 COCORAHS_CSV = RAW_DIR / "historical_rain_cocorahs.csv"   # src/collectors/cocorahs.py
 
 
-def rain_series(source: str) -> tuple:
-    """Daily rain (inches) for `source` + fill note.
+def rain_series(source: str, input_rules: list | None = None) -> tuple:
+    """Daily rain (inches) for `source` + fill note. ``input_rules`` may name
+    "gauge_outage_v1" (rain_features.GAUGE_OUTAGE_RULE): a dead gauge's
+    0.00 run becomes missing before any averaging or filling, so the other
+    gauge stands in. None = the raw record, as v4 was trained.
 
     `source` is 'avg' (mean of the two NOAA gauges), a NOAA gauge name
     ('SF Downtown' / 'SF Oceanside'; a missing day takes the other gauge),
@@ -105,9 +109,14 @@ def rain_series(source: str) -> tuple:
     rp = rain_df.pivot_table(index="date", columns="rain_station_name",
                              values="precip_inches", aggfunc="first").sort_index()
     cols = list(rp.columns)
+    masked = []
+    if input_rules and GAUGE_OUTAGE_RULE["name"] in input_rules:
+        tmp, masked = mask_gauge_outages(rp.reset_index(), gauges=tuple(cols))
+        rp = tmp.set_index("date")[cols]
+    extra = {"outage_runs_masked": len(masked), "outage_days_masked": int(sum(r["days"] for r in masked))}
     avg = rp[cols].mean(axis=1)
     if source == "avg":
-        return avg.fillna(0.0), {"filled_from_other_gauge": 0}
+        return avg.fillna(0.0), {"filled_from_other_gauge": 0, **extra}
     if source == "avg3":   # NOAA pair + CoCoRaHS Potrero where it reported, else the pair alone
         cc = pd.read_csv(COCORAHS_CSV, parse_dates=["date"])
         pot = cc[cc["station_id"] == "US1CASF0017"].set_index("date")["precip_inches"].reindex(rp.index)
@@ -117,7 +126,7 @@ def rain_series(source: str) -> tuple:
         other = [c for c in cols if c != source][0]
         s = rp[source]
         filled = int(s.isna().sum() - (s.isna() & rp[other].isna()).sum())
-        return s.fillna(rp[other]).fillna(0.0), {"filled_from_other_gauge": filled}
+        return s.fillna(rp[other]).fillna(0.0), {"filled_from_other_gauge": filled, **extra}
     sid, _, shift = source.partition("@")
     cc = pd.read_csv(COCORAHS_CSV, parse_dates=["date"])
     s = cc[cc["station_id"] == sid].set_index("date")["precip_inches"].reindex(rp.index)
@@ -129,11 +138,11 @@ def rain_series(source: str) -> tuple:
     return s.fillna(avg).fillna(0.0), {"filled_from_two_gauge_mean": filled, "shift_days": int(shift or 0)}
 
 
-def rain_features(source: str) -> pd.DataFrame:
+def rain_features(source: str, input_rules: list | None = None) -> pd.DataFrame:
     """Daily features over an arbitrary daily series — the shared formula
     (src/models/rain_features.py), the same one serving applies."""
     from rain_features import add_daily_features
-    s, _ = rain_series(source)
+    s, _ = rain_series(source, input_rules)
     rp = add_daily_features(pd.DataFrame({"date": s.index, "precip_inches": s.values}))
     return rp[["date"] + get_feature_columns()]
 
@@ -218,12 +227,13 @@ def apply_archive_labels(df: pd.DataFrame, arch: dict, rain_avg: pd.Series) -> d
 
 # ── Dataset ─────────────────────────────────────────────────────────────────
 
-def build_dataset(end: pd.Timestamp = TRAIN_END, sources: list = None) -> tuple:
+def build_dataset(end: pd.Timestamp = TRAIN_END, sources: list = None, input_rules: list | None = None) -> tuple:
     """Returns ({rain_source: feature+label frame}, notes). Label columns are
     identical across sources; only the rain features differ. `end` is the
     training window's last day (TRAIN_END) or, for --rescore, the last day the
     refreshed inputs cover. `sources` defaults to RAIN_SOURCES; the leaderboard
-    passes extra gauges (see rain_series)."""
+    passes extra gauges (see rain_series). ``input_rules``: see rain_series —
+    None reproduces the record the served models were trained on."""
     labels = build_daily_labels()
     days = pd.DataFrame({"date": pd.date_range(TRAIN_START, end)})
     df = days.merge(labels, on="date", how="left")
@@ -233,7 +243,7 @@ def build_dataset(end: pd.Timestamp = TRAIN_END, sources: list = None) -> tuple:
         df[f"{basin}_volume_known"] = df[f"{basin}_covered"].astype(int)
         df[f"{basin}_label_source"] = np.where(df[f"{basin}_covered"] == 1, "ciwqs", "")
 
-    rain_avg, _ = rain_series("avg")
+    rain_avg, _ = rain_series("avg", input_rules)
     arch = archive_tables()
     recall = archive_recall(arch)
     notes = {"archive_recall": recall, "archive_used": False}
@@ -251,11 +261,12 @@ def build_dataset(end: pd.Timestamp = TRAIN_END, sources: list = None) -> tuple:
     hourly = build_hourly_features()
     out = {}
     for src in (sources or RAIN_SOURCES):
-        f = df.merge(rain_features(src), on="date", how="left").merge(hourly, on="date", how="left")
+        f = df.merge(rain_features(src, input_rules), on="date", how="left").merge(hourly, on="date", how="left")
         f[INTENSITY_FEATURES] = f[INTENSITY_FEATURES].fillna(0)
         f[get_feature_columns()] = f[get_feature_columns()].fillna(0)
         out[src] = f.reset_index(drop=True)
-        notes[f"rain_{src}"] = rain_series(src)[1]
+        notes[f"rain_{src}"] = rain_series(src, input_rules)[1]
+    notes["input_rules"] = list(input_rules or [])
     return out, notes
 
 
@@ -754,7 +765,8 @@ def stage2_from_served() -> tuple:
     return heads, json.loads((SERVE_DIR / "impact_table.json").read_text())
 
 
-def rescore(promote: bool = False, tolerance: float = 0.02) -> dict:
+def rescore(promote: bool = False, tolerance: float = 0.02, replace_post: bool = False,
+            input_rules: list | None = None) -> dict:
     """Extend the served scorecard with POST-TRAINING days.
 
     The served v4 models, exactly as deployed (data/models/*.pkl + impact
@@ -770,7 +782,13 @@ def rescore(promote: bool = False, tolerance: float = 0.02) -> dict:
     the artifact's own recent days to within `tolerance`; if they don't, some
     input changed retroactively and we refuse to append.
 
-    Run:  venv/bin/python features/forecast/src/models/train_v4.py --rescore [--promote]
+    ``replace_post``: re-score EVERY post-training day (not just append) with
+    the served models on inputs treated by ``input_rules`` (default: the rules
+    serving applies, rain_features.INPUT_RULES_LIVE — today the gauge-outage
+    rule). Pre-training days stay exactly as trained; the fidelity gate still
+    runs on the raw record. The artifact records ``input_rules_post``.
+
+    Run:  venv/bin/python features/forecast/src/models/train_v4.py --rescore [--promote] [--replace-post]
     """
     import gzip
     served = SERVE_DIR / "scorecard.json.gz"
@@ -782,7 +800,7 @@ def rescore(promote: bool = False, tolerance: float = 0.02) -> dict:
     end = min(reach.values())
     print(f"rescore: artifact ends {last.date()} (models trained through {trained_through}); inputs reach "
           + ", ".join(f"{k} {v.date()}" for k, v in reach.items()) + f" → scoring through {end.date()}")
-    if end <= last:
+    if end <= last and not replace_post:
         print("nothing to add")
         return sc
 
@@ -813,9 +831,25 @@ def rescore(promote: bool = False, tolerance: float = 0.02) -> dict:
     if worst > tolerance:
         raise SystemExit(f"served models do not reproduce the artifact (worst {worst:.4f} > {tolerance}) — an input changed retroactively; refusing to append")
 
-    new_days = [{**d, "post_training": True} for d in fresh["days"] if d["date"] > sc["span"][1]]
-    sc["days"] = sc["days"] + new_days
-    sc["span"] = [sc["span"][0], new_days[-1]["date"]]
+    if replace_post:
+        rules = list(input_rules or INPUT_RULES_LIVE)
+        frames_r, notes_r = build_dataset(end=end, input_rules=rules)
+        fresh_r = build_scorecard(frames_r, chosen, finals, {}, heads, impact_raw, load_samples(),
+                                  archive_tables(), notes_r["archive_used"], finals["citywide"]["features"])
+        old_by_date = {d["date"]: d for d in sc["days"]}
+        keep = [d for d in sc["days"] if d["date"] <= trained_through]
+        new_days = [{**d, "post_training": True} for d in fresh_r["days"] if d["date"] > trained_through]
+        moved = [(d["date"], zk, old_by_date[d["date"]]["zones"][zk]["risk"], d["zones"][zk]["risk"]) for d in new_days if d["date"] in old_by_date
+                 for zk in d["zones"] if abs(d["zones"][zk]["risk"] - old_by_date[d["date"]]["zones"][zk]["risk"]) >= 0.05]
+        print(f"replace-post with input rules {rules}: {len(new_days)} post-training days re-scored; "
+              f"{len(moved)} zone-days moved by ≥ 0.05" + (" — e.g. " + "; ".join(f"{d} {zk} {a:.2f}→{b:.2f}" for d, zk, a, b in moved[:6]) if moved else ""))
+        sc["days"] = keep + new_days
+        sc["input_rules_post"] = rules
+        sc["rain_notes_post"] = {k: v for k, v in notes_r.items() if k.startswith("rain_")}
+    else:
+        new_days = [{**d, "post_training": True} for d in fresh["days"] if d["date"] > sc["span"][1]]
+        sc["days"] = sc["days"] + new_days
+    sc["span"] = [sc["span"][0], sc["days"][-1]["date"]]
     sc["trained_through"] = trained_through
     sc["rescored_at"] = datetime.now().isoformat()
     sc["rescore_inputs"] = {k: str(v.date()) for k, v in reach.items()}
@@ -835,6 +869,6 @@ def rescore(promote: bool = False, tolerance: float = 0.02) -> dict:
 
 if __name__ == "__main__":
     if "--rescore" in sys.argv:
-        rescore(promote="--promote" in sys.argv)
+        rescore(promote="--promote" in sys.argv, replace_post="--replace-post" in sys.argv)
     else:
         main(promote="--promote" in sys.argv)
