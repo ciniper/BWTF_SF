@@ -18,7 +18,7 @@ Basin mapping (CSD report basins → forecast app basins):
 
 Coverage: Bayside from Oct 2016, Oceanside from Jan 2018, through the last
 month in data/csd/sf_csd_monthly_coverage.csv (Jul 2026 after the 2026-09-24
-refresh; Nov–Dec 2025 are a hole). Use load_coverage() to distinguish
+refresh, continuous). Use load_coverage() to distinguish
 verified-zero months from no-data months — days outside covered months must
 NOT be treated as negatives.
 """

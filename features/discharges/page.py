@@ -75,9 +75,9 @@ def _coverage() -> dict:
 
     note = ("Oceanside (Pacific side) per-event records begin Jan 2018 — citywide totals "
             "for 2016–2017 exclude it.")
-    hole_months = sorted({m for ms in holes.values() for m in ms})
-    if hole_months:
-        note += " No public report for " + ", ".join(label((int(m[:4]), int(m[5:]))) for m in hole_months) + "."
+    for fac, ms in sorted(holes.items()):
+        if ms:
+            note += f" No public {fac} report yet for " + ", ".join(label((int(m[:4]), int(m[5:]))) for m in ms) + "."
     note += f" Records after {label(through)} aren't public on CIWQS yet."
     return {"bayside_from": "2016-10", "oceanside_from": "2018-01",
             "through": f"{through[0]}-{through[1]:02d}", "holes": holes, "note": note}

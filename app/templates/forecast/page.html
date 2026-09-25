@@ -635,8 +635,10 @@ function renderCheckDetail(day) {
     }
     html += '</table>';
     if (ad && ZONE_ORDER.some(zk => ad.zones[zk] && ad.zones[zk].discharge == null)) {
-        const ce = current.actual.coverage_end || {}, through = ce.bayside || ce.oceanside;
-        html += `<div class="mute" style="font-size:.8em;margin:-4px 0 8px">No discharge report covers this day: SFPUC's CIWQS filings run through ${through ? esc(fmtMonth(through + '-01')) : '?'}; the BWTF watcher covers ${esc(new Date((current.actual.watcher_since || '2026-08-20') + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }))} onward.</div>`;
+        const ce = current.actual.coverage_end || {};
+        const through = !ce.bayside && !ce.oceanside ? '?' : ce.bayside === ce.oceanside ? esc(fmtMonth(ce.bayside + '-01'))
+            : `${ce.oceanside ? esc(fmtMonth(ce.oceanside + '-01')) : '?'} (Oceanside) / ${ce.bayside ? esc(fmtMonth(ce.bayside + '-01')) : '?'} (Bayside)`;
+        html += `<div class="mute" style="font-size:.8em;margin:-4px 0 8px">No discharge report covers this day for at least one zone: SFPUC's CIWQS filings run through ${through}; the BWTF watcher covers ${esc(new Date((current.actual.watcher_since || '2026-08-20') + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }))} onward.</div>`;
     }
     if (scDay && scDay.basins) {
         html += `<div class="subhead">${ic('chart')} Stage 1 — discharge probability by basin (training-time hindcast vs reported)</div><table class="tbl"><tr><th>Basin</th><th class="num">P(discharge)</th><th>Reported</th><th class="num">Volume (MG)</th><th>Label source</th></tr>`;

@@ -5,26 +5,24 @@ SF Bay Regional Water Quality Control Board (Region 2), retrieved as PDF attachm
 from CIWQS. Purpose: ground-truth training labels for the BWTF CSO forecaster
 (replaces the proxy label in `features/forecast/src/models/train.py`).
 
-Refreshed 2026-09-24 with Jan–Jul 2026 (27 events, 14 facility-months; Oct 2025
-re-parsed as a control and came out identical). See "Refresh log" at the end.
+Refreshed 2026-09-24 with Nov 2025 – Jul 2026 for both plants plus Bayside Aug 2026
+(97 events, 19 facility-months; Oct 2025 re-parsed as a control and came out
+identical). See "Refresh log" at the end.
 
 ## Files
 
 | File | Rows | What it is |
 |---|---|---|
-| `sf_csd_events.csv` | 1,034 events | Per-event records, modern format (date, outfall, start time, duration, volume) |
-| `sf_csd_monthly_coverage.csv` | 322 facility-months | Month-by-month coverage/status grid — use this to distinguish "no event" from "no data" |
+| `sf_csd_events.csv` | 1,104 events | Per-event records, modern format (date, outfall, start time, duration, volume) |
+| `sf_csd_monthly_coverage.csv` | 327 facility-months | Month-by-month coverage/status grid — use this to distinguish "no event" from "no data" |
 | `sf_csd_events_bayside_legacy_2013_2016.csv` | 115 rows | Bayside legacy format (2013 – Sep 2016): per-day discharge hours + count; **no volumes** |
 
 ## Coverage (per-event with volumes: `sf_csd_events.csv`)
 
 | System | NPDES permit | Outfalls | Coverage |
 |---|---|---|---|
-| Oceanside / Westside (Ocean Beach side) | CA0037681 (Order R2-2019-0028; before Nov 2019 R2-2009-0062) | CSD-001…007 | **Jan 2018 – Oct 2025, Jan – Jul 2026** |
-| Southeast / Bayside | CA0037664 | CSD-009…043 (29 points, 4 basins) | **Oct 2016 – Oct 2025, Jan – Jul 2026** |
-
-Nov and Dec 2025 are a hole for both plants (see gap 3): the coverage grid has no
-rows for them, so code that reads the grid treats those days as unknown.
+| Oceanside / Westside (Ocean Beach side) | CA0037681 (Order R2-2019-0028; before Nov 2019 R2-2009-0062) | CSD-001…007 | **Jan 2018 – Jul 2026** (continuous; Aug 2026 not filed yet) |
+| Southeast / Bayside | CA0037664 | CSD-009…043 (29 points, 4 basins) | **Oct 2016 – Aug 2026** (continuous) |
 
 Wet years total 1,300–2,400 MG/yr across both systems, consistent with EPA's
 "~1.8 billion gallons/yr average since 2016" (2024 federal complaint) — good
@@ -43,14 +41,20 @@ external validation.
    regenerate modern-format tables for old months (in Sep 2023 they filed revised
    "FINAL WW Summary" tables for Oct 2016 – Oct 2017), so a records request could
    extend volumes further back.
-3. **Nov – Dec 2025 (both plants):** as of 2026-09-24 SFPUC's Nov and Dec 2025
-   monthly SMR documents are not in the data.ca.gov eSMR analytical datastore (other
-   Region 2 facilities' are, and SFPUC's Jan – Jul 2026 are), so their CIWQS document
-   ids can't be enumerated and the attachments weren't harvested. Retry with
-   `list_documents.py 2025 2026 --only-new`; if they never appear, the CIWQS
-   drilldown ids sit somewhere between 3018740 (Oct 2025) and 3063421 (Jan 2026) —
-   or ask SFPUC (see `records_request_draft.md`).
-   **Aug 2026 – present:** not filed / not yet public; re-run quarterly.
+3. **The data.ca.gov eSMR analytical datastore is not a reliable document index.**
+   SFPUC's Nov and Dec 2025 SMRs were filed on time (received 12/24–12/29/2025 and
+   01/27–01/28/2026) with attachments on CIWQS, yet as of 2026-09-24 neither month has
+   a single analytical row in the state's 2025 or 2026 export (other Region 2 plants'
+   Nov–Dec rows are there). Enumerate documents from CIWQS itself instead: the eSMR
+   At-A-Glance servlet has a search form (`inCommand=reset&reportID=2`, then
+   `reportID=1&firstRun=Y&partyName=San Francisco Public Utilities Commission&runReport=Run Report`,
+   then `reportID=1&newPageNumber=0&newPageSize=5000` in the same session) that
+   lists every SFPUC document with report name, period, due date and date received.
+   `list_documents.py` does exactly this; `--datastore` keeps the old route as a
+   cross-check. Document ids are a statewide sequence and the two plants' ids for
+   the same month can be tens of thousands apart, so never guess them.
+   **Aug 2026 – present:** not yet filed (SMRs land ~4–6 weeks after month end);
+   re-run quarterly.
 4. Dec 2016 Bayside: the modern revision was misfiled on CIWQS (the Nov-2016 file was
    attached twice), so the 23 Dec-2016 events were manually transcribed from the
    scanned original (flagged `manual_transcription`).
@@ -116,20 +120,28 @@ datastore + scrape CIWQS drilldown attachment lists) → `download_pdfs.py` (fet
 `parse_old_sep.py` (legacy Bayside format).
 
 Key identifiers: Oceanside facility place ID `256498`, Southeast `256499`
-(CIWQS); eSMR analytical datasets on data.ca.gov are datastore-enabled (SQL API),
-column `smr_document_id` links analytical rows to the monthly report documents
-(`list_documents.py` does this query and writes `smr_documents.json`).
+(CIWQS); party name "San Francisco Public Utilities Commission" (CIWQS party
+43055). Step 0, `list_documents.py`, lists SFPUC's monthly SMR documents from the
+CIWQS eSMR At-A-Glance party search (see gap 3 for the request sequence) and
+writes `smr_documents.json`; the data.ca.gov eSMR datastore (`smr_document_id`
+column, SQL API) remains available via `--datastore` as a cross-check.
 
 ## Refresh log
 
-- **2026-09-24** — Jan – Jul 2026, both plants (14 SMR documents, 32 PDFs).
-  27 events: the Jan 5 storm (Westside CSD-001/002/003 + Sea Cliff #2, Mission
-  Creek CSD-024/025/026, Islais CSD-031A/032/033/035), Feb 16–19 Westside
-  (CSD-001/002/003 twice, Sea Cliff #2), Apr 11 (Sea Cliff #2, Mission Creek
-  CSD-024/025/026, Mariposa), Apr 22 Sea Cliff #2. Mar, May, Jun, Jul: tables
-  present, zero events (both plants); Feb Bayside zero. Two QA flags, both the
-  stale-TOTAL quirk (Jan 2026 Sea Cliff #2 TOTAL omits the Jan 4 event; daily rows
-  kept). Parser note: from May 2026 the Westside page header reads "Westside CSD
-  Summary" instead of "Oceanside Basin CSD Summary" — `aggregate.py` maps both.
-  Control: Oct 2025 re-parsed identical (4 events). Nov – Dec 2025 still missing
-  (gap 3).
+- **2026-09-24** — Nov 2025 – Jul 2026, both plants, plus Bayside Aug 2026
+  (received 09/23/2026, table present, zero events; Oceanside's Aug not filed
+  yet) — 19 SMR documents, 42 PDFs. 97 events, no changes to earlier months.
+  `aggregate.py` now writes the events CSV header even when a run has zero
+  events (it crashed on the dry Aug 2026 run). The 2025-26 winter: **Nov 13 2025**
+  (both plants: Westside CSD-001…004/006/007, North Shore CSD-009…017, Mission
+  Creek, Islais), **Nov 17**, **Dec 22** (Lincoln 59 MG, Islais Creek North 48 MG),
+  **Dec 24**, **Dec 25** (Division Street 103 MG — the largest single event in the
+  record; Evans Ave posted Southeast), **Dec 26**, **Jan 5 2026** (Westside +
+  Mission Creek + Islais), **Feb 16–19** Westside, **Apr 11** Westside + Mission
+  Creek + Mariposa, **Apr 22** Sea Cliff #2. Mar, May, Jun, Jul: tables present,
+  zero events (both plants); Feb Bayside zero. Two QA flags, both the stale-TOTAL
+  quirk (Jan 2026 Sea Cliff #2 TOTAL omits the Jan 4 event; daily rows kept).
+  Parser note: from May 2026 the Westside page header reads "Westside CSD Summary"
+  instead of "Oceanside Basin CSD Summary" — `aggregate.py` maps both. Control:
+  Oct 2025 re-parsed identical (4 events). Nov – Dec 2025 needed the CIWQS party
+  search because the state datastore has no rows for them (gap 3).

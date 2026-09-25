@@ -108,8 +108,12 @@ for key, rec in sorted(best.items(), key=lambda kv: (kv[0][0], kv[0][1] or 0, kv
 
 for e in events: e.pop('_cid')
 events.sort(key=lambda e: (e['event_date'], e['facility'], e['outfall_id']))
-with open('sf_csd_events.csv', 'w', newline='') as f:
-    w = csv.DictWriter(f, fieldnames=list(events[0].keys()))
+EVENT_FIELDS = ['event_date', 'facility', 'outfall_id', 'outfall_name', 'basin', 'receiving_water', 'start_time',
+                'duration_min', 'duration_flag', 'volume_MG', 'volume_qualifier', 'source_document', 'ciwqs_document_id', 'report_period']
+if events:
+    assert list(events[0].keys()) == EVENT_FIELDS, list(events[0].keys())
+with open('sf_csd_events.csv', 'w', newline='') as f:   # header even for a zero-event run (dry months)
+    w = csv.DictWriter(f, fieldnames=EVENT_FIELDS)
     w.writeheader(); w.writerows(events)
 
 # ---- coverage grid ----

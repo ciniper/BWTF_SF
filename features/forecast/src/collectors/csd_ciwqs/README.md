@@ -12,7 +12,7 @@ app's `requirements.txt` on purpose).
 ## Run order
 
 ```
-python list_documents.py 2026 --only-new   # eSMR datastore (data.ca.gov) -> smr_documents.json (months not yet in the coverage grid)
+python list_documents.py --only-new   # CIWQS eSMR party search -> smr_documents.json (months not yet in the coverage grid)
 python harvest_index.py    # smr_documents.json -> CIWQS drilldowns -> attachment index
 python download_pdfs.py    # fetch SMR PDFs via CIWQS PublicAttachmentRetriever (no auth)
 python batch_parse.py      # extract "CSD Summary" tables (parse_csd.py) from every PDF
@@ -26,8 +26,12 @@ For a refresh, include one already-covered month as a control (its rows must
 come out identical), then **append** the new event rows to
 `features/forecast/data/csd/sf_csd_events.csv` (date-sorted) and the new
 facility-months to `sf_csd_monthly_coverage.csv` (sorted facility, year, month)
-after reviewing `qa_report.json`. Last refresh: 2026-09-24 (Jan–Jul 2026; SFPUC's
-Nov–Dec 2025 SMRs were not in the eSMR datastore yet — retry).
+after reviewing `qa_report.json`. Last refresh: 2026-09-24 (Nov 2025 – Jul 2026).
+
+Step 0 reads CIWQS's own document listing (eSMR At-A-Glance search by party
+name), not the data.ca.gov analytical datastore: the datastore lags and skipped
+SFPUC's Nov–Dec 2025 entirely even though both plants had filed. `--datastore`
+keeps the old route as a cross-check.
 
 Key identifiers: CIWQS facility place IDs — Oceanside plant `256498`,
 Southeast plant `256499`. Facilities file monthly; attachments appear in the
