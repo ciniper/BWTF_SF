@@ -5,20 +5,26 @@ SF Bay Regional Water Quality Control Board (Region 2), retrieved as PDF attachm
 from CIWQS. Purpose: ground-truth training labels for the BWTF CSO forecaster
 (replaces the proxy label in `features/forecast/src/models/train.py`).
 
+Refreshed 2026-09-24 with Jan–Jul 2026 (27 events, 14 facility-months; Oct 2025
+re-parsed as a control and came out identical). See "Refresh log" at the end.
+
 ## Files
 
 | File | Rows | What it is |
 |---|---|---|
-| `sf_csd_events.csv` | 1,007 events | Per-event records, modern format (date, outfall, start time, duration, volume) |
-| `sf_csd_monthly_coverage.csv` | 308 facility-months | Month-by-month coverage/status grid — use this to distinguish "no event" from "no data" |
+| `sf_csd_events.csv` | 1,034 events | Per-event records, modern format (date, outfall, start time, duration, volume) |
+| `sf_csd_monthly_coverage.csv` | 322 facility-months | Month-by-month coverage/status grid — use this to distinguish "no event" from "no data" |
 | `sf_csd_events_bayside_legacy_2013_2016.csv` | 115 rows | Bayside legacy format (2013 – Sep 2016): per-day discharge hours + count; **no volumes** |
 
 ## Coverage (per-event with volumes: `sf_csd_events.csv`)
 
 | System | NPDES permit | Outfalls | Coverage |
 |---|---|---|---|
-| Oceanside / Westside (Ocean Beach side) | CA0037681 (Order R2-2019-0028; before Nov 2019 R2-2009-0062) | CSD-001…007 | **Jan 2018 – Oct 2025** |
-| Southeast / Bayside | CA0037664 | CSD-009…043 (29 points, 4 basins) | **Oct 2016 – Oct 2025** |
+| Oceanside / Westside (Ocean Beach side) | CA0037681 (Order R2-2019-0028; before Nov 2019 R2-2009-0062) | CSD-001…007 | **Jan 2018 – Oct 2025, Jan – Jul 2026** |
+| Southeast / Bayside | CA0037664 | CSD-009…043 (29 points, 4 basins) | **Oct 2016 – Oct 2025, Jan – Jul 2026** |
+
+Nov and Dec 2025 are a hole for both plants (see gap 3): the coverage grid has no
+rows for them, so code that reads the grid treats those days as unknown.
 
 Wet years total 1,300–2,400 MG/yr across both systems, consistent with EPA's
 "~1.8 billion gallons/yr average since 2016" (2024 federal complaint) — good
@@ -37,9 +43,14 @@ external validation.
    regenerate modern-format tables for old months (in Sep 2023 they filed revised
    "FINAL WW Summary" tables for Oct 2016 – Oct 2017), so a records request could
    extend volumes further back.
-3. **Nov 2025 – present:** monthly SMR documents exist in the eSMR system but their
-   attachments are not yet exposed in CIWQS's public report (drilldown pages return
-   empty). Re-run the pipeline in a few months.
+3. **Nov – Dec 2025 (both plants):** as of 2026-09-24 SFPUC's Nov and Dec 2025
+   monthly SMR documents are not in the data.ca.gov eSMR analytical datastore (other
+   Region 2 facilities' are, and SFPUC's Jan – Jul 2026 are), so their CIWQS document
+   ids can't be enumerated and the attachments weren't harvested. Retry with
+   `list_documents.py 2025 2026 --only-new`; if they never appear, the CIWQS
+   drilldown ids sit somewhere between 3018740 (Oct 2025) and 3063421 (Jan 2026) —
+   or ask SFPUC (see `records_request_draft.md`).
+   **Aug 2026 – present:** not filed / not yet public; re-run quarterly.
 4. Dec 2016 Bayside: the modern revision was misfiled on CIWQS (the Nov-2016 file was
    attached twice), so the 23 Dec-2016 events were manually transcribed from the
    scanned original (flagged `manual_transcription`).
@@ -106,4 +117,19 @@ datastore + scrape CIWQS drilldown attachment lists) → `download_pdfs.py` (fet
 
 Key identifiers: Oceanside facility place ID `256498`, Southeast `256499`
 (CIWQS); eSMR analytical datasets on data.ca.gov are datastore-enabled (SQL API),
-column `smr_document_id` links analytical rows to the monthly report documents.
+column `smr_document_id` links analytical rows to the monthly report documents
+(`list_documents.py` does this query and writes `smr_documents.json`).
+
+## Refresh log
+
+- **2026-09-24** — Jan – Jul 2026, both plants (14 SMR documents, 32 PDFs).
+  27 events: the Jan 5 storm (Westside CSD-001/002/003 + Sea Cliff #2, Mission
+  Creek CSD-024/025/026, Islais CSD-031A/032/033/035), Feb 16–19 Westside
+  (CSD-001/002/003 twice, Sea Cliff #2), Apr 11 (Sea Cliff #2, Mission Creek
+  CSD-024/025/026, Mariposa), Apr 22 Sea Cliff #2. Mar, May, Jun, Jul: tables
+  present, zero events (both plants); Feb Bayside zero. Two QA flags, both the
+  stale-TOTAL quirk (Jan 2026 Sea Cliff #2 TOTAL omits the Jan 4 event; daily rows
+  kept). Parser note: from May 2026 the Westside page header reads "Westside CSD
+  Summary" instead of "Oceanside Basin CSD Summary" — `aggregate.py` maps both.
+  Control: Oct 2025 re-parsed identical (4 events). Nov – Dec 2025 still missing
+  (gap 3).

@@ -139,6 +139,9 @@ footer a { color: #0072BC; text-decoration: none; }
 .score b { display: block; font-size: 1.05em; color: #26272a; margin-bottom: 4px; }
 .score .row { display: flex; justify-content: space-between; color: #54576F; padding: 2px 0; }
 .score .row span:last-child { font-weight: 700; color: #26272a; font-variant-numeric: tabular-nums; }
+.sc-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 10px; font-size: 0.85em; }
+.sc-controls .date-picker { padding: 6px 10px; font-size: 0.95em; }
+.sc-controls .mode-btn { padding: 6px 12px; font-size: 0.9em; }
 .sources { font-size: 0.78em; color: #8a93a3; line-height: 1.5; margin-top: 12px; }
 .pill-line { display: inline-flex; align-items: center; gap: 4px; }
 .mute { color: #8a93a3; }
@@ -282,7 +285,7 @@ async function loadData() {
                 const [h, a, sc] = await Promise.all([
                     getJSON('/forecast/api/historical?date=' + date),
                     getJSON('/forecast/api/actuals?date=' + date),
-                    getJSON('/forecast/api/scorecard?date=' + date)]);
+                    getJSON('/forecast/api/scorecard?date=' + date + scoreRangeQuery())]);
                 if (h.error) throw new Error(h.error);
                 renderCheck(h, a.error ? { days: {} } : a, sc.error ? {} : sc, date);
             }
@@ -474,7 +477,7 @@ function zoneActualStatus(z) {
     if (z.elevated) b.push(badge('warn', 'microscope', 'elevated bacteria'));
     if (!b.length) {
         if (z.bad === false) b.push(badge('ok', 'circle-check', z.n_samples ? 'clear (sampled)' : 'no discharge'));
-        else b.push(badge('muted', 'circle-dashed', z.discharge == null ? 'no discharge records' : 'not sampled'));
+        else b.push(badge('muted', 'circle-dashed', z.discharge == null ? 'no discharge report' : 'no posting seen, not sampled'));
     }
     return { cls: z.bad ? 'bad' : z.bad === false ? 'clear' : 'unknown', badges: b };
 }
@@ -507,7 +510,7 @@ function renderActual(a) {
                 ${dis ? badge('danger', 'octagon-alert', dis + ' outfall' + (dis > 1 ? 's' : '')) : ''}
                 ${day.postings.length ? badge('warn', 'triangle-alert', day.postings.length + ' posting' + (day.postings.length > 1 ? 's' : '')) : ''}
                 ${el ? badge('warn', 'microscope', el + ' elevated') : ''}
-                ${!dis && !day.postings.length && !el ? (known ? badge('ok', 'circle-check', 'clear') : badge('muted', 'circle-dashed', day.samples.length ? 'sampled, clear' : 'no records')) : ''}
+                ${!dis && !day.postings.length && !el ? (known ? badge('ok', 'circle-check', 'clear') : badge('muted', 'circle-dashed', day.coverage && day.coverage.watcher ? 'quiet, not sampled' : day.samples.length ? 'sampled, clear' : 'no discharge report')) : ''}
             </div>`;
         card.onclick = () => selectDay(day);
         timeline.appendChild(card);
@@ -547,7 +550,7 @@ function renderActualDetail(day) {
         html += '<table class="tbl"><tr><th>Outfall</th><th>Basin</th><th class="num">Volume (MG)</th><th>Beaches it posts</th><th>Source</th></tr>' +
             day.discharges.map(d => `<tr><td><b>${esc(d.outfall_id)}</b> ${esc(d.name)}</td><td>${esc(d.basin || '')}</td><td class="num">${d.volume_mg != null ? Number(d.volume_mg).toFixed(2) : '—'}</td><td>${d.stations.map(esc).join(', ')}</td><td class="mute">${esc(d.source)}</td></tr>`).join('') + '</table>';
     } else {
-        html += `<div class="mute" style="font-size:.85em">${day.coverage.oceanside || day.coverage.bayside || day.coverage.watcher ? 'None reported.' : 'No discharge records cover this date (CIWQS reports span Oct 2016 – Oct 2025; the SFPUC feed archive Mar 2016 – Jan 2017; the BWTF watcher Aug 2026 →).'}</div>`;
+        html += `<div class="mute" style="font-size:.85em">${day.coverage.oceanside || day.coverage.bayside || day.coverage.watcher ? 'None reported.' : 'No discharge report covers this date. Sources: ' + esc(current.actual.sources.discharges) + '.'}</div>`;
     }
     if (day.postings.length) {
         html += `<div class="subhead">${ic('triangle-alert')} SFPUC postings seen by the BWTF watcher</div><div style="font-size:.85em">` +
@@ -626,50 +629,128 @@ function renderCheckDetail(day) {
         const p = zr[zk] || 0, v = verdict(p, za);
         const sz = scDay && scDay.zones && scDay.zones[zk];
         const trained = sz ? (sz.risk_h != null ? pct(sz.risk_h) + '% <span class="mute">holdout</span>' : pct(sz.risk) + '% <span class="mute">in-sample</span>') : '<span class="mute">—</span>';
-        const dis = !za ? '<span class="mute">—</span>' : za.discharge == null ? '<span class="mute">no records</span>' : za.discharge ? badge('danger', 'octagon-alert', za.discharge_stations.length ? za.discharge_stations.length + ' beach' + (za.discharge_stations.length > 1 ? 'es' : '') : 'yes') : badge('ok', 'check', 'none');
+        const dis = !za ? '<span class="mute">—</span>' : za.discharge == null ? '<span class="mute" title="No CIWQS discharge report covers this day">no report</span>' : za.discharge ? badge('danger', 'octagon-alert', za.discharge_stations.length ? za.discharge_stations.length + ' beach' + (za.discharge_stations.length > 1 ? 'es' : '') : 'yes') : badge('ok', 'check', 'none');
         const bac = !za ? '<span class="mute">—</span>' : za.elevated == null ? '<span class="mute">not sampled</span>' : za.elevated ? badge('warn', 'microscope', za.elevated_stations.length + ' elevated') : badge('ok', 'check', za.n_samples + ' clear');
         html += `<tr><td><b>${esc(z.label)}</b></td><td class="num" style="color:${riskInfo(p).color};font-weight:700">${pct(p)}%</td><td class="num">${trained}</td><td>${dis}</td><td>${bac}</td><td>${badge(v.kind, v.icon, v.label)}</td></tr>`;
     }
     html += '</table>';
+    if (ad && ZONE_ORDER.some(zk => ad.zones[zk] && ad.zones[zk].discharge == null)) {
+        const ce = current.actual.coverage_end || {}, through = ce.bayside || ce.oceanside;
+        html += `<div class="mute" style="font-size:.8em;margin:-4px 0 8px">No discharge report covers this day: SFPUC's CIWQS filings run through ${through ? esc(fmtMonth(through + '-01')) : '?'}; the BWTF watcher covers ${esc(new Date((current.actual.watcher_since || '2026-08-20') + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }))} onward.</div>`;
+    }
     if (scDay && scDay.basins) {
         html += `<div class="subhead">${ic('chart')} Stage 1 — discharge probability by basin (training-time hindcast vs reported)</div><table class="tbl"><tr><th>Basin</th><th class="num">P(discharge)</th><th>Reported</th><th class="num">Volume (MG)</th><th>Label source</th></tr>`;
         for (const key of ['westside', 'north_shore', 'central', 'southeast']) {
             const b = scDay.basins[key]; if (!b) continue;
             const p = b.ph != null ? b.ph : b.p;
-            html += `<tr><td>${esc(BASIN_META[key].name)}</td><td class="num" style="color:${riskInfo(p).color};font-weight:700">${pct(p)}%${b.ph != null ? '' : ' <span class="mute">in-sample</span>'}</td><td>${b.y == null ? '<span class="mute">no records</span>' : b.y ? badge('danger', 'octagon-alert', 'discharge') : badge('ok', 'check', 'none')}</td><td class="num">${b.vol != null && b.y ? Number(b.vol).toFixed(1) : '—'}</td><td class="mute">${esc(b.src || '')}</td></tr>`;
+            html += `<tr><td>${esc(BASIN_META[key].name)}</td><td class="num" style="color:${riskInfo(p).color};font-weight:700">${pct(p)}%${b.ph != null ? '' : ' <span class="mute">in-sample</span>'}</td><td>${b.y == null ? '<span class="mute">not covered</span>' : b.y ? badge('danger', 'octagon-alert', 'discharge') : badge('ok', 'check', 'none')}</td><td class="num">${b.vol != null && b.y ? Number(b.vol).toFixed(1) : '—'}</td><td class="mute">${esc(b.src || '')}</td></tr>`;
         }
         html += '</table>';
     }
-    // season scorecard
-    if (sc.zone_confusion_holdout) {
-        const from = sc.holdout_start, to = sc.span ? sc.span[1] : '';
-        html += `<div class="subhead">${ic('chart-line')} Season scorecard — holdout ${esc(from)} → ${esc(to)}, models fit on data before ${esc(from)}, ${pct(RISK_THRESHOLD)}% line</div><div class="scorecard">`;
-        for (const zk of ZONE_ORDER) {
-            const c = sc.zone_confusion_holdout[zk]; if (!c) continue;
-            const d = c['0.25'].vs_discharge_posting, b = c['0.25'].vs_bacteria_elevated;
-            const rec = d.tp + d.fn ? d.tp / (d.tp + d.fn) : null, far = d.fp + d.tn ? d.fp / (d.fp + d.tn) : null, brec = b.tp + b.fn ? b.tp / (b.tp + b.fn) : null, bfa = b.fp + b.tn ? b.fp / (b.fp + b.tn) : null;
-            const f = v => v == null ? '—' : pct(v) + '%';
-            html += `<div class="score"><b>${ic(ZONE_ICON[zk])} ${esc((ZONES.find(z => z.key === zk) || {}).label)}</b>
-                <div class="row"><span>Discharge days caught</span><span>${f(rec)} <span class="mute">(${d.tp}/${d.tp + d.fn})</span></span></div>
-                <div class="row"><span>False alarms (of quiet days)</span><span>${f(far)}</span></div>
-                <div class="row"><span>Elevated-sample days caught</span><span>${f(brec)} <span class="mute">(${b.tp}/${b.tp + b.fn})</span></span></div>
-                <div class="row"><span>Alarms on clean sample days</span><span>${f(bfa)}</span></div></div>`;
-        }
-        html += '</div>';
-        if (sc.targets) {
-            html += `<div class="subhead">${ic('gauge')} Stage 1 holdout, by basin model</div><table class="tbl"><tr><th>Model</th><th>Rain source</th><th class="num">Events</th><th class="num">PR-AUC</th><th class="num">ROC-AUC</th><th class="num">Brier</th></tr>`;
-            for (const key of BASIN_ORDER) {
-                const t = sc.targets[key]; if (!t || !t.holdout) continue;
-                html += `<tr><td>${esc(BASIN_META[key].name)}</td><td class="mute">${esc(t.rain_source === 'avg' ? 'Downtown + Oceanside mean' : t.rain_source)}</td><td class="num">${t.n_events}</td><td class="num">${t.holdout.pr_auc.toFixed(3)}</td><td class="num">${t.holdout.roc_auc.toFixed(3)}</td><td class="num">${t.holdout.brier.toFixed(4)}</td></tr>`;
-            }
-            html += '</table>';
-        }
-    } else if (sc.in_span === false) {
+    if (sc.in_span === false) {
         html += `<div class="mute" style="font-size:.85em;margin-top:10px">This date is outside the training scorecard (${esc((sc.span || []).join(' → '))}); the hindcast above is today's models on archived rain.</div>`;
     }
+    html += renderScoreWindow(sc);
     html += `<div class="sources">"Today's models" = the served v4 models scored on the rain that fell (NOAA gauges for totals, Open-Meteo archive for hourly intensity). "At training time" = the same models' probabilities recorded when they were trained; holdout = from a model that never saw that season. A discharge that posts a zone's beach, an SFPUC posting, or a sample over standard makes a "bad" day.</div>`;
     panel.innerHTML = html;
 }
+
+// ─── SCORECARD WINDOW ───────────────────────────────────────────────────────
+// The scorecard scores the training-time hindcast over a window of days.
+// Default: the rain season the selected date falls in. Once the user picks a
+// season / the holdout / everything / a custom range it sticks across date
+// changes until "follow the date".
+let scoreRange = null;   // {preset, from, to} | null = follow the selected date
+const scoreRangeQuery = () => scoreRange ? '&from=' + encodeURIComponent(scoreRange.from) + '&to=' + encodeURIComponent(scoreRange.to) : '';
+const fmtMonth = s => { const d = new Date(s + 'T12:00:00'); return d.toLocaleDateString(undefined, { month: 'short', year: 'numeric' }); };
+const fmtRange = (a, b) => esc(fmtMonth(a)) + ' → ' + esc(fmtMonth(b));
+
+function scorePresetOf(w, sc) {
+    if (w.start === sc.span[0] && w.end === sc.span[1]) return 'all';
+    if (w.start === sc.holdout_start && w.end === sc.span[1]) return 'holdout';
+    const s = (sc.seasons || []).find(s => s.start === w.start && s.end === w.end);
+    return s ? 'season:' + s.season : 'custom';
+}
+
+function renderScoreWindow(sc) {
+    const w = sc.window;
+    if (!w || !w.zone_confusion || !sc.span) return '';
+    const preset = scorePresetOf(w, sc), thr = String(RISK_THRESHOLD);
+    const holdNote = w.holdout_only
+        ? badge('ok', 'circle-check', 'holdout — models fit on data before ' + fmtMonth(sc.holdout_start))
+        : badge('warn', 'triangle-alert', (w.n_holdout ? w.n_insample + ' of ' + w.n_days + ' days' : 'all days') + ' in-sample: the models trained on them, so this is optimistic');
+    const opt = (v, label) => `<option value="${v}"${v === preset ? ' selected' : ''}>${esc(label)}</option>`;
+    const seasonLabel = s => s.label + ' season' + (s.holdout === 'full' ? ' · holdout' : s.holdout === 'partial' ? ' · part holdout' : ' · in-sample');
+    let html = `<div id="scoreWindow"><div class="subhead">${ic('chart-line')} Scorecard — ${fmtRange(w.start, w.end)}, ${pct(RISK_THRESHOLD)}% line</div>
+        <div class="sc-controls">
+            <select class="date-picker" onchange="onScorePreset(this.value)" title="Window the scorecard covers">
+                ${(sc.seasons || []).map(s => opt('season:' + s.season, seasonLabel(s))).join('')}
+                ${opt('holdout', 'Holdout period (' + fmtMonth(sc.holdout_start) + ' → ' + fmtMonth(sc.span[1]) + ')')}
+                ${opt('all', 'Everything (' + fmtMonth(sc.span[0]) + ' → ' + fmtMonth(sc.span[1]) + ')')}
+                ${opt('custom', 'Custom range…')}
+            </select>
+            <span id="scCustom" style="display:${preset === 'custom' ? 'inline-flex' : 'none'};align-items:center;gap:6px">
+                <input type="date" class="date-picker" id="scFrom" min="${esc(sc.span[0])}" max="${esc(sc.span[1])}" value="${esc(w.start)}"> →
+                <input type="date" class="date-picker" id="scTo" min="${esc(sc.span[0])}" max="${esc(sc.span[1])}" value="${esc(w.end)}">
+                <button class="mode-btn" onclick="applyScoreCustom()">Apply</button>
+            </span>
+            ${scoreRange ? `<button class="mode-btn" onclick="resetScoreRange()" title="Back to the season of the selected date">${ic('calendar')} follow the date</button>` : ''}
+            <span class="mute">${w.n_days} days · ${w.n_discharge_days} discharge day${w.n_discharge_days === 1 ? '' : 's'} · ${w.n_sampled_days} sampled</span>
+            ${holdNote}
+        </div><div class="scorecard">`;
+    for (const zk of ZONE_ORDER) {
+        const c = w.zone_confusion[zk]; if (!c || !c[thr]) continue;
+        const d = c[thr].vs_discharge_posting, b = c[thr].vs_bacteria_elevated;
+        const rec = d.tp + d.fn ? d.tp / (d.tp + d.fn) : null, far = d.fp + d.tn ? d.fp / (d.fp + d.tn) : null, brec = b.tp + b.fn ? b.tp / (b.tp + b.fn) : null, bfa = b.fp + b.tn ? b.fp / (b.fp + b.tn) : null;
+        const f = v => v == null ? '—' : pct(v) + '%';
+        html += `<div class="score"><b>${ic(ZONE_ICON[zk])} ${esc((ZONES.find(z => z.key === zk) || {}).label)}</b>
+            <div class="row"><span>Discharge days caught</span><span>${f(rec)} <span class="mute">(${d.tp}/${d.tp + d.fn})</span></span></div>
+            <div class="row"><span>False alarms (of quiet days)</span><span>${f(far)} <span class="mute">(${d.fp}/${d.fp + d.tn})</span></span></div>
+            <div class="row"><span>Elevated-sample days caught</span><span>${f(brec)} <span class="mute">(${b.tp}/${b.tp + b.fn})</span></span></div>
+            <div class="row"><span>Alarms on clean sample days</span><span>${f(bfa)} <span class="mute">(${b.fp}/${b.fp + b.tn})</span></span></div></div>`;
+    }
+    html += '</div>';
+    if (w.basins) {
+        const f3 = v => v == null ? '<span class="mute">—</span>' : Number(v).toFixed(3);
+        html += `<div class="subhead">${ic('gauge')} Stage 1 — discharge model by basin, ${fmtRange(w.start, w.end)}</div><table class="tbl"><tr><th>Model</th><th>Rain source</th><th class="num">Days</th><th class="num">Discharge days</th><th class="num">PR-AUC</th><th class="num">ROC-AUC</th><th class="num">Brier</th></tr>`;
+        for (const key of ['westside', 'north_shore', 'central', 'southeast']) {
+            const b = w.basins[key]; if (!b) continue;
+            const rs = ((sc.basins || {})[key] || {}).rain_source || '';
+            html += `<tr><td>${esc(BASIN_META[key].name)}</td><td class="mute">${esc(rs === 'avg' ? 'Downtown + Oceanside mean' : rs)}</td><td class="num">${b.n_days}</td><td class="num">${b.n_events}</td><td class="num">${f3(b.pr_auc)}</td><td class="num">${f3(b.roc_auc)}</td><td class="num">${b.brier == null ? '<span class="mute">—</span>' : Number(b.brier).toFixed(4)}</td></tr>`;
+        }
+        html += '</table>';
+        if (Object.values(w.basins).some(b => b.n_days && b.pr_auc == null)) html += `<div class="mute" style="font-size:.8em;margin-top:6px">PR-AUC and ROC-AUC need at least one discharge day and one quiet day in the window.</div>`;
+    }
+    return html + '</div>';
+}
+
+async function loadScoreWindow() {
+    if (!current || current.mode !== 'check') return;
+    const el = document.getElementById('scoreWindow');
+    if (el) el.style.opacity = '.5';
+    const sc = await getJSON('/forecast/api/scorecard?date=' + current.target + scoreRangeQuery());
+    if (sc.error) { if (el) el.style.opacity = ''; return; }
+    current.scorecard = sc;
+    const fresh = document.getElementById('scoreWindow');
+    if (fresh) fresh.outerHTML = renderScoreWindow(sc);
+}
+function onScorePreset(v) {
+    if (v === 'custom') { document.getElementById('scCustom').style.display = 'inline-flex'; return; }
+    const sc = current.scorecard || {};
+    let from, to;
+    if (v === 'holdout') { from = sc.holdout_start; to = sc.span[1]; }
+    else if (v === 'all') { from = sc.span[0]; to = sc.span[1]; }
+    else { const s = (sc.seasons || []).find(s => 'season:' + s.season === v); if (!s) return; from = s.start; to = s.end; }
+    scoreRange = { preset: v, from, to };
+    loadScoreWindow();
+}
+function applyScoreCustom() {
+    const from = document.getElementById('scFrom').value, to = document.getElementById('scTo').value;
+    if (!from || !to) return;
+    scoreRange = { preset: 'custom', from, to };
+    loadScoreWindow();
+}
+function resetScoreRange() { scoreRange = null; loadScoreWindow(); }
 
 // ─── boot ───────────────────────────────────────────────────────────────────
 loadData();

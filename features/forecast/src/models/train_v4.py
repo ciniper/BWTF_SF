@@ -68,6 +68,7 @@ ARCHIVE_START, ARCHIVE_END = pd.Timestamp("2016-03-19"), pd.Timestamp("2017-01-1
 ARCHIVE_MIN_RECALL = 0.75   # feed must have shown ≥75% of CIWQS Bayside event-days
 
 from groups import BASIN_KEYS, GROUPS_BY_BASIN, SITE_GROUPS, ZONE_GROUPS  # noqa: E402  (shared with serving)
+from scorecard import zone_confusion  # noqa: E402  (shared with serving)
 
 # Which ACIS gauge sees each basin's rain (both are in data/raw/historical_rain.csv)
 LOCAL_GAUGE = {"Westside": "SF Oceanside", "North Shore": "SF Downtown",
@@ -486,23 +487,9 @@ def build_scorecard(frames: dict, chosen: dict, finals: dict, holdout_models: di
                      "rain_by_gauge": {src: round(float(frames[src].iloc[i]["precip_avg"]), 3) for src in RAIN_SOURCES if src != "avg"},
                      "citywide_p": round(float(cw[i]), 3), "basins": basins, "groups": groups, "zones": zones})
 
-    # zone confusion on the holdout window, model = holdout-fit
-    confusion = {}
-    for zk in ZONE_GROUPS:
-        confusion[zk] = {}
-        for thr in (0.10, 0.25, 0.50):
-            c_d = {"tp": 0, "fp": 0, "fn": 0, "tn": 0}
-            c_b = {"tp": 0, "fp": 0, "fn": 0, "tn": 0}
-            for day in days:
-                z = day["zones"][zk]
-                if z["risk_h"] is None:
-                    continue
-                pred = z["risk_h"] >= thr
-                if z["discharge"] is not None:
-                    c_d["tp" if pred and z["discharge"] else "fp" if pred else "fn" if z["discharge"] else "tn"] += 1
-                if z["elevated"] is not None:
-                    c_b["tp" if pred and z["elevated"] else "fp" if pred else "fn" if z["elevated"] else "tn"] += 1
-            confusion[zk][str(thr)] = {"vs_discharge_posting": c_d, "vs_bacteria_elevated": c_b}
+    # zone confusion on the holdout window, model = holdout-fit — the same
+    # function serving uses to time-box the scorecard (src/models/scorecard.py)
+    confusion = zone_confusion(days, list(ZONE_GROUPS), holdout_only=True)
 
     return {"trained_at": datetime.now().isoformat(), "holdout_start": str(HOLDOUT_START.date()),
             "span": [days[0]["date"], days[-1]["date"]],

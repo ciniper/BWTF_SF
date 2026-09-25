@@ -1,9 +1,10 @@
 """Discharge Ledger — every reported combined-sewer discharge into SF waters.
 
 Public read-only page over the ground-truth CSD event dataset
-(``features/forecast/data/csd/sf_csd_events.csv`` — 1,007 events, Oct 2016 –
-Oct 2025, extracted from SFPUC's monthly Self-Monitoring Reports on CIWQS; see
-NOTES.md there for schema, provenance, and gaps). Unlike the Site Report Card
+(``features/forecast/data/csd/sf_csd_events.csv`` — per-event records from Oct
+2016 on, extracted from SFPUC's monthly Self-Monitoring Reports on CIWQS and
+re-harvested quarterly; see NOTES.md there for schema, provenance, and gaps).
+Unlike the Site Report Card
 (bacteria *samples*) or the CSO Event Timeline (our real-time *flags*), this is
 the official record of what was actually discharged: outfall, start, duration,
 and volume in million gallons.
@@ -11,9 +12,10 @@ and volume in million gallons.
 Coverage caveats the page must surface (from NOTES.md):
   * Bayside per-event data begins Oct 2016; **Oceanside/Westside begins
     Jan 2018** — citywide totals for 2016–2017 exclude the Pacific side.
-  * The record ends Oct 2025 (later SMR attachments not yet public on CIWQS).
+  * The record ends at the last month in the coverage grid, and months SFPUC
+    hasn't published are holes — both come from ``_coverage()``, not literals.
 
-The CSV is a static repo file (refreshed ~yearly by re-running
+The CSV is a static repo file (refreshed ~quarterly by re-running
 ``src/collectors/csd_ciwqs/``), so it's loaded once per process and the full
 compact event list ships to the client (~90 KB) — all filtering/aggregation is
 client-side and instant. Serverless-safe: no threads, no external calls.
@@ -25,6 +27,7 @@ from __future__ import annotations
 
 import csv
 import json
+from datetime import datetime
 from pathlib import Path
 
 from flask import render_template
@@ -40,6 +43,44 @@ COLUMNS = ["event_date", "facility", "outfall_id", "outfall_name",
            "receiving_water", "duration_min", "volume_MG"]
 
 _payload_cache: dict | None = None
+
+_COVERAGE_CSV = _CSV.parent / "sf_csd_monthly_coverage.csv"
+_COVERED = {"events_parsed", "table_present_zero_events", "no_table_stated_no_discharge"}
+# Where the modern per-event format starts (NOTES.md): the grid also carries
+# legacy-era months, which the events CSV does not hold.
+_MODERN_FROM = {"Bayside": (2016, 10), "Oceanside": (2018, 1)}
+
+
+def _coverage() -> dict:
+    """Span and holes of the per-event record, read from the monthly coverage
+    grid so a CIWQS refresh moves the ledger's caveats by itself."""
+    months: dict[str, set[tuple[int, int]]] = {"Bayside": set(), "Oceanside": set()}
+    with open(_COVERAGE_CSV, newline="") as fh:
+        for r in csv.DictReader(fh):
+            if r["status"] in _COVERED:
+                fac = "Oceanside" if r["facility"].startswith("Oceanside") else "Bayside"
+                months[fac].add((int(r["year"]), int(r["month"])))
+    through = max(m for s in months.values() for m in s)
+    holes: dict[str, list[str]] = {}
+    for fac, s in months.items():
+        cur, miss = _MODERN_FROM[fac], []
+        while cur <= through:
+            if cur not in s:
+                miss.append(f"{cur[0]}-{cur[1]:02d}")
+            cur = (cur[0] + (cur[1] == 12), cur[1] % 12 + 1)
+        holes[fac] = miss
+
+    def label(ym: tuple[int, int]) -> str:
+        return datetime(ym[0], ym[1], 1).strftime("%b %Y")
+
+    note = ("Oceanside (Pacific side) per-event records begin Jan 2018 — citywide totals "
+            "for 2016–2017 exclude it.")
+    hole_months = sorted({m for ms in holes.values() for m in ms})
+    if hole_months:
+        note += " No public report for " + ", ".join(label((int(m[:4]), int(m[5:]))) for m in hole_months) + "."
+    note += f" Records after {label(through)} aren't public on CIWQS yet."
+    return {"bayside_from": "2016-10", "oceanside_from": "2018-01",
+            "through": f"{through[0]}-{through[1]:02d}", "holes": holes, "note": note}
 
 
 def _load() -> dict:
@@ -70,14 +111,7 @@ def _load() -> dict:
         "columns": COLUMNS,
         "events": events,
         "locations": locations,
-        "coverage": {
-            "bayside_from": "2016-10",
-            "oceanside_from": "2018-01",
-            "through": "2025-10",
-            "note": ("Oceanside (Pacific side) per-event records begin Jan 2018 — "
-                     "citywide totals for 2016–2017 exclude it. Records after "
-                     "Oct 2025 aren't yet public on CIWQS."),
-        },
+        "coverage": _coverage(),
         "source": "SFPUC monthly Self-Monitoring Reports (NPDES CA0037664 & CA0037681) via CIWQS",
     }
     return _payload_cache

@@ -154,7 +154,7 @@
     </div>
     <div class="chart-wrap"><canvas id="chart"></canvas></div>
     <p style="font-size:12px;color:#8a949b;margin:8px 0 0">Years where a system filed no per-event reports are omitted (not zero):
-    Oceanside/Pacific outfalls have no data before 2018; 2016 and 2025 are partial years for everyone.</p>
+    Oceanside/Pacific outfalls have no data before 2018; hatched years are missing months for at least one facility (see the coverage note above).</p>
   </div>
 
   <div class="board">
@@ -220,7 +220,7 @@ function render() {
   const el = document.getElementById("years");
   el.className = "";
   el.innerHTML = Object.keys(years).sort().map(y => {
-    const partial = y === "2016" || y === "2025" || (y === "2017" && (!STATE.water || STATE.water === "Pacific Ocean"));
+    const partial = partialYear(y, STATE.water);
     return `<div class="yrrow"><span class="yl">${y}</span>
       <span class="track"><span class="vol${partial?" partial":""}" style="width:${Math.max(1,100*years[y].mg/maxMG)}%"></span></span>
       <span class="val">${MGshort(years[y].mg)} · ${years[y].n} events</span></div>`;
@@ -455,6 +455,22 @@ async function initRaw() {
     renderRaw();
   });
   renderRaw();
+}
+
+// A year is hatched when any of its months lacks a public report for a facility
+// the current filter includes: before that facility's first per-event month,
+// after the last harvested month, or one of the holes in between (all from the
+// server's coverage block, so a CIWQS refresh moves the hatching by itself).
+function partialYear(y, water) {
+  y = String(y);
+  const facs = !water ? ["Bayside", "Oceanside"] : water === "Pacific Ocean" ? ["Oceanside"] : ["Bayside"];
+  return facs.some(f => {
+    const from = f === "Oceanside" ? COV.oceanside_from : COV.bayside_from;
+    if (y < from.slice(0, 4) || y > COV.through.slice(0, 4)) return true;
+    if (y === from.slice(0, 4) && from.slice(5) !== "01") return true;
+    if (y === COV.through.slice(0, 4) && COV.through.slice(5) !== "12") return true;
+    return ((COV.holes || {})[f] || []).some(m => m.slice(0, 4) === y);
+  });
 }
 
 async function load() {

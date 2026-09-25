@@ -373,14 +373,17 @@ def handle_actuals(query, body):
 
 def handle_scorecard(query, body):
     """Model check: training-time hindcast vs labels around a date, plus the
-    season scorecard (train_v4 artifact)."""
+    scorecard over a window (train_v4 artifact). Optional ?from= / ?to=
+    (YYYY-MM-DD) time-box the scorecard; default = the date's rain season."""
     err = _require_engine()
     if err:
         return err
     date_str = (query.get("date") or [""])[0]
     if not date_str:
         return _json({"error": "Missing ?date=YYYY-MM-DD parameter"})
-    return _json(_engine.LIVE.get_scorecard(date_str))
+    start = (query.get("from") or [""])[0] or None
+    end = (query.get("to") or [""])[0] or None
+    return _json(_engine.LIVE.get_scorecard(date_str, start, end))
 
 
 GET_ROUTES = {

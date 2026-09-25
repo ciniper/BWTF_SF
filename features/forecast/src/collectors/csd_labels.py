@@ -16,9 +16,11 @@ Basin mapping (CSD report basins → forecast app basins):
     Central (Mission Creek)  → Central      (CSD-018..028; BAY#220 Mission Creek —
                                              own stage-1 model since v4, 2026-09)
 
-Coverage: Bayside Oct 2016 – Oct 2025, Oceanside Jan 2018 – Oct 2025.
-Use load_coverage() to distinguish verified-zero months from no-data months —
-days outside covered months must NOT be treated as negatives.
+Coverage: Bayside from Oct 2016, Oceanside from Jan 2018, through the last
+month in data/csd/sf_csd_monthly_coverage.csv (Jul 2026 after the 2026-09-24
+refresh; Nov–Dec 2025 are a hole). Use load_coverage() to distinguish
+verified-zero months from no-data months — days outside covered months must
+NOT be treated as negatives.
 """
 
 from pathlib import Path
@@ -95,12 +97,12 @@ def build_daily_labels() -> pd.DataFrame:
     ev = load_events()
     all_basins = list(APP_BASINS)
 
-    start = ev["event_date"].min().replace(day=1)
-    end = pd.Timestamp(2025, 10, 31)  # public CIWQS coverage ends Oct 2025
-    days = pd.DataFrame({"date": pd.date_range(start, end)})
-
     ocean_cov = covered_dates("Oceanside")
     bay_cov = covered_dates("Southeast")
+
+    start = ev["event_date"].min().replace(day=1)
+    end = max(ocean_cov.max(), bay_cov.max())  # last month in the CIWQS coverage grid (re-harvested quarterly)
+    days = pd.DataFrame({"date": pd.date_range(start, end)})
 
     for basin in all_basins:
         b = ev[ev["app_basin"] == basin]

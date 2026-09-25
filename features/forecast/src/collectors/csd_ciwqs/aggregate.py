@@ -5,6 +5,7 @@ res = json.load(open('parse_results.json'))
 MONTHS = {m: i+1 for i, m in enumerate(['January','February','March','April','May','June','July','August','September','October','November','December'])}
 BASIN_MAP = {
     'Oceanside Basin CSD Summary': ('Oceanside', 'Pacific Ocean'),
+    'Westside CSD Summary': ('Oceanside', 'Pacific Ocean'),   # header SFPUC's template uses from ~2026
     'North Shore Basin CSD Summary': ('North Shore', 'SF Bay - North Shore waterfront'),
     'Central Basin #1 CSD Summary': ('Central (Mission Creek)', 'Mission Creek / China Basin'),
     'Central Basin #2 CSD Summary': ('Central (Islais Creek)', 'Islais Creek'),

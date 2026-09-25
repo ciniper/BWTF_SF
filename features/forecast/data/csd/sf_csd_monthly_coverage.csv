@@ -153,6 +153,13 @@ Oceanside (CA0037681),2025,7,table_present_zero_events,0
 Oceanside (CA0037681),2025,8,table_present_zero_events,0
 Oceanside (CA0037681),2025,9,table_present_zero_events,0
 Oceanside (CA0037681),2025,10,events_parsed,2
+Oceanside (CA0037681),2026,1,events_parsed,6
+Oceanside (CA0037681),2026,2,events_parsed,8
+Oceanside (CA0037681),2026,3,table_present_zero_events,0
+Oceanside (CA0037681),2026,4,events_parsed,2
+Oceanside (CA0037681),2026,5,table_present_zero_events,0
+Oceanside (CA0037681),2026,6,table_present_zero_events,0
+Oceanside (CA0037681),2026,7,table_present_zero_events,0
 Southeast/Bayside (CA0037664),2013,1,no_table_stated_no_discharge,0
 Southeast/Bayside (CA0037664),2013,2,no_event_table_found,0
 Southeast/Bayside (CA0037664),2013,3,no_event_table_found,0
@@ -307,3 +314,10 @@ Southeast/Bayside (CA0037664),2025,7,table_present_zero_events,0
 Southeast/Bayside (CA0037664),2025,8,table_present_zero_events,0
 Southeast/Bayside (CA0037664),2025,9,table_present_zero_events,0
 Southeast/Bayside (CA0037664),2025,10,events_parsed,2
+Southeast/Bayside (CA0037664),2026,1,events_parsed,7
+Southeast/Bayside (CA0037664),2026,2,table_present_zero_events,0
+Southeast/Bayside (CA0037664),2026,3,table_present_zero_events,0
+Southeast/Bayside (CA0037664),2026,4,events_parsed,4
+Southeast/Bayside (CA0037664),2026,5,table_present_zero_events,0
+Southeast/Bayside (CA0037664),2026,6,table_present_zero_events,0
+Southeast/Bayside (CA0037664),2026,7,table_present_zero_events,0

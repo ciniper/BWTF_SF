@@ -69,6 +69,7 @@ from src.models.impact import impact_fraction as _impact_fraction  # noqa: E402
 from src.models.impact import smooth_table as _smooth_table  # noqa: E402
 from src.models.rain_features import add_daily_features as _add_daily_features  # noqa: E402
 from src.models.rain_features import hourly_intensity as _hourly_intensity  # noqa: E402
+from src.models import scorecard as _sc  # noqa: E402  (one rule for the model-check scorecard, shared with train_v4)
 
 # ─── Data source URLs ────────────────────────────────────────────────────────
 
@@ -756,10 +757,12 @@ class LiveData:
     _CSD_DIR = Path(__file__).parent / "data" / "csd"
     _POOBOT_DIR = Path(__file__).parent / "data" / "poobot"
     DATASF_FLOOR = "2020-07-27"   # earliest DataSF bacteria sample
+    WATCHER_SINCE = "2026-08-20"  # pg_cron watcher has logged real SFPUC postings / CSO flags since
 
     def _events_table(self) -> pd.DataFrame:
         """Reported discharges with the beaches they post (via the outfall
-        registry): CIWQS self-monitoring events (Oct 2016 – Oct 2025) plus
+        registry): CIWQS self-monitoring events (Oct 2016 → the last month in
+        the coverage grid; re-harvested quarterly) plus
         SFPUC feed onsets from the 2016-17 Poo Bot archive. Cached."""
         if getattr(self, "_events_cache", None) is not None:
             return self._events_cache
@@ -910,6 +913,7 @@ class LiveData:
         postings = self._alert_log_transitions(start, end) if str(end) >= "2026-08-01" else []
         samples = self._samples_window(start, end)
         cov = self._coverage()
+        cov_end = {k: f"{max(v)[0]}-{max(v)[1]:02d}" if v else None for k, v in cov.items()}
 
         days = {}
         for d in dates:
@@ -929,7 +933,7 @@ class LiveData:
             smp = [x for x in samples if x["date"] == key]
             ocean_cov = (d.year, d.month) in cov["Oceanside"]
             bay_cov = (d.year, d.month) in cov["Southeast"]
-            watcher_live = key >= "2026-08-20"
+            watcher_live = key >= self.WATCHER_SINCE
             zones = {}
             for zk, z in ZONES.items():
                 covered = (ocean_cov if zk in ("ocean", "baker_china") else bay_cov) or watcher_live
@@ -948,9 +952,14 @@ class LiveData:
                              "bad": (True if (discharge or elevated or z_posts) else (False if (discharge is False and (z_smp or not watcher_live)) else None))}
             days[key] = {"date": key, "rain": rain, "discharges": dis, "postings": posts, "samples": smp, "zones": zones,
                          "coverage": {"oceanside": ocean_cov, "bayside": bay_cov, "watcher": watcher_live}}
+        def mon(ym):
+            return datetime.strptime(ym, "%Y-%m").strftime("%b %Y") if ym else "?"
         return {"target_date": date_str, "days": days,
+                "coverage_end": {"oceanside": cov_end["Oceanside"], "bayside": cov_end["Southeast"]},
+                "watcher_since": self.WATCHER_SINCE,
                 "sources": {"rain": "NOAA daily gauges (Downtown 047772, Oceanside 047767) via ACIS",
-                            "discharges": "SFPUC CIWQS self-monitoring reports (Oct 2016 – Oct 2025); SFPUC feed archive (Mar 2016 – Jan 2017); BWTF watcher (Aug 2026 →)",
+                            "discharges": f"SFPUC CIWQS self-monitoring reports (Oct 2016 – {mon(cov_end['Southeast'])}); "
+                                          f"SFPUC feed archive (Mar 2016 – Jan 2017); BWTF watcher ({mon(self.WATCHER_SINCE[:7])} →)",
                             "bacteria": "DataSF beach samples (Jul 2020 →); SFPUC feed archive (Dec 2015 – Jan 2017)"}}
 
     def _scorecard(self) -> dict:
@@ -966,30 +975,64 @@ class LiveData:
                 self._scorecard_cache = sc
         return self._scorecard_cache
 
-    def get_scorecard(self, date_str: str) -> dict:
+    def get_scorecard(self, date_str: str, start: str | None = None, end: str | None = None) -> dict:
         """Model check: the training-time hindcast (final model and the
         holdout-fit model) next to the labels, for −2 … +5 days around a date,
-        plus the season-level scorecard."""
+        plus a scorecard over a window of the hindcast (``window``).
+
+        The window is the explicit ``start``/``end`` when given (clamped to
+        the artifact span), else the rain season the date falls in, else —
+        for dates outside the artifact — the whole holdout. Days the holdout
+        model saw are scored with it; earlier days fall back to the final
+        model's in-sample probability and the response says so
+        (``window.holdout_only``)."""
         try:
             target = datetime.strptime(date_str, "%Y-%m-%d").date()
         except ValueError:
             return {"error": f"Invalid date: {date_str}"}
+        for v in (start, end):
+            if v:
+                try:
+                    datetime.strptime(v, "%Y-%m-%d")
+                except ValueError:
+                    return {"error": f"Invalid date: {v}"}
         sc = self._scorecard()
         if not sc:
             return {"error": "scorecard artifact missing (run train_v4.py)"}
-        window = {}
+        around = {}
         for i in range(-2, 6):
             k = str(target + timedelta(days=i))
             if k in sc["_by_date"]:
-                window[k] = sc["_by_date"][k]
+                around[k] = sc["_by_date"][k]
+
+        span = sc.get("span") or [sc["days"][0]["date"], sc["days"][-1]["date"]]
+        holdout_start = sc.get("holdout_start")
+        if start or end:
+            preset = "custom"
+            lo, hi = _sc.clamp_window(start, end, span)
+        elif span[0] <= date_str <= span[1]:
+            preset = "season"
+            lo, hi = _sc.clamp_window(*_sc.season_bounds(_sc.season_of(date_str)), span)
+        else:
+            preset = "holdout"
+            lo, hi = _sc.clamp_window(holdout_start, None, span)
+        zone_keys = list(ZONES)
+        days = sc["days"]
+        summary = _sc.window_summary(days, zone_keys, lo, hi)
+        window = {"preset": preset, "season": _sc.season_of(lo) if preset == "season" else None,
+                  "holdout_only": summary["n_insample"] == 0, **summary, "start": lo, "end": hi,
+                  "zone_confusion": _sc.zone_confusion(days, zone_keys, lo, hi, holdout_only=False),
+                  "basins": _sc.basin_metrics(days, start=lo, end=hi)}
+
         eval_path = MODEL_DIR / "eval_report.json"
         ev = json.loads(eval_path.read_text()) if eval_path.exists() else {}
         targets = {k: {"n_events": t.get("n_events"), "holdout": t.get("holdout"), "rain_source": t.get("rain_source")}
                    for k, t in ev.get("targets", {}).items()}
-        return {"target_date": date_str, "in_span": bool(window), "span": sc.get("span"),
-                "holdout_start": sc.get("holdout_start"), "trained_at": sc.get("trained_at"),
+        return {"target_date": date_str, "in_span": bool(around), "span": span,
+                "holdout_start": holdout_start, "trained_at": sc.get("trained_at"),
                 "basins": sc.get("basins"), "zones": sc.get("zones"), "groups": sc.get("groups"),
-                "days": window, "zone_confusion_holdout": sc.get("zone_confusion_holdout"),
+                "days": around, "zone_confusion_holdout": sc.get("zone_confusion_holdout"),
+                "window": window, "seasons": _sc.seasons_in(span, holdout_start),
                 "targets": targets, "backtest": ev.get("backtest")}
 
     def get_bacteria_ground_truth(self, date_str: str) -> dict:

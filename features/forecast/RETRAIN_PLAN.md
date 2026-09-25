@@ -34,7 +34,8 @@ housekeeping).
 
 Until now the models trained on a proxy label: "3+ bacteria stations elevated
 across 2+ basins" from weekly beach samples. We now have SFPUC's own per-event
-discharge records (1,007 events, Oct 2016 – Oct 2025) extracted from monthly
+discharge records (1,007 events, Oct 2016 – Oct 2025 at v4 training time; 1,034
+through Jul 2026 after the 2026-09-24 refresh, Nov–Dec 2025 missing) extracted from monthly
 self-monitoring reports on CIWQS (see `data/csd/NOTES.md`).
 
 Measured against ground truth on the 637 overlapping sample days
