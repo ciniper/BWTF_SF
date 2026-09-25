@@ -982,10 +982,12 @@ class LiveData:
 
         The window is the explicit ``start``/``end`` when given (clamped to
         the artifact span), else the rain season the date falls in, else —
-        for dates outside the artifact — the whole holdout. Days the holdout
-        model saw are scored with it; earlier days fall back to the final
-        model's in-sample probability and the response says so
-        (``window.holdout_only``)."""
+        for dates outside the artifact — the post-training stretch (days the
+        served models never saw, appended by ``train_v4.py --rescore``) or,
+        failing that, the whole holdout. Each day is scored with the holdout-
+        fit probability where one exists, else the served model's; the
+        response grades the mix (``window.grade``: holdout / post_training /
+        out_of_sample / in_sample / mixed)."""
         try:
             target = datetime.strptime(date_str, "%Y-%m-%d").date()
         except ValueError:
@@ -1007,20 +1009,25 @@ class LiveData:
 
         span = sc.get("span") or [sc["days"][0]["date"], sc["days"][-1]["date"]]
         holdout_start = sc.get("holdout_start")
+        trained_through = sc.get("trained_through") or span[1]
+        post_start = _sc._next_day(trained_through) if trained_through < span[1] else None
         if start or end:
             preset = "custom"
             lo, hi = _sc.clamp_window(start, end, span)
         elif span[0] <= date_str <= span[1]:
             preset = "season"
             lo, hi = _sc.clamp_window(*_sc.season_bounds(_sc.season_of(date_str)), span)
+        elif post_start:
+            preset = "post"
+            lo, hi = post_start, span[1]
         else:
             preset = "holdout"
-            lo, hi = _sc.clamp_window(holdout_start, None, span)
+            lo, hi = _sc.clamp_window(holdout_start, trained_through, span)
         zone_keys = list(ZONES)
         days = sc["days"]
         summary = _sc.window_summary(days, zone_keys, lo, hi)
         window = {"preset": preset, "season": _sc.season_of(lo) if preset == "season" else None,
-                  "holdout_only": summary["n_insample"] == 0, **summary, "start": lo, "end": hi,
+                  "holdout_only": summary["grade"] == "holdout", **summary, "start": lo, "end": hi,
                   "zone_confusion": _sc.zone_confusion(days, zone_keys, lo, hi, holdout_only=False),
                   "basins": _sc.basin_metrics(days, start=lo, end=hi)}
 
@@ -1030,9 +1037,10 @@ class LiveData:
                    for k, t in ev.get("targets", {}).items()}
         return {"target_date": date_str, "in_span": bool(around), "span": span,
                 "holdout_start": holdout_start, "trained_at": sc.get("trained_at"),
+                "trained_through": trained_through, "post_start": post_start, "rescored_at": sc.get("rescored_at"),
                 "basins": sc.get("basins"), "zones": sc.get("zones"), "groups": sc.get("groups"),
                 "days": around, "zone_confusion_holdout": sc.get("zone_confusion_holdout"),
-                "window": window, "seasons": _sc.seasons_in(span, holdout_start),
+                "window": window, "seasons": _sc.seasons_in(span, holdout_start, trained_through),
                 "targets": targets, "backtest": ev.get("backtest")}
 
     def get_bacteria_ground_truth(self, date_str: str) -> dict:

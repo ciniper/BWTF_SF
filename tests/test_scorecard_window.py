@@ -1,14 +1,16 @@
 """Model-check scorecard windows (v4, 2026-09).
 
 One rule for the scorecard numbers: features/forecast/src/models/scorecard.py,
-used by train_v4 (the season block stored in scorecard.json.gz) and by
-live_dashboard (the time-boxed block the Model check page requests). Pins:
+used by train_v4 (the season block stored in scorecard.json.gz, and --rescore's
+post-training days) and by live_dashboard (the time-boxed block the Model
+check page requests). Pins:
 
 1. the artifact's stored season block is exactly what the shared function
    recomputes over the holdout;
-2. windows behave — seasons, clamping to the artifact span, in-sample
-   fallback flagged, invalid dates rejected;
-3. the served holdout window reproduces the eval report's per-basin metrics.
+2. windows behave — seasons, clamping to the artifact span, the
+   holdout / post-training / in-sample grading, invalid dates rejected;
+3. the served holdout window reproduces the eval report's per-basin metrics;
+4. post-training days (if the artifact has been rescored) are what they claim.
 
     venv/bin/python tests/test_scorecard_window.py
 """
@@ -35,10 +37,13 @@ def _artifact() -> dict:
         return json.load(f)
 
 
-def _day(date, risk, risk_h, discharge, elevated, y=None):
-    return {"date": date, "season": S.season_of(date),
-            "zones": {"z": {"risk": risk, "risk_h": risk_h, "discharge": discharge, "elevated": elevated}},
-            "basins": {"b": {"p": risk, "ph": risk_h, "y": y}}}
+def _day(date, risk, risk_h, discharge, elevated, y=None, post=False):
+    d = {"date": date, "season": S.season_of(date),
+         "zones": {"z": {"risk": risk, "risk_h": risk_h, "discharge": discharge, "elevated": elevated}},
+         "basins": {"b": {"p": risk, "ph": risk_h, "y": y}}}
+    if post:
+        d["post_training"] = True
+    return d
 
 
 # ── seasons / windows ──────────────────────────────────────────────────────
@@ -51,23 +56,42 @@ def test_seasons_are_july_to_june_named_for_the_july_year():
     assert S.season_label(2024) == "2024–25"
 
 
-def test_seasons_in_span_newest_first_with_holdout_flag():
+def test_seasons_in_span_newest_first_with_grades_and_clips():
     ss = S.seasons_in(SPAN, "2023-07-01")
     assert [s["season"] for s in ss] == list(range(2025, 2014, -1))
-    assert ss[0] == {"season": 2025, "label": "2025–26", "start": "2025-07-01", "end": "2025-10-31", "holdout": "full"}
-    assert ss[-1]["start"] == "2016-03-01" and ss[-1]["holdout"] == "none"
+    top = ss[0]
+    assert (top["season"], top["label"], top["start"], top["end"]) == (2025, "2025–26", "2025-07-01", "2025-10-31")
+    assert (top["holdout"], top["post"], top["clip"]) == ("full", "none", "through Oct 2025")
+    assert ss[-1]["start"] == "2016-03-01" and ss[-1]["clip"] == "from Mar 2016" and ss[-1]["holdout"] == "none"
+    assert ss[2]["clip"] is None                                        # 2023–24 is whole
     flags = {s["season"]: s["holdout"] for s in ss}
     assert flags[2023] == "full" and flags[2022] == "none"
     assert {s["season"]: s["holdout"] for s in S.seasons_in(SPAN, "2024-01-01")}[2023] == "partial"
-    assert all(s["holdout"] == "none" for s in S.seasons_in(SPAN, None))
+    assert all(s["holdout"] == "none" and s["post"] == "none" for s in S.seasons_in(SPAN, None))
+    # a rescored artifact: trained through Oct 2025, days appended to Aug 2026
+    ext = S.seasons_in(("2016-03-01", "2026-08-27"), "2023-07-01", "2025-10-31")
+    by = {s["season"]: s for s in ext}
+    assert (by[2026]["holdout"], by[2026]["post"], by[2026]["clip"]) == ("none", "full", "through Aug 2026")
+    assert (by[2025]["holdout"], by[2025]["post"], by[2025]["clip"]) == ("partial", "partial", None)
+    assert (by[2024]["holdout"], by[2024]["post"]) == ("full", "none")
+    assert (by[2022]["holdout"], by[2022]["post"]) == ("none", "none")
 
 
 def test_clamp_window():
     assert S.clamp_window(None, None, SPAN) == SPAN
     assert S.clamp_window("2010-01-01", "2030-01-01", SPAN) == SPAN
     assert S.clamp_window("2024-06-01", "2024-01-01", SPAN) == ("2024-01-01", "2024-06-01")   # reversed → swapped
-    lo, hi = S.clamp_window("2025-12-01", "2026-02-01", SPAN)
+    lo, hi = S.clamp_window("2030-01-01", "2030-02-01", SPAN)
     assert lo > hi                                                                             # entirely outside → empty
+
+
+def test_grade_words():
+    assert S.grade(0, 0, 0) == "empty"
+    assert S.grade(5, 0, 0) == "holdout"
+    assert S.grade(0, 5, 0) == "post_training"
+    assert S.grade(5, 5, 0) == "out_of_sample"
+    assert S.grade(0, 0, 5) == "in_sample"
+    assert S.grade(5, 0, 5) == "mixed" and S.grade(0, 5, 5) == "mixed"
 
 
 # ── the shared functions on synthetic days ─────────────────────────────────
@@ -80,12 +104,13 @@ def test_zone_confusion_counts_only_known_labels_and_falls_back_in_sample():
         _day("2024-01-03", 0.1, 0.1, True, False),    # fn, tn
         _day("2024-01-04", 0.1, 0.1, False, None),    # tn
         _day("2024-01-05", 0.9, 0.9, None, None),     # labels unknown → counts nowhere
+        _day("2026-01-05", 0.9, None, True, None, post=True),   # post-training: served model's risk counts
     ]
     c = S.zone_confusion(days, ["z"], holdout_only=True)["z"]["0.25"]
     assert c["vs_discharge_posting"] == {"tp": 1, "fp": 1, "fn": 1, "tn": 1}
     assert c["vs_bacteria_elevated"] == {"tp": 1, "fp": 0, "fn": 0, "tn": 1}
     c2 = S.zone_confusion(days, ["z"], holdout_only=False)["z"]["0.25"]["vs_discharge_posting"]
-    assert c2 == {"tp": 2, "fp": 1, "fn": 1, "tn": 1}          # the 2023 day now scored with its in-sample risk
+    assert c2 == {"tp": 3, "fp": 1, "fn": 1, "tn": 1}          # 2023 (in-sample) and 2026 (post) days scored with `risk`
     c3 = S.zone_confusion(days, ["z"], start="2024-01-03", end="2024-01-04")["z"]["0.25"]["vs_discharge_posting"]
     assert c3 == {"tp": 0, "fp": 0, "fn": 1, "tn": 1}
     assert set(S.zone_confusion(days, ["z"])["z"]) == {"0.1", "0.25", "0.5"}
@@ -93,21 +118,28 @@ def test_zone_confusion_counts_only_known_labels_and_falls_back_in_sample():
 
 def test_basin_metrics_need_both_classes_for_auc():
     days = [_day("2024-01-01", .9, .9, True, None, y=1), _day("2024-01-02", .2, .2, False, None, y=0),
-            _day("2024-01-03", .8, .1, True, None, y=1), _day("2024-01-04", .1, .1, None, None, y=None)]
+            _day("2024-01-03", .8, .1, True, None, y=1), _day("2024-01-04", .1, .1, None, None, y=None),
+            _day("2026-01-05", .8, None, True, None, y=1, post=True)]
     m = S.basin_metrics(days, ["b"])["b"]
-    assert (m["n_days"], m["n_events"], m["n_holdout"]) == (3, 2, 3)
+    assert (m["n_days"], m["n_events"], m["n_holdout"], m["n_post"]) == (4, 3, 3, 1)
     assert 0 < m["pr_auc"] <= 1 and 0 <= m["roc_auc"] <= 1 and m["brier"] is not None
     one = S.basin_metrics(days, ["b"], start="2024-01-01", end="2024-01-01")["b"]
     assert one["n_days"] == 1 and one["pr_auc"] is None and one["roc_auc"] is None and one["brier"] is not None
     assert S.basin_metrics(days, ["b"], start="2030-01-01")["b"] == {
-        "n_days": 0, "n_events": 0, "n_holdout": 0, "pr_auc": None, "roc_auc": None, "brier": None}
+        "n_days": 0, "n_events": 0, "n_holdout": 0, "n_post": 0, "pr_auc": None, "roc_auc": None, "brier": None}
 
 
-def test_window_summary():
-    days = [_day("2023-01-01", .9, None, None, None), _day("2024-01-01", .9, .9, True, None), _day("2024-01-02", .2, .2, False, True)]
-    assert S.window_summary(days, ["z"]) == {"n_days": 3, "n_holdout": 2, "n_insample": 1,
-                                             "n_discharge_known": 2, "n_discharge_days": 1, "n_sampled_days": 1}
-    assert S.window_summary(days, ["z"], start="2024-01-02")["n_days"] == 1
+def test_window_summary_grades_the_mix():
+    days = [_day("2023-01-01", .9, None, None, None), _day("2024-01-01", .9, .9, True, None),
+            _day("2024-01-02", .2, .2, False, True), _day("2026-01-05", .9, None, True, None, post=True)]
+    s = S.window_summary(days, ["z"])
+    assert s == {"n_days": 4, "n_holdout": 2, "n_post": 1, "n_insample": 1, "grade": "mixed",
+                 "n_discharge_known": 3, "n_discharge_days": 2, "n_sampled_days": 1}
+    assert S.window_summary(days, ["z"], start="2024-01-01", end="2024-12-31")["grade"] == "holdout"
+    assert S.window_summary(days, ["z"], start="2024-01-01")["grade"] == "out_of_sample"
+    assert S.window_summary(days, ["z"], start="2026-01-01")["grade"] == "post_training"
+    assert S.window_summary(days, ["z"], end="2023-12-31")["grade"] == "in_sample"
+    assert S.window_summary(days, ["z"], start="2030-01-01")["grade"] == "empty"
 
 
 # ── against the real artifact and the served endpoint ──────────────────────
@@ -115,32 +147,62 @@ def test_window_summary():
 def test_artifact_season_block_is_the_shared_function():
     sc = _artifact()
     zones = list(sc["zone_confusion_holdout"])
+    trained_through = sc.get("trained_through") or sc["span"][1]
     assert S.zone_confusion(sc["days"], zones, holdout_only=True) == sc["zone_confusion_holdout"]
     # the holdout window with fallback allowed is the same block: every holdout day has a holdout probability
-    assert S.zone_confusion(sc["days"], zones, start=sc["holdout_start"], end=sc["span"][1],
+    assert S.zone_confusion(sc["days"], zones, start=sc["holdout_start"], end=trained_through,
                             holdout_only=False) == sc["zone_confusion_holdout"]
+
+
+def test_post_training_days_are_what_they_claim():
+    sc = _artifact()
+    trained_through = sc.get("trained_through") or sc["span"][1]
+    post = [d for d in sc["days"] if d.get("post_training")]
+    pre = [d for d in sc["days"] if not d.get("post_training")]
+    assert pre[-1]["date"] == trained_through, "trained_through must be the last non-post day"
+    if not post:
+        print("   (artifact not rescored yet — no post-training days to check)")
+        return
+    assert all(d["date"] > trained_through for d in post)
+    assert all(z["risk_h"] is None for d in post for z in d["zones"].values())
+    assert all(b["ph"] is None for d in post for b in d["basins"].values())
+    assert [d["date"] for d in sc["days"]] == sorted(d["date"] for d in sc["days"])
+    assert sc["span"][1] == post[-1]["date"]
+    zones = list(sc["zone_confusion_holdout"])
+    assert S.window_summary(sc["days"], zones, post[0]["date"], sc["span"][1])["grade"] == "post_training"
+    # the 2025-26 winter must be in there with real discharges
+    win = S.window_summary(sc["days"], zones, "2025-11-01", "2026-04-30")
+    assert win["n_discharge_days"] >= 8, win
 
 
 def test_served_windows():
     from features.forecast import live_dashboard as ld
     eng = ld.LiveData.__new__(ld.LiveData)          # no models needed for the scorecard
     sc = eng._scorecard()
+    trained_through = sc.get("trained_through") or sc["span"][1]
 
     # default = the rain season the date falls in
     r = eng.get_scorecard("2024-01-13")
     w = r["window"]
     assert (w["preset"], w["season"], w["start"], w["end"]) == ("season", 2023, "2023-07-01", "2024-06-30")
-    assert w["holdout_only"] and w["n_days"] == 366 and w["n_insample"] == 0
+    assert w["grade"] == "holdout" and w["holdout_only"] and w["n_days"] == 366 and w["n_insample"] == 0
     assert set(w["zone_confusion"]) == set(sc["zone_confusion_holdout"])
     assert set(w["basins"]) == {"westside", "north_shore", "central", "southeast"}
-    assert [s["season"] for s in r["seasons"]][:2] == [2025, 2024]
+    assert r["trained_through"] == trained_through
+    assert [s["season"] for s in r["seasons"]][:2] == [S.season_of(sc["span"][1]), S.season_of(sc["span"][1]) - 1]
 
-    # outside the artifact → the whole holdout = the stored season block = the eval report
-    r = eng.get_scorecard("2026-09-20")
+    # outside the artifact → the post-training stretch if there is one, else the whole holdout
+    r = eng.get_scorecard("2030-01-01")
     w = r["window"]
-    assert r["in_span"] is False and w["preset"] == "holdout"
-    assert (w["start"], w["end"]) == (sc["holdout_start"], sc["span"][1])
-    assert w["zone_confusion"] == sc["zone_confusion_holdout"]
+    assert r["in_span"] is False
+    if r["post_start"]:
+        assert w["preset"] == "post" and (w["start"], w["end"]) == (r["post_start"], sc["span"][1]) and w["grade"] == "post_training"
+    else:
+        assert w["preset"] == "holdout" and (w["start"], w["end"]) == (sc["holdout_start"], trained_through)
+
+    # the explicit holdout window = the stored season block = the eval report
+    w = eng.get_scorecard("2024-01-13", sc["holdout_start"], trained_through)["window"]
+    assert w["grade"] == "holdout" and w["zone_confusion"] == sc["zone_confusion_holdout"]
     ev = json.loads((MODEL_DIR / "eval_report.json").read_text())
     for key, b in w["basins"].items():
         h = ev["targets"][key]["holdout"]
@@ -152,10 +214,10 @@ def test_served_windows():
     w = eng.get_scorecard("2024-01-13", "2025-04-30", "2024-11-01")["window"]
     assert (w["preset"], w["start"], w["end"], w["n_days"]) == ("custom", "2024-11-01", "2025-04-30", 181)
     w = eng.get_scorecard("2019-02-14")["window"]
-    assert w["season"] == 2018 and w["holdout_only"] is False and w["n_holdout"] == 0
+    assert w["season"] == 2018 and w["grade"] == "in_sample" and w["n_holdout"] == 0
     w = eng.get_scorecard("2024-01-13", "2010-01-01", "2030-01-01")["window"]
     assert (w["start"], w["end"]) == tuple(sc["span"])
-    assert eng.get_scorecard("2024-01-13", "2025-12-01", "2026-02-01")["window"]["n_days"] == 0
+    assert eng.get_scorecard("2024-01-13", "2030-01-01", "2030-02-01")["window"]["grade"] == "empty"
     assert "error" in eng.get_scorecard("2024-01-13", "yesterday", None)
     assert "error" in eng.get_scorecard("not-a-date")
 

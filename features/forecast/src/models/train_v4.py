@@ -29,6 +29,12 @@ What changed from v3 (train_v2.py, promoted 2026-09-02):
 
 Run:  venv/bin/python features/forecast/src/models/train_v4.py
 Artifacts → data/models/v4/ (promote by copying into data/models/).
+
+Rescore (no retraining):  train_v4.py --rescore [--promote]
+Appends POST-TRAINING days to the served scorecard — the live models scored on
+every day after the artifact's end that the refreshed rain + CIWQS + bacteria
+inputs now cover. Run it after each quarterly CIWQS refresh so the Model check
+scorecard includes the latest winter.
 """
 from __future__ import annotations
 
@@ -185,11 +191,13 @@ def apply_archive_labels(df: pd.DataFrame, arch: dict, rain_avg: pd.Series) -> d
 
 # ── Dataset ─────────────────────────────────────────────────────────────────
 
-def build_dataset() -> tuple:
+def build_dataset(end: pd.Timestamp = TRAIN_END) -> tuple:
     """Returns ({rain_source: feature+label frame}, notes). Label columns are
-    identical across sources; only the rain features differ."""
+    identical across sources; only the rain features differ. `end` is the
+    training window's last day (TRAIN_END) or, for --rescore, the last day the
+    refreshed inputs cover."""
     labels = build_daily_labels()
-    days = pd.DataFrame({"date": pd.date_range(TRAIN_START, TRAIN_END)})
+    days = pd.DataFrame({"date": pd.date_range(TRAIN_START, end)})
     df = days.merge(labels, on="date", how="left")
     for basin in APP_BASINS:
         for col, fill in ((f"{basin}_csd", 0), (f"{basin}_volume_mg", 0.0), (f"{basin}_outfalls", 0), (f"{basin}_covered", 0)):
@@ -675,5 +683,101 @@ def main(promote: bool = False) -> dict:
     return report
 
 
+# ── Rescore: extend the scorecard with post-training days ───────────────────
+
+def _inputs_reach() -> dict:
+    """Last complete day of each refreshed input the frame builder reads."""
+    hourly = pd.read_csv(RAW_DIR / "hourly_rain_openmeteo.csv", parse_dates=["timestamp"])
+    hmax = hourly["timestamp"].max()
+    hourly_end = hmax.normalize() if hmax.hour == 23 else hmax.normalize() - pd.Timedelta(days=1)
+    daily = pd.read_csv(RAW_DIR / "historical_rain.csv", parse_dates=["date"]).dropna(subset=["precip_inches"])
+    both = daily.groupby("date")["rain_station_name"].nunique()
+    daily_end = both[both >= 2].index.max()
+    labels_end = build_daily_labels()["date"].max()
+    return {"hourly_rain": hourly_end, "daily_rain": daily_end, "labels": labels_end}
+
+
+def rescore(promote: bool = False, tolerance: float = 0.02) -> dict:
+    """Extend the served scorecard with POST-TRAINING days.
+
+    The served v4 models, exactly as deployed (data/models/*.pkl + impact
+    table), are scored on every day after the artifact's last day for which
+    rain features and labels now exist — data/raw and data/csd are refreshed
+    between trainings, the artifact is not. No model is refit. Existing days
+    are kept byte-identical; new days carry ``post_training: true`` and no
+    holdout probability (the holdout-fit siblings were never persisted, and a
+    day after training needs none: the live models never saw it, which is the
+    truest test there is).
+
+    Fidelity gate: the served models must reproduce the stored zone risks on
+    the artifact's own recent days to within `tolerance`; if they don't, some
+    input changed retroactively and we refuse to append.
+
+    Run:  venv/bin/python features/forecast/src/models/train_v4.py --rescore [--promote]
+    """
+    import gzip
+    served = SERVE_DIR / "scorecard.json.gz"
+    with gzip.open(served, "rt") as f:
+        sc = json.load(f)
+    last = pd.Timestamp(sc["span"][1])
+    trained_through = sc.get("trained_through") or sc["span"][1]
+    reach = _inputs_reach()
+    end = min(reach.values())
+    print(f"rescore: artifact ends {last.date()} (models trained through {trained_through}); inputs reach "
+          + ", ".join(f"{k} {v.date()}" for k, v in reach.items()) + f" → scoring through {end.date()}")
+    if end <= last:
+        print("nothing to add")
+        return sc
+
+    frames, notes = build_dataset(end=end)
+    finals, chosen, heads = {}, {}, {}
+    for basin in APP_BASINS:
+        key = BASIN_KEYS[basin]
+        with open(SERVE_DIR / f"{key}_model.pkl", "rb") as f:
+            m = pickle.load(f)
+        finals[key] = {"model": m["model"], "features": m["features"], "calibration_offset": m["calibration_offset"]}
+        chosen[basin] = m.get("rain_source", "avg")
+        vp = SERVE_DIR / f"{key}_volume.pkl"
+        if vp.exists():
+            with open(vp, "rb") as f:
+                heads[basin] = pickle.load(f)
+    with open(SERVE_DIR / "citywide_model.pkl", "rb") as f:
+        m = pickle.load(f)
+    finals["citywide"] = {"model": m["model"], "features": m["features"], "calibration_offset": m["calibration_offset"]}
+    chosen["citywide"] = "avg"
+    impact_raw = json.loads((SERVE_DIR / "impact_table.json").read_text())
+    fresh = build_scorecard(frames, chosen, finals, {}, heads, impact_raw, load_samples(),
+                            archive_tables(), notes["archive_used"], finals["citywide"]["features"])
+    by_date = {d["date"]: d for d in fresh["days"]}
+
+    tail = [d for d in sc["days"] if pd.Timestamp(d["date"]) > last - pd.Timedelta(days=120) and d["date"] in by_date]
+    worst = max((abs(by_date[d["date"]]["zones"][zk]["risk"] - d["zones"][zk]["risk"]) for d in tail for zk in d["zones"]), default=0.0)
+    print(f"fidelity: served models reproduce the stored zone risks on the artifact's last {len(tail)} days to within {worst:.4f}")
+    if worst > tolerance:
+        raise SystemExit(f"served models do not reproduce the artifact (worst {worst:.4f} > {tolerance}) — an input changed retroactively; refusing to append")
+
+    new_days = [{**d, "post_training": True} for d in fresh["days"] if d["date"] > sc["span"][1]]
+    sc["days"] = sc["days"] + new_days
+    sc["span"] = [sc["span"][0], new_days[-1]["date"]]
+    sc["trained_through"] = trained_through
+    sc["rescored_at"] = datetime.now().isoformat()
+    sc["rescore_inputs"] = {k: str(v.date()) for k, v in reach.items()}
+    n_dis = sum(1 for d in new_days if any(z["discharge"] for z in d["zones"].values()))
+    n_smp = sum(1 for d in new_days if any(z["elevated"] is not None for z in d["zones"].values()))
+    print(f"appended {len(new_days)} post-training days {new_days[0]['date']} → {new_days[-1]['date']}: "
+          f"{n_dis} with a discharge posting a beach, {n_smp} with samples")
+    V4_DIR.mkdir(parents=True, exist_ok=True)
+    with gzip.open(V4_DIR / "scorecard.json.gz", "wt") as f:
+        json.dump(sc, f, separators=(",", ":"), default=str)
+    print(f"artifact → {V4_DIR / 'scorecard.json.gz'}")
+    if promote:
+        shutil.copy2(V4_DIR / "scorecard.json.gz", served)
+        print(f"promoted → {served}")
+    return sc
+
+
 if __name__ == "__main__":
-    main(promote="--promote" in sys.argv)
+    if "--rescore" in sys.argv:
+        rescore(promote="--promote" in sys.argv)
+    else:
+        main(promote="--promote" in sys.argv)

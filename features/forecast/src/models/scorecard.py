@@ -17,7 +17,7 @@ against the artifact (``tests/test_scorecard_window.py``).
 """
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 THRESHOLDS = (0.10, 0.25, 0.50)
 BASIN_KEYS = ("westside", "north_shore", "central", "southeast")
@@ -40,22 +40,60 @@ def season_label(season: int) -> str:
     return f"{season}–{str(season + 1)[2:]}"
 
 
-def seasons_in(span: tuple[str, str] | list, holdout_start: str | None = None) -> list[dict]:
-    """Every season touching ``span`` (newest first) with its clamped bounds
-    and whether the holdout-fit model covers it fully, partly, or not at all."""
+def _mon(day: str) -> str:
+    return datetime.strptime(day, "%Y-%m-%d").strftime("%b %Y")
+
+
+def _next_day(day: str) -> str:
+    return str(datetime.strptime(day, "%Y-%m-%d").date() + timedelta(days=1))
+
+
+def _overlap(lo: str, hi: str, a: str | None, b: str | None) -> str:
+    """How much of [lo, hi] lies inside [a, b]: 'none' | 'partial' | 'full'."""
+    if a is None or b is None or hi < a or lo > b:
+        return "none"
+    return "full" if lo >= a and hi <= b else "partial"
+
+
+def seasons_in(span: tuple[str, str] | list, holdout_start: str | None = None,
+               trained_through: str | None = None) -> list[dict]:
+    """Every season touching ``span`` (newest first) with its clamped bounds and
+    what kind of probabilities it holds: ``holdout`` = share of the season the
+    holdout-fit model covers (holdout_start → trained_through), ``post`` =
+    share after training (served models on days they never saw), each
+    'none' | 'partial' | 'full'; the rest is in-sample. ``clip`` names the cut
+    when the artifact does not hold the whole season."""
     first, last = span
+    trained_through = trained_through or last
+    post_start = _next_day(trained_through) if trained_through < last else None
     out = []
     for s in range(season_of(last), season_of(first) - 1, -1):
-        lo, hi = season_bounds(s)
-        lo, hi = max(lo, first), min(hi, last)
-        if holdout_start is None or hi < holdout_start:
-            hold = "none"
-        elif lo >= holdout_start:
-            hold = "full"
-        else:
-            hold = "partial"
-        out.append({"season": s, "label": season_label(s), "start": lo, "end": hi, "holdout": hold})
+        slo, shi = season_bounds(s)
+        lo, hi = max(slo, first), min(shi, last)
+        out.append({"season": s, "label": season_label(s), "start": lo, "end": hi,
+                    "holdout": _overlap(lo, hi, holdout_start, trained_through),
+                    "post": _overlap(lo, hi, post_start, last),
+                    "clip": f"from {_mon(lo)}" if lo > slo else f"through {_mon(hi)}" if hi < shi else None})
     return out
+
+
+def grade(n_holdout: int, n_post: int, n_insample: int) -> str:
+    """One word for what a window's probabilities are."""
+    if not (n_holdout or n_post or n_insample):
+        return "empty"
+    if n_insample:
+        return "in_sample" if not (n_holdout or n_post) else "mixed"
+    if n_holdout and n_post:
+        return "out_of_sample"
+    return "holdout" if n_holdout else "post_training"
+
+
+def day_kind(day: dict) -> str:
+    """'holdout' (has a holdout-fit probability) | 'post' (after training) | 'insample'."""
+    if day.get("post_training"):
+        return "post"
+    z = next(iter(day["zones"].values()), {}) if day.get("zones") else {}
+    return "holdout" if z.get("risk_h") is not None else "insample"
 
 
 # ── windows ────────────────────────────────────────────────────────────────
@@ -130,7 +168,7 @@ def basin_metrics(days: list[dict], basin_keys=BASIN_KEYS, start: str | None = N
     out = {}
     subset = window_days(days, start, end)
     for key in basin_keys:
-        y, p, n_hold = [], [], 0
+        y, p, n_hold, n_post = [], [], 0, 0
         for day in subset:
             b = (day.get("basins") or {}).get(key)
             if not b or b.get("y") is None:
@@ -141,7 +179,8 @@ def basin_metrics(days: list[dict], basin_keys=BASIN_KEYS, start: str | None = N
             y.append(int(b["y"]))
             p.append(float(prob))
             n_hold += b.get("ph") is not None
-        row = {"n_days": len(y), "n_events": int(sum(y)), "n_holdout": n_hold,
+            n_post += bool(day.get("post_training"))
+        row = {"n_days": len(y), "n_events": int(sum(y)), "n_holdout": n_hold, "n_post": n_post,
                "pr_auc": None, "roc_auc": None, "brier": None}
         if y and 0 < sum(y) < len(y):
             row["pr_auc"] = float(average_precision_score(y, p))
@@ -156,9 +195,12 @@ def basin_metrics(days: list[dict], basin_keys=BASIN_KEYS, start: str | None = N
 
 def window_summary(days: list[dict], zone_keys, start: str | None = None, end: str | None = None) -> dict:
     subset = window_days(days, start, end)
-    n_hold = sum(1 for d in subset if d["zones"] and next(iter(d["zones"].values())).get("risk_h") is not None)
+    kinds = [day_kind(d) for d in subset]
+    n_hold, n_post = kinds.count("holdout"), kinds.count("post")
+    n_in = len(subset) - n_hold - n_post
     dis = sum(1 for d in subset if any(d["zones"][zk]["discharge"] for zk in zone_keys if zk in d["zones"]))
     known = sum(1 for d in subset if any(d["zones"][zk]["discharge"] is not None for zk in zone_keys if zk in d["zones"]))
     sampled = sum(1 for d in subset if any(d["zones"][zk]["elevated"] is not None for zk in zone_keys if zk in d["zones"]))
-    return {"n_days": len(subset), "n_holdout": n_hold, "n_insample": len(subset) - n_hold,
+    return {"n_days": len(subset), "n_holdout": n_hold, "n_post": n_post, "n_insample": n_in,
+            "grade": grade(n_hold, n_post, n_in),
             "n_discharge_known": known, "n_discharge_days": dis, "n_sampled_days": sampled}

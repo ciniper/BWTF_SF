@@ -266,11 +266,14 @@ document.getElementById('datePicker').addEventListener('change', () => { if (cur
 
 async function getJSON(url) { const r = await fetch(url); return r.json(); }
 
+let loadSeq = 0;   // a quick mode/date change must not let an older, slower response render last
 async function loadData() {
     const banner = document.getElementById('riskBanner');
+    const seq = ++loadSeq;
     try {
         if (currentMode === 'live') {
             const data = await getJSON('/forecast/api/data');
+            if (seq !== loadSeq) return;
             if (data.error) throw new Error(data.error);
             renderLive(data);
         } else {
@@ -279,6 +282,7 @@ async function loadData() {
             document.getElementById('histLabel').innerHTML = ic('hourglass') + ' Loading ' + esc(date) + '…';
             if (currentMode === 'actual') {
                 const a = await getJSON('/forecast/api/actuals?date=' + date);
+                if (seq !== loadSeq) return;
                 if (a.error) throw new Error(a.error);
                 renderActual(a);
             } else {
@@ -286,6 +290,7 @@ async function loadData() {
                     getJSON('/forecast/api/historical?date=' + date),
                     getJSON('/forecast/api/actuals?date=' + date),
                     getJSON('/forecast/api/scorecard?date=' + date + scoreRangeQuery())]);
+                if (seq !== loadSeq) return;
                 if (h.error) throw new Error(h.error);
                 renderCheck(h, a.error ? { days: {} } : a, sc.error ? {} : sc, date);
             }
@@ -622,13 +627,14 @@ function renderCheckDetail(day) {
     const scDay = (sc.days || {})[day.date];
     const panel = document.getElementById('checkPanel');
     let html = `<h2>${ic('scales')} Model vs what happened — ${esc(fmtDate(day.date))}</h2>`;
-    html += '<table class="tbl"><tr><th>Zone</th><th class="num">Today\'s models</th><th class="num">At training time</th><th>Discharge</th><th>Bacteria</th><th>Verdict</th></tr>';
+    html += '<table class="tbl"><tr><th>Zone</th><th class="num">Today\'s models</th><th class="num">Stored hindcast</th><th>Discharge</th><th>Bacteria</th><th>Verdict</th></tr>';
     const zr = zonesOf(day);
+    const storedTag = scDay && scDay.post_training ? 'post-training' : 'in-sample';
     for (const zk of ZONE_ORDER) {
         const z = ZONES.find(z => z.key === zk), za = ad && ad.zones[zk];
         const p = zr[zk] || 0, v = verdict(p, za);
         const sz = scDay && scDay.zones && scDay.zones[zk];
-        const trained = sz ? (sz.risk_h != null ? pct(sz.risk_h) + '% <span class="mute">holdout</span>' : pct(sz.risk) + '% <span class="mute">in-sample</span>') : '<span class="mute">—</span>';
+        const trained = sz ? (sz.risk_h != null ? pct(sz.risk_h) + '% <span class="mute">holdout</span>' : pct(sz.risk) + '% <span class="mute">' + storedTag + '</span>') : '<span class="mute">—</span>';
         const dis = !za ? '<span class="mute">—</span>' : za.discharge == null ? '<span class="mute" title="No CIWQS discharge report covers this day">no report</span>' : za.discharge ? badge('danger', 'octagon-alert', za.discharge_stations.length ? za.discharge_stations.length + ' beach' + (za.discharge_stations.length > 1 ? 'es' : '') : 'yes') : badge('ok', 'check', 'none');
         const bac = !za ? '<span class="mute">—</span>' : za.elevated == null ? '<span class="mute">not sampled</span>' : za.elevated ? badge('warn', 'microscope', za.elevated_stations.length + ' elevated') : badge('ok', 'check', za.n_samples + ' clear');
         html += `<tr><td><b>${esc(z.label)}</b></td><td class="num" style="color:${riskInfo(p).color};font-weight:700">${pct(p)}%</td><td class="num">${trained}</td><td>${dis}</td><td>${bac}</td><td>${badge(v.kind, v.icon, v.label)}</td></tr>`;
@@ -645,7 +651,7 @@ function renderCheckDetail(day) {
         for (const key of ['westside', 'north_shore', 'central', 'southeast']) {
             const b = scDay.basins[key]; if (!b) continue;
             const p = b.ph != null ? b.ph : b.p;
-            html += `<tr><td>${esc(BASIN_META[key].name)}</td><td class="num" style="color:${riskInfo(p).color};font-weight:700">${pct(p)}%${b.ph != null ? '' : ' <span class="mute">in-sample</span>'}</td><td>${b.y == null ? '<span class="mute">not covered</span>' : b.y ? badge('danger', 'octagon-alert', 'discharge') : badge('ok', 'check', 'none')}</td><td class="num">${b.vol != null && b.y ? Number(b.vol).toFixed(1) : '—'}</td><td class="mute">${esc(b.src || '')}</td></tr>`;
+            html += `<tr><td>${esc(BASIN_META[key].name)}</td><td class="num" style="color:${riskInfo(p).color};font-weight:700">${pct(p)}%${b.ph != null ? '' : ' <span class="mute">' + storedTag + '</span>'}</td><td>${b.y == null ? '<span class="mute">not covered</span>' : b.y ? badge('danger', 'octagon-alert', 'discharge') : badge('ok', 'check', 'none')}</td><td class="num">${b.vol != null && b.y ? Number(b.vol).toFixed(1) : '—'}</td><td class="mute">${esc(b.src || '')}</td></tr>`;
         }
         html += '</table>';
     }
@@ -653,7 +659,7 @@ function renderCheckDetail(day) {
         html += `<div class="mute" style="font-size:.85em;margin-top:10px">This date is outside the training scorecard (${esc((sc.span || []).join(' → '))}); the hindcast above is today's models on archived rain.</div>`;
     }
     html += renderScoreWindow(sc);
-    html += `<div class="sources">"Today's models" = the served v4 models scored on the rain that fell (NOAA gauges for totals, Open-Meteo archive for hourly intensity). "At training time" = the same models' probabilities recorded when they were trained; holdout = from a model that never saw that season. A discharge that posts a zone's beach, an SFPUC posting, or a sample over standard makes a "bad" day.</div>`;
+    html += `<div class="sources">"Today's models" = the served v4 models scored now on the rain that fell (NOAA gauges for totals, Open-Meteo archive for hourly intensity). "Stored hindcast" = the probability kept in the scorecard artifact: <b>holdout</b> from a model that never saw that season, <b>in-sample</b> from the served models on days they trained on (optimistic), <b>post-training</b> from the served models on days after their training data ended${sc.trained_through ? ' (' + esc(fmtMonth(sc.trained_through)) + ')' : ''} — the truest test. The scorecard below aggregates those stored probabilities over the chosen window. A discharge that posts a zone's beach, an SFPUC posting, or a sample over standard makes a "bad" day.</div>`;
     panel.innerHTML = html;
 }
 
@@ -667,27 +673,44 @@ const scoreRangeQuery = () => scoreRange ? '&from=' + encodeURIComponent(scoreRa
 const fmtMonth = s => { const d = new Date(s + 'T12:00:00'); return d.toLocaleDateString(undefined, { month: 'short', year: 'numeric' }); };
 const fmtRange = (a, b) => esc(fmtMonth(a)) + ' → ' + esc(fmtMonth(b));
 
+const trainedThrough = sc => sc.trained_through || sc.span[1];
 function scorePresetOf(w, sc) {
     if (w.start === sc.span[0] && w.end === sc.span[1]) return 'all';
-    if (w.start === sc.holdout_start && w.end === sc.span[1]) return 'holdout';
+    if (sc.post_start && w.start === sc.post_start && w.end === sc.span[1]) return 'post';
+    if (w.start === sc.holdout_start && w.end === trainedThrough(sc)) return 'holdout';
     const s = (sc.seasons || []).find(s => s.start === w.start && s.end === w.end);
     return s ? 'season:' + s.season : 'custom';
+}
+// What a season's stored probabilities are, from the server's holdout/post shares.
+function seasonGrade(s) {
+    if (s.holdout === 'none' && s.post === 'none') return 'in-sample';
+    if (s.holdout !== 'none' && s.post !== 'none') return 'holdout + post-training';
+    if (s.post !== 'none') return s.post === 'full' ? 'post-training' : 'part post-training';
+    return s.holdout === 'full' ? 'holdout' : 'part holdout, part in-sample';
+}
+function gradeBadge(w, sc) {
+    switch (w.grade) {
+        case 'holdout': return badge('ok', 'circle-check', 'holdout — a model fit on data before ' + fmtMonth(sc.holdout_start) + ' that never saw these days');
+        case 'post_training': return badge('ok', 'circle-check', 'post-training — the live models on days after their training data ended (' + fmtMonth(trainedThrough(sc)) + ')');
+        case 'out_of_sample': return badge('ok', 'circle-check', 'out-of-sample — holdout model through ' + fmtMonth(trainedThrough(sc)) + ', then the live models on days after training');
+        case 'in_sample': return badge('warn', 'triangle-alert', 'in-sample — the models trained on all ' + w.n_days + ' of these days, so this is optimistic');
+        case 'mixed': return badge('warn', 'triangle-alert', w.n_insample + ' of ' + w.n_days + ' days in-sample (optimistic); the rest holdout or post-training');
+        default: return badge('muted', 'circle-dashed', 'no hindcast days in this window');
+    }
 }
 
 function renderScoreWindow(sc) {
     const w = sc.window;
     if (!w || !w.zone_confusion || !sc.span) return '';
     const preset = scorePresetOf(w, sc), thr = String(RISK_THRESHOLD);
-    const holdNote = w.holdout_only
-        ? badge('ok', 'circle-check', 'holdout — models fit on data before ' + fmtMonth(sc.holdout_start))
-        : badge('warn', 'triangle-alert', (w.n_holdout ? w.n_insample + ' of ' + w.n_days + ' days' : 'all days') + ' in-sample: the models trained on them, so this is optimistic');
     const opt = (v, label) => `<option value="${v}"${v === preset ? ' selected' : ''}>${esc(label)}</option>`;
-    const seasonLabel = s => s.label + ' season' + (s.holdout === 'full' ? ' · holdout' : s.holdout === 'partial' ? ' · part holdout' : ' · in-sample');
+    const seasonLabel = s => s.label + ' season' + (s.clip ? ' (' + s.clip + ')' : '') + ' · ' + seasonGrade(s);
     let html = `<div id="scoreWindow"><div class="subhead">${ic('chart-line')} Scorecard — ${fmtRange(w.start, w.end)}, ${pct(RISK_THRESHOLD)}% line</div>
         <div class="sc-controls">
             <select class="date-picker" onchange="onScorePreset(this.value)" title="Window the scorecard covers">
                 ${(sc.seasons || []).map(s => opt('season:' + s.season, seasonLabel(s))).join('')}
-                ${opt('holdout', 'Holdout period (' + fmtMonth(sc.holdout_start) + ' → ' + fmtMonth(sc.span[1]) + ')')}
+                ${sc.post_start ? opt('post', 'Since training (' + fmtMonth(sc.post_start) + ' → ' + fmtMonth(sc.span[1]) + ') · post-training') : ''}
+                ${opt('holdout', 'Holdout period (' + fmtMonth(sc.holdout_start) + ' → ' + fmtMonth(trainedThrough(sc)) + ')')}
                 ${opt('all', 'Everything (' + fmtMonth(sc.span[0]) + ' → ' + fmtMonth(sc.span[1]) + ')')}
                 ${opt('custom', 'Custom range…')}
             </select>
@@ -698,7 +721,7 @@ function renderScoreWindow(sc) {
             </span>
             ${scoreRange ? `<button class="mode-btn" onclick="resetScoreRange()" title="Back to the season of the selected date">${ic('calendar')} follow the date</button>` : ''}
             <span class="mute">${w.n_days} days · ${w.n_discharge_days} discharge day${w.n_discharge_days === 1 ? '' : 's'} · ${w.n_sampled_days} sampled</span>
-            ${holdNote}
+            ${gradeBadge(w, sc)}
         </div><div class="scorecard">`;
     for (const zk of ZONE_ORDER) {
         const c = w.zone_confusion[zk]; if (!c || !c[thr]) continue;
@@ -740,7 +763,8 @@ function onScorePreset(v) {
     if (v === 'custom') { document.getElementById('scCustom').style.display = 'inline-flex'; return; }
     const sc = current.scorecard || {};
     let from, to;
-    if (v === 'holdout') { from = sc.holdout_start; to = sc.span[1]; }
+    if (v === 'holdout') { from = sc.holdout_start; to = trainedThrough(sc); }
+    else if (v === 'post') { from = sc.post_start; to = sc.span[1]; }
     else if (v === 'all') { from = sc.span[0]; to = sc.span[1]; }
     else { const s = (sc.seasons || []).find(s => 'season:' + s.season === v); if (!s) return; from = s.start; to = s.end; }
     scoreRange = { preset: v, from, to };

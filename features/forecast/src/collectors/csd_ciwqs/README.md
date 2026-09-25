@@ -26,7 +26,11 @@ For a refresh, include one already-covered month as a control (its rows must
 come out identical), then **append** the new event rows to
 `features/forecast/data/csd/sf_csd_events.csv` (date-sorted) and the new
 facility-months to `sf_csd_monthly_coverage.csv` (sorted facility, year, month)
-after reviewing `qa_report.json`. Last refresh: 2026-09-24 (Nov 2025 – Jul 2026).
+after reviewing `qa_report.json`. Then run
+`venv/bin/python features/forecast/src/models/train_v4.py --rescore --promote`
+so the Model check scorecard gains the new months as post-training days (the
+served models scored on days they never saw; no retraining). Last refresh:
+2026-09-24 (Nov 2025 – Jul 2026 + Bayside Aug 2026; rescored through Aug 17 2026).
 
 Step 0 reads CIWQS's own document listing (eSMR At-A-Glance search by party
 name), not the data.ca.gov analytical datastore: the datastore lags and skipped
