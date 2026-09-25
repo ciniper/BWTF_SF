@@ -282,3 +282,56 @@ Open items:
 - Bacteria recall at Baker & China (~10%) is dry-weather creek runoff, not
   sewage; the forecast is a sewage-risk forecast and the alerts cover the
   rest via the SFPUC posting feed.
+
+## Model selection (2026-09-25): leaderboard, candidates, selector — v4 stays served
+
+Chase's rule: the served v4 set is not touched by any of this. New models are
+*candidates* the Model check page can select and grade on the same days and
+labels; promotion into `data/models/` is a separate, human decision.
+
+- `src/models/leaderboard.py` — families × rain sources per basin, scored as
+  the trainer scores: leave-one-season-out CV on the pre-holdout seasons
+  (pooled), then the chronological holdout (Jul 2023 → Oct 2025). Families:
+  `gb` (production params) and `logit` = 19 features + hinge terms
+  max(0, x − knot) at the rain knots (precip 0.25/0.5/1", 2-day 0.5/1/2",
+  3-day 1/2", 7-day 2", max1h 0.1/0.2", max3h 0.25/0.5", max6h 0.5/1",
+  antecedent 0.2/0.5, peak_3d 0.5/1") → StandardScaler → L2 logistic, C from
+  {0.03 … 3} by pre-holdout CV. Sources: two-gauge mean, the basin's local
+  NOAA gauge, CoCoRaHS Potrero (`US1CASF0017`, `src/collectors/cocorahs.py`)
+  as filed and shifted −1 day (07:00 read), three-gauge mean. Mirrors the
+  trainer's archive-ablation choice per basin so the production row
+  reproduces `eval_report.json` (Westside 0.828 ✓).
+- Results, holdout PR-AUC on the same rain: Westside logit 0.854 vs gb 0.828;
+  North Shore 0.963 vs 0.953; Central 0.977 vs 0.967; Southeast logit on
+  Downtown 0.922 vs gb on the mean 0.835. Pre-holdout CV is higher for the
+  weights model in every basin (Southeast 0.76 vs 0.65, Westside 0.66 vs
+  0.52) — the trees overfit season-to-season more than the hinged linear
+  model. The Potrero gauge is a worse source everywhere (ACIS has it only
+  from 2020; the 07:00 observation day misaligns with start-time-dated
+  discharges — shifted −1 it recovers most of the gap but not all).
+- `src/models/candidates.py` + `leaderboard.py --save <name>` — a candidate
+  set: pickles with the served contract (the hinge transform lives inside the
+  sklearn Pipeline, so the 19-feature contract and `_predict_calibrated`
+  would work unchanged if ever promoted), `manifest.json`, and its own
+  `scorecard.json.gz` built by `train_v4.build_scorecard` with the served
+  stage 2 over the full input reach (post-training days flagged as
+  `--rescore` does). First candidate: `logit_v1`.
+- Model check: model selector (`/forecast/api/scorecard?model=`,
+  `/forecast/api/models`), threshold selector (10 / 25 / 50% line). The live
+  forecast, alerts and the explorer read only the served set.
+- `logit_v1` on the post-training window (Nov 2025 → Aug 2026, untouched):
+  Westside 0.766 vs v4 0.716 (Ocean Beach 5/6 caught, 14 false alarms vs
+  4/6 and 18); Central 0.734 vs 0.717 with a better Brier; North Shore equal
+  (2/2, fewer false alarms); **Southeast 0.742 vs 0.889** — the holdout lead
+  there (0.923 vs 0.835) did not carry, i.e. part of it was selection
+  optimism from choosing C and the Downtown source on that same holdout. So:
+  a candidate for Westside and Central, not a blanket swap; consider a
+  per-basin choice or a gb/logit blend, judged on post-training first.
+- Before promoting a candidate: check its post-training window (Nov 2025 →)
+  as well as the holdout — the holdout was used to pick C and the source, so
+  the post-training stretch is the untouched test; confirm calibration
+  (Brier) and the false-alarm rate at the 25% line per zone; if its rain
+  source is new to serving, add the gauge to `ACIS_GAUGES` and the live
+  fallback rules first; then retrain-and-promote through `train_v4.py`
+  (which would need the family plumbed in) rather than copying pickles by
+  hand.

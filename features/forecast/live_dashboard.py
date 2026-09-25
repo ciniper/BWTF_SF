@@ -70,6 +70,7 @@ from src.models.impact import smooth_table as _smooth_table  # noqa: E402
 from src.models.rain_features import add_daily_features as _add_daily_features  # noqa: E402
 from src.models.rain_features import hourly_intensity as _hourly_intensity  # noqa: E402
 from src.models import scorecard as _sc  # noqa: E402  (one rule for the model-check scorecard, shared with train_v4)
+from src.models import candidates as _cand  # noqa: E402  (candidate model sets: scorecards + manifests only, never served live)
 
 # ─── Data source URLs ────────────────────────────────────────────────────────
 
@@ -962,20 +963,39 @@ class LiveData:
                                           f"SFPUC feed archive (Mar 2016 – Jan 2017); BWTF watcher ({mon(self.WATCHER_SINCE[:7])} →)",
                             "bacteria": "DataSF beach samples (Jul 2020 →); SFPUC feed archive (Dec 2015 – Jan 2017)"}}
 
-    def _scorecard(self) -> dict:
-        if getattr(self, "_scorecard_cache", None) is None:
+    def _scorecard(self, model: str | None = None) -> dict:
+        """The served artifact (model=None) or a candidate set's (by name);
+        cached per model for the process lifetime."""
+        cache = getattr(self, "_scorecard_cache", None)
+        if not isinstance(cache, dict) or "_by_model" not in cache:
+            cache = {"_by_model": {}}
+            self._scorecard_cache = cache
+        key = model or ""
+        if key not in cache["_by_model"]:
             import gzip
-            path = MODEL_DIR / "scorecard.json.gz"
-            if not path.exists():
-                self._scorecard_cache = {}
+            if model:
+                sc = _cand.load_scorecard(model) if _cand.valid_name(model) else {}
             else:
-                with gzip.open(path, "rt") as f:
-                    sc = json.load(f)
+                path = MODEL_DIR / "scorecard.json.gz"
+                sc = {}
+                if path.exists():
+                    with gzip.open(path, "rt") as f:
+                        sc = json.load(f)
+            if sc:
                 sc["_by_date"] = {d["date"]: d for d in sc.get("days", [])}
-                self._scorecard_cache = sc
-        return self._scorecard_cache
+            cache["_by_model"][key] = sc
+        return cache["_by_model"][key]
 
-    def get_scorecard(self, date_str: str, start: str | None = None, end: str | None = None) -> dict:
+    def list_models(self) -> list:
+        """The served set first, then every candidate set on disk."""
+        out = [{"key": "", "label": "v4 (served)", "family": "gb", "served": True}]
+        for m in _cand.list_candidates():
+            out.append({"key": m["name"], "label": m["name"], "family": m.get("family"), "note": m.get("note", ""),
+                        "created_at": m.get("created_at"), "rain_sources": m.get("rain_sources"), "served": False})
+        return out
+
+    def get_scorecard(self, date_str: str, start: str | None = None, end: str | None = None,
+                      model: str | None = None) -> dict:
         """Model check: the training-time hindcast (final model and the
         holdout-fit model) next to the labels, for −2 … +5 days around a date,
         plus a scorecard over a window of the hindcast (``window``).
@@ -998,9 +1018,12 @@ class LiveData:
                     datetime.strptime(v, "%Y-%m-%d")
                 except ValueError:
                     return {"error": f"Invalid date: {v}"}
-        sc = self._scorecard()
+        if model and not _cand.valid_name(model):
+            return {"error": f"Unknown model set: {model}"}
+        sc = self._scorecard(model)
         if not sc:
-            return {"error": "scorecard artifact missing (run train_v4.py)"}
+            return {"error": f"scorecard artifact missing for {model!r} (leaderboard.py --save)" if model
+                    else "scorecard artifact missing (run train_v4.py)"}
         around = {}
         for i in range(-2, 6):
             k = str(target + timedelta(days=i))
@@ -1036,6 +1059,7 @@ class LiveData:
         targets = {k: {"n_events": t.get("n_events"), "holdout": t.get("holdout"), "rain_source": t.get("rain_source")}
                    for k, t in ev.get("targets", {}).items()}
         return {"target_date": date_str, "in_span": bool(around), "span": span,
+                "model": model or "", "models": self.list_models(),
                 "holdout_start": holdout_start, "trained_at": sc.get("trained_at"),
                 "trained_through": trained_through, "post_start": post_start, "rescored_at": sc.get("rescored_at"),
                 "basins": sc.get("basins"), "zones": sc.get("zones"), "groups": sc.get("groups"),

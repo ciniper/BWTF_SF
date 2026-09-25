@@ -203,7 +203,7 @@ const BASIN_META = {
     citywide:    { icon: 'map-pin',    name: 'City-wide',              desc: 'any basin discharging' },
 };
 const BASIN_ORDER = ['westside', 'north_shore', 'central', 'southeast', 'citywide'];
-const RISK_THRESHOLD = 0.25;   // "MODERATE" — the line the model check scores hits and misses on
+let RISK_THRESHOLD = 0.25;   // "MODERATE" — the line the model check scores hits and misses on; the scorecard's selector moves it (10 / 25 / 50)
 
 const ic = name => `<svg class="ic"><use href="#i-${name}"/></svg>`;
 const esc = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -594,7 +594,7 @@ function renderCheck(h, a, sc, target) {
     current = { mode: 'check', days, byDate: preds, actual: a, scorecard: sc, target };
     const tday = preds[target] || days[0];
     if (!tday) { setBanner(0, ic('calendar') + ' ' + esc(target) + ': no hindcast — '); return; }
-    document.getElementById('refreshInfo').textContent = 'Hindcast = today\'s models scored on the rain that actually fell. Verdicts use the ' + pct(RISK_THRESHOLD) + '% (MODERATE) line.';
+    document.getElementById('refreshInfo').textContent = 'Hindcast = today\'s models scored on the rain that actually fell. Verdicts use the ' + pct(RISK_THRESHOLD) + '% (' + riskInfo(RISK_THRESHOLD).label + ') line.';
     showPanels({ check: true });
 
     const timeline = document.getElementById('timeline');
@@ -669,7 +669,19 @@ function renderCheckDetail(day) {
 // season / the holdout / everything / a custom range it sticks across date
 // changes until "follow the date".
 let scoreRange = null;   // {preset, from, to} | null = follow the selected date
-const scoreRangeQuery = () => scoreRange ? '&from=' + encodeURIComponent(scoreRange.from) + '&to=' + encodeURIComponent(scoreRange.to) : '';
+let scoreModel = '';     // '' = the served v4 artifact; else a candidate set's name (scorecard only — the live forecast is always v4)
+const scoreRangeQuery = () => (scoreRange ? '&from=' + encodeURIComponent(scoreRange.from) + '&to=' + encodeURIComponent(scoreRange.to) : '')
+                            + (scoreModel ? '&model=' + encodeURIComponent(scoreModel) : '');
+function setScoreModel(v) {
+    scoreModel = v || '';
+    if (!current || current.mode !== 'check') return;
+    // the per-day "Stored hindcast" column reads the same artifact, so re-render the whole detail
+    getJSON('/forecast/api/scorecard?date=' + current.target + scoreRangeQuery()).then(sc => {
+        if (sc.error) { alert(sc.error); return; }
+        current.scorecard = sc;
+        if (current.selected) selectDay(current.selected);
+    });
+}
 const fmtMonth = s => { const d = new Date(s + 'T12:00:00'); return d.toLocaleDateString(undefined, { month: 'short', year: 'numeric' }); };
 const fmtRange = (a, b) => esc(fmtMonth(a)) + ' → ' + esc(fmtMonth(b));
 
@@ -705,8 +717,16 @@ function renderScoreWindow(sc) {
     const preset = scorePresetOf(w, sc), thr = String(RISK_THRESHOLD);
     const opt = (v, label) => `<option value="${v}"${v === preset ? ' selected' : ''}>${esc(label)}</option>`;
     const seasonLabel = s => s.label + ' season' + (s.clip ? ' (' + s.clip + ')' : '') + ' · ' + seasonGrade(s);
-    let html = `<div id="scoreWindow"><div class="subhead">${ic('chart-line')} Scorecard — ${fmtRange(w.start, w.end)}, ${pct(RISK_THRESHOLD)}% line</div>
+    const models = sc.models || [];
+    const modelLabel = (models.find(m => m.key === (sc.model || '')) || {}).label || 'v4 (served)';
+    let html = `<div id="scoreWindow"><div class="subhead">${ic('chart-line')} Scorecard — ${esc(modelLabel)} — ${fmtRange(w.start, w.end)}, ${pct(RISK_THRESHOLD)}% line</div>
         <div class="sc-controls">
+            ${models.length > 1 ? `<select class="date-picker" onchange="setScoreModel(this.value)" title="Which model set's stored hindcast to grade. Only the served v4 set drives the live forecast; candidates are scored here on the same days and labels.">
+                ${models.map(m => `<option value="${esc(m.key)}"${m.key === (sc.model || '') ? ' selected' : ''}>${esc(m.label)}${m.served ? '' : ' · ' + esc(m.family || 'candidate')}</option>`).join('')}
+            </select>` : ''}
+            <select class="date-picker" onchange="setRiskLine(this.value)" title="A day counts as predicted-bad when its risk reaches this line; hits, misses and false alarms everywhere on this view follow it">
+                ${[[0.1, '10% line (LOW)'], [0.25, '25% line (MODERATE)'], [0.5, '50% line (HIGH)']].map(([v, l]) => `<option value="${v}"${v === RISK_THRESHOLD ? ' selected' : ''}>${l}</option>`).join('')}
+            </select>
             <select class="date-picker" onchange="onScorePreset(this.value)" title="Window the scorecard covers">
                 ${(sc.seasons || []).map(s => opt('season:' + s.season, seasonLabel(s))).join('')}
                 ${sc.post_start ? opt('post', 'Since training (' + fmtMonth(sc.post_start) + ' → ' + fmtMonth(sc.span[1]) + ') · post-training') : ''}
@@ -720,6 +740,7 @@ function renderScoreWindow(sc) {
                 <button class="mode-btn" onclick="applyScoreCustom()">Apply</button>
             </span>
             ${scoreRange ? `<button class="mode-btn" onclick="resetScoreRange()" title="Back to the season of the selected date">${ic('calendar')} follow the date</button>` : ''}
+            ${models.length > 1 ? `<a class="mute" href="/reports/2026-09_model_leaderboard.html" title="How each candidate was fit and scored">leaderboard</a>` : ''}
             <span class="mute">${w.n_days} days · ${w.n_discharge_days} discharge day${w.n_discharge_days === 1 ? '' : 's'} · ${w.n_sampled_days} sampled</span>
             ${gradeBadge(w, sc)}
         </div><div class="scorecard">`;
@@ -777,6 +798,16 @@ function applyScoreCustom() {
     loadScoreWindow();
 }
 function resetScoreRange() { scoreRange = null; loadScoreWindow(); }
+// The probability line that separates "predicted bad" from "predicted quiet".
+// It re-grades everything on the Model check view — timeline badges, banner
+// tally, per-zone verdicts and the scorecard — from the data already loaded.
+function setRiskLine(v) {
+    RISK_THRESHOLD = parseFloat(v);
+    if (!current || current.mode !== 'check') return;
+    const selected = current.selected && current.selected.date;
+    renderCheck({ predictions: current.byDate }, current.actual, current.scorecard, current.target);
+    if (selected && current.byDate[selected]) selectDay(current.byDate[selected]);
+}
 
 // ─── boot ───────────────────────────────────────────────────────────────────
 loadData();

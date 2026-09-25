@@ -222,6 +222,35 @@ def test_served_windows():
     assert "error" in eng.get_scorecard("not-a-date")
 
 
+def test_model_sets_are_selectable_but_never_served():
+    import candidates as C
+    from features.forecast import live_dashboard as ld
+    eng = ld.LiveData.__new__(ld.LiveData)
+    models = eng.list_models()
+    assert models[0] == {"key": "", "label": "v4 (served)", "family": "gb", "served": True}
+    assert all(m["served"] is False for m in models[1:])
+    assert "error" in eng.get_scorecard("2024-01-13", model="../x")
+    assert "error" in eng.get_scorecard("2024-01-13", model="doesnotexist")
+    assert C.valid_name("logit_v1") and not C.valid_name("../x") and not C.valid_name("Bad Name") and not C.valid_name("")
+    served = {d["date"]: d for d in _artifact()["days"]}
+    for m in models[1:]:
+        r = eng.get_scorecard("2024-01-13", model=m["key"])
+        assert r["model"] == m["key"] and r["window"]["preset"] == "season" and r["window"]["grade"] == "holdout"
+        assert set(r["zone_confusion_holdout"]) == set(_artifact()["zone_confusion_holdout"])
+        cs = C.load_scorecard(m["key"])
+        assert cs["trained_through"] == (_artifact().get("trained_through") or _artifact()["span"][1])
+        # same days, same labels as the served artifact — only the probabilities may differ
+        for d in cs["days"]:
+            s = served.get(d["date"])
+            if s is None:
+                continue
+            assert {z: v["discharge"] for z, v in d["zones"].items()} == {z: v["discharge"] for z, v in s["zones"].items()}, d["date"]
+            assert {z: v["elevated"] for z, v in d["zones"].items()} == {z: v["elevated"] for z, v in s["zones"].items()}, d["date"]
+        post = [d for d in cs["days"] if d.get("post_training")]
+        assert all(z["risk_h"] is None for d in post for z in d["zones"].values())
+        print(f"   candidate {m['key']}: {len(cs['days'])} days, {len(post)} post-training, labels identical to the served artifact")
+
+
 if __name__ == "__main__":
     failed = 0
     for name, fn in sorted(globals().items()):

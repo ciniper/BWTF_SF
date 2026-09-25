@@ -383,7 +383,17 @@ def handle_scorecard(query, body):
         return _json({"error": "Missing ?date=YYYY-MM-DD parameter"})
     start = (query.get("from") or [""])[0] or None
     end = (query.get("to") or [""])[0] or None
-    return _json(_engine.LIVE.get_scorecard(date_str, start, end))
+    model = (query.get("model") or [""])[0] or None   # a candidate set's name; default = the served v4 artifact
+    return _json(_engine.LIVE.get_scorecard(date_str, start, end, model))
+
+
+def handle_models(query, body):
+    """The served model set plus every candidate set on disk (scorecards only —
+    candidates are never served live)."""
+    err = _require_engine()
+    if err:
+        return err
+    return _json({"models": _engine.LIVE.list_models()})
 
 
 GET_ROUTES = {
@@ -394,5 +404,6 @@ GET_ROUTES = {
     "/forecast/api/bacteria": handle_bacteria,
     "/forecast/api/actuals": handle_actuals,
     "/forecast/api/scorecard": handle_scorecard,
+    "/forecast/api/models": handle_models,
 }
 POST_ROUTES = {}

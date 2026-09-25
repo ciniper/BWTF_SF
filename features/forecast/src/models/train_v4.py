@@ -88,18 +88,45 @@ from shared.standards import STANDARDS, flag_exceedances, parse_result  # noqa: 
 
 # ── Rain features, per source ───────────────────────────────────────────────
 
+COCORAHS_CSV = RAW_DIR / "historical_rain_cocorahs.csv"   # src/collectors/cocorahs.py
+
+
 def rain_series(source: str) -> tuple:
-    """Daily rain (inches) for `source` ('avg' or a gauge name) + fill note."""
+    """Daily rain (inches) for `source` + fill note.
+
+    `source` is 'avg' (mean of the two NOAA gauges), a NOAA gauge name
+    ('SF Downtown' / 'SF Oceanside'; a missing day takes the other gauge),
+    an extra gauge id from data/raw/historical_rain_cocorahs.csv (e.g.
+    'US1CASF0017'; a missing day takes the two-gauge mean), or that id with
+    '@-1' appended, which moves each value one day earlier — CoCoRaHS
+    observers read the gauge at ~07:00, so the value filed for D is mostly
+    D−1's rain. Then everything is filled to 0."""
     rain_df = pd.read_csv(RAW_DIR / "historical_rain.csv", parse_dates=["date"])
     rp = rain_df.pivot_table(index="date", columns="rain_station_name",
                              values="precip_inches", aggfunc="first").sort_index()
     cols = list(rp.columns)
+    avg = rp[cols].mean(axis=1)
     if source == "avg":
-        return rp[cols].mean(axis=1).fillna(0.0), {"filled_from_other_gauge": 0}
-    other = [c for c in cols if c != source][0]
-    s = rp[source]
-    filled = int(s.isna().sum() - (s.isna() & rp[other].isna()).sum())
-    return s.fillna(rp[other]).fillna(0.0), {"filled_from_other_gauge": filled}
+        return avg.fillna(0.0), {"filled_from_other_gauge": 0}
+    if source == "avg3":   # NOAA pair + CoCoRaHS Potrero where it reported, else the pair alone
+        cc = pd.read_csv(COCORAHS_CSV, parse_dates=["date"])
+        pot = cc[cc["station_id"] == "US1CASF0017"].set_index("date")["precip_inches"].reindex(rp.index)
+        three = pd.concat([rp[cols], pot.rename("Potrero")], axis=1).mean(axis=1)
+        return three.fillna(avg).fillna(0.0), {"potrero_days": int(pot.notna().sum())}
+    if source in cols:
+        other = [c for c in cols if c != source][0]
+        s = rp[source]
+        filled = int(s.isna().sum() - (s.isna() & rp[other].isna()).sum())
+        return s.fillna(rp[other]).fillna(0.0), {"filled_from_other_gauge": filled}
+    sid, _, shift = source.partition("@")
+    cc = pd.read_csv(COCORAHS_CSV, parse_dates=["date"])
+    s = cc[cc["station_id"] == sid].set_index("date")["precip_inches"].reindex(rp.index)
+    if s.isna().all():
+        raise KeyError(f"unknown rain source {source!r}")
+    if shift:
+        s = s.shift(int(shift))
+    filled = int(s.isna().sum() - (s.isna() & avg.isna()).sum())
+    return s.fillna(avg).fillna(0.0), {"filled_from_two_gauge_mean": filled, "shift_days": int(shift or 0)}
 
 
 def rain_features(source: str) -> pd.DataFrame:
@@ -191,11 +218,12 @@ def apply_archive_labels(df: pd.DataFrame, arch: dict, rain_avg: pd.Series) -> d
 
 # ── Dataset ─────────────────────────────────────────────────────────────────
 
-def build_dataset(end: pd.Timestamp = TRAIN_END) -> tuple:
+def build_dataset(end: pd.Timestamp = TRAIN_END, sources: list = None) -> tuple:
     """Returns ({rain_source: feature+label frame}, notes). Label columns are
     identical across sources; only the rain features differ. `end` is the
     training window's last day (TRAIN_END) or, for --rescore, the last day the
-    refreshed inputs cover."""
+    refreshed inputs cover. `sources` defaults to RAIN_SOURCES; the leaderboard
+    passes extra gauges (see rain_series)."""
     labels = build_daily_labels()
     days = pd.DataFrame({"date": pd.date_range(TRAIN_START, end)})
     df = days.merge(labels, on="date", how="left")
@@ -222,7 +250,7 @@ def build_dataset(end: pd.Timestamp = TRAIN_END) -> tuple:
 
     hourly = build_hourly_features()
     out = {}
-    for src in RAIN_SOURCES:
+    for src in (sources or RAIN_SOURCES):
         f = df.merge(rain_features(src), on="date", how="left").merge(hourly, on="date", how="left")
         f[INTENSITY_FEATURES] = f[INTENSITY_FEATURES].fillna(0)
         f[get_feature_columns()] = f[get_feature_columns()].fillna(0)
@@ -695,6 +723,18 @@ def _inputs_reach() -> dict:
     daily_end = both[both >= 2].index.max()
     labels_end = build_daily_labels()["date"].max()
     return {"hourly_rain": hourly_end, "daily_rain": daily_end, "labels": labels_end}
+
+
+def stage2_from_served() -> tuple:
+    """(volume heads by basin name, raw impact table) from the served set —
+    the stage 2 every candidate shares."""
+    heads = {}
+    for basin in APP_BASINS:
+        vp = SERVE_DIR / f"{BASIN_KEYS[basin]}_volume.pkl"
+        if vp.exists():
+            with open(vp, "rb") as f:
+                heads[basin] = pickle.load(f)
+    return heads, json.loads((SERVE_DIR / "impact_table.json").read_text())
 
 
 def rescore(promote: bool = False, tolerance: float = 0.02) -> dict:
