@@ -194,7 +194,7 @@ footer a { color: #0072BC; text-decoration: none; }
 
 <footer>
     <p><svg class="ic"><use href="#i-info"/></svg> Rain: NOAA gauges (Downtown 047772, Oceanside 047767), KSFO hourly, ECMWF forecast · Discharges: SFPUC CIWQS reports · Beach status: SFPUC · Bacteria: DataSF</p>
-    <p>Community-science tool, not an official advisory — posted signs and SFPUC or health-department notices always win. <a href="/reports/2026-09_forecast_v4_model_explorer.html">How the model works</a> · <a href="/reports/2026-09_forecast_stage2_explorer.html">Stage 2: discharge → beach risk</a> · <a href="/reports/2026-09_forecast_logit_v1_model_explorer.html">Inside the weights candidate</a> · <a href="/">Back to dashboard</a> · <a href="/api/build" title="{{ build.message or '' }}">{{ build.label }}</a></p>
+    <p>Community-science tool, not an official advisory — posted signs and SFPUC or health-department notices always win. <a href="/reports/2026-09_forecast_v4_model_explorer.html">How the model works</a> · <a href="/reports/2026-09_forecast_stage2_explorer.html">Stage 2: discharge → beach risk</a> · <a href="/reports/2026-09_forecast_logit_v1_model_explorer.html">Inside the weights candidate</a> · <a href="/reports/2026-09_model_analysis.html">Model analysis: which set to run</a> · <a href="/">Back to dashboard</a> · <a href="/api/build" title="{{ build.message or '' }}">{{ build.label }}</a></p>
 </footer>
 </div>
 
@@ -766,6 +766,7 @@ function renderScoreWindow(sc) {
             ${models.length > 1 ? `<a class="mute" href="/reports/2026-09_model_leaderboard.html" title="How each candidate was fit and scored">leaderboard</a>` : ''}
             <a class="mute" href="${scoreModel ? '/reports/2026-09_forecast_' + esc(scoreModel) + '_model_explorer.html' : '/reports/2026-09_forecast_v4_model_explorer.html'}" title="The selected model set opened up: inputs, weights or trees, self-check">inside this model</a>
             <a class="mute" href="/reports/2026-09_forecast_stage2_explorer.html" title="How a discharge probability becomes beach risk — shared by every model set">stage 2</a>
+            <a class="mute" href="/reports/2026-09_model_analysis.html" title="Every model set ranked by cost, from several angles, with charts and recommendations">analysis</a>
             <span class="mute">${w.n_days} days · ${w.n_discharge_days} discharge day${w.n_discharge_days === 1 ? '' : 's'} · ${w.n_sampled_days} sampled</span>
             ${gradeBadge(w, sc)}
             ${(sc.input_rules_post || []).length && w.n_post ? `<span class="mute" title="Days after the training data ended are scored on rain treated by the serving-side input rules: a NOAA gauge stuck at exactly 0.00 for 2+ days while the other gauge records 0.5&quot; or more is treated as dead and the other gauge stands in (Oceanside was dead Jan 29 → Feb 25 2026). Pre-training days are scored exactly as the models were trained, on the raw record.">· post-training rain: ${esc(sc.input_rules_post.map(r => r.replace(/_v\d+$/, '').replace(/_/g, ' ')).join(', '))} applied</span>` : ''}
