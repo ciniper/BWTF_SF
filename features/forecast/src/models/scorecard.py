@@ -194,6 +194,60 @@ def zone_fp_tail(days: list[dict], zone_keys, start: str | None = None, end: str
     return out
 
 
+# ── zone confusion against the posting label ──────────────────────────────
+
+POSTED_IN_SCOPE = ("cso", "rain")   # see posting_label.IN_SCOPE
+
+
+def zone_confusion_posted(days: list[dict], zone_keys, label, start: str | None = None, end: str | None = None,
+                          holdout_only: bool = False, thresholds=THRESHOLDS) -> dict:
+    """{zone: {"0.25": {tp, fp, fn, tn, fp_after_discharge, other_posted,
+    other_flagged, unknown}, ...}} against the *posting* label (the signs on
+    the beach — ``posting_label.PostingLabel``), not the discharge day.
+
+    A posted day whose cause rain can explain (``cso`` / ``rain``) is a hit
+    when the zone's risk reaches the line and a miss otherwise. A day the
+    record covers with no posting is quiet: an alarm there is the false alarm,
+    and ``fp_after_discharge`` counts those falling within TAIL_DAYS of a
+    discharge (the beach already reopened, the model still up). Postings for
+    other causes (dry-weather bacteria, unexplained) are out of a rain model's
+    scope and are only counted (``other_posted`` / ``other_flagged``). Days
+    the record does not cover are ``unknown`` and not graded."""
+    out = {}
+    subset = window_days(days, start, end)
+    for zk in zone_keys:
+        dis_set = {d["date"] for d in days if zk in d["zones"] and d["zones"][zk]["discharge"]}
+
+        def in_tail(ds: str) -> bool:
+            d0 = datetime.strptime(ds, "%Y-%m-%d").date()
+            return any(str(d0 - timedelta(days=k)) in dis_set for k in range(1, TAIL_DAYS + 1))
+
+        out[zk] = {}
+        for thr in thresholds:
+            c = {"tp": 0, "fp": 0, "fn": 0, "tn": 0, "fp_after_discharge": 0, "other_posted": 0, "other_flagged": 0, "unknown": 0}
+            for day in subset:
+                z = day["zones"][zk]
+                p = _prob(z, holdout_only)
+                if p is None:
+                    continue
+                cls = label.cls(zk, day["date"])
+                if cls == "unknown":
+                    c["unknown"] += 1
+                    continue
+                pred = p >= thr
+                if cls in POSTED_IN_SCOPE:
+                    c["tp" if pred else "fn"] += 1
+                elif cls is not None:
+                    c["other_posted"] += 1
+                    c["other_flagged"] += int(pred)
+                else:
+                    c["fp" if pred else "tn"] += 1
+                    if pred and in_tail(day["date"]):
+                        c["fp_after_discharge"] += 1
+            out[zk][str(thr)] = c
+    return out
+
+
 # ── stage 1 per basin ──────────────────────────────────────────────────────
 
 def basin_metrics(days: list[dict], basin_keys=BASIN_KEYS, start: str | None = None, end: str | None = None,

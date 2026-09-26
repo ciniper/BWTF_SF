@@ -414,6 +414,51 @@ def test_stage2_variants_pair_with_any_stage1_and_served_gb_v1_is_untouched():
     assert n_variant >= 1, "expected at least one candidate on a stage 2 variant"
 
 
+def test_posting_label_grades_the_signs_not_the_discharge_day():
+    """zone_confusion_posted: a posted (sewage/rain) day is a hit or a miss, a
+    known-unposted day is quiet, other-cause postings are only counted, and
+    days outside the record are unknown and not graded."""
+    import posting_label as PL
+    dates = [f"2024-01-{d:02d}" for d in range(1, 13)]
+    risks = [0.1, 0.6, 0.9, 0.8, 0.6, 0.3, 0.55, 0.1, 0.7, 0.2, 0.9, 0.0]
+    days = [{"date": d, "zones": {"east": {"risk": r, "risk_h": None, "discharge": d == "2024-01-03", "elevated": None}}}
+            for d, r in zip(dates, risks)]
+    label = PL.PostingLabel({"east": {"2024-01-03": "cso", "2024-01-04": "cso", "2024-01-05": "cso", "2024-01-06": "cso", "2024-01-09": "other"}},
+                            [("2024-01-01", "2024-01-10")], "synthetic")
+    c = S.zone_confusion_posted(days, ["east"], label, holdout_only=False, thresholds=(0.5,))["east"]["0.5"]
+    assert c == {"tp": 3, "fn": 1, "fp": 2, "tn": 3, "fp_after_discharge": 1, "other_posted": 1, "other_flagged": 1, "unknown": 2}, c
+    assert label.cls("east", "2024-01-11") == PL.UNKNOWN and label.cls("east", "2024-01-08") is None and label.cls("east", "2024-01-04") == "cso"
+    cov = label.coverage("2024-01-01", "2024-01-12")
+    assert (cov["known_days"], cov["unknown_days"], cov["known_through"]) == (10, 2, "2024-01-10")
+    # zone_confusion itself is untouched by the new label (the artifact parity test relies on it)
+    d = S.zone_confusion(days, ["east"], holdout_only=False, thresholds=(0.5,))["east"]["0.5"]["vs_discharge_posting"]
+    assert d == {"tp": 1, "fp": 6, "fn": 0, "tn": 5}, d   # seven alarms, one on the discharge day
+
+
+def test_posted_confusion_in_the_api_matches_the_shared_function_and_the_record():
+    """The Model check window carries the same days graded against BeachWatch
+    postings, computed by the shared function, with the record's coverage."""
+    import posting_label as PL
+    from features.forecast import live_dashboard as ld
+    label = PL.from_beachwatch()
+    assert label is not None and label.source == "beachwatch"
+    eng = ld.LiveData.__new__(ld.LiveData)
+    sc = eng._scorecard()
+    w = eng.get_scorecard("2024-01-13", sc["holdout_start"], sc["span"][1])["window"]
+    assert set(w["posted_confusion"]) == set(w["zone_confusion"])
+    assert w["posted_confusion"] == S.zone_confusion_posted(sc["days"], list(w["zone_confusion"]), label, w["start"], w["end"],
+                                                            holdout_only=False, thresholds=S.LINE_GRID)
+    e = w["posted_confusion"]["east"]["0.5"]
+    assert e["tp"] + e["fn"] >= 100 and e["tp"] / (e["tp"] + e["fn"]) >= 0.6 and e["fp"] <= 20, e   # the East: most posted days flagged, few alarms on unposted days
+    assert e["other_posted"] > 50 and e["unknown"] > 0                                                # dry-weather postings counted apart; days after the record not graded
+    pl = w["posting_label"]
+    assert pl["known_through"] == label.known_through() and pl["unknown_days"] == e["unknown"] and pl["in_scope"] == ["cso", "rain"]
+    # a window entirely after the record: nothing graded, everything unknown
+    w2 = eng.get_scorecard("2024-01-13", "2026-06-01", sc["span"][1])["window"]
+    assert all(v["0.5"]["tp"] + v["0.5"]["fn"] + v["0.5"]["fp"] + v["0.5"]["tn"] == 0 and v["0.5"]["unknown"] == w2["n_days"] for v in w2["posted_confusion"].values())
+    print(f"   East vs postings at 50%: {e['tp']}/{e['tp']+e['fn']} posted days caught, {e['fp']} alarms on unposted days, {e['other_posted']} other-cause posted days, {e['unknown']} days after the record")
+
+
 if __name__ == "__main__":
     failed = 0
     for name, fn in sorted(globals().items()):

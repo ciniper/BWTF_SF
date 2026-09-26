@@ -34,8 +34,9 @@ for p in (HERE, HERE.parent / "collectors", HERE.parents[3]):
 
 import candidates  # noqa: E402
 import stage2 as S2  # noqa: E402
+import posting_label as PL  # noqa: E402
 from groups import SITE_GROUPS, ZONE_GROUPS  # noqa: E402
-from scorecard import LINE_GRID, basin_metrics, zone_confusion, zone_fp_tail  # noqa: E402
+from scorecard import LINE_GRID, basin_metrics, zone_confusion, zone_confusion_posted, zone_fp_tail  # noqa: E402
 from shared.zones import ZONES  # noqa: E402
 
 REPO = HERE.parents[3]
@@ -93,7 +94,7 @@ def _risk(z: dict, holdout_only: bool):
     return None if holdout_only else z["risk"]
 
 
-def evaluate(s: dict, zvol: dict) -> dict:
+def evaluate(s: dict, zvol: dict, label=None) -> dict:
     sc = s["sc"]
     days = sc["days"]
     res = {"windows": {}}
@@ -101,6 +102,8 @@ def evaluate(s: dict, zvol: dict) -> dict:
         # "oos" pools holdout-fit probabilities (where they exist) with served ones after training
         conf = zone_confusion(days, ZONE_ORDER, lo, hi, holdout_only=ho, thresholds=LINE_GRID)
         tail = zone_fp_tail(days, ZONE_ORDER, lo, hi, holdout_only=ho, thresholds=LINE_GRID)
+        # the same days graded against the signs on the beach (BeachWatch postings); None without the record
+        posted = zone_confusion_posted(days, ZONE_ORDER, label, lo, hi, holdout_only=ho, thresholds=LINE_GRID) if label is not None else None
         bm = basin_metrics(days, BASIN_ORDER, lo, hi, holdout_only=ho)
         # calibration bands, stage 1, pooled over basins
         bands = [(0, .1), (.1, .25), (.25, .5), (.5, .75), (.75, 1.01)]
@@ -136,7 +139,7 @@ def evaluate(s: dict, zvol: dict) -> dict:
                     if r >= thr:
                         caught_mg += mg
                 volz[zk][str(thr)] = {"caught_mg": caught_mg, "total_mg": total_mg}
-        res["windows"][wname] = {"start": lo, "end": hi, "confusion": conf, "tail": tail, "basins": bm, "calibration": cal, "volume": volz}
+        res["windows"][wname] = {"start": lo, "end": hi, "confusion": conf, "tail": tail, "posted": posted, "basins": bm, "calibration": cal, "volume": volz}
     return res
 
 
@@ -264,11 +267,18 @@ def svg_scatter_ops(sets_eval: list[tuple[dict, dict]], zk: str, wname: str, wid
 
 # ── report ──────────────────────────────────────────────────────────────────
 
+def cost_posted(pconf: dict, thr: float, wfp: float, wfn: float) -> dict:
+    """Cost against the posting label: alarms on known-quiet days + wfn × posted
+    (sewage/rain-cause) days under the line; other-cause postings not scored."""
+    per = {zk: wfp * pconf[zk][str(thr)]["fp"] + wfn * pconf[zk][str(thr)]["fn"] for zk in ZONE_ORDER}
+    return {"total": sum(per.values()), "per_zone": per}
+
+
 def fmt_pct(v):
     return "—" if v is None else f"{v:.0%}"
 
 
-def build_html(sets: list[dict], evals: list[dict], narrative: str) -> str:
+def build_html(sets: list[dict], evals: list[dict], narrative: str, label=None) -> str:
     se = list(zip(sets, evals))
     master = sets[0]["sc"]
     w = windows(master)
@@ -301,6 +311,86 @@ def build_html(sets: list[dict], evals: list[dict], narrative: str) -> str:
     hold_html, _ = rank_table("holdout", 0.5, PRIMARY, False)
     clean_html, clean_rows = rank_table("oos", 0.5, PRIMARY, True)
     line25_html, rows25 = rank_table("oos", 0.25, PRIMARY, False)
+
+    # ── the same days graded against beach postings (the signs), BeachWatch-backed ──
+    has_posted = label is not None and all(e["windows"]["oos"].get("posted") for e in evals)
+
+    def rank_table_posted(wname: str, thr: float, weighting) -> tuple[str, list]:
+        _, wfp, wfn = weighting
+        rows = []
+        for s, e in se:
+            P = e["windows"][wname]["posted"]
+            c = cost_posted(P, thr, wfp, wfn)
+            g = lambda k: sum(P[zk][str(thr)][k] for zk in ZONE_ORDER)  # noqa: E731
+            rows.append({"set": s, "cost": c["total"], "per_zone": c["per_zone"], "tp": g("tp"), "fn": g("fn"), "fp": g("fp"),
+                         "after": g("fp_after_discharge"), "other": g("other_posted"), "other_flagged": g("other_flagged"), "unknown": g("unknown")})
+        rows.sort(key=lambda r: (r["cost"], -r["tp"]))
+        h = [f'<table><tr><th>#</th><th>Set</th><th class="num">cost</th><th class="num">posted days caught</th><th class="num">missed</th><th class="num">alarms on unposted days</th><th class="num">· in the week after a discharge (reopened)</th><th class="num">other-cause posted days flagged</th>' + "".join(f'<th class="num">{esc(ZONES[zk].label.split(" ")[0])}</th>' for zk in ZONE_ORDER) + '</tr>']
+        for i, r in enumerate(rows):
+            s = r["set"]
+            share = r["tp"] / (r["tp"] + r["fn"]) if r["tp"] + r["fn"] else 0
+            h.append(f'<tr class="{"best" if i == 0 else ""}"><td>{i+1}</td><td><b>{esc(s["label"])}</b>{" <span class=\"badge info\">served</span>" if s["served"] else ""}</td><td class="num"><b>{r["cost"]:.0f}</b></td><td class="num">{r["tp"]} of {r["tp"]+r["fn"]} ({share:.0%})</td><td class="num">{r["fn"]}</td><td class="num">{r["fp"]}</td><td class="num">{r["after"]}</td><td class="num">{r["other_flagged"]} of {r["other"]}</td>' + "".join(f'<td class="num">{r["per_zone"][zk]:.0f}</td>' for zk in ZONE_ORDER) + '</tr>')
+        h.append('</table>')
+        return "".join(h), rows
+
+    posted_section, posted_verdict = "", ""
+    if has_posted:
+        p50_html, p50_rows = rank_table_posted("oos", 0.5, PRIMARY)
+        p25_html, _ = rank_table_posted("oos", 0.25, PRIMARY)
+        ppost_html, _ = rank_table_posted("post", 0.5, PRIMARY)
+        known_through = label.known_through()
+        unknown = evals[0]["windows"]["oos"]["posted"]["east"]["0.5"]["unknown"]
+        # two rulers, same alarms
+        two = ['<table><tr><th>Set (out of sample, 50%)</th><th class="num">discharge days caught</th><th class="num">false alarms vs discharge days</th><th class="num">· in the week after a discharge</th><th class="num">posted days caught</th><th class="num">alarms on unposted days</th><th class="num">· in the week after a discharge</th></tr>']
+        for s, e in se:
+            W = e["windows"]["oos"]
+            g = lambda k, blk: sum(W[blk][zk]["0.5"]["vs_discharge_posting"][k] if blk == "confusion" else W[blk][zk]["0.5"][k] for zk in ZONE_ORDER)  # noqa: E731
+            tl = sum(W["tail"][zk]["0.5"] for zk in ZONE_ORDER)
+            two.append(f'<tr><td><b>{esc(s["label"])}</b></td><td class="num">{g("tp","confusion")} of {g("tp","confusion")+g("fn","confusion")}</td><td class="num">{g("fp","confusion")}</td><td class="num">{tl}</td><td class="num">{g("tp","posted")} of {g("tp","posted")+g("fn","posted")}</td><td class="num"><b>{g("fp","posted")}</b></td><td class="num">{g("fp_after_discharge","posted")}</td></tr>')
+        two.append('</table>')
+        # per zone, served set and king: what the posting label says
+        zone_rows = ['<table><tr><th>Zone (out of sample, 50%)</th><th>Set</th><th class="num">posted days (sewage/rain)</th><th class="num">caught</th><th class="num">alarms on unposted days</th><th class="num">other-cause posted days</th><th class="num">· flagged</th></tr>']
+        for zk in ZONE_ORDER:
+            for s, e in se:
+                if not (s["served"] or s is p50_rows[0]["set"]):
+                    continue
+                P = e["windows"]["oos"]["posted"][zk]["0.5"]
+                zone_rows.append(f'<tr><td>{esc(ZONES[zk].label)}</td><td>{esc(s["label"])}</td><td class="num">{P["tp"]+P["fn"]}</td><td class="num">{P["tp"]} ({(P["tp"]/(P["tp"]+P["fn"]) if P["tp"]+P["fn"] else 0):.0%})</td><td class="num">{P["fp"]}</td><td class="num">{P["other_posted"]}</td><td class="num">{P["other_flagged"]}</td></tr>')
+        zone_rows.append('</table>')
+        # cheapest line per set and zone, posting label
+        pcheap = ['<table><tr><th>Set</th><th class="num">cheapest single line, all zones</th><th class="num">per-zone lines, summed</th>' + "".join(f'<th class="num">{esc(ZONES[zk].label)}</th>' for zk in ZONE_ORDER) + '</tr>']
+        for s, e in se:
+            P = e["windows"]["oos"]["posted"]
+            tot = {t: cost_posted(P, t, PRIMARY[1], PRIMARY[2]) for t in LINE_GRID}
+            best_all = min(LINE_GRID, key=lambda t: (tot[t]["total"], -t))
+            zone_sum = sum(min(tot[t]["per_zone"][zk] for t in LINE_GRID) for zk in ZONE_ORDER)
+            cells = []
+            for zk in ZONE_ORDER:
+                bz = min(LINE_GRID, key=lambda t: (tot[t]["per_zone"][zk], -t)); d = P[zk][str(bz)]
+                cells.append(f'<td class="num"><b>{int(bz*100)}%</b> <span class="fine">cost {tot[bz]["per_zone"][zk]:.0f} · {d["tp"]} of {d["tp"]+d["fn"]} caught, {d["fp"]} false</span></td>')
+            pcheap.append(f'<tr><td><b>{esc(s["label"])}</b></td><td class="num"><b>{int(best_all*100)}%</b> <span class="fine">cost {tot[best_all]["total"]:.0f} (vs {tot[0.5]["total"]:.0f} at 50%)</span></td><td class="num"><b>{zone_sum:.0f}</b></td>' + "".join(cells) + '</tr>')
+        pcheap.append('</table>')
+        psens = ['<table><tr><th>Setting (out of sample, vs postings)</th>' + "".join(f'<th class="num">{esc(s["label"])}</th>' for s in sets) + '</tr>']
+        for thr in LINES:
+            for weighting in WEIGHTINGS:
+                _, rows = rank_table_posted("oos", thr, weighting)
+                pos = {r["set"]["name"]: (i + 1, r["cost"]) for i, r in enumerate(rows)}
+                psens.append(f'<tr><td>{int(thr*100)}% line · {esc(weighting[0])}</td>' + "".join(f'<td class="num">{"<b>" if pos[s["name"]][0] == 1 else ""}#{pos[s["name"]][0]} <span class="fine">({pos[s["name"]][1]:.0f})</span>{"</b>" if pos[s["name"]][0] == 1 else ""}</td>' for s in sets) + '</tr>')
+        psens.append('</table>')
+        pk = p50_rows[0]
+        posted_verdict = f'<div class="verdict" style="background:#237059;margin-top:8px">Against the signs on the beach (State BeachWatch postings, through {esc(known_through)}): <b>{esc(pk["set"]["label"])}</b> is cheapest at 50% — cost {pk["cost"]:.0f} vs {p50_rows[1]["cost"]:.0f} for the runner-up ({esc(p50_rows[1]["set"]["label"])}); {pk["tp"]} of {pk["tp"]+pk["fn"]} posted days caught, {pk["fp"]} alarms on days no beach was posted.</div>'
+        posted_section = f"""
+<section id="posted"><h2>Graded against beach postings — the signs, not the discharge day</h2>
+<p class="lead">The discharge label marks only the day sewage was reported entering the water, so the week of risk stage 2 holds afterwards grades as false alarms even while the beach stays posted. This section re-grades the same days against SFPUC's actual postings, from the State Water Board's BeachWatch record (<code>data/beachwatch/</code>, 1999 → {esc(known_through)}; the {unknown} out-of-sample days after it are not graded). A bad day = one of the zone's beaches posted for a <b>sewage or rain</b> cause; a false alarm = risk over the line on a day the record shows no posting at all; postings for <b>other</b> causes (dry-weather bacteria, unexplained) are out of a rain model's scope and only counted. Cost = {PRIMARY[1]:g} × alarms on unposted days + {PRIMARY[2]:g} × posted days missed.</p>
+<h3>Out of sample, 50% line</h3>{p50_html}
+<h3>Out of sample, 25% line</h3>{p25_html}
+<h3>Since training only, 50% line</h3>{ppost_html}
+<h3>Two rulers, the same alarms</h3>
+<p class="fine">What the discharge label calls a false alarm in the week after a discharge is, by the posting label, mostly a correct alarm on a posted beach.</p>{"".join(two)}
+<h3>Per zone — served set and the posting-label winner</h3>{"".join(zone_rows)}
+<h3>Cheapest line per set and zone, posting label</h3>{"".join(pcheap)}
+<h3>Sensitivity, posting label</h3>{"".join(psens)}</section>
+"""
 
     # cheapest line per set, overall and per zone (oos, primary weighting)
     cheap = ['<table><tr><th>Set</th><th class="num">cheapest single line, all zones</th><th class="num">per-zone lines, summed</th>' + "".join(f'<th class="num">{esc(ZONES[zk].label)}</th>' for zk in ZONE_ORDER) + '</tr>']
@@ -413,9 +503,10 @@ tr.best td{{background:#e0f0ea}} .verdict{{background:#0072BC;color:#fff;border-
 <header><h1>Model analysis: which stage 1 and stage 2 to run</h1>
 <p class="sub">Every model set on disk, scored on identical days and labels from the stored scorecard artifacts, ranked by cost. Primary setting per Chase (2026-09-26): <b>{esc(PRIMARY[0])}</b>, at the <b>50% line</b>, over every out-of-sample day (the Jul 2023 → Oct 2025 holdout with holdout-fit stage 1, plus Nov 2025 → Aug 2026 with the served/candidate models on days they never saw). Other lines and weightings follow, so the verdict can be read for its sensitivity.</p>
 <div class="meta"><span>{len(sets)} sets: {esc(", ".join(f"{s['name']} = {s['stage1']} + s2 {s['stage2']}" for s in sets))}</span><span>holdout {esc(w["holdout"][0])} → {esc(w["holdout"][1])}</span><span>since training {esc(w["post"][0])} → {esc(w["post"][1])}</span><span>post-training rain: {esc(", ".join(master.get("input_rules_post") or ["raw record"]))}</span><span>generated {esc(gen)}</span></div></header>
-<nav><a href="#verdict">Verdict</a><a href="#rank">Ranking</a><a href="#sens">Sensitivity</a><a href="#cost">Cost vs line</a><a href="#s1">Stage 1</a><a href="#cal">Calibration</a><a href="#zones">Zones</a><a href="#effects">Isolated effects</a><a href="#volume">Volume</a><a href="#bact">Bacteria</a><a href="#recs">Recommendations</a></nav>
+<nav><a href="#verdict">Verdict</a><a href="#rank">Ranking</a><a href="#posted">Postings</a><a href="#sens">Sensitivity</a><a href="#cost">Cost vs line</a><a href="#s1">Stage 1</a><a href="#cal">Calibration</a><a href="#zones">Zones</a><a href="#effects">Isolated effects</a><a href="#volume">Volume</a><a href="#bact">Bacteria</a><a href="#recs">Recommendations</a></nav>
 
 <section id="verdict"><div class="verdict">King under the primary setting: <b>{esc(king["label"])}</b> — stage 1 {esc(king["stage1"])} with stage 2 {esc(king["stage2"])}: cost {primary_rows[0]["cost"]:.0f} vs {primary_rows[1]["cost"]:.0f} for the runner-up ({esc(primary_rows[1]["set"]["label"])}) and {next(r["cost"] for r in primary_rows if r["set"]["served"]):.0f} for the served {esc(served_row["set"]["stage1"])}. {primary_rows[0]["tp"]} of {primary_rows[0]["tp"]+primary_rows[0]["fn"]} discharge days caught, {primary_rows[0]["fp"]} false alarms of which {primary_rows[0]["clean"]} on clean days.</div>
+{posted_verdict}
 <div class="narr">{narrative}</div></section>
 
 <section id="rank"><h2>Ranking — 50% line, {esc(PRIMARY[0])}</h2>
@@ -427,7 +518,7 @@ tr.best td{{background:#e0f0ea}} .verdict{{background:#0072BC;color:#fff;border-
 <h3>Primary weighting at the 25% line instead</h3>{line25_html}
 <h3>Cheapest line per set — overall and per zone (out of sample, primary weighting)</h3>
 <p class="fine">Where each set's cost bottoms out on the 5–75% grid. A zone whose cheapest line differs from the others is a case for per-zone alarm lines.</p>{cheap_html}</section>
-
+{posted_section}
 <section id="sens"><h2>Sensitivity — does the winner depend on the weighting or the line?</h2>
 <p class="lead">Rank (and cost) of every set under each combination, out of sample. A verdict that holds across this table is robust; one that flips is a judgment call.</p>{"".join(sens)}</section>
 
@@ -476,6 +567,12 @@ def summary_tables(sets, evals) -> None:
                 c21 = cost(W["confusion"], W["tail"], thr, 2, 1)["total"]; c11 = cost(W["confusion"], W["tail"], thr, 1, 1)["total"]; c12 = cost(W["confusion"], W["tail"], thr, 1, 2)["total"]; cc = cost(W["confusion"], W["tail"], thr, 1, 2, True)["total"]
                 per = "  ".join(f"{z[:5]} {W['confusion'][z][str(thr)]['vs_discharge_posting']['tp']}/{W['confusion'][z][str(thr)]['vs_discharge_posting']['tp']+W['confusion'][z][str(thr)]['vs_discharge_posting']['fn']}+{W['confusion'][z][str(thr)]['vs_discharge_posting']['fp']}" for z in ZONE_ORDER)
                 print(f"   {s['name']:14} {tp}/{tp+fn}, FP {fp} ({tl}/{fp-tl}), MG {mgc:.0f}/{mgt:.0f} | {c12:.0f}, {c11:.0f}, {c21:.0f} | {cc:.0f}   [{per}]")
+        if all(e["windows"][wname].get("posted") for e in evals):
+            for thr in (0.25, 0.5):
+                print(f"-- vs postings, {int(thr*100)}% line: caught posted (cso/rain) days, alarms on unposted days (of which in the week after a discharge), other-cause posted flagged/total | cost 1:2")
+                for s, e in se:
+                    P = e["windows"][wname]["posted"]; g = lambda k: sum(P[z][str(thr)][k] for z in ZONE_ORDER)  # noqa: E731
+                    print(f"   {s['name']:14} {g('tp')}/{g('tp')+g('fn')}, FP {g('fp')} ({g('fp_after_discharge')}), other {g('other_flagged')}/{g('other_posted')} | {cost_posted(P, thr, 1, 2)['total']:.0f}   [" + "  ".join(f"{z[:5]} {P[z][str(thr)]['tp']}/{P[z][str(thr)]['tp']+P[z][str(thr)]['fn']}+{P[z][str(thr)]['fp']}" for z in ZONE_ORDER) + "]")
         print("-- stage 1 PR-AUC / Brier per basin:")
         for s, e in se:
             if s["stage2"] != "v1":
@@ -487,12 +584,13 @@ def summary_tables(sets, evals) -> None:
 def main(write: bool = True, narrative_file: Path | None = None) -> None:
     sets = load_sets()
     zvol = zone_volumes(sets[0]["sc"])
-    evals = [evaluate(s, zvol) for s in sets]
+    label = PL.from_beachwatch()
+    evals = [evaluate(s, zvol, label) for s in sets]
     summary_tables(sets, evals)
     if write:
         narr = (narrative_file or (HERE / "report_models_narrative.html")).read_text() if (narrative_file or (HERE / "report_models_narrative.html")).exists() else "<p class='fine'>Narrative not written yet.</p>"
         parts = narr.split("<!-- RECOMMENDATIONS -->")
-        html_out = build_html(sets, evals, parts[0]).replace("__RECS__", parts[1] if len(parts) > 1 else "")
+        html_out = build_html(sets, evals, parts[0], label).replace("__RECS__", parts[1] if len(parts) > 1 else "")
         OUT.write_text(html_out)
         print(f"\nwrote {OUT.relative_to(REPO)}: {OUT.stat().st_size/1e6:.2f} MB")
 

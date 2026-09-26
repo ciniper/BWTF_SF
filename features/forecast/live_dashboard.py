@@ -71,6 +71,7 @@ from src.models.rain_features import INPUT_RULES_LIVE, mask_gauge_outages as _ma
 from src.models.rain_features import add_daily_features as _add_daily_features  # noqa: E402
 from src.models.rain_features import hourly_intensity as _hourly_intensity  # noqa: E402
 from src.models import scorecard as _sc  # noqa: E402  (one rule for the model-check scorecard, shared with train_v4)
+from src.models import posting_label as _pl  # noqa: E402  (the beach-posting label, BeachWatch-backed)
 from src.models import candidates as _cand  # noqa: E402  (candidate model sets: scorecards + manifests only, never served live)
 
 # ─── Data source URLs ────────────────────────────────────────────────────────
@@ -1008,6 +1009,18 @@ class LiveData:
                         "stage2": (m.get("stage2") or {}).get("variant", "v1")})
         return out
 
+    def _posting_label(self):
+        """The BeachWatch-backed posting label, loaded once per process (None
+        when data/beachwatch/ is absent — the Model check then grades against
+        the discharge and sample labels only)."""
+        if not hasattr(self, "_posting_label_cache"):
+            try:
+                self._posting_label_cache = _pl.from_beachwatch()
+            except Exception as e:  # noqa: BLE001
+                print(f"posting label unavailable: {e}")
+                self._posting_label_cache = None
+        return self._posting_label_cache
+
     def get_scorecard(self, date_str: str, start: str | None = None, end: str | None = None,
                       model: str | None = None) -> dict:
         """Model check: the training-time hindcast (final model and the
@@ -1069,6 +1082,11 @@ class LiveData:
                   "zone_fp_tail": _sc.zone_fp_tail(days, zone_keys, lo, hi, holdout_only=False, thresholds=_sc.LINE_GRID),
                   "tail_days": _sc.TAIL_DAYS,
                   "basins": _sc.basin_metrics(days, start=lo, end=hi)}
+        label = self._posting_label()
+        if label is not None:
+            # the same window graded against the signs on the beach (BeachWatch postings)
+            window["posted_confusion"] = _sc.zone_confusion_posted(days, zone_keys, label, lo, hi, holdout_only=False, thresholds=_sc.LINE_GRID)
+            window["posting_label"] = label.coverage(lo, hi, [d["date"] for d in days])
 
         eval_path = MODEL_DIR / "eval_report.json"
         ev = json.loads(eval_path.read_text()) if eval_path.exists() else {}

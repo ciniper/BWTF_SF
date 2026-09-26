@@ -680,6 +680,12 @@ function renderCheckDetail(day) {
 let scoreRange = null;   // {preset, from, to} | null = follow the selected date
 let scoreModel = '';     // '' = the served gb_v1 artifact; else a candidate set's name (scorecard only — the live forecast always runs the served set)
 let costRatio = 4;       // one missed discharge day is worth this many false alarms: cost(line) = FP + N × FN
+let scoreLabel = 'discharge';   // what the scorecard grades against: 'discharge' = CIWQS discharge days; 'posted' = beach postings (State BeachWatch record)
+function setScoreLabel(v) {
+    scoreLabel = v === 'posted' ? 'posted' : 'discharge';
+    if (!current || current.mode !== 'check') return;
+    renderCheck({ predictions: current.byDate }, current.actual, current.scorecard, current.target);
+}
 function setCostRatio(v) {
     costRatio = Math.min(99, Math.max(1, parseInt(v, 10) || 1));
     const el = document.getElementById('scoreWindow');
@@ -742,7 +748,8 @@ function renderScoreWindow(sc) {
     const seasonLabel = s => s.label + ' season' + (s.clip ? ' (' + s.clip + ')' : '') + ' · ' + seasonGrade(s);
     const models = sc.models || [];
     const modelLabel = (models.find(m => m.key === (sc.model || '')) || {}).label || 'gb_v1 (served)';
-    let html = `<div id="scoreWindow"><div class="subhead">${ic('chart-line')} Scorecard — ${esc(modelLabel)} — ${fmtRange(w.start, w.end)}, ${pct(RISK_THRESHOLD)}% line</div>
+    const usePosted = scoreLabel === 'posted' && !!w.posted_confusion, plab = w.posting_label || {};
+    let html = `<div id="scoreWindow"><div class="subhead">${ic('chart-line')} Scorecard — ${esc(modelLabel)} — ${fmtRange(w.start, w.end)}, ${pct(RISK_THRESHOLD)}% line · vs ${usePosted ? 'beach postings' : 'discharge days'}</div>
         <div class="sc-controls">
             ${models.length > 1 ? `<select class="date-picker" onchange="setScoreModel(this.value)" title="Which model set's stored hindcast to grade. Only the served gb_v1 set drives the live forecast; candidates are scored here on the same days and labels.">
                 ${models.map(m => `<option value="${esc(m.key)}"${m.key === (sc.model || '') ? ' selected' : ''}>${esc(m.label)} — stage 1 ${esc(m.stage1 || m.family || '?')} · stage 2 ${esc(m.stage2 || 'v1')}</option>`).join('')}
@@ -750,6 +757,10 @@ function renderScoreWindow(sc) {
             <select class="date-picker" onchange="setRiskLine(this.value)" title="A day counts as predicted-bad when its risk reaches this line; hits, misses and false alarms everywhere on this view follow it">
                 ${[[0.1, '10% line (LOW)'], [0.25, '25% line (MODERATE)'], [0.5, '50% line (HIGH)']].map(([v, l]) => `<option value="${v}"${v === RISK_THRESHOLD ? ' selected' : ''}>${l}</option>`).join('')}
             </select>
+            ${w.posted_confusion ? `<select class="date-picker" onchange="setScoreLabel(this.value)" title="What counts as a bad day. Discharge days: a CIWQS-reported discharge from an outfall posting one of the zone's beaches — the day sewage went in, so the week of risk the model holds afterwards grades as false alarms. Beach postings: a day SFPUC had one of the zone's beaches posted for a sewage or rain cause, from the State's BeachWatch record (the signs on the beach; through ${esc(plab.known_through || '?')}). Postings for other causes — dry-weather bacteria — are listed but not scored.">
+                <option value="discharge"${!usePosted ? ' selected' : ''}>graded against discharge days</option>
+                <option value="posted"${usePosted ? ' selected' : ''}>graded against beach postings</option>
+            </select>` : ''}
             <select class="date-picker" onchange="onScorePreset(this.value)" title="Window the scorecard covers">
                 ${(sc.seasons || []).map(s => opt('season:' + s.season, seasonLabel(s))).join('')}
                 ${sc.post_start ? opt('post', 'Since training (' + fmtMonth(sc.post_start) + ' → ' + fmtMonth(sc.span[1]) + ') · post-training') : ''}
@@ -770,11 +781,15 @@ function renderScoreWindow(sc) {
             <span class="mute">${w.n_days} days · ${w.n_discharge_days} discharge day${w.n_discharge_days === 1 ? '' : 's'} · ${w.n_sampled_days} sampled</span>
             ${gradeBadge(w, sc)}
             ${(sc.input_rules_post || []).length && w.n_post ? `<span class="mute" title="Days after the training data ended are scored on rain treated by the serving-side input rules: a NOAA gauge stuck at exactly 0.00 for 2+ days while the other gauge records 0.5&quot; or more is treated as dead and the other gauge stands in (Oceanside was dead Jan 29 → Feb 25 2026). Pre-training days are scored exactly as the models were trained, on the raw record.">· post-training rain: ${esc(sc.input_rules_post.map(r => r.replace(/_v\d+$/, '').replace(/_/g, ' ')).join(', '))} applied</span>` : ''}
-            <label class="mute" title="Cost of a line = false alarms + N × missed discharge days, counted against the discharge label. Set N to how many false alarms you would trade to avoid one miss; the cheapest line on the grid is marked ★.">one miss = <input type="number" class="date-picker" style="width:64px;padding:4px 8px" min="1" max="99" value="${costRatio}" onchange="setCostRatio(this.value)"> false alarms</label>
+            <label class="mute" title="Cost of a line = false alarms + N × missed ${usePosted ? 'posted' : 'discharge'} days, counted against the ${usePosted ? 'posting' : 'discharge'} label. Set N to how many false alarms you would trade to avoid one miss; the cheapest line on the grid is marked ★.">one miss = <input type="number" class="date-picker" style="width:64px;padding:4px 8px" min="1" max="99" value="${costRatio}" onchange="setCostRatio(this.value)"> false alarms</label>
         </div><div class="scorecard">`;
     let totalCost = 0, totalByLine = {};
     for (const zk of ZONE_ORDER) {
-        const c = w.zone_confusion[zk]; if (!c || !c[thr]) continue;
+        const c0 = w.zone_confusion[zk]; if (!c0 || !c0[thr]) continue;
+        const pcz = usePosted && w.posted_confusion[zk] ? w.posted_confusion[zk] : null;
+        // graded against postings: the same card, fed from the posting-label confusion (the bacteria rows stay as they are)
+        const c = pcz ? Object.fromEntries(Object.keys(pcz).map(k => [k, { vs_discharge_posting: { tp: pcz[k].tp, fp: pcz[k].fp, fn: pcz[k].fn, tn: pcz[k].tn }, vs_bacteria_elevated: (c0[k] || c0[thr]).vs_bacteria_elevated }])) : c0;
+        if (!c[thr]) continue;
         const d = c[thr].vs_discharge_posting, b = c[thr].vs_bacteria_elevated;
         const rec = d.tp + d.fn ? d.tp / (d.tp + d.fn) : null, far = d.fp + d.tn ? d.fp / (d.fp + d.tn) : null, brec = b.tp + b.fn ? b.tp / (b.tp + b.fn) : null, bfa = b.fp + b.tn ? b.fp / (b.fp + b.tn) : null;
         const f = v => v == null ? '—' : pct(v) + '%';
@@ -783,21 +798,23 @@ function renderScoreWindow(sc) {
         totalCost += cost;
         for (const t of Object.keys(c)) totalByLine[t] = (totalByLine[t] || 0) + lineCost(c[t].vs_discharge_posting);
         const posted = d.tp + d.fn, quiet = d.fp + d.tn, sampled = b.tp + b.fn + b.fp + b.tn;
-        const tailN = (w.zone_fp_tail && w.zone_fp_tail[zk] && w.zone_fp_tail[zk][thr] != null) ? w.zone_fp_tail[zk][thr] : null;
+        const tailN = pcz ? pcz[thr].fp_after_discharge : ((w.zone_fp_tail && w.zone_fp_tail[zk] && w.zone_fp_tail[zk][thr] != null) ? w.zone_fp_tail[zk][thr] : null);
         const cleanN = tailN == null ? null : d.fp - tailN;
         const tailDays = w.tail_days || 7;
         const linesTable = `<table class="lines"><tr><th>line</th><th class="num">caught</th><th class="num">false alarms</th><th class="num">cost</th></tr>` +
             Object.keys(c).map(Number).sort((a, b) => a - b).map(t => { const k = String(t), x = c[k].vs_discharge_posting, cc = lineCost(x), cur = k === thr, isBest = best && t === best.line;
                 return `<tr class="${cur ? 'cur' : ''}${isBest ? ' best' : ''}"><td>${pct(t)}%${cur ? ' <span class="mute">◂</span>' : ''}</td><td class="num">${x.tp}/${x.tp + x.fn}</td><td class="num">${x.fp}</td><td class="num">${cc}${isBest ? ' ★' : ''}</td></tr>`; }).join('') + '</table>';
         html += `<div class="score"><b>${ic(ZONE_ICON[zk])} ${esc((ZONES.find(z => z.key === zk) || {}).label)}</b>
-            <div class="grp">Discharges · ${posted} day${posted === 1 ? '' : 's'} a discharge posted a beach here</div>
+            <div class="grp">${pcz ? `Posted days · ${posted} day${posted === 1 ? '' : 's'} a beach here was posted for a sewage or rain cause` : `Discharges · ${posted} day${posted === 1 ? '' : 's'} a discharge posted a beach here`}</div>
             <div class="row"><span>Caught, risk at or above ${pct(RISK_THRESHOLD)}%</span><span><b>${d.tp} of ${posted}</b> <span class="mute">${f(rec)}</span></span></div>
             <div class="row"><span>Missed</span><span><b>${d.fn}</b></span></div>
-            <div class="grp">False alarms · alarm days with no discharge posted (${quiet} quiet days)</div>
+            <div class="grp">${pcz ? `False alarms · alarm days with no beach posted (${quiet} known-quiet days)` : `False alarms · alarm days with no discharge posted (${quiet} quiet days)`}</div>
             <div class="row"><span>Total</span><span><b>${d.fp}</b> <span class="mute">${f(far)}</span></span></div>
-            ${tailN != null ? `<div class="row"><span>· within ${tailDays} days after a real discharge <span class="mute">(beach likely still dirty)</span></span><span>${tailN}</span></div>
-            <div class="row"><span>· on clean days <span class="mute">(the model's own cost)</span></span><span><b>${cleanN}</b></span></div>` : ''}
-            <div class="row"><span>False alarms per caught discharge</span><span><b>${fapc}</b></span></div>
+            ${tailN != null ? `<div class="row"><span>· within ${tailDays} days after a real discharge <span class="mute">(${pcz ? 'beach already reopened, model still up' : 'beach likely still dirty'})</span></span><span>${tailN}</span></div>
+            <div class="row"><span>· ${pcz ? 'elsewhere' : 'on clean days'} <span class="mute">(the model's own cost)</span></span><span><b>${cleanN}</b></span></div>` : ''}
+            <div class="row"><span>False alarms per caught ${pcz ? 'posted day' : 'discharge'}</span><span><b>${fapc}</b></span></div>
+            ${pcz ? `<div class="grp">Out of scope · ${pcz[thr].other_posted} posted day${pcz[thr].other_posted === 1 ? '' : 's'} for other causes</div>
+            <div class="row"><span>Dry-weather bacteria or unexplained postings <span class="mute">(a rain model is not asked to see these)</span></span><span><b>${pcz[thr].other_flagged} of ${pcz[thr].other_posted}</b> flagged</span></div>` : ''}
             <div class="grp">Bacteria samples · ${sampled} sampled day${sampled === 1 ? '' : 's'}</div>
             <div class="row"><span>Elevated-sample days caught</span><span><b>${b.tp} of ${b.tp + b.fn}</b> <span class="mute">${f(brec)}</span></span></div>
             <div class="row"><span>Alarms on clean-sample days</span><span><b>${b.fp} of ${b.fp + b.tn}</b> <span class="mute">${f(bfa)}</span></span></div>
@@ -811,7 +828,7 @@ function renderScoreWindow(sc) {
     const lines = Object.keys(totalByLine).map(Number).sort((a, b) => a - b);
     if (lines.length) {
         let bestT = lines[0]; for (const t of lines) if (totalByLine[String(t)] <= totalByLine[String(bestT)]) bestT = t;
-        html += `<div class="fine" style="margin-top:8px">All four zones at the ${pct(RISK_THRESHOLD)}% line: cost <b>${totalCost}</b>, with one miss counted as ${costRatio} false alarm${costRatio == 1 ? '' : 's'}. Cheapest single line for all zones together: <b>${pct(bestT)}%</b>, cost ${totalByLine[String(bestT)]}. "Within ${w.tail_days || 7} days after a real discharge" is the model holding risk up while the beach is likely still dirty — by design; "on clean days" is the cost the model itself adds.</div>`;
+        html += `<div class="fine" style="margin-top:8px">All four zones at the ${pct(RISK_THRESHOLD)}% line: cost <b>${totalCost}</b>, with one miss counted as ${costRatio} false alarm${costRatio == 1 ? '' : 's'}. Cheapest single line for all zones together: <b>${pct(bestT)}%</b>, cost ${totalByLine[String(bestT)]}. ${usePosted ? `Graded against the signs: a bad day is one SFPUC had a beach in the zone posted for a sewage or rain cause (State BeachWatch record, through ${esc(plab.known_through || '?')}${plab.unknown_days ? `; ${plab.unknown_days} of this window's days fall after it and are not graded` : ''}). Postings for other causes are listed but not scored.` : `"Within ${w.tail_days || 7} days after a real discharge" is the model holding risk up while the beach is likely still dirty — by design; "on clean days" is the cost the model itself adds.`}</div>`;
     }
     if (w.basins) {
         const f3 = v => v == null ? '<span class="mute">—</span>' : Number(v).toFixed(3);
