@@ -102,7 +102,7 @@ def test_groups_and_basins():
             assert s.group == "Ocean" and s.basin == "Westside", sid
         else:
             assert s.group != "Ocean" and s.basin != "Westside", sid
-    assert STATIONS["BAY#220_SL"].basin == "Central"  # Mission Creek outfalls, own model since v4
+    assert STATIONS["BAY#220_SL"].basin == "Central"  # Mission Creek outfalls, own model since the 2026-09 retrain
     assert STATION_BASINS == {sid: s.basin for sid, s in STATIONS.items()}
 
 
@@ -152,7 +152,7 @@ def test_forecast_observed_station_basins_match_registry():
 
     key = {"Westside": "westside", "North Shore": "north_shore",
            "Central": "central", "Southeast": "southeast"}
-    # every station, including 4618 Mission Creek (Central model since v4)
+    # every station, including 4618 Mission Creek (Central model since the 2026-09 retrain)
     expected = {s.sfpuc_id: key[s.basin] for s in STATIONS.values()}
     assert live_dashboard.OBSERVED_STATION_BASIN == expected
 

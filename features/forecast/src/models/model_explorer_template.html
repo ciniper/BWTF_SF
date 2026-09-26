@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>How the SF CSO forecast works — v4 model explorer</title>
+<title>How the SF CSO forecast works — model explorer</title>
 <link rel="icon" href="/static/brand/favicon.ico">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -164,7 +164,7 @@ const MODEL_ORDER = BASINS.concat(['citywide']);
 const ZONE_ORDER = ['ocean','baker_china','north','east'];
 const SOURCES = ['avg','SF Downtown','SF Oceanside'];
 const COLORS = {westside:'#0072BC', north_shore:'#237059', central:'#7b4bb5', southeast:'#d4763a', citywide:'#54576F'};
-const MS = D.model_set || {name:'v4', label:'v4 (served)', served:true, families:['gb']};
+const MS = D.model_set || {name:'gb_v1', label:'gb_v1 (served)', served:true, families:['gb']};
 const famOf = m => m.family || 'gb';
 const ANY_LOGIT = MODEL_ORDER.some(k => famOf(D.models[k]) === 'logit');
 const ALL_LOGIT = MODEL_ORDER.every(k => famOf(D.models[k]) === 'logit');
@@ -182,8 +182,8 @@ const fmtMon = s => new Date(s + 'T12:00:00').toLocaleDateString(undefined, {mon
 document.title = 'How the SF CSO forecast works — ' + MS.name + ' model explorer';
 document.getElementById('title').textContent = 'How the SF CSO forecast works' + (MS.served ? '' : ' — ' + MS.name + ' candidate');
 document.getElementById('sub').textContent = MS.served
-  ? 'The served v4 models, opened up: where the rain numbers come from, what the models are given, the trees they are made of, and how a discharge probability becomes a beach-risk percentage. Everything on this page is computed from the deployed model files — the page runs the real trees in your browser.'
-  : `The ${MS.name} candidate set, opened up — stage 1 is ${MS.stage1_name || MS.name}, a ${FAMILY_LABEL}${MS.stage1_from && MS.stage1_from !== 'fit' ? ' taken from ' + MS.stage1_from : ''}; stage 2 is ${MS.stage2 && MS.stage2.variant !== 'v1' ? MS.stage2.variant + ', the outfall split (outfall shares' + (MS.stage2.impact_table_refit ? ', impact table refit' : '') + ')' : 'v1, the basin composition v4 ships'}. It is NOT what the live forecast runs; it exists to be compared with v4 in the Model check on identical days and labels. Same rain gauges, same 19 features, same volume heads; the page runs this set's own arithmetic. ${MS.note ? MS.note : ''}`;
+  ? 'The served gb_v1 models, opened up: where the rain numbers come from, what the models are given, the trees they are made of, and how a discharge probability becomes a beach-risk percentage. Everything on this page is computed from the deployed model files — the page runs the real trees in your browser.'
+  : `The ${MS.name} candidate set, opened up — stage 1 is ${MS.stage1_name || MS.name}, a ${FAMILY_LABEL}${MS.stage1_from && MS.stage1_from !== 'fit' ? ' taken from ' + (MS.stage1_from === 'served' || MS.stage1_from === 'v4' ? 'the served bundle' : MS.stage1_from) : ''}; stage 2 is ${MS.stage2 && MS.stage2.variant !== 'v1' ? MS.stage2.variant + ', the outfall split (outfall shares' + (MS.stage2.impact_table_refit ? ', impact table refit' : '') + ')' : 'v1, the basin composition the served bundle ships'}. It is NOT what the live forecast runs; it exists to be compared with the served gb_v1 in the Model check on identical days and labels. Same rain gauges, same 19 features, same volume heads; the page runs this set's own arithmetic. ${MS.note ? MS.note : ''}`;
 const nHinge = ANY_LOGIT ? (Object.values(D.models).find(m => famOf(m) === 'logit').coef.length - D.features.all.length) : 0;
 document.getElementById('meta').innerHTML = [
   (MS.served ? 'served models ' : 'candidate ') + esc(D.version) + ' · fit ' + esc((D.trained_at||'').slice(0,10)),

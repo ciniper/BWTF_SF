@@ -60,7 +60,7 @@ LOCAL_TZ = ZoneInfo("America/Los_Angeles")
 # Basin / group / zone geography is shared with training (src/models/groups.py)
 # so serving can never disagree with what the models were fit on. Every
 # registry station maps to a basin model — including 4618 Mission Creek,
-# served by the Central model since v4 (2026-09).
+# served by the Central model since the 2026-09 retrain (gb_v1).
 from src.models.groups import (  # noqa: E402
     GROUPS_BY_BASIN, OBSERVED_STATION_BASIN, ZONE_GROUPS, zone_risks,
 )
@@ -209,7 +209,7 @@ class LiveData:
 
         ``features_by_source`` maps a rain source ('avg', 'SF Oceanside', ...)
         to that day's feature dict built from that series; each model is
-        scored on the source it was trained on (v4 regional models).
+        scored on the source it was trained on (the served gb_v1 regional models).
         
         The offset removes the model's dry-day noise floor. But when rain IS
         present, the model's prediction is real signal — so we scale the offset
@@ -1000,7 +1000,7 @@ class LiveData:
 
     def list_models(self) -> list:
         """The served set first, then every candidate set on disk."""
-        out = [{"key": "", "label": "v4 (served)", "family": "gb", "served": True, "stage1": "gb_v1", "stage2": "v1"}]
+        out = [{"key": "", "label": "gb_v1 (served)", "family": "gb", "served": True, "stage1": "gb_v1", "stage2": "v1"}]
         for m in _cand.list_candidates():
             out.append({"key": m["name"], "label": m["name"], "family": m.get("family"), "note": m.get("note", ""),
                         "created_at": m.get("created_at"), "rain_sources": m.get("rain_sources"), "served": False,

@@ -1,8 +1,8 @@
-"""Candidate model sets — alternatives to the served v4 models that the Model
+"""Candidate model sets — alternatives to the served gb_v1 models that the Model
 check page can score side by side. Nothing here is ever served live: the
-forecast's predictions always come from data/models/ (v4). A candidate is a
+forecast's predictions always come from data/models/ (the served gb_v1 bundle). A candidate is a
 directory of pickles with the same contract as the served ones plus its own
-scorecard artifact, so every window the page can score for v4 it can score
+scorecard artifact, so every window the page can score for the served set it can score
 for the candidate too, on identical labels and identical days.
 
     data/models/candidates/<name>/
@@ -194,7 +194,7 @@ def save_candidate(name: str, family: str, finals: dict, holdout_models: dict, c
     = anything worth keeping about how the model was picked (source, C, scores).
     `stage2` = a fitted variant spec to compose with (saved as stage2.json);
     None = stage 2 v1 (served). `stage1_from` names where the stage-1 models
-    came from ("fit", "v4", or another candidate's name); `stage1_name` is the
+    came from ("fit", "served", or another candidate's name); `stage1_name` is the
     stage 1's own name (a freshly fit set is named after itself, e.g. logit_v1;
     the served bundle's stage 1 is gb_v1)."""
     d = candidate_dir(name)

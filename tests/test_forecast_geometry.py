@@ -1,4 +1,4 @@
-"""Forecast geography + stage-2 composition (v4, 2026-09).
+"""Forecast geography + stage-2 composition (2026-09).
 
 Pins the contracts between training (train_v4) and serving (live_dashboard):
 basins ↔ groups ↔ zones all derive from the registries, and the shared

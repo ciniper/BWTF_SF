@@ -1,10 +1,10 @@
 """Stage 2 variants — named alternatives to the served composition that a
 candidate set can carry, selectable in the Model check next to its stage 1.
-Nothing here changes what is served: the live forecast composes with the v4
+Nothing here changes what is served: the live forecast composes with the served gb_v1
 impact table and no split until a variant is promoted.
 
     v1                 group risk composes the BASIN discharge probability
-                       directly (impact.compose with split=None) — what v4
+                       directly (impact.compose with split=None) — what the served bundle
                        ships. Ocean Beach and Baker-China get the same p.
     v2 (outfall split) p_group(D−k) = p_basin(D−k) · g_group(size(D−k)) where
                        g_group = share of the basin's CIWQS discharge days (by
@@ -121,7 +121,7 @@ def group_share(spec: dict, group: str, vol: float) -> float:
 
 
 def make_split(spec: dict | None):
-    """The `split` callable impact.compose takes, or None for stage 2 v1 (the v4 composition)."""
+    """The `split` callable impact.compose takes, or None for stage 2 v1 (the served composition)."""
     if not spec or spec.get("variant", "v1") == "v1":
         return None
     if spec["variant"] != "v2":

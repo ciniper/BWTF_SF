@@ -111,7 +111,7 @@ def compose(table: dict, groups_by_basin: dict, day_probs: list, day_volumes: li
                    certainty (p=1) replaces the prediction for those days.
     split          optional callable (group, p_basin, volume) → p_group: a
                    stage 2 variant's way of turning the basin probability into
-                   the group's (src/models/stage2.py). None = the served v4
+                   the group's (src/models/stage2.py). None = the served gb_v1
                    composition, byte-identical to before this hook existed.
 
     Returns (per_basin, per_group): per_basin[basin_key] = worst group in the

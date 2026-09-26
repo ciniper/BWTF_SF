@@ -194,7 +194,7 @@ footer a { color: #0072BC; text-decoration: none; }
 
 <footer>
     <p><svg class="ic"><use href="#i-info"/></svg> Rain: NOAA gauges (Downtown 047772, Oceanside 047767), KSFO hourly, ECMWF forecast · Discharges: SFPUC CIWQS reports · Beach status: SFPUC · Bacteria: DataSF</p>
-    <p>Community-science tool, not an official advisory — posted signs and SFPUC or health-department notices always win. <a href="/reports/2026-09_forecast_v4_model_explorer.html">How the model works</a> · <a href="/reports/2026-09_forecast_stage2_explorer.html">Stage 2: discharge → beach risk</a> · <a href="/reports/2026-09_forecast_logit_v1_model_explorer.html">Inside the weights candidate</a> · <a href="/reports/2026-09_model_analysis.html">Model analysis: which set to run</a> · <a href="/">Back to dashboard</a> · <a href="/api/build" title="{{ build.message or '' }}">{{ build.label }}</a></p>
+    <p>Community-science tool, not an official advisory — posted signs and SFPUC or health-department notices always win. <a href="/reports/2026-09_forecast_gb_v1_model_explorer.html">How the model works</a> · <a href="/reports/2026-09_forecast_stage2_explorer.html">Stage 2: discharge → beach risk</a> · <a href="/reports/2026-09_forecast_logit_v1_model_explorer.html">Inside the weights candidate</a> · <a href="/reports/2026-09_model_analysis.html">Model analysis: which set to run</a> · <a href="/">Back to dashboard</a> · <a href="/api/build" title="{{ build.message or '' }}">{{ build.label }}</a></p>
 </footer>
 </div>
 
@@ -668,7 +668,7 @@ function renderCheckDetail(day) {
         html += `<div class="mute" style="font-size:.85em;margin-top:10px">This date is outside the training scorecard (${esc((sc.span || []).join(' → '))}); the hindcast above is today's models on archived rain.</div>`;
     }
     html += renderScoreWindow(sc);
-    html += `<div class="sources">"Today's models" = the served v4 models scored now on the rain that fell (NOAA gauges for totals, Open-Meteo archive for hourly intensity). "Stored hindcast" = the probability kept in the scorecard artifact: <b>holdout</b> from a model that never saw that season, <b>in-sample</b> from the served models on days they trained on (optimistic), <b>post-training</b> from the served models on days after their training data ended${sc.trained_through ? ' (' + esc(fmtMonth(sc.trained_through)) + ')' : ''} — the truest test. The scorecard below aggregates those stored probabilities over the chosen window. A discharge that posts a zone's beach, an SFPUC posting, or a sample over standard makes a "bad" day.</div>`;
+    html += `<div class="sources">"Today's models" = the served gb_v1 models scored now on the rain that fell (NOAA gauges for totals, Open-Meteo archive for hourly intensity). "Stored hindcast" = the probability kept in the scorecard artifact: <b>holdout</b> from a model that never saw that season, <b>in-sample</b> from the served models on days they trained on (optimistic), <b>post-training</b> from the served models on days after their training data ended${sc.trained_through ? ' (' + esc(fmtMonth(sc.trained_through)) + ')' : ''} — the truest test. The scorecard below aggregates those stored probabilities over the chosen window. A discharge that posts a zone's beach, an SFPUC posting, or a sample over standard makes a "bad" day.</div>`;
     panel.innerHTML = html;
 }
 
@@ -678,7 +678,7 @@ function renderCheckDetail(day) {
 // season / the holdout / everything / a custom range it sticks across date
 // changes until "follow the date".
 let scoreRange = null;   // {preset, from, to} | null = follow the selected date
-let scoreModel = '';     // '' = the served v4 artifact; else a candidate set's name (scorecard only — the live forecast is always v4)
+let scoreModel = '';     // '' = the served gb_v1 artifact; else a candidate set's name (scorecard only — the live forecast always runs the served set)
 let costRatio = 4;       // one missed discharge day is worth this many false alarms: cost(line) = FP + N × FN
 function setCostRatio(v) {
     costRatio = Math.min(99, Math.max(1, parseInt(v, 10) || 1));
@@ -741,10 +741,10 @@ function renderScoreWindow(sc) {
     const opt = (v, label) => `<option value="${v}"${v === preset ? ' selected' : ''}>${esc(label)}</option>`;
     const seasonLabel = s => s.label + ' season' + (s.clip ? ' (' + s.clip + ')' : '') + ' · ' + seasonGrade(s);
     const models = sc.models || [];
-    const modelLabel = (models.find(m => m.key === (sc.model || '')) || {}).label || 'v4 (served)';
+    const modelLabel = (models.find(m => m.key === (sc.model || '')) || {}).label || 'gb_v1 (served)';
     let html = `<div id="scoreWindow"><div class="subhead">${ic('chart-line')} Scorecard — ${esc(modelLabel)} — ${fmtRange(w.start, w.end)}, ${pct(RISK_THRESHOLD)}% line</div>
         <div class="sc-controls">
-            ${models.length > 1 ? `<select class="date-picker" onchange="setScoreModel(this.value)" title="Which model set's stored hindcast to grade. Only the served v4 set drives the live forecast; candidates are scored here on the same days and labels.">
+            ${models.length > 1 ? `<select class="date-picker" onchange="setScoreModel(this.value)" title="Which model set's stored hindcast to grade. Only the served gb_v1 set drives the live forecast; candidates are scored here on the same days and labels.">
                 ${models.map(m => `<option value="${esc(m.key)}"${m.key === (sc.model || '') ? ' selected' : ''}>${esc(m.label)} — stage 1 ${esc(m.stage1 || m.family || '?')} · stage 2 ${esc(m.stage2 || 'v1')}</option>`).join('')}
             </select>` : ''}
             <select class="date-picker" onchange="setRiskLine(this.value)" title="A day counts as predicted-bad when its risk reaches this line; hits, misses and false alarms everywhere on this view follow it">
@@ -764,7 +764,7 @@ function renderScoreWindow(sc) {
             </span>
             ${scoreRange ? `<button class="mode-btn" onclick="resetScoreRange()" title="Back to the season of the selected date">${ic('calendar')} follow the date</button>` : ''}
             ${models.length > 1 ? `<a class="mute" href="/reports/2026-09_model_leaderboard.html" title="How each candidate was fit and scored">leaderboard</a>` : ''}
-            <a class="mute" href="${scoreModel ? '/reports/2026-09_forecast_' + esc(scoreModel) + '_model_explorer.html' : '/reports/2026-09_forecast_v4_model_explorer.html'}" title="The selected model set opened up: inputs, weights or trees, self-check">inside this model</a>
+            <a class="mute" href="${scoreModel ? '/reports/2026-09_forecast_' + esc(scoreModel) + '_model_explorer.html' : '/reports/2026-09_forecast_gb_v1_model_explorer.html'}" title="The selected model set opened up: inputs, weights or trees, self-check">inside this model</a>
             <a class="mute" href="/reports/2026-09_forecast_stage2_explorer.html" title="How a discharge probability becomes beach risk — shared by every model set">stage 2</a>
             <a class="mute" href="/reports/2026-09_model_analysis.html" title="Every model set ranked by cost, from several angles, with charts and recommendations">analysis</a>
             <span class="mute">${w.n_days} days · ${w.n_discharge_days} discharge day${w.n_discharge_days === 1 ? '' : 's'} · ${w.n_sampled_days} sampled</span>

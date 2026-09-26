@@ -220,7 +220,7 @@ def save_best_logit(name: str, note: str = "") -> Path:
     + C, by holdout PR-AUC) on the full training window, plus its holdout-fit
     sibling, and write them as a candidate set the Model check can select.
     Reads data/models/leaderboard.json — run the leaderboard first. The served
-    v4 set is untouched."""
+    served gb_v1 set is untouched."""
     import candidates
     board = json.loads(OUT_JSON.read_text())
     per_basin, chosen = {}, {}

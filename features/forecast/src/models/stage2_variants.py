@@ -6,11 +6,11 @@
           plus the impact table refit on group-attributed discharge days)
 
     venv/bin/python features/forecast/src/models/stage2_variants.py save \
-        --stage1 v4 --variant v2 --name gb_v1_s2v2 [--note "…"]
+        --stage1 served --variant v2 --name gb_v1_s2v2 [--note "…"]
     venv/bin/python features/forecast/src/models/stage2_variants.py save \
         --stage1 logit_v1 --variant v2 --name logit_v1_s2v2
         → data/models/candidates/<name>/ : the stage-1 pickles copied from the
-          source set (served v4 or a candidate), stage2.json, and a scorecard
+          source set (the served gb_v1 or a candidate), stage2.json, and a scorecard
           composed with the variant. Holdout-fit siblings are refit on the
           pre-holdout rows exactly as the source set fit them (deterministic),
           and checked against the source artifact's stored holdout
@@ -67,7 +67,7 @@ def fit(variant: str = "v2") -> Path:
     print(f"stage 2 {variant} (outfall split): shares by group (share of the basin's CIWQS discharge days on which the group's outfalls took part)")
     for g, s in spec["shares"].items():
         print(f"   {g:14} outfalls {len(spec['group_outfalls'][g]):2}  large {s['large']['p']} (n={s['large']['n']})  small {s['small']['p']} (n={s['small']['n']})  all {s['all']['p']} (n={s['all']['n']})")
-    print("impact table refit — sample days per group (v4 → split):")
+    print("impact table refit — sample days per group (served → split):")
     for g in table:
         print(f"   {g:14} {impact_raw[g]['n_sample_days']} → {table[g]['n_sample_days']}   baseline {impact_raw[g]['buckets']['baseline_no_recent_discharge']['p_elevated']} → {table[g]['buckets']['baseline_no_recent_discharge']['p_elevated']}")
     out = S2.save_variant(spec)
@@ -75,10 +75,13 @@ def fit(variant: str = "v2") -> Path:
     return out
 
 
+SERVED_ALIASES = ("served", "gb_v1", "v4")  # ways to name the served bundle's stage 1 (gb_v1); "v4" is the retired label
+
+
 def _load_stage1(source: str) -> tuple[dict, dict, str, str]:
     """({key: pickle dict}, source scorecard, family, stage-1 name). The served
-    v4 bundle's stage 1 is named gb_v1."""
-    if source == "v4":
+    bundle's stage 1 is named gb_v1; source "served" (alias "gb_v1") selects it."""
+    if source in SERVED_ALIASES:
         models = {}
         for basin in T.APP_BASINS + ["citywide"]:
             key = BASIN_KEYS.get(basin, "citywide")
@@ -154,16 +157,17 @@ def save(stage1: str, variant: str, name: str, note: str = "") -> Path:
         raise SystemExit("refit holdout models do not match the source artifact — refusing to write")
 
     per_basin = {}
-    if stage1 == "v4":
+    if stage1 in SERVED_ALIASES:
         ev = json.loads((T.SERVE_DIR / "eval_report.json").read_text())
         for key, t in ev.get("targets", {}).items():
             per_basin[key] = {"source": t.get("rain_source"), "holdout": t.get("holdout"), "n_events": t.get("n_events")}
     else:
         man = json.loads((candidates.candidate_dir(stage1) / "manifest.json").read_text())
         per_basin = man.get("per_basin", {})
-    note = note or f"Stage 1 {stage1_name} (from {stage1}) composed with stage 2 {variant} ({spec.get('kind', '')}): {spec.get('definition', '')}"
+    stage1_from = "served" if stage1 in SERVED_ALIASES else stage1
+    note = note or f"Stage 1 {stage1_name} (from {stage1_from}) composed with stage 2 {variant} ({spec.get('kind', '')}): {spec.get('definition', '')}"
     d = candidates.save_candidate(name, family, finals, holdouts, chosen, features, per_basin, note=note,
-                                  extra={"stage1_source": stage1}, stage2=spec, stage1_from=stage1, stage1_name=stage1_name)
+                                  extra={"stage1_source": stage1_from}, stage2=spec, stage1_from=stage1_from, stage1_name=stage1_name)
     print(f"candidate → {d.relative_to(REPO)} (pickles copied from {stage1}, stage2.json, manifest, scorecard)")
     return d
 
@@ -174,6 +178,6 @@ if __name__ == "__main__":
         fit(args[args.index("--variant") + 1] if "--variant" in args else "v2")
     elif args[0] == "save":
         get = lambda flag, default=None: args[args.index(flag) + 1] if flag in args else default  # noqa: E731
-        save(get("--stage1", "v4"), get("--variant", "v2"), get("--name"), get("--note", ""))
+        save(get("--stage1", "served"), get("--variant", "v2"), get("--name"), get("--note", ""))
     else:
         raise SystemExit(__doc__)

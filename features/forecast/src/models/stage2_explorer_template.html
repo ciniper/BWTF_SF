@@ -52,7 +52,7 @@ tr.dim td{color:#9aa0a6}
 <body><div class="wrap">
 <header>
   <h1>Stage 2: from discharge probability to beach risk</h1>
-  <p class="sub">Stage 1 says how likely each plant is to discharge today. Stage 2 turns that, and the past week of it, into the chance a beach group is fouled today — using how long beaches actually stayed dirty after real discharges. This page opens that layer up for the served v4 set and every candidate set: what every model shares, what differs, and a walk-through of any day in the hindcast.</p>
+  <p class="sub">Stage 1 says how likely each plant is to discharge today. Stage 2 turns that, and the past week of it, into the chance a beach group is fouled today — using how long beaches actually stayed dirty after real discharges. This page opens that layer up for the served gb_v1 set and every candidate set: what every model shares, what differs, and a walk-through of any day in the hindcast.</p>
   <div class="meta" id="meta"></div>
 </header>
 <nav>
@@ -70,13 +70,13 @@ risk<sub>zone</sub>(D) = max over the zone's groups</div>
 </section>
 
 <section id="shared"><h2>What is shared, and what differs per model</h2>
-<p class="lead">Every model set — the served v4 and each candidate — runs through the same stage 2: the same impact table, the same volume heads, the same composition code. What differs is what stage 1 feeds in: the daily probabilities, and the rain source each basin model reads. The volume heads read the rain source they were trained on regardless of which stage-1 set is in play.</p>
+<p class="lead">Every model set — the served gb_v1 and each candidate — runs through the same stage 2: the same impact table, the same volume heads, the same composition code. What differs is what stage 1 feeds in: the daily probabilities, and the rain source each basin model reads. The volume heads read the rain source they were trained on regardless of which stage-1 set is in play.</p>
 <table id="sharedTable"></table>
 <p class="fine" id="sharedNote"></p>
 </section>
 
 <section id="impact"><h2>The impact table</h2>
-<p class="lead">Fitted once, at v4 training, from every sample day within a week of a CIWQS discharge: for each beach group, size class and days-since bucket, the share of sample days over standard, with the count behind it. Serving smooths each small/large curve to be non-increasing over days (weighted pool-adjacent-violators), because contamination decays and cells with 3–6 samples are noisy enough to read day 3 above day 1.</p>
+<p class="lead">Fitted once, at gb_v1 training, from every sample day within a week of a CIWQS discharge: for each beach group, size class and days-since bucket, the share of sample days over standard, with the count behind it. Serving smooths each small/large curve to be non-increasing over days (weighted pool-adjacent-violators), because contamination decays and cells with 3–6 samples are noisy enough to read day 3 above day 1.</p>
 <div class="controls"><label>Table <select id="impactMode"><option value="impact_smoothed">stage 2 v1 table, smoothed (what serving uses)</option><option value="impact_raw">stage 2 v1 table, raw fit</option></select></label>
   <label>Show the blend for a discharge of <input type="range" id="blendVol" min="0" max="150" step="1" value="30"> <span id="blendVolV" class="mono"></span></label>
   <span class="kbd">Cells: P(elevated) with n underneath; hover for the attributable value. Curves: attributable x(k) — solid large, dashed small, orange dots the blend at the chosen volume.</span></div>
@@ -97,7 +97,7 @@ risk<sub>zone</sub>(D) = max over the zone's groups</div>
 </section>
 
 <section id="compose"><h2>Walk through any day</h2>
-<p class="lead">Pick a beach group and a day. The bars are that basin's stage-1 probability from the selected model set; the lines are the composed group risk from every set (v4 solid). Below the axis: reported discharges (with volume), bacteria samples at the group's beaches, and whether one of the zone's beaches was posted. The table shows every term of the product for the selected set on the selected day.</p>
+<p class="lead">Pick a beach group and a day. The bars are that basin's stage-1 probability from the selected model set; the lines are the composed group risk from every set (served set solid). Below the axis: reported discharges (with volume), bacteria samples at the group's beaches, and whether one of the zone's beaches was posted. The table shows every term of the product for the selected set on the selected day.</p>
 <div class="controls">
   <label>Group <select id="wGroup"></select></label>
   <label>Model set <select id="wSet"></select></label>
@@ -117,7 +117,7 @@ risk<sub>zone</sub>(D) = max over the zone's groups</div>
 <p class="lead">Stage 2 is identical, so any difference here is stage 1's. For a window, each zone's caught discharges and false alarms at the 25% line per model set — false alarms split into the seven days after a real posting (the beach really was dirty) and the rest — then the days where the sets disagree most on composed risk.</p>
 <div class="controls"><label>Window <select id="cWindow"></select></label><label>Line <select id="cLine"><option value="0.1">10%</option><option value="0.25" selected>25%</option><option value="0.5">50%</option></select></label></div>
 <table id="compareTable"></table>
-<h3>Largest disagreements vs v4 in this window</h3>
+<h3>Largest disagreements vs the served set in this window</h3>
 <div id="disagree"></div>
 </section>
 
@@ -127,7 +127,7 @@ risk<sub>zone</sub>(D) = max over the zone's groups</div>
 <p class="fine" id="checkSummary"></p>
 </section>
 
-<footer>Generated <span id="genAt"></span> by <code>features/forecast/src/models/export_stage2_explorer.py</code> from the served impact table and volume heads, each set's model pickles and scorecard artifact. <a href="/forecast">Back to the forecast</a> · <a href="/reports/2026-09_forecast_v4_model_explorer.html">v4 model explorer</a></footer>
+<footer>Generated <span id="genAt"></span> by <code>features/forecast/src/models/export_stage2_explorer.py</code> from the served impact table and volume heads, each set's model pickles and scorecard artifact. <a href="/forecast">Back to the forecast</a> · <a href="/reports/2026-09_forecast_gb_v1_model_explorer.html">gb_v1 model explorer</a></footer>
 </div>
 
 <script>
@@ -153,7 +153,7 @@ document.getElementById('meta').innerHTML = [
   'stage 1 trained through ' + esc(D.trained_through) + ' · holdout from ' + esc(D.holdout_start),
   SETS.length + ' model set' + (SETS.length > 1 ? 's: ' : ': ') + SETS.map(s => s.name + ' = ' + (s.stage1_name || s.name) + ' + s2 ' + ((s.stage2 || {}).variant || 'v1')).join(', '),
   'stage 2 versions on disk: v1' + Object.keys(D.stage2_variants || {}).map(v => ', ' + v + ' (outfall split)').join(''),
-  'volume heads: served v4, shared by every set',
+  'volume heads: the served gb_v1 bundle, shared by every set',
 ].map(t => '<span>' + esc(t) + '</span>').join('');
 document.getElementById('genAt').textContent = D.generated_at;
 document.getElementById('liveNote').textContent = D.live_override;
@@ -200,19 +200,19 @@ const zoneRisk = (si, zk, i) => Math.max(0, ...D.zones[zk].groups.map(g => group
 // ─── shared vs per model ──────────────────────────────────────────────────────
 (function shared() {
   const s2label = s => s.stage2 && s.stage2.variant !== 'v1' ? `<span class="badge diff">stage 2 ${esc(s.stage2.variant)}: outfall split</span>${s.stage2.impact_table_refit ? ' <span class="fine">impact table refit</span>' : ''}` : '<span class="badge shared">stage 2 v1: basin composition</span>';
-  const head = ['<tr><th>Basin</th>'].concat(SETS.map(s => `<th>${esc(s.label)}<br><span class="fine" style="text-transform:none;letter-spacing:0">stage 1 ${esc(s.stage1_name || s.name)}${s.stage1_from && s.stage1_from !== 'fit' && s.stage1_from !== 'v4' ? ' (from ' + esc(s.stage1_from) + ')' : ''}: rain source · family · dry-day offset</span><br>${s2label(s)}</th>`), ['<th>Volume head <span class="badge shared">shared</span><br><span class="fine" style="text-transform:none;letter-spacing:0">reads its own rain source</span></th><th>Impact table<br><span class="fine" style="text-transform:none;letter-spacing:0">served v4 fit (a variant may refit it)</span></th></tr>']);
+  const head = ['<tr><th>Basin</th>'].concat(SETS.map(s => `<th>${esc(s.label)}<br><span class="fine" style="text-transform:none;letter-spacing:0">stage 1 ${esc(s.stage1_name || s.name)}${s.stage1_from && !['fit', 'served', 'v4'].includes(s.stage1_from) ? ' (from ' + esc(s.stage1_from) + ')' : ''}: rain source · family · dry-day offset</span><br>${s2label(s)}</th>`), ['<th>Volume head <span class="badge shared">shared</span><br><span class="fine" style="text-transform:none;letter-spacing:0">reads its own rain source</span></th><th>Impact table<br><span class="fine" style="text-transform:none;letter-spacing:0">served gb_v1 fit (a variant may refit it)</span></th></tr>']);
   const rows = [head.join('')];
   for (const bk of BASINS) {
-    const v4 = SETS[0].spec[bk];
-    const cells = SETS.map((s, i) => { const sp = s.spec[bk]; const diff = i > 0 && (sp.rain_source !== v4.rain_source || sp.family !== v4.family || sp.calibration_offset !== v4.calibration_offset);
+    const base = SETS[0].spec[bk];
+    const cells = SETS.map((s, i) => { const sp = s.spec[bk]; const diff = i > 0 && (sp.rain_source !== base.rain_source || sp.family !== base.family || sp.calibration_offset !== base.calibration_offset);
       const split = setSplit(i); const groupsTxt = split ? '<br><span class="fine">outfall shares: ' + D.basins[bk].groups.map(g => { const sh = (split.shares || {})[g] || {}; return `${esc(g)} large ${sh.large && sh.large.p != null ? sh.large.p.toFixed(2) : '—'} / small ${sh.small && sh.small.p != null ? sh.small.p.toFixed(2) : '—'}`; }).join(' · ') + '</span>' : '';
-      return `<td>${esc(sp.rain_source === 'avg' ? 'two-gauge mean' : sp.rain_source)} · ${sp.family === 'logit' ? 'weights' + (sp.C != null ? ` (C=${sp.C})` : '') : 'trees'} · offset ${(sp.calibration_offset*100).toFixed(2)} pts ${i > 0 ? (diff ? '<span class="badge diff">stage 1 differs from v4</span>' : '<span class="badge shared">stage 1 same as v4</span>') : ''}${groupsTxt}</td>`; });
+      return `<td>${esc(sp.rain_source === 'avg' ? 'two-gauge mean' : sp.rain_source)} · ${sp.family === 'logit' ? 'weights' + (sp.C != null ? ` (C=${sp.C})` : '') : 'trees'} · offset ${(sp.calibration_offset*100).toFixed(2)} pts ${i > 0 ? (diff ? '<span class="badge diff">stage 1 differs from ' + esc(SETS[0].name) + '</span>' : '<span class="badge shared">stage 1 same as ' + esc(SETS[0].name) + '</span>') : ''}${groupsTxt}</td>`; });
     const h = D.volume_heads[bk];
     rows.push(`<tr><td><span class="pill" style="background:${COLORS[bk]}">${esc(nameOf(bk))}</span></td>${cells.join('')}<td>${h ? esc(h.rain_source === 'avg' ? 'two-gauge mean' : h.rain_source) + ' · ' + h.n_events + ' events' : 'none'}</td><td>${D.basins[bk].groups.map(g => esc(g) + ' (' + (D.impact_raw[g] || {}).n_sample_days + ' sample days)').join('<br>')}</td></tr>`);
   }
   document.getElementById('sharedTable').innerHTML = rows.join('');
   const variants = Object.keys(D.stage2_variants || {});
-  document.getElementById('sharedNote').innerHTML = `Names: stage 1 sets are <b>gb_v1</b> (the gradient-boosted trees v4 ships) and <b>logit_v1</b> (the weights model); stage 2 comes in versions (<code>src/models/stage2.py</code>): <b>v1</b> composes the basin probability directly, ${variants.length ? variants.map(v => `<b>${esc(v)}</b> multiplies it first by the share of the basin's discharge days on which the group's own outfalls took part (the outfall split, below)`).join('; ') : 'no other version is on disk'}. A set pairs one stage 1 with one stage 2 and is named after its stage 1, with <code>_s2v2</code> appended when it uses stage 2 v2; the served v4 bundle is gb_v1 + stage 2 v1. Volume heads always read the rain source they were trained on (before 2026-09-25 a candidate's scorecard fed them the candidate's source — fixed, artifacts regenerated). ` + SETS.slice(1).map(s => `<b>${esc(s.name)}</b>: ${esc(s.note || '')}`).join(' ');
+  document.getElementById('sharedNote').innerHTML = `Names: stage 1 sets are <b>gb_v1</b> (the gradient-boosted trees the served bundle ships) and <b>logit_v1</b> (the weights model); stage 2 comes in versions (<code>src/models/stage2.py</code>): <b>v1</b> composes the basin probability directly, ${variants.length ? variants.map(v => `<b>${esc(v)}</b> multiplies it first by the share of the basin's discharge days on which the group's own outfalls took part (the outfall split, below)`).join('; ') : 'no other version is on disk'}. A set pairs one stage 1 with one stage 2 and is named after its stage 1, with <code>_s2v2</code> appended when it uses stage 2 v2; the served bundle is gb_v1 + stage 2 v1. Volume heads always read the rain source they were trained on (before 2026-09-25 a candidate's scorecard fed them the candidate's source — fixed, artifacts regenerated). ` + SETS.slice(1).map(s => `<b>${esc(s.name)}</b>: ${esc(s.note || '')}`).join(' ');
 })();
 
 // ─── impact tables + decay curves ──────────────────────────────────────────────
@@ -379,14 +379,14 @@ function renderCompare() {
     SETS.forEach((s, k) => { let tp = 0, fn = 0, fp = 0, fpt = 0, tn = 0;
       for (let i = o.lo; i <= o.hi; i++) { if (lab[i] == null) continue; const pred = zr[k][i] >= thr; if (lab[i]) { tp += pred; fn += !pred; } else if (pred) { fp++; if (tail(i)) fpt++; } else tn++; }
       rows.push(`<tr>${k === 0 ? `<td rowspan="${SETS.length}"><b>${esc(D.zones[zk].label)}</b></td>` : ''}<td><span style="display:inline-block;width:10px;height:10px;background:${SET_COLORS[k % SET_COLORS.length]};border-radius:2px;margin-right:6px"></span>${esc(s.label)}</td><td class="num">${tp} / ${tp + fn}</td><td class="num"><b>${fp}</b></td><td class="num">${fpt}</td><td class="num">${fp - fpt}</td><td class="num">${tn + fp}</td></tr>`);
-      if (k > 0) for (let i = o.lo; i <= o.hi; i++) { const d = zr[k][i] - zr[0][i]; if (Math.abs(d) >= 0.2) dis.push({zk, i, k, v4: zr[0][i], cand: zr[k][i], d}); } });
+      if (k > 0) for (let i = o.lo; i <= o.hi; i++) { const d = zr[k][i] - zr[0][i]; if (Math.abs(d) >= 0.2) dis.push({zk, i, k, base: zr[0][i], cand: zr[k][i], d}); } });
   }
   document.getElementById('compareTable').innerHTML = rows.join('');
   dis.sort((a, b) => Math.abs(b.d) - Math.abs(a.d));
   const top = dis.slice(0, 15);
-  document.getElementById('disagree').innerHTML = SETS.length < 2 ? '<p class="fine">Only one model set on disk — nothing to disagree with.</p>' : !top.length ? '<p class="fine">No day in this window where a candidate and v4 differ by 20 points or more on zone risk.</p>' :
-    '<table><tr><th>Day</th><th>Zone</th><th>Set</th><th class="num">v4</th><th class="num">candidate</th><th class="num">Δ</th><th>what happened</th></tr>' + top.map(x => { const lab = D.labels.zone_discharge[x.zk][x.i]; const els = D.zones[x.zk].groups.map(g => D.labels.group_elevated[g][x.i]).filter(v => v != null);
-      return `<tr><td><a href="#compose" onclick="W_.i=${x.i};W_.g='${esc(D.zones[x.zk].groups[0])}';renderWalk()">${fmtDate(D.dates[x.i])}</a> <span class="fine">rain ${f2(D.rain[x.i])}"</span></td><td>${esc(D.zones[x.zk].label)}</td><td>${esc(SETS[x.k].name)}</td><td class="num">${pct(x.v4)}</td><td class="num">${pct(x.cand)}</td><td class="num" style="color:${x.d > 0 ? '#b5310a' : '#237059'}">${x.d > 0 ? '+' : ''}${Math.round(x.d*100)} pts</td><td class="fine">${lab == null ? 'no discharge report' : lab ? '<b>beach posted (discharge)</b>' : 'no discharge posted'}${els.length ? ' · sample ' + (els.some(Boolean) ? '<b>elevated</b>' : 'clean') : ''}</td></tr>`; }).join('') + '</table><p class="fine">Click a day to load it in the walk-through above (first group of the zone).</p>';
+  document.getElementById('disagree').innerHTML = SETS.length < 2 ? '<p class="fine">Only one model set on disk — nothing to disagree with.</p>' : !top.length ? '<p class="fine">No day in this window where a candidate and the served set differ by 20 points or more on zone risk.</p>' :
+    '<table><tr><th>Day</th><th>Zone</th><th>Set</th><th class="num">' + esc(SETS[0].name) + '</th><th class="num">candidate</th><th class="num">Δ</th><th>what happened</th></tr>' + top.map(x => { const lab = D.labels.zone_discharge[x.zk][x.i]; const els = D.zones[x.zk].groups.map(g => D.labels.group_elevated[g][x.i]).filter(v => v != null);
+      return `<tr><td><a href="#compose" onclick="W_.i=${x.i};W_.g='${esc(D.zones[x.zk].groups[0])}';renderWalk()">${fmtDate(D.dates[x.i])}</a> <span class="fine">rain ${f2(D.rain[x.i])}"</span></td><td>${esc(D.zones[x.zk].label)}</td><td>${esc(SETS[x.k].name)}</td><td class="num">${pct(x.base)}</td><td class="num">${pct(x.cand)}</td><td class="num" style="color:${x.d > 0 ? '#b5310a' : '#237059'}">${x.d > 0 ? '+' : ''}${Math.round(x.d*100)} pts</td><td class="fine">${lab == null ? 'no discharge report' : lab ? '<b>beach posted (discharge)</b>' : 'no discharge posted'}${els.length ? ' · sample ' + (els.some(Boolean) ? '<b>elevated</b>' : 'clean') : ''}</td></tr>`; }).join('') + '</table><p class="fine">Click a day to load it in the walk-through above (first group of the zone).</p>';
 }
 renderCompare();
 

@@ -4,7 +4,7 @@ discharge-probability → beach-risk transformation (src/models/impact.py):
 the empirical impact table (raw and smoothed, with sample counts), the decay
 curves and the small/large volume blend, the volume heads and how well they
 predict reported volumes, and a day-by-day composition walk-through for ANY
-day in the hindcast, for the served v4 set and every candidate set side by
+day in the hindcast, for the served gb_v1 set and every candidate set side by
 side — so what is shared (the whole of stage 2) and what differs per model
 (the stage-1 probabilities and rain sources feeding it) is visible, and a
 self-check proves the page's composition reproduces the stored artifacts.
@@ -51,7 +51,7 @@ def _r(v, nd):
 
 
 def load_sets() -> list[dict]:
-    """The served v4 set plus every candidate: {name, label, served, models{key: pickle}, scorecard, manifest}."""
+    """The served gb_v1 set plus every candidate: {name, label, served, models{key: pickle}, scorecard, manifest}."""
     served = {}
     for basin in T.APP_BASINS + ["citywide"]:
         key = BASIN_KEYS.get(basin, "citywide")
@@ -60,9 +60,9 @@ def load_sets() -> list[dict]:
     with gzip.open(SERVE_DIR / "scorecard.json.gz", "rt") as f:
         sc = json.load(f)
     ev = json.loads((SERVE_DIR / "eval_report.json").read_text())
-    sets = [{"name": "v4", "label": "v4 (served)", "served": True, "models": served, "scorecard": sc,
+    sets = [{"name": "gb_v1", "label": "gb_v1 (served)", "served": True, "models": served, "scorecard": sc,
              "note": f"the live forecast; trained {str(ev.get('trained_at', ''))[:10]}", "family": "gb",
-             "stage1_name": "gb_v1", "stage1_from": "v4"}]
+             "stage1_name": "gb_v1", "stage1_from": "served"}]
     for man in candidates.list_candidates():
         name = man["name"]
         try:
@@ -148,7 +148,7 @@ def main() -> None:
                                                   "median_event_volume_mg": s2["median_event_volume_mg"], "definition": s2.get("definition"),
                                                   "impact_table_note": s2.get("impact_table_note"), "train_window": s2.get("train_window")}
         model_sets.append({"name": s["name"], "label": s["label"], "served": s["served"], "note": s["note"], "family": s["family"],
-                           "stage1_from": s.get("stage1_from", "v4" if s["served"] else "fit"), "stage1_name": s.get("stage1_name", s["name"]),
+                           "stage1_from": s.get("stage1_from", "served" if s["served"] else "fit"), "stage1_name": s.get("stage1_name", s["name"]),
                            "trained_through": sc.get("trained_through") or (sc.get("span") or [None, None])[1],
                            "span": sc.get("span"), "probs": probs, "spec": spec, "stored_groups": stored_groups,
                            "stage2": stage2_out,
@@ -194,7 +194,7 @@ def main() -> None:
         "input_rules_post": rules_post,
         "impact_raw": impact_raw, "impact_smoothed": impact_smoothed,
         "impact_fitted_from": {"sample_days": {g: t.get("n_sample_days") for g, t in impact_raw.items()},
-                               "note": "fit by train_v4.fit_impact_table at v4 training (2026-09-12) from DataSF + Poo Bot samples and CIWQS discharges; "
+                               "note": "fit by train_v4.fit_impact_table at gb_v1 training (2026-09-12) from DataSF + Poo Bot samples and CIWQS discharges; "
                                        "the served file is data/models/impact_table.json; the page smooths it exactly as serving does (impact.smooth_table)"},
         "basins": {BASIN_KEYS[b]: {"name": b, "groups": GROUPS_BY_BASIN[BASIN_KEYS[b]]} for b in T.APP_BASINS},
         "groups": {g: {"basin": BASIN_KEYS[b], "stations": [{"id": s, "name": STATIONS[s].name} for s in sids]} for g, (b, sids) in SITE_GROUPS.items()},

@@ -47,8 +47,9 @@ BASIN_NAME = {"westside": "Westside", "north_shore": "North Shore", "central": "
 ZONE_BASIN = {"ocean": "westside", "baker_china": "westside", "north": "north_shore", "east": "southeast"}
 LINES = [0.25, 0.5]
 # cost weightings: (label, weight per false alarm, weight per miss)
-WEIGHTINGS = [("a false alarm costs 2 misses", 2, 1), ("1 : 1", 1, 1), ("a miss costs 2 false alarms", 1, 2), ("a miss costs 4 false alarms", 1, 4)]
-PRIMARY = ("a false alarm costs 2 misses", 2, 1)
+WEIGHTINGS = [("a miss costs 2 false alarms", 1, 2), ("1 : 1", 1, 1), ("a miss costs 4 false alarms", 1, 4), ("a miss costs 6 false alarms", 1, 6),
+              ("a miss costs 10 false alarms", 1, 10), ("a false alarm costs 2 misses", 2, 1)]
+PRIMARY = ("a miss costs 2 false alarms", 1, 2)
 COLORS = ["#0072BC", "#b5310a", "#7b4bb5", "#237059", "#b97e00", "#d4763a"]
 
 
@@ -56,7 +57,7 @@ COLORS = ["#0072BC", "#b5310a", "#7b4bb5", "#237059", "#b97e00", "#d4763a"]
 
 def load_sets() -> list[dict]:
     sc = json.load(gzip.open(SERVE_DIR / "scorecard.json.gz"))
-    sets = [{"name": "v4", "label": "v4 (served)", "stage1": "gb_v1", "stage2": "v1", "served": True, "sc": sc}]
+    sets = [{"name": "gb_v1", "label": "gb_v1 (served)", "stage1": "gb_v1", "stage2": "v1", "served": True, "sc": sc}]
     for man in candidates.list_candidates():
         c = candidates.load_scorecard(man["name"])
         if not c:
@@ -302,17 +303,18 @@ def build_html(sets: list[dict], evals: list[dict], narrative: str) -> str:
     line25_html, rows25 = rank_table("oos", 0.25, PRIMARY, False)
 
     # cheapest line per set, overall and per zone (oos, primary weighting)
-    cheap = ['<table><tr><th>Set</th><th class="num">cheapest single line, all zones</th>' + "".join(f'<th class="num">{esc(ZONES[zk].label)}</th>' for zk in ZONE_ORDER) + '</tr>']
+    cheap = ['<table><tr><th>Set</th><th class="num">cheapest single line, all zones</th><th class="num">per-zone lines, summed</th>' + "".join(f'<th class="num">{esc(ZONES[zk].label)}</th>' for zk in ZONE_ORDER) + '</tr>']
     for s, e in se:
         W = e["windows"]["oos"]
         tot = {t: cost(W["confusion"], W["tail"], t, PRIMARY[1], PRIMARY[2]) for t in LINE_GRID}
         best_all = min(LINE_GRID, key=lambda t: (tot[t]["total"], -t))
         cells = []
+        zone_sum = sum(min(tot[t]["per_zone"][zk] for t in LINE_GRID) for zk in ZONE_ORDER)
         for zk in ZONE_ORDER:
             bz = min(LINE_GRID, key=lambda t: (tot[t]["per_zone"][zk], -t))
             d = W["confusion"][zk][str(bz)]["vs_discharge_posting"]
             cells.append(f'<td class="num"><b>{int(bz*100)}%</b> <span class="fine">cost {tot[bz]["per_zone"][zk]:.0f} · {d["tp"]} of {d["tp"]+d["fn"]} caught, {d["fp"]} false</span></td>')
-        cheap.append(f'<tr><td><b>{esc(s["label"])}</b></td><td class="num"><b>{int(best_all*100)}%</b> <span class="fine">cost {tot[best_all]["total"]:.0f} (vs {tot[0.5]["total"]:.0f} at 50%)</span></td>' + "".join(cells) + '</tr>')
+        cheap.append(f'<tr><td><b>{esc(s["label"])}</b></td><td class="num"><b>{int(best_all*100)}%</b> <span class="fine">cost {tot[best_all]["total"]:.0f} (vs {tot[0.5]["total"]:.0f} at 50%)</span></td><td class="num"><b>{zone_sum:.0f}</b> <span class="fine">each zone at its own cheapest line</span></td>' + "".join(cells) + '</tr>')
     cheap.append('</table>')
     cheap_html = "".join(cheap)
 
@@ -399,6 +401,7 @@ def build_html(sets: list[dict], evals: list[dict], narrative: str) -> str:
     bact.append('</table>')
 
     king = primary_rows[0]["set"]
+    served_row = next(r for r in primary_rows if r["set"]["served"])
     css = (REPO / "features/forecast/src/models/stage2_explorer_template.html").read_text().split("<style>")[1].split("</style>")[0]
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Model analysis — which stage 1 and stage 2 to run</title><link rel="icon" href="/static/brand/favicon.ico">
@@ -408,15 +411,15 @@ tr.best td{{background:#e0f0ea}} .verdict{{background:#0072BC;color:#fff;border-
 .narr p{{margin:8px 0}} .narr h3{{margin-top:18px}}
 </style></head><body><div class="wrap">
 <header><h1>Model analysis: which stage 1 and stage 2 to run</h1>
-<p class="sub">Every model set on disk, scored on identical days and labels from the stored scorecard artifacts, ranked by cost. Primary setting per Chase (2026-09-25): a <b>false alarm costs twice a miss</b>, at the <b>50% line</b>, over every out-of-sample day (the Jul 2023 → Oct 2025 holdout with holdout-fit stage 1, plus Nov 2025 → Aug 2026 with the served/candidate models on days they never saw). Other lines and weightings follow, so the verdict can be read for its sensitivity.</p>
+<p class="sub">Every model set on disk, scored on identical days and labels from the stored scorecard artifacts, ranked by cost. Primary setting per Chase (2026-09-26): <b>{esc(PRIMARY[0])}</b>, at the <b>50% line</b>, over every out-of-sample day (the Jul 2023 → Oct 2025 holdout with holdout-fit stage 1, plus Nov 2025 → Aug 2026 with the served/candidate models on days they never saw). Other lines and weightings follow, so the verdict can be read for its sensitivity.</p>
 <div class="meta"><span>{len(sets)} sets: {esc(", ".join(f"{s['name']} = {s['stage1']} + s2 {s['stage2']}" for s in sets))}</span><span>holdout {esc(w["holdout"][0])} → {esc(w["holdout"][1])}</span><span>since training {esc(w["post"][0])} → {esc(w["post"][1])}</span><span>post-training rain: {esc(", ".join(master.get("input_rules_post") or ["raw record"]))}</span><span>generated {esc(gen)}</span></div></header>
 <nav><a href="#verdict">Verdict</a><a href="#rank">Ranking</a><a href="#sens">Sensitivity</a><a href="#cost">Cost vs line</a><a href="#s1">Stage 1</a><a href="#cal">Calibration</a><a href="#zones">Zones</a><a href="#effects">Isolated effects</a><a href="#volume">Volume</a><a href="#bact">Bacteria</a><a href="#recs">Recommendations</a></nav>
 
-<section id="verdict"><div class="verdict">King under the primary setting: <b>{esc(king["label"])}</b> — stage 1 {esc(king["stage1"])} with stage 2 {esc(king["stage2"])}: cost {primary_rows[0]["cost"]:.0f} vs {primary_rows[1]["cost"]:.0f} for the runner-up ({esc(primary_rows[1]["set"]["label"])}) and {next(r["cost"] for r in primary_rows if r["set"]["served"]):.0f} for the served v4. {primary_rows[0]["tp"]} of {primary_rows[0]["tp"]+primary_rows[0]["fn"]} discharge days caught, {primary_rows[0]["fp"]} false alarms of which {primary_rows[0]["clean"]} on clean days.</div>
+<section id="verdict"><div class="verdict">King under the primary setting: <b>{esc(king["label"])}</b> — stage 1 {esc(king["stage1"])} with stage 2 {esc(king["stage2"])}: cost {primary_rows[0]["cost"]:.0f} vs {primary_rows[1]["cost"]:.0f} for the runner-up ({esc(primary_rows[1]["set"]["label"])}) and {next(r["cost"] for r in primary_rows if r["set"]["served"]):.0f} for the served {esc(served_row["set"]["stage1"])}. {primary_rows[0]["tp"]} of {primary_rows[0]["tp"]+primary_rows[0]["fn"]} discharge days caught, {primary_rows[0]["fp"]} false alarms of which {primary_rows[0]["clean"]} on clean days.</div>
 <div class="narr">{narrative}</div></section>
 
-<section id="rank"><h2>Ranking — 50% line, a false alarm costs 2 misses</h2>
-<p class="lead">Cost = 2 × false alarms + 1 × missed discharge days, summed over the four zones, against the discharge label (a CIWQS-reported discharge that day from an outfall posting one of the zone's beaches). "After a real discharge" = false alarms within 7 days of a real posting, the composition holding risk up while the beach is likely still dirty; "clean days" is the model's own cost. MG caught = reported discharge volume on caught days.</p>
+<section id="rank"><h2>Ranking — 50% line, {esc(PRIMARY[0])}</h2>
+<p class="lead">Cost = {PRIMARY[1]:g} × false alarms + {PRIMARY[2]:g} × missed discharge days, summed over the four zones, against the discharge label (a CIWQS-reported discharge that day from an outfall posting one of the zone's beaches). "After a real discharge" = false alarms within 7 days of a real posting, the composition holding risk up while the beach is likely still dirty; "clean days" is the model's own cost. MG caught = reported discharge volume on caught days.</p>
 <h3>Out of sample — holdout + since training (primary)</h3>{primary_html}
 <h3>Since training only — Nov 2025 → Aug 2026, the truest test</h3>{post_html}
 <h3>Holdout only — Jul 2023 → Oct 2025</h3>{hold_html}
@@ -464,15 +467,15 @@ def summary_tables(sets, evals) -> None:
     for wname in ("holdout", "post", "oos"):
         print(f"\n=== {wname} ===")
         for thr in (0.25, 0.5):
-            print(f"-- {int(thr*100)}% line: set: caught/posted, FP (tail/clean), MG caught/total | cost 2:1, 1:1, 1:2 | clean-only 2:1")
+            print(f"-- {int(thr*100)}% line: set: caught/posted, FP (tail/clean), MG caught/total | cost (FA:miss) 1:2, 1:1, 2:1 | clean-only 1:2")
             for s, e in se:
                 W = e["windows"][wname]
                 tp = sum(W["confusion"][z][str(thr)]["vs_discharge_posting"]["tp"] for z in ZONE_ORDER); fn = sum(W["confusion"][z][str(thr)]["vs_discharge_posting"]["fn"] for z in ZONE_ORDER)
                 fp = sum(W["confusion"][z][str(thr)]["vs_discharge_posting"]["fp"] for z in ZONE_ORDER); tl = sum(W["tail"][z][str(thr)] for z in ZONE_ORDER)
                 mgc = sum(W["volume"][z][str(thr)]["caught_mg"] for z in ZONE_ORDER); mgt = sum(W["volume"][z][str(thr)]["total_mg"] for z in ZONE_ORDER)
-                c21 = cost(W["confusion"], W["tail"], thr, 2, 1)["total"]; c11 = cost(W["confusion"], W["tail"], thr, 1, 1)["total"]; c12 = cost(W["confusion"], W["tail"], thr, 1, 2)["total"]; cc = cost(W["confusion"], W["tail"], thr, 2, 1, True)["total"]
+                c21 = cost(W["confusion"], W["tail"], thr, 2, 1)["total"]; c11 = cost(W["confusion"], W["tail"], thr, 1, 1)["total"]; c12 = cost(W["confusion"], W["tail"], thr, 1, 2)["total"]; cc = cost(W["confusion"], W["tail"], thr, 1, 2, True)["total"]
                 per = "  ".join(f"{z[:5]} {W['confusion'][z][str(thr)]['vs_discharge_posting']['tp']}/{W['confusion'][z][str(thr)]['vs_discharge_posting']['tp']+W['confusion'][z][str(thr)]['vs_discharge_posting']['fn']}+{W['confusion'][z][str(thr)]['vs_discharge_posting']['fp']}" for z in ZONE_ORDER)
-                print(f"   {s['name']:14} {tp}/{tp+fn}, FP {fp} ({tl}/{fp-tl}), MG {mgc:.0f}/{mgt:.0f} | {c21:.0f}, {c11:.0f}, {c12:.0f} | {cc:.0f}   [{per}]")
+                print(f"   {s['name']:14} {tp}/{tp+fn}, FP {fp} ({tl}/{fp-tl}), MG {mgc:.0f}/{mgt:.0f} | {c12:.0f}, {c11:.0f}, {c21:.0f} | {cc:.0f}   [{per}]")
         print("-- stage 1 PR-AUC / Brier per basin:")
         for s, e in se:
             if s["stage2"] != "v1":

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Model explorer — one self-contained HTML page that shows the served v4
+"""Model explorer — one self-contained HTML page that shows the served gb_v1
 forecast exactly as it is: the rain gauges and live feeds, the 19 input
 features and their formulas, every basin model's trees (exported so the page
 runs them in the browser, with a what-if rain editor), the volume heads, the
@@ -7,7 +7,7 @@ stage-2 impact table and composition, the basins → groups → zones map, and a
 self-check that the in-page arithmetic matches scikit-learn on real storms.
 
     venv/bin/python features/forecast/src/models/export_model_explorer.py
-    → reports/2026-09_forecast_v4_model_explorer.html  (served at /reports/…)
+    → reports/2026-09_forecast_gb_v1_model_explorer.html  (served at /reports/…)
     venv/bin/python features/forecast/src/models/export_model_explorer.py --model logit_v1
     → reports/2026-09_forecast_logit_v1_model_explorer.html  (a candidate set: its
       own stage-1 weights, the served stage 2; the page says so)
@@ -45,7 +45,7 @@ from shared.zones import ZONES  # noqa: E402
 REPO = HERE.parents[3]
 SERVE_DIR = T.SERVE_DIR
 RAW_DIR = T.RAW_DIR
-OUT = REPO / "reports" / "2026-09_forecast_v4_model_explorer.html"
+OUT = REPO / "reports" / "2026-09_forecast_gb_v1_model_explorer.html"
 TEMPLATE = HERE / "model_explorer_template.html"
 
 ACIS_GAUGES = {"SF Downtown": "047772", "SF Oceanside": "047767"}
@@ -102,7 +102,7 @@ def export_logit(pipe, features, C=None) -> dict:
 
 
 def export_stage1(m: dict, features) -> dict:
-    """Dispatch on the pickle's family (v4 pickles predate the key → gb)."""
+    """Dispatch on the pickle's family (pickles saved before 2026-09-25 predate the key → gb)."""
     fam = m.get("family") or ("logit" if hasattr(m["model"], "named_steps") else "gb")
     if fam == "logit":
         return export_logit(m["model"], features, m.get("C"))
@@ -111,7 +111,7 @@ def export_stage1(m: dict, features) -> dict:
 
 def load_model_set(name: str | None) -> tuple[dict, dict, dict]:
     """({key: pickle dict}, manifest-or-eval-report holdout block, meta) for the
-    served v4 set (name None) or a candidate under data/models/candidates/."""
+    served gb_v1 set (name None) or a candidate under data/models/candidates/."""
     features = T.get_feature_columns_v21()
     if name is None:
         ev = json.loads((SERVE_DIR / "eval_report.json").read_text())
@@ -123,9 +123,9 @@ def load_model_set(name: str | None) -> tuple[dict, dict, dict]:
         holdout = {k: {"pr_auc": t["holdout"].get("pr_auc"), "roc_auc": t["holdout"].get("roc_auc"), "brier": t["holdout"].get("brier"),
                        "n_test": t["holdout"].get("n_test"), "pos_test": t["holdout"].get("pos_test"), "n_events": t.get("n_events"), "n_days": t.get("n_days")}
                    for k, t in ev.get("targets", {}).items() if t.get("holdout")}
-        meta = {"name": "v4", "label": "v4 (served)", "served": True, "version": ev.get("version"), "trained_at": ev.get("trained_at"),
+        meta = {"name": "gb_v1", "label": "gb_v1 (served)", "served": True, "version": "gb_v1", "trained_at": ev.get("trained_at"),  # the pickles' own tag is the retired "v4"
                 "train_window": ev.get("train_window"), "feature_set": ev.get("feature_set"), "note": None,
-                "stage1_name": "gb_v1", "stage1_from": "v4",
+                "stage1_name": "gb_v1", "stage1_from": "served",
                 "scorecard": SERVE_DIR / "scorecard.json.gz"}
     else:
         import candidates
@@ -143,7 +143,7 @@ def load_model_set(name: str | None) -> tuple[dict, dict, dict]:
                 "note": manifest.get("note"), "family": manifest.get("family"), "C_grid": manifest.get("C_grid"),
                 "stage1_from": (manifest.get("stage1") or {}).get("from", "fit"),
                 "stage1_name": (manifest.get("stage1") or {}).get("name", name),
-                "stage2": candidates.load_stage2(name),   # None = served v4 stage 2
+                "stage2": candidates.load_stage2(name),   # None = the served stage 2 (v1)
                 "scorecard": candidates.candidate_dir(name) / "scorecard.json.gz"}
     for m in models.values():
         assert m["features"] == features, "feature contract drifted"
@@ -183,6 +183,8 @@ def gauge_series(days: int = 420) -> dict:
 
 def main(model_name: str | None = None) -> None:
     features = T.get_feature_columns_v21()
+    if model_name in ("gb_v1", "served"):
+        model_name = None  # the served bundle's stage 1 is gb_v1: its page is the default one
     raw_models, holdout, meta = load_model_set(model_name)
     models, heads, rain_source = {}, {}, {}
     for basin in T.APP_BASINS + ["citywide"]:
@@ -269,10 +271,10 @@ def main(model_name: str | None = None) -> None:
     data = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "model_set": {"name": meta["name"], "label": meta["label"], "served": meta["served"], "note": meta.get("note"),
-                      "families": families, "C_grid": meta.get("C_grid"), "stage1_from": meta.get("stage1_from", "v4" if meta["served"] else "fit"),
+                      "families": families, "C_grid": meta.get("C_grid"), "stage1_from": meta.get("stage1_from", "served" if meta["served"] else "fit"),
                       "stage1_name": meta.get("stage1_name", "gb_v1" if meta["served"] else meta["name"]),
                       "stage2": stage2_out,
-                      "stage2_from": "volume heads: served v4, shared by every set; impact table and split: this set's stage 2 variant"},
+                      "stage2_from": "volume heads: the served gb_v1 bundle's, shared by every set; impact table and split: this set's stage 2 variant"},
         "stage2": stage2_out,
         "trained_at": meta.get("trained_at"), "version": meta.get("version"), "feature_set": meta.get("feature_set"),
         "train_window": meta.get("train_window"), "holdout_start": sc.get("holdout_start"),

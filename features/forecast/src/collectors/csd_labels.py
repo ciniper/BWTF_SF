@@ -14,7 +14,7 @@ Basin mapping (CSD report basins → forecast app basins):
     Southeast                → Southeast     are BAY#320 Islais, BAY#230 Crane Cove,
                                              and the Candlestick trio BAY#300.1/301.1/301.2)
     Central (Mission Creek)  → Central      (CSD-018..028; BAY#220 Mission Creek —
-                                             own stage-1 model since v4, 2026-09)
+                                             own stage-1 model since the 2026-09 retrain)
 
 Coverage: Bayside from Oct 2016, Oceanside from Jan 2018, through the last
 month in data/csd/sf_csd_monthly_coverage.csv (Jul 2026 after the 2026-09-24
@@ -34,7 +34,7 @@ COVERAGE_CSV = CSD_DIR / "sf_csd_monthly_coverage.csv"
 # CSD report basin -> forecast app basin. The outfall registry
 # (shared/outfalls.py) is the single source of truth; "Central" is the
 # Mission Creek basin (CSD-018..028), which has had its own stage-1 model
-# since v4 (2026-09). Islais Creek outfalls report under "Central (Islais
+# since the 2026-09 retrain. Islais Creek outfalls report under "Central (Islais
 # Creek)" but post the Southeast beaches, so they are Southeast here.
 import sys as _sys
 from pathlib import Path as _Path

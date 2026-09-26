@@ -34,7 +34,7 @@ housekeeping).
 
 Until now the models trained on a proxy label: "3+ bacteria stations elevated
 across 2+ basins" from weekly beach samples. We now have SFPUC's own per-event
-discharge records (1,007 events, Oct 2016 – Oct 2025 at v4 training time; 1,104
+discharge records (1,007 events, Oct 2016 – Oct 2025 at gb_v1 training time; 1,104
 through Jul 2026, continuous, after the 2026-09-24 refresh) extracted from monthly
 self-monitoring reports on CIWQS (see `data/csd/NOTES.md`).
 
@@ -222,7 +222,7 @@ not yet public as of Aug 2026). Re-run `src/collectors/csd_ciwqs/` quarterly
 needs a records request (drafted in `data/csd/records_request_draft.md`):
 per-event Westside data 2013–2017.
 
-## v4 (2026-09-05): four basins · regional rain · Poo Bot archive · scorecard
+## gb_v1, the served bundle (2026-09-05; called "v4" until 2026-09-26): four basins · regional rain · Poo Bot archive · scorecard
 
 `src/models/train_v4.py` (imports the shared formulas from train_v2.py, which
 stays as the reference implementation). Artifacts `data/models/v4/`, promoted
@@ -267,7 +267,7 @@ What changed:
   validated against the registries at import; `shared/zones.py` is the
   canonical zone list (signup imports it too).
 
-Holdout (2023-07 → 2025-10), PR-AUC v3 → v4: Westside 0.828 → 0.828 (avg
+Holdout (2023-07 → 2025-10), PR-AUC v3 → gb_v1: Westside 0.828 → 0.828 (avg
 rain, CIWQS labels only), North Shore 0.790 → 0.953 (Downtown), Central — →
 0.967 (Downtown), Southeast 0.812 → 0.835 (avg), citywide 0.911 → 0.911.
 
@@ -283,9 +283,9 @@ Open items:
   sewage; the forecast is a sewage-risk forecast and the alerts cover the
   rest via the SFPUC posting feed.
 
-## Model selection (2026-09-25): leaderboard, candidates, selector — v4 stays served
+## Model selection (2026-09-25): leaderboard, candidates, selector — gb_v1 stays served
 
-Chase's rule: the served v4 set is not touched by any of this. New models are
+Chase's rule: the served gb_v1 set is not touched by any of this. New models are
 *candidates* the Model check page can select and grade on the same days and
 labels; promotion into `data/models/` is a separate, human decision.
 
@@ -337,23 +337,24 @@ labels; promotion into `data/models/` is a separate, human decision.
   `leaderboard.add_hinges` (the script dispatches through the module) so
   `candidates.load_models` can open them anywhere.
 - Stage 2 variants (`src/models/stage2.py`, 2026-09-25): stage 2 is a named
-  layer a candidate pairs with its stage 1. `v4` = compose the basin
-  probability directly. stage 2 `v2` (the outfall split) = multiply it by the share of the
+  layer a candidate pairs with its stage 1. `v1` = compose the basin
+  probability directly (served). stage 2 `v2` (the outfall split) = multiply it by the share of the
   basin's CIWQS discharge days (by size) on which the group's own outfalls
   took part, blended by V/(V+median), and refit the impact table on
   group-attributed days; identity where a group's outfalls are the whole
   basin. `stage2_variants.py fit` → `data/models/stage2/<variant>.json`;
-  `stage2_variants.py save --stage1 v4|<candidate> --variant <v> --name <n>`
+  `stage2_variants.py save --stage1 served|<candidate> --variant <v> --name <n>`
   → a candidate set with `stage2.json`, holdout siblings refit exactly as the
   source fit them (checked against the source artifact before writing).
-  Sets on disk: `gb_v1_s2v2`, `logit_v1_s2v2`. Serving still composes with v4;
+  Sets on disk: `gb_v1_s2v2`, `logit_v1_s2v2`. Serving still composes with stage 2 v1;
   promotion = ship the spec next to the served pickles and pass
   `split=stage2.make_split(spec)` in `live_dashboard._compose_impact`.
-- Naming (2026-09-25): stage 1 sets `gb_v1` (the trees v4 ships) and
+- Naming (2026-09-25, amended 2026-09-26): stage 1 sets `gb_v1` (the trees the served bundle ships) and
   `logit_v1` (weights); stage 2 versions `v1` (basin composition, served)
   and `v2` (outfall split). A set = its stage 1 name, plus `_s2v2` when it
-  uses stage 2 v2. "v4" is the release label of the served bundle
-  (gb_v1 + stage 2 v1).
+  uses stage 2 v2. The served bundle is gb_v1 + stage 2 v1; Chase retired the
+  "v4" label on 2026-09-26 — say "gb_v1 (served)". Only file and directory
+  names (`train_v4.py`, `data/models/v4/`, `reports/2026-09_forecast_v4.html`) keep it.
 - Input rules (2026-09-25): `rain_features.GAUGE_OUTAGE_RULE` masks a dead
   gauge's 0.00 run (≥2 days while the other gauge totals ≥0.5") before
   averaging/filling. Serving applies it; `--rescore --replace-post` and
@@ -361,7 +362,7 @@ labels; promotion into `data/models/` is a separate, human decision.
   frames take it via `build_dataset(input_rules=…)` (default None = the raw
   record the served models were trained on). No model changed.
 - `logit_v1` on the post-training window (Nov 2025 → Aug 2026, untouched):
-  Westside 0.766 vs v4 0.716 (Ocean Beach 5/6 caught, 14 false alarms vs
+  Westside 0.766 vs gb_v1 0.716 (Ocean Beach 5/6 caught, 14 false alarms vs
   4/6 and 18); Central 0.734 vs 0.717 with a better Brier; North Shore equal
   (2/2, fewer false alarms); **Southeast 0.742 vs 0.889** — the holdout lead
   there (0.923 vs 0.835) did not carry, i.e. part of it was selection

@@ -305,7 +305,7 @@ def create_app():
     for path, handler in discharges_page.GET_ROUTES.items():
         app.add_url_rule(path, f"discharges-get:{path}", _forecast_view(handler), methods=["GET"])
 
-    # Reports: static HTML analyses committed under reports/ (model explorer, v4 report …)
+    # Reports: static HTML analyses committed under reports/ (model explorers, training report …)
     app.add_url_rule("/reports/<name>", "reports", _report_view, methods=["GET"])
     # Which build is this? Every template gets `build` (footers show it); /api/build returns it as JSON.
     app.context_processor(lambda: {"build": build_info()})

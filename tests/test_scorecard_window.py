@@ -1,4 +1,4 @@
-"""Model-check scorecard windows (v4, 2026-09).
+"""Model-check scorecard windows (2026-09).
 
 One rule for the scorecard numbers: features/forecast/src/models/scorecard.py,
 used by train_v4 (the season block stored in scorecard.json.gz, and --rescore's
@@ -159,7 +159,7 @@ def test_gauge_outage_rule_masks_dead_gauge_runs_only():
 
 
 def test_gauge_outage_rule_in_the_record_and_the_rescored_post_training_days():
-    """The rule is opt-in for training frames (None = the record v4 was trained
+    """The rule is opt-in for training frames (None = the record gb_v1 was trained
     on) and applied to the post-training block by --rescore --replace-post."""
     import pandas as pd
     sys.path.insert(0, str(ROOT / "features" / "forecast"))
@@ -300,7 +300,7 @@ def test_model_sets_are_selectable_but_never_served():
     from features.forecast import live_dashboard as ld
     eng = ld.LiveData.__new__(ld.LiveData)
     models = eng.list_models()
-    assert models[0] == {"key": "", "label": "v4 (served)", "family": "gb", "served": True, "stage1": "gb_v1", "stage2": "v1"}
+    assert models[0] == {"key": "", "label": "gb_v1 (served)", "family": "gb", "served": True, "stage1": "gb_v1", "stage2": "v1"}
     assert all(m.get("stage2") in ("v1", "v2") for m in models), [m.get("stage2") for m in models]
     assert all(m["served"] is False for m in models[1:])
     assert "error" in eng.get_scorecard("2024-01-13", model="../x")
@@ -344,7 +344,7 @@ def test_candidate_models_unpickle_anywhere_and_explorers_are_built():
                 assert fn.__module__ == "leaderboard", f"{key}: hinge transform pickled as {fn.__module__}.{fn.__name__}"
         print(f"   candidate {m['name']}: {len(models)} models unpickle with a plain import")
     reports = Path(__file__).resolve().parents[1] / "reports"
-    for name in ("2026-09_forecast_v4_model_explorer.html", "2026-09_forecast_stage2_explorer.html", "2026-09_model_analysis.html",
+    for name in ("2026-09_forecast_gb_v1_model_explorer.html", "2026-09_forecast_stage2_explorer.html", "2026-09_model_analysis.html",
                  *[f"2026-09_forecast_{m['name']}_model_explorer.html" for m in C.list_candidates()]):
         p = reports / name
         assert p.exists(), f"missing report {name} — run the exporter"
@@ -353,12 +353,12 @@ def test_candidate_models_unpickle_anywhere_and_explorers_are_built():
         print(f"   report {name}: {p.stat().st_size / 1e6:.2f} MB")
 
 
-def test_stage2_variants_pair_with_any_stage1_and_v4_is_untouched():
-    """A stage 2 variant is a fitted spec; a candidate may carry one. v4's
+def test_stage2_variants_pair_with_any_stage1_and_served_gb_v1_is_untouched():
+    """A stage 2 variant is a fitted spec; a candidate may carry one. The served gb_v1's
     composition must be byte-identical with the hook in place (split=None);
     the outfall shares must be probabilities and the identity for groups whose
-    outfalls are the whole basin; a candidate whose stage 1 is v4's must carry
-    v4's exact stage-1 probabilities and a faithful holdout refit."""
+    outfalls are the whole basin; a candidate whose stage 1 is the served set's must carry
+    its exact stage-1 probabilities and a faithful holdout refit."""
     root = Path(__file__).resolve().parents[1] / "features" / "forecast"
     sys.path.insert(0, str(root / "src" / "models"))
     import candidates as C
@@ -405,12 +405,12 @@ def test_stage2_variants_pair_with_any_stage1_and_v4_is_untouched():
             worst_p = max(abs(d["basins"][k]["p"] - served[d["date"]]["basins"][k]["p"]) for d in sc["days"] for k in d["basins"] if d["date"] in served)
             worst_ph = max(abs(d["basins"][k]["ph"] - served[d["date"]]["basins"][k]["ph"]) for d in hold for k in d["basins"]
                            if d["date"] in served and d["basins"][k].get("ph") is not None and served[d["date"]]["basins"][k].get("ph") is not None)
-            assert worst_p == 0.0, f"{m['name']}: stage 1 is v4's, probabilities must be identical (worst {worst_p})"
-            assert worst_ph <= 0.001, f"{m['name']}: holdout refit drifted from v4's stored ph (worst {worst_ph})"
+            assert worst_p == 0.0, f"{m['name']}: stage 1 is the served gb_v1's, probabilities must be identical (worst {worst_p})"
+            assert worst_ph <= 0.001, f"{m['name']}: holdout refit drifted from the served set's stored ph (worst {worst_ph})"
             # and the composition differs only where the split bites (Westside / North Shore groups)
             east_same = all(d["groups"]["Southeast"]["risk"] == served[d["date"]]["groups"]["Southeast"]["risk"] for d in sc["days"] if d["date"] in served)
             assert east_same, f"{m['name']}: Southeast group must be unchanged by the split"
-            print(f"   {m['name']}: stage 1 identical to v4, holdout refit within {worst_ph:.4f}, Southeast untouched")
+            print(f"   {m['name']}: stage 1 identical to the served gb_v1, holdout refit within {worst_ph:.4f}, Southeast untouched")
     assert n_variant >= 1, "expected at least one candidate on a stage 2 variant"
 
 

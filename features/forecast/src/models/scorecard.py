@@ -1,4 +1,4 @@
-"""One rule for the model-check scorecard (v4, 2026-09).
+"""One rule for the model-check scorecard (2026-09).
 
 The training-time hindcast (``scorecard.json.gz`` → ``days``) records, per
 day, each zone's composed risk from the final model (``risk``) and from the
