@@ -132,8 +132,13 @@ def predicted_volumes(days: list) -> dict:
 # ── the replay ─────────────────────────────────────────────────────────────
 
 def replay(days: list, table: dict, vol_pred: dict, onsets: dict, flags: dict, era: tuple, rules: dict,
-           use_samples: bool, watcher_ok: bool = True) -> dict:
-    """{date: {group: risk}} for every era day, composed day by day with what was known then."""
+           use_samples: bool, watcher_ok: bool = True, cutoff: str = "start") -> dict:
+    """{date: {group: risk}} for every era day, composed day by day with what was
+    known then. ``cutoff="start"`` (the graded forecast) uses only observations
+    through the END OF THE DAY BEFORE — the forecast a visitor saw that morning,
+    so a discharge day is never credited for its own flag and the corrections
+    are judged on the tail they shape; ``cutoff="end"`` includes the day's own
+    flags and samples (what the page shows by evening)."""
     by_date = {d["date"]: d for d in days}
     dates_all = [dt.date.fromisoformat(d["date"]) for d in days]
     idx_of = {d: i for i, d in enumerate(dates_all)}
@@ -156,15 +161,16 @@ def replay(days: list, table: dict, vol_pred: dict, onsets: dict, flags: dict, e
         probs = [{bk: float(by_date[str(d)]["basins"][bk]["p"]) for bk in GROUPS_BY_BASIN} for d in win]
         vols = [{bk: float(vol_pred.get(str(d), {}).get(bk, 0.0)) for bk in GROUPS_BY_BASIN} for d in win]
         rain = {d: float(by_date[str(d)].get("rain", 0.0) or 0.0) for d in win}
-        on_k = {d: s for d, s in onsets.items() if d <= D}
-        fl_k = {d: s for d, s in flags.items() if d <= D}
+        known = D if cutoff == "end" else D - dt.timedelta(days=1)
+        on_k = {d: s for d, s in onsets.items() if d <= known}
+        fl_k = {d: s for d, s in flags.items() if d <= known}
         p2, v2, _ = LR.adjust_stage1(probs, vols, win, on_k, fl_k, rain, D, rules=rules, watcher_from=era_start, watcher_ok=watcher_ok)
         j = len(win) - 1
         _, groups = compose(table, GROUPS_BY_BASIN, p2, v2, j, win, {})
         p_only = [dict(p) for p in p2]
         p_only[j] = {b: 0.0 for b in p_only[j]}
         _, persist = compose(table, GROUPS_BY_BASIN, p_only, v2, j, win, {})
-        smp = {k: v for k, v in samples_all.items() if k[1] <= D} if use_samples else {}
+        smp = {k: v for k, v in samples_all.items() if k[1] <= known} if use_samples else {}
         probs_by_date = {d: p2[k] for k, d in enumerate(win)}
         adjusted, _ = LR.adjust_groups(groups, persist, p2[j], D, smp, probs_by_date, on_k, fl_k, _ZONE_OF_GROUP, _BASIN_OF_GROUP, large, rules=rules)
         out[str(D)] = adjusted
@@ -230,23 +236,24 @@ def grade(days_v: list, label) -> dict:
     return out
 
 
-def main(write: bool = True) -> dict:
+def main(write: bool = True, cutoff: str = "start") -> dict:
     sc, days, table = load_artifact()
     onsets, flags, era = archive_flags()
     label = PL.from_beachwatch()
     vol_pred = predicted_volumes(days)
     plain, worst = plain_recomposition(days, table, vol_pred, era)
-    results = {"era": [str(era[0]), str(era[1])], "self_check_worst_delta": round(worst, 4),
+    results = {"era": [str(era[0]), str(era[1])], "cutoff": cutoff, "self_check_worst_delta": round(worst, 4),
                "flag_days": sum(len(v) for v in flags.values()), "onset_days": sum(len(v) for v in onsets.values()),
                "onset_basins": sorted({b for v in onsets.values() for b in v}), "rules": LR.RULES, "variants": {}}
     risks = {"plain": plain}
     for name, rules in variants().items():
-        risks[name] = replay(days, table, vol_pred, onsets, flags, era, rules, use_samples=name not in NO_SAMPLES)
+        risks[name] = replay(days, table, vol_pred, onsets, flags, era, rules, use_samples=name not in NO_SAMPLES, cutoff=cutoff)
     for name, r in risks.items():
         dv = graded_days(days, r)
         g = grade(dv, label)
         changed = {z: sum(1 for d in dv if abs(zone_risks(r[d["date"]]).get(z, 0) - zone_risks(plain[d["date"]]).get(z, 0)) >= 0.05) for z in ZONE_ORDER} if name != "plain" else {z: 0 for z in ZONE_ORDER}
         results["variants"][name] = {"grades": g, "days_changed": changed, "n_days": len(dv)}
+    print(f"cutoff = {cutoff} of day ({'observations through the day before — the start-of-day forecast' if cutoff == 'start' else 'the day’s own flags and samples included'})")
     print(f"era {results['era'][0]} → {results['era'][1]}: {results['variants']['plain']['n_days']} days, {results['flag_days']} flag basin-days, {results['onset_days']} onset basin-days ({', '.join(results['onset_basins'])}); self-check worst Δ {worst:.4f}")
     for thr in LINES:
         t = str(thr)
@@ -297,7 +304,7 @@ def render_html(res: dict) -> str:
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <style>{css} tr.best td{{background:#e0f0ea}}</style></head><body><div class="wrap">
 <header><h1>Live corrections replay: live_v1 vs the model alone</h1>
-<p class="sub">Every day of the era recomposed with only what was known by the end of that day — the served stage-1 probabilities, the feed's CSO onsets and flag days, samples published a day later — through <code>src/models/live_rules.py</code> exactly as serving does, then graded on the Model check's three rulers. Cost = false alarms + {WFN} × misses.</p>
+<p class="sub">Every day of the era recomposed with only what was known by the <b>end of the day before</b> — the start-of-day forecast — the served stage-1 probabilities, the feed's CSO onsets and flag days, samples published a day later — through <code>src/models/live_rules.py</code> exactly as serving does, then graded on the Model check's three rulers. A discharge day is never credited for its own flag; the corrections are judged on the tail they shape. Cost = false alarms + {WFN} × misses.</p>
 <div class="meta"><span>era {esc(res["era"][0])} → {esc(res["era"][1])} ({v["plain"]["n_days"]} days)</span><span>{res["flag_days"]} flag basin-days · {res["onset_days"]} onset basin-days ({esc(", ".join(res["onset_basins"]))})</span><span>self-check: plain recomposition vs stored risks, worst Δ {res["self_check_worst_delta"]}</span><span>downgrade recall {esc(json.dumps(r["downgrade"]["recall"]))}</span></div></header>
 <section><h2>Read this first</h2>
 <p class="lead">The only era with feed-flag data today is the 2016-17 Poo Bot archive. Its stage-1 probabilities are <b>in-sample</b> (the served models trained on these seasons), so every variant is flattered by the same amount — read the difference between rows, not the rows. <b>Read the bayside subtotal as the clean comparison:</b> North Shore and East labels come from CIWQS, independent of the feed. The Westside has no CIWQS per-event records before 2018, so its discharge labels in this era <i>are</i> the archive's feed onsets — the onset rule catches them by construction and that column is marked circular (the sample part of the primary ruler is still independent there). Snapshots came twice a day, so a flag that came and went between them is missed. The watcher era (Aug 2026 →) joins this page once the hindcast artifact is rescored past it.</p>
@@ -309,4 +316,4 @@ def render_html(res: dict) -> str:
 
 
 if __name__ == "__main__":
-    main(write="--no-write" not in sys.argv)
+    main(write="--no-write" not in sys.argv, cutoff="end" if "--cutoff=end" in sys.argv else "start")

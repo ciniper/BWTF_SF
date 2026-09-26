@@ -6,7 +6,7 @@ r = 0.60 for the bayside basins, none for the Westside. Each day's payload carri
 rule that fired, from → to) beside `plain` (the model alone), and the page shows them as badges with a
 "Live corrections v1: on/off" toggle; the server switch is the env var `LIVE_CORRECTIONS` or the `watcher_config`
 key `live_corrections` ("off"). The old observed-CSO override is now the `cso_onset` rule, so "off" is the pure two-stage model. The downgrade is gated on the watcher being live and
-ticking (`watcher_runtime`). §5, the replay, is built too: `src/models/replay_live.py` → `reports/2026-09_live_replay.html` (archive era 2016-17; the watcher era joins after the next rescore). Result on the bayside zones at 50%: the model alone caught 21 of 35 bad days for 1 false alarm (cost 29); live_v1 caught 35 of 35 for 7 (cost 7). At 25% the sample floors add false alarms (cost 22 → 30) while the CSO-flag rules alone cut it to 12; the downgrade changed one day. Tests: `tests/test_live_rules.py`.**
+ticking (`watcher_runtime`). §5, the replay, is built too: `src/models/replay_live.py` → `reports/2026-09_live_replay.html` (archive era 2016-17; the watcher era joins after the next rescore). Graded on the start-of-day forecast (a day never sees its own flag). Result on the bayside zones at 50%: the model alone caught 21 of 35 bad days for 1 false alarm (cost 29); live_v1 caught 32 of 35 for 7 (cost 13). At 25% the sample floors add false alarms (cost 22 → 34) while the CSO-flag rules alone hold at 16; the conservative downgrade changed one day. Tests: `tests/test_live_rules.py`.**
 
 *Design, 2026-09-26. It answers Chase's three questions (how much to upgrade on a
 confirmed CSO, how much to downgrade when an expected CSO did not appear, what a confirmed or clean sample
