@@ -89,6 +89,12 @@ If models **disagree** at 1-2 days, that itself is a signal worth flagging.
 | **SFPUC Annual Reports** | Historical discharge data | May need FOIA/public records request |
 | **EPA ECHO** | NPDES permit violations | Discharge monitoring reports |
 
+### Beach Postings — Historical (signs up / signs down)
+
+| Source | Type | Notes |
+|--------|------|-------|
+| **CA State Water Board — BeachWatch** | Every SF beach advisory since 1999, per SFPUC station, with posting and reopening dates and cause | [data.ca.gov dataset](https://data.ca.gov/dataset/beach-water-quality-postings-and-closures); stored under `data/beachwatch/` by `src/collectors/beachwatch.py --refresh` (see its NOTES.md). DataSF and the live feed carry samples, not postings. |
+
 ## CSO Outfall Geography
 
 ### Drainage Basins & Outfalls

@@ -1,0 +1,63 @@
+{
+  "fetched_at": "2026-09-26T18:15:48+00:00",
+  "source": "local file Beach_Posting_and_Closures-_Advisories.csv",
+  "dataset": "https://data.ca.gov/dataset/beach-water-quality-postings-and-closures",
+  "resource_id": "d5cd6a23-829c-426d-a63e-689a55a3db9c",
+  "statewide_rows": 35748,
+  "statewide_sha256": "399574c75cb314fac599e8bc7032b791e7e97ae02e2a2d7b0c6528cd44f49ede",
+  "sf_rows": 2142,
+  "dropped_bad_dates": [
+    {
+      "advisory_id": "48680",
+      "station_name": "BAY#301.2_SL",
+      "posted_on": "2014-12-03",
+      "reopened_on": "1014-12-06"
+    }
+  ],
+  "unmapped_stations": {},
+  "excluded_long_advisories": [
+    {
+      "advisory_id": "2484",
+      "station_name": "BAY#202.4_SL",
+      "advisory_type": "Closure",
+      "cause": "Other",
+      "posted_on": "2007-11-08",
+      "reopened_on": "2008-11-19",
+      "duration_days": "377"
+    },
+    {
+      "advisory_id": "2443",
+      "station_name": "OCEAN#21_SL",
+      "advisory_type": "Posting",
+      "cause": "Rain",
+      "posted_on": "2008-01-04",
+      "reopened_on": "2015-09-23",
+      "duration_days": "2819"
+    }
+  ],
+  "span": [
+    "1999-01-31",
+    "2026-02-28"
+  ],
+  "advisory_types": {
+    "Posting": 1962,
+    "Rain": 163,
+    "Closure": 17
+  },
+  "cause_classes": {
+    "other": 1038,
+    "cso": 988,
+    "rain": 116
+  },
+  "posted_zone_days": {
+    "ocean": 386,
+    "baker_china": 740,
+    "north": 670,
+    "east": 1541
+  },
+  "cso_posting_duration_days": {
+    "median": 2.0,
+    "p90": 4.0
+  },
+  "convention": "a station is posted from posted_on through reopened_on inclusive (validated vs data/poobot/feed_status.csv)"
+}
