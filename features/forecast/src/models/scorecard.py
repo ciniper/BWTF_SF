@@ -194,6 +194,77 @@ def zone_fp_tail(days: list[dict], zone_keys, start: str | None = None, end: str
     return out
 
 
+# ── zone confusion against discharge days + samples (the primary ruler) ─────
+
+def combined_label(day: dict, zk: str, dis_set: set) -> tuple[str, str]:
+    """('bad' | 'good' | 'unknown' | 'scope', why) for one zone-day, from the
+    artifact's own labels — the final percentage judged on what it claims, a
+    beach fouled by a discharge:
+      bad      the discharge day itself (the model's definition, x(0) = 1), or an
+               elevated sample within TAIL_DAYS after a discharge (persistence,
+               confirmed)
+      good     a clean sample (any day), or an unsampled day with no recent
+               discharge and a known discharge record (quiet)
+      unknown  an unsampled day within TAIL_DAYS after a discharge — nobody
+               measured the water; or a day without a discharge record
+      scope    an elevated sample with no discharge in the prior TAIL_DAYS —
+               dry-weather or unexplained dirtiness a rain model does not claim;
+               counted, never a hit or a miss (the bacteria view grades it)"""
+    z = day["zones"][zk]
+    if z["discharge"]:
+        return "bad", "discharge"
+    d0 = datetime.strptime(day["date"], "%Y-%m-%d").date()
+    in_tail = any(str(d0 - timedelta(days=k)) in dis_set for k in range(1, TAIL_DAYS + 1))
+    if z["elevated"] is not None:
+        if not z["elevated"]:
+            return "good", "sample"
+        if in_tail:
+            return "bad", "sample"
+        return ("unknown", "uncovered") if z["discharge"] is None else ("scope", "dry")
+    if z["discharge"] is None:
+        return "unknown", "uncovered"
+    if in_tail:
+        return "unknown", "tail"
+    return "good", "quiet"
+
+
+def zone_confusion_combined(days: list[dict], zone_keys, start: str | None = None, end: str | None = None,
+                            holdout_only: bool = False, thresholds=THRESHOLDS) -> dict:
+    """{zone: {"0.25": {tp, fp, fn, tn, tp_discharge, tp_sample, fn_discharge,
+    fn_sample, fp_sample, fp_quiet, tn_sample, tn_quiet, unknown_tail,
+    unknown_uncovered, dry_elevated, dry_flagged}, ...}} — the final
+    percentage graded against discharge days + samples; see ``combined_label``."""
+    out = {}
+    subset = window_days(days, start, end)
+    for zk in zone_keys:
+        dis_set = {d["date"] for d in days if zk in d["zones"] and d["zones"][zk]["discharge"]}
+        out[zk] = {}
+        for thr in thresholds:
+            c = {k: 0 for k in ("tp", "fp", "fn", "tn", "tp_discharge", "tp_sample", "fn_discharge", "fn_sample",
+                                "fp_sample", "fp_quiet", "tn_sample", "tn_quiet", "unknown_tail", "unknown_uncovered",
+                                "dry_elevated", "dry_flagged")}
+            for day in subset:
+                z = day["zones"][zk]
+                p = _prob(z, holdout_only)
+                if p is None:
+                    continue
+                verdict, why = combined_label(day, zk, dis_set)
+                pred = p >= thr
+                if verdict == "unknown":
+                    c["unknown_" + why] += 1
+                elif verdict == "scope":
+                    c["dry_elevated"] += 1
+                    c["dry_flagged"] += int(pred)
+                elif verdict == "bad":
+                    c["tp" if pred else "fn"] += 1
+                    c[("tp_" if pred else "fn_") + why] += 1
+                else:
+                    c["fp" if pred else "tn"] += 1
+                    c[("fp_" if pred else "tn_") + why] += 1
+            out[zk][str(thr)] = c
+    return out
+
+
 # ── zone confusion against the posting label ──────────────────────────────
 
 POSTED_IN_SCOPE = ("cso", "rain")   # see posting_label.IN_SCOPE

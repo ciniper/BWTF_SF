@@ -36,7 +36,7 @@ import candidates  # noqa: E402
 import stage2 as S2  # noqa: E402
 import posting_label as PL  # noqa: E402
 from groups import SITE_GROUPS, ZONE_GROUPS  # noqa: E402
-from scorecard import LINE_GRID, basin_metrics, zone_confusion, zone_confusion_posted, zone_fp_tail  # noqa: E402
+from scorecard import LINE_GRID, basin_metrics, zone_confusion, zone_confusion_combined, zone_confusion_posted, zone_fp_tail  # noqa: E402
 from shared.zones import ZONES  # noqa: E402
 
 REPO = HERE.parents[3]
@@ -104,6 +104,8 @@ def evaluate(s: dict, zvol: dict, label=None) -> dict:
         tail = zone_fp_tail(days, ZONE_ORDER, lo, hi, holdout_only=ho, thresholds=LINE_GRID)
         # the same days graded against the signs on the beach (BeachWatch postings); None without the record
         posted = zone_confusion_posted(days, ZONE_ORDER, label, lo, hi, holdout_only=ho, thresholds=LINE_GRID) if label is not None else None
+        # the primary ruler: discharge days + samples (a discharge day is bad, an elevated sample in the week after one confirms persistence)
+        comb = zone_confusion_combined(days, ZONE_ORDER, lo, hi, holdout_only=ho, thresholds=LINE_GRID)
         bm = basin_metrics(days, BASIN_ORDER, lo, hi, holdout_only=ho)
         # calibration bands, stage 1, pooled over basins
         bands = [(0, .1), (.1, .25), (.25, .5), (.5, .75), (.75, 1.01)]
@@ -139,7 +141,7 @@ def evaluate(s: dict, zvol: dict, label=None) -> dict:
                     if r >= thr:
                         caught_mg += mg
                 volz[zk][str(thr)] = {"caught_mg": caught_mg, "total_mg": total_mg}
-        res["windows"][wname] = {"start": lo, "end": hi, "confusion": conf, "tail": tail, "posted": posted, "basins": bm, "calibration": cal, "volume": volz}
+        res["windows"][wname] = {"start": lo, "end": hi, "confusion": conf, "tail": tail, "posted": posted, "combined": comb, "basins": bm, "calibration": cal, "volume": volz}
     return res
 
 
@@ -267,6 +269,13 @@ def svg_scatter_ops(sets_eval: list[tuple[dict, dict]], zk: str, wname: str, wid
 
 # ── report ──────────────────────────────────────────────────────────────────
 
+def cost_combined(cconf: dict, thr: float, wfp: float, wfn: float) -> dict:
+    """Cost against discharge days + samples: wfp × false alarms (clean-sample or
+    quiet days) + wfn × bad days (discharge day or confirmed persistence) under the line."""
+    per = {zk: wfp * cconf[zk][str(thr)]["fp"] + wfn * cconf[zk][str(thr)]["fn"] for zk in ZONE_ORDER}
+    return {"total": sum(per.values()), "per_zone": per}
+
+
 def cost_posted(pconf: dict, thr: float, wfp: float, wfn: float) -> dict:
     """Cost against the posting label: alarms on known-quiet days + wfn × posted
     (sewage/rain-cause) days under the line; other-cause postings not scored."""
@@ -306,11 +315,39 @@ def build_html(sets: list[dict], evals: list[dict], narrative: str, label=None) 
         h.append('</table>')
         return "".join(h), rows
 
-    primary_html, primary_rows = rank_table("oos", 0.5, PRIMARY, False)
-    post_html, post_rows = rank_table("post", 0.5, PRIMARY, False)
-    hold_html, _ = rank_table("holdout", 0.5, PRIMARY, False)
+    def rank_table_combined(wname: str, thr: float, weighting) -> tuple[str, list]:
+        """The primary ruler: discharge days + samples (scorecard.combined_label)."""
+        _, wfp, wfn = weighting
+        rows = []
+        for s, e in se:
+            W = e["windows"][wname]
+            C = W["combined"]
+            c = cost_combined(C, thr, wfp, wfn)
+            g = lambda k: sum(C[zk][str(thr)][k] for zk in ZONE_ORDER)  # noqa: E731
+            mg_c = sum(W["volume"][zk][str(thr)]["caught_mg"] for zk in ZONE_ORDER)
+            mg_t = sum(W["volume"][zk][str(thr)]["total_mg"] for zk in ZONE_ORDER)
+            rows.append({"set": s, "cost": c["total"], "per_zone": c["per_zone"], "tp": g("tp"), "fn": g("fn"), "fp": g("fp"),
+                         "tp_discharge": g("tp_discharge"), "tp_sample": g("tp_sample"), "fn_discharge": g("fn_discharge"), "fn_sample": g("fn_sample"),
+                         "fp_sample": g("fp_sample"), "fp_quiet": g("fp_quiet"), "unknown": g("unknown_tail") + g("unknown_uncovered"),
+                         "dry": g("dry_elevated"), "dry_flagged": g("dry_flagged"), "mg_c": mg_c, "mg_t": mg_t})
+        rows.sort(key=lambda r: (r["cost"], -r["tp"]))
+        h = [f'<table><tr><th>#</th><th>Set</th><th>stage 1 · stage 2</th><th class="num">cost</th><th class="num">bad days caught</th><th class="num">· discharge days</th><th class="num">· elevated samples in the week after</th><th class="num">missed</th><th class="num">false alarms</th><th class="num">· on clean-sample days</th><th class="num">· on quiet days</th><th class="num">not graded</th><th class="num">dry-weather elevated (flagged)</th><th class="num">MG caught</th>' + "".join(f'<th class="num">{esc(ZONES[zk].label.split(" ")[0])}</th>' for zk in ZONE_ORDER) + '</tr>']
+        for i, r in enumerate(rows):
+            s = r["set"]
+            h.append(f'<tr class="{"best" if i == 0 else ""}"><td>{i+1}</td><td><b>{esc(s["label"])}</b>{" <span class=\"badge info\">served</span>" if s["served"] else ""}</td><td class="fine">{esc(s["stage1"])} · s2 {esc(s["stage2"])}</td><td class="num"><b>{r["cost"]:.0f}</b></td><td class="num">{r["tp"]} of {r["tp"]+r["fn"]}</td><td class="num">{r["tp_discharge"]} of {r["tp_discharge"]+r["fn_discharge"]}</td><td class="num">{r["tp_sample"]} of {r["tp_sample"]+r["fn_sample"]}</td><td class="num">{r["fn"]}</td><td class="num">{r["fp"]}</td><td class="num">{r["fp_sample"]}</td><td class="num">{r["fp_quiet"]}</td><td class="num">{r["unknown"]}</td><td class="num">{r["dry"]} ({r["dry_flagged"]})</td><td class="num">{r["mg_c"]:.0f} of {r["mg_t"]:.0f}</td>' + "".join(f'<td class="num">{r["per_zone"][zk]:.0f}</td>' for zk in ZONE_ORDER) + '</tr>')
+        h.append('</table>')
+        return "".join(h), rows
+
+    # primary ruler: discharge days + samples
+    primary_html, primary_rows = rank_table_combined("oos", 0.5, PRIMARY)
+    post_html, post_rows = rank_table_combined("post", 0.5, PRIMARY)
+    hold_html, _ = rank_table_combined("holdout", 0.5, PRIMARY)
+    line25_html, rows25 = rank_table_combined("oos", 0.25, PRIMARY)
+    # the discharge-day ruler the first version of this report used
+    d50_html, d50_rows = rank_table("oos", 0.5, PRIMARY, False)
+    dpost_html, _ = rank_table("post", 0.5, PRIMARY, False)
     clean_html, clean_rows = rank_table("oos", 0.5, PRIMARY, True)
-    line25_html, rows25 = rank_table("oos", 0.25, PRIMARY, False)
+    d25_html, _ = rank_table("oos", 0.25, PRIMARY, False)
 
     # ── the same days graded against beach postings (the signs), BeachWatch-backed ──
     has_posted = label is not None and all(e["windows"]["oos"].get("posted") for e in evals)
@@ -392,21 +429,24 @@ def build_html(sets: list[dict], evals: list[dict], narrative: str, label=None) 
 <h3>Sensitivity, posting label</h3>{"".join(psens)}</section>
 """
 
-    # cheapest line per set, overall and per zone (oos, primary weighting)
-    cheap = ['<table><tr><th>Set</th><th class="num">cheapest single line, all zones</th><th class="num">per-zone lines, summed</th>' + "".join(f'<th class="num">{esc(ZONES[zk].label)}</th>' for zk in ZONE_ORDER) + '</tr>']
-    for s, e in se:
-        W = e["windows"]["oos"]
-        tot = {t: cost(W["confusion"], W["tail"], t, PRIMARY[1], PRIMARY[2]) for t in LINE_GRID}
-        best_all = min(LINE_GRID, key=lambda t: (tot[t]["total"], -t))
-        cells = []
-        zone_sum = sum(min(tot[t]["per_zone"][zk] for t in LINE_GRID) for zk in ZONE_ORDER)
-        for zk in ZONE_ORDER:
-            bz = min(LINE_GRID, key=lambda t: (tot[t]["per_zone"][zk], -t))
-            d = W["confusion"][zk][str(bz)]["vs_discharge_posting"]
-            cells.append(f'<td class="num"><b>{int(bz*100)}%</b> <span class="fine">cost {tot[bz]["per_zone"][zk]:.0f} · {d["tp"]} of {d["tp"]+d["fn"]} caught, {d["fp"]} false</span></td>')
-        cheap.append(f'<tr><td><b>{esc(s["label"])}</b></td><td class="num"><b>{int(best_all*100)}%</b> <span class="fine">cost {tot[best_all]["total"]:.0f} (vs {tot[0.5]["total"]:.0f} at 50%)</span></td><td class="num"><b>{zone_sum:.0f}</b> <span class="fine">each zone at its own cheapest line</span></td>' + "".join(cells) + '</tr>')
-    cheap.append('</table>')
-    cheap_html = "".join(cheap)
+    def cheap_table(blk: str) -> str:
+        # cheapest line per set, overall and per zone (oos, primary weighting)
+        cheap = ['<table><tr><th>Set</th><th class="num">cheapest single line, all zones</th><th class="num">per-zone lines, summed</th>' + "".join(f'<th class="num">{esc(ZONES[zk].label)}</th>' for zk in ZONE_ORDER) + '</tr>']
+        for s, e in se:
+            W = e["windows"]["oos"]
+            tot = {t: (cost_combined(W["combined"], t, PRIMARY[1], PRIMARY[2]) if blk == "combined" else cost(W["confusion"], W["tail"], t, PRIMARY[1], PRIMARY[2])) for t in LINE_GRID}
+            best_all = min(LINE_GRID, key=lambda t: (tot[t]["total"], -t))
+            cells = []
+            zone_sum = sum(min(tot[t]["per_zone"][zk] for t in LINE_GRID) for zk in ZONE_ORDER)
+            for zk in ZONE_ORDER:
+                bz = min(LINE_GRID, key=lambda t: (tot[t]["per_zone"][zk], -t))
+                d = W["combined"][zk][str(bz)] if blk == "combined" else W["confusion"][zk][str(bz)]["vs_discharge_posting"]
+                cells.append(f'<td class="num"><b>{int(bz*100)}%</b> <span class="fine">cost {tot[bz]["per_zone"][zk]:.0f} · {d["tp"]} of {d["tp"]+d["fn"]} caught, {d["fp"]} false</span></td>')
+            cheap.append(f'<tr><td><b>{esc(s["label"])}</b></td><td class="num"><b>{int(best_all*100)}%</b> <span class="fine">cost {tot[best_all]["total"]:.0f} (vs {tot[0.5]["total"]:.0f} at 50%)</span></td><td class="num"><b>{zone_sum:.0f}</b> <span class="fine">each zone at its own cheapest line</span></td>' + "".join(cells) + '</tr>')
+        cheap.append('</table>')
+        return "".join(cheap)
+    cheap_html = cheap_table("combined")
+    dcheap_html = cheap_table("confusion")
 
     # sensitivity: rank position of each set under every weighting × line × fp-mode (oos)
     sens = ['<table><tr><th>Setting (out of sample, Jul 2023 → Aug 2026)</th>' + "".join(f'<th class="num">{esc(s["label"])}</th>' for s in sets) + '</tr>']
@@ -417,13 +457,20 @@ def build_html(sets: list[dict], evals: list[dict], narrative: str, label=None) 
                 pos = {r["set"]["name"]: (i + 1, r["cost"]) for i, r in enumerate(rows)}
                 sens.append(f'<tr><td>{int(thr*100)}% line · {esc(weighting[0])}{" · clean-day false alarms only" if clean_only else ""}</td>' + "".join(f'<td class="num">{"<b>" if pos[s["name"]][0] == 1 else ""}#{pos[s["name"]][0]} <span class="fine">({pos[s["name"]][1]:.0f})</span>{"</b>" if pos[s["name"]][0] == 1 else ""}</td>' for s in sets) + '</tr>')
     sens.append('</table>')
+    csens = ['<table><tr><th>Setting (out of sample, discharge days + samples)</th>' + "".join(f'<th class="num">{esc(s["label"])}</th>' for s in sets) + '</tr>']
+    for thr in LINES:
+        for weighting in WEIGHTINGS:
+            _, rows = rank_table_combined("oos", thr, weighting)
+            pos = {r["set"]["name"]: (i + 1, r["cost"]) for i, r in enumerate(rows)}
+            csens.append(f'<tr><td>{int(thr*100)}% line · {esc(weighting[0])}</td>' + "".join(f'<td class="num">{"<b>" if pos[s["name"]][0] == 1 else ""}#{pos[s["name"]][0]} <span class="fine">({pos[s["name"]][1]:.0f})</span>{"</b>" if pos[s["name"]][0] == 1 else ""}</td>' for s in sets) + '</tr>')
+    csens.append('</table>')
 
     # cost vs line chart (oos, primary weighting), all zones
     xs = list(LINE_GRID)
-    series = [{"label": s["label"], "y": [cost(e["windows"]["oos"]["confusion"], e["windows"]["oos"]["tail"], t, PRIMARY[1], PRIMARY[2])["total"] for t in xs], "color": COLORS[k], "dash": "" if k % 2 == 0 else "6 4"} for k, (s, e) in enumerate(se)]
-    cost_chart = svg_lines(series, xs, f"cost, all zones ({PRIMARY[0]})", "alarm line", mark_x=0.5)
-    series_c = [{"label": s["label"], "y": [cost(e["windows"]["oos"]["confusion"], e["windows"]["oos"]["tail"], t, PRIMARY[1], PRIMARY[2], True)["total"] for t in xs], "color": COLORS[k], "dash": "" if k % 2 == 0 else "6 4"} for k, (s, e) in enumerate(se)]
-    cost_chart_clean = svg_lines(series_c, xs, "cost counting clean-day false alarms only", "alarm line", mark_x=0.5)
+    series = [{"label": s["label"], "y": [cost_combined(e["windows"]["oos"]["combined"], t, PRIMARY[1], PRIMARY[2])["total"] for t in xs], "color": COLORS[k], "dash": "" if k % 2 == 0 else "6 4"} for k, (s, e) in enumerate(se)]
+    cost_chart = svg_lines(series, xs, f"cost vs discharge days + samples ({PRIMARY[0]})", "alarm line", mark_x=0.5)
+    series_c = [{"label": s["label"], "y": [cost(e["windows"]["oos"]["confusion"], e["windows"]["oos"]["tail"], t, PRIMARY[1], PRIMARY[2])["total"] for t in xs], "color": COLORS[k], "dash": "" if k % 2 == 0 else "6 4"} for k, (s, e) in enumerate(se)]
+    cost_chart_clean = svg_lines(series_c, xs, "cost vs discharge days only (every tail day a false alarm)", "alarm line", mark_x=0.5)
 
     # stage 1: PR-AUC per basin, holdout and post, for each distinct stage 1
     stage1_sets = {}
@@ -501,29 +548,38 @@ tr.best td{{background:#e0f0ea}} .verdict{{background:#0072BC;color:#fff;border-
 .narr p{{margin:8px 0}} .narr h3{{margin-top:18px}}
 </style></head><body><div class="wrap">
 <header><h1>Model analysis: which stage 1 and stage 2 to run</h1>
-<p class="sub">Every model set on disk, scored on identical days and labels from the stored scorecard artifacts, ranked by cost. Primary setting per Chase (2026-09-26): <b>{esc(PRIMARY[0])}</b>, at the <b>50% line</b>, over every out-of-sample day (the Jul 2023 → Oct 2025 holdout with holdout-fit stage 1, plus Nov 2025 → Aug 2026 with the served/candidate models on days they never saw). Other lines and weightings follow, so the verdict can be read for its sensitivity.</p>
+<p class="sub">Every model set on disk, scored on identical days and labels from the stored scorecard artifacts, ranked by cost. Primary setting per Chase (2026-09-26): <b>{esc(PRIMARY[0])}</b>, at the <b>50% line</b>, graded against <b>discharge days + samples</b> (stage 1 alone is graded on discharge days; the final percentage on the discharge day plus the samples that confirm or clear the week after it), over every out-of-sample day (the Jul 2023 → Oct 2025 holdout with holdout-fit stage 1, plus Nov 2025 → Aug 2026 with the served/candidate models on days they never saw). Other lines and weightings follow, so the verdict can be read for its sensitivity.</p>
 <div class="meta"><span>{len(sets)} sets: {esc(", ".join(f"{s['name']} = {s['stage1']} + s2 {s['stage2']}" for s in sets))}</span><span>holdout {esc(w["holdout"][0])} → {esc(w["holdout"][1])}</span><span>since training {esc(w["post"][0])} → {esc(w["post"][1])}</span><span>post-training rain: {esc(", ".join(master.get("input_rules_post") or ["raw record"]))}</span><span>generated {esc(gen)}</span></div></header>
-<nav><a href="#verdict">Verdict</a><a href="#rank">Ranking</a><a href="#posted">Postings</a><a href="#sens">Sensitivity</a><a href="#cost">Cost vs line</a><a href="#s1">Stage 1</a><a href="#cal">Calibration</a><a href="#zones">Zones</a><a href="#effects">Isolated effects</a><a href="#volume">Volume</a><a href="#bact">Bacteria</a><a href="#recs">Recommendations</a></nav>
+<nav><a href="#verdict">Verdict</a><a href="#rank">Ranking</a><a href="#discharge">Discharge days</a><a href="#posted">Postings</a><a href="#sens">Sensitivity</a><a href="#cost">Cost vs line</a><a href="#s1">Stage 1</a><a href="#cal">Calibration</a><a href="#zones">Zones</a><a href="#effects">Isolated effects</a><a href="#volume">Volume</a><a href="#bact">Bacteria</a><a href="#recs">Recommendations</a></nav>
 
-<section id="verdict"><div class="verdict">King under the primary setting: <b>{esc(king["label"])}</b> — stage 1 {esc(king["stage1"])} with stage 2 {esc(king["stage2"])}: cost {primary_rows[0]["cost"]:.0f} vs {primary_rows[1]["cost"]:.0f} for the runner-up ({esc(primary_rows[1]["set"]["label"])}) and {next(r["cost"] for r in primary_rows if r["set"]["served"]):.0f} for the served {esc(served_row["set"]["stage1"])}. {primary_rows[0]["tp"]} of {primary_rows[0]["tp"]+primary_rows[0]["fn"]} discharge days caught, {primary_rows[0]["fp"]} false alarms of which {primary_rows[0]["clean"]} on clean days.</div>
+<section id="verdict"><div class="verdict">King under the primary setting (discharge days + samples): <b>{esc(king["label"])}</b> — stage 1 {esc(king["stage1"])} with stage 2 {esc(king["stage2"])}: cost {primary_rows[0]["cost"]:.0f} vs {primary_rows[1]["cost"]:.0f} for the runner-up ({esc(primary_rows[1]["set"]["label"])}) and {served_row["cost"]:.0f} for the served {esc(served_row["set"]["stage1"])}. {primary_rows[0]["tp"]} of {primary_rows[0]["tp"]+primary_rows[0]["fn"]} bad days caught ({primary_rows[0]["tp_discharge"]} of {primary_rows[0]["tp_discharge"]+primary_rows[0]["fn_discharge"]} discharge days, {primary_rows[0]["tp_sample"]} of {primary_rows[0]["tp_sample"]+primary_rows[0]["fn_sample"]} elevated samples in the week after one); {primary_rows[0]["fp"]} false alarms, {primary_rows[0]["fp_sample"]} on clean-sample days and {primary_rows[0]["fp_quiet"]} on quiet days.</div>
+<div class="verdict" style="background:#54576F;margin-top:8px">Against discharge days only (every day after a discharge counted quiet): <b>{esc(d50_rows[0]["set"]["label"])}</b> cheapest at 50% — cost {d50_rows[0]["cost"]:.0f} vs {d50_rows[1]["cost"]:.0f} ({esc(d50_rows[1]["set"]["label"])}); {d50_rows[0]["tp"]} of {d50_rows[0]["tp"]+d50_rows[0]["fn"]} discharge days caught, {d50_rows[0]["fp"]} "false alarms" of which {d50_rows[0]["tail"]} in the week after a real discharge.</div>
 {posted_verdict}
 <div class="narr">{narrative}</div></section>
 
-<section id="rank"><h2>Ranking — 50% line, {esc(PRIMARY[0])}</h2>
-<p class="lead">Cost = {PRIMARY[1]:g} × false alarms + {PRIMARY[2]:g} × missed discharge days, summed over the four zones, against the discharge label (a CIWQS-reported discharge that day from an outfall posting one of the zone's beaches). "After a real discharge" = false alarms within 7 days of a real posting, the composition holding risk up while the beach is likely still dirty; "clean days" is the model's own cost. MG caught = reported discharge volume on caught days.</p>
+<section id="rank"><h2>Ranking — 50% line, {esc(PRIMARY[0])}, against discharge days + samples</h2>
+<p class="lead">The final percentage graded on what it claims — a beach fouled by a discharge. A <b>bad day</b> is the discharge day itself (the model's own definition) or an <b>elevated sample within 7 days after a discharge</b> (persistence, confirmed by the water). A <b>false alarm</b> is risk over the line on a day known clean: a clean sample, or an unsampled day with no discharge in the prior week. An unsampled day in the week after a discharge is <b>not graded</b> — nobody measured the water. An elevated sample with no discharge in the prior week is <b>dry-weather dirtiness</b> a rain model does not claim: counted, never a hit or a miss (the bacteria view below grades it). Cost = {PRIMARY[1]:g} × false alarms + {PRIMARY[2]:g} × bad days missed. MG caught = reported discharge volume on caught discharge days.</p>
 <h3>Out of sample — holdout + since training (primary)</h3>{primary_html}
 <h3>Since training only — Nov 2025 → Aug 2026, the truest test</h3>{post_html}
 <h3>Holdout only — Jul 2023 → Oct 2025</h3>{hold_html}
-<h3>Same as primary, counting clean-day false alarms only</h3>{clean_html}
 <h3>Primary weighting at the 25% line instead</h3>{line25_html}
 <h3>Cheapest line per set — overall and per zone (out of sample, primary weighting)</h3>
 <p class="fine">Where each set's cost bottoms out on the 5–75% grid. A zone whose cheapest line differs from the others is a case for per-zone alarm lines.</p>{cheap_html}</section>
+
+<section id="discharge"><h2>Graded against discharge days only</h2>
+<p class="lead">The ruler the first version of this report used (2026-09-25): a bad day is a CIWQS-reported discharge that day from an outfall posting one of the zone's beaches, and every other day is quiet — so the week of risk stage 2 holds after a discharge counts as false alarms ("after a real discharge") whether or not the beach was still dirty. Kept because it is the right ruler for stage 1 and for "did we call the discharge day", and because the tail split shows how much of each set's false-alarm count is that design.</p>
+<h3>Out of sample, 50% line</h3>{d50_html}
+<h3>Since training only, 50% line</h3>{dpost_html}
+<h3>Counting clean-day false alarms only</h3>{clean_html}
+<h3>25% line</h3>{d25_html}
+<h3>Cheapest line per set and zone, discharge-day ruler</h3>{dcheap_html}
+<h3>Sensitivity, discharge-day ruler</h3>{"".join(sens)}</section>
 {posted_section}
 <section id="sens"><h2>Sensitivity — does the winner depend on the weighting or the line?</h2>
-<p class="lead">Rank (and cost) of every set under each combination, out of sample. A verdict that holds across this table is robust; one that flips is a judgment call.</p>{"".join(sens)}</section>
+<p class="lead">Rank (and cost) of every set under each combination, out of sample, against discharge days + samples. A verdict that holds across this table is robust; one that flips is a judgment call.</p>{"".join(csens)}</section>
 
 <section id="cost"><h2>Cost against the alarm line</h2>
-<p class="lead">Total cost over all zones as the line moves from 5% to 75% (out of sample). The dashed vertical is the 50% line. Left: all false alarms count. Right: only clean-day false alarms count.</p>
+<p class="lead">Total cost over all zones as the line moves from 5% to 75% (out of sample). The dashed vertical is the 50% line. Left: the primary ruler, discharge days + samples. Right: discharge days only, where every tail day is a false alarm.</p>
 <div class="grid g2"><div class="card">{cost_chart}</div><div class="card">{cost_chart_clean}</div></div></section>
 
 <section id="s1"><h2>Stage 1 — ranking quality per basin</h2>
@@ -567,6 +623,11 @@ def summary_tables(sets, evals) -> None:
                 c21 = cost(W["confusion"], W["tail"], thr, 2, 1)["total"]; c11 = cost(W["confusion"], W["tail"], thr, 1, 1)["total"]; c12 = cost(W["confusion"], W["tail"], thr, 1, 2)["total"]; cc = cost(W["confusion"], W["tail"], thr, 1, 2, True)["total"]
                 per = "  ".join(f"{z[:5]} {W['confusion'][z][str(thr)]['vs_discharge_posting']['tp']}/{W['confusion'][z][str(thr)]['vs_discharge_posting']['tp']+W['confusion'][z][str(thr)]['vs_discharge_posting']['fn']}+{W['confusion'][z][str(thr)]['vs_discharge_posting']['fp']}" for z in ZONE_ORDER)
                 print(f"   {s['name']:14} {tp}/{tp+fn}, FP {fp} ({tl}/{fp-tl}), MG {mgc:.0f}/{mgt:.0f} | {c12:.0f}, {c11:.0f}, {c21:.0f} | {cc:.0f}   [{per}]")
+        for thr in (0.25, 0.5):
+            print(f"-- vs discharge days + samples, {int(thr*100)}% line: caught bad days (discharge + confirmed persistence), FP (clean-sample/quiet), not graded, dry elevated (flagged) | cost 1:2")
+            for s, e in se:
+                C = e["windows"][wname]["combined"]; g = lambda k: sum(C[z][str(thr)][k] for z in ZONE_ORDER)  # noqa: E731
+                print(f"   {s['name']:14} {g('tp')}/{g('tp')+g('fn')} ({g('tp_discharge')}/{g('tp_discharge')+g('fn_discharge')} + {g('tp_sample')}/{g('tp_sample')+g('fn_sample')}), FP {g('fp')} ({g('fp_sample')}/{g('fp_quiet')}), ng {g('unknown_tail')+g('unknown_uncovered')}, dry {g('dry_elevated')} ({g('dry_flagged')}) | {cost_combined(C, thr, 1, 2)['total']:.0f}   [" + "  ".join(f"{z[:5]} {C[z][str(thr)]['tp']}/{C[z][str(thr)]['tp']+C[z][str(thr)]['fn']}+{C[z][str(thr)]['fp']}" for z in ZONE_ORDER) + "]")
         if all(e["windows"][wname].get("posted") for e in evals):
             for thr in (0.25, 0.5):
                 print(f"-- vs postings, {int(thr*100)}% line: caught posted (cso/rain) days, alarms on unposted days (of which in the week after a discharge), other-cause posted flagged/total | cost 1:2")

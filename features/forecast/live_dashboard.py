@@ -1082,6 +1082,8 @@ class LiveData:
                   "zone_fp_tail": _sc.zone_fp_tail(days, zone_keys, lo, hi, holdout_only=False, thresholds=_sc.LINE_GRID),
                   "tail_days": _sc.TAIL_DAYS,
                   "basins": _sc.basin_metrics(days, start=lo, end=hi)}
+        # the primary ruler: the final percentage against discharge days + samples
+        window["combined_confusion"] = _sc.zone_confusion_combined(days, zone_keys, lo, hi, holdout_only=False, thresholds=_sc.LINE_GRID)
         label = self._posting_label()
         if label is not None:
             # the same window graded against the signs on the beach (BeachWatch postings)

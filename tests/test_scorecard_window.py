@@ -435,6 +435,28 @@ def test_posting_label_grades_the_signs_not_the_discharge_day():
     assert d == {"tp": 1, "fp": 6, "fn": 0, "tn": 5}, d   # seven alarms, one on the discharge day
 
 
+def test_combined_label_grades_discharge_days_and_confirmed_persistence():
+    """The primary ruler: discharge day = bad; elevated sample in the week after
+    = bad (persistence confirmed); clean sample = good; unsampled tail day =
+    not graded; elevated sample with no recent discharge = out of scope."""
+    dates = [f"2024-01-{d:02d}" for d in range(1, 13)]
+    risks = [0.1, 0.1, 0.9, 0.8, 0.6, 0.3, 0.55, 0.1, 0.7, 0.2, 0.9, 0.0]
+    dis = {d: (None if d == "2024-01-01" else d == "2024-01-03") for d in dates}
+    elev = {"2024-01-04": False, "2024-01-05": True, "2024-01-09": True, "2024-01-12": True}
+    days = [{"date": d, "zones": {"east": {"risk": r, "risk_h": None, "discharge": dis[d], "elevated": elev.get(d)}}} for d, r in zip(dates, risks)]
+    c = S.zone_confusion_combined(days, ["east"], holdout_only=False, thresholds=(0.5,))["east"]["0.5"]
+    assert c == {"tp": 3, "fp": 2, "fn": 0, "tn": 1, "tp_discharge": 1, "tp_sample": 2, "fn_discharge": 0, "fn_sample": 0,
+                 "fp_sample": 1, "fp_quiet": 1, "tn_sample": 0, "tn_quiet": 1, "unknown_tail": 4, "unknown_uncovered": 1,
+                 "dry_elevated": 1, "dry_flagged": 0}, c
+    dis_set = {d for d, v in dis.items() if v}
+    assert S.combined_label(days[2], "east", dis_set) == ("bad", "discharge")
+    assert S.combined_label(days[3], "east", dis_set) == ("good", "sample")       # clean sample in the tail → the alarm there is false
+    assert S.combined_label(days[8], "east", dis_set) == ("bad", "sample")        # elevated 6 days after → persistence confirmed
+    assert S.combined_label(days[11], "east", dis_set) == ("scope", "dry")        # elevated 9 days after → dry-weather, out of scope
+    assert S.combined_label(days[5], "east", dis_set) == ("unknown", "tail")
+    assert S.combined_label(days[0], "east", dis_set) == ("unknown", "uncovered")
+
+
 def test_posted_confusion_in_the_api_matches_the_shared_function_and_the_record():
     """The Model check window carries the same days graded against BeachWatch
     postings, computed by the shared function, with the record's coverage."""
@@ -446,6 +468,10 @@ def test_posted_confusion_in_the_api_matches_the_shared_function_and_the_record(
     sc = eng._scorecard()
     w = eng.get_scorecard("2024-01-13", sc["holdout_start"], sc["span"][1])["window"]
     assert set(w["posted_confusion"]) == set(w["zone_confusion"])
+    assert w["combined_confusion"] == S.zone_confusion_combined(sc["days"], list(w["zone_confusion"]), w["start"], w["end"], holdout_only=False, thresholds=S.LINE_GRID)
+    ce = w["combined_confusion"]["east"]["0.5"]
+    assert ce["tp_discharge"] + ce["fn_discharge"] == w["zone_confusion"]["east"]["0.5"]["vs_discharge_posting"]["tp"] + w["zone_confusion"]["east"]["0.5"]["vs_discharge_posting"]["fn"]
+    assert ce["tp_sample"] + ce["fn_sample"] >= 50 and ce["dry_elevated"] >= 50 and ce["unknown_tail"] >= 10, ce   # the East: confirmed persistence, dry-weather dirtiness, unsampled tail days all present
     assert w["posted_confusion"] == S.zone_confusion_posted(sc["days"], list(w["zone_confusion"]), label, w["start"], w["end"],
                                                             holdout_only=False, thresholds=S.LINE_GRID)
     e = w["posted_confusion"]["east"]["0.5"]

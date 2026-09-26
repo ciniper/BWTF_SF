@@ -3,7 +3,8 @@
 *Written 2026-09-26. This is the map; the other documents are the territory:
 [README](../README.md) (the original monitor and its standards), [features/forecast/README](../features/forecast/README.md)
 (the forecast), [DEPLOY](../DEPLOY.md) (hosting, Supabase, the watcher), [features/forecast/RETRAIN_PLAN](../features/forecast/RETRAIN_PLAN.md)
-(model history), [TODO](../TODO.md) (what is done and what is open), and the `NOTES.md` next to each dataset.*
+(model history), [features/forecast/LIVE_COMPOSITION_DESIGN](../features/forecast/LIVE_COMPOSITION_DESIGN.md)
+(how live CSO flags and samples should change the forecast), [TODO](../TODO.md) (what is done and what is open), and the `NOTES.md` next to each dataset.*
 
 ## 1. What it is
 
@@ -138,8 +139,10 @@ precautionary, and the East is often dirty with no posting and no rain.
 - **Live.** Past complete days use the two NOAA gauges (with the outage rule); today uses NWS hours so far plus the
   ECMWF forecast; forecast days use ECMWF. An observed CSO flag from the watcher sets that day's p to 1 (never lowers).
 - **Evaluation.** `scorecard.json.gz` stores every day's probabilities and labels since 2016; the Model check grades
-  any window at any line, per model set, against the discharge label, the sample label and (since 2026-09-26) the
-  posting label — a "graded against" selector switches the cards. `reports/2026-09_model_analysis.html` ranks the sets by cost (Chase's weighting: a miss costs two false
+  any window at any line, per model set. Three rulers (2026-09-26): **discharge days + samples** is primary (a discharge day
+  is bad, an elevated sample in the week after confirms persistence, a clean sample is good, unsampled tail days are not graded,
+  dry-weather elevated samples are out of scope), discharge days only, and beach postings — a "graded against" selector
+  switches the cards. Stage 1 alone is always graded on discharge days. `reports/2026-09_model_analysis.html` ranks the sets by cost (Chase's weighting: a miss costs two false
   alarms). Explorer pages open every set's arithmetic in the browser and self-check against the artifact.
 - **Nomenclature (2026-09-26):** the served bundle is `gb_v1 (served)` = stage 1 `gb_v1` + stage 2 `v1`. The old
   release label "v4" survives only in file names (`train_v4.py`, `data/models/v4/`).
