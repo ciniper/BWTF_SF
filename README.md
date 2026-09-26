@@ -2,6 +2,8 @@
 
 A monitoring and alert system for San Francisco beach water quality, designed for the **Surfrider SF Blue Water Task Force (BWTF)**.
 
+> **Start here:** [docs/OVERVIEW.md](docs/OVERVIEW.md) — what this repository does today, how it runs, every page, and every data source in one place. The notification, scheduling and architecture sections below describe the original command-line monitor.
+
 ## Overview
 
 This system monitors water quality data from multiple sources and sends alerts when:

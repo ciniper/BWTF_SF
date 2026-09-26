@@ -1,0 +1,168 @@
+# BWTF SF — what this repository is, and every data source it uses
+
+*Written 2026-09-26. This is the map; the other documents are the territory:
+[README](../README.md) (the original monitor and its standards), [features/forecast/README](../features/forecast/README.md)
+(the forecast), [DEPLOY](../DEPLOY.md) (hosting, Supabase, the watcher), [features/forecast/RETRAIN_PLAN](../features/forecast/RETRAIN_PLAN.md)
+(model history), [TODO](../TODO.md) (what is done and what is open), and the `NOTES.md` next to each dataset.*
+
+## 1. What it is
+
+A small public web app plus a database-side alert watcher, built for the **Surfrider Foundation San Francisco
+chapter's Blue Water Task Force (BWTF)**, the volunteer program that samples SF beaches for bacteria. It answers
+one question in several ways: **is the water at a San Francisco beach safe right now, and will it be tomorrow?**
+
+- **Live:** https://bwtf-sf.vercel.app (the only host; `main` auto-deploys). Every page footer shows `build <sha>`;
+  `/api/build` returns it as JSON.
+- **Alerts:** subscribers pick beach zones and get one email when SFPUC posts a beach or reports an active
+  combined-sewer discharge (CSO). Detection and sending run inside Supabase (Postgres, pg_cron), not in the web app.
+- **Forecast:** a rain-driven machine-learning model predicts, for today and the next five days, the chance that each
+  beach zone is fouled by a combined-sewer discharge — a warning *before* the posting.
+- **Records:** public pages over the official datasets — every discharge SFPUC reported to regulators, every lab
+  sample, every posting and CSO our watcher has seen, and Surfrider's own volunteer results.
+
+Why it exists: San Francisco has a *combined* sewer. Heavy rain overwhelms the storage boxes and the treatment
+plants, and the system discharges a mix of stormwater and sewage through 34 permitted outfalls onto Ocean Beach,
+Baker/China, the north shore and the bay side. SFPUC posts warning signs after a discharge and when weekly samples
+fail the state standard; this project makes that information timely, searchable and predictive.
+
+## 2. How it runs
+
+```
+   browser ──► Vercel (Flask, app/wsgi.py) ──► feature packages (features/*)
+                    │                              │
+                    │ reads/writes                 │ reads
+                    ▼                              ▼
+             Supabase Postgres  ◄──────── external data sources (§4)
+             subscribers · watcher state · alert_log · watcher_config · forecast cache
+                    │
+                    │ pg_cron every minute (db/migrations/002–004)
+                    ▼
+             poll SFPUC getBeaches → detect station transitions → email via Brevo (source='pg_live')
+             healthchecks.io dead-man ping · hourly keep-alive ping of the app
+```
+
+- **Web app** — one Flask application (`app/wsgi.py`) mounting eight feature packages. Serverless on Vercel
+  (`vercel.json`, 60 s function limit); `Procfile` runs gunicorn for any conventional host. Static analyses under
+  `reports/` are served at `/reports/<name>`.
+- **State** — everything durable lives in Supabase (`db/migrations/001` → `011`): subscribers, the watcher's last-seen
+  station states, `alert_log` (every detection, dispatch and simulation, with provenance), `watcher_config`, and a
+  single-row forecast snapshot cache. Without Supabase credentials the app falls back to the legacy JSON files under
+  `data/` and in-memory forecasts — fine for a bare checkout, never for production.
+- **Watcher** — the detection→dispatch loop is SQL, run by pg_cron every minute and fetching the SFPUC feed with pg_net.
+  It alerts only on transitions to a *worse* state (safe → posted, safe → CSO, posted → CSO), once per event, and logs
+  clears since migration 006. Mode is `watcher_config.mode` (`shadow` | `live` | `off`). The former in-process Python
+  thread and the Railway host were retired in 2026-08/09.
+- **Forecast** — computed on visit: `/forecast/api/data` serves the cached snapshot while it is under 30 minutes old and
+  recomputes otherwise (5–20 s), with a claim guard so concurrent visitors never double-compute.
+- **Local dev** — `venv/bin/python -m app.wsgi` on port 8080. A local `.env` with Supabase keys shares the production
+  database: set `ALERT_WATCHER_INTERVAL=off` and never POST a simulation to production (real subscribers receive it).
+
+## 3. The pages
+
+| Route | Page | What it shows | Data behind it |
+|---|---|---|---|
+| `/` | Landing | Status banner (active CSOs, postings) and the feature cards | SFPUC feed |
+| `/signup` | Get Beach Alerts | Public, zone-based email signup (four zones, bad-news-only alerts) | Supabase `subscribers` |
+| `/alerts` | Sewage Alert System | Operator dashboard: live station status, bacteria, subscriber list, simulations, dispatch log. Behind a passphrase (`ALERTS_PASSPHRASE`) | SFPUC feed, DataSF, Supabase |
+| `/forecast` | CSO Forecast | Zone risk today + 5 days, basin view, **What happened** (past days vs reality), **Model check** (scorecard over any window, per model set, any alarm line) | Rain sources, models, CIWQS labels, samples, alert_log |
+| `/compare` | Source Comparison | Surfrider volunteer results vs the city's lab results, same beaches | BWTF GraphQL, DataSF |
+| `/bwtf` | BWTF Sample Log | Every volunteer sample with field conditions and notes | BWTF GraphQL |
+| `/cso-history` | CSO Event Timeline | Every posting / CSO our watcher detected, per station, with clears | Supabase `alert_log` |
+| `/analysis` | Site Report Card | How often each site fails the state standard; storm-season effect; trends | DataSF |
+| `/discharges` | Discharge Ledger | Every reported discharge since 2016: outfall, duration, million gallons | CIWQS records (`data/csd/`) |
+| `/reports/<name>` | Analyses | Model explorers, stage 2 explorer, model analysis, leaderboard, training report | Static HTML under `reports/` |
+
+## 4. Data sources — the complete list
+
+### 4.1 Water quality and postings (what actually happened)
+
+| Source | What it gives us | Coverage / cadence | Code | Stored | Used by |
+|---|---|---|---|---|---|
+| **SFPUC LIMS feed** `infrastructure.sfwater.org/lims.asmx/getBeaches` (the API behind SFPUC's beach map) | Per station right now: posted flag, active CSO flag, latest sample colour/date | Live; polled every minute by the watcher | `shared/sfpuc_api.py`, `db/migrations/002+` | Transitions in Supabase `alert_log` (since Aug 2026) | Watcher/alerts, landing banner, alerts page, forecast's observed-CSO override, CSO Event Timeline |
+| **DataSF beach lab dataset** `v3fv-x3ux` (data.sf.gov; legacy `data.sfgov.org` host now 403s `$select` queries) | SFPUC's lab results: Enterococcus, E. coli/fecal and total coliform per station and sample date | 20 stations, roughly weekly, **Jul 2020 → today**, 1–2 day lag | `shared/datasf.py`, `features/forecast/src/collectors/historical.py` | `features/forecast/data/raw/historical_bacteria.csv` (training copy) | Site Report Card, Source Comparison, alerts page, forecast "elevated" labels and impact table |
+| **Poo Bot archive** (John Brandon's `Beach_Poo_Bot`, 552 snapshots of SFPUC's `getCSV` feed) | Samples Dec 2015 → Jan 2017, plus each snapshot's POSTED stations and active CSO structures | **Mar 2016 → Jan 2017** | `collectors/poobot_archive.py` | `features/forecast/data/poobot/` (`samples.csv`, `feed_status.csv`, `discharge_onsets.csv`) | Forecast labels for 2016–17 (Westside stage 1 excludes them after ablation); the evidence behind the outfall → station mapping |
+| **CIWQS self-monitoring reports** (SFPUC's monthly SMRs to the Regional Water Board, PDF attachments) | The official discharge record: outfall, date, start time, duration, volume (MG) per event | **Bayside Oct 2016 →, Westside Jan 2018 →** (continuous); refreshed quarterly; 1,104 events at 2026-09-24 | `collectors/csd_ciwqs/` (offline pipeline), `collectors/csd_labels.py` | `features/forecast/data/csd/sf_csd_events.csv`, coverage grid, legacy Bayside 2013–16 | Forecast training labels and scorecard "discharge" label, Discharge Ledger |
+| **BeachWatch** (California State Water Resources Control Board, data.ca.gov `beach-water-quality-postings-and-closures`) | Every SF beach advisory county health filed with the State: station, posting date, reopening date, type (Posting / Rain / Closure), cause | **1999 → Feb 2026** (SF files months late); 2,142 SF station-advisories | `collectors/beachwatch.py --refresh` | `features/forecast/data/beachwatch/` (`sf_beach_advisories.csv`, `sf_posted_zone_days.csv`, manifest) | The posting label for grading (next: scorecard + analysis report) |
+| **Surfrider BWTF database** (AWS AppSync GraphQL behind bwtf.surfrider.org; SF chapter = lab 76) | Volunteer samples with tester, weather, tide, waves, comments | Chapter history | `features/comparison/bwtf_api.py` | Not stored | Source Comparison, BWTF Sample Log |
+| **Our own alert_log** (Supabase) | Every station transition the watcher saw (posted / CSO / cleared), every dispatch, every simulation | **Aug 2026 →** (`pg_shadow` from 2026-08-16, `pg_live` after the flip) | `shared/alert_log.py`, `features/cso_history` | Supabase | CSO Event Timeline, forecast live override, "What happened" |
+
+### 4.2 Rain and weather (what drives the forecast)
+
+| Source | What | Coverage | Code | Stored | Used by |
+|---|---|---|---|---|---|
+| **NOAA ACIS daily gauges** — SF Downtown `047772`, SF Oceanside `047767` | Daily precipitation totals; the series the models were trained on | 2016 → today (longer available) | `collectors/historical.py`, `live_dashboard._daily_frames` | `features/forecast/data/raw/historical_rain.csv` | Stage 1 features; past days re-based onto these gauges. The **gauge outage rule** (`rain_features.GAUGE_OUTAGE_RULE`) masks a gauge reporting exact 0.00 for ≥2 days while the other gauge records ≥0.5" |
+| **Open-Meteo** (ECMWF IFS 0.25° via `api.open-meteo.com`) | Hourly forecast for the next 5 days; hourly archive for peak-intensity features | Live + archive | `live_dashboard.py` (`METEO_PARAMS`) | `data/raw/hourly_rain_openmeteo.csv` | Forecast days; `rain_max1h/3h/6h` features |
+| **NWS** (`api.weather.gov`: KSFO observations, MTR gridpoint hourly forecast) | Recent hours observed; the rain advisory (avoid water contact 72 h after rain) | Live | `live_dashboard.py`, `shared/weather_tides.py` | — | Today's partial-day rain; alerts page advisory |
+| **NOAA CO-OPS** station 9414290 | Tide predictions (and met observations in an exploratory collector) | Live | `shared/weather_tides.py`, `collectors/noaa_met.py` | — | Alerts page context |
+| **CoCoRaHS via ACIS** (Potrero / Dogpatch gauge) | A third daily gauge on the east side, since 1998 | Historical | `collectors/cocorahs.py` | `data/raw/historical_rain_cocorahs.csv` | Model leaderboard only — tested and found a worse rain source |
+| Exploratory, not in production | Weather Underground PWS scrapes, GFS/ICON model pulls, MesoWest | — | `collectors/wunderground.py`, `collectors/forecast_models.py`, `collectors/nws_rain.py` | — | Early research |
+
+### 4.3 What each label covers, on one timeline
+
+```
+             2016   2017   2018   2019   2020   2021   2022   2023   2024   2025   2026
+samples      ■■■■   ▪                    ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■   Poo Bot 2016 · DataSF Jul 2020 →
+discharges          ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■   Bayside Oct 2016 → · Westside Jan 2018 →
+postings     ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■     BeachWatch 1999 → Feb 2026
+our flags    ▪▪▪                                                                    ■■■   Poo Bot POSTED/CSO 2016–17 · alert_log Aug 2026 →
+rain         ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■   two NOAA gauges (+ ECMWF forward)
+```
+
+Three different truths: a **sample** is one bottle at one hour; a **discharge** is sewage reported entering the water on
+a day; a **posting** is the official warning sign, up until a clean sample. They disagree in useful ways — postings are
+precautionary, and the East is often dirty with no posting and no rain.
+
+### 4.4 Registries — single sources of truth (never hand-type these)
+
+| Module | Holds |
+|---|---|
+| `shared/stations.py` | The 20 SFPUC shoreline stations: lab `source` id, feed id, names, shoreline group, drainage basin, coordinates |
+| `shared/outfalls.py` | The 34 permitted outfalls: CIWQS id, feed name, basin, and **which stations SFPUC posts when it fires** (evidence-tagged) |
+| `shared/zones.py` | The four signup/forecast zones: Ocean Beach (6 stations), Baker & China (4), North Beaches (4), East Beaches (6) |
+| `features/forecast/src/models/groups.py` | Basins (Westside, North Shore, Central, Southeast) ↔ beach groups ↔ zones, shared by training and serving |
+| `shared/standards.py` | California AB 411 single-sample maxima (Enterococcus 104 MPN/100 mL, etc.) and the one "over standard" helper |
+
+`tests/test_single_source.py` scans the tree for stray copies of these numbers and URLs.
+
+## 5. The forecast in one page
+
+- **Stage 1 — rain → discharge.** One model per basin predicts the probability that the basin's outfalls discharge
+  today from 19 rain features (`rain_features.py`: daily totals, trailing sums, lags, antecedent moisture, peak
+  1/3/6-hour intensity). The served set is **`gb_v1`** (gradient-boosted trees, trained 2026-09-12 on 2016-03 →
+  2025-10, holdout from 2023-07). A weights model, **`logit_v1`**, is a candidate. A citywide model gives context.
+- **Stage 2 — discharge → beach risk.** For each beach group, today's risk = 1 − Π over the last 8 days of
+  (1 − p × x), where x is the impact table's chance the beach is still fouled k days after a discharge of that size
+  (fit from samples; volume heads predict size). Zone risk = max over its groups. **v1** composes the basin probability
+  directly; **v2** (the outfall split) first scales it by the share of the basin's discharges that reach the group's
+  own outfalls. A set is named `<stage1>` or `<stage1>_s2v2`.
+- **Live.** Past complete days use the two NOAA gauges (with the outage rule); today uses NWS hours so far plus the
+  ECMWF forecast; forecast days use ECMWF. An observed CSO flag from the watcher sets that day's p to 1 (never lowers).
+- **Evaluation.** `scorecard.json.gz` stores every day's probabilities and labels since 2016; the Model check grades
+  any window at any line, per model set, against the discharge label and the sample label — and, next, the posting
+  label. `reports/2026-09_model_analysis.html` ranks the sets by cost (Chase's weighting: a miss costs two false
+  alarms). Explorer pages open every set's arithmetic in the browser and self-check against the artifact.
+- **Nomenclature (2026-09-26):** the served bundle is `gb_v1 (served)` = stage 1 `gb_v1` + stage 2 `v1`. The old
+  release label "v4" survives only in file names (`train_v4.py`, `data/models/v4/`).
+
+## 6. Operating it
+
+| Task | How |
+|---|---|
+| Deploy | Push `main`; Vercel builds. Confirm with `curl -s https://bwtf-sf.vercel.app/api/build` (sha) |
+| Run tests | Each file is standalone, no pytest: `venv/bin/python tests/<file>.py` — `test_scorecard_window` (forecast + explorers), `test_beachwatch`, `test_build_info`, `test_feature_parity`, `test_forecast_geometry`, `test_outfalls`, `test_rain_overlay`, `test_single_source`, `test_stations` |
+| Refresh discharge records | Quarterly: the CIWQS pipeline (`collectors/csd_ciwqs/README.md`), then `train_v4.py --rescore --promote` adds the new months to the Model check as post-training days (no retraining) |
+| Refresh postings | `collectors/beachwatch.py --refresh`, then `tests/test_beachwatch.py` |
+| Retrain / new candidates | `RETRAIN_PLAN.md`; candidates via `leaderboard.py`, `candidates.py`, `stage2_variants.py`; regenerate explorers (`export_model_explorer.py [--model NAME]`, `export_stage2_explorer.py`) and the report (`report_models.py`) after any rescore |
+| Database changes | `db/migrations/NNN_*.sql`, applied by hand in Supabase with no simulation active |
+| Secrets | Env vars only (`DEPLOY.md`): Supabase URL/key, Brevo, `ALERTS_PASSPHRASE`, healthchecks URL. Nothing in the repo |
+
+## 7. Known gaps and cautions
+
+- Westside per-event discharge records do not exist before 2018 (SFPUC reported monthly counts only); a records
+  request draft is in `data/csd/records_request_draft.md`.
+- Bacteria labels have a hole from mid-2017 to mid-2020; BeachWatch postings cover it.
+- BeachWatch lags: the county's last filing was Feb 2026 at the Sept 2026 pull. Our watcher covers Aug 2026 onward;
+  Mar–Jul 2026 has no posting label.
+- The SFPUC feed is undocumented and internal; the watcher's dead-man ping is what tells us if it changes shape.
+- The root `README.md`'s notification, scheduling and architecture sections describe the original command-line monitor
+  and its Slack/Discord/SMS channels; production alerting is the pg_cron watcher + Brevo email described above.
