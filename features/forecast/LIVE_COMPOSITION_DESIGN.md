@@ -1,10 +1,12 @@
-# Live composition — what observed CSO flags and bacteria results should do to the forecast, and how to grade it
+# Live corrections (live_v1) — what observed CSO flags and bacteria results do to the forecast, and how to grade it
 
-**Status (2026-09-26, later the same day): §2–§4 are built as `src/models/live_rules.py` (`live_rules_v1`), wired
+**Status (2026-09-26, later the same day): §2–§4 are built as `src/models/live_rules.py` (version `live_v1`, "live corrections" — not a third stage: edits before and after stage 2), wired
 into `live_dashboard` for the live forecast and the live-mode hindcast. Chase chose the CONSERVATIVE downgrade:
-r = 0.60 for the bayside basins, none for the Westside. Each day's payload carries a `live_rules` block (every
-rule that fired, from → to) and the page shows them as badges. The downgrade is gated on the watcher being live and
-ticking (`watcher_runtime`). §5, the replay, is not built. Tests: `tests/test_live_rules.py`.**
+r = 0.60 for the bayside basins, none for the Westside. Each day's payload carries a `live_corrections` block (every
+rule that fired, from → to) beside `plain` (the model alone), and the page shows them as badges with a
+"Live corrections v1: on/off" toggle; the server switch is the env var `LIVE_CORRECTIONS` or the `watcher_config`
+key `live_corrections` ("off"). The old observed-CSO override is now the `cso_onset` rule, so "off" is the pure two-stage model. The downgrade is gated on the watcher being live and
+ticking (`watcher_runtime`). §5, the replay, is built too: `src/models/replay_live.py` → `reports/2026-09_live_replay.html` (archive era 2016-17; the watcher era joins after the next rescore). Result on the bayside zones at 50%: the model alone caught 21 of 35 bad days for 1 false alarm (cost 29); live_v1 caught 35 of 35 for 7 (cost 7). At 25% the sample floors add false alarms (cost 22 → 30) while the CSO-flag rules alone cut it to 12; the downgrade changed one day. Tests: `tests/test_live_rules.py`.**
 
 *Design, 2026-09-26. It answers Chase's three questions (how much to upgrade on a
 confirmed CSO, how much to downgrade when an expected CSO did not appear, what a confirmed or clean sample
@@ -20,7 +22,7 @@ should do) with the numbers we have, and lays out the replay that would grade it
 
 ## 1. Evidence
 
-**Feed flags vs the filed record** (2016-17 Poo Bot archive vs CIWQS, bayside; the archive has no Westside flags):
+**Feed flags vs the filed record** (2016-17 Poo Bot archive vs CIWQS, bayside only — the archive does carry Westside flags (Sea Cliff and neighbours, 8 onset days) but CIWQS has no Westside per-event records before 2018 to check them against, so Westside recall is unmeasured):
 
 | Measure | Value | n |
 |---|---|---|
@@ -77,8 +79,8 @@ Bayes on the day after: if the model said p and by the end of D+1 the feed has s
 - **Bayside:** start at r = 0.87 but call it provisional — it rests on 15 discharge days from 2016-17 (Chase's
   caveat). Re-estimate every quarter from the watcher's alert_log against the CIWQS refresh; the 2026-27 season
   will give a second, independent r.
-- **Westside:** r is unmeasured (no Westside flags in the archive) → **no downgrade** until the watcher era
-  measures it. The Feb 2026 Westside events will be the first test.
+- **Westside:** r is unmeasured (the archive's Westside flags cannot be checked against CIWQS before 2018) →
+  **no downgrade** until the watcher era measures it. The Feb 2026 Westside events will be the first test.
 - **Timing:** apply at the end of D+1, not on D — the flag lags a day. Until then the day keeps its model p.
 - **What it does downstream:** the false forecast's tail dissipates. A 0.7 Ocean Beach day contributes
   0.7 × 0.54 = 0.38 to the next day's risk today; after the downgrade 0.23 × 0.54 = 0.12. This is the answer to
@@ -122,8 +124,8 @@ bad days caught, false alarms, days each rule changed the zone's call, and the s
 
 Caveats to build in: grading a sample-informed composition against samples is partly circular inside the
 three-day horizon — grade (d) against the *next* sample after the one it used, or lean on postings for (d).
-Expect (b) and (c) to move the East most (long tail, reliable flags) and to do nothing for the Westside in
-2016-17 (no flags there). Everything above is a serving-side and evaluation change; the models and the impact
+Expect (b) and (c) to move the East most (long tail, reliable flags). In 2016-17 the Westside discharge labels
+are the archive onsets themselves, so grade the Westside there on samples and postings only. Everything above is a serving-side and evaluation change; the models and the impact
 table are untouched.
 
 ## 6. Numbers still missing

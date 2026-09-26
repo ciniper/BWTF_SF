@@ -344,12 +344,12 @@ def test_candidate_models_unpickle_anywhere_and_explorers_are_built():
                 assert fn.__module__ == "leaderboard", f"{key}: hinge transform pickled as {fn.__module__}.{fn.__name__}"
         print(f"   candidate {m['name']}: {len(models)} models unpickle with a plain import")
     reports = Path(__file__).resolve().parents[1] / "reports"
-    for name in ("2026-09_forecast_gb_v1_model_explorer.html", "2026-09_forecast_stage2_explorer.html", "2026-09_model_analysis.html",
+    for name in ("2026-09_forecast_gb_v1_model_explorer.html", "2026-09_forecast_stage2_explorer.html", "2026-09_model_analysis.html", "2026-09_live_replay.html",
                  *[f"2026-09_forecast_{m['name']}_model_explorer.html" for m in C.list_candidates()]):
         p = reports / name
         assert p.exists(), f"missing report {name} — run the exporter"
         text = p.read_text()
-        assert "__DATA__" not in text and "__RECS__" not in text and ('"model_sets"' in text or '"models"' in text or "King under the primary setting" in text), f"{name}: data not injected"
+        assert "__DATA__" not in text and "__RECS__" not in text and ('"model_sets"' in text or '"models"' in text or "King under the primary setting" in text or "Live corrections replay" in text), f"{name}: data not injected"
         print(f"   report {name}: {p.stat().st_size / 1e6:.2f} MB")
 
 

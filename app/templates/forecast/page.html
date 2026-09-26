@@ -175,6 +175,9 @@ footer a { color: #0072BC; text-decoration: none; }
         <button id="viewZones" class="active" onclick="setView('zones')"><svg class="ic"><use href="#i-map-pin"/></svg> Zones</button>
         <button id="viewBasins" onclick="setView('basins')"><svg class="ic"><use href="#i-building-2"/></svg> Basins</button>
     </span>
+    <span class="view-toggle" id="liveToggle" style="display:none" title="Live corrections (live_v1): what the watcher's CSO flags and the published samples do to the model's numbers — an observed discharge becomes certain, an expected one the feed never flagged is downgraded, a flag still up or an elevated sample holds the beach up, a clean sample caps the tail. Off = the two-stage model alone.">
+        <button id="liveBtn" class="active" onclick="toggleLiveCorrections()"><svg class="ic"><use href="#i-satellite-dish"/></svg> Live corrections v1: on</button>
+    </span>
     <span class="historical-label" id="histLabel"></span>
 </div>
 
@@ -194,7 +197,7 @@ footer a { color: #0072BC; text-decoration: none; }
 
 <footer>
     <p><svg class="ic"><use href="#i-info"/></svg> Rain: NOAA gauges (Downtown 047772, Oceanside 047767), KSFO hourly, ECMWF forecast · Discharges: SFPUC CIWQS reports · Beach status: SFPUC · Bacteria: DataSF</p>
-    <p>Community-science tool, not an official advisory — posted signs and SFPUC or health-department notices always win. <a href="/reports/2026-09_forecast_gb_v1_model_explorer.html">How the model works</a> · <a href="/reports/2026-09_forecast_stage2_explorer.html">Stage 2: discharge → beach risk</a> · <a href="/reports/2026-09_forecast_logit_v1_model_explorer.html">Inside the weights candidate</a> · <a href="/reports/2026-09_model_analysis.html">Model analysis: which set to run</a> · <a href="/">Back to dashboard</a> · <a href="/api/build" title="{{ build.message or '' }}">{{ build.label }}</a></p>
+    <p>Community-science tool, not an official advisory — posted signs and SFPUC or health-department notices always win. <a href="/reports/2026-09_forecast_gb_v1_model_explorer.html">How the model works</a> · <a href="/reports/2026-09_forecast_stage2_explorer.html">Stage 2: discharge → beach risk</a> · <a href="/reports/2026-09_forecast_logit_v1_model_explorer.html">Inside the weights candidate</a> · <a href="/reports/2026-09_model_analysis.html">Model analysis: which set to run</a> · <a href="/reports/2026-09_live_replay.html">Live corrections: replay</a> · <a href="/">Back to dashboard</a> · <a href="/api/build" title="{{ build.message or '' }}">{{ build.label }}</a></p>
 </footer>
 </div>
 
@@ -217,7 +220,7 @@ let RISK_THRESHOLD = 0.5;   // "HIGH" — the line the model check scores hits a
 const ic = name => `<svg class="ic"><use href="#i-${name}"/></svg>`;
 const esc = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const badge = (kind, icon, label) => `<span class="badge ${kind}">${ic(icon)}${esc(label)}</span>`;
-// Live composition rules (src/models/live_rules.py): how a number moved and why.
+// Live corrections (live_v1, src/models/live_rules.py): how a number moved and why.
 const RULE_BADGE = {
     cso_onset:             a => ['danger', 'octagon-alert', 'discharge observed'],
     cso_anchor_prev_day:   a => ['danger', 'octagon-alert', 'discharge observed (flag next day)'],
@@ -230,7 +233,7 @@ const RULE_BADGE = {
 const ruleBadge = (rule, a) => { const f = RULE_BADGE[rule]; return f ? badge(...f(a || {})) : ''; };
 // every live-rule badge that touches a zone: its basins' stage-1 rules and its groups' stage-2 rules
 function liveBadgesZone(day, zk) {
-    const live = day.live_rules || {}; const out = [];
+    const live = day.live_corrections || {}; const out = [];
     const groups = ZONE_GROUPS[zk] || [];
     const basins = new Set(groups.map(g => Object.keys(ZONE_GROUPS_BY_BASIN).find(b => (ZONE_GROUPS_BY_BASIN[b] || []).includes(g))).filter(Boolean));
     for (const b of basins) { const a = (live.stage1 || {})[b]; if (a) out.push(ruleBadge(a.rule, a)); }
@@ -251,6 +254,7 @@ function riskInfo(prob) {
 // Zone risk for a prediction day: server field, else worst of its groups,
 // else worst of its basins (old cached snapshots).
 function zonesOf(day) {
+    day = eff(day);
     if (day.zones && Object.keys(day.zones).length) return day.zones;
     const out = {};
     for (const zk of ZONE_ORDER) {
@@ -275,8 +279,28 @@ function rainSourceLabel(day) {
 
 // ─── state / mode / view ────────────────────────────────────────────────────
 let currentMode = 'live', currentView = 'zones', current = null;
+// Live corrections (live_v1): the payload carries the corrected numbers and, under `plain`, the model alone.
+// The toggle swaps which one every renderer reads — no refetch, no recompute.
+let showLiveCorrections = true, lastLiveData = null;
+function eff(day) {
+    if (!day || showLiveCorrections || !day.plain) return day;
+    return { ...day, predictions: day.plain.predictions, impact_groups: day.plain.impact_groups, zones: day.plain.zones,
+             discharge_probs_live: null, observed_cso: [], live_corrections: day.live_corrections ? { ...day.live_corrections, stage1: {}, groups: {} } : null };
+}
+function renderLiveToggle(info) {
+    const wrap = document.getElementById('liveToggle'), btn = document.getElementById('liveBtn');
+    if (!wrap || !btn) return;
+    if (!info || currentMode !== 'live') { wrap.style.display = 'none'; return; }
+    wrap.style.display = 'inline-flex';
+    const v = (info.version || 'live_v1').replace(/^live_/, '');   // live_v1 → v1
+    if (info.enabled === false) { btn.className = ''; btn.disabled = true; btn.innerHTML = `${ic('satellite-dish')} Live corrections ${esc(v)}: off (${esc(info.source || 'server')})`; return; }
+    btn.disabled = false; btn.className = showLiveCorrections ? 'active' : '';
+    btn.innerHTML = `${ic('satellite-dish')} Live corrections ${esc(v)}: ${showLiveCorrections ? 'on' : 'off — model alone'}`;
+}
+function toggleLiveCorrections() { showLiveCorrections = !showLiveCorrections; if (lastLiveData && currentMode === 'live') renderLive(lastLiveData); }
 
 function setMode(mode) {
+    const lt = document.getElementById('liveToggle'); if (lt && mode !== 'live') lt.style.display = 'none';
     currentMode = mode;
     for (const [id, m] of [['btnLive', 'live'], ['btnActual', 'actual'], ['btnCheck', 'check']])
         document.getElementById(id).className = 'mode-btn' + (mode === m ? ' active' : '');
@@ -356,6 +380,8 @@ function renderLive(data) {
     const days = Object.values(preds).filter(d => d.day_offset >= 0).sort((a, b) => a.day_offset - b.day_offset);
     if (!days.length) { setBanner(0, ic('hourglass') + ' Forecast is being computed — '); return; }
     const today = days.find(d => d.is_today) || days[0];
+    lastLiveData = data;
+    renderLiveToggle(data.live_corrections);
     const refreshEl = document.getElementById('refreshInfo');
     refreshEl.textContent = data.last_refresh ? 'Last updated: ' + new Date(data.last_refresh).toLocaleTimeString() + ' · auto-refreshes every 30 min'
                           + (data.stale_note ? ' · ' + data.stale_note : '') : '';
@@ -444,6 +470,7 @@ function renderBanner(day) {
 // Zone (or basin) cards for one prediction day; `actual` (model check) adds
 // the verdict badge.
 function renderPredictionCards(day, actual) {
+    day = eff(day);
     const el = document.getElementById('detail');
     el.innerHTML = '';
     if (currentView === 'zones') {
@@ -465,7 +492,7 @@ function renderPredictionCards(day, actual) {
         }
     } else {
         const dp = day.discharge_probs_live || day.discharge_probs || {};
-        const live = day.live_rules || {};
+        const live = day.live_corrections || {};
         for (const key of BASIN_ORDER) {
             if (!(key in (day.predictions || {}))) continue;
             const meta = BASIN_META[key] || { icon: 'map-pin', name: key, desc: '' };
@@ -803,6 +830,7 @@ function renderScoreWindow(sc) {
             <a class="mute" href="${scoreModel ? '/reports/2026-09_forecast_' + esc(scoreModel) + '_model_explorer.html' : '/reports/2026-09_forecast_gb_v1_model_explorer.html'}" title="The selected model set opened up: inputs, weights or trees, self-check">inside this model</a>
             <a class="mute" href="/reports/2026-09_forecast_stage2_explorer.html" title="How a discharge probability becomes beach risk — shared by every model set">stage 2</a>
             <a class="mute" href="/reports/2026-09_model_analysis.html" title="Every model set ranked by cost, from several angles, with charts and recommendations">analysis</a>
+            <a class="mute" href="/reports/2026-09_live_replay.html" title="Live corrections (live_v1) replayed day by day over the 2016-17 feed archive and graded against the model alone">live replay</a>
             <span class="mute">${w.n_days} days · ${w.n_discharge_days} discharge day${w.n_discharge_days === 1 ? '' : 's'} · ${w.n_sampled_days} sampled</span>
             ${gradeBadge(w, sc)}
             ${(sc.input_rules_post || []).length && w.n_post ? `<span class="mute" title="Days after the training data ended are scored on rain treated by the serving-side input rules: a NOAA gauge stuck at exactly 0.00 for 2+ days while the other gauge records 0.5&quot; or more is treated as dead and the other gauge stands in (Oceanside was dead Jan 29 → Feb 25 2026). Pre-training days are scored exactly as the models were trained, on the raw record.">· post-training rain: ${esc(sc.input_rules_post.map(r => r.replace(/_v\d+$/, '').replace(/_/g, ' ')).join(', '))} applied</span>` : ''}

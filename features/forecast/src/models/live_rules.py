@@ -1,5 +1,7 @@
-"""Live composition rules — what observed CSO flags and bacteria results do to
-the forecast once it is running. Serving-side only: the stage-1 models, the
+"""Live corrections (live_v1) — what observed CSO flags and bacteria results do
+to the forecast once it is running. Not a third stage: two sets of conditional
+edits, one before stage 2 (on the discharge probabilities) and one after it (on
+the composed beach risk); on most days they do nothing at all. Serving-side only: the stage-1 models, the
 impact table and the stored hindcasts are untouched. Design, evidence and the
 numbers behind every constant: features/forecast/LIVE_COMPOSITION_DESIGN.md.
 
@@ -33,14 +35,17 @@ Stage 2 (per group-day, after composition — ``adjust_groups``):
 
 Every adjustment is recorded (rule, from, to) so the page can say why a
 number moved; with no watcher data and no samples the output is byte-identical
-to the plain composition (tests/test_live_rules.py).
+to the plain composition (tests/test_live_rules.py). Switch: env
+LIVE_CORRECTIONS=off, or the watcher_config key live_corrections = 'off'
+(live_dashboard._live_corrections_enabled); the payload always carries the
+plain composition beside the corrected one so the page can show either.
 """
 from __future__ import annotations
 
 import copy
 from datetime import date, timedelta
 
-VERSION = "live_rules_v1"
+VERSION = "live_v1"
 
 # Zone-level next-sample transition rates from the scorecard's sample record
 # (pairs of sampled days ≤ 3 days apart; "tail" = a discharge in the zone within

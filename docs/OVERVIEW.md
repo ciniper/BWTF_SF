@@ -71,7 +71,7 @@ fail the state standard; this project makes that information timely, searchable 
 | `/cso-history` | CSO Event Timeline | Every posting / CSO our watcher detected, per station, with clears | Supabase `alert_log` |
 | `/analysis` | Site Report Card | How often each site fails the state standard; storm-season effect; trends | DataSF |
 | `/discharges` | Discharge Ledger | Every reported discharge since 2016: outfall, duration, million gallons | CIWQS records (`data/csd/`) |
-| `/reports/<name>` | Analyses | Model explorers, stage 2 explorer, model analysis, leaderboard, training report | Static HTML under `reports/` |
+| `/reports/<name>` | Analyses | Model explorers, stage 2 explorer, model analysis, live-corrections replay, leaderboard, training report | Static HTML under `reports/` |
 
 ## 4. Data sources — the complete list
 
@@ -137,11 +137,11 @@ precautionary, and the East is often dirty with no posting and no rain.
   directly; **v2** (the outfall split) first scales it by the share of the basin's discharges that reach the group's
   own outfalls. A set is named `<stage1>` or `<stage1>_s2v2`.
 - **Live.** Past complete days use the two NOAA gauges (with the outage rule); today uses NWS hours so far plus the
-  ECMWF forecast; forecast days use ECMWF. Live rules (`src/models/live_rules.py`, since 2026-09-26) then adjust the
+  ECMWF forecast; forecast days use ECMWF. Live corrections (`live_v1`, `src/models/live_rules.py`, since 2026-09-26) then adjust the
   composition from what was observed: a watcher CSO onset sets that basin-day to 1 (and anchors the day before), an
   expected discharge the feed never flagged is downgraded by Bayes with a conservative recall (bayside only, while the
   watcher is ticking), a flag still up holds the beach at the large-event curve, and published samples floor (elevated)
-  or cap (clean) the persistence term at empirical next-sample rates. Every adjustment is recorded and shown as a badge.
+  or cap (clean) the persistence term at empirical next-sample rates. Every adjustment is recorded and shown as a badge; a page toggle shows the model alone, and the env var `LIVE_CORRECTIONS` or the `watcher_config` key `live_corrections` turns the layer off server-side. Not a third stage: edits before and after stage 2.
 - **Evaluation.** `scorecard.json.gz` stores every day's probabilities and labels since 2016; the Model check grades
   any window at any line, per model set. Three rulers (2026-09-26): **discharge days + samples** is primary (a discharge day
   is bad, an elevated sample in the week after confirms persistence, a clean sample is good, unsampled tail days are not graded,
@@ -159,6 +159,7 @@ precautionary, and the East is often dirty with no posting and no rain.
 | Run tests | Each file is standalone, no pytest: `venv/bin/python tests/<file>.py` — `test_scorecard_window` (forecast + explorers), `test_beachwatch`, `test_build_info`, `test_feature_parity`, `test_forecast_geometry`, `test_outfalls`, `test_rain_overlay`, `test_single_source`, `test_stations` |
 | Refresh discharge records | Quarterly: the CIWQS pipeline (`collectors/csd_ciwqs/README.md`), then `train_v4.py --rescore --promote` adds the new months to the Model check as post-training days (no retraining) |
 | Refresh postings | `collectors/beachwatch.py --refresh`, then `tests/test_beachwatch.py` |
+| Grade the live corrections | `venv/bin/python features/forecast/src/models/replay_live.py` → `reports/2026-09_live_replay.html`; re-run after a rescore (the watcher era joins once the artifact extends past Aug 2026) |
 | Retrain / new candidates | `RETRAIN_PLAN.md`; candidates via `leaderboard.py`, `candidates.py`, `stage2_variants.py`; regenerate explorers (`export_model_explorer.py [--model NAME]`, `export_stage2_explorer.py`) and the report (`report_models.py`) after any rescore |
 | Database changes | `db/migrations/NNN_*.sql`, applied by hand in Supabase with no simulation active |
 | Secrets | Env vars only (`DEPLOY.md`): Supabase URL/key, Brevo, `ALERTS_PASSPHRASE`, healthchecks URL. Nothing in the repo |

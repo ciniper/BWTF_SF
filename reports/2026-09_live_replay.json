@@ -1,0 +1,2159 @@
+{
+ "era": [
+  "2016-03-19",
+  "2017-01-10"
+ ],
+ "self_check_worst_delta": 0.001,
+ "flag_days": 70,
+ "onset_days": 23,
+ "onset_basins": [
+  "central",
+  "north_shore",
+  "southeast",
+  "westside"
+ ],
+ "rules": {
+  "version": "live_v1",
+  "cso": {
+   "onset_p": 1.0,
+   "anchor_prev_day": {
+    "min_p": 0.25,
+    "min_rain_in": 0.25
+   },
+   "large_when_flag_persists_days": 2,
+   "large_volume_mg": 1000000.0,
+   "hold_while_flagged": true,
+   "hold_max_days": 7
+  },
+  "downgrade": {
+   "recall": {
+    "westside": 0.0,
+    "north_shore": 0.6,
+    "central": 0.6,
+    "southeast": 0.6
+   },
+   "settle_days": 1
+  },
+  "samples": {
+   "known_lag_days": 1,
+   "horizon_days": 3,
+   "tail_days": 7,
+   "tail_min_p": 0.5,
+   "floor_elevated_tail": {
+    "ocean": 0.4,
+    "baker_china": 0.14,
+    "north": 0.35,
+    "east": 0.8
+   },
+   "cap_clean_tail": {
+    "ocean": 0.42,
+    "baker_china": 0.36,
+    "north": 0.67,
+    "east": 0.67
+   },
+   "floor_elevated_dry": {
+    "ocean": 0.06,
+    "baker_china": 0.2,
+    "north": 0.16,
+    "east": 0.38
+   }
+  }
+ },
+ "variants": {
+  "plain": {
+   "grades": {
+    "0.25": {
+     "combined": {
+      "tp": 32,
+      "fn": 13,
+      "fp": 14,
+      "cost": 40,
+      "per_zone": {
+       "ocean": 6,
+       "baker_china": 12,
+       "north": 5,
+       "east": 17
+      },
+      "zones": {
+       "ocean": {
+        "tp": 4,
+        "fp": 2,
+        "fn": 2,
+        "tn": 265,
+        "tp_discharge": 3,
+        "tp_sample": 1,
+        "fn_discharge": 2,
+        "fn_sample": 0,
+        "fp_sample": 0,
+        "fp_quiet": 2,
+        "tn_sample": 43,
+        "tn_quiet": 222,
+        "unknown_tail": 12,
+        "unknown_uncovered": 12,
+        "dry_elevated": 1,
+        "dry_flagged": 0
+       },
+       "baker_china": {
+        "tp": 0,
+        "fp": 4,
+        "fn": 4,
+        "tn": 256,
+        "tp_discharge": 0,
+        "tp_sample": 0,
+        "fn_discharge": 4,
+        "fn_sample": 0,
+        "fp_sample": 0,
+        "fp_quiet": 4,
+        "tn_sample": 42,
+        "tn_quiet": 214,
+        "unknown_tail": 13,
+        "unknown_uncovered": 12,
+        "dry_elevated": 9,
+        "dry_flagged": 0
+       },
+       "north": {
+        "tp": 3,
+        "fp": 3,
+        "fn": 1,
+        "tn": 263,
+        "tp_discharge": 3,
+        "tp_sample": 0,
+        "fn_discharge": 1,
+        "fn_sample": 0,
+        "fp_sample": 1,
+        "fp_quiet": 2,
+        "tn_sample": 39,
+        "tn_quiet": 224,
+        "unknown_tail": 11,
+        "unknown_uncovered": 11,
+        "dry_elevated": 6,
+        "dry_flagged": 0
+       },
+       "east": {
+        "tp": 25,
+        "fp": 5,
+        "fn": 6,
+        "tn": 220,
+        "tp_discharge": 11,
+        "tp_sample": 14,
+        "fn_discharge": 1,
+        "fn_sample": 5,
+        "fp_sample": 3,
+        "fp_quiet": 2,
+        "tn_sample": 36,
+        "tn_quiet": 184,
+        "unknown_tail": 17,
+        "unknown_uncovered": 11,
+        "dry_elevated": 14,
+        "dry_flagged": 0
+       }
+      },
+      "bayside": {
+       "tp": 28,
+       "fn": 7,
+       "fp": 8,
+       "cost": 22
+      },
+      "westside": {
+       "tp": 4,
+       "fn": 6,
+       "fp": 6,
+       "cost": 18
+      }
+     },
+     "discharge": {
+      "tp": 17,
+      "fn": 8,
+      "fp": 39,
+      "cost": 55,
+      "zones": {
+       "ocean": {
+        "tp": 3,
+        "fp": 5,
+        "fn": 2,
+        "tn": 273
+       },
+       "baker_china": {
+        "tp": 0,
+        "fp": 5,
+        "fn": 4,
+        "tn": 274
+       },
+       "north": {
+        "tp": 3,
+        "fp": 6,
+        "fn": 1,
+        "tn": 275
+       },
+       "east": {
+        "tp": 11,
+        "fp": 23,
+        "fn": 1,
+        "tn": 250
+       }
+      },
+      "bayside": {
+       "tp": 14,
+       "fn": 2,
+       "fp": 29,
+       "cost": 33
+      },
+      "westside": {
+       "tp": 3,
+       "fn": 6,
+       "fp": 10,
+       "cost": 22
+      }
+     },
+     "posted": {
+      "tp": 35,
+      "fn": 26,
+      "fp": 19,
+      "cost": 71,
+      "zones": {
+       "ocean": {
+        "tp": 6,
+        "fp": 3,
+        "fn": 7,
+        "tn": 282,
+        "fp_after_discharge": 1,
+        "other_posted": 0,
+        "other_flagged": 0,
+        "unknown": 0
+       },
+       "baker_china": {
+        "tp": 1,
+        "fp": 5,
+        "fn": 9,
+        "tn": 269,
+        "fp_after_discharge": 0,
+        "other_posted": 14,
+        "other_flagged": 0,
+        "unknown": 0
+       },
+       "north": {
+        "tp": 2,
+        "fp": 6,
+        "fn": 2,
+        "tn": 279,
+        "fp_after_discharge": 3,
+        "other_posted": 9,
+        "other_flagged": 1,
+        "unknown": 0
+       },
+       "east": {
+        "tp": 26,
+        "fp": 5,
+        "fn": 8,
+        "tn": 233,
+        "fp_after_discharge": 2,
+        "other_posted": 26,
+        "other_flagged": 3,
+        "unknown": 0
+       }
+      },
+      "bayside": {
+       "tp": 28,
+       "fn": 10,
+       "fp": 11,
+       "cost": 31
+      },
+      "westside": {
+       "tp": 7,
+       "fn": 16,
+       "fp": 8,
+       "cost": 40
+      }
+     }
+    },
+    "0.5": {
+     "combined": {
+      "tp": 22,
+      "fn": 23,
+      "fp": 4,
+      "cost": 50,
+      "per_zone": {
+       "ocean": 11,
+       "baker_china": 10,
+       "north": 4,
+       "east": 25
+      },
+      "zones": {
+       "ocean": {
+        "tp": 1,
+        "fp": 1,
+        "fn": 5,
+        "tn": 266,
+        "tp_discharge": 1,
+        "tp_sample": 0,
+        "fn_discharge": 4,
+        "fn_sample": 1,
+        "fp_sample": 0,
+        "fp_quiet": 1,
+        "tn_sample": 43,
+        "tn_quiet": 223,
+        "unknown_tail": 12,
+        "unknown_uncovered": 12,
+        "dry_elevated": 1,
+        "dry_flagged": 0
+       },
+       "baker_china": {
+        "tp": 0,
+        "fp": 2,
+        "fn": 4,
+        "tn": 258,
+        "tp_discharge": 0,
+        "tp_sample": 0,
+        "fn_discharge": 4,
+        "fn_sample": 0,
+        "fp_sample": 0,
+        "fp_quiet": 2,
+        "tn_sample": 42,
+        "tn_quiet": 216,
+        "unknown_tail": 13,
+        "unknown_uncovered": 12,
+        "dry_elevated": 9,
+        "dry_flagged": 0
+       },
+       "north": {
+        "tp": 2,
+        "fp": 0,
+        "fn": 2,
+        "tn": 266,
+        "tp_discharge": 2,
+        "tp_sample": 0,
+        "fn_discharge": 2,
+        "fn_sample": 0,
+        "fp_sample": 0,
+        "fp_quiet": 0,
+        "tn_sample": 40,
+        "tn_quiet": 226,
+        "unknown_tail": 11,
+        "unknown_uncovered": 11,
+        "dry_elevated": 6,
+        "dry_flagged": 0
+       },
+       "east": {
+        "tp": 19,
+        "fp": 1,
+        "fn": 12,
+        "tn": 224,
+        "tp_discharge": 9,
+        "tp_sample": 10,
+        "fn_discharge": 3,
+        "fn_sample": 9,
+        "fp_sample": 1,
+        "fp_quiet": 0,
+        "tn_sample": 38,
+        "tn_quiet": 186,
+        "unknown_tail": 17,
+        "unknown_uncovered": 11,
+        "dry_elevated": 14,
+        "dry_flagged": 0
+       }
+      },
+      "bayside": {
+       "tp": 21,
+       "fn": 14,
+       "fp": 1,
+       "cost": 29
+      },
+      "westside": {
+       "tp": 1,
+       "fn": 9,
+       "fp": 3,
+       "cost": 21
+      }
+     },
+     "discharge": {
+      "tp": 12,
+      "fn": 13,
+      "fp": 16,
+      "cost": 42,
+      "zones": {
+       "ocean": {
+        "tp": 1,
+        "fp": 2,
+        "fn": 4,
+        "tn": 276
+       },
+       "baker_china": {
+        "tp": 0,
+        "fp": 3,
+        "fn": 4,
+        "tn": 276
+       },
+       "north": {
+        "tp": 2,
+        "fp": 0,
+        "fn": 2,
+        "tn": 281
+       },
+       "east": {
+        "tp": 9,
+        "fp": 11,
+        "fn": 3,
+        "tn": 262
+       }
+      },
+      "bayside": {
+       "tp": 11,
+       "fn": 5,
+       "fp": 11,
+       "cost": 21
+      },
+      "westside": {
+       "tp": 1,
+       "fn": 8,
+       "fp": 5,
+       "cost": 21
+      }
+     },
+     "posted": {
+      "tp": 20,
+      "fn": 41,
+      "fp": 8,
+      "cost": 90,
+      "zones": {
+       "ocean": {
+        "tp": 2,
+        "fp": 2,
+        "fn": 11,
+        "tn": 283,
+        "fp_after_discharge": 1,
+        "other_posted": 0,
+        "other_flagged": 0,
+        "unknown": 0
+       },
+       "baker_china": {
+        "tp": 1,
+        "fp": 3,
+        "fn": 9,
+        "tn": 271,
+        "fp_after_discharge": 0,
+        "other_posted": 14,
+        "other_flagged": 0,
+        "unknown": 0
+       },
+       "north": {
+        "tp": 0,
+        "fp": 1,
+        "fn": 4,
+        "tn": 284,
+        "fp_after_discharge": 0,
+        "other_posted": 9,
+        "other_flagged": 1,
+        "unknown": 0
+       },
+       "east": {
+        "tp": 17,
+        "fp": 2,
+        "fn": 17,
+        "tn": 236,
+        "fp_after_discharge": 1,
+        "other_posted": 26,
+        "other_flagged": 1,
+        "unknown": 0
+       }
+      },
+      "bayside": {
+       "tp": 17,
+       "fn": 21,
+       "fp": 3,
+       "cost": 45
+      },
+      "westside": {
+       "tp": 3,
+       "fn": 20,
+       "fp": 5,
+       "cost": 45
+      }
+     }
+    }
+   },
+   "days_changed": {
+    "ocean": 0,
+    "baker_china": 0,
+    "north": 0,
+    "east": 0
+   },
+   "n_days": 298
+  },
+  "live_v1": {
+   "grades": {
+    "0.25": {
+     "combined": {
+      "tp": 45,
+      "fn": 0,
+      "fp": 59,
+      "cost": 59,
+      "per_zone": {
+       "ocean": 15,
+       "baker_china": 14,
+       "north": 4,
+       "east": 26
+      },
+      "zones": {
+       "ocean": {
+        "tp": 6,
+        "fp": 15,
+        "fn": 0,
+        "tn": 252,
+        "tp_discharge": 5,
+        "tp_sample": 1,
+        "fn_discharge": 0,
+        "fn_sample": 0,
+        "fp_sample": 5,
+        "fp_quiet": 10,
+        "tn_sample": 38,
+        "tn_quiet": 214,
+        "unknown_tail": 12,
+        "unknown_uncovered": 12,
+        "dry_elevated": 1,
+        "dry_flagged": 1
+       },
+       "baker_china": {
+        "tp": 4,
+        "fp": 14,
+        "fn": 0,
+        "tn": 246,
+        "tp_discharge": 4,
+        "tp_sample": 0,
+        "fn_discharge": 0,
+        "fn_sample": 0,
+        "fp_sample": 3,
+        "fp_quiet": 11,
+        "tn_sample": 39,
+        "tn_quiet": 207,
+        "unknown_tail": 13,
+        "unknown_uncovered": 12,
+        "dry_elevated": 9,
+        "dry_flagged": 0
+       },
+       "north": {
+        "tp": 4,
+        "fp": 4,
+        "fn": 0,
+        "tn": 262,
+        "tp_discharge": 4,
+        "tp_sample": 0,
+        "fn_discharge": 0,
+        "fn_sample": 0,
+        "fp_sample": 2,
+        "fp_quiet": 2,
+        "tn_sample": 38,
+        "tn_quiet": 224,
+        "unknown_tail": 11,
+        "unknown_uncovered": 11,
+        "dry_elevated": 6,
+        "dry_flagged": 0
+       },
+       "east": {
+        "tp": 31,
+        "fp": 26,
+        "fn": 0,
+        "tn": 199,
+        "tp_discharge": 12,
+        "tp_sample": 19,
+        "fn_discharge": 0,
+        "fn_sample": 0,
+        "fp_sample": 15,
+        "fp_quiet": 11,
+        "tn_sample": 24,
+        "tn_quiet": 175,
+        "unknown_tail": 17,
+        "unknown_uncovered": 11,
+        "dry_elevated": 14,
+        "dry_flagged": 5
+       }
+      },
+      "bayside": {
+       "tp": 35,
+       "fn": 0,
+       "fp": 30,
+       "cost": 30
+      },
+      "westside": {
+       "tp": 10,
+       "fn": 0,
+       "fp": 29,
+       "cost": 29
+      }
+     },
+     "discharge": {
+      "tp": 25,
+      "fn": 0,
+      "fp": 119,
+      "cost": 119,
+      "zones": {
+       "ocean": {
+        "tp": 5,
+        "fp": 23,
+        "fn": 0,
+        "tn": 255
+       },
+       "baker_china": {
+        "tp": 4,
+        "fp": 18,
+        "fn": 0,
+        "tn": 261
+       },
+       "north": {
+        "tp": 4,
+        "fp": 12,
+        "fn": 0,
+        "tn": 269
+       },
+       "east": {
+        "tp": 12,
+        "fp": 66,
+        "fn": 0,
+        "tn": 207
+       }
+      },
+      "bayside": {
+       "tp": 16,
+       "fn": 0,
+       "fp": 78,
+       "cost": 78
+      },
+      "westside": {
+       "tp": 9,
+       "fn": 0,
+       "fp": 41,
+       "cost": 41
+      }
+     },
+     "posted": {
+      "tp": 60,
+      "fn": 1,
+      "fp": 69,
+      "cost": 71,
+      "zones": {
+       "ocean": {
+        "tp": 12,
+        "fp": 17,
+        "fn": 1,
+        "tn": 268,
+        "fp_after_discharge": 4,
+        "other_posted": 0,
+        "other_flagged": 0,
+        "unknown": 0
+       },
+       "baker_china": {
+        "tp": 10,
+        "fp": 13,
+        "fn": 0,
+        "tn": 261,
+        "fp_after_discharge": 0,
+        "other_posted": 14,
+        "other_flagged": 0,
+        "unknown": 0
+       },
+       "north": {
+        "tp": 4,
+        "fp": 11,
+        "fn": 0,
+        "tn": 274,
+        "fp_after_discharge": 8,
+        "other_posted": 9,
+        "other_flagged": 1,
+        "unknown": 0
+       },
+       "east": {
+        "tp": 34,
+        "fp": 28,
+        "fn": 0,
+        "tn": 210,
+        "fp_after_discharge": 16,
+        "other_posted": 26,
+        "other_flagged": 17,
+        "unknown": 0
+       }
+      },
+      "bayside": {
+       "tp": 38,
+       "fn": 0,
+       "fp": 39,
+       "cost": 39
+      },
+      "westside": {
+       "tp": 22,
+       "fn": 1,
+       "fp": 30,
+       "cost": 32
+      }
+     }
+    },
+    "0.5": {
+     "combined": {
+      "tp": 45,
+      "fn": 0,
+      "fp": 22,
+      "cost": 22,
+      "per_zone": {
+       "ocean": 9,
+       "baker_china": 6,
+       "north": 1,
+       "east": 6
+      },
+      "zones": {
+       "ocean": {
+        "tp": 6,
+        "fp": 9,
+        "fn": 0,
+        "tn": 258,
+        "tp_discharge": 5,
+        "tp_sample": 1,
+        "fn_discharge": 0,
+        "fn_sample": 0,
+        "fp_sample": 2,
+        "fp_quiet": 7,
+        "tn_sample": 41,
+        "tn_quiet": 217,
+        "unknown_tail": 12,
+        "unknown_uncovered": 12,
+        "dry_elevated": 1,
+        "dry_flagged": 1
+       },
+       "baker_china": {
+        "tp": 4,
+        "fp": 6,
+        "fn": 0,
+        "tn": 254,
+        "tp_discharge": 4,
+        "tp_sample": 0,
+        "fn_discharge": 0,
+        "fn_sample": 0,
+        "fp_sample": 1,
+        "fp_quiet": 5,
+        "tn_sample": 41,
+        "tn_quiet": 213,
+        "unknown_tail": 13,
+        "unknown_uncovered": 12,
+        "dry_elevated": 9,
+        "dry_flagged": 0
+       },
+       "north": {
+        "tp": 4,
+        "fp": 1,
+        "fn": 0,
+        "tn": 265,
+        "tp_discharge": 4,
+        "tp_sample": 0,
+        "fn_discharge": 0,
+        "fn_sample": 0,
+        "fp_sample": 1,
+        "fp_quiet": 0,
+        "tn_sample": 39,
+        "tn_quiet": 226,
+        "unknown_tail": 11,
+        "unknown_uncovered": 11,
+        "dry_elevated": 6,
+        "dry_flagged": 0
+       },
+       "east": {
+        "tp": 31,
+        "fp": 6,
+        "fn": 0,
+        "tn": 219,
+        "tp_discharge": 12,
+        "tp_sample": 19,
+        "fn_discharge": 0,
+        "fn_sample": 0,
+        "fp_sample": 6,
+        "fp_quiet": 0,
+        "tn_sample": 33,
+        "tn_quiet": 186,
+        "unknown_tail": 17,
+        "unknown_uncovered": 11,
+        "dry_elevated": 14,
+        "dry_flagged": 1
+       }
+      },
+      "bayside": {
+       "tp": 35,
+       "fn": 0,
+       "fp": 7,
+       "cost": 7
+      },
+      "westside": {
+       "tp": 10,
+       "fn": 0,
+       "fp": 15,
+       "cost": 15
+      }
+     },
+     "discharge": {
+      "tp": 25,
+      "fn": 0,
+      "fp": 68,
+      "cost": 68,
+      "zones": {
+       "ocean": {
+        "tp": 5,
+        "fp": 14,
+        "fn": 0,
+        "tn": 264
+       },
+       "baker_china": {
+        "tp": 4,
+        "fp": 7,
+        "fn": 0,
+        "tn": 272
+       },
+       "north": {
+        "tp": 4,
+        "fp": 4,
+        "fn": 0,
+        "tn": 277
+       },
+       "east": {
+        "tp": 12,
+        "fp": 43,
+        "fn": 0,
+        "tn": 230
+       }
+      },
+      "bayside": {
+       "tp": 16,
+       "fn": 0,
+       "fp": 47,
+       "cost": 47
+      },
+      "westside": {
+       "tp": 9,
+       "fn": 0,
+       "fp": 21,
+       "cost": 21
+      }
+     },
+     "posted": {
+      "tp": 51,
+      "fn": 10,
+      "fp": 39,
+      "cost": 59,
+      "zones": {
+       "ocean": {
+        "tp": 9,
+        "fp": 11,
+        "fn": 4,
+        "tn": 274,
+        "fp_after_discharge": 2,
+        "other_posted": 0,
+        "other_flagged": 0,
+        "unknown": 0
+       },
+       "baker_china": {
+        "tp": 5,
+        "fp": 7,
+        "fn": 5,
+        "tn": 267,
+        "fp_after_discharge": 0,
+        "other_posted": 14,
+        "other_flagged": 0,
+        "unknown": 0
+       },
+       "north": {
+        "tp": 3,
+        "fp": 4,
+        "fn": 1,
+        "tn": 281,
+        "fp_after_discharge": 3,
+        "other_posted": 9,
+        "other_flagged": 1,
+        "unknown": 0
+       },
+       "east": {
+        "tp": 34,
+        "fp": 17,
+        "fn": 0,
+        "tn": 221,
+        "fp_after_discharge": 16,
+        "other_posted": 26,
+        "other_flagged": 4,
+        "unknown": 0
+       }
+      },
+      "bayside": {
+       "tp": 37,
+       "fn": 1,
+       "fp": 21,
+       "cost": 23
+      },
+      "westside": {
+       "tp": 14,
+       "fn": 9,
+       "fp": 18,
+       "cost": 36
+      }
+     }
+    }
+   },
+   "days_changed": {
+    "ocean": 37,
+    "baker_china": 32,
+    "north": 24,
+    "east": 73
+   },
+   "n_days": 298
+  },
+  "no_downgrade": {
+   "grades": {
+    "0.25": {
+     "combined": {
+      "tp": 45,
+      "fn": 0,
+      "fp": 59,
+      "cost": 59,
+      "per_zone": {
+       "ocean": 15,
+       "baker_china": 14,
+       "north": 4,
+       "east": 26
+      },
+      "zones": {
+       "ocean": {
+        "tp": 6,
+        "fp": 15,
+        "fn": 0,
+        "tn": 252,
+        "tp_discharge": 5,
+        "tp_sample": 1,
+        "fn_discharge": 0,
+        "fn_sample": 0,
+        "fp_sample": 5,
+        "fp_quiet": 10,
+        "tn_sample": 38,
+        "tn_quiet": 214,
+        "unknown_tail": 12,
+        "unknown_uncovered": 12,
+        "dry_elevated": 1,
+        "dry_flagged": 1
+       },
+       "baker_china": {
+        "tp": 4,
+        "fp": 14,
+        "fn": 0,
+        "tn": 246,
+        "tp_discharge": 4,
+        "tp_sample": 0,
+        "fn_discharge": 0,
+        "fn_sample": 0,
+        "fp_sample": 3,
+        "fp_quiet": 11,
+        "tn_sample": 39,
+        "tn_quiet": 207,
+        "unknown_tail": 13,
+        "unknown_uncovered": 12,
+        "dry_elevated": 9,
+        "dry_flagged": 0
+       },
+       "north": {
+        "tp": 4,
+        "fp": 4,
+        "fn": 0,
+        "tn": 262,
+        "tp_discharge": 4,
+        "tp_sample": 0,
+        "fn_discharge": 0,
+        "fn_sample": 0,
+        "fp_sample": 2,
+        "fp_quiet": 2,
+        "tn_sample": 38,
+        "tn_quiet": 224,
+        "unknown_tail": 11,
+        "unknown_uncovered": 11,
+        "dry_elevated": 6,
+        "dry_flagged": 0
+       },
+       "east": {
+        "tp": 31,
+        "fp": 26,
+        "fn": 0,
+        "tn": 199,
+        "tp_discharge": 12,
+        "tp_sample": 19,
+        "fn_discharge": 0,
+        "fn_sample": 0,
+        "fp_sample": 15,
+        "fp_quiet": 11,
+        "tn_sample": 24,
+        "tn_quiet": 175,
+        "unknown_tail": 17,
+        "unknown_uncovered": 11,
+        "dry_elevated": 14,
+        "dry_flagged": 5
+       }
+      },
+      "bayside": {
+       "tp": 35,
+       "fn": 0,
+       "fp": 30,
+       "cost": 30
+      },
+      "westside": {
+       "tp": 10,
+       "fn": 0,
+       "fp": 29,
+       "cost": 29
+      }
+     },
+     "discharge": {
+      "tp": 25,
+      "fn": 0,
+      "fp": 119,
+      "cost": 119,
+      "zones": {
+       "ocean": {
+        "tp": 5,
+        "fp": 23,
+        "fn": 0,
+        "tn": 255
+       },
+       "baker_china": {
+        "tp": 4,
+        "fp": 18,
+        "fn": 0,
+        "tn": 261
+       },
+       "north": {
+        "tp": 4,
+        "fp": 12,
+        "fn": 0,
+        "tn": 269
+       },
+       "east": {
+        "tp": 12,
+        "fp": 66,
+        "fn": 0,
+        "tn": 207
+       }
+      },
+      "bayside": {
+       "tp": 16,
+       "fn": 0,
+       "fp": 78,
+       "cost": 78
+      },
+      "westside": {
+       "tp": 9,
+       "fn": 0,
+       "fp": 41,
+       "cost": 41
+      }
+     },
+     "posted": {
+      "tp": 60,
+      "fn": 1,
+      "fp": 69,
+      "cost": 71,
+      "zones": {
+       "ocean": {
+        "tp": 12,
+        "fp": 17,
+        "fn": 1,
+        "tn": 268,
+        "fp_after_discharge": 4,
+        "other_posted": 0,
+        "other_flagged": 0,
+        "unknown": 0
+       },
+       "baker_china": {
+        "tp": 10,
+        "fp": 13,
+        "fn": 0,
+        "tn": 261,
+        "fp_after_discharge": 0,
+        "other_posted": 14,
+        "other_flagged": 0,
+        "unknown": 0
+       },
+       "north": {
+        "tp": 4,
+        "fp": 11,
+        "fn": 0,
+        "tn": 274,
+        "fp_after_discharge": 8,
+        "other_posted": 9,
+        "other_flagged": 1,
+        "unknown": 0
+       },
+       "east": {
+        "tp": 34,
+        "fp": 28,
+        "fn": 0,
+        "tn": 210,
+        "fp_after_discharge": 16,
+        "other_posted": 26,
+        "other_flagged": 17,
+        "unknown": 0
+       }
+      },
+      "bayside": {
+       "tp": 38,
+       "fn": 0,
+       "fp": 39,
+       "cost": 39
+      },
+      "westside": {
+       "tp": 22,
+       "fn": 1,
+       "fp": 30,
+       "cost": 32
+      }
+     }
+    },
+    "0.5": {
+     "combined": {
+      "tp": 45,
+      "fn": 0,
+      "fp": 22,
+      "cost": 22,
+      "per_zone": {
+       "ocean": 9,
+       "baker_china": 6,
+       "north": 1,
+       "east": 6
+      },
+      "zones": {
+       "ocean": {
+        "tp": 6,
+        "fp": 9,
+        "fn": 0,
+        "tn": 258,
+        "tp_discharge": 5,
+        "tp_sample": 1,
+        "fn_discharge": 0,
+        "fn_sample": 0,
+        "fp_sample": 2,
+        "fp_quiet": 7,
+        "tn_sample": 41,
+        "tn_quiet": 217,
+        "unknown_tail": 12,
+        "unknown_uncovered": 12,
+        "dry_elevated": 1,
+        "dry_flagged": 1
+       },
+       "baker_china": {
+        "tp": 4,
+        "fp": 6,
+        "fn": 0,
+        "tn": 254,
+        "tp_discharge": 4,
+        "tp_sample": 0,
+        "fn_discharge": 0,
+        "fn_sample": 0,
+        "fp_sample": 1,
+        "fp_quiet": 5,
+        "tn_sample": 41,
+        "tn_quiet": 213,
+        "unknown_tail": 13,
+        "unknown_uncovered": 12,
+        "dry_elevated": 9,
+        "dry_flagged": 0
+       },
+       "north": {
+        "tp": 4,
+        "fp": 1,
+        "fn": 0,
+        "tn": 265,
+        "tp_discharge": 4,
+        "tp_sample": 0,
+        "fn_discharge": 0,
+        "fn_sample": 0,
+        "fp_sample": 1,
+        "fp_quiet": 0,
+        "tn_sample": 39,
+        "tn_quiet": 226,
+        "unknown_tail": 11,
+        "unknown_uncovered": 11,
+        "dry_elevated": 6,
+        "dry_flagged": 0
+       },
+       "east": {
+        "tp": 31,
+        "fp": 6,
+        "fn": 0,
+        "tn": 219,
+        "tp_discharge": 12,
+        "tp_sample": 19,
+        "fn_discharge": 0,
+        "fn_sample": 0,
+        "fp_sample": 6,
+        "fp_quiet": 0,
+        "tn_sample": 33,
+        "tn_quiet": 186,
+        "unknown_tail": 17,
+        "unknown_uncovered": 11,
+        "dry_elevated": 14,
+        "dry_flagged": 1
+       }
+      },
+      "bayside": {
+       "tp": 35,
+       "fn": 0,
+       "fp": 7,
+       "cost": 7
+      },
+      "westside": {
+       "tp": 10,
+       "fn": 0,
+       "fp": 15,
+       "cost": 15
+      }
+     },
+     "discharge": {
+      "tp": 25,
+      "fn": 0,
+      "fp": 68,
+      "cost": 68,
+      "zones": {
+       "ocean": {
+        "tp": 5,
+        "fp": 14,
+        "fn": 0,
+        "tn": 264
+       },
+       "baker_china": {
+        "tp": 4,
+        "fp": 7,
+        "fn": 0,
+        "tn": 272
+       },
+       "north": {
+        "tp": 4,
+        "fp": 4,
+        "fn": 0,
+        "tn": 277
+       },
+       "east": {
+        "tp": 12,
+        "fp": 43,
+        "fn": 0,
+        "tn": 230
+       }
+      },
+      "bayside": {
+       "tp": 16,
+       "fn": 0,
+       "fp": 47,
+       "cost": 47
+      },
+      "westside": {
+       "tp": 9,
+       "fn": 0,
+       "fp": 21,
+       "cost": 21
+      }
+     },
+     "posted": {
+      "tp": 51,
+      "fn": 10,
+      "fp": 39,
+      "cost": 59,
+      "zones": {
+       "ocean": {
+        "tp": 9,
+        "fp": 11,
+        "fn": 4,
+        "tn": 274,
+        "fp_after_discharge": 2,
+        "other_posted": 0,
+        "other_flagged": 0,
+        "unknown": 0
+       },
+       "baker_china": {
+        "tp": 5,
+        "fp": 7,
+        "fn": 5,
+        "tn": 267,
+        "fp_after_discharge": 0,
+        "other_posted": 14,
+        "other_flagged": 0,
+        "unknown": 0
+       },
+       "north": {
+        "tp": 3,
+        "fp": 4,
+        "fn": 1,
+        "tn": 281,
+        "fp_after_discharge": 3,
+        "other_posted": 9,
+        "other_flagged": 1,
+        "unknown": 0
+       },
+       "east": {
+        "tp": 34,
+        "fp": 17,
+        "fn": 0,
+        "tn": 221,
+        "fp_after_discharge": 16,
+        "other_posted": 26,
+        "other_flagged": 4,
+        "unknown": 0
+       }
+      },
+      "bayside": {
+       "tp": 37,
+       "fn": 1,
+       "fp": 21,
+       "cost": 23
+      },
+      "westside": {
+       "tp": 14,
+       "fn": 9,
+       "fp": 18,
+       "cost": 36
+      }
+     }
+    }
+   },
+   "days_changed": {
+    "ocean": 37,
+    "baker_china": 32,
+    "north": 23,
+    "east": 72
+   },
+   "n_days": 298
+  },
+  "no_samples": {
+   "grades": {
+    "0.25": {
+     "combined": {
+      "tp": 45,
+      "fn": 0,
+      "fp": 41,
+      "cost": 41,
+      "per_zone": {
+       "ocean": 15,
+       "baker_china": 14,
+       "north": 4,
+       "east": 8
+      },
+      "zones": {
+       "ocean": {
+        "tp": 6,
+        "fp": 15,
+        "fn": 0,
+        "tn": 252,
+        "tp_discharge": 5,
+        "tp_sample": 1,
+        "fn_discharge": 0,
+        "fn_sample": 0,
+        "fp_sample": 5,
+        "fp_quiet": 10,
+        "tn_sample": 38,
+        "tn_quiet": 214,
+        "unknown_tail": 12,
+        "unknown_uncovered": 12,
+        "dry_elevated": 1,
+        "dry_flagged": 1
+       },
+       "baker_china": {
+        "tp": 4,
+        "fp": 14,
+        "fn": 0,
+        "tn": 246,
+        "tp_discharge": 4,
+        "tp_sample": 0,
+        "fn_discharge": 0,
+        "fn_sample": 0,
+        "fp_sample": 3,
+        "fp_quiet": 11,
+        "tn_sample": 39,
+        "tn_quiet": 207,
+        "unknown_tail": 13,
+        "unknown_uncovered": 12,
+        "dry_elevated": 9,
+        "dry_flagged": 0
+       },
+       "north": {
+        "tp": 4,
+        "fp": 4,
+        "fn": 0,
+        "tn": 262,
+        "tp_discharge": 4,
+        "tp_sample": 0,
+        "fn_discharge": 0,
+        "fn_sample": 0,
+        "fp_sample": 2,
+        "fp_quiet": 2,
+        "tn_sample": 38,
+        "tn_quiet": 224,
+        "unknown_tail": 11,
+        "unknown_uncovered": 11,
+        "dry_elevated": 6,
+        "dry_flagged": 0
+       },
+       "east": {
+        "tp": 31,
+        "fp": 8,
+        "fn": 0,
+        "tn": 217,
+        "tp_discharge": 12,
+        "tp_sample": 19,
+        "fn_discharge": 0,
+        "fn_sample": 0,
+        "fp_sample": 6,
+        "fp_quiet": 2,
+        "tn_sample": 33,
+        "tn_quiet": 184,
+        "unknown_tail": 17,
+        "unknown_uncovered": 11,
+        "dry_elevated": 14,
+        "dry_flagged": 0
+       }
+      },
+      "bayside": {
+       "tp": 35,
+       "fn": 0,
+       "fp": 12,
+       "cost": 12
+      },
+      "westside": {
+       "tp": 10,
+       "fn": 0,
+       "fp": 29,
+       "cost": 29
+      }
+     },
+     "discharge": {
+      "tp": 25,
+      "fn": 0,
+      "fp": 97,
+      "cost": 97,
+      "zones": {
+       "ocean": {
+        "tp": 5,
+        "fp": 23,
+        "fn": 0,
+        "tn": 255
+       },
+       "baker_china": {
+        "tp": 4,
+        "fp": 18,
+        "fn": 0,
+        "tn": 261
+       },
+       "north": {
+        "tp": 4,
+        "fp": 12,
+        "fn": 0,
+        "tn": 269
+       },
+       "east": {
+        "tp": 12,
+        "fp": 44,
+        "fn": 0,
+        "tn": 229
+       }
+      },
+      "bayside": {
+       "tp": 16,
+       "fn": 0,
+       "fp": 56,
+       "cost": 56
+      },
+      "westside": {
+       "tp": 9,
+       "fn": 0,
+       "fp": 41,
+       "cost": 41
+      }
+     },
+     "posted": {
+      "tp": 60,
+      "fn": 1,
+      "fp": 60,
+      "cost": 62,
+      "zones": {
+       "ocean": {
+        "tp": 12,
+        "fp": 17,
+        "fn": 1,
+        "tn": 268,
+        "fp_after_discharge": 4,
+        "other_posted": 0,
+        "other_flagged": 0,
+        "unknown": 0
+       },
+       "baker_china": {
+        "tp": 10,
+        "fp": 13,
+        "fn": 0,
+        "tn": 261,
+        "fp_after_discharge": 0,
+        "other_posted": 14,
+        "other_flagged": 0,
+        "unknown": 0
+       },
+       "north": {
+        "tp": 4,
+        "fp": 11,
+        "fn": 0,
+        "tn": 274,
+        "fp_after_discharge": 8,
+        "other_posted": 9,
+        "other_flagged": 1,
+        "unknown": 0
+       },
+       "east": {
+        "tp": 34,
+        "fp": 19,
+        "fn": 0,
+        "tn": 219,
+        "fp_after_discharge": 16,
+        "other_posted": 26,
+        "other_flagged": 3,
+        "unknown": 0
+       }
+      },
+      "bayside": {
+       "tp": 38,
+       "fn": 0,
+       "fp": 30,
+       "cost": 30
+      },
+      "westside": {
+       "tp": 22,
+       "fn": 1,
+       "fp": 30,
+       "cost": 32
+      }
+     }
+    },
+    "0.5": {
+     "combined": {
+      "tp": 45,
+      "fn": 0,
+      "fp": 23,
+      "cost": 23,
+      "per_zone": {
+       "ocean": 10,
+       "baker_china": 6,
+       "north": 1,
+       "east": 6
+      },
+      "zones": {
+       "ocean": {
+        "tp": 6,
+        "fp": 10,
+        "fn": 0,
+        "tn": 257,
+        "tp_discharge": 5,
+        "tp_sample": 1,
+        "fn_discharge": 0,
+        "fn_sample": 0,
+        "fp_sample": 3,
+        "fp_quiet": 7,
+        "tn_sample": 40,
+        "tn_quiet": 217,
+        "unknown_tail": 12,
+        "unknown_uncovered": 12,
+        "dry_elevated": 1,
+        "dry_flagged": 1
+       },
+       "baker_china": {
+        "tp": 4,
+        "fp": 6,
+        "fn": 0,
+        "tn": 254,
+        "tp_discharge": 4,
+        "tp_sample": 0,
+        "fn_discharge": 0,
+        "fn_sample": 0,
+        "fp_sample": 1,
+        "fp_quiet": 5,
+        "tn_sample": 41,
+        "tn_quiet": 213,
+        "unknown_tail": 13,
+        "unknown_uncovered": 12,
+        "dry_elevated": 9,
+        "dry_flagged": 0
+       },
+       "north": {
+        "tp": 4,
+        "fp": 1,
+        "fn": 0,
+        "tn": 265,
+        "tp_discharge": 4,
+        "tp_sample": 0,
+        "fn_discharge": 0,
+        "fn_sample": 0,
+        "fp_sample": 1,
+        "fp_quiet": 0,
+        "tn_sample": 39,
+        "tn_quiet": 226,
+        "unknown_tail": 11,
+        "unknown_uncovered": 11,
+        "dry_elevated": 6,
+        "dry_flagged": 0
+       },
+       "east": {
+        "tp": 31,
+        "fp": 6,
+        "fn": 0,
+        "tn": 219,
+        "tp_discharge": 12,
+        "tp_sample": 19,
+        "fn_discharge": 0,
+        "fn_sample": 0,
+        "fp_sample": 6,
+        "fp_quiet": 0,
+        "tn_sample": 33,
+        "tn_quiet": 186,
+        "unknown_tail": 17,
+        "unknown_uncovered": 11,
+        "dry_elevated": 14,
+        "dry_flagged": 0
+       }
+      },
+      "bayside": {
+       "tp": 35,
+       "fn": 0,
+       "fp": 7,
+       "cost": 7
+      },
+      "westside": {
+       "tp": 10,
+       "fn": 0,
+       "fp": 16,
+       "cost": 16
+      }
+     },
+     "discharge": {
+      "tp": 25,
+      "fn": 0,
+      "fp": 69,
+      "cost": 69,
+      "zones": {
+       "ocean": {
+        "tp": 5,
+        "fp": 16,
+        "fn": 0,
+        "tn": 262
+       },
+       "baker_china": {
+        "tp": 4,
+        "fp": 7,
+        "fn": 0,
+        "tn": 272
+       },
+       "north": {
+        "tp": 4,
+        "fp": 4,
+        "fn": 0,
+        "tn": 277
+       },
+       "east": {
+        "tp": 12,
+        "fp": 42,
+        "fn": 0,
+        "tn": 231
+       }
+      },
+      "bayside": {
+       "tp": 16,
+       "fn": 0,
+       "fp": 46,
+       "cost": 46
+      },
+      "westside": {
+       "tp": 9,
+       "fn": 0,
+       "fp": 23,
+       "cost": 23
+      }
+     },
+     "posted": {
+      "tp": 53,
+      "fn": 8,
+      "fp": 39,
+      "cost": 55,
+      "zones": {
+       "ocean": {
+        "tp": 11,
+        "fp": 11,
+        "fn": 2,
+        "tn": 274,
+        "fp_after_discharge": 2,
+        "other_posted": 0,
+        "other_flagged": 0,
+        "unknown": 0
+       },
+       "baker_china": {
+        "tp": 5,
+        "fp": 7,
+        "fn": 5,
+        "tn": 267,
+        "fp_after_discharge": 0,
+        "other_posted": 14,
+        "other_flagged": 0,
+        "unknown": 0
+       },
+       "north": {
+        "tp": 3,
+        "fp": 4,
+        "fn": 1,
+        "tn": 281,
+        "fp_after_discharge": 3,
+        "other_posted": 9,
+        "other_flagged": 1,
+        "unknown": 0
+       },
+       "east": {
+        "tp": 34,
+        "fp": 17,
+        "fn": 0,
+        "tn": 221,
+        "fp_after_discharge": 16,
+        "other_posted": 26,
+        "other_flagged": 3,
+        "unknown": 0
+       }
+      },
+      "bayside": {
+       "tp": 37,
+       "fn": 1,
+       "fp": 21,
+       "cost": 23
+      },
+      "westside": {
+       "tp": 16,
+       "fn": 7,
+       "fp": 18,
+       "cost": 32
+      }
+     }
+    }
+   },
+   "days_changed": {
+    "ocean": 37,
+    "baker_china": 21,
+    "north": 13,
+    "east": 50
+   },
+   "n_days": 298
+  },
+  "cso_flags_only": {
+   "grades": {
+    "0.25": {
+     "combined": {
+      "tp": 45,
+      "fn": 0,
+      "fp": 41,
+      "cost": 41,
+      "per_zone": {
+       "ocean": 15,
+       "baker_china": 14,
+       "north": 4,
+       "east": 8
+      },
+      "zones": {
+       "ocean": {
+        "tp": 6,
+        "fp": 15,
+        "fn": 0,
+        "tn": 252,
+        "tp_discharge": 5,
+        "tp_sample": 1,
+        "fn_discharge": 0,
+        "fn_sample": 0,
+        "fp_sample": 5,
+        "fp_quiet": 10,
+        "tn_sample": 38,
+        "tn_quiet": 214,
+        "unknown_tail": 12,
+        "unknown_uncovered": 12,
+        "dry_elevated": 1,
+        "dry_flagged": 1
+       },
+       "baker_china": {
+        "tp": 4,
+        "fp": 14,
+        "fn": 0,
+        "tn": 246,
+        "tp_discharge": 4,
+        "tp_sample": 0,
+        "fn_discharge": 0,
+        "fn_sample": 0,
+        "fp_sample": 3,
+        "fp_quiet": 11,
+        "tn_sample": 39,
+        "tn_quiet": 207,
+        "unknown_tail": 13,
+        "unknown_uncovered": 12,
+        "dry_elevated": 9,
+        "dry_flagged": 0
+       },
+       "north": {
+        "tp": 4,
+        "fp": 4,
+        "fn": 0,
+        "tn": 262,
+        "tp_discharge": 4,
+        "tp_sample": 0,
+        "fn_discharge": 0,
+        "fn_sample": 0,
+        "fp_sample": 2,
+        "fp_quiet": 2,
+        "tn_sample": 38,
+        "tn_quiet": 224,
+        "unknown_tail": 11,
+        "unknown_uncovered": 11,
+        "dry_elevated": 6,
+        "dry_flagged": 0
+       },
+       "east": {
+        "tp": 31,
+        "fp": 8,
+        "fn": 0,
+        "tn": 217,
+        "tp_discharge": 12,
+        "tp_sample": 19,
+        "fn_discharge": 0,
+        "fn_sample": 0,
+        "fp_sample": 6,
+        "fp_quiet": 2,
+        "tn_sample": 33,
+        "tn_quiet": 184,
+        "unknown_tail": 17,
+        "unknown_uncovered": 11,
+        "dry_elevated": 14,
+        "dry_flagged": 0
+       }
+      },
+      "bayside": {
+       "tp": 35,
+       "fn": 0,
+       "fp": 12,
+       "cost": 12
+      },
+      "westside": {
+       "tp": 10,
+       "fn": 0,
+       "fp": 29,
+       "cost": 29
+      }
+     },
+     "discharge": {
+      "tp": 25,
+      "fn": 0,
+      "fp": 97,
+      "cost": 97,
+      "zones": {
+       "ocean": {
+        "tp": 5,
+        "fp": 23,
+        "fn": 0,
+        "tn": 255
+       },
+       "baker_china": {
+        "tp": 4,
+        "fp": 18,
+        "fn": 0,
+        "tn": 261
+       },
+       "north": {
+        "tp": 4,
+        "fp": 12,
+        "fn": 0,
+        "tn": 269
+       },
+       "east": {
+        "tp": 12,
+        "fp": 44,
+        "fn": 0,
+        "tn": 229
+       }
+      },
+      "bayside": {
+       "tp": 16,
+       "fn": 0,
+       "fp": 56,
+       "cost": 56
+      },
+      "westside": {
+       "tp": 9,
+       "fn": 0,
+       "fp": 41,
+       "cost": 41
+      }
+     },
+     "posted": {
+      "tp": 60,
+      "fn": 1,
+      "fp": 60,
+      "cost": 62,
+      "zones": {
+       "ocean": {
+        "tp": 12,
+        "fp": 17,
+        "fn": 1,
+        "tn": 268,
+        "fp_after_discharge": 4,
+        "other_posted": 0,
+        "other_flagged": 0,
+        "unknown": 0
+       },
+       "baker_china": {
+        "tp": 10,
+        "fp": 13,
+        "fn": 0,
+        "tn": 261,
+        "fp_after_discharge": 0,
+        "other_posted": 14,
+        "other_flagged": 0,
+        "unknown": 0
+       },
+       "north": {
+        "tp": 4,
+        "fp": 11,
+        "fn": 0,
+        "tn": 274,
+        "fp_after_discharge": 8,
+        "other_posted": 9,
+        "other_flagged": 1,
+        "unknown": 0
+       },
+       "east": {
+        "tp": 34,
+        "fp": 19,
+        "fn": 0,
+        "tn": 219,
+        "fp_after_discharge": 16,
+        "other_posted": 26,
+        "other_flagged": 3,
+        "unknown": 0
+       }
+      },
+      "bayside": {
+       "tp": 38,
+       "fn": 0,
+       "fp": 30,
+       "cost": 30
+      },
+      "westside": {
+       "tp": 22,
+       "fn": 1,
+       "fp": 30,
+       "cost": 32
+      }
+     }
+    },
+    "0.5": {
+     "combined": {
+      "tp": 45,
+      "fn": 0,
+      "fp": 23,
+      "cost": 23,
+      "per_zone": {
+       "ocean": 10,
+       "baker_china": 6,
+       "north": 1,
+       "east": 6
+      },
+      "zones": {
+       "ocean": {
+        "tp": 6,
+        "fp": 10,
+        "fn": 0,
+        "tn": 257,
+        "tp_discharge": 5,
+        "tp_sample": 1,
+        "fn_discharge": 0,
+        "fn_sample": 0,
+        "fp_sample": 3,
+        "fp_quiet": 7,
+        "tn_sample": 40,
+        "tn_quiet": 217,
+        "unknown_tail": 12,
+        "unknown_uncovered": 12,
+        "dry_elevated": 1,
+        "dry_flagged": 1
+       },
+       "baker_china": {
+        "tp": 4,
+        "fp": 6,
+        "fn": 0,
+        "tn": 254,
+        "tp_discharge": 4,
+        "tp_sample": 0,
+        "fn_discharge": 0,
+        "fn_sample": 0,
+        "fp_sample": 1,
+        "fp_quiet": 5,
+        "tn_sample": 41,
+        "tn_quiet": 213,
+        "unknown_tail": 13,
+        "unknown_uncovered": 12,
+        "dry_elevated": 9,
+        "dry_flagged": 0
+       },
+       "north": {
+        "tp": 4,
+        "fp": 1,
+        "fn": 0,
+        "tn": 265,
+        "tp_discharge": 4,
+        "tp_sample": 0,
+        "fn_discharge": 0,
+        "fn_sample": 0,
+        "fp_sample": 1,
+        "fp_quiet": 0,
+        "tn_sample": 39,
+        "tn_quiet": 226,
+        "unknown_tail": 11,
+        "unknown_uncovered": 11,
+        "dry_elevated": 6,
+        "dry_flagged": 0
+       },
+       "east": {
+        "tp": 31,
+        "fp": 6,
+        "fn": 0,
+        "tn": 219,
+        "tp_discharge": 12,
+        "tp_sample": 19,
+        "fn_discharge": 0,
+        "fn_sample": 0,
+        "fp_sample": 6,
+        "fp_quiet": 0,
+        "tn_sample": 33,
+        "tn_quiet": 186,
+        "unknown_tail": 17,
+        "unknown_uncovered": 11,
+        "dry_elevated": 14,
+        "dry_flagged": 0
+       }
+      },
+      "bayside": {
+       "tp": 35,
+       "fn": 0,
+       "fp": 7,
+       "cost": 7
+      },
+      "westside": {
+       "tp": 10,
+       "fn": 0,
+       "fp": 16,
+       "cost": 16
+      }
+     },
+     "discharge": {
+      "tp": 25,
+      "fn": 0,
+      "fp": 69,
+      "cost": 69,
+      "zones": {
+       "ocean": {
+        "tp": 5,
+        "fp": 16,
+        "fn": 0,
+        "tn": 262
+       },
+       "baker_china": {
+        "tp": 4,
+        "fp": 7,
+        "fn": 0,
+        "tn": 272
+       },
+       "north": {
+        "tp": 4,
+        "fp": 4,
+        "fn": 0,
+        "tn": 277
+       },
+       "east": {
+        "tp": 12,
+        "fp": 42,
+        "fn": 0,
+        "tn": 231
+       }
+      },
+      "bayside": {
+       "tp": 16,
+       "fn": 0,
+       "fp": 46,
+       "cost": 46
+      },
+      "westside": {
+       "tp": 9,
+       "fn": 0,
+       "fp": 23,
+       "cost": 23
+      }
+     },
+     "posted": {
+      "tp": 53,
+      "fn": 8,
+      "fp": 39,
+      "cost": 55,
+      "zones": {
+       "ocean": {
+        "tp": 11,
+        "fp": 11,
+        "fn": 2,
+        "tn": 274,
+        "fp_after_discharge": 2,
+        "other_posted": 0,
+        "other_flagged": 0,
+        "unknown": 0
+       },
+       "baker_china": {
+        "tp": 5,
+        "fp": 7,
+        "fn": 5,
+        "tn": 267,
+        "fp_after_discharge": 0,
+        "other_posted": 14,
+        "other_flagged": 0,
+        "unknown": 0
+       },
+       "north": {
+        "tp": 3,
+        "fp": 4,
+        "fn": 1,
+        "tn": 281,
+        "fp_after_discharge": 3,
+        "other_posted": 9,
+        "other_flagged": 1,
+        "unknown": 0
+       },
+       "east": {
+        "tp": 34,
+        "fp": 17,
+        "fn": 0,
+        "tn": 221,
+        "fp_after_discharge": 16,
+        "other_posted": 26,
+        "other_flagged": 3,
+        "unknown": 0
+       }
+      },
+      "bayside": {
+       "tp": 37,
+       "fn": 1,
+       "fp": 21,
+       "cost": 23
+      },
+      "westside": {
+       "tp": 16,
+       "fn": 7,
+       "fp": 18,
+       "cost": 32
+      }
+     }
+    }
+   },
+   "days_changed": {
+    "ocean": 37,
+    "baker_china": 21,
+    "north": 12,
+    "east": 49
+   },
+   "n_days": 298
+  }
+ }
+}

@@ -17,6 +17,7 @@ Open: http://localhost:8091
 """
 
 import json
+import os
 import re
 import pickle
 import sys
@@ -73,7 +74,7 @@ from src.models.rain_features import INPUT_RULES_LIVE, mask_gauge_outages as _ma
 from src.models.rain_features import add_daily_features as _add_daily_features  # noqa: E402
 from src.models.rain_features import hourly_intensity as _hourly_intensity  # noqa: E402
 from src.models import scorecard as _sc  # noqa: E402  (one rule for the model-check scorecard, shared with train_v4)
-from src.models import live_rules as _lr  # noqa: E402  (live composition rules: observed CSO flags, samples — LIVE_COMPOSITION_DESIGN.md)
+from src.models import live_rules as _lr  # noqa: E402  (live corrections live_v1: observed CSO flags, samples — LIVE_COMPOSITION_DESIGN.md)
 from src.models import posting_label as _pl  # noqa: E402  (the beach-posting label, BeachWatch-backed)
 from src.models import candidates as _cand  # noqa: E402  (candidate model sets: scorecards + manifests only, never served live)
 
@@ -663,6 +664,24 @@ class LiveData:
 
     _LIVE_HEALTH_MAX_AGE_H = 2
 
+    def _live_corrections_enabled(self) -> tuple[bool, str]:
+        """(enabled, source). The env var LIVE_CORRECTIONS (on/off) wins; else the
+        watcher_config key ``live_corrections`` ('off' disables — flippable
+        without a deploy); default on."""
+        env = (os.environ.get("LIVE_CORRECTIONS") or "").strip().lower()
+        if env in ("off", "0", "false", "no"):
+            return False, "env"
+        if env in ("on", "1", "true", "yes"):
+            return True, "env"
+        if _supabase is not None and _supabase.is_configured():
+            try:
+                rows = _supabase.select("watcher_config", {"select": "value", "key": "eq.live_corrections"})
+                if rows:
+                    return str(rows[0].get("value", "")).strip().lower() not in ("off", "0", "false", "no"), "config"
+            except Exception as e:  # noqa: BLE001
+                print(f"live_corrections config lookup failed (default on): {e}")
+        return True, "default"
+
     def _watcher_health(self) -> dict:
         """Is the pg_cron watcher ticking? The no-flag downgrade treats the
         absence of a CSO flag as evidence, which it only is while someone is
@@ -776,6 +795,11 @@ class LiveData:
         identity — the composition is then exactly the plain one."""
         if not dates:
             return None
+        enabled, source = self._live_corrections_enabled()
+        self._live_switch = {"enabled": enabled, "source": source}
+        if not enabled:
+            self._live_watcher = None
+            return {"enabled": False, "source": source}
         start, end = min(dates), min(max(dates), today)
         health = self._watcher_health()
         self._live_watcher = health
@@ -785,15 +809,20 @@ class LiveData:
         watcher_from = datetime.strptime(self.WATCHER_SINCE, "%Y-%m-%d").date()
         probs2, vols2, notes = _lr.adjust_stage1(probs, vols, dates, observed or {}, flags, rain, today,
                                                  watcher_from=watcher_from, watcher_ok=bool(health.get("ok")))
-        return {"probs": probs2, "vols": vols2, "notes": notes, "flags": flags, "samples": samples,
-                "onsets": observed or {}, "health": health, "today": today}
+        return {"enabled": True, "source": source, "probs": probs2, "vols": vols2, "notes": notes, "flags": flags,
+                "samples": samples, "onsets": observed or {}, "health": health, "today": today}
 
     def _day_payload(self, frames: dict, idx: int, feats: list, probs: list, vols: list,
                      dates: list, observed: dict, live: dict | None = None) -> dict:
-        if live is None:
-            day_predictions = self._compose_impact(probs, vols, idx, dates, observed)
-            impact_groups = day_predictions.pop("_groups", {})
-            rules_block, probs_live = None, None
+        # the plain two-stage composition — the models alone, no observation of any kind (the observed-CSO
+        # override is now the cso_onset rule of live_v1) — always computed so the page can show it instead
+        plain_predictions = self._compose_impact(probs, vols, idx, dates, {})
+        plain_groups = plain_predictions.pop("_groups", {})
+        plain_block = {"predictions": plain_predictions, "impact_groups": plain_groups, "zones": zone_risks(plain_groups), "discharge_probs": probs[idx]}
+        if live is None or not live.get("enabled"):
+            day_predictions, impact_groups = dict(plain_predictions), dict(plain_groups)
+            rules_block = None if live is None else {"version": _lr.VERSION, "enabled": False, "source": live.get("source")}
+            probs_live = None
         else:
             p2, v2 = live["probs"], live["vols"]
             day_predictions = self._compose_impact(p2, v2, idx, dates, observed)
@@ -810,7 +839,8 @@ class LiveData:
                 impact_groups = adjusted
                 day_predictions = {bk: (max(adjusted[g] for g in gs if g in adjusted) if gs else 0.0) for bk, gs in self.BASIN_IMPACT_GROUPS.items()}
                 day_predictions["citywide"] = max(day_predictions.values()) if day_predictions else 0.0
-            rules_block = {"version": _lr.VERSION, "stage1": live["notes"].get(str(dates[idx]), {}), "groups": gnotes,
+            rules_block = {"version": _lr.VERSION, "enabled": True, "source": live.get("source"),
+                           "stage1": live["notes"].get(str(dates[idx]), {}), "groups": gnotes,
                            "flags_active": sorted(live["flags"].get(dates[idx], ())), "watcher_ok": bool(live["health"].get("ok"))}
             probs_live = p2[idx]
         f = feats[idx]["avg"]
@@ -828,7 +858,8 @@ class LiveData:
             "discharge_probs": probs[idx],
             "discharge_probs_live": probs_live,
             "observed_cso": sorted(observed.get(dates[idx], ())),
-            "live_rules": rules_block,
+            "live_corrections": rules_block,
+            "plain": plain_block,
             "gauge_outage": getattr(self, "_outage_days", {}).get(str(pd.Timestamp(dates[idx]).date()), []),
             "input_rules": list(INPUT_RULES_LIVE),
             "features": f,
@@ -1414,7 +1445,8 @@ class LiveData:
             return {
                 "last_refresh": self.last_refresh.isoformat() if self.last_refresh else None,
                 "predictions": self.predictions or {},
-                "live_rules": {"version": _lr.VERSION, "watcher": getattr(self, "_live_watcher", None), "watcher_since": self.WATCHER_SINCE},
+                "live_corrections": {"version": _lr.VERSION, **(getattr(self, "_live_switch", None) or {"enabled": True, "source": "default"}),
+                                     "watcher": getattr(self, "_live_watcher", None), "watcher_since": self.WATCHER_SINCE},
                 "beach_status": self.beach_status or [],
                 "error": self.error,
                 "thresholds": self.thresholds,
