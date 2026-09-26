@@ -1,6 +1,12 @@
 # Live composition — what observed CSO flags and bacteria results should do to the forecast, and how to grade it
 
-*Design, 2026-09-26. Nothing here is built; it answers Chase's three questions (how much to upgrade on a
+**Status (2026-09-26, later the same day): §2–§4 are built as `src/models/live_rules.py` (`live_rules_v1`), wired
+into `live_dashboard` for the live forecast and the live-mode hindcast. Chase chose the CONSERVATIVE downgrade:
+r = 0.60 for the bayside basins, none for the Westside. Each day's payload carries a `live_rules` block (every
+rule that fired, from → to) and the page shows them as badges. The downgrade is gated on the watcher being live and
+ticking (`watcher_runtime`). §5, the replay, is not built. Tests: `tests/test_live_rules.py`.**
+
+*Design, 2026-09-26. It answers Chase's three questions (how much to upgrade on a
 confirmed CSO, how much to downgrade when an expected CSO did not appear, what a confirmed or clean sample
 should do) with the numbers we have, and lays out the replay that would grade it. Companion to
 `RETRAIN_PLAN.md` (models) and `docs/OVERVIEW.md` (the system).*

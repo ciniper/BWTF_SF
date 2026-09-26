@@ -62,8 +62,10 @@ LOCAL_TZ = ZoneInfo("America/Los_Angeles")
 # registry station maps to a basin model — including 4618 Mission Creek,
 # served by the Central model since the 2026-09 retrain (gb_v1).
 from src.models.groups import (  # noqa: E402
-    GROUPS_BY_BASIN, OBSERVED_STATION_BASIN, ZONE_GROUPS, zone_risks,
+    GROUP_OF_STATION, GROUPS_BY_BASIN, OBSERVED_STATION_BASIN, ZONE_GROUPS, zone_risks,
 )
+_ZONE_OF_GROUP = {g: zk for zk, gs in ZONE_GROUPS.items() for g in gs}
+_BASIN_OF_GROUP = {g: bk for bk, gs in GROUPS_BY_BASIN.items() for g in gs}
 from src.models.impact import compose as _compose_risk  # noqa: E402
 from src.models.impact import impact_fraction as _impact_fraction  # noqa: E402
 from src.models.impact import smooth_table as _smooth_table  # noqa: E402
@@ -71,6 +73,7 @@ from src.models.rain_features import INPUT_RULES_LIVE, mask_gauge_outages as _ma
 from src.models.rain_features import add_daily_features as _add_daily_features  # noqa: E402
 from src.models.rain_features import hourly_intensity as _hourly_intensity  # noqa: E402
 from src.models import scorecard as _sc  # noqa: E402  (one rule for the model-check scorecard, shared with train_v4)
+from src.models import live_rules as _lr  # noqa: E402  (live composition rules: observed CSO flags, samples — LIVE_COMPOSITION_DESIGN.md)
 from src.models import posting_label as _pl  # noqa: E402  (the beach-posting label, BeachWatch-backed)
 from src.models import candidates as _cand  # noqa: E402  (candidate model sets: scorecards + manifests only, never served live)
 
@@ -655,10 +658,161 @@ class LiveData:
         dates = [d.date() for d in frames["avg"]["date"]]
         return feats, probs, vols, dates
 
+    # ── live composition rules: observed CSO flags and published samples ───
+    # (src/models/live_rules.py; design and evidence in LIVE_COMPOSITION_DESIGN.md)
+
+    _LIVE_HEALTH_MAX_AGE_H = 2
+
+    def _watcher_health(self) -> dict:
+        """Is the pg_cron watcher ticking? The no-flag downgrade treats the
+        absence of a CSO flag as evidence, which it only is while someone is
+        watching — so it is gated on a fresh tick in a live or shadow mode.
+        {"ok", "mode", "last_processed_at", "reason"}."""
+        if _supabase is None or not _supabase.is_configured():
+            return {"ok": False, "mode": None, "last_processed_at": None, "reason": "supabase not configured"}
+        try:
+            rt = _supabase.select("watcher_runtime", {"select": "last_processed_at,last_error_at", "id": "eq.1"})
+            cfg = _supabase.select("watcher_config", {"select": "value", "key": "eq.mode"})   # key/value table (migration 002)
+        except Exception as e:  # noqa: BLE001
+            return {"ok": False, "mode": None, "last_processed_at": None, "reason": f"lookup failed: {e}"}
+        from datetime import timezone as _tz
+        row = rt[0] if rt else {}
+        mode = cfg[0].get("value") if cfg else None
+        last = row.get("last_processed_at")
+        try:
+            last_dt = datetime.fromisoformat(str(last).replace("Z", "+00:00")) if last else None
+        except ValueError:
+            last_dt = None
+        fresh = last_dt is not None and (datetime.now(_tz.utc) - last_dt) <= timedelta(hours=self._LIVE_HEALTH_MAX_AGE_H)
+        err = row.get("last_error_at")
+        erring = bool(err and last and str(err) > str(last))
+        ok = bool(fresh and mode in ("live", "shadow") and not erring)
+        return {"ok": ok, "mode": mode, "last_processed_at": last,
+                "reason": "ok" if ok else ("stale tick" if not fresh else "erroring" if erring else f"mode {mode}")}
+
+    def _cso_flag_days(self, start, end, today) -> dict:
+        """{date: {basin_key}} — days the feed's CSO flag was up for a station
+        in the basin: a watcher transition → 'cso' opens a window, any other
+        transition for that station closes it (the clear day itself is not
+        flagged), a window still open runs through today, and whatever the
+        watcher's state table shows as 'cso' right now counts for today."""
+        if _supabase is None or not _supabase.is_configured():
+            return {}
+        try:
+            rows = _supabase.select("alert_log", {
+                "select": "created_at,event_type,station_ids,simulated,results,source",
+                "simulated": "eq.false", "source": f"in.({','.join(REALTIME_SOURCES)})",
+                "created_at": f"gte.{(start - timedelta(days=10)).isoformat()}T00:00:00+00:00",
+                "order": "created_at.asc", "limit": "1000"})
+            state = _supabase.select("watcher_state", {"select": "station_id,status"})
+        except Exception as e:  # noqa: BLE001
+            print(f"CSO flag windows unavailable: {e}")
+            return {}
+        flagged: dict = {}
+
+        def mark(basin, d0, d1):
+            d = d0
+            while d <= d1:
+                if start <= d <= end:
+                    flagged.setdefault(d, set()).add(basin)
+                d += timedelta(days=1)
+
+        open_since: dict = {}
+        for row in sorted(rows, key=lambda r: str(r.get("created_at") or "")):
+            try:
+                d = datetime.fromisoformat(row["created_at"].replace("Z", "+00:00")).astimezone(LOCAL_TZ).date()
+            except (KeyError, ValueError):
+                continue
+            results = row.get("results")
+            trans = (results.get("transitions") if isinstance(results, dict) else None) or []
+            if not trans:
+                trans = [{"station_id": sid, "to": row.get("event_type")} for sid in (row.get("station_ids") or [])]
+            for t in trans:
+                if not isinstance(t, dict) or t.get("simulated"):
+                    continue
+                sid = str(t.get("station_id", ""))
+                if t.get("to") == "cso":
+                    open_since.setdefault(sid, d)
+                elif sid in open_since:
+                    basin = OBSERVED_STATION_BASIN.get(sid)
+                    d0 = open_since.pop(sid)
+                    if basin:
+                        mark(basin, d0, d - timedelta(days=1))
+        now_cso = {str(r.get("station_id")) for r in (state or []) if r.get("status") == "cso"}
+        for sid, d0 in open_since.items():
+            basin = OBSERVED_STATION_BASIN.get(sid)
+            if basin:
+                mark(basin, d0, min(end, today))
+        for sid in now_cso - set(open_since):
+            basin = OBSERVED_STATION_BASIN.get(sid)
+            if basin:
+                mark(basin, today, today)
+        return flagged
+
+    def _sample_flags(self, start, end) -> dict:
+        """{(group, date): elevated} from the lab results already published for [start, end]."""
+        try:
+            samples = self._samples_window(start, end)
+        except Exception as e:  # noqa: BLE001
+            print(f"live samples unavailable: {e}")
+            return {}
+        out: dict = {}
+        for x in samples:
+            g = GROUP_OF_STATION.get(x.get("station"))
+            if not g:
+                continue
+            try:
+                d = datetime.strptime(x["date"], "%Y-%m-%d").date()
+            except (KeyError, ValueError):
+                continue
+            out[(g, d)] = bool(out.get((g, d), False) or x.get("exceeds"))
+        return out
+
+    def _live_context(self, frames: dict, probs: list, vols: list, dates: list, observed: dict, today) -> dict | None:
+        """Everything the live rules need for one run, fetched once: watcher
+        health, CSO flag windows, published samples, and the stage-1
+        probabilities and volumes after the CSO and no-flag rules. Every
+        fetch degrades to "nothing observed", which makes the rules the
+        identity — the composition is then exactly the plain one."""
+        if not dates:
+            return None
+        start, end = min(dates), min(max(dates), today)
+        health = self._watcher_health()
+        self._live_watcher = health
+        flags = self._cso_flag_days(start, end, today) if health.get("mode") else {}
+        samples = self._sample_flags(start, end) if str(end) >= self.DATASF_FLOOR else {}
+        rain = {d: float(frames["avg"].iloc[i].get("precip_inches", 0.0) or 0.0) for i, d in enumerate(dates)}
+        watcher_from = datetime.strptime(self.WATCHER_SINCE, "%Y-%m-%d").date()
+        probs2, vols2, notes = _lr.adjust_stage1(probs, vols, dates, observed or {}, flags, rain, today,
+                                                 watcher_from=watcher_from, watcher_ok=bool(health.get("ok")))
+        return {"probs": probs2, "vols": vols2, "notes": notes, "flags": flags, "samples": samples,
+                "onsets": observed or {}, "health": health, "today": today}
+
     def _day_payload(self, frames: dict, idx: int, feats: list, probs: list, vols: list,
-                     dates: list, observed: dict) -> dict:
-        day_predictions = self._compose_impact(probs, vols, idx, dates, observed)
-        impact_groups = day_predictions.pop("_groups", {})
+                     dates: list, observed: dict, live: dict | None = None) -> dict:
+        if live is None:
+            day_predictions = self._compose_impact(probs, vols, idx, dates, observed)
+            impact_groups = day_predictions.pop("_groups", {})
+            rules_block, probs_live = None, None
+        else:
+            p2, v2 = live["probs"], live["vols"]
+            day_predictions = self._compose_impact(p2, v2, idx, dates, observed)
+            impact_groups = day_predictions.pop("_groups", {})
+            # the persistence-only composition (the day's own discharge term removed) — what a clean sample caps
+            p_only = [dict(p) for p in p2]
+            p_only[idx] = {b: 0.0 for b in p_only[idx]}
+            _, persist_groups = _compose_risk(self.impact_table, self.BASIN_IMPACT_GROUPS, p_only, v2, idx, dates, {})
+            large_curve = lambda g, k: _impact_fraction(self.impact_table, g, k, _lr.RULES["cso"]["large_volume_mg"])  # noqa: E731
+            probs_by_date = {d: p2[j] for j, d in enumerate(dates)}
+            adjusted, gnotes = _lr.adjust_groups(impact_groups, persist_groups, p2[idx], dates[idx], live["samples"],
+                                                 probs_by_date, live["onsets"], live["flags"], _ZONE_OF_GROUP, _BASIN_OF_GROUP, large_curve)
+            if gnotes:
+                impact_groups = adjusted
+                day_predictions = {bk: (max(adjusted[g] for g in gs if g in adjusted) if gs else 0.0) for bk, gs in self.BASIN_IMPACT_GROUPS.items()}
+                day_predictions["citywide"] = max(day_predictions.values()) if day_predictions else 0.0
+            rules_block = {"version": _lr.VERSION, "stage1": live["notes"].get(str(dates[idx]), {}), "groups": gnotes,
+                           "flags_active": sorted(live["flags"].get(dates[idx], ())), "watcher_ok": bool(live["health"].get("ok"))}
+            probs_live = p2[idx]
         f = feats[idx]["avg"]
         row = frames["avg"].iloc[idx]
         return {
@@ -672,7 +826,9 @@ class LiveData:
             "impact_groups": impact_groups,
             "zones": zone_risks(impact_groups),
             "discharge_probs": probs[idx],
+            "discharge_probs_live": probs_live,
             "observed_cso": sorted(observed.get(dates[idx], ())),
+            "live_rules": rules_block,
             "gauge_outage": getattr(self, "_outage_days", {}).get(str(pd.Timestamp(dates[idx]).date()), []),
             "input_rules": list(INPUT_RULES_LIVE),
             "features": f,
@@ -689,6 +845,7 @@ class LiveData:
         frames = self._daily_frames(rain_df, today)
         feats, probs, vols, dates = self._score_frames(frames)
         observed = self._fetch_observed_cso(min(dates)) if dates else {}
+        live = self._live_context(frames, probs, vols, dates, observed, today)
 
         results = {}
         for day_offset in range(0, 6):
@@ -701,7 +858,7 @@ class LiveData:
                 label = "Today"
             elif day_offset == 1:
                 label = "Tomorrow"
-            payload = self._day_payload(frames, idx, feats, probs, vols, dates, observed)
+            payload = self._day_payload(frames, idx, feats, probs, vols, dates, observed, live)
             payload.update({"label": label, "date": str(target_date), "day_offset": day_offset,
                             "is_forecast": day_offset > 0, "is_today": day_offset == 0})
             results[str(target_date)] = payload
@@ -752,6 +909,7 @@ class LiveData:
         frames = self._daily_frames(rain_df, _now_local().date())
         feats, probs, vols, dates = self._score_frames(frames)
         observed = self._fetch_observed_cso(min(dates)) if dates else {}
+        live = self._live_context(frames, probs, vols, dates, observed, _now_local().date())
 
         target_date = target.date()
         filtered = {}
@@ -759,7 +917,7 @@ class LiveData:
             offset = (row_date - target_date).days
             if offset < -2 or offset > 5:
                 continue
-            payload = self._day_payload(frames, idx, feats, probs, vols, dates, observed)
+            payload = self._day_payload(frames, idx, feats, probs, vols, dates, observed, live)
             payload.update({"label": row_date.strftime("%a %b %d") + (" ★" if offset == 0 else ""),
                             "date": str(row_date), "day_offset": offset, "is_today": offset == 0,
                             "is_forecast": False})
@@ -1256,6 +1414,7 @@ class LiveData:
             return {
                 "last_refresh": self.last_refresh.isoformat() if self.last_refresh else None,
                 "predictions": self.predictions or {},
+                "live_rules": {"version": _lr.VERSION, "watcher": getattr(self, "_live_watcher", None), "watcher_since": self.WATCHER_SINCE},
                 "beach_status": self.beach_status or [],
                 "error": self.error,
                 "thresholds": self.thresholds,

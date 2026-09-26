@@ -137,7 +137,11 @@ precautionary, and the East is often dirty with no posting and no rain.
   directly; **v2** (the outfall split) first scales it by the share of the basin's discharges that reach the group's
   own outfalls. A set is named `<stage1>` or `<stage1>_s2v2`.
 - **Live.** Past complete days use the two NOAA gauges (with the outage rule); today uses NWS hours so far plus the
-  ECMWF forecast; forecast days use ECMWF. An observed CSO flag from the watcher sets that day's p to 1 (never lowers).
+  ECMWF forecast; forecast days use ECMWF. Live rules (`src/models/live_rules.py`, since 2026-09-26) then adjust the
+  composition from what was observed: a watcher CSO onset sets that basin-day to 1 (and anchors the day before), an
+  expected discharge the feed never flagged is downgraded by Bayes with a conservative recall (bayside only, while the
+  watcher is ticking), a flag still up holds the beach at the large-event curve, and published samples floor (elevated)
+  or cap (clean) the persistence term at empirical next-sample rates. Every adjustment is recorded and shown as a badge.
 - **Evaluation.** `scorecard.json.gz` stores every day's probabilities and labels since 2016; the Model check grades
   any window at any line, per model set. Three rulers (2026-09-26): **discharge days + samples** is primary (a discharge day
   is bad, an elevated sample in the week after confirms persistence, a clean sample is good, unsampled tail days are not graded,

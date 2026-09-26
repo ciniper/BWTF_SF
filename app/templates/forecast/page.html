@@ -217,6 +217,26 @@ let RISK_THRESHOLD = 0.5;   // "HIGH" — the line the model check scores hits a
 const ic = name => `<svg class="ic"><use href="#i-${name}"/></svg>`;
 const esc = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const badge = (kind, icon, label) => `<span class="badge ${kind}">${ic(icon)}${esc(label)}</span>`;
+// Live composition rules (src/models/live_rules.py): how a number moved and why.
+const RULE_BADGE = {
+    cso_onset:             a => ['danger', 'octagon-alert', 'discharge observed'],
+    cso_anchor_prev_day:   a => ['danger', 'octagon-alert', 'discharge observed (flag next day)'],
+    no_flag_downgrade:     a => ['muted', 'trending-down', `no CSO flag · ${pct(a.from)}% → ${pct(a.to)}%`],
+    sample_elevated_floor: a => ['danger', 'microscope', `sample elevated · held ≥ ${pct(a.to)}%`],
+    sample_dry_floor:      a => ['warn', 'microscope', `sample elevated, dry weather · ≥ ${pct(a.to)}%`],
+    sample_clean_cap:      a => ['ok', 'microscope', `sample clean · ${pct(a.from)}% → ${pct(a.to)}%`],
+    flag_hold:             a => ['danger', 'octagon-alert', `CSO flag still up · held ≥ ${pct(a.to)}%`],
+};
+const ruleBadge = (rule, a) => { const f = RULE_BADGE[rule]; return f ? badge(...f(a || {})) : ''; };
+// every live-rule badge that touches a zone: its basins' stage-1 rules and its groups' stage-2 rules
+function liveBadgesZone(day, zk) {
+    const live = day.live_rules || {}; const out = [];
+    const groups = ZONE_GROUPS[zk] || [];
+    const basins = new Set(groups.map(g => Object.keys(ZONE_GROUPS_BY_BASIN).find(b => (ZONE_GROUPS_BY_BASIN[b] || []).includes(g))).filter(Boolean));
+    for (const b of basins) { const a = (live.stage1 || {})[b]; if (a) out.push(ruleBadge(a.rule, a)); }
+    for (const g of groups) { const a = (live.groups || {})[g]; if (a) out.push(ruleBadge(a.rule, a)); }
+    return out.join('');
+}
 const pct = p => Math.round((p || 0) * 100);
 const fmtIn = v => (v == null || isNaN(v)) ? '—' : Number(v).toFixed(2) + '"';
 
@@ -439,25 +459,28 @@ function renderPredictionCards(day, actual) {
                 <div class="basin-bar"><div class="basin-bar-fill" style="width:${pct(p)}%;background:${r.color}"></div></div>
                 <div class="basin-detail">${ic('droplets')} ${fmtIn(zoneRain(day, zk))} today · 3d ${fmtIn(day.rain_3d_cum)} · ${esc(z.gauge)} gauge</div>
                 <div class="zone-stations">${z.stations.map(esc).join(' · ')}</div>
+                ${liveBadgesZone(day, zk) ? '<div class="status-line">' + liveBadgesZone(day, zk) + '</div>' : ''}
                 ${actual ? verdictLine(p, actual.zones && actual.zones[zk]) : ''}`;
             el.appendChild(card);
         }
     } else {
-        const dp = day.discharge_probs || {};
+        const dp = day.discharge_probs_live || day.discharge_probs || {};
+        const live = day.live_rules || {};
         for (const key of BASIN_ORDER) {
             if (!(key in (day.predictions || {}))) continue;
             const meta = BASIN_META[key] || { icon: 'map-pin', name: key, desc: '' };
             const p = day.predictions[key], r = riskInfo(p);
             const groups = Object.entries(day.impact_groups || {}).filter(([g]) => (ZONE_GROUPS_BY_BASIN[key] || []).includes(g));
-            const observed = (day.observed_cso || []).includes(key);
+            const s1 = (live.stage1 || {})[key];
+            const observed = (day.observed_cso || []).includes(key) && !s1;   // the rule badge says it when the rules ran
             const card = document.createElement('div');
             card.className = 'basin-card'; card.style.borderLeftColor = r.color;
             card.innerHTML = `
                 <div class="basin-name">${ic(meta.icon)} ${esc(meta.name)}</div>
                 <div class="basin-prob" style="color:${r.color}">${pct(p)}%</div>
                 <div class="basin-bar"><div class="basin-bar-fill" style="width:${pct(p)}%;background:${r.color}"></div></div>
-                <div class="basin-detail">${esc(meta.desc)}${key !== 'citywide' && dp[key] != null ? ' · same-day discharge ' + pct(dp[key]) + '%' : ''}${observed ? ' · ' + badge('danger', 'octagon-alert', 'discharge observed') : ''}</div>
-                ${groups.length ? '<div class="status-line">' + groups.map(([g, v]) => `<span class="badge muted">${esc(g)} ${pct(v)}%</span>`).join('') + '</div>' : ''}`;
+                <div class="basin-detail">${esc(meta.desc)}${key !== 'citywide' && dp[key] != null ? ' · same-day discharge ' + pct(dp[key]) + '%' : ''}${observed ? ' · ' + badge('danger', 'octagon-alert', 'discharge observed') : ''}${s1 ? ' · ' + ruleBadge(s1.rule, s1) : ''}</div>
+                ${groups.length ? '<div class="status-line">' + groups.map(([g, v]) => `<span class="badge muted">${esc(g)} ${pct(v)}%</span>` + ((live.groups || {})[g] ? ruleBadge(live.groups[g].rule, live.groups[g]) : '')).join('') + '</div>' : ''}`;
             el.appendChild(card);
         }
     }
