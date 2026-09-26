@@ -139,8 +139,8 @@ precautionary, and the East is often dirty with no posting and no rain.
 - **Live.** Past complete days use the two NOAA gauges (with the outage rule); today uses NWS hours so far plus the
   ECMWF forecast; forecast days use ECMWF. Live corrections (`live_v1`, `src/models/live_rules.py`, since 2026-09-26) then adjust the
   composition from what was observed: a watcher CSO onset sets that basin-day to 1 (and anchors the day before), an
-  expected discharge the feed never flagged is downgraded by Bayes with a conservative recall (bayside only, while the
-  watcher is ticking), a flag still up holds the beach at the large-event curve, and published samples floor (elevated)
+  expected discharge the feed never flagged is downgraded by Bayes with a recall that grows with each quiet day after it
+  (0.60 the morning after, 0.87, then 0.95; bayside only, while the watcher is ticking), a flag still up holds the beach at the large-event curve, and published samples floor (elevated)
   or cap (clean) the persistence term at empirical next-sample rates. Every adjustment is recorded and shown as a badge; a page toggle shows the model alone, and the env var `LIVE_CORRECTIONS` or the `watcher_config` key `live_corrections` turns the layer off server-side. Not a third stage: edits before and after stage 2.
 - **Evaluation.** `scorecard.json.gz` stores every day's probabilities and labels since 2016; the Model check grades
   any window at any line, per model set. Three rulers (2026-09-26): **discharge days + samples** is primary (a discharge day

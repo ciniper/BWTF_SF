@@ -1,8 +1,8 @@
 # Live corrections (live_v1) — what observed CSO flags and bacteria results do to the forecast, and how to grade it
 
 **Status (2026-09-26, later the same day): §2–§4 are built as `src/models/live_rules.py` (version `live_v1`, "live corrections" — not a third stage: edits before and after stage 2), wired
-into `live_dashboard` for the live forecast and the live-mode hindcast. Chase chose the CONSERVATIVE downgrade:
-r = 0.60 for the bayside basins, none for the Westside. Each day's payload carries a `live_corrections` block (every
+into `live_dashboard` for the live forecast and the live-mode hindcast. The downgrade is a schedule by quiet days (Chase):
+R = 0.60 the morning after, 0.87 after one quiet day, 0.95 after two, bayside basins only, none for the Westside. Each day's payload carries a `live_corrections` block (every
 rule that fired, from → to) beside `plain` (the model alone), and the page shows them as badges with a
 "Live corrections v1: on/off" toggle; the server switch is the env var `LIVE_CORRECTIONS` or the `watcher_config`
 key `live_corrections` ("off"). The old observed-CSO override is now the `cso_onset` rule, so "off" is the pure two-stage model. The downgrade is gated on the watcher being live and
@@ -65,27 +65,28 @@ a single clean bottle is weak evidence of recovery there. On the Westside an ele
 
 ## 3. Downgrade when an expected CSO did not appear
 
-Bayes on the day after: if the model said p and by the end of D+1 the feed has shown no onset for the basin,
+Bayes, with a recall that grows with every quiet day observed after the storm day (Chase, 2026-09-26: conservative
+the morning after; "if there are two quiet days after the big storm there should be a more significant downgrade —
+farther from the event, more proof there really was no CSO"). At the start of day T, a past day D the model put at
+p, with no onset for the basin on D … min(T−1, D+2), becomes
 
-    p' = p · (1 − r) / ( p · (1 − r) + (1 − p) ),   r = P(flag by end of D+1 | a discharge on D)
+    p' = p · (1 − R[k]) / ( p · (1 − R[k]) + (1 − p) ),   k = quiet days fully observed after D = (T − D) − 1
 
-| model p | p' with r = 0.87 (archive, bayside) | p' with r = 0.60 (conservative) |
-|---|---|---|
-| 0.9 | 0.54 | 0.78 |
-| 0.7 | 0.23 | 0.48 |
-| 0.5 | 0.12 | 0.29 |
-| 0.3 | 0.05 | 0.15 |
+| quiet days after D | R[k] | source | p = 0.9 → | 0.7 → | 0.5 → | 0.3 → |
+|---|---|---|---|---|---|---|
+| 0 (the morning after) | **0.60** | conservative — the flag can lag | 0.78 | 0.48 | 0.29 | 0.15 |
+| 1 | **0.87** | the archive: 13 of 15 bayside discharge days flagged same or next day | 0.54 | 0.23 | 0.12 | 0.05 |
+| 2 or more | **0.95** | assumed — the archive's two misses were never flagged at all; to be measured in the watcher era | 0.31 | 0.10 | 0.05 | 0.02 |
 
-- **Bayside:** start at r = 0.87 but call it provisional — it rests on 15 discharge days from 2016-17 (Chase's
-  caveat). Re-estimate every quarter from the watcher's alert_log against the CIWQS refresh; the 2026-27 season
-  will give a second, independent r.
-- **Westside:** r is unmeasured (the archive's Westside flags cannot be checked against CIWQS before 2018) →
-  **no downgrade** until the watcher era measures it. The Feb 2026 Westside events will be the first test.
-- **Timing:** apply at the end of D+1, not on D — the flag lags a day. Until then the day keeps its model p.
-- **What it does downstream:** the false forecast's tail dissipates. A 0.7 Ocean Beach day contributes
-  0.7 × 0.54 = 0.38 to the next day's risk today; after the downgrade 0.23 × 0.54 = 0.12. This is the answer to
-  "shouldn't we dissipate risk after a high day with no discharge": yes, by the posterior, not to zero.
-- **Grading:** the "partial grading" idea — a downgraded day is scored at p', so a wrong downgrade still costs.
+- **Bayside only** (North Shore, Central, Southeast). **Westside:** recall unmeasured — the archive's Westside flags
+  cannot be checked against CIWQS before 2018 — so no downgrade until the watcher era measures it.
+- Only days the model actually called (p ≥ 0.15); tiny days are left alone.
+- An onset on D+1 cancels the downgrade of D (the discharge probably started on D; the anchor rule in §2 usually
+  already set D to 1).
+- **What it does downstream:** the false forecast's tail dissipates as the quiet days accumulate. A 0.7 Ocean-Beach-
+  sized day contributes 0.7 × 0.54 = 0.38 to the next morning's risk on the plain model; 0.26 the morning after
+  (R = 0.60); 0.12 the day after that; 0.06 with two quiet days behind it — on top of the impact table's own decay.
+- **Grading:** a downgraded day is scored at p', so a wrong downgrade still costs.
 
 ## 4. Bacteria results in the live cast
 

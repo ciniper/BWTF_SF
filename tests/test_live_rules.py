@@ -34,7 +34,8 @@ def test_bayes_downgrade_is_the_conservative_posterior():
     assert round(LR.bayes_downgrade(0.9, 0.6), 3) == 0.783
     assert round(LR.bayes_downgrade(0.7, 0.87), 2) == 0.23           # the archive figure, for reference
     assert LR.bayes_downgrade(0.7, 0.0) == 0.7 and LR.bayes_downgrade(1.0, 0.6) == 1.0 and LR.bayes_downgrade(0.0, 0.6) == 0.0
-    assert LR.RULES["downgrade"]["recall"] == {"westside": 0.0, "north_shore": 0.60, "central": 0.60, "southeast": 0.60}
+    assert LR.RULES["downgrade"]["recall_by_quiet_days"]["southeast"] == [0.60, 0.87, 0.95] and LR.RULES["downgrade"]["recall_by_quiet_days"]["westside"] == [0.0, 0.0, 0.0]
+    assert round(LR.bayes_downgrade(0.7, 0.95), 3) == 0.104 and round(LR.bayes_downgrade(0.5, 0.95), 3) == 0.048
 
 
 def test_stage1_onset_anchor_and_downgrade():
@@ -52,12 +53,23 @@ def test_stage1_onset_anchor_and_downgrade():
     assert p2[2]["southeast"] == 1.0 and notes[str(DATES[2])]["southeast"]["rule"] == "cso_anchor_prev_day"
     # … but not when it had nothing and it barely rained
     assert p2[1]["central"] == 0.05 and "central" not in notes.get(str(DATES[1]), {})
-    # no-flag downgrade: applies to days ≤ today − 2 in the bayside basins only
-    assert round(p2[4]["north_shore"], 3) == 0.375                          # 0.6 → 0.6·0.4/(0.24+0.4)
-    assert notes[str(DATES[4])]["north_shore"]["rule"] == "no_flag_downgrade"
+    # no-flag downgrade: a schedule by quiet days observed after the day, bayside basins only
+    assert round(p2[4]["north_shore"], 3) == 0.07                            # two quiet days observed → R = 0.95: 0.6·0.05/(0.03+0.4)
+    assert notes[str(DATES[4])]["north_shore"] == {"rule": "no_flag_downgrade", "from": 0.6, "to": 0.07, "quiet_days": 2}
     assert p2[0]["westside"] == 0.8 and "westside" not in notes.get(str(DATES[0]), {})   # Westside recall unmeasured → off
-    assert p2[6]["north_shore"] == 0.1 and str(DATES[6]) not in notes     # D+1 = today has not ended → not yet
+    assert p2[6]["north_shore"] == 0.1 and str(DATES[6]) not in notes     # under min_p 0.15: left alone
     assert p2[7]["north_shore"] == 0.1 and p2[8]["north_shore"] == 0.1     # today / forecast days: never
+    # the schedule itself: the morning after is conservative, one quiet day uses the archive recall, two or more 0.95
+    probs_s = _probs({(6, "central"): 0.7, (5, "central"): 0.7, (4, "central"): 0.7})
+    ps, _, ns = LR.adjust_stage1(probs_s, vols, DATES, {}, {}, {}, TODAY, watcher_from=D0, watcher_ok=True)
+    assert (round(ps[6]["central"], 3), ns[str(DATES[6])]["central"]["quiet_days"]) == (0.483, 0)   # yesterday: silence overnight only
+    assert (round(ps[5]["central"], 3), ns[str(DATES[5])]["central"]["quiet_days"]) == (0.233, 1)   # one full quiet day after
+    assert (round(ps[4]["central"], 3), ns[str(DATES[4])]["central"]["quiet_days"]) == (0.104, 2)   # two quiet days: 0.95
+    # an onset on the day after cancels the downgrade of the day before (the discharge likely started then)
+    ps2, _, ns2 = LR.adjust_stage1(probs_s, vols, DATES, {DATES[6]: {"central"}}, {}, {}, TODAY, watcher_from=D0, watcher_ok=True)
+    assert ps2[5]["central"] == 1.0 and ns2[str(DATES[5])]["central"]["rule"] == "cso_anchor_prev_day"
+    ps3, _, ns3 = LR.adjust_stage1(_probs({(5, "central"): 0.2, (6, "central"): 0.1}), vols, DATES, {DATES[6]: {"central"}}, {}, {}, TODAY, watcher_from=D0, watcher_ok=True)
+    assert ps3[5]["central"] == 0.2 and "central" not in ns3.get(str(DATES[5]), {})                # no anchor (0.2 < 0.25, no rain) and no downgrade either
     # a basin with an onset on D or D+1 is never downgraded
     assert str(DATES[2]) in notes and notes[str(DATES[2])].get("central", {}).get("rule") == "cso_onset"
     # the downgrade is off when the watcher is not live for that day, or not healthy now
@@ -153,7 +165,7 @@ def test_live_dashboard_wiring_is_the_identity_without_observations_and_moves_wi
     live = eng._live_context(frames, probs, vols, DATES, onsets, TODAY)
     assert live["probs"][6]["southeast"] == 1.0 and live["notes"][str(DATES[6])]["southeast"]["rule"] == "cso_onset"
     assert live["probs"][5]["southeast"] == 1.0 and live["notes"][str(DATES[5])]["southeast"]["rule"] == "cso_anchor_prev_day"   # 0.3" fell the day before (≥ 0.25")
-    assert round(live["probs"][4]["north_shore"], 3) == 0.375 and live["notes"][str(DATES[4])]["north_shore"]["rule"] == "no_flag_downgrade"
+    assert round(live["probs"][4]["north_shore"], 3) == 0.07 and live["notes"][str(DATES[4])]["north_shore"]["rule"] == "no_flag_downgrade"
     assert live["probs"][4]["westside"] == 0.9                       # Westside: recall unmeasured, never downgraded
     today = eng._day_payload(frames, 7, feats, probs, vols, DATES, onsets, live)
     rules = today["live_corrections"]
@@ -175,7 +187,7 @@ def test_live_dashboard_wiring_is_the_identity_without_observations_and_moves_wi
     assert today["predictions"]["southeast"] == today["impact_groups"]["Southeast"]      # the basin follows its (only) group
     assert today["zones"]["east"] == today["impact_groups"]["Southeast"] and today["zones"]["ocean"] == today["impact_groups"]["Ocean Beach"]
     past = eng._day_payload(frames, 4, feats, probs, vols, DATES, onsets, live)
-    assert past["discharge_probs"]["north_shore"] == 0.6 and round(past["discharge_probs_live"]["north_shore"], 3) == 0.375
+    assert past["discharge_probs"]["north_shore"] == 0.6 and round(past["discharge_probs_live"]["north_shore"], 3) == 0.07
     assert past["live_corrections"]["stage1"]["north_shore"]["rule"] == "no_flag_downgrade"
     # the switch: LIVE_CORRECTIONS=off → plain numbers, the block says so, nothing is fetched
     import os

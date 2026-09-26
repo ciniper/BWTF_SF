@@ -224,7 +224,7 @@ const badge = (kind, icon, label) => `<span class="badge ${kind}">${ic(icon)}${e
 const RULE_BADGE = {
     cso_onset:             a => ['danger', 'octagon-alert', 'discharge observed'],
     cso_anchor_prev_day:   a => ['danger', 'octagon-alert', 'discharge observed (flag next day)'],
-    no_flag_downgrade:     a => ['muted', 'trending-down', `no CSO flag · ${pct(a.from)}% → ${pct(a.to)}%`],
+    no_flag_downgrade:     a => ['muted', 'trending-down', `no CSO flag${a.quiet_days ? ` · ${a.quiet_days} quiet day${a.quiet_days === 1 ? '' : 's'} after` : ' overnight'} · ${pct(a.from)}% → ${pct(a.to)}%`],
     sample_elevated_floor: a => ['danger', 'microscope', `sample elevated · held ≥ ${pct(a.to)}%`],
     sample_dry_floor:      a => ['warn', 'microscope', `sample elevated, dry weather · ≥ ${pct(a.to)}%`],
     sample_clean_cap:      a => ['ok', 'microscope', `sample clean · ${pct(a.from)}% → ${pct(a.to)}%`],

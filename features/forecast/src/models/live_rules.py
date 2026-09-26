@@ -10,13 +10,17 @@ Stage 1 (per basin-day, before composition — ``adjust_stage1``):
   cso_anchor_prev_day     the feed's onset usually lands the day after the
                           filed discharge; when the day before had rain or a
                           real model probability, anchor it too → p = 1
-  no_flag_downgrade       an expected discharge the feed never flagged: Bayes
-                          on the day after, p' = p(1-r)/(p(1-r)+1-p), with the
-                          CONSERVATIVE recall r = 0.60 (Chase, 2026-09-26) for
-                          the bayside basins and none for the Westside, whose
-                          recall is unmeasured. Only while the watcher is live
-                          and healthy — absence of a flag is evidence only if
-                          someone was watching.
+  no_flag_downgrade       an expected discharge the feed never flagged: Bayes,
+                          p' = p(1-R)/(p(1-R)+1-p), where R grows with every
+                          quiet day observed after the storm day (Chase,
+                          2026-09-26): conservative the morning after (R = 0.60,
+                          silence through the storm day only), the archive's
+                          same-or-next-day recall after one quiet day (0.87),
+                          and 0.95 after two or more — farther from the event,
+                          more proof there was no CSO. Bayside basins only; the
+                          Westside's recall is unmeasured. Only while the
+                          watcher is live and healthy — absence of a flag is
+                          evidence only if someone was watching.
   large_when_flag_persists  a flag up for ≥ 2 days means a large event: the
                           onset day's volume is raised to the large curve
 
@@ -61,10 +65,13 @@ RULES = {
         "hold_max_days": 7,
     },
     "downgrade": {
-        # P(flag by the end of D+1 | a discharge on D). Archive estimate 0.87 on
-        # 15 bayside days (2016-17); 0.60 is the conservative choice. Westside: unmeasured → off.
-        "recall": {"westside": 0.0, "north_shore": 0.60, "central": 0.60, "southeast": 0.60},
-        "settle_days": 1,              # apply once D+1 has ended (the flag lags a day)
+        # R[k] = P(the feed has flagged a real discharge on D by the end of day D+k). Index k = quiet days fully
+        # observed after D: 0 = the morning after (silence through D only — conservative, the flag can lag),
+        # 1 = the archive's same-or-next-day recall (13 of 15 bayside days, 2016-17), 2+ = assumed 0.95 (the
+        # archive's two misses were never flagged at all; to be measured in the watcher era). Westside: unmeasured → off.
+        "recall_by_quiet_days": {"westside": [0.0, 0.0, 0.0], "north_shore": [0.60, 0.87, 0.95],
+                                 "central": [0.60, 0.87, 0.95], "southeast": [0.60, 0.87, 0.95]},
+        "min_p": 0.15,                 # only days the model actually called; tiny days are left alone
     },
     "samples": {
         "known_lag_days": 1,           # results reach DataSF / the feed a day or two after sampling
@@ -124,14 +131,18 @@ def adjust_stage1(probs: list, vols: list, dates: list, onsets: dict, flags_acti
                 probs2[j][b] = cso["onset_p"]
                 note(d, b, "cso_anchor_prev_day", p, cso["onset_p"])
                 continue
-            r = dg["recall"].get(b, 0.0)
-            if (r > 0.0 and watcher_ok and watcher_from is not None and d >= watcher_from
-                    and d + timedelta(days=dg["settle_days"]) < today
-                    and b not in onsets.get(d, ()) and b not in onsets.get(nxt, ())):
-                p2 = bayes_downgrade(p, r)
-                if abs(p2 - p) >= 0.0005:
-                    probs2[j][b] = round(p2, 4)
-                    note(d, b, "no_flag_downgrade", p, p2)
+            sched = dg["recall_by_quiet_days"].get(b) or []
+            quiet = (today - d).days - 1          # quiet days fully observed after d (today itself is not over)
+            if (sched and quiet >= 0 and p >= dg["min_p"] and watcher_ok and watcher_from is not None and d >= watcher_from
+                    and not any(b in onsets.get(d + timedelta(days=k), ()) for k in range(0, min(quiet, len(sched) - 1) + 2))):
+                k = min(quiet, len(sched) - 1)
+                r = sched[k]
+                if r > 0.0:
+                    p2 = bayes_downgrade(p, r)
+                    if abs(p2 - p) >= 0.0005:
+                        probs2[j][b] = round(p2, 4)
+                        note(d, b, "no_flag_downgrade", p, p2)
+                        notes[str(d)][b]["quiet_days"] = k
     return probs2, vols2, notes
 
 

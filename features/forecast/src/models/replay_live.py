@@ -73,7 +73,7 @@ def variants() -> dict:
     """{name: rules} — the rule sets to replay."""
     full = copy.deepcopy(LR.RULES)
     nodg = copy.deepcopy(full)
-    nodg["downgrade"]["recall"] = {b: 0.0 for b in nodg["downgrade"]["recall"]}
+    nodg["downgrade"]["recall_by_quiet_days"] = {b: [0.0] * 3 for b in nodg["downgrade"]["recall_by_quiet_days"]}
     return {"live_v1": full, "no_downgrade": nodg, "no_samples": full, "cso_flags_only": nodg}
 
 
@@ -305,7 +305,7 @@ def render_html(res: dict) -> str:
 <style>{css} tr.best td{{background:#e0f0ea}}</style></head><body><div class="wrap">
 <header><h1>Live corrections replay: live_v1 vs the model alone</h1>
 <p class="sub">Every day of the era recomposed with only what was known by the <b>end of the day before</b> — the start-of-day forecast — the served stage-1 probabilities, the feed's CSO onsets and flag days, samples published a day later — through <code>src/models/live_rules.py</code> exactly as serving does, then graded on the Model check's three rulers. A discharge day is never credited for its own flag; the corrections are judged on the tail they shape. Cost = false alarms + {WFN} × misses.</p>
-<div class="meta"><span>era {esc(res["era"][0])} → {esc(res["era"][1])} ({v["plain"]["n_days"]} days)</span><span>{res["flag_days"]} flag basin-days · {res["onset_days"]} onset basin-days ({esc(", ".join(res["onset_basins"]))})</span><span>self-check: plain recomposition vs stored risks, worst Δ {res["self_check_worst_delta"]}</span><span>downgrade recall {esc(json.dumps(r["downgrade"]["recall"]))}</span></div></header>
+<div class="meta"><span>era {esc(res["era"][0])} → {esc(res["era"][1])} ({v["plain"]["n_days"]} days)</span><span>{res["flag_days"]} flag basin-days · {res["onset_days"]} onset basin-days ({esc(", ".join(res["onset_basins"]))})</span><span>self-check: plain recomposition vs stored risks, worst Δ {res["self_check_worst_delta"]}</span><span>downgrade recall by quiet days {esc(json.dumps(r["downgrade"]["recall_by_quiet_days"]))}</span></div></header>
 <section><h2>Read this first</h2>
 <p class="lead">The only era with feed-flag data today is the 2016-17 Poo Bot archive. Its stage-1 probabilities are <b>in-sample</b> (the served models trained on these seasons), so every variant is flattered by the same amount — read the difference between rows, not the rows. <b>Read the bayside subtotal as the clean comparison:</b> North Shore and East labels come from CIWQS, independent of the feed. The Westside has no CIWQS per-event records before 2018, so its discharge labels in this era <i>are</i> the archive's feed onsets — the onset rule catches them by construction and that column is marked circular (the sample part of the primary ruler is still independent there). Snapshots came twice a day, so a flag that came and went between them is missed. The watcher era (Aug 2026 →) joins this page once the hindcast artifact is rescored past it.</p>
 <p class="lead">Variants: <b>plain</b> = the two-stage model alone · <b>live_v1</b> = every rule · <b>no_downgrade</b> = live_v1 with the no-flag downgrade off · <b>no_samples</b> = live_v1 without the sample floors and caps · <b>cso_flags_only</b> = onset, anchor, large volume and flag hold only.</p></section>

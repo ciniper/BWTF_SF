@@ -27,13 +27,29 @@
    "hold_max_days": 7
   },
   "downgrade": {
-   "recall": {
-    "westside": 0.0,
-    "north_shore": 0.6,
-    "central": 0.6,
-    "southeast": 0.6
+   "recall_by_quiet_days": {
+    "westside": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "north_shore": [
+     0.6,
+     0.87,
+     0.95
+    ],
+    "central": [
+     0.6,
+     0.87,
+     0.95
+    ],
+    "southeast": [
+     0.6,
+     0.87,
+     0.95
+    ]
    },
-   "settle_days": 1
+   "min_p": 0.15
   },
   "samples": {
    "known_lag_days": 1,
@@ -894,8 +910,8 @@
    "days_changed": {
     "ocean": 32,
     "baker_china": 26,
-    "north": 22,
-    "east": 69
+    "north": 25,
+    "east": 70
    },
    "n_days": 298
   },
@@ -1732,8 +1748,8 @@
    "days_changed": {
     "ocean": 33,
     "baker_china": 15,
-    "north": 11,
-    "east": 46
+    "north": 14,
+    "east": 49
    },
    "n_days": 298
   },
