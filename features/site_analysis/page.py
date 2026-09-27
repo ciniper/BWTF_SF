@@ -6,9 +6,13 @@ expand testing to X?") from DataSF's beach lab results (dataset v3fv-x3ux —
 the SFPUC shoreline monitoring program's published Enterococcus/coliform
 counts, ~weekly per station since Jul 2020).
 
-Standard: California's single-sample maximum for Enterococcus, 104 MPN/100mL
-(with 36 as the caution tier) — the same standard BWTF's own grading and the
-city's beach postings use, so numbers here line up with the other pages.
+Standard: by default California's single-sample maximum for Enterococcus,
+104 MPN/100mL (with 36 as the caution tier) — what BWTF's own grading uses,
+so numbers here line up with the other pages. A "Standard" toggle
+(?indicator=) regrades the same samples on fecal coliform, total coliform, or
+ANY — the state posting rule (Title 17 §7958): bad when any of the three is
+at or over its limit, the total-coliform limit falling to 1,000 when fecal is
+over 10% of total. The city posts on any of the three (Chase, 2026-09-27).
 
 Two sampling views (?mode=):
   * ``weekly`` (default) — first sample of each site-week only. The city's
@@ -52,12 +56,21 @@ from shared.stations import STATIONS as _CANONICAL_STATIONS
 from shared.datasf import BEACH_SAMPLES_URL  # noqa: E402
 from shared.standards import (  # noqa: E402
     ENTERO_CAUTION, GEOMETRIC_MEAN_MIN_SAMPLES, GEOMETRIC_MEAN_WINDOW_DAYS, STANDARDS, parse_result,
+    single_sample_max,
 )
 
 SOCRATA_URL = BEACH_SAMPLES_URL  # shared/datasf.py
 ANALYTE = "ENTERO"
 SSM = STANDARDS["ENTERO"]["single_sample_max"]   # CA single-sample maximum, Enterococcus (shared/standards.py)
 CAUTION = ENTERO_CAUTION                        # BWTF/state caution tier
+# The standards the page can grade on (the "Standard" toggle). The three
+# indicators are the ones the state posting rule lists for marine water; "ANY"
+# is that rule itself. E. coli is left out: the rule does not use it for ocean
+# and bay water and the city reports it for few shoreline samples.
+POSTING_INDICATORS = ("ENTERO", "COLI_FECAL", "COLI_TOTAL")
+INDICATORS = {code: STANDARDS[code]["description"] for code in POSTING_INDICATORS}
+INDICATORS["ANY"] = "All (any over)"
+DEFAULT_INDICATOR = ANALYTE
 ROUTINE_MIN = 300  # fewer full-record samples than this = sporadic/reactive
 WET_MONTHS = {11, 12, 1, 2, 3, 4}
 DATASET_FLOOR = "2020-07-27"  # the city publishes nothing earlier
@@ -76,12 +89,13 @@ STATIONS = {
 
 
 def _fetch_rows() -> list[dict]:
-    """All ENTERO rows from DataSF (paged; currently ~5k of 21k total rows)."""
+    """All rows for the three posting indicators from DataSF (paged; ~20k rows)."""
     rows, offset = [], 0
+    where = "analyte in (" + ",".join(f"'{a}'" for a in POSTING_INDICATORS) + ")"
     while True:
         batch = requests.get(SOCRATA_URL, params={
             "$limit": 50000, "$offset": offset, "$order": ":id",
-            "analyte": ANALYTE,
+            "$where": where,
         }, timeout=30).json()
         rows.extend(batch)
         if len(batch) < 50000:
@@ -97,16 +111,50 @@ def _value(raw) -> float | None:
 
 
 def _parse_rows(rows: list[dict]) -> dict[str, list]:
-    """rows -> {station id: [(date, value)] sorted by date}."""
-    samples = defaultdict(list)
+    """rows -> {station id: [(sample time, {analyte: value})] sorted by time}:
+    one entry per station and sample time holding every indicator measured
+    then, so the total-coliform ratio rule can see the same sample's fecal
+    result. A repeated (station, time, analyte) keeps the higher value — an
+    exceedance must survive the merge."""
+    by_key: dict = defaultdict(dict)
     for r in rows:
-        sid, v = r.get("source"), _value(r.get("data"))
-        if sid not in STATIONS or v is None or not r.get("sample_date"):
+        sid, a, v = r.get("source"), r.get("analyte"), _value(r.get("data"))
+        if sid not in STATIONS or a not in POSTING_INDICATORS or v is None or not r.get("sample_date"):
             continue
-        samples[sid].append((datetime.fromisoformat(r["sample_date"][:19]), v))
+        d = datetime.fromisoformat(r["sample_date"][:19])
+        by_key[(sid, d)][a] = max(v, by_key[(sid, d)].get(a, v))
+    samples = defaultdict(list)
+    for (sid, d), vals in by_key.items():
+        samples[sid].append((d, vals))
     for pairs in samples.values():
-        pairs.sort()
+        pairs.sort(key=lambda p: p[0])
     return samples
+
+
+def _over(indicator: str, vals: dict) -> bool | None:
+    """Is one sample "bad" under ``indicator``? None = that indicator was not
+    measured in the sample (it then counts for nothing). Single indicators:
+    at or over their single-sample limit, total coliform's falling to the
+    ratio limit when the same sample's fecal share is over the threshold.
+    ANY: bad when any measured indicator is."""
+    if indicator == "ANY":
+        flags = [f for f in (_over(a, vals) for a in POSTING_INDICATORS) if f is not None]
+        return any(flags) if flags else None
+    v = vals.get(indicator)
+    if v is None:
+        return None
+    return v >= single_sample_max(indicator, vals.get("COLI_FECAL"), vals.get("COLI_TOTAL"))
+
+
+def bad_text(indicator: str) -> str:
+    """How the page words "bad" under ``indicator``, from shared/standards.py."""
+    total = STANDARDS["COLI_TOTAL"]
+    ratio = f"{total['single_sample_max_ratio']:,} when fecal coliform is over {total['ratio_threshold']:.0%} of total"
+    if indicator == "ANY":
+        return f"any of the three indicators at or over its state single-sample limit (total coliform's falls to {ratio})"
+    s = STANDARDS[indicator]
+    txt = f"{s['description']} at or over the state single-sample limit, {s['single_sample_max']:,} MPN/100mL"
+    return txt + (f" ({ratio})" if indicator == "COLI_TOTAL" else "")
 
 
 def _weekly_only(pairs: list[tuple]) -> list[tuple]:
@@ -122,20 +170,27 @@ def _weekly_only(pairs: list[tuple]) -> list[tuple]:
 
 
 def _compute(rows: list[dict], start: datetime | None, end: datetime | None,
-             weekly: bool) -> dict:
+             weekly: bool, indicator: str = DEFAULT_INDICATOR) -> dict:
     all_samples = _parse_rows(rows)
     newest = max((p[-1][0] for p in all_samples.values() if p), default=None)
 
-    def rate(pairs, pred):
-        hits = [p for p in pairs if pred(p)]
-        return {"n": len(hits), "pct": round(100 * sum(v >= SSM for _, v in hits) / len(hits), 1)} if hits else {"n": 0, "pct": None}
+    def pct(flags):
+        return round(100 * sum(flags) / len(flags), 1)
+
+    def rate(flagged, pred):
+        hits = [p for p in flagged if pred(p)]
+        return {"n": len(hits), "pct": pct([f for _, f in hits])} if hits else {"n": 0, "pct": None}
 
     sites = []
     for sid, full_pairs in all_samples.items():
         name, group, lat, lon = STATIONS[sid]
-        pairs = _weekly_only(full_pairs) if weekly else full_pairs
-        pairs = [(d, v) for d, v in pairs
+        # only samples that measured the chosen indicator take part (the
+        # weekly regime then picks the first such sample of each site-week)
+        measured = [(d, vals) for d, vals in full_pairs if _over(indicator, vals) is not None]
+        pairs = _weekly_only(measured) if weekly else measured
+        pairs = [(d, vals) for d, vals in pairs
                  if (start is None or d >= start) and (end is None or d <= end)]
+        flagged = [(d, _over(indicator, vals)) for d, vals in pairs]
         entry = {
             "id": sid, "name": name, "group": group, "lat": lat, "lon": lon,
             # sporadic flag is judged on the FULL record so short custom
@@ -144,23 +199,24 @@ def _compute(rows: list[dict], start: datetime | None, end: datetime | None,
             "samples": len(pairs),
         }
         if pairs:
-            values = [v for _, v in pairs]
-            n = len(values)
+            n = len(pairs)
             by_year = defaultdict(list)
-            for d, v in pairs:
-                by_year[d.year].append(v)
+            for d, f in flagged:
+                by_year[d.year].append(f)
+            # the value columns (median, worst reading) only mean something for one indicator
+            values = [vals[indicator] for _, vals in pairs] if indicator != "ANY" else []
+            entero = [vals["ENTERO"] for _, vals in pairs] if indicator == "ENTERO" else []
             entry.update({
                 "first": min(d for d, _ in pairs).strftime("%Y-%m-%d"),
                 "last": max(d for d, _ in pairs).strftime("%Y-%m-%d"),
-                "exceed_pct": round(100 * sum(v >= SSM for v in values) / n, 1),
-                "caution_pct": round(100 * sum(v >= CAUTION for v in values) / n, 1),
-                "median": sorted(values)[n // 2],
-                "max": max(values),
-                "wet": rate(pairs, lambda p: p[0].month in WET_MONTHS),
-                "dry": rate(pairs, lambda p: p[0].month not in WET_MONTHS),
-                "yearly": [{"year": y, "n": len(vs),
-                            "pct": round(100 * sum(v >= SSM for v in vs) / len(vs), 1)}
-                           for y, vs in sorted(by_year.items())],
+                "exceed_pct": pct([f for _, f in flagged]),
+                "caution_pct": pct([v >= CAUTION for v in entero]) if entero else None,
+                "median": sorted(values)[n // 2] if values else None,
+                "max": max(values) if values else None,
+                "wet": rate(flagged, lambda p: p[0].month in WET_MONTHS),
+                "dry": rate(flagged, lambda p: p[0].month not in WET_MONTHS),
+                "yearly": [{"year": y, "n": len(fs), "pct": pct(fs)}
+                           for y, fs in sorted(by_year.items())],
             })
         else:
             entry.update({"first": None, "last": None, "exceed_pct": None,
@@ -172,6 +228,7 @@ def _compute(rows: list[dict], start: datetime | None, end: datetime | None,
     sites.sort(key=lambda s: (not s["routine"], -(s["exceed_pct"] if s["exceed_pct"] is not None else -1)))
     return {
         "analyte": ANALYTE, "ssm": SSM, "caution": CAUTION,
+        "indicator": indicator, "indicator_label": INDICATORS[indicator], "bad_text": bad_text(indicator),
         "routine_min": ROUTINE_MIN,
         "mode": "weekly" if weekly else "all",
         "start": start.strftime("%Y-%m-%d") if start else None,
@@ -214,7 +271,10 @@ def handle_summary(query, body):
     if end:  # inclusive through end-of-day
         end = end + timedelta(days=1) - timedelta(seconds=1)
     weekly = (query.get("mode") or ["weekly"])[0] != "all"
-    payload = _compute(rows, start, end, weekly)
+    indicator = (query.get("indicator") or [DEFAULT_INDICATOR])[0].strip().upper()
+    if indicator not in INDICATORS:
+        indicator = DEFAULT_INDICATOR
+    payload = _compute(rows, start, end, weekly, indicator)
     if stale_note:
         payload["stale_note"] = stale_note
     return _json(payload)
@@ -240,7 +300,8 @@ def standards_context() -> dict:
             "ratio_pct": round(100 * s["ratio_threshold"]) if "ratio_threshold" in s else None,
         })
     return {
-        "standards": rows, "graded_on": ANALYTE, "graded_on_name": STANDARDS[ANALYTE]["description"],
+        "standards": rows, "graded_on": DEFAULT_INDICATOR, "graded_on_name": STANDARDS[DEFAULT_INDICATOR]["description"],
+        "indicators": [{"code": c, "label": l, "title": "bad = " + bad_text(c)} for c, l in INDICATORS.items()],
         "ssm": SSM, "caution": CAUTION,
         "gm_window_days": GEOMETRIC_MEAN_WINDOW_DAYS, "gm_min_samples": GEOMETRIC_MEAN_MIN_SAMPLES,
         "below_detection": int(parse_result("<10")), "over_range": int(parse_result(">24196")),

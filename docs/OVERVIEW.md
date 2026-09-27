@@ -69,7 +69,7 @@ fail the state standard; this project makes that information timely, searchable 
 | `/compare` | Source Comparison | Surfrider volunteer results vs the city's lab results, same beaches | BWTF GraphQL, DataSF |
 | `/bwtf` | BWTF Sample Log | Every volunteer sample with field conditions and notes | BWTF GraphQL |
 | `/cso-history` | CSO Event Timeline | Every posting / CSO our watcher detected, per station, with clears | Supabase `alert_log` |
-| `/analysis` | Site Report Card | How often each site fails the state standard; storm-season effect; trends | DataSF |
+| `/analysis` | Site Report Card | How often each site fails the state standard (Enterococcus by default; a Standard toggle regrades on fecal or total coliform, or on all three the way the city posts); storm-season effect; trends; the four AB 411 limits | DataSF |
 | `/discharges` | Discharge Ledger | Every reported discharge since 2016: outfall, duration, million gallons | CIWQS records (`data/csd/`) |
 | `/reports/<name>` | Analyses | Model explorers, stage 2 explorer, model analysis, live-corrections replays (archive feed, synthetic feed), leaderboard, training report | Static HTML under `reports/` |
 

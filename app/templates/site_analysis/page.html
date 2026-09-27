@@ -79,10 +79,11 @@
   <a class="back-to-dash" href="/">← Dashboard</a>
   <div class="hero">
     <h1>Site Report Card</h1>
-    <p>How often each shoreline monitoring site fails the state bacteria standard
-    ({{ graded_on_name }} single-sample max, {{ ssm }}&nbsp;MPN/100mL — the same standard BWTF grading
-    and the city's beach postings use), from the city's published lab results.
-    Click a site for its year-by-year trend. <a href="#standards" style="color:#fff">All four state limits are listed below.</a></p>
+    <p>How often each shoreline monitoring site fails the state bacteria standard, from the city's
+    published lab results. By default that is the {{ graded_on_name }} single-sample max,
+    {{ ssm }}&nbsp;MPN/100mL — the indicator BWTF measures; the <b>Standard</b> toggle regrades the same
+    samples on fecal or total coliform, or on all three the way the city posts (bad when any is over).
+    Click a site for its year-by-year trend. <a href="#standards" style="color:#fff">The limits are listed below.</a></p>
   </div>
 
   <div class="controls" id="groupBtns">
@@ -98,6 +99,10 @@
     <div class="seg-toggle" id="modeToggle">
       <button class="seg-btn active" data-mode="weekly" title="First sample of each site-week — the city's scheduled cadence, excluding follow-up resamples that cluster around contamination events">Weekly regime</button>
       <button class="seg-btn" data-mode="all" title="Every published sample, including post-exceedance resamples">All samples</button>
+    </div>
+    <span class="ctl-label">Standard:</span>
+    <div class="seg-toggle" id="stdToggle">
+      {% for i in indicators %}<button class="seg-btn{% if i.code == graded_on %} active{% endif %}" data-indicator="{{ i.code }}" title="{{ i.title }}">{{ i.label }}</button>{% endfor %}
     </div>
     <span class="ctl-label">Range:</span>
     <input type="date" id="startDate" min="2020-07-27">
@@ -119,7 +124,7 @@
       <thead><tr>
         <th>Site</th>
         <th class="barcell" id="mainCol">% bad — selected range</th>
-        <th class="num">caution (≥{{ caution }})</th>
+        <th class="num cautioncol">caution (≥{{ caution }})</th>
         <th class="num">wet season</th>
         <th class="num">dry season</th>
         <th class="num">samples</th>
@@ -130,7 +135,8 @@
 
   <div class="notes">
     <h2>Reading these numbers</h2>
-    <b>"Bad" = a sample at or over the state single-sample limit</b> ({{ graded_on_name }} {{ ssm }} MPN/100mL; <a href="#standards">the standards</a>);
+    <b>"Bad" = <span id="badDef">{{ graded_on_name }} at or over the state single-sample limit, {{ ssm }} MPN/100mL</span></b>
+    (<a href="#standards">the standards</a>; the <b>Standard</b> toggle switches it);
     the wet season is November–April. The dataset begins 2020-07-27 — the city publishes nothing earlier.
     <br><br>
     <b>Weekly regime</b> keeps only the first sample of each site-week (the city's scheduled Monday
@@ -149,8 +155,10 @@
   <div class="notes" id="standards">
     <h2>The bacteria standards</h2>
     California's recreational-water limits (AB 411 / Ocean Plan), in MPN per 100 mL. This page grades on
-    <b>{{ graded_on_name }} alone</b> — the indicator the state, the city's beach postings and BWTF's own
-    grading all use for ocean and bay water — and shows <b>&ge;{{ caution }}</b> as a caution tier below the limit.
+    <b>{{ graded_on_name }} by default</b> — the indicator BWTF measures, and the one the newer federal criteria
+    use for marine water — with <b>&ge;{{ caution }}</b> as a caution tier below the limit. The <b>Standard</b> toggle
+    regrades on fecal coliform, total coliform, or <b>All (any over)</b>: the state posting rule, under which a
+    sample is over standard when any of the three is at or over its limit. The city posts beaches on any of the three.
     <table class="std">
       <thead><tr>
         <th>Indicator</th>
@@ -165,7 +173,7 @@
         <td class="num">{{ "{:,}".format(s.ssm) }}</td>
         <td class="num">{{ "{:,}".format(s.gm) }}</td>
         <td class="note">
-          {%- if s.code == graded_on %}What this page counts as "bad"; &ge;{{ caution }} is the caution tier.
+          {%- if s.code == graded_on %}The default standard here; &ge;{{ caution }} is the caution tier.
           {%- elif s.ratio_ssm %}Drops to {{ "{:,}".format(s.ratio_ssm) }} when fecal coliform is more than {{ s.ratio_pct }}% of total coliform in the same sample.
           {%- elif s.code == "COLI_E" %}The freshwater indicator; the city reports it for only a small share of shoreline samples.
           {%- else %}Reported with nearly every sample; also sets the total-coliform ratio rule.
@@ -179,7 +187,8 @@
     A geometric mean needs at least {{ gm_min_samples }} samples in {{ gm_window_days }} days, which the city's weekly cadence rarely gives,
     so every "bad" on this page is a single-sample exceedance.
     The alerts page and the forecast's sample labels flag a sample when <b>any</b> indicator is over its single-sample
-    max (ratio rule included), so a day can be "elevated" there on coliform alone while this page counts it clean.
+    max (ratio rule included) — the same as this page's <b>All (any over)</b> setting; on the default Enterococcus
+    setting a coliform-only day counts as clean here.
     Every number in this panel is read from <code>shared/standards.py</code>, the one home for these limits.
   </div>
   <div class="foot" id="foot">Source: DataSF “Beach Water Quality” lab results (SFPUC shoreline
@@ -188,7 +197,7 @@
 
 <script>
 let DATA = null, activeGroup = "";
-const STATE = { mode: "weekly", start: "", end: "" };
+const STATE = { mode: "weekly", indicator: "{{ graded_on }}", start: "", end: "" };
 
 // ─── Site map ────────────────────────────────────────────────────────────────
 let MAP = null, markerLayer = null;
@@ -222,7 +231,7 @@ function updateMap() {
     m.bindTooltip(shortName(s.name), {permanent: true, direction: "right",
                                       offset: [r > 8 ? r - 2 : 6, 0], className: "st-label"});
     m.bindPopup(`<b>${s.name}</b> (${s.group})<br>` +
-      (s.samples ? `${pctTxt(p)} of ${s.samples} samples ≥ ${DATA.ssm} MPN in this view<br>` +
+      (s.samples ? `${pctTxt(p)} of ${s.samples} samples bad in this view (${DATA.indicator_label})<br>` +
                    `wet ${pctTxt(s.wet.pct)} · dry ${pctTxt(s.dry.pct)}` +
                    (s.routine ? "" : "<br><i>sporadically sampled — not rankable</i>")
                  : "no samples in the selected range/mode"));
@@ -252,7 +261,7 @@ function render() {
     tr.innerHTML = `
       <td class="name">${s.name}${groupChip(s.group)}${s.routine ? "" : '<span class="chip sporadic">sporadic</span>'}</td>
       <td class="barcell">${barCell(s.exceed_pct, !s.routine)}</td>
-      <td class="num">${pctTxt(s.caution_pct)}</td>
+      <td class="num cautioncol">${pctTxt(s.caution_pct)}</td>
       <td class="num">${pctTxt(s.wet.pct)}</td>
       <td class="num">${pctTxt(s.dry.pct)}</td>
       <td class="num">${s.samples}</td>`;
@@ -262,8 +271,8 @@ function render() {
     detail.innerHTML = s.samples === 0
       ? `<td colspan="6"><p class="detail-meta">${s.name} — no samples in the selected range/mode.</p></td>`
       : `<td colspan="6">
-      <p class="detail-meta">${s.name} — ${s.first} → ${s.last} ·
-        median ${s.median} MPN · worst reading ${Math.round(s.max).toLocaleString()} MPN</p>
+      <p class="detail-meta">${s.name} — ${s.first} → ${s.last}${s.median === null ? "" :
+        ` · median ${s.median} MPN · worst reading ${Math.round(s.max).toLocaleString()} MPN`}</p>
       <div class="years">${s.yearly.map(y =>
         `<div class="yr"><b>${pctTxt(y.pct)}</b><span>${y.year} · ${y.n} samples</span></div>`).join("")}
       </div></td>`;
@@ -273,11 +282,14 @@ function render() {
     tb.appendChild(tr);
     tb.appendChild(detail);
   }
+  // the caution tier is an Enterococcus idea; hide the column under any other standard
+  const showCaution = DATA.indicator === "ENTERO";
+  document.querySelectorAll(".cautioncol").forEach(el => { el.style.display = showCaution ? "" : "none"; });
   updateMap();
 }
 
 async function load() {
-  const q = new URLSearchParams({ mode: STATE.mode });
+  const q = new URLSearchParams({ mode: STATE.mode, indicator: STATE.indicator });
   if (STATE.start) q.set("start", STATE.start);
   if (STATE.end) q.set("end", STATE.end);
   const resp = await fetch("/analysis/api/summary?" + q);
@@ -290,7 +302,8 @@ async function load() {
   document.getElementById("tbl").style.display = "";
   const rangeTxt = (DATA.start || DATA.dataset_floor) + " → " + (DATA.end || DATA.newest_sample);
   document.getElementById("mainCol").textContent =
-    "% bad — " + (STATE.mode === "weekly" ? "weekly regime" : "all samples");
+    "% bad — " + (STATE.mode === "weekly" ? "weekly regime" : "all samples") + " · " + DATA.indicator_label;
+  document.getElementById("badDef").textContent = DATA.bad_text;
   document.getElementById("metaLine").textContent =
     `${DATA.total_samples.toLocaleString()} samples · ${rangeTxt}` +
     (DATA.stale_note ? " · cached (" + DATA.stale_note + ")" : "");
@@ -313,8 +326,16 @@ document.getElementById("groupBtns").addEventListener("click", e => {
 document.getElementById("modeToggle").addEventListener("click", e => {
   const btn = e.target.closest(".seg-btn");
   if (!btn || btn.dataset.mode === STATE.mode) return;
-  document.querySelectorAll(".seg-btn").forEach(b => b.classList.toggle("active", b === btn));
+  document.querySelectorAll("#modeToggle .seg-btn").forEach(b => b.classList.toggle("active", b === btn));
   STATE.mode = btn.dataset.mode;
+  load();
+});
+
+document.getElementById("stdToggle").addEventListener("click", e => {
+  const btn = e.target.closest(".seg-btn");
+  if (!btn || btn.dataset.indicator === STATE.indicator) return;
+  document.querySelectorAll("#stdToggle .seg-btn").forEach(b => b.classList.toggle("active", b === btn));
+  STATE.indicator = btn.dataset.indicator;
   load();
 });
 
