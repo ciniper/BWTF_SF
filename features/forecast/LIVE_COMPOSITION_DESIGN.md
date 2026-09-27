@@ -6,7 +6,7 @@ R = 0.60 the morning after, 0.87 after one quiet day, 0.95 after two, bayside ba
 rule that fired, from → to) beside `plain` (the model alone), and the page shows them as badges with a
 "Live corrections v1: on/off" toggle; the server switch is the env var `LIVE_CORRECTIONS` or the `watcher_config`
 key `live_corrections` ("off"). The old observed-CSO override is now the `cso_onset` rule, so "off" is the pure two-stage model. The downgrade is gated on the watcher being live and
-ticking (`watcher_runtime`). §5, the replay, is built too: `src/models/replay_live.py` → `reports/2026-09_live_replay.html` (archive era 2016-17; the watcher era joins after the next rescore). Graded on the start-of-day forecast (a day never sees its own flag). Result on the bayside zones at 50%: the model alone caught 21 of 35 bad days for 1 false alarm (cost 29); live_v1 caught 32 of 35 for 7 (cost 13). At 25% the sample floors add false alarms (cost 22 → 34) while the CSO-flag rules alone hold at 16; the conservative downgrade changed one day. **Synthetic-feed replay (2026-09-27, `--synthetic` → `reports/2026-09_live_replay_synthetic.html`):** the filed discharge days as onsets over every out-of-sample day (Jul 2023 → Aug 2026, 1,144 days, 88 onset basin-days), degraded with the archive's rates (13% never flagged, 60% a day late), BeachWatch CSO postings as flag windows, mean of 5 draws. Primary ruler at 50%: model alone 129 of 182 bad days for 38 false alarms (cost 144) → live_v1 150 for 65 (cost 130; perfect feed 115); bayside 72 → 58; postings 311 → 257. The downgrade earns 2–7 points (6 fewer false alarms for 2 more misses at 50%). **At 25% the sample floors below 50% are the whole problem** (cost 147 → 207); with only floors ≥ 0.5 kept (the East's 0.80 tail floor) the 25% cost is 149 and the 50% result is unchanged — recommended change to live_v1's floors. Tests: `tests/test_live_rules.py`.**
+ticking (`watcher_runtime`). §5, the replay, is built too: `src/models/replay_live.py` → `reports/2026-09_live_replay.html` (archive era 2016-17; the watcher era joins after the next rescore). Graded on the start-of-day forecast (a day never sees its own flag). Result on the bayside zones at 50%: the model alone caught 21 of 35 bad days for 1 false alarm (cost 29); live_v1 caught 32 of 35 for 7 (cost 13). At 25% live_v1 costs 16 against the model's 22 (the sub-50% sample floors, since zeroed, had pushed it to 34); the conservative downgrade changed one day. **Synthetic-feed replay (2026-09-27, `--synthetic` → `reports/2026-09_live_replay_synthetic.html`):** the filed discharge days as onsets over every out-of-sample day (Jul 2023 → Aug 2026, 1,144 days, 88 onset basin-days), degraded with the archive's rates (13% never flagged, 60% a day late), BeachWatch CSO postings as flag windows, mean of 5 draws. Primary ruler at 50%: model alone 129 of 182 bad days for 38 false alarms (cost 144) → live_v1 150 for 65 (cost 130; perfect feed 115); bayside 72 → 58; postings 311 → 257. The downgrade earns 2–7 points (6 fewer false alarms for 2 more misses at 50%). **Sample floors below 50% zeroed (Chase, 2026-09-27):** they never changed a 50% call but turned 20% days into alarms at the 25% line (cost 147 → 207). The empirical rates stay in `live_rules.SAMPLE_RATES` as the evidence; `RULES` keeps a floor only where the rate is ≥ 0.5 (today the East's 0.80 tail floor) and every clean-sample cap. Re-run: at 50% nothing changes (synthetic 130, archive bayside 13); at 25% live_v1 costs 149 against the model's 147 (bayside 60 against 70). What is left at 25% is the Westside (90 against 77), where the downgrade is off and the onset and anchor rules only add. The `all_floors` replay variant keeps the old behaviour as the counterfactual. Tests: `tests/test_live_rules.py`.**
 
 *Design, 2026-09-26. It answers Chase's three questions (how much to upgrade on a
 confirmed CSO, how much to downgrade when an expected CSO did not appear, what a confirmed or clean sample
@@ -96,13 +96,17 @@ model's own composition resumes.
 
 - **Elevated sample at a group, in a discharge tail:** floor the group's risk at P(elevated next | elevated now)
   for that zone — East 80%, Ocean Beach 40%, North Shore 35%, Baker–China 14%. In the East an elevated bottle
-  keeps the zone red; on the Westside it barely moves it, which is what the samples say.
+  keeps the zone red; on the Westside it barely moves it, which is what the samples say. **Policy (Chase,
+  2026-09-27): a floor applies only where the rate is ≥ 0.5, so today the East's alone.** A 40% floor never
+  changes a 50% call but turns every 20% day into an alarm at the 25% line; both replays priced that at 60
+  points. The rates stay in `live_rules.SAMPLE_RATES`.
 - **Clean sample in a discharge tail:** cap the group's persistence term at P(elevated next | clean now) — East
   67%, Ocean Beach 42%, North Shore 67% (n=9, weak), Baker–China 36%. Do **not** zero the tail on one clean
   bottle. This departs from SFPUC practice (a clean sample lifts the posting); the East data say that practice
   is optimistic there.
 - **Elevated sample with no discharge in the prior week (dry weather):** the same floor at the dry-weather rate
-  (East 38%, Baker–China 20%, North Shore 16%, Ocean Beach 6%) for three days. This is the seed of the non-rain
+  (East 38%, Baker–China 20%, North Shore 16%, Ocean Beach 6%) for three days. Every rate is under 0.5, so
+  under the policy above this rule is off today; the rates are recorded. This is the seed of the non-rain
   model in TODO; it says "a dirty beach tends to stay dirty" and nothing about why.
 - **Clean sample, no recent discharge:** nothing to do.
 

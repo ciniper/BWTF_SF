@@ -27,13 +27,19 @@ Stage 1 (per basin-day, before composition — ``adjust_stage1``):
 Stage 2 (per group-day, after composition — ``adjust_groups``):
   sample_elevated_floor   an elevated sample in a discharge tail floors the
                           group's risk at the zone's empirical P(elevated next
-                          | elevated now) for the next-sample horizon
+                          | elevated now) for the next-sample horizon — ONLY
+                          where that rate is ≥ 0.5 (today: the East, 0.80).
+                          Floors below 0.5 never change a 50% call but turned
+                          20% days into alarms at the 25% line (both replays,
+                          2026-09-27), so they are zero = no floor.
   sample_clean_cap        a clean sample in a discharge tail caps the
                           PERSISTENCE term at P(elevated next | clean now) —
                           never zero: in the East a clean bottle is followed
                           by an elevated one two times in three
-  sample_dry_floor        an elevated sample with no recent discharge floors
-                          the risk at the dry-weather repeat rate
+  sample_dry_floor        an elevated sample with no recent discharge would
+                          floor the risk at the dry-weather repeat rate — every
+                          zone's is under 0.5, so today this rule is off (the
+                          rates stay in SAMPLE_RATES for the record)
   flag_hold               while the feed's CSO flag stays up after the onset,
                           the group's risk holds at the large-event curve
 
@@ -54,6 +60,20 @@ VERSION = "live_v1"
 # Zone-level next-sample transition rates from the scorecard's sample record
 # (pairs of sampled days ≤ 3 days apart; "tail" = a discharge in the zone within
 # the prior 7 days). Fit 2026-09-26 by ``fit_sample_rates``; see the design doc.
+# These are the EVIDENCE; RULES["samples"] below is the POLICY made from them.
+SAMPLE_RATES = {
+    "floor_elevated_tail": {"ocean": 0.40, "baker_china": 0.14, "north": 0.35, "east": 0.80},
+    "cap_clean_tail":      {"ocean": 0.42, "baker_china": 0.36, "north": 0.67, "east": 0.67},
+    "floor_elevated_dry":  {"ocean": 0.06, "baker_china": 0.20, "north": 0.16, "east": 0.38},
+}
+FLOOR_MIN = 0.5   # a floor below the 50% line never changes a 50% call but hurts every lower line (Chase, 2026-09-27)
+
+
+def _policy_floors(rates: dict) -> dict:
+    """Floors at or above FLOOR_MIN; anything lower is zero = no floor."""
+    return {z: (r if r >= FLOOR_MIN else 0.0) for z, r in rates.items()}
+
+
 RULES = {
     "version": VERSION,
     "cso": {
@@ -79,9 +99,9 @@ RULES = {
         "tail_days": 7,
         "tail_min_p": 0.5,             # a sample day counts as "in a discharge tail" when an onset was
                                        # observed, or the (adjusted) basin probability reached this, within tail_days
-        "floor_elevated_tail": {"ocean": 0.40, "baker_china": 0.14, "north": 0.35, "east": 0.80},
-        "cap_clean_tail":      {"ocean": 0.42, "baker_china": 0.36, "north": 0.67, "east": 0.67},
-        "floor_elevated_dry":  {"ocean": 0.06, "baker_china": 0.20, "north": 0.16, "east": 0.38},
+        "floor_elevated_tail": _policy_floors(SAMPLE_RATES["floor_elevated_tail"]),   # {east: 0.80}, the rest off
+        "cap_clean_tail":      dict(SAMPLE_RATES["cap_clean_tail"]),                    # caps are kept everywhere
+        "floor_elevated_dry":  _policy_floors(SAMPLE_RATES["floor_elevated_dry"]),    # all under 0.5 → off
     },
 }
 
@@ -232,10 +252,13 @@ def fit_sample_rates(days: list, zone_groups: dict, max_gap_days: int = 3, tail_
 
 
 def rules_with_fitted_rates(rates: dict, rules: dict = RULES) -> dict:
-    """A copy of ``rules`` with the sample floors/caps replaced by ``fit_sample_rates`` output."""
+    """A copy of ``rules`` with the sample caps and floors rebuilt from
+    ``fit_sample_rates`` output, floors filtered by FLOOR_MIN as the policy says."""
     r = copy.deepcopy(rules)
     for zk, v in rates.items():
-        for key in ("floor_elevated_tail", "cap_clean_tail", "floor_elevated_dry"):
+        if v.get("cap_clean_tail") is not None:
+            r["samples"]["cap_clean_tail"][zk] = v["cap_clean_tail"]
+        for key in ("floor_elevated_tail", "floor_elevated_dry"):
             if v.get(key) is not None:
-                r["samples"][key][zk] = v[key]
+                r["samples"][key][zk] = v[key] if v[key] >= FLOOR_MIN else 0.0
     return r

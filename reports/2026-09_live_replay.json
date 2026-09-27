@@ -57,9 +57,9 @@
    "tail_days": 7,
    "tail_min_p": 0.5,
    "floor_elevated_tail": {
-    "ocean": 0.4,
-    "baker_china": 0.14,
-    "north": 0.35,
+    "ocean": 0.0,
+    "baker_china": 0.0,
+    "north": 0.0,
     "east": 0.8
    },
    "cap_clean_tail": {
@@ -69,10 +69,10 @@
     "east": 0.67
    },
    "floor_elevated_dry": {
-    "ocean": 0.06,
-    "baker_china": 0.2,
-    "north": 0.16,
-    "east": 0.38
+    "ocean": 0.0,
+    "baker_china": 0.0,
+    "north": 0.0,
+    "east": 0.0
    }
   }
  },
@@ -502,13 +502,13 @@
      "combined": {
       "tp": 40,
       "fn": 5,
-      "fp": 55,
-      "cost": 65,
+      "fp": 37,
+      "cost": 47,
       "per_zone": {
        "ocean": 15,
        "baker_china": 16,
        "north": 6,
-       "east": 28
+       "east": 10
       },
       "zones": {
        "ocean": {
@@ -567,28 +567,28 @@
        },
        "east": {
         "tp": 30,
-        "fp": 26,
+        "fp": 8,
         "fn": 1,
-        "tn": 199,
+        "tn": 217,
         "tp_discharge": 11,
         "tp_sample": 19,
         "fn_discharge": 1,
         "fn_sample": 0,
-        "fp_sample": 15,
-        "fp_quiet": 11,
-        "tn_sample": 24,
-        "tn_quiet": 175,
+        "fp_sample": 6,
+        "fp_quiet": 2,
+        "tn_sample": 33,
+        "tn_quiet": 184,
         "unknown_tail": 17,
         "unknown_uncovered": 11,
         "dry_elevated": 14,
-        "dry_flagged": 5
+        "dry_flagged": 1
        }
       },
       "bayside": {
        "tp": 33,
        "fn": 2,
-       "fp": 30,
-       "cost": 34
+       "fp": 12,
+       "cost": 16
       },
       "westside": {
        "tp": 7,
@@ -600,8 +600,8 @@
      "discharge": {
       "tp": 20,
       "fn": 5,
-      "fp": 115,
-      "cost": 125,
+      "fp": 94,
+      "cost": 104,
       "zones": {
        "ocean": {
         "tp": 4,
@@ -623,16 +623,16 @@
        },
        "east": {
         "tp": 11,
-        "fp": 66,
+        "fp": 45,
         "fn": 1,
-        "tn": 207
+        "tn": 228
        }
       },
       "bayside": {
        "tp": 14,
        "fn": 2,
-       "fp": 78,
-       "cost": 82
+       "fp": 57,
+       "cost": 61
       },
       "westside": {
        "tp": 6,
@@ -644,8 +644,8 @@
      "posted": {
       "tp": 55,
       "fn": 6,
-      "fp": 65,
-      "cost": 77,
+      "fp": 56,
+      "cost": 68,
       "zones": {
        "ocean": {
         "tp": 11,
@@ -679,20 +679,20 @@
        },
        "east": {
         "tp": 33,
-        "fp": 28,
+        "fp": 19,
         "fn": 1,
-        "tn": 210,
+        "tn": 219,
         "fp_after_discharge": 16,
         "other_posted": 26,
-        "other_flagged": 17,
+        "other_flagged": 4,
         "unknown": 0
        }
       },
       "bayside": {
        "tp": 36,
        "fn": 2,
-       "fp": 39,
-       "cost": 43
+       "fp": 30,
+       "cost": 34
       },
       "westside": {
        "tp": 19,
@@ -909,9 +909,9 @@
    },
    "days_changed": {
     "ocean": 32,
-    "baker_china": 26,
-    "north": 25,
-    "east": 70
+    "baker_china": 14,
+    "north": 14,
+    "east": 49
    },
    "n_days": 298
   },
@@ -921,13 +921,13 @@
      "combined": {
       "tp": 40,
       "fn": 5,
-      "fp": 55,
-      "cost": 65,
+      "fp": 37,
+      "cost": 47,
       "per_zone": {
        "ocean": 15,
        "baker_china": 16,
        "north": 6,
-       "east": 28
+       "east": 10
       },
       "zones": {
        "ocean": {
@@ -986,28 +986,28 @@
        },
        "east": {
         "tp": 30,
-        "fp": 26,
+        "fp": 8,
         "fn": 1,
-        "tn": 199,
+        "tn": 217,
         "tp_discharge": 11,
         "tp_sample": 19,
         "fn_discharge": 1,
         "fn_sample": 0,
-        "fp_sample": 15,
-        "fp_quiet": 11,
-        "tn_sample": 24,
-        "tn_quiet": 175,
+        "fp_sample": 6,
+        "fp_quiet": 2,
+        "tn_sample": 33,
+        "tn_quiet": 184,
         "unknown_tail": 17,
         "unknown_uncovered": 11,
         "dry_elevated": 14,
-        "dry_flagged": 5
+        "dry_flagged": 1
        }
       },
       "bayside": {
        "tp": 33,
        "fn": 2,
-       "fp": 30,
-       "cost": 34
+       "fp": 12,
+       "cost": 16
       },
       "westside": {
        "tp": 7,
@@ -1019,8 +1019,8 @@
      "discharge": {
       "tp": 20,
       "fn": 5,
-      "fp": 115,
-      "cost": 125,
+      "fp": 94,
+      "cost": 104,
       "zones": {
        "ocean": {
         "tp": 4,
@@ -1042,16 +1042,16 @@
        },
        "east": {
         "tp": 11,
-        "fp": 66,
+        "fp": 45,
         "fn": 1,
-        "tn": 207
+        "tn": 228
        }
       },
       "bayside": {
        "tp": 14,
        "fn": 2,
-       "fp": 78,
-       "cost": 82
+       "fp": 57,
+       "cost": 61
       },
       "westside": {
        "tp": 6,
@@ -1063,8 +1063,8 @@
      "posted": {
       "tp": 55,
       "fn": 6,
-      "fp": 65,
-      "cost": 77,
+      "fp": 56,
+      "cost": 68,
       "zones": {
        "ocean": {
         "tp": 11,
@@ -1098,20 +1098,20 @@
        },
        "east": {
         "tp": 33,
-        "fp": 28,
+        "fp": 19,
         "fn": 1,
-        "tn": 210,
+        "tn": 219,
         "fp_after_discharge": 16,
         "other_posted": 26,
-        "other_flagged": 17,
+        "other_flagged": 4,
         "unknown": 0
        }
       },
       "bayside": {
        "tp": 36,
        "fn": 2,
-       "fp": 39,
-       "cost": 43
+       "fp": 30,
+       "cost": 34
       },
       "westside": {
        "tp": 19,
@@ -1328,9 +1328,9 @@
    },
    "days_changed": {
     "ocean": 32,
-    "baker_china": 26,
-    "north": 21,
-    "east": 68
+    "baker_china": 14,
+    "north": 10,
+    "east": 46
    },
    "n_days": 298
   },
@@ -2172,19 +2172,19 @@
    },
    "n_days": 298
   },
-  "high_floors_only": {
+  "all_floors": {
    "grades": {
     "0.25": {
      "combined": {
       "tp": 40,
       "fn": 5,
-      "fp": 37,
-      "cost": 47,
+      "fp": 55,
+      "cost": 65,
       "per_zone": {
        "ocean": 15,
        "baker_china": 16,
        "north": 6,
-       "east": 10
+       "east": 28
       },
       "zones": {
        "ocean": {
@@ -2243,28 +2243,28 @@
        },
        "east": {
         "tp": 30,
-        "fp": 8,
+        "fp": 26,
         "fn": 1,
-        "tn": 217,
+        "tn": 199,
         "tp_discharge": 11,
         "tp_sample": 19,
         "fn_discharge": 1,
         "fn_sample": 0,
-        "fp_sample": 6,
-        "fp_quiet": 2,
-        "tn_sample": 33,
-        "tn_quiet": 184,
+        "fp_sample": 15,
+        "fp_quiet": 11,
+        "tn_sample": 24,
+        "tn_quiet": 175,
         "unknown_tail": 17,
         "unknown_uncovered": 11,
         "dry_elevated": 14,
-        "dry_flagged": 1
+        "dry_flagged": 5
        }
       },
       "bayside": {
        "tp": 33,
        "fn": 2,
-       "fp": 12,
-       "cost": 16
+       "fp": 30,
+       "cost": 34
       },
       "westside": {
        "tp": 7,
@@ -2276,8 +2276,8 @@
      "discharge": {
       "tp": 20,
       "fn": 5,
-      "fp": 94,
-      "cost": 104,
+      "fp": 115,
+      "cost": 125,
       "zones": {
        "ocean": {
         "tp": 4,
@@ -2299,16 +2299,16 @@
        },
        "east": {
         "tp": 11,
-        "fp": 45,
+        "fp": 66,
         "fn": 1,
-        "tn": 228
+        "tn": 207
        }
       },
       "bayside": {
        "tp": 14,
        "fn": 2,
-       "fp": 57,
-       "cost": 61
+       "fp": 78,
+       "cost": 82
       },
       "westside": {
        "tp": 6,
@@ -2320,8 +2320,8 @@
      "posted": {
       "tp": 55,
       "fn": 6,
-      "fp": 56,
-      "cost": 68,
+      "fp": 65,
+      "cost": 77,
       "zones": {
        "ocean": {
         "tp": 11,
@@ -2355,20 +2355,20 @@
        },
        "east": {
         "tp": 33,
-        "fp": 19,
+        "fp": 28,
         "fn": 1,
-        "tn": 219,
+        "tn": 210,
         "fp_after_discharge": 16,
         "other_posted": 26,
-        "other_flagged": 4,
+        "other_flagged": 17,
         "unknown": 0
        }
       },
       "bayside": {
        "tp": 36,
        "fn": 2,
-       "fp": 30,
-       "cost": 34
+       "fp": 39,
+       "cost": 43
       },
       "westside": {
        "tp": 19,
@@ -2585,9 +2585,9 @@
    },
    "days_changed": {
     "ocean": 32,
-    "baker_china": 14,
-    "north": 14,
-    "east": 49
+    "baker_china": 26,
+    "north": 25,
+    "east": 70
    },
    "n_days": 298
   }

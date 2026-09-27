@@ -93,12 +93,12 @@ def test_stage2_sample_rules_and_flag_hold():
     today_terms = {"southeast": 0.03, "westside": 0.1, "north_shore": 0.02}
     samples = {("Southeast", DATES[4]): True,        # elevated in a tail → floor at 0.80
                ("Ocean Beach", DATES[4]): False,      # clean in a tail → cap the persistence at 0.42, recombine with today's 0.1
-               ("Crissy", DATES[4]): True,            # elevated, no discharge near → dry floor 0.16
+               ("Crissy", DATES[4]): True,            # elevated, no discharge near → the dry floor is off (rate 0.16 < 0.5): nothing
                ("Baker-China", DATES[1]): True}       # too old (day 1, horizon 3) → ignored
     out, notes = LR.adjust_groups(risks, persist, today_terms, day, samples, probs_by_date, {}, {}, zone_of, basin_of, large)
     assert out["Southeast"] == 0.8 and notes["Southeast"]["rule"] == "sample_elevated_floor"
     assert out["Ocean Beach"] == round(1 - (1 - 0.42) * (1 - 0.1), 3) and notes["Ocean Beach"]["rule"] == "sample_clean_cap"
-    assert out["Crissy"] == 0.16 and notes["Crissy"]["rule"] == "sample_dry_floor"
+    assert out["Crissy"] == 0.10 and "Crissy" not in notes
     assert out["Baker-China"] == 0.20 and "Baker-China" not in notes
     # a sample whose result is not yet known (lag 1 day) does nothing
     out2, n2 = LR.adjust_groups(risks, persist, today_terms, day, {("Southeast", day): True}, probs_by_date, {}, {}, zone_of, basin_of, large)
@@ -123,9 +123,13 @@ def test_sample_rates_refit_reproduces_the_constants():
     rates = LR.fit_sample_rates(days, ZONE_GROUPS)
     for zk in ZONE_GROUPS:
         for key in ("floor_elevated_tail", "cap_clean_tail", "floor_elevated_dry"):
-            assert abs(rates[zk][key] - LR.RULES["samples"][key][zk]) < 0.011, (zk, key, rates[zk][key])
+            assert abs(rates[zk][key] - LR.SAMPLE_RATES[key][zk]) < 0.011, (zk, key, rates[zk][key])
+    # the policy: caps everywhere, floors only at or above 0.5 (the East's tail floor), the rest off
+    assert LR.RULES["samples"]["cap_clean_tail"] == LR.SAMPLE_RATES["cap_clean_tail"]
+    assert LR.RULES["samples"]["floor_elevated_tail"] == {"ocean": 0.0, "baker_china": 0.0, "north": 0.0, "east": 0.80}
+    assert LR.RULES["samples"]["floor_elevated_dry"] == {"ocean": 0.0, "baker_china": 0.0, "north": 0.0, "east": 0.0}
     fitted = LR.rules_with_fitted_rates(rates)
-    assert fitted["samples"]["floor_elevated_tail"]["east"] == rates["east"]["floor_elevated_tail"] and fitted is not LR.RULES
+    assert fitted["samples"]["floor_elevated_tail"]["east"] == rates["east"]["floor_elevated_tail"] and fitted["samples"]["floor_elevated_tail"]["ocean"] == 0.0 and fitted is not LR.RULES
 
 
 def test_live_dashboard_wiring_is_the_identity_without_observations_and_moves_with_them():
@@ -228,7 +232,7 @@ def test_replay_report_exists_and_its_self_check_held():
     # the synthetic-feed replay over the out-of-sample years: same shape, degraded variants are means over draws
     syn = json.loads((ROOT / "reports" / "2026-09_live_replay_synthetic.json").read_text())
     assert syn["self_check_worst_delta"] <= 0.001 and syn["cutoff"] == "start" and len(syn["feed"]["seeds"]) >= 3
-    assert {"plain", "live_v1", "live_v1_perfect_feed", "no_downgrade", "no_samples", "cso_flags_only", "high_floors_only"} <= set(syn["variants"])
+    assert {"plain", "live_v1", "live_v1_perfect_feed", "no_downgrade", "no_samples", "cso_flags_only", "all_floors"} <= set(syn["variants"])
     pl, lv, pf = (syn["variants"][k]["grades"]["0.5"]["combined"] for k in ("plain", "live_v1", "live_v1_perfect_feed"))
     assert lv["tp"] > pl["tp"] and pf["cost"] <= lv["cost"], (pl["tp"], lv["tp"], pf["cost"], lv["cost"])   # more confirmed-persistence days caught; the perfect feed is the bound
     assert syn["feed"]["draws"] and all(d["dropped"] > 0 and d["lagged"] > 0 for d in syn["feed"]["draws"])
