@@ -22,8 +22,13 @@ Two sampling views (?mode=):
     (Islais Creek: 30% all-samples vs 15.5% weekly). This is the honest
     week-by-week base rate — and the apples-to-apples view vs BWTF's own
     weekly volunteer sampling.
-  * ``all`` — every published sample, resamples included. Shows how often
-    *tests* failed, not how often *weeks* were bad.
+  * ``all`` — every published sample, resamples on later days included.
+    Shows how often *tests* failed, not how often *weeks* were bad.
+  In both views one station + sample time is ONE sample holding every
+  indicator measured then, and a repeated (station, time, analyte) keeps the
+  higher value (Chase, 2026-09-27): DataSF truncates sample_date to midnight,
+  so a routine sample and a storm resample on the same day collide, and 406 of
+  the 503 collisions are the Aug–Oct 2020 batches loaded twice.
 Plus a date range (?start=YYYY-MM-DD&end=YYYY-MM-DD; the dataset's floor is
 2020-07-27 — the city publishes nothing earlier).
 

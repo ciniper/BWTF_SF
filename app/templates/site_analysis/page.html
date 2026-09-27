@@ -141,10 +141,12 @@
     <br><br>
     <b>Weekly regime</b> keeps only the first sample of each site-week (the city's scheduled Monday
     cadence) — the true week-by-week base rate, and the apples-to-apples comparison with BWTF's own
-    weekly sampling. <b>All samples</b> adds the city's follow-up resamples, which cluster around
-    contamination events and can roughly double a site's rate (Islais Creek: ~16% weekly vs ~30%
+    weekly sampling. <b>All samples</b> adds the city's follow-up resamples on later days, which cluster
+    around contamination events and can roughly double a site's rate (Islais Creek: ~16% weekly vs ~30%
     all-samples over the full record) — it answers "how often did tests fail", not "how often were
-    weeks bad".
+    weeks bad". In both views a site's samples on one calendar day count once, at the day's worse value:
+    the city's dataset carries the date but not the time, so a routine sample and a storm-day resample
+    on the same date cannot be told apart, and the day is graded on its worst bottle.
     Sites marked <span class="chip sporadic">sporadic</span> are sampled only occasionally or
     reactively (often during storm events), so their rates aren't comparable to the
     weekly-sampled sites and they're listed separately at the bottom, unranked.
