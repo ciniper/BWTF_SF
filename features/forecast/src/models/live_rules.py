@@ -188,9 +188,11 @@ def adjust_groups(group_risks: dict, persist_risks: dict, today_terms: dict, day
             sd, elevated = max(cands)
             tail = in_tail(basin, sd, probs_by_date, onsets, rules)
             if elevated and tail:
-                apply(g, "sample_elevated_floor", max(out[g], s["floor_elevated_tail"][zone]))
+                if s["floor_elevated_tail"].get(zone, 0.0) > 0.0:   # a zero rate = no floor for that zone
+                    apply(g, "sample_elevated_floor", max(out[g], s["floor_elevated_tail"][zone]))
             elif elevated:
-                apply(g, "sample_dry_floor", max(out[g], s["floor_elevated_dry"][zone]))
+                if s["floor_elevated_dry"].get(zone, 0.0) > 0.0:
+                    apply(g, "sample_dry_floor", max(out[g], s["floor_elevated_dry"][zone]))
             elif tail:
                 persist = min(float(persist_risks.get(g, out[g])), s["cap_clean_tail"][zone])
                 today_p = float(today_terms.get(basin, 0.0) or 0.0)

@@ -225,6 +225,14 @@ def test_replay_report_exists_and_its_self_check_held():
     assert live["cost"] <= plain["cost"] and live["tp"] >= plain["tp"], (plain, live)
     assert res["variants"]["plain"]["days_changed"] == {z: 0 for z in res["variants"]["plain"]["days_changed"]}
     assert (ROOT / "reports" / "2026-09_live_replay.html").exists()
+    # the synthetic-feed replay over the out-of-sample years: same shape, degraded variants are means over draws
+    syn = json.loads((ROOT / "reports" / "2026-09_live_replay_synthetic.json").read_text())
+    assert syn["self_check_worst_delta"] <= 0.001 and syn["cutoff"] == "start" and len(syn["feed"]["seeds"]) >= 3
+    assert {"plain", "live_v1", "live_v1_perfect_feed", "no_downgrade", "no_samples", "cso_flags_only", "high_floors_only"} <= set(syn["variants"])
+    pl, lv, pf = (syn["variants"][k]["grades"]["0.5"]["combined"] for k in ("plain", "live_v1", "live_v1_perfect_feed"))
+    assert lv["tp"] > pl["tp"] and pf["cost"] <= lv["cost"], (pl["tp"], lv["tp"], pf["cost"], lv["cost"])   # more confirmed-persistence days caught; the perfect feed is the bound
+    assert syn["feed"]["draws"] and all(d["dropped"] > 0 and d["lagged"] > 0 for d in syn["feed"]["draws"])
+    assert (ROOT / "reports" / "2026-09_live_replay_synthetic.html").exists()
 
 
 if __name__ == "__main__":
