@@ -86,6 +86,14 @@
           .src--city{background:#eef1f3;color:#3f474d}
           .v-time{color:#8a949b;font-size:11px;margin-left:5px}
           tr.v-over td{background:#fff7f5}
+          tr.site-extra{display:none}
+          body.show-all tr.site-extra{display:table-row}
+          .v-open{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:999px;border:0;background:#0072BC;color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;margin:4px 0 8px}
+          .v-open:hover{background:#005f9e}
+          .v-graph{padding:7px 12px;border-radius:999px;border:2px solid #0072BC;background:#fff;color:#0072BC;cursor:pointer;font-size:12.5px;font-weight:700;font-family:inherit}
+          .v-graph:disabled{border-color:#d9e4e8;color:#98a3ab;cursor:default}
+          .v-sitelink{color:inherit;text-decoration:none;border-bottom:1px dotted #0072BC;cursor:pointer}
+          .v-sitelink:hover{color:#0072BC}
         </style><link rel="stylesheet" href="/static/brand.css">
 </head>
 <body>
@@ -109,13 +117,28 @@
     <div class="card"><div class="n">{{ max_gap_display }}</div><div class="l">Max sampling gap</div></div>
   </div>
 
-  <p class="hint"><svg class="ic"><use href="#i-chart-line"/></svg> Click any site below for its {{ analyte_label }} history — BWTF vs. SFPUC, over time.</p>
+  <p class="hint"><svg class="ic"><use href="#i-chart-line"/></svg> Click any site below for its {{ analyte_label }} history over the graph window — BWTF vs. SFPUC, over time.</p>
 
   <div class="bacteria-select">
     <label for="bacteria-type">Bacteria type</label>
-    <select id="bacteria-type" aria-label="Bacteria type" onchange="location.href='/compare?analyte='+this.value">
+    <select id="bacteria-type" aria-label="Bacteria type" onchange="changeAnalyte(this.value)">
       {{ analyte_options|safe }}
     </select>
+  </div>
+
+  <div class="v-controls" id="cmp-controls">
+    <span class="ctl-label">Sites</span>
+    <div class="seg-toggle" id="cmp-scope">
+      <button class="seg-btn{% if scope != 'all' %} active{% endif %}" data-scope="dual" title="The six beaches both Surfrider and the city sample">Dual sites</button>
+      <button class="seg-btn{% if scope == 'all' %} active{% endif %}" data-scope="all" title="Every city monitoring station ({{ extra_count }} more, sampled by the city only)">All sites</button>
+    </div>
+    <span class="ctl-label">Graph window</span>
+    <input type="date" id="h-start" aria-label="Graph start date" min="{{ dataset_floor }}">
+    <span style="color:#54576F">→</span>
+    <input type="date" id="h-end" aria-label="Graph end date">
+    <button class="v-preset h-preset" data-days="365">Last 12 mo</button>
+    <button class="v-preset h-preset" data-days="730">Last 2 yrs</button>
+    <button class="v-preset h-preset" data-days="">Full record</button>
   </div>
 
   {{ bwtf_note|safe }}
@@ -138,7 +161,9 @@
     shows both values. Enterococcus, fecal and total coliform are each graded against their own state single-sample
     limit (total coliform's falls to 1,000 when fecal is over 10% of total); <span class="v-val caution">amber</span> is
     Enterococcus in the caution tier, <span class="v-val over">red</span> is over the limit. Default: the six beaches
-    both programs sample, over the last year.</p>
+    both programs sample, over the last year. Click a site name in the table for its graph over the same range.</p>
+  <button class="v-open" id="v-open" type="button"><svg class="ic"><use href="#i-chart-line"/></svg> Open the sample viewer</button>
+  <div id="v-body" hidden>
   <div class="v-controls">
     <span class="ctl-label">Sites</span>
     <div class="seg-toggle" id="v-scope">
@@ -146,6 +171,7 @@
       <button class="seg-btn" data-scope="all" title="Every city monitoring station, plus BWTF-only sites">All sites</button>
     </div>
     <select id="v-site" aria-label="Site"><option value="">Any site in view</option></select>
+    <button class="v-graph" id="v-graph" disabled title="Pick a site, then graph it over the range below">Graph this site</button>
     <span class="ctl-label">Range</span>
     <input type="date" id="v-start" aria-label="Start date">
     <span style="color:#54576F">→</span>
@@ -162,6 +188,7 @@
     </tr></thead>
     <tbody id="v-rows"></tbody>
   </table>
+  </div>
 
   <p class="foot">
     Generated {{ generated }}. Both sources grade {{ analyte_label }} against the CA single-sample max ({{ limit }} MPN/100mL);
@@ -175,7 +202,35 @@
   </p>
 </div>
 <script>
-// ─── Sample viewer ──────────────────────────────────────────────────────────
+// ─── First section: which rows show, and the graph window ───────────────────
+var FLOOR = "{{ dataset_floor }}";
+var isoDaysAgo = function (days, end) { var e = end ? new Date(end) : new Date(); return new Date(e - days * 864e5).toISOString().slice(0, 10); };
+var HIST = { start: isoDaysAgo(365), end: new Date().toISOString().slice(0, 10) };
+var SCOPE = "{{ scope }}";
+document.body.classList.toggle("show-all", SCOPE === "all");
+(function () {
+  var hs = document.getElementById("h-start"), he = document.getElementById("h-end");
+  hs.value = HIST.start; he.value = HIST.end; he.max = HIST.end;
+  hs.addEventListener("change", function (e) { HIST.start = e.target.value; });
+  he.addEventListener("change", function (e) { HIST.end = e.target.value; });
+  document.querySelectorAll(".h-preset").forEach(function (btn) { btn.addEventListener("click", function () {
+    HIST.end = new Date().toISOString().slice(0, 10);
+    HIST.start = btn.dataset.days ? isoDaysAgo(+btn.dataset.days, HIST.end) : FLOOR;
+    hs.value = HIST.start; he.value = HIST.end;
+  }); });
+  document.getElementById("cmp-scope").addEventListener("click", function (e) {
+    var btn = e.target.closest(".seg-btn");
+    if (!btn) return;
+    SCOPE = btn.dataset.scope;
+    document.querySelectorAll("#cmp-scope .seg-btn").forEach(function (b) { b.classList.toggle("active", b === btn); });
+    document.body.classList.toggle("show-all", SCOPE === "all");
+    var u = new URL(location.href); if (SCOPE === "all") u.searchParams.set("scope", "all"); else u.searchParams.delete("scope");
+    history.replaceState(null, "", u);
+  });
+})();
+function changeAnalyte(v) { location.href = "/compare?analyte=" + encodeURIComponent(v) + (SCOPE === "all" ? "&scope=all" : ""); }
+
+// ─── Sample viewer (collapsed until opened; nothing is fetched before that) ──
 var VDATA = null;
 var VIEW = { scope: "dual", site: "", start: "", end: "" };
 var vEsc = function (s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); };
@@ -201,7 +256,7 @@ function vRender() {
     var c = r.cells || {};
     html += '<tr' + (r.over ? ' class="v-over"' : "") + '>' +
       '<td>' + r.date + (r.time ? '<span class="v-time">' + vEsc(r.time) + '</span>' : "") + '</td>' +
-      '<td><b>' + vEsc(r.site) + '</b>' + (r.n_samples > 1 ? '<span class="v-dup">' + r.n_samples + ' samples that day</span>' : "") + '</td>' +
+      '<td><b><a class="v-sitelink" data-key="' + vEsc(r.site_key) + '" data-name="' + vEsc(r.site) + '" title="Graph this site over the viewer range">' + vEsc(r.site) + '</a></b>' + (r.n_samples > 1 ? '<span class="v-dup">' + r.n_samples + ' samples that day</span>' : "") + '</td>' +
       '<td><span class="src ' + (r.source === "BWTF" ? "src--bwtf" : "src--city") + '">' + r.source + '</span></td>' +
       '<td class="num">' + vCell(c.ENTERO) + '</td>' +
       '<td class="num">' + vCell(c.COLI_FECAL) + '</td>' +
@@ -216,7 +271,10 @@ function vRender() {
     dbl + " double-sampled day" + (dbl === 1 ? "" : "s") + " · " + VDATA.start + " → " + VDATA.end;
   document.getElementById("v-table").style.display = rows.length ? "" : "none";
   if (!rows.length) document.getElementById("v-status").textContent += " · no samples in this view";
+  document.getElementById("v-graph").disabled = !VIEW.site;
 }
+function vSiteName(key) { var s = VDATA && VDATA.sites.find(function (x) { return x.key === key; }); return s ? s.name : key; }
+function vOpenGraph(key, name) { openSite(key, name || vSiteName(key), VIEW.start || (VDATA && VDATA.start), VIEW.end || (VDATA && VDATA.end)); }
 function vLoad() {
   var q = new URLSearchParams({ scope: VIEW.scope });
   if (VIEW.start) q.set("start", VIEW.start);
@@ -240,10 +298,16 @@ document.getElementById("v-scope").addEventListener("click", function (e) {
   vLoad();
 });
 document.getElementById("v-site").addEventListener("change", function (e) { VIEW.site = e.target.value; vRender(); });
+document.getElementById("v-graph").addEventListener("click", function () { if (VIEW.site) vOpenGraph(VIEW.site); });
+document.getElementById("v-rows").addEventListener("click", function (e) {
+  var a = e.target.closest(".v-sitelink");
+  if (a) { e.preventDefault(); vOpenGraph(a.dataset.key, a.dataset.name); }
+});
 ["v-start", "v-end"].forEach(function (id) {
   document.getElementById(id).addEventListener("change", function (e) { VIEW[id === "v-start" ? "start" : "end"] = e.target.value; vLoad(); });
 });
-document.querySelectorAll(".v-preset").forEach(function (btn) { btn.addEventListener("click", function () {
+// scoped to the viewer's own presets: the first section's graph-window presets share the look, not the handler
+document.querySelectorAll("#v-body .v-preset").forEach(function (btn) { btn.addEventListener("click", function () {
   var sd = document.getElementById("v-start"), ed = document.getElementById("v-end");
   var end = new Date((VDATA && VDATA.end) || new Date().toISOString().slice(0, 10));
   var days = btn.dataset.days;
@@ -251,6 +315,15 @@ document.querySelectorAll(".v-preset").forEach(function (btn) { btn.addEventList
   VIEW.start = sd.value = start; VIEW.end = ed.value = end.toISOString().slice(0, 10);
   vLoad();
 }); });
-vLoad();
+var V_OPENED = false;
+function vOpen() {
+  if (V_OPENED) return;
+  V_OPENED = true;
+  document.getElementById("v-open").style.display = "none";
+  document.getElementById("v-body").hidden = false;
+  vLoad();
+}
+document.getElementById("v-open").addEventListener("click", vOpen);
+if (location.hash === "#viewer") { vOpen(); }
 </script>
 {{ modal_script|safe }}

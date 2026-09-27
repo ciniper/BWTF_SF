@@ -10,6 +10,7 @@ from flask import render_template
 
 from features.comparison.comparison import build_comparison, build_site_history
 from features.comparison.samples import build_sample_viewer
+from shared.datasf import DATASET_FLOOR
 
 COMPARISON_MODAL_SCRIPT = """
 <div id="hist-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="hist-title">
@@ -34,24 +35,31 @@ function closeSite(){
   if(histChart){histChart.destroy(); histChart=null;}
   if(histBar){histBar.destroy(); histBar=null;}
 }
-function openSite(site){
+// key = a station id, "bwtf:<name>" or a BWTF site name (all accepted by /api/site-history);
+// start/end = the window (the first section's graph window, or the viewer's range).
+function openSite(key, name, start, end){
   const modal=document.getElementById('hist-modal');
-  document.getElementById('hist-title').textContent=site;
+  document.getElementById('hist-title').textContent=name||key;
   document.getElementById('hist-note').textContent='Loading…';
   modal.classList.add('open');
   var bt=document.getElementById('bacteria-type');
-  fetch('/api/site-history?site='+encodeURIComponent(site)+'&analyte='+(bt?bt.value:'ENTERO'))
+  var q=new URLSearchParams({site:key, analyte:(bt?bt.value:'ENTERO')});
+  if(start) q.set('start', start); if(end) q.set('end', end);
+  fetch('/api/site-history?'+q)
     .then(r=>r.json()).then(renderHist)
     .catch(e=>{document.getElementById('hist-note').textContent='Could not load history: '+e;});
 }
 function renderHist(d){
   if(d.ok===false){document.getElementById('hist-note').textContent=d.error||'No data available';return;}
+  if(d.site) document.getElementById('hist-title').textContent=d.site;
   const std=d.standard;
   const toPts=a=>(a||[]).map(p=>({x:p.ts,y:p.value,raw:p.raw}));
   const bwtf=toPts(d.bwtf), city=toPts(d.city);
   const xs=[...bwtf,...city].map(p=>p.x), ys=[...bwtf,...city].map(p=>p.y);
   const parts=[bwtf.length+' BWTF samples', city.length+' city samples'];
   if(d.city_source) parts.push('city station '+d.city_source);
+  if(d.start) parts.push(d.start+' → '+d.end);
+  if(d.bwtf_sampled===false) parts.push('BWTF does not sample this site');
   document.getElementById('hist-note').textContent=parts.join(' · ');
   const thresh = xs.length ? [{x:Math.min.apply(null,xs),y:std},{x:Math.max.apply(null,xs),y:std}] : [];
   const ymax = Math.max(std*1.15, ys.length?Math.max.apply(null,ys)*1.1:std*1.15);
@@ -79,7 +87,9 @@ function renderHist(d){
   const barNote=document.getElementById('bar-note');
   if(histBar){histBar.destroy(); histBar=null;}
   if(!paired.length){
-    barNote.textContent='No same-day samples in this window — the two programs sampled on different days.';
+    barNote.textContent=d.bwtf_sampled===false
+      ? 'BWTF does not sample this site, so there is nothing to put head to head; only the results from the city are plotted above.'
+      : 'No same-day samples in this window — the two programs sampled on different days.';
   }else{
     barNote.textContent=paired.length+' day(s) when both programs sampled this site (worst reading per day).';
     histBar=new Chart(document.getElementById('hist-bar'),{
@@ -102,8 +112,9 @@ function renderHist(d){
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSite();});
 document.getElementById('hist-modal').addEventListener('click',function(e){if(e.target===this)closeSite();});
 document.querySelectorAll('.row-click').forEach(function(el){
-  el.addEventListener('click',function(){openSite(el.dataset.site);});
-  el.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();openSite(el.dataset.site);}});
+  var go=function(){openSite(el.dataset.site, el.dataset.name, HIST.start, HIST.end);};
+  el.addEventListener('click',go);
+  el.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
 });
 </script>
 </body></html>"""
@@ -135,11 +146,14 @@ class ComparisonRoutes:
         params = parse_qs(urlparse(self.path).query)
         site = (params.get("site") or [""])[0].strip()
         analyte = (params.get("analyte") or ["ENTERO"])[0]
+        start = (params.get("start") or [""])[0].strip()
+        end = (params.get("end") or [""])[0].strip()
         if not site:
             self._send_json({"ok": False, "error": "missing 'site' parameter"}, status=400)
             return
         try:
-            data = build_site_history(site, sf_gov_monitor=self.combined_monitor.sf_gov_monitor, analyte=analyte)
+            data = build_site_history(site, sf_gov_monitor=self.combined_monitor.sf_gov_monitor, analyte=analyte,
+                                      start=start, end=end)
             self._send_json(data)
         except Exception as e:
             self._send_json({"ok": False, "error": str(e)}, status=500)
@@ -159,7 +173,8 @@ class ComparisonRoutes:
     def send_comparison_page(self):
         """Send the BWTF-vs-city comparison dashboard page."""
         try:
-            html = self.generate_comparison_html(self._compare_data(self._analyte_param()))
+            scope = (parse_qs(urlparse(self.path).query).get("scope") or ["dual"])[0]
+            html = self.generate_comparison_html(self._compare_data(self._analyte_param()), scope=scope)
         except Exception as e:
             html = f"<!doctype html><meta charset='utf-8'><h1>Comparison unavailable</h1><pre>{e}</pre>"
         encoded = html.encode()
@@ -169,8 +184,9 @@ class ComparisonRoutes:
         self.end_headers()
         self.wfile.write(encoded)
 
-    def generate_comparison_html(self, data):
-        """Render the source-comparison dashboard (Surfrider BWTF vs. public city data)."""
+    def generate_comparison_html(self, data, scope="dual"):
+        """Render the source-comparison dashboard (Surfrider BWTF vs. public city data).
+        ``scope`` = which rows start visible: the dual sites, or every station."""
         std = data["standard"]
         s = data["summary"]
         limit = std["single_sample_max"]
@@ -221,13 +237,15 @@ class ComparisonRoutes:
 
         rows_html = ""
         for r in data["rows"]:
-            if r['bwtf_raw'] is None:
+            if not r.get("bwtf_site", True):
+                bwtf_html = '<span class="pill pill--na">BWTF doesn\'t sample here</span>'
+            elif r['bwtf_raw'] is None:
                 bwtf_html = '<span class="pill pill--na">not measured</span>'
             else:
                 bwtf_html = (f"{pill(r['bwtf_exceeds'], r['bwtf_raw'])}"
                              f"<small class=\"date\">{r['bwtf_date'] or '—'}{(' · ' + r['bwtf_time']) if r['bwtf_time'] else ''}</small>")
             rows_html += f"""
-              <tr class="row-click" data-site="{r['site_name']}" tabindex="0" role="button" aria-label="Show history for {r['site_name']}">
+              <tr class="row-click{'' if r.get('bwtf_site', True) else ' site-extra'}" data-site="{r.get('site_key') or r['site_name']}" data-name="{r['site_name']}" tabindex="0" role="button" aria-label="Show history for {r['site_name']}">
                 <td class="site"><strong>{r['site_name']}</strong><span class="go"><svg class="ic"><use href="#i-chart-line"/></svg> view history →</span></td>
                 <td>{bwtf_html}</td>
                 <td>{pill(r['city_exceeds'], r['city_raw'])}<small class="date">{r['city_date'] or '—'}{(' · ' + r['city_source']) if r['city_source'] else ''}{(f" · {r['city_n']} samples that day, graded on the worse") if r.get('city_n', 0) > 1 else ''}</small></td>
@@ -247,5 +265,8 @@ class ComparisonRoutes:
             bwtf_note=bwtf_note,
             rows_html=rows_html,
             generated=generated,
+            scope="all" if scope == "all" else "dual",
+            dataset_floor=DATASET_FLOOR,
+            extra_count=sum(1 for r in data["rows"] if not r.get("bwtf_site", True)),
             modal_script=COMPARISON_MODAL_SCRIPT,
         )

@@ -11,6 +11,7 @@ sys.path.insert(0, str(ROOT))
 
 from features.comparison import comparison as C  # noqa: E402
 from features.comparison import samples as S  # noqa: E402
+assert S.parse_range is C.parse_range  # one range parser for the graph and the viewer
 
 
 def test_latest_city_result_keeps_both_samples_of_the_latest_day():
@@ -68,6 +69,71 @@ def test_sample_viewer_lists_every_result_and_grades_each_indicator():
     only = S.build_samples(city, bwtf, start, end, scope="all", site=islais)["rows"]
     assert len(only) == 1 and only[0]["cells"]["ENTERO"][0]["over"] is True
     assert S.build_samples(city, bwtf, start, end, scope="bogus")["scope"] == "dual"
+
+
+def test_resolve_site_accepts_station_ids_bwtf_keys_and_bwtf_names():
+    st = C.resolve_site("OCEAN#15_SL")                       # a dual station by id
+    assert st == {"key": "OCEAN#15_SL", "name": "Baker Beach at Lobos Creek", "bwtf_name": "Baker Beach at Lobos Creek", "sources": ["OCEAN#15_SL"], "dual": True}
+    assert C.resolve_site("Ocean Beach at Vicente St")["key"] == "OCEAN#21_SL"   # the table's original key, a BWTF name
+    city_only = C.resolve_site("BAY#320_SL")
+    assert city_only["name"] == "Islais Creek" and city_only["bwtf_name"] is None and city_only["dual"] is False
+    bw = C.resolve_site("bwtf:Bayview Hunters Point")
+    assert bw == {"key": "bwtf:Bayview Hunters Point", "name": "Bayview Hunters Point", "bwtf_name": "Bayview Hunters Point", "sources": [], "dual": False}
+
+
+class _Resp:
+    def __init__(self, records): self._r = records
+    def raise_for_status(self): pass
+    def json(self): return self._r
+
+
+class _Session:
+    def __init__(self, records): self.records = records; self.calls = []
+    def get(self, url, params=None, timeout=None): self.calls.append(params); return _Resp(self.records)
+
+
+class _Monitor:
+    API_URL = "https://example.test/rows.json"
+    def __init__(self, records): self.session = _Session(records)
+
+
+class _Bwtf:
+    def __init__(self, lab): self._lab = lab
+    def fetch_lab(self): return self._lab
+    def fetch_history(self, since=None, **kw): return []
+
+
+class _Sfpuc:
+    def fetch_stations(self): return []
+
+
+def test_comparison_lists_every_station_with_the_lab_sites_first():
+    from features.comparison.bwtf_api import BWTFLab, BWTFSite, BWTFSample
+    when = datetime(2026, 9, 24, 18, 30)
+    site = BWTFSite("s1", "Aquatic Park", 37.8, -122.4, when, "20", 20.0,
+                    [BWTFSample(when, "Enterococcus", "20", 20.0)])
+    bay = BWTFSite("s2", "Bayview Hunters Point", 37.7, -122.38, when, "131", 131.0,
+                   [BWTFSample(when, "Enterococcus", "131", 131.0)])
+    lab = BWTFLab(76, "SF", "San Francisco", 36, 104, [site, bay])
+    records = [  # newest first, ENTERO only (the query filters by analyte)
+        {"source": "BAY#211_SL", "sample_date": "2026-09-22T00:00:00.000", "data": "20"},
+        {"source": "BAY#211_SL", "sample_date": "2026-09-22T00:00:00.000", "data": "399"},
+        {"source": "BAY#320_SL", "sample_date": "2026-09-22T00:00:00.000", "data": "148"},
+    ]
+    mon = _Monitor(records)
+    data = C.build_comparison(bwtf_client=_Bwtf(lab), sf_gov_monitor=mon, sfpuc_api=_Sfpuc())
+    rows = data["rows"]
+    assert len(rows) == 21 and [r["site_name"] for r in rows[:2]] == ["Aquatic Park", "Bayview Hunters Point"]
+    aq = rows[0]
+    assert aq["dual"] and aq["bwtf_site"] and aq["site_key"] == "BAY#211_SL"
+    assert aq["city_raw"] == "20 / 399" and aq["city_n"] == 2 and aq["city_exceeds"] is True and aq["agree"] is False
+    assert rows[1]["site_key"] == "bwtf:Bayview Hunters Point" and rows[1]["city_raw"] is None and rows[1]["bwtf_site"]
+    islais = next(r for r in rows if r["site_key"] == "BAY#320_SL")
+    assert islais["bwtf_site"] is False and islais["dual"] is False and islais["city_raw"] == "148" and islais["bwtf_raw"] is None
+    # one city query covered every station; the head-to-head summary is still about the lab's sites
+    assert len(mon.session.calls) == 1 and all(f"source='{sid}'" in mon.session.calls[0]["$where"] for sid in ("BAY#320_SL", "OCEAN#22_SL"))
+    s = data["summary"]
+    assert (s["site_count"], s["all_site_count"], s["comparable_count"], s["disagree_count"], s["city_exceed_count"]) == (2, 21, 1, 1, 1)
 
 
 def test_default_range_is_the_last_year_and_bad_input_falls_back():

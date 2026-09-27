@@ -28,6 +28,11 @@ import requests
 from features.comparison.bwtf_api import SFBWTFClient, parse_datetime, parse_result
 from features.alerts.monitoring import STANDARDS, SFPUC_TO_SFGOV_SOURCES, SFWaterQualityMonitor
 from shared.sfpuc_api import SFPUCRealTimeAPI
+from shared.stations import STATIONS
+
+# The history graph's default window (Chase, 2026-09-27: a year, selectable back
+# to the dataset floor). The sample viewer shares it.
+DEFAULT_DAYS = 365
 
 # Selectable analytes for these sites. dict key = SF Gov `analyte` code; each maps
 # to the BWTF substance name, a display label, and the CA single-sample maximum.
@@ -55,6 +60,41 @@ BWTF_TO_SFPUC_NAME = {
     "Ocean Beach at Lincoln Way": "Ocean Beach at Lincoln Way",
     "Ocean Beach at Vicente St": "Ocean Beach at Vicente Street",
 }
+
+
+def parse_range(start: str = "", end: str = "") -> tuple[datetime, datetime]:
+    """YYYY-MM-DD strings -> (start, end) datetimes; the default is the last
+    DEFAULT_DAYS ending today. Bad or reversed input falls back the same way."""
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    def parse(s):
+        try:
+            return datetime.strptime((s or "").strip(), "%Y-%m-%d")
+        except ValueError:
+            return None
+    e = parse(end) or today
+    s = parse(start) or (e - timedelta(days=DEFAULT_DAYS))
+    if s > e:
+        s = e - timedelta(days=DEFAULT_DAYS)
+    return s, e
+
+
+def resolve_site(site: str) -> dict:
+    """A site key or name -> {key, name, bwtf_name, sources, dual}. Accepts a
+    DataSF station id ("OCEAN#15_SL"), "bwtf:<BWTF site name>" for a BWTF-only
+    site, or a bare BWTF site name (the comparison table's original key), so
+    the history graph works for every station, not only the six dual ones."""
+    sfpuc_to_bwtf = {v: k for k, v in BWTF_TO_SFPUC_NAME.items()}
+    if site in STATIONS:
+        st = STATIONS[site]
+        bw = sfpuc_to_bwtf.get(st.sfpuc_name)
+        return {"key": site, "name": st.name, "bwtf_name": bw, "sources": [site], "dual": bw is not None}
+    name = site[5:] if site.startswith("bwtf:") else site
+    sfpuc_name = BWTF_TO_SFPUC_NAME.get(name)
+    sources = SFPUC_TO_SFGOV_SOURCES.get(sfpuc_name, []) if sfpuc_name else []
+    if sources:
+        return {"key": sources[0], "name": STATIONS[sources[0]].name, "bwtf_name": name, "sources": sources, "dual": True}
+    return {"key": "bwtf:" + name, "name": name, "bwtf_name": name, "sources": [], "dual": False}
 
 
 @dataclass
@@ -90,6 +130,13 @@ class ComparisonRow:
     agree: Optional[bool]          # do the two sources agree on pass/fail vs the standard?
     value_delta: Optional[float]   # |bwtf - city|
     day_gap: Optional[int]         # days between the two samples
+
+    # Which kind of site: key = DataSF station id (or "bwtf:<name>"); dual =
+    # both programs sample it; bwtf_site = a BWTF lab site (dual or BWTF-only).
+    # City-only stations join the table behind the "All sites" toggle.
+    site_key: str = ""
+    dual: bool = False
+    bwtf_site: bool = False
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -160,17 +207,17 @@ def _latest_by_source(records: list[dict]) -> dict:
     return latest
 
 
-def _fetch_city_series(monitor: SFWaterQualityMonitor, sources: list[str], days: int, analyte: str) -> dict:
-    """All city results for `analyte` per source over `days`, ascending by date."""
+def _fetch_city_series(monitor: SFWaterQualityMonitor, sources: list[str], start: datetime, end: datetime,
+                       analyte: str) -> dict:
+    """All city results for `analyte` per source in [start, end], ascending by date."""
     if not sources:
         return {}
-    start = datetime.now() - timedelta(days=days)
     source_filter = " OR ".join(f"source='{s}'" for s in sources)
     params = {
         "$select": "source,sample_date,data",
         "$where": (
             f"analyte='{analyte}' AND sample_date >= '{start.strftime('%Y-%m-%dT00:00:00')}' "
-            f"AND ({source_filter})"
+            f"AND sample_date <= '{end.strftime('%Y-%m-%dT23:59:59')}' AND ({source_filter})"
         ),
         "$order": "sample_date ASC",
         "$limit": 5000,
@@ -231,21 +278,12 @@ def build_comparison(
 
     lab = bwtf_client.fetch_lab()
 
-    # Gather every city source id we might need across the mapped sites.
-    needed_sources = sorted({
-        src
-        for sfpuc_name in BWTF_TO_SFPUC_NAME.values()
-        for src in SFPUC_TO_SFGOV_SOURCES.get(sfpuc_name, [])
-    })
-    city_latest = _fetch_city_latest(sf_gov_monitor, needed_sources, city_days, analyte)
+    # Every city station takes part (one query); the ones BWTF also samples
+    # are "dual" and lead the table, the rest sit behind the All sites toggle.
+    city_latest = _fetch_city_latest(sf_gov_monitor, sorted(STATIONS), city_days, analyte)
     sfpuc_status = _sfpuc_status_by_name(sfpuc_api)
 
-    rows: list[ComparisonRow] = []
-    bwtf_sites = lab.sites if lab else []
-    for site in bwtf_sites:
-        sfpuc_name = BWTF_TO_SFPUC_NAME.get(site.name)
-        sources = SFPUC_TO_SFGOV_SOURCES.get(sfpuc_name, []) if sfpuc_name else []
-
+    def row_for(site_name, lat, lon, sources, sfpuc_name, bwtf_sample, site_key, dual, bwtf_site) -> ComparisonRow:
         # Freshest city result among the candidate sources for this site.
         city = None
         for src in sources:
@@ -255,10 +293,8 @@ def build_comparison(
             if city is None or candidate["date"] > city["date"]:
                 city = {**candidate, "source": src}
 
-        # BWTF value for the selected analyte (only Enterococcus is reported here).
-        bwtf_raw, bwtf_value, bwtf_time = _bwtf_sample_for(site, cfg["bwtf_substance"])
+        bwtf_raw, bwtf_value, bwtf_time = bwtf_sample
         bwtf_exceeds = _exceeds(bwtf_value, limit)
-
         city_value = city["value"] if city else None
         city_exceeds = _exceeds(city_value, limit)
         both_have = bwtf_value is not None and city_value is not None
@@ -270,10 +306,10 @@ def build_comparison(
             if bwtf_time and city["date"]:
                 day_gap = abs((bwtf_time.date() - city["date"].date()).days)
 
-        rows.append(ComparisonRow(
-            site_name=site.name,
-            latitude=site.latitude,
-            longitude=site.longitude,
+        return ComparisonRow(
+            site_name=site_name,
+            latitude=lat,
+            longitude=lon,
             bwtf_date=bwtf_time.strftime("%Y-%m-%d") if bwtf_time else None,
             bwtf_time=bwtf_time.strftime("%-I:%M %p") if bwtf_time else None,
             bwtf_raw=bwtf_raw,
@@ -291,16 +327,39 @@ def build_comparison(
             agree=agree,
             value_delta=value_delta,
             day_gap=day_gap,
-        ))
+            site_key=site_key,
+            dual=dual,
+            bwtf_site=bwtf_site,
+        )
 
-    comparable = [r for r in rows if r.both_have]
+    rows: list[ComparisonRow] = []
+    bwtf_sites = lab.sites if lab else []
+    for site in bwtf_sites:
+        sfpuc_name = BWTF_TO_SFPUC_NAME.get(site.name)
+        sources = SFPUC_TO_SFGOV_SOURCES.get(sfpuc_name, []) if sfpuc_name else []
+        # BWTF value for the selected analyte (only Enterococcus is reported here).
+        rows.append(row_for(site.name, site.latitude, site.longitude, sources, sfpuc_name,
+                            _bwtf_sample_for(site, cfg["bwtf_substance"]),
+                            site_key=sources[0] if sources else "bwtf:" + site.name,
+                            dual=bool(sources), bwtf_site=True))
+    covered = {r.site_key for r in rows}
+    for sid, st in sorted(STATIONS.items(), key=lambda kv: (kv[1].group, kv[1].name)):
+        if sid in covered:
+            continue
+        rows.append(row_for(st.name, st.lat, st.lon, [sid], st.sfpuc_name, (None, None, None),
+                            site_key=sid, dual=False, bwtf_site=False))
+
+    # The head-to-head summary is about the BWTF lab's sites, as it always was.
+    lab_rows = [r for r in rows if r.bwtf_site]
+    comparable = [r for r in lab_rows if r.both_have]
     summary = {
-        "site_count": len(rows),
+        "site_count": len(lab_rows),
+        "all_site_count": len(rows),
         "comparable_count": len(comparable),
         "agree_count": sum(1 for r in comparable if r.agree),
         "disagree_count": sum(1 for r in comparable if r.agree is False),
-        "bwtf_exceed_count": sum(1 for r in rows if r.bwtf_exceeds),
-        "city_exceed_count": sum(1 for r in rows if r.city_exceeds),
+        "bwtf_exceed_count": sum(1 for r in lab_rows if r.bwtf_exceeds),
+        "city_exceed_count": sum(1 for r in lab_rows if r.city_exceeds),
         "max_day_gap": max((r.day_gap for r in comparable if r.day_gap is not None), default=None),
     }
 
@@ -330,26 +389,36 @@ def build_site_history(
     site_name: str,
     bwtf_client: Optional[SFBWTFClient] = None,
     sf_gov_monitor: Optional[SFWaterQualityMonitor] = None,
-    days: int = 540,
+    days: Optional[int] = None,
     analyte: str = DEFAULT_ANALYTE,
+    start: str = "",
+    end: str = "",
 ) -> dict:
     """Per-site time series for one analyte from both sources (JSON-serializable).
 
-    BWTF only reports Enterococcus, so its series is empty for the coliforms.
+    ``site_name`` is anything resolve_site accepts (a station id, "bwtf:<name>",
+    or a BWTF site name), so city-only stations graph too — with an empty BWTF
+    series, as the coliforms have for every site. The window is [start, end]
+    (default the last DEFAULT_DAYS; ``days`` is the old caller's shorthand).
     Point: {date, ts, value, raw}.
     """
     bwtf_client = bwtf_client or SFBWTFClient()
     sf_gov_monitor = sf_gov_monitor or SFWaterQualityMonitor()
     analyte = resolve_analyte(analyte)
     cfg = ANALYTES[analyte]
-    since = datetime.now() - timedelta(days=days)
+    site = resolve_site(site_name)
+    if days and not start:
+        since, until = datetime.now() - timedelta(days=days), datetime.now()
+    else:
+        since, until = parse_range(start, end)
+    until_end = until + timedelta(days=1)
 
     bwtf_series = []
-    for rec in bwtf_client.fetch_history(since=since):
-        if rec["site_name"] != site_name or rec["substance"] != cfg["bwtf_substance"]:
+    for rec in (bwtf_client.fetch_history(since=since, max_pages=40) if site["bwtf_name"] else []):
+        if rec["site_name"] != site["bwtf_name"] or rec["substance"] != cfg["bwtf_substance"]:
             continue
         when, value = rec["collection_time"], rec["result_value"]
-        if when is None or value is None:
+        if when is None or value is None or when > until_end:
             continue
         bwtf_series.append({
             "date": when.strftime("%Y-%m-%d"),
@@ -359,9 +428,7 @@ def build_site_history(
         })
     bwtf_series.sort(key=lambda p: p["ts"])
 
-    sfpuc_name = BWTF_TO_SFPUC_NAME.get(site_name)
-    sources = SFPUC_TO_SFGOV_SOURCES.get(sfpuc_name, []) if sfpuc_name else []
-    by_source = _fetch_city_series(sf_gov_monitor, sources, days, analyte)
+    by_source = _fetch_city_series(sf_gov_monitor, site["sources"], since, until, analyte)
     # Use the single city station with the most data so the line stays continuous.
     city_source = max(by_source, key=lambda s: len(by_source[s]), default=None)
     city_series = by_source.get(city_source, []) if city_source else []
@@ -380,12 +447,18 @@ def build_site_history(
         })
 
     return {
-        "site": site_name,
+        "site": site["name"],
+        "site_key": site["key"],
+        "bwtf_name": site["bwtf_name"],
+        "bwtf_sampled": site["bwtf_name"] is not None,
+        "dual": site["dual"],
         "analyte": cfg["label"],
         "code": analyte,
         "standard": cfg["limit"],
         "units": "MPN/100mL",
-        "days": days,
+        "start": since.strftime("%Y-%m-%d"),
+        "end": until.strftime("%Y-%m-%d"),
+        "days": (until - since).days,
         "city_source": city_source,
         "bwtf": bwtf_series,
         "city": city_series,

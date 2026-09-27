@@ -26,12 +26,11 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 from features.comparison.bwtf_api import SFBWTFClient
-from features.comparison.comparison import ANALYTES, BWTF_TO_SFPUC_NAME
+from features.comparison.comparison import ANALYTES, BWTF_TO_SFPUC_NAME, DEFAULT_DAYS, parse_range  # noqa: F401
 from shared.datasf import DATASET_FLOOR
 from shared.standards import ENTERO_CAUTION, exceeds, parse_result
 from shared.stations import STATIONS
 
-DEFAULT_DAYS = 365
 SCOPES = ("dual", "all")
 SUBSTANCE_TO_CODE = {meta["bwtf_substance"]: code for code, meta in ANALYTES.items()}
 
@@ -50,22 +49,6 @@ def viewer_sites(bwtf_history: Optional[list] = None) -> list[dict]:
         sites.append({"key": "bwtf:" + name, "name": name, "group": "BWTF only", "bwtf_name": name,
                       "dual": False, "city": False})
     return sites
-
-
-def parse_range(start: str = "", end: str = "") -> tuple[datetime, datetime]:
-    """YYYY-MM-DD strings -> (start, end) datetimes; the default is the last
-    DEFAULT_DAYS ending today. Bad or reversed input falls back the same way."""
-    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    def parse(s):
-        try:
-            return datetime.strptime((s or "").strip(), "%Y-%m-%d")
-        except ValueError:
-            return None
-    e = parse(end) or today
-    s = parse(start) or (e - timedelta(days=DEFAULT_DAYS))
-    if s > e:
-        s = e - timedelta(days=DEFAULT_DAYS)
-    return s, e
 
 
 def fetch_city_records(monitor, sources: list[str], start: datetime, end: datetime) -> list[dict]:
