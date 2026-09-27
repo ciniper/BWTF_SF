@@ -173,6 +173,37 @@ precautionary, and the East is often dirty with no posting and no rain.
 | Database changes | `db/migrations/NNN_*.sql`, applied by hand in Supabase with no simulation active |
 | Secrets | Env vars only (`DEPLOY.md`): Supabase URL/key, Brevo, `ALERTS_PASSPHRASE`, healthchecks URL. Nothing in the repo |
 
+## 6a. Supabase: every table, function and job (as of migration 013, 2026-09-27)
+
+All in the `public` schema, row-level security on, readable only with the service key. `db/migrations/001` → `013`; applied
+by hand in the SQL editor with no simulation active.
+
+| Table | One row per | Written by | Read by |
+|---|---|---|---|
+| `subscribers` | signup (email or phone + carrier, station list, zone, active) | `/signup`, the `/alerts` operator page | the SQL dispatcher when a transition matches |
+| `watcher_state_shadow` | station: last-seen status (ok / posted / cso) and the simulation overlay forced last tick | every tick (`bwtf_process_payload`) | the same, to diff this tick against the last. The live state in BOTH modes; the name is a leftover |
+| `alert_log` | transition seen (posted / cso / cleared), dispatch (with Brevo results), or simulation — with source and a simulated flag | the tick; manual dispatches | CSO Event Timeline, the forecast's observed-CSO onsets and flag windows, "What happened" |
+| `watcher_config` | key/value: `mode`, `sfpuc_url`, `forecast_refresh_url`, `healthchecks_ping_url`, `alert_from_email`, `brevo_api_key`, `live_corrections`, `keepalive_url` (unused since 013) | hand edits, the operator page | every tick; the forecast's switch and health gate |
+| `watcher_runtime` | one row: last request id, last fetch status, last processed time, tick summary, last error | every tick | the forecast's watcher-health gate |
+| `simulated_cso` | active simulation: station, kind (cso / posted), optional recipient list | `/alerts` simulation controls | the tick, as an overlay on the real feed |
+| `forecast_predictions` | one row: the current forecast snapshot (JSON), generated time, refresh claim | the production refresh | `/forecast/api/data` — every page load |
+| `forecast_history` (012) | Pacific day: the day's first snapshot (start-of-day forecast) and its last | the production refresh (rpc `bwtf_record_forecast`) | nothing yet — the watcher-era replay of live_v1 |
+| `feed_station_days` (012) | station-day: raw posted / CSO flags, colours, worst and last classified status, raw station object, tick count | every tick (`bwtf_record_feed_day`) | nothing yet — the watcher's miss/lag rate vs CIWQS |
+| `samples` (012) | lab result (station, date, analyte, raw value) with `first_seen_at` | the production refresh (`shared/samples_mirror`) and `--backfill` | nothing yet — results' arrival lag; a backstop if DataSF is down |
+| `forecast_changes` (013) | distinct forecast: fingerprint, `first_at`, `last_confirmed_at`, refreshes that produced it | the production refresh (rpc `bwtf_record_forecast_change`) | nothing yet — the intra-day trajectory |
+| `watcher_errors` (013) | tick error: kind, message, status; 90-day retention | the tick (`bwtf_log_error`) | operators |
+
+Dropped: `watcher_state` (phase 1, 012). **Bacteria results otherwise never touch the database**: pages read DataSF live; training reads
+the committed CSVs under `features/forecast/data/raw/`.
+
+Functions: `bwtf_classify` (feed flags → status), `bwtf_process_payload` (diff, overlay, transitions), `bwtf_shadow_tick` (harvest the
+last fetch, process, record feed day, trigger a refresh on a real transition, issue the next fetch), `bwtf_dispatch_live` /
+`bwtf_render_alert` / `bwtf_log_escalations` / `bwtf_log_downgrades` / `bwtf_sms_gateway` (alerts), `bwtf_record_forecast`,
+`bwtf_record_feed_day`, `bwtf_record_forecast_change`, `bwtf_log_error`, `bwtf_forecast_refresh`, `bwtf_keepalive` (defined,
+unscheduled), `set_updated_at`.
+
+Cron: `bwtf-shadow-tick` every minute; `bwtf-forecast-refresh` at :05 and :35 (→ `/forecast/api/refresh`, 55 s timeout).
+
 ## 7. Known gaps and cautions
 
 - Westside per-event discharge records do not exist before 2018 (SFPUC reported monthly counts only); a records
