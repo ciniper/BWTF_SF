@@ -9,13 +9,9 @@ data/*.json
 !data/.gitkeep
 token.txt
 
-# Forecast feature: large, regenerable training data.
-# Trained models (features/forecast/data/models/*.pkl + *.json) ARE committed
-# so /forecast works on a fresh clone.
-features/forecast/data/raw/
-features/forecast/data/processed/
-!features/forecast/data/raw/.gitkeep
-!features/forecast/data/processed/.gitkeep
+# Forecast training inputs (features/forecast/data/raw/ and processed/, ~6 MB) ARE
+# committed since 2026-09-27 so a retrain is reproducible from a fresh clone; the
+# collectors refresh them in place (see features/forecast/RETRAIN_PLAN.md).
 
 # Local secrets (Supabase service key etc.) — never commit
 .env

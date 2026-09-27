@@ -51,7 +51,7 @@ fail the state standard; this project makes that information timely, searchable 
   history tables: `forecast_history` (the first and last snapshot of every day — the first is the start-of-day forecast the
   grading uses), `feed_station_days` (what the SFPUC feed showed per station per day, written by every tick), and `samples`
   (a mirror of the city's lab results stamped when we first saw them). Bacteria results otherwise never touch the database:
-  pages read DataSF live and training reads the gitignored CSV under `features/forecast/data/raw/`. Without Supabase credentials the app falls back to the legacy JSON files under
+  pages read DataSF live and training reads the committed CSVs under `features/forecast/data/raw/` (in the repo since 2026-09-27; refreshed by the collectors before a retrain or rescore). Without Supabase credentials the app falls back to the legacy JSON files under
   `data/` and in-memory forecasts — fine for a bare checkout, never for production.
 - **Watcher** — the detection→dispatch loop is SQL, run by pg_cron every minute and fetching the SFPUC feed with pg_net.
   It alerts only on transitions to a *worse* state (safe → posted, safe → CSO, posted → CSO), once per event, and logs
