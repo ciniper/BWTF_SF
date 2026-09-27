@@ -50,7 +50,9 @@ from flask import render_template
 from shared.stations import STATIONS as _CANONICAL_STATIONS
 
 from shared.datasf import BEACH_SAMPLES_URL  # noqa: E402
-from shared.standards import ENTERO_CAUTION, STANDARDS  # noqa: E402
+from shared.standards import (  # noqa: E402
+    ENTERO_CAUTION, GEOMETRIC_MEAN_MIN_SAMPLES, GEOMETRIC_MEAN_WINDOW_DAYS, STANDARDS, parse_result,
+)
 
 SOCRATA_URL = BEACH_SAMPLES_URL  # shared/datasf.py
 ANALYTE = "ENTERO"
@@ -218,8 +220,35 @@ def handle_summary(query, body):
     return _json(payload)
 
 
+# The analytes the city's shoreline program reports, in the order the standards
+# panel lists them. E. coli is the freshwater indicator and appears in only a
+# small share of the city's rows (848 of ~21k in the training copy).
+STANDARDS_ORDER = ("ENTERO", "COLI_FECAL", "COLI_TOTAL", "COLI_E")
+
+
+def standards_context() -> dict:
+    """Everything the page's "bacteria standards" panel shows, read from
+    shared/standards.py so the panel cannot drift from the alerts page or the
+    forecast's sample labels (tests/test_single_source.py guards the numbers)."""
+    rows = []
+    for code in STANDARDS_ORDER:
+        s = STANDARDS[code]
+        rows.append({
+            "code": code, "name": s["description"],
+            "ssm": s["single_sample_max"], "gm": s["geometric_mean"],
+            "ratio_ssm": s.get("single_sample_max_ratio"),
+            "ratio_pct": round(100 * s["ratio_threshold"]) if "ratio_threshold" in s else None,
+        })
+    return {
+        "standards": rows, "graded_on": ANALYTE, "graded_on_name": STANDARDS[ANALYTE]["description"],
+        "ssm": SSM, "caution": CAUTION,
+        "gm_window_days": GEOMETRIC_MEAN_WINDOW_DAYS, "gm_min_samples": GEOMETRIC_MEAN_MIN_SAMPLES,
+        "below_detection": int(parse_result("<10")), "over_range": int(parse_result(">24196")),
+    }
+
+
 def handle_page(query, body):
-    html = render_template("site_analysis/page.html")
+    html = render_template("site_analysis/page.html", **standards_context())
     return 200, "text/html; charset=utf-8", html.encode()
 
 

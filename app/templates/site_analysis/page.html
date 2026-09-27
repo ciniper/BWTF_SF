@@ -67,6 +67,10 @@
   .notes{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:16px 20px;margin-top:18px;font-size:13.5px;color:#3f474d;line-height:1.55}
   .notes h2{font-size:15px;margin:0 0 8px;color:#26272a}
   .foot{color:#8a949b;font-size:12px;margin-top:16px}
+  table.std{min-width:0;margin:12px 0 10px;font-size:13px}
+  table.std th,table.std td{padding:7px 10px}
+  table.std tr.graded td{background:#e3f1fa}
+  table.std td.note{color:#54576F;font-size:12.5px}
   .loading{padding:40px;text-align:center;color:#54576F;font-weight:600}
 </style><link rel="stylesheet" href="/static/brand.css">
 </head>
@@ -76,9 +80,9 @@
   <div class="hero">
     <h1>Site Report Card</h1>
     <p>How often each shoreline monitoring site fails the state bacteria standard
-    (Enterococcus single-sample max, 104&nbsp;MPN/100mL — the same standard BWTF grading
+    ({{ graded_on_name }} single-sample max, {{ ssm }}&nbsp;MPN/100mL — the same standard BWTF grading
     and the city's beach postings use), from the city's published lab results.
-    Click a site for its year-by-year trend.</p>
+    Click a site for its year-by-year trend. <a href="#standards" style="color:#fff">All four state limits are listed below.</a></p>
   </div>
 
   <div class="controls" id="groupBtns">
@@ -115,7 +119,7 @@
       <thead><tr>
         <th>Site</th>
         <th class="barcell" id="mainCol">% bad — selected range</th>
-        <th class="num">caution (≥36)</th>
+        <th class="num">caution (≥{{ caution }})</th>
         <th class="num">wet season</th>
         <th class="num">dry season</th>
         <th class="num">samples</th>
@@ -126,7 +130,7 @@
 
   <div class="notes">
     <h2>Reading these numbers</h2>
-    <b>"Bad" = a sample at or over the state single-sample limit</b> (Enterococcus 104 MPN/100mL);
+    <b>"Bad" = a sample at or over the state single-sample limit</b> ({{ graded_on_name }} {{ ssm }} MPN/100mL; <a href="#standards">the standards</a>);
     the wet season is November–April. The dataset begins 2020-07-27 — the city publishes nothing earlier.
     <br><br>
     <b>Weekly regime</b> keeps only the first sample of each site-week (the city's scheduled Monday
@@ -140,6 +144,43 @@
     weekly-sampled sites and they're listed separately at the bottom, unranked.
     Also worth knowing: <b>the city samples no station at India Basin</b> — the largest
     unsampled gap on the east shoreline, between Islais Creek and Sunnydale Cove.
+  </div>
+
+  <div class="notes" id="standards">
+    <h2>The bacteria standards</h2>
+    California's recreational-water limits (AB 411 / Ocean Plan), in MPN per 100 mL. This page grades on
+    <b>{{ graded_on_name }} alone</b> — the indicator the state, the city's beach postings and BWTF's own
+    grading all use for ocean and bay water — and shows <b>&ge;{{ caution }}</b> as a caution tier below the limit.
+    <table class="std">
+      <thead><tr>
+        <th>Indicator</th>
+        <th class="num">Single-sample max</th>
+        <th class="num">{{ gm_window_days }}-day geometric mean</th>
+        <th>Notes</th>
+      </tr></thead>
+      <tbody>
+      {% for s in standards %}
+      <tr{% if s.code == graded_on %} class="graded"{% endif %}>
+        <td class="name">{{ s.name }}</td>
+        <td class="num">{{ "{:,}".format(s.ssm) }}</td>
+        <td class="num">{{ "{:,}".format(s.gm) }}</td>
+        <td class="note">
+          {%- if s.code == graded_on %}What this page counts as "bad"; &ge;{{ caution }} is the caution tier.
+          {%- elif s.ratio_ssm %}Drops to {{ "{:,}".format(s.ratio_ssm) }} when fecal coliform is more than {{ s.ratio_pct }}% of total coliform in the same sample.
+          {%- elif s.code == "COLI_E" %}The freshwater indicator; the city reports it for only a small share of shoreline samples.
+          {%- else %}Reported with nearly every sample; also sets the total-coliform ratio rule.
+          {%- endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    A result the lab reports as "&lt;10" counts as {{ below_detection }} (half the detection limit) and "&gt;24196" as {{ "{:,}".format(over_range) }}.
+    A geometric mean needs at least {{ gm_min_samples }} samples in {{ gm_window_days }} days, which the city's weekly cadence rarely gives,
+    so every "bad" on this page is a single-sample exceedance.
+    The alerts page and the forecast's sample labels flag a sample when <b>any</b> indicator is over its single-sample
+    max (ratio rule included), so a day can be "elevated" there on coliform alone while this page counts it clean.
+    Every number in this panel is read from <code>shared/standards.py</code>, the one home for these limits.
   </div>
   <div class="foot" id="foot">Source: DataSF “Beach Water Quality” lab results (SFPUC shoreline
   monitoring program), fetched live.</div>

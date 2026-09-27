@@ -80,6 +80,13 @@ def test_bacteria_standards_have_one_home():
     assert site_analysis.SSM == standards.STANDARDS["ENTERO"]["single_sample_max"]
     assert site_analysis.CAUTION == standards.ENTERO_CAUTION
     assert historical.BACTERIA_THRESHOLDS == {k: v["single_sample_max"] for k, v in standards.STANDARDS.items()}
+    # the Site Report Card's standards panel is rendered from the same dict (2026-09-27)
+    ctx = site_analysis.standards_context()
+    assert {r["code"] for r in ctx["standards"]} == set(standards.STANDARDS)
+    for r in ctx["standards"]:
+        assert r["ssm"] == standards.STANDARDS[r["code"]]["single_sample_max"] and r["gm"] == standards.STANDARDS[r["code"]]["geometric_mean"]
+    assert ctx["caution"] == standards.ENTERO_CAUTION and ctx["graded_on"] == "ENTERO"
+    assert next(r for r in ctx["standards"] if r["code"] == "COLI_TOTAL")["ratio_ssm"] == standards.STANDARDS["COLI_TOTAL"]["single_sample_max_ratio"]
     pat = re.compile(r"(ENTERO|COLI_E|COLI_FECAL|COLI_TOTAL)\W{0,12}(104|235|400|10000|10,000)\b|\b(104|235|400|10000)\W{0,12}(ENTERO|COLI_E|COLI_FECAL|COLI_TOTAL)")
     offenders = []
     for p in _source_files():
