@@ -62,6 +62,30 @@
           .modal__close{border:none;background:#eef2f4;border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:700;color:#26272a;font-size:14px}
           .modal__note{color:#8a949b;font-size:12px;margin:6px 0 12px;line-height:1.5}
           .chart-wrap{position:relative;height:360px}
+          /* sample viewer */
+          .viewer-head{margin:28px 0 6px;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:28px;letter-spacing:.05em;text-transform:uppercase;color:#26272a}
+          .viewer-intro{color:#54576F;font-size:13.5px;line-height:1.55;margin:0 0 12px;max-width:90ch}
+          .v-controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 10px}
+          .ctl-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#54576F;font-weight:700}
+          .seg-toggle{display:inline-flex;border:2px solid #d9e4e8;border-radius:999px;overflow:hidden;background:#fff}
+          .seg-btn{padding:7px 14px;border:0;background:transparent;color:#54576F;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
+          .seg-btn.active{background:#0072BC;color:#fff}
+          .v-controls select,.v-controls input[type=date]{font-size:13px;padding:7px 10px;border:2px solid #d9e4e8;border-radius:10px;background:#fff;color:#26272a;font-family:inherit;font-weight:600}
+          .v-preset{padding:7px 12px;border-radius:999px;border:2px solid #d9e4e8;background:#fff;color:#54576F;cursor:pointer;font-size:12.5px;font-weight:700;font-family:inherit}
+          .v-status{color:#54576F;font-size:12.5px;font-weight:600;margin:0 0 8px}
+          table.viewer th,table.viewer td{padding:8px 10px;font-size:13px;vertical-align:middle}
+          table.viewer td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+          table.viewer th.num{text-align:right}
+          .v-val{display:inline-block;padding:1px 6px;border-radius:6px}
+          .v-val.over{background:#d15c5c;color:#fff;font-weight:700}
+          .v-val.caution{background:#fbeccd;color:#7a5200;font-weight:700}
+          .v-sep{color:#98a3ab;margin:0 3px}
+          .v-dup{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:#e3eefb;color:#1f5e8f;font-size:10.5px;font-weight:700;vertical-align:1px;white-space:nowrap}
+          .src{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700}
+          .src--bwtf{background:#e3f1fa;color:#0072BC}
+          .src--city{background:#eef1f3;color:#3f474d}
+          .v-time{color:#8a949b;font-size:11px;margin-left:5px}
+          tr.v-over td{background:#fff7f5}
         </style><link rel="stylesheet" href="/static/brand.css">
 </head>
 <body>
@@ -108,13 +132,125 @@
     </tbody>
   </table>
 
+  <h2 class="viewer-head" id="viewer">Sample viewer</h2>
+  <p class="viewer-intro">Every published result, one row per sample, from both programs. The table above and the
+    Site Report Card reduce a day to its worse reading; here the record stays whole — a day the city sampled twice
+    shows both values. Enterococcus, fecal and total coliform are each graded against their own state single-sample
+    limit (total coliform's falls to 1,000 when fecal is over 10% of total); <span class="v-val caution">amber</span> is
+    Enterococcus in the caution tier, <span class="v-val over">red</span> is over the limit. Default: the six beaches
+    both programs sample, over the last year.</p>
+  <div class="v-controls">
+    <span class="ctl-label">Sites</span>
+    <div class="seg-toggle" id="v-scope">
+      <button class="seg-btn active" data-scope="dual" title="The six beaches both Surfrider and the city sample">Dual sites</button>
+      <button class="seg-btn" data-scope="all" title="Every city monitoring station, plus BWTF-only sites">All sites</button>
+    </div>
+    <select id="v-site" aria-label="Site"><option value="">Any site in view</option></select>
+    <span class="ctl-label">Range</span>
+    <input type="date" id="v-start" aria-label="Start date">
+    <span style="color:#54576F">→</span>
+    <input type="date" id="v-end" aria-label="End date">
+    <button class="v-preset" data-days="365">Last 12 mo</button>
+    <button class="v-preset" data-days="730">Last 2 yrs</button>
+    <button class="v-preset" data-days="">Full record</button>
+  </div>
+  <p class="v-status" id="v-status">Loading samples…</p>
+  <table class="viewer" id="v-table" style="display:none">
+    <thead><tr>
+      <th>Date</th><th>Site</th><th>Source</th>
+      <th class="num">Enterococcus</th><th class="num">Fecal coliform</th><th class="num">Total coliform</th>
+    </tr></thead>
+    <tbody id="v-rows"></tbody>
+  </table>
+
   <p class="foot">
     Generated {{ generated }}. Both sources grade {{ analyte_label }} against the CA single-sample max ({{ limit }} MPN/100mL);
     "&lt;10" means below the lab's detection limit. Agreement compares whether each source's latest result meets
-    that standard — not the exact numbers, which differ because sampling days and exact sample points differ.<br>
+    that standard — not the exact numbers, which differ because sampling days and exact sample points differ.
+    When the city's latest day carries two samples (a routine sample and a storm resample share a date in the
+    city's dataset), both are shown and the worse one is graded.<br>
     Sources: <a href="https://bwtf.surfrider.org/explore/76" target="_blank" rel="noopener">Surfrider BWTF (SF)</a> ·
     <a href="{{ DATASF_DATASET_URL }}" target="_blank" rel="noopener">SF Gov Open Data</a> ·
     <a href="https://webapps.sfpuc.org/sapps/beachesandbay.html" target="_blank" rel="noopener">SFPUC Beach Map</a>
   </p>
 </div>
+<script>
+// ─── Sample viewer ──────────────────────────────────────────────────────────
+var VDATA = null;
+var VIEW = { scope: "dual", site: "", start: "", end: "" };
+var vEsc = function (s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); };
+function vCell(vals) {
+  if (!vals || !vals.length) return '<span style="color:#98a3ab">—</span>';
+  return vals.map(function (v) {
+    var cls = v.over ? " over" : (v.caution ? " caution" : "");
+    return '<span class="v-val' + cls + '">' + vEsc(v.raw) + '</span>';
+  }).join('<span class="v-sep">·</span>');
+}
+function vRender() {
+  if (!VDATA) return;
+  var sel = document.getElementById("v-site");
+  var inView = VDATA.sites.filter(function (s) { return VIEW.scope === "all" || s.dual; });
+  var keep = inView.some(function (s) { return s.key === VIEW.site; }) ? VIEW.site : "";
+  sel.innerHTML = '<option value="">Any site in view</option>' + inView.map(function (s) {
+    return '<option value="' + vEsc(s.key) + '">' + vEsc(s.name) + (s.city ? "" : " (BWTF only)") + '</option>';
+  }).join("");
+  sel.value = VIEW.site = keep;
+  var rows = VDATA.rows.filter(function (r) { return !VIEW.site || r.site_key === VIEW.site; });
+  var tb = document.getElementById("v-rows"), html = "";
+  rows.forEach(function (r) {
+    var c = r.cells || {};
+    html += '<tr' + (r.over ? ' class="v-over"' : "") + '>' +
+      '<td>' + r.date + (r.time ? '<span class="v-time">' + vEsc(r.time) + '</span>' : "") + '</td>' +
+      '<td><b>' + vEsc(r.site) + '</b>' + (r.n_samples > 1 ? '<span class="v-dup">' + r.n_samples + ' samples that day</span>' : "") + '</td>' +
+      '<td><span class="src ' + (r.source === "BWTF" ? "src--bwtf" : "src--city") + '">' + r.source + '</span></td>' +
+      '<td class="num">' + vCell(c.ENTERO) + '</td>' +
+      '<td class="num">' + vCell(c.COLI_FECAL) + '</td>' +
+      '<td class="num">' + vCell(c.COLI_TOTAL) + '</td></tr>';
+  });
+  tb.innerHTML = html;
+  var k = VDATA.counts, over = rows.filter(function (r) { return r.over; }).length;
+  var dbl = rows.filter(function (r) { return r.n_samples > 1; }).length;
+  document.getElementById("v-status").textContent =
+    rows.length.toLocaleString() + " rows · " + rows.filter(function (r) { return r.source === "SFPUC"; }).length.toLocaleString() + " SFPUC · " +
+    rows.filter(function (r) { return r.source === "BWTF"; }).length.toLocaleString() + " BWTF · " + over.toLocaleString() + " over a limit · " +
+    dbl + " double-sampled day" + (dbl === 1 ? "" : "s") + " · " + VDATA.start + " → " + VDATA.end;
+  document.getElementById("v-table").style.display = rows.length ? "" : "none";
+  if (!rows.length) document.getElementById("v-status").textContent += " · no samples in this view";
+}
+function vLoad() {
+  var q = new URLSearchParams({ scope: VIEW.scope });
+  if (VIEW.start) q.set("start", VIEW.start);
+  if (VIEW.end) q.set("end", VIEW.end);
+  document.getElementById("v-status").textContent = "Loading samples…";
+  fetch("/api/samples?" + q).then(function (r) { return r.json(); }).then(function (d) {
+    if (d.ok === false) { document.getElementById("v-status").textContent = "Could not load samples: " + d.error; return; }
+    VDATA = d;
+    var sd = document.getElementById("v-start"), ed = document.getElementById("v-end");
+    sd.min = ed.min = d.floor; ed.max = d.end;
+    if (!sd.value) sd.value = d.start;
+    if (!ed.value) ed.value = d.end;
+    vRender();
+  }).catch(function (e) { document.getElementById("v-status").textContent = "Could not load samples: " + e; });
+}
+document.getElementById("v-scope").addEventListener("click", function (e) {
+  var btn = e.target.closest(".seg-btn");
+  if (!btn || btn.dataset.scope === VIEW.scope) return;
+  document.querySelectorAll("#v-scope .seg-btn").forEach(function (b) { b.classList.toggle("active", b === btn); });
+  VIEW.scope = btn.dataset.scope;
+  vLoad();
+});
+document.getElementById("v-site").addEventListener("change", function (e) { VIEW.site = e.target.value; vRender(); });
+["v-start", "v-end"].forEach(function (id) {
+  document.getElementById(id).addEventListener("change", function (e) { VIEW[id === "v-start" ? "start" : "end"] = e.target.value; vLoad(); });
+});
+document.querySelectorAll(".v-preset").forEach(function (btn) { btn.addEventListener("click", function () {
+  var sd = document.getElementById("v-start"), ed = document.getElementById("v-end");
+  var end = new Date((VDATA && VDATA.end) || new Date().toISOString().slice(0, 10));
+  var days = btn.dataset.days;
+  var start = days ? new Date(end - days * 864e5).toISOString().slice(0, 10) : ((VDATA && VDATA.floor) || "2020-07-27");
+  VIEW.start = sd.value = start; VIEW.end = ed.value = end.toISOString().slice(0, 10);
+  vLoad();
+}); });
+vLoad();
+</script>
 {{ modal_script|safe }}

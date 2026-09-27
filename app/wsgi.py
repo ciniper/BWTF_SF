@@ -92,6 +92,7 @@ _COMPARE_GET = {
     "/compare": "send_comparison_page",
     "/api/compare": "send_api_compare",
     "/api/site-history": "send_api_site_history",
+    "/api/samples": "send_api_samples",
 }
 
 # ── Alerts access gate ────────────────────────────────────────────────────────

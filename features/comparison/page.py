@@ -9,6 +9,7 @@ from urllib.parse import parse_qs, urlparse
 from flask import render_template
 
 from features.comparison.comparison import build_comparison, build_site_history
+from features.comparison.samples import build_sample_viewer
 
 COMPARISON_MODAL_SCRIPT = """
 <div id="hist-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="hist-title">
@@ -143,6 +144,18 @@ class ComparisonRoutes:
         except Exception as e:
             self._send_json({"ok": False, "error": str(e)}, status=500)
 
+    def send_api_samples(self):
+        """Send the sample viewer rows: every published result for the chosen
+        sites and window, from both programs (features/comparison/samples.py)."""
+        params = parse_qs(urlparse(self.path).query)
+        one = lambda k, d="": (params.get(k) or [d])[0].strip()  # noqa: E731
+        try:
+            data = build_sample_viewer(start=one("start"), end=one("end"), scope=one("scope", "dual"),
+                                       site=one("site"), sf_gov_monitor=self.combined_monitor.sf_gov_monitor)
+            self._send_json(data)
+        except Exception as e:
+            self._send_json({"ok": False, "error": str(e)}, status=500)
+
     def send_comparison_page(self):
         """Send the BWTF-vs-city comparison dashboard page."""
         try:
@@ -217,7 +230,7 @@ class ComparisonRoutes:
               <tr class="row-click" data-site="{r['site_name']}" tabindex="0" role="button" aria-label="Show history for {r['site_name']}">
                 <td class="site"><strong>{r['site_name']}</strong><span class="go"><svg class="ic"><use href="#i-chart-line"/></svg> view history →</span></td>
                 <td>{bwtf_html}</td>
-                <td>{pill(r['city_exceeds'], r['city_raw'])}<small class="date">{r['city_date'] or '—'}{(' · ' + r['city_source']) if r['city_source'] else ''}</small></td>
+                <td>{pill(r['city_exceeds'], r['city_raw'])}<small class="date">{r['city_date'] or '—'}{(' · ' + r['city_source']) if r['city_source'] else ''}{(f" · {r['city_n']} samples that day, graded on the worse") if r.get('city_n', 0) > 1 else ''}</small></td>
                 <td>{sfpuc_pill(r['sfpuc_status'])}</td>
                 <td>{agreement_cell(r)}</td>
               </tr>"""

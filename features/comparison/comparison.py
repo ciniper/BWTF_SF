@@ -70,12 +70,17 @@ class ComparisonRow:
     bwtf_value: Optional[float]
     bwtf_exceeds: Optional[bool]
 
-    # City — SF Gov Open Data lab result
+    # City — SF Gov Open Data lab result. On a double-sampled day (DataSF keeps
+    # the date but not the time, so a routine sample and a storm resample share
+    # it) city_raws lists every result, city_raw joins them, city_value is the
+    # worse one and grades the row (Chase, 2026-09-27).
     city_source: Optional[str]
     city_date: Optional[str]
     city_raw: Optional[str]
     city_value: Optional[float]
     city_exceeds: Optional[bool]
+    city_raws: list
+    city_n: int
 
     # City — SFPUC official posted status (context)
     sfpuc_status: Optional[str]
@@ -127,17 +132,31 @@ def _fetch_city_latest(monitor: SFWaterQualityMonitor, sources: list[str], days:
         print(f"Error fetching city {analyte} data: {exc}")
         return {}
 
+    return _latest_by_source(records)
+
+
+def _latest_by_source(records: list[dict]) -> dict:
+    """Newest-first records -> {source: latest}. Every record sharing the
+    source's newest sample date is kept: ``raws`` lists them in the order the
+    city published them, ``raw`` joins them for display, ``value`` is the
+    worst (max) and grades the row, ``n`` counts them."""
     latest: dict[str, dict] = {}
     for record in records:
         source = record.get("source")
-        if not source or source in latest:  # records are newest-first, keep the first
+        when = parse_datetime(record.get("sample_date"))
+        if not source or when is None:
             continue
         raw, value = parse_result(record.get("data"))
-        latest[source] = {
-            "date": parse_datetime(record.get("sample_date")),
-            "raw": raw,
-            "value": value,
-        }
+        cur = latest.get(source)
+        if cur is None:
+            latest[source] = {"date": when, "raw": raw, "value": value, "raws": [raw], "values": [value], "n": 1}
+        elif when.date() == cur["date"].date():   # same latest day: a second sample
+            cur["raws"].append(raw)
+            cur["values"].append(value)
+            cur["n"] += 1
+            cur["raw"] = " / ".join(cur["raws"])
+            vals = [v for v in cur["values"] if v is not None]
+            cur["value"] = max(vals) if vals else None
     return latest
 
 
@@ -265,6 +284,8 @@ def build_comparison(
             city_raw=city["raw"] if city else None,
             city_value=city_value,
             city_exceeds=city_exceeds,
+            city_raws=list(city["raws"]) if city else [],
+            city_n=city["n"] if city else 0,
             sfpuc_status=sfpuc_status.get(sfpuc_name) if sfpuc_name else None,
             both_have=both_have,
             agree=agree,

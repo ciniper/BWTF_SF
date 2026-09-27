@@ -58,7 +58,7 @@ from flask import render_template
 
 from shared.stations import STATIONS as _CANONICAL_STATIONS
 
-from shared.datasf import BEACH_SAMPLES_URL  # noqa: E402
+from shared.datasf import BEACH_SAMPLES_URL, DATASET_FLOOR  # noqa: E402
 from shared.standards import (  # noqa: E402
     ENTERO_CAUTION, GEOMETRIC_MEAN_MIN_SAMPLES, GEOMETRIC_MEAN_WINDOW_DAYS, STANDARDS, parse_result,
     single_sample_max,
@@ -78,7 +78,6 @@ INDICATORS["ANY"] = "All (any over)"
 DEFAULT_INDICATOR = ANALYTE
 ROUTINE_MIN = 300  # fewer full-record samples than this = sporadic/reactive
 WET_MONTHS = {11, 12, 1, 2, 3, 4}
-DATASET_FLOOR = "2020-07-27"  # the city publishes nothing earlier
 
 # Raw rows are cached (the dataset refreshes daily); stats are recomputed
 # per request from them — filtering 7k tuples is microseconds.
