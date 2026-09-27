@@ -213,3 +213,17 @@ venv/bin/python -m shared.samples_mirror --backfill
 `watcher_config` also carries the row `live_corrections` (`on` / `off`): the
 forecast's live-corrections layer, flippable without a deploy; the env var
 `LIVE_CORRECTIONS` on Vercel wins over it.
+
+## 013: constant forecast cadence, capture on change, tick error log (2026-09-27)
+
+`db/migrations/013_forecast_cadence_and_error_log.sql` — apply by hand with no
+simulation active. What changes:
+
+| | Before | After |
+|---|---|---|
+| Forecast recompute | a visitor who found the snapshot > 30 min old computed it (5–20 s spinner); hourly `bwtf-keepalive` ping | pg_cron `bwtf-forecast-refresh` at :05 and :35 hits `watcher_config.forecast_refresh_url` (`/forecast/api/refresh`, 55 s pg_net timeout); the tick also fires it when a REAL transition is logged. `bwtf-keepalive` unscheduled; `keepalive_url` row unused (delete at will) |
+| Page load | served stored if < 30 min, else computed | always served stored (stale note past 45 min; compute-on-visit only if the clock has been silent 3 h) |
+| Forecast capture | `forecast_history` first + last per day (012) | plus `forecast_changes`: a row every time the fingerprint (zone/basin %, rules fired, rain to 0.05", feed statuses) changes; unchanged refreshes bump `last_confirmed_at` / `refreshes` |
+| Tick errors | only `watcher_runtime.last_error` (the last one) | every error in `watcher_errors` (kind, message, status), pruned at 90 days |
+
+Check after applying: `watcher_errors` empty or explaining itself; `forecast_changes` gains a row at the first refresh after apply; `select * from cron.job` shows `bwtf-forecast-refresh` and no `bwtf-keepalive`.

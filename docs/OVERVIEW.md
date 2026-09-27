@@ -39,7 +39,7 @@ fail the state standard; this project makes that information timely, searchable 
                     │ pg_cron every minute (db/migrations/002–004)
                     ▼
              poll SFPUC getBeaches → detect station transitions → email via Brevo (source='pg_live')
-             healthchecks.io dead-man ping · hourly keep-alive ping of the app
+             healthchecks.io dead-man ping · forecast refresh every 30 min (+ on a real transition)
 ```
 
 - **Web app** — one Flask application (`app/wsgi.py`) mounting eight feature packages. Serverless on Vercel
@@ -50,7 +50,11 @@ fail the state standard; this project makes that information timely, searchable 
   (key/value: mode, feed URL, keep-alive URL, `live_corrections`), the single-row forecast snapshot cache, and since 012 three
   history tables: `forecast_history` (the first and last snapshot of every day — the first is the start-of-day forecast the
   grading uses; every snapshot carries a `model` stamp: served set from `candidates.SERVED`, artifact version and training time, live-corrections version, input rules, build sha), `feed_station_days` (what the SFPUC feed showed per station per day, written by every tick), and `samples`
-  (a mirror of the city's lab results stamped when we first saw them). Bacteria results otherwise never touch the database:
+  (a mirror of the city's lab results stamped when we first saw them); since 013 also `forecast_changes` (the forecast every time
+  it changed, with first_at / last_confirmed_at so the stretch between two rows is confirmed, not assumed) and `watcher_errors`
+  (every tick error, 90-day retention). The production forecast recomputes on a clock — pg_cron every 30 min at :05 and :35, and
+  immediately when the tick logs a real transition — and the page always serves the stored snapshot (a visitor computes only if
+  the clock has been silent 3 h). Bacteria results otherwise never touch the database:
   pages read DataSF live and training reads the committed CSVs under `features/forecast/data/raw/` (in the repo since 2026-09-27; refreshed by the collectors before a retrain or rescore). Without Supabase credentials the app falls back to the legacy JSON files under
   `data/` and in-memory forecasts — fine for a bare checkout, never for production.
 - **Watcher** — the detection→dispatch loop is SQL, run by pg_cron every minute and fetching the SFPUC feed with pg_net.

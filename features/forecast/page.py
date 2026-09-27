@@ -21,6 +21,7 @@ response contract ``app/wsgi.py`` dispatches.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import sys
@@ -64,6 +65,12 @@ def is_available() -> bool:
 
 _TABLE = "forecast_predictions"
 FRESH_SECONDS = 30 * 60   # a snapshot younger than this is served as-is
+# Since migration 013 the production forecast recomputes on a clock (pg_cron
+# every 30 min, plus a real feed transition) and visitors are served the
+# stored snapshot whatever its age — up to this ceiling, past which the cron
+# has clearly stopped and the old compute-on-visit path takes over.
+SERVE_STORED_SECONDS = 3 * 3600
+STALE_NOTE_SECONDS = 45 * 60   # older than a missed half-hour: say so on the page
 GUARD_SECONDS = 3 * 60    # a refresh claim older than this is abandoned (crashed worker)
 _COLD_WAIT_SECONDS = 24   # how long a guard-losing visitor waits when there's NO snapshot yet
 
@@ -172,6 +179,42 @@ def _record_history(snap: dict, now: datetime) -> bool:
         return False
 
 
+def _fingerprint(snap: dict) -> str:
+    """What a visitor would notice changing: per day the zone and basin
+    percentages (3 dp), the live rules that fired, the day's rain (to 0.05"),
+    and each station's feed status. Timestamps and the model stamp are left
+    out, so an unchanged forecast fingerprints the same across refreshes."""
+    days = {}
+    for key, d in sorted((snap.get("predictions") or {}).items()):
+        if not isinstance(d, dict):
+            continue
+        lc = d.get("live_corrections") or {}
+        rules = sorted({str(v.get("rule")) for blk in (lc.get("stage1") or {}, lc.get("groups") or {})
+                        for v in blk.values() if isinstance(v, dict)})
+        days[key] = {
+            "zones": {k: round(float(v), 3) for k, v in (d.get("zones") or {}).items()},
+            "basins": {k: round(float(v), 3) for k, v in (d.get("discharge_probs") or {}).items()},
+            "rules": rules,
+            "rain": round(float(d.get("rain_inches") or 0) / 0.05) * 0.05,
+        }
+    feed = sorted((b.get("name"), b.get("status"), bool(b.get("has_cso")))
+                  for b in (snap.get("beach_status") or []) if isinstance(b, dict))
+    return hashlib.sha1(json.dumps({"days": days, "feed": feed}, sort_keys=True, default=str).encode()).hexdigest()
+
+
+def _record_change(snap: dict, now: datetime):
+    """forecast_changes (migration 013): a new row when the fingerprint differs
+    from the last stored one, else that row's last_confirmed_at moves forward.
+    Returns True (new row), False (confirmed unchanged) or None (not recorded)."""
+    try:
+        clean = json.loads(json.dumps(snap, default=str))
+        return bool(sb.rpc("bwtf_record_forecast_change",
+                           {"p_fingerprint": _fingerprint(snap), "p_snapshot": clean, "p_at": _iso(now)}))
+    except Exception as e:  # noqa: BLE001
+        print(f"forecast_changes not recorded: {e}")
+        return None
+
+
 def _mirror_samples() -> int:
     """samples (migration 012): the lab results the engine just fetched for its
     window, DO NOTHING on the ones already there. Never raises."""
@@ -221,6 +264,7 @@ def _compute_and_store(row, now: datetime):
     if row is not None:
         if _store_snapshot(snap, now):
             _record_history(snap, now)   # the production host is the only writer (migration 012)
+            _record_change(snap, now)    # capture on change (migration 013)
             _mirror_samples()
     return _json(_with_meta(snap, now))
 
@@ -320,9 +364,15 @@ def handle_data(query, body):
     stored_snap = row.get("snapshot") if row else None
     stored_at = _parse_ts(row.get("generated_at")) if row else None
 
-    # 1. Fresh stored snapshot → serve instantly, no engine work at all.
-    if stored_snap and stored_at and (now - stored_at).total_seconds() < FRESH_SECONDS:
-        return _json(_with_meta(stored_snap, stored_at))
+    # 1. A stored snapshot → serve instantly, no engine work at all. The clock
+    #    (pg_cron, migration 013) keeps it fresh; a visitor never computes
+    #    unless the clock has been silent for SERVE_STORED_SECONDS.
+    if stored_snap and stored_at:
+        age = (now - stored_at).total_seconds()
+        if age < SERVE_STORED_SECONDS:
+            note = None if age < STALE_NOTE_SECONDS else \
+                f"last computed {int(age // 60)} min ago; the scheduled refresh has not run since"
+            return _json(_with_meta(stored_snap, stored_at, stale_note=note))
 
     # 2. Stale or missing → the engine has to run. An engine-less host can
     #    still serve whatever snapshot another host stored.
