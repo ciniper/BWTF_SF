@@ -191,7 +191,7 @@ Hit `/`, `/alerts`, `/compare`, `/forecast`. The first `/forecast` visit after
 a deploy (or after 30 quiet minutes) takes ~5–20 s while that visit recomputes;
 subsequent visits serve the stored snapshot instantly.
 
-## 012: history tables (2026-09-27)
+## 012: history tables (2026-09-27, applied the same day; samples backfilled)
 
 `db/migrations/012_history_tables.sql` — apply by hand in the Supabase SQL
 editor with no simulation active. It drops `watcher_state` (the phase-1 Python
