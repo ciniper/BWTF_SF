@@ -49,7 +49,7 @@ fail the state standard; this project makes that information timely, searchable 
   station states (`watcher_state_shadow`, in shadow and live mode alike), `alert_log` (every detection, dispatch and simulation, with provenance), `watcher_config`
   (key/value: mode, feed URL, keep-alive URL, `live_corrections`), the single-row forecast snapshot cache, and since 012 three
   history tables: `forecast_history` (the first and last snapshot of every day — the first is the start-of-day forecast the
-  grading uses), `feed_station_days` (what the SFPUC feed showed per station per day, written by every tick), and `samples`
+  grading uses; every snapshot carries a `model` stamp: served set from `candidates.SERVED`, artifact version and training time, live-corrections version, input rules, build sha), `feed_station_days` (what the SFPUC feed showed per station per day, written by every tick), and `samples`
   (a mirror of the city's lab results stamped when we first saw them). Bacteria results otherwise never touch the database:
   pages read DataSF live and training reads the committed CSVs under `features/forecast/data/raw/` (in the repo since 2026-09-27; refreshed by the collectors before a retrain or rescore). Without Supabase credentials the app falls back to the legacy JSON files under
   `data/` and in-memory forecasts — fine for a bare checkout, never for production.

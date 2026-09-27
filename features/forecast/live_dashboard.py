@@ -1440,11 +1440,43 @@ class LiveData:
             "days": days,
         }
 
+    def model_stamp(self) -> dict:
+        """Which model made this snapshot — so a forecast_history row stays
+        comparable across a model swap. The served set's name comes from
+        candidates.SERVED (the one home), the artifact version and training
+        time from the pickles, the rest from the modules that define them.
+        Computed once per process."""
+        cached = getattr(self, "_model_stamp", None)
+        if cached:
+            return cached
+        first = next(iter(self.models.values()), {}) if getattr(self, "models", None) else {}
+        stamp = {
+            **_cand.SERVED,
+            "trained_at": first.get("trained_at"),
+            "live_corrections": _lr.VERSION,
+            "input_rules": list(INPUT_RULES_LIVE),
+            "build": None,
+        }
+        try:
+            report = MODEL_DIR / "eval_report.json"
+            if report.exists():
+                stamp["feature_set"] = json.load(open(report)).get("feature_set")
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            from app.build_info import build_info
+            stamp["build"] = build_info().get("sha")
+        except Exception:  # noqa: BLE001
+            pass
+        self._model_stamp = stamp
+        return stamp
+
     def get_snapshot(self) -> dict:
         """Get current state as JSON-serializable dict"""
         with self.lock:
             return {
                 "last_refresh": self.last_refresh.isoformat() if self.last_refresh else None,
+                "model": self.model_stamp(),
                 "predictions": self.predictions or {},
                 "live_corrections": {"version": _lr.VERSION, **(getattr(self, "_live_switch", None) or {"enabled": True, "source": "default"}),
                                      "watcher": getattr(self, "_live_watcher", None), "watcher_since": self.WATCHER_SINCE},

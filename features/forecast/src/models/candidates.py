@@ -31,6 +31,14 @@ SERVE_DIR = HERE.parents[1] / "data" / "models"
 CANDIDATES_DIR = SERVE_DIR / "candidates"
 NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{1,40}$")
 
+# The served set, named once. "gb_v1" is the user-facing name of the stage 1
+# trees in data/models/ (their pickles and directory still say "v4" — file
+# names only; never call the model v4), composed with stage 2 v1. The live
+# snapshot stamps itself with this (live_dashboard.model_stamp) so every
+# forecast_history row says which model made it; the analysis report labels
+# the served set from it too.
+SERVED = {"name": "gb_v1", "stage1": "gb_v1", "stage2": "v1", "artifact": "v4"}
+
 
 def valid_name(name: str) -> bool:
     return bool(name) and bool(NAME_RE.match(name))

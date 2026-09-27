@@ -58,7 +58,8 @@ COLORS = ["#0072BC", "#b5310a", "#7b4bb5", "#237059", "#b97e00", "#d4763a"]
 
 def load_sets() -> list[dict]:
     sc = json.load(gzip.open(SERVE_DIR / "scorecard.json.gz"))
-    sets = [{"name": "gb_v1", "label": "gb_v1 (served)", "stage1": "gb_v1", "stage2": "v1", "served": True, "sc": sc}]
+    sets = [{"name": candidates.SERVED["name"], "label": f'{candidates.SERVED["name"]} (served)', "stage1": candidates.SERVED["stage1"],
+             "stage2": candidates.SERVED["stage2"], "served": True, "sc": sc}]
     for man in candidates.list_candidates():
         c = candidates.load_scorecard(man["name"])
         if not c:

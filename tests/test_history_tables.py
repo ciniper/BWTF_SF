@@ -120,6 +120,25 @@ def test_engine_keeps_the_live_samples_and_the_refresh_writes_only_after_storing
         page._engine, page._store_snapshot, page._record_history, page._mirror_samples = saved
 
 
+def test_snapshot_carries_the_model_stamp():
+    import pickle
+    from features.forecast import live_dashboard as ld
+    from features.forecast.src.models import candidates, live_rules
+    from features.forecast.src.models.rain_features import INPUT_RULES_LIVE
+    from app.build_info import build_info
+    snap = ld.LIVE.get_snapshot()
+    m = snap["model"]
+    assert m["name"] == m["stage1"] == candidates.SERVED["name"] == "gb_v1" and m["stage2"] == "v1"
+    pk = pickle.load(open(ROOT / "features/forecast/data/models/central_model.pkl", "rb"))
+    assert m["artifact"] == pk["version"] and m["trained_at"] == pk["trained_at"]
+    assert m["live_corrections"] == live_rules.VERSION and m["input_rules"] == list(INPUT_RULES_LIVE)
+    assert m["feature_set"] and m["build"] == build_info()["sha"]
+    assert ld.LIVE.model_stamp() is m   # computed once per process
+    # the analysis report names the served set from the same constant, not a literal
+    src = (ROOT / "features/forecast/src/models/report_models.py").read_text()
+    assert '"name": "gb_v1"' not in src and "candidates.SERVED" in src
+
+
 if __name__ == "__main__":
     failed = 0
     for name, fn in sorted(globals().items()):
