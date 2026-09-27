@@ -775,6 +775,7 @@ class LiveData:
         except Exception as e:  # noqa: BLE001
             print(f"live samples unavailable: {e}")
             return {}
+        self.last_live_samples = samples   # mirrored into Supabase `samples` by the production refresh (migration 012)
         out: dict = {}
         for x in samples:
             g = GROUP_OF_STATION.get(x.get("station"))

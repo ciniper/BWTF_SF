@@ -190,3 +190,26 @@ PaaS — each deploy silently re-baselines, never re-alerts standing events).
 Hit `/`, `/alerts`, `/compare`, `/forecast`. The first `/forecast` visit after
 a deploy (or after 30 quiet minutes) takes ~5–20 s while that visit recomputes;
 subsequent visits serve the stored snapshot instantly.
+
+## 012: history tables (2026-09-27)
+
+`db/migrations/012_history_tables.sql` — apply by hand in the Supabase SQL
+editor with no simulation active. It drops `watcher_state` (the phase-1 Python
+watcher's table; nothing reads it) and adds three tables nothing depends on
+until they exist — the Python writers catch a missing table and log it:
+
+| Table | Written by | One row per |
+|---|---|---|
+| `forecast_history` | the production forecast refresh (`features/forecast/page.py` → rpc `bwtf_record_forecast`) | Pacific day: the day's first snapshot (the start-of-day forecast) and its last |
+| `feed_station_days` | every watcher tick (`bwtf_shadow_tick` → `bwtf_record_feed_day`) | station-day: raw posted / CSO flags, colours, worst and last classified status, the raw station object |
+| `samples` | the production refresh (`shared/samples_mirror.mirror`) and the backfill below | lab result (station, date, analyte, raw value), stamped `first_seen_at` |
+
+After applying, backfill the samples mirror once from this laptop (DataSF from 2020-07-27, DO NOTHING on rows already there):
+
+```bash
+venv/bin/python -m shared.samples_mirror --backfill
+```
+
+`watcher_config` also carries the row `live_corrections` (`on` / `off`): the
+forecast's live-corrections layer, flippable without a deploy; the env var
+`LIVE_CORRECTIONS` on Vercel wins over it.

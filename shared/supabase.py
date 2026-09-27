@@ -102,10 +102,13 @@ def insert(table: str, rows: list[dict], returning: bool = False) -> list[dict]:
     return response.json() if returning else []
 
 
-def upsert(table: str, rows: list[dict], on_conflict: str) -> None:
-    """INSERT ... ON CONFLICT (on_conflict) DO UPDATE for every row."""
+def upsert(table: str, rows: list[dict], on_conflict: str, resolution: str = "merge-duplicates") -> None:
+    """INSERT ... ON CONFLICT (on_conflict) DO UPDATE for every row; pass
+    resolution="ignore-duplicates" for DO NOTHING (keeps the stored row, e.g.
+    a first_seen_at stamp)."""
+    assert resolution in ("merge-duplicates", "ignore-duplicates"), resolution
     _request("POST", table, params={"on_conflict": on_conflict},
-             json_body=rows, prefer="resolution=merge-duplicates,return=minimal")
+             json_body=rows, prefer=f"resolution={resolution},return=minimal")
 
 
 def update(table: str, filters: dict, patch: dict) -> list[dict]:

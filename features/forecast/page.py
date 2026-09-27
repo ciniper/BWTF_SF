@@ -26,6 +26,7 @@ import os
 import sys
 import time
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from pathlib import Path
 
 from flask import render_template
@@ -145,6 +146,44 @@ def _store_snapshot(snap: dict, now: datetime) -> bool:
         return False
 
 
+_PACIFIC = ZoneInfo("America/Los_Angeles")
+
+
+def _forecast_date(snap: dict, now: datetime) -> str:
+    """The Pacific calendar day a snapshot belongs to: the engine's own
+    ``is_today`` day when present, else ``now`` in Pacific time."""
+    for d in (snap.get("predictions") or {}).values():
+        if isinstance(d, dict) and d.get("is_today") and d.get("date"):
+            return str(d["date"])[:10]
+    return now.astimezone(_PACIFIC).strftime("%Y-%m-%d")
+
+
+def _record_history(snap: dict, now: datetime) -> bool:
+    """forecast_history (migration 012): the day's first snapshot is the
+    start-of-day forecast the grading uses, the last is kept too — one rpc,
+    never raises (a missing table or a hiccup must not fail the refresh)."""
+    try:
+        clean = json.loads(json.dumps(snap, default=str))
+        sb.rpc("bwtf_record_forecast", {"p_date": _forecast_date(snap, now),
+                                        "p_snapshot": clean, "p_generated_at": _iso(now)})
+        return True
+    except Exception as e:  # noqa: BLE001
+        print(f"forecast_history not recorded: {e}")
+        return False
+
+
+def _mirror_samples() -> int:
+    """samples (migration 012): the lab results the engine just fetched for its
+    window, DO NOTHING on the ones already there. Never raises."""
+    try:
+        from shared import samples_mirror
+        rows = getattr(_engine.LIVE, "last_live_samples", None) or []
+        return samples_mirror.mirror(rows) if rows else 0
+    except Exception as e:  # noqa: BLE001
+        print(f"samples not mirrored: {e}")
+        return -1
+
+
 def _with_meta(snap: dict | None, generated_at: datetime | None,
                refreshing: bool = False, stale_note: str | None = None) -> dict:
     out = dict(snap or {"last_refresh": None, "predictions": {},
@@ -180,7 +219,9 @@ def _compute_and_store(row, now: datetime):
         return _json(_with_meta(snap, None))
 
     if row is not None:
-        _store_snapshot(snap, now)
+        if _store_snapshot(snap, now):
+            _record_history(snap, now)   # the production host is the only writer (migration 012)
+            _mirror_samples()
     return _json(_with_meta(snap, now))
 
 

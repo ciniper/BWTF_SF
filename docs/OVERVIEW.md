@@ -45,9 +45,13 @@ fail the state standard; this project makes that information timely, searchable 
 - **Web app** — one Flask application (`app/wsgi.py`) mounting eight feature packages. Serverless on Vercel
   (`vercel.json`, 60 s function limit); `Procfile` runs gunicorn for any conventional host. Static analyses under
   `reports/` are served at `/reports/<name>`.
-- **State** — everything durable lives in Supabase (`db/migrations/001` → `011`): subscribers, the watcher's last-seen
-  station states, `alert_log` (every detection, dispatch and simulation, with provenance), `watcher_config`, and a
-  single-row forecast snapshot cache. Without Supabase credentials the app falls back to the legacy JSON files under
+- **State** — everything durable lives in Supabase (`db/migrations/001` → `012`): subscribers, the watcher's last-seen
+  station states (`watcher_state_shadow`, in shadow and live mode alike), `alert_log` (every detection, dispatch and simulation, with provenance), `watcher_config`
+  (key/value: mode, feed URL, keep-alive URL, `live_corrections`), the single-row forecast snapshot cache, and since 012 three
+  history tables: `forecast_history` (the first and last snapshot of every day — the first is the start-of-day forecast the
+  grading uses), `feed_station_days` (what the SFPUC feed showed per station per day, written by every tick), and `samples`
+  (a mirror of the city's lab results stamped when we first saw them). Bacteria results otherwise never touch the database:
+  pages read DataSF live and training reads the gitignored CSV under `features/forecast/data/raw/`. Without Supabase credentials the app falls back to the legacy JSON files under
   `data/` and in-memory forecasts — fine for a bare checkout, never for production.
 - **Watcher** — the detection→dispatch loop is SQL, run by pg_cron every minute and fetching the SFPUC feed with pg_net.
   It alerts only on transitions to a *worse* state (safe → posted, safe → CSO, posted → CSO), once per event, and logs
@@ -86,6 +90,7 @@ fail the state standard; this project makes that information timely, searchable 
 | **BeachWatch** (California State Water Resources Control Board, data.ca.gov `beach-water-quality-postings-and-closures`) | Every SF beach advisory county health filed with the State: station, posting date, reopening date, type (Posting / Rain / Closure), cause | **1999 → Feb 2026** (SF files months late); 2,142 SF station-advisories | `collectors/beachwatch.py --refresh`, `src/models/posting_label.py` | `features/forecast/data/beachwatch/` (`sf_beach_advisories.csv`, `sf_posted_zone_days.csv`, manifest) | The posting label: Model check "graded against beach postings", analysis report section |
 | **Surfrider BWTF database** (AWS AppSync GraphQL behind bwtf.surfrider.org; SF chapter = lab 76) | Volunteer samples with tester, weather, tide, waves, comments | Chapter history | `features/comparison/bwtf_api.py` | Not stored | Source Comparison, BWTF Sample Log |
 | **Our own alert_log** (Supabase) | Every station transition the watcher saw (posted / CSO / cleared), every dispatch, every simulation | **Aug 2026 →** (`pg_shadow` from 2026-08-16, `pg_live` after the flip) | `shared/alert_log.py`, `features/cso_history` | Supabase | CSO Event Timeline, forecast live override, "What happened" |
+| **Our own history tables** (Supabase, migration 012) | `forecast_history`: first and last forecast snapshot per day; `feed_station_days`: the feed's flags, colours and classified status per station-day ("polled and saw nothing" included); `samples`: the city's lab results with the time we first saw each | **from the day 012 is applied** (samples backfilled to Jul 2020) | `features/forecast/page.py` (refresh), the tick (`bwtf_record_feed_day`), `shared/samples_mirror.py` | Supabase | Nothing reads them yet: the watcher-era replay of live_v1, the watcher's miss/lag rate vs CIWQS, the results' arrival lag |
 
 ### 4.2 Rain and weather (what drives the forecast)
 
