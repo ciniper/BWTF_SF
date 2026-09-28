@@ -45,7 +45,7 @@ HUBS = [
              "every result · both programs"),
             ("/graphs", "Graphs",
              "Any site over time: all three indicators on one plot with the state limits drawn in, or the city against Surfrider head to head.",
-             "any site · all indicators"),
+             "any site · all indicators", ("/compare", "Source Comparison: the six dual beaches, head to head")),
         ],
     },
     {
@@ -77,8 +77,8 @@ UNDER_THE_HOOD = [
 # Flat (href, icon, title, blurb) view of the same pages, kept for anything
 # that wants the list (tests, the sitemap of this repo's docs).
 PAGES = [(h["primary"][0], "mail", h["primary"][1], h["primary"][2]) for h in HUBS if h["primary"]] + [
-    (href, {"today": "cloud-rain", "water": "chart", "record": "receipt"}[h["key"]], title, blurb)
-    for h in HUBS for href, title, blurb, _fact in h["rows"]
+    (r[0], {"today": "cloud-rain", "water": "chart", "record": "receipt"}[h["key"]], r[1], r[2])
+    for h in HUBS for r in h["rows"]
 ]
 
 FACTS_BUDGET_SECONDS = 2.5   # the landing page must stay quick; a slow source just keeps its static fact
@@ -184,9 +184,10 @@ def hubs_with_facts(facts: dict | None) -> list[dict]:
     facts = facts or {}
     rendered = []
     for h in HUBS:
-        rows = [{"href": href, "title": title, "blurb": blurb,
-                 "fact": facts.get(href, static), "live": href in facts}
-                for href, title, blurb, static in h["rows"]]
+        rows = [{"href": r[0], "title": r[1], "blurb": r[2],
+                 "fact": facts.get(r[0], r[3]), "live": r[0] in facts,
+                 "sub": r[4] if len(r) > 4 else None}   # optional (href, label): a subpage under this row
+                for r in h["rows"]]
         rendered.append({**h, "rows": rows})
     return rendered
 

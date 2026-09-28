@@ -11,7 +11,7 @@ from urllib.parse import parse_qs, urlencode, urlparse
 
 from flask import render_template
 
-from features.comparison.comparison import build_comparison, build_site_history, build_site_series, graph_sites
+from features.comparison.comparison import ANALYTES, build_comparison, build_site_history, build_site_series, graph_sites
 from features.comparison.samples import build_sample_day, build_sample_viewer
 from shared.datasf import DATASET_FLOOR
 
@@ -86,17 +86,28 @@ class ComparisonRoutes:
         self.send_header("Location", url)
         self.end_headers()
 
-    def send_compare_redirect(self):
-        """/compare is retired: its graphs live on /graphs and its viewer on /samples.
-        Old deep links keep working: ?graph=<station> → /graphs, ?vsite=<station> → /samples."""
+    def send_comparison_page(self):
+        """Source Comparison — the head to head for the beaches both programs sample
+        (back by request, 2026-09-28). The old viewer deep links still forward:
+        ?vsite=<station> → /samples, ?graph=<station> → /graphs."""
         params = parse_qs(urlparse(self.path).query)
         one = lambda k: (params.get(k) or [""])[0].strip()  # noqa: E731
         if one("vsite"):
             self._redirect("/samples?" + urlencode({"scope": "all", "site": one("vsite")}))
-        elif one("graph"):
+            return
+        if one("graph"):
             self._redirect("/graphs?" + urlencode({"site": one("graph")}))
-        else:
-            self._redirect("/graphs")
+            return
+        try:
+            html = self.generate_comparison_html(self._compare_data(self._analyte_param()))
+        except Exception as e:
+            html = f"<!doctype html><meta charset='utf-8'><h1>Comparison unavailable</h1><pre>{e}</pre>"
+        encoded = html.encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", len(encoded))
+        self.end_headers()
+        self.wfile.write(encoded)
 
     def send_bwtf_redirect(self):
         """/bwtf (the BWTF Sample Log) is now the Surfrider view of /samples with the field notes as columns."""
@@ -135,8 +146,96 @@ class ComparisonRoutes:
             items = [x for x in sites if x["group"] == g]
             if items:
                 groups.append((g, items))
-        self._send_page("graphs/page.html", sites=sites, site_groups=groups, dataset_floor=DATASET_FLOOR)
+        self._send_page("graphs/page.html", sites=sites, site_groups=groups, dataset_floor=DATASET_FLOOR,
+                        analytes=[{"code": c, "label": m["label"]} for c, m in ANALYTES.items()])
 
     def send_samples_page(self):
         """Samples: every result from both programs, the latest-by-site strip, field notes three ways."""
         self._send_page("samples/page.html", dataset_floor=DATASET_FLOOR)
+
+    def generate_comparison_html(self, data, scope="dual"):
+        """Render the source-comparison dashboard (Surfrider BWTF vs. public city data).
+        ``scope`` = which rows start visible: the dual sites, or every station."""
+        std = data["standard"]
+        s = data["summary"]
+        limit = std["single_sample_max"]
+        analyte_label = std["analyte"]
+        analyte_code = std["code"]
+        bwtf_measures = data.get("bwtf_measures", True)
+        analyte_options = "".join(
+            f'<option value="{a["code"]}"{" selected" if a["code"] == analyte_code else ""}>{a["label"]}</option>'
+            for a in data.get("analytes", [])
+        )
+        bwtf_note = (
+            f'<p class="note-info">ℹ︎ BWTF measures Enterococcus only — showing the SFPUC {analyte_label} '
+            f'readings (graded against {limit} MPN/100mL). Switch to Enterococcus for the head-to-head comparison.</p>'
+        ) if not bwtf_measures else ""
+
+        def pill(exceeds, raw):
+            if raw is None:
+                return '<span class="pill pill--na">no data</span>'
+            cls, label = ("pill--bad", "exceeds") if exceeds else ("pill--ok", "within")
+            return f'<span class="pill {cls}">{raw}<small>{label}</small></span>'
+
+        def sfpuc_pill(status):
+            mapping = {
+                "cso": ("pill--bad", "CSO"),
+                "posted": ("pill--warn", "posted"),
+                "safe": ("pill--ok", "safe"),
+                "not_sampled": ("pill--na", "not sampled"),
+                "not_routinely_sampled": ("pill--na", "not routine"),
+            }
+            cls, label = mapping.get(status, ("pill--na", "—"))
+            return f'<span class="pill {cls}">{label}</span>'
+
+        def agreement_cell(r):
+            if not r["both_have"]:
+                if r["city_value"] is not None and r["bwtf_value"] is None:
+                    return '<span class="agree agree--na">SFPUC only</span>'
+                return '<span class="agree agree--na">— incomplete</span>'
+            sub = []
+            if r["value_delta"] is not None:
+                sub.append(f"Δ {r['value_delta']:g}")
+            if r["day_gap"] is not None:
+                sub.append(f"{r['day_gap']}d apart")
+            subline = f"<small>{' · '.join(sub)}</small>" if sub else ""
+            if r["agree"]:
+                txt = "Both exceed" if r["bwtf_exceeds"] else "Both within standard"
+                return f'<span class="agree agree--yes"><svg class="ic"><use href="#i-circle-check"/></svg> {txt}</span>{subline}'
+            return f'<span class="agree agree--no"><svg class="ic"><use href="#i-triangle-alert"/></svg> Sources differ</span>{subline}'
+
+        rows_html = ""
+        for r in data["rows"]:
+            if not r.get("bwtf_site", True):
+                continue   # city-only stations belong to /graphs and /samples
+            if False:
+                bwtf_html = '<span class="pill pill--na">BWTF doesn\'t sample here</span>'
+            elif r['bwtf_raw'] is None:
+                bwtf_html = '<span class="pill pill--na">not measured</span>'
+            else:
+                bwtf_html = (f"{pill(r['bwtf_exceeds'], r['bwtf_raw'])}"
+                             f"<small class=\"date\">{r['bwtf_date'] or '—'}{(' · ' + r['bwtf_time']) if r['bwtf_time'] else ''}</small>")
+            rows_html += f"""
+              <tr class="row-click" data-site="{r.get('site_key') or r['site_name']}" data-name="{r['site_name']}" tabindex="0" role="button" aria-label="Show history for {r['site_name']}">
+                <td class="site"><strong>{r['site_name']}</strong><span class="go"><svg class="ic"><use href="#i-chart-line"/></svg> view history →</span></td>
+                <td>{bwtf_html}</td>
+                <td>{pill(r['city_exceeds'], r['city_raw'])}<small class="date">{r['city_date'] or '—'}{(' · ' + r['city_source']) if r['city_source'] else ''}{(f" · {r['city_n']} samples that day, graded on the worse") if r.get('city_n', 0) > 1 else ''}</small></td>
+                <td>{sfpuc_pill(r['sfpuc_status'])}</td>
+                <td>{agreement_cell(r)}</td>
+              </tr>"""
+
+        generated = data["generated_at"][:16].replace("T", " ")
+        max_gap_display = '—' if s['max_day_gap'] is None else str(s['max_day_gap']) + 'd'
+        return render_template(
+            "comparison/page.html",
+            analyte_label=analyte_label,
+            limit=limit,
+            s=s,
+            max_gap_display=max_gap_display,
+            analyte_options=analyte_options,
+            bwtf_note=bwtf_note,
+            rows_html=rows_html,
+            generated=generated,
+            analyte_code=analyte_code,
+            dataset_floor=DATASET_FLOOR,
+        )

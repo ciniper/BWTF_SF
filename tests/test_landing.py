@@ -15,13 +15,15 @@ FEATURE_PAGES = {"/signup", "/alerts", "/forecast", "/samples", "/graphs", "/cso
 
 def test_every_feature_page_sits_in_exactly_one_hub_and_every_link_resolves():
     hrefs = [h["primary"][0] for h in L.HUBS if h["primary"]] + [r[0] for h in L.HUBS for r in h["rows"]]
+    subs = [r[4][0] for h in L.HUBS for r in h["rows"] if len(r) > 4]
+    assert subs == ["/compare"]   # Source Comparison hangs under Graphs
     assert sorted(hrefs) == sorted(FEATURE_PAGES) and len(hrefs) == len(set(hrefs)) == 9
     assert [h["title"] for h in L.HUBS] == ["Today & alerts", "The water record", "Postings & discharges"]
     assert L.HUBS[2]["sub"] == "What the city reported, and when"
     assert {href for href, *_ in L.PAGES} == FEATURE_PAGES            # the flat view still lists them all
     from app.wsgi import app
     rules = {r.rule for r in app.url_map.iter_rules()}
-    for href in hrefs + [h for h, _ in L.UNDER_THE_HOOD]:
+    for href in hrefs + subs + [h for h, _ in L.UNDER_THE_HOOD]:
         path = href.split("#")[0]
         if path.startswith("/reports/"):
             assert (ROOT / "reports" / path.split("/")[-1]).is_file(), path
@@ -32,13 +34,14 @@ def test_every_feature_page_sits_in_exactly_one_hub_and_every_link_resolves():
     assert [r[1] for r in L.HUBS[1]["rows"]] == ["Site Report Card", "Samples", "Graphs"]
     # the retired pages redirect to their successors, old deep links included
     with app.test_client() as c:
-        assert (c.get("/compare").status_code, c.get("/compare").headers["Location"]) == (302, "/graphs")
-        assert c.get("/compare?graph=BAY%23320_SL").headers["Location"] == "/graphs?site=BAY%23320_SL"
+        assert c.get("/compare?graph=BAY%23320_SL").headers["Location"] == "/graphs?site=BAY%23320_SL"   # old deep links still forward
         assert c.get("/compare?vsite=BAY%23211_SL").headers["Location"] == "/samples?scope=all&site=BAY%23211_SL"
         assert c.get("/bwtf").headers["Location"] == "/samples?source=bwtf&scope=all&notes=columns"
         for u in ("/graphs", "/samples"):
             html = c.get(u).data.decode(); assert "/static/charts.js" in html and "/static/sample_popover.js" in html, u
         assert "Field notes" in c.get("/samples").data.decode() and 'data-notes="columns"' in c.get("/samples").data.decode()
+        g = c.get("/graphs").data.decode()
+        assert g.count('class="tile"') >= 20 and 'id="analyte"' in g and '<option value="ENTERO" selected>' in g and 'href="/compare"' in g
     assert "Online Postings Timeline" in (ROOT / "app/templates/cso_history/page.html").read_text()
     assert 'id="i-clipboard"' in (ROOT / "app/templates/_icons.html").read_text()
 

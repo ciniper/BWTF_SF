@@ -91,7 +91,7 @@ _ALERT_POST = {
 _COMPARE_GET = {
     "/graphs": "send_graphs_page",
     "/samples": "send_samples_page",
-    "/compare": "send_compare_redirect",      # retired page → /graphs (or /samples for ?vsite=)
+    "/compare": "send_comparison_page",       # Source Comparison: the head to head for the dual sites
     "/bwtf": "send_bwtf_redirect",            # retired BWTF Sample Log → /samples?source=bwtf&notes=columns
     "/api/compare": "send_api_compare",
     "/api/site-history": "send_api_site_history",

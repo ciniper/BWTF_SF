@@ -207,6 +207,23 @@ def test_sample_rows_carry_the_volunteer_field_notes_from_events():
     assert plain["rows"][0]["field"] is None
 
 
+def test_source_comparison_page_renders_the_lab_sites_only_with_the_bacteria_select():
+    from app.wsgi import app
+    from features.comparison.page import ComparisonRoutes
+    row = lambda name, key, bwtf_site, dual, **kw: dict(site_name=name, latitude=None, longitude=None, bwtf_date="2026-09-24", bwtf_time="6:30 PM", bwtf_raw="20", bwtf_value=20.0, bwtf_exceeds=False,  # noqa: E731
+        city_source=key, city_date="2026-09-22", city_raw="20 / 399", city_value=399.0, city_exceeds=True, city_raws=["20", "399"], city_n=2, sfpuc_status="posted",
+        both_have=True, agree=False, value_delta=379.0, day_gap=2, site_key=key, dual=dual, bwtf_site=bwtf_site, **kw)
+    data = {"generated_at": "2026-09-28T20:00:00", "standard": {"analyte": "Enterococcus", "code": "ENTERO", "single_sample_max": 104, "units": "MPN/100mL"},
+            "analytes": [{"code": "ENTERO", "label": "Enterococcus"}, {"code": "COLI_TOTAL", "label": "Total coliform"}], "bwtf_measures": True, "bwtf_available": True, "lab_name": "SF",
+            "summary": {"site_count": 1, "all_site_count": 2, "comparable_count": 1, "agree_count": 0, "disagree_count": 1, "bwtf_exceed_count": 0, "city_exceed_count": 1, "max_day_gap": 2},
+            "rows": [row("Aquatic Park", "BAY#211_SL", True, True), row("Islais Creek", "BAY#320_SL", False, False)]}
+    with app.test_request_context("/compare"):
+        h = ComparisonRoutes.generate_comparison_html(None, data)
+    assert h.count('class="row-click"') == 1 and "Aquatic Park" in h and "Islais Creek" not in h     # city-only stations stay on /graphs and /samples
+    assert '<option value="ENTERO" selected>' in h and "20 / 399" in h and "2 samples that day, graded on the worse" in h
+    assert "/static/charts.js" in h and 'id="hist-modal"' in h and "/api/site-series?" in h and "chart.umd.js" not in h
+
+
 def test_default_range_is_the_last_year_and_bad_input_falls_back():
     s, e = S.parse_range("", "")
     assert (e - s).days == S.DEFAULT_DAYS == 365 and e.date() == datetime.now().date()
