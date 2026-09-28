@@ -38,7 +38,7 @@ import requests
 
 # Public BWTF AppSync GraphQL endpoint + API key (shipped in the website front-end)
 BWTF_GRAPHQL_URL = "https://esvbxbhkmzgh5ojw3g2hvsx7du.appsync-api.us-west-2.amazonaws.com/graphql"
-BWTF_API_KEY = "da2-vnfkf5zembhljj6lwoshzhiodm"
+BWTF_API_KEY = "da2-vnfkf5zembhljj6lwoshzhiodm"  # sadscan:disable np.appsync.1 — the public key Surfrider ships in the bwtf.surfrider.org front-end, not a secret
 
 # Surfrider San Francisco chapter lab id
 SF_LAB_ID = 76
@@ -184,7 +184,7 @@ query History($lab: Int, $sort: ModelSortDirection, $limit: Int, $nextToken: Str
       testedBy
       comments
       volume
-      location { name }
+      location { id name }
       weather {
         airTemperature waterTemperature currentWeather precipitation tide waveHeight
         wind { direction speed }
@@ -362,6 +362,7 @@ class SFBWTFClient:
                 events.append({
                     "collection_time": when,
                     "site_name": (it.get("location") or {}).get("name", ""),
+                    "site_id": str((it.get("location") or {}).get("id") or ""),
                     "tested_by": it.get("testedBy") or "",
                     "comments": it.get("comments") or "",
                     "volume": it.get("volume") or "",
