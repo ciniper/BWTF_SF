@@ -37,9 +37,9 @@
   .tile-group-name{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#54576F;font-weight:700;margin:0 0 6px}
   .tile-row{display:flex;flex-wrap:wrap;gap:8px}
   .tile{padding:8px 12px;border-radius:12px;border:2px solid #d9e4e8;background:#fff;color:#26272a;cursor:pointer;font:700 13px 'Roboto','Segoe UI',Arial,sans-serif;text-align:left;line-height:1.25}
-  .tile small{display:block;font-weight:600;font-size:11px;color:#8a949b}
   .tile:hover{border-color:#85BFDF}
-  .tile.active{border-color:#0072BC;background:#0072BC;color:#fff} .tile.active small{color:rgba(255,255,255,.8)}
+  .tile.active{border-color:#0072BC;background:#0072BC;color:#fff}
+  .tile[hidden],.tile-group[hidden]{display:none}
   .subpage{font-size:13px;color:#54576F;margin:0 0 12px} .subpage a{font-weight:700}
 </style><link rel="stylesheet" href="/static/brand.css">
 </head>
@@ -48,26 +48,20 @@
   <a class="back-to-dash" href="/">← Dashboard</a>
   <div class="hero">
     <h1>Water Quality Graphs</h1>
-    <p>Pick a site, a range, and a view: all three indicators on one plot with each state limit drawn in, or the city against Surfrider head to head.
-    Click any city point for that day's results. The same samples, row by row, are on <a href="/samples">Samples</a>.</p>
+    <p>Pick a site, a range, and an indicator — or all three at once — and choose the city's lab, Surfrider's, or both. Click any city point for that day's results. The same samples, row by row, are on <a href="/samples">Samples</a>.</p>
   </div>
   <p class="subpage">Looking for the original head to head? <a href="/compare">Source Comparison</a> keeps the six beaches both programs sample, latest result and agreement per site, with the same graphs one click away.</p>
   <div class="controls">
     <span class="ctl-label">Bacteria</span>
-    <select id="analyte" aria-label="Bacteria type" title="Which indicator the City vs Surfrider view plots (the All indicators view shows all three)">
+    <select id="analyte" aria-label="Bacteria type">
       {% for a in analytes %}<option value="{{ a.code }}"{% if a.code == 'ENTERO' %} selected{% endif %}>{{ a.label }}</option>{% endfor %}
+      <option value="ALL">All indicators</option>
     </select>
-    <span class="ctl-label">View</span>
-    <div class="seg-toggle" id="view">
-      <button class="seg-btn active" data-v="all" title="Enterococcus, fecal and total coliform for this site on one log-scale plot">All indicators</button>
-      <button class="seg-btn" data-v="h2h" title="Enterococcus from the city's lab and Surfrider's volunteer lab, with same-day pairs">City vs Surfrider</button>
-      <button class="seg-btn" disabled title="Later: one indicator across several sites">Sites side by side</button>
-    </div>
     <span class="ctl-label">Source</span>
     <div class="seg-toggle" id="src"><button class="seg-btn" data-s="city">City</button><button class="seg-btn" data-s="bwtf">Surfrider</button><button class="seg-btn active" data-s="both">Both</button></div>
   </div>
   <div class="tiles" id="tiles" aria-label="Site">
-    {% for group, items in site_groups %}<div class="tile-group"><div class="tile-group-name">{{ group }}</div><div class="tile-row">{% for s in items %}<button class="tile" type="button" data-key="{{ s.key }}" data-name="{{ s.name }}">{{ s.name }}<small>{% if not s.city %}Surfrider only{% elif s.dual %}both programs{% else %}city only{% endif %}</small></button>{% endfor %}</div></div>{% endfor %}
+    {% for group, items in site_groups %}<div class="tile-group" data-group="{{ group }}"><div class="tile-group-name">{{ group }}</div><div class="tile-row">{% for s in items %}<button class="tile" type="button" data-key="{{ s.key }}" data-name="{{ s.name }}" data-city="{{ 1 if s.city else 0 }}" data-bwtf="{{ 1 if s.bwtf else 0 }}">{{ s.name }}</button>{% endfor %}</div></div>{% endfor %}
   </div>
   <div class="controls">
     <span class="ctl-label">Range</span>
@@ -83,7 +77,7 @@
     <p class="foot" id="explain"></p>
   </div>
   <p class="foot">City = SFPUC's lab results published on SF Gov Open Data (a station's worst value per day; a double-sampled day says so in the tooltip). Surfrider = the Blue Water Task Force volunteer lab, Enterococcus only.
-  Log scale keeps 10 and 24,196 on one axis. Dashed lines are the state single-sample limits; total coliform's baseline is 10,000 and drops to 1,000 when fecal is over 10% of total, marked on the point. Red points are over their own limit.</p>
+  Log scale keeps 10 and 24,196 on one axis. Dashed lines are the state single-sample limits; total coliform's baseline is 10,000 and drops to 1,000 when fecal is over 10% of total, which the tooltip notes.</p>
 
 </div>
 <script src="/static/charts.js"></script>
@@ -93,21 +87,33 @@ const SITES = {{ sites|tojson }};
 const FLOOR = "{{ dataset_floor }}";
 const CH = window.BWTFCharts;
 const params = new URLSearchParams(location.search);
-const firstDual = (SITES.find(s => s.dual) || SITES[0]).key;
-const ANALYTES = [...document.querySelectorAll("#analyte option")].map(o => o.value);
-const S = { site: SITES.some(s => s.key === params.get("site")) ? params.get("site") : firstDual,
-            view: params.get("view") === "h2h" ? "h2h" : "all", src: ["city", "bwtf", "both"].includes(params.get("source")) ? params.get("source") : "both",
-            analyte: ANALYTES.includes(params.get("analyte")) ? params.get("analyte") : "ENTERO",
+const ANALYTES = [...document.querySelectorAll("#analyte option")].map(o => o.value);   // ENTERO, COLI_FECAL, COLI_TOTAL, ALL
+const legacyAll = params.get("view") === "all" && !params.get("analyte");                // old links: ?view=all meant all indicators
+const S = { site: params.get("site") || "", src: ["city", "bwtf", "both"].includes(params.get("source")) ? params.get("source") : "both",
+            analyte: legacyAll ? "ALL" : (ANALYTES.includes(params.get("analyte")) ? params.get("analyte") : "ENTERO"),
             start: params.get("start") || "", end: params.get("end") || "" };
 let DATA = null, c1 = null, c2 = null, seq = 0;
 const $ = id => document.getElementById(id);
 const siteOf = k => SITES.find(s => s.key === k) || {};
+const tiles = () => [...document.querySelectorAll("#tiles .tile")];
+const tileFits = t => S.src === "both" || (S.src === "city" ? t.dataset.city === "1" : t.dataset.bwtf === "1");
+function filterTiles() {   // the Source choice hides sites that source never sampled; a hidden current site falls back to the first shown
+  tiles().forEach(t => { t.hidden = !tileFits(t); });
+  document.querySelectorAll("#tiles .tile-group").forEach(g => { g.hidden = ![...g.querySelectorAll(".tile")].some(t => !t.hidden); });
+  const shown = tiles().filter(t => !t.hidden);
+  if (!shown.some(t => t.dataset.key === S.site)) {   // prefer a beach both programs sample, so a fresh visit opens on a well-sampled site
+    const pick = shown.find(t => t.dataset.bwtf === "1" && t.dataset.city === "1") || shown[0];
+    S.site = pick ? pick.dataset.key : "";
+  }
+  tiles().forEach(t => t.classList.toggle("active", t.dataset.key === S.site));
+}
 $("analyte").value = S.analyte; $("start").value = S.start; $("end").value = S.end;
-function markTile() { document.querySelectorAll("#tiles .tile").forEach(t => t.classList.toggle("active", t.dataset.key === S.site)); }
-markTile();
-function syncUrl() { const u = new URL(location.href); u.search = ""; u.searchParams.set("site", S.site); if (S.view !== "all") u.searchParams.set("view", S.view); if (S.src !== "both") u.searchParams.set("source", S.src); if (S.analyte !== "ENTERO") u.searchParams.set("analyte", S.analyte); if (S.start) u.searchParams.set("start", S.start); if (S.end) u.searchParams.set("end", S.end); history.replaceState(null, "", u); }
+document.querySelectorAll("#src .seg-btn").forEach(b => b.classList.toggle("active", b.dataset.s === S.src));
+filterTiles();
+function syncUrl() { const u = new URL(location.href); u.search = ""; u.searchParams.set("site", S.site); if (S.analyte !== "ENTERO") u.searchParams.set("analyte", S.analyte); if (S.src !== "both") u.searchParams.set("source", S.src); if (S.start) u.searchParams.set("start", S.start); if (S.end) u.searchParams.set("end", S.end); history.replaceState(null, "", u); }
 function load() {
-  const my = ++seq; markTile(); $("title").textContent = siteOf(S.site).name + " — loading…"; syncUrl();
+  const my = ++seq; filterTiles(); if (!S.site) { $("title").textContent = "No site for this source"; return; }
+  $("title").textContent = siteOf(S.site).name + " — loading…"; syncUrl();
   const q = new URLSearchParams({ site: S.site }); if (S.start) q.set("start", S.start); if (S.end) q.set("end", S.end);
   Promise.all([fetch("/api/site-series?" + q).then(r => r.json()), CH.ensureChart()]).then(([d]) => {
     if (my !== seq) return;
@@ -117,52 +123,46 @@ function load() {
   }).catch(e => { $("title").textContent = "Could not load: " + e; });
 }
 function render() {
-  const site = siteOf(S.site), dual = !!site.dual, cityOnly = !!site.city && !dual, bwtfOnly = !site.city;
-  document.querySelectorAll("#src .seg-btn").forEach(b => { b.disabled = (cityOnly && b.dataset.s !== "city") || (bwtfOnly && b.dataset.s !== "bwtf"); });
-  if (cityOnly) S.src = "city"; if (bwtfOnly) S.src = "bwtf";
-  document.querySelector('#view [data-v="h2h"]').disabled = !dual; if (!dual && S.view === "h2h") S.view = "all";
-  document.querySelectorAll("#src .seg-btn").forEach(b => b.classList.toggle("active", b.dataset.s === S.src));
-  document.querySelectorAll("#view .seg-btn").forEach(b => b.classList.toggle("active", b.dataset.v === S.view));
-  $("analyte").disabled = S.view === "all";
   if (c1) { c1.destroy(); c1 = null; } if (c2) { c2.destroy(); c2 = null; }
   const L = DATA.limits, C = CH.COLORS, onPoint = p => { if (p.station && window.SamplePopover) SamplePopover.open({ station: p.station, name: p.name, date: p.date }); };
   const pts = arr => (arr || []).map(p => ({ x: p.ts, y: p.value, raw: p.raw, over: p.over, ratio: p.ratio, date: p.date, station: p.station, name: p.name, n: p.n }));
-  const range = DATA.start + " → " + DATA.end;
-  if (S.view === "all") {
+  const range = DATA.start + " → " + DATA.end, wantCity = S.src !== "bwtf", wantBwtf = S.src !== "city" && DATA.bwtf.length > 0;
+  if (S.analyte === "ALL") {
     $("h2hWrap").style.display = "none";
     const series = [];
-    if (S.src !== "bwtf") for (const a of DATA.analytes) series.push({ label: "City " + a.label, color: C[a.code], points: pts(DATA.city[a.code]) });
-    if (S.src !== "city" && DATA.bwtf.length) series.push({ label: "Surfrider Enterococcus", color: C.BWTF_LIGHT, dash: [4, 3], pointRadius: 3.4, points: pts(DATA.bwtf) });
-    const lines = [CH.limitLine(L.ENTERO, C.ENTERO, "Enterococcus limit " + CH.fmt(L.ENTERO)), CH.limitLine(L.COLI_FECAL, C.COLI_FECAL, "Fecal limit " + CH.fmt(L.COLI_FECAL)),
-                   CH.limitLine(L.COLI_TOTAL, C.COLI_TOTAL, "Total limit " + CH.fmt(L.COLI_TOTAL)), CH.limitLine(DATA.caution, C.CAUTION_LINE, "caution " + DATA.caution, "dotted")];
-    if (S.src === "bwtf") lines.splice(1, 2);
+    if (wantCity) for (const a of DATA.analytes) series.push({ label: "City " + a.label, color: C[a.code], points: pts(DATA.city[a.code]) });
+    if (wantBwtf) series.push({ label: "Surfrider Enterococcus", color: C.BWTF_LIGHT, dash: [4, 3], pointRadius: 3.4, points: pts(DATA.bwtf) });
+    const lines = [CH.limitLine(L.ENTERO, C.ENTERO, "Enterococcus limit " + CH.fmt(L.ENTERO))];
+    if (wantCity) lines.push(CH.limitLine(L.COLI_FECAL, C.COLI_FECAL, "Fecal limit " + CH.fmt(L.COLI_FECAL)), CH.limitLine(L.COLI_TOTAL, C.COLI_TOTAL, "Total limit " + CH.fmt(L.COLI_TOTAL)));
+    lines.push(CH.limitLine(DATA.caution, C.CAUTION_LINE, "caution " + DATA.caution, "dotted"));
     c1 = CH.seriesChart($("c1"), { series, lines, legend: false, onPoint });
     $("title").textContent = DATA.site + " — all indicators";
-    $("legend").innerHTML = series.map(s => '<span><i style="background:' + s.color + '"></i>' + s.label + "</span>").join("") + '<span><i class="dash" style="color:#54576F"></i>state limits</span><span><i style="background:' + C.OVER + '"></i>over its limit</span>';
-    $("sub").textContent = DATA.counts.city_days + " city sample days" + (S.src !== "city" && DATA.bwtf.length ? " · " + DATA.bwtf.length + " Surfrider samples" : "") + (DATA.bwtf_sampled === false ? " · Surfrider does not sample this site" : "") + " · " + range;
-    $("explain").textContent = "";
+    $("legend").innerHTML = series.map(s => '<span><i style="background:' + s.color + '"></i>' + s.label + "</span>").join("") + '<span><i class="dash" style="color:#54576F"></i>state limits</span>';
+    $("sub").textContent = (wantCity ? DATA.counts.city_days + " city sample days" : "") + (wantBwtf ? (wantCity ? " · " : "") + DATA.bwtf.length + " Surfrider samples" : "") + " · " + range;
   } else {
-    $("h2hWrap").style.display = "";
     const a = S.analyte, label = (DATA.analytes.find(x => x.code === a) || { label: a }).label, entero = a === "ENTERO";
     const series = [];
-    if (entero && DATA.bwtf.length) series.push({ label: "Surfrider", color: C.BWTF, width: 2, pointRadius: 3.4, points: pts(DATA.bwtf) });
-    series.push({ label: "City (SFPUC)", color: C.CITY, width: 2, points: pts(DATA.city[a] || []) });
+    if (entero && wantBwtf) series.push({ label: "Surfrider", color: C.BWTF, width: 2, pointRadius: 3.4, points: pts(DATA.bwtf) });
+    if (wantCity) series.push({ label: "City (SFPUC)", color: C.CITY, width: 2, points: pts(DATA.city[a] || []) });
     const lines = [CH.limitLine(L[a], C.LIMIT, "CA limit " + CH.fmt(L[a]))]; if (entero) lines.push(CH.limitLine(DATA.caution, C.CAUTION_LINE, "caution " + DATA.caution, "dotted"));
     c1 = CH.seriesChart($("c1"), { series, lines, yTitle: label + " (MPN/100 mL), log scale", onPoint });
-    $("title").textContent = DATA.site + " — " + label + ", city vs Surfrider";
+    const both = series.length === 2;
+    $("title").textContent = DATA.site + " — " + label + (both ? ", city vs Surfrider" : "");
     $("legend").innerHTML = "";
-    $("sub").textContent = (DATA.city[a] || []).length + " city samples" + (entero ? " · " + DATA.bwtf.length + " Surfrider samples" : " · Surfrider measures Enterococcus only") + " · " + range;
-    const P = entero ? DATA.paired : [];
-    $("barNote").textContent = P.length ? P.length + " day" + (P.length === 1 ? "" : "s") + " both programs sampled this site (worst reading per day)" : (entero ? "No same-day samples in this window — the two programs sampled on different days." : "Head to head needs Enterococcus — the only indicator both programs measure.");
-    if (P.length) c2 = CH.pairedBars($("c2"), { labels: P.map(p => p.date), a: { label: "Surfrider", color: C.BWTF, data: P.map(p => p.bwtf), raws: P.map(p => p.bwtf_raw) }, b: { label: "City (SFPUC)", color: C.CITY, data: P.map(p => p.city), raws: P.map(p => p.city_raw) }, lines: [CH.limitLine(L.ENTERO, C.LIMIT, "CA limit " + L.ENTERO)] });
-    $("explain").textContent = "";
+    $("sub").textContent = [wantCity ? (DATA.city[a] || []).length + " city samples" : "", entero && wantBwtf ? DATA.bwtf.length + " Surfrider samples" : "", !entero && S.src !== "city" ? "Surfrider measures Enterococcus only" : ""].filter(Boolean).join(" · ") + " · " + range;
+    const P = entero && both ? DATA.paired : [];
+    $("h2hWrap").style.display = both ? "" : "none";
+    if (both) {
+      $("barNote").textContent = P.length ? P.length + " day" + (P.length === 1 ? "" : "s") + " both programs sampled this site (worst reading per day)" : "No same-day samples in this window — the two programs sampled on different days.";
+      if (P.length) c2 = CH.pairedBars($("c2"), { labels: P.map(p => p.date), a: { label: "Surfrider", color: C.BWTF, data: P.map(p => p.bwtf), raws: P.map(p => p.bwtf_raw) }, b: { label: "City (SFPUC)", color: C.CITY, data: P.map(p => p.city), raws: P.map(p => p.city_raw) }, lines: [CH.limitLine(L.ENTERO, C.LIMIT, "CA limit " + L.ENTERO)] });
+    }
   }
+  $("explain").textContent = "";
   syncUrl();
 }
-$("tiles").addEventListener("click", e => { const t = e.target.closest(".tile"); if (!t || t.dataset.key === S.site) return; S.site = t.dataset.key; load(); });
+$("tiles").addEventListener("click", e => { const t = e.target.closest(".tile"); if (!t || t.hidden || t.dataset.key === S.site) return; S.site = t.dataset.key; load(); });
 $("analyte").addEventListener("change", e => { S.analyte = e.target.value; if (DATA) render(); });
-$("view").addEventListener("click", e => { const b = e.target.closest(".seg-btn"); if (!b || b.disabled) return; S.view = b.dataset.v; if (DATA) render(); });
-$("src").addEventListener("click", e => { const b = e.target.closest(".seg-btn"); if (!b || b.disabled) return; S.src = b.dataset.s; if (DATA) render(); });
+$("src").addEventListener("click", e => { const b = e.target.closest(".seg-btn"); if (!b) return; document.querySelectorAll("#src .seg-btn").forEach(x => x.classList.toggle("active", x === b)); S.src = b.dataset.s; const before = S.site; filterTiles(); if (S.site !== before || !DATA) load(); else render(); });
 ["start", "end"].forEach(id => $(id).addEventListener("change", e => { S[id] = e.target.value; load(); }));
 document.querySelectorAll(".preset").forEach(btn => btn.addEventListener("click", () => { const end = new Date().toISOString().slice(0, 10); S.end = end; S.start = btn.dataset.days ? new Date(Date.now() - btn.dataset.days * 864e5).toISOString().slice(0, 10) : FLOOR; $("start").value = S.start; $("end").value = S.end; load(); }));
 load();

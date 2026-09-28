@@ -44,9 +44,8 @@
       var pts = s.points || [];
       return { label: s.label, data: pts, parsing: false, borderColor: s.color, backgroundColor: s.color, borderDash: s.dash || [],
         borderWidth: s.width || 1.6, tension: 0, spanGaps: true,
-        pointBackgroundColor: pts.map(function (p) { return p.over ? COLORS.OVER : s.color; }),
-        pointBorderColor: pts.map(function (p) { return p.over ? COLORS.OVER : s.color; }),
-        pointRadius: pts.map(function (p) { return p.over ? 4.2 : (s.pointRadius || 2.6); }), pointHoverRadius: 6 };
+        pointBackgroundColor: s.color, pointBorderColor: s.color,
+        pointRadius: s.pointRadius || 2.6, pointHoverRadius: 6 };
     });
     var xs = []; datasets.forEach(function (d) { d.data.forEach(function (p) { xs.push(p.x); }); });
     var xmin = xs.length ? Math.min.apply(null, xs) : Date.now() - 365 * 864e5, xmax = xs.length ? Math.max.apply(null, xs) : Date.now();

@@ -188,7 +188,10 @@ def test_site_series_grades_every_indicator_per_day_and_pairs_same_day_samples()
     assert d["counts"] == {"city_days": 2, "bwtf": 1, "paired": 1} and d["limits"]["ENTERO"] == standards.STANDARDS["ENTERO"]["single_sample_max"]
     only = C.site_series_payload(C.resolve_site("BAY#320_SL"), recs, hist, start, end)
     assert only["bwtf_sampled"] is False and only["bwtf"] == [] and only["paired"] == [] and only["city"]["ENTERO"][0]["over"] is True
-    assert {s["key"] for s in C.graph_sites()} >= {"OCEAN#15_SL", "BAY#320_SL", "bwtf:Bayview Hunters Point"}
+    sites = C.graph_sites()
+    assert {s["key"] for s in sites} >= {"OCEAN#15_SL", "BAY#320_SL", "bwtf:Bayview Hunters Point"}
+    assert [s["group"] for s in sites][:6] == ["Ocean Beach"] * 6 and sites[-1]["group"] == "Surfrider only"   # grouped by our zones, Surfrider-only last
+    assert next(s for s in sites if s["key"] == "OCEAN#15_SL")["bwtf"] is True and next(s for s in sites if s["key"] == "BAY#320_SL")["bwtf"] is False
 
 
 def test_sample_rows_carry_the_volunteer_field_notes_from_events():

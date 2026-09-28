@@ -54,6 +54,7 @@ def test_both_pages_include_the_shared_script_and_the_route_exists():
     charts = (ROOT / "app" / "static" / "charts.js").read_text()
     assert "/api/sample-day?" in js and "data-sample-station" in js and "BWTFCharts.miniBars" in js and "chart.umd.js" not in js   # one chart module
     assert "chart.umd.js" in charts and '"limitLines"' in charts and "seriesChart" in charts and "pairedBars" in charts and "miniBars" in charts
+    assert "p.over ? COLORS.OVER" not in charts.split("function seriesChart")[1].split("function pairedBars")[0]   # dots keep their series colour (Chase, 2026-09-28)
     for tpl in ("app/templates/alerts/dashboard.html", "app/templates/forecast/page.html", "app/templates/graphs/page.html", "app/templates/samples/page.html"):
         assert "/static/sample_popover.js" in (ROOT / tpl).read_text(), tpl
     from app import wsgi

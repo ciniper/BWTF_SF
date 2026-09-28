@@ -215,7 +215,7 @@ function renderHist(d) {
       b: { label: "SFPUC", color: C.CITY, data: P.map(function (p) { return p.city; }), raws: P.map(function (p) { return p.city_raw; }) },
       lines: [CH.limitLine(limit, C.LIMIT, "CA limit " + CH.fmt(limit))] });
   }
-  var gq = new URLSearchParams({ site: d.site_key, view: "h2h", analyte: a, start: d.start, end: d.end }), sq = new URLSearchParams({ scope: "all", site: d.site_key, start: d.start, end: d.end });
+  var gq = new URLSearchParams({ site: d.site_key, analyte: a, start: d.start, end: d.end }), sq = new URLSearchParams({ scope: "all", site: d.site_key, start: d.start, end: d.end });
   document.getElementById("hist-links").innerHTML = '<a href="/graphs?' + gq + '">Open on Graphs</a><a href="/samples?' + sq + '">Every sample for this site</a>';
 }
 document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeSite(); });

@@ -31,6 +31,7 @@ from features.alerts.monitoring import STANDARDS, SFPUC_TO_SFGOV_SOURCES, SFWate
 from shared.sfpuc_api import SFPUCRealTimeAPI
 from shared.standards import ENTERO_CAUTION, exceeds, parse_result as std_parse, single_sample_max
 from shared.stations import STATIONS
+from shared.zones import ZONES, ZONE_OF_SOURCE
 
 # The BWTF lab's sites with no city counterpart (the lab's site list, 2026-09);
 # the samples viewer discovers these from the history at run time, the graphs
@@ -271,13 +272,22 @@ def fetch_city_records(monitor, sources: list[str], start: datetime, end: dateti
     return response.json()
 
 
+SURFRIDER_ONLY_GROUP = "Surfrider only"
+
+
 def graph_sites() -> list[dict]:
-    """Every site the graphs page can plot: the 20 stations (dual when BWTF
-    samples the same beach) then the BWTF-only sites."""
+    """Every site the graphs page can plot, in zone order (shared/zones.py):
+    the 20 stations (``city``; ``bwtf`` too when Surfrider samples the beach)
+    then the Surfrider-only sites. ``group`` is the zone label."""
     sfpuc_to_bwtf = {v: k for k, v in BWTF_TO_SFPUC_NAME.items()}
-    out = [{"key": sid, "name": st.name, "group": st.group, "dual": st.sfpuc_name in sfpuc_to_bwtf, "city": True}
-           for sid, st in STATIONS.items()]
-    out += [{"key": "bwtf:" + n, "name": n, "group": "BWTF only", "dual": False, "city": False} for n in BWTF_ONLY_SITES]
+    out = []
+    for zone in ZONES.values():
+        for sid, st in STATIONS.items():
+            if ZONE_OF_SOURCE.get(sid) == zone.key:
+                dual = st.sfpuc_name in sfpuc_to_bwtf
+                out.append({"key": sid, "name": st.name, "group": zone.label, "zone": zone.key, "dual": dual, "city": True, "bwtf": dual})
+    out += [{"key": "bwtf:" + n, "name": n, "group": SURFRIDER_ONLY_GROUP, "zone": None, "dual": False, "city": False, "bwtf": True}
+            for n in BWTF_ONLY_SITES]
     return out
 
 
