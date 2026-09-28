@@ -62,10 +62,10 @@
       <img src="https://bwtf.surfrider.org/images/BWTF-Logo_White.png" alt="Blue Water Task Force">
       <span class="kicker">Email Alerts</span>
       <h1>Know Before<br>You Go</h1>
-      <p>One email when a beach you follow is posted for bacteria or has a sewage discharge.</p>
-      <p>No daily digest, no marketing. Reply to any alert to unsubscribe.</p>
-      <p>Changing beaches? Sign up again with the same email — the new zones replace the old ones.</p>
-      <div class="disclaimer"><img class="illus" src="/static/brand/shield-flask.png" alt=""><div>Alerts are a community-science tool, not an official advisory.
+      <p>We watch SFPUC's beach map around the clock. When a beach you follow is posted for bacteria or has a sewage discharge, you get an email within minutes.</p>
+      <p>Nothing else lands in your inbox: no confirmation, no digest, no marketing. All-clear emails are on the roadmap.</p>
+      <p>To stop, reply "unsubscribe" to any alert. To change areas, sign up again and the new ones replace the old.</p>
+      <div class="disclaimer"><img class="illus" src="/static/brand/shield-flask.png" alt=""><div>Community science, not an official advisory.
       Posted signs and SFPUC or health-department notices always win.</div></div>
     </div>
     <div class="right">
@@ -80,10 +80,10 @@
         <p class="flabel">Which areas? <span class="count" id="selCount">0 selected</span></p>
         <div class="zones" id="zones"></div>
         <div id="map"></div>
-        <p class="maphint">Selected areas light up — each dot is a city monitoring station your alerts will cover.</p>
+        <p class="maphint">Each dot is a city monitoring station. Pick areas to light up the ones your alerts cover.</p>
 
-        <p class="note">You'll get an email only when a site in your areas turns <b>bad</b> — a new
-        bacteria posting or an active sewage discharge. All-clear and caution notes are on the roadmap.</p>
+        <p class="note">Only bad news, as the city reports it: a new bacteria posting or an active sewage discharge
+        at a station in your areas. Your email is used for these alerts and nothing else.</p>
         <button class="go" id="go" type="submit">Sign up</button>
         <div class="msg" id="msg"></div>
       </form>
@@ -105,8 +105,8 @@ for (const z of ZONES) {
 }
 
 const MAP = L.map("map", {scrollWheelZoom: false, zoomControl: false}).setView([37.765, -122.45], 11);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-  {maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(MAP);
+L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",   // muted basemap, no key: no peak triangles or red highways behind the station dots
+  {maxZoom: 16, attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ'}).addTo(MAP);
 const markers = {};
 for (const z of ZONES) for (const s of z.stations) {
   markers[s.id] = {zone: z.key, name: s.name,
@@ -150,9 +150,9 @@ document.getElementById("f").addEventListener("submit", async e => {
     if (d.ok) {
       msg.className = "msg ok";
       const zones = d.zones || "your selected areas";
-      const count = d.station_count ? ` — ${d.station_count} monitoring sites covered` : "";
-      msg.innerHTML = `<svg class="ic"><use href="#i-circle-check"/></svg> You're signed up for ${zones}${count}. ` +
-                        `You'll only hear from us when one of them turns bad.`;
+      const count = d.station_count ? ` — ${d.station_count} stations` : "";
+      msg.innerHTML = `<svg class="ic"><use href="#i-circle-check"/></svg> You're on the list for ${zones}${count}. ` +
+                        `No confirmation email; the first message you get will be a real alert.`;
       go.innerHTML = 'Signed up <svg class="ic"><use href="#i-check"/></svg>';
     } else {
       msg.className = "msg err"; msg.textContent = d.error || "Something went wrong.";

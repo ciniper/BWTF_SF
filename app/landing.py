@@ -22,7 +22,7 @@ HUBS = [
         "key": "today", "icon": "bell", "title": "Today & alerts",
         "sub": "Is the water safe, and tell me when it isn't",
         "primary": ("/signup", "Get beach alerts",
-                    "Pick your beach areas and get one email when the water turns bad — a new posting or an active sewage discharge. Nothing else, ever."),
+                    "Pick your beach areas and get an email when the city posts one for bacteria or a sewage discharge. No digest, no marketing."),
         "rows": [
             ("/forecast", "CSO Forecast",
              "Machine-learning forecast of combined-sewer-overflow risk from rainfall — a warning before discharges happen.",
