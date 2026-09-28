@@ -12,7 +12,7 @@ from urllib.parse import parse_qs, urlencode, urlparse
 from flask import render_template
 
 from features.comparison.comparison import ANALYTES, build_comparison, build_site_history, build_site_series, graph_sites
-from features.comparison.samples import build_sample_day, build_sample_viewer
+from features.comparison.samples import build_bwtf_sample_day, build_sample_day, build_sample_viewer
 from shared.datasf import DATASET_FLOOR
 
 
@@ -71,11 +71,14 @@ class ComparisonRoutes:
         for the mini bar graphs behind the "latest sample" chips."""
         params = parse_qs(urlparse(self.path).query)
         one = lambda k, d="": (params.get(k) or [d])[0].strip()  # noqa: E731
-        if not one("station"):
-            self._send_json({"ok": False, "error": "missing 'station' parameter"}, status=400)
+        if not one("station") and not one("bwtf"):
+            self._send_json({"ok": False, "error": "missing 'station' (DataSF id) or 'bwtf' (Surfrider site name or site key) parameter"}, status=400)
             return
         try:
-            self._send_json(build_sample_day(one("station"), one("date"), sf_gov_monitor=self.combined_monitor.sf_gov_monitor))
+            if one("bwtf"):
+                self._send_json(build_bwtf_sample_day(one("bwtf"), one("date")))
+            else:
+                self._send_json(build_sample_day(one("station"), one("date"), sf_gov_monitor=self.combined_monitor.sf_gov_monitor))
         except ValueError as e:
             self._send_json({"ok": False, "error": str(e)}, status=404)
         except Exception as e:

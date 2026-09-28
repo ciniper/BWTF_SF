@@ -215,6 +215,33 @@ def test_site_series_scores_each_day_against_its_own_limits_and_keeps_the_worst_
     assert [(p["date"], p["code"], p["raw"], p["pct"]) for p in d["worst"]["bwtf"]] == [("2024-02-20", "ENTERO", "208", 200.0)]   # one point per day: the day's worst
 
 
+def test_surfrider_sample_day_payload_grades_the_collections_and_carries_the_field_notes():
+    """The popover's Surfrider face: one site, one day, every collection that day, one indicator."""
+    ev = lambda day, hour, raw, value, **kw: {"site_name": "Baker Beach at Lobos Creek", "site_id": "1234", "collection_time": datetime(2024, 2, day, hour),  # noqa: E731
+                                              "tested_by": kw.get("who", ""), "comments": kw.get("note", ""), "weather": {"water_temp": kw.get("water"), "current_weather": kw.get("sky")},
+                                              "samples": [{"substance": "Enterococcus", "result_raw": raw.lstrip("<"), "result_display": raw, "result_value": value}]}
+    events = [ev(20, 16, "208", 208.0), ev(20, 8, "52", 52.0, who="Ana", water=13.0, sky="Overcast"), ev(13, 9, "<10", 5.0),
+              {"site_name": "Aquatic Park", "site_id": "99", "collection_time": datetime(2024, 2, 20, 9), "samples": [{"substance": "Enterococcus", "result_raw": "900", "result_value": 900.0}]}]
+    d = S.bwtf_sample_day_payload(events, "Baker Beach at Lobos Creek")           # no date → the newest collection day at that site
+    assert d["source"] == "bwtf" and d["name"] == "Baker Beach at Lobos Creek" and d["date"] == "2024-02-20" and d["found"] and d["times"] == ["08:00", "16:00"]
+    assert [(c["raw"], c["over"], c["caution"]) for c in d["cells"]["ENTERO"]] == [("52", False, True), ("208", True, False)] and d["over"] and d["n_samples"] == 2
+    assert d["analytes"] == [{"code": "ENTERO", "label": "Enterococcus"}] and d["limits"] == {"ENTERO": standards.STANDARDS["ENTERO"]["single_sample_max"]} and d["ratio_applied"] is False
+    assert d["field"]["tested_by"] == "Ana" and d["field"]["sky"] == "Overcast" and d["field"]["water"]          # the collection that carried notes
+    assert d["results_url"].endswith("/report/76/1234") and d["viewer_url"] == "/samples?scope=all&site=OCEAN%2315_SL&source=bwtf" and d["graph_url"] == "/graphs?site=OCEAN%2315_SL"
+    e = S.bwtf_sample_day_payload(events, "Baker Beach at Lobos Creek", "2024-02-13")
+    assert e["times"] == ["09:00"] and [c["raw"] for c in e["cells"]["ENTERO"]] == ["<10"] and e["field"] is None
+    none = S.bwtf_sample_day_payload(events, "Baker Beach at Lobos Creek", "2024-01-01")
+    assert none["found"] is False and none["cells"]["ENTERO"] == [] and none["n_samples"] == 0
+    by_key = S.bwtf_sample_day_payload(events, "OCEAN#15_SL")                          # a station id resolves to its Surfrider name (the Samples page's pills)
+    assert by_key["bwtf"] == "Baker Beach at Lobos Creek" and by_key["date"] == "2024-02-20" and by_key["n_samples"] == 2
+    only = S.bwtf_sample_day_payload([dict(events[3], site_name="Bayview Hunters Point")], "Bayview Hunters Point")
+    assert only["found"] and only["viewer_url"].startswith("/samples?scope=all&site=bwtf%3ABayview") and only["graph_url"] == "/graphs?site=bwtf%3ABayview%20Hunters%20Point"
+    try:
+        S.bwtf_sample_day_payload(events, "BAY#320_SL"); assert False, "a site Surfrider never samples must raise"
+    except ValueError:
+        pass
+
+
 def test_sample_rows_carry_the_volunteer_field_notes_from_events():
     start, end = datetime(2026, 9, 1), datetime(2026, 9, 30)
     event = {"site_name": "Aquatic Park", "collection_time": datetime(2026, 9, 24, 18, 30), "tested_by": "A. Volunteer", "comments": "Kelp on the beach", "volume": "",

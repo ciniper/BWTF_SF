@@ -74,7 +74,7 @@
   <div class="controls">
     <span class="ctl-label">Range</span>
     <input type="date" id="start" min="{{ dataset_floor }}" aria-label="Start date"> <span style="color:#54576F">→</span> <input type="date" id="end" aria-label="End date">
-    <button class="preset" data-days="365">Last 12 mo</button><button class="preset" data-days="730">Last 2 yrs</button><button class="preset" data-days="">Full record</button>
+    <button class="preset" data-days="91">Last 3 mo</button><button class="preset" data-days="365">Last 12 mo</button><button class="preset" data-days="730">Last 2 yrs</button><button class="preset" data-days="">Full record</button>
   </div>
   <div class="board">
     <h2 id="title">Loading…</h2>
@@ -139,7 +139,7 @@ function load() {
 function render() {
   if (c1) { c1.destroy(); c1 = null; } if (c2) { c2.destroy(); c2 = null; }
   $("explain").textContent = "";
-  const L = DATA.limits, C = CH.COLORS, onPoint = p => { if (p.station && window.SamplePopover) SamplePopover.open({ station: p.station, name: p.name, date: p.date }); };
+  const L = DATA.limits, C = CH.COLORS, onPoint = p => { if (!window.SamplePopover) return; if (p.station) SamplePopover.open({ station: p.station, name: p.name, date: p.date }); else if (DATA.bwtf_name) SamplePopover.open({ bwtf: DATA.bwtf_name, name: DATA.site, date: p.date }); };
   const pts = arr => (arr || []).map(p => ({ x: p.ts, y: p.value, raw: p.raw, over: p.over, ratio: p.ratio, date: p.date, station: p.station, name: p.name, n: p.n }));
   const range = DATA.start + " → " + DATA.end, wantCity = S.src !== "bwtf", wantBwtf = S.src !== "city" && DATA.bwtf.length > 0;
   if (S.analyte === "ALL") {

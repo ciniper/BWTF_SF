@@ -5,7 +5,9 @@ The comparison table and the Site Report Card both reduce a station-day to
 one number (the worse reading). This is the place the raw record stays
 visible: each city row is one station and sample date with EVERY value the
 city published for each indicator that day (a double-sampled storm day shows
-both), each BWTF row is one volunteer collection with its time.
+both), each BWTF row is one volunteer collection with its time. The
+    one-day payloads at the bottom feed the sample popover: the city's
+    (``sample_day_payload``) and Surfrider's (``bwtf_sample_day_payload``).
 
   * Range: any window; the default is the last year. The city's dataset
     starts at DATASET_FLOOR (2020-07-27); BWTF's SF record starts Sep 2023.
@@ -25,8 +27,8 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Optional
 
-from features.comparison.bwtf_api import SFBWTFClient
-from features.comparison.comparison import ANALYTES, BWTF_TO_SFPUC_NAME, DEFAULT_DAYS, fetch_city_records, parse_range  # noqa: F401
+from features.comparison.bwtf_api import BWTF_REPORT_URL, ENTERO_SUBSTANCE, SF_LAB_ID, SFBWTFClient
+from features.comparison.comparison import ANALYTES, BWTF_TO_SFPUC_NAME, DEFAULT_DAYS, fetch_city_records, parse_range, resolve_site  # noqa: F401
 from urllib.parse import quote, urlencode
 
 from shared.datasf import BEACH_SAMPLES_URL, DATASET_FLOOR
@@ -222,6 +224,57 @@ def sample_day_payload(city_records: list[dict], station: str, date: str = "") -
         "viewer_url": f"/samples?scope=all&site={quote(station, safe='')}",
         "graph_url": f"/graphs?site={quote(station, safe='')}",
     }
+
+
+def bwtf_sample_day_payload(events: list[dict], bwtf_name: str, date: str = "") -> dict:
+    """Pure: Surfrider's collections at one site on one day (no ``date`` = the
+    newest), every Enterococcus result graded by the shared rule, with the
+    volunteer's field notes. Same shape as ``sample_day_payload`` so the popover
+    draws it the same way — one mini bar graph, since Surfrider measures one
+    indicator (Chase, 2026-09-28: the mini graph for BWTF points too).
+    ``bwtf_name`` may be any site key ``resolve_site`` accepts (a station id of
+    a beach Surfrider samples, ``bwtf:<name>`` or the Surfrider name)."""
+    site = resolve_site(bwtf_name)
+    if site.get("bwtf_name") is None:
+        raise ValueError(f"Surfrider does not sample {bwtf_name!r}")
+    rows = [r for r in _bwtf_rows(events) if r.get("site_name") == site["bwtf_name"] and r.get("collection_time") is not None]
+    date = date or max((r["collection_time"].strftime("%Y-%m-%d") for r in rows), default="")
+    day = sorted((r for r in rows if r["collection_time"].strftime("%Y-%m-%d") == date), key=lambda r: r["collection_time"])
+    cells = defaultdict(list)
+    for r in day:
+        if r.get("substance") == ENTERO_SUBSTANCE:
+            cells["ENTERO"].append({"raw": r.get("result_raw"), "value": r.get("result_value")})
+    field = next((r["field"] for r in day if any((r.get("field") or {}).values())), None)
+    row = _row(site, date, day[0]["collection_time"].strftime("%H:%M") if day else None, "Surfrider", cells, field) if day else None
+    site_id = next((e.get("site_id") for e in events if e.get("site_name") == site["bwtf_name"] and e.get("site_id")), "")
+    key = quote(site["key"], safe="")
+    return {
+        "source": "bwtf", "station": None, "bwtf": site["bwtf_name"], "name": site["name"], "date": date or None, "found": bool(day),
+        "times": [r["collection_time"].strftime("%H:%M") for r in day],
+        "cells": row["cells"] if row else {c: [] for c in ANALYTES},
+        "over": row["over"] if row else False, "n_samples": row["n_samples"] if row else 0,
+        "limits": {"ENTERO": single_sample_max("ENTERO")}, "ratio_applied": False, "ratio_note": "",
+        "caution": ENTERO_CAUTION, "units": "MPN/100mL",
+        "analytes": [{"code": "ENTERO", "label": ANALYTES["ENTERO"]["label"]}],
+        "field": field,
+        "results_url": BWTF_REPORT_URL.format(lab_id=SF_LAB_ID, site_id=site_id) if site_id else None,
+        "viewer_url": f"/samples?scope=all&site={key}&source=bwtf",
+        "graph_url": f"/graphs?site={key}",
+    }
+
+
+def build_bwtf_sample_day(bwtf_name: str, date: str = "", bwtf_client: Optional[SFBWTFClient] = None) -> dict:
+    """Fetch Surfrider's events back to that day (or the last 60 then 400 days
+    for the newest collection at the site) and build the payload."""
+    bwtf_client = bwtf_client or SFBWTFClient()
+    if date:
+        events = bwtf_client.fetch_event_history(since=datetime.strptime(date, "%Y-%m-%d"), max_pages=20)
+    else:
+        today = datetime.now()
+        events = bwtf_client.fetch_event_history(since=today - timedelta(days=60), max_pages=5)
+        if not any(e.get("site_name") == bwtf_name for e in events):
+            events = bwtf_client.fetch_event_history(since=today - timedelta(days=400), max_pages=20)
+    return bwtf_sample_day_payload(events, bwtf_name, date)
 
 
 def build_sample_day(station: str, date: str = "", sf_gov_monitor=None) -> dict:

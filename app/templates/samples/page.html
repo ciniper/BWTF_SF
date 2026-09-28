@@ -77,7 +77,7 @@
   <div class="controls">
     <span class="ctl-label">Range</span>
     <input type="date" id="v-start" aria-label="Start date" min="{{ dataset_floor }}"> <span style="color:#54576F">→</span> <input type="date" id="v-end" aria-label="End date">
-    <button class="preset v-preset" data-days="365">Last 12 mo</button><button class="preset v-preset" data-days="730">Last 2 yrs</button><button class="preset v-preset" data-days="">Full record</button>
+    <button class="preset v-preset" data-days="91">Last 3 mo</button><button class="preset v-preset" data-days="365">Last 12 mo</button><button class="preset v-preset" data-days="730">Last 2 yrs</button><button class="preset v-preset" data-days="">Full record</button>
     <span class="ctl-label" style="margin-left:8px">Field notes</span>
     <div class="seg-toggle" id="v-notes"><button class="seg-btn" data-notes="hidden">Hidden</button><button class="seg-btn active" data-notes="expand">Expandable</button><button class="seg-btn" data-notes="columns">Columns</button></div>
   </div>
@@ -169,7 +169,7 @@ function loadLatest() {
     var rows = (d.rows || []).filter(function (r) { return r.bwtf_site; });
     $("latest").innerHTML = rows.map(function (r) {
       var city = r.city_raw == null ? '<span class="pill na">City — none in 60 days</span>' : '<span class="pill ' + (r.city_exceeds ? "over" : "city") + '">City ' + vEsc(r.city_raw) + " · " + (r.city_date || "").slice(5).replace("-", "/") + (r.city_n > 1 ? " ×" + r.city_n : "") + "</span>";
-      var bw = r.bwtf_raw == null ? '<span class="pill na">Surfrider — not measured</span>' : '<span class="pill ' + (r.bwtf_exceeds ? "over" : "bwtf") + '">Surfrider ' + vEsc(r.bwtf_raw) + " · " + (r.bwtf_date || "").slice(5).replace("-", "/") + "</span>";
+      var bw = r.bwtf_raw == null ? '<span class="pill na">Surfrider — not measured</span>' : '<span class="pill ' + (r.bwtf_exceeds ? "over" : "bwtf") + '" role="button" tabindex="0" style="cursor:pointer" data-sample-bwtf="' + vEsc(r.site_key) + '" data-sample-name="' + vEsc(r.site_name) + '" data-sample-date="' + vEsc(r.bwtf_date || "") + '">Surfrider ' + vEsc(r.bwtf_raw) + " · " + (r.bwtf_date || "").slice(5).replace("-", "/") + "</span>";
       var open = r.site_key && r.site_key.indexOf("bwtf:") !== 0 ? ' data-sample-station="' + vEsc(r.site_key) + '" data-sample-name="' + vEsc(r.site_name) + '"' : "";
       return '<div class="lt"' + open + ' style="' + (open ? "cursor:pointer" : "") + '"><b>' + vEsc(r.site_name) + "</b>" + city + bw + "</div>";
     }).join("") || '<span class="status">No comparison data right now.</span>';
