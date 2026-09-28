@@ -27,8 +27,10 @@ from typing import Optional
 
 from features.comparison.bwtf_api import SFBWTFClient
 from features.comparison.comparison import ANALYTES, BWTF_TO_SFPUC_NAME, DEFAULT_DAYS, parse_range  # noqa: F401
-from shared.datasf import DATASET_FLOOR
-from shared.standards import ENTERO_CAUTION, exceeds, parse_result
+from urllib.parse import quote, urlencode
+
+from shared.datasf import BEACH_SAMPLES_URL, DATASET_FLOOR
+from shared.standards import ENTERO_CAUTION, STANDARDS, exceeds, parse_result, single_sample_max
 from shared.stations import STATIONS
 
 SCOPES = ("dual", "all")
@@ -147,3 +149,66 @@ def build_sample_viewer(start: str = "", end: str = "", scope: str = "dual", sit
     city_start = max(s, datetime.strptime(DATASET_FLOOR, "%Y-%m-%d"))
     records = fetch_city_records(sf_gov_monitor, wanted, city_start, e) if city_start <= e else []
     return build_samples(records, history, s, e, scope, site)
+
+
+# ── one station-day: the mini bar graphs behind the "latest sample" chips ────
+
+def results_url(station: str, date: str) -> str:
+    """The raw DataSF rows for one station and day (the link the alerts page has always offered)."""
+    params = {"$select": "source,sample_date,analyte,data,data_as_of,data_loaded_at",
+              "$where": f"source='{station}' AND sample_date = '{date}T00:00:00'", "$order": "source, analyte"}
+    return f"{BEACH_SAMPLES_URL}?{urlencode(params)}"
+
+
+def sample_day_payload(city_records: list[dict], station: str, date: str = "") -> dict:
+    """Pure: DataSF rows -> one station's results on one day, every value the
+    city published per indicator (a double-sampled day has two), each graded by
+    the shared rule, with the limits the graphs draw. No ``date`` = the newest
+    published day among the records. Feeds /api/sample-day and the popover on
+    the alerts and forecast pages (Chase, 2026-09-27)."""
+    st = STATIONS.get(station)
+    if st is None:
+        raise ValueError(f"unknown station {station!r}")
+    recs = [r for r in city_records if r.get("source") == station and r.get("analyte") in ANALYTES and r.get("sample_date")]
+    date = date or max((r["sample_date"][:10] for r in recs), default="")
+    day = [r for r in recs if r["sample_date"][:10] == date]
+    cells = defaultdict(list)
+    for r in day:
+        raw = str(r.get("data") if r.get("data") is not None else "").strip()
+        cells[r["analyte"]].append({"raw": raw, "value": parse_result(raw)})
+    site = {"key": station, "name": st.name, "dual": False}
+    row = _row(site, date, None, "SFPUC", cells) if day else None
+    fecal_max = max((c["value"] for c in cells.get("COLI_FECAL", []) if c["value"] is not None), default=None)
+    total_max = max((c["value"] for c in cells.get("COLI_TOTAL", []) if c["value"] is not None), default=None)
+    return {
+        "station": station, "name": st.name, "group": st.group, "date": date or None, "found": bool(day),
+        "cells": row["cells"] if row else {c: [] for c in ANALYTES},
+        "over": row["over"] if row else False, "n_samples": row["n_samples"] if row else 0,
+        "limits": {c: single_sample_max(c, fecal_max, total_max) for c in ANALYTES},   # total coliform's is the ratio-adjusted one
+        "ratio_applied": (fecal_max is not None and total_max is not None and total_max > 0
+                          and fecal_max / total_max > STANDARDS["COLI_TOTAL"]["ratio_threshold"]),
+        "ratio_note": f"fecal over {STANDARDS['COLI_TOTAL']['ratio_threshold']:.0%} of total, so the limit drops to {STANDARDS['COLI_TOTAL']['single_sample_max_ratio']:,}",
+        "caution": ENTERO_CAUTION, "units": "MPN/100mL",
+        "analytes": [{"code": c, "label": m["label"]} for c, m in ANALYTES.items()],
+        "results_url": results_url(station, date) if date else None,
+        "viewer_url": f"/compare?scope=all&vsite={quote(station, safe='')}#viewer",
+        "graph_url": f"/compare?scope=all&graph={quote(station, safe='')}",
+    }
+
+
+def build_sample_day(station: str, date: str = "", sf_gov_monitor=None) -> dict:
+    """Fetch one station's rows (that day, or the last 60 then 400 days for the
+    newest published day) and build the payload."""
+    from features.alerts.monitoring import SFWaterQualityMonitor  # local: avoids the import cycle at module load
+    if station not in STATIONS:
+        raise ValueError(f"unknown station {station!r}")
+    sf_gov_monitor = sf_gov_monitor or SFWaterQualityMonitor()
+    if date:
+        d = datetime.strptime(date, "%Y-%m-%d")
+        records = fetch_city_records(sf_gov_monitor, [station], d, d)
+    else:
+        today = datetime.now()
+        records = fetch_city_records(sf_gov_monitor, [station], today - timedelta(days=60), today)
+        if not records:
+            records = fetch_city_records(sf_gov_monitor, [station], today - timedelta(days=400), today)
+    return sample_day_payload(records, station, date)

@@ -586,7 +586,7 @@ class AlertsRoutes:
                 """
             lab_details_html = f"""
                 <div class="station-meta">
-                    <span>Latest sample data: <a class="lab-link" href="{lab_result['results_url']}" target="_blank" rel="noopener noreferrer" title="Open the lab results on SF Gov Open Data">{lab_sample_date}</a></span>
+                    <span>Latest sample data: <a class="lab-link" href="{lab_result['results_url']}" target="_blank" rel="noopener noreferrer" title="The lab results as mini graphs (the raw rows are linked inside)" data-sample-station="{lab_result['source_id']}" data-sample-name="{station.station_name}" data-sample-date="{lab_result['sample_date'].strftime('%Y-%m-%d')}" data-sample-feed-date="{station.sample_date.strftime('%Y-%m-%d') if station.sample_date else ''}">{lab_sample_date}</a></span>
                     <span>ID: {station.station_id}</span>
                 </div>
                 {pending_html}

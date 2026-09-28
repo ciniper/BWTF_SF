@@ -11,6 +11,7 @@ sys.path.insert(0, str(ROOT))
 
 from features.comparison import comparison as C  # noqa: E402
 from features.comparison import samples as S  # noqa: E402
+from shared import standards  # noqa: E402
 assert S.parse_range is C.parse_range  # one range parser for the graph and the viewer
 
 
@@ -134,6 +135,39 @@ def test_comparison_lists_every_station_with_the_lab_sites_first():
     assert len(mon.session.calls) == 1 and all(f"source='{sid}'" in mon.session.calls[0]["$where"] for sid in ("BAY#320_SL", "OCEAN#22_SL"))
     s = data["summary"]
     assert (s["site_count"], s["all_site_count"], s["comparable_count"], s["disagree_count"], s["city_exceed_count"]) == (2, 21, 1, 1, 1)
+
+
+def e_ratio_off(recs, station):
+    return S.sample_day_payload(recs, station, "2024-02-13")["ratio_applied"]
+
+
+def test_sample_day_payload_grades_one_station_day_with_both_values_and_the_ratio_limit():
+    baker = "OCEAN#15_SL"
+    recs = (_city(baker, "2024-02-20", ENTERO=20, COLI_FECAL=200, COLI_TOTAL=1500) + _city(baker, "2024-02-20", ENTERO=399)
+            + _city(baker, "2024-02-13", ENTERO=41, COLI_FECAL=10, COLI_TOTAL=100))
+    d = S.sample_day_payload(recs, baker)                      # no date → the newest published day
+    assert d["date"] == "2024-02-20" and d["found"] and d["name"] == "Baker Beach at Lobos Creek" and d["n_samples"] == 2
+    assert [v["raw"] for v in d["cells"]["ENTERO"]] == ["20", "399"] and [v["over"] for v in d["cells"]["ENTERO"]] == [False, True]
+    ST = standards.STANDARDS
+    assert d["limits"] == {"ENTERO": ST["ENTERO"]["single_sample_max"], "COLI_FECAL": ST["COLI_FECAL"]["single_sample_max"],
+                           "COLI_TOTAL": ST["COLI_TOTAL"]["single_sample_max_ratio"]}   # fecal is 13% of total → the ratio limit
+    assert d["cells"]["COLI_TOTAL"][0]["over"] is True and d["over"] is True and d["caution"] == standards.ENTERO_CAUTION
+    assert d["ratio_applied"] is True and "10%" in d["ratio_note"] and e_ratio_off(recs, baker) is False
+    assert d["results_url"].startswith("https://data.sf.gov/resource/") and "2024-02-20T00%3A00%3A00" in d["results_url"] and "OCEAN%2315_SL" in d["results_url"]
+    assert d["viewer_url"] == "/compare?scope=all&vsite=OCEAN%2315_SL#viewer" and d["graph_url"] == "/compare?scope=all&graph=OCEAN%2315_SL"
+    e = S.sample_day_payload(recs, baker, "2024-02-13")
+    assert e["cells"]["ENTERO"][0]["caution"] is True and e["over"] is False and e["limits"]["COLI_TOTAL"] == ST["COLI_TOTAL"]["single_sample_max"]
+    none = S.sample_day_payload(recs, baker, "2024-01-01")
+    assert none["found"] is False and none["n_samples"] == 0 and none["cells"] == {"ENTERO": [], "COLI_FECAL": [], "COLI_TOTAL": []}
+    try:
+        S.sample_day_payload(recs, "NOPE"); assert False, "unknown station must raise"
+    except ValueError:
+        pass
+    # the popover script is one file both pages include, and it reads the same endpoint
+    js = (ROOT / "app" / "static" / "sample_popover.js").read_text()
+    assert "/api/sample-day?" in js and "data-sample-station" in js
+    for tpl in ("app/templates/alerts/dashboard.html", "app/templates/forecast/page.html"):
+        assert "/static/sample_popover.js" in (ROOT / tpl).read_text(), tpl
 
 
 def test_default_range_is_the_last_year_and_bad_input_falls_back():

@@ -43,7 +43,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 # the `src.*` imports below need this directory either way.
 if str(Path(__file__).resolve().parent) not in sys.path:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
-from shared.stations import STATION_BASINS, STATION_NAMES, STATIONS  # noqa: E402
+from shared.stations import SFPUC_TO_SFGOV_SOURCES, STATION_BASINS, STATION_NAMES, STATIONS  # noqa: E402
 from shared.zones import ZONES, ZONE_OF_SOURCE, ZONE_OF_STATION  # noqa: E402
 from shared.outfalls import FEED_NAME_TO_OUTFALLS, OUTFALLS  # noqa: E402
 from shared.datasf import BEACH_SAMPLES_URL  # noqa: E402
@@ -543,7 +543,10 @@ class LiveData:
             return []
         return [{"name": st.station_name, "status": self._beach_status(st),
                  "has_cso": bool(st.has_cso),
-                 "sample_date": st.sample_date.strftime("%m/%d/%y") if getattr(st, "sample_date", None) else None}
+                 "sample_date": st.sample_date.strftime("%m/%d/%y") if getattr(st, "sample_date", None) else None,
+                 # for the sample popover: the DataSF station id and the feed's sample date as ISO
+                 "source": (SFPUC_TO_SFGOV_SOURCES.get(st.station_name) or [None])[0],
+                 "sample_date_iso": st.sample_date.strftime("%Y-%m-%d") if getattr(st, "sample_date", None) else None}
                 for st in stations]
 
     # ── Rain → daily features, per rain source ─────────────────────────────

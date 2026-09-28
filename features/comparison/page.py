@@ -9,7 +9,7 @@ from urllib.parse import parse_qs, urlparse
 from flask import render_template
 
 from features.comparison.comparison import build_comparison, build_site_history
-from features.comparison.samples import build_sample_viewer
+from features.comparison.samples import build_sample_day, build_sample_viewer
 from shared.datasf import DATASET_FLOOR
 
 COMPARISON_MODAL_SCRIPT = """
@@ -116,6 +116,15 @@ document.querySelectorAll('.row-click').forEach(function(el){
   el.addEventListener('click',go);
   el.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
 });
+// Deep links from the sample popover on other pages: ?vsite=<station> opens the
+// viewer on that site (all sites in scope); ?graph=<station> opens its history.
+(function(){
+  var u=new URL(location.href), vs=u.searchParams.get('vsite'), g=u.searchParams.get('graph');
+  if(vs){ VIEW.scope='all'; VIEW.site=vs;
+    document.querySelectorAll('#v-scope .seg-btn').forEach(function(b){b.classList.toggle('active', b.dataset.scope==='all');});
+    vOpen(); }
+  if(g){ openSite(g, null, HIST.start, HIST.end); }
+})();
 </script>
 </body></html>"""
 
@@ -167,6 +176,21 @@ class ComparisonRoutes:
             data = build_sample_viewer(start=one("start"), end=one("end"), scope=one("scope", "dual"),
                                        site=one("site"), sf_gov_monitor=self.combined_monitor.sf_gov_monitor)
             self._send_json(data)
+        except Exception as e:
+            self._send_json({"ok": False, "error": str(e)}, status=500)
+
+    def send_api_sample_day(self):
+        """One station's results on one day (default: its newest published day),
+        for the mini bar graphs behind the "latest sample" chips."""
+        params = parse_qs(urlparse(self.path).query)
+        one = lambda k, d="": (params.get(k) or [d])[0].strip()  # noqa: E731
+        if not one("station"):
+            self._send_json({"ok": False, "error": "missing 'station' parameter"}, status=400)
+            return
+        try:
+            self._send_json(build_sample_day(one("station"), one("date"), sf_gov_monitor=self.combined_monitor.sf_gov_monitor))
+        except ValueError as e:
+            self._send_json({"ok": False, "error": str(e)}, status=404)
         except Exception as e:
             self._send_json({"ok": False, "error": str(e)}, status=500)
 

@@ -106,6 +106,9 @@ header .live-dot { display: inline-block; width: 8px; height: 8px; background: #
 .gt-station-value.over { color: #b5310a; font-weight: 600; }
 
 .gt-no-samples { color: #8a93a3; font-style: italic; font-size: 0.85em; padding: 10px; }
+.sample-link { color: #0072BC; text-decoration: none; font-size: .82em; font-weight: 600; margin-left: 8px; border-bottom: 1px dotted #0072BC; }
+.sample-link:hover { color: #005f9e; }
+.tbl .sample-link { font-size: inherit; margin-left: 0; }
 
 footer { text-align: center; padding: 20px; color: #54576F; font-size: 0.85em; }
 footer p { display: flex; justify-content: center; align-items: center; gap: 7px; flex-wrap: wrap; }
@@ -527,7 +530,8 @@ function renderBeaches(beaches) {
         item.className = 'beach-item';
         const label = b.status === 'cso' ? badge('danger', 'octagon-alert', 'CSO') : b.status === 'posted' ? badge('warn', 'triangle-alert', 'Posted')
                     : b.status === 'safe' ? badge('ok', 'circle-check', 'Safe') : badge('muted', 'circle-dashed', 'No data');
-        item.innerHTML = `<span class="beach-dot ${esc(b.status)}"></span><span>${esc(b.name)}</span><span style="margin-left:auto;">${label}</span>`;
+        const sample = b.source ? `<a class="sample-link" href="#" data-sample-station="${esc(b.source)}" data-sample-name="${esc(b.name)}" data-sample-feed-date="${esc(b.sample_date_iso || '')}" title="Latest lab results as mini graphs">${ic('microscope')} ${b.sample_date ? 'sample ' + esc(b.sample_date) : 'latest sample'}</a>` : '';
+        item.innerHTML = `<span class="beach-dot ${esc(b.status)}"></span><span>${esc(b.name)}</span>${sample}<span style="margin-left:auto;">${label}</span>`;
         grid.appendChild(item);
     });
 }
@@ -625,7 +629,7 @@ function renderActualDetail(day) {
     const rows = (smp.length ? smp : day.samples).sort((a, b) => (b.exceeds - a.exceeds) || String(a.station_name).localeCompare(b.station_name));
     if (rows.length) {
         html += '<table class="tbl"><tr><th>Station</th><th>Zone</th><th>Analyte</th><th class="num">Result</th><th></th></tr>' +
-            rows.map(s => `<tr><td>${esc(s.station_name)}</td><td class="mute">${esc((ZONES.find(z => z.key === s.zone) || {}).label || '')}</td><td class="mute">${esc(s.analyte)}</td><td class="num" style="${s.exceeds ? 'color:#b5310a;font-weight:700' : ''}">${esc(s.value_raw)}</td><td>${s.exceeds ? badge('danger', 'triangle-alert', 'over standard') : ''}</td></tr>`).join('') + '</table>';
+            rows.map(s => `<tr><td><a class="sample-link" href="#" data-sample-station="${esc(s.station)}" data-sample-name="${esc(s.station_name)}" data-sample-date="${esc(s.date)}" title="This day's lab results as mini graphs">${esc(s.station_name)}</a></td><td class="mute">${esc((ZONES.find(z => z.key === s.zone) || {}).label || '')}</td><td class="mute">${esc(s.analyte)}</td><td class="num" style="${s.exceeds ? 'color:#b5310a;font-weight:700' : ''}">${esc(s.value_raw)}</td><td>${s.exceeds ? badge('danger', 'triangle-alert', 'over standard') : ''}</td></tr>`).join('') + '</table>';
     } else {
         html += '<div class="mute" style="font-size:.85em">No samples this day (SFPUC samples weekly).</div>';
     }
@@ -949,4 +953,5 @@ function setRiskLine(v) {
 loadData();
 setInterval(() => { if (currentMode === 'live') loadData(); }, 300000);
 </script>
+<script src="/static/sample_popover.js" defer></script>
 </body></html>
