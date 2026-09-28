@@ -227,3 +227,13 @@ simulation active. What changes:
 | Tick errors | only `watcher_runtime.last_error` (the last one) | every error in `watcher_errors` (kind, message, status), pruned at 90 days |
 
 Check after applying: `watcher_errors` empty or explaining itself; `forecast_changes` gains a row at the first refresh after apply; `select * from cron.job` shows `bwtf-forecast-refresh` and no `bwtf-keepalive`.
+
+## 014: samples.source (2026-09-27)
+
+`db/migrations/014_samples_source.sql` — `samples.source` = `refresh` (the
+production refresh picked the row up as the city published it; `first_seen_at`
+is a real arrival time) or `backfill` (historical load; the stamp is the load
+day). The 2026-09-27 backfill rows are relabelled by timestamp. `samples_lag`
+is the view to read lags from: refresh rows only, `lag_days` = Pacific day
+first seen minus the collection day. Compare its median with the one-day lag
+the live-corrections rules assume (`live_rules.RULES["samples"]["known_lag_days"]`).

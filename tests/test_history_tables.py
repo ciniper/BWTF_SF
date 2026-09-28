@@ -73,7 +73,18 @@ def test_samples_mirror_shapes_rows_and_inserts_do_nothing_in_batches():
     ]
     rows = samples_mirror.to_rows(samples)
     assert [r["analyte"] for r in rows] == ["ENTERO", "COLI_TOTAL"]
-    assert rows[1] == {"station_id": st, "sample_date": "2026-09-21", "analyte": "COLI_TOTAL", "value_raw": ">24196", "value": 24196.0, "exceeds": True}
+    assert rows[1] == {"station_id": st, "sample_date": "2026-09-21", "analyte": "COLI_TOTAL", "value_raw": ">24196", "value": 24196.0, "exceeds": True, "source": "refresh"}
+    assert samples_mirror.to_rows(samples, source="backfill")[0]["source"] == "backfill"
+    try:
+        samples_mirror.to_rows(samples, source="guess"); assert False, "unknown source accepted"
+    except AssertionError as e:
+        assert "guess" in str(e)
+    # the backfill CLI path labels its rows, the refresh path keeps the default
+    src = (ROOT / "shared/samples_mirror.py").read_text()
+    assert 'mirror(samples, source="backfill")' in src
+    sql = (ROOT / "db/migrations/014_samples_source.sql").read_text()
+    assert "add column if not exists source text not null default 'refresh'" in sql and "create or replace view public.samples_lag" in sql
+    assert "where source = 'refresh' and first_seen_at < '2026-09-27T18:30:00+00'" in sql
     calls = []
     orig = samples_mirror.sb.upsert
     samples_mirror.sb.upsert = lambda table, rows, on_conflict, resolution="merge-duplicates": calls.append((table, len(rows), on_conflict, resolution))

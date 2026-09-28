@@ -4,7 +4,10 @@ DataSF (dataset v3fv-x3ux) is the source of truth and the pages keep reading
 it live; this table adds the one thing DataSF cannot give — WHEN we first saw
 each result (the live rules assume results arrive a day after sampling) — and
 a backstop if the API is down. Rows are keyed by station, date, analyte and
-raw value and inserted with DO NOTHING, so first_seen_at never moves.
+raw value and inserted with DO NOTHING, so first_seen_at never moves. The
+``source`` column (migration 014) says whether that stamp is a real arrival
+time ("refresh", the production refresh) or the day of a historical load
+("backfill"); the view ``samples_lag`` reads refresh rows only.
 
 Two writers:
   * the production forecast refresh (features/forecast/page.py) mirrors the
@@ -30,11 +33,16 @@ DATASF_FLOOR = "2020-07-27"   # the city publishes nothing earlier
 BATCH = 500
 
 
-def to_rows(samples: Iterable[dict]) -> list[dict]:
+SOURCES = ("refresh", "backfill")   # samples.source (migration 014): real-time pickup vs historical load
+
+
+def to_rows(samples: Iterable[dict], source: str = "refresh") -> list[dict]:
     """Engine-shaped samples ({date, station, analyte, value, value_raw, exceeds})
     → table rows. Unknown stations/analytes and blank raw values are dropped;
     duplicates within the batch collapse (PostgREST rejects a batch that hits
-    the same key twice)."""
+    the same key twice). ``source`` says whether first_seen_at is a real
+    arrival time ("refresh") or the day of a historical load ("backfill")."""
+    assert source in SOURCES, source
     out, seen = [], set()
     for s in samples:
         st, d, an, raw = s.get("station"), str(s.get("date") or "")[:10], s.get("analyte"), str(s.get("value_raw") or "").strip()
@@ -45,14 +53,14 @@ def to_rows(samples: Iterable[dict]) -> list[dict]:
             continue
         seen.add(key)
         out.append({"station_id": st, "sample_date": d, "analyte": an, "value_raw": raw,
-                    "value": s.get("value"), "exceeds": s.get("exceeds")})
+                    "value": s.get("value"), "exceeds": s.get("exceeds"), "source": source})
     return out
 
 
-def mirror(samples: Iterable[dict]) -> int:
+def mirror(samples: Iterable[dict], source: str = "refresh") -> int:
     """Insert what is new (DO NOTHING on conflict). Returns rows sent. Raises
     SupabaseError on a failed request — callers on the serving path catch it."""
-    rows = to_rows(samples)
+    rows = to_rows(samples, source)
     for i in range(0, len(rows), BATCH):
         sb.upsert(TABLE, rows[i:i + BATCH], on_conflict=ON_CONFLICT, resolution="ignore-duplicates")
     return len(rows)
@@ -83,8 +91,8 @@ def fetch_datasf(since: str = DATASF_FLOOR, until: str | None = None) -> list[di
 
 def backfill(since: str = DATASF_FLOOR) -> int:
     samples = fetch_datasf(since)
-    n = mirror(samples)
-    print(f"samples mirror: {n} rows sent from {since} (DO NOTHING on the ones already there)")
+    n = mirror(samples, source="backfill")
+    print(f"samples mirror: {n} rows sent from {since} as source=backfill (DO NOTHING on the ones already there)")
     return n
 
 
