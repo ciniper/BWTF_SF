@@ -50,6 +50,8 @@ def _served_chosen() -> dict:
 
 
 def fit(variant: str = "v2") -> Path:
+    if variant == "v3":
+        return fit_v3()
     if variant != "v2":
         raise SystemExit(f"no fitter for {variant!r}")
     heads, impact_raw = T.stage2_from_served()
@@ -70,6 +72,35 @@ def fit(variant: str = "v2") -> Path:
     print("impact table refit — sample days per group (served → split):")
     for g in table:
         print(f"   {g:14} {impact_raw[g]['n_sample_days']} → {table[g]['n_sample_days']}   baseline {impact_raw[g]['buckets']['baseline_no_recent_discharge']['p_elevated']} → {table[g]['buckets']['baseline_no_recent_discharge']['p_elevated']}")
+    out = S2.save_variant(spec)
+    print(f"variant → {out.relative_to(REPO)}")
+    return out
+
+
+def fit_v3() -> Path:
+    """Stage 2 v3: v2's outfall split with the shares fitted from the water
+    (stage2.fit_water_split); the impact table is copied from v2 so the two
+    variants differ in the shares alone."""
+    v2 = S2.load_variant("v2")
+    heads, impact_raw = T.stage2_from_served()
+    chosen = _served_chosen()
+    sources = sorted(set(T.RAIN_SOURCES) | set(chosen.values()) | {h.get("rain_source", "avg") for h in heads.values()})
+    frames, notes = T.build_dataset(sources=sources)
+    spec = S2.fit_water_split(frames, chosen, heads, impact_raw, T.load_events(), T.load_samples(), v2)
+    spec["impact_table"] = v2["impact_table"]
+    spec["impact_table_note"] = v2.get("impact_table_note", "") + " — copied from v2: v3 changes the shares only"
+    spec["train_window"] = v2.get("train_window") or [str(frames["avg"]["date"].min().date()), str(frames["avg"]["date"].max().date())]
+    print("stage 2 v3 (shares from the water): blended p ← map share + (1 − map)·f, f = over-standard rate on PURE non-attributed tails "
+          "(days 0–3 after a basin discharge that did not come through the group's outfalls, none that did in 7 days) above baseline, "
+          "relative to attributed tails")
+    for g, s in spec["shares"].items():
+        head = f"   {g:14} b={s['baseline']:.3f}  attributed days {s['n_attributed_days']} / non-attributed {s['n_non_attributed_days']}" + (" — identity" if s["identity"] else "")
+        print(head)
+        if not s["identity"]:
+            for size in ("large", "small", "all"):
+                x = s[size]
+                print(f"      {size:5} p {x['p']}  ← map {x['map']}, water {x['water']}, f {x['f_non_attributed']}  |  attributed tails {x['tail_rate_attributed']} (n={x['n_tail_attributed']}), "
+                      f"pure non-attributed tails {x['tail_rate_pure_non_attributed']} (n={x['n_tail_pure_non_attributed']})")
     out = S2.save_variant(spec)
     print(f"variant → {out.relative_to(REPO)}")
     return out

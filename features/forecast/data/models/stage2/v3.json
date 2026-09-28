@@ -1,0 +1,650 @@
+{
+ "variant": "v3",
+ "kind": "outfall_split_water",
+ "fitted_at": "2026-09-28T00:22:09",
+ "group_outfalls": {
+  "Ocean Beach": [
+   "CSD-001",
+   "CSD-002",
+   "CSD-003"
+  ],
+  "Baker-China": [
+   "CSD-004",
+   "CSD-005",
+   "CSD-006",
+   "CSD-007"
+  ],
+  "Crissy Field": [
+   "CSD-009",
+   "CSD-010",
+   "CSD-011",
+   "CSD-119"
+  ],
+  "Aquatic Park": [
+   "CSD-013",
+   "CSD-015",
+   "CSD-017"
+  ],
+  "Mission Creek": [
+   "CSD-018",
+   "CSD-022",
+   "CSD-023",
+   "CSD-024",
+   "CSD-025",
+   "CSD-026",
+   "CSD-027"
+  ],
+  "Southeast": [
+   "CSD-029",
+   "CSD-030",
+   "CSD-030A",
+   "CSD-031",
+   "CSD-031A",
+   "CSD-032",
+   "CSD-033",
+   "CSD-035",
+   "CSD-037",
+   "CSD-040",
+   "CSD-041",
+   "CSD-042",
+   "CSD-043"
+  ]
+ },
+ "shares": {
+  "Ocean Beach": {
+   "n_basin_days": 51,
+   "n_attributed_days": 45,
+   "n_non_attributed_days": 14,
+   "baseline": 0.0436,
+   "n_baseline_sample_days": 298,
+   "identity": false,
+   "large": {
+    "p": 1.0,
+    "n": 25,
+    "water": null,
+    "map": 1.0,
+    "f_non_attributed": null,
+    "tail_rate_attributed": 0.6744,
+    "n_tail_attributed": 43,
+    "tail_rate_pure_non_attributed": null,
+    "n_tail_pure_non_attributed": 0
+   },
+   "small": {
+    "p": 0.4615,
+    "n": 26,
+    "water": null,
+    "map": 0.4615,
+    "f_non_attributed": null,
+    "tail_rate_attributed": 0.3333,
+    "n_tail_attributed": 27,
+    "tail_rate_pure_non_attributed": 0.0,
+    "n_tail_pure_non_attributed": 1
+   },
+   "all": {
+    "p": 0.7255,
+    "n": 51,
+    "water": null,
+    "map": 0.7255,
+    "f_non_attributed": null,
+    "tail_rate_attributed": 0.5429,
+    "n_tail_attributed": 70,
+    "tail_rate_pure_non_attributed": 0.0,
+    "n_tail_pure_non_attributed": 1
+   }
+  },
+  "Baker-China": {
+   "n_basin_days": 51,
+   "n_attributed_days": 49,
+   "n_non_attributed_days": 10,
+   "baseline": 0.1662,
+   "n_baseline_sample_days": 349,
+   "identity": false,
+   "large": {
+    "p": 0.8,
+    "n": 25,
+    "water": null,
+    "map": 0.8,
+    "f_non_attributed": null,
+    "tail_rate_attributed": 0.3913,
+    "n_tail_attributed": 23,
+    "tail_rate_pure_non_attributed": null,
+    "n_tail_pure_non_attributed": 0
+   },
+   "small": {
+    "p": 0.8077,
+    "n": 26,
+    "water": null,
+    "map": 0.8077,
+    "f_non_attributed": null,
+    "tail_rate_attributed": 0.35,
+    "n_tail_attributed": 20,
+    "tail_rate_pure_non_attributed": 0.0,
+    "n_tail_pure_non_attributed": 2
+   },
+   "all": {
+    "p": 0.8039,
+    "n": 51,
+    "water": null,
+    "map": 0.8039,
+    "f_non_attributed": null,
+    "tail_rate_attributed": 0.3721,
+    "n_tail_attributed": 43,
+    "tail_rate_pure_non_attributed": 0.0,
+    "n_tail_pure_non_attributed": 2
+   }
+  },
+  "Crissy Field": {
+   "n_basin_days": 40,
+   "n_attributed_days": 40,
+   "n_non_attributed_days": 0,
+   "baseline": 0.1168,
+   "n_baseline_sample_days": 334,
+   "identity": true,
+   "large": {
+    "p": 1.0,
+    "n": 20,
+    "water": 1.0,
+    "map": 1.0,
+    "f_non_attributed": null,
+    "tail_rate_attributed": 0.5417,
+    "n_tail_attributed": 24,
+    "tail_rate_pure_non_attributed": null,
+    "n_tail_pure_non_attributed": 0
+   },
+   "small": {
+    "p": 1.0,
+    "n": 20,
+    "water": 1.0,
+    "map": 1.0,
+    "f_non_attributed": null,
+    "tail_rate_attributed": 0.5417,
+    "n_tail_attributed": 24,
+    "tail_rate_pure_non_attributed": null,
+    "n_tail_pure_non_attributed": 0
+   },
+   "all": {
+    "p": 1.0,
+    "n": 40,
+    "water": 1.0,
+    "map": 1.0,
+    "f_non_attributed": null,
+    "tail_rate_attributed": 0.5417,
+    "n_tail_attributed": 48,
+    "tail_rate_pure_non_attributed": null,
+    "n_tail_pure_non_attributed": 0
+   }
+  },
+  "Aquatic Park": {
+   "n_basin_days": 40,
+   "n_attributed_days": 30,
+   "n_non_attributed_days": 10,
+   "baseline": 0.0538,
+   "n_baseline_sample_days": 316,
+   "identity": false,
+   "large": {
+    "p": 1.0,
+    "n": 20,
+    "water": null,
+    "map": 1.0,
+    "f_non_attributed": null,
+    "tail_rate_attributed": 0.48,
+    "n_tail_attributed": 25,
+    "tail_rate_pure_non_attributed": null,
+    "n_tail_pure_non_attributed": 0
+   },
+   "small": {
+    "p": 0.5,
+    "n": 20,
+    "water": 0.5,
+    "map": 0.5,
+    "f_non_attributed": 0.0,
+    "tail_rate_attributed": 0.3333,
+    "n_tail_attributed": 12,
+    "tail_rate_pure_non_attributed": 0.0,
+    "n_tail_pure_non_attributed": 5
+   },
+   "all": {
+    "p": 0.75,
+    "n": 40,
+    "water": 0.75,
+    "map": 0.75,
+    "f_non_attributed": 0.0,
+    "tail_rate_attributed": 0.4324,
+    "n_tail_attributed": 37,
+    "tail_rate_pure_non_attributed": 0.0,
+    "n_tail_pure_non_attributed": 5
+   }
+  },
+  "Mission Creek": {
+   "n_basin_days": 78,
+   "n_attributed_days": 78,
+   "n_non_attributed_days": 0,
+   "baseline": 0.0551,
+   "n_baseline_sample_days": 254,
+   "identity": true,
+   "large": {
+    "p": 1.0,
+    "n": 39,
+    "water": 1.0,
+    "map": 1.0,
+    "f_non_attributed": null,
+    "tail_rate_attributed": 0.88,
+    "n_tail_attributed": 50,
+    "tail_rate_pure_non_attributed": null,
+    "n_tail_pure_non_attributed": 0
+   },
+   "small": {
+    "p": 1.0,
+    "n": 39,
+    "water": 1.0,
+    "map": 1.0,
+    "f_non_attributed": null,
+    "tail_rate_attributed": 0.6857,
+    "n_tail_attributed": 70,
+    "tail_rate_pure_non_attributed": null,
+    "n_tail_pure_non_attributed": 0
+   },
+   "all": {
+    "p": 1.0,
+    "n": 78,
+    "water": 1.0,
+    "map": 1.0,
+    "f_non_attributed": null,
+    "tail_rate_attributed": 0.7667,
+    "n_tail_attributed": 120,
+    "tail_rate_pure_non_attributed": null,
+    "n_tail_pure_non_attributed": 0
+   }
+  },
+  "Southeast": {
+   "n_basin_days": 78,
+   "n_attributed_days": 78,
+   "n_non_attributed_days": 0,
+   "baseline": 0.3531,
+   "n_baseline_sample_days": 439,
+   "identity": true,
+   "large": {
+    "p": 1.0,
+    "n": 39,
+    "water": 1.0,
+    "map": 1.0,
+    "f_non_attributed": null,
+    "tail_rate_attributed": 0.95,
+    "n_tail_attributed": 80,
+    "tail_rate_pure_non_attributed": null,
+    "n_tail_pure_non_attributed": 0
+   },
+   "small": {
+    "p": 1.0,
+    "n": 39,
+    "water": 1.0,
+    "map": 1.0,
+    "f_non_attributed": null,
+    "tail_rate_attributed": 0.8947,
+    "n_tail_attributed": 57,
+    "tail_rate_pure_non_attributed": null,
+    "n_tail_pure_non_attributed": 0
+   },
+   "all": {
+    "p": 1.0,
+    "n": 78,
+    "water": 1.0,
+    "map": 1.0,
+    "f_non_attributed": null,
+    "tail_rate_attributed": 0.927,
+    "n_tail_attributed": 137,
+    "tail_rate_pure_non_attributed": null,
+    "n_tail_pure_non_attributed": 0
+   }
+  }
+ },
+ "median_event_volume_mg": {
+  "Ocean Beach": 3.7,
+  "Baker-China": 3.7,
+  "Crissy Field": 7.25,
+  "Aquatic Park": 7.25,
+  "Mission Creek": 55.27,
+  "Southeast": 26.77
+ },
+ "tail_days": 3,
+ "prior_weight": 10,
+ "min_signal": 0.05,
+ "definition": "p_group(D\u2212k) = p_basin(D\u2212k) \u00b7 [w\u00b7g_large + (1\u2212w)\u00b7g_small], w = V/(V+median) \u2014 as v2; g_size = blend of the water share, map + (1 \u2212 map)\u00b7f, with f = the group's over-standard rate on pure non-attributed tails (a non-attributed basin discharge in the last 3 days, no attributed one in the last 7) above its dry-weather rate, over the same after attributed discharges; blended with the v2 map share at 10 pure-tail sample-days of prior weight; identity groups stay 1",
+ "impact_table": {
+  "Ocean Beach": {
+   "basin": "Westside",
+   "stations": [
+    "OCEAN#18_SL",
+    "OCEAN#19_SL",
+    "OCEAN#20_SL",
+    "OCEAN#21_SL",
+    "OCEAN#21.1_SL",
+    "OCEAN#22_SL"
+   ],
+   "median_event_volume_mg": 13.93,
+   "n_sample_days": 387,
+   "buckets": {
+    "baseline_no_recent_discharge": {
+     "p_elevated": 0.047,
+     "n": 301
+    },
+    "d0_large": {
+     "p_elevated": 1.0,
+     "n": 11
+    },
+    "d0_small": {
+     "p_elevated": 0.562,
+     "n": 16
+    },
+    "d1_large": {
+     "p_elevated": 0.727,
+     "n": 11
+    },
+    "d1_small": {
+     "p_elevated": 0.333,
+     "n": 15
+    },
+    "d2_large": {
+     "p_elevated": 0.5,
+     "n": 6
+    },
+    "d2_small": {
+     "p_elevated": 0.0,
+     "n": 5
+    },
+    "d3_large": {
+     "p_elevated": 0.5,
+     "n": 4
+    },
+    "d4-5_large": {
+     "p_elevated": 0.0,
+     "n": 3
+    },
+    "d4-5_small": {
+     "p_elevated": 0.2,
+     "n": 5
+    },
+    "d6-7_small": {
+     "p_elevated": 0.167,
+     "n": 6
+    }
+   }
+  },
+  "Baker-China": {
+   "basin": "Westside",
+   "stations": [
+    "OCEAN#15_SL",
+    "OCEAN#15EAST_SL",
+    "OCEAN#16_SL",
+    "OCEAN#17_SL"
+   ],
+   "median_event_volume_mg": 3.7,
+   "n_sample_days": 411,
+   "buckets": {
+    "baseline_no_recent_discharge": {
+     "p_elevated": 0.166,
+     "n": 355
+    },
+    "d0_large": {
+     "p_elevated": 0.625,
+     "n": 8
+    },
+    "d0_small": {
+     "p_elevated": 0.444,
+     "n": 9
+    },
+    "d1_large": {
+     "p_elevated": 0.25,
+     "n": 8
+    },
+    "d1_small": {
+     "p_elevated": 0.375,
+     "n": 8
+    },
+    "d2_large": {
+     "p_elevated": 0.667,
+     "n": 3
+    },
+    "d2_small": {
+     "p_elevated": 0.0,
+     "n": 3
+    },
+    "d3_large": {
+     "p_elevated": 0.0,
+     "n": 4
+    },
+    "d4-5_small": {
+     "p_elevated": 0.167,
+     "n": 6
+    },
+    "d6-7_small": {
+     "p_elevated": 0.25,
+     "n": 4
+    }
+   }
+  },
+  "Crissy Field": {
+   "basin": "North Shore",
+   "stations": [
+    "BAY#202.4_SL",
+    "BAY#202.5_SL"
+   ],
+   "median_event_volume_mg": 7.25,
+   "n_sample_days": 397,
+   "buckets": {
+    "baseline_no_recent_discharge": {
+     "p_elevated": 0.117,
+     "n": 334
+    },
+    "d0_large": {
+     "p_elevated": 1.0,
+     "n": 10
+    },
+    "d0_small": {
+     "p_elevated": 0.667,
+     "n": 12
+    },
+    "d1_large": {
+     "p_elevated": 0.222,
+     "n": 9
+    },
+    "d1_small": {
+     "p_elevated": 0.444,
+     "n": 9
+    },
+    "d3_large": {
+     "p_elevated": 0.0,
+     "n": 3
+    },
+    "d4-5_small": {
+     "p_elevated": 0.25,
+     "n": 8
+    },
+    "d6-7_large": {
+     "p_elevated": 0.0,
+     "n": 4
+    }
+   }
+  },
+  "Aquatic Park": {
+   "basin": "North Shore",
+   "stations": [
+    "BAY#210.1_SL",
+    "BAY#211_SL"
+   ],
+   "median_event_volume_mg": 10.98,
+   "n_sample_days": 370,
+   "buckets": {
+    "baseline_no_recent_discharge": {
+     "p_elevated": 0.053,
+     "n": 323
+    },
+    "d0_large": {
+     "p_elevated": 0.857,
+     "n": 7
+    },
+    "d0_small": {
+     "p_elevated": 0.556,
+     "n": 9
+    },
+    "d1_large": {
+     "p_elevated": 0.429,
+     "n": 7
+    },
+    "d1_small": {
+     "p_elevated": 0.143,
+     "n": 7
+    },
+    "d3_large": {
+     "p_elevated": 0.0,
+     "n": 3
+    },
+    "d4-5_small": {
+     "p_elevated": 0.0,
+     "n": 3
+    },
+    "d6-7_large": {
+     "p_elevated": 0.0,
+     "n": 3
+    },
+    "d6-7_small": {
+     "p_elevated": 0.0,
+     "n": 3
+    }
+   }
+  },
+  "Mission Creek": {
+   "basin": "Central",
+   "stations": [
+    "BAY#220_SL"
+   ],
+   "median_event_volume_mg": 55.27,
+   "n_sample_days": 410,
+   "buckets": {
+    "baseline_no_recent_discharge": {
+     "p_elevated": 0.055,
+     "n": 254
+    },
+    "d0_large": {
+     "p_elevated": 0.933,
+     "n": 15
+    },
+    "d0_small": {
+     "p_elevated": 0.952,
+     "n": 21
+    },
+    "d1_large": {
+     "p_elevated": 1.0,
+     "n": 13
+    },
+    "d1_small": {
+     "p_elevated": 0.818,
+     "n": 22
+    },
+    "d2_large": {
+     "p_elevated": 0.75,
+     "n": 12
+    },
+    "d2_small": {
+     "p_elevated": 0.368,
+     "n": 19
+    },
+    "d3_large": {
+     "p_elevated": 0.8,
+     "n": 10
+    },
+    "d3_small": {
+     "p_elevated": 0.375,
+     "n": 8
+    },
+    "d4-5_large": {
+     "p_elevated": 0.3,
+     "n": 10
+    },
+    "d4-5_small": {
+     "p_elevated": 0.5,
+     "n": 12
+    },
+    "d6-7_large": {
+     "p_elevated": 0.0,
+     "n": 5
+    },
+    "d6-7_small": {
+     "p_elevated": 0.222,
+     "n": 9
+    }
+   }
+  },
+  "Southeast": {
+   "basin": "Southeast",
+   "stations": [
+    "BAY#230_SL",
+    "BAY#300.1_SL",
+    "BAY#301.1_SL",
+    "BAY#301.2_SL",
+    "BAY#320_SL"
+   ],
+   "median_event_volume_mg": 26.77,
+   "n_sample_days": 634,
+   "buckets": {
+    "baseline_no_recent_discharge": {
+     "p_elevated": 0.353,
+     "n": 439
+    },
+    "d0_large": {
+     "p_elevated": 1.0,
+     "n": 22
+    },
+    "d0_small": {
+     "p_elevated": 0.941,
+     "n": 17
+    },
+    "d1_large": {
+     "p_elevated": 1.0,
+     "n": 21
+    },
+    "d1_small": {
+     "p_elevated": 1.0,
+     "n": 16
+    },
+    "d2_large": {
+     "p_elevated": 0.9,
+     "n": 20
+    },
+    "d2_small": {
+     "p_elevated": 0.846,
+     "n": 13
+    },
+    "d3_large": {
+     "p_elevated": 0.882,
+     "n": 17
+    },
+    "d3_small": {
+     "p_elevated": 0.727,
+     "n": 11
+    },
+    "d4-5_large": {
+     "p_elevated": 0.652,
+     "n": 23
+    },
+    "d4-5_small": {
+     "p_elevated": 0.6,
+     "n": 15
+    },
+    "d6-7_large": {
+     "p_elevated": 0.769,
+     "n": 13
+    },
+    "d6-7_small": {
+     "p_elevated": 0.286,
+     "n": 7
+    }
+   }
+  }
+ },
+ "impact_table_note": "refit on group-attributed discharge days (CIWQS days where one of the group's outfalls discharged, plus the basin's 2016-17 feed-archive days, which carry no outfall detail) \u2014 copied from v2: v3 changes the shares only",
+ "train_window": [
+  "2016-03-01",
+  "2025-10-31"
+ ]
+}
