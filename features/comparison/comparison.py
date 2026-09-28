@@ -15,6 +15,7 @@ own California single-sample maximum.
 from __future__ import annotations
 
 import sys
+from collections import defaultdict
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -28,7 +29,13 @@ import requests
 from features.comparison.bwtf_api import SFBWTFClient, parse_datetime, parse_result
 from features.alerts.monitoring import STANDARDS, SFPUC_TO_SFGOV_SOURCES, SFWaterQualityMonitor
 from shared.sfpuc_api import SFPUCRealTimeAPI
+from shared.standards import ENTERO_CAUTION, exceeds, parse_result as std_parse, single_sample_max
 from shared.stations import STATIONS
+
+# The BWTF lab's sites with no city counterpart (the lab's site list, 2026-09);
+# the samples viewer discovers these from the history at run time, the graphs
+# page's site list is rendered offline from this.
+BWTF_ONLY_SITES = ("Bayview Hunters Point",)
 
 # The history graph's default window (Chase, 2026-09-27: a year, selectable back
 # to the dataset floor). The sample viewer shares it.
@@ -246,6 +253,95 @@ def _fetch_city_series(monitor: SFWaterQualityMonitor, sources: list[str], start
             "raw": raw,
         })
     return by_source
+
+
+def fetch_city_records(monitor, sources: list[str], start: datetime, end: datetime) -> list[dict]:
+    """Every DataSF row for these stations, all three posting indicators, in
+    [start, end] (raw Socrata dicts: source, sample_date, analyte, data)."""
+    if not sources:
+        return []
+    where = (f"sample_date >= '{start:%Y-%m-%dT00:00:00}' AND sample_date <= '{end:%Y-%m-%dT23:59:59}' "
+             f"AND analyte in ({','.join(repr(a) for a in ANALYTES)}) "
+             f"AND source in ({','.join(repr(s) for s in sources)})")
+    response = monitor.session.get(monitor.API_URL, params={
+        "$select": "source,sample_date,analyte,data", "$where": where,
+        "$order": "sample_date DESC", "$limit": 50000,
+    }, timeout=30)
+    response.raise_for_status()
+    return response.json()
+
+
+def graph_sites() -> list[dict]:
+    """Every site the graphs page can plot: the 20 stations (dual when BWTF
+    samples the same beach) then the BWTF-only sites."""
+    sfpuc_to_bwtf = {v: k for k, v in BWTF_TO_SFPUC_NAME.items()}
+    out = [{"key": sid, "name": st.name, "group": st.group, "dual": st.sfpuc_name in sfpuc_to_bwtf, "city": True}
+           for sid, st in STATIONS.items()]
+    out += [{"key": "bwtf:" + n, "name": n, "group": "BWTF only", "dual": False, "city": False} for n in BWTF_ONLY_SITES]
+    return out
+
+
+def site_series_payload(site: dict, city_records: list[dict], bwtf_history: list[dict], since: datetime, until: datetime) -> dict:
+    """Pure: one site's results over time for the graphs page. City: per day and
+    indicator the worst value the city published (a double-sampled day keeps
+    both counted in ``n``), graded by the shared rule with the ratio from the
+    same day's fecal and total. Surfrider: every Enterococcus collection.
+    ``paired``: days both programs sampled (worst per day)."""
+    by_day: dict = defaultdict(lambda: defaultdict(list))
+    for r in city_records:
+        if r.get("source") not in site["sources"] or r.get("analyte") not in ANALYTES or not r.get("sample_date"):
+            continue
+        raw = str(r.get("data") if r.get("data") is not None else "").strip()
+        v = std_parse(raw)
+        if v is not None:
+            by_day[r["sample_date"][:10]][r["analyte"]].append((v, raw))
+    city = {code: [] for code in ANALYTES}
+    for day in sorted(by_day):
+        vals = by_day[day]
+        fecal = max((v for v, _ in vals.get("COLI_FECAL", [])), default=None)
+        total = max((v for v, _ in vals.get("COLI_TOTAL", [])), default=None)
+        ts = int(datetime.strptime(day, "%Y-%m-%d").replace(hour=12).timestamp() * 1000)
+        for code, pairs in vals.items():
+            v, raw = max(pairs)
+            limit = single_sample_max(code, fecal, total)
+            city[code].append({"date": day, "ts": ts, "value": v, "raw": raw, "n": len(pairs),
+                               "over": exceeds(code, v, fecal, total),
+                               "ratio": code == "COLI_TOTAL" and limit != STANDARDS["COLI_TOTAL"]["single_sample_max"],
+                               "station": site["sources"][0] if site["sources"] else None, "name": site["name"]})
+    bwtf = []
+    for rec in bwtf_history:
+        if rec.get("site_name") != site["bwtf_name"] or rec.get("substance") != "Enterococcus":
+            continue
+        when, value = rec.get("collection_time"), rec.get("result_value")
+        if when is None or value is None or when < since or when > until + timedelta(days=1):
+            continue
+        bwtf.append({"date": when.strftime("%Y-%m-%d"), "ts": int(when.timestamp() * 1000), "value": value,
+                     "raw": rec.get("result_raw"), "over": exceeds("ENTERO", value), "name": site["name"]})
+    bwtf.sort(key=lambda p: p["ts"])
+    c_by_day = {p["date"]: p for p in city["ENTERO"]}
+    b_by_day = _by_day_max(bwtf)
+    paired = [{"date": d, "bwtf": b_by_day[d]["value"], "bwtf_raw": b_by_day[d]["raw"], "city": c_by_day[d]["value"], "city_raw": c_by_day[d]["raw"]}
+              for d in sorted(set(c_by_day) & set(b_by_day))]
+    return {
+        "site": site["name"], "site_key": site["key"], "bwtf_name": site["bwtf_name"], "bwtf_sampled": site["bwtf_name"] is not None,
+        "dual": site["dual"], "start": since.strftime("%Y-%m-%d"), "end": until.strftime("%Y-%m-%d"),
+        "analytes": [{"code": c, "label": m["label"]} for c, m in ANALYTES.items()],
+        "limits": {c: STANDARDS[c]["single_sample_max"] for c in ANALYTES}, "caution": ENTERO_CAUTION, "units": "MPN/100mL",
+        "city": city, "bwtf": bwtf, "paired": paired,
+        "counts": {"city_days": len(by_day), "bwtf": len(bwtf), "paired": len(paired)},
+    }
+
+
+def build_site_series(site_name: str, bwtf_client: Optional[SFBWTFClient] = None,
+                      sf_gov_monitor: Optional[SFWaterQualityMonitor] = None, start: str = "", end: str = "") -> dict:
+    """Fetch both programs for one site and window and build the graphs payload."""
+    bwtf_client = bwtf_client or SFBWTFClient()
+    sf_gov_monitor = sf_gov_monitor or SFWaterQualityMonitor()
+    site = resolve_site(site_name)
+    since, until = parse_range(start, end)
+    records = fetch_city_records(sf_gov_monitor, site["sources"], since, until) if site["sources"] else []
+    history = bwtf_client.fetch_history(since=since, max_pages=40) if site["bwtf_name"] else []
+    return site_series_payload(site, records, history, since, until)
 
 
 def _sfpuc_status_by_name(sfpuc_api: SFPUCRealTimeAPI) -> dict:

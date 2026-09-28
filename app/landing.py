@@ -40,12 +40,12 @@ HUBS = [
             ("/analysis", "Site Report Card",
              "How often each shoreline site fails the state bacteria standard — rankings, storm-season effect, and year-by-year trends from the city's lab data.",
              "rankings · trends"),
-            ("/compare", "Source Comparison",
-             "Surfrider volunteer-lab results vs. official city data for the same beaches, with full history.",
-             "city vs Surfrider · every sample"),
-            ("/bwtf", "BWTF Sample Log",
-             "Every Surfrider volunteer sample — tester, field conditions (weather, tide, waves), and notes.",
-             "volunteer samples · field notes"),
+            ("/samples", "Samples",
+             "Every published result from the city's lab and Surfrider's volunteers, one row per sample, with the volunteers' field notes.",
+             "every result · both programs"),
+            ("/graphs", "Graphs",
+             "Any site over time: all three indicators on one plot with the state limits drawn in, or the city against Surfrider head to head.",
+             "any site · all indicators"),
         ],
     },
     {
@@ -102,24 +102,27 @@ def _fact_forecast() -> str:
 
 
 def _fact_samples() -> str:
-    from shared import supabase as sb
-    if not sb.is_configured():
-        return ""
-    rows = sb.select("samples", {"select": "sample_date,station_id,exceeds", "order": "sample_date.desc", "limit": 200}) or []
-    if not rows:
-        return ""
-    newest = rows[0]["sample_date"]
-    day = [r for r in rows if r["sample_date"] == newest]
-    over = len({r["station_id"] for r in day if r.get("exceeds")})
-    d = datetime.strptime(newest[:10], "%Y-%m-%d")
-    return f"city samples {d:%-m/%-d}" + (f" · {over} site{'s' if over != 1 else ''} over" if over else " · all under standard")
-
-
-def _fact_bwtf() -> str:
-    from features.comparison.bwtf_api import SFBWTFClient
-    lab = SFBWTFClient(timeout=3).fetch_lab()
-    times = [s.latest_time for s in (lab.sites if lab else []) if s.latest_time]
-    return f"last volunteer sample {max(times):%-m/%-d}" if times else ""
+    """Newest city sample day (and sites over) from the mirror, newest Surfrider sample from BWTF."""
+    parts = []
+    try:
+        from shared import supabase as sb
+        rows = sb.select("samples", {"select": "sample_date,station_id,exceeds", "order": "sample_date.desc", "limit": 200}) if sb.is_configured() else []
+        if rows:
+            newest = rows[0]["sample_date"]
+            over = len({r["station_id"] for r in rows if r["sample_date"] == newest and r.get("exceeds")})
+            d = datetime.strptime(newest[:10], "%Y-%m-%d")
+            parts.append(f"city {d:%-m/%-d}" + (f" · {over} over" if over else ""))
+    except Exception:
+        pass
+    try:
+        from features.comparison.bwtf_api import SFBWTFClient
+        lab = SFBWTFClient(timeout=3).fetch_lab()
+        times = [s.latest_time for s in (lab.sites if lab else []) if s.latest_time]
+        if times:
+            parts.append(f"Surfrider {max(times):%-m/%-d}")
+    except Exception:
+        pass
+    return " · ".join(parts)
 
 
 def _fact_discharges() -> str:
@@ -147,8 +150,7 @@ def _fact_timeline() -> str:
 
 _FACT_SOURCES = {
     "/forecast": _fact_forecast,
-    "/compare": _fact_samples,
-    "/bwtf": _fact_bwtf,
+    "/samples": _fact_samples,
     "/discharges": _fact_discharges,
     "/cso-history": _fact_timeline,
 }

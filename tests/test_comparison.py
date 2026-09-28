@@ -154,7 +154,7 @@ def test_sample_day_payload_grades_one_station_day_with_both_values_and_the_rati
     assert d["cells"]["COLI_TOTAL"][0]["over"] is True and d["over"] is True and d["caution"] == standards.ENTERO_CAUTION
     assert d["ratio_applied"] is True and "10%" in d["ratio_note"] and e_ratio_off(recs, baker) is False
     assert d["results_url"].startswith("https://data.sf.gov/resource/") and "2024-02-20T00%3A00%3A00" in d["results_url"] and "OCEAN%2315_SL" in d["results_url"]
-    assert d["viewer_url"] == "/compare?scope=all&vsite=OCEAN%2315_SL#viewer" and d["graph_url"] == "/compare?scope=all&graph=OCEAN%2315_SL"
+    assert d["viewer_url"] == "/samples?scope=all&site=OCEAN%2315_SL" and d["graph_url"] == "/graphs?site=OCEAN%2315_SL"
     e = S.sample_day_payload(recs, baker, "2024-02-13")
     assert e["cells"]["ENTERO"][0]["caution"] is True and e["over"] is False and e["limits"]["COLI_TOTAL"] == ST["COLI_TOTAL"]["single_sample_max"]
     none = S.sample_day_payload(recs, baker, "2024-01-01")
@@ -168,6 +168,43 @@ def test_sample_day_payload_grades_one_station_day_with_both_values_and_the_rati
     assert "/api/sample-day?" in js and "data-sample-station" in js
     for tpl in ("app/templates/alerts/dashboard.html", "app/templates/forecast/page.html"):
         assert "/static/sample_popover.js" in (ROOT / tpl).read_text(), tpl
+
+
+def test_site_series_grades_every_indicator_per_day_and_pairs_same_day_samples():
+    site = C.resolve_site("OCEAN#15_SL")
+    start, end = datetime(2024, 1, 1), datetime(2024, 3, 1)
+    recs = (_city("OCEAN#15_SL", "2024-02-20", ENTERO=20, COLI_FECAL=200, COLI_TOTAL=1500) + _city("OCEAN#15_SL", "2024-02-20", ENTERO=399)
+            + _city("OCEAN#15_SL", "2024-02-13", ENTERO="<10", COLI_FECAL=10, COLI_TOTAL=100) + _city("BAY#320_SL", "2024-02-13", ENTERO=500))
+    hist = [{"site_name": "Baker Beach at Lobos Creek", "collection_time": datetime(2024, 2, 20, 10), "substance": "Enterococcus", "result_value": 41.0, "result_raw": "41"},
+            {"site_name": "Aquatic Park", "collection_time": datetime(2024, 2, 20, 10), "substance": "Enterococcus", "result_value": 900.0, "result_raw": "900"}]
+    d = C.site_series_payload(site, recs, hist, start, end)
+    assert d["site"] == "Baker Beach at Lobos Creek" and d["dual"] and d["bwtf_sampled"]
+    ent = d["city"]["ENTERO"]
+    assert [(p["date"], p["value"], p["raw"], p["over"], p["n"]) for p in ent] == [("2024-02-13", 5.0, "<10", False, 1), ("2024-02-20", 399.0, "399", True, 2)]
+    tot = d["city"]["COLI_TOTAL"]
+    assert [(p["date"], p["over"], p["ratio"]) for p in tot] == [("2024-02-13", False, False), ("2024-02-20", True, True)]   # 200/1500 → limit 1,000
+    assert [p["raw"] for p in d["bwtf"]] == ["41"] and d["bwtf"][0]["over"] is False        # the other lab site is filtered out
+    assert d["paired"] == [{"date": "2024-02-20", "bwtf": 41.0, "bwtf_raw": "41", "city": 399.0, "city_raw": "399"}]
+    assert d["counts"] == {"city_days": 2, "bwtf": 1, "paired": 1} and d["limits"]["ENTERO"] == standards.STANDARDS["ENTERO"]["single_sample_max"]
+    only = C.site_series_payload(C.resolve_site("BAY#320_SL"), recs, hist, start, end)
+    assert only["bwtf_sampled"] is False and only["bwtf"] == [] and only["paired"] == [] and only["city"]["ENTERO"][0]["over"] is True
+    assert {s["key"] for s in C.graph_sites()} >= {"OCEAN#15_SL", "BAY#320_SL", "bwtf:Bayview Hunters Point"}
+
+
+def test_sample_rows_carry_the_volunteer_field_notes_from_events():
+    start, end = datetime(2026, 9, 1), datetime(2026, 9, 30)
+    event = {"site_name": "Aquatic Park", "collection_time": datetime(2026, 9, 24, 18, 30), "tested_by": "A. Volunteer", "comments": "Kelp on the beach", "volume": "",
+             "weather": {"air_temp": 64.0, "water_temp": 58.0, "current_weather": "Partly Cloudy", "precipitation": False, "tide": "rising", "wave_height": "1-2 ft", "wind_direction": "W", "wind_speed": 8.0},
+             "samples": [{"substance": "Enterococcus", "result_raw": "20", "result_display": "20", "result_value": 20.0, "units": "MPN/100mL", "method": "", "modifier": ""}]}
+    d = S.build_samples([], [event], start, end, scope="dual")
+    r = d["rows"][0]
+    assert r["source"] == "BWTF" and r["time"] == "6:30 PM" and r["cells"]["ENTERO"][0]["raw"] == "20"
+    assert r["field"] == {"tested_by": "A. Volunteer", "air": "64°F", "water": "58°F", "sky": "Partly Cloudy", "wind": "W 8 mph", "tide": "Rising",
+                          "waves": "1-2 ft", "rain": "No", "comments": "Kelp on the beach"}
+    assert [c["key"] for c in d["field_columns"]] == ["tested_by", "air", "water", "sky", "wind", "tide", "waves", "rain", "comments"]
+    # history-shaped input (no field record) still works and carries no notes
+    plain = S.build_samples([], [{"site_name": "Aquatic Park", "collection_time": datetime(2026, 9, 24, 18, 30), "substance": "Enterococcus", "result_value": 20.0, "result_raw": "20"}], start, end)
+    assert plain["rows"][0]["field"] is None
 
 
 def test_default_range_is_the_last_year_and_bad_input_falls_back():

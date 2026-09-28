@@ -1,132 +1,19 @@
-"""Comparison page — Surfrider BWTF vs. public city water-quality data.
+"""Comparison feature pages — Surfrider BWTF vs. public city water-quality data.
 
-Owns /compare, /api/compare, /api/site-history. Implemented as a mixin on the
-request handler in the Flask app (app/wsgi.py), which supplies the HTTP helpers
-(self._send_json) and shared clients (self.combined_monitor, self.sfpuc_api).
+Owns /graphs (Water Quality Graphs), /samples (every sample from both
+programs, with Surfrider's field notes), the JSON behind them and the
+redirects from the retired /compare and /bwtf pages. Implemented as a mixin
+on the request handler in the Flask app (app/wsgi.py), which supplies the HTTP
+helpers (self._send_json) and shared clients (self.combined_monitor,
+self.sfpuc_api).
 """
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlencode, urlparse
 
 from flask import render_template
 
-from features.comparison.comparison import build_comparison, build_site_history
+from features.comparison.comparison import build_comparison, build_site_history, build_site_series, graph_sites
 from features.comparison.samples import build_sample_day, build_sample_viewer
 from shared.datasf import DATASET_FLOOR
-
-COMPARISON_MODAL_SCRIPT = """
-<div id="hist-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="hist-title">
-  <div class="modal__box">
-    <div class="modal__head">
-      <h2 id="hist-title">Site history</h2>
-      <button class="modal__close" type="button" onclick="closeSite()">Close &times;</button>
-    </div>
-    <p class="modal__note" id="hist-note">Loading…</p>
-    <div class="chart-wrap"><canvas id="hist-canvas"></canvas></div>
-    <h3 class="modal__h3">Same-day samples — head to head</h3>
-    <p class="modal__note" id="bar-note"></p>
-    <div class="chart-wrap"><canvas id="hist-bar"></canvas></div>
-    <p class="modal__note">BWTF = Surfrider volunteer lab · SFPUC = monitoring lab results, published via SF Gov Open Data. The real-time posting feed is status-only, so it has no historical numbers to plot. Dashed line = CA single-sample max; the same-day chart uses the worst (max) reading when a source sampled more than once that day.</p>
-  </div>
-</div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<script>
-let histChart, histBar;
-function closeSite(){
-  document.getElementById('hist-modal').classList.remove('open');
-  if(histChart){histChart.destroy(); histChart=null;}
-  if(histBar){histBar.destroy(); histBar=null;}
-}
-// key = a station id, "bwtf:<name>" or a BWTF site name (all accepted by /api/site-history);
-// start/end = the window (the first section's graph window, or the viewer's range).
-function openSite(key, name, start, end){
-  const modal=document.getElementById('hist-modal');
-  document.getElementById('hist-title').textContent=name||key;
-  document.getElementById('hist-note').textContent='Loading…';
-  modal.classList.add('open');
-  var bt=document.getElementById('bacteria-type');
-  var q=new URLSearchParams({site:key, analyte:(bt?bt.value:'ENTERO')});
-  if(start) q.set('start', start); if(end) q.set('end', end);
-  fetch('/api/site-history?'+q)
-    .then(r=>r.json()).then(renderHist)
-    .catch(e=>{document.getElementById('hist-note').textContent='Could not load history: '+e;});
-}
-function renderHist(d){
-  if(d.ok===false){document.getElementById('hist-note').textContent=d.error||'No data available';return;}
-  if(d.site) document.getElementById('hist-title').textContent=d.site;
-  const std=d.standard;
-  const toPts=a=>(a||[]).map(p=>({x:p.ts,y:p.value,raw:p.raw}));
-  const bwtf=toPts(d.bwtf), city=toPts(d.city);
-  const xs=[...bwtf,...city].map(p=>p.x), ys=[...bwtf,...city].map(p=>p.y);
-  const parts=[bwtf.length+' BWTF samples', city.length+' city samples'];
-  if(d.city_source) parts.push('city station '+d.city_source);
-  if(d.start) parts.push(d.start+' → '+d.end);
-  if(d.bwtf_sampled===false) parts.push('BWTF does not sample this site');
-  document.getElementById('hist-note').textContent=parts.join(' · ');
-  const thresh = xs.length ? [{x:Math.min.apply(null,xs),y:std},{x:Math.max.apply(null,xs),y:std}] : [];
-  const ymax = Math.max(std*1.15, ys.length?Math.max.apply(null,ys)*1.1:std*1.15);
-  if(histChart) histChart.destroy();
-  histChart=new Chart(document.getElementById('hist-canvas'),{
-    type:'line',
-    data:{datasets:[
-      {label:'BWTF (Surfrider)',data:bwtf,borderColor:'#317fb2',backgroundColor:'#317fb2',borderWidth:2,tension:0,spanGaps:true,pointRadius:3},
-      {label:'SFPUC',data:city,borderColor:'#26272a',backgroundColor:'#26272a',borderWidth:2,tension:0,spanGaps:true,pointRadius:2},
-      {label:'CA limit ('+std+')',data:thresh,borderColor:'#ff4100',borderDash:[6,5],borderWidth:1.5,pointRadius:0}
-    ]},
-    options:{parsing:false,responsive:true,maintainAspectRatio:false,
-      interaction:{mode:'nearest',intersect:false},
-      scales:{
-        x:{type:'linear',ticks:{maxRotation:0,autoSkip:true,maxTicksLimit:7,callback:v=>new Date(v).toLocaleDateString(undefined,{month:'short',year:'2-digit'})}},
-        y:{type:'logarithmic',title:{display:true,text:(d.analyte||'Result')+' (MPN/100mL), log scale'}}
-      },
-      plugins:{legend:{position:'top'},tooltip:{callbacks:{
-        title:items=>items.length?new Date(items[0].parsed.x).toLocaleDateString():'',
-        label:it=>it.dataset.label+': '+((it.raw&&it.raw.raw!=null)?it.raw.raw:it.parsed.y)
-      }}}
-    }
-  });
-  const paired=d.paired||[];
-  const barNote=document.getElementById('bar-note');
-  if(histBar){histBar.destroy(); histBar=null;}
-  if(!paired.length){
-    barNote.textContent=d.bwtf_sampled===false
-      ? 'BWTF does not sample this site, so there is nothing to put head to head; only the results from the city are plotted above.'
-      : 'No same-day samples in this window — the two programs sampled on different days.';
-  }else{
-    barNote.textContent=paired.length+' day(s) when both programs sampled this site (worst reading per day).';
-    histBar=new Chart(document.getElementById('hist-bar'),{
-      data:{labels:paired.map(p=>p.date),datasets:[
-        {type:'bar',label:'BWTF (Surfrider)',data:paired.map(p=>p.bwtf),backgroundColor:'#317fb2'},
-        {type:'bar',label:'SFPUC',data:paired.map(p=>p.city),backgroundColor:'#26272a'},
-        {type:'line',label:'CA limit ('+std+')',data:paired.map(()=>std),borderColor:'#ff4100',borderDash:[6,5],borderWidth:1.5,pointRadius:0}
-      ]},
-      options:{responsive:true,maintainAspectRatio:false,
-        scales:{y:{beginAtZero:true,title:{display:true,text:(d.analyte||'Result')+' (MPN/100mL)'}}},
-        plugins:{legend:{position:'top'},tooltip:{callbacks:{
-          label:it=>{ if(it.dataset.type==='line') return it.dataset.label;
-            const raw=it.dataset.label.indexOf('BWTF')===0?paired[it.dataIndex].bwtf_raw:paired[it.dataIndex].city_raw;
-            return it.dataset.label+': '+raw; }
-        }}}
-      }
-    });
-  }
-}
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSite();});
-document.getElementById('hist-modal').addEventListener('click',function(e){if(e.target===this)closeSite();});
-document.querySelectorAll('.row-click').forEach(function(el){
-  var go=function(){openSite(el.dataset.site, el.dataset.name, HIST.start, HIST.end);};
-  el.addEventListener('click',go);
-  el.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
-});
-// Deep links from the sample popover on other pages: ?vsite=<station> opens the
-// viewer on that site (all sites in scope); ?graph=<station> opens its history.
-(function(){
-  var u=new URL(location.href), vs=u.searchParams.get('vsite'), g=u.searchParams.get('graph');
-  if(vs){ VIEW.scope='all'; VIEW.site=vs;
-    document.querySelectorAll('#v-scope .seg-btn').forEach(function(b){b.classList.toggle('active', b.dataset.scope==='all');});
-    vOpen(); }
-  if(g){ openSite(g, null, HIST.start, HIST.end); }
-})();
-</script>
-</body></html>"""
 
 
 class ComparisonRoutes:
@@ -194,13 +81,45 @@ class ComparisonRoutes:
         except Exception as e:
             self._send_json({"ok": False, "error": str(e)}, status=500)
 
-    def send_comparison_page(self):
-        """Send the BWTF-vs-city comparison dashboard page."""
+    def _redirect(self, url: str):
+        self.send_response(302)
+        self.send_header("Location", url)
+        self.end_headers()
+
+    def send_compare_redirect(self):
+        """/compare is retired: its graphs live on /graphs and its viewer on /samples.
+        Old deep links keep working: ?graph=<station> → /graphs, ?vsite=<station> → /samples."""
+        params = parse_qs(urlparse(self.path).query)
+        one = lambda k: (params.get(k) or [""])[0].strip()  # noqa: E731
+        if one("vsite"):
+            self._redirect("/samples?" + urlencode({"scope": "all", "site": one("vsite")}))
+        elif one("graph"):
+            self._redirect("/graphs?" + urlencode({"site": one("graph")}))
+        else:
+            self._redirect("/graphs")
+
+    def send_bwtf_redirect(self):
+        """/bwtf (the BWTF Sample Log) is now the Surfrider view of /samples with the field notes as columns."""
+        self._redirect("/samples?" + urlencode({"source": "bwtf", "scope": "all", "notes": "columns"}))
+
+    def send_api_site_series(self):
+        """One site's results over time for the graphs page: every indicator from
+        the city, Enterococcus from Surfrider, same-day pairs."""
+        params = parse_qs(urlparse(self.path).query)
+        one = lambda k, d="": (params.get(k) or [d])[0].strip()  # noqa: E731
+        if not one("site"):
+            self._send_json({"ok": False, "error": "missing 'site' parameter"}, status=400)
+            return
         try:
-            scope = (parse_qs(urlparse(self.path).query).get("scope") or ["dual"])[0]
-            html = self.generate_comparison_html(self._compare_data(self._analyte_param()), scope=scope)
+            self._send_json(build_site_series(one("site"), sf_gov_monitor=self.combined_monitor.sf_gov_monitor, start=one("start"), end=one("end")))
         except Exception as e:
-            html = f"<!doctype html><meta charset='utf-8'><h1>Comparison unavailable</h1><pre>{e}</pre>"
+            self._send_json({"ok": False, "error": str(e)}, status=500)
+
+    def _send_page(self, template: str, **ctx):
+        try:
+            html = render_template(template, **ctx)
+        except Exception as e:
+            html = f"<!doctype html><meta charset='utf-8'><h1>Page unavailable</h1><pre>{e}</pre>"
         encoded = html.encode()
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
@@ -208,89 +127,16 @@ class ComparisonRoutes:
         self.end_headers()
         self.wfile.write(encoded)
 
-    def generate_comparison_html(self, data, scope="dual"):
-        """Render the source-comparison dashboard (Surfrider BWTF vs. public city data).
-        ``scope`` = which rows start visible: the dual sites, or every station."""
-        std = data["standard"]
-        s = data["summary"]
-        limit = std["single_sample_max"]
-        analyte_label = std["analyte"]
-        analyte_code = std["code"]
-        bwtf_measures = data.get("bwtf_measures", True)
-        analyte_options = "".join(
-            f'<option value="{a["code"]}"{" selected" if a["code"] == analyte_code else ""}>{a["label"]}</option>'
-            for a in data.get("analytes", [])
-        )
-        bwtf_note = (
-            f'<p class="note-info">ℹ︎ BWTF measures Enterococcus only — showing the SFPUC {analyte_label} '
-            f'readings (graded against {limit} MPN/100mL). Switch to Enterococcus for the head-to-head comparison.</p>'
-        ) if not bwtf_measures else ""
+    def send_graphs_page(self):
+        """Water Quality Graphs: site + range + view, drawn client-side from /api/site-series."""
+        sites = graph_sites()
+        groups = []
+        for g in ("Ocean", "North Shore", "East Bayshore", "BWTF only"):
+            items = [x for x in sites if x["group"] == g]
+            if items:
+                groups.append((g, items))
+        self._send_page("graphs/page.html", sites=sites, site_groups=groups, dataset_floor=DATASET_FLOOR)
 
-        def pill(exceeds, raw):
-            if raw is None:
-                return '<span class="pill pill--na">no data</span>'
-            cls, label = ("pill--bad", "exceeds") if exceeds else ("pill--ok", "within")
-            return f'<span class="pill {cls}">{raw}<small>{label}</small></span>'
-
-        def sfpuc_pill(status):
-            mapping = {
-                "cso": ("pill--bad", "CSO"),
-                "posted": ("pill--warn", "posted"),
-                "safe": ("pill--ok", "safe"),
-                "not_sampled": ("pill--na", "not sampled"),
-                "not_routinely_sampled": ("pill--na", "not routine"),
-            }
-            cls, label = mapping.get(status, ("pill--na", "—"))
-            return f'<span class="pill {cls}">{label}</span>'
-
-        def agreement_cell(r):
-            if not r["both_have"]:
-                if r["city_value"] is not None and r["bwtf_value"] is None:
-                    return '<span class="agree agree--na">SFPUC only</span>'
-                return '<span class="agree agree--na">— incomplete</span>'
-            sub = []
-            if r["value_delta"] is not None:
-                sub.append(f"Δ {r['value_delta']:g}")
-            if r["day_gap"] is not None:
-                sub.append(f"{r['day_gap']}d apart")
-            subline = f"<small>{' · '.join(sub)}</small>" if sub else ""
-            if r["agree"]:
-                txt = "Both exceed" if r["bwtf_exceeds"] else "Both within standard"
-                return f'<span class="agree agree--yes"><svg class="ic"><use href="#i-circle-check"/></svg> {txt}</span>{subline}'
-            return f'<span class="agree agree--no"><svg class="ic"><use href="#i-triangle-alert"/></svg> Sources differ</span>{subline}'
-
-        rows_html = ""
-        for r in data["rows"]:
-            if not r.get("bwtf_site", True):
-                bwtf_html = '<span class="pill pill--na">BWTF doesn\'t sample here</span>'
-            elif r['bwtf_raw'] is None:
-                bwtf_html = '<span class="pill pill--na">not measured</span>'
-            else:
-                bwtf_html = (f"{pill(r['bwtf_exceeds'], r['bwtf_raw'])}"
-                             f"<small class=\"date\">{r['bwtf_date'] or '—'}{(' · ' + r['bwtf_time']) if r['bwtf_time'] else ''}</small>")
-            rows_html += f"""
-              <tr class="row-click{'' if r.get('bwtf_site', True) else ' site-extra'}" data-site="{r.get('site_key') or r['site_name']}" data-name="{r['site_name']}" tabindex="0" role="button" aria-label="Show history for {r['site_name']}">
-                <td class="site"><strong>{r['site_name']}</strong><span class="go"><svg class="ic"><use href="#i-chart-line"/></svg> view history →</span></td>
-                <td>{bwtf_html}</td>
-                <td>{pill(r['city_exceeds'], r['city_raw'])}<small class="date">{r['city_date'] or '—'}{(' · ' + r['city_source']) if r['city_source'] else ''}{(f" · {r['city_n']} samples that day, graded on the worse") if r.get('city_n', 0) > 1 else ''}</small></td>
-                <td>{sfpuc_pill(r['sfpuc_status'])}</td>
-                <td>{agreement_cell(r)}</td>
-              </tr>"""
-
-        generated = data["generated_at"][:16].replace("T", " ")
-        max_gap_display = '—' if s['max_day_gap'] is None else str(s['max_day_gap']) + 'd'
-        return render_template(
-            "comparison/page.html",
-            analyte_label=analyte_label,
-            limit=limit,
-            s=s,
-            max_gap_display=max_gap_display,
-            analyte_options=analyte_options,
-            bwtf_note=bwtf_note,
-            rows_html=rows_html,
-            generated=generated,
-            scope="all" if scope == "all" else "dual",
-            dataset_floor=DATASET_FLOOR,
-            extra_count=sum(1 for r in data["rows"] if not r.get("bwtf_site", True)),
-            modal_script=COMPARISON_MODAL_SCRIPT,
-        )
+    def send_samples_page(self):
+        """Samples: every result from both programs, the latest-by-site strip, field notes three ways."""
+        self._send_page("samples/page.html", dataset_floor=DATASET_FLOOR)

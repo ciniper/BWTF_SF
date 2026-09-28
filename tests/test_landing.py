@@ -10,7 +10,7 @@ sys.path.insert(0, str(ROOT))
 
 from app import landing as L  # noqa: E402
 
-FEATURE_PAGES = {"/signup", "/alerts", "/forecast", "/compare", "/bwtf", "/cso-history", "/analysis", "/discharges", "/postings"}
+FEATURE_PAGES = {"/signup", "/alerts", "/forecast", "/samples", "/graphs", "/cso-history", "/analysis", "/discharges", "/postings"}
 
 
 def test_every_feature_page_sits_in_exactly_one_hub_and_every_link_resolves():
@@ -29,6 +29,16 @@ def test_every_feature_page_sits_in_exactly_one_hub_and_every_link_resolves():
             assert path in rules, path
     names = {r[1] for h in L.HUBS for r in h["rows"]}
     assert "Online Postings Timeline" in names and "SFPUC Alerts Timeline" not in names
+    assert [r[1] for r in L.HUBS[1]["rows"]] == ["Site Report Card", "Samples", "Graphs"]
+    # the retired pages redirect to their successors, old deep links included
+    with app.test_client() as c:
+        assert (c.get("/compare").status_code, c.get("/compare").headers["Location"]) == (302, "/graphs")
+        assert c.get("/compare?graph=BAY%23320_SL").headers["Location"] == "/graphs?site=BAY%23320_SL"
+        assert c.get("/compare?vsite=BAY%23211_SL").headers["Location"] == "/samples?scope=all&site=BAY%23211_SL"
+        assert c.get("/bwtf").headers["Location"] == "/samples?source=bwtf&scope=all&notes=columns"
+        for u in ("/graphs", "/samples"):
+            html = c.get(u).data.decode(); assert "/static/charts.js" in html and "/static/sample_popover.js" in html, u
+        assert "Field notes" in c.get("/samples").data.decode() and 'data-notes="columns"' in c.get("/samples").data.decode()
     assert "Online Postings Timeline" in (ROOT / "app/templates/cso_history/page.html").read_text()
     assert 'id="i-clipboard"' in (ROOT / "app/templates/_icons.html").read_text()
 
@@ -39,12 +49,12 @@ def test_live_facts_replace_statics_and_slow_or_failing_sources_keep_them():
     def broken(): raise RuntimeError("upstream down")
     def empty(): return ""
     t0 = time.time()
-    facts = L._live_facts(budget=0.5, sources={"/forecast": quick, "/bwtf": slow, "/compare": broken, "/discharges": empty})
+    facts = L._live_facts(budget=0.5, sources={"/forecast": quick, "/graphs": slow, "/samples": broken, "/discharges": empty})
     assert facts == {"/forecast": "today 4% risk"} and time.time() - t0 < 2.0
     hubs = L.hubs_with_facts(facts)
     rows = {r["href"]: r for h in hubs for r in h["rows"]}
     assert rows["/forecast"]["fact"] == "today 4% risk" and rows["/forecast"]["live"] is True
-    assert rows["/bwtf"]["fact"] == "volunteer samples · field notes" and rows["/bwtf"]["live"] is False
+    assert rows["/graphs"]["fact"] == "any site · all indicators" and rows["/graphs"]["live"] is False
     assert rows["/discharges"]["fact"] == "filed with regulators · since 2016"
     assert L._live_facts(sources={}) == {}
 

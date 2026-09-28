@@ -8,7 +8,12 @@
  * Any element with data-sample-station opens it; data-sample-name,
  * data-sample-date and data-sample-feed-date are optional. */
 (function () {
-  var CHART_SRC = "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js";
+  /* Charts are drawn by /static/charts.js (BWTFCharts); it is loaded on demand if the page did not include it. */
+  function ensureCharts() {
+    var need = window.BWTFCharts ? Promise.resolve() : new Promise(function (res, rej) {
+      var t = document.createElement("script"); t.src = "/static/charts.js"; t.onload = res; t.onerror = function () { rej(new Error("charts module did not load")); }; document.head.appendChild(t); });
+    return need.then(function () { return window.BWTFCharts.ensureChart(); });
+  }
   var CSS = ".sp-modal{position:fixed;inset:0;background:rgba(38,39,42,.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:60;font-family:'Roboto','Segoe UI',Arial,sans-serif;color:#26272a}" +
     ".sp-modal.open{display:flex}.sp-box{background:#fff;border-radius:20px;max-width:820px;width:100%;padding:20px 22px;box-shadow:0 24px 60px rgba(0,0,0,.3);max-height:92vh;overflow:auto}" +
     ".sp-head{display:flex;justify-content:space-between;align-items:center;gap:12px}.sp-head h2{margin:0;font-size:19px;color:#26272a}" +
@@ -19,23 +24,8 @@
     ".sp-val.over{background:#d15c5c;color:#fff}.sp-val.caution{background:#fbeccd;color:#7a5200}.sp-val.none{background:transparent;color:#98a3ab;font-weight:600}" +
     ".sp-links{margin:14px 0 0;font-size:13px;color:#54576F}.sp-links a{color:#0072BC;font-weight:700}.sp-links a+a{margin-left:14px}";
   var el = null, charts = [];
-  // Horizontal limit lines drawn across the whole plot. A line *dataset* needs
-  // two points, so on a one-sample day it drew nothing (Chase, 2026-09-27).
-  var limitLines = { id: "limitLines", afterDatasetsDraw: function (chart, _args, opts) {
-    var area = chart.chartArea, y = chart.scales.y, ctx = chart.ctx;
-    (opts.lines || []).forEach(function (l) {
-      var yy = y.getPixelForValue(l.value);
-      if (yy < area.top || yy > area.bottom) return;
-      ctx.save(); ctx.strokeStyle = l.color; ctx.lineWidth = l.width; ctx.setLineDash(l.dash);
-      ctx.beginPath(); ctx.moveTo(area.left, yy); ctx.lineTo(area.right, yy); ctx.stroke(); ctx.restore();
-    });
-  } };
   var esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); };
   var fmt = function (n) { return n == null ? "—" : Number(n).toLocaleString(); };
-  function ensureChart() {
-    if (window.Chart) return Promise.resolve();
-    return new Promise(function (res, rej) { var s = document.createElement("script"); s.src = CHART_SRC; s.onload = res; s.onerror = function () { rej(new Error("chart library did not load")); }; document.head.appendChild(s); });
-  }
   function modal() {
     if (el) return el;
     var st = document.createElement("style"); st.textContent = CSS; document.head.appendChild(st);
@@ -56,7 +46,7 @@
     m.querySelector("#sp-grid").innerHTML = ""; m.querySelector("#sp-links").innerHTML = "";
     m.classList.add("open");
     var q = new URLSearchParams({ station: opts.station }); if (opts.date) q.set("date", opts.date);
-    Promise.all([fetch("/api/sample-day?" + q).then(function (r) { return r.json(); }), ensureChart()])
+    Promise.all([fetch("/api/sample-day?" + q).then(function (r) { return r.json(); }), ensureCharts()])
       .then(function (res) { render(res[0], opts); })
       .catch(function (e) { m.querySelector("#sp-note").textContent = "Could not load the results: " + e; });
   }
@@ -82,19 +72,10 @@
       if (!vals.length) { canvas.parentElement.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:#98a3ab;font-size:12.5px">no result</div>'; return; }
       var labels = vals.length > 1 ? vals.map(function (_, i) { return "sample " + (i + 1); }) : ["result"];
       var ys = vals.map(function (v) { return v.value; }), ymax = Math.max(limit * 1.15, Math.max.apply(null, ys.map(function (y) { return y || 0; })) * 1.1);
-      var lines = [{ value: limit, color: "#ff4100", dash: [6, 5], width: 1.5 }];
-      if (a.code === "ENTERO" && d.caution) lines.push({ value: d.caution, color: "#b97e00", dash: [2, 3], width: 1.2 });
-      charts.push(new Chart(canvas, { type: "bar", plugins: [limitLines], data: { labels: labels, datasets: [
-        { label: a.label, data: ys, backgroundColor: vals.map(function (v) { return v.over ? "#d15c5c" : v.caution ? "#d4a017" : "#26272a"; }), maxBarThickness: 46 }
-      ] }, options: {
-        responsive: true, maintainAspectRatio: false, animation: false,
-        scales: { y: { beginAtZero: true, suggestedMax: ymax, ticks: { maxTicksLimit: 5 } }, x: { grid: { display: false } } },
-        plugins: { legend: { display: false }, limitLines: { lines: lines },
-                   tooltip: { callbacks: { label: function (it) { return a.label + ": " + (vals[it.dataIndex] || {}).raw + " (limit " + fmt(limit) + ")"; } } } }
-      } }));
+      charts.push(window.BWTFCharts.miniBars(canvas, { label: a.label, values: vals, limit: limit, caution: a.code === "ENTERO" ? d.caution : 0 }));
     });
     links.innerHTML = '<a href="' + esc(d.results_url) + '" target="_blank" rel="noopener noreferrer">Raw results on SF Gov Open Data</a>' +
-      '<a href="' + esc(d.viewer_url) + '">All samples for this site</a><a href="' + esc(d.graph_url) + '">History graph</a>';
+      '<a href="' + esc(d.viewer_url) + '">All samples for this site</a><a href="' + esc(d.graph_url) + '">Graphs for this site</a>';
   }
   function fromEl(a) { return { station: a.dataset.sampleStation, name: a.dataset.sampleName, date: a.dataset.sampleDate || "", feedDate: a.dataset.sampleFeedDate || "" }; }
   document.addEventListener("click", function (e) {

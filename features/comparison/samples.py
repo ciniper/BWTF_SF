@@ -26,7 +26,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 from features.comparison.bwtf_api import SFBWTFClient
-from features.comparison.comparison import ANALYTES, BWTF_TO_SFPUC_NAME, DEFAULT_DAYS, parse_range  # noqa: F401
+from features.comparison.comparison import ANALYTES, BWTF_TO_SFPUC_NAME, DEFAULT_DAYS, fetch_city_records, parse_range  # noqa: F401
 from urllib.parse import quote, urlencode
 
 from shared.datasf import BEACH_SAMPLES_URL, DATASET_FLOOR
@@ -53,22 +53,47 @@ def viewer_sites(bwtf_history: Optional[list] = None) -> list[dict]:
     return sites
 
 
-def fetch_city_records(monitor, sources: list[str], start: datetime, end: datetime) -> list[dict]:
-    """Every DataSF row for these stations, all three indicators, in the window."""
-    if not sources:
-        return []
-    where = (f"sample_date >= '{start:%Y-%m-%dT00:00:00}' AND sample_date <= '{end:%Y-%m-%dT23:59:59}' "
-             f"AND analyte in ({','.join(repr(a) for a in ANALYTES)}) "
-             f"AND source in ({','.join(repr(s) for s in sources)})")
-    response = monitor.session.get(monitor.API_URL, params={
-        "$select": "source,sample_date,analyte,data", "$where": where,
-        "$order": "sample_date DESC", "$limit": 50000,
-    }, timeout=30)
-    response.raise_for_status()
-    return response.json()
+def _fmt_temp(value) -> str:
+    return f"{value:.0f}°F" if value is not None else ""
 
 
-def _row(site: dict, day: str, time: Optional[str], source: str, cells: dict) -> dict:
+def field_notes(event: dict) -> dict:
+    """The volunteer's field record for one collection, formatted for display
+    (what the old BWTF Sample Log page showed): tester, air, water, sky, wind,
+    tide, waves, rain, comments. Empty strings where nothing was recorded."""
+    w = event.get("weather") or {}
+    wind = " ".join(x for x in (w.get("wind_direction") or "", f"{w['wind_speed']:.0f} mph" if w.get("wind_speed") is not None else "") if x)
+    rain = w.get("precipitation")
+    return {
+        "tested_by": event.get("tested_by") or "", "air": _fmt_temp(w.get("air_temp")), "water": _fmt_temp(w.get("water_temp")),
+        "sky": w.get("current_weather") or "", "wind": wind, "tide": (w.get("tide") or "").title(), "waves": w.get("wave_height") or "",
+        "rain": "Yes" if rain else ("No" if rain is False else ""), "comments": event.get("comments") or "",
+    }
+
+
+FIELD_COLUMNS = [("tested_by", "Tested by"), ("air", "Air"), ("water", "Water"), ("sky", "Sky"), ("wind", "Wind"),
+                 ("tide", "Tide"), ("waves", "Waves"), ("rain", "Rain"), ("comments", "Comments")]
+
+
+def _bwtf_rows(history_or_events: list[dict]) -> list[dict]:
+    """Accept either fetch_history rows (site_name, collection_time, substance,
+    result_value, result_raw) or fetch_event_history events (with ``samples``
+    and the field record) and return one row per substance result, each
+    carrying ``field`` (empty for history-shaped input)."""
+    out = []
+    for item in history_or_events:
+        if "samples" in item:
+            notes = field_notes(item)
+            for smp in item.get("samples") or []:
+                out.append({"site_name": item.get("site_name"), "collection_time": item.get("collection_time"),
+                            "substance": smp.get("substance"), "result_value": smp.get("result_value"),
+                            "result_raw": smp.get("result_display") or smp.get("result_raw"), "field": notes})
+        else:
+            out.append({**item, "field": item.get("field") or {}})
+    return out
+
+
+def _row(site: dict, day: str, time: Optional[str], source: str, cells: dict, field: Optional[dict] = None) -> dict:
     fecal_max = max((c["value"] for c in cells.get("COLI_FECAL", []) if c["value"] is not None), default=None)
     total_max = max((c["value"] for c in cells.get("COLI_TOTAL", []) if c["value"] is not None), default=None)
     out, n, over_any = {}, 0, False
@@ -82,7 +107,7 @@ def _row(site: dict, day: str, time: Optional[str], source: str, cells: dict) ->
         out[code] = vals
         n = max(n, len(vals))
     return {"date": day, "time": time, "site": site["name"], "site_key": site["key"], "dual": site["dual"],
-            "source": source, "cells": out, "over": over_any, "n_samples": n}
+            "source": source, "cells": out, "over": over_any, "n_samples": n, "field": field or None}
 
 
 def build_samples(city_records: list[dict], bwtf_history: list[dict], start: datetime, end: datetime,
@@ -107,14 +132,16 @@ def build_samples(city_records: list[dict], bwtf_history: list[dict], start: dat
     for (key, day), cells in city.items():
         rows.append(_row(by_key[key], day, None, "SFPUC", cells))
 
-    events = defaultdict(lambda: defaultdict(list))
-    for h in bwtf_history:
+    events = defaultdict(lambda: defaultdict(list)); fields = {}
+    for h in _bwtf_rows(bwtf_history):
         s, when, code = by_bwtf.get(h.get("site_name")), h.get("collection_time"), SUBSTANCE_TO_CODE.get(h.get("substance"))
         if not s or when is None or not code or when < start or when > end + timedelta(days=1):
             continue
         events[(s["key"], when)][code].append({"raw": h.get("result_raw") or "", "value": h.get("result_value")})
+        if h.get("field"):
+            fields[(s["key"], when)] = h["field"]
     for (key, when), cells in events.items():
-        rows.append(_row(by_key[key], when.strftime("%Y-%m-%d"), when.strftime("%-I:%M %p"), "BWTF", cells))
+        rows.append(_row(by_key[key], when.strftime("%Y-%m-%d"), when.strftime("%-I:%M %p"), "BWTF", cells, fields.get((key, when))))
 
     # newest day first; within a day by site, the city's sample before the volunteers', then by time
     rows.sort(key=lambda r: (r["site"], 0 if r["source"] == "SFPUC" else 1, r["time"] or ""))
@@ -124,6 +151,7 @@ def build_samples(city_records: list[dict], bwtf_history: list[dict], start: dat
         "floor": DATASET_FLOOR, "default_days": DEFAULT_DAYS, "caution": ENTERO_CAUTION,
         "sites": [{k: s[k] for k in ("key", "name", "group", "dual", "city")} for s in sites],
         "analytes": [{"code": c, "label": m["label"], "limit": m["limit"]} for c, m in ANALYTES.items()],
+        "field_columns": [{"key": k, "label": l} for k, l in FIELD_COLUMNS],
         "rows": rows,
         "counts": {
             "rows": len(rows),
@@ -143,7 +171,7 @@ def build_sample_viewer(start: str = "", end: str = "", scope: str = "dual", sit
     sf_gov_monitor = sf_gov_monitor or SFWaterQualityMonitor()
     s, e = parse_range(start, end)
     scope = scope if scope in SCOPES else "dual"
-    history = bwtf_client.fetch_history(since=s, max_pages=40)
+    history = bwtf_client.fetch_event_history(since=s, max_pages=20)   # events carry the field notes
     sites = viewer_sites(history)
     wanted = [x["key"] for x in sites if x["city"] and (scope == "all" or x["dual"]) and (not site or x["key"] == site)]
     city_start = max(s, datetime.strptime(DATASET_FLOOR, "%Y-%m-%d"))
@@ -191,8 +219,8 @@ def sample_day_payload(city_records: list[dict], station: str, date: str = "") -
         "caution": ENTERO_CAUTION, "units": "MPN/100mL",
         "analytes": [{"code": c, "label": m["label"]} for c, m in ANALYTES.items()],
         "results_url": results_url(station, date) if date else None,
-        "viewer_url": f"/compare?scope=all&vsite={quote(station, safe='')}#viewer",
-        "graph_url": f"/compare?scope=all&graph={quote(station, safe='')}",
+        "viewer_url": f"/samples?scope=all&site={quote(station, safe='')}",
+        "graph_url": f"/graphs?site={quote(station, safe='')}",
     }
 
 

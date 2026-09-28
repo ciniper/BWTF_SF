@@ -51,15 +51,18 @@ def test_alerts_card_chip_opens_the_popover_and_keeps_the_raw_link():
 
 def test_both_pages_include_the_shared_script_and_the_route_exists():
     js = (ROOT / "app" / "static" / "sample_popover.js").read_text()
-    assert "/api/sample-day?" in js and "data-sample-station" in js and "chart.umd.js" in js
-    for tpl in ("app/templates/alerts/dashboard.html", "app/templates/forecast/page.html"):
+    charts = (ROOT / "app" / "static" / "charts.js").read_text()
+    assert "/api/sample-day?" in js and "data-sample-station" in js and "BWTFCharts.miniBars" in js and "chart.umd.js" not in js   # one chart module
+    assert "chart.umd.js" in charts and '"limitLines"' in charts and "seriesChart" in charts and "pairedBars" in charts and "miniBars" in charts
+    for tpl in ("app/templates/alerts/dashboard.html", "app/templates/forecast/page.html", "app/templates/graphs/page.html", "app/templates/samples/page.html"):
         assert "/static/sample_popover.js" in (ROOT / tpl).read_text(), tpl
     from app import wsgi
     assert wsgi._COMPARE_GET["/api/sample-day"] == "send_api_sample_day"
     forecast_tpl = (ROOT / "app/templates/forecast/page.html").read_text()
     assert "item.dataset.sampleStation = b.source" in forecast_tpl and 'data-sample-date="${esc(s.date)}"' in forecast_tpl
     assert 'class="beach-date"' in forecast_tpl and "sample-link" not in forecast_tpl.split("function renderBeaches")[1].split("// ─── WHAT HAPPENED")[0]
-    assert '"limitLines"' in js and "getPixelForValue" in js               # limits drawn as real horizontal lines
+    charts_js = (ROOT / "app" / "static" / "charts.js").read_text()
+    assert '"limitLines"' in charts_js and "getPixelForValue" in charts_js and "limitLines" not in js   # limits drawn as real horizontal lines, in one place
 
 
 if __name__ == "__main__":

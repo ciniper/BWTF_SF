@@ -60,7 +60,6 @@ from features.alerts.cso_alerts import SimulatedCSOStore
 from shared.sfpuc_api import SFPUCRealTimeAPI
 from app.landing import render_landing
 from app.build_info import build_info
-from features.bwtf_history.page import render_bwtf_history
 
 try:
     from shared.weather_tides import EnvironmentalContext
@@ -90,9 +89,13 @@ _ALERT_POST = {
 }
 # Comparison-page GET endpoints -> ComparisonRoutes method names.
 _COMPARE_GET = {
-    "/compare": "send_comparison_page",
+    "/graphs": "send_graphs_page",
+    "/samples": "send_samples_page",
+    "/compare": "send_compare_redirect",      # retired page → /graphs (or /samples for ?vsite=)
+    "/bwtf": "send_bwtf_redirect",            # retired BWTF Sample Log → /samples?source=bwtf&notes=columns
     "/api/compare": "send_api_compare",
     "/api/site-history": "send_api_site_history",
+    "/api/site-series": "send_api_site_series",
     "/api/samples": "send_api_samples",
     "/api/sample-day": "send_api_sample_day",
 }
@@ -236,14 +239,6 @@ def _landing_view():
     return Response(html, content_type="text/html; charset=utf-8")
 
 
-def _bwtf_view():
-    try:
-        html = render_bwtf_history()
-    except Exception as e:  # never blank the page on a flaky upstream
-        html = f"<!doctype html><meta charset='utf-8'><h1>BWTF Sample Log unavailable</h1><pre>{e}</pre>"
-    return Response(html, content_type="text/html; charset=utf-8")
-
-
 _REPORTS_DIR = Path(__file__).resolve().parents[1] / "reports"
 
 
@@ -273,7 +268,6 @@ def create_app():
                      lambda: redirect("/static/brand/favicon.ico", code=302), methods=["GET"])
 
     # BWTF Sample Log
-    app.add_url_rule("/bwtf", "bwtf", _bwtf_view, methods=["GET"])
 
     # Alerts page (passphrase-gated) + its GET/POST APIs
     app.add_url_rule("/alerts", "alerts", _gated_page(_mixin_view("send_dashboard")), methods=["GET"])
