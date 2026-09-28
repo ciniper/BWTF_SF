@@ -39,6 +39,8 @@ def test_page_and_csv_routes():
     with app.test_client() as c:   # registered in the app, linked from its neighbours
         assert c.get("/postings").status_code == 200 and c.get("/postings/api/advisories").status_code == 200
         assert 'href="/postings"' in c.get("/discharges").data.decode() and 'href="/postings"' in c.get("/analysis").data.decode()
+        landing = c.get("/").data.decode()   # a card on the main dashboard (app/landing.py PAGES)
+        assert 'class="card" href="/postings"' in landing and "Beach Postings" in landing
 
 
 def test_ledger_carries_the_refresh_stamp_and_next_due():
