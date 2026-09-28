@@ -68,6 +68,9 @@ header .live-dot { display: inline-block; width: 8px; height: 8px; background: #
 .beach-section h2 { color: #26272a; font-size: 1.05em; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
 .beach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
 .beach-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px; font-size: 0.85em; background: #f3f6f9; }
+.beach-item.clickable { cursor: pointer; }
+.beach-item.clickable:hover { background: #e8eef5; }
+.beach-date { color: #8a93a3; font-size: .9em; }
 .beach-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 .beach-dot.safe { background: #237059; }
 .beach-dot.posted { background: #d4763a; }
@@ -106,9 +109,8 @@ header .live-dot { display: inline-block; width: 8px; height: 8px; background: #
 .gt-station-value.over { color: #b5310a; font-weight: 600; }
 
 .gt-no-samples { color: #8a93a3; font-style: italic; font-size: 0.85em; padding: 10px; }
-.sample-link { color: #0072BC; text-decoration: none; font-size: .82em; font-weight: 600; margin-left: 8px; border-bottom: 1px dotted #0072BC; }
-.sample-link:hover { color: #005f9e; }
-.tbl .sample-link { font-size: inherit; margin-left: 0; }
+.tbl .sample-link { color: inherit; text-decoration: none; border-bottom: 1px dotted #0072BC; }
+.tbl .sample-link:hover { color: #0072BC; }
 
 footer { text-align: center; padding: 20px; color: #54576F; font-size: 0.85em; }
 footer p { display: flex; justify-content: center; align-items: center; gap: 7px; flex-wrap: wrap; }
@@ -530,8 +532,14 @@ function renderBeaches(beaches) {
         item.className = 'beach-item';
         const label = b.status === 'cso' ? badge('danger', 'octagon-alert', 'CSO') : b.status === 'posted' ? badge('warn', 'triangle-alert', 'Posted')
                     : b.status === 'safe' ? badge('ok', 'circle-check', 'Safe') : badge('muted', 'circle-dashed', 'No data');
-        const sample = b.source ? `<a class="sample-link" href="#" data-sample-station="${esc(b.source)}" data-sample-name="${esc(b.name)}" data-sample-feed-date="${esc(b.sample_date_iso || '')}" title="Latest lab results as mini graphs">${ic('microscope')} ${b.sample_date ? 'sample ' + esc(b.sample_date) : 'latest sample'}</a>` : '';
-        item.innerHTML = `<span class="beach-dot ${esc(b.status)}"></span><span>${esc(b.name)}</span>${sample}<span style="margin-left:auto;">${label}</span>`;
+        // the whole chip opens the sample popover (app/static/sample_popover.js); the chip itself stays plain: dot, name, sample date, status
+        if (b.source) {
+            item.classList.add('clickable');
+            item.dataset.sampleStation = b.source; item.dataset.sampleName = b.name; item.dataset.sampleFeedDate = b.sample_date_iso || '';
+            item.title = 'Latest lab results'; item.setAttribute('role', 'button'); item.tabIndex = 0;
+        }
+        const date = b.sample_date ? `<span class="beach-date">${esc(b.sample_date)}</span>` : '';
+        item.innerHTML = `<span class="beach-dot ${esc(b.status)}"></span><span>${esc(b.name)}</span>${date}<span style="margin-left:auto;">${label}</span>`;
         grid.appendChild(item);
     });
 }

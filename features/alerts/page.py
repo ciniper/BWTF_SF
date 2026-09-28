@@ -628,9 +628,16 @@ class AlertsRoutes:
         
         # Add CSS class for not_sampled cards
         card_class = status_type
-        
+        # With published lab results the whole card opens the sample popover
+        # (app/static/sample_popover.js); the date link inside keeps the raw rows as its href.
+        card_attrs = (f' clickable" role="button" tabindex="0" title="Latest lab results as mini graphs"'
+                      f' data-sample-station="{lab_result["source_id"]}" data-sample-name="{station.station_name}"'
+                      f' data-sample-date="{lab_result["sample_date"].strftime("%Y-%m-%d")}"'
+                      f' data-sample-feed-date="{station.sample_date.strftime("%Y-%m-%d") if station.sample_date else ""}'
+                      if lab_result else "")
+
         return f"""
-            <div class="station-card {card_class}">
+            <div class="station-card {card_class}{card_attrs}">
                 <div class="station-header">
                     <h3>{station.station_name}</h3>
                     <span class="status-badge {status_type}">{status_icon} {status_label}</span>

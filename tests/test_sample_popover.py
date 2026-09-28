@@ -40,7 +40,10 @@ def test_alerts_card_chip_opens_the_popover_and_keeps_the_raw_link():
     st = types.SimpleNamespace(station_id="4613", station_name="Aquatic Park", sample_date=datetime(2026, 9, 23))
     lab = {"sample_date": datetime(2026, 9, 22), "source_id": "BAY#211_SL", "results_url": "https://data.sf.gov/resource/x.json?q"}
     card = AlertsRoutes._generate_station_card(types.SimpleNamespace(), st, "safe", False, lab)
-    assert 'data-sample-station="BAY#211_SL"' in card and 'data-sample-name="Aquatic Park"' in card
+    assert card.count('data-sample-station="BAY#211_SL"') == 2 and 'data-sample-name="Aquatic Park"' in card   # the card and the date link
+    assert 'class="station-card safe clickable" role="button" tabindex="0"' in card
+    plain = AlertsRoutes._generate_station_card(types.SimpleNamespace(), st, "safe", False, None)
+    assert "clickable" not in plain and "data-sample-station" not in plain                # no lab results: nothing to open
     assert 'data-sample-date="2026-09-22"' in card and 'data-sample-feed-date="2026-09-23"' in card
     assert 'href="https://data.sf.gov/resource/x.json?q"' in card          # the raw rows stay one click away
     assert "not yet published" in card                                      # feed date newer than the lab's: the pending note
@@ -54,7 +57,9 @@ def test_both_pages_include_the_shared_script_and_the_route_exists():
     from app import wsgi
     assert wsgi._COMPARE_GET["/api/sample-day"] == "send_api_sample_day"
     forecast_tpl = (ROOT / "app/templates/forecast/page.html").read_text()
-    assert 'data-sample-station="${esc(b.source)}"' in forecast_tpl and 'data-sample-date="${esc(s.date)}"' in forecast_tpl
+    assert "item.dataset.sampleStation = b.source" in forecast_tpl and 'data-sample-date="${esc(s.date)}"' in forecast_tpl
+    assert 'class="beach-date"' in forecast_tpl and "sample-link" not in forecast_tpl.split("function renderBeaches")[1].split("// ─── WHAT HAPPENED")[0]
+    assert '"limitLines"' in js and "getPixelForValue" in js               # limits drawn as real horizontal lines
 
 
 if __name__ == "__main__":
