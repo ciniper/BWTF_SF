@@ -48,7 +48,7 @@
   <a class="back-to-dash" href="/">← Dashboard</a>
   <div class="hero">
     <h1>Water Quality Graphs</h1>
-    <p>Pick a site, a range, and an indicator — or all three at once — and choose the city's lab, Surfrider's, or both. Click any city point for that day's results. The same samples, row by row, are on <a href="/samples">Samples</a>.</p>
+    <p>Pick a site, a range, and an indicator — or all three at once — and choose the city's lab, Surfrider's, only the beaches both sample, or all sites. Click any city point for that day's results. The same samples, row by row, are on <a href="/samples">Samples</a>.</p>
   </div>
   <p class="subpage">Looking for the original head to head? <a href="/compare">Source Comparison</a> keeps the six beaches both programs sample, latest result and agreement per site, with the same graphs one click away.</p>
   <div class="controls">
@@ -58,7 +58,12 @@
       <option value="ALL">All indicators</option>
     </select>
     <span class="ctl-label">Source</span>
-    <div class="seg-toggle" id="src"><button class="seg-btn" data-s="city">City</button><button class="seg-btn" data-s="bwtf">Surfrider</button><button class="seg-btn active" data-s="both">Both</button></div>
+    <div class="seg-toggle" id="src">
+      <button class="seg-btn" data-s="city" title="The city's lab: the 20 monitoring stations">City</button>
+      <button class="seg-btn" data-s="bwtf" title="Surfrider's volunteer lab: the beaches it samples">Surfrider</button>
+      <button class="seg-btn" data-s="both" title="Only the beaches both programs sample, both labs plotted">Both</button>
+      <button class="seg-btn active" data-s="all" title="Every site, whichever lab has results">All</button>
+    </div>
   </div>
   <div class="tiles" id="tiles" aria-label="Site">
     {% for group, items in site_groups %}<div class="tile-group" data-group="{{ group }}"><div class="tile-group-name">{{ group }}</div><div class="tile-row">{% for s in items %}<button class="tile" type="button" data-key="{{ s.key }}" data-name="{{ s.name }}" data-city="{{ 1 if s.city else 0 }}" data-bwtf="{{ 1 if s.bwtf else 0 }}">{{ s.name }}</button>{% endfor %}</div></div>{% endfor %}
@@ -89,14 +94,14 @@ const CH = window.BWTFCharts;
 const params = new URLSearchParams(location.search);
 const ANALYTES = [...document.querySelectorAll("#analyte option")].map(o => o.value);   // ENTERO, COLI_FECAL, COLI_TOTAL, ALL
 const legacyAll = params.get("view") === "all" && !params.get("analyte");                // old links: ?view=all meant all indicators
-const S = { site: params.get("site") || "", src: ["city", "bwtf", "both"].includes(params.get("source")) ? params.get("source") : "both",
+const S = { site: params.get("site") || "", src: ["city", "bwtf", "both", "all"].includes(params.get("source")) ? params.get("source") : "all",
             analyte: legacyAll ? "ALL" : (ANALYTES.includes(params.get("analyte")) ? params.get("analyte") : "ENTERO"),
             start: params.get("start") || "", end: params.get("end") || "" };
 let DATA = null, c1 = null, c2 = null, seq = 0;
 const $ = id => document.getElementById(id);
 const siteOf = k => SITES.find(s => s.key === k) || {};
 const tiles = () => [...document.querySelectorAll("#tiles .tile")];
-const tileFits = t => S.src === "both" || (S.src === "city" ? t.dataset.city === "1" : t.dataset.bwtf === "1");
+const tileFits = t => S.src === "all" ? true : S.src === "both" ? (t.dataset.city === "1" && t.dataset.bwtf === "1") : S.src === "city" ? t.dataset.city === "1" : t.dataset.bwtf === "1";
 function filterTiles() {   // the Source choice hides sites that source never sampled; a hidden current site falls back to the first shown
   tiles().forEach(t => { t.hidden = !tileFits(t); });
   document.querySelectorAll("#tiles .tile-group").forEach(g => { g.hidden = ![...g.querySelectorAll(".tile")].some(t => !t.hidden); });
@@ -110,7 +115,7 @@ function filterTiles() {   // the Source choice hides sites that source never sa
 $("analyte").value = S.analyte; $("start").value = S.start; $("end").value = S.end;
 document.querySelectorAll("#src .seg-btn").forEach(b => b.classList.toggle("active", b.dataset.s === S.src));
 filterTiles();
-function syncUrl() { const u = new URL(location.href); u.search = ""; u.searchParams.set("site", S.site); if (S.analyte !== "ENTERO") u.searchParams.set("analyte", S.analyte); if (S.src !== "both") u.searchParams.set("source", S.src); if (S.start) u.searchParams.set("start", S.start); if (S.end) u.searchParams.set("end", S.end); history.replaceState(null, "", u); }
+function syncUrl() { const u = new URL(location.href); u.search = ""; u.searchParams.set("site", S.site); if (S.analyte !== "ENTERO") u.searchParams.set("analyte", S.analyte); if (S.src !== "all") u.searchParams.set("source", S.src); if (S.start) u.searchParams.set("start", S.start); if (S.end) u.searchParams.set("end", S.end); history.replaceState(null, "", u); }
 function load() {
   const my = ++seq; filterTiles(); if (!S.site) { $("title").textContent = "No site for this source"; return; }
   $("title").textContent = siteOf(S.site).name + " — loading…"; syncUrl();

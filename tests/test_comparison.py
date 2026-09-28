@@ -190,7 +190,8 @@ def test_site_series_grades_every_indicator_per_day_and_pairs_same_day_samples()
     assert only["bwtf_sampled"] is False and only["bwtf"] == [] and only["paired"] == [] and only["city"]["ENTERO"][0]["over"] is True
     sites = C.graph_sites()
     assert {s["key"] for s in sites} >= {"OCEAN#15_SL", "BAY#320_SL", "bwtf:Bayview Hunters Point"}
-    assert [s["group"] for s in sites][:6] == ["Ocean Beach"] * 6 and sites[-1]["group"] == "Surfrider only"   # grouped by our zones, Surfrider-only last
+    assert [s["group"] for s in sites][:6] == ["Ocean Beach"] * 6 and sites[-1]["group"] == "East Beaches"     # grouped by our zones; the Surfrider-only site sits in its zone
+    assert sites[-1]["key"] == "bwtf:Bayview Hunters Point" and sites[-1]["city"] is False and sites[-1]["bwtf"] is True
     assert next(s for s in sites if s["key"] == "OCEAN#15_SL")["bwtf"] is True and next(s for s in sites if s["key"] == "BAY#320_SL")["bwtf"] is False
 
 

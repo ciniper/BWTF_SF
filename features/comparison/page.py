@@ -11,7 +11,7 @@ from urllib.parse import parse_qs, urlencode, urlparse
 
 from flask import render_template
 
-from features.comparison.comparison import ANALYTES, SURFRIDER_ONLY_GROUP, build_comparison, build_site_history, build_site_series, graph_sites
+from features.comparison.comparison import ANALYTES, build_comparison, build_site_history, build_site_series, graph_sites
 from features.comparison.samples import build_sample_day, build_sample_viewer
 from shared.datasf import DATASET_FLOOR
 
@@ -142,7 +142,7 @@ class ComparisonRoutes:
         """Water Quality Graphs: site + range + view, drawn client-side from /api/site-series."""
         sites = graph_sites()
         groups = []
-        for g in [*dict.fromkeys(x["group"] for x in sites if x["group"] != SURFRIDER_ONLY_GROUP), SURFRIDER_ONLY_GROUP]:
+        for g in dict.fromkeys(x["group"] for x in sites):
             items = [x for x in sites if x["group"] == g]
             if items:
                 groups.append((g, items))

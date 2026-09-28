@@ -43,7 +43,8 @@ def test_every_feature_page_sits_in_exactly_one_hub_and_every_link_resolves():
         g = c.get("/graphs").data.decode()
         assert g.count('class="tile"') >= 20 and 'id="analyte"' in g and '<option value="ENTERO" selected>' in g and '<option value="ALL">All indicators</option>' in g and 'href="/compare"' in g
         assert 'id="view"' not in g and "<small>" not in g.split('id="tiles"')[1].split('id="start"')[0]          # no view buttons, plain tiles
-        assert [m for m in ("Ocean Beach", "Baker &amp; China Beach", "North Beaches", "East Beaches", "Surfrider only") if m in g] == ["Ocean Beach", "Baker &amp; China Beach", "North Beaches", "East Beaches", "Surfrider only"]
+        assert [m for m in ("Ocean Beach", "Baker &amp; China Beach", "North Beaches", "East Beaches") if m in g] == ["Ocean Beach", "Baker &amp; China Beach", "North Beaches", "East Beaches"] and "Surfrider only" not in g
+        assert 'data-s="all"' in g and 'data-s="both"' in g and g.count('class="seg-btn') == 4
     assert "Online Postings Timeline" in (ROOT / "app/templates/cso_history/page.html").read_text()
     assert 'id="i-clipboard"' in (ROOT / "app/templates/_icons.html").read_text()
 
