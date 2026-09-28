@@ -1,4 +1,4 @@
-"""SFPUC Alerts Timeline (was "CSO Event Timeline" until 2026-09-27; the route /cso-history is kept) —
+"""Online Postings Timeline (was "Online Postings Timeline" and before that "CSO Event Timeline"; renamed 2026-09-28, the route /cso-history is kept) —
 what the public could see, minute by minute, per station.
 
 A public read-only page (no passphrase — it exposes no subscriber data)

@@ -1,4 +1,4 @@
-"""SFPUC Alerts Timeline (/cso-history): the lab-samples row (collection day + publish lag) added 2026-09-27."""
+"""Online Postings Timeline (/cso-history): the lab-samples row (collection day + publish lag) added 2026-09-27."""
 import pathlib
 import sys
 

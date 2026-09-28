@@ -23,15 +23,27 @@
   .status.danger{background:#d15c5c;color:#fff}
   .conditions{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 0}
   .conditions span{background:rgba(255,255,255,.14);border-radius:999px;padding:7px 13px;font-size:13px;color:#fff}
-  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:22px}
-  .card{display:block;background:#fff;border:1px solid #d9e4e8;border-radius:20px;padding:22px;text-decoration:none;color:#26272a;transition:transform .12s ease,box-shadow .12s ease}
-  .card:hover{transform:translateY(-3px);box-shadow:0 14px 30px rgba(38,39,42,.12);border-color:#85BFDF}
-  .card-icon{display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:14px;background:#E3EBF2;color:#0072BC}
-  .card-icon svg{width:28px;height:28px}
-  .card:hover .card-icon{background:#0072BC;color:#fff}
-  .card-title{font-size:19px;font-weight:900;margin:12px 0 6px}
-  .card-blurb{color:#54576F;font-size:14px;line-height:1.5}
-  .card-go{margin-top:14px;color:#0072BC;font-weight:700;font-size:14px}
+  .hubs{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px;margin-top:22px}
+  .hub{background:#fff;border:1px solid #d9e4e8;border-radius:20px;padding:20px 22px 12px}
+  .hub.primary{border:2px solid #0072BC}
+  .hub-head{display:flex;align-items:center;gap:12px}
+  .hub-icon{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;background:#E3EBF2;color:#0072BC;flex-shrink:0}
+  .hub-icon svg{width:24px;height:24px}
+  .hub-title{font-size:19px;font-weight:900;margin:0}
+  .hub-q{color:#54576F;font-size:13.5px;margin:2px 0 0}
+  .rows{margin:14px 0 0;padding:0;list-style:none}
+  .rows a{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:11px 4px;border-top:1px solid #eef2f4;text-decoration:none;color:#26272a;border-radius:8px}
+  .rows a:hover{background:#f3f8fb;color:#0072BC}
+  .rows .name{font-weight:700;font-size:15px}
+  .rows .fact{color:#8a949b;font-size:12.5px;text-align:right;max-width:55%}
+  .rows .fact.live{color:#0072BC;font-weight:700}
+  .cta{display:block;margin:14px 0 8px;background:#0072BC;color:#fff;text-align:center;border-radius:999px;padding:11px 14px;font-weight:700;font-size:14px;text-decoration:none}
+  .cta:hover{background:#005f9e}
+  .hood{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin-top:18px;padding:12px 18px;background:rgba(255,255,255,.55);border:1px dashed #b9c6cd;border-radius:16px;font-size:13px;color:#54576F}
+  .hood b{color:#26272a}
+  .hood a{color:#0072BC;text-decoration:none;font-weight:600}
+  .hood a:hover{text-decoration:underline}
+  .hood .stamp{margin-left:auto;color:#8a949b}
   .site-footer{background:#343b44;border-radius:24px;padding:24px;text-align:center;margin-top:22px;color:rgba(255,255,255,.78);font-size:14px;line-height:1.7}
   .site-footer .hotline{color:#fff;font-weight:700;margin:0 0 6px}
   .site-footer .advisory{color:#ff8a66;font-weight:600;margin:0 0 10px}
@@ -55,15 +67,27 @@
     {% endif %}
   </div>
 
-  <div class="cards">
-    {% for href, icon, title, blurb in pages %}
-    <a class="card" href="{{ href }}">
-      <div class="card-icon"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-{{ icon }}"/></svg></div>
-      <div class="card-title">{{ title }}</div>
-      <div class="card-blurb">{{ blurb }}</div>
-      <div class="card-go">Open →</div>
-    </a>
+  <div class="hubs">
+    {% for hub in hubs %}
+    <section class="hub{% if hub.primary %} primary{% endif %}" aria-labelledby="hub-{{ hub.key }}">
+      <div class="hub-head">
+        <span class="hub-icon"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-{{ hub.icon }}"/></svg></span>
+        <div><h2 class="hub-title" id="hub-{{ hub.key }}">{{ hub.title }}</h2><p class="hub-q">{{ hub.sub }}</p></div>
+      </div>
+      {% if hub.primary %}<a class="cta" href="{{ hub.primary[0] }}" title="{{ hub.primary[2] }}">{{ hub.primary[1] }} →</a>{% endif %}
+      <ul class="rows">
+        {% for r in hub.rows %}
+        <li><a href="{{ r.href }}" title="{{ r.blurb }}"><span class="name">{{ r.title }}</span><span class="fact{% if r.live %} live{% endif %}">{{ r.fact }}</span></a></li>
+        {% endfor %}
+      </ul>
+    </section>
     {% endfor %}
+  </div>
+
+  <div class="hood">
+    <b>Under the hood</b>
+    {% for href, label in hood %}<a href="{{ href }}">{{ label }}</a>{% endfor %}
+    <span class="stamp">{{ build.label if build else '' }}</span>
   </div>
 
   <div class="site-footer">
