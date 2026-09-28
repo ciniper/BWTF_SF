@@ -16,7 +16,8 @@ python list_documents.py --only-new   # CIWQS eSMR party search -> smr_documents
 python harvest_index.py    # smr_documents.json -> CIWQS drilldowns -> attachment index
 python download_pdfs.py    # fetch SMR PDFs via CIWQS PublicAttachmentRetriever (no auth)
 python batch_parse.py      # extract "CSD Summary" tables (parse_csd.py) from every PDF
-python aggregate.py        # dedupe/normalize -> sf_csd_events.csv + coverage grid + QA report
+python aggregate.py        # dedupe/normalize -> sf_csd_events.csv + coverage grid + QA report + refresh_manifest.json
+#   → append the CSVs to features/forecast/data/csd/ and copy refresh_manifest.json to data/csd/manifest.json (the Ledger shows refreshed_at)
 python parse_old_sep.py    # optional: legacy Bayside format (2013 - Sep 2016), hours/counts only
 ```
 

@@ -150,6 +150,18 @@ with open('sf_csd_monthly_coverage.csv', 'w', newline='') as f:
     w.writeheader(); w.writerows(grid)
 
 json.dump(qa, open('qa_report.json','w'), indent=1)
+
+# ---- refresh manifest: when this run happened and what it covered ----
+# Copy to features/forecast/data/csd/manifest.json after appending the CSVs;
+# the Discharge Ledger shows refreshed_at and turns amber past 90 days.
+from datetime import date as _date
+doc_ids = {m.get('ciwqs_document_id') or m.get('document_id') or m.get('report_name') for m in manifest}
+json.dump({
+    'refreshed_at': _date.today().isoformat(),
+    'documents': len(doc_ids), 'pdfs': len(manifest), 'events_added': len(events),
+    'months': sorted({f"{yr}-{mon:02d}" for (_f, yr, mon) in docs_by_month if mon}),
+    'note': 'written by aggregate.py',
+}, open('refresh_manifest.json', 'w'), indent=2)
 from collections import Counter
 print(len(events), 'events;', len(qa), 'QA flags')
 print(Counter(e['event_date'][:4] for e in events))

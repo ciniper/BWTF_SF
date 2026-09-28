@@ -1,0 +1,8 @@
+{
+  "refreshed_at": "2026-09-24",
+  "documents": 19,
+  "pdfs": 42,
+  "events_added": 97,
+  "note": "Nov 2025 \u2013 Jul 2026 both plants + Bayside Aug 2026 (zero events); Oceanside Aug 2026 not yet filed. See NOTES.md refresh log.",
+  "written_by": "hand (first manifest); aggregate.py writes refresh_manifest.json on every run \u2014 copy it here"
+}

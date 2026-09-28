@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link rel="icon" href="/static/brand/favicon.ico"><link rel="apple-touch-icon" sizes="144x144" href="/static/brand/bwtf_144x144.png">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Beach Postings — Surfrider SF Blue Water Task Force</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#E3EBF2;color:#26272a;font-family:'Roboto','Segoe UI',Arial,sans-serif}
+  a{color:#0072BC}
+  .wrap{max-width:1100px;margin:0 auto;padding:24px}
+  .back-to-dash{display:inline-block;margin:0 0 12px;padding:8px 14px;background:#343b44;color:#fff;border-radius:999px;text-decoration:none;font-weight:700;font-size:13px}
+  .back-to-dash:hover{background:#26272a}
+  .hero{background:#0072BC;color:#fff;border-radius:24px;padding:28px;margin-bottom:20px}
+  .hero h1{margin:6px 0 6px;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:38px;text-transform:uppercase;letter-spacing:.06em;color:#fff}
+  .hero p{margin:0;color:rgba(255,255,255,.88);font-size:15px;line-height:1.5;max-width:78ch}
+  .hero a{color:#cfe6f6}
+  .controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:0 0 14px}
+  .group-btn{padding:8px 16px;border-radius:999px;border:2px solid #d9e4e8;background:#fff;color:#54576F;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
+  .group-btn.active{border-color:#0072BC;background:#0072BC;color:#fff}
+  .ctl-label{font-size:13px;font-weight:700;color:#54576F}
+  .seg-toggle{display:inline-flex;border:2px solid #d9e4e8;border-radius:999px;overflow:hidden;background:#fff}
+  .seg-btn{padding:8px 16px;border:0;background:transparent;color:#54576F;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
+  .seg-btn.active{background:#0072BC;color:#fff}
+  input[type=number]{width:86px;padding:7px 10px;border:2px solid #d9e4e8;border-radius:10px;font-family:inherit;font-size:13px;color:#26272a;background:#fff}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:0 0 16px}
+  .card{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:14px 16px}
+  .card b{display:block;font-size:26px;font-variant-numeric:tabular-nums;color:#26272a}
+  .card span{font-size:12.5px;color:#54576F;font-weight:600}
+  .board{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:14px 18px;margin:0 0 16px;overflow-x:auto}
+  .board h2{font-size:16px;margin:2px 0 10px;color:#26272a}
+  .board h2 span{font-weight:600;color:#54576F;font-size:12.5px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px}
+  th{text-align:left;color:#54576F;font-weight:700;padding:9px 10px 7px;border-bottom:2px solid #d9e4e8;white-space:nowrap}
+  th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
+  td{padding:8px 10px;border-bottom:1px solid #eef2f4;vertical-align:middle}
+  .name{font-weight:700;white-space:nowrap}
+  .chip{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap}
+  .chip.cso{background:#fbe3dc;color:#b5310a}
+  .chip.rain{background:#e3f1fa;color:#0072BC}
+  .chip.other{background:#eef1f3;color:#54576F}
+  .chip.long{background:#fdeee2;color:#b25b1e}
+  .bar{display:inline-block;height:12px;border-radius:4px;background:#0072BC;vertical-align:middle;margin-right:8px}
+  .bar.cso{background:#b5310a}
+  svg.chart{width:100%;height:240px;display:block}
+  .legend{display:flex;gap:16px;font-size:12.5px;color:#54576F;font-weight:600;margin:6px 0 0}
+  .legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:5px}
+  .notes{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:16px 20px;margin-top:18px;font-size:13.5px;color:#3f474d;line-height:1.55}
+  .notes h2{font-size:15px;margin:0 0 8px;color:#26272a}
+  .foot{color:#8a949b;font-size:12px;margin-top:16px}
+  .loading{padding:40px;text-align:center;color:#54576F;font-weight:600}
+  .dl{font-size:12.5px;font-weight:700}
+</style><link rel="stylesheet" href="/static/brand.css">
+</head>
+<body>
+{% include "_icons.html" %}<div class="wrap">
+  <a class="back-to-dash" href="/">← Dashboard</a>
+  <div class="hero">
+    <h1>Beach Postings</h1>
+    <p>Every advisory San Francisco filed with the State since 1999 — when each beach was posted,
+    for how long, and why — from the State Water Board's BeachWatch record. This is what the public was
+    <i>told</i>, alongside what was actually discharged (<a href="/discharges">Discharge Ledger</a>),
+    what the water measured (<a href="/analysis">Site Report Card</a>) and what our own watcher saw
+    (<a href="/cso-history">CSO Event Timeline</a>).</p>
+  </div>
+
+  <div class="controls" id="zoneBtns">
+    <button class="group-btn active" data-zone="">All beaches</button>
+  </div>
+  <div class="controls">
+    <span class="ctl-label">Cause:</span>
+    <div class="seg-toggle" id="causeToggle">
+      <button class="seg-btn active" data-cause="">All</button>
+      <button class="seg-btn" data-cause="cso">Sewage discharge</button>
+      <button class="seg-btn" data-cause="rain">Rain advisory</button>
+      <button class="seg-btn" data-cause="other">Other</button>
+    </div>
+    <span class="ctl-label">Years:</span>
+    <input type="number" id="yearFrom" min="1999" step="1"> <span style="color:#54576F">→</span>
+    <input type="number" id="yearTo" min="1999" step="1">
+    <button class="group-btn preset" data-years="">Full record</button>
+    <button class="group-btn preset" data-years="10">Last 10 yrs</button>
+    <button class="group-btn preset" data-years="3">Last 3 yrs</button>
+  </div>
+
+  <div class="loading" id="loading">Loading the State's posting record…</div>
+  <div id="content" style="display:none">
+    <div class="cards">
+      <div class="card"><b id="cAdv">–</b><span>postings (station-advisories)</span></div>
+      <div class="card"><b id="cDays">–</b><span>posted station-days</span></div>
+      <div class="card"><b id="cMed">–</b><span>median posting length, days</span></div>
+      <div class="card"><b id="cCso">–</b><span>of posted days name a sewage discharge</span></div>
+      <div class="card"><b id="cPerYr">–</b><span>posted station-days per year</span></div>
+    </div>
+
+    <div class="board">
+      <h2>Posted station-days by year <span>— stacked by cause · a station posted 3 days = 3</span></h2>
+      <svg class="chart" id="chart" viewBox="0 0 1000 240" preserveAspectRatio="none"></svg>
+      <div class="legend"><span><i style="background:#b5310a"></i>Sewage discharge</span><span><i style="background:#0072BC"></i>Rain advisory</span><span><i style="background:#98a3ab"></i>Other / unknown</span></div>
+    </div>
+
+    <div class="board">
+      <h2>By station <span>— in the selected view · click a column header to sort</span></h2>
+      <table id="tbl"><thead><tr>
+        <th data-k="name">Station</th><th data-k="zone">Zone</th>
+        <th class="num" data-k="adv">postings</th><th class="num" data-k="days">posted days</th>
+        <th class="num" data-k="pct" style="min-width:170px">share of days posted</th>
+        <th class="num" data-k="med">median length</th><th class="num" data-k="cso">sewage share</th><th data-k="last">last posted</th>
+      </tr></thead><tbody id="rows"></tbody></table>
+    </div>
+
+    <div class="board">
+      <h2>Most recent postings <span>— newest first, in the selected view · <a class="dl" href="/postings/api/csv" download="sf_beach_advisories.csv">download the full record (CSV)</a></span></h2>
+      <table><thead><tr><th>Posted</th><th>Reopened</th><th class="num">days</th><th>Station</th><th>Cause</th><th>Type</th><th>Record says</th></tr></thead><tbody id="recent"></tbody></table>
+    </div>
+  </div>
+
+  <div class="notes" id="notes">
+    <h2>Reading these numbers</h2>
+    <b>A posting</b> is one station-advisory: a sign up at one station from the posted date through the reopened date, both
+    inclusive, so a same-day post-and-reopen counts as one posted day. <b>Cause</b> is the record's own attribution:
+    <span class="chip cso">sewage discharge</span> when a combined-sewer discharge is named as the source,
+    <span class="chip rain">rain advisory</span> for the standing wet-weather warning, <span class="chip other">other</span>
+    when neither is named (mostly dry-weather bacteria). Postings are precautionary — on sampled sewage-posted days the water
+    was over standard roughly half to four-fifths of the time — so this record grades what people were told, not what the water
+    was; the Site Report Card grades the water. <span id="longNote"></span>
+    <span id="lagNote"></span>
+  </div>
+  <div class="foot" id="foot"></div>
+</div>
+
+<script>
+let D = null, ADV = [], ST = {};
+const STATE = { zone: "", cause: "", from: null, to: null, sort: {k: "days", dir: -1} };
+const C = {cso: "#b5310a", rain: "#0072BC", other: "#98a3ab"};
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = n => Number(n).toLocaleString();
+const median = a => { if (!a.length) return null; const s = [...a].sort((x, y) => x - y); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+
+function view() {
+  return ADV.filter(a => (!STATE.zone || a.zone === STATE.zone) && (!STATE.cause || a.cause === STATE.cause)
+    && (STATE.from == null || a.year >= STATE.from) && (STATE.to == null || a.year <= STATE.to));
+}
+function render() {
+  const v = view(), counted = v.filter(a => !a.long);
+  const days = counted.reduce((n, a) => n + a.days, 0), csoDays = counted.filter(a => a.cause === "cso").reduce((n, a) => n + a.days, 0);
+  const years = new Set(counted.map(a => a.year)); const span = Math.max(1, (STATE.to ?? D.lastYear) - (STATE.from ?? D.firstYear) + 1);
+  document.getElementById("cAdv").textContent = fmt(v.length);
+  document.getElementById("cDays").textContent = fmt(days);
+  document.getElementById("cMed").textContent = counted.length ? median(counted.map(a => a.days)) : "–";
+  document.getElementById("cCso").textContent = days ? Math.round(100 * csoDays / days) + "%" : "–";
+  document.getElementById("cPerYr").textContent = fmt(Math.round(days / span));
+  renderChart(counted); renderStations(v); renderRecent(v);
+}
+function renderChart(counted) {
+  const y0 = STATE.from ?? D.firstYear, y1 = STATE.to ?? D.lastYear, ys = []; for (let y = y0; y <= y1; y++) ys.push(y);
+  const by = {}; for (const y of ys) by[y] = {cso: 0, rain: 0, other: 0};
+  for (const a of counted) if (by[a.year]) by[a.year][a.cause] += a.days;
+  const max = Math.max(1, ...ys.map(y => by[y].cso + by[y].rain + by[y].other));
+  const W = 1000, H = 240, padL = 44, padB = 26, padT = 10, bw = (W - padL - 8) / ys.length;
+  let s = "";
+  for (let g = 0; g <= 4; g++) { const val = Math.round(max * g / 4), yy = padT + (H - padT - padB) * (1 - g / 4);
+    s += `<line x1="${padL}" x2="${W}" y1="${yy}" y2="${yy}" stroke="#eef2f4"/><text x="${padL - 6}" y="${yy + 4}" font-size="11" text-anchor="end" fill="#54576F">${fmt(val)}</text>`; }
+  ys.forEach((y, i) => { let base = H - padB; const x = padL + i * bw + bw * 0.12, w = bw * 0.76;
+    for (const c of ["other", "rain", "cso"]) { const h = (H - padT - padB) * by[y][c] / max; if (h > 0) { s += `<rect x="${x}" y="${base - h}" width="${w}" height="${h}" fill="${C[c]}"><title>${y} · ${c}: ${fmt(by[y][c])} posted station-days</title></rect>`; base -= h; } }
+    if (ys.length <= 14 || i % Math.ceil(ys.length / 14) === 0) s += `<text x="${x + w / 2}" y="${H - 8}" font-size="11" text-anchor="middle" fill="#54576F">${y}</text>`; });
+  document.getElementById("chart").innerHTML = s;
+}
+function renderStations(v) {
+  const per = {};
+  for (const a of v) { const p = per[a.station] ??= {name: ST[a.station]?.name || a.station, zone: D.zones[a.zone] || a.zone, adv: 0, days: 0, cso: 0, lens: [], last: ""};
+    p.adv++; if (!a.long) { p.days += a.days; if (a.cause === "cso") p.cso += a.days; p.lens.push(a.days); } if (a.posted > p.last) p.last = a.posted; }
+  const span = Math.max(1, (STATE.to ?? D.lastYear) - (STATE.from ?? D.firstYear) + 1) * 365.25;
+  const rows = Object.values(per).map(p => ({...p, med: median(p.lens) ?? 0, pct: 100 * p.days / span, csoPct: p.days ? 100 * p.cso / p.days : 0}));
+  const {k, dir} = STATE.sort; rows.sort((a, b) => (a[k] > b[k] ? 1 : a[k] < b[k] ? -1 : 0) * dir);
+  const maxPct = Math.max(1, ...rows.map(r => r.pct));
+  document.getElementById("rows").innerHTML = rows.map(r => `<tr><td class="name">${esc(r.name)}</td><td>${esc(r.zone)}</td><td class="num">${fmt(r.adv)}</td><td class="num">${fmt(r.days)}</td>
+    <td class="num"><span class="bar${r.csoPct >= 50 ? ' cso' : ''}" style="width:${Math.round(110 * r.pct / maxPct)}px"></span>${r.pct.toFixed(1)}%</td>
+    <td class="num">${r.med}</td><td class="num">${Math.round(r.csoPct)}%</td><td>${esc(r.last)}</td></tr>`).join("");
+}
+function renderRecent(v) {
+  document.getElementById("recent").innerHTML = v.slice(0, 40).map(a => `<tr><td>${a.posted}</td><td>${a.reopened}</td><td class="num">${a.days}${a.long ? ' <span class="chip long" title="left open over ' + D.max_duration_days + ' days — excluded from day totals">left open</span>' : ''}</td>
+    <td class="name">${esc(ST[a.station]?.name || a.station)}</td><td><span class="chip ${a.cause}">${esc(D.cause_labels[a.cause] || a.cause)}</span></td><td>${esc(a.type)}</td><td style="color:#54576F">${esc(a.rawCause)}${a.src ? ' · ' + esc(a.src) : ''}</td></tr>`).join("");
+}
+function wire() {
+  const zb = document.getElementById("zoneBtns");
+  for (const [k, label] of Object.entries(D.zones)) { const b = document.createElement("button"); b.className = "group-btn"; b.dataset.zone = k; b.textContent = label; zb.appendChild(b); }
+  zb.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; STATE.zone = b.dataset.zone; zb.querySelectorAll("button").forEach(x => x.classList.toggle("active", x === b)); render(); });
+  const ct = document.getElementById("causeToggle");
+  ct.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; STATE.cause = b.dataset.cause; ct.querySelectorAll("button").forEach(x => x.classList.toggle("active", x === b)); render(); });
+  const yf = document.getElementById("yearFrom"), yt = document.getElementById("yearTo");
+  yf.max = yt.max = D.lastYear; yf.placeholder = D.firstYear; yt.placeholder = D.lastYear;
+  const setYears = (f, t) => { STATE.from = f; STATE.to = t; yf.value = f ?? ""; yt.value = t ?? ""; render(); };
+  yf.addEventListener("change", () => setYears(yf.value ? +yf.value : null, STATE.to));
+  yt.addEventListener("change", () => setYears(STATE.from, yt.value ? +yt.value : null));
+  document.querySelectorAll(".preset").forEach(b => b.addEventListener("click", () => { const n = b.dataset.years; n ? setYears(D.lastYear - n + 1, D.lastYear) : setYears(null, null); }));
+  document.querySelectorAll("#tbl th").forEach(th => th.addEventListener("click", () => { const k = th.dataset.k; STATE.sort = {k, dir: STATE.sort.k === k ? -STATE.sort.dir : (k === "name" || k === "zone" || k === "last" ? 1 : -1)}; renderStations(view()); }));
+}
+fetch("/postings/api/advisories").then(r => r.json()).then(d => {
+  D = d; ST = d.stations;
+  const I = Object.fromEntries(d.columns.map((c, i) => [c, i]));
+  ADV = d.advisories.map(r => ({posted: r[I.posted_on], reopened: r[I.reopened_on], days: r[I.duration_days] + 1, year: +r[I.posted_on].slice(0, 4),
+    station: r[I.station], zone: r[I.zone], cause: r[I.cause_class], type: r[I.advisory_type], rawCause: r[I.cause], src: r[I.source], long: r[I.duration_days] > d.max_duration_days}));
+  D.firstYear = +d.first.slice(0, 4); D.lastYear = +d.known_through.slice(0, 4);
+  document.getElementById("longNote").textContent = d.excluded_long ? `${d.excluded_long} filings left open for over ${d.max_duration_days} days are listed but excluded from day totals.` : "";
+  document.getElementById("lagNote").innerHTML = `The record runs <b>${d.first}</b> → <b>${d.known_through}</b>; San Francisco files with the State months late, so recent months are incomplete until the next refresh, not sign-free.`;
+  document.getElementById("foot").textContent = "Source: " + d.source + (d.fetched_at ? " · fetched " + d.fetched_at.slice(0, 10) : "") + " · stored at features/forecast/data/beachwatch/ (collector: src/collectors/beachwatch.py --refresh) · the same record is the forecast's third grading ruler (Model check → graded against beach postings).";
+  wire(); render();
+  document.getElementById("loading").style.display = "none"; document.getElementById("content").style.display = "";
+}).catch(e => { document.getElementById("loading").textContent = "Could not load the posting record: " + e; });
+</script>
+</body></html>

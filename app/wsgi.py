@@ -49,6 +49,7 @@ import features.discharges.page as discharges_page
 import features.forecast.page as forecast_page
 import features.signup.page as signup_page
 import features.site_analysis.page as site_analysis_page
+import features.postings.page as postings_page
 from features.alerts.page import AlertsRoutes
 from features.comparison.page import ComparisonRoutes
 from shared.datasf import DATASET_PAGE_URL
@@ -306,6 +307,10 @@ def create_app():
     # Discharge ledger (public read-only; static CSD dataset from CIWQS SMRs)
     for path, handler in discharges_page.GET_ROUTES.items():
         app.add_url_rule(path, f"discharges-get:{path}", _forecast_view(handler), methods=["GET"])
+
+    # Beach postings (public read-only; the State's BeachWatch record, static repo file)
+    for path, handler in postings_page.GET_ROUTES.items():
+        app.add_url_rule(path, f"postings-get:{path}", _forecast_view(handler), methods=["GET"])
 
     # Reports: static HTML analyses committed under reports/ (model explorers, training report …)
     app.add_url_rule("/reports/<name>", "reports", _report_view, methods=["GET"])
