@@ -13,7 +13,15 @@ id/name + from/to), so recipient data never even reaches this process, let
 alone the response.
 
 Event windows are assembled server-side (testable) from the transition
-stream; the page renders them client-side like the other pages. Each route
+stream; the page renders them client-side like the other pages.
+
+Since 2026-09-27 each station also carries a samples row: the day each lab
+sample was collected (from the Supabase ``samples`` mirror of the city's
+dataset) and, for results the production refresh picked up as the city
+published them, how long until the result appeared online — the publish lag
+the live-corrections rules assume is one day. Backfilled rows show the
+collection day only. Together with the flags this makes the page the
+"what did the public-facing sources show, and when" view. Each route
 handler returns ``(status, content_type, body_bytes)`` — the contract
 ``app/wsgi.py`` dispatches.
 """
@@ -25,6 +33,8 @@ from datetime import datetime, timedelta, timezone
 from flask import render_template
 
 from shared import supabase as sb
+from shared.stations import STATIONS
+from zoneinfo import ZoneInfo
 
 from shared.alert_log import REALTIME_SOURCES as _SOURCES  # our real-time detections only
 _SEVERITY = {"ok": 0, "posted": 1, "cso": 2}
@@ -32,6 +42,10 @@ _ROW_LIMIT = 5000
 # An open window with no clear record and no live roster to consult is shown
 # as "ongoing" only while young; older ones are "end not recorded".
 _ASSUME_ONGOING_HOURS = 24
+_PACIFIC = ZoneInfo("America/Los_Angeles")
+_SAMPLE_LOOKBACK_DAYS = 21      # samples collected up to this long before monitoring began still show
+_SFPUC_OF_SOURCE = {sid: s.sfpuc_id for sid, s in STATIONS.items()}    # DataSF station id → SFPUC feed id (the timeline's key)
+_NAME_OF_SFPUC = {s.sfpuc_id: s.sfpuc_name for s in STATIONS.values()}
 
 
 def _parse_ts(value) -> datetime | None:
@@ -80,6 +94,55 @@ def _fetch_roster() -> dict[str, dict]:
                 for s in SFPUCRealTimeAPI().fetch_stations()}
     except Exception:
         return {}
+
+
+def _fetch_sample_rows(since_day: str) -> list[dict]:
+    """The samples mirror (migration 012/014) from ``since_day`` on."""
+    return sb.select("samples", {
+        "select": "station_id,sample_date,exceeds,first_seen_at,source",
+        "sample_date": f"gte.{since_day}",
+        "order": "sample_date.asc",
+        "limit": str(_ROW_LIMIT),
+    })
+
+
+def build_sample_days(rows: list[dict]) -> dict[str, list[dict]]:
+    """{SFPUC station id: [{date, elevated, n, source, first_seen, lag_days}]},
+    one entry per station-day. ``elevated`` = any analyte over its limit that
+    day; ``first_seen`` = when the mirror first saw the day's results (the
+    earliest row); ``lag_days`` = the Pacific day first seen minus the
+    collection day — only for days whose rows the production refresh picked up
+    in real time (source ``refresh``); a day with any backfilled row has no
+    honest lag and shows the collection day alone."""
+    days: dict[tuple[str, str], dict] = {}
+    for r in rows:
+        sfpuc = _SFPUC_OF_SOURCE.get(str(r.get("station_id") or ""))
+        day = str(r.get("sample_date") or "")[:10]
+        if not sfpuc or len(day) != 10:
+            continue
+        e = days.setdefault((sfpuc, day), {"elevated": False, "first_seen": None, "source": "refresh", "n": 0})
+        e["n"] += 1
+        e["elevated"] = e["elevated"] or bool(r.get("exceeds"))
+        fs = _parse_ts(r.get("first_seen_at"))
+        if fs is not None and (e["first_seen"] is None or fs < e["first_seen"]):
+            e["first_seen"] = fs
+        if r.get("source") != "refresh":
+            e["source"] = "backfill"
+    out: dict[str, list[dict]] = {}
+    for (sfpuc, day), e in sorted(days.items()):
+        real = e["source"] == "refresh" and e["first_seen"] is not None
+        lag = (e["first_seen"].astimezone(_PACIFIC).date() - datetime.strptime(day, "%Y-%m-%d").date()).days if real else None
+        out.setdefault(sfpuc, []).append({"date": day, "elevated": e["elevated"], "n": e["n"], "source": e["source"],
+                                          "first_seen": _iso(e["first_seen"]) if real else None, "lag_days": lag})
+    return out
+
+
+def _median(values: list) -> float | None:
+    if not values:
+        return None
+    s = sorted(values)
+    m = len(s) // 2
+    return float(s[m]) if len(s) % 2 else (s[m - 1] + s[m]) / 2
 
 
 def _row_transitions(row: dict) -> list[dict]:
@@ -222,11 +285,29 @@ def handle_events(query, body):
                       "stations": [], "event_count": 0,
                       "note": f"event history temporarily unavailable ({type(exc).__name__})"})
     stations = build_station_windows(rows, _fetch_roster(), now)
+    samples, sample_note = {}, None
+    try:
+        since_day = ((_parse_ts(monitoring_since) or now) - timedelta(days=_SAMPLE_LOOKBACK_DAYS)).date().isoformat()
+        samples = build_sample_days(_fetch_sample_rows(since_day))
+    except Exception as exc:  # the samples row is an addition; its absence must not blank the events
+        sample_note = f"sample dates temporarily unavailable ({type(exc).__name__})"
+    known = {s["station_id"] for s in stations}
+    extra = [{"station_id": sid, "station_name": _NAME_OF_SFPUC.get(sid, sid), "current_status": None, "windows": []}
+             for sid in samples if sid not in known]
+    if extra:   # eventful stations stay on top; the quiet ones re-sort alphabetically
+        eventful = [s for s in stations if s["windows"]]
+        quiet = sorted([s for s in stations if not s["windows"]] + extra, key=lambda s: s["station_name"].lower())
+        stations = eventful + quiet
+    lags = [d["lag_days"] for v in samples.values() for d in v if d["lag_days"] is not None]
     return _json({
         "generated_at": _iso(now),
         "monitoring_since": monitoring_since,
         "stations": stations,
         "event_count": sum(len(s["windows"]) for s in stations),
+        "samples": samples,
+        "sample_lag": {"n": len(lags), "median_days": _median(lags),
+                       "measured_since": "2026-09-27"},   # the mirror's first real-time pickup (migration 012)
+        "sample_note": sample_note,
     })
 
 

@@ -25,6 +25,19 @@
   .swatch{display:inline-block;width:22px;height:12px;border-radius:4px}
   .swatch.posted{background:#d4763a}
   .swatch.cso{background:repeating-linear-gradient(135deg,#b5310a 0 5px,#992a09 5px 8px)}
+  .swatch.clean{width:12px;height:12px;border-radius:50%;background:#2f7d4c}
+  .swatch.elevated{width:12px;height:12px;border-radius:50%;background:#b5310a}
+  .swatch.lag{background:#8fb8d8;height:4px}
+  .row.srow{height:20px}
+  .row + .row.srow{border-top:0}
+  .row.srow .name{font-size:11px;font-weight:600;color:#8a949b;text-align:right;padding-right:10px}
+  .smark{position:absolute;top:5px;width:10px;height:10px;margin-left:-5px;border-radius:50%;box-shadow:0 0 0 2px #fff;cursor:pointer;z-index:2}
+  .smark.clean{background:#2f7d4c}
+  .smark.elevated{background:#b5310a}
+  .smark.hist{opacity:.5}
+  .lagbar{position:absolute;top:8px;height:4px;background:#8fb8d8;border-radius:2px;cursor:pointer}
+  .lagbar.elevated{background:#e3a08a}
+  .pub{position:absolute;top:4px;width:2px;height:12px;background:#54576F;margin-left:-1px;pointer-events:none}
 
   .board{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:18px 18px 10px;overflow-x:auto}
   .chart{position:relative;min-width:640px}
@@ -75,7 +88,7 @@
   <a class="back-to-dash" href="/">← Dashboard</a>
   <div class="hero">
     <h1>CSO Event Timeline</h1>
-    <p>Every bacteria posting and combined-sewer-overflow event our real-time watcher has detected, plotted per station — when it started, how it escalated, and when it cleared. This is our own minute-by-minute detection record, independent of the city's published history.</p>
+    <p>Every bacteria posting and combined-sewer-overflow event our real-time watcher has detected, plotted per station — when it started, how it escalated, and when it cleared. This is our own minute-by-minute detection record, independent of the city's published history. Under each station, its lab samples: the day each was collected and, for results published since we started watching, how long until they appeared online.</p>
   </div>
 
   <div id="status" class="loading">Loading event history…</div>
@@ -89,6 +102,9 @@
       <div class="legend">
         <span class="key"><span class="swatch posted"></span>Posted (bacteria)</span>
         <span class="key"><span class="swatch cso"></span>CSO discharge</span>
+        <span class="key"><span class="swatch clean"></span>Sample collected (clean)</span>
+        <span class="key"><span class="swatch elevated"></span>over standard</span>
+        <span class="key"><span class="swatch lag"></span>until it appeared online</span>
       </div>
     </div>
     <div class="board">
@@ -188,7 +204,47 @@
       dot.title = s.current_status ? ('current status: ' + s.current_status) : 'current status unavailable';
       row.appendChild(name); row.appendChild(track); row.appendChild(dot);
       chart.appendChild(row);
+
+      // the samples row: collection day (dot) and, when we watched it arrive, the bar until it appeared online
+      var sd = (DATA.samples || {})[s.station_id] || [];
+      if (!sd.length) return;
+      var srow = document.createElement('div'); srow.className = 'row srow';
+      var sname = document.createElement('div'); sname.className = 'name'; sname.textContent = 'lab samples';
+      var strack = document.createElement('div'); strack.className = 'track';
+      sd.forEach(function(d){
+        var dayMs = new Date(d.date + 'T20:00:00Z').getTime();          // ~noon Pacific on the collection day
+        var fsMs = d.first_seen ? new Date(d.first_seen).getTime() : null;
+        if (Math.max(dayMs, fsMs || 0) < t0) return;                      // outside the selected range
+        if (fsMs && fsMs > dayMs) {
+          var lag = document.createElement('div'); lag.className = 'lagbar' + (d.elevated ? ' elevated' : '');
+          lag.style.left = pos(dayMs) + '%'; lag.style.width = Math.max(0.3, pos(fsMs) - pos(dayMs)) + '%';
+          lag.addEventListener('mousemove', function(ev){ showSampleTip(ev, s, d); }); lag.addEventListener('mouseleave', hideTip);
+          strack.appendChild(lag);
+          var pub = document.createElement('span'); pub.className = 'pub'; pub.style.left = pos(fsMs) + '%'; strack.appendChild(pub);
+        }
+        var m = document.createElement('span');
+        m.className = 'smark ' + (d.elevated ? 'elevated' : 'clean') + (d.source === 'backfill' ? ' hist' : '');
+        m.style.left = pos(dayMs) + '%';
+        m.addEventListener('mousemove', function(ev){ showSampleTip(ev, s, d); }); m.addEventListener('mouseleave', hideTip);
+        strack.appendChild(m);
+      });
+      var spacer = document.createElement('span'); spacer.className = 'nowdot'; spacer.style.visibility = 'hidden';
+      srow.appendChild(sname); srow.appendChild(strack); srow.appendChild(spacer);
+      chart.appendChild(srow);
     });
+  }
+
+  function showSampleTip(ev, s, d){
+    var tip = document.getElementById('tooltip');
+    var when = new Date(d.date + 'T20:00:00Z').toLocaleDateString('en-US', {timeZone:'America/Los_Angeles', month:'short', day:'numeric', year:'numeric'});
+    var pub = d.first_seen
+      ? 'Appeared online: ' + fmt(d.first_seen) + ' — <b>' + d.lag_days + (d.lag_days === 1 ? ' day' : ' days') + '</b> after collection'
+      : 'Appeared online: not observed (loaded from the city\'s history — collection day only)';
+    tip.innerHTML = '<b>' + s.station_name + '</b><br>Lab sample collected ' + when + ' · ' +
+      (d.elevated ? '<b style="color:#f3b7a5">over standard</b>' : 'clean') + (d.n > 1 ? ' (' + d.n + ' results)' : '') + '<br>' + pub;
+    tip.style.display = 'block';
+    var x = Math.min(ev.clientX + 14, window.innerWidth - 300);
+    tip.style.left = x + 'px'; tip.style.top = (ev.clientY + 14) + 'px';
   }
 
   function showTip(ev, s, w, wStart){
@@ -221,6 +277,18 @@
     var html = '<table><thead><tr><th>Station</th><th>Event</th><th>Detected</th><th>Cleared</th><th>Duration</th></tr></thead><tbody>';
     if (rows.length) rows.forEach(function(r){ html += '<tr><td>' + r.map(function(c){ return String(c); }).join('</td><td>') + '</td></tr>'; });
     else html += '<tr><td colspan="5" class="muted">No events recorded.</td></tr>';
+    html += '</tbody></table>';
+    // the sample publication log: newest collection first
+    var srows = [];
+    var byId = {}; DATA.stations.forEach(function(s){ byId[s.station_id] = s.station_name; });
+    Object.keys(DATA.samples || {}).forEach(function(sid){ (DATA.samples[sid] || []).forEach(function(d){ srows.push([byId[sid] || sid, d]); }); });
+    srows.sort(function(a, b){ return a[1].date < b[1].date ? 1 : a[1].date > b[1].date ? -1 : 0; });
+    html += '<h3 style="font-size:14px;margin:18px 0 6px">Lab samples — collected, and when the result appeared online</h3>' +
+      '<table><thead><tr><th>Station</th><th>Collected</th><th>Result</th><th>Appeared online</th><th>Lag</th></tr></thead><tbody>';
+    if (srows.length) srows.slice(0, 300).forEach(function(r){ var d = r[1];
+      html += '<tr><td>' + r[0] + '</td><td>' + d.date + '</td><td>' + (d.elevated ? 'over standard' : 'clean') + (d.n > 1 ? ' (' + d.n + ')' : '') + '</td><td>' +
+        (d.first_seen ? fmt(d.first_seen) : '<span class="muted">not observed</span>') + '</td><td>' + (d.lag_days != null ? d.lag_days + (d.lag_days === 1 ? ' day' : ' days') : '—') + '</td></tr>'; });
+    else html += '<tr><td colspan="5" class="muted">No samples in the record window.</td></tr>';
     document.getElementById('tablebox').innerHTML = html + '</tbody></table>';
   }
 
@@ -241,6 +309,9 @@
       (data.monitoring_since ? 'Real-time detection since ' + fmt(data.monitoring_since) + ' (Pacific time). ' : '') +
       'Times are our own detection minutes: a 1-minute check cadence via the in-database watcher since Aug 16, 2026 (2-minute before that). ' +
       'Events detected before clear-logging was added show “end not recorded”. Simulated test events are excluded. ' +
+      'Lab-sample dots are the collection day from the city\'s dataset; the bar to the right runs until the result appeared online' +
+      (data.sample_lag && data.sample_lag.n ? ' (median so far <b>' + data.sample_lag.median_days + ' days</b> over ' + data.sample_lag.n + ' sample-days, measured since ' + data.sample_lag.measured_since + ')' : ' (measured from ' + ((data.sample_lag || {}).measured_since || '2026-09-27') + ' on; nothing published yet since then)') +
+      '. Faded dots are the city\'s history loaded in one go — collection day only. ' + (data.sample_note ? data.sample_note + ' ' : '') +
       'Live station status: <a href="https://webapps.sfpuc.org/sapps/beachesandbay.html" target="_blank" rel="noopener">SFPUC beach map</a>.';
     render(); renderTable();
   }).catch(function(e){
