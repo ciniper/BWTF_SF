@@ -69,7 +69,7 @@
   #rawTbl th{cursor:pointer;user-select:none}
   #rawTbl th .dir{color:#0072BC}
   .dl{padding:8px 16px;border-radius:999px;background:#0072BC;color:#fff;text-decoration:none;font-size:13px;font-weight:700}
-  .cov-note.overdue{background:#fdeee2;color:#8a3d10;border-color:#f0c9ad}
+  .note.overdue{background:#fdeee2;color:#8a3d10;border-color:#f0c9ad}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -114,7 +114,7 @@
   </div>
 
   <div class="note" id="covNote"></div>
-  <div class="cov-note" id="refreshNote" style="display:none"></div>
+  <div class="note" id="refreshNote" style="display:none"></div>
 
   <div class="board">
     <h2>Outfall map <span style="font-weight:600;color:#54576F;font-size:12.5px">— circle size = volume in the selected range · click a marker for details</span></h2>
@@ -492,8 +492,8 @@ async function load() {
     const overdue = age > (R.due_days || 90);
     const el = document.getElementById("refreshNote");
     el.style.display = "";
-    el.className = "cov-note" + (overdue ? " overdue" : "");
-    el.innerHTML = '<svg class="ic ' + (overdue ? 'warn' : '') + '"><use href="#i-' + (overdue ? 'triangle-alert' : 'refresh-cw') + '"/></svg> Record last refreshed from CIWQS on <b>' + R.refreshed_at + '</b> (' + age + ' days ago' + (R.documents ? ', ' + R.documents + ' reports, ' + (R.events_added ?? 0) + ' events added' : '') + ')' +
+    el.className = "note" + (overdue ? " overdue" : "");
+    el.innerHTML = '<svg class="ic ' + (overdue ? 'warn' : '') + '"><use href="#i-' + (overdue ? 'triangle-alert' : 'refresh-cw') + '"/></svg> Record last refreshed from CIWQS on <b>' + R.refreshed_at + '</b> (' + age + (age === 1 ? ' day ago' : ' days ago') + (R.documents ? ', ' + R.documents + ' reports, ' + (R.events_added ?? 0) + ' events added' : '') + ')' +
       (R.next_due ? ' · next quarterly run due <b>' + R.next_due + '</b>' : '') + (overdue ? ' — <b>overdue</b>' : '') + '.';
   }
   document.getElementById("foot").textContent = "Source: " + d.source +

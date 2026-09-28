@@ -28,6 +28,7 @@ from pathlib import Path
 
 from flask import render_template
 
+from shared.freshness import DUE_DAYS, refresh_block
 from shared.stations import STATIONS
 from shared.zones import ZONES
 
@@ -78,6 +79,9 @@ def _load() -> dict:
         "first": min((x[0] for x in rows), default=None),
         "known_through": max((x[1] or x[0] for x in rows), default=None),
         "fetched_at": man.get("fetched_at"),
+        # the freshness line: when WE last fetched the State's file and when the quarterly run is due;
+        # the record's own end (known_through) is the State's side — SF files postings months late
+        "refresh": refresh_block(man.get("fetched_at"), DUE_DAYS, statewide_rows=man.get("statewide_rows"), sf_rows=man.get("sf_rows")),
         "excluded_long": len(man.get("excluded_long_advisories") or []),
         "source": "California State Water Resources Control Board — BeachWatch, \"Beach Posting and Closures – Advisories\" (data.ca.gov), San Francisco rows",
     }

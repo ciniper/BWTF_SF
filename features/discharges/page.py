@@ -35,6 +35,7 @@ from flask import render_template
 _CSV = Path(__file__).resolve().parents[1] / "forecast" / "data" / "csd" / "sf_csd_events.csv"
 # Outfall coordinates, basin and the stations SFPUC posts per structure come
 # from the canonical registry (shared/outfalls.py); the map popups show them.
+from shared.freshness import DUE_DAYS, refresh_block
 from shared.outfalls import OUTFALLS  # noqa: E402
 
 # Compact wire format: list of rows in this column order (keeps the payload
@@ -46,7 +47,7 @@ _payload_cache: dict | None = None
 
 _COVERAGE_CSV = _CSV.parent / "sf_csd_monthly_coverage.csv"
 _MANIFEST = _CSV.parent / "manifest.json"          # refreshed_at etc., written by csd_ciwqs/aggregate.py
-REFRESH_DUE_DAYS = 90                                # SFPUC files a month ~4–6 weeks late; a quarterly run keeps up
+REFRESH_DUE_DAYS = DUE_DAYS                          # shared/freshness.py — the quarterly rule every page uses
 _COVERED = {"events_parsed", "table_present_zero_events", "no_table_stated_no_discharge"}
 # Where the modern per-event format starts (NOTES.md): the grid also carries
 # legacy-era months, which the events CSV does not hold.
@@ -87,28 +88,13 @@ def _coverage() -> dict:
 
 def _refresh() -> dict:
     """When the record was last re-harvested from CIWQS (data/csd/manifest.json)
-    and when the next run is due: the next quarterly 15th (Mar / Jun / Sep /
-    Dec) after it, never sooner than REFRESH_DUE_DAYS."""
+    and when the next quarterly run is due (shared/freshness.py)."""
     try:
         m = json.load(open(_MANIFEST))
     except Exception:  # noqa: BLE001
-        return {"refreshed_at": None, "next_due": None, "due_days": REFRESH_DUE_DAYS}
-    at = m.get("refreshed_at")
-    nxt = None
-    try:
-        d = datetime.strptime(at, "%Y-%m-%d").date()
-        y, mo = d.year, d.month
-        for _ in range(8):
-            mo += 1
-            if mo > 12:
-                mo, y = 1, y + 1
-            if mo in (3, 6, 9, 12) and (datetime(y, mo, 15).date() - d).days >= REFRESH_DUE_DAYS - 15:
-                nxt = f"{y:04d}-{mo:02d}-15"
-                break
-    except (TypeError, ValueError):
-        pass
-    return {"refreshed_at": at, "next_due": nxt, "due_days": REFRESH_DUE_DAYS,
-            "documents": m.get("documents"), "events_added": m.get("events_added"), "note": m.get("note")}
+        return refresh_block(None, REFRESH_DUE_DAYS)
+    return refresh_block(m.get("refreshed_at"), REFRESH_DUE_DAYS,
+                         documents=m.get("documents"), events_added=m.get("events_added"), note=m.get("note"))
 
 
 def _load() -> dict:

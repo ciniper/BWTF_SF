@@ -24,6 +24,8 @@ def test_payload_is_the_whole_record_with_names_zones_and_span():
     assert d["advisories"] == sorted(d["advisories"], key=lambda x: (x[0], x[3]), reverse=True)   # newest first
     st = d["stations"]; assert "OCEAN#21.1_SL" in st and st["OCEAN#21.1_SL"]["name"] == "Ocean Beach at Sloat" and st["OCEAN#21.1_SL"]["zone"] == "ocean"
     assert d["max_duration_days"] == 60 and d["excluded_long"] == 2 and d["fetched_at"]
+    assert d["refresh"] == {"refreshed_at": "2026-09-26", "next_due": "2026-12-15", "due_days": 90, "statewide_rows": 35748, "sf_rows": 2142}
+    assert 'id="freshNote"' in (ROOT / "app/templates/postings/page.html").read_text()
     assert sum(1 for r in d["advisories"] if r[2] > 60) == 2
 
 
@@ -44,6 +46,10 @@ def test_page_and_csv_routes():
 
 
 def test_ledger_carries_the_refresh_stamp_and_next_due():
+    from shared import freshness
+    assert freshness.next_quarterly_due("2026-09-24") == "2026-12-15" and freshness.next_quarterly_due("2026-09-26T18:15:48+00:00") == "2026-12-15"
+    assert freshness.next_quarterly_due("2026-12-10") == "2027-03-15" and freshness.next_quarterly_due("2026-12-20") == "2027-03-15"
+    assert freshness.next_quarterly_due("2026-01-05") == "2026-03-15" and freshness.next_quarterly_due("2026-03-01") == "2026-06-15" and freshness.next_quarterly_due(None) is None
     r = L._refresh()
     assert r["refreshed_at"] == "2026-09-24" and r["next_due"] == "2026-12-15" and r["due_days"] == 90
     status, ctype, body = L.handle_events({}, b"")

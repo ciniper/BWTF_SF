@@ -51,6 +51,10 @@
   .notes h2{font-size:15px;margin:0 0 8px;color:#26272a}
   .foot{color:#8a949b;font-size:12px;margin-top:16px}
   .loading{padding:40px;text-align:center;color:#54576F;font-weight:600}
+  .fresh-note{display:flex;gap:8px;align-items:center;background:#fff;border:1px solid #d9e4e8;border-radius:12px;padding:10px 14px;margin:0 0 14px;font-size:13px;color:#3f474d}
+  .fresh-note .ic{width:16px;height:16px;flex:none;color:#0072BC}
+  .fresh-note.overdue{background:#fdeee2;color:#8a3d10;border-color:#f0c9ad}
+  .fresh-note.overdue .ic{color:#b25b1e}
   .dl{font-size:12.5px;font-weight:700}
 </style><link rel="stylesheet" href="/static/brand.css">
 </head>
@@ -85,6 +89,7 @@
     <button class="group-btn preset" data-years="3">Last 3 yrs</button>
   </div>
 
+  <div class="fresh-note" id="freshNote" style="display:none"></div>
   <div class="loading" id="loading">Loading the State's posting record…</div>
   <div id="content" style="display:none">
     <div class="cards">
@@ -206,6 +211,17 @@ fetch("/postings/api/advisories").then(r => r.json()).then(d => {
   D.firstYear = +d.first.slice(0, 4); D.lastYear = +d.known_through.slice(0, 4);
   document.getElementById("longNote").textContent = d.excluded_long ? `${d.excluded_long} filings left open for over ${d.max_duration_days} days are listed but excluded from day totals.` : "";
   document.getElementById("lagNote").innerHTML = `The record runs <b>${d.first}</b> → <b>${d.known_through}</b>; San Francisco files with the State months late, so recent months are incomplete until the next refresh, not sign-free.`;
+  const R = d.refresh || {};
+  if (R.refreshed_at) {   // our fetch date vs the State's record end — two different kinds of stale
+    const age = Math.floor((Date.now() - new Date(R.refreshed_at + "T12:00:00")) / 86400000);
+    const overdue = age > (R.due_days || 90);
+    const gapDays = Math.floor((new Date(R.refreshed_at + "T12:00:00") - new Date(d.known_through + "T12:00:00")) / 86400000);
+    const el = document.getElementById("freshNote");
+    el.style.display = ""; el.className = "fresh-note" + (overdue ? " overdue" : "");
+    el.innerHTML = '<svg class="ic"><use href="#i-' + (overdue ? 'triangle-alert' : 'refresh-cw') + '"/></svg><span>Record fetched from the State on <b>' + R.refreshed_at + '</b> (' + age + (age === 1 ? ' day ago' : ' days ago') + (R.sf_rows ? ', ' + fmt(R.sf_rows) + ' SF postings of ' + fmt(R.statewide_rows) + ' statewide' : '') + ')'
+      + ' · the State\'s record then ran through <b>' + d.known_through + '</b>' + (gapDays > 45 ? ' — SF had filed nothing newer for ' + Math.round(gapDays / 30) + ' months' : '')
+      + (R.next_due ? ' · next refresh due <b>' + R.next_due + '</b>' : '') + (overdue ? ' — <b>overdue</b>' : '') + '.</span>';
+  }
   document.getElementById("foot").textContent = "Source: " + d.source + (d.fetched_at ? " · fetched " + d.fetched_at.slice(0, 10) : "") + " · stored at features/forecast/data/beachwatch/ (collector: src/collectors/beachwatch.py --refresh) · the same record is the forecast's third grading ruler (Model check → graded against beach postings).";
   wire(); render();
   document.getElementById("loading").style.display = "none"; document.getElementById("content").style.display = "";
