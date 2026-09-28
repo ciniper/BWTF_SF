@@ -4,7 +4,8 @@
 [README](../README.md) (the original monitor and its standards), [features/forecast/README](../features/forecast/README.md)
 (the forecast), [DEPLOY](../DEPLOY.md) (hosting, Supabase, the watcher), [features/forecast/RETRAIN_PLAN](../features/forecast/RETRAIN_PLAN.md)
 (model history), [features/forecast/LIVE_COMPOSITION_DESIGN](../features/forecast/LIVE_COMPOSITION_DESIGN.md)
-(how live CSO flags and samples should change the forecast), [TODO](../TODO.md) (what is done and what is open), and the `NOTES.md` next to each dataset.*
+(how live CSO flags and samples should change the forecast), [features/forecast/STAGE2_V3_FINDINGS](../features/forecast/STAGE2_V3_FINDINGS.md)
+(why the outfall split's shares could not be refit from the water — a negative result), [TODO](../TODO.md) (what is done and what is open), and the `NOTES.md` next to each dataset.*
 
 ## 1. What it is
 
