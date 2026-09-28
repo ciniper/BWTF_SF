@@ -23,6 +23,7 @@
   .seg-btn.active{background:#0072BC;color:#fff} .seg-btn:disabled{color:#b4b2a9;cursor:default}
   select,input[type=date]{font-size:13px;padding:7px 10px;border:2px solid #d9e4e8;border-radius:10px;background:#fff;color:#26272a;font-family:inherit;font-weight:600}
   .preset{padding:7px 12px;border-radius:999px;border:2px solid #d9e4e8;background:#fff;color:#54576F;cursor:pointer;font-size:12.5px;font-weight:700;font-family:inherit}
+  .preset.active{border-color:#0072BC;background:#0072BC;color:#fff}
   .board{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:16px 18px;margin:0 0 16px}
   .board h2{font-size:16px;margin:0 0 4px} .sub{color:#54576F;font-size:12.5px;margin:0 0 10px}
   .status{color:#54576F;font-size:12.5px;font-weight:600;margin:0 0 8px}
@@ -107,6 +108,12 @@ document.querySelectorAll("#v-scope .seg-btn").forEach(function (b) { b.classLis
 document.querySelectorAll("#v-source .seg-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.source === VIEW.source); });
 document.querySelectorAll("#v-notes .seg-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.notes === VIEW.notes); });
 $("v-start").value = VIEW.start; $("v-end").value = VIEW.end;
+var DAY = 864e5, isoNear = function (iso, ms) { return !!iso && Math.abs(new Date(iso) - ms) <= 1.5 * DAY; };   // a day of slack: server date vs browser date
+function markPreset() {   // light the preset whose window matches the dates shown
+  var start = $("v-start").value, end = $("v-end").value, now = Date.now();
+  document.querySelectorAll(".v-preset").forEach(function (b) { b.classList.toggle("active", b.dataset.days ? isoNear(start, now - b.dataset.days * DAY) && isoNear(end, now) : !!start && start <= FLOOR && isoNear(end, now)); });
+}
+markPreset();
 function syncUrl() { var u = new URL(location.href); u.search = ""; if (VIEW.scope !== "dual") u.searchParams.set("scope", VIEW.scope); if (VIEW.site) u.searchParams.set("site", VIEW.site); if (VIEW.source !== "both") u.searchParams.set("source", VIEW.source); if (VIEW.notes !== "expand") u.searchParams.set("notes", VIEW.notes); if (VIEW.start) u.searchParams.set("start", VIEW.start); if (VIEW.end) u.searchParams.set("end", VIEW.end); history.replaceState(null, "", u); }
 function vCell(vals) {
   if (!vals || !vals.length) return '<span style="color:#98a3ab">—</span>';
@@ -153,7 +160,7 @@ function vLoad() {
   $("v-status").textContent = "Loading samples…";
   fetch("/api/samples?" + q).then(function (r) { return r.json(); }).then(function (d) {
     if (d.ok === false) { $("v-status").textContent = "Could not load samples: " + d.error; return; }
-    VDATA = d; var sd = $("v-start"), ed = $("v-end"); sd.min = ed.min = d.floor; ed.max = d.end; if (!sd.value) sd.value = d.start; if (!ed.value) ed.value = d.end;
+    VDATA = d; var sd = $("v-start"), ed = $("v-end"); sd.min = ed.min = d.floor; ed.max = d.end; if (!sd.value) sd.value = d.start; if (!ed.value) ed.value = d.end; markPreset();
     vRender();
   }).catch(function (e) { $("v-status").textContent = "Could not load samples: " + e; });
 }
@@ -177,8 +184,8 @@ $("v-rows").addEventListener("click", function (e) {
   var caret = e.target.closest(".caret"); if (caret) { var tr = $("notes-" + caret.dataset.i); var open = tr.style.display === "none"; tr.style.display = open ? "" : "none"; caret.textContent = open ? "▾" : "▸"; return; }
   var a = e.target.closest(".v-sitelink"); if (a) { e.preventDefault(); var q = new URLSearchParams({ site: a.dataset.key }); if (VDATA) { q.set("start", VIEW.start || VDATA.start); q.set("end", VIEW.end || VDATA.end); } location.href = "/graphs?" + q; }
 });
-["v-start", "v-end"].forEach(function (id) { $(id).addEventListener("change", function (e) { VIEW[id === "v-start" ? "start" : "end"] = e.target.value; vLoad(); }); });
-document.querySelectorAll(".v-preset").forEach(function (btn) { btn.addEventListener("click", function () { var end = new Date().toISOString().slice(0, 10); VIEW.end = end; VIEW.start = btn.dataset.days ? new Date(Date.now() - btn.dataset.days * 864e5).toISOString().slice(0, 10) : FLOOR; $("v-start").value = VIEW.start; $("v-end").value = VIEW.end; vLoad(); }); });
+["v-start", "v-end"].forEach(function (id) { $(id).addEventListener("change", function (e) { VIEW[id === "v-start" ? "start" : "end"] = e.target.value; markPreset(); vLoad(); }); });
+document.querySelectorAll(".v-preset").forEach(function (btn) { btn.addEventListener("click", function () { var end = new Date().toISOString().slice(0, 10); VIEW.end = end; VIEW.start = btn.dataset.days ? new Date(Date.now() - btn.dataset.days * DAY).toISOString().slice(0, 10) : FLOOR; $("v-start").value = VIEW.start; $("v-end").value = VIEW.end; markPreset(); vLoad(); }); });
 vLoad(); loadLatest();
 </script>
 </body></html>

@@ -195,6 +195,26 @@ def test_site_series_grades_every_indicator_per_day_and_pairs_same_day_samples()
     assert next(s for s in sites if s["key"] == "OCEAN#15_SL")["bwtf"] is True and next(s for s in sites if s["key"] == "BAY#320_SL")["bwtf"] is False
 
 
+def test_site_series_scores_each_day_against_its_own_limits_and_keeps_the_worst_indicator():
+    """All % threshold: every point carries the limit that applied and its % of it; ``worst`` keeps one
+    indicator per day — the highest %, with the ratio rule's 1,000 total-coliform limit when it applies."""
+    site = C.resolve_site("OCEAN#15_SL")
+    start, end = datetime(2024, 1, 1), datetime(2024, 3, 1)
+    recs = (_city("OCEAN#15_SL", "2024-02-06", ENTERO=30, COLI_FECAL=500, COLI_TOTAL=6000)      # fecal 125% beats total 60% (ratio 0.083, limit stays 10,000)
+            + _city("OCEAN#15_SL", "2024-02-13", ENTERO=30, COLI_FECAL=500, COLI_TOTAL=2000)    # ratio 0.25 → total limit 1,000 → 200% beats fecal 125%
+            + _city("OCEAN#15_SL", "2024-02-20", ENTERO="<10", COLI_FECAL=10, COLI_TOTAL=100))  # nothing near a limit: Enterococcus 5 → 4.8%
+    hist = [{"site_name": "Baker Beach at Lobos Creek", "collection_time": datetime(2024, 2, 20, 8), "substance": "Enterococcus", "result_value": 52.0, "result_raw": "52"},
+            {"site_name": "Baker Beach at Lobos Creek", "collection_time": datetime(2024, 2, 20, 16), "substance": "Enterococcus", "result_value": 208.0, "result_raw": "208"}]
+    d = C.site_series_payload(site, recs, hist, start, end)
+    ent, tot = standards.STANDARDS["ENTERO"]["single_sample_max"], standards.STANDARDS["COLI_TOTAL"]
+    assert [(p["limit"], p["pct"]) for p in d["city"]["COLI_TOTAL"]] == [(tot["single_sample_max"], 60.0), (tot["single_sample_max_ratio"], 200.0), (tot["single_sample_max"], 1.0)]
+    assert [(p["date"], p["code"], p["pct"], p["over"], p["ratio"]) for p in d["worst"]["city"]] == [
+        ("2024-02-06", "COLI_FECAL", 125.0, True, False), ("2024-02-13", "COLI_TOTAL", 200.0, True, True), ("2024-02-20", "ENTERO", round(5 / ent * 100, 1), False, False)]
+    assert all(p["label"] == C.ANALYTES[p["code"]]["label"] and p["station"] == "OCEAN#15_SL" for p in d["worst"]["city"])
+    assert [(p["limit"], p["pct"]) for p in d["bwtf"]] == [(ent, 50.0), (ent, 200.0)]
+    assert [(p["date"], p["code"], p["raw"], p["pct"]) for p in d["worst"]["bwtf"]] == [("2024-02-20", "ENTERO", "208", 200.0)]   # one point per day: the day's worst
+
+
 def test_sample_rows_carry_the_volunteer_field_notes_from_events():
     start, end = datetime(2026, 9, 1), datetime(2026, 9, 30)
     event = {"site_name": "Aquatic Park", "collection_time": datetime(2026, 9, 24, 18, 30), "tested_by": "A. Volunteer", "comments": "Kelp on the beach", "volume": "",

@@ -23,6 +23,7 @@
   .seg-btn.active{background:#0072BC;color:#fff} .seg-btn:disabled{color:#b4b2a9;cursor:default}
   select,input[type=date]{font-size:13px;padding:7px 10px;border:2px solid #d9e4e8;border-radius:10px;background:#fff;color:#26272a;font-family:inherit;font-weight:600}
   .preset{padding:7px 12px;border-radius:999px;border:2px solid #d9e4e8;background:#fff;color:#54576F;cursor:pointer;font-size:12.5px;font-weight:700;font-family:inherit}
+  .preset.active{border-color:#0072BC;background:#0072BC;color:#fff}
   .board{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:16px 18px;margin:0 0 16px}
   .board h2{font-size:16px;margin:0 0 4px} .sub{color:#54576F;font-size:12.5px;margin:0 0 10px}
   .status{color:#54576F;font-size:12.5px;font-weight:600;margin:0 0 8px}
@@ -33,6 +34,7 @@
   .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:#54576F;margin:10px 0 0}
   .legend i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:6px;border-radius:2px}
   .legend i.dash{background:repeating-linear-gradient(90deg,currentColor 0 4px,transparent 4px 7px);height:2px}
+  .legend i.dot{width:10px;height:10px;border-radius:50%}
   .tiles{display:flex;flex-direction:column;gap:10px;margin:0 0 14px}
   .tile-group-name{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#54576F;font-weight:700;margin:0 0 6px}
   .tile-row{display:flex;flex-wrap:wrap;gap:8px}
@@ -56,6 +58,7 @@
     <select id="analyte" aria-label="Bacteria type">
       {% for a in analytes %}<option value="{{ a.code }}"{% if a.code == 'ENTERO' %} selected{% endif %}>{{ a.label }}</option>{% endfor %}
       <option value="ALL">All indicators</option>
+      <option value="PCT">All % threshold</option>
     </select>
     <span class="ctl-label">Source</span>
     <div class="seg-toggle" id="src">
@@ -92,7 +95,13 @@ const SITES = {{ sites|tojson }};
 const FLOOR = "{{ dataset_floor }}";
 const CH = window.BWTFCharts;
 const params = new URLSearchParams(location.search);
-const ANALYTES = [...document.querySelectorAll("#analyte option")].map(o => o.value);   // ENTERO, COLI_FECAL, COLI_TOTAL, ALL
+const ANALYTES = [...document.querySelectorAll("#analyte option")].map(o => o.value);   // ENTERO, COLI_FECAL, COLI_TOTAL, ALL, PCT
+const PCT_TICKS = [1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000], DAY = 864e5;
+const isoNear = (iso, ms) => !!iso && Math.abs(new Date(iso) - ms) <= 1.5 * DAY;      // a day of slack: the server's date vs the browser's
+function markPreset() {   // light the preset whose window matches the dates shown, so a chosen range reads as chosen
+  const start = $("start").value, end = $("end").value, now = Date.now();
+  document.querySelectorAll(".preset").forEach(b => b.classList.toggle("active", b.dataset.days ? isoNear(start, now - b.dataset.days * DAY) && isoNear(end, now) : !!start && start <= FLOOR && isoNear(end, now)));
+}
 const legacyAll = params.get("view") === "all" && !params.get("analyte");                // old links: ?view=all meant all indicators
 const S = { site: params.get("site") || "", src: ["city", "bwtf", "both", "all"].includes(params.get("source")) ? params.get("source") : "all",
             analyte: legacyAll ? "ALL" : (ANALYTES.includes(params.get("analyte")) ? params.get("analyte") : "ENTERO"),
@@ -112,7 +121,7 @@ function filterTiles() {   // the Source choice hides sites that source never sa
   }
   tiles().forEach(t => t.classList.toggle("active", t.dataset.key === S.site));
 }
-$("analyte").value = S.analyte; $("start").value = S.start; $("end").value = S.end;
+$("analyte").value = S.analyte; $("start").value = S.start; $("end").value = S.end; markPreset();
 document.querySelectorAll("#src .seg-btn").forEach(b => b.classList.toggle("active", b.dataset.s === S.src));
 filterTiles();
 function syncUrl() { const u = new URL(location.href); u.search = ""; u.searchParams.set("site", S.site); if (S.analyte !== "ENTERO") u.searchParams.set("analyte", S.analyte); if (S.src !== "all") u.searchParams.set("source", S.src); if (S.start) u.searchParams.set("start", S.start); if (S.end) u.searchParams.set("end", S.end); history.replaceState(null, "", u); }
@@ -123,12 +132,13 @@ function load() {
   Promise.all([fetch("/api/site-series?" + q).then(r => r.json()), CH.ensureChart()]).then(([d]) => {
     if (my !== seq) return;
     if (d.ok === false) { $("title").textContent = "Could not load: " + d.error; return; }
-    DATA = d; if (!S.start) $("start").value = d.start; if (!S.end) $("end").value = d.end; $("end").max = d.end;
+    DATA = d; if (!S.start) $("start").value = d.start; if (!S.end) $("end").value = d.end; $("end").max = d.end; markPreset();
     render();
   }).catch(e => { $("title").textContent = "Could not load: " + e; });
 }
 function render() {
   if (c1) { c1.destroy(); c1 = null; } if (c2) { c2.destroy(); c2 = null; }
+  $("explain").textContent = "";
   const L = DATA.limits, C = CH.COLORS, onPoint = p => { if (p.station && window.SamplePopover) SamplePopover.open({ station: p.station, name: p.name, date: p.date }); };
   const pts = arr => (arr || []).map(p => ({ x: p.ts, y: p.value, raw: p.raw, over: p.over, ratio: p.ratio, date: p.date, station: p.station, name: p.name, n: p.n }));
   const range = DATA.start + " → " + DATA.end, wantCity = S.src !== "bwtf", wantBwtf = S.src !== "city" && DATA.bwtf.length > 0;
@@ -144,6 +154,21 @@ function render() {
     $("title").textContent = DATA.site + " — all indicators";
     $("legend").innerHTML = series.map(s => '<span><i style="background:' + s.color + '"></i>' + s.label + "</span>").join("") + '<span><i class="dash" style="color:#54576F"></i>state limits</span>';
     $("sub").textContent = (wantCity ? DATA.counts.city_days + " city sample days" : "") + (wantBwtf ? (wantCity ? " · " : "") + DATA.bwtf.length + " Surfrider samples" : "") + " · " + range;
+  } else if (S.analyte === "PCT") {   // each sample day's worst indicator as % of its own limit; the dot's colour names the indicator
+    $("h2hWrap").style.display = "none";
+    const W = DATA.worst || { city: [], bwtf: [] }, pf = v => v >= 100 ? Math.round(v).toLocaleString() : String(v);
+    const pp = arr => (arr || []).map(p => ({ x: p.ts, y: p.pct, pct: p.pct, code: p.code, label: p.label, raw: p.raw, limit: p.limit, over: p.over, ratio: p.ratio, date: p.date, station: p.station, name: p.name, n: p.n }));
+    const series = [];
+    if (wantCity) series.push({ label: "City (SFPUC)", color: "#8a949b", width: 1.4, pointRadius: 3.4, points: pp(W.city), pointColors: W.city.map(p => C[p.code]) });
+    if (wantBwtf) series.push({ label: "Surfrider", color: C.BWTF_LIGHT, dash: [4, 3], pointRadius: 3.4, points: pp(W.bwtf) });
+    c1 = CH.seriesChart($("c1"), { series, lines: [CH.limitLine(100, C.LIMIT, "state limit = 100%")], legend: false, onPoint,
+                                    yMin: 1, yTicks: PCT_TICKS, yFormat: v => CH.fmt(v) + "%", yTitle: "% of that indicator's state limit, log scale",
+                                    tooltip: (p, who) => who + " · " + p.label + " " + p.raw + " = " + pf(p.pct) + "% of " + CH.fmt(p.limit) + (p.ratio ? " (ratio rule)" : "") });
+    $("title").textContent = DATA.site + " — worst indicator each day, % of its limit";
+    $("legend").innerHTML = (wantCity ? DATA.analytes.map(a => '<span><i class="dot" style="background:' + C[a.code] + '"></i>' + a.label + '</span>').join("") : "")
+      + (wantBwtf ? '<span><i style="background:' + C.BWTF_LIGHT + '"></i>Surfrider Enterococcus</span>' : "") + '<span><i class="dash" style="color:#54576F"></i>100% = state limit</span>';
+    $("sub").textContent = (wantCity ? W.city.length + " city sample days" : "") + (wantBwtf ? (wantCity ? " · " : "") + W.bwtf.length + " Surfrider sample days" : "") + " · " + range;
+    $("explain").textContent = "One point per sample day: the indicator that came closest to, or furthest over, its own limit — the dot's colour names it. Above the dashed line is over the state limit. Total coliform counts against 1,000 instead of 10,000 when fecal is more than a tenth of it (the ratio rule).";
   } else {
     const a = S.analyte, label = (DATA.analytes.find(x => x.code === a) || { label: a }).label, entero = a === "ENTERO";
     const series = [];
@@ -162,14 +187,13 @@ function render() {
       if (P.length) c2 = CH.pairedBars($("c2"), { labels: P.map(p => p.date), a: { label: "Surfrider", color: C.BWTF, data: P.map(p => p.bwtf), raws: P.map(p => p.bwtf_raw) }, b: { label: "City (SFPUC)", color: C.CITY, data: P.map(p => p.city), raws: P.map(p => p.city_raw) }, lines: [CH.limitLine(L.ENTERO, C.LIMIT, "CA limit " + L.ENTERO)] });
     }
   }
-  $("explain").textContent = "";
   syncUrl();
 }
 $("tiles").addEventListener("click", e => { const t = e.target.closest(".tile"); if (!t || t.hidden || t.dataset.key === S.site) return; S.site = t.dataset.key; load(); });
 $("analyte").addEventListener("change", e => { S.analyte = e.target.value; if (DATA) render(); });
 $("src").addEventListener("click", e => { const b = e.target.closest(".seg-btn"); if (!b) return; document.querySelectorAll("#src .seg-btn").forEach(x => x.classList.toggle("active", x === b)); S.src = b.dataset.s; const before = S.site; filterTiles(); if (S.site !== before || !DATA) load(); else render(); });
-["start", "end"].forEach(id => $(id).addEventListener("change", e => { S[id] = e.target.value; load(); }));
-document.querySelectorAll(".preset").forEach(btn => btn.addEventListener("click", () => { const end = new Date().toISOString().slice(0, 10); S.end = end; S.start = btn.dataset.days ? new Date(Date.now() - btn.dataset.days * 864e5).toISOString().slice(0, 10) : FLOOR; $("start").value = S.start; $("end").value = S.end; load(); }));
+["start", "end"].forEach(id => $(id).addEventListener("change", e => { S[id] = e.target.value; markPreset(); load(); }));
+document.querySelectorAll(".preset").forEach(btn => btn.addEventListener("click", () => { const end = new Date().toISOString().slice(0, 10); S.end = end; S.start = btn.dataset.days ? new Date(Date.now() - btn.dataset.days * DAY).toISOString().slice(0, 10) : FLOOR; $("start").value = S.start; $("end").value = S.end; markPreset(); load(); }));
 load();
 </script>
 </body></html>

@@ -70,6 +70,7 @@
           .seg-btn.active{background:#0072BC;color:#fff}
           .v-controls select,.v-controls input[type=date]{font-size:13px;padding:7px 10px;border:2px solid #d9e4e8;border-radius:10px;background:#fff;color:#26272a;font-family:inherit;font-weight:600}
           .v-preset{padding:7px 12px;border-radius:999px;border:2px solid #d9e4e8;background:#fff;color:#54576F;cursor:pointer;font-size:12.5px;font-weight:700;font-family:inherit}
+          .v-preset.active{border-color:#0072BC;background:#0072BC;color:#fff}
           .tile-link{display:inline-block;margin:0 0 14px;color:#0072BC;font-weight:700;font-size:13px}
           .modal__links{color:#54576F;font-size:12.5px;margin:10px 0 0}.modal__links a{color:#0072BC;font-weight:700;margin-right:14px}
         </style><link rel="stylesheet" href="/static/brand.css">
@@ -162,10 +163,16 @@ var HIST = { start: isoDaysAgo(365), end: new Date().toISOString().slice(0, 10) 
 (function () {
   var hs = document.getElementById("h-start"), he = document.getElementById("h-end");
   hs.value = HIST.start; he.value = HIST.end; he.max = HIST.end;
-  hs.addEventListener("change", function (e) { HIST.start = e.target.value; });
-  he.addEventListener("change", function (e) { HIST.end = e.target.value; });
+  var DAY = 864e5, isoNear = function (iso, ms) { return !!iso && Math.abs(new Date(iso) - ms) <= 1.5 * DAY; };
+  var markPreset = function () {   // light the preset whose window matches the dates chosen
+    var now = Date.now();
+    document.querySelectorAll(".h-preset").forEach(function (b) { b.classList.toggle("active", b.dataset.days ? isoNear(HIST.start, now - b.dataset.days * DAY) && isoNear(HIST.end, now) : !!HIST.start && HIST.start <= FLOOR && isoNear(HIST.end, now)); });
+  };
+  markPreset();
+  hs.addEventListener("change", function (e) { HIST.start = e.target.value; markPreset(); });
+  he.addEventListener("change", function (e) { HIST.end = e.target.value; markPreset(); });
   document.querySelectorAll(".h-preset").forEach(function (btn) { btn.addEventListener("click", function () {
-    HIST.end = new Date().toISOString().slice(0, 10); HIST.start = btn.dataset.days ? isoDaysAgo(+btn.dataset.days, HIST.end) : FLOOR; hs.value = HIST.start; he.value = HIST.end; }); });
+    HIST.end = new Date().toISOString().slice(0, 10); HIST.start = btn.dataset.days ? isoDaysAgo(+btn.dataset.days, HIST.end) : FLOOR; hs.value = HIST.start; he.value = HIST.end; markPreset(); }); });
 })();
 function changeAnalyte(v) { location.href = "/compare?analyte=" + encodeURIComponent(v); }
 var histChart = null, histBar = null, HIST_DATA = null;

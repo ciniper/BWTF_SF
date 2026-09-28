@@ -293,8 +293,11 @@ def site_series_payload(site: dict, city_records: list[dict], bwtf_history: list
     """Pure: one site's results over time for the graphs page. City: per day and
     indicator the worst value the city published (a double-sampled day keeps
     both counted in ``n``), graded by the shared rule with the ratio from the
-    same day's fecal and total. Surfrider: every Enterococcus collection.
-    ``paired``: days both programs sampled (worst per day)."""
+    same day's fecal and total; every point carries the limit that applied
+    and ``pct`` = value as % of it. Surfrider: every Enterococcus collection.
+    ``paired``: days both programs sampled (worst per day). ``worst``: per day
+    and source, the one indicator with the highest ``pct`` (city: across the
+    three indicators; Surfrider: its Enterococcus)."""
     by_day: dict = defaultdict(lambda: defaultdict(list))
     for r in city_records:
         if r.get("source") not in site["sources"] or r.get("analyte") not in ANALYTES or not r.get("sample_date"):
@@ -304,18 +307,27 @@ def site_series_payload(site: dict, city_records: list[dict], bwtf_history: list
         if v is not None:
             by_day[r["sample_date"][:10]][r["analyte"]].append((v, raw))
     city = {code: [] for code in ANALYTES}
+    worst_city = []   # per day, the indicator furthest over (or nearest to) its own limit — the "All % threshold" view
     for day in sorted(by_day):
         vals = by_day[day]
         fecal = max((v for v, _ in vals.get("COLI_FECAL", [])), default=None)
         total = max((v for v, _ in vals.get("COLI_TOTAL", [])), default=None)
         ts = int(datetime.strptime(day, "%Y-%m-%d").replace(hour=12).timestamp() * 1000)
-        for code, pairs in vals.items():
+        day_points = []
+        for code in ANALYTES:                       # registry order, so a tie on % goes to Enterococcus
+            pairs = vals.get(code)
+            if not pairs:
+                continue
             v, raw = max(pairs)
             limit = single_sample_max(code, fecal, total)
-            city[code].append({"date": day, "ts": ts, "value": v, "raw": raw, "n": len(pairs),
-                               "over": exceeds(code, v, fecal, total),
-                               "ratio": code == "COLI_TOTAL" and limit != STANDARDS["COLI_TOTAL"]["single_sample_max"],
-                               "station": site["sources"][0] if site["sources"] else None, "name": site["name"]})
+            point = {"date": day, "ts": ts, "value": v, "raw": raw, "n": len(pairs), "limit": limit, "pct": _pct_of_limit(v, limit),
+                     "over": exceeds(code, v, fecal, total),
+                     "ratio": code == "COLI_TOTAL" and limit != STANDARDS["COLI_TOTAL"]["single_sample_max"],
+                     "station": site["sources"][0] if site["sources"] else None, "name": site["name"]}
+            city[code].append(point)
+            day_points.append(dict(point, code=code, label=ANALYTES[code]["label"]))
+        worst_city.append(max(day_points, key=lambda q: q["pct"]))
+    entero_limit = STANDARDS["ENTERO"]["single_sample_max"]
     bwtf = []
     for rec in bwtf_history:
         if rec.get("site_name") != site["bwtf_name"] or rec.get("substance") != "Enterococcus":
@@ -324,10 +336,12 @@ def site_series_payload(site: dict, city_records: list[dict], bwtf_history: list
         if when is None or value is None or when < since or when > until + timedelta(days=1):
             continue
         bwtf.append({"date": when.strftime("%Y-%m-%d"), "ts": int(when.timestamp() * 1000), "value": value,
-                     "raw": rec.get("result_raw"), "over": exceeds("ENTERO", value), "name": site["name"]})
+                     "raw": rec.get("result_raw"), "limit": entero_limit, "pct": _pct_of_limit(value, entero_limit),
+                     "over": exceeds("ENTERO", value), "name": site["name"]})
     bwtf.sort(key=lambda p: p["ts"])
     c_by_day = {p["date"]: p for p in city["ENTERO"]}
     b_by_day = _by_day_max(bwtf)
+    worst_bwtf = [dict(b_by_day[d], code="ENTERO", label=ANALYTES["ENTERO"]["label"]) for d in sorted(b_by_day)]
     paired = [{"date": d, "bwtf": b_by_day[d]["value"], "bwtf_raw": b_by_day[d]["raw"], "city": c_by_day[d]["value"], "city_raw": c_by_day[d]["raw"]}
               for d in sorted(set(c_by_day) & set(b_by_day))]
     return {
@@ -336,6 +350,7 @@ def site_series_payload(site: dict, city_records: list[dict], bwtf_history: list
         "analytes": [{"code": c, "label": m["label"]} for c, m in ANALYTES.items()],
         "limits": {c: STANDARDS[c]["single_sample_max"] for c in ANALYTES}, "caution": ENTERO_CAUTION, "units": "MPN/100mL",
         "city": city, "bwtf": bwtf, "paired": paired,
+        "worst": {"city": worst_city, "bwtf": worst_bwtf},
         "counts": {"city_days": len(by_day), "bwtf": len(bwtf), "paired": len(paired)},
     }
 
@@ -477,6 +492,11 @@ def build_comparison(
         "summary": summary,
         "rows": [r.to_dict() for r in rows],
     }
+
+
+def _pct_of_limit(value: float, limit: Optional[float]) -> Optional[float]:
+    """A result as a percentage of the limit that applies to it (100 = at the limit)."""
+    return round(value / limit * 100, 1) if limit else None
 
 
 def _by_day_max(series: list[dict]) -> dict:

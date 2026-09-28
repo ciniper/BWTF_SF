@@ -314,6 +314,7 @@ async function load() {
   sd.max = ed.max = DATA.newest_sample;
   if (!sd.value && DATA.start) sd.value = DATA.start;
   if (!ed.value && DATA.end) ed.value = DATA.end;
+  markPreset();
   initMap();
   render();
 }
@@ -342,6 +343,12 @@ document.getElementById("stdToggle").addEventListener("click", e => {
   load();
 });
 
+function markPreset() {   // light the preset in play: no dates = Full record; a start N days before the newest sample (a day of slack) = that preset
+  const newest = new Date(DATA ? DATA.newest_sample : Date.now()), DAY = 864e5;
+  document.querySelectorAll(".preset").forEach(b => { const d = b.dataset.days;
+    b.classList.toggle("active", d ? !STATE.end && !!STATE.start && Math.abs(new Date(STATE.start) - (newest - d * DAY)) <= 1.5 * DAY : !STATE.start && !STATE.end); });
+}
+
 document.querySelectorAll(".preset").forEach(btn => btn.addEventListener("click", () => {
   const days = btn.dataset.days;
   const sd = document.getElementById("startDate"), ed = document.getElementById("endDate");
@@ -353,12 +360,14 @@ document.querySelectorAll(".preset").forEach(btn => btn.addEventListener("click"
     STATE.end = ed.value = "";
     ed.value = "";
   }
+  markPreset();
   load();
 }));
 
 for (const id of ["startDate", "endDate"]) {
   document.getElementById(id).addEventListener("change", e => {
     STATE[id === "startDate" ? "start" : "end"] = e.target.value;
+    markPreset();
     load();
   });
 }

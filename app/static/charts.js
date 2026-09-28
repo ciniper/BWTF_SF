@@ -37,29 +37,33 @@
   } };
   function limitLine(value, color, label, dashed) { return { value: value, color: color || COLORS.LIMIT, label: label || "", dash: dashed === "dotted" ? [2, 3] : [6, 5], width: dashed === "dotted" ? 1.2 : 1.5 }; }
 
-  /* series: [{label, color, dash, points:[{x, y, raw, over, date, station, name}]}]; lines: [limitLine…];
-     onPoint(point) fires on click. Log axis by default. */
+  /* series: [{label, color, dash, pointColors?, points:[{x, y, raw, over, date, station, name}]}]; lines: [limitLine…];
+     onPoint(point) fires on click. Log axis by default; yMin / yTicks / yFormat reshape it (the % view);
+     tooltip(point, seriesLabel) replaces the default line. */
   function seriesChart(canvas, o) {
     var datasets = (o.series || []).map(function (s) {
       var pts = s.points || [];
       return { label: s.label, data: pts, parsing: false, borderColor: s.color, backgroundColor: s.color, borderDash: s.dash || [],
         borderWidth: s.width || 1.6, tension: 0, spanGaps: true,
-        pointBackgroundColor: s.color, pointBorderColor: s.color,
+        pointBackgroundColor: s.pointColors || s.color, pointBorderColor: s.pointColors || s.color,
         pointRadius: s.pointRadius || 2.6, pointHoverRadius: 6 };
     });
     var xs = []; datasets.forEach(function (d) { d.data.forEach(function (p) { xs.push(p.x); }); });
     var xmin = xs.length ? Math.min.apply(null, xs) : Date.now() - 365 * 864e5, xmax = xs.length ? Math.max.apply(null, xs) : Date.now();
     if (xmin === xmax) { xmin -= 15 * 864e5; xmax += 15 * 864e5; }
+    var yTicks = o.yTicks || LOG_TICKS, yFmt = o.yFormat || fmt;
     return new Chart(canvas, { type: "line", plugins: [limitLines], data: { datasets: datasets }, options: {
       responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: "nearest", intersect: false },
       onClick: function (_e, els) { if (o.onPoint && els.length) { var el = els[0]; o.onPoint(datasets[el.datasetIndex].data[el.index]); } },
       scales: { x: { type: "linear", min: xmin, max: xmax, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8, callback: monthTick } },
                 y: o.log === false ? { beginAtZero: true, title: { display: true, text: o.yTitle || "MPN/100 mL" } }
-                  : { type: "logarithmic", min: 4, title: { display: true, text: o.yTitle || "MPN/100 mL, log scale" },
-                      ticks: { callback: function (v) { return LOG_TICKS.indexOf(v) >= 0 ? fmt(v) : ""; } } } },
+                  : { type: "logarithmic", min: o.yMin || 4, title: { display: true, text: o.yTitle || "MPN/100 mL, log scale" },
+                      afterBuildTicks: o.yTicks ? function (ax) { ax.ticks = o.yTicks.filter(function (v) { return v >= ax.min && v <= ax.max; }).map(function (v) { return { value: v }; }); } : undefined,
+                      ticks: { callback: function (v) { return yTicks.indexOf(v) >= 0 ? yFmt(v) : ""; } } } },
       plugins: { legend: { display: o.legend !== false, position: "top" }, limitLines: { lines: o.lines || [] },
                  tooltip: { callbacks: { title: function (it) { return it.length ? new Date(it[0].parsed.x).toLocaleDateString() : ""; },
-                                         label: function (it) { var p = it.raw || {}; return it.dataset.label + ": " + (p.raw != null ? p.raw : it.parsed.y) + (p.over ? " · over its limit" : "") + (p.ratio ? " (ratio rule)" : ""); } } } }
+                                         label: function (it) { var p = it.raw || {}; if (o.tooltip) return o.tooltip(p, it.dataset.label);
+                                                                return it.dataset.label + ": " + (p.raw != null ? p.raw : it.parsed.y) + (p.over ? " · over its limit" : "") + (p.ratio ? " (ratio rule)" : ""); } } } }
     } });
   }
 
