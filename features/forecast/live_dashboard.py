@@ -76,7 +76,8 @@ from src.models.rain_features import hourly_intensity as _hourly_intensity  # no
 from src.models import scorecard as _sc  # noqa: E402  (one rule for the model-check scorecard, shared with train_v4)
 from src.models import live_rules as _lr  # noqa: E402  (live corrections live_v1: observed CSO flags, samples — LIVE_COMPOSITION_DESIGN.md)
 from src.models import posting_label as _pl  # noqa: E402  (the beach-posting label, BeachWatch-backed)
-from src.models import candidates as _cand  # noqa: E402  (candidate model sets: scorecards + manifests only, never served live)
+from src.models import candidates as _cand  # noqa: E402  (candidate model sets: scorecards + manifests; SERVED = the served set's descriptor)
+from src.models import stage2 as _s2  # noqa: E402  (the served stage 2 spec's split, if data/models/stage2.json exists)
 
 # ─── Data source URLs ────────────────────────────────────────────────────────
 
@@ -168,9 +169,24 @@ class LiveData:
         self.models = self._load_models()
         self.thresholds = self._load_thresholds()
         self.volume_models = self._load_volume_models()
+        self.stage2 = self._load_stage2()                 # the served stage 2 spec (None = v1, the basin composition)
+        self.split = _s2.make_split(self.stage2)          # None for v1; the outfall split's callable for v2/v3
         self.impact_table = self._load_impact_table()
 
     def _load_models(self):
+        """The served stage-1 pickles. Weights-model pipelines reference their
+        hinge transform as ``leaderboard.add_hinges``, so that module is
+        imported first (the same way candidates.load_models does)."""
+        models_dir = str(Path(__file__).resolve().parent / "src" / "models")
+        if models_dir not in sys.path:
+            sys.path.insert(0, models_dir)
+        try:
+            import leaderboard  # noqa: F401
+            main_mod = sys.modules.get("__main__")
+            if main_mod is not None and not hasattr(main_mod, "add_hinges"):
+                main_mod.add_hinges = leaderboard.add_hinges
+        except Exception as e:  # noqa: BLE001  (trees unpickle without it)
+            print(f"leaderboard import skipped: {e}")
         models = {}
         for name in ["citywide", "westside", "north_shore", "central", "southeast"]:
             path = MODEL_DIR / f"{name}_model.pkl"
@@ -178,6 +194,20 @@ class LiveData:
                 with open(path, "rb") as f:
                     models[name] = pickle.load(f)
         return models
+
+    def _load_stage2(self):
+        """data/models/stage2.json — the served stage 2 variant spec written by
+        promote.py, or None for stage 2 v1 (the plain basin composition)."""
+        path = MODEL_DIR / "stage2.json"
+        if not path.exists():
+            return None
+        try:
+            with open(path) as f:
+                spec = json.load(f)
+            return spec if spec.get("variant", "v1") != "v1" else None
+        except Exception as e:  # noqa: BLE001
+            print(f"stage2.json unreadable, composing as v1: {e}")
+            return None
 
     def _load_volume_models(self):
         """Per-basin expected-discharge-volume regressors (log1p MG), from the
@@ -196,6 +226,8 @@ class LiveData:
         measured from beach samples joined to reported discharges
         (train_v4.fit_impact_table), smoothed to a non-increasing decay per
         size class by the shared src/models/impact.smooth_table."""
+        if getattr(self, "stage2", None) and self.stage2.get("impact_table"):
+            return _smooth_table(self.stage2["impact_table"])   # the variant's refit table (group-attributed discharge days)
         path = MODEL_DIR / "impact_table.json"
         if not path.exists():
             return {}
@@ -214,7 +246,7 @@ class LiveData:
 
         ``features_by_source`` maps a rain source ('avg', 'SF Oceanside', ...)
         to that day's feature dict built from that series; each model is
-        scored on the source it was trained on (the served gb_v1 regional models).
+        scored on the source it was trained on (the served set's regional models).
         
         The offset removes the model's dry-day noise floor. But when rain IS
         present, the model's prediction is real signal — so we scale the offset
@@ -356,7 +388,7 @@ class LiveData:
         replaced with certainty. Implementation shared with training:
         src/models/impact.compose."""
         composed, groups_out = _compose_risk(self.impact_table, self.BASIN_IMPACT_GROUPS,
-                                             day_probs, day_volumes, idx, day_dates, observed)
+                                             day_probs, day_volumes, idx, day_dates, observed, split=getattr(self, "split", None))
         # NOTE: keep `composed` flat floats only — the frontend takes
         # Math.max(Object.values(predictions)) and renders a card per key.
         composed["_groups"] = groups_out
@@ -834,7 +866,7 @@ class LiveData:
             # the persistence-only composition (the day's own discharge term removed) — what a clean sample caps
             p_only = [dict(p) for p in p2]
             p_only[idx] = {b: 0.0 for b in p_only[idx]}
-            _, persist_groups = _compose_risk(self.impact_table, self.BASIN_IMPACT_GROUPS, p_only, v2, idx, dates, {})
+            _, persist_groups = _compose_risk(self.impact_table, self.BASIN_IMPACT_GROUPS, p_only, v2, idx, dates, {}, split=getattr(self, "split", None))
             large_curve = lambda g, k: _impact_fraction(self.impact_table, g, k, _lr.RULES["cso"]["large_volume_mg"])  # noqa: E731
             probs_by_date = {d: p2[j] for j, d in enumerate(dates)}
             adjusted, gnotes = _lr.adjust_groups(impact_groups, persist_groups, p2[idx], dates[idx], live["samples"],
@@ -1194,7 +1226,9 @@ class LiveData:
 
     def list_models(self) -> list:
         """The served set first, then every candidate set on disk."""
-        out = [{"key": "", "label": "gb_v1 (served)", "family": "gb", "served": True, "stage1": "gb_v1", "stage2": "v1"}]
+        sv = _cand.served_info()
+        out = [{"key": "", "label": f'{sv["name"]} (served)', "family": sv.get("family", "gb"), "served": True,
+                "stage1": sv["stage1"], "stage2": sv["stage2"], "line": sv.get("line", 0.5), "promoted_at": sv.get("promoted_at")}]
         for m in _cand.list_candidates():
             out.append({"key": m["name"], "label": m["name"], "family": m.get("family"), "note": m.get("note", ""),
                         "created_at": m.get("created_at"), "rain_sources": m.get("rain_sources"), "served": False,
@@ -1285,8 +1319,13 @@ class LiveData:
 
         eval_path = MODEL_DIR / "eval_report.json"
         ev = json.loads(eval_path.read_text()) if eval_path.exists() else {}
-        targets = {k: {"n_events": t.get("n_events"), "holdout": t.get("holdout"), "rain_source": t.get("rain_source")}
-                   for k, t in ev.get("targets", {}).items()}
+        sv = _cand.served_info()
+        if not model and sv.get("per_basin"):     # a promoted set: its per-basin picks come from its manifest, not gb_v1's training report
+            targets = {k: {"n_events": t.get("n_events"), "holdout": t.get("holdout"), "rain_source": t.get("source"), "C": t.get("C")}
+                       for k, t in sv["per_basin"].items()}
+        else:
+            targets = {k: {"n_events": t.get("n_events"), "holdout": t.get("holdout"), "rain_source": t.get("rain_source")}
+                       for k, t in ev.get("targets", {}).items()}
         return {"target_date": date_str, "in_span": bool(around), "span": span,
                 "model": model or "", "models": self.list_models(),
                 "holdout_start": holdout_start, "trained_at": sc.get("trained_at"),
@@ -1296,7 +1335,8 @@ class LiveData:
                 "basins": sc.get("basins"), "zones": sc.get("zones"), "groups": sc.get("groups"),
                 "days": around, "zone_confusion_holdout": sc.get("zone_confusion_holdout"),
                 "window": window, "seasons": _sc.seasons_in(span, holdout_start, trained_through),
-                "targets": targets, "backtest": ev.get("backtest")}
+                "targets": targets, "backtest": ev.get("backtest") if (model or sv["stage1"] == "gb_v1") else None,
+                "served": {k: sv.get(k) for k in ("name", "stage1", "stage2", "family", "line", "promoted_at", "replaced")}}
 
     def get_bacteria_ground_truth(self, date_str: str) -> dict:
         """
@@ -1453,8 +1493,9 @@ class LiveData:
         if cached:
             return cached
         first = next(iter(self.models.values()), {}) if getattr(self, "models", None) else {}
+        sv = _cand.served_info()
         stamp = {
-            **_cand.SERVED,
+            **{k: sv.get(k) for k in ("name", "stage1", "stage2", "artifact", "family", "line", "promoted_at")},
             "trained_at": first.get("trained_at"),
             "live_corrections": _lr.VERSION,
             "input_rules": list(INPUT_RULES_LIVE),

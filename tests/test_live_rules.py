@@ -231,7 +231,10 @@ def test_replay_report_exists_and_its_self_check_held():
     assert (ROOT / "reports" / "2026-09_live_replay.html").exists()
     # the synthetic-feed replay over the out-of-sample years: same shape, degraded variants are means over draws
     syn = json.loads((ROOT / "reports" / "2026-09_live_replay_synthetic.json").read_text())
-    assert syn["self_check_worst_delta"] <= 0.001 and syn["cutoff"] == "start" and len(syn["feed"]["seeds"]) >= 3
+    # the artifact stores p and risks at 3 dp; with the served outfall split (shares × volume weights over an
+    # 8-day product) the recomposition from rounded p lands within 0.002 of the stored risk, so the check is
+    # "within rounding", 0.0025, not 0.001 (which held for the v1 composition alone)
+    assert syn["self_check_worst_delta"] <= 0.0025 and syn["cutoff"] == "start" and len(syn["feed"]["seeds"]) >= 3
     assert {"plain", "live_v1", "live_v1_perfect_feed", "no_downgrade", "no_samples", "cso_flags_only", "all_floors"} <= set(syn["variants"])
     pl, lv, pf = (syn["variants"][k]["grades"]["0.5"]["combined"] for k in ("plain", "live_v1", "live_v1_perfect_feed"))
     assert lv["tp"] > pl["tp"] and pf["cost"] <= lv["cost"], (pl["tp"], lv["tp"], pf["cost"], lv["cost"])   # more confirmed-persistence days caught; the perfect feed is the bound
