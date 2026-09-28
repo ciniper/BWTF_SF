@@ -1,4 +1,5 @@
-"""CSO Event Timeline — our own real-time detections, plotted per station.
+"""SFPUC Alerts Timeline (was "CSO Event Timeline" until 2026-09-27; the route /cso-history is kept) —
+what the public could see, minute by minute, per station.
 
 A public read-only page (no passphrase — it exposes no subscriber data)
 showing every posting / CSO event the watcher has detected since real-time
@@ -134,7 +135,36 @@ def build_sample_days(rows: list[dict]) -> dict[str, list[dict]]:
         lag = (e["first_seen"].astimezone(_PACIFIC).date() - datetime.strptime(day, "%Y-%m-%d").date()).days if real else None
         out.setdefault(sfpuc, []).append({"date": day, "elevated": e["elevated"], "n": e["n"], "source": e["source"],
                                           "first_seen": _iso(e["first_seen"]) if real else None, "lag_days": lag})
+    for entries in out.values():
+        assign_lanes(entries)
     return out
+
+
+MIN_BAR_LAG_DAYS = 2   # a lag of 0–1 days is shorter than the dot itself: tooltip only, no bar
+
+
+def assign_lanes(entries: list[dict]) -> int:
+    """Give each publish-lag bar a lane so overlapping bars stack instead of
+    smearing (a storm week's resamples are all published together). A bar
+    spans the collection day to first_seen; sorted by start, each takes the
+    first lane whose previous bar has ended. Entries without a bar (no
+    first_seen, or a lag under MIN_BAR_LAG_DAYS) get lane None. Returns the
+    number of lanes used (0 when no bars)."""
+    bars = [e for e in entries if e.get("first_seen") and (e.get("lag_days") or 0) >= MIN_BAR_LAG_DAYS]
+    for e in entries:
+        e["lane"] = None
+    lane_end: list[str] = []          # per lane, the ISO first_seen of its last bar
+    for e in sorted(bars, key=lambda e: (e["date"], e["first_seen"])):
+        start = e["date"] + "T20:00:00Z"   # ~noon Pacific on the collection day, the same anchor the page draws
+        lane = 0
+        while lane < len(lane_end) and lane_end[lane] > start:
+            lane += 1
+        if lane == len(lane_end):
+            lane_end.append(e["first_seen"])
+        else:
+            lane_end[lane] = e["first_seen"]
+        e["lane"] = lane
+    return len(lane_end)
 
 
 def _median(values: list) -> float | None:

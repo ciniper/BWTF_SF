@@ -5,7 +5,7 @@ Public read-only page over the ground-truth CSD event dataset
 2016 on, extracted from SFPUC's monthly Self-Monitoring Reports on CIWQS and
 re-harvested quarterly; see NOTES.md there for schema, provenance, and gaps).
 Unlike the Site Report Card
-(bacteria *samples*) or the CSO Event Timeline (our real-time *flags*), this is
+(bacteria *samples*) or the SFPUC Alerts Timeline (our real-time *flags*), this is
 the official record of what was actually discharged: outfall, start, duration,
 and volume in million gallons.
 

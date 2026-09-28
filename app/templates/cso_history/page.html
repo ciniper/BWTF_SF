@@ -2,7 +2,7 @@
 <html lang="en"><head><meta charset="utf-8">
 <link rel="icon" href="/static/brand/favicon.ico"><link rel="apple-touch-icon" sizes="144x144" href="/static/brand/bwtf_144x144.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CSO Event Timeline — Surfrider SF Blue Water Task Force</title>
+<title>SFPUC Alerts Timeline — Surfrider SF Blue Water Task Force</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -20,8 +20,8 @@
   .controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:0 0 14px}
   .range-btn{padding:8px 16px;border-radius:999px;border:2px solid #d9e4e8;background:#fff;color:#54576F;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
   .range-btn.active{border-color:#0072BC;background:#0072BC;color:#fff}
-  .legend{display:flex;gap:16px;align-items:center;margin-left:auto;font-size:13px;font-weight:600;color:#54576F}
-  .legend .key{display:inline-flex;align-items:center;gap:6px}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;margin-left:auto;font-size:13px;font-weight:600;color:#54576F}
+  .legend .key{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
   .swatch{display:inline-block;width:22px;height:12px;border-radius:4px}
   .swatch.posted{background:#d4763a}
   .swatch.cso{background:repeating-linear-gradient(135deg,#b5310a 0 5px,#992a09 5px 8px)}
@@ -35,9 +35,8 @@
   .smark.clean{background:#2f7d4c}
   .smark.elevated{background:#b5310a}
   .smark.hist{opacity:.5}
-  .lagbar{position:absolute;top:8px;height:4px;background:#8fb8d8;border-radius:2px;cursor:pointer}
-  .lagbar.elevated{background:#e3a08a}
-  .pub{position:absolute;top:4px;width:2px;height:12px;background:#54576F;margin-left:-1px;pointer-events:none}
+  .lagbar{position:absolute;height:4px;background:#8fb8d8;border-radius:2px;cursor:pointer}   /* top set per lane, below the dots */
+  .pub{position:absolute;top:4px;width:2px;background:#54576F;margin-left:-1px;pointer-events:none}   /* height set per row */
 
   .board{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:18px 18px 10px;overflow-x:auto}
   .chart{position:relative;min-width:640px}
@@ -87,8 +86,8 @@
 {% include "_icons.html" %}<div class="wrap">
   <a class="back-to-dash" href="/">← Dashboard</a>
   <div class="hero">
-    <h1>CSO Event Timeline</h1>
-    <p>Every bacteria posting and combined-sewer-overflow event our real-time watcher has detected, plotted per station — when it started, how it escalated, and when it cleared. This is our own minute-by-minute detection record, independent of the city's published history. Under each station, its lab samples: the day each was collected and, for results published since we started watching, how long until they appeared online.</p>
+    <h1>SFPUC Alerts Timeline</h1>
+    <p>What the public could see, minute by minute. For each station: when its sign went up on SFPUC's beach map — a bacteria posting or a CSO discharge flag — how it changed, and when it came down; and beneath it, the day each lab sample was collected and how long until the result appeared in the city's open dataset. Our watcher reads the map once a minute and the dataset every half hour, so this is an independent record of what was shown and when, not the city's own history. What was actually discharged is on the <a href="/discharges" style="color:#cfe6f6">Discharge Ledger</a>; the State's filed advisories are on <a href="/postings" style="color:#cfe6f6">Beach Postings</a>.</p>
   </div>
 
   <div id="status" class="loading">Loading event history…</div>
@@ -100,11 +99,13 @@
       <button class="range-btn" data-days="30">30 days</button>
       <button class="range-btn active" data-days="all">All</button>
       <div class="legend">
-        <span class="key"><span class="swatch posted"></span>Posted (bacteria)</span>
-        <span class="key"><span class="swatch cso"></span>CSO discharge</span>
-        <span class="key"><span class="swatch clean"></span>Sample collected (clean)</span>
+        <span class="key" style="color:#8a949b">On SFPUC's map:</span>
+        <span class="key"><span class="swatch posted"></span>posted — elevated bacteria</span>
+        <span class="key"><span class="swatch cso"></span>CSO discharge flag</span>
+        <span class="key" style="color:#8a949b;margin-left:6px">In the lab dataset:</span>
+        <span class="key"><span class="swatch clean"></span>sample collected — clean</span>
         <span class="key"><span class="swatch elevated"></span>over standard</span>
-        <span class="key"><span class="swatch lag"></span>until it appeared online</span>
+        <span class="key"><span class="swatch lag"></span>days until the result appeared online</span>
       </div>
     </div>
     <div class="board">
@@ -123,7 +124,7 @@
 <script>
 (function(){
   var DATA = null, RANGE = 'all';
-  var SEV_LABEL = {posted:'Posted — elevated bacteria', cso:'CSO discharge'};
+  var SEV_LABEL = {posted:'Posted — elevated bacteria', cso:'CSO discharge flag'};
   var STUB_MS = 45*60*1000; // visual stub for windows whose end was never logged
   var fmtOpts = {timeZone:'America/Los_Angeles', month:'short', day:'numeric', hour:'numeric', minute:'2-digit'};
   function fmt(iso){ return iso ? new Date(iso).toLocaleString('en-US', fmtOpts) : '—'; }
@@ -211,22 +212,33 @@
       var srow = document.createElement('div'); srow.className = 'row srow';
       var sname = document.createElement('div'); sname.className = 'name'; sname.textContent = 'lab samples';
       var strack = document.createElement('div'); strack.className = 'track';
+      // lanes (assigned server-side, build_sample_days → assign_lanes): bars sit in a band BELOW the dots,
+      // lane 0 at LANE_TOP, each further lane LANE_STEP lower; a row with no bars keeps its 20px
+      var LANE_TOP = 17, LANE_STEP = 6, BAR_H = 4;
+      var lanes = 0; sd.forEach(function(d){ if (d.lane != null) lanes = Math.max(lanes, d.lane + 1); });
+      srow.style.height = (lanes ? LANE_TOP + BAR_H + (lanes - 1) * LANE_STEP + 3 : 20) + 'px';
+      var ticks = {};
       sd.forEach(function(d){
         var dayMs = new Date(d.date + 'T20:00:00Z').getTime();          // ~noon Pacific on the collection day
         var fsMs = d.first_seen ? new Date(d.first_seen).getTime() : null;
         if (Math.max(dayMs, fsMs || 0) < t0) return;                      // outside the selected range
-        if (fsMs && fsMs > dayMs) {
-          var lag = document.createElement('div'); lag.className = 'lagbar' + (d.elevated ? ' elevated' : '');
+        if (fsMs && d.lane != null && fsMs > dayMs) {
+          var lag = document.createElement('div'); lag.className = 'lagbar';
           lag.style.left = pos(dayMs) + '%'; lag.style.width = Math.max(0.3, pos(fsMs) - pos(dayMs)) + '%';
+          lag.style.top = (LANE_TOP + d.lane * LANE_STEP) + 'px';
           lag.addEventListener('mousemove', function(ev){ showSampleTip(ev, s, d); }); lag.addEventListener('mouseleave', hideTip);
           strack.appendChild(lag);
-          var pub = document.createElement('span'); pub.className = 'pub'; pub.style.left = pos(fsMs) + '%'; strack.appendChild(pub);
+          ticks[fsMs] = true;                                             // one publish tick per moment, however many bars end there
         }
         var m = document.createElement('span');
         m.className = 'smark ' + (d.elevated ? 'elevated' : 'clean') + (d.source === 'backfill' ? ' hist' : '');
         m.style.left = pos(dayMs) + '%';
         m.addEventListener('mousemove', function(ev){ showSampleTip(ev, s, d); }); m.addEventListener('mouseleave', hideTip);
         strack.appendChild(m);
+      });
+      Object.keys(ticks).forEach(function(ms){
+        var pub = document.createElement('span'); pub.className = 'pub'; pub.style.left = pos(+ms) + '%';
+        pub.style.height = (LANE_TOP + BAR_H + (lanes - 1) * LANE_STEP - 4) + 'px'; strack.appendChild(pub);   // from the dot row down to the last lane
       });
       var spacer = document.createElement('span'); spacer.className = 'nowdot'; spacer.style.visibility = 'hidden';
       srow.appendChild(sname); srow.appendChild(strack); srow.appendChild(spacer);
@@ -251,13 +263,13 @@
     var tip = document.getElementById('tooltip');
     var worst = w.segments.some(function(sg){ return sg.status === 'cso'; }) ? 'cso' : 'posted';
     var endBit;
-    if (w.end) endBit = 'Cleared: ' + fmt(w.end) + ' · lasted ' + dur(wStart, new Date(w.end).getTime());
-    else if (w.ongoing) endBit = '<b>Ongoing</b> — not yet cleared (' + dur(wStart, new Date(DATA.generated_at).getTime()) + ' so far)';
-    else endBit = 'End not recorded (event predates clear-logging)';
+    if (w.end) endBit = 'Came down: ' + fmt(w.end) + ' · up for ' + dur(wStart, new Date(w.end).getTime());
+    else if (w.ongoing) endBit = '<b>Still up</b> (' + dur(wStart, new Date(DATA.generated_at).getTime()) + ' so far)';
+    else endBit = 'Came down: not recorded (before we logged sign-downs)';
     var path = w.segments.map(function(sg){ return sg.status; }).join(' → ');
     tip.innerHTML = '<b>' + s.station_name + '</b><br>' + SEV_LABEL[worst] +
       (w.segments.length > 1 ? '<br><span style="opacity:.8">path: ' + path + '</span>' : '') +
-      '<br>Detected: ' + fmt(w.start) + '<br>' + endBit;
+      '<br>Went up on the map: ' + fmt(w.start) + '<br>' + endBit;
     tip.style.display = 'block';
     var x = Math.min(ev.clientX + 14, window.innerWidth - 300);
     tip.style.left = x + 'px'; tip.style.top = (ev.clientY + 14) + 'px';
@@ -270,21 +282,21 @@
       s.windows.forEach(function(w){
         var worst = w.segments.some(function(sg){ return sg.status === 'cso'; }) ? 'CSO' : 'Posted';
         rows.push([s.station_name, worst, fmt(w.start),
-                   w.end ? fmt(w.end) : (w.ongoing ? 'ongoing' : 'not recorded'),
+                   w.end ? fmt(w.end) : (w.ongoing ? 'still up' : 'not recorded'),
                    w.end ? dur(new Date(w.start).getTime(), new Date(w.end).getTime()) : '—']);
       });
     });
-    var html = '<table><thead><tr><th>Station</th><th>Event</th><th>Detected</th><th>Cleared</th><th>Duration</th></tr></thead><tbody>';
+    var html = '<table><thead><tr><th>Station</th><th>Sign</th><th>Went up</th><th>Came down</th><th>Up for</th></tr></thead><tbody>';
     if (rows.length) rows.forEach(function(r){ html += '<tr><td>' + r.map(function(c){ return String(c); }).join('</td><td>') + '</td></tr>'; });
-    else html += '<tr><td colspan="5" class="muted">No events recorded.</td></tr>';
+    else html += '<tr><td colspan="5" class="muted">No sign has gone up since we started watching.</td></tr>';
     html += '</tbody></table>';
     // the sample publication log: newest collection first
     var srows = [];
     var byId = {}; DATA.stations.forEach(function(s){ byId[s.station_id] = s.station_name; });
     Object.keys(DATA.samples || {}).forEach(function(sid){ (DATA.samples[sid] || []).forEach(function(d){ srows.push([byId[sid] || sid, d]); }); });
     srows.sort(function(a, b){ return a[1].date < b[1].date ? 1 : a[1].date > b[1].date ? -1 : 0; });
-    html += '<h3 style="font-size:14px;margin:18px 0 6px">Lab samples — collected, and when the result appeared online</h3>' +
-      '<table><thead><tr><th>Station</th><th>Collected</th><th>Result</th><th>Appeared online</th><th>Lag</th></tr></thead><tbody>';
+    html += '<h3 style="font-size:14px;margin:18px 0 6px">Lab samples — the day collected, and when the result appeared in the city\'s dataset</h3>' +
+      '<table><thead><tr><th>Station</th><th>Collected</th><th>Result</th><th>Appeared online</th><th>Days until online</th></tr></thead><tbody>';
     if (srows.length) srows.slice(0, 300).forEach(function(r){ var d = r[1];
       html += '<tr><td>' + r[0] + '</td><td>' + d.date + '</td><td>' + (d.elevated ? 'over standard' : 'clean') + (d.n > 1 ? ' (' + d.n + ')' : '') + '</td><td>' +
         (d.first_seen ? fmt(d.first_seen) : '<span class="muted">not observed</span>') + '</td><td>' + (d.lag_days != null ? d.lag_days + (d.lag_days === 1 ? ' day' : ' days') : '—') + '</td></tr>'; });
@@ -301,14 +313,14 @@
       banner.style.display = ''; banner.textContent = data.note;
     } else if (data.event_count === 0) {
       banner.style.display = ''; banner.className = 'banner clean';
-      banner.innerHTML = '<svg class="ic" style="color:#237059"><use href="#i-circle-check"/></svg> <b>No posting or CSO events detected</b>' +
-        (data.monitoring_since ? ' since real-time monitoring began on <b>' + fmt(data.monitoring_since) + '</b>' : ' yet') +
-        ' — a clean-water stretch. The watcher checks every station once a minute; the first real event will appear here automatically.';
+      banner.innerHTML = '<svg class="ic" style="color:#237059"><use href="#i-circle-check"/></svg> <b>No sign has gone up on SFPUC\'s map</b>' +
+        (data.monitoring_since ? ' since we started watching on <b>' + fmt(data.monitoring_since) + '</b>' : ' yet') +
+        ' — a clean-water stretch. The watcher reads every station once a minute; the first sign will appear here automatically.';
     }
     document.getElementById('foot').innerHTML =
-      (data.monitoring_since ? 'Real-time detection since ' + fmt(data.monitoring_since) + ' (Pacific time). ' : '') +
-      'Times are our own detection minutes: a 1-minute check cadence via the in-database watcher since Aug 16, 2026 (2-minute before that). ' +
-      'Events detected before clear-logging was added show “end not recorded”. Simulated test events are excluded. ' +
+      (data.monitoring_since ? 'We have read SFPUC\'s beach map since ' + fmt(data.monitoring_since) + ' (Pacific time). ' : '') +
+      'Times are the minute our watcher first saw a change: once a minute via the in-database watcher since Aug 16, 2026 (every 2 minutes before that). ' +
+      'Signs that went up before we logged sign-downs show “not recorded”. Simulated test events are excluded. ' +
       'Lab-sample dots are the collection day from the city\'s dataset; the bar to the right runs until the result appeared online' +
       (data.sample_lag && data.sample_lag.n ? ' (median so far <b>' + data.sample_lag.median_days + ' days</b> over ' + data.sample_lag.n + ' sample-days, measured since ' + data.sample_lag.measured_since + ')' : ' (measured from ' + ((data.sample_lag || {}).measured_since || '2026-09-27') + ' on; nothing published yet since then)') +
       '. Faded dots are the city\'s history loaded in one go — collection day only. ' + (data.sample_note ? data.sample_note + ' ' : '') +
@@ -327,6 +339,8 @@
     });
   });
   window.addEventListener('resize', function(){ if (DATA) render(); });
+  // debugging hook (preview_eval / devtools): read or replace the payload and redraw — never used by the page itself
+  window.__timeline = { getData: function(){ return DATA; }, setData: function(d){ DATA = d; render(); renderTable(); } };
 })();
 </script>
 </body></html>
