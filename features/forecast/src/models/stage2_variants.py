@@ -75,13 +75,14 @@ def fit(variant: str = "v2") -> Path:
     return out
 
 
-SERVED_ALIASES = ("served", "gb_v1", "v4")  # ways to name the served bundle's stage 1 (gb_v1); "v4" is the retired label
+SERVED_ALIASES = ("served", candidates.SERVED["name"])  # ways to name the served bundle's stage 1 ("v4" was the retired label of the original gb_v1)
 
 
 def _load_stage1(source: str) -> tuple[dict, dict, str, str]:
     """({key: pickle dict}, source scorecard, family, stage-1 name). The served
     bundle's stage 1 is named gb_v1; source "served" (alias "gb_v1") selects it."""
     if source in SERVED_ALIASES:
+        import leaderboard  # noqa: F401  (weights pipelines reference leaderboard.add_hinges)
         models = {}
         for basin in T.APP_BASINS + ["citywide"]:
             key = BASIN_KEYS.get(basin, "citywide")
@@ -90,7 +91,8 @@ def _load_stage1(source: str) -> tuple[dict, dict, str, str]:
         import gzip
         with gzip.open(T.SERVE_DIR / "scorecard.json.gz", "rt") as f:
             sc = json.load(f)
-        return models, sc, "gb", "gb_v1"
+        sv = candidates.served_info()
+        return models, sc, sv.get("family") or models["westside"].get("family", "gb"), sv["stage1"]
     models = candidates.load_models(source)
     sc = candidates.load_scorecard(source)
     man = json.loads((candidates.candidate_dir(source) / "manifest.json").read_text())

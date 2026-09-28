@@ -171,16 +171,23 @@ def test_gauge_outage_rule_in_the_record_and_the_rescored_post_training_days():
     assert note["outage_runs_masked"] >= 10 and note["outage_days_masked"] > 300
     assert (raw != fixed).sum() < 100, "the rule should move only storm days inside dead-gauge runs"
     assert T.rain_series("avg")[1]["outage_runs_masked"] == 0                  # None = untouched record
+    # the served artifact (whichever set is served) carries the rule on its post-training block
     sc = _artifact()
     assert sc.get("input_rules_post") == ["gauge_outage_v1"], sc.get("input_rules_post")
     day = {d["date"]: d for d in sc["days"]}
     assert day["2026-02-16"]["post_training"] and day["2026-02-19"]["post_training"]
-    assert day["2026-02-16"]["basins"]["westside"]["p"] > 0.5, day["2026-02-16"]["basins"]["westside"]
-    # Feb 19: stage 1 stays low (0.08 on 0.77") but the corrected Feb 16–17 tail carries Ocean Beach over the line
-    assert day["2026-02-19"]["basins"]["westside"]["p"] > 0.05 and day["2026-02-19"]["zones"]["ocean"]["risk"] >= 0.25, day["2026-02-19"]["zones"]["ocean"]
-    # pre-training days are exactly as trained: no rule marker, holdout probabilities present
     assert day["2024-01-13"]["basins"]["westside"]["ph"] is not None and not day["2024-01-13"].get("post_training")
-    print(f"   Feb 16 2026 Westside p {day['2026-02-16']['basins']['westside']['p']}, Feb 19 {day['2026-02-19']['basins']['westside']['p']} (were 0.24 / 0.01 on the raw record)")
+    # the numbers this test was written around are gb_v1's (served until 2026-09-28; a candidate since):
+    # Feb 16 2026 Westside p > 0.5 once the dead Oceanside gauge is masked, and the corrected Feb 16–17
+    # tail carrying Ocean Beach over the 25% line on Feb 19 (they were 0.24 / 0.01 on the raw record)
+    import candidates as C
+    gb = C.load_scorecard("gb_v1") if C.candidate_dir("gb_v1").exists() else sc
+    assert gb.get("input_rules_post") == ["gauge_outage_v1"]
+    gday = {d["date"]: d for d in gb["days"]}
+    assert gday["2026-02-16"]["basins"]["westside"]["p"] > 0.5, gday["2026-02-16"]["basins"]["westside"]
+    assert gday["2026-02-19"]["basins"]["westside"]["p"] > 0.05 and gday["2026-02-19"]["zones"]["ocean"]["risk"] >= 0.25, gday["2026-02-19"]["zones"]["ocean"]
+    print(f"   gb_v1: Feb 16 2026 Westside p {gday['2026-02-16']['basins']['westside']['p']}, Feb 19 {gday['2026-02-19']['basins']['westside']['p']} (were 0.24 / 0.01 on the raw record); "
+          f"served {C.served_info()['name']}: Feb 16 p {day['2026-02-16']['basins']['westside']['p']}, Feb 19 Ocean Beach risk {day['2026-02-19']['zones']['ocean']['risk']}")
 
 
 def test_basin_metrics_need_both_classes_for_auc():
@@ -276,10 +283,17 @@ def test_served_windows():
         assert set(w["zone_confusion"][zk]) == {str(t) for t in S.LINE_GRID}
         assert {t: w["zone_confusion"][zk][t] for t in stored} == stored, zk
     assert set(w["zone_confusion"]) == set(sc["zone_confusion_holdout"])
+    # the holdout block equals the served set's own training record: eval_report for the original gb_v1
+    # bundle, the promoted set's manifest (served.json per_basin, keys n/pos) since the 2026-09-28 promotion
+    import candidates as C
+    sv = C.served_info()
     ev = json.loads((MODEL_DIR / "eval_report.json").read_text())
     for key, b in w["basins"].items():
-        h = ev["targets"][key]["holdout"]
-        assert (b["n_days"], b["n_events"]) == (h["n_test"], h["pos_test"]), key
+        if sv.get("per_basin"):
+            h = sv["per_basin"][key]["holdout"]; n_test, pos_test = h.get("n"), h.get("pos")
+        else:
+            h = ev["targets"][key]["holdout"]; n_test, pos_test = h["n_test"], h["pos_test"]
+        assert (b["n_days"], b["n_events"]) == (n_test, pos_test), key
         # the artifact stores probabilities to 3 dp, hence the tolerance
         assert abs(b["pr_auc"] - h["pr_auc"]) < 0.005 and abs(b["roc_auc"] - h["roc_auc"]) < 0.005, key
 
@@ -300,8 +314,11 @@ def test_model_sets_are_selectable_but_never_served():
     from features.forecast import live_dashboard as ld
     eng = ld.LiveData.__new__(ld.LiveData)
     models = eng.list_models()
-    assert models[0] == {"key": "", "label": "gb_v1 (served)", "family": "gb", "served": True, "stage1": "gb_v1", "stage2": "v1"}
-    assert all(m.get("stage2") in ("v1", "v2") for m in models), [m.get("stage2") for m in models]
+    sv = C.served_info()
+    assert models[0]["key"] == "" and models[0]["served"] is True and models[0]["label"] == f'{sv["name"]} (served)'
+    assert models[0]["stage1"] == sv["stage1"] and models[0]["stage2"] == sv["stage2"] and models[0]["family"] == sv.get("family") and models[0]["line"] == sv.get("line", 0.5)
+    assert all(m.get("stage2") in ("v1", "v2", "v3") for m in models), [m.get("stage2") for m in models]
+    assert sv["name"] not in {m["key"] for m in models[1:]}, "a set is served or a candidate, never both"
     assert all(m["served"] is False for m in models[1:])
     assert "error" in eng.get_scorecard("2024-01-13", model="../x")
     assert "error" in eng.get_scorecard("2024-01-13", model="doesnotexist")
@@ -344,7 +361,7 @@ def test_candidate_models_unpickle_anywhere_and_explorers_are_built():
                 assert fn.__module__ == "leaderboard", f"{key}: hinge transform pickled as {fn.__module__}.{fn.__name__}"
         print(f"   candidate {m['name']}: {len(models)} models unpickle with a plain import")
     reports = Path(__file__).resolve().parents[1] / "reports"
-    for name in ("2026-09_forecast_gb_v1_model_explorer.html", "2026-09_forecast_stage2_explorer.html", "2026-09_model_analysis.html", "2026-09_live_replay.html", "2026-09_live_replay_synthetic.html",
+    for name in (f"2026-09_forecast_{C.served_info()['name']}_model_explorer.html", "2026-09_forecast_stage2_explorer.html", "2026-09_model_analysis.html", "2026-09_live_replay.html", "2026-09_live_replay_synthetic.html",
                  *[f"2026-09_forecast_{m['name']}_model_explorer.html" for m in C.list_candidates()]):
         p = reports / name
         assert p.exists(), f"missing report {name} — run the exporter"
@@ -354,7 +371,8 @@ def test_candidate_models_unpickle_anywhere_and_explorers_are_built():
 
 
 def test_stage2_variants_pair_with_any_stage1_and_served_gb_v1_is_untouched():
-    """A stage 2 variant is a fitted spec; a candidate may carry one. The served gb_v1's
+    """A stage 2 variant is a fitted spec; a candidate may carry one. (Written when gb_v1 was served; since the
+    2026-09-28 promotion the served set is read from data/models/served.json.) A candidate's
     composition must be byte-identical with the hook in place (split=None);
     the outfall shares must be probabilities and the identity for groups whose
     outfalls are the whole basin; a candidate whose stage 1 is the served set's must carry
@@ -401,16 +419,20 @@ def test_stage2_variants_pair_with_any_stage1_and_served_gb_v1_is_untouched():
         assert C.load_stage2(m["name"]), f"{m['name']}: stage2.json missing"
         hold = [d for d in sc["days"] if d["basins"]["westside"].get("ph") is not None]
         assert hold, f"{m['name']}: no holdout probabilities — the holdout siblings were not refit"
-        if (m.get("stage1") or {}).get("from") == "v4":
-            worst_p = max(abs(d["basins"][k]["p"] - served[d["date"]]["basins"][k]["p"]) for d in sc["days"] for k in d["basins"] if d["date"] in served)
-            worst_ph = max(abs(d["basins"][k]["ph"] - served[d["date"]]["basins"][k]["ph"]) for d in hold for k in d["basins"]
-                           if d["date"] in served and d["basins"][k].get("ph") is not None and served[d["date"]]["basins"][k].get("ph") is not None)
-            assert worst_p == 0.0, f"{m['name']}: stage 1 is the served gb_v1's, probabilities must be identical (worst {worst_p})"
-            assert worst_ph <= 0.001, f"{m['name']}: holdout refit drifted from the served set's stored ph (worst {worst_ph})"
-            # and the composition differs only where the split bites (Westside / North Shore groups)
-            east_same = all(d["groups"]["Southeast"]["risk"] == served[d["date"]]["groups"]["Southeast"]["risk"] for d in sc["days"] if d["date"] in served)
+        # a split candidate built on another set's stage 1 must carry that set's exact stage-1 probabilities
+        src_name = (m.get("stage1") or {}).get("from")
+        sv = C.served_info()
+        source = served if src_name in ("served", sv["name"]) or (m.get("stage1") or {}).get("name") == sv["stage1"] and src_name == "served" else (
+            {d["date"]: d for d in C.load_scorecard(src_name)["days"]} if src_name and C.valid_name(src_name) and C.candidate_dir(src_name).exists() else None)
+        if source:
+            worst_p = max(abs(d["basins"][k]["p"] - source[d["date"]]["basins"][k]["p"]) for d in sc["days"] for k in d["basins"] if d["date"] in source)
+            worst_ph = max(abs(d["basins"][k]["ph"] - source[d["date"]]["basins"][k]["ph"]) for d in hold for k in d["basins"]
+                           if d["date"] in source and d["basins"][k].get("ph") is not None and source[d["date"]]["basins"][k].get("ph") is not None)
+            assert worst_p == 0.0, f"{m['name']}: stage 1 is {src_name}'s, probabilities must be identical (worst {worst_p})"
+            assert worst_ph <= 0.001, f"{m['name']}: holdout refit drifted from {src_name}'s stored ph (worst {worst_ph})"
+            east_same = all(d["groups"]["Southeast"]["risk"] == source[d["date"]]["groups"]["Southeast"]["risk"] for d in sc["days"] if d["date"] in source)
             assert east_same, f"{m['name']}: Southeast group must be unchanged by the split"
-            print(f"   {m['name']}: stage 1 identical to the served gb_v1, holdout refit within {worst_ph:.4f}, Southeast untouched")
+            print(f"   {m['name']}: stage 1 identical to {src_name}, holdout refit within {worst_ph:.4f}, Southeast untouched")
     assert n_variant >= 1, "expected at least one candidate on a stage 2 variant"
 
 

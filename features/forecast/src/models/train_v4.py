@@ -769,8 +769,8 @@ def rescore(promote: bool = False, tolerance: float = 0.02, replace_post: bool =
             input_rules: list | None = None) -> dict:
     """Extend the served scorecard with POST-TRAINING days.
 
-    The served v4 models, exactly as deployed (data/models/*.pkl + impact
-    table), are scored on every day after the artifact's last day for which
+    The served models, exactly as deployed (data/models/*.pkl, the impact
+    table and, since a promotion, stage2.json's split), are scored on every day after the artifact's last day for which
     rain features and labels now exist — data/raw and data/csd are refreshed
     between trainings, the artifact is not. No model is refit. Existing days
     are kept byte-identical; new days carry ``post_training: true`` and no
@@ -805,6 +805,12 @@ def rescore(promote: bool = False, tolerance: float = 0.02, replace_post: bool =
         return sc
 
     frames, notes = build_dataset(end=end)
+    try:
+        import leaderboard  # noqa: F401  (weights pipelines reference leaderboard.add_hinges)
+    except Exception:  # noqa: BLE001
+        pass
+    s2_path = SERVE_DIR / "stage2.json"                     # the served stage 2 spec (promote.py); None = v1
+    served_stage2 = json.loads(s2_path.read_text()) if s2_path.exists() else None
     finals, chosen, heads = {}, {}, {}
     for basin in APP_BASINS:
         key = BASIN_KEYS[basin]
@@ -822,11 +828,26 @@ def rescore(promote: bool = False, tolerance: float = 0.02, replace_post: bool =
     chosen["citywide"] = "avg"
     impact_raw = json.loads((SERVE_DIR / "impact_table.json").read_text())
     fresh = build_scorecard(frames, chosen, finals, {}, heads, impact_raw, load_samples(),
-                            archive_tables(), notes["archive_used"], finals["citywide"]["features"])
+                            archive_tables(), notes["archive_used"], finals["citywide"]["features"], stage2=served_stage2)
     by_date = {d["date"]: d for d in fresh["days"]}
 
-    tail = [d for d in sc["days"] if pd.Timestamp(d["date"]) > last - pd.Timedelta(days=120) and d["date"] in by_date]
-    worst = max((abs(by_date[d["date"]]["zones"][zk]["risk"] - d["zones"][zk]["risk"]) for d in tail for zk in d["zones"]), default=0.0)
+    # Fidelity gate. The artifact's post-training days were scored on inputs treated by its
+    # input_rules_post (the gauge-outage rule since 2026-09-25); comparing them with days rebuilt
+    # from the raw record would flag the rule itself as drift. So when the last-120-day tail is
+    # post-training, rebuild it with the same rules the artifact records.
+    tail_dates = [d["date"] for d in sc["days"] if pd.Timestamp(d["date"]) > last - pd.Timedelta(days=120)]
+    gate_rules = list(sc.get("input_rules_post") or []) if tail_dates and all(d > trained_through for d in tail_dates) else []
+    if gate_rules:
+        frames_g, notes_g = build_dataset(end=end, input_rules=gate_rules)
+        fresh_g = build_scorecard(frames_g, chosen, finals, {}, heads, impact_raw, load_samples(),
+                                  archive_tables(), notes_g["archive_used"], finals["citywide"]["features"], stage2=served_stage2)
+        gate_by_date = {d["date"]: d for d in fresh_g["days"]}
+        print(f"fidelity gate rebuilt with the artifact's input rules {gate_rules}")
+    else:
+        gate_by_date = by_date
+
+    tail = [d for d in sc["days"] if pd.Timestamp(d["date"]) > last - pd.Timedelta(days=120) and d["date"] in gate_by_date]
+    worst = max((abs(gate_by_date[d["date"]]["zones"][zk]["risk"] - d["zones"][zk]["risk"]) for d in tail for zk in d["zones"]), default=0.0)
     print(f"fidelity: served models reproduce the stored zone risks on the artifact's last {len(tail)} days to within {worst:.4f}")
     if worst > tolerance:
         raise SystemExit(f"served models do not reproduce the artifact (worst {worst:.4f} > {tolerance}) — an input changed retroactively; refusing to append")
@@ -835,7 +856,7 @@ def rescore(promote: bool = False, tolerance: float = 0.02, replace_post: bool =
         rules = list(input_rules or INPUT_RULES_LIVE)
         frames_r, notes_r = build_dataset(end=end, input_rules=rules)
         fresh_r = build_scorecard(frames_r, chosen, finals, {}, heads, impact_raw, load_samples(),
-                                  archive_tables(), notes_r["archive_used"], finals["citywide"]["features"])
+                                  archive_tables(), notes_r["archive_used"], finals["citywide"]["features"], stage2=served_stage2)
         old_by_date = {d["date"]: d for d in sc["days"]}
         keep = [d for d in sc["days"] if d["date"] <= trained_through]
         new_days = [{**d, "post_training": True} for d in fresh_r["days"] if d["date"] > trained_through]
@@ -857,12 +878,13 @@ def rescore(promote: bool = False, tolerance: float = 0.02, replace_post: bool =
     n_smp = sum(1 for d in new_days if any(z["elevated"] is not None for z in d["zones"].values()))
     print(f"appended {len(new_days)} post-training days {new_days[0]['date']} → {new_days[-1]['date']}: "
           f"{n_dis} with a discharge posting a beach, {n_smp} with samples")
-    V4_DIR.mkdir(parents=True, exist_ok=True)
-    with gzip.open(V4_DIR / "scorecard.json.gz", "wt") as f:
+    staged = SERVE_DIR / "scorecard.rescored.json.gz"     # staging beside the served artifact (V4_DIR is gb_v1's training record)
+    with gzip.open(staged, "wt") as f:
         json.dump(sc, f, separators=(",", ":"), default=str)
-    print(f"artifact → {V4_DIR / 'scorecard.json.gz'}")
+    print(f"artifact → {staged}")
     if promote:
-        shutil.copy2(V4_DIR / "scorecard.json.gz", served)
+        shutil.copy2(staged, served)
+        staged.unlink()
         print(f"promoted → {served}")
     return sc
 

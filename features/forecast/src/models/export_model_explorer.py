@@ -45,7 +45,8 @@ from shared.zones import ZONES  # noqa: E402
 REPO = HERE.parents[3]
 SERVE_DIR = T.SERVE_DIR
 RAW_DIR = T.RAW_DIR
-OUT = REPO / "reports" / "2026-09_forecast_gb_v1_model_explorer.html"
+import candidates as _cand  # noqa: E402
+OUT = REPO / "reports" / f"2026-09_forecast_{_cand.SERVED['name']}_model_explorer.html"   # the served set's page
 TEMPLATE = HERE / "model_explorer_template.html"
 
 ACIS_GAUGES = {"SF Downtown": "047772", "SF Oceanside": "047767"}
@@ -115,17 +116,30 @@ def load_model_set(name: str | None) -> tuple[dict, dict, dict]:
     features = T.get_feature_columns_v21()
     if name is None:
         ev = json.loads((SERVE_DIR / "eval_report.json").read_text())
+        sv = _cand.served_info()
+        import leaderboard  # noqa: F401  (weights pipelines reference leaderboard.add_hinges)
         models = {}
         for basin in T.APP_BASINS + ["citywide"]:
             key = BASIN_KEYS.get(basin, "citywide")
             with open(SERVE_DIR / f"{key}_model.pkl", "rb") as f:
                 models[key] = pickle.load(f)
-        holdout = {k: {"pr_auc": t["holdout"].get("pr_auc"), "roc_auc": t["holdout"].get("roc_auc"), "brier": t["holdout"].get("brier"),
-                       "n_test": t["holdout"].get("n_test"), "pos_test": t["holdout"].get("pos_test"), "n_events": t.get("n_events"), "n_days": t.get("n_days")}
-                   for k, t in ev.get("targets", {}).items() if t.get("holdout")}
-        meta = {"name": "gb_v1", "label": "gb_v1 (served)", "served": True, "version": "gb_v1", "trained_at": ev.get("trained_at"),  # the pickles' own tag is the retired "v4"
-                "train_window": ev.get("train_window"), "feature_set": ev.get("feature_set"), "note": None,
-                "stage1_name": "gb_v1", "stage1_from": "served",
+        if sv.get("per_basin"):        # a promoted set: holdout picks from its manifest
+            holdout = {}
+            for k, pb in sv["per_basin"].items():
+                h = pb.get("holdout") or {}
+                holdout[k] = {"pr_auc": h.get("pr_auc"), "roc_auc": h.get("roc_auc"), "brier": h.get("brier"),
+                              "n_test": h.get("n"), "pos_test": h.get("pos"), "n_events": pb.get("n_events"), "n_days": None,
+                              "C": pb.get("C"), "season_cv": pb.get("season_cv_pre_holdout")}
+        else:                          # the original gb_v1 bundle: its training report
+            holdout = {k: {"pr_auc": t["holdout"].get("pr_auc"), "roc_auc": t["holdout"].get("roc_auc"), "brier": t["holdout"].get("brier"),
+                           "n_test": t["holdout"].get("n_test"), "pos_test": t["holdout"].get("pos_test"), "n_events": t.get("n_events"), "n_days": t.get("n_days")}
+                       for k, t in ev.get("targets", {}).items() if t.get("holdout")}
+        s2_path = SERVE_DIR / "stage2.json"
+        meta = {"name": sv["name"], "label": f'{sv["name"]} (served)', "served": True, "version": sv["stage1"],
+                "trained_at": sv.get("created_at") or ev.get("trained_at"),
+                "train_window": ev.get("train_window"), "feature_set": ev.get("feature_set"), "note": sv.get("note"),
+                "stage1_name": sv["stage1"], "stage1_from": "served",
+                "stage2": json.loads(s2_path.read_text()) if s2_path.exists() else None,
                 "scorecard": SERVE_DIR / "scorecard.json.gz"}
     else:
         import candidates
@@ -183,8 +197,8 @@ def gauge_series(days: int = 420) -> dict:
 
 def main(model_name: str | None = None) -> None:
     features = T.get_feature_columns_v21()
-    if model_name in ("gb_v1", "served"):
-        model_name = None  # the served bundle's stage 1 is gb_v1: its page is the default one
+    if model_name in ("served", _cand.SERVED["name"]):
+        model_name = None  # the served set's page is the default one
     raw_models, holdout, meta = load_model_set(model_name)
     models, heads, rain_source = {}, {}, {}
     for basin in T.APP_BASINS + ["citywide"]:

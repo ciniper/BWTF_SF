@@ -52,6 +52,7 @@ def _r(v, nd):
 
 def load_sets() -> list[dict]:
     """The served gb_v1 set plus every candidate: {name, label, served, models{key: pickle}, scorecard, manifest}."""
+    import leaderboard  # noqa: F401  (weights pipelines reference leaderboard.add_hinges)
     served = {}
     for basin in T.APP_BASINS + ["citywide"]:
         key = BASIN_KEYS.get(basin, "citywide")
@@ -59,10 +60,12 @@ def load_sets() -> list[dict]:
             served[key] = pickle.load(f)
     with gzip.open(SERVE_DIR / "scorecard.json.gz", "rt") as f:
         sc = json.load(f)
-    ev = json.loads((SERVE_DIR / "eval_report.json").read_text())
-    sets = [{"name": "gb_v1", "label": "gb_v1 (served)", "served": True, "models": served, "scorecard": sc,
-             "note": f"the live forecast; trained {str(ev.get('trained_at', ''))[:10]}", "family": "gb",
-             "stage1_name": "gb_v1", "stage1_from": "served"}]
+    sv = candidates.served_info()
+    s2_path = SERVE_DIR / "stage2.json"
+    served_s2 = json.loads(s2_path.read_text()) if s2_path.exists() else None
+    sets = [{"name": sv["name"], "label": f'{sv["name"]} (served)', "served": True, "models": served, "scorecard": sc,
+             "note": f"the live forecast since {str(sv.get('promoted_at') or '2026-09-12')[:10]}", "family": sv.get("family", "gb"),
+             "stage2": served_s2, "stage1_name": sv["stage1"], "stage1_from": "served"}]
     for man in candidates.list_candidates():
         name = man["name"]
         try:

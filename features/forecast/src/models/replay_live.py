@@ -61,7 +61,14 @@ import live_rules as LR  # noqa: E402
 import posting_label as PL  # noqa: E402
 import train_v4 as T  # noqa: E402
 from groups import BASIN_KEYS, GROUPS_BY_BASIN, ZONE_GROUPS, zone_risks  # noqa: E402
-from impact import compose, impact_fraction, smooth_table  # noqa: E402
+from impact import compose as _compose, impact_fraction, smooth_table  # noqa: E402
+
+SPLIT = [None]   # the served stage 2 split, set by load_artifact; every composition here goes through it
+
+
+def compose(*args, **kwargs):
+    kwargs.setdefault("split", SPLIT[0])
+    return _compose(*args, **kwargs)
 from scorecard import zone_confusion, zone_confusion_combined, zone_confusion_posted  # noqa: E402
 from shared.outfalls import FEED_NAME_TO_OUTFALLS, OUTFALLS  # noqa: E402
 from shared.zones import ZONES  # noqa: E402
@@ -127,7 +134,11 @@ def archive_flags() -> tuple[dict, dict, tuple]:
 def load_artifact() -> tuple[dict, list, dict]:
     with gzip.open(SERVE_DIR / "scorecard.json.gz", "rt") as f:
         sc = json.load(f)
-    table = smooth_table(json.loads((SERVE_DIR / "impact_table.json").read_text()))
+    s2_path = SERVE_DIR / "stage2.json"                      # the served stage 2 spec (promote.py); None = v1
+    spec = json.loads(s2_path.read_text()) if s2_path.exists() else None
+    table = smooth_table(spec["impact_table"]) if spec and spec.get("impact_table") else smooth_table(json.loads((SERVE_DIR / "impact_table.json").read_text()))
+    import stage2 as _s2
+    SPLIT[0] = _s2.make_split(spec)
     return sc, sc["days"], table
 
 

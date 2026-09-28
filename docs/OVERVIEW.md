@@ -159,7 +159,8 @@ precautionary, and the East is often dirty with no posting and no rain.
   dry-weather elevated samples are out of scope), discharge days only, and beach postings — a "graded against" selector
   switches the cards. Stage 1 alone is always graded on discharge days. `reports/2026-09_model_analysis.html` ranks the sets by cost (Chase's weighting: a miss costs two false
   alarms). Explorer pages open every set's arithmetic in the browser and self-check against the artifact.
-- **Nomenclature (2026-09-26):** the served bundle is `gb_v1 (served)` = stage 1 `gb_v1` + stage 2 `v1`. The old
+- **Served set (from 2026-09-28): `logit_v1_s2v2`** = stage 1 `logit_v1` (L2 logistic regression with hinge terms on the 19 rain features) + stage 2 `v2` (the outfall split with its refit impact table), operating line 25%. Described once in `features/forecast/data/models/served.json`, written by `src/models/promote.py`; `candidates.SERVED` reads it and every page, explorer and report labels the served set from it. `gb_v1` (served 2026-09-12 → 2026-09-28) is a candidate now, still graded beside the others. Promotion = `promote.py <candidate> --line L`: the candidate's pickles, scorecard and stage2.json replace the served ones, the retired set moves to `candidates/<name>/`, then re-export explorers and the report and run `train_v4.py --rescore --replace-post` as the fidelity gate.
+- **Nomenclature (2026-09-26, amended 2026-09-28):** stage 1 sets `gb_v1` (trees; pickles/dir still say "v4" — file names only) and `logit_v1` (weights); stage 2 `v1` (basin composition), `v2` (outfall split, map shares), `v3` (split, shares from the water — a recorded negative result, no candidate). A set is named `<stage1>_s2<variant>` unless it is stage 2 v1.
   release label "v4" survives only in file names (`train_v4.py`, `data/models/v4/`).
 
 ## 6. Operating it

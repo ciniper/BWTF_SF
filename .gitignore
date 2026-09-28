@@ -15,3 +15,5 @@ token.txt
 
 # Local secrets (Supabase service key etc.) — never commit
 .env
+# rescore staging beside the served artifact (train_v4.py --rescore without --promote)
+features/forecast/data/models/scorecard.rescored.json.gz

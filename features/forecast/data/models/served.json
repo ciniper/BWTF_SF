@@ -1,0 +1,104 @@
+{
+ "name": "logit_v1_s2v2",
+ "stage1": "logit_v1",
+ "stage2": "v2",
+ "artifact": "logit_v1_s2v2",
+ "family": "logit",
+ "line": 0.25,
+ "promoted_at": "2026-09-28T01:10:14",
+ "from_candidate": "logit_v1_s2v2",
+ "replaced": "gb_v1",
+ "created_at": "2026-09-25T13:26:15",
+ "trained_through": "2025-10-31",
+ "holdout_start": "2023-07-01",
+ "rain_sources": {
+  "westside": "avg",
+  "north_shore": "SF Downtown",
+  "central": "SF Downtown",
+  "southeast": "SF Downtown",
+  "citywide": "avg"
+ },
+ "per_basin": {
+  "westside": {
+   "source": "avg",
+   "C": 0.1,
+   "holdout": {
+    "n": 854,
+    "pos": 12,
+    "roc_auc": 0.9969319081551861,
+    "pr_auc": 0.8544337606837608,
+    "brier": 0.006319498449207048
+   },
+   "season_cv_pre_holdout": {
+    "n": 2038,
+    "pos": 39,
+    "roc_auc": 0.9874937468734367,
+    "pr_auc": 0.6556423409202696,
+    "brier": 0.011947843491327458
+   },
+   "n_events": 51
+  },
+  "north_shore": {
+   "source": "SF Downtown",
+   "C": 0.03,
+   "holdout": {
+    "n": 854,
+    "pos": 9,
+    "roc_auc": 0.9996055226824458,
+    "pr_auc": 0.9626543209876544,
+    "brier": 0.0016344423913581185
+   },
+   "season_cv_pre_holdout": {
+    "n": 2647,
+    "pos": 31,
+    "roc_auc": 0.9949319325244155,
+    "pr_auc": 0.7280439981489266,
+    "brier": 0.005914489335737074
+   },
+   "n_events": 40
+  },
+  "central": {
+   "source": "SF Downtown",
+   "C": 0.03,
+   "holdout": {
+    "n": 854,
+    "pos": 20,
+    "roc_auc": 0.9995203836930455,
+    "pr_auc": 0.9767387525185512,
+    "brier": 0.004460916643662821
+   },
+   "season_cv_pre_holdout": {
+    "n": 2647,
+    "pos": 58,
+    "roc_auc": 0.9742278339393454,
+    "pr_auc": 0.6811647714601871,
+    "brier": 0.01066838887930852
+   },
+   "n_events": 78
+  },
+  "southeast": {
+   "source": "SF Downtown",
+   "C": 0.03,
+   "holdout": {
+    "n": 854,
+    "pos": 17,
+    "roc_auc": 0.9988052568697731,
+    "pr_auc": 0.9222065637472667,
+    "brier": 0.004330013885027062
+   },
+   "season_cv_pre_holdout": {
+    "n": 2647,
+    "pos": 61,
+    "roc_auc": 0.9920061364471999,
+    "pr_auc": 0.7608716691447874,
+    "brier": 0.010157491921572075
+   },
+   "n_events": 78
+  }
+ },
+ "input_rules_post": [
+  "gauge_outage_v1"
+ ],
+ "stage2_kind": "outfall_split",
+ "note": "logit_v1 (weights: 19 features + hinges, L2 logistic) composed with stage 2 v2, the outfall split. Not served."
+}

@@ -31,13 +31,28 @@ SERVE_DIR = HERE.parents[1] / "data" / "models"
 CANDIDATES_DIR = SERVE_DIR / "candidates"
 NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{1,40}$")
 
-# The served set, named once. "gb_v1" is the user-facing name of the stage 1
-# trees in data/models/ (their pickles and directory still say "v4" — file
-# names only; never call the model v4), composed with stage 2 v1. The live
+# The served set, described once, in data/models/served.json — written by
+# promote.py when a candidate is promoted. Without the file the served set is
+# the original gb_v1 bundle (stage 1 trees whose pickles still say "v4" — a
+# file name only; never call the model v4 — composed with stage 2 v1). The live
 # snapshot stamps itself with this (live_dashboard.model_stamp) so every
-# forecast_history row says which model made it; the analysis report labels
-# the served set from it too.
-SERVED = {"name": "gb_v1", "stage1": "gb_v1", "stage2": "v1", "artifact": "v4"}
+# forecast_history row says which model made it; the analysis report, the
+# Model check and the explorers label the served set from it too. ``line`` is
+# the operating line the served set is meant to run at (the page's alarm and
+# the Model check's default).
+SERVED_FILE = SERVE_DIR / "served.json"
+SERVED_DEFAULT = {"name": "gb_v1", "stage1": "gb_v1", "stage2": "v1", "artifact": "v4", "family": "gb", "line": 0.5}
+
+
+def served_info() -> dict:
+    """The served set's descriptor: served.json merged over the default."""
+    out = dict(SERVED_DEFAULT)
+    if SERVED_FILE.exists():
+        out.update(json.loads(SERVED_FILE.read_text()))
+    return out
+
+
+SERVED = served_info()
 
 
 def valid_name(name: str) -> bool:

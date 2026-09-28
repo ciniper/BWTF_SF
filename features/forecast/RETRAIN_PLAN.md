@@ -222,6 +222,8 @@ not yet public as of Aug 2026). Re-run `src/collectors/csd_ciwqs/` quarterly
 needs a records request (drafted in `data/csd/records_request_draft.md`):
 per-event Westside data 2013–2017.
 
+> **Served set changed 2026-09-28:** `logit_v1_s2v2` (stage 1 logit_v1 + stage 2 v2, line 25%) is the served set; gb_v1 below is a candidate now (`candidates/gb_v1/`). The served set is described in `data/models/served.json` (promote.py). The section below stays as gb_v1's training record.
+
 ## gb_v1, the served bundle (2026-09-05; called "v4" until 2026-09-26): four basins · regional rain · Poo Bot archive · scorecard
 
 `src/models/train_v4.py` (imports the shared formulas from train_v2.py, which

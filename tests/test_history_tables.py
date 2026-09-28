@@ -216,10 +216,13 @@ def test_snapshot_carries_the_model_stamp():
     from features.forecast import live_dashboard as ld
     from features.forecast.src.models import candidates, live_rules
     from features.forecast.src.models.rain_features import INPUT_RULES_LIVE
+    sys.path.insert(0, str(ROOT / "features/forecast/src/models"))
     from app.build_info import build_info
     snap = ld.LIVE.get_snapshot()
     m = snap["model"]
-    assert m["name"] == m["stage1"] == candidates.SERVED["name"] == "gb_v1" and m["stage2"] == "v1"
+    sv = candidates.served_info()
+    assert m["name"] == sv["name"] and m["stage1"] == sv["stage1"] and m["stage2"] == sv["stage2"] and m["line"] == sv.get("line", 0.5)
+    import leaderboard  # noqa: F401  (weights pipelines reference leaderboard.add_hinges)
     pk = pickle.load(open(ROOT / "features/forecast/data/models/central_model.pkl", "rb"))
     assert m["artifact"] == pk["version"] and m["trained_at"] == pk["trained_at"]
     assert m["live_corrections"] == live_rules.VERSION and m["input_rules"] == list(INPUT_RULES_LIVE)
