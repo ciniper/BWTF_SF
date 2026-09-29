@@ -19,7 +19,8 @@ States (``status_of``):
   delivery_state / delivery_at (a failure's reason goes into error). It runs as
   a side job of the production forecast refresh (every 30 min), never as a
   public endpoint: nothing to spoof, and a week of downtime loses nothing
-  (Brevo keeps 90 days of events).
+  (Brevo keeps 90 days of events). It also stamps ``opened_at`` (016) from the
+  first 'opened' event — pixel-based, so null is not proof of unread.
 
 Nothing here may break the dashboard or a send: every Supabase call is wrapped
 by its caller, and ``record_manual`` swallows its own failures.
@@ -48,6 +49,7 @@ BREVO_MAX_PAGES = 4
 _FINAL = {"delivered": "delivered", "hardBounces": "hard_bounce", "blocked": "blocked",
           "spam": "spam", "invalid": "invalid", "error": "error"}
 _INTERIM = {"softBounces": "soft_bounce", "deferred": "deferred"}
+OPEN_EVENT = "opened"      # not 'loadedByProxy': Apple Mail's prefetch is not a reader
 _TAG = re.compile(r"^bwtf-delivery-(\d+)$")
 _BOUNCING = ("bounced", "blocked", "spam")
 
@@ -117,11 +119,13 @@ def status_of(row: dict, now: datetime | None = None) -> tuple[str, str]:
 
 def summarize(rows: list[dict], now: datetime | None = None) -> dict:
     counts = {"messages": len(rows), "accepted": 0, "failed": 0, "pending": 0, "unknown": 0,
-              "delivered": 0, "bounced": 0}
+              "delivered": 0, "bounced": 0, "opened": 0}
     for r in rows:
         state, _ = status_of(r, now)
         key = {"blocked": "bounced", "spam": "bounced", "deferred": "pending"}.get(state, state)
         counts[key] = counts.get(key, 0) + 1
+        if r.get("opened_at"):
+            counts["opened"] += 1
     return counts
 
 
@@ -142,7 +146,7 @@ def fetch_recent(limit: int = RECENT_EVENTS, now: datetime | None = None) -> dic
     unlinked = sb.select("alert_deliveries", {
         "select": "*", "alert_log_id": "is.null", "sent_at": f"gte.{since}", "order": "id.asc"})
     tally_rows = sb.select("alert_deliveries", {
-        "select": "recipient,http_status,checked_at,error,delivery_state,delivery_at,sent_at",
+        "select": "recipient,http_status,checked_at,error,delivery_state,delivery_at,sent_at,opened_at",
         "sent_at": f"gte.{(now - timedelta(days=SUMMARY_DAYS)).isoformat()}"})
 
     by_log: dict = {}
@@ -210,6 +214,8 @@ def _event_block(ev: dict, now: datetime, open_: bool) -> str:
         trs = []
         for d in rows:
             state, detail = status_of(d, now)
+            if d.get("opened_at"):
+                detail += f" · opened {_pacific(d['opened_at'])}"
             trs.append("<tr>"
                        f"<td class='dto'>{html.escape(d.get('recipient') or '')}</td>"
                        f"<td>{html.escape(d.get('channel') or '')}</td>"
@@ -229,7 +235,7 @@ def render_section(data: dict, now: datetime | None = None) -> str:
     s = data.get("summary") or {}
     days = data.get("days", SUMMARY_DAYS)
     parts = [f"{s.get('messages', 0)} message{'s' if s.get('messages', 0) != 1 else ''}"]
-    for key in ("accepted", "delivered", "pending", "unknown", "failed", "bounced"):
+    for key in ("accepted", "delivered", "opened", "pending", "unknown", "failed", "bounced"):
         if s.get(key):
             parts.append(f"{s[key]} {key}")
     line = f"<p class='dsummary'>Last {days} days: {' · '.join(parts)}.</p>"
@@ -338,7 +344,16 @@ def _pick_state(events: list[dict]) -> tuple[str, str | None, str | None] | None
         return None
     state = _FINAL.get(e.get("event")) or _INTERIM.get(e.get("event"))
     at = _parse_ts(e.get("date"))
-    return state, (at.isoformat() if at else None), (e.get("reason") or None)
+    return state, (at.astimezone(timezone.utc).isoformat() if at else None), (e.get("reason") or None)
+
+
+def _first_open(events: list[dict]) -> str | None:
+    """ISO time of the earliest 'opened' event, or None. 'loadedByProxy'
+    (Apple Mail prefetch) is not an open."""
+    opens = [e for e in events if e.get("event") == OPEN_EVENT and _parse_ts(e.get("date"))]
+    if not opens:
+        return None
+    return min(_parse_ts(e["date"]) for e in opens).astimezone(timezone.utc).isoformat()
 
 
 def poll_brevo(now: datetime | None = None, days: int = POLL_DAYS, dry_run: bool = False) -> dict:
@@ -346,15 +361,16 @@ def poll_brevo(now: datetime | None = None, days: int = POLL_DAYS, dry_run: bool
     events. Candidates: message_id known, sent within ``days``, no final state
     yet (null, deferred or soft_bounce). One paged events call per poll, matched
     on messageId, else on the bwtf-delivery-<id> tag. A failure's reason goes
-    into ``error``; a delivery clears it. Raises on Brevo/Supabase errors — the
-    refresh hook swallows and logs them. ``dry_run`` returns the patches instead
-    of writing them."""
+    into ``error``; a delivery clears it. Rows without an open yet are asked
+    again too (016: ``opened_at`` = the first 'opened' event). Raises on
+    Brevo/Supabase errors — the refresh hook swallows and logs them.
+    ``dry_run`` returns the patches instead of writing them."""
     now = now or datetime.now(timezone.utc)
     since = (now - timedelta(days=days)).isoformat()
     rows = sb.select("alert_deliveries", {
-        "select": "id,message_id,delivery_state,sent_at",
+        "select": "id,message_id,delivery_state,sent_at,opened_at",
         "message_id": "not.is.null", "sent_at": f"gte.{since}",
-        "or": "(delivery_state.is.null,delivery_state.in.(deferred,soft_bounce))",
+        "or": "(delivery_state.is.null,delivery_state.in.(deferred,soft_bounce),opened_at.is.null)",
         "order": "id.asc", "limit": "500"})
     if not rows:
         return {"candidates": 0, "updated": 0, "events": 0, "states": {}}
@@ -376,22 +392,27 @@ def poll_brevo(now: datetime | None = None, days: int = POLL_DAYS, dry_run: bool
     states: dict = {}
     patches: list[dict] = []
     for r in rows:
-        picked = _pick_state(by_msg.get(r["message_id"]) or by_tag.get(int(r["id"])) or [])
-        if not picked:
+        evs = by_msg.get(r["message_id"]) or by_tag.get(int(r["id"])) or []
+        patch: dict = {}
+        picked = _pick_state(evs)
+        if picked and picked[0] != r.get("delivery_state"):
+            state, at, reason = picked
+            patch = {"delivery_state": state, "delivery_at": at or now.isoformat()}
+            if state == "delivered":
+                patch["error"] = None
+            elif reason:
+                patch["error"] = reason[:500]
+            states[state] = states.get(state, 0) + 1
+        opened = _first_open(evs)
+        if opened and not r.get("opened_at"):
+            patch["opened_at"] = opened
+            states["opened"] = states.get("opened", 0) + 1
+        if not patch:
             continue
-        state, at, reason = picked
-        if state == r.get("delivery_state"):
-            continue
-        patch = {"delivery_state": state, "delivery_at": at or now.isoformat()}
-        if state == "delivered":
-            patch["error"] = None
-        elif reason:
-            patch["error"] = reason[:500]
         patches.append({"id": r["id"], **patch})
         if not dry_run:
             sb.update("alert_deliveries", {"id": f"eq.{r['id']}"}, patch)
         updated += 1
-        states[state] = states.get(state, 0) + 1
     out = {"candidates": len(rows), "updated": updated, "events": len(events), "states": states}
     if dry_run:
         out["patches"] = patches
