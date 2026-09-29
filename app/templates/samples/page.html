@@ -188,4 +188,5 @@ $("v-rows").addEventListener("click", function (e) {
 document.querySelectorAll(".v-preset").forEach(function (btn) { btn.addEventListener("click", function () { var end = new Date().toISOString().slice(0, 10); VIEW.end = end; VIEW.start = btn.dataset.days ? new Date(Date.now() - btn.dataset.days * DAY).toISOString().slice(0, 10) : FLOOR; $("v-start").value = VIEW.start; $("v-end").value = VIEW.end; markPreset(); vLoad(); }); });
 vLoad(); loadLatest();
 </script>
+<script src="/static/tables.js" defer></script>
 </body></html>
