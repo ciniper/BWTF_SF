@@ -36,8 +36,8 @@
   .legend i.dash{background:repeating-linear-gradient(90deg,currentColor 0 4px,transparent 4px 7px);height:2px}
   .legend i.dot{width:10px;height:10px;border-radius:50%}
   .tiles{display:flex;flex-direction:column;gap:10px;margin:0 0 14px}
-  .site-bar{display:none;align-items:center;gap:10px;margin:0 0 12px;flex-wrap:wrap} .site-bar b{font-size:14px}
-  @media (max-width:640px){ .site-bar{display:flex} .tiles{display:none} .tiles.open{display:flex} }   /* phones: the chosen site and a Change site button; the tiles open on demand */
+  .site-bar{display:flex;align-items:center;gap:10px;margin:0 0 12px;flex-wrap:wrap} .site-bar b{font-size:14px}
+  .tiles{display:none} .tiles.open{display:flex}   /* the chosen site and a Change site button; the tiles open on demand (Chase: at every width) */
   .tile-group-name{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#54576F;font-weight:700;margin:0 0 6px}
   .tile-row{display:flex;flex-wrap:wrap;gap:8px}
   .tile{padding:8px 12px;border-radius:12px;border:2px solid #d9e4e8;background:#fff;color:#26272a;cursor:pointer;font:700 13px 'Roboto','Segoe UI',Arial,sans-serif;text-align:left;line-height:1.25}
@@ -130,7 +130,7 @@ function filterTiles() {   // the Source choice hides sites that source never sa
   tiles().forEach(t => t.classList.toggle("active", t.dataset.key === S.site));
   $("siteName").textContent = siteOf(S.site).name || "—";
 }
-function showTiles(open) {   // phones only (CSS): the tile block opens from the Change site button and closes on a pick
+function showTiles(open) {   // the tile block opens from the Change site button and closes on a pick
   $("tiles").classList.toggle("open", open); $("siteChange").setAttribute("aria-expanded", String(open)); $("siteChange").textContent = open ? "Hide sites" : "Change site";
 }
 $("analyte").value = S.analyte; $("start").value = S.start; $("end").value = S.end; markPreset();
