@@ -125,10 +125,10 @@
 
     <!-- sources -->
     {{ node(20, 50, 220, 64, "logo:logos/sfpuc.png", "SFPUC beach map", "posted & sewage flags", "SFPUC's live beach feed (getBeaches): read by the watcher every minute and by the site on each visit") }}
-    {{ node(20, 128, 220, 64, "flask", "DataSF", "city lab results", "The city's beach lab results: mirrored into Supabase every 30 minutes and read live by the pages") }}
+    {{ node(20, 128, 220, 64, "logo:logos/sf-city-seal.png", "DataSF", "city lab results", "The city's beach lab results: mirrored into Supabase every 30 minutes and read live by the pages") }}
     {{ node(20, 206, 220, 64, "logo:brand/bwtf_144x144.png", "Surfrider BWTF", "volunteer samples", "The Blue Water Task Force database, read live by the pages") }}
     {{ node(20, 284, 220, 64, "logo:logos/noaa.svg", "Weather & tides", "NOAA · NWS · Open-Meteo", "Rain gauges, rain forecast and tides: the forecast's inputs") }}
-    {{ node(20, 452, 220, 64, "building-2", "State records", "CIWQS · BeachWatch", "Discharge reports and beach postings, pulled by script each quarter (see /records)") }}
+    {{ node(20, 452, 220, 64, "logo:logos/water-boards.png", "State records", "CIWQS · BeachWatch", "Discharge reports and beach postings, pulled by script each quarter (see /records)") }}
 
     <!-- backend -->
     <g class="node" transform="translate(380,40)"><title>Supabase: the Postgres database. pg_cron runs the alert watcher every minute and triggers the forecast every 30 minutes; it keeps subscribers, the alert log and history tables.</title>
@@ -183,7 +183,7 @@
     <path class="live" d="M350 523H362V203H354" marker-end="url(#arrM)"/>
 
     {{ mnode(10, 26, "logo:logos/sfpuc.png", "SFPUC map", "SFPUC's live beach feed: read by the watcher every minute and by the site on each visit") }}
-    {{ mnode(194, 26, "flask", "DataSF", "The city's beach lab results: mirrored into Supabase every 30 minutes and read live by the pages") }}
+    {{ mnode(194, 26, "logo:logos/sf-city-seal.png", "DataSF", "The city's beach lab results: mirrored into Supabase every 30 minutes and read live by the pages") }}
     {{ mnode(10, 80, "logo:brand/bwtf_144x144.png", "Surfrider", "The Blue Water Task Force database, read live by the pages") }}
     {{ mnode(194, 80, "logo:logos/noaa.svg", "Weather", "Rain gauges, rain forecast and tides (NOAA, NWS, Open-Meteo)") }}
 
@@ -205,7 +205,7 @@
     {{ mnode(10, 340, "logo:logos/brevo.svg", "Brevo", "Email service: Supabase hands it each alert") }}
     {{ mnode(194, 340, "logo:logos/healthchecks.svg", "Healthchecks", "healthchecks.io: pinged by every watcher run; silence raises an alarm") }}
     {{ mnode(10, 412, "users", "Subscribers", "People signed up at /signup for their beach zones") }}
-    {{ mnode(10, 500, "building-2", "State records", "CIWQS discharge reports and BeachWatch postings, pulled by script each quarter") }}
+    {{ mnode(10, 500, "logo:logos/water-boards.png", "State records", "CIWQS discharge reports and BeachWatch postings, pulled by script each quarter") }}
     {{ mnode(194, 500, "logo:logos/github.svg", "GitHub", "The code and the committed record CSVs; a push to main deploys") }}
 
     <g transform="translate(22,600)">
