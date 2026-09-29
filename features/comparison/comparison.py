@@ -30,6 +30,8 @@ from features.comparison.bwtf_api import SFBWTFClient, parse_datetime, parse_res
 from features.alerts.monitoring import STANDARDS, SFPUC_TO_SFGOV_SOURCES, SFWaterQualityMonitor
 from shared.sfpuc_api import SFPUCRealTimeAPI
 from shared.standards import ENTERO_CAUTION, exceeds, parse_result as std_parse, single_sample_max
+from shared import city_history
+from shared.datasf import DATASET_FLOOR
 from shared.stations import STATIONS
 from shared.zones import ZONES, ZONE_OF_SOURCE
 
@@ -45,10 +47,13 @@ DEFAULT_DAYS = 365
 
 # Selectable analytes for these sites. dict key = SF Gov `analyte` code; each maps
 # to the BWTF substance name, a display label, and the CA single-sample maximum.
-# BWTF only reports Enterococcus, so the coliforms are city-only here.
+# BWTF only reports Enterococcus, so the coliforms are city-only here. E. coli is
+# the indicator the city ran in place of fecal coliform from Jul 2002 to Jul 2020
+# (shared/city_history.py) and in a few hundred rows since.
 ANALYTES = {
     "ENTERO":     {"label": "Enterococcus",   "bwtf_substance": "Enterococcus",   "limit": STANDARDS["ENTERO"]["single_sample_max"]},
     "COLI_FECAL": {"label": "Fecal coliform", "bwtf_substance": "Fecal Coliform", "limit": STANDARDS["COLI_FECAL"]["single_sample_max"]},
+    "COLI_E":     {"label": "E. coli",        "bwtf_substance": "E. coli",        "limit": STANDARDS["COLI_E"]["single_sample_max"]},
     "COLI_TOTAL": {"label": "Total coliform", "bwtf_substance": "Total Coliform", "limit": STANDARDS["COLI_TOTAL"]["single_sample_max"]},
 }
 DEFAULT_ANALYTE = "ENTERO"
@@ -221,23 +226,27 @@ def _fetch_city_series(monitor: SFWaterQualityMonitor, sources: list[str], start
     """All city results for `analyte` per source in [start, end], ascending by date."""
     if not sources:
         return {}
+    records = city_history.records(sources, start, end, [analyte]) if city_history.covers(start) else []
+    api_start = max(start, _datasf_floor())
     source_filter = " OR ".join(f"source='{s}'" for s in sources)
     params = {
         "$select": "source,sample_date,data",
         "$where": (
-            f"analyte='{analyte}' AND sample_date >= '{start.strftime('%Y-%m-%dT00:00:00')}' "
+            f"analyte='{analyte}' AND sample_date >= '{api_start.strftime('%Y-%m-%dT00:00:00')}' "
             f"AND sample_date <= '{end.strftime('%Y-%m-%dT23:59:59')}' AND ({source_filter})"
         ),
         "$order": "sample_date ASC",
         "$limit": 5000,
     }
-    try:
-        response = monitor.session.get(monitor.API_URL, params=params, timeout=30)
-        response.raise_for_status()
-        records = response.json()
-    except requests.RequestException as exc:
-        print(f"Error fetching city {analyte} series: {exc}")
-        return {}
+    if api_start <= end:
+        try:
+            response = monitor.session.get(monitor.API_URL, params=params, timeout=30)
+            response.raise_for_status()
+            records = records + response.json()
+        except requests.RequestException as exc:
+            print(f"Error fetching city {analyte} series: {exc}")
+            if not records:
+                return {}
 
     by_source: dict[str, list] = {}
     for record in records:
@@ -257,12 +266,22 @@ def _fetch_city_series(monitor: SFWaterQualityMonitor, sources: list[str], start
     return by_source
 
 
+def _datasf_floor() -> datetime:
+    return datetime.strptime(DATASET_FLOOR, "%Y-%m-%d")
+
+
 def fetch_city_records(monitor, sources: list[str], start: datetime, end: datetime) -> list[dict]:
-    """Every DataSF row for these stations, all three posting indicators, in
-    [start, end] (raw Socrata dicts: source, sample_date, analyte, data)."""
+    """Every city row for these stations and the four indicators in [start, end]
+    (raw Socrata dicts: source, sample_date, analyte, data): DataSF from its
+    floor, and for the days before it SFPUC's lab export (shared/city_history.py,
+    rows flagged ``history``)."""
     if not sources:
         return []
-    where = (f"sample_date >= '{start:%Y-%m-%dT00:00:00}' AND sample_date <= '{end:%Y-%m-%dT23:59:59}' "
+    out = city_history.records(sources, start, end, list(ANALYTES)) if city_history.covers(start) else []
+    api_start = max(start, _datasf_floor())
+    if api_start > end:
+        return out
+    where = (f"sample_date >= '{api_start:%Y-%m-%dT00:00:00}' AND sample_date <= '{end:%Y-%m-%dT23:59:59}' "
              f"AND analyte in ({','.join(repr(a) for a in ANALYTES)}) "
              f"AND source in ({','.join(repr(s) for s in sources)})")
     response = monitor.session.get(monitor.API_URL, params={
@@ -270,7 +289,7 @@ def fetch_city_records(monitor, sources: list[str], start: datetime, end: dateti
         "$order": "sample_date DESC", "$limit": 50000,
     }, timeout=30)
     response.raise_for_status()
-    return response.json()
+    return out + response.json()
 
 
 def graph_sites() -> list[dict]:

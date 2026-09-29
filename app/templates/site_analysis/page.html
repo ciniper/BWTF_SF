@@ -106,9 +106,9 @@
       {% for i in indicators %}<button class="seg-btn{% if i.code == graded_on %} active{% endif %}" data-indicator="{{ i.code }}" title="{{ i.title }}">{{ i.label }}</button>{% endfor %}
     </div>
     <span class="ctl-label">Range:</span>
-    <input type="date" id="startDate" min="2020-07-27">
+    <input type="date" id="startDate" min="{{ floor }}">
     <span style="color:#54576F">→</span>
-    <input type="date" id="endDate" min="2020-07-27">
+    <input type="date" id="endDate" min="{{ floor }}">
     <button class="group-btn preset" data-days="">Full record</button>
     <button class="group-btn preset" data-days="730">Last 2 yrs</button>
     <button class="group-btn preset" data-days="365">Last 12 mo</button>
@@ -138,7 +138,7 @@
     <h2>Reading these numbers</h2>
     <b>"Bad" = <span id="badDef">{{ graded_on_name }} at or over the state single-sample limit, {{ ssm }} MPN/100mL</span></b>
     (<a href="#standards">the standards</a>; the <b>Standard</b> toggle switches it);
-    the wet season is November–April. The dataset begins 2020-07-27 — the city publishes nothing earlier.
+    the wet season is November–April. City results run from {{ floor }}: SFPUC's lab export ({{ history.label }}) until DataSF begins on {{ datasf_from }}, DataSF from then on. Enterococcus and E. coli were first measured on {{ history.entero_from }}; before August 2020 the city ran E. coli where it now runs fecal coliform, so the fecal-coliform and ratio views have no data for the earlier years.
     <br><br>
     <b>Weekly regime</b> keeps only the first sample of each site-week (the city's scheduled Monday
     cadence) — the true week-by-week base rate, and the apples-to-apples comparison with BWTF's own
@@ -178,7 +178,7 @@
         <td class="note">
           {%- if s.code == graded_on %}The default standard here; &ge;{{ caution }} is the caution tier.
           {%- elif s.ratio_ssm %}Drops to {{ "{:,}".format(s.ratio_ssm) }} when fecal coliform is more than {{ s.ratio_pct }}% of total coliform in the same sample.
-          {%- elif s.code == "COLI_E" %}The freshwater indicator; the city reports it for only a small share of shoreline samples.
+          {%- elif s.code == "COLI_E" %}The indicator the city ran in place of fecal coliform from July 2002 to July 2020; only a small share of shoreline rows since.
           {%- else %}Reported with nearly every sample; also sets the total-coliform ratio rule.
           {%- endif %}
         </td>

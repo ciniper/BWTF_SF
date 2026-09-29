@@ -13,7 +13,8 @@ from flask import render_template
 
 from features.comparison.comparison import ANALYTES, build_comparison, build_site_history, build_site_series, graph_sites
 from features.comparison.samples import build_bwtf_sample_day, build_sample_day, build_sample_viewer
-from shared.datasf import DATASET_FLOOR
+from shared import city_history
+from shared.datasf import DATASET_FLOOR  # noqa: F401
 
 
 class ComparisonRoutes:
@@ -149,12 +150,12 @@ class ComparisonRoutes:
             items = [x for x in sites if x["group"] == g]
             if items:
                 groups.append((g, items))
-        self._send_page("graphs/page.html", sites=sites, site_groups=groups, dataset_floor=DATASET_FLOOR,
+        self._send_page("graphs/page.html", sites=sites, site_groups=groups, dataset_floor=city_history.city_record_floor(), datasf_from=DATASET_FLOOR,
                         analytes=[{"code": c, "label": m["label"]} for c, m in ANALYTES.items()])
 
     def send_samples_page(self):
         """Samples: every result from both programs, the latest-by-site strip, field notes three ways."""
-        self._send_page("samples/page.html", dataset_floor=DATASET_FLOOR)
+        self._send_page("samples/page.html", dataset_floor=city_history.city_record_floor(), datasf_from=DATASET_FLOOR)
 
     def generate_comparison_html(self, data, scope="dual"):
         """Render the source-comparison dashboard (Surfrider BWTF vs. public city data).
@@ -240,5 +241,5 @@ class ComparisonRoutes:
             rows_html=rows_html,
             generated=generated,
             analyte_code=analyte_code,
-            dataset_floor=DATASET_FLOOR,
+            dataset_floor=city_history.city_record_floor(),
         )
