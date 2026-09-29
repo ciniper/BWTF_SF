@@ -34,7 +34,13 @@ external validation.
    Under the 2009 permit, SFPUC's monthly filings reported only a *count* of CSODs
    per month (cover-letter narrative; scanned PDFs). Per-event Westside tables begin
    with the Jan 2018 SMR. The underlying telemetry exists at SFPUC (their tables cite
-   TELOG/SCADA data tags) → see `records_request_draft.md`.
+   TELOG/SCADA data tags) → see `records_request_draft.md`. **Two partial substitutes
+   (2026-09-29):** the scanned 2013–2017 Oceanside cover letters state a monthly CSD
+   count ("There were four combined sewer discharges during this reporting period",
+   season-to-date, design criterion 8/yr — Feb 2017 letter) that could be transcribed by
+   hand or OCR into 60 monthly counts; and SFPUC's STARDB export shows OCEAN#20/#21/#22
+   were sampled *only after* Westside CSDs from 2004, so their sample dates are
+   approximate discharge dates 2004–2017 — `data/sfpuc_stardb_2000_2020/NOTES.md`.
 2. **Bayside per-outfall volumes before Oct 2016** — legacy reports give per-day
    discharge *hours* and counts per outfall (or outfall group), volumes only as
    basin-month estimates. Legacy CSV covers this era. SFPUC demonstrably can
