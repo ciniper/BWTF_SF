@@ -11,5 +11,9 @@
     });
   }
   document.addEventListener("click", function () { requestAnimationFrame(sync); }, true);
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", sync); else sync();
+  // pages also flip .active after data arrives (e.g. a date preset lit once the range is known): follow class changes too
+  var pending = false;
+  function queue() { if (pending) return; pending = true; requestAnimationFrame(function () { pending = false; sync(); }); }
+  function start() { sync(); new MutationObserver(queue).observe(document.body, {subtree: true, attributes: true, attributeFilter: ["class"]}); }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
 })();
