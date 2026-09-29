@@ -43,9 +43,11 @@ def test_every_feature_page_sits_in_exactly_one_hub_and_every_link_resolves():
         g = c.get("/graphs").data.decode()
         assert g.count('class="tile"') >= 20 and 'id="analyte"' in g and '<option value="ENTERO" selected>' in g and '<option value="ALL">All indicators</option>' in g and '<option value="PCT">All % threshold</option>' in g and 'href="/compare"' in g
         assert ".preset.active{" in g and "function markPreset" in g            # a chosen date-range preset lights up
+        assert 'id="kind"' in g and 'data-k="line"' in g and 'data-k="bar"' in g and "CH.barSeries : CH.seriesChart" in g   # the Chart choice: lines or bars
         assert 'id="view"' not in g and "<small>" not in g.split('id="tiles"')[1].split('id="start"')[0]          # no view buttons, plain tiles
         assert [m for m in ("Ocean Beach", "Baker &amp; China Beach", "North Beaches", "East Beaches") if m in g] == ["Ocean Beach", "Baker &amp; China Beach", "North Beaches", "East Beaches"] and "Surfrider only" not in g
-        assert 'data-s="all"' in g and 'data-s="both"' in g and g.count('class="seg-btn') == 4
+        seg = lambda i: g.split('id="' + i + '"')[1].split("</div>")[0].count('class="seg-btn')  # noqa: E731
+        assert 'data-s="all"' in g and 'data-s="both"' in g and seg("src") == 4 and seg("kind") == 2      # Source: City/Surfrider/Both/All; Chart: Lines/Bars
     assert "Online Postings Timeline" in (ROOT / "app/templates/cso_history/page.html").read_text()
     assert 'id="i-clipboard"' in (ROOT / "app/templates/_icons.html").read_text()
 

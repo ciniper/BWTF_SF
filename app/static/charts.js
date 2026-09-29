@@ -1,6 +1,7 @@
 /* BWTFCharts — the one place the site's bacteria charts are drawn from.
  * Colours, labels, the horizontal limit lines and three chart shapes:
  *   seriesChart  — results over time, log axis, one line per indicator/source
+ *   barSeries    — the same series as bars, one slot per sample day (the Graphs page's Bars choice)
  *   pairedBars   — same-day head-to-head bars (city vs Surfrider)
  *   miniBars     — one sample's results, one small chart per indicator (the popover)
  * Chart.js loads on first use (ensureChart). Limits come from the API payloads,
@@ -40,6 +41,20 @@
   /* series: [{label, color, dash, pointColors?, points:[{x, y, raw, over, date, station, name}]}]; lines: [limitLine…];
      onPoint(point) fires on click. Log axis by default; yMin / yTicks / yFormat reshape it (the % view);
      tooltip(point, seriesLabel) replaces the default line. */
+  function yScale(o) {   // the shared y axis: log by default (yMin / yTicks / yFormat reshape it), linear on request
+    var yTicks = o.yTicks || LOG_TICKS, yFmt = o.yFormat || fmt;
+    return o.log === false ? { beginAtZero: true, title: { display: true, text: o.yTitle || "MPN/100 mL" } }
+      : { type: "logarithmic", min: o.yMin || 4, title: { display: true, text: o.yTitle || "MPN/100 mL, log scale" },
+          afterBuildTicks: o.yTicks ? function (ax) { ax.ticks = o.yTicks.filter(function (v) { return v >= ax.min && v <= ax.max; }).map(function (v) { return { value: v }; }); } : undefined,
+          ticks: { callback: function (v) { return yTicks.indexOf(v) >= 0 ? yFmt(v) : ""; } } };
+  }
+  function pointText(o, p, label, y) {   // one tooltip line for a point: custom, or "label: raw · over its limit (ratio rule)"
+    if (o.tooltip) return o.tooltip(p, label);
+    return label + ": " + (p.raw != null ? p.raw : y) + (p.over ? " · over its limit" : "") + (p.ratio ? " (ratio rule)" : "");
+  }
+  var dayOf = function (p) { return p.date || new Date(p.x).toISOString().slice(0, 10); };
+  var dayText = function (d) { return new Date(d + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "2-digit" }); };
+
   function seriesChart(canvas, o) {
     var datasets = (o.series || []).map(function (s) {
       var pts = s.points || [];
@@ -51,19 +66,38 @@
     var xs = []; datasets.forEach(function (d) { d.data.forEach(function (p) { xs.push(p.x); }); });
     var xmin = xs.length ? Math.min.apply(null, xs) : Date.now() - 365 * 864e5, xmax = xs.length ? Math.max.apply(null, xs) : Date.now();
     if (xmin === xmax) { xmin -= 15 * 864e5; xmax += 15 * 864e5; }
-    var yTicks = o.yTicks || LOG_TICKS, yFmt = o.yFormat || fmt;
     return new Chart(canvas, { type: "line", plugins: [limitLines], data: { datasets: datasets }, options: {
       responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: "nearest", intersect: false },
       onClick: function (_e, els) { if (o.onPoint && els.length) { var el = els[0]; o.onPoint(datasets[el.datasetIndex].data[el.index]); } },
-      scales: { x: { type: "linear", min: xmin, max: xmax, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8, callback: monthTick } },
-                y: o.log === false ? { beginAtZero: true, title: { display: true, text: o.yTitle || "MPN/100 mL" } }
-                  : { type: "logarithmic", min: o.yMin || 4, title: { display: true, text: o.yTitle || "MPN/100 mL, log scale" },
-                      afterBuildTicks: o.yTicks ? function (ax) { ax.ticks = o.yTicks.filter(function (v) { return v >= ax.min && v <= ax.max; }).map(function (v) { return { value: v }; }); } : undefined,
-                      ticks: { callback: function (v) { return yTicks.indexOf(v) >= 0 ? yFmt(v) : ""; } } } },
+      scales: { x: { type: "linear", min: xmin, max: xmax, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8, callback: monthTick } }, y: yScale(o) },
       plugins: { legend: { display: o.legend !== false, position: "top" }, limitLines: { lines: o.lines || [] },
                  tooltip: { callbacks: { title: function (it) { return it.length ? new Date(it[0].parsed.x).toLocaleDateString() : ""; },
-                                         label: function (it) { var p = it.raw || {}; if (o.tooltip) return o.tooltip(p, it.dataset.label);
-                                                                return it.dataset.label + ": " + (p.raw != null ? p.raw : it.parsed.y) + (p.over ? " · over its limit" : "") + (p.ratio ? " (ratio rule)" : ""); } } } }
+                                         label: function (it) { return pointText(o, it.raw || {}, it.dataset.label, it.parsed.y); } } } }
+    } });
+  }
+
+  /* The same series drawn as bars: one slot per sample day (the union of the series' days), the bars of a day
+     side by side; a series with two collections on one day shows the day's worst. Options as seriesChart. */
+  function barSeries(canvas, o) {
+    var series = o.series || [], seen = {};
+    series.forEach(function (s) { (s.points || []).forEach(function (p) { seen[dayOf(p)] = 1; }); });
+    var labels = Object.keys(seen).sort();
+    var datasets = series.map(function (s) {
+      var best = {};
+      (s.points || []).forEach(function (p, i) { var d = dayOf(p); if (!best[d] || p.y > best[d].p.y) best[d] = { p: p, i: i }; });
+      var meta = labels.map(function (d) { return best[d] ? best[d].p : null; });
+      var colors = labels.map(function (d) { return best[d] && s.pointColors ? s.pointColors[best[d].i] : s.color; });
+      return { label: s.label, data: meta.map(function (p) { return p ? p.y : null; }), meta: meta, backgroundColor: colors, borderColor: colors,
+               borderWidth: 0, maxBarThickness: 28, minBarLength: 2, skipNull: true };
+    });
+    return new Chart(canvas, { type: "bar", plugins: [limitLines], data: { labels: labels, datasets: datasets }, options: {
+      responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: "index", intersect: false },
+      onClick: function (_e, els) { if (!o.onPoint || !els.length) return; var el = els[0], p = datasets[el.datasetIndex].meta[el.index]; if (p) o.onPoint(p); },
+      scales: { x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8, callback: function (_v, i) { return labels[i] ? dayText(labels[i]) : ""; } } }, y: yScale(o) },
+      plugins: { legend: { display: o.legend !== false, position: "top" }, limitLines: { lines: o.lines || [] },
+                 tooltip: { filter: function (it) { return it.raw != null; },
+                            callbacks: { title: function (it) { return it.length ? dayText(labels[it[0].dataIndex]) : ""; },
+                                         label: function (it) { var p = it.dataset.meta[it.dataIndex] || {}; return pointText(o, p, it.dataset.label, it.parsed.y); } } } }
     } });
   }
 
@@ -93,5 +127,5 @@
                    tooltip: { callbacks: { label: function (it) { return o.label + ": " + (vals[it.dataIndex] || {}).raw + " (limit " + fmt(o.limit) + ")"; } } } } } });
   }
   window.BWTFCharts = { COLORS: COLORS, LABELS: LABELS, limitLines: limitLines, limitLine: limitLine, ensureChart: ensureChart,
-                        seriesChart: seriesChart, pairedBars: pairedBars, miniBars: miniBars, fmt: fmt, monthTick: monthTick };
+                        seriesChart: seriesChart, barSeries: barSeries, pairedBars: pairedBars, miniBars: miniBars, fmt: fmt, monthTick: monthTick };
 })();

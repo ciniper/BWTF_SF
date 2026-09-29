@@ -50,7 +50,7 @@
   <a class="back-to-dash" href="/">← Dashboard</a>
   <div class="hero">
     <h1>Water Quality Graphs</h1>
-    <p>Pick a site, a range, and an indicator — or all three at once — and choose the city's lab, Surfrider's, only the beaches both sample, or all sites. Click any city point for that day's results. The same samples, row by row, are on <a href="/samples">Samples</a>.</p>
+    <p>Pick a site, a range, and an indicator — or all three at once — and choose the city's lab, Surfrider's, only the beaches both sample, or all sites. Click any point or bar for that day's results. The same samples, row by row, are on <a href="/samples">Samples</a>.</p>
   </div>
   <p class="subpage">Looking for the original head to head? <a href="/compare">Source Comparison</a> keeps the six beaches both programs sample, latest result and agreement per site, with the same graphs one click away.</p>
   <div class="controls">
@@ -66,6 +66,11 @@
       <button class="seg-btn" data-s="bwtf" title="Surfrider's volunteer lab: the beaches it samples">Surfrider</button>
       <button class="seg-btn" data-s="both" title="Only the beaches both programs sample, both labs plotted">Both</button>
       <button class="seg-btn active" data-s="all" title="Every site, whichever lab has results">All</button>
+    </div>
+    <span class="ctl-label">Chart</span>
+    <div class="seg-toggle" id="kind">
+      <button class="seg-btn active" data-k="line" title="Results over time: one line per lab or indicator">Lines</button>
+      <button class="seg-btn" data-k="bar" title="One bar per sample day, a day's bars side by side">Bars</button>
     </div>
   </div>
   <div class="tiles" id="tiles" aria-label="Site">
@@ -105,7 +110,7 @@ function markPreset() {   // light the preset whose window matches the dates sho
 const legacyAll = params.get("view") === "all" && !params.get("analyte");                // old links: ?view=all meant all indicators
 const S = { site: params.get("site") || "", src: ["city", "bwtf", "both", "all"].includes(params.get("source")) ? params.get("source") : "all",
             analyte: legacyAll ? "ALL" : (ANALYTES.includes(params.get("analyte")) ? params.get("analyte") : "ENTERO"),
-            start: params.get("start") || "", end: params.get("end") || "" };
+            start: params.get("start") || "", end: params.get("end") || "", kind: params.get("chart") === "bar" ? "bar" : "line" };
 let DATA = null, c1 = null, c2 = null, seq = 0;
 const $ = id => document.getElementById(id);
 const siteOf = k => SITES.find(s => s.key === k) || {};
@@ -123,8 +128,9 @@ function filterTiles() {   // the Source choice hides sites that source never sa
 }
 $("analyte").value = S.analyte; $("start").value = S.start; $("end").value = S.end; markPreset();
 document.querySelectorAll("#src .seg-btn").forEach(b => b.classList.toggle("active", b.dataset.s === S.src));
+document.querySelectorAll("#kind .seg-btn").forEach(b => b.classList.toggle("active", b.dataset.k === S.kind));
 filterTiles();
-function syncUrl() { const u = new URL(location.href); u.search = ""; u.searchParams.set("site", S.site); if (S.analyte !== "ENTERO") u.searchParams.set("analyte", S.analyte); if (S.src !== "all") u.searchParams.set("source", S.src); if (S.start) u.searchParams.set("start", S.start); if (S.end) u.searchParams.set("end", S.end); history.replaceState(null, "", u); }
+function syncUrl() { const u = new URL(location.href); u.search = ""; u.searchParams.set("site", S.site); if (S.analyte !== "ENTERO") u.searchParams.set("analyte", S.analyte); if (S.src !== "all") u.searchParams.set("source", S.src); if (S.kind !== "line") u.searchParams.set("chart", S.kind); if (S.start) u.searchParams.set("start", S.start); if (S.end) u.searchParams.set("end", S.end); history.replaceState(null, "", u); }
 function load() {
   const my = ++seq; filterTiles(); if (!S.site) { $("title").textContent = "No site for this source"; return; }
   $("title").textContent = siteOf(S.site).name + " — loading…"; syncUrl();
@@ -139,6 +145,7 @@ function load() {
 function render() {
   if (c1) { c1.destroy(); c1 = null; } if (c2) { c2.destroy(); c2 = null; }
   $("explain").textContent = "";
+  const draw = S.kind === "bar" ? CH.barSeries : CH.seriesChart;   // the Chart choice: same series, lines or bars
   const L = DATA.limits, C = CH.COLORS, onPoint = p => { if (!window.SamplePopover) return; if (p.station) SamplePopover.open({ station: p.station, name: p.name, date: p.date }); else if (DATA.bwtf_name) SamplePopover.open({ bwtf: DATA.bwtf_name, name: DATA.site, date: p.date }); };
   const pts = arr => (arr || []).map(p => ({ x: p.ts, y: p.value, raw: p.raw, over: p.over, ratio: p.ratio, date: p.date, station: p.station, name: p.name, n: p.n }));
   const range = DATA.start + " → " + DATA.end, wantCity = S.src !== "bwtf", wantBwtf = S.src !== "city" && DATA.bwtf.length > 0;
@@ -150,7 +157,7 @@ function render() {
     const lines = [CH.limitLine(L.ENTERO, C.ENTERO, "Enterococcus limit " + CH.fmt(L.ENTERO))];
     if (wantCity) lines.push(CH.limitLine(L.COLI_FECAL, C.COLI_FECAL, "Fecal limit " + CH.fmt(L.COLI_FECAL)), CH.limitLine(L.COLI_TOTAL, C.COLI_TOTAL, "Total limit " + CH.fmt(L.COLI_TOTAL)));
     lines.push(CH.limitLine(DATA.caution, C.CAUTION_LINE, "caution " + DATA.caution, "dotted"));
-    c1 = CH.seriesChart($("c1"), { series, lines, legend: false, onPoint });
+    c1 = draw($("c1"), { series, lines, legend: false, onPoint });
     $("title").textContent = DATA.site + " — all indicators";
     $("legend").innerHTML = series.map(s => '<span><i style="background:' + s.color + '"></i>' + s.label + "</span>").join("") + '<span><i class="dash" style="color:#54576F"></i>state limits</span>';
     $("sub").textContent = (wantCity ? DATA.counts.city_days + " city sample days" : "") + (wantBwtf ? (wantCity ? " · " : "") + DATA.bwtf.length + " Surfrider samples" : "") + " · " + range;
@@ -161,7 +168,7 @@ function render() {
     const series = [];
     if (wantCity) series.push({ label: "City (SFPUC)", color: "#8a949b", width: 1.4, pointRadius: 3.4, points: pp(W.city), pointColors: W.city.map(p => C[p.code]) });
     if (wantBwtf) series.push({ label: "Surfrider", color: C.BWTF_LIGHT, dash: [4, 3], pointRadius: 3.4, points: pp(W.bwtf) });
-    c1 = CH.seriesChart($("c1"), { series, lines: [CH.limitLine(100, C.LIMIT, "state limit = 100%")], legend: false, onPoint,
+    c1 = draw($("c1"), { series, lines: [CH.limitLine(100, C.LIMIT, "state limit = 100%")], legend: false, onPoint,
                                     yMin: 1, yTicks: PCT_TICKS, yFormat: v => CH.fmt(v) + "%", yTitle: "% of that indicator's state limit, log scale",
                                     tooltip: (p, who) => who + " · " + p.label + " " + p.raw + " = " + pf(p.pct) + "% of " + CH.fmt(p.limit) + (p.ratio ? " (ratio rule)" : "") });
     $("title").textContent = DATA.site + " — worst indicator each day, % of its limit";
@@ -175,7 +182,7 @@ function render() {
     if (entero && wantBwtf) series.push({ label: "Surfrider", color: C.BWTF, width: 2, pointRadius: 3.4, points: pts(DATA.bwtf) });
     if (wantCity) series.push({ label: "City (SFPUC)", color: C.CITY, width: 2, points: pts(DATA.city[a] || []) });
     const lines = [CH.limitLine(L[a], C.LIMIT, "CA limit " + CH.fmt(L[a]))]; if (entero) lines.push(CH.limitLine(DATA.caution, C.CAUTION_LINE, "caution " + DATA.caution, "dotted"));
-    c1 = CH.seriesChart($("c1"), { series, lines, yTitle: label + " (MPN/100 mL), log scale", onPoint });
+    c1 = draw($("c1"), { series, lines, yTitle: label + " (MPN/100 mL), log scale", onPoint });
     const both = series.length === 2;
     $("title").textContent = DATA.site + " — " + label + (both ? ", city vs Surfrider" : "");
     $("legend").innerHTML = "";
@@ -191,6 +198,7 @@ function render() {
 }
 $("tiles").addEventListener("click", e => { const t = e.target.closest(".tile"); if (!t || t.hidden || t.dataset.key === S.site) return; S.site = t.dataset.key; load(); });
 $("analyte").addEventListener("change", e => { S.analyte = e.target.value; if (DATA) render(); });
+$("kind").addEventListener("click", e => { const b = e.target.closest(".seg-btn"); if (!b || b.dataset.k === S.kind) return; document.querySelectorAll("#kind .seg-btn").forEach(x => x.classList.toggle("active", x === b)); S.kind = b.dataset.k; if (DATA) render(); });
 $("src").addEventListener("click", e => { const b = e.target.closest(".seg-btn"); if (!b) return; document.querySelectorAll("#src .seg-btn").forEach(x => x.classList.toggle("active", x === b)); S.src = b.dataset.s; const before = S.site; filterTiles(); if (S.site !== before || !DATA) load(); else render(); });
 ["start", "end"].forEach(id => $(id).addEventListener("change", e => { S[id] = e.target.value; markPreset(); load(); }));
 document.querySelectorAll(".preset").forEach(btn => btn.addEventListener("click", () => { const end = new Date().toISOString().slice(0, 10); S.end = end; S.start = btn.dataset.days ? new Date(Date.now() - btn.dataset.days * DAY).toISOString().slice(0, 10) : FLOOR; $("start").value = S.start; $("end").value = S.end; markPreset(); load(); }));
