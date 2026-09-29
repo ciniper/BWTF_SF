@@ -1,8 +1,10 @@
 {%- macro node(x, y, w, h, icon, title, sub, tip) -%}
 <g class="node" transform="translate({{ x }},{{ y }})"><title>{{ tip }}</title>
   <rect class="box" width="{{ w }}" height="{{ h }}" rx="16"/>
-  <rect class="tile" x="12" y="{{ (h - 40) / 2 }}" width="40" height="40" rx="11"/>
-  <use class="icn" href="#i-{{ icon }}" x="20" y="{{ (h - 24) / 2 }}" width="24" height="24"/>
+  {% if icon.startswith("logo:") %}<rect class="tile logo" x="12" y="{{ (h - 40) / 2 }}" width="40" height="40" rx="11"/>
+  <image href="/static/{{ icon[5:] }}" x="18" y="{{ (h - 28) / 2 }}" width="28" height="28" preserveAspectRatio="xMidYMid meet"/>
+  {% else %}<rect class="tile" x="12" y="{{ (h - 40) / 2 }}" width="40" height="40" rx="11"/>
+  <use class="icn" href="#i-{{ icon }}" x="20" y="{{ (h - 24) / 2 }}" width="24" height="24"/>{% endif %}
   <text class="t" x="64" y="{{ h / 2 - 3 }}">{{ title }}</text>
   <text class="s" x="64" y="{{ h / 2 + 15 }}">{{ sub }}</text>
 </g>
@@ -10,8 +12,10 @@
 {%- macro mnode(x, y, icon, title, tip, w=156) -%}
 <g class="node" transform="translate({{ x }},{{ y }})"><title>{{ tip }}</title>
   <rect class="box" width="{{ w }}" height="46" rx="13"/>
-  <rect class="tile" x="7" y="7" width="32" height="32" rx="9"/>
-  <use class="icn" href="#i-{{ icon }}" x="13" y="13" width="20" height="20"/>
+  {% if icon.startswith("logo:") %}<rect class="tile logo" x="7" y="7" width="32" height="32" rx="9"/>
+  <image href="/static/{{ icon[5:] }}" x="12" y="12" width="22" height="22" preserveAspectRatio="xMidYMid meet"/>
+  {% else %}<rect class="tile" x="7" y="7" width="32" height="32" rx="9"/>
+  <use class="icn" href="#i-{{ icon }}" x="13" y="13" width="20" height="20"/>{% endif %}
   <text class="t m" x="47" y="28">{{ title }}</text>
 </g>
 {%- endmacro -%}
@@ -54,6 +58,7 @@
   .box{fill:#fff;stroke:#d9e4e8;stroke-width:1.5}
   .box.hub{stroke:#0072BC;stroke-width:2}
   .tile{fill:#E3EBF2}
+  .tile.logo{fill:#fff;stroke:#e3ebf2;stroke-width:1.5}
   .chip{fill:#f3f7fa}
   .icn{fill:none;stroke:#0072BC;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   .t{font-size:15px;font-weight:700;fill:#26272a}
@@ -119,17 +124,17 @@
     <path class="live" d="M640 368H756" marker-end="url(#arr)"/>
 
     <!-- sources -->
-    {{ node(20, 50, 220, 64, "satellite-dish", "SFPUC beach map", "posted & sewage flags", "SFPUC's live beach feed (getBeaches): read by the watcher every minute and by the site on each visit") }}
+    {{ node(20, 50, 220, 64, "logo:logos/sfpuc.png", "SFPUC beach map", "posted & sewage flags", "SFPUC's live beach feed (getBeaches): read by the watcher every minute and by the site on each visit") }}
     {{ node(20, 128, 220, 64, "flask", "DataSF", "city lab results", "The city's beach lab results: mirrored into Supabase every 30 minutes and read live by the pages") }}
-    {{ node(20, 206, 220, 64, "waves", "Surfrider BWTF", "volunteer samples", "The Blue Water Task Force database, read live by the pages") }}
-    {{ node(20, 284, 220, 64, "cloud-rain", "Weather & tides", "NOAA · NWS · Open-Meteo", "Rain gauges, rain forecast and tides: the forecast's inputs") }}
+    {{ node(20, 206, 220, 64, "logo:brand/bwtf_144x144.png", "Surfrider BWTF", "volunteer samples", "The Blue Water Task Force database, read live by the pages") }}
+    {{ node(20, 284, 220, 64, "logo:logos/noaa.svg", "Weather & tides", "NOAA · NWS · Open-Meteo", "Rain gauges, rain forecast and tides: the forecast's inputs") }}
     {{ node(20, 452, 220, 64, "building-2", "State records", "CIWQS · BeachWatch", "Discharge reports and beach postings, pulled by script each quarter (see /records)") }}
 
     <!-- backend -->
     <g class="node" transform="translate(380,40)"><title>Supabase: the Postgres database. pg_cron runs the alert watcher every minute and triggers the forecast every 30 minutes; it keeps subscribers, the alert log and history tables.</title>
       <rect class="box hub" width="260" height="212" rx="18"/>
-      <rect class="tile" x="12" y="12" width="40" height="40" rx="11"/>
-      <use class="icn" href="#i-database" x="20" y="20" width="24" height="24"/>
+      <rect class="tile logo" x="12" y="12" width="40" height="40" rx="11"/>
+      <image href="/static/logos/supabase.svg" x="19" y="19" width="26" height="26"/>
       <text class="t" x="64" y="29">Supabase</text>
       <text class="s" x="64" y="46">database + scheduler</text>
       {{ chip(72, "clock", "Alert watcher", "1 min") }}
@@ -138,17 +143,17 @@
     </g>
     <g class="node" transform="translate(380,330)"><title>Vercel: the Flask web app (app/wsgi.py) — every page and API; main auto-deploys</title>
       <rect class="box hub" width="260" height="76" rx="16"/>
-      <rect class="tile" x="12" y="18" width="40" height="40" rx="11"/>
-      <use class="icn" href="#i-server" x="20" y="26" width="24" height="24"/>
+      <rect class="tile logo" x="12" y="18" width="40" height="40" rx="11"/>
+      <image href="/static/logos/vercel.svg" x="21" y="27" width="22" height="22"/>
       <text class="t" x="64" y="35">Vercel</text>
       <text class="s" x="64" y="53">the website (Flask)</text>
     </g>
-    {{ node(380, 452, 260, 64, "git-branch", "GitHub", "code + records", "ciniper/BWTF_SF: the code and the committed record CSVs; a push to main deploys") }}
+    {{ node(380, 452, 260, 64, "logo:logos/github.svg", "GitHub", "code + records", "ciniper/BWTF_SF: the code and the committed record CSVs; a push to main deploys") }}
 
     <!-- people -->
-    {{ node(760, 40, 220, 64, "mail", "Brevo", "sends the alerts", "Email service: Supabase hands it each alert; delivery status is read back") }}
+    {{ node(760, 40, 220, 64, "logo:logos/brevo.svg", "Brevo", "sends the alerts", "Email service: Supabase hands it each alert; delivery status is read back") }}
     {{ node(760, 140, 220, 64, "users", "Subscribers", "email & text alerts", "People signed up at /signup for their beach zones") }}
-    {{ node(760, 240, 220, 56, "pulse", "Healthchecks", "is the watcher alive?", "healthchecks.io: pinged by every watcher run; silence raises an alarm") }}
+    {{ node(760, 240, 220, 56, "logo:logos/healthchecks.svg", "Healthchecks", "is the watcher alive?", "healthchecks.io: pinged by every watcher run; silence raises an alarm") }}
     {{ node(760, 336, 220, 64, "globe", "Visitors", "anyone, any browser", "The public website") }}
 
     <!-- legend -->
@@ -177,31 +182,31 @@
     <text class="lbl" x="180" y="490" text-anchor="middle">quarterly</text>
     <path class="live" d="M350 523H362V203H354" marker-end="url(#arrM)"/>
 
-    {{ mnode(10, 26, "satellite-dish", "SFPUC map", "SFPUC's live beach feed: read by the watcher every minute and by the site on each visit") }}
+    {{ mnode(10, 26, "logo:logos/sfpuc.png", "SFPUC map", "SFPUC's live beach feed: read by the watcher every minute and by the site on each visit") }}
     {{ mnode(194, 26, "flask", "DataSF", "The city's beach lab results: mirrored into Supabase every 30 minutes and read live by the pages") }}
-    {{ mnode(10, 80, "waves", "Surfrider", "The Blue Water Task Force database, read live by the pages") }}
-    {{ mnode(194, 80, "cloud-rain", "Weather", "Rain gauges, rain forecast and tides (NOAA, NWS, Open-Meteo)") }}
+    {{ mnode(10, 80, "logo:brand/bwtf_144x144.png", "Surfrider", "The Blue Water Task Force database, read live by the pages") }}
+    {{ mnode(194, 80, "logo:logos/noaa.svg", "Weather", "Rain gauges, rain forecast and tides (NOAA, NWS, Open-Meteo)") }}
 
     <g class="node" transform="translate(10,180)"><title>Supabase: the database and scheduler. Runs the alert watcher every minute and the forecast every 30 minutes; keeps subscribers and history.</title>
       <rect class="box hub" width="156" height="132" rx="14"/>
-      <rect class="tile" x="7" y="7" width="32" height="32" rx="9"/>
-      <use class="icn" href="#i-database" x="13" y="13" width="20" height="20"/>
+      <rect class="tile logo" x="7" y="7" width="32" height="32" rx="9"/>
+      <image href="/static/logos/supabase.svg" x="12" y="12" width="22" height="22"/>
       <text class="t m" x="47" y="28">Supabase</text>
       {{ mchip(52, "Watcher", "1 min") }}
       {{ mchip(90, "Forecast", "30 min") }}
     </g>
     <g class="node" transform="translate(194,180)"><title>Vercel: the Flask web app, every page and API; main auto-deploys</title>
       <rect class="box hub" width="156" height="46" rx="13"/>
-      <rect class="tile" x="7" y="7" width="32" height="32" rx="9"/>
-      <use class="icn" href="#i-server" x="13" y="13" width="20" height="20"/>
+      <rect class="tile logo" x="7" y="7" width="32" height="32" rx="9"/>
+      <image href="/static/logos/vercel.svg" x="13" y="13" width="20" height="20"/>
       <text class="t m" x="47" y="28">Vercel</text>
     </g>
     {{ mnode(194, 246, "globe", "Visitors", "The public website") }}
-    {{ mnode(10, 340, "mail", "Brevo", "Email service: Supabase hands it each alert") }}
-    {{ mnode(194, 340, "pulse", "Healthchecks", "healthchecks.io: pinged by every watcher run; silence raises an alarm") }}
+    {{ mnode(10, 340, "logo:logos/brevo.svg", "Brevo", "Email service: Supabase hands it each alert") }}
+    {{ mnode(194, 340, "logo:logos/healthchecks.svg", "Healthchecks", "healthchecks.io: pinged by every watcher run; silence raises an alarm") }}
     {{ mnode(10, 412, "users", "Subscribers", "People signed up at /signup for their beach zones") }}
     {{ mnode(10, 500, "building-2", "State records", "CIWQS discharge reports and BeachWatch postings, pulled by script each quarter") }}
-    {{ mnode(194, 500, "git-branch", "GitHub", "The code and the committed record CSVs; a push to main deploys") }}
+    {{ mnode(194, 500, "logo:logos/github.svg", "GitHub", "The code and the committed record CSVs; a push to main deploys") }}
 
     <g transform="translate(22,600)">
       <path class="live" d="M0 0H28"/><text class="lbl" x="34" y="4">live</text>
