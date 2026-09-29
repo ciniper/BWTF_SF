@@ -1,7 +1,8 @@
 # Stage 2 v3 — "shares from the water": findings (2026-09-28)
 
-**Status: negative result. The code was not merged (Chase, 2026-09-28); it lives on
-branch `stage2-v3` (commit `9eea48a`, worktree removed).** This note keeps what the
+**Status: negative result. The code was not merged (Chase, 2026-09-28). The remote
+branch was deleted on 2026-09-29; the code survives only as local branch `stage2-v3`
+(commit `9eea48a`) in Chase's clone.** This note keeps what the
 investigation found so the question does not have to be re-opened from scratch.
 
 ## The question
@@ -87,7 +88,8 @@ evidence at all — the postings are precautionary, the samples absent.
 
 ## Re-running the fit
 
-The fitter is not on `main`. From a worktree on the branch:
+The fitter is not on `main` and no longer on GitHub. From a worktree on the local branch
+(if the branch is gone, the commit is `9eea48a`; tag it before it is garbage-collected):
 
     git worktree add ~/Personal/BWTF-stage2-v3 stage2-v3
     cd ~/Personal/BWTF-stage2-v3
