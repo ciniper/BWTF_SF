@@ -271,6 +271,8 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
     by_id = {str(getattr(st, "station_id", "")): st for st in stations}   # SFPUC id → live feed row
     status_text = {"safe": "safe", "posted": "posted for bacteria", "discharge": "sewage discharge", "unknown": "not sampled"}
     tiles, posted, discharging, n_safe, n_graded = [], [], [], 0, 0
+    posted_by_zone: dict[str, list] = {}
+    cso_by_zone: dict[str, list] = {}
     for zk, z in ZONES.items():
         sts = []
         for source, reg in zip(z.source_ids, z.stations):    # every registry station, so the map and the dots stay complete when the feed is short
@@ -283,6 +285,10 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
         z_cso = [x["name"] for x in sts if x["status"] == "discharge"]
         z_safe = sum(1 for x in sts if x["status"] == "safe")
         posted += z_posted; discharging += z_cso; n_safe += z_safe; n_graded += z_safe + len(z_posted) + len(z_cso)
+        if z_posted:
+            posted_by_zone[zk] = z_posted
+        if z_cso:
+            cso_by_zone[zk] = z_cso
         status = "discharge" if z_cso else "posted" if z_posted else "safe" if z_safe else "unknown"
         text = ("Sewage discharge" if status == "discharge" else f"{len(z_posted)} beach{'es' if len(z_posted) > 1 else ''} posted" if status == "posted"
                 else "All clear" if status == "safe" else "Not sampled")
@@ -291,40 +297,64 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
         meta = (" · ".join(z_cso + z_posted) + f" · {sampled}") if (z_cso or z_posted) else f"{len(sts)} stations · {sampled}"
         tiles.append({"key": zk, "label": z.label, "status": status, "status_text": text, "risk": (risks.get("zones") or {}).get(zk),
                       "stations": sts, "meta": meta})
-    if discharging:
-        tone, headline = "danger", f"Sewage discharge at {_join(discharging)}."
-        headline_html = f"<em>{_esc(headline)}</em>"
+    # The headline reads like a public notice and keeps one shape at any severity: counts only
+    # (Chase, 2026-09-29: "beaches" and "posted"). The names go first in the subhead, where a whole
+    # zone collapses to "all of <Zone>" and the list stops at three items ("… and N more").
+    def describe(names_by_zone: dict) -> str:
+        items = []
+        for zk, names in names_by_zone.items():
+            if len(names) > 1 and len(names) == len(ZONES[zk].stations):
+                items.append(f"all of {ZONES[zk].label}")
+            else:
+                items.extend(names)
+        return _join(items) if len(items) <= 3 else ", ".join(items[:3]) + f" and {len(items) - 3} more"
+    n_cso, n_posted = len(discharging), len(posted)
+    plural = lambda n, one, many: one if n == 1 else many  # noqa: E731
+    # Colour carries the grade: the discharge sentence red, the posted sentence orange, the standard green
+    # when everyone meets it, the safe count plain (Chase, 2026-09-29).
+    if n_cso:
+        tone = "danger"
+        parts = [("discharge", f"Sewage discharge at {n_cso} {plural(n_cso, 'beach', 'beaches')}.")]
+        if n_posted:
+            parts.append(("posted", f"{n_posted} {plural(n_posted, 'beach is', 'beaches are')} posted for bacteria."))
+        if n_safe:
+            parts.append(("", f"{n_safe} {plural(n_safe, 'meets', 'meet')} state standards." if n_posted
+                          else f"{n_safe} other {plural(n_safe, 'beach meets', 'beaches meet')} state standards."))
     elif n_graded == 0:
-        tone, headline = "warn", "Beach status is loading or unavailable right now."
-        headline_html = _esc(headline)
-    elif posted:
+        tone, parts = "warn", [("", "Beach status is unavailable right now.")]
+    elif n_posted:
         tone = "warn"
-        tail = f"{_join(posted)} {'is' if len(posted) == 1 else 'are'} posted." if len(posted) <= 2 else f"{len(posted)} beaches are posted."
-        headline = f"Water's fine at {n_safe} of {n_graded} beaches. {tail}"
-        headline_html = f"Water's fine at {n_safe} of {n_graded} beaches. <em>{_esc(tail)}</em>"
+        parts = [("posted", f"{n_posted} {plural(n_posted, 'beach is', 'beaches are')} posted for bacteria.")]
+        if n_safe:
+            parts.append(("", f"{n_safe} {plural(n_safe, 'other meets', 'others meet')} state standards."))
     else:
-        tone, headline = "ok", f"Water's fine at all {n_graded} beaches."
-        headline_html = _esc(headline)
+        tone, parts = "ok", [("", f"All {n_graded} monitored beaches <good>meet state standards</good> today.")]
+    headline = " ".join(t for _, t in parts).replace("<good>", "").replace("</good>", "")
+    headline_html = " ".join(f'<em class="{cls}">{_esc(t)}</em>' if cls else _esc(t).replace("&lt;good&gt;", '<em class="good">').replace("&lt;/good&gt;", "</em>")
+                             for cls, t in parts)
+    # The subhead stays low: facts only, no advice (Chase, 2026-09-29).
     lead = []
-    if discharging:
-        lead.append("Avoid water contact there, and for 72 hours after it ends.")
-    elif n_graded:
-        lead.append("No sewage discharge anywhere.")
+    if n_cso:
+        lead.append("Discharging: " + describe(cso_by_zone) + ".")
+    if n_posted:
+        lead.append("Posted: " + describe(posted_by_zone) + ".")
+    if not n_cso and n_graded:
+        lead.append("No active sewage discharge.")
     zr = risks.get("zones") or {}
     if zr:
         worst = max(zr.values())
-        where = "in every zone" if len(set(zr.values())) == 1 else f"at most, in {ZONES[max(zr, key=zr.get)].label}"
+        where = "in every zone" if len(set(zr.values())) == 1 else f"at most ({ZONES[max(zr, key=zr.get)].label})"
         ahead = risks.get("ahead") or []
         if ahead and max(p for _, p in ahead) < 10:
-            trend = f", and it stays low through {ahead[-1][0]}"
+            trend = f", staying low through {ahead[-1][0]}"
         elif ahead and max(p for _, p in ahead) >= worst + 10:
             lbl, pk = max(ahead, key=lambda t: t[1]); trend = f", rising to {pk}% by {lbl}"
         else:
             trend = ""
-        lead.append(f"Overflow risk today is {worst}% {where}{trend}.")
+        lead.append(f"Sewer-overflow risk today: {worst}% {where}{trend}.")
     if samples_fact:
         lead.append("Latest samples: " + samples_fact.replace("city", "city lab").replace("Surfrider", "Surfrider volunteers") + ".")
-    return {"tone": tone, "headline": headline, "headline_html": headline_html, "lead": " ".join(lead), "zones": tiles,
+    return {"tone": tone, "headline": headline, "headline_html": headline_html, "lead": " ".join(lead), "zones": tiles, "feed_ok": bool(stations),
             "posted": posted, "discharging": discharging, "n_safe": n_safe, "n_graded": n_graded,
             "date": now.strftime("%a %b %-d"), "checked": now.strftime("%-I:%M %p")}
 

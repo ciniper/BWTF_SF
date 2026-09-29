@@ -14,8 +14,8 @@
   .board .grid{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:22px;align-items:stretch}
   .eyebrow{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
   .board h1{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:42px;line-height:1;margin:8px 0 6px;letter-spacing:.02em;color:var(--ink)}
-  .board h1 em{font-style:normal;color:var(--posted)}
-  .board.tone-danger h1 em{color:var(--discharge)}
+  .board h1 em{font-style:normal}
+  .board h1 em.posted{color:var(--posted)}.board h1 em.discharge{color:var(--discharge)}.board h1 em.good{color:var(--safe)}
   .board .lead{font-size:16px;color:var(--muted);margin:0 0 16px}
   .zones{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .zone{border:1px solid var(--line);border-radius:var(--r);padding:12px 13px 11px;color:inherit;background:#fff;display:block;width:100%;text-align:left;cursor:pointer;font:inherit}
@@ -76,7 +76,7 @@
   <section class="board tone-{{ board.tone }}" aria-labelledby="today-h">
     <div class="grid">
       <div class="left">
-        <div class="eyebrow">Today · {{ board.date }} · city map checked {{ board.checked }}</div>
+        <div class="eyebrow">Beach status · {{ board.date }} · {% if board.feed_ok %}SFPUC map checked {{ board.checked }}{% else %}SFPUC map unreachable{% endif %}</div>
         <h1 id="today-h">{{ board.headline_html|safe }}</h1>
         {% if board.lead %}<p class="lead">{{ board.lead }}</p>{% endif %}
         {% if board.zones %}
