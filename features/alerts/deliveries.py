@@ -14,8 +14,12 @@ States (``status_of``):
   accepted  — Brevo answered 2xx (queued for delivery; not the same as arrived)
   failed    — Brevo or pg_net said no (the error column says why)
   unknown   — nothing could be read before pg_net purged the reply
-  delivered / bounced / blocked / spam / deferred — level 2, from Brevo's
-  events API (delivery_state); not polled yet.
+  delivered / bounced / blocked / spam / deferred — level 2: ``poll_brevo``
+  asks Brevo's events API what became of recent accepted messages and stamps
+  delivery_state / delivery_at (a failure's reason goes into error). It runs as
+  a side job of the production forecast refresh (every 30 min), never as a
+  public endpoint: nothing to spoof, and a week of downtime loses nothing
+  (Brevo keeps 90 days of events).
 
 Nothing here may break the dashboard or a send: every Supabase call is wrapped
 by its caller, and ``record_manual`` swallows its own failures.
@@ -23,6 +27,8 @@ by its caller, and ``record_manual`` swallows its own failures.
 from __future__ import annotations
 
 import html
+import os
+import re
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
@@ -33,6 +39,17 @@ PENDING_MINUTES = 15       # no reply yet but this young → "pending", not "unk
 RECENT_EVENTS = 12         # alert events shown on the dashboard
 SUMMARY_DAYS = 30          # the one-line tally above them
 UNLINKED_HOURS = 24        # rows the trigger did not link (should be none) still show
+
+# level 2 — Brevo's transactional events (GET /v3/smtp/statistics/events)
+BREVO_EVENTS_URL = "https://api.brevo.com/v3/smtp/statistics/events"
+POLL_DAYS = 7              # accepted rows younger than this without a final state are re-asked
+BREVO_PAGE = 2500          # Brevo's page cap
+BREVO_MAX_PAGES = 4
+_FINAL = {"delivered": "delivered", "hardBounces": "hard_bounce", "blocked": "blocked",
+          "spam": "spam", "invalid": "invalid", "error": "error"}
+_INTERIM = {"softBounces": "soft_bounce", "deferred": "deferred"}
+_TAG = re.compile(r"^bwtf-delivery-(\d+)$")
+_BOUNCING = ("bounced", "blocked", "spam")
 
 _EVENT_LABEL = {"posted": "bacteria posting", "cso": "CSO discharge",
                 "manual_dispatch": "manual send", "cleared": "cleared"}
@@ -72,15 +89,17 @@ def status_of(row: dict, now: datetime | None = None) -> tuple[str, str]:
     state = (row.get("delivery_state") or "").strip()
     if state:
         when = _pacific(row.get("delivery_at"))
+        reason = (row.get("error") or "").strip()
+        tail = (f" {when}" if when else "") + (f": {reason}" if reason and state != "delivered" else "")
         if state == "delivered":
-            return "delivered", f"delivered {when}".strip()
+            return "delivered", f"delivered{tail}"
         if state in ("soft_bounce", "hard_bounce"):
-            return "bounced", f"{state.replace('_', ' ')} {when}".strip()
+            return "bounced", f"{state.replace('_', ' ')}{tail}"
         if state == "deferred":
-            return "deferred", f"deferred by the receiving server {when}".strip()
+            return "deferred", f"deferred by the receiving server{tail}"
         if state in ("blocked", "spam"):
-            return state, f"{state} {when}".strip()
-        return "failed", f"{state} {when}".strip()
+            return state, f"{state}{tail}"
+        return "failed", f"{state}{tail}"
 
     http = row.get("http_status")
     if http is not None:
@@ -123,7 +142,7 @@ def fetch_recent(limit: int = RECENT_EVENTS, now: datetime | None = None) -> dic
     unlinked = sb.select("alert_deliveries", {
         "select": "*", "alert_log_id": "is.null", "sent_at": f"gte.{since}", "order": "id.asc"})
     tally_rows = sb.select("alert_deliveries", {
-        "select": "http_status,checked_at,error,delivery_state,delivery_at,sent_at",
+        "select": "recipient,http_status,checked_at,error,delivery_state,delivery_at,sent_at",
         "sent_at": f"gte.{(now - timedelta(days=SUMMARY_DAYS)).isoformat()}"})
 
     by_log: dict = {}
@@ -135,7 +154,21 @@ def fetch_recent(limit: int = RECENT_EVENTS, now: datetime | None = None) -> dic
                                   "event_type": "unlinked", "station_names": [],
                                   "recipient_count": len(unlinked), "simulated": False},
                           "deliveries": unlinked})
-    return {"events": events, "summary": summarize(tally_rows, now), "days": SUMMARY_DAYS}
+    return {"events": events, "summary": summarize(tally_rows, now), "days": SUMMARY_DAYS,
+            "bouncing": bouncing(tally_rows, now)}
+
+
+def bouncing(rows: list[dict], now: datetime | None = None) -> list[dict]:
+    """Addresses whose messages bounced, were blocked or went to spam in the
+    window — for Chase to review; nothing is deactivated automatically."""
+    seen: dict = {}
+    for r in rows:
+        state, detail = status_of(r, now)
+        if state in _BOUNCING and r.get("recipient"):
+            e = seen.setdefault(r["recipient"], {"recipient": r["recipient"], "count": 0, "last": ""})
+            e["count"] += 1
+            e["last"] = detail
+    return sorted(seen.values(), key=lambda e: (-e["count"], e["recipient"]))
 
 
 def _chip(state: str, label: str | None = None) -> str:
@@ -200,6 +233,9 @@ def render_section(data: dict, now: datetime | None = None) -> str:
         if s.get(key):
             parts.append(f"{s[key]} {key}")
     line = f"<p class='dsummary'>Last {days} days: {' · '.join(parts)}.</p>"
+    if data.get("bouncing"):
+        items = "; ".join(f"{html.escape(b['recipient'])} ({b['count']}: {html.escape(b['last'])})" for b in data["bouncing"])
+        line += f"<p class='dbouncing'>{_chip('bounced', 'review')} Not arriving: {items}. Fix or remove the address — nothing is deactivated automatically.</p>"
     events = data.get("events") or []
     if not events:
         return line + "<p class='mute'>No alerts have reached anyone yet.</p>"
@@ -251,3 +287,112 @@ def record_manual(alert_log_id: int | None, deliveries: list[dict]) -> int:
     except Exception as exc:  # logging must never break the dispatch path
         print(f"[alert_deliveries] failed to record {len(rows)} deliveries: {exc}")
         return 0
+
+
+# ── level 2: did it arrive? (Brevo's events API, polled from the refresh) ────
+
+def brevo_key() -> str | None:
+    """BREVO_API_KEY from the environment, else watcher_config (the key the pg
+    sender uses). Never log or return it to a page."""
+    key = os.environ.get("BREVO_API_KEY")
+    if key:
+        return key
+    try:
+        rows = sb.select("watcher_config", {"select": "value", "key": "eq.brevo_api_key"})
+        return (rows[0].get("value") or None) if rows else None
+    except Exception:
+        return None
+
+
+def _fetch_brevo_events(key: str, days: int) -> list[dict]:
+    """Every transactional event of the last ``days`` days, newest first, paged."""
+    import requests
+    out: list[dict] = []
+    for page in range(BREVO_MAX_PAGES):
+        r = requests.get(BREVO_EVENTS_URL,
+                         params={"days": days, "limit": BREVO_PAGE, "offset": page * BREVO_PAGE, "sort": "desc"},
+                         headers={"api-key": key, "accept": "application/json"}, timeout=20)
+        if r.status_code >= 300:
+            raise RuntimeError(f"Brevo events API {r.status_code}: {r.text[:200]}")
+        events = (r.json() or {}).get("events") or []
+        out.extend(events)
+        if len(events) < BREVO_PAGE:
+            break
+    return out
+
+
+def _pick_state(events: list[dict]) -> tuple[str, str | None, str | None] | None:
+    """(state, at, reason) for one message: delivered wins; else the latest hard
+    failure; else a soft bounce; else deferred. None when Brevo has only
+    'requests' (accepted) or nothing yet — the row stays as it is."""
+    final = [e for e in events if e.get("event") in _FINAL]
+    interim = [e for e in events if e.get("event") in _INTERIM]
+    latest = lambda lst: max(lst, key=lambda e: e.get("date") or "")
+    if final:
+        delivered = [e for e in final if e.get("event") == "delivered"]
+        e = latest(delivered) if delivered else latest(final)
+    elif interim:
+        soft = [e for e in interim if e.get("event") == "softBounces"]
+        e = latest(soft) if soft else latest(interim)
+    else:
+        return None
+    state = _FINAL.get(e.get("event")) or _INTERIM.get(e.get("event"))
+    at = _parse_ts(e.get("date"))
+    return state, (at.isoformat() if at else None), (e.get("reason") or None)
+
+
+def poll_brevo(now: datetime | None = None, days: int = POLL_DAYS, dry_run: bool = False) -> dict:
+    """Stamp delivery_state / delivery_at on recent accepted rows from Brevo's
+    events. Candidates: message_id known, sent within ``days``, no final state
+    yet (null, deferred or soft_bounce). One paged events call per poll, matched
+    on messageId, else on the bwtf-delivery-<id> tag. A failure's reason goes
+    into ``error``; a delivery clears it. Raises on Brevo/Supabase errors — the
+    refresh hook swallows and logs them. ``dry_run`` returns the patches instead
+    of writing them."""
+    now = now or datetime.now(timezone.utc)
+    since = (now - timedelta(days=days)).isoformat()
+    rows = sb.select("alert_deliveries", {
+        "select": "id,message_id,delivery_state,sent_at",
+        "message_id": "not.is.null", "sent_at": f"gte.{since}",
+        "or": "(delivery_state.is.null,delivery_state.in.(deferred,soft_bounce))",
+        "order": "id.asc", "limit": "500"})
+    if not rows:
+        return {"candidates": 0, "updated": 0, "events": 0, "states": {}}
+    key = brevo_key()
+    if not key:
+        raise RuntimeError("no Brevo API key (BREVO_API_KEY or watcher_config.brevo_api_key)")
+    events = _fetch_brevo_events(key, days + 1)
+    by_msg: dict = {}
+    by_tag: dict = {}
+    for e in events:
+        if e.get("messageId"):
+            by_msg.setdefault(e["messageId"], []).append(e)
+        tags = e.get("tag") or e.get("tags") or []      # Brevo: one comma-joined string
+        for t in (re.split(r"[,\s]+", tags) if isinstance(tags, str) else tags):
+            m = _TAG.match(str(t))
+            if m:
+                by_tag.setdefault(int(m.group(1)), []).append(e)
+    updated = 0
+    states: dict = {}
+    patches: list[dict] = []
+    for r in rows:
+        picked = _pick_state(by_msg.get(r["message_id"]) or by_tag.get(int(r["id"])) or [])
+        if not picked:
+            continue
+        state, at, reason = picked
+        if state == r.get("delivery_state"):
+            continue
+        patch = {"delivery_state": state, "delivery_at": at or now.isoformat()}
+        if state == "delivered":
+            patch["error"] = None
+        elif reason:
+            patch["error"] = reason[:500]
+        patches.append({"id": r["id"], **patch})
+        if not dry_run:
+            sb.update("alert_deliveries", {"id": f"eq.{r['id']}"}, patch)
+        updated += 1
+        states[state] = states.get(state, 0) + 1
+    out = {"candidates": len(rows), "updated": updated, "events": len(events), "states": states}
+    if dry_run:
+        out["patches"] = patches
+    return out

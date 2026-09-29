@@ -263,6 +263,125 @@ def test_manual_dispatcher_attaches_deliveries_to_each_result():
                   "source": "manual", "text_body": "B", "html_body": "<h>"}]
 
 
+
+# ── level 2: Brevo's events ──────────────────────────────────────────────────
+
+def _ev(kind, msg, date, **extra):
+    return {"event": kind, "messageId": msg, "date": date, "email": "x@x.org", **extra}
+
+
+def test_pick_state_prefers_delivery_then_hard_failure_then_soft_then_deferred():
+    assert D._pick_state([]) is None
+    assert D._pick_state([_ev("requests", "<a>", "2026-09-29T06:40:01.000Z")]) is None
+    assert D._pick_state([_ev("requests", "<a>", "2026-09-29T06:40:01.000Z"),
+                          _ev("deferred", "<a>", "2026-09-29T06:41:00.000Z"),
+                          _ev("delivered", "<a>", "2026-09-29T06:45:00.000Z")]) == ("delivered", "2026-09-29T06:45:00+00:00", None)
+    st = D._pick_state([_ev("softBounces", "<a>", "2026-09-29T06:41:00.000Z", reason="mailbox full"),
+                        _ev("hardBounces", "<a>", "2026-09-29T07:00:00.000Z", reason="user unknown")])
+    assert st == ("hard_bounce", "2026-09-29T07:00:00+00:00", "user unknown")
+    assert D._pick_state([_ev("softBounces", "<a>", "2026-09-29T06:41:00.000Z", reason="mailbox full"),
+                          _ev("deferred", "<a>", "2026-09-29T06:50:00.000Z")])[0] == "soft_bounce"
+    assert D._pick_state([_ev("deferred", "<a>", "2026-09-29T06:50:00.000Z")])[0] == "deferred"
+    assert D._pick_state([_ev("blocked", "<a>", "2026-09-29T06:50:00.000Z", reason="reputation")])[0] == "blocked"
+    # a delivery after a failure still counts as delivered (Brevo retried and got through)
+    assert D._pick_state([_ev("blocked", "<a>", "2026-09-29T06:50:00.000Z"),
+                          _ev("delivered", "<a>", "2026-09-29T06:20:00.000Z")])[0] == "delivered"
+
+
+def test_poll_brevo_matches_rows_by_message_id_or_tag_and_writes_only_changes():
+    selects, updates, gets = [], [], []
+    rows = [{"id": 1, "message_id": "<m1>", "delivery_state": None, "sent_at": "2026-09-29T06:40:00+00:00"},
+            {"id": 2, "message_id": "<m2>", "delivery_state": "soft_bounce", "sent_at": "2026-09-29T06:40:00+00:00"},
+            {"id": 3, "message_id": "<m3>", "delivery_state": None, "sent_at": "2026-09-29T06:40:00+00:00"},
+            {"id": 4, "message_id": "<m4>", "delivery_state": "deferred", "sent_at": "2026-09-29T06:40:00+00:00"},
+            {"id": 5, "message_id": "<lost>", "delivery_state": None, "sent_at": "2026-09-29T06:40:00+00:00"}]
+    events = [_ev("delivered", "<m1>", "2026-09-29T06:40:05.000Z"),
+              _ev("softBounces", "<m2>", "2026-09-29T06:41:00.000Z", reason="mailbox full"),   # unchanged → no write
+              _ev("requests", "<m3>", "2026-09-29T06:40:01.000Z"),                             # accepted only → no write
+              _ev("hardBounces", "<m4>", "2026-09-29T07:00:00.000Z", reason="user unknown"),
+              _ev("delivered", None, "2026-09-29T06:40:09.000Z", tag="bwtf-alert,bwtf-delivery-5")]   # no messageId: the tag finds it (Brevo joins tags with commas)
+
+    class Resp:
+        status_code = 200
+        text = ""
+        def __init__(self, ev): self._ev = ev
+        def json(self): return {"events": self._ev}
+
+    import requests
+    orig = (D.sb.select, D.sb.update, requests.get)
+    D.sb.select = lambda table, params: (selects.append((table, params)) or rows) if table == "alert_deliveries" else [{"value": "k"}]
+    D.sb.update = lambda table, filters, patch: updates.append((table, filters, patch)) or []
+    requests.get = lambda url, params=None, headers=None, timeout=None: gets.append((url, params, headers)) or Resp(events)
+    os.environ.pop("BREVO_API_KEY", None)
+    try:
+        out = D.poll_brevo(now=datetime(2026, 9, 29, 8, 0, tzinfo=timezone.utc))
+    finally:
+        D.sb.select, D.sb.update, requests.get = orig
+    assert out["candidates"] == 5 and out["events"] == 5
+    assert out["updated"] == 3 and out["states"] == {"delivered": 2, "hard_bounce": 1}, out
+    # candidate filter: accepted rows of the last week without a final state
+    _, params = selects[0]
+    assert params["message_id"] == "not.is.null" and params["or"] == "(delivery_state.is.null,delivery_state.in.(deferred,soft_bounce))"
+    assert params["sent_at"] == "gte.2026-09-22T08:00:00+00:00"
+    # one events call, keyed with the watcher_config key, never echoed in the result
+    assert len(gets) == 1 and gets[0][2]["api-key"] == "k" and gets[0][1]["days"] == 8 and "k" not in str(out)
+    by_id = {int(f["id"].split(".")[1]): p for _, f, p in updates}
+    assert by_id[1] == {"delivery_state": "delivered", "delivery_at": "2026-09-29T06:40:05+00:00", "error": None}
+    assert by_id[4] == {"delivery_state": "hard_bounce", "delivery_at": "2026-09-29T07:00:00+00:00", "error": "user unknown"}
+    assert by_id[5]["delivery_state"] == "delivered"
+    # dry run: same decisions, nothing written
+    D.sb.select = lambda table, params: rows if table == "alert_deliveries" else [{"value": "k"}]
+    D.sb.update = lambda *a: (_ for _ in ()).throw(AssertionError("wrote in dry run"))
+    requests.get = lambda *a, **k: Resp(events)
+    try:
+        dry = D.poll_brevo(now=datetime(2026, 9, 29, 8, 0, tzinfo=timezone.utc), dry_run=True)
+    finally:
+        D.sb.select, D.sb.update, requests.get = orig
+    assert [p["id"] for p in dry["patches"]] == [1, 4, 5]
+    # no candidates → no Brevo call at all
+    D.sb.select = lambda table, params: []
+    requests.get = lambda *a, **k: (_ for _ in ()).throw(AssertionError("called Brevo with nothing to ask"))
+    try:
+        assert D.poll_brevo()["candidates"] == 0
+    finally:
+        D.sb.select, D.sb.update, requests.get = orig
+
+
+def test_refresh_hook_swallows_poller_failures():
+    from features.forecast import page as fpage
+    orig = D.poll_brevo
+    D.poll_brevo = lambda: (_ for _ in ()).throw(AssertionError("polled from a non-production host"))
+    os.environ.pop("FORECAST_CACHE_WRITE", None); os.environ.pop("VERCEL_ENV", None)
+    try:
+        assert fpage._poll_deliveries() == 0                # laptops and tests never poll (same gate as the cache row)
+        os.environ["FORECAST_CACHE_WRITE"] = "1"
+        D.poll_brevo = lambda: (_ for _ in ()).throw(RuntimeError("Brevo events API 401"))
+        assert fpage._poll_deliveries() == -1
+        D.poll_brevo = lambda: {"candidates": 2, "updated": 1, "events": 9, "states": {"delivered": 1}}
+        assert fpage._poll_deliveries() == 1
+    finally:
+        D.poll_brevo = orig
+        os.environ.pop("FORECAST_CACHE_WRITE", None)
+    src = (ROOT / "features/forecast/page.py").read_text()
+    assert "_mirror_samples()\n            _poll_deliveries()" in src      # runs with the other post-store side jobs
+
+
+def test_panel_shows_arrival_states_reasons_and_bouncing_addresses():
+    rows = [{"id": 1, "recipient": "ok@x.org", "channel": "email", "sent_at": "2026-09-28T19:29:00+00:00",
+             "http_status": 201, "delivery_state": "delivered", "delivery_at": "2026-09-28T19:29:41+00:00"},
+            {"id": 2, "recipient": "gone@x.org", "channel": "email", "sent_at": "2026-09-28T19:29:00+00:00",
+             "http_status": 201, "delivery_state": "hard_bounce", "delivery_at": "2026-09-28T19:30:00+00:00", "error": "user unknown"},
+            {"id": 3, "recipient": "gone@x.org", "channel": "email", "sent_at": "2026-09-27T19:29:00+00:00",
+             "http_status": 201, "delivery_state": "blocked", "delivery_at": "2026-09-27T19:30:00+00:00", "error": "reputation"}]
+    assert D.status_of(rows[1], NOW) == ("bounced", "hard bounce Sep 28, 12:30 PM: user unknown")
+    assert D.status_of(rows[0], NOW) == ("delivered", "delivered Sep 28, 12:29 PM")
+    b = D.bouncing(rows, NOW)
+    assert b == [{"recipient": "gone@x.org", "count": 2, "last": "blocked Sep 27, 12:30 PM: reputation"}]
+    html = D.render_section({"events": [], "summary": D.summarize(rows, NOW), "days": 30, "bouncing": b}, NOW)
+    assert "1 delivered · 2 bounced" in html
+    assert "Not arriving: gone@x.org (2: blocked Sep 27, 12:30 PM: reputation)" in html
+    assert "nothing is deactivated automatically" in html
+
 if __name__ == "__main__":
     import traceback
     failed = 0

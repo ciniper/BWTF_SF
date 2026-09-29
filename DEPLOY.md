@@ -268,5 +268,28 @@ select * from watcher_errors where kind like 'deliver%' order by at desc;  -- ex
 ```
 
 Before the table exists the panel reads "Deliveries unavailable: …" and the
-rest of the page is unaffected. Level 2 — did it arrive, from Brevo's events
-API polled by the refresh — is the next item in TODO.md.
+rest of the page is unaffected.
+
+**Applied 2026-09-28 and accepted:** the simulated alert produced one row,
+linked by the trigger, with `http_status 201` and a `message_id` one minute
+after dispatch; `watcher_errors` stayed empty.
+
+**Level 2 — did it arrive? (2026-09-29, no migration).** The production
+forecast refresh (every 30 min at :05/:35, and on real transitions) runs
+`features/alerts/deliveries.poll_brevo()` after storing the snapshot: one
+paged call to Brevo's events API for the last 8 days, matched to the accepted
+rows of the last 7 days that have no final state yet, stamping
+`delivery_state` / `delivery_at` — delivered, or hard_bounce / blocked / spam /
+invalid / error with Brevo's reason in `error`; soft_bounce and deferred are
+interim and re-asked. The key is `BREVO_API_KEY` from the environment, else
+`watcher_config.brevo_api_key`. There is no public endpoint; the refresh log
+line `deliveries: {...}` shows each poll that changed something and
+`deliveries not polled: …` when Brevo or Supabase refused. The panel shows the
+states and lists **Not arriving** addresses (bounced / blocked / spam in the
+last 30 days) for review — nothing is deactivated automatically. Check after
+deploy: within 30 min of an accepted send its row shows `delivery_state =
+delivered`.
+
+Brevo records opens and clicks by default (the events API returns them); the
+poller ignores them. Turn open/click tracking off in Brevo's transactional
+settings if the alerts should not track their readers.

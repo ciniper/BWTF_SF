@@ -227,6 +227,25 @@ def _mirror_samples() -> int:
         return -1
 
 
+def _poll_deliveries() -> int:
+    """alert_deliveries level 2: ask Brevo what became of the last week's
+    accepted messages and stamp delivery_state (features/alerts/deliveries.
+    poll_brevo). Runs only here, on the production refresh — no public
+    endpoint, and never from a laptop or a test (same gate as the cache row:
+    a stray poll would stamp real rows). Never raises."""
+    if not _cache_writable():
+        return 0
+    try:
+        from features.alerts import deliveries
+        out = deliveries.poll_brevo()
+        if out.get("updated"):
+            print(f"deliveries: {out}")
+        return int(out.get("updated", 0))
+    except Exception as e:  # noqa: BLE001
+        print(f"deliveries not polled: {e}")
+        return -1
+
+
 def _with_meta(snap: dict | None, generated_at: datetime | None,
                refreshing: bool = False, stale_note: str | None = None) -> dict:
     out = dict(snap or {"last_refresh": None, "predictions": {},
@@ -261,11 +280,17 @@ def _compute_and_store(row, now: datetime):
                                     stale_note=f"refresh failed: {snap['error']}"))
         return _json(_with_meta(snap, None))
 
-    if row is not None:
+    # The production host is the only writer — of the cache row AND of every
+    # side job below. The request handlers already keep other hosts out, but a
+    # direct call (a test on a laptop with the service key) reached the side
+    # jobs unguarded once (2026-09-29: junk forecast_changes rows), so the gate
+    # lives here too.
+    if row is not None and _cache_writable():
         if _store_snapshot(snap, now):
             _record_history(snap, now)   # the production host is the only writer (migration 012)
             _record_change(snap, now)    # capture on change (migration 013)
             _mirror_samples()
+            _poll_deliveries()           # alert deliveries level 2: did the mail arrive? (Brevo events)
     return _json(_with_meta(snap, now))
 
 

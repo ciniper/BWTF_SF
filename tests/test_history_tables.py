@@ -113,22 +113,33 @@ def test_engine_keeps_the_live_samples_and_the_refresh_writes_only_after_storing
     class FakeEngine:
         LIVE = FakeLive()
     seen = []
-    saved = (page._engine, page._store_snapshot, page._record_history, page._mirror_samples)
+    saved = (page._engine, page._store_snapshot, page._record_history, page._record_change,
+             page._mirror_samples, page._poll_deliveries)
     page._engine = FakeEngine
     page._record_history = lambda snap, now: seen.append("history")
+    page._record_change = lambda snap, now: seen.append("change")       # every side job stubbed: this test must never write to Supabase
     page._mirror_samples = lambda: seen.append("mirror")
+    page._poll_deliveries = lambda: seen.append("deliveries")
+    expected = ["history", "change", "mirror", "deliveries"]
     now = datetime(2026, 9, 27, 18, 0, tzinfo=timezone.utc)
+    import os
+    os.environ.pop("FORECAST_CACHE_WRITE", None); os.environ.pop("VERCEL_ENV", None)
     try:
         page._store_snapshot = lambda snap, now: True
         page._compute_and_store({"snapshot": {}, "generated_at": "2026-09-27T17:00:00Z"}, now)
-        assert seen == ["history", "mirror"]
+        assert seen == []                                   # not the production host → no store, no side jobs at all
+        os.environ["FORECAST_CACHE_WRITE"] = "1"            # the cache tests' override: now we are "production"
+        page._compute_and_store({"snapshot": {}, "generated_at": "2026-09-27T17:00:00Z"}, now)
+        assert seen == expected
         page._store_snapshot = lambda snap, now: False      # store failed → nothing recorded
         page._compute_and_store({"snapshot": {}, "generated_at": "2026-09-27T17:00:00Z"}, now)
-        assert seen == ["history", "mirror"]
+        assert seen == expected
         page._compute_and_store(None, now)                  # no cache row (Supabase-less host) → nothing recorded
-        assert seen == ["history", "mirror"]
+        assert seen == expected
     finally:
-        page._engine, page._store_snapshot, page._record_history, page._mirror_samples = saved
+        os.environ.pop("FORECAST_CACHE_WRITE", None)
+        (page._engine, page._store_snapshot, page._record_history, page._record_change,
+         page._mirror_samples, page._poll_deliveries) = saved
 
 
 def test_migration_013_adds_only_marked_blocks_to_the_tick_and_wires_the_clock():
