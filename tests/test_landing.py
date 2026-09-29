@@ -10,14 +10,14 @@ sys.path.insert(0, str(ROOT))
 
 from app import landing as L  # noqa: E402
 
-FEATURE_PAGES = {"/today", "/signup", "/alerts", "/forecast", "/samples", "/graphs", "/cso-history", "/analysis", "/discharges", "/postings"}
+FEATURE_PAGES = {"/today", "/signup", "/alerts", "/forecast", "/samples", "/graphs", "/compare", "/cso-history", "/analysis", "/discharges", "/postings"}
 
 
 def test_every_feature_page_sits_in_exactly_one_hub_and_every_link_resolves():
     hrefs = [h["primary"][0] for h in L.HUBS if h["primary"]] + [r[0] for h in L.HUBS for r in h["rows"]]
     subs = [r[4][0] for h in L.HUBS for r in h["rows"] if len(r) > 4]
-    assert subs == ["/compare"]   # Source Comparison hangs under Graphs
-    assert sorted(hrefs) == sorted(FEATURE_PAGES) and len(hrefs) == len(set(hrefs)) == 10
+    assert subs == []             # Source Comparison is a row like the others (Chase, 2026-09-29)
+    assert sorted(hrefs) == sorted(FEATURE_PAGES) and len(hrefs) == len(set(hrefs)) == 11
     assert [h["title"] for h in L.HUBS] == ["Today & alerts", "The water record", "Postings & discharges"]
     assert L.HUBS[2]["sub"] == "What the city reported, and when"
     assert {href for href, *_ in L.PAGES} == FEATURE_PAGES            # the flat view still lists them all
@@ -31,7 +31,7 @@ def test_every_feature_page_sits_in_exactly_one_hub_and_every_link_resolves():
             assert path in rules, path
     names = {r[1] for h in L.HUBS for r in h["rows"]}
     assert "Online Postings Timeline" in names and "SFPUC Alerts Timeline" not in names
-    assert [r[1] for r in L.HUBS[1]["rows"]] == ["Site Report Card", "Samples", "Graphs"]
+    assert [r[1] for r in L.HUBS[1]["rows"]] == ["Site Report Card", "Samples", "Graphs", "Source Comparison"]
     # the retired pages redirect to their successors, old deep links included
     with app.test_client() as c:
         assert c.get("/compare?graph=BAY%23320_SL").headers["Location"] == "/graphs?site=BAY%23320_SL"   # old deep links still forward

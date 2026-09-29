@@ -50,7 +50,10 @@ HUBS = [
              "every result · both programs"),
             ("/graphs", "Graphs",
              "Any site over time: all three indicators on one plot with the state limits drawn in, or the city against Surfrider head to head.",
-             "any site · all indicators", ("/compare", "Source Comparison: the six dual beaches, head to head")),
+             "any site · all indicators"),
+            ("/compare", "Source Comparison",
+             "The six beaches both programs sample, head to head: Surfrider's volunteer lab against the city's, latest result and agreement per site.",
+             "six dual beaches · head to head"),   # a row like the others, not a sub-row under Graphs (Chase, 2026-09-29)
         ],
     },
     {
