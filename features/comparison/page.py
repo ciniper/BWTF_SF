@@ -60,7 +60,7 @@ class ComparisonRoutes:
         params = parse_qs(urlparse(self.path).query)
         one = lambda k, d="": (params.get(k) or [d])[0].strip()  # noqa: E731
         try:
-            data = build_sample_viewer(start=one("start"), end=one("end"), scope=one("scope", "dual"),
+            data = build_sample_viewer(start=one("start"), end=one("end"), source=one("source"), scope=one("scope"),
                                        site=one("site"), sf_gov_monitor=self.combined_monitor.sf_gov_monitor)
             self._send_json(data)
         except Exception as e:
@@ -96,7 +96,7 @@ class ComparisonRoutes:
         params = parse_qs(urlparse(self.path).query)
         one = lambda k: (params.get(k) or [""])[0].strip()  # noqa: E731
         if one("vsite"):
-            self._redirect("/samples?" + urlencode({"scope": "all", "site": one("vsite")}))
+            self._redirect("/samples?" + urlencode({"site": one("vsite")}))
             return
         if one("graph"):
             self._redirect("/graphs?" + urlencode({"site": one("graph")}))
@@ -114,7 +114,7 @@ class ComparisonRoutes:
 
     def send_bwtf_redirect(self):
         """/bwtf (the BWTF Sample Log) is now the Surfrider view of /samples with the field notes as columns."""
-        self._redirect("/samples?" + urlencode({"source": "bwtf", "scope": "all", "notes": "columns"}))
+        self._redirect("/samples?" + urlencode({"source": "bwtf", "notes": "columns"}))
 
     def send_api_site_series(self):
         """One site's results over time for the graphs page: every indicator from

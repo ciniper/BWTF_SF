@@ -50,6 +50,8 @@ import features.cso_history.page as cso_history_page
 import features.discharges.page as discharges_page
 import features.forecast.page as forecast_page
 import features.signup.page as signup_page
+import features.unsubscribe.page as unsubscribe_page
+import features.manage.page as manage_page
 import features.site_analysis.page as site_analysis_page
 import features.postings.page as postings_page
 from features.alerts.page import AlertsRoutes
@@ -332,6 +334,20 @@ def create_app():
         app.add_url_rule(path, f"signup-get:{path}", _forecast_view(handler), methods=["GET"])
     for path, handler in signup_page.POST_ROUTES.items():
         app.add_url_rule(path, f"signup-post:{path}", _forecast_view(handler), methods=["POST"])
+
+    # One-click unsubscribe (017) — UNGATED by design: the per-subscriber token
+    # in the link is the credential. GET confirms, POST (button or a mail
+    # client's RFC 8058 one-click) deactivates.
+    for path, handler in unsubscribe_page.GET_ROUTES.items():
+        app.add_url_rule(path, f"unsubscribe-get:{path}", _forecast_view(handler), methods=["GET"])
+    for path, handler in unsubscribe_page.POST_ROUTES.items():
+        app.add_url_rule(path, f"unsubscribe-post:{path}", _forecast_view(handler), methods=["POST"])
+    # "Change your sites" (same token): the signup zones, pre-checked, saved
+    # through the signup store; saving on an unsubscribed row turns alerts back on.
+    for path, handler in manage_page.GET_ROUTES.items():
+        app.add_url_rule(path, f"manage-get:{path}", _forecast_view(handler), methods=["GET"])
+    for path, handler in manage_page.POST_ROUTES.items():
+        app.add_url_rule(path, f"manage-post:{path}", _forecast_view(handler), methods=["POST"])
 
     # No forecast refresh thread: predictions are compute-on-visit, cached in
     # Supabase (forecast_predictions) — /forecast/api/data refreshes on staleness.

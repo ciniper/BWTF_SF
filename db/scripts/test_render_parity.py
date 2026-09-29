@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Parity test: the pg renderer (bwtf_render_alert, migration 008) must match
+"""Parity test: the pg renderer (bwtf_render_alert, migration 017) must match
 the Python fallback byte-for-byte — subject, sms_text, text_body, html_body.
 
 If this fails after a format change, update whichever side lagged (format
@@ -33,6 +33,10 @@ CASES = [
     ], False, "Ocean Beach"),
     ("blank zone equals none", [{"station_id": "4613", "station_name": "Aquatic Park", "to": "posted"}], False, "  "),
 ]
+UNSUB = "https://bwtf-sf.vercel.app/unsubscribe?t=0f3b2c9e-1d2a-4e5f-8a9b-0c1d2e3f4a5b"
+# every case twice: without the link (phone-only / pre-017 rows) and with it
+CASES = [(label, tr, sim, zone, None) for label, tr, sim, zone in CASES] + \
+        [(label + " + unsubscribe", tr, sim, zone, UNSUB) for label, tr, sim, zone in CASES]
 
 FIELDS = ("subject", "sms_text", "text_body", "html_body")
 
@@ -42,16 +46,16 @@ def main() -> int:
         print("Supabase env missing — aborting."); return 1
     try:
         sb.rpc("bwtf_render_alert", {"p_transitions": CASES[0][1],
-                                     "p_simulated": False, "p_zone": None})
+                                     "p_simulated": False, "p_zone": None, "p_unsubscribe_url": None})
     except Exception as exc:
-        print(f"bwtf_render_alert RPC unavailable ({exc}) — paste db/migrations/008 first.")
+        print(f"bwtf_render_alert RPC unavailable ({exc}) — paste db/migrations/017 first.")
         return 1
 
     failures = 0
-    for label, transitions, simulated, zone in CASES:
+    for label, transitions, simulated, zone, unsub in CASES:
         pg = sb.rpc("bwtf_render_alert", {"p_transitions": transitions,
-                                          "p_simulated": simulated, "p_zone": zone})
-        py = _fallback(transitions, simulated, zone)
+                                          "p_simulated": simulated, "p_zone": zone, "p_unsubscribe_url": unsub})
+        py = _fallback(transitions, simulated, zone, unsub)
         for f in FIELDS:
             if pg.get(f) == py[f]:
                 print(f"PASS {label} · {f}")

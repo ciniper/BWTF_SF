@@ -31,6 +31,7 @@ class SiteSubscription:
     station_ids: list[str]
     created_at: str
     updated_at: str
+    unsubscribe_token: str = ""   # 017: per-row uuid behind the one-click link
 
 
 def normalize_email(email: str) -> str:
@@ -68,6 +69,7 @@ class SubscriptionStore:
             station_ids=sorted(set(row.get("station_ids", []))),
             created_at=row.get("created_at", ""),
             updated_at=row.get("updated_at", ""),
+            unsubscribe_token=str(row.get("unsubscribe_token") or ""),
         )
 
     def _remote_candidates(self, email: str, phone: str) -> list[dict]:

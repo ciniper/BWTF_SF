@@ -77,7 +77,10 @@ def test_dispatch_is_008_plus_marked_blocks_and_the_posts_are_never_swallowed():
     # the renderer stamp is the migration that last defined bwtf_render_alert, on both sides
     latest = max(p.name[:3] for p in MIG.glob("0*.sql")
                  if "create or replace function public.bwtf_render_alert(" in p.read_text())
-    assert f"renderer_ver text := '{latest}'" in d015, latest
+    newest_dispatch = max((p for p in MIG.glob("0*.sql")
+                           if "create or replace function public.bwtf_dispatch_live(" in p.read_text()),
+                          key=lambda p: p.name)
+    assert f"renderer_ver text := '{latest}'" in _grab(newest_dispatch.read_text(), "bwtf_dispatch_live"), latest
     assert render.RENDERER_VERSION == latest
 
 
@@ -247,7 +250,7 @@ def test_manual_dispatcher_attaches_deliveries_to_each_result():
 
     orig = cso_alerts.EmailNotifier, cso_alerts.render_alert
     cso_alerts.EmailNotifier = FakeNotifier
-    cso_alerts.render_alert = lambda tr, sim, zone=None: {"subject": "S", "sms_text": "T", "text_body": "B", "html_body": "<h>"}
+    cso_alerts.render_alert = lambda tr, sim, zone=None, **kw: {"subject": "S", "sms_text": "T", "text_body": "B", "html_body": "<h>"}
     os.environ["BREVO_API_KEY"] = "test-key"
     try:
         st = SFPUCStation("4619", "Islais Creek", StationStatus.POSTED, True, "BAY#320", None, None, 37.7, -122.4, "R", "R")

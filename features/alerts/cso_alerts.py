@@ -13,7 +13,7 @@ from pathlib import Path
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from features.alerts.render import render_alert
+from features.alerts.render import render_alert, unsubscribe_url
 from features.alerts.deliveries import sends_to_deliveries
 from features.alerts.notifiers import (
     EmailNotifier,
@@ -202,6 +202,7 @@ def dispatch_subscription_alerts(
             [{"station_id": s.station_id, "station_name": s.station_name, "to": "cso"}
              for s in matching_stations],
             is_simulated,
+            unsubscribe_url=unsubscribe_url(subscription.unsubscribe_token) if subscription.email else None,
         )
         message = rendered["sms_text"]
 

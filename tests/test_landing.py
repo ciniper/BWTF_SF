@@ -35,17 +35,31 @@ def test_every_feature_page_sits_in_exactly_one_hub_and_every_link_resolves():
     # the retired pages redirect to their successors, old deep links included
     with app.test_client() as c:
         assert c.get("/compare?graph=BAY%23320_SL").headers["Location"] == "/graphs?site=BAY%23320_SL"   # old deep links still forward
-        assert c.get("/compare?vsite=BAY%23211_SL").headers["Location"] == "/samples?scope=all&site=BAY%23211_SL"
-        assert c.get("/bwtf").headers["Location"] == "/samples?source=bwtf&scope=all&notes=columns"
+        assert c.get("/compare?vsite=BAY%23211_SL").headers["Location"] == "/samples?site=BAY%23211_SL"
+        assert c.get("/bwtf").headers["Location"] == "/samples?source=bwtf&notes=columns"
         for u in ("/graphs", "/samples"):
             html = c.get(u).data.decode(); assert "/static/charts.js" in html and "/static/sample_popover.js" in html, u
-        assert "Field notes" in c.get("/samples").data.decode() and 'data-notes="columns"' in c.get("/samples").data.decode()
+        # every page with a table carries tables.js: 50 rows first, "Show all N rows" for the rest (Chase, 2026-09-29)
+        for tpl in ROOT.glob("app/templates/**/*.html"):
+            body = tpl.read_text()
+            if "<table" in body or "<tbody" in body:
+                assert "/static/tables.js" in body, tpl
+        tables_js = (ROOT / "app/static/tables.js").read_text()
+        assert "Show all " in tables_js and "MutationObserver" in tables_js and "var N = 50" in tables_js and 'classList.contains("notes")' in tables_js
+        assert "slice(0, 40)" not in (ROOT / "app/templates/postings/page.html").read_text() and "slice(0, 300)" not in (ROOT / "app/templates/cso_history/page.html").read_text()
+        smp = c.get("/samples").data.decode()
+        assert "Field notes" in smp and 'data-notes="columns"' in smp
+        assert 'id="v-scope"' not in smp and "Dual sites" not in smp and [m for m in ("city", "bwtf", "both", "all") if 'data-source="%s"' % m in smp] == ["city", "bwtf", "both", "all"]   # Source as on Graphs, no Sites toggle
         g = c.get("/graphs").data.decode()
         assert g.count('class="tile"') >= 20 and 'id="analyte"' in g and '<option value="ENTERO" selected>' in g and '<option value="ALL">All indicators</option>' in g and '<option value="PCT">All % threshold</option>' in g and 'href="/compare"' in g
         assert ".preset.active{" in g and "function markPreset" in g            # a chosen date-range preset lights up
+        assert 'id="kind"' in g and 'data-k="line"' in g and 'data-k="bar"' in g and "CH.barSeries : CH.seriesChart" in g   # the Chart choice: lines or bars
+        assert 'querySelectorAll(".preset[data-days]")' in g and 'querySelectorAll(".preset")' not in g   # the Change site pill must not act as a range preset
+        assert 'id="siteBar"' in g and 'id="siteChange"' in g and ".tiles{display:none} .tiles.open{display:flex}" in g and "@media (max-width:640px)" not in g   # tiles collapse to the chosen site at every width
         assert 'id="view"' not in g and "<small>" not in g.split('id="tiles"')[1].split('id="start"')[0]          # no view buttons, plain tiles
         assert [m for m in ("Ocean Beach", "Baker &amp; China Beach", "North Beaches", "East Beaches") if m in g] == ["Ocean Beach", "Baker &amp; China Beach", "North Beaches", "East Beaches"] and "Surfrider only" not in g
-        assert 'data-s="all"' in g and 'data-s="both"' in g and g.count('class="seg-btn') == 4
+        seg = lambda i: g.split('id="' + i + '"')[1].split("</div>")[0].count('class="seg-btn')  # noqa: E731
+        assert 'data-s="all"' in g and 'data-s="both"' in g and seg("src") == 4 and seg("kind") == 2      # Source: City/Surfrider/Both/All; Chart: Lines/Bars
     assert "Online Postings Timeline" in (ROOT / "app/templates/cso_history/page.html").read_text()
     assert 'id="i-clipboard"' in (ROOT / "app/templates/_icons.html").read_text()
 

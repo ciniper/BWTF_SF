@@ -22,6 +22,8 @@ Python paths don't and pass None (the email just omits the zone line).
 """
 from __future__ import annotations
 
+import os
+
 from shared import supabase as sb
 
 MAP_URL = "https://webapps.sfpuc.org/sapps/beachesandbay.html"
@@ -29,7 +31,15 @@ MAP_URL = "https://webapps.sfpuc.org/sapps/beachesandbay.html"
 # alert_deliveries row (015) so an old message is never mistaken for a
 # re-render with a newer template. Bump with the SQL (015's renderer_ver and
 # tests/test_alert_deliveries.py hold it to the latest renderer migration).
-RENDERER_VERSION = "008"
+RENDERER_VERSION = "017"
+SITE_URL = os.environ.get("SITE_URL", "https://bwtf-sf.vercel.app").rstrip("/")
+
+
+def unsubscribe_url(token: str | None) -> str | None:
+    """The per-subscriber one-click link (017). None when there is no token
+    (phone-only rows, or a row read before 017 was applied). The renderer
+    derives the "Change your sites" link (/manage?t=…) from it."""
+    return f"{SITE_URL}/unsubscribe?t={token}" if token else None
 THUMB_BASE = "https://bwtf-sf.vercel.app/static/emailmaps"
 LOGO_URL = "https://bwtf.surfrider.org/images/BWTF-Logo_White.png"
 _LABEL = {"cso": "CSO discharge", "posted": "bacteria posting"}
@@ -41,13 +51,16 @@ _SEV_ADVICE = {"cso": "Sewage discharge — avoid water contact for 72 hours.",
                "posted": "Elevated bacteria — water contact not recommended."}
 
 
-def render_alert(transitions: list[dict], simulated: bool, zone: str | None = None) -> dict:
-    """{"subject","sms_text","text_body","html_body"} for one recipient's events."""
+def render_alert(transitions: list[dict], simulated: bool, zone: str | None = None,
+                 unsubscribe_url: str | None = None) -> dict:
+    """{"subject","sms_text","text_body","html_body"} for one recipient's events.
+    ``unsubscribe_url`` (017) puts the one-click link in the footer; without it
+    the footer keeps the older 'reply to unsubscribe' sentence."""
     if sb.is_configured():
         try:
             out = sb.rpc("bwtf_render_alert",
                          {"p_transitions": transitions, "p_simulated": simulated,
-                          "p_zone": zone})
+                          "p_zone": zone, "p_unsubscribe_url": unsubscribe_url})
             if isinstance(out, dict) and out.get("subject"):
                 return out
         except Exception:
@@ -55,12 +68,15 @@ def render_alert(transitions: list[dict], simulated: bool, zone: str | None = No
     return _fallback(transitions, simulated, zone)
 
 
-def _fallback(transitions: list[dict], simulated: bool, zone: str | None = None) -> dict:
+def _fallback(transitions: list[dict], simulated: bool, zone: str | None = None,
+              unsubscribe_url: str | None = None) -> dict:
     """Byte-for-byte Python port of bwtf_render_alert (do not restyle here —
     format changes belong in migration SQL; the parity test enforces this)."""
     prefix = "TEST " if simulated else ""
     n = len(transitions)
     zone = (zone or "").strip() or None
+    unsub = (unsubscribe_url or "").strip() or None
+    manage = unsub.replace("/unsubscribe?t=", "/manage?t=") if unsub else None
     label = lambda t: _LABEL.get(t["to"], "bacteria posting")
     sev = lambda t: t["to"] if t["to"] in _SEV_COLOR else "posted"
 
@@ -82,7 +98,9 @@ def _fallback(transitions: list[dict], simulated: bool, zone: str | None = None)
         + f"\n\nLive map: {MAP_URL}\n\n"
         + "Alerts are a community-science tool, not an official advisory. "
         + "Posted signs and SFPUC or health-department notices always win.\n\n"
-        + 'You subscribed to SF beach alerts (Surfrider SF Blue Water Task Force). Reply "unsubscribe" to stop.'
+        + "You subscribed to SF beach alerts (Surfrider SF Blue Water Task Force). "
+        + ('Reply "unsubscribe" to stop.' if unsub is None
+           else f"Change your sites: {manage}\nUnsubscribe: {unsub}")
     )
 
     rows_html = "".join(
@@ -138,7 +156,11 @@ def _fallback(transitions: list[dict], simulated: bool, zone: str | None = None)
         "Posted signs and SFPUC or health-department notices always win.</td></tr></table>"
         '<p style="margin:16px 0 22px;font-size:12px;color:#8a93a3;line-height:1.5;">'
         "You subscribed to SF beach alerts from Surfrider San Francisco&#39;s Blue Water Task Force. "
-        "Reply to this email with &quot;unsubscribe&quot; to stop alerts.</p>"
+        + ("Reply to this email with &quot;unsubscribe&quot; to stop alerts."
+           if unsub is None else
+           f'<a href="{manage}" style="color:#8a93a3;text-decoration:underline;">Change your sites</a>'
+           f' &middot; <a href="{unsub}" style="color:#8a93a3;text-decoration:underline;">Unsubscribe</a>')
+        + "</p>"
         "</td></tr></table></td></tr></table></body></html>"
     )
     return {"subject": subject, "sms_text": sms_text,
