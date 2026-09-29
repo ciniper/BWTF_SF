@@ -237,3 +237,36 @@ day). The 2026-09-27 backfill rows are relabelled by timestamp. `samples_lag`
 is the view to read lags from: refresh rows only, `lag_days` = Pacific day
 first seen minus the collection day. Compare its median with the one-day lag
 the live-corrections rules assume (`live_rules.RULES["samples"]["known_lag_days"]`).
+
+## 015: alert deliveries (built 2026-09-28 on branch `alert-deliveries`; NOT yet applied)
+
+`db/migrations/015_alert_deliveries.sql` — apply by hand in the Supabase SQL
+editor with no simulation active, in a dry spell. What it changes:
+
+| | Before | After |
+|---|---|---|
+| Per message | pg_net `request_id` inside `alert_log.results`; Brevo's reply purged unread after ~6 h | `alert_deliveries` row: recipient, channel, rendered subject / text / HTML / SMS text, renderer version, request id — then `http_status` (201 = Brevo accepted), `message_id`, `error` |
+| Dispatch (`bwtf_dispatch_live`) | 008's loop | the same loop; the delivery row is inserted before each POST and the request tagged `bwtf-delivery-<id>`, each in its own exception block — the POST is untouched and never inside a swallowing block |
+| Linking | — | after-insert trigger on `alert_log` (`bwtf_link_deliveries`) points the rows at their event; the callers in 006/009/011 are not redefined |
+| Reading the reply | never | `bwtf_check_deliveries`, its own pg_cron job every minute (`bwtf-check-deliveries`; the tick is untouched): copies status / messageId / error from `net._http_response`, logs failures to `watcher_errors` (kind `delivery`), marks rows whose reply was purged before it was read |
+| Manual sends (`/alerts` button, Python) | a boolean per recipient | complete rows written at once (`features/alerts/alert_log.py` → `deliveries.record_manual`) |
+| `/alerts` | — | **Deliveries** panel under Beach Stations: a 30-day tally, the recent events, one row per message with a status chip (pending / accepted / failed / unknown; level 2 adds delivered / bounced) and the message as sent |
+
+Nothing touches `watcher_runtime.last_error` (the health gate) or
+`bwtf_shadow_tick`. Storage ≈ 3.4 KB per message, 2.8 KB of it the HTML.
+
+**Acceptance (Chase, from the /alerts Simulator, to the test recipients):** run
+one simulated alert. Rows appear in `alert_deliveries` at dispatch; a minute
+later each shows `http_status 201` and a `message_id`, and the panel shows them
+as accepted with the message that went out. Then:
+
+```sql
+select jobname, schedule from cron.job;                                   -- bwtf-check-deliveries, * * * * *
+select id, recipient, channel, http_status, message_id, error, sent_at, checked_at
+  from alert_deliveries order by id desc limit 10;
+select * from watcher_errors where kind like 'deliver%' order by at desc;  -- expect none
+```
+
+Before the table exists the panel reads "Deliveries unavailable: …" and the
+rest of the page is unaffected. Level 2 — did it arrive, from Brevo's events
+API polled by the refresh — is the next item in TODO.md.

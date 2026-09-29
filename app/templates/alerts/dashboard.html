@@ -722,6 +722,29 @@
                 text-align: center;
             }
         }
+
+        /* Deliveries (015) */
+        .deliveries-panel { margin-top: 18px; }
+        .dsummary { margin: 0 0 10px; color: #54576F; }
+        .dlist { display: flex; flex-direction: column; gap: 8px; }
+        .devent { border: 1px solid rgba(38,39,42,0.08); border-radius: 14px; padding: 8px 12px; background: #fff; }
+        .devent > summary { cursor: pointer; list-style: none; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+        .devent > summary::-webkit-details-marker { display: none; }
+        .dwhen { font-weight: 600; }
+        .dsites { color: #54576F; }
+        .dchip { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: .78em; font-weight: 600; background: #e9edf2; color: #54576F; }
+        .dchip.ok { background: #e0f0ea; color: #237059; }
+        .dchip.bad { background: #f8dcd6; color: #b5310a; }
+        .dchip.wait { background: #fbe9d9; color: #9a5313; }
+        .dchip.sim { background: #e8e4f7; color: #5b4b9a; }
+        .dtable { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: .92em; }
+        .dtable th { text-align: left; color: #8a93a3; font-weight: 600; padding: 4px 8px; border-bottom: 1px solid rgba(38,39,42,0.08); }
+        .dtable td { padding: 6px 8px; border-bottom: 1px solid rgba(38,39,42,0.05); vertical-align: top; }
+        .dtable .dto { word-break: break-all; }
+        .dmessage summary { cursor: pointer; color: #1d6fa5; }
+        .dmsg { white-space: pre-wrap; background: #f6f8fa; padding: 8px 10px; border-radius: 8px; font-size: .85em; max-width: 720px; }
+        .dhtml { width: 100%; max-width: 720px; height: 460px; border: 1px solid rgba(38,39,42,0.1); border-radius: 8px; background: #fff; }
+        .dnone { margin: 8px 0 0; }
     </style>
 <link rel="stylesheet" href="/static/brand.css">
 </head>
@@ -789,6 +812,11 @@
                     {{ real.station_cards|safe }}
                 </div>
             </div>
+
+            <section class="panel deliveries-panel">
+                <h3>Deliveries <small class="mute">what each subscriber was sent, and whether Brevo took it</small></h3>
+                {{ deliveries_html|safe }}
+            </section>
         </div>
 
         <div id="view-sim" class="view" hidden>
