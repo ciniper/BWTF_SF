@@ -58,9 +58,20 @@ def email_transport_configured() -> bool:
     return all(os.environ.get(key) for key in ("SMTP_USERNAME", "SMTP_PASSWORD"))
 
 
+class BrevoSendError(RuntimeError):
+    """Brevo answered with an error status; ``status`` and ``body`` carry what it said."""
+
+    def __init__(self, status: int, body: str):
+        super().__init__(f"Brevo API {status}: {body[:200]}")
+        self.status = status
+        self.body = body
+
+
 def _send_via_brevo(from_email: str, to_email: str, subject: str,
-                    text_content: str, html_content: Optional[str] = None) -> None:
-    """Send one email through Brevo's transactional API. Raises on failure."""
+                    text_content: str, html_content: Optional[str] = None) -> dict:
+    """Send one email through Brevo's transactional API. Returns
+    ``{"http_status", "message_id"}`` from Brevo's reply; raises BrevoSendError
+    on a non-2xx status (the delivery log keeps the status either way)."""
     if not from_email:
         raise RuntimeError("No sender address — set ALERT_FROM_EMAIL to a Brevo-verified sender")
     payload = {
@@ -78,7 +89,12 @@ def _send_via_brevo(from_email: str, to_email: str, subject: str,
         timeout=HTTP_EMAIL_TIMEOUT_SECONDS,
     )
     if response.status_code >= 300:
-        raise RuntimeError(f"Brevo API {response.status_code}: {response.text[:200]}")
+        raise BrevoSendError(response.status_code, response.text)
+    try:
+        message_id = (response.json() or {}).get("messageId")
+    except ValueError:
+        message_id = None
+    return {"http_status": response.status_code, "message_id": message_id}
 
 
 class Notifier(ABC):
@@ -282,10 +298,17 @@ https://sf.surfrider.org/programs/blue-water-task-force
             print("Email notifier not configured. Set BREVO_API_KEY or SMTP_* environment variables.")
             return False
 
+        self.last_sends: list[dict] = []   # per-recipient outcome, read by the delivery log (015)
         try:
             if use_brevo:
                 for to_email in to_emails:
-                    _send_via_brevo(self.from_email, to_email, subject, text_content, html_content)
+                    try:
+                        reply = _send_via_brevo(self.from_email, to_email, subject, text_content, html_content)
+                    except Exception as exc:
+                        self.last_sends.append({"to": to_email, "http_status": getattr(exc, "status", None),
+                                                "message_id": None, "error": f"{type(exc).__name__}: {exc}"})
+                        raise
+                    self.last_sends.append({"to": to_email, **reply, "error": None})
             else:
                 msg = MIMEMultipart("alternative")
                 msg["Subject"] = subject
@@ -642,22 +665,27 @@ class EmailToSMSNotifier(Notifier):
             return False
 
         success = True
+        self.last_sends: list[dict] = []   # per-recipient outcome, read by the delivery log (015)
         for sms_email in self.to_sms_emails:
             try:
-                self._send_to_email(sms_email, message)
+                reply = self._send_to_email(sms_email, message) or {}
                 print(f"SMS sent to {sms_email}")
                 self.last_error = None
+                self.last_sends.append({"to": sms_email, "http_status": reply.get("http_status"),
+                                        "message_id": reply.get("message_id"), "error": None})
             except Exception as e:
                 print(f"Failed to send SMS to {sms_email}: {e}")
                 self.last_error = f"{type(e).__name__}: {e}"
+                self.last_sends.append({"to": sms_email, "http_status": getattr(e, "status", None),
+                                        "message_id": None, "error": self.last_error})
                 success = False
 
         return success
 
-    def _send_to_email(self, sms_email: str, message: str) -> None:
+    def _send_to_email(self, sms_email: str, message: str) -> Optional[dict]:
         if brevo_api_key():
             # Carrier gateways render the subject inline, so keep it blank-ish.
-            _send_via_brevo(self.from_email, sms_email, " ", message)
+            return _send_via_brevo(self.from_email, sms_email, " ", message)
             return
         msg = MIMEText(message)
         msg["From"] = self.from_email

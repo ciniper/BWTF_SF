@@ -25,6 +25,11 @@ from __future__ import annotations
 from shared import supabase as sb
 
 MAP_URL = "https://webapps.sfpuc.org/sapps/beachesandbay.html"
+# The migration whose bwtf_render_alert wrote the message; stored on every
+# alert_deliveries row (015) so an old message is never mistaken for a
+# re-render with a newer template. Bump with the SQL (015's renderer_ver and
+# tests/test_alert_deliveries.py hold it to the latest renderer migration).
+RENDERER_VERSION = "008"
 THUMB_BASE = "https://bwtf-sf.vercel.app/static/emailmaps"
 LOGO_URL = "https://bwtf.surfrider.org/images/BWTF-Logo_White.png"
 _LABEL = {"cso": "CSO discharge", "posted": "bacteria posting"}

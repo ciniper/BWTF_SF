@@ -534,6 +534,16 @@ class AlertsRoutes:
             for sub in subscriptions if (sub.email or sub.phone_number)
         ) or '<div class="empty-state">No subscribers yet.</div>'
         
+        # Deliveries panel (015): what each subscriber was sent and whether Brevo
+        # took it. The table may not exist yet, or Supabase may be down — then
+        # the panel says so and the rest of the page renders as before.
+        try:
+            from features.alerts import deliveries as _deliveries
+            deliveries_html = _deliveries.render_section(_deliveries.fetch_recent())
+        except Exception as e:
+            from html import escape as _esc
+            deliveries_html = f'<p class="mute">Deliveries unavailable: {_esc(str(e)[:200])}</p>'
+
         return render_template(
             "alerts/dashboard.html",
             generated=datetime.now().strftime('%B %d, %Y at %I:%M %p'),
@@ -553,6 +563,7 @@ class AlertsRoutes:
             current_subscription_html=current_subscription_html,
             alerts_html=alerts_html,
             feed_date_html=feed_date_html,
+            deliveries_html=deliveries_html,
         )
     
     def _generate_station_card(self, station, status_type, is_simulated=False, lab_result=None):

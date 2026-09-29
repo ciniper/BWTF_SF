@@ -46,14 +46,16 @@ fail the state standard; this project makes that information timely, searchable 
 - **Web app** — one Flask application (`app/wsgi.py`) mounting eight feature packages. Serverless on Vercel
   (`vercel.json`, 60 s function limit); `Procfile` runs gunicorn for any conventional host. Static analyses under
   `reports/` are served at `/reports/<name>`.
-- **State** — everything durable lives in Supabase (`db/migrations/001` → `012`): subscribers, the watcher's last-seen
+- **State** — everything durable lives in Supabase (`db/migrations/001` → `015`): subscribers, the watcher's last-seen
   station states (`watcher_state_shadow`, in shadow and live mode alike), `alert_log` (every detection, dispatch and simulation, with provenance), `watcher_config`
   (key/value: mode, feed URL, keep-alive URL, `live_corrections`), the single-row forecast snapshot cache, and since 012 three
   history tables: `forecast_history` (the first and last snapshot of every day — the first is the start-of-day forecast the
   grading uses; every snapshot carries a `model` stamp: served set from `candidates.SERVED`, artifact version and training time, live-corrections version, input rules, build sha), `feed_station_days` (what the SFPUC feed showed per station per day, written by every tick), and `samples`
   (a mirror of the city's lab results stamped when we first saw them); since 013 also `forecast_changes` (the forecast every time
   it changed, with first_at / last_confirmed_at so the stretch between two rows is confirmed, not assumed) and `watcher_errors`
-  (every tick error, 90-day retention). The production forecast recomputes on a clock — pg_cron every 30 min at :05 and :35, and
+  (every tick error, 90-day retention); since 015 also `alert_deliveries` (one row per message sent — the rendered subject/body
+  and Brevo's reply: `http_status`, `message_id`, `error`, read by its own per-minute pg_cron job; the /alerts Deliveries panel
+  shows them; level 2 will add delivered / bounced from Brevo's events API). The production forecast recomputes on a clock — pg_cron every 30 min at :05 and :35, and
   immediately when the tick logs a real transition — and the page always serves the stored snapshot (a visitor computes only if
   the clock has been silent 3 h). Bacteria results otherwise never touch the database:
   pages read DataSF live and training reads the committed CSVs under `features/forecast/data/raw/` (in the repo since 2026-09-27; refreshed by the collectors before a retrain or rescore). Without Supabase credentials the app falls back to the legacy JSON files under

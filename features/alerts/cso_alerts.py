@@ -14,6 +14,7 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from features.alerts.render import render_alert
+from features.alerts.deliveries import sends_to_deliveries
 from features.alerts.notifiers import (
     EmailNotifier,
     EmailToSMSNotifier,
@@ -207,6 +208,7 @@ def dispatch_subscription_alerts(
         delivery = "preview"
         delivered = False
         error = None
+        deliveries: list[dict] = []   # one row per message actually attempted (015)
 
         if channel == "email":
             if smtp_email_configured and subscription.email:
@@ -214,6 +216,7 @@ def dispatch_subscription_alerts(
                     notifier = EmailNotifier(to_emails=[subscription.email])
                     delivered = notifier.send_message(rendered["subject"], rendered["text_body"],
                                                       [subscription.email], rendered["html_body"])
+                    deliveries = sends_to_deliveries(notifier, "email", rendered, is_simulated)
                     delivery = "email" if delivered else "failed"
                     if not delivered:
                         error = notifier.last_error
@@ -230,6 +233,7 @@ def dispatch_subscription_alerts(
                     gateway_email = EmailToSMSNotifier.phone_to_gateway(subscription.phone_number, subscription.carrier)
                     notifier = EmailToSMSNotifier(to_sms_emails=[gateway_email])
                     delivered = notifier.send_message(message)
+                    deliveries = sends_to_deliveries(notifier, "sms", rendered, is_simulated)
                     delivery = "email_to_sms" if delivered else "failed"
                 except Exception as exc:  # pragma: no cover - defensive around network
                     delivery = "failed"
@@ -261,6 +265,7 @@ def dispatch_subscription_alerts(
             "delivered": delivered,
             "simulated": is_simulated,
             "error": error,
+            "deliveries": deliveries,
         })
 
     return results
