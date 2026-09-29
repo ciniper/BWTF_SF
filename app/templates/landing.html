@@ -39,7 +39,7 @@
   .zone .stations .status-dot{width:9px;height:9px}
   .zone .meta{font-size:12px;color:var(--faint)}
   .zones-hint{font-size:12px;color:var(--faint);margin:8px 0 0}
-  .map-wrap{position:relative;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;min-height:400px;background:var(--sand2)}
+  .map-wrap{position:relative;isolation:isolate;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;min-height:400px;background:var(--sand2)}   /* isolate: Leaflet's z-indexes stay inside the map */
   #today-map{position:absolute;inset:0}
   .map-reset{position:absolute;top:10px;right:10px;z-index:500;background:#fff;border:2px solid var(--line);border-radius:999px;padding:6px 12px;font:700 12.5px Roboto,sans-serif;color:var(--brand);cursor:pointer}
   .map-reset:hover{border-color:var(--brand)}
@@ -169,7 +169,11 @@ function initMap() {
   if (!window.L || !document.getElementById("today-map")) return;
   MAP = L.map("today-map", {scrollWheelZoom: false, zoomControl: true}).setView([37.765, -122.44], 11);
   L.tileLayer({{ BASEMAP.url|tojson }}, {{ BASEMAP.options|tojson }}).addTo(MAP);
-  for (const z of ZONES) for (const s of z.stations) {
+  // Stacking order: Leaflet draws vector markers in the order they are added, so add them by rank —
+  // not sampled underneath, then safe, posted, and discharge on top (Chase, 2026-09-29).
+  const RANK = {unknown: 0, caution: 1, safe: 1, posted: 2, discharge: 3};
+  const ordered = ZONES.flatMap(z => z.stations.map(s => [z, s])).sort((a, b) => (RANK[a[1].status] || 0) - (RANK[b[1].status] || 0));
+  for (const [z, s] of ordered) {
     const bad = s.status === "posted" || s.status === "discharge";
     const m = L.circleMarker([s.lat, s.lon], {radius: bad ? 9 : 7, color: "#fff", weight: 2, fillColor: COL[s.status] || COL.unknown, fillOpacity: .95, bubblingMouseEvents: false}).addTo(MAP);
     m.bindTooltip(bad ? s.name + " · " + (s.status === "discharge" ? "discharge" : "posted") : s.full_name + " · " + s.status_text + (s.sampled ? " · sampled " + s.sampled : ""),

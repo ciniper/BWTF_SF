@@ -16,7 +16,7 @@
       var t = document.createElement("script"); t.src = "/static/charts.js"; t.onload = res; t.onerror = function () { rej(new Error("charts module did not load")); }; document.head.appendChild(t); });
     return need.then(function () { return window.BWTFCharts.ensureChart(); });
   }
-  var CSS = ".sp-modal{position:fixed;inset:0;background:rgba(38,39,42,.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:60;font-family:'Roboto','Segoe UI',Arial,sans-serif;color:#26272a}" +
+  var CSS = ".sp-modal{position:fixed;inset:0;background:rgba(38,39,42,.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:5000;font-family:'Roboto','Segoe UI',Arial,sans-serif;color:#26272a}" +
     ".sp-modal.open{display:flex}.sp-box{background:#fff;border-radius:20px;max-width:820px;width:100%;padding:20px 22px;box-shadow:0 24px 60px rgba(0,0,0,.3);max-height:92vh;overflow:auto}" +
     ".sp-head{display:flex;justify-content:space-between;align-items:center;gap:12px}.sp-head h2{margin:0;font-size:19px;color:#26272a}" +
     ".sp-close{border:none;background:#eef2f4;border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:700;color:#26272a;font-size:14px;font-family:inherit}" +
