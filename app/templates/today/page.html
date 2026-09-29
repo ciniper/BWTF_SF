@@ -10,14 +10,14 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 <script src="/static/sample_popover.js" defer></script>
-<link rel="stylesheet" href="/static/brand.css">
+
 {% from "_today_board.html" import board_styles, board_section, board_script with context %}
 {{ board_styles() }}
+<link rel="stylesheet" href="/static/brand.css">
 <style>
-  *{box-sizing:border-box}
   body{margin:0;background:var(--sand);color:var(--ink);font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:15px;line-height:1.5}
   .wrap{max-width:1100px;margin:0 auto;padding:20px 24px 40px}
-  .foot-note{color:var(--faint);font-size:12.5px;margin:12px 0 0;line-height:1.6}
+  .foot-note{color:var(--faint);font-size:13px;margin:12px 0 0;line-height:1.6}
   .foot-note a{color:var(--brand)}
   @media (max-width:760px){.wrap{padding:14px 14px 30px}}
 </style>

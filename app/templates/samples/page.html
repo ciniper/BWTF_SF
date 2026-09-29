@@ -5,30 +5,9 @@
 <title>Samples — Surfrider SF Blue Water Task Force</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/brand.css">
 <style>
-  *{box-sizing:border-box}
-  body{margin:0;background:#E3EBF2;color:#26272a;font-family:'Roboto','Segoe UI',Arial,sans-serif}
-  a{color:#0072BC}
-  .wrap{max-width:1100px;margin:0 auto;padding:24px}
-  .back-to-dash{display:inline-block;margin:0 0 12px;padding:8px 14px;background:#343b44;color:#fff;border-radius:999px;text-decoration:none;font-weight:700;font-size:13px}
-  .back-to-dash:hover{background:#26272a}
-  .hero{background:#0072BC;color:#fff;border-radius:24px;padding:28px;margin-bottom:20px}
-  .hero h1{margin:6px 0 6px;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:38px;text-transform:uppercase;letter-spacing:.06em;color:#fff}
-  .hero p{margin:0;color:rgba(255,255,255,.88);font-size:15px;line-height:1.5;max-width:80ch}
-  .hero a{color:#fff}
-  .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 12px}
-  .ctl-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#54576F;font-weight:700}
-  .seg-toggle{display:inline-flex;border:2px solid #d9e4e8;border-radius:999px;overflow:hidden;background:#fff}
-  .seg-btn{padding:7px 14px;border:0;background:transparent;color:#54576F;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
-  .seg-btn.active{background:#0072BC;color:#fff} .seg-btn:disabled{color:#b4b2a9;cursor:default}
-  select,input[type=date]{font-size:13px;padding:7px 10px;border:2px solid #d9e4e8;border-radius:10px;background:#fff;color:#26272a;font-family:inherit;font-weight:600}
-  .preset{padding:7px 12px;border-radius:999px;border:2px solid #d9e4e8;background:#fff;color:#54576F;cursor:pointer;font-size:12.5px;font-weight:700;font-family:inherit}
-  .preset.active{border-color:#0072BC;background:#0072BC;color:#fff}
-  .board{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:16px 18px;margin:0 0 16px}
-  .board h2{font-size:16px;margin:0 0 4px} .sub{color:#54576F;font-size:12.5px;margin:0 0 10px}
-  .status{color:#54576F;font-size:12.5px;font-weight:600;margin:0 0 8px}
-  .foot{color:#8a949b;font-size:12px;margin-top:16px;line-height:1.6}
-  .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-weight:700;font-size:12px;margin-right:6px}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-weight:700;font-size:13px;margin-right:6px}
   .pill.city{background:#eef1f3;color:#3f474d} .pill.bwtf{background:#e3f1fa;color:#0072BC} .pill.over{background:#d15c5c;color:#fff} .pill.na{background:#f3f6f9;color:#98a3ab;font-weight:600}
   .latest{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin:0 0 6px}
   .lt{background:#f6f9fb;border:1px solid #d9e4e8;border-radius:12px;padding:10px 12px;font-size:13px}
@@ -37,7 +16,7 @@
   table.viewer th{text-align:left;color:#54576F;font-weight:700;padding:8px 10px;border-bottom:2px solid #d9e4e8;white-space:nowrap}
   table.viewer td{padding:8px 10px;border-bottom:1px solid #eef2f4;vertical-align:middle}
   table.viewer td.num,table.viewer th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-  table.viewer td.fc{color:#3f474d;font-size:12.5px;max-width:260px}
+  table.viewer td.fc{color:#3f474d;font-size:13px;max-width:260px}
   .v-val{display:inline-block;padding:1px 6px;border-radius:6px} .v-val.over{background:#d15c5c;color:#fff;font-weight:700} .v-val.caution{background:#fbeccd;color:#7a5200;font-weight:700}
   .v-sep{color:#98a3ab;margin:0 3px}
   .v-dup{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:#e3eefb;color:#1f5e8f;font-size:10.5px;font-weight:700;vertical-align:1px;white-space:nowrap}
@@ -49,7 +28,7 @@
   tr.notes td{background:#f6f9fb;padding:10px 16px 14px;border-bottom:1px solid #d9e4e8}
   .field{font-size:13px;color:#3f474d} .field-grid{display:flex;flex-wrap:wrap;gap:6px 18px;margin:8px 0 4px;color:#54576F} .field-note{font-style:italic;color:#54576F;margin-top:6px}
   .board.tbl{overflow-x:auto}
-</style><link rel="stylesheet" href="/static/brand.css">
+</style>
 </head>
 <body>
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}

@@ -6,18 +6,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/brand.css">
 <style>
-          *{box-sizing:border-box}
-          body{margin:0;background:#E3EBF2;color:#26272a;font-family:'Roboto','Segoe UI',Arial,sans-serif;}
-          a{color:#0072BC}
           .wrap{max-width:1040px;margin:0 auto;padding:24px}
-          .hero{background:#0072BC;color:#fff;border-radius:24px;padding:28px;margin-bottom:22px}
-          .hero h1{margin:6px 0 6px;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:38px;text-transform:uppercase;letter-spacing:.06em;color:#fff}
-          .hero p{margin:0;color:rgba(255,255,255,.85);font-size:15px;line-height:1.5;max-width:70ch}
-          .hero ul{margin:8px 0 10px;padding-left:22px;color:rgba(255,255,255,.88);font-size:15px;line-height:1.55}
-          .hero li{margin:2px 0}
-          .back-to-dash{display:inline-block;margin:0 0 12px;padding:8px 14px;background:#343b44;color:#fff;border-radius:999px;text-decoration:none;font-weight:700;font-size:13px}
-          .back-to-dash:hover{background:#26272a}
           .legend{display:flex;flex-wrap:wrap;gap:14px;margin:0 0 18px}
           .legend div{background:#fff;border:1px solid #d9e4e8;border-radius:14px;padding:10px 14px;font-size:13px;color:#54576F}
           .legend b{color:#26272a}
@@ -44,7 +35,7 @@
           .agree{font-weight:700;font-size:13px}
           .agree--yes{color:#146b37}.agree--no{color:#b5310a}.agree--na{color:#8a949b}
           .agree small{display:block;color:#8a949b;font-weight:600;margin-top:3px}
-          .foot{color:#54576F;font-size:12px;line-height:1.6;margin-top:18px}
+          .foot{color:#54576F;font-size:13px;line-height:1.6;margin-top:18px}
           .hint{display:flex;align-items:center;gap:6px;color:#54576F;font-size:13px;margin:0 0 10px}
           .bacteria-select{display:flex;align-items:center;gap:10px;margin:0 0 12px}
           .bacteria-select label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#54576F;font-weight:700}
@@ -60,20 +51,14 @@
           .modal__head{display:flex;justify-content:space-between;align-items:center;gap:12px}
           .modal__head h2{margin:0;font-size:20px;color:#26272a}
           .modal__close{border:none;background:#eef2f4;border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:700;color:#26272a;font-size:14px}
-          .modal__note{color:#8a949b;font-size:12px;margin:6px 0 12px;line-height:1.5}
+          .modal__note{color:#8a949b;font-size:13px;margin:6px 0 12px;line-height:1.5}
           .chart-wrap{position:relative;height:360px}
           /* sample viewer */
           .v-controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 10px}
-          .ctl-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#54576F;font-weight:700}
-          .seg-toggle{display:inline-flex;border:2px solid #d9e4e8;border-radius:999px;overflow:hidden;background:#fff}
-          .seg-btn{padding:7px 14px;border:0;background:transparent;color:#54576F;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
-          .seg-btn.active{background:#0072BC;color:#fff}
           .v-controls select,.v-controls input[type=date]{font-size:13px;padding:7px 10px;border:2px solid #d9e4e8;border-radius:10px;background:#fff;color:#26272a;font-family:inherit;font-weight:600}
-          .v-preset{padding:7px 12px;border-radius:999px;border:2px solid #d9e4e8;background:#fff;color:#54576F;cursor:pointer;font-size:12.5px;font-weight:700;font-family:inherit}
-          .v-preset.active{border-color:#0072BC;background:#0072BC;color:#fff}
           .tile-link{display:inline-block;margin:0 0 14px;color:#0072BC;font-weight:700;font-size:13px}
-          .modal__links{color:#54576F;font-size:12.5px;margin:10px 0 0}.modal__links a{color:#0072BC;font-weight:700;margin-right:14px}
-        </style><link rel="stylesheet" href="/static/brand.css">
+          .modal__links{color:#54576F;font-size:13px;margin:10px 0 0}.modal__links a{color:#0072BC;font-weight:700;margin-right:14px}
+        </style>
 </head>
 <body>
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}

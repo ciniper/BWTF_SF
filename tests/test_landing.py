@@ -52,7 +52,7 @@ def test_every_feature_page_sits_in_exactly_one_hub_and_every_link_resolves():
         assert 'id="v-scope"' not in smp and "Dual sites" not in smp and [m for m in ("city", "bwtf", "both", "all") if 'data-source="%s"' % m in smp] == ["city", "bwtf", "both", "all"]   # Source as on Graphs, no Sites toggle
         g = c.get("/graphs").data.decode()
         assert g.count('class="tile"') >= 20 and 'id="analyte"' in g and '<option value="ENTERO" selected>' in g and '<option value="ALL">All indicators</option>' in g and '<option value="PCT">All % threshold</option>' in g and 'href="/compare"' in g
-        assert ".preset.active{" in g and "function markPreset" in g            # a chosen date-range preset lights up
+        assert ".preset.active" in (ROOT / "app/static/brand.css").read_text() and "function markPreset" in g            # a chosen date-range preset lights up (kit CSS lives in brand.css)
         assert 'id="kind"' in g and 'data-k="line"' in g and 'data-k="bar"' in g and "CH.barSeries : CH.seriesChart" in g   # the Chart choice: lines or bars
         assert 'querySelectorAll(".preset[data-days]")' in g and 'querySelectorAll(".preset")' not in g   # the Change site pill must not act as a range preset
         assert 'id="siteBar"' in g and 'id="siteChange"' in g and ".tiles{display:none} .tiles.open{display:flex}" in g and "@media (max-width:640px)" not in g   # tiles collapse to the chosen site at every width

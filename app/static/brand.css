@@ -26,6 +26,35 @@
 :root{--brand:#0072BC;--brand-deep:#005a96;--sky:#85BFDF;--ink:#26272A;--muted:#54576F;--faint:#8a949b;--line:#d9e4e8;--sand:#E3EBF2;--sand2:#eef3f7;
       --safe:#237059;--caution:#c99a12;--posted:#d4763a;--discharge:#b5310a;--unknown:#98a3ab;--r:14px;--r-lg:20px}
 
+/* ── Kit: page basics and the shared controls (redesign, 2026-09-29) ─────────────
+   brand.css loads BEFORE each page's own <style>, so a page may still specialise a
+   rule; these are the defaults every page used to re-declare. */
+*{box-sizing:border-box}
+body{margin:0;background:var(--sand);color:var(--ink);font-family:'Roboto','Segoe UI',Arial,sans-serif}
+a{color:var(--brand)}
+.wrap{max-width:1100px;margin:0 auto;padding:24px}
+.controls{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:center;margin:0 0 12px}
+.ctl-label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
+.seg-toggle{display:inline-flex;border:2px solid var(--line);border-radius:999px;overflow:hidden;background:#fff}
+.seg-btn{padding:7px 14px;border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
+.seg-btn:hover{color:var(--ink)}
+.seg-btn.active{background:var(--brand);color:#fff}
+.seg-btn:disabled{color:#b4b2a9;cursor:default}
+.preset,.v-preset,.group-btn,.range-btn{padding:7px 13px;border-radius:999px;border:2px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
+.preset:hover,.v-preset:hover,.group-btn:hover,.range-btn:hover{border-color:var(--sky)}
+.preset.active,.v-preset.active,.group-btn.active,.range-btn.active{border-color:var(--brand);background:var(--brand);color:#fff}
+select,input[type=date]{font-size:13px;padding:7px 10px;border:2px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);font-family:inherit;font-weight:600}
+.board{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;margin:0 0 16px}
+.board h2{font-size:16px;margin:0 0 4px}
+.sub{color:var(--muted);font-size:13px;margin:0 0 10px}
+.status{color:var(--muted);font-size:13px;font-weight:600;margin:0 0 8px}
+.loading{padding:40px;text-align:center;color:var(--muted);font-weight:600}
+th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
+.foot{color:var(--faint);font-size:13px;margin-top:16px;line-height:1.6}
+/* keyboard users see where they are; toggles announce their state via kit.js (aria-pressed) */
+:focus-visible{outline:3px solid var(--sky);outline-offset:2px}
+.seg-btn:focus-visible{outline-offset:-3px}
+
 /* ── Frame: top bar ───────────────────────────────────────────────────────── */
 .topbar{background:#fff;border-bottom:1px solid var(--line);position:relative;z-index:30;font-family:'Roboto','Segoe UI',Arial,sans-serif}
 .topbar .in{max-width:1100px;margin:0 auto;padding:8px 24px;display:flex;align-items:center;gap:14px}

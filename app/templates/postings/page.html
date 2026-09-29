@@ -6,37 +6,18 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/brand.css">
 <style>
-  *{box-sizing:border-box}
-  body{margin:0;background:#E3EBF2;color:#26272a;font-family:'Roboto','Segoe UI',Arial,sans-serif}
-  a{color:#0072BC}
-  .wrap{max-width:1100px;margin:0 auto;padding:24px}
-  .back-to-dash{display:inline-block;margin:0 0 12px;padding:8px 14px;background:#343b44;color:#fff;border-radius:999px;text-decoration:none;font-weight:700;font-size:13px}
-  .back-to-dash:hover{background:#26272a}
-  .how-link{margin-left:6px;background:#fff;color:#0072BC;border:1px solid #d9e4e8}
-  .how-link:hover{background:#f3f8fb;color:#0072BC}
-  .hero{background:#0072BC;color:#fff;border-radius:24px;padding:28px;margin-bottom:20px}
-  .hero h1{margin:6px 0 6px;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:38px;text-transform:uppercase;letter-spacing:.06em;color:#fff}
-  .hero p{margin:0;color:rgba(255,255,255,.88);font-size:15px;line-height:1.5;max-width:78ch}
-  .hero a{color:#cfe6f6}
-  .controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:0 0 14px}
-  .group-btn{padding:8px 16px;border-radius:999px;border:2px solid #d9e4e8;background:#fff;color:#54576F;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
-  .group-btn.active{border-color:#0072BC;background:#0072BC;color:#fff}
-  .ctl-label{font-size:13px;font-weight:700;color:#54576F}
-  .seg-toggle{display:inline-flex;border:2px solid #d9e4e8;border-radius:999px;overflow:hidden;background:#fff}
-  .seg-btn{padding:8px 16px;border:0;background:transparent;color:#54576F;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
-  .seg-btn.active{background:#0072BC;color:#fff}
   input[type=number]{width:86px;padding:7px 10px;border:2px solid #d9e4e8;border-radius:10px;font-family:inherit;font-size:13px;color:#26272a;background:#fff}
   .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:0 0 16px}
   .card{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:14px 16px}
   .card b{display:block;font-size:26px;font-variant-numeric:tabular-nums;color:#26272a}
-  .card span{font-size:12.5px;color:#54576F;font-weight:600}
+  .card span{font-size:13px;color:#54576F;font-weight:600}
   .board{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:14px 18px;margin:0 0 16px;overflow-x:auto}
   .board h2{font-size:16px;margin:2px 0 10px;color:#26272a}
-  .board h2 span{font-weight:600;color:#54576F;font-size:12.5px}
+  .board h2 span{font-weight:600;color:#54576F;font-size:13px}
   table{border-collapse:collapse;width:100%;font-size:13.5px}
   th{text-align:left;color:#54576F;font-weight:700;padding:9px 10px 7px;border-bottom:2px solid #d9e4e8;white-space:nowrap}
-  th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
   td{padding:8px 10px;border-bottom:1px solid #eef2f4;vertical-align:middle}
   .name{font-weight:700;white-space:nowrap}
   .chip{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap}
@@ -51,14 +32,12 @@
   .legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:5px}
   .notes{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:16px 20px;margin-top:18px;font-size:13.5px;color:#3f474d;line-height:1.55}
   .notes h2{font-size:15px;margin:0 0 8px;color:#26272a}
-  .foot{color:#8a949b;font-size:12px;margin-top:16px}
-  .loading{padding:40px;text-align:center;color:#54576F;font-weight:600}
   .fresh-note{display:flex;gap:8px;align-items:center;background:#fff;border:1px solid #d9e4e8;border-radius:12px;padding:10px 14px;margin:0 0 14px;font-size:13px;color:#3f474d}
   .fresh-note .ic{width:16px;height:16px;flex:none;color:#0072BC}
   .fresh-note.overdue{background:#fdeee2;color:#8a3d10;border-color:#f0c9ad}
   .fresh-note.overdue .ic{color:#b25b1e}
-  .dl{font-size:12.5px;font-weight:700}
-</style><link rel="stylesheet" href="/static/brand.css">
+  .dl{font-size:13px;font-weight:700}
+</style>
 </head>
 <body>
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}

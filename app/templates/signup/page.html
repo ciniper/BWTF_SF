@@ -8,12 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="/static/brand.css">
 <style>
-  *{box-sizing:border-box}
-  body{margin:0;background:#E3EBF2;color:#26272A;font-family:'Roboto','Segoe UI',Arial,sans-serif}
-  .wrap{max-width:1100px;margin:0 auto;padding:24px}
-  .back-to-dash{display:inline-block;margin:0 0 12px;padding:8px 14px;background:#343b44;color:#fff;border-radius:999px;text-decoration:none;font-weight:700;font-size:13px}
-  .back-to-dash:hover{background:#26272A}
 
   .panel{display:grid;grid-template-columns:5fr 6fr;background:#fff;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(38,39,42,.08)}
   @media (max-width:840px){.panel{grid-template-columns:1fr}}
@@ -21,7 +17,7 @@
   .kicker{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#85BFDF}
   .left h1{margin:10px 0 12px;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:52px;line-height:.95;text-transform:uppercase;letter-spacing:.04em}
   .left p{margin:0 0 8px;font-size:15.5px;line-height:1.55;color:rgba(255,255,255,.9)}
-  .disclaimer{margin-top:auto;padding-top:24px;font-size:12.5px;color:#85BFDF;line-height:1.5;border-top:1px solid rgba(255,255,255,.18);display:flex;gap:12px;align-items:flex-start}
+  .disclaimer{margin-top:auto;padding-top:24px;font-size:13px;color:#85BFDF;line-height:1.5;border-top:1px solid rgba(255,255,255,.18);display:flex;gap:12px;align-items:flex-start}
   .disclaimer .illus{background:#fff;border-radius:10px;padding:3px;width:44px;height:44px}
   .left img{height:56px;width:auto;align-self:flex-start;margin-bottom:18px;opacity:.95}
 
@@ -38,12 +34,12 @@
   .zone.on{border-color:#0072BC;background:#eef6fc}
   .zone input{accent-color:#0072BC;width:17px;height:17px;vertical-align:-3px;margin-right:8px}
   .zone .zname{font-weight:700;font-size:14.5px}
-  .zone .zsites{margin:5px 0 0 25px;font-size:11.5px;color:#54576F;line-height:1.45}
+  .zone .zsites{margin:5px 0 0 25px;font-size:13px;color:#54576F;line-height:1.45}
 
   #map{height:240px;border-radius:14px;margin-bottom:16px;border:1px solid #d9e4e8}
-  .maphint{font-size:11.5px;color:#8a949b;margin:-10px 0 16px}
+  .maphint{font-size:13px;color:#8a949b;margin:-10px 0 16px}
 
-  .note{font-size:12.5px;color:#54576F;line-height:1.5;margin:0 0 16px}
+  .note{font-size:13px;color:#54576F;line-height:1.5;margin:0 0 16px}
   button.go{width:100%;padding:15px;border:0;border-radius:12px;background:#0072BC;color:#fff;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer}
   button.go:hover{background:#005a96}
   button.go:disabled{background:#9db8c9;cursor:default}
@@ -52,7 +48,7 @@
   .msg.err{display:block;background:#fdeceb;color:#a63a30;font-weight:600}
   .st-label{background:rgba(255,255,255,.92);border:1px solid #b9c6cd;border-radius:6px;padding:0 4px;font:700 10px 'Roboto',sans-serif;color:#26272A;white-space:nowrap;box-shadow:none}
   .st-label::before{display:none}
-</style><link rel="stylesheet" href="/static/brand.css">
+</style>
 </head>
 <body>
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}

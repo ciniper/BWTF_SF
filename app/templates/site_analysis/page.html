@@ -8,31 +8,14 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="/static/brand.css">
 <style>
-  *{box-sizing:border-box}
-  body{margin:0;background:#E3EBF2;color:#26272a;font-family:'Roboto','Segoe UI',Arial,sans-serif}
-  a{color:#0072BC}
-  .wrap{max-width:1100px;margin:0 auto;padding:24px}
-  .back-to-dash{display:inline-block;margin:0 0 12px;padding:8px 14px;background:#343b44;color:#fff;border-radius:999px;text-decoration:none;font-weight:700;font-size:13px}
-  .back-to-dash:hover{background:#26272a}
-  .hero{background:#0072BC;color:#fff;border-radius:24px;padding:28px;margin-bottom:20px}
-  .hero h1{margin:6px 0 6px;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:38px;text-transform:uppercase;letter-spacing:.06em;color:#fff}
-  .hero p{margin:0;color:rgba(255,255,255,.88);font-size:15px;line-height:1.5;max-width:78ch}
-
-  .controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:0 0 14px}
-  .group-btn{padding:8px 16px;border-radius:999px;border:2px solid #d9e4e8;background:#fff;color:#54576F;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
-  .group-btn.active{border-color:#0072BC;background:#0072BC;color:#fff}
   .legend{margin-left:auto;font-size:13px;font-weight:600;color:#54576F}
-  .ctl-label{font-size:13px;font-weight:700;color:#54576F}
-  .seg-toggle{display:inline-flex;border:2px solid #d9e4e8;border-radius:999px;overflow:hidden;background:#fff}
-  .seg-btn{padding:8px 16px;border:0;background:transparent;color:#54576F;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
-  .seg-btn.active{background:#0072BC;color:#fff}
   input[type=date]{padding:7px 10px;border:2px solid #d9e4e8;border-radius:10px;font-family:inherit;font-size:13px;color:#26272a;background:#fff}
 
   .board{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:6px 18px 14px;overflow-x:auto}
   table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:760px}
   th{text-align:left;color:#54576F;font-weight:700;padding:10px 10px 8px;border-bottom:2px solid #d9e4e8;white-space:nowrap}
-  th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
   td{padding:9px 10px;border-bottom:1px solid #eef2f4;vertical-align:middle}
   tr.site{cursor:pointer}
   tr.site:hover td{background:#f6f9fb}
@@ -54,7 +37,7 @@
   .yr{background:#fff;border:1px solid #d9e4e8;border-radius:10px;padding:7px 11px;text-align:center;min-width:74px}
   .yr b{display:block;font-size:15px}
   .yr span{font-size:11px;color:#54576F}
-  .detail-meta{margin:0 0 10px;font-size:12.5px;color:#54576F}
+  .detail-meta{margin:0 0 10px;font-size:13px;color:#54576F}
 
   .map-board{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:16px 18px;margin:0 0 16px}
   .map-board h2{font-size:16px;margin:2px 0 12px;color:#26272a}
@@ -66,13 +49,11 @@
   .leaflet-popup-content{font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:13px}
   .notes{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:16px 20px;margin-top:18px;font-size:13.5px;color:#3f474d;line-height:1.55}
   .notes h2{font-size:15px;margin:0 0 8px;color:#26272a}
-  .foot{color:#8a949b;font-size:12px;margin-top:16px}
   table.std{min-width:0;margin:12px 0 10px;font-size:13px}
   table.std th,table.std td{padding:7px 10px}
   table.std tr.graded td{background:#e3f1fa}
-  table.std td.note{color:#54576F;font-size:12.5px}
-  .loading{padding:40px;text-align:center;color:#54576F;font-weight:600}
-</style><link rel="stylesheet" href="/static/brand.css">
+  table.std td.note{color:#54576F;font-size:13px}
+</style>
 </head>
 <body>
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}

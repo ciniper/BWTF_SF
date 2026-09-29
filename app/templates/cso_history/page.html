@@ -6,22 +6,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/brand.css">
 <style>
-  *{box-sizing:border-box}
-  body{margin:0;background:#E3EBF2;color:#26272a;font-family:'Roboto','Segoe UI',Arial,sans-serif}
-  a{color:#0072BC}
-  .wrap{max-width:1100px;margin:0 auto;padding:24px}
-  .back-to-dash{display:inline-block;margin:0 0 12px;padding:8px 14px;background:#343b44;color:#fff;border-radius:999px;text-decoration:none;font-weight:700;font-size:13px}
-  .back-to-dash:hover{background:#26272a}
-  .how-link{margin-left:6px;background:#fff;color:#0072BC;border:1px solid #d9e4e8}
-  .how-link:hover{background:#f3f8fb;color:#0072BC}
-  .hero{background:#0072BC;color:#fff;border-radius:24px;padding:28px;margin-bottom:20px}
-  .hero h1{margin:6px 0 6px;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:38px;text-transform:uppercase;letter-spacing:.06em;color:#fff}
-  .hero p{margin:0;color:rgba(255,255,255,.88);font-size:15px;line-height:1.5;max-width:78ch}
-
-  .controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:0 0 14px}
-  .range-btn{padding:8px 16px;border-radius:999px;border:2px solid #d9e4e8;background:#fff;color:#54576F;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
-  .range-btn.active{border-color:#0072BC;background:#0072BC;color:#fff}
   .legend{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;margin-left:auto;font-size:13px;font-weight:600;color:#54576F}
   .legend .key{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
   .swatch{display:inline-block;width:22px;height:12px;border-radius:4px}
@@ -71,7 +57,7 @@
   .banner b{color:#26272a}
   .muted{color:#54576F}
 
-  .tooltip{position:fixed;z-index:10;pointer-events:none;background:#26272a;color:#fff;border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.5;max-width:280px;box-shadow:0 6px 18px rgba(0,0,0,.25);display:none}
+  .tooltip{position:fixed;z-index:10;pointer-events:none;background:#26272a;color:#fff;border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.5;max-width:280px;box-shadow:0 6px 18px rgba(0,0,0,.25);display:none}
   .tooltip b{font-size:13px}
 
   details.tableview{margin-top:16px}
@@ -80,9 +66,9 @@
   details.tableview th,details.tableview td{text-align:left;padding:8px 12px;border-bottom:1px solid #eef2f4}
   details.tableview th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#54576F;background:#f7fafb}
 
-  .foot{color:#54576F;font-size:12px;line-height:1.6;margin-top:16px}
+  .foot{color:#54576F;font-size:13px;line-height:1.6;margin-top:16px}
   .loading{padding:48px;text-align:center;color:#8a949b}
-</style><link rel="stylesheet" href="/static/brand.css">
+</style>
 </head>
 <body>
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}

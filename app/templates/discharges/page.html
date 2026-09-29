@@ -6,36 +6,20 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/brand.css">
 <style>
-  *{box-sizing:border-box}
-  body{margin:0;background:#E3EBF2;color:#26272a;font-family:'Roboto','Segoe UI',Arial,sans-serif}
-  a{color:#0072BC}
-  .wrap{max-width:1100px;margin:0 auto;padding:24px}
-  .back-to-dash{display:inline-block;margin:0 0 12px;padding:8px 14px;background:#343b44;color:#fff;border-radius:999px;text-decoration:none;font-weight:700;font-size:13px}
-  .back-to-dash:hover{background:#26272a}
-  .how-link{margin-left:6px;background:#fff;color:#0072BC;border:1px solid #d9e4e8}
-  .how-link:hover{background:#f3f8fb;color:#0072BC}
-  .hero{background:#0072BC;color:#fff;border-radius:24px;padding:28px;margin-bottom:20px}
-  .hero h1{margin:6px 0 6px;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:38px;text-transform:uppercase;letter-spacing:.06em;color:#fff}
-  .hero p{margin:0;color:rgba(255,255,255,.88);font-size:15px;line-height:1.5;max-width:78ch}
 
   .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:0 0 16px}
   .tile{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:14px 18px}
   .tile b{display:block;font-size:24px;font-variant-numeric:tabular-nums}
-  .tile span{font-size:12.5px;color:#54576F;font-weight:600}
-
-  .controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:0 0 14px}
-  .group-btn{padding:8px 16px;border-radius:999px;border:2px solid #d9e4e8;background:#fff;color:#54576F;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
-  .group-btn.active{border-color:#0072BC;background:#0072BC;color:#fff}
+  .tile span{font-size:13px;color:#54576F;font-weight:600}
   .legend{margin-left:auto;font-size:13px;font-weight:600;color:#54576F}
-  .ctl-label{font-size:13px;font-weight:700;color:#54576F}
   input[type=date]{padding:7px 10px;border:2px solid #d9e4e8;border-radius:10px;font-family:inherit;font-size:13px;color:#26272a;background:#fff}
 
   .board{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:16px 18px;margin-bottom:16px;overflow-x:auto}
   .board h2{font-size:16px;margin:2px 0 12px;color:#26272a}
   table{border-collapse:collapse;width:100%;font-size:13.5px}
   th{text-align:left;color:#54576F;font-weight:700;padding:8px 10px;border-bottom:2px solid #d9e4e8;white-space:nowrap}
-  th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
   td{padding:8px 10px;border-bottom:1px solid #eef2f4}
   .name{font-weight:700;white-space:nowrap}
   tr.outfall{cursor:pointer}
@@ -54,8 +38,7 @@
   .yrrow .val{width:170px;text-align:right;font-variant-numeric:tabular-nums;color:#3f474d;white-space:nowrap}
   .bar{display:inline-block;height:13px;border-radius:4px;background:#0072BC;vertical-align:middle;margin-right:8px}
   .note{background:#fdf6ec;border:1px solid #ecd9b8;border-radius:12px;padding:12px 16px;font-size:13px;margin:0 0 16px;color:#5a4f3d}
-  .foot{color:#8a949b;font-size:12px;margin-top:8px}
-  .loading{padding:40px;text-align:center;color:#54576F;font-weight:600}
+  .foot{color:#8a949b;font-size:13px;margin-top:8px}
 
   .chart-wrap{position:relative;height:380px}
   .picker{position:relative}
@@ -64,9 +47,6 @@
   .picker .panel{position:absolute;z-index:30;top:110%;left:0;background:#fff;border:1px solid #d9e4e8;border-radius:12px;box-shadow:0 8px 24px rgba(38,39,42,.15);padding:10px 14px;max-height:300px;overflow-y:auto;min-width:320px}
   .picker label{display:block;font-size:13px;padding:3px 0;white-space:nowrap;cursor:pointer}
   .picker .grp{font-weight:700;color:#0072BC;margin:8px 0 2px;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
-  .seg-toggle{display:inline-flex;border:2px solid #d9e4e8;border-radius:999px;overflow:hidden;background:#fff}
-  .seg-btn{padding:8px 16px;border:0;background:transparent;color:#54576F;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
-  .seg-btn.active{background:#0072BC;color:#fff}
   input[type=search]{padding:8px 12px;border:2px solid #d9e4e8;border-radius:10px;font-family:inherit;font-size:13px;min-width:220px}
   #rawTbl th{cursor:pointer;user-select:none}
   #rawTbl th .dir{color:#0072BC}
@@ -84,7 +64,7 @@
   .of-label::before{display:none}
   .leaflet-popup-content{font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:13px}
 </style>
-<link rel="stylesheet" href="/static/brand.css">
+
 </head>
 <body>
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}

@@ -71,4 +71,5 @@
   <a href="{{ h.href }}"{% if p in h.paths %} class="on"{% endif %}><svg class="ic"><use href="#i-{{ {'today': 'bell', 'water': 'flask', 'record': 'clipboard'}[h.key] }}"/></svg>{{ {'today': 'Today', 'water': 'Water record', 'record': 'Postings'}[h.key] }}</a>
   {%- endfor %}
 </nav>
+<script src="/static/kit.js" defer></script>
 {%- endmacro %}
