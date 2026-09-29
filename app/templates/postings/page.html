@@ -64,14 +64,13 @@
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
 {{ topbar() }}
 <div class="wrap">
-  {% call page_head("Beach Postings", "Every advisory San Francisco filed with the State since 1999: when each beach was posted, for how long, and why.", "record") %}
+  {% call page_head("Beach Postings", "Every advisory San Francisco filed with the State since 1999: when each beach was posted, for how long, and why.", "record", link=("/records#postings", "How we get these records")) %}
     
     <p>Every advisory San Francisco filed with the State since 1999 — when each beach was posted,
     for how long, and why — from the State Water Board's BeachWatch record. This is what the public was
     <i>told</i>, alongside what was actually discharged (<a href="/discharges">Discharge Ledger</a>),
     what the water measured (<a href="/analysis">Site Report Card</a>) and what our own watcher saw
     (<a href="/cso-history">Online Postings Timeline</a>).</p>
-    <p><a href="/records#postings">How we get these records</a></p>
   {% endcall %}
 
   <div class="controls" id="zoneBtns">

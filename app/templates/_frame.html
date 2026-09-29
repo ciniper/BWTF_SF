@@ -5,7 +5,9 @@
     Import with context so `request` is in scope:
       {% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
     Row one of the top bar is Main + the three hubs; inside a hub, row two lists its pages as
-    tabs (so Samples ↔ Graphs is one click). A page head with a "How to read this" drawer:
+    tabs (so Samples ↔ Graphs is one click). page_head(..., link=(href, label)) adds a visible
+    action link under the lead (the records pages' "How we get these records"). A page head with a
+    "How to read this" drawer:
       {% call page_head("Graphs", "one-line lead", "water") %} …the longer explanation… {% endcall %} -#}
 
 {% macro topbar() -%}
@@ -32,11 +34,12 @@
 </header>
 {%- endmacro %}
 
-{% macro page_head(title, lead="", hub_key=None, how_label="How to read this") -%}
+{% macro page_head(title, lead="", hub_key=None, how_label="How to read this", link=None) -%}
 <div class="page-head">
   <div class="ph-main">
     <h1>{{ title }}</h1>
     {%- if lead %}<p class="lead">{{ lead | safe }}</p>{% endif %}
+    {%- if link %}<a class="ph-link" href="{{ link[0] }}">{{ link[1] }} →</a>{% endif %}
   </div>
   {%- if caller %}<details class="how"><summary>{{ how_label }}</summary><div class="how-body">{{ caller() }}</div></details>{% endif %}
 </div>

@@ -90,14 +90,13 @@
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
 {{ topbar() }}
 <div class="wrap">
-  {% call page_head("Discharge Ledger", "Every combined-sewer discharge SFPUC reported to state regulators since 2016: outfall, start, duration and volume.", "record") %}
+  {% call page_head("Discharge Ledger", "Every combined-sewer discharge SFPUC reported to state regulators since 2016: outfall, start, duration and volume.", "record", link=("/records#discharges", "How we get these records")) %}
     
     <p>Every combined-sewer discharge into San Francisco waters that SFPUC reported to state
     regulators — outfall, start, duration, and volume — extracted from monthly self-monitoring
     reports filed under the city's two sewer permits. This is the official record of what was
     actually discharged, alongside our real-time detections (<a href="/cso-history">SFPUC Alerts Timeline</a>)
     the bacteria outcomes (<a href="/analysis">Site Report Card</a>) and the signs the public saw (<a href="/postings">Beach Postings</a>).</p>
-    <p><a href="/records#discharges">How we get these records</a></p>
   {% endcall %}
 
   <div class="tiles" id="tiles"></div>
