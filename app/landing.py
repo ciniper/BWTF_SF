@@ -26,6 +26,9 @@ HUBS = [
         "primary": ("/signup", "Get beach alerts",
                     "Pick your beach areas and get an email when the city posts one for bacteria or a sewage discharge. No digest, no marketing."),
         "rows": [
+            ("/today", "Today",
+             "The Main page's board with room to experiment: the city map with Surfrider's latest results as a toggle.",
+             "the board · Surfrider on the map"),
             ("/forecast", "CSO Forecast",
              "Machine-learning forecast of combined-sewer-overflow risk from rainfall — a warning before discharges happen.",
              "risk from rain · next 3 days"),
@@ -369,7 +372,9 @@ def _conditions_lines(env_context) -> list[str]:
     return lines
 
 
-def render_landing(sfpuc_api, env_context=None, live_facts: bool = True) -> str:
+def board_context(sfpuc_api, env_context=None, live_facts: bool = True) -> dict:
+    """Everything the Today board needs — shared by the Main page and /today:
+    the board, the conditions chips, the live facts, a timestamp."""
     try:
         stations = list(sfpuc_api.fetch_stations()) if hasattr(sfpuc_api, "fetch_stations") else []
     except Exception:
@@ -378,22 +383,24 @@ def render_landing(sfpuc_api, env_context=None, live_facts: bool = True) -> str:
         summary = sfpuc_api.get_status_summary() if not stations else {}
     except Exception:
         summary = {}
-
-    conditions = _conditions_lines(env_context)
-    generated = datetime.now().strftime("%B %-d, %Y at %-I:%M %p")
     facts = _live_facts() if live_facts else {}
     board = today_board(stations, facts.get("_forecast"), facts.get("/samples", ""))
     if not stations and summary:   # a client that only knows the summary: keep the old banner sentence as the headline
         board["tone"], message = _status_banner(summary)
         board["headline"] = board["headline_html"] = message.split("</svg> ", 1)[-1]
+    return {"board": board, "conditions": _conditions_lines(env_context), "facts": facts,
+            "generated": datetime.now().strftime("%B %-d, %Y at %-I:%M %p")}
 
+
+def render_landing(sfpuc_api, env_context=None, live_facts: bool = True) -> str:
+    ctx = board_context(sfpuc_api, env_context, live_facts)
     return render_template(
         "landing.html",
         bwtf_logo=BWTF_LOGO_URL,
-        board=board,
-        conditions=conditions,
-        hubs=hubs_with_facts(facts),
+        board=ctx["board"],
+        conditions=ctx["conditions"],
+        hubs=hubs_with_facts(ctx["facts"]),
         hood=UNDER_THE_HOOD,
         pages=PAGES,
-        generated=generated,
+        generated=ctx["generated"],
     )

@@ -82,6 +82,7 @@ three hubs. Status colours mean the same thing everywhere: safe, caution, posted
 
 | Route | Page | What it shows | Data behind it |
 |---|---|---|---|
+| `/today` | Today | The Main page's board as a tab of the Today & alerts hub, with an experimental-layers row: Surfrider's latest Enterococcus result per site as diamonds on the map (`/api/today/surfrider`, graded by the shared rule; toggle, off by default, `?surfrider=1` pre-enables). Board markup/JS shared with `/` via `app/templates/_today_board.html` | SFPUC feed, forecast cache, BWTF GraphQL |
 | `/` | Dashboard (landing) | Live status hero (SFPUC summary, rain, tide) above three hubs — Today & alerts (signup button, CSO Forecast, Sewage Alert System), The water record (Site Report Card, Source Comparison, BWTF Sample Log), Postings & discharges (Discharge Ledger, Beach Postings, Online Postings Timeline) — each row carrying a live fact when its source answers within 2.5 s (`app/landing.py` HUBS / `_live_facts`), plus an Under the hood strip (model check, analysis, replays, build) | SFPUC feed, Supabase (forecast snapshot, samples mirror, alert_log), BWTF GraphQL, CIWQS csv |
 | `/signup` | Get Beach Alerts | Public, zone-based email signup (four zones, bad-news-only alerts) | Supabase `subscribers` |
 | `/alerts` | Sewage Alert System | Operator dashboard: live station status, bacteria, subscriber list, simulations, dispatch log. Behind a passphrase (`ALERTS_PASSPHRASE`) | SFPUC feed, DataSF, Supabase |

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link rel="icon" href="/static/brand/favicon.ico"><link rel="apple-touch-icon" sizes="144x144" href="/static/brand/bwtf_144x144.png">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="refresh" content="120">
+<title>Today — SF Beach Water · Surfrider SF Blue Water Task Force</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+<script src="/static/sample_popover.js" defer></script>
+<link rel="stylesheet" href="/static/brand.css">
+{% from "_today_board.html" import board_styles, board_section, board_script with context %}
+{{ board_styles() }}
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--sand);color:var(--ink);font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:15px;line-height:1.5}
+  .wrap{max-width:1100px;margin:0 auto;padding:20px 24px 40px}
+  .foot-note{color:var(--faint);font-size:12.5px;margin:12px 0 0;line-height:1.6}
+  .foot-note a{color:var(--brand)}
+  @media (max-width:760px){.wrap{padding:14px 14px 30px}}
+</style>
+</head>
+<body>
+{% include "_icons.html" %}{% from "_frame.html" import topbar, footer, tabbar with context %}
+{{ topbar() }}
+<div class="wrap">
+  {{ board_section(board, conditions, extras=true) }}
+  <p class="foot-note">This is the Main page's board with room to experiment. The city's statuses come from SFPUC's beach map, checked every minute; the overflow risk from the <a href="/forecast">CSO Forecast</a>. Surfrider's results are the volunteers' latest Enterococcus reading per site — see <a href="/samples?source=bwtf&scope=all">every sample</a> or <a href="/graphs">the graphs</a>. Updated {{ generated }}.</p>
+  {{ footer() }}
+</div>
+{{ tabbar() }}
+{{ board_script(board) }}
+</body></html>

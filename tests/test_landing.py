@@ -10,14 +10,14 @@ sys.path.insert(0, str(ROOT))
 
 from app import landing as L  # noqa: E402
 
-FEATURE_PAGES = {"/signup", "/alerts", "/forecast", "/samples", "/graphs", "/cso-history", "/analysis", "/discharges", "/postings"}
+FEATURE_PAGES = {"/today", "/signup", "/alerts", "/forecast", "/samples", "/graphs", "/cso-history", "/analysis", "/discharges", "/postings"}
 
 
 def test_every_feature_page_sits_in_exactly_one_hub_and_every_link_resolves():
     hrefs = [h["primary"][0] for h in L.HUBS if h["primary"]] + [r[0] for h in L.HUBS for r in h["rows"]]
     subs = [r[4][0] for h in L.HUBS for r in h["rows"] if len(r) > 4]
     assert subs == ["/compare"]   # Source Comparison hangs under Graphs
-    assert sorted(hrefs) == sorted(FEATURE_PAGES) and len(hrefs) == len(set(hrefs)) == 9
+    assert sorted(hrefs) == sorted(FEATURE_PAGES) and len(hrefs) == len(set(hrefs)) == 10
     assert [h["title"] for h in L.HUBS] == ["Today & alerts", "The water record", "Postings & discharges"]
     assert L.HUBS[2]["sub"] == "What the city reported, and when"
     assert {href for href, *_ in L.PAGES} == FEATURE_PAGES            # the flat view still lists them all
@@ -93,10 +93,10 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
     assert L.today_board([S("4601", "Fort Funston", "safe")], {}, "")["headline"] == "Water's fine at all 1 beaches." or True   # wording for n=1 is an edge we accept
     assert L.today_board([], {}, "")["tone"] == "warn" and "unavailable" in L.today_board([], {}, "")["headline"]
     nav = L.nav_model()
-    assert [h["key"] for h in nav] == ["today", "water", "record"] and [h["href"] for h in nav] == ["/forecast", "/analysis", "/discharges"]   # a hub opens on its first page
+    assert [h["key"] for h in nav] == ["today", "water", "record"] and [h["href"] for h in nav] == ["/today", "/analysis", "/discharges"]   # a hub opens on its first page
     assert [r["title"] for r in nav[1]["rows"]] == ["Site Report Card", "Samples", "Graphs", "Source Comparison"] and "/compare" in nav[1]["paths"]  # subpage = its own tab
-    assert [r["href"] for r in nav[0]["rows"]] == ["/forecast", "/signup", "/alerts"] and "/" not in nav[0]["paths"]                                   # Main is its own tab; the locked page last
-    assert [r["gated"] for r in nav[0]["rows"]] == [False, False, True] and L.UNDER_THE_HOOD == [("/architecture", "How it's built"), ("/records", "How we get the records"), ("/forecast#check", "Model check")]
+    assert [r["href"] for r in nav[0]["rows"]] == ["/today", "/forecast", "/signup", "/alerts"] and "/" not in nav[0]["paths"]                          # Main is its own tab; the locked page last
+    assert [r["gated"] for r in nav[0]["rows"]] == [False, False, False, True] and L.UNDER_THE_HOOD == [("/architecture", "How it's built"), ("/records", "How we get the records"), ("/forecast#check", "Model check")]
     from app.wsgi import app
     with app.test_client() as c:
         g = c.get("/graphs").data.decode()
