@@ -44,6 +44,7 @@ from urllib.parse import parse_qs, urlparse
 
 from flask import Flask, Response, abort, redirect, render_template, request, send_from_directory, session
 
+import features.about.page as about_page
 import features.cso_history.page as cso_history_page
 import features.discharges.page as discharges_page
 import features.forecast.page as forecast_page
@@ -307,6 +308,10 @@ def create_app():
     # Beach postings (public read-only; the State's BeachWatch record, static repo file)
     for path, handler in postings_page.GET_ROUTES.items():
         app.add_url_rule(path, f"postings-get:{path}", _forecast_view(handler), methods=["GET"])
+
+    # About: how the records were obtained (/records) and the infrastructure diagram (/architecture)
+    for path, handler in about_page.GET_ROUTES.items():
+        app.add_url_rule(path, f"about-get:{path}", _forecast_view(handler), methods=["GET"])
 
     # Reports: static HTML analyses committed under reports/ (model explorers, training report …)
     app.add_url_rule("/reports/<name>", "reports", _report_view, methods=["GET"])

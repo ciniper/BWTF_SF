@@ -13,6 +13,8 @@
   .wrap{max-width:1100px;margin:0 auto;padding:24px}
   .back-to-dash{display:inline-block;margin:0 0 12px;padding:8px 14px;background:#343b44;color:#fff;border-radius:999px;text-decoration:none;font-weight:700;font-size:13px}
   .back-to-dash:hover{background:#26272a}
+  .how-link{margin-left:6px;background:#fff;color:#0072BC;border:1px solid #d9e4e8}
+  .how-link:hover{background:#f3f8fb;color:#0072BC}
   .hero{background:#0072BC;color:#fff;border-radius:24px;padding:28px;margin-bottom:20px}
   .hero h1{margin:6px 0 6px;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:38px;text-transform:uppercase;letter-spacing:.06em;color:#fff}
   .hero p{margin:0;color:rgba(255,255,255,.88);font-size:15px;line-height:1.5;max-width:78ch}
@@ -60,7 +62,7 @@
 </head>
 <body>
 {% include "_icons.html" %}<div class="wrap">
-  <a class="back-to-dash" href="/">← Dashboard</a>
+  <a class="back-to-dash" href="/">← Dashboard</a><a class="back-to-dash how-link" href="/records#postings"><span class="with-ic"><svg class="ic"><use href="#i-info"/></svg>How we get these records</span></a>
   <div class="hero">
     <h1>Beach Postings</h1>
     <p>Every advisory San Francisco filed with the State since 1999 — when each beach was posted,

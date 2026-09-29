@@ -1,0 +1,216 @@
+{%- macro node(x, y, w, h, icon, title, sub, tip) -%}
+<g class="node" transform="translate({{ x }},{{ y }})"><title>{{ tip }}</title>
+  <rect class="box" width="{{ w }}" height="{{ h }}" rx="16"/>
+  <rect class="tile" x="12" y="{{ (h - 40) / 2 }}" width="40" height="40" rx="11"/>
+  <use class="icn" href="#i-{{ icon }}" x="20" y="{{ (h - 24) / 2 }}" width="24" height="24"/>
+  <text class="t" x="64" y="{{ h / 2 - 3 }}">{{ title }}</text>
+  <text class="s" x="64" y="{{ h / 2 + 15 }}">{{ sub }}</text>
+</g>
+{%- endmacro -%}
+{%- macro mnode(x, y, icon, title, tip, w=156) -%}
+<g class="node" transform="translate({{ x }},{{ y }})"><title>{{ tip }}</title>
+  <rect class="box" width="{{ w }}" height="46" rx="13"/>
+  <rect class="tile" x="7" y="7" width="32" height="32" rx="9"/>
+  <use class="icn" href="#i-{{ icon }}" x="13" y="13" width="20" height="20"/>
+  <text class="t m" x="47" y="28">{{ title }}</text>
+</g>
+{%- endmacro -%}
+{%- macro mchip(y, label, right) -%}
+<g transform="translate(8,{{ y }})">
+  <rect class="chip" width="140" height="30" rx="8"/>
+  <use class="icn" href="#i-clock" x="8" y="8" width="14" height="14"/>
+  <text class="c m" x="28" y="19.5">{{ label }}</text>
+  <text class="cr" x="132" y="19.5" text-anchor="end">{{ right }}</text>
+</g>
+{%- endmacro -%}
+{%- macro chip(y, icon, label, right) -%}
+<g transform="translate(16,{{ y }})">
+  <rect class="chip" width="228" height="34" rx="9"/>
+  <use class="icn" href="#i-{{ icon }}" x="10" y="9" width="16" height="16"/>
+  <text class="c" x="34" y="22">{{ label }}</text>
+  {% if right %}<text class="cr" x="216" y="22" text-anchor="end">{{ right }}</text>{% endif %}
+</g>
+{%- endmacro -%}
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link rel="icon" href="/static/brand/favicon.ico"><link rel="apple-touch-icon" sizes="144x144" href="/static/brand/bwtf_144x144.png">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How It's Built — Surfrider SF Blue Water Task Force</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#E3EBF2;color:#26272a;font-family:'Roboto','Segoe UI',Arial,sans-serif}
+  a{color:#0072BC}
+  .wrap{max-width:1080px;margin:0 auto;padding:24px}
+  .back-to-dash{display:inline-block;margin:0 0 12px;padding:8px 14px;background:#343b44;color:#fff;border-radius:999px;text-decoration:none;font-weight:700;font-size:13px}
+  .back-to-dash:hover{background:#26272a}
+  .hero{background:#0072BC;color:#fff;border-radius:24px;padding:24px 28px;margin-bottom:18px}
+  .hero h1{margin:4px 0 4px;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:38px;text-transform:uppercase;letter-spacing:.06em;color:#fff}
+  .hero p{margin:0;color:rgba(255,255,255,.88);font-size:15px}
+  .panel{background:#fff;border:1px solid #d9e4e8;border-radius:24px;padding:18px 14px;overflow-x:auto}
+  svg.arch{display:block;width:100%;min-width:760px;height:auto;font-family:'Roboto','Segoe UI',Arial,sans-serif}
+  .box{fill:#fff;stroke:#d9e4e8;stroke-width:1.5}
+  .box.hub{stroke:#0072BC;stroke-width:2}
+  .tile{fill:#E3EBF2}
+  .chip{fill:#f3f7fa}
+  .icn{fill:none;stroke:#0072BC;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .t{font-size:15px;font-weight:700;fill:#26272a}
+  .s{font-size:12px;fill:#54576F}
+  .c{font-size:13px;font-weight:600;fill:#26272a}
+  .cr{font-size:12px;font-weight:700;fill:#0072BC}
+  .col{font-size:11px;font-weight:700;letter-spacing:.14em;fill:#8a949b}
+  .lbl{font-size:11.5px;font-weight:700;fill:#54576F}
+  .live{fill:none;stroke:#0072BC;stroke-width:2}
+  .sched{fill:none;stroke:#0072BC;stroke-width:2;stroke-dasharray:7 6;animation:flow 1.2s linear infinite}
+  .hand{fill:none;stroke:#8a949b;stroke-width:2.2;stroke-dasharray:1 6;stroke-linecap:round}
+  .dot{fill:#0072BC}
+  @keyframes flow{to{stroke-dashoffset:-13}}
+  @media (prefers-reduced-motion:reduce){.sched{animation:none}}
+  .node:hover .box{stroke:#0072BC}
+  .t.m{font-size:13.5px}
+  .c.m{font-size:12px}
+  svg.arch.m{display:none;min-width:0;max-width:420px;margin:0 auto}
+  @media (max-width:700px){svg.arch.d{display:none}svg.arch.m{display:block}.panel{padding:12px 8px}.hover-hint{display:none}}
+  .foot{color:#8a949b;font-size:12px;margin-top:12px}
+  @media (max-width:560px){.wrap{padding:16px}.hero{padding:20px}.hero h1{font-size:32px}}
+</style><link rel="stylesheet" href="/static/brand.css">
+</head>
+<body>
+{% include "_icons.html" %}<div class="wrap">
+  <a class="back-to-dash" href="/">← Dashboard</a>
+  <div class="hero">
+    <h1>How it's built</h1>
+    <p>Where the data comes from, where it lives, and who it reaches.</p>
+  </div>
+
+  <div class="panel">
+  <svg class="arch d" viewBox="0 0 1000 600" role="img" aria-labelledby="archTitle archDesc">
+    <title id="archTitle">Infrastructure of the SF beach water quality site</title>
+    <desc id="archDesc">Four live sources (SFPUC beach map, DataSF lab results, Surfrider BWTF, weather and tides) feed the Vercel web app on each visit. SFPUC and DataSF are also read on a schedule by Supabase, which runs the alert watcher every minute and the forecast every 30 minutes, sends alerts through Brevo to subscribers and pings Healthchecks. State records (CIWQS, BeachWatch) are pulled quarterly by hand into GitHub, which deploys the app to Vercel. Visitors use the site on Vercel.</desc>
+    <defs>
+      <marker id="arr" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#0072BC"/></marker>
+      <marker id="arrG" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#8a949b"/></marker>
+    </defs>
+
+    <text class="col" x="20" y="26">SOURCES</text>
+    <text class="col" x="380" y="26">BACKEND</text>
+    <text class="col" x="760" y="26">PEOPLE</text>
+
+    <!-- connections (drawn first, under the boxes) -->
+    <path class="sched" d="M240 74H378" marker-end="url(#arr)"/>
+    <path class="sched" d="M240 152H378" marker-end="url(#arr)"/>
+    <path class="live" d="M240 94H310M240 172H310M240 238H310M240 316H310M310 94V368H378" marker-end="url(#arr)"/>
+    <circle class="dot" cx="310" cy="94" r="3.5"/><circle class="dot" cx="310" cy="172" r="3.5"/>
+    <circle class="dot" cx="310" cy="238" r="3.5"/><circle class="dot" cx="310" cy="316" r="3.5"/>
+
+    <path class="live" d="M490 256V326" marker-start="url(#arr)" marker-end="url(#arr)"/>
+    <path class="sched" d="M540 254V326" marker-end="url(#arr)"/>
+    <path class="live" d="M510 452V410" marker-end="url(#arr)"/>
+    <text class="lbl" x="520" y="436">deploy</text>
+
+    <path class="hand" d="M240 484H376" marker-end="url(#arrG)"/>
+    <text class="lbl" x="276" y="474">quarterly</text>
+
+    <path class="live" d="M640 72H756" marker-end="url(#arr)"/>
+    <path class="live" d="M870 104V136" marker-end="url(#arr)"/>
+    <path class="sched" d="M640 232C700 232 700 268 756 268" marker-end="url(#arr)"/>
+    <path class="live" d="M640 368H756" marker-end="url(#arr)"/>
+
+    <!-- sources -->
+    {{ node(20, 50, 220, 64, "satellite-dish", "SFPUC beach map", "posted & sewage flags", "SFPUC's live beach feed (getBeaches): read by the watcher every minute and by the site on each visit") }}
+    {{ node(20, 128, 220, 64, "flask", "DataSF", "city lab results", "The city's beach lab results: mirrored into Supabase every 30 minutes and read live by the pages") }}
+    {{ node(20, 206, 220, 64, "waves", "Surfrider BWTF", "volunteer samples", "The Blue Water Task Force database, read live by the pages") }}
+    {{ node(20, 284, 220, 64, "cloud-rain", "Weather & tides", "NOAA · NWS · Open-Meteo", "Rain gauges, rain forecast and tides: the forecast's inputs") }}
+    {{ node(20, 452, 220, 64, "building-2", "State records", "CIWQS · BeachWatch", "Discharge reports and beach postings, pulled by script each quarter (see /records)") }}
+
+    <!-- backend -->
+    <g class="node" transform="translate(380,40)"><title>Supabase: the Postgres database. pg_cron runs the alert watcher every minute and triggers the forecast every 30 minutes; it keeps subscribers, the alert log and history tables.</title>
+      <rect class="box hub" width="260" height="212" rx="18"/>
+      <rect class="tile" x="12" y="12" width="40" height="40" rx="11"/>
+      <use class="icn" href="#i-database" x="20" y="20" width="24" height="24"/>
+      <text class="t" x="64" y="29">Supabase</text>
+      <text class="s" x="64" y="46">database + scheduler</text>
+      {{ chip(72, "clock", "Alert watcher", "1 min") }}
+      {{ chip(114, "clock", "Forecast", "30 min") }}
+      {{ chip(156, "inbox", "Subscribers & history", "") }}
+    </g>
+    <g class="node" transform="translate(380,330)"><title>Vercel: the Flask web app (app/wsgi.py) — every page and API; main auto-deploys</title>
+      <rect class="box hub" width="260" height="76" rx="16"/>
+      <rect class="tile" x="12" y="18" width="40" height="40" rx="11"/>
+      <use class="icn" href="#i-server" x="20" y="26" width="24" height="24"/>
+      <text class="t" x="64" y="35">Vercel</text>
+      <text class="s" x="64" y="53">the website (Flask)</text>
+    </g>
+    {{ node(380, 452, 260, 64, "git-branch", "GitHub", "code + records", "ciniper/BWTF_SF: the code and the committed record CSVs; a push to main deploys") }}
+
+    <!-- people -->
+    {{ node(760, 40, 220, 64, "mail", "Brevo", "sends the alerts", "Email service: Supabase hands it each alert; delivery status is read back") }}
+    {{ node(760, 140, 220, 64, "users", "Subscribers", "email & text alerts", "People signed up at /signup for their beach zones") }}
+    {{ node(760, 240, 220, 56, "pulse", "Healthchecks", "is the watcher alive?", "healthchecks.io: pinged by every watcher run; silence raises an alarm") }}
+    {{ node(760, 336, 220, 64, "globe", "Visitors", "anyone, any browser", "The public website") }}
+
+    <!-- legend -->
+    <g transform="translate(300,560)">
+      <path class="live" d="M0 0H36"/><text class="lbl" x="44" y="4">live</text>
+      <path class="sched" d="M120 0H156"/><text class="lbl" x="164" y="4">on a schedule</text>
+      <path class="hand" d="M290 0H326"/><text class="lbl" x="334" y="4">by hand</text>
+    </g>
+  </svg>
+  <!-- phone layout: the same system stacked; titles only, details on tap/hover -->
+  <svg class="arch m" viewBox="0 0 370 626" role="img" aria-label="Infrastructure of the SF beach water quality site, stacked for phones">
+    <defs>
+      <marker id="arrM" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#0072BC"/></marker>
+      <marker id="arrGM" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#8a949b"/></marker>
+    </defs>
+    <path class="live" d="M166 49H180M194 49H180M166 103H180M194 103H180M180 49V150H272V174" marker-end="url(#arrM)"/>
+    <circle class="dot" cx="180" cy="49" r="3"/><circle class="dot" cx="180" cy="103" r="3"/>
+    <path class="sched" d="M180 150H88V174" marker-end="url(#arrM)"/>
+    <text class="lbl" x="98" y="168">SFPUC · DataSF</text>
+    <path class="live" d="M168 203H192" marker-start="url(#arrM)" marker-end="url(#arrM)"/>
+    <path class="live" d="M272 226V242" marker-end="url(#arrM)"/>
+    <path class="live" d="M88 312V336" marker-end="url(#arrM)"/>
+    <path class="live" d="M88 386V408" marker-end="url(#arrM)"/>
+    <path class="sched" d="M166 300H272V336" marker-end="url(#arrM)"/>
+    <path class="hand" d="M166 523H190" marker-end="url(#arrGM)"/>
+    <text class="lbl" x="180" y="490" text-anchor="middle">quarterly</text>
+    <path class="live" d="M350 523H362V203H354" marker-end="url(#arrM)"/>
+
+    {{ mnode(10, 26, "satellite-dish", "SFPUC map", "SFPUC's live beach feed: read by the watcher every minute and by the site on each visit") }}
+    {{ mnode(194, 26, "flask", "DataSF", "The city's beach lab results: mirrored into Supabase every 30 minutes and read live by the pages") }}
+    {{ mnode(10, 80, "waves", "Surfrider", "The Blue Water Task Force database, read live by the pages") }}
+    {{ mnode(194, 80, "cloud-rain", "Weather", "Rain gauges, rain forecast and tides (NOAA, NWS, Open-Meteo)") }}
+
+    <g class="node" transform="translate(10,180)"><title>Supabase: the database and scheduler. Runs the alert watcher every minute and the forecast every 30 minutes; keeps subscribers and history.</title>
+      <rect class="box hub" width="156" height="132" rx="14"/>
+      <rect class="tile" x="7" y="7" width="32" height="32" rx="9"/>
+      <use class="icn" href="#i-database" x="13" y="13" width="20" height="20"/>
+      <text class="t m" x="47" y="28">Supabase</text>
+      {{ mchip(52, "Watcher", "1 min") }}
+      {{ mchip(90, "Forecast", "30 min") }}
+    </g>
+    <g class="node" transform="translate(194,180)"><title>Vercel: the Flask web app, every page and API; main auto-deploys</title>
+      <rect class="box hub" width="156" height="46" rx="13"/>
+      <rect class="tile" x="7" y="7" width="32" height="32" rx="9"/>
+      <use class="icn" href="#i-server" x="13" y="13" width="20" height="20"/>
+      <text class="t m" x="47" y="28">Vercel</text>
+    </g>
+    {{ mnode(194, 246, "globe", "Visitors", "The public website") }}
+    {{ mnode(10, 340, "mail", "Brevo", "Email service: Supabase hands it each alert") }}
+    {{ mnode(194, 340, "pulse", "Healthchecks", "healthchecks.io: pinged by every watcher run; silence raises an alarm") }}
+    {{ mnode(10, 412, "users", "Subscribers", "People signed up at /signup for their beach zones") }}
+    {{ mnode(10, 500, "building-2", "State records", "CIWQS discharge reports and BeachWatch postings, pulled by script each quarter") }}
+    {{ mnode(194, 500, "git-branch", "GitHub", "The code and the committed record CSVs; a push to main deploys") }}
+
+    <g transform="translate(22,600)">
+      <path class="live" d="M0 0H28"/><text class="lbl" x="34" y="4">live</text>
+      <path class="sched" d="M86 0H114"/><text class="lbl" x="120" y="4">on a schedule</text>
+      <path class="hand" d="M226 0H254"/><text class="lbl" x="260" y="4">by hand</text>
+    </g>
+  </svg>
+  </div>
+
+  <p class="foot"><span class="hover-hint">Hover a box for details. </span> How the records are gathered: <a href="/records">How we get the records</a>. · {{ build.label if build else '' }}</p>
+</div>
+</body></html>

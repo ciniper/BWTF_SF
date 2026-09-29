@@ -68,6 +68,8 @@ HUBS = [
 
 # Model pages and reports — for the curious, out of the public cards.
 UNDER_THE_HOOD = [
+    ("/architecture", "How it's built"),
+    ("/records", "How we get the records"),
     ("/forecast#check", "Model check"),
     ("/reports/2026-09_model_analysis.html", "Model analysis"),
     ("/reports/2026-09_live_replay.html", "Live corrections replay"),

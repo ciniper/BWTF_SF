@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link rel="icon" href="/static/brand/favicon.ico"><link rel="apple-touch-icon" sizes="144x144" href="/static/brand/bwtf_144x144.png">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How We Get the Records — Surfrider SF Blue Water Task Force</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#E3EBF2;color:#26272a;font-family:'Roboto','Segoe UI',Arial,sans-serif;line-height:1.55}
+  a{color:#0072BC}
+  .wrap{max-width:960px;margin:0 auto;padding:24px}
+  .back-to-dash{display:inline-block;margin:0 0 12px;padding:8px 14px;background:#343b44;color:#fff;border-radius:999px;text-decoration:none;font-weight:700;font-size:13px}
+  .back-to-dash:hover{background:#26272a}
+  .hero{background:#0072BC;color:#fff;border-radius:24px;padding:28px;margin-bottom:18px}
+  .hero h1{margin:6px 0 6px;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:38px;text-transform:uppercase;letter-spacing:.06em;color:#fff}
+  .hero p{margin:0;color:rgba(255,255,255,.88);font-size:15px;max-width:78ch}
+  .jump{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 18px}
+  .jump a{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:999px;border:2px solid #d9e4e8;background:#fff;color:#26272a;font-weight:700;font-size:13.5px;text-decoration:none}
+  .jump a:hover{border-color:#0072BC;color:#0072BC}
+  .jump .ic{color:#0072BC}
+  section.rec{background:#fff;border:1px solid #d9e4e8;border-radius:20px;padding:22px 24px;margin:0 0 18px;scroll-margin-top:16px}
+  .rec-head{display:flex;align-items:center;gap:12px;margin:0 0 4px}
+  .rec-head h2{margin:0;font-size:21px;font-weight:900}
+  .rec-sub{margin:0 0 14px;color:#54576F;font-size:14px}
+  .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin:0 0 16px}
+  .fact{background:#f3f7fa;border-radius:12px;padding:10px 13px}
+  .fact span{display:block;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#54576F}
+  .fact b{font-size:14px;font-weight:700;color:#26272a}
+  .fact.due{background:#fdeee2}
+  .fact.due b{color:#b25b1e}
+  .fact .fine{display:inline;font-size:12px;font-weight:500;letter-spacing:0;text-transform:none;color:#54576F}
+  h3{font-size:15px;margin:18px 0 8px;color:#26272a}
+  ol.steps{margin:0;padding:0;list-style:none;counter-reset:s}
+  ol.steps > li{position:relative;padding:0 0 12px 40px;counter-increment:s;font-size:14px;color:#3f474d}
+  ol.steps > li::before{content:counter(s);position:absolute;left:0;top:-1px;width:27px;height:27px;border-radius:50%;background:#0072BC;color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center}
+  ol.steps > li b{color:#26272a}
+  ul.plain{margin:0;padding-left:20px;font-size:14px;color:#3f474d}
+  ul.plain li{margin:0 0 6px}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;background:#eef2f4;border-radius:5px;padding:1px 5px;word-break:break-word}
+  pre{background:#26272a;color:#e8edf1;border-radius:12px;padding:12px 14px;font-size:12.5px;overflow-x:auto;margin:6px 0 0;line-height:1.6}
+  pre code{background:none;padding:0;color:inherit}
+  .callout{display:flex;gap:10px;background:#fdf6ec;border:1px solid #f0dcbc;border-radius:12px;padding:11px 14px;font-size:13.5px;color:#6b4a14;margin:14px 0 0}
+  .callout .ic{color:#b97e00;width:18px;height:18px;margin-top:2px}
+  .foot{color:#8a949b;font-size:12px;margin-top:6px}
+  @media (max-width:560px){.wrap{padding:16px}.hero{padding:22px}.hero h1{font-size:32px}section.rec{padding:18px 16px}}
+</style><link rel="stylesheet" href="/static/brand.css">
+</head>
+<body>
+{% include "_icons.html" %}<div class="wrap">
+  <a class="back-to-dash" href="/">← Dashboard</a>
+  <div class="hero">
+    <h1>How we get the records</h1>
+    <p>The standard operating procedure behind the three record pages: who publishes each record, how to get it
+    yourself, the script that does it for us, and what is missing. Everything here is public — no logins, no
+    special access.</p>
+  </div>
+
+  <nav class="jump" aria-label="Records on this page">
+    <a href="#discharges"><svg class="ic"><use href="#i-receipt"/></svg>Discharge Ledger</a>
+    <a href="#postings"><svg class="ic"><use href="#i-triangle-alert"/></svg>Beach Postings</a>
+    <a href="#timeline"><svg class="ic"><use href="#i-satellite-dish"/></svg>Online Postings Timeline</a>
+    <a href="#requests"><svg class="ic"><use href="#i-inbox"/></svg>Records that aren't public</a>
+  </nav>
+
+  {% set d = fresh.discharges or {} %}
+  <section class="rec" id="discharges">
+    <div class="rec-head"><span class="ictile"><svg class="ic"><use href="#i-receipt"/></svg></span><h2>Discharge Ledger</h2></div>
+    <p class="rec-sub">Every combined-sewer discharge SFPUC reported to state regulators. <a href="/discharges">Open the ledger →</a></p>
+    <div class="facts">
+      <div class="fact"><span>Published by</span><b>SFPUC, filed with the SF Bay Regional Water Board</b></div>
+      <div class="fact"><span>Where</span><b>CIWQS (state water-quality database)</b></div>
+      <div class="fact"><span>Format</span><b>Monthly PDF reports</b></div>
+      <div class="fact"><span>Covers</span><b>Oct 2016 → {{ d.through or "today" }}<br><span class="fine">Westside from Jan 2018</span></b></div>
+      {% if d.refreshed_at %}<div class="fact"><span>Last refreshed</span><b>{{ d.refreshed_at }}</b></div>{% endif %}
+      {% if d.next_due %}<div class="fact{% if d.overdue %} due{% endif %}"><span>{% if d.overdue %}Refresh overdue since{% else %}Next refresh due{% endif %}</span><b>{{ d.next_due }}</b></div>{% endif %}
+    </div>
+
+    <h3>By hand</h3>
+    <ol class="steps">
+      <li><b>Open the CIWQS eSMR search.</b> Go to the
+        <a href="https://ciwqs.waterboards.ca.gov/ciwqs/readOnly/PublicReportEsmrAtGlanceServlet?inCommand=reset&amp;reportID=2" target="_blank" rel="noopener">eSMR At-A-Glance report</a>
+        and search the party name <code>San Francisco Public Utilities Commission</code>. It lists every monthly
+        Self-Monitoring Report (SMR) with its period, due date and date received.</li>
+      <li><b>Pick both treatment plants for the month you want.</b> Each files its own report:
+        <ul class="plain" style="margin-top:6px">
+          <li><b>Oceanside plant</b>: permit CA0037681, the Westside outfalls <code>CSD-001</code>–<code>007</code> (Ocean Beach side).</li>
+          <li><b>Southeast plant</b>: permit CA0037664, the Bayside outfalls <code>CSD-009</code>–<code>043</code>.</li>
+        </ul></li>
+      <li><b>Open the report and download its PDF attachments.</b> The report's detail page lists them; downloads need no
+        account. If a month was amended, use the newest attachment.</li>
+      <li><b>Find the discharge table.</b> Bayside: the <i>FINAL WW Summary</i> / <i>CSD Summary</i> pages. Westside:
+        <i>Oceanside Basin CSD Summary</i> (called <i>Westside CSD Summary</i> from May 2026 on).</li>
+      <li><b>Copy one row per event:</b> date, outfall, start time, duration and volume in million gallons. A second
+        discharge on the same day is its own row. Keep a volume printed as <code>&lt;0.01</code> as “less than”.</li>
+      <li><b>Trust the daily rows, not the TOTAL row.</b> SFPUC's spreadsheet template sometimes carries a stale monthly
+        total from an earlier month.</li>
+      <li><b>Record the month either way.</b> A month with a table and no events is a verified zero, which is different
+        from a month with no report yet. The coverage grid keeps that distinction.</li>
+    </ol>
+
+    <h3>Automated</h3>
+    <p style="margin:0;font-size:14px;color:#3f474d">The same steps as scripts, run on a laptop (not on the website), in
+      <code>features/forecast/src/collectors/csd_ciwqs/</code>:</p>
+<pre><code>python list_documents.py --only-new   # 1. list SFPUC's reports on CIWQS
+python harvest_index.py               # 2. find each report's attachments
+python download_pdfs.py               # 3. download the PDFs
+python batch_parse.py                 # 4. read the discharge tables
+python aggregate.py                   # 5. clean, check totals, build the CSVs</code></pre>
+    <ul class="plain" style="margin-top:10px">
+      <li>Re-parse one month you already have as a control; its rows must come out identical.</li>
+      <li>Review <code>qa_report.json</code>, append the new rows to <code>features/forecast/data/csd/</code>, copy the
+        manifest, commit and push. Vercel redeploys and the ledger shows the new months.</li>
+      <li>Full notes and the data dictionary: <code>features/forecast/data/csd/NOTES.md</code>.</li>
+    </ul>
+
+    <h3>When</h3>
+    <p style="margin:0;font-size:14px;color:#3f474d">Quarterly, around Mar, Jun, Sep and Dec 15. SFPUC files each month's
+      report 4–6 weeks after the month ends, so the most recent month or two are never there yet.</p>
+
+    <div class="callout"><svg class="ic"><use href="#i-circle-alert"/></svg><div><b>Known gaps.</b> Westside per-event
+      records before Jan 2018 were never filed (the old permit asked only for monthly counts), and Bayside before Oct 2016
+      has discharge hours but no volumes. Both exist at SFPUC; see <a href="#requests">records that aren't public</a>.
+      Don't use the state's data.ca.gov eSMR export to find reports: it skipped SFPUC's Nov–Dec 2025 filings entirely.</div></div>
+  </section>
+
+  {% set p = fresh.postings or {} %}
+  <section class="rec" id="postings">
+    <div class="rec-head"><span class="ictile"><svg class="ic"><use href="#i-triangle-alert"/></svg></span><h2>Beach Postings</h2></div>
+    <p class="rec-sub">Every advisory San Francisco filed with the State: when each beach was posted, for how long, and why. <a href="/postings">Open Beach Postings →</a></p>
+    <div class="facts">
+      <div class="fact"><span>Published by</span><b>State Water Resources Control Board (BeachWatch)</b></div>
+      <div class="fact"><span>Filed by</span><b>San Francisco, per SFPUC station</b></div>
+      <div class="fact"><span>Format</span><b>One statewide CSV (~30 MB)</b></div>
+      <div class="fact"><span>Covers</span><b>{{ (p.first or '1999')[:4] }} → {{ p.through or "today" }}<br><span class="fine">SF files months late</span></b></div>
+      {% if p.refreshed_at %}<div class="fact"><span>Last refreshed</span><b>{{ p.refreshed_at }}</b></div>{% endif %}
+      {% if p.next_due %}<div class="fact{% if p.overdue %} due{% endif %}"><span>{% if p.overdue %}Refresh overdue since{% else %}Next refresh due{% endif %}</span><b>{{ p.next_due }}</b></div>{% endif %}
+    </div>
+
+    <h3>By hand</h3>
+    <ol class="steps">
+      <li><b>Open the dataset on data.ca.gov:</b>
+        <a href="https://data.ca.gov/dataset/beach-water-quality-postings-and-closures" target="_blank" rel="noopener">Beach Water Quality Postings and Closures</a>.</li>
+      <li><b>Download the resource</b> <i>Beach Posting and Closures – Advisories</i>. It is the whole state in one CSV.</li>
+      <li><b>Keep the San Francisco rows:</b> <code>County</code> = San Francisco and <code>CountyCode</code> = SF.
+        Station names such as <code>OCEAN#15_SL</code> are the same ids SFPUC's beach map uses.</li>
+      <li><b>Read each row as one sign at one station:</b> up on <code>DateofAdvisory</code>, down on
+        <code>DateOpened</code>, both days counted. <code>AdvisoryType</code> is Posting, Rain or Closure;
+        <code>AdvisoryCause</code> and <code>Source</code> say why.</li>
+      <li><b>Sort the cause:</b> sewage when the cause is Combined Sewer Overflow or the source is Combined Sewer
+        Discharge; rain for the 72-hour rain rule; everything else is other (mostly dry-weather bacteria).</li>
+      <li><b>Check for bad rows:</b> impossible dates (one row says the year 1014), and filings left open for a year or
+        more, which are kept but not counted as posted days.</li>
+    </ol>
+
+    <h3>Automated</h3>
+<pre><code>python features/forecast/src/collectors/beachwatch.py --refresh
+python tests/test_beachwatch.py</code></pre>
+    <ul class="plain" style="margin-top:10px">
+      <li>Downloads the statewide file, keeps SF, maps stations to our zones, classifies causes and writes
+        <code>features/forecast/data/beachwatch/</code> with a manifest (fetch time, row counts, file checksum).</li>
+      <li>Commit and push; Vercel redeploys and the page shows the new postings.</li>
+      <li>Full notes: <code>features/forecast/data/beachwatch/NOTES.md</code>.</li>
+    </ul>
+
+    <h3>When</h3>
+    <p style="margin:0;font-size:14px;color:#3f474d">Quarterly, with the discharge refresh. San Francisco files its
+      postings with the State months late, so the newest months are always missing; the Online Postings Timeline
+      below covers that gap from Aug 2026 on.</p>
+  </section>
+
+  <section class="rec" id="timeline">
+    <div class="rec-head"><span class="ictile"><svg class="ic"><use href="#i-satellite-dish"/></svg></span><h2>Online Postings Timeline</h2></div>
+    <p class="rec-sub">Not requested from anyone: we record it ourselves by watching what SFPUC shows the public. <a href="/cso-history">Open the timeline →</a></p>
+    <div class="facts">
+      <div class="fact"><span>Watches</span><b>SFPUC's beach map feed</b></div>
+      <div class="fact"><span>How often</span><b>Every minute</b></div>
+      <div class="fact"><span>Stored in</span><b>Supabase (our database)</b></div>
+      <div class="fact"><span>Covers</span><b>Aug 16 2026 → now</b></div>
+    </div>
+
+    <h3>How it's recorded</h3>
+    <ol class="steps">
+      <li><b>Every minute</b> a scheduled job in our Supabase database reads
+        <a href="https://infrastructure.sfwater.org/lims.asmx/getBeaches" target="_blank" rel="noopener">SFPUC's beach feed</a>,
+        the same data behind the <a href="https://webapps.sfpuc.org/sapps/beachesandbay.html" target="_blank" rel="noopener">SFPUC beach map</a>.</li>
+      <li><b>It compares each station with the minute before.</b> When a station goes from open to posted, to a sewage
+        discharge flag, or back to open, it writes that change and the time to <code>alert_log</code>.</li>
+      <li><b>Every half hour</b> it copies the city's lab results from
+        <a href="{{ DATASF_DATASET_URL }}" target="_blank" rel="noopener">DataSF</a> into a <code>samples</code>
+        table and notes when each result first appeared, which is how the page shows publishing delay.</li>
+      <li><b>The page</b> turns those changes into a window per station: sign up, sign down.</li>
+    </ol>
+
+    <h3>To check it yourself</h3>
+    <ul class="plain">
+      <li>Open the SFPUC feed link above in a browser: it shows every station's posted and sewage flags right now.</li>
+      <li>Nothing before Aug 2026 exists in our record. For 2016–17, a volunteer archive of the same feed
+        (Beach Poo Bot) is kept in <code>features/forecast/data/poobot/</code>; for anything else, use Beach Postings above.</li>
+    </ul>
+  </section>
+
+  <section class="rec" id="requests">
+    <div class="rec-head"><span class="ictile"><svg class="ic"><use href="#i-inbox"/></svg></span><h2>Records that aren't public</h2></div>
+    <p class="rec-sub">When a record exists at an agency but isn't published, ask for it under the California Public Records Act.</p>
+    <ol class="steps">
+      <li><b>Ask the agency that holds it.</b> For per-event discharges before 2018 (Westside) and discharge volumes
+        before Oct 2016 (Bayside), that is SFPUC, not the Regional Board, which never received them.</li>
+      <li><b>Be specific:</b> permit numbers, outfall ids, date range and the format you want (the modern monthly
+        summary tables are the easiest to ask for, because SFPUC has already produced them for older months once).</li>
+      <li><b>Send it through SFPUC's public records request process</b>, asking for electronic copies. Agencies generally
+        have 10 days to respond. If part is refused, ask them to cite the exemption and release the rest.</li>
+    </ol>
+    <p style="margin:12px 0 0;font-size:14px;color:#3f474d">A ready-to-review draft is in
+      <code>features/forecast/data/csd/records_request_draft.md</code>. It hasn't been sent.</p>
+  </section>
+
+  <p class="foot">How the whole site fits together: <a href="/architecture">How it's built</a>. · {{ build.label if build else '' }}</p>
+</div>
+</body></html>
