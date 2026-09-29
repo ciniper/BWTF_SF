@@ -34,8 +34,9 @@
   .zones-hint{font-size:12px;color:var(--faint);margin:8px 0 0}
   .map-wrap{position:relative;isolation:isolate;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;min-height:400px;background:var(--sand2)}   /* isolate: Leaflet's z-indexes stay inside the map */
   #today-map{position:absolute;inset:0}
-  .map-reset{position:absolute;top:10px;right:10px;z-index:500;background:#fff;border:2px solid var(--line);border-radius:999px;padding:6px 12px;font:700 12.5px Roboto,sans-serif;color:var(--brand);cursor:pointer}
+  .map-reset{position:absolute;bottom:12px;right:12px;z-index:500;background:#fff;border:2px solid var(--line);border-radius:999px;padding:6px 12px;font:700 12.5px Roboto,sans-serif;color:var(--brand);cursor:pointer}
   .map-reset:hover{border-color:var(--brand)}
+  #today-map .leaflet-control-attribution{max-width:56%;white-space:normal;line-height:1.3;border-radius:0 8px 0 0}   /* wraps on the left, leaving the bottom right to the button */
   .map-legend{position:absolute;left:56px;top:12px;z-index:500;display:flex;flex-wrap:wrap;gap:10px;background:rgba(255,255,255,.92);border-radius:999px;padding:5px 10px;font-size:11.5px;color:var(--muted)}
   .map-legend span{display:inline-flex;align-items:center;gap:5px}
   .map-legend span[hidden]{display:none}   /* the Surfrider entry stays out of the legend until its layer is switched on */
@@ -133,7 +134,8 @@ function focusZone(key) {
 }
 function initMap() {
   if (!window.L || !document.getElementById("today-map")) return;
-  MAP = L.map("today-map", {scrollWheelZoom: false, zoomControl: true}).setView([37.765, -122.44], 11);
+  MAP = L.map("today-map", {scrollWheelZoom: false, zoomControl: true, attributionControl: false}).setView([37.765, -122.44], 11);
+  L.control.attribution({position: "bottomleft"}).addTo(MAP);   // credits bottom left; the Whole-city button takes the bottom right
   L.tileLayer({{ BASEMAP.url|tojson }}, {{ BASEMAP.options|tojson }}).addTo(MAP);
   // Stacking order: Leaflet draws vector markers in the order they are added, so add them by rank —
   // not sampled underneath, then safe, posted, and discharge on top (Chase, 2026-09-29).
