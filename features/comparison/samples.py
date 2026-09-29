@@ -13,8 +13,9 @@ both), each BWTF row is one volunteer collection with its time. The
     2000-01-03: SFPUC's lab export until DataSF begins (DATASET_FLOOR,
     2020-07-27), DataSF from then on (shared/city_history.py; rows before the
     floor carry ``history``). BWTF's SF record starts Sep 2023.
-  * Sites: ``dual`` (default) = the six beaches both programs sample, keyed by
-    BWTF_TO_SFPUC_NAME; ``all`` = every city station plus BWTF-only sites.
+  * Source, as on Graphs: ``all`` (default) = every city station plus
+    BWTF-only sites, both labs; ``both`` = only the six beaches both programs
+    sample (BWTF_TO_SFPUC_NAME); ``city`` / ``bwtf`` = one lab's sites and rows.
   * Grading: shared/standards.exceeds — over its single-sample limit, the
     total-coliform limit falling to 1,000 when fecal is over 10% of total. On
     a double-sampled day the ratio uses the day's highest fecal and total
@@ -38,7 +39,18 @@ from shared.datasf import BEACH_SAMPLES_URL, DATASET_FLOOR
 from shared.standards import ENTERO_CAUTION, STANDARDS, exceeds, parse_result, single_sample_max
 from shared.stations import STATIONS
 
-SCOPES = ("dual", "all")
+SOURCES = ("city", "bwtf", "both", "all")   # as on Graphs: City / Surfrider / Both = only the beaches both programs sample / All
+
+
+def normalise_source(source: str = "", scope: str = "") -> str:
+    """The Source choice; old links carried ``scope=dual|all`` instead (dual = today's Both)."""
+    if source in SOURCES:
+        return source
+    return "both" if scope == "dual" else "all"
+
+
+def site_fits(site: dict, source: str) -> bool:
+    return source == "all" or (source == "both" and site["dual"]) or (source == "city" and site["city"]) or (source == "bwtf" and site["bwtf_name"] is not None)
 SUBSTANCE_TO_CODE = {meta["bwtf_substance"]: code for code, meta in ANALYTES.items()}
 
 
@@ -116,15 +128,15 @@ def _row(site: dict, day: str, time: Optional[str], source: str, cells: dict, fi
 
 
 def build_samples(city_records: list[dict], bwtf_history: list[dict], start: datetime, end: datetime,
-                  scope: str = "dual", site: str = "") -> dict:
-    """Pure: records + history -> the viewer payload (JSON-serializable)."""
-    scope = scope if scope in SCOPES else "dual"
-    sites = viewer_sites(bwtf_history)
-    in_scope = [s for s in sites if scope == "all" or s["dual"]]
-    if site:
-        in_scope = [s for s in in_scope if s["key"] == site]
-    by_key = {s["key"]: s for s in in_scope}
-    by_bwtf = {s["bwtf_name"]: s for s in in_scope if s["bwtf_name"]}
+                  source: str = "", site: str = "", scope: str = "") -> dict:
+    """Pure: records + history -> the viewer payload (JSON-serializable).
+    ``sites`` lists the sites the Source choice admits; ``rows`` only that
+    source's results (``scope`` is the old parameter, see normalise_source)."""
+    source = normalise_source(source, scope)
+    sites = [s for s in viewer_sites(bwtf_history) if site_fits(s, source)]
+    in_scope = [s for s in sites if s["key"] == site] if site else sites
+    by_key = {s["key"]: s for s in in_scope} if source != "bwtf" else {}
+    by_bwtf = {s["bwtf_name"]: s for s in in_scope if s["bwtf_name"]} if source != "city" else {}
 
     rows = []
     city = defaultdict(lambda: defaultdict(list))
@@ -145,17 +157,18 @@ def build_samples(city_records: list[dict], bwtf_history: list[dict], start: dat
         events[(s["key"], when)][code].append({"raw": h.get("result_raw") or "", "value": h.get("result_value")})
         if h.get("field"):
             fields[(s["key"], when)] = h["field"]
+    site_of = {s["key"]: s for s in in_scope}
     for (key, when), cells in events.items():
-        rows.append(_row(by_key[key], when.strftime("%Y-%m-%d"), when.strftime("%-I:%M %p"), "BWTF", cells, fields.get((key, when))))
+        rows.append(_row(site_of[key], when.strftime("%Y-%m-%d"), when.strftime("%-I:%M %p"), "BWTF", cells, fields.get((key, when))))
 
     # newest day first; within a day by site, the city's sample before the volunteers', then by time
     rows.sort(key=lambda r: (r["site"], 0 if r["source"] == "SFPUC" else 1, r["time"] or ""))
     rows.sort(key=lambda r: r["date"], reverse=True)
     return {
-        "start": start.strftime("%Y-%m-%d"), "end": end.strftime("%Y-%m-%d"), "scope": scope, "site": site,
+        "start": start.strftime("%Y-%m-%d"), "end": end.strftime("%Y-%m-%d"), "source": source, "site": site,
         "floor": city_history.city_record_floor(), "datasf_from": DATASET_FLOOR, "history": city_history.provenance(),
         "default_days": DEFAULT_DAYS, "caution": ENTERO_CAUTION,
-        "sites": [{k: s[k] for k in ("key", "name", "group", "dual", "city")} for s in sites],
+        "sites": [dict({k: s[k] for k in ("key", "name", "group", "dual", "city")}, bwtf=s["bwtf_name"] is not None) for s in sites],
         "analytes": [{"code": c, "label": m["label"], "limit": m["limit"]} for c, m in ANALYTES.items()],
         "field_columns": [{"key": k, "label": l} for k, l in FIELD_COLUMNS],
         "rows": rows,
@@ -169,20 +182,21 @@ def build_samples(city_records: list[dict], bwtf_history: list[dict], start: dat
     }
 
 
-def build_sample_viewer(start: str = "", end: str = "", scope: str = "dual", site: str = "",
+def build_sample_viewer(start: str = "", end: str = "", source: str = "", site: str = "", scope: str = "",
                         bwtf_client: Optional[SFBWTFClient] = None, sf_gov_monitor=None) -> dict:
-    """Fetch both programs for the window and build the payload."""
+    """Fetch what the Source choice needs for the window and build the payload
+    (Surfrider only: no DataSF call; City only: the history still names the
+    Surfrider-only sites, so it is fetched either way)."""
     from features.alerts.monitoring import SFWaterQualityMonitor  # local: avoids the import cycle at module load
     bwtf_client = bwtf_client or SFBWTFClient()
     sf_gov_monitor = sf_gov_monitor or SFWaterQualityMonitor()
     s, e = parse_range(start, end)
-    scope = scope if scope in SCOPES else "dual"
+    source = normalise_source(source, scope)
     history = bwtf_client.fetch_event_history(since=s, max_pages=20)   # events carry the field notes
-    sites = viewer_sites(history)
-    wanted = [x["key"] for x in sites if x["city"] and (scope == "all" or x["dual"]) and (not site or x["key"] == site)]
+    wanted = [x["key"] for x in viewer_sites(history) if x["city"] and source != "bwtf" and site_fits(x, source) and (not site or x["key"] == site)]
     city_start = max(s, datetime.strptime(city_history.city_record_floor(), "%Y-%m-%d"))
-    records = fetch_city_records(sf_gov_monitor, wanted, city_start, e) if city_start <= e else []
-    return build_samples(records, history, s, e, scope, site)
+    records = fetch_city_records(sf_gov_monitor, wanted, city_start, e) if wanted and city_start <= e else []
+    return build_samples(records, history, s, e, source, site)
 
 
 # ── one station-day: the mini bar graphs behind the "latest sample" chips ────
@@ -226,7 +240,7 @@ def sample_day_payload(city_records: list[dict], station: str, date: str = "") -
         "analytes": [{"code": c, "label": m["label"]} for c, m in ANALYTES.items()],
         "results_url": results_url(station, date) if date and date >= DATASET_FLOOR else None,   # the export's days have no DataSF page
         "history": bool(date) and date < DATASET_FLOOR,
-        "viewer_url": f"/samples?scope=all&site={quote(station, safe='')}",
+        "viewer_url": f"/samples?site={quote(station, safe='')}",
         "graph_url": f"/graphs?site={quote(station, safe='')}",
     }
 
@@ -263,7 +277,7 @@ def bwtf_sample_day_payload(events: list[dict], bwtf_name: str, date: str = "") 
         "analytes": [{"code": "ENTERO", "label": ANALYTES["ENTERO"]["label"]}],
         "field": field,
         "results_url": BWTF_REPORT_URL.format(lab_id=SF_LAB_ID, site_id=site_id) if site_id else None,
-        "viewer_url": f"/samples?scope=all&site={key}&source=bwtf",
+        "viewer_url": f"/samples?site={key}&source=bwtf",
         "graph_url": f"/graphs?site={key}",
     }
 

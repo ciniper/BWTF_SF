@@ -188,7 +188,7 @@ function renderStations(v) {
     <td class="num">${r.med}</td><td class="num">${Math.round(r.csoPct)}%</td><td>${esc(r.last)}</td></tr>`).join("");
 }
 function renderRecent(v) {
-  document.getElementById("recent").innerHTML = v.slice(0, 40).map(a => `<tr><td>${a.posted}</td><td>${a.reopened}</td><td class="num">${a.days}${a.long ? ' <span class="chip long" title="left open over ' + D.max_duration_days + ' days — excluded from day totals">left open</span>' : ''}</td>
+  document.getElementById("recent").innerHTML = v.map(a => `<tr><td>${a.posted}</td><td>${a.reopened}</td><td class="num">${a.days}${a.long ? ' <span class="chip long" title="left open over ' + D.max_duration_days + ' days — excluded from day totals">left open</span>' : ''}</td>
     <td class="name">${esc(ST[a.station]?.name || a.station)}</td><td><span class="chip ${a.cause}">${esc(D.cause_labels[a.cause] || a.cause)}</span></td><td>${esc(a.type)}</td><td style="color:#54576F">${esc(a.rawCause)}${a.src ? ' · ' + esc(a.src) : ''}</td></tr>`).join("");
 }
 function wire() {
@@ -229,4 +229,5 @@ fetch("/postings/api/advisories").then(r => r.json()).then(d => {
   document.getElementById("loading").style.display = "none"; document.getElementById("content").style.display = "";
 }).catch(e => { document.getElementById("loading").textContent = "Could not load the posting record: " + e; });
 </script>
+<script src="/static/tables.js" defer></script>
 </body></html>
