@@ -321,7 +321,7 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
             parts.append(("", f"{n_safe} {plural(n_safe, 'meets', 'meet')} state standards." if n_posted
                           else f"{n_safe} other {plural(n_safe, 'beach meets', 'beaches meet')} state standards."))
     elif n_graded == 0:
-        tone, parts = "warn", [("", "Beach status is unavailable right now.")]
+        tone, parts = "warn", [("warn", "Beach status is unavailable right now.")]
     elif n_posted:
         tone = "warn"
         parts = [("posted", f"{n_posted} {plural(n_posted, 'beach is', 'beaches are')} posted for bacteria.")]

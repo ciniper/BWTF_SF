@@ -106,7 +106,8 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
     assert st["lead"] == "Discharging: all of Ocean Beach, Islais Creek and Crane Cove Park. Posted: Crissy East and Aquatic Park."   # a whole zone collapses; no advice
     many = L.today_board([S(sid, st.name, "posted") for sid, st in zip(Z["east"].station_ids[:5], Z["east"].stations[:5])], {}, "")
     assert many["lead"].startswith("Posted: Jackrabbit Beach, Windsurfer Circle, Sunnydale Cove and 2 more.")                                       # the list stops at three
-    assert L.today_board([], {}, "")["tone"] == "warn" and "unavailable" in L.today_board([], {}, "")["headline"]
+    down = L.today_board([], {}, "")
+    assert down["tone"] == "warn" and down["headline_html"] == '<em class="warn">Beach status is unavailable right now.</em>'    # orange, like a posting
     nav = L.nav_model()
     assert [h["key"] for h in nav] == ["today", "water", "record"] and [h["href"] for h in nav] == ["/today", "/analysis", "/discharges"]   # a hub opens on its first page
     assert [r["title"] for r in nav[1]["rows"]] == ["Site Report Card", "Samples", "Graphs", "Source Comparison"] and "/compare" in nav[1]["paths"]  # subpage = its own tab
