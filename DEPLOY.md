@@ -302,3 +302,72 @@ until then the poller's `opened_at` filter makes Supabase answer 400 and the
 refresh logs `deliveries not polled: …` — harmless, and gone once applied.
 Turn open tracking off in Brevo's transactional settings if the alerts should
 not track their readers at all; the column then simply stays null.
+
+## 017: one-click unsubscribe (built 2026-09-29 on branch `sender-and-unsubscribe`)
+
+`db/migrations/017_unsubscribe.sql` — apply by hand in the Supabase SQL editor
+with no simulation active. Safe to apply before or after the deploy: the
+renderer keeps a default for the new argument, so the code running today keeps
+working, and the new code falls back to its Python renderer until the function
+exists.
+
+| | Before | After |
+|---|---|---|
+| Footer | 'Reply "unsubscribe" to stop' (a manual step for Chase) | two links per recipient: **Change your sites** (`<site_url>/manage?t=<token>`) and **Unsubscribe** (`<site_url>/unsubscribe?t=<token>`) |
+| Headers | none | RFC 8058 `List-Unsubscribe` + `List-Unsubscribe-Post: List-Unsubscribe=One-Click` on every email, so Gmail/Apple Mail show their own unsubscribe button |
+| `subscribers` | — | `unsubscribe_token uuid` (generated per row, unique) + `unsubscribed_at` |
+| `watcher_config` | — | `site_url` = `https://bwtf-sf.vercel.app` (change it here when a custom domain lands; no migration) |
+| Renderer | `bwtf_render_alert(transitions, simulated, zone)` (008) | same body + `p_unsubscribe_url`; the 2- and 3-argument overloads are dropped |
+| Dispatcher | 015 | 015 + marked 017 blocks (token lookup, URL, headers); `renderer_ver` = 017; the POSTs still never sit in a swallowing block |
+| Pages | — | `GET /unsubscribe?t=…` confirm page (never unsubscribes on a GET — link scanners follow those); `POST` deactivates (`active = false`), idempotent. `GET /manage?t=…` shows the four signup zones with the subscriber's current ones checked; `POST /manage/api/update` saves through the signup store (and turns alerts back on for an unsubscribed row, saying so). Re-signing up on /signup also reactivates. |
+
+The Python manual path (`/alerts` send button) renders with the same link;
+`features/alerts/render.RENDERER_VERSION` is `017`. SMS-by-gateway messages
+carry no link (gateways strip URLs; 0 SMS subscribers today).
+
+**Check after applying:** `venv/bin/python db/scripts/test_render_parity.py`
+(pg == Python, with and without the link; 14 cases × 4 fields), then one
+simulated alert to yourself: the footer shows *Unsubscribe*, the Deliveries
+panel stores that body, the link opens the confirm page for your address, the
+button sets `active = false`, and `/signup` brings it back. Gmail should show
+its own "Unsubscribe" next to the sender once it has seen the headers.
+
+## Sender domain: authenticate the From address with Brevo (runbook; not yet done)
+
+**Why.** `watcher_config.alert_from_email` is a gmail.com address. Brevo cannot
+sign Gmail, so every alert actually leaves as `…@11897871.brevosend.com`
+(visible in Brevo's events as `from`), with a shared reputation and a "via"
+label in mail clients. This is the largest deliverability risk in the system
+and it degrades silently. Fix = a domain Chase controls, authenticated in
+Brevo, exactly as Surftober did for `surftober.com` on 2026-09-06 (see
+`/pers`: Brevo Manual records at GoDaddy; two Brevo accounts stay separate so
+a Surftober burst can never touch alert quota).
+
+**Step 0 — pick the domain.** BWTF has none today (`bwtf-sf.vercel.app` is
+Vercel's). Options: a domain Chase buys (e.g. `sfbeachalerts.org`), or a
+subdomain the chapter delegates (`alerts.sf.surfrider.org` — needs their DNS
+and is the same conversation as the HubSpot embed). Sender address becomes
+e.g. `alerts@<domain>`; the site can move to the same domain later
+(`watcher_config.site_url`, Vercel domain).
+
+**Steps (Chase, ~20 min + DNS propagation):**
+1. Brevo → Senders, Domains & Dedicated IPs → Domains → Add domain → **Manual**
+   records (not Automatic; no third-party DNS access). Skip the "branded
+   link/subdomain" step — it is click-tracking.
+2. At the registrar add: `brevo1._domainkey` CNAME, `brevo2._domainkey` CNAME
+   (Brevo's DKIM), `brevo-code` TXT (verification), `_dmarc` TXT
+   `v=DMARC1; p=none; rua=mailto:rua@dmarc.brevo.com`. GoDaddy's host field
+   takes only the left label.
+3. **Delete the registrar's default `_dmarc` record if one exists** (GoDaddy
+   plants `p=quarantine … onsecureserver.net`); two DMARC records = no DMARC.
+4. `venv/bin/python db/scripts/check_sender_dns.py <domain>` until ALL PASS
+   (checks the two DKIM CNAMEs, the code TXT, exactly one DMARC).
+5. Brevo → Senders → add `alerts@<domain>` (verified through the domain).
+6. `update watcher_config set value = 'alerts@<domain>' where key = 'alert_from_email';`
+   and set `ALERT_FROM_EMAIL` on Vercel to the same (manual sends) → redeploy.
+7. One simulated alert: Brevo's events `from` shows the new domain; the
+   Deliveries panel shows accepted → delivered; the mail client shows no
+   "via". Then `p=none` → `p=quarantine` after a clean month if desired.
+
+Do not put the sender key or ping URLs in the repo; `alert_from_email` is
+plain config and fine to mention.
