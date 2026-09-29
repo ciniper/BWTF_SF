@@ -9,7 +9,7 @@ from datetime import datetime
 from html import escape as _esc
 from flask import render_template
 
-from shared.zones import ZONES, ZONE_OF_STATION
+from shared.zones import ZONES
 
 BWTF_LOGO_URL = "https://bwtf.surfrider.org/images/BWTF-Logo_White.png"
 SURFRIDER_LOGO_URL = "https://f.hubspotusercontent20.net/hubfs/20811975/SF-Horizontal-Logo_RGB_Black_crop_small.png"
@@ -259,18 +259,22 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
     objects (station_id = SFPUC id, station_name, status, has_cso, sample_date);
     ``risks`` is _forecast_risks(); ``samples_fact`` the samples row's live fact.
     Returns the headline (plain + HTML), the lead sentence, a tone, and one tile
-    per zone with its stations' statuses (Chase, 2026-09-29: lead with the answer)."""
+    per zone with every registry station's status, coordinates and DataSF id —
+    the tiles' dots and the city map's markers (Chase, 2026-09-29: lead with the
+    answer; the map like SFPUC's, zone tiles zoom it)."""
     now = now or datetime.now()
     risks = risks or {}
-    by_zone: dict[str, list] = {k: [] for k in ZONES}
-    for st in stations:
-        zk = ZONE_OF_STATION.get(str(getattr(st, "station_id", "")))
-        if zk:
-            by_zone[zk].append(st)
+    by_id = {str(getattr(st, "station_id", "")): st for st in stations}   # SFPUC id → live feed row
     status_text = {"safe": "safe", "posted": "posted for bacteria", "discharge": "sewage discharge", "unknown": "not sampled"}
     tiles, posted, discharging, n_safe, n_graded = [], [], [], 0, 0
     for zk, z in ZONES.items():
-        sts = [{"name": _short(st.station_name), "status": _station_status(st), "status_text": status_text[_station_status(st)]} for st in by_zone[zk]]
+        sts = []
+        for source, reg in zip(z.source_ids, z.stations):    # every registry station, so the map and the dots stay complete when the feed is short
+            st = by_id.get(reg.sfpuc_id)
+            status = _station_status(st) if st is not None else "unknown"
+            d = getattr(st, "sample_date", None) if st is not None else None
+            sts.append({"name": _short(reg.name), "full_name": reg.name, "status": status, "status_text": status_text[status],
+                        "source": source, "lat": reg.lat, "lon": reg.lon, "sampled": d.strftime("%Y-%m-%d") if d else ""})
         z_posted = [x["name"] for x in sts if x["status"] == "posted"]
         z_cso = [x["name"] for x in sts if x["status"] == "discharge"]
         z_safe = sum(1 for x in sts if x["status"] == "safe")
@@ -278,8 +282,8 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
         status = "discharge" if z_cso else "posted" if z_posted else "safe" if z_safe else "unknown"
         text = ("Sewage discharge" if status == "discharge" else f"{len(z_posted)} beach{'es' if len(z_posted) > 1 else ''} posted" if status == "posted"
                 else "All clear" if status == "safe" else "Not sampled")
-        dates = [st.sample_date for st in by_zone[zk] if getattr(st, "sample_date", None)]
-        sampled = f"sampled {max(dates):%b %-d}" if dates else "no sample date"
+        dates = [x["sampled"] for x in sts if x["sampled"]]
+        sampled = f"sampled {datetime.strptime(max(dates), '%Y-%m-%d'):%b %-d}" if dates else "no sample date"
         meta = (" · ".join(z_cso + z_posted) + f" · {sampled}") if (z_cso or z_posted) else f"{len(sts)} stations · {sampled}"
         tiles.append({"key": zk, "label": z.label, "status": status, "status_text": text, "risk": (risks.get("zones") or {}).get(zk),
                       "stations": sts, "meta": meta})
