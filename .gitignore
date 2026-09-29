@@ -17,3 +17,7 @@ token.txt
 .env
 # rescore staging beside the served artifact (train_v4.py --rescore without --promote)
 features/forecast/data/models/scorecard.rescored.json.gz
+
+# CIWQS SMR PDF archive: the PDFs stay out of git (hundreds of MB); the manifests next to them are tracked
+features/forecast/data/csd/pdf_archive/pdfs/
+features/forecast/data/csd/pdf_archive/*.log
