@@ -162,12 +162,10 @@ footer a { color: #0072BC; text-decoration: none; }
 </style>
 </head>
 <body>
-{% include "_icons.html" %}
-<div class="container"><a class="back-to-dash" href="/">← Dashboard</a>
-<header>
-    <h1><span class="live-dot"></span> SF CSO Live Forecast</h1>
-    <div class="subtitle">Sewage-overflow risk for San Francisco's beaches — by zone, updated every 30 minutes</div>
-</header>
+{% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
+{{ topbar() }}
+<div class="container">
+{{ page_head("CSO Forecast", "Sewage-overflow risk for San Francisco's beaches, by zone, updated every 30 minutes.", "today") }}
 
 <div class="mode-bar">
     <button class="mode-btn active" id="btnLive" onclick="setMode('live')"><svg class="ic"><use href="#i-pulse"/></svg> Live forecast</button>
@@ -970,4 +968,6 @@ loadData();
 setInterval(() => { if (currentMode === 'live') loadData(); }, 300000);
 </script>
 <script src="/static/sample_popover.js" defer></script>
+<div class="container wrap-foot">{{ footer() }}</div>
+{{ tabbar() }}
 </body></html>

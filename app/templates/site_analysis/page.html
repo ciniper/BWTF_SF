@@ -75,17 +75,18 @@
 </style><link rel="stylesheet" href="/static/brand.css">
 </head>
 <body>
-{% include "_icons.html" %}<div class="wrap">
-  <a class="back-to-dash" href="/">← Dashboard</a>
-  <div class="hero">
-    <h1>Site Report Card</h1>
+{% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
+{{ topbar() }}
+<div class="wrap">
+  {% call page_head("Site Report Card", "How often each shoreline site fails the state bacteria standard, from the city's published lab results.", "water") %}
+    
     <p>How often each shoreline monitoring site fails the state bacteria standard, from the city's
     published lab results. By default that is the {{ graded_on_name }} single-sample max,
     {{ ssm }}&nbsp;MPN/100mL — the indicator BWTF measures; the <b>Standard</b> toggle regrades the same
     samples on fecal or total coliform, or on all three the way the city posts (bad when any is over).
-    Click a site for its year-by-year trend. <a href="#standards" style="color:#fff">The limits are listed below.</a>
-    The signs the public saw are on <a href="/postings" style="color:#cfe6f6">Beach Postings</a>; what was discharged is on the <a href="/discharges" style="color:#cfe6f6">Discharge Ledger</a>.</p>
-  </div>
+    Click a site for its year-by-year trend. <a href="#standards">The limits are listed below.</a>
+    The signs the public saw are on <a href="/postings">Beach Postings</a>; what was discharged is on the <a href="/discharges">Discharge Ledger</a>.</p>
+  {% endcall %}
 
   <div class="controls" id="groupBtns">
     <button class="group-btn active" data-group="">All sites</button>
@@ -372,4 +373,6 @@ for (const id of ["startDate", "endDate"]) {
 
 load();
 </script>
+<div class="wrap wrap-foot">{{ footer() }}</div>
+{{ tabbar() }}
 </body></html>

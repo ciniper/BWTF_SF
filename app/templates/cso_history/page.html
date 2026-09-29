@@ -85,12 +85,14 @@
 </style><link rel="stylesheet" href="/static/brand.css">
 </head>
 <body>
-{% include "_icons.html" %}<div class="wrap">
-  <a class="back-to-dash" href="/">← Dashboard</a><a class="back-to-dash how-link" href="/records#timeline"><span class="with-ic"><svg class="ic"><use href="#i-info"/></svg>How we get these records</span></a>
-  <div class="hero">
-    <h1>Online Postings Timeline</h1>
-    <p>What the public could see, minute by minute. For each station: when its sign went up on SFPUC's beach map — a bacteria posting or a CSO discharge flag — how it changed, and when it came down; and beneath it, the day each lab sample was collected and how long until the result appeared in the city's open dataset. Our watcher reads the map once a minute and the dataset every half hour, so this is an independent record of what was shown and when, not the city's own history. What was actually discharged is on the <a href="/discharges" style="color:#cfe6f6">Discharge Ledger</a>; the State's filed advisories are on <a href="/postings" style="color:#cfe6f6">Beach Postings</a>.</p>
-  </div>
+{% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
+{{ topbar() }}
+<div class="wrap">
+  {% call page_head("Online Postings Timeline", "What the public could see on SFPUC's beach map, minute by minute, station by station.", "record") %}
+    
+    <p>What the public could see, minute by minute. For each station: when its sign went up on SFPUC's beach map — a bacteria posting or a CSO discharge flag — how it changed, and when it came down; and beneath it, the day each lab sample was collected and how long until the result appeared in the city's open dataset. Our watcher reads the map once a minute and the dataset every half hour, so this is an independent record of what was shown and when, not the city's own history. What was actually discharged is on the <a href="/discharges">Discharge Ledger</a>; the State's filed advisories are on <a href="/postings">Beach Postings</a>.</p>
+    <p><a href="/records#timeline">How we get these records</a></p>
+  {% endcall %}
 
   <div id="status" class="loading">Loading event history…</div>
 
@@ -345,4 +347,6 @@
   window.__timeline = { getData: function(){ return DATA; }, setData: function(d){ DATA = d; render(); renderTable(); } };
 })();
 </script>
+<div class="wrap wrap-foot">{{ footer() }}</div>
+{{ tabbar() }}
 </body></html>

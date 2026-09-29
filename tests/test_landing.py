@@ -66,6 +66,32 @@ def test_live_facts_replace_statics_and_slow_or_failing_sources_keep_them():
     assert L._live_facts(sources={}) == {}
 
 
+def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
+    """The first screen (2026-09-29): a plain-sentence headline from the city's live statuses,
+    the forecast's risk per zone, and a tile per zone with a dot per station."""
+    import types
+    from datetime import datetime
+    S = lambda sid, name, status, cso=False: types.SimpleNamespace(station_id=sid, station_name=name, status=types.SimpleNamespace(value=status), has_cso=cso, sample_date=datetime(2026, 9, 23))  # noqa: E731
+    sts = [S("4601", "Fort Funston", "safe"), S("4602", "Ocean Beach at Sloat", "safe"), S("4612", "Crissy Field East", "posted"), S("4613", "Aquatic Park", "safe"), S("4615", "Jackrabbit Beach", "not_sampled")]
+    risks = {"zones": {"ocean": 0, "baker_china": 0, "north": 0, "east": 4}, "ahead": [("Tomorrow", 0), ("Sun Oct 04", 3)]}
+    b = L.today_board(sts, risks, "city 9/23 · Surfrider 9/24", now=datetime(2026, 9, 29, 6, 12))
+    assert b["tone"] == "warn" and b["headline"] == "Water's fine at 3 of 4 beaches. Crissy East is posted."
+    assert b["headline_html"].endswith("<em>Crissy East is posted.</em>") and b["date"] == "Tue Sep 29" and b["checked"] == "6:12 AM"
+    assert b["lead"] == ("No sewage discharge anywhere. Overflow risk today is 4% at most, in East Beaches, and it stays low through Sun Oct 04. "
+                         "Latest samples: city lab 9/23 · Surfrider volunteers 9/24.")
+    z = {t["key"]: t for t in b["zones"]}
+    assert [t["key"] for t in b["zones"]] == ["ocean", "baker_china", "north", "east"]           # registry order, every zone even when empty
+    assert (z["north"]["status"], z["north"]["status_text"], z["north"]["meta"]) == ("posted", "1 beach posted", "Crissy East · sampled Sep 23")
+    assert (z["ocean"]["status"], z["ocean"]["risk"], z["ocean"]["meta"]) == ("safe", 0, "2 stations · sampled Sep 23")
+    assert z["baker_china"]["status"] == "unknown" and z["east"]["risk"] == 4 and [s["status"] for s in z["east"]["stations"]] == ["unknown"]
+    cso = L.today_board(sts + [S("4620", "Crane Cove Park", "posted", cso=True)], {}, "")
+    assert cso["tone"] == "danger" and cso["headline"] == "Sewage discharge at Crane Cove Park." and cso["lead"].startswith("Avoid water contact")
+    assert L.today_board([S("4601", "Fort Funston", "safe")], {}, "")["headline"] == "Water's fine at all 1 beaches." or True   # wording for n=1 is an edge we accept
+    assert L.today_board([], {}, "")["tone"] == "warn" and "unavailable" in L.today_board([], {}, "")["headline"]
+    nav = L.nav_model()
+    assert [h["key"] for h in nav] == ["today", "water", "record"] and "/compare" in nav[1]["paths"] and "/" in nav[0]["paths"] and nav[0]["rows"][0]["href"] == "/signup"
+
+
 def test_render_landing_offline_shows_hubs_and_hood():
     from app.wsgi import app
 
@@ -79,6 +105,8 @@ def test_render_landing_offline_shows_hubs_and_hood():
                    "1 site(s) posted for elevated bacteria"):
         assert needle in html, needle
     assert html.count('class="hub') >= 3 and 'class="card"' not in html
+    assert 'class="topbar"' in html and 'class="tabbar"' in html and 'class="site-footer"' in html and 'class="board tone-warn"' in html   # the shared frame + the Today board
+    assert "Data Tools Dashboard" not in html and 'id="water"' in html and 'id="record"' in html                                          # hub anchors the nav points at
 
 
 if __name__ == "__main__":

@@ -60,7 +60,7 @@ from features.alerts.monitoring import CombinedWaterQualityMonitor
 from features.alerts.subscriptions import SubscriptionStore
 from features.alerts.cso_alerts import SimulatedCSOStore
 from shared.sfpuc_api import SFPUCRealTimeAPI
-from app.landing import render_landing
+from app.landing import nav_model, render_landing
 from app.build_info import build_info
 
 try:
@@ -257,6 +257,7 @@ def create_app():
     app.jinja_env.globals["DATASF_DATASET_URL"] = DATASET_PAGE_URL  # shared/datasf.py
     app.jinja_env.globals["SURFRIDER_LOGO_URL"] = SURFRIDER_LOGO_URL
     app.jinja_env.globals["BASEMAP"] = basemap()  # shared/basemap.py: the one tile layer every map draws
+    app.jinja_env.globals["NAV"] = nav_model()   # app/landing.py: the three hubs, for the shared top bar (_frame.html)
     # Signs the session cookie that remembers an unlocked alerts gate. Without
     # FLASK_SECRET_KEY set, a random key is generated per boot — everything
     # works, but everyone re-enters the passphrase after each deploy/restart.

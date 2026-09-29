@@ -46,12 +46,13 @@
 </style><link rel="stylesheet" href="/static/brand.css">
 </head>
 <body>
-{% include "_icons.html" %}<div class="wrap">
-  <a class="back-to-dash" href="/">← Dashboard</a>
-  <div class="hero">
-    <h1>Water Quality Graphs</h1>
+{% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
+{{ topbar() }}
+<div class="wrap">
+  {% call page_head("Water Quality Graphs", "Any site, any window, any indicator: the city's lab and Surfrider's volunteers on one axis.", "water") %}
+    
     <p>Pick a site, a range, and an indicator — or all three at once — and choose the city's lab, Surfrider's, only the beaches both sample, or all sites. Click any city point for that day's results. The same samples, row by row, are on <a href="/samples">Samples</a>.</p>
-  </div>
+  {% endcall %}
   <p class="subpage">Looking for the original head to head? <a href="/compare">Source Comparison</a> keeps the six beaches both programs sample, latest result and agreement per site, with the same graphs one click away.</p>
   <div class="controls">
     <span class="ctl-label">Bacteria</span>
@@ -196,4 +197,6 @@ $("src").addEventListener("click", e => { const b = e.target.closest(".seg-btn")
 document.querySelectorAll(".preset").forEach(btn => btn.addEventListener("click", () => { const end = new Date().toISOString().slice(0, 10); S.end = end; S.start = btn.dataset.days ? new Date(Date.now() - btn.dataset.days * DAY).toISOString().slice(0, 10) : FLOOR; $("start").value = S.start; $("end").value = S.end; markPreset(); load(); }));
 load();
 </script>
+<div class="wrap wrap-foot">{{ footer() }}</div>
+{{ tabbar() }}
 </body></html>

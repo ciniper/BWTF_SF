@@ -9,6 +9,8 @@ from datetime import datetime
 from html import escape as _esc
 from flask import render_template
 
+from shared.zones import ZONES, ZONE_OF_STATION
+
 BWTF_LOGO_URL = "https://bwtf.surfrider.org/images/BWTF-Logo_White.png"
 SURFRIDER_LOGO_URL = "https://f.hubspotusercontent20.net/hubfs/20811975/SF-Horizontal-Logo_RGB_Black_crop_small.png"
 
@@ -65,6 +67,23 @@ HUBS = [
         ],
     },
 ]
+
+def nav_model() -> list[dict]:
+    """The three hubs for the shared top bar and phone tab bar
+    (app/templates/_frame.html): static rows with their static facts, the
+    landing anchor each hub label opens, and the paths that light the hub.
+    Set as the Jinja global ``NAV`` in app/wsgi.py."""
+    anchors = {"today": "/", "water": "/#water", "record": "/#record"}
+    out = []
+    for h in HUBS:
+        rows = ([{"href": h["primary"][0], "title": h["primary"][1], "fact": ""}] if h["primary"] else [])
+        rows += [{"href": r[0], "title": r[1], "fact": r[3]} for r in h["rows"]]
+        paths = [r["href"] for r in rows] + [r[4][0] for r in h["rows"] if len(r) > 4]
+        if h["key"] == "today":
+            paths.append("/")
+        out.append({"key": h["key"], "title": h["title"], "href": anchors[h["key"]], "rows": rows, "paths": paths})
+    return out
+
 
 # Model pages and reports — for the curious, out of the public cards.
 UNDER_THE_HOOD = [
@@ -150,7 +169,24 @@ def _fact_timeline() -> str:
     return f"last posting seen {d:%b %-d}"
 
 
+def _forecast_risks() -> dict:
+    """Today's overflow risk per zone (0–100) and the days ahead, from the forecast cache row —
+    what the Today board's zone tiles show. Empty dict when there is no snapshot."""
+    from features.forecast import page as fp
+    row = fp._read_row()
+    snap = (row or {}).get("snapshot") or {}
+    days = sorted((d for d in snap.get("predictions", {}).values() if isinstance(d, dict)), key=lambda d: d.get("day_offset") or 0)
+    today = next((d for d in days if d.get("is_today")), None)
+    if not today or not isinstance(today.get("zones"), dict):
+        return {}
+    zones = {k: round(float(v) * 100) for k, v in today["zones"].items() if isinstance(v, (int, float))}
+    ahead = [(d.get("label") or d.get("date") or "", round(max((float(v) for v in (d.get("zones") or {}).values()), default=0.0) * 100))
+             for d in days if (d.get("day_offset") or 0) > 0]
+    return {"zones": zones, "ahead": ahead}
+
+
 _FACT_SOURCES = {
+    "_forecast": _forecast_risks,
     "/forecast": _fact_forecast,
     "/samples": _fact_samples,
     "/discharges": _fact_discharges,
@@ -192,6 +228,94 @@ def hubs_with_facts(facts: dict | None) -> list[dict]:
                 for r in h["rows"]]
         rendered.append({**h, "rows": rows})
     return rendered
+
+
+_SHORT = (("Ocean Beach at ", "OB "), ("Baker Beach at Lobos Creek", "Baker Lobos"), ("Baker Beach ", "Baker "), ("Crissy Field ", "Crissy "), (" Street Pier", " St Pier"))
+
+
+def _short(name: str) -> str:
+    for a, b in _SHORT:
+        name = name.replace(a, b)
+    return name
+
+
+def _station_status(st) -> str:
+    """safe / posted / discharge / unknown from an SFPUC station object (status enum or string)."""
+    if getattr(st, "has_cso", False):
+        return "discharge"
+    v = getattr(getattr(st, "status", None), "value", getattr(st, "status", None))
+    return {"safe": "safe", "posted": "posted"}.get(str(v), "unknown")
+
+
+def _join(names: list[str]) -> str:
+    return names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
+
+
+def today_board(stations: list, risks: dict | None = None, samples_fact: str = "", now: datetime | None = None) -> dict:
+    """Pure: the landing page's first screen. ``stations`` are SFPUC station
+    objects (station_id = SFPUC id, station_name, status, has_cso, sample_date);
+    ``risks`` is _forecast_risks(); ``samples_fact`` the samples row's live fact.
+    Returns the headline (plain + HTML), the lead sentence, a tone, and one tile
+    per zone with its stations' statuses (Chase, 2026-09-29: lead with the answer)."""
+    now = now or datetime.now()
+    risks = risks or {}
+    by_zone: dict[str, list] = {k: [] for k in ZONES}
+    for st in stations:
+        zk = ZONE_OF_STATION.get(str(getattr(st, "station_id", "")))
+        if zk:
+            by_zone[zk].append(st)
+    status_text = {"safe": "safe", "posted": "posted for bacteria", "discharge": "sewage discharge", "unknown": "not sampled"}
+    tiles, posted, discharging, n_safe, n_graded = [], [], [], 0, 0
+    for zk, z in ZONES.items():
+        sts = [{"name": _short(st.station_name), "status": _station_status(st), "status_text": status_text[_station_status(st)]} for st in by_zone[zk]]
+        z_posted = [x["name"] for x in sts if x["status"] == "posted"]
+        z_cso = [x["name"] for x in sts if x["status"] == "discharge"]
+        z_safe = sum(1 for x in sts if x["status"] == "safe")
+        posted += z_posted; discharging += z_cso; n_safe += z_safe; n_graded += z_safe + len(z_posted) + len(z_cso)
+        status = "discharge" if z_cso else "posted" if z_posted else "safe" if z_safe else "unknown"
+        text = ("Sewage discharge" if status == "discharge" else f"{len(z_posted)} beach{'es' if len(z_posted) > 1 else ''} posted" if status == "posted"
+                else "All clear" if status == "safe" else "Not sampled")
+        dates = [st.sample_date for st in by_zone[zk] if getattr(st, "sample_date", None)]
+        sampled = f"sampled {max(dates):%b %-d}" if dates else "no sample date"
+        meta = (" · ".join(z_cso + z_posted) + f" · {sampled}") if (z_cso or z_posted) else f"{len(sts)} stations · {sampled}"
+        tiles.append({"key": zk, "label": z.label, "status": status, "status_text": text, "risk": (risks.get("zones") or {}).get(zk),
+                      "stations": sts, "meta": meta})
+    if discharging:
+        tone, headline = "danger", f"Sewage discharge at {_join(discharging)}."
+        headline_html = f"<em>{_esc(headline)}</em>"
+    elif n_graded == 0:
+        tone, headline = "warn", "Beach status is loading or unavailable right now."
+        headline_html = _esc(headline)
+    elif posted:
+        tone = "warn"
+        tail = f"{_join(posted)} {'is' if len(posted) == 1 else 'are'} posted." if len(posted) <= 2 else f"{len(posted)} beaches are posted."
+        headline = f"Water's fine at {n_safe} of {n_graded} beaches. {tail}"
+        headline_html = f"Water's fine at {n_safe} of {n_graded} beaches. <em>{_esc(tail)}</em>"
+    else:
+        tone, headline = "ok", f"Water's fine at all {n_graded} beaches."
+        headline_html = _esc(headline)
+    lead = []
+    if discharging:
+        lead.append("Avoid water contact there, and for 72 hours after it ends.")
+    elif n_graded:
+        lead.append("No sewage discharge anywhere.")
+    zr = risks.get("zones") or {}
+    if zr:
+        worst = max(zr.values())
+        where = "in every zone" if len(set(zr.values())) == 1 else f"at most, in {ZONES[max(zr, key=zr.get)].label}"
+        ahead = risks.get("ahead") or []
+        if ahead and max(p for _, p in ahead) < 10:
+            trend = f", and it stays low through {ahead[-1][0]}"
+        elif ahead and max(p for _, p in ahead) >= worst + 10:
+            lbl, pk = max(ahead, key=lambda t: t[1]); trend = f", rising to {pk}% by {lbl}"
+        else:
+            trend = ""
+        lead.append(f"Overflow risk today is {worst}% {where}{trend}.")
+    if samples_fact:
+        lead.append("Latest samples: " + samples_fact.replace("city", "city lab").replace("Surfrider", "Surfrider volunteers") + ".")
+    return {"tone": tone, "headline": headline, "headline_html": headline_html, "lead": " ".join(lead), "zones": tiles,
+            "posted": posted, "discharging": discharging, "n_safe": n_safe, "n_graded": n_graded,
+            "date": now.strftime("%a %b %-d"), "checked": now.strftime("%-I:%M %p")}
 
 
 def _status_banner(summary: dict) -> tuple[str, str]:
@@ -239,20 +363,26 @@ def _conditions_lines(env_context) -> list[str]:
 
 def render_landing(sfpuc_api, env_context=None, live_facts: bool = True) -> str:
     try:
-        summary = sfpuc_api.get_status_summary()
+        stations = list(sfpuc_api.fetch_stations()) if hasattr(sfpuc_api, "fetch_stations") else []
+    except Exception:
+        stations = []
+    try:
+        summary = sfpuc_api.get_status_summary() if not stations else {}
     except Exception:
         summary = {}
 
-    tone, message = _status_banner(summary)
     conditions = _conditions_lines(env_context)
     generated = datetime.now().strftime("%B %-d, %Y at %-I:%M %p")
     facts = _live_facts() if live_facts else {}
+    board = today_board(stations, facts.get("_forecast"), facts.get("/samples", ""))
+    if not stations and summary:   # a client that only knows the summary: keep the old banner sentence as the headline
+        board["tone"], message = _status_banner(summary)
+        board["headline"] = board["headline_html"] = message.split("</svg> ", 1)[-1]
 
     return render_template(
         "landing.html",
         bwtf_logo=BWTF_LOGO_URL,
-        tone=tone,
-        message=message,
+        board=board,
         conditions=conditions,
         hubs=hubs_with_facts(facts),
         hood=UNDER_THE_HOOD,

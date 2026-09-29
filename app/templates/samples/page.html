@@ -52,14 +52,15 @@
 </style><link rel="stylesheet" href="/static/brand.css">
 </head>
 <body>
-{% include "_icons.html" %}<div class="wrap">
-  <a class="back-to-dash" href="/">← Dashboard</a>
-  <div class="hero">
-    <h1>Samples</h1>
+{% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
+{{ topbar() }}
+<div class="wrap">
+  {% call page_head("Samples", "Every published result from both programs, one row per sample, with the volunteers' field notes.", "water") %}
+    
     <p>Every published result from both programs, one row per sample: the city's lab (SFPUC, on SF Gov Open Data) and Surfrider's volunteer lab.
     A day the city sampled twice shows both values. Surfrider rows carry the volunteer's field notes — open them row by row, show them as columns, or hide them.
     Plots of the same samples are on <a href="/graphs">Graphs</a>.</p>
-  </div>
+  {% endcall %}
 
   <div class="board">
     <h2>Latest by site</h2><p class="sub">The newest result each program has for the beaches both sample. Click a site for its latest results as graphs.</p>
@@ -188,4 +189,6 @@ $("v-rows").addEventListener("click", function (e) {
 document.querySelectorAll(".v-preset").forEach(function (btn) { btn.addEventListener("click", function () { var end = new Date().toISOString().slice(0, 10); VIEW.end = end; VIEW.start = btn.dataset.days ? new Date(Date.now() - btn.dataset.days * DAY).toISOString().slice(0, 10) : FLOOR; $("v-start").value = VIEW.start; $("v-end").value = VIEW.end; markPreset(); vLoad(); }); });
 vLoad(); loadLatest();
 </script>
+<div class="wrap wrap-foot">{{ footer() }}</div>
+{{ tabbar() }}
 </body></html>

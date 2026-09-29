@@ -71,6 +71,15 @@ fail the state standard; this project makes that information timely, searchable 
 
 ## 3. The pages
 
+**Shared frame (redesign branch, 2026-09-29).** Every public page is wrapped by `app/templates/_frame.html`: a white top bar
+(the three hubs as drop-down menus built from `app/landing.py` `HUBS` via the `NAV` Jinja global, plus the "Get beach alerts"
+button), a compact page head (`page_head(title, lead, hub)`; the old blue-hero paragraph sits behind a "How to read this"
+drawer), the site footer, and a phone tab bar under 760 px. Design tokens (palette, status colours, radii) and the frame's
+styles live in `app/static/brand.css`; pages still carry their own component CSS for now. The landing page (`/`) opens on the
+**Today board** (`landing.today_board`): a plain-sentence headline from SFPUC's live station statuses ("Water's fine at 16 of
+17 beaches. Islais Creek is posted."), one tile per zone with the forecast's overflow risk and a dot per station, then the
+three hubs. Status colours mean the same thing everywhere: safe, caution, posted, discharge, unknown.
+
 | Route | Page | What it shows | Data behind it |
 |---|---|---|---|
 | `/` | Dashboard (landing) | Live status hero (SFPUC summary, rain, tide) above three hubs — Today & alerts (signup button, CSO Forecast, Sewage Alert System), The water record (Site Report Card, Source Comparison, BWTF Sample Log), Postings & discharges (Discharge Ledger, Beach Postings, Online Postings Timeline) — each row carrying a live fact when its source answers within 2.5 s (`app/landing.py` HUBS / `_live_facts`), plus an Under the hood strip (model check, analysis, replays, build) | SFPUC feed, Supabase (forecast snapshot, samples mirror, alert_log), BWTF GraphQL, CIWQS csv |

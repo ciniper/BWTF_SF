@@ -61,16 +61,18 @@
 </style><link rel="stylesheet" href="/static/brand.css">
 </head>
 <body>
-{% include "_icons.html" %}<div class="wrap">
-  <a class="back-to-dash" href="/">← Dashboard</a><a class="back-to-dash how-link" href="/records#postings"><span class="with-ic"><svg class="ic"><use href="#i-info"/></svg>How we get these records</span></a>
-  <div class="hero">
-    <h1>Beach Postings</h1>
+{% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
+{{ topbar() }}
+<div class="wrap">
+  {% call page_head("Beach Postings", "Every advisory San Francisco filed with the State since 1999: when each beach was posted, for how long, and why.", "record") %}
+    
     <p>Every advisory San Francisco filed with the State since 1999 — when each beach was posted,
     for how long, and why — from the State Water Board's BeachWatch record. This is what the public was
     <i>told</i>, alongside what was actually discharged (<a href="/discharges">Discharge Ledger</a>),
     what the water measured (<a href="/analysis">Site Report Card</a>) and what our own watcher saw
     (<a href="/cso-history">Online Postings Timeline</a>).</p>
-  </div>
+    <p><a href="/records#postings">How we get these records</a></p>
+  {% endcall %}
 
   <div class="controls" id="zoneBtns">
     <button class="group-btn active" data-zone="">All beaches</button>
@@ -229,4 +231,6 @@ fetch("/postings/api/advisories").then(r => r.json()).then(d => {
   document.getElementById("loading").style.display = "none"; document.getElementById("content").style.display = "";
 }).catch(e => { document.getElementById("loading").textContent = "Could not load the posting record: " + e; });
 </script>
+<div class="wrap wrap-foot">{{ footer() }}</div>
+{{ tabbar() }}
 </body></html>

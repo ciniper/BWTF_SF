@@ -55,8 +55,9 @@
 </style><link rel="stylesheet" href="/static/brand.css">
 </head>
 <body>
-{% include "_icons.html" %}<div class="wrap">
-  <a class="back-to-dash" href="/">← Dashboard</a>
+{% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
+{{ topbar() }}
+<div class="wrap">
   <div class="panel">
     <div class="left">
       <img src="https://bwtf.surfrider.org/images/BWTF-Logo_White.png" alt="Blue Water Task Force">
@@ -164,4 +165,6 @@ document.getElementById("f").addEventListener("submit", async e => {
 });
 refresh();
 </script>
+<div class="wrap wrap-foot">{{ footer() }}</div>
+{{ tabbar() }}
 </body></html>

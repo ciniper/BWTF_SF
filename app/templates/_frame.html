@@ -1,0 +1,63 @@
+{#- The shared page frame (redesign, 2026-09-29): one top bar with the three hubs as
+    drop-downs, a compact page head that replaces the tall blue heroes, the site
+    footer, and a phone tab bar. Styles live in app/static/brand.css; the nav model
+    (NAV) is a Jinja global built from app/landing.py's HUBS.
+    Import with context so `request` is in scope:
+      {% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
+    A page head with a "How to read this" drawer:
+      {% call page_head("Graphs", "one-line lead", "water") %} …the longer explanation… {% endcall %} -#}
+
+{% macro topbar() -%}
+<header class="topbar"><div class="in">
+  <a class="mark" href="/"><img src="/static/brand/bwtf_144x144.png" alt="">SF Beach Water</a>
+  <nav aria-label="Sections">
+    {%- for hub in NAV %}
+    <div class="navhub{% if request.path in hub.paths %} on{% endif %}">
+      <a href="{{ hub.href }}">{{ hub.title }}</a>
+      <div class="menu">{% for r in hub.rows %}<a href="{{ r.href }}"{% if r.href == request.path %} class="cur"{% endif %}>{{ r.title }}{% if r.fact %}<small>{{ r.fact }}</small>{% endif %}</a>{% endfor %}</div>
+    </div>
+    {%- endfor %}
+  </nav>
+  <a class="cta" href="/signup">Get beach alerts</a>
+</div></header>
+{%- endmacro %}
+
+{% macro page_head(title, lead="", hub_key=None, how_label="How to read this") -%}
+<div class="page-head">
+  <div class="ph-main">
+    {%- if hub_key %}{% set hub = (NAV | selectattr("key", "equalto", hub_key) | first) %}
+    <div class="crumbs"><a href="/">Today</a> › <a href="{{ hub.href }}">{{ hub.title }}</a> › {{ title }}</div>
+    {%- endif %}
+    <h1>{{ title }}</h1>
+    {%- if lead %}<p class="lead">{{ lead | safe }}</p>{% endif %}
+  </div>
+  {%- if caller %}<details class="how"><summary>{{ how_label }}</summary><div class="how-body">{{ caller() }}</div></details>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro footer() -%}
+<footer class="site-footer">
+  <a class="footer-logo" href="https://sf.surfrider.org/" target="_blank" rel="noopener" aria-label="Surfrider Foundation San Francisco"><img src="{{ SURFRIDER_LOGO_URL }}" alt="Surfrider Foundation"></a>
+  <p class="hotline"><span class="with-ic"><svg class="ic"><use href="#i-phone"/></svg> Beach Hotline: 1-877-SFBEACH (1-877-732-3224) or 415-242-2214</span></p>
+  <p class="advisory"><span class="with-ic"><svg class="ic"><use href="#i-triangle-alert"/></svg> Avoid water contact during and 72 hours after rain events</span></p>
+  <p>
+    <a href="https://webapps.sfpuc.org/sapps/beachesandbay.html" target="_blank" rel="noopener">SFPUC Beach Map</a> ·
+    <a href="{{ DATASF_DATASET_URL }}" target="_blank" rel="noopener">SF Gov Data</a> ·
+    <a href="https://sf.surfrider.org/programs/blue-water-task-force" target="_blank" rel="noopener">Surfrider BWTF</a> ·
+    <a href="/architecture">How it's built</a>
+  </p>
+  <p class="sources">Community science by Surfrider SF's Blue Water Task Force, not an official advisory. Sources: SFPUC beach map, SF Gov Open Data, Surfrider BWTF, NWS, NOAA.
+    · <a href="/api/build" title="{{ build.message if build else '' }}">{{ build.label if build else '' }}</a></p>
+</footer>
+{%- endmacro %}
+
+{% macro tabbar() -%}
+<nav class="tabbar" aria-label="Sections">
+  {%- set p = request.path %}
+  <a href="/"{% if p == "/" %} class="on"{% endif %}><svg class="ic"><use href="#i-waves"/></svg>Today</a>
+  <a href="/forecast"{% if p == "/forecast" %} class="on"{% endif %}><svg class="ic"><use href="#i-cloud-rain"/></svg>Forecast</a>
+  <a href="/#water"{% if p in ("/analysis", "/samples", "/graphs", "/compare") %} class="on"{% endif %}><svg class="ic"><use href="#i-flask"/></svg>Record</a>
+  <a href="/#record"{% if p in ("/discharges", "/postings", "/cso-history") %} class="on"{% endif %}><svg class="ic"><use href="#i-clipboard"/></svg>Postings</a>
+  <a href="/signup"{% if p == "/signup" %} class="on"{% endif %}><svg class="ic"><use href="#i-bell"/></svg>Alerts</a>
+</nav>
+{%- endmacro %}

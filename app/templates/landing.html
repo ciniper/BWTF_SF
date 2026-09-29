@@ -3,75 +3,101 @@
 <link rel="icon" href="/static/brand/favicon.ico"><link rel="apple-touch-icon" sizes="144x144" href="/static/brand/bwtf_144x144.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="refresh" content="120">
-<title>SF Beach Water Quality — Surfrider SF Blue Water Task Force</title>
+<title>SF Beach Water — is the water safe today? · Surfrider SF Blue Water Task Force</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/brand.css">
 <style>
   *{box-sizing:border-box}
-  body{margin:0;background:#E3EBF2;color:#26272a;font-family:'Roboto','Segoe UI',Arial,sans-serif}
-  .wrap{max-width:1040px;margin:0 auto;padding:24px}
-  .hero{background:#0072BC;color:#fff;border-radius:24px;padding:30px 28px}
-  .kicker{display:inline-block;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);border-radius:999px;padding:7px 12px;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
-  .hero h1{margin:12px 0 6px;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:44px;text-transform:uppercase;letter-spacing:.06em;color:#fff}
-  .hero .sub{margin:0;color:rgba(255,255,255,.85);font-size:15px}
-  .hero-logos{float:right;display:flex;gap:12px;align-items:center}
-  .hero-logos img{height:80px;width:auto;opacity:.95}
-  .status{margin:18px 0 0;border-radius:16px;padding:16px 18px;font-weight:600;font-size:15px;line-height:1.45}
-  .status.ok{background:#237059;color:#fff}
-  .status.warn{background:#b97e00;color:#fff}
-  .status.danger{background:#d15c5c;color:#fff}
-  .conditions{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 0}
-  .conditions span{background:rgba(255,255,255,.14);border-radius:999px;padding:7px 13px;font-size:13px;color:#fff}
-  .hubs{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px;margin-top:22px}
-  .hub{background:#fff;border:1px solid #d9e4e8;border-radius:20px;padding:20px 22px 12px}
-  .hub.primary{border:2px solid #0072BC}
-  .hub-head{display:flex;align-items:center;gap:12px}
-  .hub-icon{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;background:#E3EBF2;color:#0072BC;flex-shrink:0}
-  .hub-icon svg{width:24px;height:24px}
-  .hub-title{font-size:19px;font-weight:900;margin:0}
-  .hub-q{color:#54576F;font-size:13.5px;margin:2px 0 0}
-  .rows{margin:14px 0 0;padding:0;list-style:none}
-  .rows a{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:11px 4px;border-top:1px solid #eef2f4;text-decoration:none;color:#26272a;border-radius:8px}
-  .rows a:hover{background:#f3f8fb;color:#0072BC}
-  .rows .name{font-weight:700;font-size:15px}
-  .rows .fact{color:#8a949b;font-size:12.5px;text-align:right;max-width:55%}
-  .rows .fact.live{color:#0072BC;font-weight:700}
-  .rows .sub{display:block;padding:0 4px 9px 18px;margin-top:-4px;border-top:0;font-size:12.5px;color:#54576F;font-weight:600}
-  .rows .sub:hover{color:#0072BC;background:transparent}
-  .cta{display:block;margin:14px 0 8px;background:#0072BC;color:#fff;text-align:center;border-radius:999px;padding:11px 14px;font-weight:700;font-size:14px;text-decoration:none}
-  .cta:hover{background:#005f9e}
-  .hood{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin-top:18px;padding:12px 18px;background:rgba(255,255,255,.55);border:1px dashed #b9c6cd;border-radius:16px;font-size:13px;color:#54576F}
-  .hood b{color:#26272a}
-  .hood a{color:#0072BC;text-decoration:none;font-weight:600}
+  body{margin:0;background:var(--sand);color:var(--ink);font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:15px;line-height:1.5}
+  .wrap{max-width:1100px;margin:0 auto;padding:20px 24px 40px}
+  /* ── Today board: the first screen answers the question ── */
+  .board{background:#fff;border-radius:var(--r-lg);padding:26px 28px;border:1px solid var(--line)}
+  .board.tone-warn{border-color:#efd3bf}.board.tone-danger{border-color:#e6b3a5}
+  .eyebrow{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .board h1{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:46px;line-height:1;margin:8px 0 6px;letter-spacing:.02em;color:var(--ink)}
+  .board h1 em{font-style:normal;color:var(--posted)}
+  .board.tone-danger h1 em{color:var(--discharge)}
+  .board .lead{font-size:17px;color:var(--muted);margin:0 0 18px;max-width:78ch}
+  .zones{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .zone{border:1px solid var(--line);border-radius:var(--r);padding:14px 14px 12px;text-decoration:none;color:inherit;background:#fff;display:block}
+  .zone:hover{border-color:var(--sky);box-shadow:0 6px 18px rgba(0,114,188,.08)}
+  .zone.posted{border-color:var(--posted)}.zone.discharge{border-color:var(--discharge)}
+  .zone .st{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px}
+  .zone.posted .st{color:var(--posted)}.zone.discharge .st{color:var(--discharge)}.zone.unknown .st{color:var(--faint)}
+  .zone .nm{font-size:17px;font-weight:900;margin:6px 0 2px;line-height:1.2}
+  .zone .risk{font-size:13px;color:var(--muted)}
+  .zone .risk b{color:var(--safe)}.zone .risk b.hi{color:var(--posted)}
+  .zone .stations{display:flex;flex-wrap:wrap;gap:4px;margin:10px 0 6px;min-height:9px}
+  .zone .stations .status-dot{width:9px;height:9px}
+  .zone .meta{font-size:12px;color:var(--faint)}
+  .conds{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 0}
+  .conds span{background:var(--sand2);border-radius:999px;padding:6px 12px;font-size:13px;color:var(--muted)}
+  .conds .ic{color:var(--brand)}
+  /* ── the three hubs, compact ── */
+  .hubs{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
+  .hub{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:16px 18px 8px;scroll-margin-top:70px}
+  .hub-head{display:flex;align-items:center;gap:10px}
+  .hub-icon{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;background:var(--sand);color:var(--brand);flex-shrink:0}
+  .hub-icon svg{width:20px;height:20px}
+  .hub-title{font-size:17px;font-weight:900;margin:0}
+  .hub-q{color:var(--muted);font-size:13px;margin:0}
+  .rows{margin:8px 0 0;padding:0;list-style:none}
+  .rows a{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:9px 2px;border-top:1px solid var(--sand2);text-decoration:none;color:var(--ink)}
+  .rows a:hover{color:var(--brand)}
+  .rows .name{font-weight:600;font-size:14px}
+  .rows .fact{color:var(--faint);font-size:12px;text-align:right;max-width:55%}
+  .rows .fact.live{color:var(--brand);font-weight:700}
+  .rows .sub{display:block;padding:0 2px 8px 16px;margin-top:-4px;border-top:0;font-size:12px;color:var(--muted);font-weight:600}
+  .cta{display:block;margin:10px 0 6px;background:var(--brand);color:#fff;text-align:center;border-radius:999px;padding:10px 14px;font-weight:700;font-size:14px;text-decoration:none}
+  .cta:hover{background:var(--brand-deep)}
+  .hood{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin-top:14px;padding:10px 18px;border:1px dashed #b9c6cd;border-radius:var(--r);font-size:13px;color:var(--muted)}
+  .hood b{color:var(--ink)}
+  .hood a{color:var(--brand);text-decoration:none;font-weight:600}
   .hood a:hover{text-decoration:underline}
-  .hood .stamp{margin-left:auto;color:#8a949b}
-  .site-footer{background:#343b44;border-radius:24px;padding:24px;text-align:center;margin-top:22px;color:rgba(255,255,255,.78);font-size:14px;line-height:1.7}
-  .site-footer .hotline{color:#fff;font-weight:700;margin:0 0 6px}
-  .site-footer .advisory{color:#ff8a66;font-weight:600;margin:0 0 10px}
-  .site-footer a{color:#7ab8e0;text-decoration:none}
-  .site-footer a:hover{text-decoration:underline}
-  .site-footer .sources{margin-top:12px;font-size:12px;color:#8a949b}
-  .site-footer .footer-logo{display:inline-block;background:#fff;border-radius:12px;padding:8px 16px;margin:0 0 14px}
-  .site-footer .footer-logo img{display:block;height:34px;width:auto}
-</style><link rel="stylesheet" href="/static/brand.css">
+  .hood .stamp{margin-left:auto;color:var(--faint)}
+  @media (max-width:900px){.zones{grid-template-columns:1fr 1fr}.hubs{grid-template-columns:1fr}}
+  @media (max-width:760px){
+    .wrap{padding:14px 14px 30px}
+    .board{padding:18px 16px}
+    .board h1{font-size:34px}
+    .board .lead{font-size:14px;margin-bottom:12px}
+    .zone{padding:12px}.zone .nm{font-size:15px}
+    .conds{overflow:auto;flex-wrap:nowrap;margin:12px -16px 0;padding:0 16px;scrollbar-width:none}.conds span{flex:none}
+  }
+  @media (max-width:420px){.zones{grid-template-columns:1fr 1fr;gap:8px}}
+</style>
 </head>
 <body>
-{% include "_icons.html" %}
+{% include "_icons.html" %}{% from "_frame.html" import topbar, footer, tabbar with context %}
+{{ topbar() }}
 <div class="wrap">
-  <div class="hero">
-    <div class="hero-logos"><img src="{{ bwtf_logo }}" alt="Blue Water Task Force"></div>
-    <span class="kicker">Blue Water Task Force • Surfrider SF</span>
-    <h1>Data Tools Dashboard</h1>
-    <div class="status {{ tone }}">{{ message|safe }}</div>
-    {% if conditions %}
-    <div class="conditions">{% for c in conditions %}<span class="with-ic">{{ c|safe }}</span>{% endfor %}</div>
+  <section class="board tone-{{ board.tone }}" aria-labelledby="today-h">
+    <div class="eyebrow">Today · {{ board.date }} · city map checked {{ board.checked }}</div>
+    <h1 id="today-h">{{ board.headline_html|safe }}</h1>
+    {% if board.lead %}<p class="lead">{{ board.lead }}</p>{% endif %}
+    {% if board.zones %}
+    <div class="zones">
+      {% for z in board.zones %}
+      <a class="zone {{ z.status }}" href="/forecast" title="{{ z.label }}: {{ z.status_text }}">
+        <div class="st"><i class="status-dot {{ z.status }}"></i>{{ z.status_text }}</div>
+        <div class="nm">{{ z.label }}</div>
+        <div class="risk">{% if z.risk is not none %}<b{% if z.risk >= 25 %} class="hi"{% endif %}>{{ z.risk }}%</b> overflow risk today{% else %}overflow risk unavailable{% endif %}</div>
+        <div class="stations">{% for s in z.stations %}<i class="status-dot {{ s.status }}" title="{{ s.name }} · {{ s.status_text }}"></i>{% endfor %}</div>
+        <div class="meta">{{ z.meta }}</div>
+      </a>
+      {% endfor %}
+    </div>
     {% endif %}
-  </div>
+    {% if conditions %}
+    <div class="conds">{% for c in conditions %}<span class="with-ic">{{ c|safe }}</span>{% endfor %}<span>Status as the city reports it, checked every minute</span></div>
+    {% endif %}
+  </section>
 
   <div class="hubs">
     {% for hub in hubs %}
-    <section class="hub{% if hub.primary %} primary{% endif %}" aria-labelledby="hub-{{ hub.key }}">
+    <section class="hub{% if hub.primary %} primary{% endif %}" id="{{ hub.key }}" aria-labelledby="hub-{{ hub.key }}">
       <div class="hub-head">
         <span class="hub-icon"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-{{ hub.icon }}"/></svg></span>
         <div><h2 class="hub-title" id="hub-{{ hub.key }}">{{ hub.title }}</h2><p class="hub-q">{{ hub.sub }}</p></div>
@@ -89,19 +115,10 @@
   <div class="hood">
     <b>Under the hood</b>
     {% for href, label in hood %}<a href="{{ href }}">{{ label }}</a>{% endfor %}
-    <span class="stamp">{{ build.label if build else '' }}</span>
+    <span class="stamp">{{ build.label if build else '' }} · updated {{ generated }}</span>
   </div>
 
-  <div class="site-footer">
-    <a class="footer-logo" href="https://sf.surfrider.org/" target="_blank" rel="noopener" aria-label="Surfrider Foundation San Francisco"><img src="{{ SURFRIDER_LOGO_URL }}" alt="Surfrider Foundation"></a>
-    <p class="hotline"><span class="with-ic"><svg class="ic"><use href="#i-phone"/></svg> Beach Hotline: 1-877-SFBEACH (1-877-732-3224) or 415-242-2214</span></p>
-    <p class="advisory"><span class="with-ic"><svg class="ic"><use href="#i-triangle-alert"/></svg> Avoid water contact during and 72 hours after rain events</span></p>
-    <p>
-      <a href="https://webapps.sfpuc.org/sapps/beachesandbay.html" target="_blank" rel="noopener">SFPUC Beach Map</a> ·
-      <a href="{{ DATASF_DATASET_URL }}" target="_blank" rel="noopener">SF Gov Data</a> ·
-      <a href="/api/debug/sfpuc" target="_blank" rel="noopener">Debug SFPUC Payload</a> ·
-      <a href="https://sf.surfrider.org/programs/blue-water-task-force" target="_blank" rel="noopener">Surfrider BWTF</a>
-    </p>
-    <p class="sources">Updated {{ generated }}. Data refreshes automatically. Sources: SFPUC LIMS API, SF Gov Open Data, NWS Weather, NOAA Tides. · <a href="/api/build" title="{{ build.message or '' }}">{{ build.label }}</a></p>
-  </div>
-</div></body></html>
+  {{ footer() }}
+</div>
+{{ tabbar() }}
+</body></html>

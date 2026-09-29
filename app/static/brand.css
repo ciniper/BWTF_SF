@@ -19,3 +19,78 @@
 .ictile .ic{width:20px;height:20px}
 .illus{width:38px;height:38px;flex:none;display:inline-block;vertical-align:middle}
 .with-ic{display:inline-flex;align-items:center;gap:7px}
+
+/* ── Design tokens (redesign, 2026-09-29) ─────────────────────────────────────
+   One palette, one radius scale, one set of status colours. Pages should read
+   these instead of re-declaring hex values. */
+:root{--brand:#0072BC;--brand-deep:#005a96;--sky:#85BFDF;--ink:#26272A;--muted:#54576F;--faint:#8a949b;--line:#d9e4e8;--sand:#E3EBF2;--sand2:#eef3f7;
+      --safe:#237059;--caution:#c99a12;--posted:#d4763a;--discharge:#b5310a;--unknown:#98a3ab;--r:14px;--r-lg:20px}
+
+/* ── Frame: top bar ───────────────────────────────────────────────────────── */
+.topbar{background:#fff;border-bottom:1px solid var(--line);position:relative;z-index:30;font-family:'Roboto','Segoe UI',Arial,sans-serif}
+.topbar .in{max-width:1100px;margin:0 auto;padding:8px 24px;display:flex;align-items:center;gap:14px}
+.topbar .mark{display:flex;align-items:center;gap:9px;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.05em;color:var(--ink);text-decoration:none;white-space:nowrap}
+.topbar .mark img{width:28px;height:28px;border-radius:8px}
+.topbar nav{display:flex;gap:2px;margin-left:6px}
+.navhub{position:relative}
+.navhub>a{display:block;color:var(--muted);text-decoration:none;font-weight:600;font-size:14px;padding:11px 10px 9px;border-bottom:2px solid transparent}
+.navhub>a:hover{color:var(--ink)}
+.navhub.on>a{color:var(--ink);border-color:var(--brand)}
+.navhub .menu{display:none;position:absolute;top:100%;left:0;min-width:270px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 30px rgba(38,39,42,.14);padding:6px;z-index:31}
+.navhub:hover .menu,.navhub:focus-within .menu{display:block}
+.navhub .menu a{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:9px 10px;border-radius:8px;text-decoration:none;color:var(--ink);font-weight:600;font-size:14px;white-space:nowrap}
+.navhub .menu a small{color:var(--faint);font-weight:500;font-size:12px;text-align:right;white-space:normal;max-width:150px}
+.navhub .menu a:hover,.navhub .menu a.cur{background:var(--sand2);color:var(--brand)}
+.topbar .cta{margin-left:auto;background:var(--brand);color:#fff;border-radius:999px;padding:9px 16px;font-weight:700;font-size:14px;text-decoration:none;white-space:nowrap}
+.topbar .cta:hover{background:var(--brand-deep)}
+
+/* ── Frame: page head (replaces the blue hero on tool pages) ─────────────── */
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:0 0 14px}
+.page-head .crumbs{font-size:13px;color:var(--faint);margin:0 0 4px}
+.page-head .crumbs a{color:var(--brand);text-decoration:none;font-weight:600}
+.page-head h1{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:34px;line-height:1;margin:0;letter-spacing:.03em;color:var(--ink);text-transform:none}
+.page-head .lead{margin:6px 0 0;color:var(--muted);max-width:70ch;font-size:15px;line-height:1.5}
+.page-head .lead a{color:var(--brand)}
+.page-head details.how{flex:none;max-width:400px;font-size:13px;color:var(--muted);position:relative}
+.page-head details.how summary{color:var(--brand);font-weight:700;cursor:pointer;list-style:none;padding:6px 0;text-align:right}
+.page-head details.how summary::-webkit-details-marker{display:none}
+.page-head details.how summary::after{content:" ▸"}
+.page-head details.how[open] summary::after{content:" ▾"}
+.page-head .how-body{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;line-height:1.55;text-align:left}
+.page-head .how-body a{color:var(--brand)}
+.page-head .how-body p{margin:0 0 8px}.page-head .how-body p:last-child{margin:0}
+
+/* ── Frame: footer (every page) ───────────────────────────────────────────── */
+.wrap-foot{padding-top:0!important}
+.site-footer{background:#343b44;border-radius:var(--r-lg);padding:24px;text-align:center;margin:22px 0 0;color:rgba(255,255,255,.78);font-size:14px;line-height:1.7;font-family:'Roboto','Segoe UI',Arial,sans-serif}
+.site-footer .hotline{color:#fff;font-weight:700;margin:0 0 6px}
+.site-footer .advisory{color:#ff8a66;font-weight:600;margin:0 0 10px}
+.site-footer a{color:#7ab8e0;text-decoration:none}
+.site-footer a:hover{text-decoration:underline}
+.site-footer .sources{margin-top:12px;font-size:12px;color:#8a949b}
+.site-footer .footer-logo{display:inline-block;background:#fff;border-radius:12px;padding:8px 16px;margin:0 0 14px}
+.site-footer .footer-logo img{display:block;height:34px;width:auto}
+
+/* ── Frame: phone tab bar (hidden on wide screens) ────────────────────────── */
+.tabbar{display:none}
+@media (max-width:760px){
+  .topbar nav{display:none}
+  .topbar .in{padding:8px 14px}
+  .topbar .cta{padding:8px 13px;font-size:13px}
+  .page-head{flex-direction:column;align-items:stretch}
+  .page-head h1{font-size:30px}
+  .page-head details.how{max-width:none}
+  .page-head details.how summary{text-align:left}
+  .tabbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:40;background:#fff;border-top:1px solid var(--line);justify-content:space-around;padding:8px 6px calc(8px + env(safe-area-inset-bottom));font-family:'Roboto','Segoe UI',Arial,sans-serif}
+  .tabbar a{font-size:11px;font-weight:700;color:var(--muted);text-decoration:none;text-align:center;line-height:1.2;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:56px}
+  .tabbar a .ic{width:20px;height:20px}
+  .tabbar a.on{color:var(--brand)}
+  body{padding-bottom:72px}
+}
+
+/* ── Kit: small shared pieces ─────────────────────────────────────────────── */
+.status-dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none;vertical-align:middle}
+.status-dot.safe{background:var(--safe)}.status-dot.caution{background:var(--caution)}.status-dot.posted{background:var(--posted)}
+.status-dot.discharge{background:var(--discharge)}.status-dot.unknown{background:var(--unknown)}
+.skel{height:12px;border-radius:6px;background:linear-gradient(90deg,#e6ecf0,#f5f8fa,#e6ecf0);background-size:200% 100%;animation:skel-shimmer 1.2s infinite;margin:6px 0}
+@keyframes skel-shimmer{to{background-position:-200% 0}}

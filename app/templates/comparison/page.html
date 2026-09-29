@@ -76,18 +76,19 @@
         </style><link rel="stylesheet" href="/static/brand.css">
 </head>
 <body>
-{% include "_icons.html" %}<div class="wrap">
-  <a class="back-to-dash" href="/">← Dashboard</a>
-  <div class="hero">
-    <h1>Source Comparison</h1>
+{% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
+{{ topbar() }}
+<div class="wrap">
+  {% call page_head("Source Comparison", "" ~ "The beaches both programs sample, head to head on <b>" ~ analyte_label ~ "</b>." ~ "", "water") %}
+    
     <p>Independent <b>{{ analyte_label }}</b> results for the beaches both programs sample, measured by:</p>
     <ul class="sources">
       <li><b>Surfrider SF Blue Water Task Force (BWTF)</b></li>
       <li><b>San Francisco Public Utilities Commission (SFPUC)</b></li>
     </ul>
     <p>Both are graded against the California single-sample maximum of <b>{{ limit }} MPN/100mL</b>.
-    Every site, and all three indicators at once, are on <a href="/graphs" style="color:#fff">Graphs</a>; every sample is on <a href="/samples" style="color:#fff">Samples</a>.</p>
-  </div>
+    Every site, and all three indicators at once, are on <a href="/graphs">Graphs</a>; every sample is on <a href="/samples">Samples</a>.</p>
+  {% endcall %}
 
   <div class="cards">
     <div class="card"><div class="n">{{ s.comparable_count }}/{{ s.site_count }}</div><div class="l">Sites compared</div></div>
@@ -234,4 +235,6 @@ document.querySelectorAll(".row-click").forEach(function (el) {
   el.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
 });
 </script>
+<div class="wrap wrap-foot">{{ footer() }}</div>
+{{ tabbar() }}
 </body></html>
