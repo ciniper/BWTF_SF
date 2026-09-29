@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/brand.css">
 <style>
   *{box-sizing:border-box}
   body{margin:0;background:#E3EBF2;color:#26272A;font-family:'Roboto','Segoe UI',Arial,sans-serif}
@@ -37,7 +38,9 @@
   a.danger{color:#b5310a}
   .foot{border-top:1px solid #dde5ee;margin-top:22px;padding-top:16px}
 </style></head>
-<body><div class="wrap"><div class="card">
+<body>{% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
+{{ topbar() }}
+<div class="wrap"><div class="card">
   <div class="head">
     <div class="kicker">Surfrider SF · Blue Water Task Force</div>
     <h1>Your beach alerts</h1>
@@ -111,4 +114,6 @@ document.getElementById("f").addEventListener("submit", async e => {
 });
 </script>
 {% endif %}
+<div class="wrap wrap-foot">{{ footer() }}</div>
+{{ tabbar() }}
 </body></html>

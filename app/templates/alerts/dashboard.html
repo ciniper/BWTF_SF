@@ -755,9 +755,9 @@
 <link rel="stylesheet" href="/static/brand.css">
 </head>
 <body>
-{% include "_icons.html" %}
+{% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
+{{ topbar() }}
     <div class="container">
-        <a class="back-to-dash" href="/">← Dashboard</a>
         <header>
             <div class="header-row">
                 <div class="hero-copy">
@@ -1026,5 +1026,7 @@
     </script>
     <script src="/static/sample_popover.js" defer></script>
 <script src="/static/tables.js" defer></script>
+<div class="container wrap-foot">{{ footer() }}</div>
+{{ tabbar() }}
 </body>
 </html>
