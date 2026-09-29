@@ -54,6 +54,8 @@ def test_every_feature_page_sits_in_exactly_one_hub_and_every_link_resolves():
         assert g.count('class="tile"') >= 20 and 'id="analyte"' in g and '<option value="ENTERO" selected>' in g and '<option value="ALL">All indicators</option>' in g and '<option value="PCT">All % threshold</option>' in g and 'href="/compare"' in g
         assert ".preset.active{" in g and "function markPreset" in g            # a chosen date-range preset lights up
         assert 'id="kind"' in g and 'data-k="line"' in g and 'data-k="bar"' in g and "CH.barSeries : CH.seriesChart" in g   # the Chart choice: lines or bars
+        assert 'querySelectorAll(".preset[data-days]")' in g and 'querySelectorAll(".preset")' not in g   # the Change site pill must not act as a range preset
+        assert 'id="siteBar"' in g and 'id="siteChange"' in g and "@media (max-width:640px){ .site-bar{display:flex} .tiles{display:none}" in g   # phones: tiles collapse to the chosen site
         assert 'id="view"' not in g and "<small>" not in g.split('id="tiles"')[1].split('id="start"')[0]          # no view buttons, plain tiles
         assert [m for m in ("Ocean Beach", "Baker &amp; China Beach", "North Beaches", "East Beaches") if m in g] == ["Ocean Beach", "Baker &amp; China Beach", "North Beaches", "East Beaches"] and "Surfrider only" not in g
         seg = lambda i: g.split('id="' + i + '"')[1].split("</div>")[0].count('class="seg-btn')  # noqa: E731

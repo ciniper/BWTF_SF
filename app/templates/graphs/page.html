@@ -36,6 +36,8 @@
   .legend i.dash{background:repeating-linear-gradient(90deg,currentColor 0 4px,transparent 4px 7px);height:2px}
   .legend i.dot{width:10px;height:10px;border-radius:50%}
   .tiles{display:flex;flex-direction:column;gap:10px;margin:0 0 14px}
+  .site-bar{display:none;align-items:center;gap:10px;margin:0 0 12px;flex-wrap:wrap} .site-bar b{font-size:14px}
+  @media (max-width:640px){ .site-bar{display:flex} .tiles{display:none} .tiles.open{display:flex} }   /* phones: the chosen site and a Change site button; the tiles open on demand */
   .tile-group-name{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#54576F;font-weight:700;margin:0 0 6px}
   .tile-row{display:flex;flex-wrap:wrap;gap:8px}
   .tile{padding:8px 12px;border-radius:12px;border:2px solid #d9e4e8;background:#fff;color:#26272a;cursor:pointer;font:700 13px 'Roboto','Segoe UI',Arial,sans-serif;text-align:left;line-height:1.25}
@@ -73,6 +75,7 @@
       <button class="seg-btn" data-k="bar" title="One bar per sample day, a day's bars side by side">Bars</button>
     </div>
   </div>
+  <div class="site-bar" id="siteBar"><span class="ctl-label">Site</span><b id="siteName">—</b><button class="preset" id="siteChange" type="button" aria-controls="tiles" aria-expanded="false">Change site</button></div>
   <div class="tiles" id="tiles" aria-label="Site">
     {% for group, items in site_groups %}<div class="tile-group" data-group="{{ group }}"><div class="tile-group-name">{{ group }}</div><div class="tile-row">{% for s in items %}<button class="tile" type="button" data-key="{{ s.key }}" data-name="{{ s.name }}" data-city="{{ 1 if s.city else 0 }}" data-bwtf="{{ 1 if s.bwtf else 0 }}">{{ s.name }}</button>{% endfor %}</div></div>{% endfor %}
   </div>
@@ -105,7 +108,7 @@ const PCT_TICKS = [1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 250
 const isoNear = (iso, ms) => !!iso && Math.abs(new Date(iso) - ms) <= 1.5 * DAY;      // a day of slack: the server's date vs the browser's
 function markPreset() {   // light the preset whose window matches the dates shown, so a chosen range reads as chosen
   const start = $("start").value, end = $("end").value, now = Date.now();
-  document.querySelectorAll(".preset").forEach(b => b.classList.toggle("active", b.dataset.days ? isoNear(start, now - b.dataset.days * DAY) && isoNear(end, now) : !!start && start <= FLOOR && isoNear(end, now)));
+  document.querySelectorAll(".preset[data-days]").forEach(b => b.classList.toggle("active", b.dataset.days ? isoNear(start, now - b.dataset.days * DAY) && isoNear(end, now) : !!start && start <= FLOOR && isoNear(end, now)));
 }
 const legacyAll = params.get("view") === "all" && !params.get("analyte");                // old links: ?view=all meant all indicators
 const S = { site: params.get("site") || "", src: ["city", "bwtf", "both", "all"].includes(params.get("source")) ? params.get("source") : "all",
@@ -125,6 +128,10 @@ function filterTiles() {   // the Source choice hides sites that source never sa
     S.site = pick ? pick.dataset.key : "";
   }
   tiles().forEach(t => t.classList.toggle("active", t.dataset.key === S.site));
+  $("siteName").textContent = siteOf(S.site).name || "—";
+}
+function showTiles(open) {   // phones only (CSS): the tile block opens from the Change site button and closes on a pick
+  $("tiles").classList.toggle("open", open); $("siteChange").setAttribute("aria-expanded", String(open)); $("siteChange").textContent = open ? "Hide sites" : "Change site";
 }
 $("analyte").value = S.analyte; $("start").value = S.start; $("end").value = S.end; markPreset();
 document.querySelectorAll("#src .seg-btn").forEach(b => b.classList.toggle("active", b.dataset.s === S.src));
@@ -196,12 +203,13 @@ function render() {
   }
   syncUrl();
 }
-$("tiles").addEventListener("click", e => { const t = e.target.closest(".tile"); if (!t || t.hidden || t.dataset.key === S.site) return; S.site = t.dataset.key; load(); });
+$("tiles").addEventListener("click", e => { const t = e.target.closest(".tile"); if (!t || t.hidden) return; showTiles(false); if (t.dataset.key === S.site) return; S.site = t.dataset.key; load(); });
+$("siteChange").addEventListener("click", () => showTiles(!$("tiles").classList.contains("open")));
 $("analyte").addEventListener("change", e => { S.analyte = e.target.value; if (DATA) render(); });
 $("kind").addEventListener("click", e => { const b = e.target.closest(".seg-btn"); if (!b || b.dataset.k === S.kind) return; document.querySelectorAll("#kind .seg-btn").forEach(x => x.classList.toggle("active", x === b)); S.kind = b.dataset.k; if (DATA) render(); });
 $("src").addEventListener("click", e => { const b = e.target.closest(".seg-btn"); if (!b) return; document.querySelectorAll("#src .seg-btn").forEach(x => x.classList.toggle("active", x === b)); S.src = b.dataset.s; const before = S.site; filterTiles(); if (S.site !== before || !DATA) load(); else render(); });
 ["start", "end"].forEach(id => $(id).addEventListener("change", e => { S[id] = e.target.value; markPreset(); load(); }));
-document.querySelectorAll(".preset").forEach(btn => btn.addEventListener("click", () => { const end = new Date().toISOString().slice(0, 10); S.end = end; S.start = btn.dataset.days ? new Date(Date.now() - btn.dataset.days * DAY).toISOString().slice(0, 10) : FLOOR; $("start").value = S.start; $("end").value = S.end; markPreset(); load(); }));
+document.querySelectorAll(".preset[data-days]").forEach(btn => btn.addEventListener("click", () => { const end = new Date().toISOString().slice(0, 10); S.end = end; S.start = btn.dataset.days ? new Date(Date.now() - btn.dataset.days * DAY).toISOString().slice(0, 10) : FLOOR; $("start").value = S.start; $("end").value = S.end; markPreset(); load(); }));   // only the range presets: the Change site pill shares the class
 load();
 </script>
 </body></html>
