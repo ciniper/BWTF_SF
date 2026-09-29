@@ -290,6 +290,15 @@ last 30 days) for review — nothing is deactivated automatically. Check after
 deploy: within 30 min of an accepted send its row shows `delivery_state =
 delivered`.
 
-Brevo records opens and clicks by default (the events API returns them); the
-poller ignores them. Turn open/click tracking off in Brevo's transactional
-settings if the alerts should not track their readers.
+Brevo records opens and clicks by default (the events API returns them).
+**016 (2026-09-29, Chase's ask): `alert_deliveries.opened_at`** — the poller
+also stamps the first `opened` event on each row and keeps asking about
+delivered-but-unopened rows for the week; the panel shows "opened <time>" beside
+the status and an opened count in the tally. Pixel-based: a reader who blocks
+images never registers, and Apple Mail's prefetch (`loadedByProxy`) is ignored,
+so null is not proof of unread. Clicks are still not stored. Apply
+`db/migrations/016_alert_deliveries_opened.sql` by hand (one `alter table`);
+until then the poller's `opened_at` filter makes Supabase answer 400 and the
+refresh logs `deliveries not polled: …` — harmless, and gone once applied.
+Turn open tracking off in Brevo's transactional settings if the alerts should
+not track their readers at all; the column then simply stays null.

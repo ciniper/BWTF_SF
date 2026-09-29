@@ -128,7 +128,7 @@ def test_status_reads_level2_then_brevo_then_age():
     assert D.status_of(_rows()[1], NOW)[1] == "Key not found"
     assert "12:29 PM" in D.status_of(_rows()[4], NOW)[1]          # Pacific
     s = D.summarize(_rows(), NOW)
-    assert s == {"messages": 7, "accepted": 1, "failed": 1, "pending": 1, "unknown": 2, "delivered": 1, "bounced": 1}, s
+    assert s == {"messages": 7, "accepted": 1, "failed": 1, "pending": 1, "unknown": 2, "delivered": 1, "bounced": 1, "opened": 0}, s
 
 
 def test_render_section_escapes_collapses_and_tallies():
@@ -264,6 +264,13 @@ def test_manual_dispatcher_attaches_deliveries_to_each_result():
 
 
 
+def test_migration_016_adds_only_the_opened_column():
+    sql = (MIG / "016_alert_deliveries_opened.sql").read_text()
+    code = _code_only(sql)
+    assert "alter table public.alert_deliveries add column if not exists opened_at timestamptz;" in code
+    assert code.count("alter table") == 1 and "create " not in code and "drop " not in code
+
+
 # ── level 2: Brevo's events ──────────────────────────────────────────────────
 
 def _ev(kind, msg, date, **extra):
@@ -294,8 +301,13 @@ def test_poll_brevo_matches_rows_by_message_id_or_tag_and_writes_only_changes():
             {"id": 2, "message_id": "<m2>", "delivery_state": "soft_bounce", "sent_at": "2026-09-29T06:40:00+00:00"},
             {"id": 3, "message_id": "<m3>", "delivery_state": None, "sent_at": "2026-09-29T06:40:00+00:00"},
             {"id": 4, "message_id": "<m4>", "delivery_state": "deferred", "sent_at": "2026-09-29T06:40:00+00:00"},
-            {"id": 5, "message_id": "<lost>", "delivery_state": None, "sent_at": "2026-09-29T06:40:00+00:00"}]
+            {"id": 5, "message_id": "<lost>", "delivery_state": None, "sent_at": "2026-09-29T06:40:00+00:00"},
+            {"id": 6, "message_id": "<m6>", "delivery_state": "delivered", "sent_at": "2026-09-29T06:40:00+00:00", "opened_at": None},
+            {"id": 7, "message_id": "<m7>", "delivery_state": "delivered", "sent_at": "2026-09-29T06:40:00+00:00", "opened_at": None}]
     events = [_ev("delivered", "<m1>", "2026-09-29T06:40:05.000Z"),
+              _ev("opened", "<m1>", "2026-09-29T07:10:00.000Z"), _ev("opened", "<m1>", "2026-09-29T06:50:00.000Z"),   # earliest open wins
+              _ev("opened", "<m6>", "2026-09-29T06:59:00.000-07:00"),                    # delivered earlier, opened now → only opened_at
+              _ev("loadedByProxy", "<m7>", "2026-09-29T06:59:00.000Z"),                 # Apple prefetch → not an open
               _ev("softBounces", "<m2>", "2026-09-29T06:41:00.000Z", reason="mailbox full"),   # unchanged → no write
               _ev("requests", "<m3>", "2026-09-29T06:40:01.000Z"),                             # accepted only → no write
               _ev("hardBounces", "<m4>", "2026-09-29T07:00:00.000Z", reason="user unknown"),
@@ -317,18 +329,23 @@ def test_poll_brevo_matches_rows_by_message_id_or_tag_and_writes_only_changes():
         out = D.poll_brevo(now=datetime(2026, 9, 29, 8, 0, tzinfo=timezone.utc))
     finally:
         D.sb.select, D.sb.update, requests.get = orig
-    assert out["candidates"] == 5 and out["events"] == 5
-    assert out["updated"] == 3 and out["states"] == {"delivered": 2, "hard_bounce": 1}, out
-    # candidate filter: accepted rows of the last week without a final state
+    assert out["candidates"] == 7 and out["events"] == 9
+    assert out["updated"] == 4 and out["states"] == {"delivered": 2, "hard_bounce": 1, "opened": 2}, out
+    # candidate filter: accepted rows of the last week without a final state, or not yet opened
     _, params = selects[0]
-    assert params["message_id"] == "not.is.null" and params["or"] == "(delivery_state.is.null,delivery_state.in.(deferred,soft_bounce))"
+    assert params["message_id"] == "not.is.null"
+    assert params["or"] == "(delivery_state.is.null,delivery_state.in.(deferred,soft_bounce),opened_at.is.null)"
     assert params["sent_at"] == "gte.2026-09-22T08:00:00+00:00"
     # one events call, keyed with the watcher_config key, never echoed in the result
     assert len(gets) == 1 and gets[0][2]["api-key"] == "k" and gets[0][1]["days"] == 8 and "k" not in str(out)
     by_id = {int(f["id"].split(".")[1]): p for _, f, p in updates}
-    assert by_id[1] == {"delivery_state": "delivered", "delivery_at": "2026-09-29T06:40:05+00:00", "error": None}
+    assert by_id[1] == {"delivery_state": "delivered", "delivery_at": "2026-09-29T06:40:05+00:00", "error": None,
+                        "opened_at": "2026-09-29T06:50:00+00:00"}
     assert by_id[4] == {"delivery_state": "hard_bounce", "delivery_at": "2026-09-29T07:00:00+00:00", "error": "user unknown"}
     assert by_id[5]["delivery_state"] == "delivered"
+    assert by_id[6] == {"opened_at": "2026-09-29T13:59:00+00:00"}       # state untouched, offset normalised to UTC
+    assert 7 not in by_id                                                # proxy load is not an open
+    assert D._first_open([]) is None
     # dry run: same decisions, nothing written
     D.sb.select = lambda table, params: rows if table == "alert_deliveries" else [{"value": "k"}]
     D.sb.update = lambda *a: (_ for _ in ()).throw(AssertionError("wrote in dry run"))
@@ -337,7 +354,7 @@ def test_poll_brevo_matches_rows_by_message_id_or_tag_and_writes_only_changes():
         dry = D.poll_brevo(now=datetime(2026, 9, 29, 8, 0, tzinfo=timezone.utc), dry_run=True)
     finally:
         D.sb.select, D.sb.update, requests.get = orig
-    assert [p["id"] for p in dry["patches"]] == [1, 4, 5]
+    assert [p["id"] for p in dry["patches"]] == [1, 4, 5, 6]
     # no candidates → no Brevo call at all
     D.sb.select = lambda table, params: []
     requests.get = lambda *a, **k: (_ for _ in ()).throw(AssertionError("called Brevo with nothing to ask"))
@@ -377,8 +394,14 @@ def test_panel_shows_arrival_states_reasons_and_bouncing_addresses():
     assert D.status_of(rows[0], NOW) == ("delivered", "delivered Sep 28, 12:29 PM")
     b = D.bouncing(rows, NOW)
     assert b == [{"recipient": "gone@x.org", "count": 2, "last": "blocked Sep 27, 12:30 PM: reputation"}]
-    html = D.render_section({"events": [], "summary": D.summarize(rows, NOW), "days": 30, "bouncing": b}, NOW)
-    assert "1 delivered · 2 bounced" in html
+    rows[0]["opened_at"] = "2026-09-28T19:33:00+00:00"
+    assert D.summarize(rows, NOW)["opened"] == 1
+    html = D.render_section({"events": [{"log": {"id": 1, "created_at": "2026-09-28T19:29:00+00:00", "event_type": "posted",
+                                                 "station_names": ["X"], "recipient_count": 3, "simulated": False},
+                                         "deliveries": rows}],
+                             "summary": D.summarize(rows, NOW), "days": 30, "bouncing": b}, NOW)
+    assert "1 delivered · 1 opened · 2 bounced" in html
+    assert "delivered Sep 28, 12:29 PM · opened Sep 28, 12:33 PM" in html
     assert "Not arriving: gone@x.org (2: blocked Sep 27, 12:30 PM: reputation)" in html
     assert "nothing is deactivated automatically" in html
 
