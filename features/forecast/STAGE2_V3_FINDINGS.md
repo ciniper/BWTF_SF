@@ -1,9 +1,10 @@
 # Stage 2 v3 — "shares from the water": findings (2026-09-28)
 
 **Status: negative result. The code was not merged (Chase, 2026-09-28). The remote
-branch was deleted on 2026-09-29; the code survives only as local branch `stage2-v3`
-(commit `9eea48a`) in Chase's clone.** This note keeps what the
-investigation found so the question does not have to be re-opened from scratch.
+branch was deleted on 2026-09-29; the code is kept as tag `stage2-v3-negative-result`
+(commit `9eea48a`, tagged 2026-09-29 in Chase's clone; push the tag to keep it on
+GitHub too).** This note keeps what the investigation found so the question does not
+have to be re-opened from scratch.
 
 ## The question
 
@@ -88,10 +89,9 @@ evidence at all — the postings are precautionary, the samples absent.
 
 ## Re-running the fit
 
-The fitter is not on `main` and no longer on GitHub. From a worktree on the local branch
-(if the branch is gone, the commit is `9eea48a`; tag it before it is garbage-collected):
+The fitter is not on `main`. From a worktree on the tag (commit `9eea48a`):
 
-    git worktree add ~/Personal/BWTF-stage2-v3 stage2-v3
+    git worktree add ~/Personal/BWTF-stage2-v3 stage2-v3-negative-result
     cd ~/Personal/BWTF-stage2-v3
     venv/bin/python features/forecast/src/models/stage2_variants.py fit --variant v3
 

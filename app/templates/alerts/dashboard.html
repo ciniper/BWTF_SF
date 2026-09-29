@@ -593,9 +593,9 @@
             flex: 1;
         }
         
-        .status-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px;
+        .status-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px;
             border-radius: 20px;
-            font-size: 0.75em;
+            font-size: 0.68em;
             font-weight: 600;
             text-transform: uppercase;
         }
@@ -725,6 +725,12 @@
 
         /* Deliveries (015) */
         .deliveries-panel { margin-top: 18px; }
+        .deliveries-panel > summary { cursor: pointer; list-style: none; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+        .deliveries-panel > summary::-webkit-details-marker { display: none; }
+        .deliveries-panel > summary h3 { margin: 0; }
+        .deliveries-panel > summary::after { content: 'show'; color: #1d6fa5; font-size: .9em; font-weight: 600; white-space: nowrap; }
+        .deliveries-panel[open] > summary::after { content: 'hide'; }
+        .deliveries-panel[open] > summary { margin-bottom: 10px; }
         .dsummary { margin: 0 0 10px; color: #54576F; }
         .dlist { display: flex; flex-direction: column; gap: 8px; }
         .devent { border: 1px solid rgba(38,39,42,0.08); border-radius: 14px; padding: 8px 12px; background: #fff; }
@@ -813,10 +819,10 @@
                 </div>
             </div>
 
-            <section class="panel deliveries-panel">
-                <h3>Deliveries <small class="mute">what each subscriber was sent, and whether Brevo took it</small></h3>
+            <details class="panel deliveries-panel">
+                <summary><h3>Deliveries <small class="mute">what each subscriber was sent, and whether Brevo took it</small></h3></summary>
                 {{ deliveries_html|safe }}
-            </section>
+            </details>
         </div>
 
         <div id="view-sim" class="view" hidden>
