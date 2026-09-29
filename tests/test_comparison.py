@@ -46,7 +46,7 @@ def test_sample_viewer_lists_every_result_and_grades_each_indicator():
         {"site_name": "Bayview Hunters Point", "collection_time": datetime(2024, 2, 19, 9, 30), "substance": "Enterococcus", "result_value": 120.0, "result_raw": "120"},
         {"site_name": "Baker Beach at Lobos Creek", "collection_time": datetime(2023, 12, 1, 9, 0), "substance": "Enterococcus", "result_value": 10.0, "result_raw": "10"},  # before the window
     ]
-    dual = S.build_samples(city, bwtf, start, end, scope="dual")
+    dual = S.build_samples(city, bwtf, start, end, source="both")      # Both = only the beaches both programs sample, both labs
     rows = dual["rows"]
     assert [(r["date"], r["source"], r["site"]) for r in rows] == [
         ("2024-02-20", "SFPUC", "Baker Beach at Lobos Creek"), ("2024-02-20", "BWTF", "Baker Beach at Lobos Creek"),
@@ -61,15 +61,20 @@ def test_sample_viewer_lists_every_result_and_grades_each_indicator():
     rb = rows[1]
     assert rb["time"] == "10:00 AM" and rb["cells"]["ENTERO"][0]["caution"] is True and rb["over"] is False
     assert dual["counts"] == {"rows": 3, "city": 2, "bwtf": 1, "double_sampled_days": 1, "over": 2}
-    # the site list carries every station plus the BWTF-only site; dual scope hides the city-only and BWTF-only ones
-    keys = {s["key"]: s for s in dual["sites"]}
-    assert keys[baker]["dual"] and not keys[islais]["dual"] and keys["bwtf:Bayview Hunters Point"]["city"] is False
-    assert sum(s["dual"] for s in dual["sites"]) == len(C.BWTF_TO_SFPUC_NAME) == 6
-    all_rows = S.build_samples(city, bwtf, start, end, scope="all")["rows"]
-    assert len(all_rows) == 5 and {r["site"] for r in all_rows} >= {"Islais Creek", "Bayview Hunters Point"}
-    only = S.build_samples(city, bwtf, start, end, scope="all", site=islais)["rows"]
+    # the site list follows the Source choice: Both = the six shared beaches; All = every station plus the BWTF-only site
+    assert len(dual["sites"]) == len(C.BWTF_TO_SFPUC_NAME) == 6 and all(s["dual"] for s in dual["sites"]) and dual["source"] == "both"
+    every = S.build_samples(city, bwtf, start, end, source="all")
+    keys = {s["key"]: s for s in every["sites"]}
+    assert keys[baker]["dual"] and keys[baker]["bwtf"] and not keys[islais]["dual"] and keys["bwtf:Bayview Hunters Point"]["city"] is False and len(every["sites"]) == 21
+    assert len(every["rows"]) == 5 and {r["site"] for r in every["rows"]} >= {"Islais Creek", "Bayview Hunters Point"} and every["source"] == "all"
+    only = S.build_samples(city, bwtf, start, end, source="all", site=islais)["rows"]
     assert len(only) == 1 and only[0]["cells"]["ENTERO"][0]["over"] is True
-    assert S.build_samples(city, bwtf, start, end, scope="bogus")["scope"] == "dual"
+    city_only = S.build_samples(city, bwtf, start, end, source="city")
+    assert {r["source"] for r in city_only["rows"]} == {"SFPUC"} and len(city_only["rows"]) == 3 and all(s["city"] for s in city_only["sites"]) and len(city_only["sites"]) == 20
+    surf_only = S.build_samples(city, bwtf, start, end, source="bwtf")
+    assert {r["source"] for r in surf_only["rows"]} == {"BWTF"} and [r["site"] for r in surf_only["rows"]] == ["Baker Beach at Lobos Creek", "Bayview Hunters Point"] and len(surf_only["sites"]) == 7
+    assert S.build_samples(city, bwtf, start, end, source="bogus")["source"] == "all"                       # bad input → All
+    assert S.build_samples(city, bwtf, start, end, scope="dual")["source"] == "both" and S.normalise_source("", "all") == "all"   # old links
 
 
 def test_resolve_site_accepts_station_ids_bwtf_keys_and_bwtf_names():
@@ -154,7 +159,7 @@ def test_sample_day_payload_grades_one_station_day_with_both_values_and_the_rati
     assert d["cells"]["COLI_TOTAL"][0]["over"] is True and d["over"] is True and d["caution"] == standards.ENTERO_CAUTION
     assert d["ratio_applied"] is True and "10%" in d["ratio_note"] and e_ratio_off(recs, baker) is False
     assert d["results_url"].startswith("https://data.sf.gov/resource/") and "2024-02-20T00%3A00%3A00" in d["results_url"] and "OCEAN%2315_SL" in d["results_url"]
-    assert d["viewer_url"] == "/samples?scope=all&site=OCEAN%2315_SL" and d["graph_url"] == "/graphs?site=OCEAN%2315_SL"
+    assert d["viewer_url"] == "/samples?site=OCEAN%2315_SL" and d["graph_url"] == "/graphs?site=OCEAN%2315_SL"
     e = S.sample_day_payload(recs, baker, "2024-02-13")
     assert e["cells"]["ENTERO"][0]["caution"] is True and e["over"] is False and e["limits"]["COLI_TOTAL"] == ST["COLI_TOTAL"]["single_sample_max"]
     none = S.sample_day_payload(recs, baker, "2024-01-01")
@@ -227,7 +232,7 @@ def test_surfrider_sample_day_payload_grades_the_collections_and_carries_the_fie
     assert [(c["raw"], c["over"], c["caution"]) for c in d["cells"]["ENTERO"]] == [("52", False, True), ("208", True, False)] and d["over"] and d["n_samples"] == 2
     assert d["analytes"] == [{"code": "ENTERO", "label": "Enterococcus"}] and d["limits"] == {"ENTERO": standards.STANDARDS["ENTERO"]["single_sample_max"]} and d["ratio_applied"] is False
     assert d["field"]["tested_by"] == "Ana" and d["field"]["sky"] == "Overcast" and d["field"]["water"]          # the collection that carried notes
-    assert d["results_url"].endswith("/report/76/1234") and d["viewer_url"] == "/samples?scope=all&site=OCEAN%2315_SL&source=bwtf" and d["graph_url"] == "/graphs?site=OCEAN%2315_SL"
+    assert d["results_url"].endswith("/report/76/1234") and d["viewer_url"] == "/samples?site=OCEAN%2315_SL&source=bwtf" and d["graph_url"] == "/graphs?site=OCEAN%2315_SL"
     e = S.bwtf_sample_day_payload(events, "Baker Beach at Lobos Creek", "2024-02-13")
     assert e["times"] == ["09:00"] and [c["raw"] for c in e["cells"]["ENTERO"]] == ["<10"] and e["field"] is None
     none = S.bwtf_sample_day_payload(events, "Baker Beach at Lobos Creek", "2024-01-01")
@@ -235,7 +240,7 @@ def test_surfrider_sample_day_payload_grades_the_collections_and_carries_the_fie
     by_key = S.bwtf_sample_day_payload(events, "OCEAN#15_SL")                          # a station id resolves to its Surfrider name (the Samples page's pills)
     assert by_key["bwtf"] == "Baker Beach at Lobos Creek" and by_key["date"] == "2024-02-20" and by_key["n_samples"] == 2
     only = S.bwtf_sample_day_payload([dict(events[3], site_name="Bayview Hunters Point")], "Bayview Hunters Point")
-    assert only["found"] and only["viewer_url"].startswith("/samples?scope=all&site=bwtf%3ABayview") and only["graph_url"] == "/graphs?site=bwtf%3ABayview%20Hunters%20Point"
+    assert only["found"] and only["viewer_url"].startswith("/samples?site=bwtf%3ABayview") and only["graph_url"] == "/graphs?site=bwtf%3ABayview%20Hunters%20Point"
     try:
         S.bwtf_sample_day_payload(events, "BAY#320_SL"); assert False, "a site Surfrider never samples must raise"
     except ValueError:
@@ -247,7 +252,7 @@ def test_sample_rows_carry_the_volunteer_field_notes_from_events():
     event = {"site_name": "Aquatic Park", "collection_time": datetime(2026, 9, 24, 18, 30), "tested_by": "A. Volunteer", "comments": "Kelp on the beach", "volume": "",
              "weather": {"air_temp": 64.0, "water_temp": 58.0, "current_weather": "Partly Cloudy", "precipitation": False, "tide": "rising", "wave_height": "1-2 ft", "wind_direction": "W", "wind_speed": 8.0},
              "samples": [{"substance": "Enterococcus", "result_raw": "20", "result_display": "20", "result_value": 20.0, "units": "MPN/100mL", "method": "", "modifier": ""}]}
-    d = S.build_samples([], [event], start, end, scope="dual")
+    d = S.build_samples([], [event], start, end, source="both")
     r = d["rows"][0]
     assert r["source"] == "BWTF" and r["time"] == "6:30 PM" and r["cells"]["ENTERO"][0]["raw"] == "20"
     assert r["field"] == {"tested_by": "A. Volunteer", "air": "64°F", "water": "58°F", "sky": "Partly Cloudy", "wind": "W 8 mph", "tide": "Rising",

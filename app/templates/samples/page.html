@@ -68,9 +68,12 @@
 
   <div class="controls">
     <span class="ctl-label">Source</span>
-    <div class="seg-toggle" id="v-source"><button class="seg-btn" data-source="city">City</button><button class="seg-btn" data-source="bwtf">Surfrider</button><button class="seg-btn active" data-source="both">Both</button></div>
-    <span class="ctl-label">Sites</span>
-    <div class="seg-toggle" id="v-scope"><button class="seg-btn active" data-scope="dual" title="The six beaches both Surfrider and the city sample">Dual sites</button><button class="seg-btn" data-scope="all" title="Every city monitoring station, plus Surfrider-only sites">All sites</button></div>
+    <div class="seg-toggle" id="v-source">
+      <button class="seg-btn" data-source="city" title="The city's lab: the 20 monitoring stations">City</button>
+      <button class="seg-btn" data-source="bwtf" title="Surfrider's volunteer lab: the beaches it samples">Surfrider</button>
+      <button class="seg-btn" data-source="both" title="Only the beaches both programs sample, both labs' rows">Both</button>
+      <button class="seg-btn active" data-source="all" title="Every site, whichever lab has results">All</button>
+    </div>
     <select id="v-site" aria-label="Site"><option value="">Any site in view</option></select>
     <button class="preset" id="v-graph" disabled title="Pick a site, then see it on the Graphs page over this range">Graph this site →</button>
   </div>
@@ -98,13 +101,11 @@
 var FLOOR = "{{ dataset_floor }}";
 var params = new URLSearchParams(location.search);
 var VDATA = null;
-var VIEW = { scope: params.get("scope") === "all" ? "all" : "dual", site: params.get("site") || "", start: params.get("start") || "", end: params.get("end") || "",
-             source: ["city", "bwtf", "both"].indexOf(params.get("source")) >= 0 ? params.get("source") : "both",
+var VIEW = { site: params.get("site") || "", start: params.get("start") || "", end: params.get("end") || "",
+             source: ["city", "bwtf", "both", "all"].indexOf(params.get("source")) >= 0 ? params.get("source") : (params.get("scope") === "dual" ? "both" : "all"),   // old links: scope=dual meant today's Both
              notes: ["hidden", "expand", "columns"].indexOf(params.get("notes")) >= 0 ? params.get("notes") : "expand" };
-if (VIEW.site && VIEW.scope !== "all") VIEW.scope = "all";
 var vEsc = function (s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); };
 var $ = function (id) { return document.getElementById(id); };
-document.querySelectorAll("#v-scope .seg-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.scope === VIEW.scope); });
 document.querySelectorAll("#v-source .seg-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.source === VIEW.source); });
 document.querySelectorAll("#v-notes .seg-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.notes === VIEW.notes); });
 $("v-start").value = VIEW.start; $("v-end").value = VIEW.end;
@@ -114,7 +115,7 @@ function markPreset() {   // light the preset whose window matches the dates sho
   document.querySelectorAll(".v-preset").forEach(function (b) { b.classList.toggle("active", b.dataset.days ? isoNear(start, now - b.dataset.days * DAY) && isoNear(end, now) : !!start && start <= FLOOR && isoNear(end, now)); });
 }
 markPreset();
-function syncUrl() { var u = new URL(location.href); u.search = ""; if (VIEW.scope !== "dual") u.searchParams.set("scope", VIEW.scope); if (VIEW.site) u.searchParams.set("site", VIEW.site); if (VIEW.source !== "both") u.searchParams.set("source", VIEW.source); if (VIEW.notes !== "expand") u.searchParams.set("notes", VIEW.notes); if (VIEW.start) u.searchParams.set("start", VIEW.start); if (VIEW.end) u.searchParams.set("end", VIEW.end); history.replaceState(null, "", u); }
+function syncUrl() { var u = new URL(location.href); u.search = ""; if (VIEW.site) u.searchParams.set("site", VIEW.site); if (VIEW.source !== "all") u.searchParams.set("source", VIEW.source); if (VIEW.notes !== "expand") u.searchParams.set("notes", VIEW.notes); if (VIEW.start) u.searchParams.set("start", VIEW.start); if (VIEW.end) u.searchParams.set("end", VIEW.end); history.replaceState(null, "", u); }
 function vCell(vals) {
   if (!vals || !vals.length) return '<span style="color:#98a3ab">—</span>';
   return vals.map(function (v) { return '<span class="v-val' + (v.over ? " over" : (v.caution ? " caution" : "")) + '">' + vEsc(v.raw) + "</span>"; }).join('<span class="v-sep">·</span>');
@@ -128,11 +129,11 @@ function fieldBlock(f) {
 }
 function vRender() {
   if (!VDATA) return;
-  var sel = $("v-site"), inView = VDATA.sites.filter(function (s) { return VIEW.scope === "all" || s.dual; });
+  var sel = $("v-site"), inView = VDATA.sites;   // the server already narrowed the sites to the Source choice
   var keep = inView.some(function (s) { return s.key === VIEW.site; }) ? VIEW.site : "";
   sel.innerHTML = '<option value="">Any site in view</option>' + inView.map(function (s) { return '<option value="' + vEsc(s.key) + '">' + vEsc(s.name) + (s.city ? "" : " (Surfrider only)") + "</option>"; }).join("");
   sel.value = VIEW.site = keep;
-  var rows = VDATA.rows.filter(function (r) { return (!VIEW.site || r.site_key === VIEW.site) && (VIEW.source === "both" || (VIEW.source === "bwtf") === (r.source === "BWTF")); });
+  var rows = VDATA.rows.filter(function (r) { return (!VIEW.site || r.site_key === VIEW.site) && (VIEW.source !== "city" || r.source === "SFPUC") && (VIEW.source !== "bwtf" || r.source === "BWTF"); });
   var cols = VIEW.notes === "columns" ? VDATA.field_columns : [];
   $("v-head").innerHTML = "<th>Date</th><th>Site</th><th>Source</th>" + VDATA.analytes.map(function (a) { return '<th class="num">' + vEsc(a.label) + "</th>"; }).join("") + cols.map(function (c) { return "<th>" + vEsc(c.label) + "</th>"; }).join("");
   var html = "";
@@ -156,7 +157,7 @@ function vRender() {
   syncUrl();
 }
 function vLoad() {
-  var q = new URLSearchParams({ scope: VIEW.scope }); if (VIEW.start) q.set("start", VIEW.start); if (VIEW.end) q.set("end", VIEW.end);
+  var q = new URLSearchParams({ source: VIEW.source }); if (VIEW.start) q.set("start", VIEW.start); if (VIEW.end) q.set("end", VIEW.end);
   $("v-status").textContent = "Loading samples…";
   fetch("/api/samples?" + q).then(function (r) { return r.json(); }).then(function (d) {
     if (d.ok === false) { $("v-status").textContent = "Could not load samples: " + d.error; return; }
@@ -175,8 +176,7 @@ function loadLatest() {
     }).join("") || '<span class="status">No comparison data right now.</span>';
   }).catch(function () { $("latest").innerHTML = '<span class="status">Latest results unavailable right now.</span>'; });
 }
-$("v-scope").addEventListener("click", function (e) { var b = e.target.closest(".seg-btn"); if (!b || b.dataset.scope === VIEW.scope) return; document.querySelectorAll("#v-scope .seg-btn").forEach(function (x) { x.classList.toggle("active", x === b); }); VIEW.scope = b.dataset.scope; vLoad(); });
-$("v-source").addEventListener("click", function (e) { var b = e.target.closest(".seg-btn"); if (!b) return; document.querySelectorAll("#v-source .seg-btn").forEach(function (x) { x.classList.toggle("active", x === b); }); VIEW.source = b.dataset.source; vRender(); });
+$("v-source").addEventListener("click", function (e) { var b = e.target.closest(".seg-btn"); if (!b || b.dataset.source === VIEW.source) return; document.querySelectorAll("#v-source .seg-btn").forEach(function (x) { x.classList.toggle("active", x === b); }); VIEW.source = b.dataset.source; vLoad(); });
 $("v-notes").addEventListener("click", function (e) { var b = e.target.closest(".seg-btn"); if (!b) return; document.querySelectorAll("#v-notes .seg-btn").forEach(function (x) { x.classList.toggle("active", x === b); }); VIEW.notes = b.dataset.notes; vRender(); });
 $("v-site").addEventListener("change", function (e) { VIEW.site = e.target.value; vRender(); });
 $("v-graph").addEventListener("click", function () { if (!VIEW.site) return; var q = new URLSearchParams({ site: VIEW.site }); if (VIEW.start || (VDATA && VDATA.start)) q.set("start", VIEW.start || VDATA.start); if (VIEW.end || (VDATA && VDATA.end)) q.set("end", VIEW.end || VDATA.end); location.href = "/graphs?" + q; });

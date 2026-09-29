@@ -35,11 +35,13 @@ def test_every_feature_page_sits_in_exactly_one_hub_and_every_link_resolves():
     # the retired pages redirect to their successors, old deep links included
     with app.test_client() as c:
         assert c.get("/compare?graph=BAY%23320_SL").headers["Location"] == "/graphs?site=BAY%23320_SL"   # old deep links still forward
-        assert c.get("/compare?vsite=BAY%23211_SL").headers["Location"] == "/samples?scope=all&site=BAY%23211_SL"
-        assert c.get("/bwtf").headers["Location"] == "/samples?source=bwtf&scope=all&notes=columns"
+        assert c.get("/compare?vsite=BAY%23211_SL").headers["Location"] == "/samples?site=BAY%23211_SL"
+        assert c.get("/bwtf").headers["Location"] == "/samples?source=bwtf&notes=columns"
         for u in ("/graphs", "/samples"):
             html = c.get(u).data.decode(); assert "/static/charts.js" in html and "/static/sample_popover.js" in html, u
-        assert "Field notes" in c.get("/samples").data.decode() and 'data-notes="columns"' in c.get("/samples").data.decode()
+        smp = c.get("/samples").data.decode()
+        assert "Field notes" in smp and 'data-notes="columns"' in smp
+        assert 'id="v-scope"' not in smp and "Dual sites" not in smp and [m for m in ("city", "bwtf", "both", "all") if 'data-source="%s"' % m in smp] == ["city", "bwtf", "both", "all"]   # Source as on Graphs, no Sites toggle
         g = c.get("/graphs").data.decode()
         assert g.count('class="tile"') >= 20 and 'id="analyte"' in g and '<option value="ENTERO" selected>' in g and '<option value="ALL">All indicators</option>' in g and '<option value="PCT">All % threshold</option>' in g and 'href="/compare"' in g
         assert ".preset.active{" in g and "function markPreset" in g            # a chosen date-range preset lights up
