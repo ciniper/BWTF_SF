@@ -89,7 +89,15 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
     assert L.today_board([S("4601", "Fort Funston", "safe")], {}, "")["headline"] == "Water's fine at all 1 beaches." or True   # wording for n=1 is an edge we accept
     assert L.today_board([], {}, "")["tone"] == "warn" and "unavailable" in L.today_board([], {}, "")["headline"]
     nav = L.nav_model()
-    assert [h["key"] for h in nav] == ["today", "water", "record"] and "/compare" in nav[1]["paths"] and "/" in nav[0]["paths"] and nav[0]["rows"][0]["href"] == "/signup"
+    assert [h["key"] for h in nav] == ["today", "water", "record"] and [h["href"] for h in nav] == ["/forecast", "/analysis", "/discharges"]   # a hub opens on its first page
+    assert [r["title"] for r in nav[1]["rows"]] == ["Site Report Card", "Samples", "Graphs", "Source Comparison"] and "/compare" in nav[1]["paths"]  # subpage = its own tab
+    assert [r["href"] for r in nav[0]["rows"]] == ["/forecast", "/alerts", "/signup"] and "/" not in nav[0]["paths"]                                   # Main is its own tab
+    from app.wsgi import app
+    with app.test_client() as c:
+        g = c.get("/graphs").data.decode()
+        assert 'class="subtabs"' in g and g.count('aria-current="page"') == 1 and '<a href="/samples">Samples</a>' in g and 'href="/graphs" class="on" aria-current="page">Graphs' in g
+        assert "The water record</a>" in g and 'class="crumbs"' not in g and "navhub" not in g
+        assert 'class="subtabs"' not in c.get("/").data.decode()          # Main has no second row
 
 
 def test_render_landing_offline_shows_hubs_and_hood():

@@ -69,19 +69,22 @@ HUBS = [
 ]
 
 def nav_model() -> list[dict]:
-    """The three hubs for the shared top bar and phone tab bar
-    (app/templates/_frame.html): static rows with their static facts, the
-    landing anchor each hub label opens, and the paths that light the hub.
-    Set as the Jinja global ``NAV`` in app/wsgi.py."""
-    anchors = {"today": "/", "water": "/#water", "record": "/#record"}
+    """The three hubs for the shared two-tier tab bar (app/templates/_frame.html):
+    row one is Main + the hubs, row two the active hub's pages as tabs (Chase,
+    2026-09-29: "almost like they are within the same main page"). Each hub opens
+    on its first page; a row's subpage (Source Comparison) gets its own tab; the
+    Today hub's signup CTA closes its row. ``paths`` light the hub. Set as the
+    Jinja global ``NAV`` in app/wsgi.py."""
     out = []
     for h in HUBS:
-        rows = ([{"href": h["primary"][0], "title": h["primary"][1], "fact": ""}] if h["primary"] else [])
-        rows += [{"href": r[0], "title": r[1], "fact": r[3]} for r in h["rows"]]
-        paths = [r["href"] for r in rows] + [r[4][0] for r in h["rows"] if len(r) > 4]
-        if h["key"] == "today":
-            paths.append("/")
-        out.append({"key": h["key"], "title": h["title"], "href": anchors[h["key"]], "rows": rows, "paths": paths})
+        rows = []
+        for r in h["rows"]:
+            rows.append({"href": r[0], "title": r[1], "fact": r[3]})
+            if len(r) > 4:
+                rows.append({"href": r[4][0], "title": r[4][1].split(":")[0], "fact": ""})
+        if h["primary"]:
+            rows.append({"href": h["primary"][0], "title": h["primary"][1], "fact": ""})
+        out.append({"key": h["key"], "title": h["title"], "href": rows[0]["href"], "rows": rows, "paths": [r["href"] for r in rows]})
     return out
 
 
