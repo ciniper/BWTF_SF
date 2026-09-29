@@ -132,6 +132,7 @@ precautionary, and the East is often dirty with no posting and no rain.
 | `shared/stations.py` | The 20 SFPUC shoreline stations: lab `source` id, feed id, names, shoreline group, drainage basin, coordinates |
 | `shared/outfalls.py` | The 34 permitted outfalls: CIWQS id, feed name, basin, and **which stations SFPUC posts when it fires** (evidence-tagged) |
 | `shared/zones.py` | The four signup/forecast zones: Ocean Beach (6 stations), Baker & China (4), North Beaches (4), East Beaches (6) |
+| `shared/basemap.py` | The one Leaflet tile layer every map draws (Esri World Topo since 2026-09-28; keyless alternatives kept: Esri Ocean Base, Humanitarian OSM, Esri Light Gray) — templates read the `BASEMAP` Jinja global |
 | `features/forecast/src/models/groups.py` | Basins (Westside, North Shore, Central, Southeast) ↔ beach groups ↔ zones, shared by training and serving |
 | `shared/standards.py` | California AB 411 single-sample maxima (Enterococcus 104 MPN/100 mL, etc.) and the one "over standard" helper |
 

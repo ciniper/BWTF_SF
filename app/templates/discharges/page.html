@@ -279,9 +279,7 @@ const ONAMES = {}, OWATER = {};
 
 function initMap() {
   MAP = L.map("map", {scrollWheelZoom: false}).setView([37.762, -122.443], 12);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  }).addTo(MAP);
+  L.tileLayer({{ BASEMAP.url|tojson }}, {{ BASEMAP.options|tojson }}).addTo(MAP);   // the site's one basemap: shared/basemap.py
   markerLayer = L.layerGroup().addTo(MAP);
 }
 

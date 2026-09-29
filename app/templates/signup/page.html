@@ -105,8 +105,7 @@ for (const z of ZONES) {
 }
 
 const MAP = L.map("map", {scrollWheelZoom: false, zoomControl: false}).setView([37.765, -122.45], 11);
-L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",   // muted basemap, no key: no peak triangles or red highways behind the station dots
-  {maxZoom: 16, attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ'}).addTo(MAP);
+L.tileLayer({{ BASEMAP.url|tojson }}, {{ BASEMAP.options|tojson }}).addTo(MAP);   // the site's one basemap: shared/basemap.py
 const markers = {};
 for (const z of ZONES) for (const s of z.stations) {
   markers[s.id] = {zone: z.key, name: s.name,
