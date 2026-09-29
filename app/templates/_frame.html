@@ -39,7 +39,7 @@
   <div class="ph-main">
     <h1>{{ title }}</h1>
     {%- if lead %}<p class="lead">{{ lead | safe }}</p>{% endif %}
-    {%- if link %}<a class="ph-link" href="{{ link[0] }}">{{ link[1] }} →</a>{% endif %}
+    {%- if link %}<a class="ph-link" href="{{ link[0] }}">{{ link[1] }}</a>{% endif %}
   </div>
   {%- if caller %}<details class="how"><summary>{{ how_label }}</summary><div class="how-body">{{ caller() }}</div></details>{% endif %}
 </div>
