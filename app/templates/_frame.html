@@ -15,19 +15,20 @@
 {%- set ns = namespace(hub=None) %}{% for h in NAV %}{% if p in h.paths %}{% set ns.hub = h %}{% endif %}{% endfor %}
 <header class="topbar">
   <div class="in">
-    <a class="mark" href="/"><img src="/static/brand/bwtf_144x144.png" alt="">SF Beach Water</a>
+    <a class="mark" href="/"><img src="/static/brand/bwtf_144x144.png" alt=""><span><b>SF Beach Water</b><small>Surfrider SF · Blue Water Task Force</small></span></a>
     <nav class="tabs" aria-label="Sections">
       <a href="/"{% if p == "/" %} class="on" aria-current="page"{% endif %}>Main</a>
       {%- for h in NAV %}
       <a href="{{ h.href }}"{% if ns.hub and ns.hub.key == h.key %} class="on"{% endif %}>{{ h.title }}</a>
       {%- endfor %}
     </nav>
+    <a class="about" href="/about" title="About this site: who runs it, where the numbers come from"><svg class="ic"><use href="#i-info"/></svg><span>About</span></a>
     <a class="cta" href="/signup">Get beach alerts</a>
   </div>
   {%- if ns.hub %}
   <nav class="subtabs" aria-label="{{ ns.hub.title }} pages"><div class="in">
     {%- for r in ns.hub.rows %}
-    <a href="{{ r.href }}"{% if r.href == p %} class="on" aria-current="page"{% endif %}>{{ r.title }}</a>
+    <a href="{{ r.href }}" class="{% if r.href == p %}on{% endif %}{% if r.gated %} gated{% endif %}"{% if r.href == p %} aria-current="page"{% endif %}{% if r.gated %} title="Coordinators only — needs the passphrase"{% endif %}>{{ r.title }}{% if r.gated %}<svg class="ic"><use href="#i-lock"/></svg>{% endif %}</a>
     {%- endfor %}
   </div></nav>
   {%- endif %}
@@ -54,6 +55,7 @@
     <a href="https://webapps.sfpuc.org/sapps/beachesandbay.html" target="_blank" rel="noopener">SFPUC Beach Map</a> ·
     <a href="{{ DATASF_DATASET_URL }}" target="_blank" rel="noopener">SF Gov Data</a> ·
     <a href="https://sf.surfrider.org/programs/blue-water-task-force" target="_blank" rel="noopener">Surfrider BWTF</a> ·
+    <a href="/about">About this site</a> ·
     <a href="/architecture">How it's built</a>
   </p>
   <p class="sources">Community science by Surfrider SF's Blue Water Task Force, not an official advisory. Sources: SFPUC beach map, SF Gov Open Data, Surfrider BWTF, NWS, NOAA.

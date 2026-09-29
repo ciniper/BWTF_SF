@@ -8,6 +8,8 @@
                    read, so a refresh moves this page too.
 ``/architecture``  one diagram of the infrastructure — sources, Supabase,
                    Vercel, GitHub, Brevo, the people on the other end.
+``/about``         who runs the site, what it draws on, what the colours
+                   mean, the disclaimer — the framing behind the ⓘ link.
 
 Both are static apart from the freshness lines. Serverless-safe: no threads,
 no external calls. Each route handler returns ``(status, content_type,
@@ -51,11 +53,18 @@ def handle_records(query, body):
     return 200, "text/html; charset=utf-8", html.encode()
 
 
+def handle_about(query, body):
+    """/about — the framing the old landing hero carried: who runs the site, what it
+    draws on, what the colours mean, the disclaimer (Chase, 2026-09-29)."""
+    return 200, "text/html; charset=utf-8", render_template("about/index.html").encode()
+
+
 def handle_architecture(query, body):
     return 200, "text/html; charset=utf-8", render_template("about/architecture.html").encode()
 
 
 GET_ROUTES = {
+    "/about": handle_about,
     "/records": handle_records,
     "/architecture": handle_architecture,
 }

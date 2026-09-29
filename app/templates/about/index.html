@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link rel="icon" href="/static/brand/favicon.ico"><link rel="apple-touch-icon" sizes="144x144" href="/static/brand/bwtf_144x144.png">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>About this site — Surfrider SF Blue Water Task Force</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/brand.css">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--sand);color:var(--ink);font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:15px;line-height:1.55}
+  .wrap{max-width:1100px;margin:0 auto;padding:20px 24px 40px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:18px 20px}
+  .card h2{margin:0 0 8px;font-size:17px;font-weight:900}
+  .card p{margin:0 0 8px;color:var(--muted)}.card p:last-child{margin:0}
+  .card a{color:var(--brand);font-weight:600;text-decoration:none}.card a:hover{text-decoration:underline}
+  .card ul{margin:0;padding:0 0 0 18px;color:var(--muted)}.card li{margin:0 0 6px}
+  .card li b{color:var(--ink)}
+  .legend{list-style:none;padding:0}.legend li{display:flex;gap:10px;align-items:flex-start}.legend .status-dot{margin-top:6px}
+  .wide{grid-column:1/-1}
+  .links{display:flex;flex-wrap:wrap;gap:8px}.links a{background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:13.5px}
+  .links a:hover{border-color:var(--brand);text-decoration:none}
+</style>
+</head>
+<body>
+{% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
+{{ topbar() }}
+<div class="wrap">
+  {{ page_head("About this site", "Community science for San Francisco's beaches, by the volunteers of Surfrider Foundation San Francisco's Blue Water Task Force.") }}
+  <div class="cards">
+    <section class="card">
+      <h2>What this is</h2>
+      <p>A public dashboard of San Francisco's beach water quality: today's status as the city reports it, a rain-driven forecast of sewage overflows, the lab record from the city and from our volunteers, and the official record of beach postings and discharges.</p>
+      <p>The Blue Water Task Force is Surfrider's volunteer water-testing program. In San Francisco the chapter samples several beaches every week and runs its own lab; this site puts those results next to the city's, and watches the city's beach map so you hear about a posting or a discharge within minutes.</p>
+    </section>
+    <section class="card">
+      <h2>Where the numbers come from</h2>
+      <ul>
+        <li><b>SFPUC's live beach map</b> — the posted signs and discharge flags the city shows right now, checked every minute. This drives the Main page and the alerts.</li>
+        <li><b>SF Gov Open Data</b> — the city lab's bacteria results (Enterococcus, fecal and total coliform) for twenty shoreline stations since July 2020.</li>
+        <li><b>Surfrider's Blue Water Task Force lab</b> — the volunteers' Enterococcus results and field notes since September 2023.</li>
+        <li><b>State Water Board BeachWatch</b> — every beach advisory San Francisco filed with the State since 1999.</li>
+        <li><b>CIWQS self-monitoring reports</b> — every combined-sewer discharge SFPUC reported to regulators since 2016.</li>
+        <li><b>NOAA rain gauges, NWS forecasts and NOAA tides</b> — the inputs to the overflow forecast and the conditions chips.</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h2>What the colours mean</h2>
+      <ul class="legend">
+        <li><i class="status-dot safe"></i><span><b>Safe</b> — the city's map shows the station meeting California's standards.</span></li>
+        <li><i class="status-dot caution"></i><span><b>Caution</b> — an Enterococcus result at or above 36 MPN/100 mL but under the 104 single-sample limit.</span></li>
+        <li><i class="status-dot posted"></i><span><b>Posted</b> — the city's sign is up: a result over the state single-sample limit.</span></li>
+        <li><i class="status-dot discharge"></i><span><b>Discharge</b> — the city's combined-sewer-overflow flag; avoid water contact for 72 hours after it ends.</span></li>
+        <li><i class="status-dot unknown"></i><span><b>Not sampled</b> — no current result for the station.</span></li>
+      </ul>
+    </section>
+    <section class="card">
+      <h2>Not an official advisory</h2>
+      <p>This is a community-science tool. Posted signs and SFPUC or health-department notices always win. Avoid water contact during and for 72 hours after rain.</p>
+      <p>Beach Hotline: 1-877-SFBEACH (1-877-732-3224) or 415-242-2214. The city's own map is at <a href="https://webapps.sfpuc.org/sapps/beachesandbay.html" target="_blank" rel="noopener">webapps.sfpuc.org</a>.</p>
+    </section>
+    <section class="card wide">
+      <h2>Go deeper</h2>
+      <div class="links">
+        <a href="/architecture">How it's built</a><a href="/records">How we get the records</a><a href="/forecast#check">Model check</a><a href="/signup">Get beach alerts</a>
+        <a href="https://sf.surfrider.org/programs/blue-water-task-force" target="_blank" rel="noopener">Surfrider SF Blue Water Task Force</a>
+        <a href="https://github.com/ciniper/BWTF_SF" target="_blank" rel="noopener">Source code on GitHub</a>
+      </div>
+    </section>
+  </div>
+  {{ footer() }}
+</div>
+{{ tabbar() }}
+</body></html>

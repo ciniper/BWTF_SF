@@ -34,7 +34,7 @@ def test_architecture_page_has_both_layouts():
 def test_record_pages_and_landing_link_here():
     from app import landing as L
     for page, anchor in (("discharges", "discharges"), ("postings", "postings"), ("cso_history", "timeline")):
-        assert f'href="/records#{anchor}"' in (ROOT / f"app/templates/{page}/page.html").read_text(), page
+        assert f'link=("/records#{anchor}"' in (ROOT / f"app/templates/{page}/page.html").read_text(), page   # the page head's action pill (rendered as href by _frame.html)
     hood = [h for h, _ in L.UNDER_THE_HOOD]
     assert "/architecture" in hood and "/records" in hood
 

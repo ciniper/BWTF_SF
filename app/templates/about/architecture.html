@@ -83,8 +83,9 @@
 </style><link rel="stylesheet" href="/static/brand.css">
 </head>
 <body>
-{% include "_icons.html" %}<div class="wrap">
-  <a class="back-to-dash" href="/">← Dashboard</a>
+{% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
+{{ topbar() }}
+<div class="wrap">
   <div class="hero">
     <h1>How it's built</h1>
     <p>Where the data comes from, where it lives, and who it reaches.</p>
@@ -218,4 +219,6 @@
 
   <p class="foot"><span class="hover-hint">Hover a box for details. </span> How the records are gathered: <a href="/records">How we get the records</a>. · {{ build.label if build else '' }}</p>
 </div>
+<div class="wrap wrap-foot">{{ footer() }}</div>
+{{ tabbar() }}
 </body></html>

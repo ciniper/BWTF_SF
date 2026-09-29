@@ -29,8 +29,14 @@
 /* ── Frame: top bar ───────────────────────────────────────────────────────── */
 .topbar{background:#fff;border-bottom:1px solid var(--line);position:relative;z-index:30;font-family:'Roboto','Segoe UI',Arial,sans-serif}
 .topbar .in{max-width:1100px;margin:0 auto;padding:8px 24px;display:flex;align-items:center;gap:14px}
-.topbar .mark{display:flex;align-items:center;gap:9px;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.05em;color:var(--ink);text-decoration:none;white-space:nowrap}
-.topbar .mark img{width:28px;height:28px;border-radius:8px}
+.topbar .mark{display:flex;align-items:center;gap:9px;color:var(--ink);text-decoration:none;white-space:nowrap}
+.topbar .mark img{width:30px;height:30px;border-radius:8px}
+.topbar .mark span{display:flex;flex-direction:column;line-height:1}
+.topbar .mark b{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:22px;letter-spacing:.05em}
+.topbar .mark small{font:600 10px 'Roboto','Segoe UI',Arial,sans-serif;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-top:2px}
+.topbar .about{margin-left:auto;display:inline-flex;align-items:center;gap:5px;color:var(--muted);font-weight:600;font-size:13px;text-decoration:none;padding:6px 8px;border-radius:8px}
+.topbar .about:hover{color:var(--brand);background:var(--sand2)}
+.topbar .about .ic{width:16px;height:16px}
 .topbar .tabs{display:flex;gap:2px;margin-left:6px}
 .topbar .tabs a{display:block;color:var(--muted);text-decoration:none;font-weight:600;font-size:14px;padding:12px 12px 10px;border-bottom:2px solid transparent;white-space:nowrap}
 .topbar .tabs a:hover{color:var(--ink)}
@@ -41,7 +47,9 @@
 .topbar .subtabs a{display:block;color:var(--muted);text-decoration:none;font-weight:600;font-size:13.5px;padding:10px 14px 9px;border-bottom:2px solid transparent;white-space:nowrap}
 .topbar .subtabs a:hover{color:var(--ink)}
 .topbar .subtabs a.on{color:var(--brand);border-color:var(--brand)}
-.topbar .cta{margin-left:auto;background:var(--brand);color:#fff;border-radius:999px;padding:9px 16px;font-weight:700;font-size:14px;text-decoration:none;white-space:nowrap}
+.topbar .subtabs a.gated{margin-left:auto;color:var(--faint)}
+.topbar .subtabs a .ic{width:13px;height:13px;margin-left:5px;vertical-align:-2px}
+.topbar .cta{margin-left:6px;background:var(--brand);color:#fff;border-radius:999px;padding:9px 16px;font-weight:700;font-size:14px;text-decoration:none;white-space:nowrap}
 .topbar .cta:hover{background:var(--brand-deep)}
 
 /* ── Frame: page head (replaces the blue hero on tool pages) ─────────────── */
@@ -78,6 +86,8 @@
 .tabbar{display:none}
 @media (max-width:760px){
   .topbar .tabs{display:none}
+  .topbar .mark small{display:none}
+  .topbar .about span{display:none}
   .topbar .subtabs .in{padding:0 8px}
   .topbar .subtabs a{padding:10px 11px 9px;font-size:13px}
   .topbar .in{padding:8px 14px}

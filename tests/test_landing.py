@@ -95,13 +95,19 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
     nav = L.nav_model()
     assert [h["key"] for h in nav] == ["today", "water", "record"] and [h["href"] for h in nav] == ["/forecast", "/analysis", "/discharges"]   # a hub opens on its first page
     assert [r["title"] for r in nav[1]["rows"]] == ["Site Report Card", "Samples", "Graphs", "Source Comparison"] and "/compare" in nav[1]["paths"]  # subpage = its own tab
-    assert [r["href"] for r in nav[0]["rows"]] == ["/forecast", "/alerts", "/signup"] and "/" not in nav[0]["paths"]                                   # Main is its own tab
+    assert [r["href"] for r in nav[0]["rows"]] == ["/forecast", "/signup", "/alerts"] and "/" not in nav[0]["paths"]                                   # Main is its own tab; the locked page last
+    assert [r["gated"] for r in nav[0]["rows"]] == [False, False, True] and L.UNDER_THE_HOOD == [("/architecture", "How it's built"), ("/records", "How we get the records"), ("/forecast#check", "Model check")]
     from app.wsgi import app
     with app.test_client() as c:
         g = c.get("/graphs").data.decode()
         assert 'class="subtabs"' in g and g.count('aria-current="page"') == 1 and '<a href="/samples">Samples</a>' in g and 'href="/graphs" class="on" aria-current="page">Graphs' in g
         assert "The water record</a>" in g and 'class="crumbs"' not in g and "navhub" not in g
         assert 'class="subtabs"' not in c.get("/").data.decode()          # Main has no second row
+        f = c.get("/forecast").data.decode()
+        assert 'class=" gated" title="Coordinators only' in f and f.index('href="/signup"', f.index('class="subtabs"')) < f.index('href="/alerts"', f.index('class="subtabs"'))   # lock icon, rightmost
+        a = c.get("/about").data.decode()
+        assert "About this site" in a and "Blue Water Task Force" in a and 'class="topbar"' in a and "SFPUC's live beach map" in a and 'class="status-dot discharge"' in a
+        assert 'class="topbar"' in c.get("/records").data.decode() and 'class="topbar"' in c.get("/architecture").data.decode() and "back-to-dash\" href" not in c.get("/records").data.decode()
 
 
 def test_render_landing_offline_shows_hubs_and_hood():
@@ -113,7 +119,7 @@ def test_render_landing_offline_shows_hubs_and_hood():
     with app.test_request_context("/"):
         html = L.render_landing(Sfpuc(), None, live_facts=False)
     for needle in ("Today &amp; alerts", "The water record", "Postings &amp; discharges", "What the city reported, and when",
-                   'class="cta" href="/signup"', "Online Postings Timeline", "Under the hood", "/reports/2026-09_model_analysis.html",
+                   'class="cta" href="/signup"', "Online Postings Timeline", "Under the hood", 'href="/architecture"', 'href="/about"',  # the ⓘ About link in the frame
                    "1 site(s) posted for elevated bacteria"):
         assert needle in html, needle
     assert html.count('class="hub') >= 3 and 'class="card"' not in html

@@ -77,13 +77,14 @@ def nav_model() -> list[dict]:
     Jinja global ``NAV`` in app/wsgi.py."""
     out = []
     for h in HUBS:
-        rows = []
+        rows, gated = [], []
         for r in h["rows"]:
-            rows.append({"href": r[0], "title": r[1], "fact": r[3]})
+            (gated if r[0] in GATED else rows).append({"href": r[0], "title": r[1], "fact": r[3], "gated": r[0] in GATED})
             if len(r) > 4:
-                rows.append({"href": r[4][0], "title": r[4][1].split(":")[0], "fact": ""})
+                rows.append({"href": r[4][0], "title": r[4][1].split(":")[0], "fact": "", "gated": False})
         if h["primary"]:
-            rows.append({"href": h["primary"][0], "title": h["primary"][1], "fact": ""})
+            rows.append({"href": h["primary"][0], "title": h["primary"][1], "fact": "", "gated": False})
+        rows += gated                                    # the locked page sits last in its row
         out.append({"key": h["key"], "title": h["title"], "href": rows[0]["href"], "rows": rows, "paths": [r["href"] for r in rows]})
     return out
 
@@ -93,10 +94,10 @@ UNDER_THE_HOOD = [
     ("/architecture", "How it's built"),
     ("/records", "How we get the records"),
     ("/forecast#check", "Model check"),
-    ("/reports/2026-09_model_analysis.html", "Model analysis"),
-    ("/reports/2026-09_live_replay.html", "Live corrections replay"),
-    ("/reports/2026-09_live_replay_synthetic.html", "Synthetic replay"),
-]
+]   # the model reports stay reachable from Model check; Chase dropped them from the strip (2026-09-29)
+
+# Pages behind the coordinators' passphrase: a lock icon in the tabs and the hub rows, and last in their row.
+GATED = {"/alerts"}
 
 # Flat (href, icon, title, blurb) view of the same pages, kept for anything
 # that wants the list (tests, the sitemap of this repo's docs).
@@ -225,7 +226,7 @@ def hubs_with_facts(facts: dict | None) -> list[dict]:
     facts = facts or {}
     rendered = []
     for h in HUBS:
-        rows = [{"href": r[0], "title": r[1], "blurb": r[2],
+        rows = [{"href": r[0], "title": r[1], "blurb": r[2], "gated": r[0] in GATED,
                  "fact": facts.get(r[0], r[3]), "live": r[0] in facts,
                  "sub": r[4] if len(r) > 4 else None}   # optional (href, label): a subpage under this row
                 for r in h["rows"]]

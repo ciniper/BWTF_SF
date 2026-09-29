@@ -48,14 +48,15 @@
 </style><link rel="stylesheet" href="/static/brand.css">
 </head>
 <body>
-{% include "_icons.html" %}<div class="wrap">
-  <a class="back-to-dash" href="/">← Dashboard</a>
-  <div class="hero">
-    <h1>How we get the records</h1>
+{% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
+{{ topbar() }}
+<div class="wrap">
+  {% call page_head("How we get the records", "The standard operating procedure behind the Discharge Ledger, Beach Postings and the Online Postings Timeline.") %}
+    
     <p>The standard operating procedure behind the three record pages: who publishes each record, how to get it
     yourself, the script that does it for us, and what is missing. Everything here is public — no logins, no
     special access.</p>
-  </div>
+  {% endcall %}
 
   <nav class="jump" aria-label="Records on this page">
     <a href="#discharges"><svg class="ic"><use href="#i-receipt"/></svg>Discharge Ledger</a>
@@ -218,4 +219,6 @@ python tests/test_beachwatch.py</code></pre>
 
   <p class="foot">How the whole site fits together: <a href="/architecture">How it's built</a>. · {{ build.label if build else '' }}</p>
 </div>
+<div class="wrap wrap-foot">{{ footer() }}</div>
+{{ tabbar() }}
 </body></html>
