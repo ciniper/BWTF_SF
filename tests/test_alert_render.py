@@ -13,7 +13,7 @@ import re  # noqa: E402
 UNSUB = "https://bwtf-sf.vercel.app/unsubscribe?t=abc"
 WHEN = "Tue Sep 30, 7:12 AM PDT"
 POSTED = {"station_id": "4602", "station_name": "Ocean Beach at Sloat Boulevard", "to": "posted"}
-CSO = {"station_id": "4613", "station_name": "Islais Creek", "to": "cso"}
+CSO = {"station_id": "4619", "station_name": "Islais Creek", "to": "cso"}
 
 
 def test_one_station_is_named_and_several_are_counted():
