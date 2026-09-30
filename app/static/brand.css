@@ -33,6 +33,7 @@
 body{margin:0;background:var(--sand);color:var(--ink);font-family:'Roboto','Segoe UI',Arial,sans-serif;min-height:100vh;display:flex;flex-direction:column}   /* flex column so the footer reaches the bottom on short pages */
 a{color:var(--brand)}
 .wrap{max-width:var(--page-w);margin:0 auto;padding:24px}
+body>.wrap,body>.container{width:100%}   /* body is a flex column and auto margins switch off stretch: without an explicit width the column shrink-wraps its widest child (a table, a card row) and grows past a phone's screen, so the phone zooms out */
 .controls{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:center;margin:0 0 12px}
 .ctl-label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
 .seg-toggle{display:inline-flex;border:2px solid var(--line);border-radius:999px;overflow:hidden;background:#fff}

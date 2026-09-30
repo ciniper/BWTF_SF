@@ -14,10 +14,6 @@
 body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; color: #26272a; min-height: 100vh; }
 .container { max-width: var(--page-w); margin: 0 auto; padding: 24px; }   /* same gutter as .wrap so the text edge lines up with the wordmark */
 
-header { background: #0072BC; color: #fff; border-radius: 24px; padding: 28px 32px; margin-bottom: 20px; }
-header h1 { font-family: 'Bebas Neue', sans-serif; font-weight: 400; font-size: 38px; text-transform: uppercase; letter-spacing: .06em; color: #fff; display: flex; align-items: center; gap: 12px; }
-header .subtitle { color: rgba(255,255,255,0.88); font-size: 15px; margin-top: 4px; }
-header .live-dot { display: inline-block; width: 8px; height: 8px; background: #237059; border-radius: 50%; margin-right: 6px; animation: blink 2s infinite; }
 
 .mode-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
 .mode-btn { display: inline-flex; align-items: center; gap: 6px; font-family: inherit; padding: 7px 13px; border-radius: 999px; border: 2px solid var(--line); background: #fff; color: var(--muted); cursor: pointer; font-size: 13px; font-weight: 700; }
@@ -38,6 +34,7 @@ header .live-dot { display: inline-block; width: 8px; height: 8px; background: #
 /* Forecast timeline */
 .timeline { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 10px; margin-bottom: 20px; }  /* 7 live days or 8 hindcast days on one row */
 @media (max-width: 800px) { .timeline { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 600px) { .timeline { display: flex; overflow-x: auto; gap: 10px; padding-bottom: 6px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; } .day-card { flex: 0 0 124px; scroll-snap-align: start; } }   /* phones: the week is a strip you swipe, not seven columns squeezed past the screen edge */
 .day-card { background: #ffffff; border-radius: 16px; padding: 14px; text-align: center; border: 2px solid transparent; transition: border-color 0.3s, transform 0.2s; cursor: pointer; }
 .day-card.today { border-color: #0072BC; }
 .day-card.selected { border-color: #b97e00; background: #fff7e6; }

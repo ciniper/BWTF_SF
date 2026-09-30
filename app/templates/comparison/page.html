@@ -36,7 +36,8 @@
           .agree small{display:block;color:#8a949b;font-weight:600;margin-top:3px}
           .foot{color:#54576F;font-size:13px;line-height:1.6;margin-top:18px}
           .hint{display:flex;align-items:center;gap:6px;color:#54576F;font-size:13px;margin:0 0 10px}
-          .bacteria-select{display:flex;align-items:center;gap:10px;margin:0 0 12px}
+          .bacteria-select{display:flex;align-items:center;gap:10px;margin:0 0 12px;flex-wrap:wrap;row-gap:10px}
+          .tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}   /* the head-to-head table scrolls sideways on phones instead of pushing the page wider */
           .bacteria-select label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#54576F;font-weight:700}
           .bacteria-select select{font-size:14px;padding:8px 12px;border:1px solid #d9e4e8;border-radius:10px;background:#fff;color:#26272a;font-weight:600;cursor:pointer}
           tr.row-click{cursor:pointer}
@@ -101,6 +102,7 @@
 
   {{ bwtf_note|safe }}
 
+  <div class="tscroll">
   <table>
     <thead><tr>
       <th>Site</th>
@@ -112,6 +114,7 @@
     <tbody>{{ rows_html|safe }}
     </tbody>
   </table>
+  </div>
 
   <p class="foot">
     Generated {{ generated }}. Both sources grade {{ analyte_label }} against the CA single-sample max ({{ limit }} MPN/100mL);
