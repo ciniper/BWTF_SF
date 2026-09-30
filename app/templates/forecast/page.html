@@ -168,12 +168,12 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 <div class="container">
 {% call page_head("CSO Forecast", "Sewage-overflow risk for San Francisco's beaches, by zone, updated every 30 minutes.", "today", "How this forecast works") %}
 <p><b>What it is.</b> For each beach zone, the chance that a sewage overflow has fouled the water: today and the next five days, as a percentage, refreshed every 30 minutes. It is a rain model. It does not see dry-weather dirtiness, and posted signs always win.</p>
-<p><b>Rain in.</b> What fell comes from two NOAA gauges, Downtown and Oceanside; the last few hours from the SFO airport gauge; the hours ahead from a weather model (ECMWF). On past days the gauges replace everything else.</p>
+<p><b>Rain in.</b> What fell comes from two NOAA gauges, Downtown and Oceanside; the last few hours from the SFO airport gauge; the hours ahead from a weather model (ICON, via Open-Meteo). On past days the gauges replace everything else.</p>
 <p><b>Stage 1: will the sewers overflow?</b> San Francisco has four combined-sewer basins. For each one, a model trained on ten years of the city's filed overflow reports turns the rain pattern (today's total, the last days' totals, the peak hour) into the chance of an overflow that day.</p>
 <p><b>Stage 2: which beaches, and for how long?</b> An overflow fouls a beach for days. How long, by basin and by the size of the overflow, comes from the city's own bacteria samples after past overflows; which beaches, from the outfalls each one posts. The percentage shown is the combined risk from the last eight days of overflow chances.</p>
 <p><b>Live corrections.</b> When SFPUC's beach map shows an overflow flag, that day becomes certain and the following days follow; when it shows a posting or a clean sample, the following days are held up or capped. Nothing observed, nothing changed. The toggle on the live view shows the model alone.</p>
 <p><b>Reading the number.</b> 25% is the alarm line the alerts use. The banner words follow the same number: 10% low, 25% moderate, 50% high. Per-zone lines are under review.</p>
-<p><b>Is it any good?</b> The Model check tab grades every past day against the city's filed overflows and its samples, zone by zone, at any line. The technical reports (how each model is built, the replays, the weather-model comparison) are linked there.</p>
+<p><b>Is it any good?</b> The Model check tab grades every past day against the city's filed overflows and its samples, zone by zone, at any line. Two plain reports go deeper: <a href="/reports/2026-09_forecast_how_it_works.html">how the forecast works</a> and <a href="/reports/2026-09_forecast_how_it_is_graded.html">how it is graded</a>; the technical pages are linked from the Model check.</p>
 {% endcall %}
 
 <div class="mode-bar">
@@ -208,7 +208,7 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 </div>
 
 <div class="foot">   {# the page's own source note; the site footer is the frame's #}
-    <p><svg class="ic"><use href="#i-info"/></svg> Rain: NOAA gauges (Downtown 047772, Oceanside 047767), KSFO hourly, ECMWF forecast · Discharges: SFPUC CIWQS reports · Beach status: SFPUC · Bacteria: DataSF</p>
+    <p><svg class="ic"><use href="#i-info"/></svg> Rain: NOAA gauges (Downtown 047772, Oceanside 047767), KSFO hourly, ICON forecast (Open-Meteo) · Discharges: SFPUC CIWQS reports · Beach status: SFPUC · Bacteria: DataSF</p>
     <p>Community-science tool, not an official advisory — posted signs and SFPUC or health-department notices always win. <a href="/">Back to dashboard</a> · <a href="/api/build" title="{{ build.message or '' }}">{{ build.label }}</a></p>
 </div>
 </div>
@@ -288,8 +288,8 @@ const zoneRain = (day, zk) => {
 function rainSourceLabel(day) {
     const src = day.rain_source || (day.is_forecast ? 'forecast' : 'model');
     return { gauges: ic('gauge') + ' NOAA gauges', observed: ic('gauge') + ' KSFO gauge',
-             mixed: ic('gauge') + ' gauge + ' + ic('satellite-dish') + ' ECMWF',
-             model: ic('satellite-dish') + ' model hindcast', forecast: ic('satellite-dish') + ' ECMWF forecast' }[src] || esc(src);
+             mixed: ic('gauge') + ' gauge + ' + ic('satellite-dish') + ' ICON',
+             model: ic('satellite-dish') + ' model hindcast', forecast: ic('satellite-dish') + ' ICON forecast' }[src] || esc(src);
 }
 
 // ─── state / mode / view ────────────────────────────────────────────────────
@@ -1004,6 +1004,8 @@ function renderScoreWindow(sc) {
     }
 
     html += `<div class="sc-reports"><span class="mute">Reports:</span>
+        <a href="/reports/2026-09_forecast_how_it_works.html" title="Inputs → stage 1 → stage 2 → live corrections → outputs, and how it was trained, in pictures">how it works</a>
+        <a href="/reports/2026-09_forecast_how_it_is_graded.html" title="The rulers, the windows, the lines, every set on the same days, the replays, the weather input">how it is graded</a>
         <a href="${scoreModel ? '/reports/2026-09_forecast_' + esc(scoreModel) + '_model_explorer.html' : '/reports/2026-09_forecast_' + esc(SERVED_NAME) + '_model_explorer.html'}" title="The selected model set opened up: inputs, weights or trees, self-check">inside this model</a>
         <a href="/reports/2026-09_forecast_stage2_explorer.html" title="How a discharge probability becomes beach risk — shared by every model set">stage 2</a>
         <a href="/reports/2026-09_model_analysis.html" title="Every model set ranked by cost, from several angles, with charts and recommendations">model analysis</a>
