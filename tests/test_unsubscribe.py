@@ -105,8 +105,11 @@ def test_python_renderer_matches_the_sql_footer_logic_and_version():
         assert render.render_alert(tr, True, "East Beaches", URL) == {"subject": "S"}
     finally:
         render.sb.rpc, render.sb.is_configured = orig
-    assert seen == [("bwtf_render_alert", {"p_transitions": tr, "p_simulated": True, "p_zone": "East Beaches",
-                                           "p_unsubscribe_url": URL})]
+    import re
+    assert len(seen) == 1 and seen[0][0] == "bwtf_render_alert"
+    payload = dict(seen[0][1]); when = payload.pop("p_when")
+    assert payload == {"p_transitions": tr, "p_simulated": True, "p_zone": "East Beaches", "p_unsubscribe_url": URL}
+    assert re.fullmatch(r"[A-Z][a-z]{2} [A-Z][a-z]{2} \d{1,2}, \d{1,2}:\d{2} [AP]M P[DS]T", when), when   # 020: the moment, Pacific, in the dispatcher's shape
 
 
 def test_subscription_rows_carry_the_token_and_old_rows_still_load():

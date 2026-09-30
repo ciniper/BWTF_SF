@@ -38,6 +38,7 @@ UNSUB = "https://bwtf-sf.vercel.app/unsubscribe?t=0f3b2c9e-1d2a-4e5f-8a9b-0c1d2e
 CASES = [(label, tr, sim, zone, None) for label, tr, sim, zone in CASES] + \
         [(label + " + unsubscribe", tr, sim, zone, UNSUB) for label, tr, sim, zone in CASES]
 
+WHEN = "Tue Sep 30, 7:12 AM PDT"   # 020: the dispatcher passes the moment in; both sides get this one
 FIELDS = ("subject", "sms_text", "text_body", "html_body")
 
 
@@ -46,16 +47,16 @@ def main() -> int:
         print("Supabase env missing — aborting."); return 1
     try:
         sb.rpc("bwtf_render_alert", {"p_transitions": CASES[0][1],
-                                     "p_simulated": False, "p_zone": None, "p_unsubscribe_url": None})
+                                     "p_simulated": False, "p_zone": None, "p_unsubscribe_url": None, "p_when": WHEN})
     except Exception as exc:
-        print(f"bwtf_render_alert RPC unavailable ({exc}) — paste db/migrations/017 first.")
+        print(f"bwtf_render_alert RPC unavailable ({exc}) — paste db/migrations/020 first.")
         return 1
 
     failures = 0
     for label, transitions, simulated, zone, unsub in CASES:
         pg = sb.rpc("bwtf_render_alert", {"p_transitions": transitions,
-                                          "p_simulated": simulated, "p_zone": zone, "p_unsubscribe_url": unsub})
-        py = _fallback(transitions, simulated, zone, unsub)
+                                          "p_simulated": simulated, "p_zone": zone, "p_unsubscribe_url": unsub, "p_when": WHEN})
+        py = _fallback(transitions, simulated, zone, unsub, WHEN)
         for f in FIELDS:
             if pg.get(f) == py[f]:
                 print(f"PASS {label} · {f}")

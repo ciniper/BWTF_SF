@@ -25,6 +25,7 @@ from __future__ import annotations
 import os
 
 from shared import supabase as sb
+from shared.clock import now_pacific
 
 MAP_URL = "https://webapps.sfpuc.org/sapps/beachesandbay.html"
 # The migration whose bwtf_render_alert wrote the message; stored on every
@@ -42,31 +43,40 @@ def unsubscribe_url(token: str | None) -> str | None:
     return f"{SITE_URL}/unsubscribe?t={token}" if token else None
 
 
+STAMP_FORMAT = "%a %b %-d, %-I:%M %p %Z"   # "Tue Sep 30, 7:12 AM PDT" — the same shape the dispatcher's to_char produces
+
+
+def alert_stamp() -> str:
+    return now_pacific().strftime(STAMP_FORMAT)
+
+
 def render_alert(transitions: list[dict], simulated: bool, zone: str | None = None,
-                 unsubscribe_url: str | None = None) -> dict:
+                 unsubscribe_url: str | None = None, when: str | None = None) -> dict:
     """{"subject","sms_text","text_body","html_body"} for one recipient's events.
     ``unsubscribe_url`` (017) puts the one-click link in the footer; without it
     the footer keeps the older 'reply to unsubscribe' sentence."""
+    when = when or alert_stamp()
     if sb.is_configured():
         try:
             out = sb.rpc("bwtf_render_alert",
                          {"p_transitions": transitions, "p_simulated": simulated,
-                          "p_zone": zone, "p_unsubscribe_url": unsubscribe_url})
+                          "p_zone": zone, "p_unsubscribe_url": unsubscribe_url, "p_when": when})
             if isinstance(out, dict) and out.get("subject"):
                 return out
         except Exception:
             pass  # fall through to the local port
-    return _fallback(transitions, simulated, zone, unsubscribe_url)
+    return _fallback(transitions, simulated, zone, unsubscribe_url, when)
 
 
 def _fallback(transitions: list[dict], simulated: bool, zone: str | None = None,
-              unsubscribe_url: str | None = None) -> dict:
+              unsubscribe_url: str | None = None, when: str | None = None) -> dict:
     """Byte-for-byte Python port of bwtf_render_alert (migration 020 — do not restyle here;
     format changes belong in migration SQL; db/scripts/test_render_parity.py enforces this)."""
     prefix = "TEST " if simulated else ""
     n = len(transitions)
     zone = (zone or "").strip() or None
     unsub = (unsubscribe_url or "").strip() or None
+    stamp = (when or "").strip() or None
     manage = unsub.replace("/unsubscribe?t=", "/manage?t=") if unsub else None
     site = (unsub.split("/unsubscribe?t=", 1)[0] if unsub else "") or "https://bwtf-sf.vercel.app"
     is_cso = lambda t: t["to"] == "cso"  # noqa: E731
@@ -100,7 +110,7 @@ def _fallback(transitions: list[dict], simulated: bool, zone: str | None = None,
                 + f". Live status: {site}/")[:320]
 
     text_body = (
-        subject + "\n\n"
+        subject + (f"\n{stamp}" if stamp else "") + "\n\n"
         + "\n".join(f"- {t['station_name']}: " + ("sewage discharge." if is_cso(t) else "posted.") for t in transitions)
         + "\n\nFrom SFPUC: beach users should be aware that during and immediately after rainfall, nearshore bacteria concentrations may be elevated, even when there has not been a combined sewer discharge.\n\n"
         + f"Live status: {site}/\nSFPUC's map: {MAP_URL}\n\n"
@@ -141,7 +151,7 @@ def _fallback(transitions: list[dict], simulated: bool, zone: str | None = None,
         "</tr></table></td></tr>"
         f'<tr><td style="background:#ffffff;border:2px solid {tone};border-radius:20px;padding:20px 22px 18px;">'
         '<div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#54576F;">Beach alert'
-        + ("" if zone is None else f" &middot; {zone} zone") + "</div>"
+        + ("" if stamp is None else f" &middot; {stamp}") + ("" if zone is None else f" &middot; {zone} zone") + "</div>"
         f'<h1 style="margin:6px 0 0;font-size:26px;line-height:1.15;font-weight:900;letter-spacing:.01em;color:#26272a;">{headline}</h1>'
         f'<p style="margin:8px 0 16px;color:#54576F;font-size:14px;line-height:1.5;">{facts}</p>'
         + rows_html

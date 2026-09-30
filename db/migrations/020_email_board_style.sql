@@ -7,12 +7,14 @@
 -- naming the beaches, one row per station with its map thumbnail and one factual line in SFPUC's own
 -- terms ("posted" is their status word; the reason sits under it), SFPUC's rainfall sentence quoted
 -- once, one button — "Live status" — to the site's board. SFPUC's
--- own map moves to the small print, which also drops "always win" for "take precedence". No
--- timestamp in the body (the message's own Date header carries it; the Python port must match
--- byte for byte and cannot share a clock with the database).
+-- own map moves to the small print, which also drops "always win" for "take precedence". The
+-- eyebrow carries the moment of the alert in Pacific time ("Tue Sep 30, 7:12 AM PDT"): the
+-- dispatcher reads the clock once and passes it in as p_when, so the renderer stays a pure
+-- function of its arguments and the Python port can match it byte for byte.
 --
 -- bwtf_dispatch_live is restated verbatim from 017 with renderer_ver '020', so every
--- alert_deliveries row names the renderer that wrote it. Signatures unchanged.
+-- alert_deliveries row names the renderer that wrote it. bwtf_dispatch_live's signature is
+-- unchanged; bwtf_render_alert gains p_when, and its 4-argument form stays as a wrapper.
 --
 -- Apply in the Supabase SQL editor with no simulation active (bwtf_shadow_tick and the live
 -- dispatcher read these at call time; nothing is queued). Then:
@@ -20,12 +22,12 @@
 --   select renderer, count(*) from alert_deliveries group by 1;   -- new rows say 020
 
 create or replace function public.bwtf_render_alert(
-  p_transitions jsonb, p_simulated boolean, p_zone text default null,
-  p_unsubscribe_url text default null
+  p_transitions jsonb, p_simulated boolean, p_zone text, p_unsubscribe_url text, p_when text
 ) returns jsonb
 language plpgsql stable security definer set search_path = public as $$
 declare
   prefix     text := case when p_simulated then 'TEST ' else '' end;
+  stamp      text := nullif(trim(coalesce(p_when, '')), '');
   n_matched  integer := jsonb_array_length(p_transitions);
   zone       text := nullif(trim(coalesce(p_zone, '')), '');
   unsub      text := nullif(trim(coalesce(p_unsubscribe_url, '')), '');
@@ -94,7 +96,7 @@ begin
     from jsonb_array_elements(p_transitions) with ordinality as x(t, ord);
   sms_text := left(sms_text, 320);
 
-  select subject || E'\n\n'
+  select subject || case when stamp is null then '' else E'\n' || stamp end || E'\n\n'
          || string_agg('- ' || (t->>'station_name') || ': ' || case t->>'to' when 'cso' then 'sewage discharge.' else 'posted.' end, E'\n' order by ord)
          || E'\n\nFrom SFPUC: beach users should be aware that during and immediately after rainfall, nearshore bacteria concentrations may be elevated, even when there has not been a combined sewer discharge.\n\n'
          || 'Live status: ' || site || E'/\nSFPUC''s map: ' || map_url || E'\n\n'
@@ -138,6 +140,7 @@ begin
       || '</tr></table></td></tr>'
       || '<tr><td style="background:#ffffff;border:2px solid ' || tone || ';border-radius:20px;padding:20px 22px 18px;">'
       || '<div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#54576F;">Beach alert'
+      || case when stamp is null then '' else ' &middot; ' || stamp end
       || case when zone is null then '' else ' &middot; ' || zone || ' zone' end || '</div>'
       || '<h1 style="margin:6px 0 0;font-size:26px;line-height:1.15;font-weight:900;letter-spacing:.01em;color:#26272a;">' || headline || '</h1>'
       || '<p style="margin:8px 0 16px;color:#54576F;font-size:14px;line-height:1.5;">' || facts || '</p>'
@@ -154,6 +157,17 @@ begin
                             'text_body', text_body, 'html_body', html_body);
 end $$;
 
+revoke all on function public.bwtf_render_alert(jsonb, boolean, text, text, text) from public, anon, authenticated;
+grant execute on function public.bwtf_render_alert(jsonb, boolean, text, text, text) to service_role;
+
+-- the 4-argument form (017's signature) stays as a wrapper without a stamp, for any older caller
+create or replace function public.bwtf_render_alert(
+  p_transitions jsonb, p_simulated boolean, p_zone text default null,
+  p_unsubscribe_url text default null
+) returns jsonb
+language sql stable security definer set search_path = public as $$
+  select public.bwtf_render_alert($1, $2, $3, $4, null::text)
+$$;
 revoke all on function public.bwtf_render_alert(jsonb, boolean, text, text) from public, anon, authenticated;
 grant execute on function public.bwtf_render_alert(jsonb, boolean, text, text) to service_role;
 
@@ -183,6 +197,10 @@ declare
   tok        uuid;
   unsub_url  text;
   -- /017
+  -- 020: the moment of this alert, Pacific, read once for every recipient
+  stamp      text;
+  tz_saved   text;
+  -- /020
 begin
   select value into api_key    from watcher_config where key = 'brevo_api_key';
   select value into from_email from watcher_config where key = 'alert_from_email';
@@ -195,6 +213,12 @@ begin
   select value into site_url from watcher_config where key = 'site_url';
   site_url := rtrim(coalesce(nullif(site_url, ''), 'https://bwtf-sf.vercel.app'), '/');
   -- /017
+  -- 020: "Tue Sep 30, 7:12 AM PDT" — TZ needs the session zone, so switch it for one line and put it back
+  tz_saved := current_setting('timezone');
+  perform set_config('timezone', 'America/Los_Angeles', true);
+  stamp := to_char(now(), 'Dy Mon FMDD, FMHH12:MI AM TZ');
+  perform set_config('timezone', tz_saved, true);
+  -- /020
 
   for r in select * from jsonb_array_elements(p_recipients)
   loop
@@ -223,7 +247,7 @@ begin
     end if;
     -- /017
 
-    rendered := bwtf_render_alert(matched, p_simulated, zone, unsub_url);
+    rendered := bwtf_render_alert(matched, p_simulated, zone, unsub_url, stamp);   -- 020: with the stamp
 
     sends := '[]'::jsonb;
 

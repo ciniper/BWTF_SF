@@ -307,23 +307,32 @@ not track their readers at all; the column then simply stays null.
 ## 020: the alert email in the site's voice (built 2026-09-30 on branch `design/email-surfrider-popover`)
 
 `db/migrations/020_email_board_style.sql` — apply by hand in the Supabase SQL editor, with no
-simulation active. It redefines `bwtf_render_alert` (same signature) and restates
-`bwtf_dispatch_live` from 017 with `renderer_ver = '020'`; nothing else changes.
+simulation active. It redefines `bwtf_render_alert` with a fifth argument, `p_when` (the
+4-argument form stays as a wrapper), and restates `bwtf_dispatch_live` from 017 with
+`renderer_ver = '020'`; nothing else changes.
 
 What subscribers see: header "SF BEACH WATER QUALITY ALERT" over the site's mark; the Today
 board's card with a border in the grade colour; a headline in counts and colour ("Sewage
-discharge at 1 beach. Bacteria posting at 1 beach." — one station is named outright); a facts
+discharge at 1 beach. Posted at 1 beach." — one station is named outright); a facts
 line naming the beaches; one row per station with its map thumbnail and one factual line; SFPUC's
 guidance once, attributed; one button, **Live status**, to the site's board. SFPUC's own map is in
 the small print, which says "take precedence" (not "always win"). Subjects name the beach or the
-counts; the SMS is ~120 characters. No timestamp in the body (the Python port cannot share the
-database's clock; the message's Date header carries it).
+counts; the SMS is ~120 characters. The eyebrow carries the moment of the alert in Pacific time
+("Tue Sep 30, 7:12 AM PDT"): the dispatcher reads its clock once per run and passes it as
+`p_when`; the 4-argument signature stays as a wrapper for older callers.
 
 `features/alerts/render.RENDERER_VERSION` is `020`; `_fallback` is the byte-for-byte port.
 
 **Check after applying:** `venv/bin/python db/scripts/test_render_parity.py` (pg == Python,
-every case) · `select renderer, count(*) from alert_deliveries group by 1;` (new rows say 020) ·
-one simulated alert to yourself, then read it on a phone.
+every case; both sides are handed the same fixed stamp, so the clock line is checked separately) ·
+in the SQL editor, the dispatcher's clock line, which should read like `Tue Sep 30, 7:12 AM PDT`:
+
+```sql
+select set_config('timezone', 'America/Los_Angeles', true), to_char(now(), 'Dy Mon FMDD, FMHH12:MI AM TZ');
+```
+
+· `select renderer, count(*) from alert_deliveries group by 1;` (new rows say 020) · one simulated
+alert to yourself, then read it on a phone: the eyebrow says "Beach alert · <that moment> · <zone> zone".
 
 ## 017: one-click unsubscribe (built 2026-09-29 on branch `sender-and-unsubscribe`)
 
