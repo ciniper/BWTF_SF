@@ -85,16 +85,16 @@ def test_python_renderer_matches_the_sql_footer_logic_and_version():
     plain = render._fallback(tr, False, None)
     linked = render._fallback(tr, False, None, URL)
     MANAGE = URL.replace("/unsubscribe?t=", "/manage?t=")
-    assert plain["text_body"].endswith('Reply "unsubscribe" to stop.')
+    assert plain["text_body"].endswith('Reply to this email with "unsubscribe" to stop alerts.')
     assert linked["text_body"].endswith(f"Change your sites: {MANAGE}\nUnsubscribe: {URL}")
-    assert "Reply to this email with &quot;unsubscribe&quot; to stop alerts.</p>" in plain["html_body"]
-    assert (f'<a href="{MANAGE}" style="color:#8a93a3;text-decoration:underline;">Change your sites</a> &middot; '
-            f'<a href="{URL}" style="color:#8a93a3;text-decoration:underline;">Unsubscribe</a></p>') in linked["html_body"]
+    assert "Reply to this email with &quot;unsubscribe&quot; to stop them.</td>" in plain["html_body"]
+    assert (f'<a href="{MANAGE}" style="color:#54576F;">Change your sites</a> &middot; '
+            f'<a href="{URL}" style="color:#54576F;">Unsubscribe</a></td>') in linked["html_body"]                # 019's small print
     assert "reply" not in linked["html_body"].lower()                 # the old sentence is gone when linked
     for k in ("subject", "sms_text"):
         assert plain[k] == linked[k]                      # only the footer moves
     assert render._fallback(tr, False, None, "  ") == plain   # blank URL = none
-    assert render.RENDERER_VERSION == "017"
+    assert render.RENDERER_VERSION == "019"
     assert render.unsubscribe_url(TOKEN) == URL and render.unsubscribe_url("") is None
     # render_alert passes the URL to the pg renderer
     seen = []

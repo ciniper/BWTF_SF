@@ -304,6 +304,27 @@ refresh logs `deliveries not polled: …` — harmless, and gone once applied.
 Turn open tracking off in Brevo's transactional settings if the alerts should
 not track their readers at all; the column then simply stays null.
 
+## 019: the alert email in the site's voice (built 2026-09-30 on branch `design/email-surfrider-popover`)
+
+`db/migrations/019_email_board_style.sql` — apply by hand in the Supabase SQL editor, with no
+simulation active. It redefines `bwtf_render_alert` (same signature) and restates
+`bwtf_dispatch_live` from 017 with `renderer_ver = '019'`; nothing else changes.
+
+What subscribers see: header "SF BEACH WATER QUALITY ALERT" over the site's mark; the Today
+board's card with a border in the grade colour; a headline in counts and colour ("Sewage
+discharge at 1 beach. 1 beach is posted for bacteria." — one station is named outright); a facts
+line naming the beaches; one row per station with its map thumbnail and one factual line; SFPUC's
+guidance once, attributed; one button, **Live status**, to the site's board. SFPUC's own map is in
+the small print, which says "take precedence" (not "always win"). Subjects name the beach or the
+counts; the SMS is ~120 characters. No timestamp in the body (the Python port cannot share the
+database's clock; the message's Date header carries it).
+
+`features/alerts/render.RENDERER_VERSION` is `019`; `_fallback` is the byte-for-byte port.
+
+**Check after applying:** `venv/bin/python db/scripts/test_render_parity.py` (pg == Python,
+every case) · `select renderer, count(*) from alert_deliveries group by 1;` (new rows say 019) ·
+one simulated alert to yourself, then read it on a phone.
+
 ## 017: one-click unsubscribe (built 2026-09-29 on branch `sender-and-unsubscribe`)
 
 `db/migrations/017_unsubscribe.sql` — apply by hand in the Supabase SQL editor

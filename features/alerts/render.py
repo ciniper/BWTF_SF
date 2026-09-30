@@ -31,7 +31,7 @@ MAP_URL = "https://webapps.sfpuc.org/sapps/beachesandbay.html"
 # alert_deliveries row (015) so an old message is never mistaken for a
 # re-render with a newer template. Bump with the SQL (015's renderer_ver and
 # tests/test_alert_deliveries.py hold it to the latest renderer migration).
-RENDERER_VERSION = "017"
+RENDERER_VERSION = "019"
 SITE_URL = os.environ.get("SITE_URL", "https://bwtf-sf.vercel.app").rstrip("/")
 
 
@@ -40,15 +40,6 @@ def unsubscribe_url(token: str | None) -> str | None:
     (phone-only rows, or a row read before 017 was applied). The renderer
     derives the "Change your sites" link (/manage?t=…) from it."""
     return f"{SITE_URL}/unsubscribe?t={token}" if token else None
-THUMB_BASE = "https://bwtf-sf.vercel.app/static/emailmaps"
-LOGO_URL = "https://bwtf.surfrider.org/images/BWTF-Logo_White.png"
-_LABEL = {"cso": "CSO discharge", "posted": "bacteria posting"}
-_LINE_ADVICE = {"cso": "CSO discharge — avoid water contact for 72 hours.",
-                "posted": "bacteria posting — water contact not recommended."}
-_SEV_COLOR = {"cso": "#b5310a", "posted": "#d4763a"}
-_SEV_LABEL = {"cso": "CSO DISCHARGE", "posted": "BACTERIA POSTING"}
-_SEV_ADVICE = {"cso": "Sewage discharge — avoid water contact for 72 hours.",
-               "posted": "Elevated bacteria — water contact not recommended."}
 
 
 def render_alert(transitions: list[dict], simulated: bool, zone: str | None = None,
@@ -65,103 +56,101 @@ def render_alert(transitions: list[dict], simulated: bool, zone: str | None = No
                 return out
         except Exception:
             pass  # fall through to the local port
-    return _fallback(transitions, simulated, zone)
+    return _fallback(transitions, simulated, zone, unsubscribe_url)
 
 
 def _fallback(transitions: list[dict], simulated: bool, zone: str | None = None,
               unsubscribe_url: str | None = None) -> dict:
-    """Byte-for-byte Python port of bwtf_render_alert (do not restyle here —
-    format changes belong in migration SQL; the parity test enforces this)."""
+    """Byte-for-byte Python port of bwtf_render_alert (migration 019 — do not restyle here;
+    format changes belong in migration SQL; db/scripts/test_render_parity.py enforces this)."""
     prefix = "TEST " if simulated else ""
     n = len(transitions)
     zone = (zone or "").strip() or None
     unsub = (unsubscribe_url or "").strip() or None
     manage = unsub.replace("/unsubscribe?t=", "/manage?t=") if unsub else None
-    label = lambda t: _LABEL.get(t["to"], "bacteria posting")
-    sev = lambda t: t["to"] if t["to"] in _SEV_COLOR else "posted"
+    site = (unsub.split("/unsubscribe?t=", 1)[0] if unsub else "") or "https://bwtf-sf.vercel.app"
+    is_cso = lambda t: t["to"] == "cso"  # noqa: E731
+    cso = [t for t in transitions if is_cso(t)]
+    posted = [t for t in transitions if not is_cso(t)]
+    n_cso, n_posted = len(cso), len(posted)
+    name1, cso1 = transitions[0]["station_name"], is_cso(transitions[0])
+    tone = "#b5310a" if n_cso > 0 else "#d4763a"
+    beaches = lambda k: f"{k} beach" + ("es" if k > 1 else "")  # noqa: E731
+    col = lambda t: "#b5310a" if is_cso(t) else "#d4763a"  # noqa: E731
 
     if n == 1:
-        subject = f"{prefix}SF Beach Alert: {label(transitions[0])} at {transitions[0]['station_name']}"
+        subject = f"{prefix}Beach alert: {name1}" + (" — sewage discharge" if cso1 else " posted for bacteria")
     else:
-        subject = f"{prefix}SF Beach Alert: {n} sites affected"
+        subject = f"{prefix}Beach alert: " + ", ".join(filter(None, [
+            f"sewage discharge at {beaches(n_cso)}" if n_cso > 0 else None,
+            f"{beaches(n_posted)} posted" if n_posted > 0 else None]))
 
-    sms_text = (f"🚨 {prefix}SF Beach alert: "
-                + "; ".join(f"{t['station_name']} ({label(t)})" for t in transitions)
-                + f". Avoid water contact. Map: {MAP_URL}")[:320]
+    if n == 1:
+        headline = f'<span style="color:{tone}">{name1}</span>' + (" has a sewage discharge." if cso1 else " is posted for bacteria.")
+    else:
+        headline = " ".join(filter(None, [
+            f'<span style="color:#b5310a">Sewage discharge at {beaches(n_cso)}.</span>' if n_cso > 0 else None,
+            f'<span style="color:#d4763a">{n_posted} beach' + ("es are" if n_posted > 1 else " is") + " posted for bacteria.</span>" if n_posted > 0 else None]))
+    facts = ((f"Discharging: {', '.join(t['station_name'] for t in cso)}. " if n_cso > 0 else "")
+             + (f"Posted: {', '.join(t['station_name'] for t in posted)}. " if n_posted > 0 else "")
+             + "From SFPUC's beach map, which this site checks every minute.")
+
+    sms_text = (f"{prefix}Beach alert: "
+                + "; ".join(f"{t['station_name']} — " + ("sewage discharge" if is_cso(t) else "posted for bacteria") for t in transitions)
+                + f". SFPUC: avoid water contact. {site}/")[:320]
 
     text_body = (
-        f"{prefix}SF Beach Water Quality Alert"
-        + (f" — {zone}" if zone else "")
-        + "\n\nNew events at your selected sites:\n"
-        + "\n".join(f"- {t['station_name']}: {_LINE_ADVICE.get(t['to'], _LINE_ADVICE['posted'])}"
-                    for t in transitions)
-        + f"\n\nLive map: {MAP_URL}\n\n"
-        + "Alerts are a community-science tool, not an official advisory. "
-        + "Posted signs and SFPUC or health-department notices always win.\n\n"
-        + "You subscribed to SF beach alerts (Surfrider SF Blue Water Task Force). "
-        + ('Reply "unsubscribe" to stop.' if unsub is None
+        subject + "\n\n"
+        + "\n".join(f"- {t['station_name']}: " + ("sewage discharge." if is_cso(t) else "posted for bacteria.") for t in transitions)
+        + "\n\nSFPUC's guidance: avoid water contact at a posted beach, and for 72 hours after a discharge or heavy rain.\n\n"
+        + f"Live status: {site}/\nSFPUC's map: {MAP_URL}\n\n"
+        + "Community science by Surfrider SF's Blue Water Task Force, not an official advisory; posted signs and notices from SFPUC or the health department take precedence.\n"
+        + ('Reply to this email with "unsubscribe" to stop alerts.' if unsub is None
            else f"Change your sites: {manage}\nUnsubscribe: {unsub}")
     )
 
     rows_html = "".join(
-        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
-        f'style="margin:0 0 12px;border:1px solid #dde5ee;border-left:4px solid {_SEV_COLOR[sev(t)]}'
-        ';border-radius:12px;"><tr>'
-        f'<td width="132" style="padding:0;line-height:0;"><img src="{THUMB_BASE}/'
-        f'{t["station_id"]}.jpg" alt="Map: {t["station_name"]}'
-        '" width="132" height="96" style="display:block;border:0;"></td>'
+        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 10px;border:2px solid '
+        f'{col(t)};border-radius:14px;"><tr>'
+        f'<td width="112" style="padding:0;line-height:0;"><img src="{site}/static/emailmaps/{t["station_id"]}'
+        '.jpg" alt="" width="112" height="82" style="display:block;border:0;border-radius:12px 0 0 12px;"></td>'
         '<td style="padding:10px 14px;vertical-align:middle;">'
         f'<div style="font-weight:700;font-size:15px;color:#26272a;">{t["station_name"]}</div>'
-        '<div style="font-size:12px;font-weight:700;letter-spacing:.06em;margin-top:3px;color:'
-        f'{_SEV_COLOR[sev(t)]};">{_SEV_LABEL[sev(t)]}'
-        "</div>"
+        '<div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-top:2px;color:'
+        + ('#b5310a;">Sewage discharge' if is_cso(t) else '#d4763a;">Posted for bacteria') + "</div>"
         '<div style="font-size:13px;color:#54576F;margin-top:3px;line-height:1.45;">'
-        f"{_SEV_ADVICE[sev(t)]}"
-        "</div></td></tr></table>"
+        + ("A combined-sewer discharge reported by SFPUC; the posting stays up about 72 hours after it ends." if is_cso(t)
+           else "The latest sample was over the state single-sample limit; the sign stays up until a clean resample.")
+        + "</div></td></tr></table>"
         for t in transitions
     )
 
-    zone_html = (
-        f'<div style="margin-top:6px;color:#cfe8f9;font-size:14px;font-weight:700;">Your zone: {zone}</div>'
-        if zone else ""
-    )
+    footer_sub = ('You subscribed to SF beach alerts. Reply to this email with &quot;unsubscribe&quot; to stop them.' if unsub is None
+                  else "You get this because you chose " + ("these beaches" if zone is None else f"the {zone} zone")
+                       + f' &middot; <a href="{manage}" style="color:#54576F;">Change your sites</a>'
+                       + f' &middot; <a href="{unsub}" style="color:#54576F;">Unsubscribe</a>')
 
     html_body = (
-        '<html><body style="margin:0;padding:24px;background:#E3EBF2;'
-        "font-family:Roboto,'Helvetica Neue',Arial,sans-serif;color:#26272a;\">"
+        "<html><body style=\"margin:0;padding:24px 16px;background:#E3EBF2;font-family:Roboto,'Helvetica Neue',Arial,sans-serif;color:#26272a;\">"
         '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">'
-        '<table role="presentation" cellpadding="0" cellspacing="0" '
-        'style="max-width:640px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;">'
-        '<tr><td style="background:#0072BC;padding:22px 24px;">'
-        f'<img src="{LOGO_URL}" alt="Blue Water Task Force" '
-        'width="150" style="display:block;border:0;">'
-        '<div style="color:rgba(255,255,255,.85);font-size:12px;font-weight:700;'
-        'letter-spacing:.12em;text-transform:uppercase;margin-top:12px;">Surfrider San Francisco</div>'
-        '<h1 style="margin:6px 0 0;color:#ffffff;font-size:24px;line-height:1.2;">'
-        f"{prefix}Beach Water Quality Alert</h1>"
-        f"{zone_html}"
+        '<table role="presentation" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">'
+        '<tr><td style="padding:0 6px 12px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr>'
+        f'<td style="padding:0 10px 0 0;line-height:0;"><img src="{site}/static/brand/bwtf_144x144.png" alt="" width="36" height="36" style="display:block;border:0;border-radius:9px;"></td>'
+        f'<td><div style="font-weight:900;font-size:17px;letter-spacing:.04em;text-transform:uppercase;color:#26272a;line-height:1.1;">{prefix}SF Beach Water Quality Alert</div>'
+        '<div style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#54576F;margin-top:2px;">Surfrider SF &middot; Blue Water Task Force</div></td>'
+        "</tr></table></td></tr>"
+        f'<tr><td style="background:#ffffff;border:2px solid {tone};border-radius:20px;padding:20px 22px 18px;">'
+        '<div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#54576F;">Beach alert'
+        + ("" if zone is None else f" &middot; {zone} zone") + "</div>"
+        f'<h1 style="margin:6px 0 0;font-size:26px;line-height:1.15;font-weight:900;letter-spacing:.01em;color:#26272a;">{headline}</h1>'
+        f'<p style="margin:8px 0 16px;color:#54576F;font-size:14px;line-height:1.5;">{facts}</p>'
+        + rows_html
+        + "<p style=\"margin:14px 0 0;font-size:13.5px;color:#26272a;line-height:1.5;\"><b>SFPUC's guidance:</b> avoid water contact at a posted beach, and for 72 hours after a discharge or heavy rain.</p>"
+        f'<p style="margin:16px 0 4px;"><a href="{site}/" style="display:inline-block;background:#0072BC;color:#ffffff;text-decoration:none;padding:11px 18px;border-radius:999px;font-weight:700;font-size:14px;">Live status</a></p>'
         "</td></tr>"
-        '<tr><td style="padding:20px 24px 0;">'
-        '<p style="margin:0 0 14px;color:#54576F;line-height:1.6;">New events at your selected sites. '
-        "Avoid water contact and check conditions before heading out.</p>"
-        f"{rows_html}"
-        '<p style="margin:18px 0 0;">'
-        f'<a href="{MAP_URL}" '
-        'style="display:inline-block;background:#0072BC;color:#ffffff;text-decoration:none;'
-        'padding:11px 18px;border-radius:999px;font-weight:700;font-size:14px;">View SFPUC Beach Map</a></p>'
-        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
-        'style="margin:18px 0 0;background:#E3EBF2;border-radius:12px;"><tr>'
-        '<td style="padding:12px 14px;font-size:12.5px;color:#54576F;line-height:1.5;">'
-        "Alerts are a community-science tool, not an official advisory. "
-        "Posted signs and SFPUC or health-department notices always win.</td></tr></table>"
-        '<p style="margin:16px 0 22px;font-size:12px;color:#8a93a3;line-height:1.5;">'
-        "You subscribed to SF beach alerts from Surfrider San Francisco&#39;s Blue Water Task Force. "
-        + ("Reply to this email with &quot;unsubscribe&quot; to stop alerts."
-           if unsub is None else
-           f'<a href="{manage}" style="color:#8a93a3;text-decoration:underline;">Change your sites</a>'
-           f' &middot; <a href="{unsub}" style="color:#8a93a3;text-decoration:underline;">Unsubscribe</a>')
-        + "</p>"
+        '<tr><td style="padding:14px 8px 0;font-size:12px;color:#54576F;line-height:1.55;">'
+        "Community science by Surfrider SF's Blue Water Task Force, not an official advisory; posted signs and notices from SFPUC or the health department take precedence. "
+        f'SFPUC\'s own map: <a href="{MAP_URL}" style="color:#54576F;">webapps.sfpuc.org</a>.<br>{footer_sub}'
         "</td></tr></table></td></tr></table></body></html>"
     )
-    return {"subject": subject, "sms_text": sms_text,
-            "text_body": text_body, "html_body": html_body}
+    return {"subject": subject, "sms_text": sms_text, "text_body": text_body, "html_body": html_body}
