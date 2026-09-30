@@ -11,7 +11,7 @@
 <style>
   .board{background:#fff;border-radius:var(--r-lg);padding:24px 26px;margin:0;border:2px solid var(--line)}   /* the card's border carries the day's grade */
   .board.tone-ok{border-color:var(--safe)}.board.tone-warn{border-color:var(--posted)}.board.tone-danger{border-color:var(--discharge)}
-  .board .grid{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:22px;align-items:stretch}
+  .board .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(420px,44%);gap:22px;align-items:stretch}   /* the map takes its share of the wider frame */
   .eyebrow{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
   .board h1{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:42px;line-height:1;margin:8px 0 6px;letter-spacing:.02em;color:var(--ink)}
   .board h1 em{font-style:normal}

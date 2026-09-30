@@ -24,8 +24,7 @@
    One palette, one radius scale, one set of status colours. Pages should read
    these instead of re-declaring hex values. */
 :root{--brand:#0072BC;--brand-deep:#005a96;--sky:#85BFDF;--ink:#26272A;--muted:#54576F;--faint:#8a949b;--line:#d9e4e8;--sand:#E3EBF2;--sand2:#eef3f7;
-      --safe:#237059;--caution:#c99a12;--posted:#d4763a;--discharge:#b5310a;--unknown:#98a3ab;--r:14px;--r-lg:20px;--page-w:1100px}
-body.wide{--page-w:1280px}   /* data pages (tables, charts): header, sub-tabs, content and footer all follow */
+      --safe:#237059;--caution:#c99a12;--posted:#d4763a;--discharge:#b5310a;--unknown:#98a3ab;--r:14px;--r-lg:20px;--page-w:1280px}   /* one frame width on every page — header, sub-tabs, content and footer (Chase, 2026-09-29: no jumping between pages) */
 
 /* ── Kit: page basics and the shared controls (redesign, 2026-09-29) ─────────────
    brand.css loads BEFORE each page's own <style>, so a page may still specialise a

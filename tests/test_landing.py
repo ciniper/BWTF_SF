@@ -2,7 +2,7 @@
 with a static fact that a live one replaces when its source answers in time.
 Offline: stubbed status client, facts injected or disabled."""
 import pathlib
-import sys
+import re, sys
 import time
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -157,21 +157,19 @@ def test_render_landing_offline_shows_hubs_and_hood():
     assert "Data Tools Dashboard" not in html and 'id="water"' in html and 'id="record"' in html                                          # hub anchors the nav points at
 
 
-def test_data_pages_widen_the_whole_frame_and_the_board_pages_stay_narrow():
-    """One page-width variable drives header, sub-tabs, content and footer; the data pages
-    (tables, charts) opt into the wider column with body.wide (Chase, 2026-09-29)."""
+def test_one_frame_width_on_every_page():
+    """One page-width variable drives header, sub-tabs, content and footer, and no page
+    overrides it — the frame must not jump between pages (Chase, 2026-09-29)."""
     css = (ROOT / "app/static/brand.css").read_text()
-    assert "--page-w:1100px" in css and "body.wide{--page-w:1280px}" in css
+    assert "--page-w:1280px" in css and "body.wide" not in css
     for sel in (".wrap{", ".topbar .in{", ".site-footer .in{"):
         rule = css[css.index(sel):]; rule = rule[:rule.index("}")]
         assert "max-width:var(--page-w)" in rule, sel
-    wide = {"graphs", "samples", "comparison", "discharges", "postings", "site_analysis", "cso_history"}
-    for name in wide:
-        assert '<body class="wide">' in (ROOT / f"app/templates/{name}/page.html").read_text(), name
-    for name in ("landing.html", "today/page.html", "about/index.html", "forecast/page.html", "signup/page.html"):
-        t = (ROOT / "app/templates" / name).read_text()
-        assert 'class="wide"' not in t and "max-width:1100px" not in t, name          # the board and prose pages read the variable, at its default
-
+    for f in sorted((ROOT / "app/templates").rglob("*.html")):
+        t = f.read_text()
+        assert 'class="wide"' not in t and "max-width:1100px" not in t and "max-width:1040px" not in t, f.name
+        if f.parent.name not in ("alerts", "manage", "unsubscribe") and f.name not in ("records.html", "architecture.html"):   # form cards and the two long reads keep a narrower column inside the same frame
+            assert not re.search(r"\.wrap\{max-width:\d+px", t), f.name
 
 if __name__ == "__main__":
     failures = 0
