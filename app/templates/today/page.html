@@ -28,8 +28,8 @@
 <div class="wrap">
   {{ board_section(board, conditions, extras=true) }}
   <p class="foot-note">This is the Main page's board with room to experiment. The city's statuses come from SFPUC's beach map, checked every minute; the overflow risk from the <a href="/forecast">CSO Forecast</a>. Surfrider's results are the volunteers' latest Enterococcus reading per site — see <a href="/samples?source=bwtf&scope=all">every sample</a> or <a href="/graphs">the graphs</a>. Updated {{ generated }}.</p>
-  {{ footer() }}
 </div>
+{{ footer() }}
 {{ tabbar() }}
 {{ board_script(board) }}
 </body></html>

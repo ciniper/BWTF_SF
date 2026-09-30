@@ -1,6 +1,7 @@
 {#- The shared page frame (redesign, 2026-09-29): a two-tier top bar (Main + the three
     hubs; inside a hub, its pages as a second row of tabs), a compact page head that
-    replaces the tall blue heroes, the site footer, and a phone tab bar. Styles live in app/static/brand.css; the nav model
+    replaces the tall blue heroes, the site footer as a full-bleed band (place it OUTSIDE the page's
+    .wrap), and a phone tab bar. Styles live in app/static/brand.css; the nav model
     (NAV) is a Jinja global built from app/landing.py's HUBS.
     Import with context so `request` is in scope:
       {% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
@@ -47,7 +48,7 @@
 {%- endmacro %}
 
 {% macro footer() -%}
-<footer class="site-footer">
+<footer class="site-footer"><div class="in">
   <a class="footer-logo" href="https://sf.surfrider.org/" target="_blank" rel="noopener" aria-label="Surfrider Foundation San Francisco"><img src="{{ SURFRIDER_LOGO_URL }}" alt="Surfrider Foundation"></a>
   <p class="hotline"><span class="with-ic"><svg class="ic"><use href="#i-phone"/></svg> Beach Hotline: 1-877-SFBEACH (1-877-732-3224) or 415-242-2214</span></p>
   <p class="advisory"><span class="with-ic"><svg class="ic"><use href="#i-triangle-alert"/></svg> Avoid water contact during and 72 hours after rain events</span></p>
@@ -60,7 +61,7 @@
   </p>
   <p class="sources">Community science by Surfrider SF's Blue Water Task Force, not an official advisory. Sources: SFPUC beach map, SF Gov Open Data, Surfrider BWTF, NWS, NOAA.
     · <a href="/api/build" title="{{ build.message if build else '' }}">{{ build.label if build else '' }}</a></p>
-</footer>
+</div></footer>
 {%- endmacro %}
 
 {% macro tabbar() -%}

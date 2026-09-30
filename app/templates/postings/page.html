@@ -210,6 +210,6 @@ fetch("/postings/api/advisories").then(r => r.json()).then(d => {
 }).catch(e => { document.getElementById("loading").textContent = "Could not load the posting record: " + e; });
 </script>
 <script src="/static/tables.js" defer></script>
-<div class="wrap wrap-foot">{{ footer() }}</div>
+{{ footer() }}
 {{ tabbar() }}
 </body></html>

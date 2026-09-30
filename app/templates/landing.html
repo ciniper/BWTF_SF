@@ -30,8 +30,7 @@
   .rows a:hover{color:var(--brand)}
   .rows .name{font-weight:600;font-size:14px}
   .rows .ic.lock{width:12px;height:12px;color:var(--faint);vertical-align:-1px}
-  .rows .fact{color:var(--faint);font-size:13px;text-align:right;max-width:55%}
-  .rows .fact.live{color:var(--brand);font-weight:700}
+  .rows .fact{color:var(--muted);font-size:13px;text-align:right;max-width:55%}   /* one grey for every fact, live or static (Chase, 2026-09-29) */
   .rows .sub{display:block;padding:0 2px 8px 16px;margin-top:-4px;border-top:0;font-size:13px;color:var(--muted);font-weight:600}
   .cta{display:block;margin:10px 0 6px;background:var(--brand);color:#fff;text-align:center;border-radius:999px;padding:10px 14px;font-weight:700;font-size:14px;text-decoration:none}
   .cta:hover{background:var(--brand-deep)}
@@ -73,8 +72,8 @@
     <span class="stamp">{{ build.label if build else '' }} · updated {{ generated }}</span>
   </div>
 
-  {{ footer() }}
 </div>
+{{ footer() }}
 {{ tabbar() }}
 {{ board_script(board) }}
 </body></html>

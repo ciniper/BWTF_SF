@@ -192,6 +192,6 @@ $("src").addEventListener("click", e => { const b = e.target.closest(".seg-btn")
 document.querySelectorAll(".preset[data-days]").forEach(btn => btn.addEventListener("click", () => { const end = new Date().toISOString().slice(0, 10); S.end = end; S.start = btn.dataset.days ? new Date(Date.now() - btn.dataset.days * DAY).toISOString().slice(0, 10) : FLOOR; $("start").value = S.start; $("end").value = S.end; markPreset(); load(); }));   // only the range presets: the Change site pill shares the class
 load();
 </script>
-<div class="wrap wrap-foot">{{ footer() }}</div>
+{{ footer() }}
 {{ tabbar() }}
 </body></html>
