@@ -210,10 +210,19 @@ def icon_tile(x, y, name, size=40):
             f'<use class="icn" href="#i-{name}" x="{x + 8}" y="{y + 8}" width="{size - 16}" height="{size - 16}"/>')
 
 
+def _fit(text: str, avail: float, size: float, per_char: float, floor: float) -> float:
+    """A font size at which `text` fits in `avail` px (rough width = chars × per_char × size), never below `floor`."""
+    need = len(text) * per_char * size
+    return size if need <= avail else max(floor, size * avail / need)
+
+
 def node(x, y, w, h, icon, title, sub, hub=False):
     tile = logo_tile(x + 10, y + (h - 40) / 2, icon[5:]) if icon.startswith("logo:") else icon_tile(x + 10, y + (h - 40) / 2, icon)
+    avail = w - 60 - 10
+    ts, ss = _fit(title, avail, 16, 0.58, 12), _fit(sub, avail, 13, 0.52, 10.5)
     return (f'<rect class="box{" hub" if hub else ""}" x="{x}" y="{y}" width="{w}" height="{h}" rx="14"/>{tile}'
-            f'<text class="t" x="{x + 60}" y="{y + h / 2 - 3}">{esc(title)}</text><text class="s" x="{x + 60}" y="{y + h / 2 + 14}">{esc(sub)}</text>')
+            f'<text class="t" style="font-size:{ts:.1f}px" x="{x + 60}" y="{y + h / 2 - 3}">{esc(title)}</text>'
+            f'<text class="s" style="font-size:{ss:.1f}px" x="{x + 60}" y="{y + h / 2 + 14}">{esc(sub)}</text>')
 
 
 def pipeline_svg(sv: dict, wx_label: str, n_events: int = 0, n_sample_days: int = 0) -> str:
@@ -239,7 +248,7 @@ def pipeline_svg(sv: dict, wx_label: str, n_events: int = 0, n_sample_days: int 
     a.append(node(20, 452, 250, 56, "logo:logos/sfpuc.png", "SFPUC beach map", "flags · postings, every minute"))
     a.append(node(20, 516, 250, 56, "logo:logos/sf-city-seal.png", "City lab results, new", "this week's samples (DataSF)"))
     # the model row
-    a.append(node(320, 298, 190, 56, "gauge", "19 numbers a day", "totals · lags · peaks · dryness", hub=True))
+    a.append(node(320, 298, 190, 56, "gauge", "19 rain inputs a day", "totals · lags · peaks · dryness", hub=True))
     a.append(node(550, 298, 200, 56, "chart", "Stage 1 · 4 basins", "chance the sewers overflow", hub=True))
     a.append(node(790, 298, 210, 56, "waves", "Stage 2 · 6 beach groups", "how long, and which beaches", hub=True))
     a.append(node(790, 452, 210, 56, "satellite-dish", f"Live corrections {LR.VERSION.replace('live_', '')}", "observations override", hub=True))
@@ -257,13 +266,13 @@ def pipeline_svg(sv: dict, wx_label: str, n_events: int = 0, n_sample_days: int 
         a.append(f'<circle class="dot" cx="{x}" cy="{y}" r="3.5"/>')
 
     # fitted on: the past samples teach stage 2 how long beaches stay dirty; the filed overflows teach stage 1 which rain overflows
-    arrow("M270,80 H895 V298", "teaches stage 2 how long a beach stays dirty after an overflow", 560, 72, cls="fit", marker="pg")
-    arrow("M270,144 H650 V298", "teaches stage 1 which rain makes the sewers overflow", 455, 136, cls="fit", marker="pg")
+    arrow("M270,80 H895 V298", "teaches stage 2 how long a beach stays dirty", 580, 72, cls="fit", marker="pg")
+    arrow("M270,144 H650 V298", "teaches stage 1 which rain overflows", 460, 136, cls="fit", marker="pg")
     # rain: three sources become one hourly series, then the day's numbers
     a.append('<path class="flow" d="M270,262 H295 V390 H270"/>'); dot(295, 326)
     arrow("M295,326 H320"); a.append('<text class="al" x="302" y="412" text-anchor="start">one hourly rain series</text>')
-    arrow("M510,326 H550", "19 numbers", 530, 290)
-    arrow("M750,326 H790", "P(overflow)", 770, 290)
+    arrow("M510,326 H550")
+    arrow("M750,326 H790")
     arrow("M895,354 V452", "% per beach group", 903, 408, "start")
     # observations into the live corrections
     a.append('<path class="flow" d="M270,544 H295 V480 H270"/>'); dot(295, 480)
@@ -279,7 +288,7 @@ def pipeline_svg(sv: dict, wx_label: str, n_events: int = 0, n_sample_days: int 
     steps = [
         ("logo:logos/water-boards.png", "Fitted once", f"{n_events:,} filed overflows taught stage 1 which rain overflows; {n_sample_days:,} sampled days taught stage 2 how long a beach stays dirty."),
         ("logo:logos/noaa.svg", "Rain in, live", f"Two NOAA gauges for every past day, the SFO gauge for today's hours, the {wx_label} model for the hours ahead: one hourly series."),
-        ("gauge", "19 numbers a day", "Totals, lags, peaks, dryness."),
+        ("gauge", "19 rain inputs a day", "Totals, lags, peaks, dryness."),
         ("chart", "Stage 1 · 4 basins", "The chance the sewers overflow today."),
         ("waves", "Stage 2 · 6 beach groups", "How long, and which beaches: a percentage from the last eight days."),
         ("satellite-dish", f"Live corrections {LR.VERSION.replace('live_', '')}", "The beach map's flags and postings and this week's samples override the model where they have something to say."),
@@ -563,7 +572,7 @@ def report_works(S: dict, reg: dict, wx_model: str) -> str:
 <section id="inputs"><h2>What comes in</h2><div class="grid3">{inputs}</div></section>
 
 <section id="stage1"><h2>Stage 1 · will the sewers overflow?</h2>
-<p class="lead">One model per combined-sewer basin, trained on the days SFPUC filed an overflow. Each is a weights model: the 19 numbers, plus bends at a few rain amounts so the response can steepen, standardised, then an L2 logistic fit. Every basin reads the gauge that predicted it best on the holdout. The two charts are the served models answering "how likely is an overflow today if this much falls?", once after a dry month and once after a wet start to the week.</p>
+<p class="lead"><b>Inputs, weights, output.</b> The 19 numbers are the <b>inputs</b>: what goes in each day, computed from the rain. The <b>weights</b> are what the fit learned, 38 per basin, fixed since training. The <b>output</b> is one number per basin per day: the chance the sewers overflow. One model per combined-sewer basin, trained on the days SFPUC filed an overflow. Each is a weights model: the 19 inputs, plus bends at a few rain amounts so the response can steepen, standardised, then an L2 logistic fit. Every basin reads the gauge that predicted it best on the holdout. The two charts are the served models answering "how likely is an overflow today if this much falls?", once after a dry month and once after a wet start to the week.</p>
 <div class="grid2"><div class="card">{curves_dry}</div><div class="card">{curves_wet}</div></div>
 <div class="card wide">{facts}</div>
 <h3>What each basin weighs</h3>
@@ -791,7 +800,7 @@ def report_graded(S: dict) -> str:
 
 
 CSS = """
-.wrap{max-width:1280px;margin:0 auto;padding:24px}
+.wrap{max-width:1440px;margin:0 auto;padding:24px}
 .rh{display:flex;gap:18px;align-items:flex-start;margin-bottom:8px}.rh .mark{width:56px;height:56px;border-radius:14px}
 h1{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:40px;letter-spacing:.04em;margin:0 0 6px;color:#26272a}
 h2{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:28px;letter-spacing:.05em;margin:28px 0 8px;color:#26272a}
