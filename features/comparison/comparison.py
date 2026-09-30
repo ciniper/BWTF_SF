@@ -44,7 +44,7 @@ BWTF_ONLY_SITES = {"Bayview Hunters Point": "east"}
 
 # The history graph's default window (Chase, 2026-09-27: a year, selectable back
 # to the dataset floor). The sample viewer shares it.
-DEFAULT_DAYS = 365
+DEFAULT_DAYS = 91   # the last three months: every range on the site opens there (Chase, 2026-09-30) — never the full record
 
 # Selectable analytes for these sites. dict key = SF Gov `analyte` code; each maps
 # to the BWTF substance name, a display label, and the CA single-sample maximum.

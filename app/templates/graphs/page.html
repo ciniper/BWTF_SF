@@ -14,20 +14,12 @@
   .legend i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:6px;border-radius:2px}
   .legend i.dash{background:repeating-linear-gradient(90deg,currentColor 0 4px,transparent 4px 7px);height:2px}
   .legend i.dot{width:10px;height:10px;border-radius:50%}
-  .tiles{display:flex;flex-direction:column;gap:10px;margin:0 0 14px}
-  .site-bar{display:flex;align-items:center;gap:10px;margin:0 0 12px;flex-wrap:wrap} .site-bar b{font-size:14px}
-  .tiles{display:none} .tiles.open{display:flex}   /* the chosen site and a Change site button; the tiles open on demand (Chase: at every width) */
-  .tile-group-name{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#54576F;font-weight:700;margin:0 0 6px}
-  .tile-row{display:flex;flex-wrap:wrap;gap:8px}
-  .tile{padding:8px 12px;border-radius:12px;border:2px solid #d9e4e8;background:#fff;color:#26272a;cursor:pointer;font:700 13px 'Roboto','Segoe UI',Arial,sans-serif;text-align:left;line-height:1.25}
-  .tile:hover{border-color:#85BFDF}
-  .tile.active{border-color:#0072BC;background:#0072BC;color:#fff}
-  .tile[hidden],.tile-group[hidden]{display:none}
+  /* site picker (bar, pill, tiles): brand.css */
   .subpage{font-size:13px;color:#54576F;margin:0 0 12px} .subpage a{font-weight:700}
 </style>
 </head>
 <body>
-{% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
+{% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}{% from "_site_picker.html" import site_picker %}
 {{ topbar() }}
 <div class="wrap">
   {% call page_head("Water Quality Graphs", "Any site, any window, any indicator: the city's lab and Surfrider's volunteers on one axis.", "water") %}
@@ -55,14 +47,11 @@
       <button class="seg-btn" data-k="bar" title="One bar per sample day, a day's bars side by side">Bars</button>
     </div>
   </div>
-  <div class="site-bar" id="siteBar"><span class="ctl-label">Site</span><b id="siteName">—</b><button class="preset" id="siteChange" type="button" aria-controls="tiles" aria-expanded="false">Change site</button></div>
-  <div class="tiles" id="tiles" aria-label="Site">
-    {% for group, items in site_groups %}<div class="tile-group" data-group="{{ group }}"><div class="tile-group-name">{{ group }}</div><div class="tile-row">{% for s in items %}<button class="tile" type="button" data-key="{{ s.key }}" data-name="{{ s.name }}" data-city="{{ 1 if s.city else 0 }}" data-bwtf="{{ 1 if s.bwtf else 0 }}">{{ s.name }}</button>{% endfor %}</div></div>{% endfor %}
-  </div>
+  {{ site_picker(site_groups, cross=("Samples →", "toSamples", "/samples"), first_site=first_site) }}
   <div class="controls">
     <span class="ctl-label">Range</span>
     <input type="date" id="start" min="{{ dataset_floor }}" aria-label="Start date"> <span style="color:#54576F">→</span> <input type="date" id="end" aria-label="End date">
-    <button class="preset" data-days="91">Last 3 mo</button><button class="preset" data-days="365">Last 12 mo</button><button class="preset" data-days="730">Last 2 yrs</button><button class="preset" data-days="">Full record</button>
+    <button class="preset" data-days="91">Last 3 mo</button><button class="preset" data-days="365">Last 12 mo</button><button class="preset" data-days="1096">Last 3 yrs</button><button class="preset" data-days="">Full record</button>
   </div>
   <div class="board">
     <h2 id="title">Loading…</h2>
@@ -78,6 +67,7 @@
 </div>
 <script src="/static/charts.js"></script>
 <script src="/static/sample_popover.js" defer></script>
+<script src="/static/site_picker.js"></script>
 <script>
 const SITES = {{ sites|tojson }};
 const FLOOR = "{{ dataset_floor }}";
@@ -97,27 +87,15 @@ const S = { site: params.get("site") || "", src: ["city", "bwtf", "both", "all"]
 let DATA = null, c1 = null, c2 = null, seq = 0;
 const $ = id => document.getElementById(id);
 const siteOf = k => SITES.find(s => s.key === k) || {};
-const tiles = () => [...document.querySelectorAll("#tiles .tile")];
 const tileFits = t => S.src === "all" ? true : S.src === "both" ? (t.dataset.city === "1" && t.dataset.bwtf === "1") : S.src === "city" ? t.dataset.city === "1" : t.dataset.bwtf === "1";
-function filterTiles() {   // the Source choice hides sites that source never sampled; a hidden current site falls back to the first shown
-  tiles().forEach(t => { t.hidden = !tileFits(t); });
-  document.querySelectorAll("#tiles .tile-group").forEach(g => { g.hidden = ![...g.querySelectorAll(".tile")].some(t => !t.hidden); });
-  const shown = tiles().filter(t => !t.hidden);
-  if (!shown.some(t => t.dataset.key === S.site)) {   // prefer a beach both programs sample, so a fresh visit opens on a well-sampled site
-    const pick = shown.find(t => t.dataset.bwtf === "1" && t.dataset.city === "1") || shown[0];
-    S.site = pick ? pick.dataset.key : "";
-  }
-  tiles().forEach(t => t.classList.toggle("active", t.dataset.key === S.site));
-  $("siteName").textContent = siteOf(S.site).name || "—";
-}
-function showTiles(open) {   // the tile block opens from the Change site button and closes on a pick
-  $("tiles").classList.toggle("open", open); $("siteChange").setAttribute("aria-expanded", String(open)); $("siteChange").textContent = open ? "Hide sites" : "Change site";
-}
+function filterTiles() { S.site = SitePicker.filter(tileFits); }   // the Source choice hides sites that source never sampled; a hidden current site falls back to a beach both programs sample
 $("analyte").value = S.analyte; $("start").value = S.start; $("end").value = S.end; markPreset();
 document.querySelectorAll("#src .seg-btn").forEach(b => b.classList.toggle("active", b.dataset.s === S.src));
 document.querySelectorAll("#kind .seg-btn").forEach(b => b.classList.toggle("active", b.dataset.k === S.kind));
+SitePicker.init({ key: S.site, onPick: key => { S.site = key; load(); } });
 filterTiles();
-function syncUrl() { const u = new URL(location.href); u.search = ""; u.searchParams.set("site", S.site); if (S.analyte !== "ENTERO") u.searchParams.set("analyte", S.analyte); if (S.src !== "all") u.searchParams.set("source", S.src); if (S.kind !== "line") u.searchParams.set("chart", S.kind); if (S.start) u.searchParams.set("start", S.start); if (S.end) u.searchParams.set("end", S.end); history.replaceState(null, "", u); }
+function syncUrl() { const u = new URL(location.href); u.search = ""; u.searchParams.set("site", S.site); if (S.analyte !== "ENTERO") u.searchParams.set("analyte", S.analyte); if (S.src !== "all") u.searchParams.set("source", S.src); if (S.kind !== "line") u.searchParams.set("chart", S.kind); if (S.start) u.searchParams.set("start", S.start); if (S.end) u.searchParams.set("end", S.end); history.replaceState(null, "", u);
+  const q = new URLSearchParams({ site: S.site }); if (S.src !== "all") q.set("source", S.src); if ($("start").value) q.set("start", $("start").value); if ($("end").value) q.set("end", $("end").value); $("toSamples").href = "/samples?" + q; }   // the Samples link follows site, source and the range shown
 function load() {
   const my = ++seq; filterTiles(); if (!S.site) { $("title").textContent = "No site for this source"; return; }
   $("title").textContent = siteOf(S.site).name + " — loading…"; syncUrl();
@@ -183,8 +161,6 @@ function render() {
   }
   syncUrl();
 }
-$("tiles").addEventListener("click", e => { const t = e.target.closest(".tile"); if (!t || t.hidden) return; showTiles(false); if (t.dataset.key === S.site) return; S.site = t.dataset.key; load(); });
-$("siteChange").addEventListener("click", () => showTiles(!$("tiles").classList.contains("open")));
 $("analyte").addEventListener("change", e => { S.analyte = e.target.value; if (DATA) render(); });
 $("kind").addEventListener("click", e => { const b = e.target.closest(".seg-btn"); if (!b || b.dataset.k === S.kind) return; document.querySelectorAll("#kind .seg-btn").forEach(x => x.classList.toggle("active", x === b)); S.kind = b.dataset.k; if (DATA) render(); });
 $("src").addEventListener("click", e => { const b = e.target.closest(".seg-btn"); if (!b) return; document.querySelectorAll("#src .seg-btn").forEach(x => x.classList.toggle("active", x === b)); S.src = b.dataset.s; const before = S.site; filterTiles(); if (S.site !== before || !DATA) load(); else render(); });

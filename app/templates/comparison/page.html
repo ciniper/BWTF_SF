@@ -96,7 +96,7 @@
     <input type="date" id="h-end" aria-label="Graph end date">
     <button class="v-preset h-preset" data-days="91">Last 3 mo</button>
     <button class="v-preset h-preset" data-days="365">Last 12 mo</button>
-    <button class="v-preset h-preset" data-days="730">Last 2 yrs</button>
+    <button class="v-preset h-preset" data-days="1096">Last 3 yrs</button>
     <button class="v-preset h-preset" data-days="">Full record</button>
   </div>
 
@@ -148,7 +148,7 @@
 <script>
 var FLOOR = "{{ dataset_floor }}", ANALYTE = "{{ analyte_code }}";
 var isoDaysAgo = function (days, end) { var e = end ? new Date(end) : new Date(); return new Date(e - days * 864e5).toISOString().slice(0, 10); };
-var HIST = { start: isoDaysAgo(365), end: new Date().toISOString().slice(0, 10) };
+var HIST = { start: isoDaysAgo(91), end: new Date().toISOString().slice(0, 10) };
 (function () {
   var hs = document.getElementById("h-start"), he = document.getElementById("h-end");
   hs.value = HIST.start; he.value = HIST.end; he.max = HIST.end;

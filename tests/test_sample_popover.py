@@ -67,7 +67,8 @@ def test_both_pages_include_the_shared_script_and_the_route_exists():
     assert "data-sample-bwtf" in js and "{ bwtf: opts.bwtf }" in js and 'd.source === "bwtf"' in js and "sp-field" in js
     assert 'one("bwtf")' in (ROOT / "features/comparison/page.py").read_text() and "build_bwtf_sample_day" in (ROOT / "features/comparison/page.py").read_text()
     assert "bwtf: DATA.bwtf_name" in (ROOT / "app/templates/graphs/page.html").read_text() and "bwtf: d.bwtf_name" in (ROOT / "app/templates/comparison/page.html").read_text()
-    assert 'data-sample-bwtf="' in (ROOT / "app/templates/samples/page.html").read_text()
+    smp = (ROOT / "app/templates/samples/page.html").read_text()
+    assert "{ bwtf: r.site_key, name: r.site, date: r.date }" in smp and "{ station: r.site_key, name: r.site, date: r.date }" in smp   # a Samples row opens that day (Chase, 2026-09-30)
     for tpl in ("app/templates/graphs/page.html", "app/templates/samples/page.html", "app/templates/comparison/page.html"):
         assert 'data-days="91">Last 3 mo<' in (ROOT / tpl).read_text(), tpl            # the three-month preset on every graph window
     forecast_tpl = (ROOT / "app/templates/forecast/page.html").read_text()

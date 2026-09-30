@@ -280,15 +280,15 @@ def test_source_comparison_page_renders_the_lab_sites_only_with_the_bacteria_sel
     assert "/static/charts.js" in h and 'id="hist-modal"' in h and "/api/site-series?" in h and "chart.umd.js" not in h
 
 
-def test_default_range_is_the_last_year_and_bad_input_falls_back():
+def test_default_range_is_the_last_three_months_and_bad_input_falls_back():
     s, e = S.parse_range("", "")
-    assert (e - s).days == S.DEFAULT_DAYS == 365 and e.date() == datetime.now().date()
+    assert (e - s).days == S.DEFAULT_DAYS == 91 and e.date() == datetime.now().date()   # three months, never the full record
     s, e = S.parse_range("2021-01-01", "2021-12-31")
     assert (s.year, e.month, e.day) == (2021, 12, 31)
-    s, e = S.parse_range("2025-01-01", "2024-01-01")   # reversed → last year before the end
-    assert e == datetime(2024, 1, 1) and s == e - timedelta(days=365)
+    s, e = S.parse_range("2025-01-01", "2024-01-01")   # reversed → the default window before the end
+    assert e == datetime(2024, 1, 1) and s == e - timedelta(days=S.DEFAULT_DAYS)
     s, e = S.parse_range("garbage", "2024-06-01")
-    assert e == datetime(2024, 6, 1) and s == e - timedelta(days=365)
+    assert e == datetime(2024, 6, 1) and s == e - timedelta(days=S.DEFAULT_DAYS)
 
 
 def test_sample_dates_list_every_day_a_site_was_sampled_for_the_popover_arrows():

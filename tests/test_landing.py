@@ -55,7 +55,8 @@ def test_every_feature_page_sits_in_exactly_one_hub_and_every_link_resolves():
         assert ".preset.active" in (ROOT / "app/static/brand.css").read_text() and "function markPreset" in g            # a chosen date-range preset lights up (kit CSS lives in brand.css)
         assert 'id="kind"' in g and 'data-k="line"' in g and 'data-k="bar"' in g and "CH.barSeries : CH.seriesChart" in g   # the Chart choice: lines or bars
         assert 'querySelectorAll(".preset[data-days]")' in g and 'querySelectorAll(".preset")' not in g   # the Change site pill must not act as a range preset
-        assert 'id="siteBar"' in g and 'id="siteChange"' in g and ".tiles{display:none} .tiles.open{display:flex}" in g and "@media (max-width:640px)" not in g   # tiles collapse to the chosen site at every width
+        kit = (ROOT / "app/static/brand.css").read_text()
+        assert 'id="siteBar"' in g and 'id="siteChange"' in g and ".tiles{display:none;" in kit and ".tiles.open{display:flex}" in kit and "@media (max-width:640px)" not in g   # tiles collapse to the chosen site at every width (picker styles live in the kit)
         assert 'id="view"' not in g and "<small>" not in g.split('id="tiles"')[1].split('id="start"')[0]          # no view buttons, plain tiles
         assert [m for m in ("Ocean Beach", "Baker &amp; China Beach", "North Beaches", "East Beaches") if m in g] == ["Ocean Beach", "Baker &amp; China Beach", "North Beaches", "East Beaches"] and "Surfrider only" not in g
         seg = lambda i: g.split('id="' + i + '"')[1].split("</div>")[0].count('class="seg-btn')  # noqa: E731
