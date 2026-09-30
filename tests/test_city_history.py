@@ -50,7 +50,8 @@ def test_history_rows_come_in_datasf_shape_and_stop_at_the_floor():
     assert {r["analyte"] for r in rows} == {"ENTERO", "COLI_E", "COLI_TOTAL"}     # E. coli, not fecal coliform, in those years
     assert H.records(["OCEAN#15_SL"], "2001-01-01", "2001-12-31", ["ENTERO"]) == []   # Enterococcus starts Jul 2002
     seam = H.records(None, "2020-07-20", "2020-08-30")
-    assert seam and max(r["sample_date"][:10] for r in seam) == H.HISTORY_END < DATASET_FLOOR   # DataSF owns 2020-07-27 on
+    last = max(r["sample_date"][:10] for r in seam)
+    assert seam and last <= H.HISTORY_END < DATASET_FLOOR and last == "2020-07-20"   # the last round before DataSF owns 2020-07-27 on
     assert H.records(None, DATASET_FLOOR, "2021-01-01") == [] and not H.covers(DATASET_FLOOR) and H.covers("2019-12-31")
     prov = H.provenance()
     assert prov["rows"] > 60000 and prov["entero_from"] == "2002-07-01" and prov["datasf_from"] == DATASET_FLOOR

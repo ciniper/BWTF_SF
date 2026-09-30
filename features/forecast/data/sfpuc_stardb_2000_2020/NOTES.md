@@ -30,8 +30,11 @@ results, 3,312 sample days, 27,088 station-days, 4,602 exceedances.**
 ## What is in the data
 
 - **Analytes.** Total coliform throughout (27,112 results). **Enterococcus and E. coli start
-  2002-07-01** (16,731 and 16,730) — before that only total coliform was run, which is why
-  2000–2002 show almost no exceedances (0.4–4.8% of results vs 8–12% later). One fecal
+  2002-07-01 at the bay stations and 2003-10-02 on the ocean beaches** (Pacheco, Vicente,
+  Fort Funston: Dec 2003; 16,731 and 16,730 results) — before that only total coliform was
+  run, which is why 2000–2002 show almost no exceedances (0.4–4.8% of results vs 8–12% later).
+  Stations added later start complete: Crissy Field East Apr 2008, Islais Creek and Mission
+  Creek Nov 2013. One fecal
   coliform result. DataSF from Aug 2020 reports fecal coliform (`COLI_FECAL`) where this
   export has E. coli; the standards module carries both limits.
 - **Methods.** Membrane filtration (CFU/100 mL, 10,383 results, to ~2003), then Quantitray /
@@ -66,7 +69,18 @@ follow-up episodes, 99% in Oct–Apr — the period CIWQS has no Oceanside per-e
 days; a discharge with no follow-up sampling leaves no trace; the count of episodes per season
 can be checked against the monthly CSD counts in the scanned Oceanside cover letters.
 
-## Not yet used by the site (2026-09-29)
+## How the site uses it (2026-09-29)
+
+`shared/city_history.py` serves these rows in DataSF's record shape for any window
+that starts before 2020-07-27; `features/comparison/comparison.fetch_city_records`
+(Samples page, Graphs, sample popover) and `features/site_analysis/page._fetch_rows`
+(Site Report Card) splice them ahead of the API rows. E. coli became a fourth indicator
+on those pages because it is what the city measured in place of fecal coliform until
+August 2020; the Report Card's "routine" flag became a per-year rate so the three
+after-discharge stations do not read as routine over 26 years. The forecast does not
+read it yet.
+
+## Still open for the forecast
 
 Candidates, in rough order of value: (1) the samples ruler and the stage 2 persistence
 evidence get 2000–2020 sample outcomes after the Bayside discharge days of the legacy record

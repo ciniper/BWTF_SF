@@ -17,7 +17,9 @@ API rows. History rows carry ``"history": True`` so a page can label them.
 
 What a page should know about the older years: from July 2002 to July 2020
 the city ran **E. coli** (``COLI_E``) where it now runs fecal coliform;
-Enterococcus and E. coli begin 2002-07-01 (only total coliform before that);
+Enterococcus and E. coli begin 2002-07-01 at the bay stations and 2003-10-02
+on the ocean beaches (Pacheco, Vicente and Fort Funston Dec 2003) — only
+total coliform before that;
 the first years are membrane filtration (CFU/100 mL) rather than Quantitray
 (MPN/100 mL) — both are counts per 100 mL and graded by the same limits.
 """
@@ -36,7 +38,8 @@ HISTORY_CSV = REPO / "features" / "forecast" / "data" / "sfpuc_stardb_2000_2020"
     "sfpuc_beach_bacteria_2000-01_2020-07_normalized.csv"
 HISTORY_FLOOR = "2000-01-03"   # first sample day in the export
 HISTORY_END = "2020-07-26"     # the export also holds 2020-07-27; DataSF owns that day on
-ENTERO_FROM = "2002-07-01"     # Enterococcus and E. coli start here; only total coliform before
+ENTERO_FROM = "2002-07-01"     # Enterococcus and E. coli start here at the bay stations; only total coliform before
+ENTERO_FROM_OCEAN = "2003-10-02"  # ...and here on the ocean beaches (Pacheco / Vicente / Fort Funston: Dec 2003)
 SOURCE_LABEL = "SFPUC lab export (STARDB), Jan 2000 – Jul 2020"
 
 
@@ -106,4 +109,4 @@ def records(sources: Optional[Iterable[str]] = None, start=None, end=None,
 def provenance() -> dict:
     """What a page prints about the older years."""
     return {"label": SOURCE_LABEL, "floor": HISTORY_FLOOR, "end": HISTORY_END, "datasf_from": DATASET_FLOOR,
-            "entero_from": ENTERO_FROM, "rows": len(_rows()), "available": available()}
+            "entero_from": ENTERO_FROM, "entero_from_ocean": ENTERO_FROM_OCEAN, "rows": len(_rows()), "available": available()}

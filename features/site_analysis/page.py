@@ -35,8 +35,8 @@ Plus a date range (?start=YYYY-MM-DD&end=YYYY-MM-DD; the dataset's floor is
 Other methodology notes baked into the payload (the page shows them):
   * Censored values ("<10", ">24196") keep their magnitude; "<x" is below
     every threshold in play and ">x" is far above, so sign-stripping is safe.
-  * Stations sampled only sporadically/reactively (under ROUTINE_PER_YEAR samples in a typical year of the window; see _routine —
-    the full record) are flagged — their rates reflect when the city chose
+  * Stations sampled only sporadically/reactively (under ROUTINE_PER_YEAR samples
+    in a typical year of the window, or of the full record — see _routine) are flagged — their rates reflect when the city chose
     to sample, not typical conditions, and must not be ranked against
     weekly sites.
 

@@ -8,9 +8,9 @@
  * which read shared/standards.py — never typed here. */
 (function () {
   var CHART_SRC = "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js";
-  var COLORS = { ENTERO: "#0072BC", COLI_FECAL: "#d4763a", COLI_TOTAL: "#26272a", BWTF: "#317fb2", BWTF_LIGHT: "#7ab8e0",
+  var COLORS = { ENTERO: "#0072BC", COLI_FECAL: "#d4763a", COLI_E: "#8f5cc7", COLI_TOTAL: "#26272a", BWTF: "#317fb2", BWTF_LIGHT: "#7ab8e0",
                  CITY: "#26272a", OVER: "#d15c5c", CAUTION: "#d4a017", LIMIT: "#ff4100", CAUTION_LINE: "#b97e00" };
-  var LABELS = { ENTERO: "Enterococcus", COLI_FECAL: "Fecal coliform", COLI_TOTAL: "Total coliform" };
+  var LABELS = { ENTERO: "Enterococcus", COLI_FECAL: "Fecal coliform", COLI_E: "E. coli", COLI_TOTAL: "Total coliform" };
   var fmt = function (n) { return n == null ? "—" : Number(n).toLocaleString(); };
   var monthTick = function (v) { return new Date(v).toLocaleDateString(undefined, { month: "short", year: "2-digit" }); };
   var LOG_TICKS = [5, 10, 36, 100, 400, 1000, 10000];

@@ -92,7 +92,7 @@
     <div id="h2hWrap" style="display:none"><h2 style="margin-top:18px">Same-day samples — head to head</h2><p class="sub" id="barNote"></p><div class="chart small"><canvas id="c2"></canvas></div></div>
     <p class="foot" id="explain"></p>
   </div>
-  <p class="foot">City = SFPUC's lab results — SF Gov Open Data from {{ datasf_from }}, and for the years before that SFPUC's own lab export (Jan 2000 → Jul 2020; Enterococcus and E. coli from Jul 2002, E. coli in place of fecal coliform until Aug 2020) — a station's worst value per day; a double-sampled day says so in the tooltip. Surfrider = the Blue Water Task Force volunteer lab, Enterococcus only.
+  <p class="foot">City = SFPUC's lab results — SF Gov Open Data from {{ datasf_from }}, and for the years before that SFPUC's own lab export (Jan 2000 → Jul 2020; Enterococcus and E. coli from Jul 2002 at the bay stations and Oct 2003 on the ocean beaches, E. coli in place of fecal coliform until Aug 2020) — a station's worst value per day; a double-sampled day says so in the tooltip. Surfrider = the Blue Water Task Force volunteer lab, Enterococcus only.
   Log scale keeps 10 and 24,196 on one axis. Dashed lines are the state single-sample limits; total coliform's baseline is 10,000 and drops to 1,000 when fecal is over 10% of total, which the tooltip notes.</p>
 
 </div>
@@ -162,7 +162,7 @@ function render() {
     if (wantCity) for (const a of DATA.analytes) series.push({ label: "City " + a.label, color: C[a.code], points: pts(DATA.city[a.code]) });
     if (wantBwtf) series.push({ label: "Surfrider Enterococcus", color: C.BWTF_LIGHT, dash: [4, 3], pointRadius: 3.4, points: pts(DATA.bwtf) });
     const lines = [CH.limitLine(L.ENTERO, C.ENTERO, "Enterococcus limit " + CH.fmt(L.ENTERO))];
-    if (wantCity) lines.push(CH.limitLine(L.COLI_FECAL, C.COLI_FECAL, "Fecal limit " + CH.fmt(L.COLI_FECAL)), CH.limitLine(L.COLI_TOTAL, C.COLI_TOTAL, "Total limit " + CH.fmt(L.COLI_TOTAL)));
+    if (wantCity) lines.push(CH.limitLine(L.COLI_FECAL, C.COLI_FECAL, "Fecal limit " + CH.fmt(L.COLI_FECAL)), CH.limitLine(L.COLI_E, C.COLI_E, "E. coli limit " + CH.fmt(L.COLI_E)), CH.limitLine(L.COLI_TOTAL, C.COLI_TOTAL, "Total limit " + CH.fmt(L.COLI_TOTAL)));
     lines.push(CH.limitLine(DATA.caution, C.CAUTION_LINE, "caution " + DATA.caution, "dotted"));
     c1 = draw($("c1"), { series, lines, legend: false, onPoint });
     $("title").textContent = DATA.site + " — all indicators";
