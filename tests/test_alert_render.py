@@ -1,5 +1,5 @@
-"""The alert email in the site's voice (migration 020; features/alerts/render._fallback is its
-byte-for-byte port — db/scripts/test_render_parity.py checks the two agree once 020 is applied).
+"""The alert email in the site's voice (migration 020, button to /today in 021; features/alerts/render._fallback is its
+byte-for-byte port — db/scripts/test_render_parity.py checks the two agree once 021 is applied).
 Offline: the Python port only."""
 import pathlib
 import sys
@@ -34,7 +34,7 @@ def test_the_email_speaks_the_sites_language():
     h = render._fallback([POSTED, CSO], False, "Ocean Beach", UNSUB, WHEN)
     html, text, sms = h["html_body"], h["text_body"], h["sms_text"]
     assert "SF Beach Water Quality Alert" in html and "Surfrider SF &middot; Blue Water Task Force" in html          # the header Chase asked for
-    assert ">Live status</a>" in html and 'href="https://bwtf-sf.vercel.app/"' in html                              # one button, to the board
+    assert ">Live status</a>" in html and 'href="https://bwtf-sf.vercel.app/today"' in html                         # one button, to the Today page (021)
     assert 'SFPUC\'s own map: <a href="https://webapps.sfpuc.org/sapps/beachesandbay.html"' in html                # the city's map in the small print
     assert "always win" not in html and "always win" not in text and "take precedence" in html and "take precedence" in text
     assert "Beach alert &middot; Tue Sep 30, 7:12 AM PDT &middot; Ocean Beach zone" in html and "you chose the Ocean Beach zone" in html   # the moment, then the zone
@@ -47,7 +47,7 @@ def test_the_email_speaks_the_sites_language():
     assert "<b>From SFPUC:</b> beach users should be aware that during and immediately after rainfall, nearshore bacteria concentrations may be elevated, even when there has not been a combined sewer discharge." in html and "72 hours" not in html                                              # their published sentence, not our figure
     assert "SFPUC posts a beach when samples show bacteria above State standards, and sometimes as a precaution" in html   # the reason under the status, never a claimed cause
     assert text.startswith("Beach alert: sewage discharge at 1 beach, posted at 1 beach\nTue Sep 30, 7:12 AM PDT\n\n- Ocean Beach at Sloat Boulevard: posted.\n- Islais Creek: sewage discharge.")
-    assert sms == "Beach alert: Ocean Beach at Sloat Boulevard — posted; Islais Creek — sewage discharge. Live status: https://bwtf-sf.vercel.app/"
+    assert sms == "Beach alert: Ocean Beach at Sloat Boulevard — posted; Islais Creek — sewage discharge. Live status: https://bwtf-sf.vercel.app/today"
     for k in ("Avoid water contact and check conditions", "New events at your selected sites", "View SFPUC Beach Map"):
         assert k not in html                                                                                       # the old copy is gone
 
@@ -55,12 +55,13 @@ def test_the_email_speaks_the_sites_language():
 def test_without_an_unsubscribe_link_the_footer_says_how_to_stop():
     h = render._fallback([POSTED], False, None, None)
     assert "Reply to this email with &quot;unsubscribe&quot; to stop them." in h["html_body"] and 'Reply to this email with "unsubscribe" to stop alerts.' in h["text_body"]
-    assert 'href="https://bwtf-sf.vercel.app/"' in h["html_body"] and "these beaches" not in h["html_body"]         # the public site stands in for the link's host
+    assert 'href="https://bwtf-sf.vercel.app/today"' in h["html_body"] and "these beaches" not in h["html_body"]    # the public site stands in for the link's host
 
 
 def test_migration_and_port_carry_the_same_stamp_and_the_same_words():
-    sql = (ROOT / "db/migrations/020_email_board_style.sql").read_text()
-    assert render.RENDERER_VERSION == "020" and "renderer_ver text := '020'" in sql
+    sql = (ROOT / "db/migrations/021_live_status_to_today.sql").read_text()
+    assert render.RENDERER_VERSION == "021" and "renderer_ver text := '021'" in sql
+    assert sql.count("|| '/today'") == 1 and sql.count("E'/today\\n") == 1 and sql.count("'/today\" style=") == 1   # SMS, text, button
     body = sql.split("create or replace function public.bwtf_render_alert(")[1]
     for phrase in ("SF Beach Water Quality Alert", ">Live status</a>", "take precedence", "Surfrider SF &middot; Blue Water Task Force",
                    '<span style="color:#b5310a">sewage discharge</span>.', '<span style="color:#d4763a">posted</span>.', "From SFPUC:"):

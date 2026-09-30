@@ -32,7 +32,7 @@ MAP_URL = "https://webapps.sfpuc.org/sapps/beachesandbay.html"
 # alert_deliveries row (015) so an old message is never mistaken for a
 # re-render with a newer template. Bump with the SQL (015's renderer_ver and
 # tests/test_alert_deliveries.py hold it to the latest renderer migration).
-RENDERER_VERSION = "020"
+RENDERER_VERSION = "021"
 SITE_URL = os.environ.get("SITE_URL", "https://bwtf-sf.vercel.app").rstrip("/")
 
 
@@ -70,7 +70,7 @@ def render_alert(transitions: list[dict], simulated: bool, zone: str | None = No
 
 def _fallback(transitions: list[dict], simulated: bool, zone: str | None = None,
               unsubscribe_url: str | None = None, when: str | None = None) -> dict:
-    """Byte-for-byte Python port of bwtf_render_alert (migration 020 — do not restyle here;
+    """Byte-for-byte Python port of bwtf_render_alert (migration 021 — do not restyle here;
     format changes belong in migration SQL; db/scripts/test_render_parity.py enforces this)."""
     prefix = "TEST " if simulated else ""
     n = len(transitions)
@@ -107,13 +107,13 @@ def _fallback(transitions: list[dict], simulated: bool, zone: str | None = None,
 
     sms_text = (f"{prefix}Beach alert: "
                 + "; ".join(f"{t['station_name']} — " + ("sewage discharge" if is_cso(t) else "posted") for t in transitions)
-                + f". Live status: {site}/")[:320]
+                + f". Live status: {site}/today")[:320]
 
     text_body = (
         subject + (f"\n{stamp}" if stamp else "") + "\n\n"
         + "\n".join(f"- {t['station_name']}: " + ("sewage discharge." if is_cso(t) else "posted.") for t in transitions)
         + "\n\nFrom SFPUC: beach users should be aware that during and immediately after rainfall, nearshore bacteria concentrations may be elevated, even when there has not been a combined sewer discharge.\n\n"
-        + f"Live status: {site}/\nSFPUC's map: {MAP_URL}\n\n"
+        + f"Live status: {site}/today\nSFPUC's map: {MAP_URL}\n\n"
         + "Community science by Surfrider SF's Blue Water Task Force, not an official advisory; posted signs and notices from SFPUC or the health department take precedence.\n"
         + ('Reply to this email with "unsubscribe" to stop alerts.' if unsub is None
            else f"Change your sites: {manage}\nUnsubscribe: {unsub}")
@@ -156,7 +156,7 @@ def _fallback(transitions: list[dict], simulated: bool, zone: str | None = None,
         f'<p style="margin:8px 0 16px;color:#54576F;font-size:14px;line-height:1.5;">{facts}</p>'
         + rows_html
         + "<p style=\"margin:14px 0 0;font-size:13.5px;color:#26272a;line-height:1.5;\"><b>From SFPUC:</b> beach users should be aware that during and immediately after rainfall, nearshore bacteria concentrations may be elevated, even when there has not been a combined sewer discharge.</p>"
-        f'<p style="margin:16px 0 4px;"><a href="{site}/" style="display:inline-block;background:#0072BC;color:#ffffff;text-decoration:none;padding:11px 18px;border-radius:999px;font-weight:700;font-size:14px;">Live status</a></p>'
+        f'<p style="margin:16px 0 4px;"><a href="{site}/today" style="display:inline-block;background:#0072BC;color:#ffffff;text-decoration:none;padding:11px 18px;border-radius:999px;font-weight:700;font-size:14px;">Live status</a></p>'
         "</td></tr>"
         '<tr><td style="padding:14px 8px 0;font-size:12px;color:#54576F;line-height:1.55;">'
         "Community science by Surfrider SF's Blue Water Task Force, not an official advisory; posted signs and notices from SFPUC or the health department take precedence. "

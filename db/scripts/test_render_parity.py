@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Parity test: the pg renderer (bwtf_render_alert, migration 020) must match
+"""Parity test: the pg renderer (bwtf_render_alert, migration 021) must match
 the Python fallback byte-for-byte — subject, sms_text, text_body, html_body.
 
 If this fails after a format change, update whichever side lagged (format
@@ -49,7 +49,7 @@ def main() -> int:
         sb.rpc("bwtf_render_alert", {"p_transitions": CASES[0][1],
                                      "p_simulated": False, "p_zone": None, "p_unsubscribe_url": None, "p_when": WHEN})
     except Exception as exc:
-        print(f"bwtf_render_alert RPC unavailable ({exc}) — paste db/migrations/020 first.")
+        print(f"bwtf_render_alert RPC unavailable ({exc}) — paste db/migrations/021 first.")
         return 1
 
     failures = 0

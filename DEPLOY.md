@@ -304,6 +304,16 @@ refresh logs `deliveries not polled: …` — harmless, and gone once applied.
 Turn open tracking off in Brevo's transactional settings if the alerts should
 not track their readers at all; the column then simply stays null.
 
+## 021: the "Live status" button opens the Today page (built 2026-09-30)
+
+`db/migrations/021_live_status_to_today.sql` — apply by hand in the Supabase SQL editor, with no
+simulation active. The button, the text body's "Live status:" line and the SMS point at
+`<site>/today` instead of `<site>/`; the renderer is otherwise 020 verbatim, and `bwtf_dispatch_live`
+is restated with `renderer_ver = '021'`. `features/alerts/render.RENDERER_VERSION` is `021`.
+
+**Check after applying:** `venv/bin/python db/scripts/test_render_parity.py` · new rows in
+`alert_deliveries` say 021.
+
 ## 020: the alert email in the site's voice (built 2026-09-30 on branch `design/email-surfrider-popover`)
 
 `db/migrations/020_email_board_style.sql` — apply by hand in the Supabase SQL editor, with no
