@@ -19,6 +19,7 @@ from pathlib import Path
 
 from shared import supabase as sb
 from shared.paths import DATA_DIR
+from shared.clock import utc_iso
 
 SUBSCRIPTIONS_PATH = DATA_DIR / "subscriptions.json"
 
@@ -163,7 +164,7 @@ class SubscriptionStore:
             self._mirror_to_json()
             return self._from_row(row)
 
-        now = datetime.utcnow().isoformat()
+        now = utc_iso()
         rows = self._load_raw()
         updated_rows = []
         subscription = None

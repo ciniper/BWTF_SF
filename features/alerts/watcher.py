@@ -47,6 +47,7 @@ from shared import supabase as sb
 from shared.paths import DATA_DIR
 from shared.sfpuc_api import SFPUCRealTimeAPI
 from features.alerts.render import render_alert
+from shared.clock import utc_iso
 
 STATE_PATH = DATA_DIR / "alert_watcher_state.json"
 DEFAULT_INTERVAL_SECONDS = 120
@@ -104,7 +105,7 @@ def save_state(statuses: dict, names: dict | None = None) -> None:
     STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
     STATE_PATH.write_text(json.dumps({
         "statuses": statuses,
-        "updated_at": datetime.now().isoformat(),
+        "updated_at": utc_iso(),
     }, indent=2))
 
 
@@ -227,7 +228,7 @@ def check_and_dispatch(api=None) -> dict:
     api = api or SFPUCRealTimeAPI()
     stations = api.fetch_stations()
     info = {
-        "checked_at": datetime.now().isoformat(),
+        "checked_at": utc_iso(),
         "baselined": False,
         "station_count": len(stations),
         "transitions": [],
@@ -312,7 +313,7 @@ def _watch_loop(interval_seconds: int) -> None:
         try:
             check_and_dispatch()
         except Exception as exc:  # never let the watcher die
-            _record_run({"checked_at": datetime.now().isoformat(), "error": str(exc),
+            _record_run({"checked_at": utc_iso(), "error": str(exc),
                          "baselined": False, "transitions": [], "dispatch_results": []})
             print(f"[watcher] poll failed: {exc}")
         time.sleep(interval_seconds)

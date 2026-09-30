@@ -28,6 +28,7 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from features.alerts.monitoring import Alert
+from shared.clock import now_pacific, utc_iso
 
 BWTF_LOGO_URL = "https://bwtf.surfrider.org/images/BWTF-Logo_White.png"
 SURFRIDER_LOGO_URL = "https://f.hubspotusercontent20.net/hubfs/20811975/SF-Horizontal-Logo_RGB_Black_crop_small.png"
@@ -203,7 +204,7 @@ class EmailNotifier(Notifier):
         # Plain text version
         text_content = f"""
 SF Beach Water Quality Alert
-Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}
+Generated: {now_pacific().strftime('%Y-%m-%d %H:%M %Z')}
 
 {self.format_alert_summary(alerts)}
 
@@ -229,7 +230,7 @@ https://sf.surfrider.org/programs/blue-water-task-force
                 <img src="{BWTF_LOGO_URL}" alt="Blue Water Task Force" style="display:block; width:180px; max-width:100%; height:auto;">
             </div>
             <h1 style="margin:18px 0 8px; color:#ffffff; font-size:32px; line-height:1; text-transform:uppercase; letter-spacing:0.03em;">SF Beach Water Quality Alert</h1>
-            <p style="margin:0; color:rgba(255,255,255,0.82); font-size:15px;">Generated {datetime.now().strftime('%Y-%m-%d %H:%M')}</p>
+            <p style="margin:0; color:rgba(255,255,255,0.82); font-size:15px;">Generated {now_pacific().strftime('%Y-%m-%d %H:%M %Z')}</p>
         </div>
 
         <div style="padding:24px;">
@@ -361,7 +362,7 @@ class SlackNotifier(Notifier):
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": f"*Generated:* {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+                    "text": f"*Generated:* {now_pacific().strftime('%Y-%m-%d %H:%M %Z')}"
                 }
             },
             {"type": "divider"}
@@ -437,7 +438,7 @@ class DiscordNotifier(Notifier):
             "title": "🏖️ SF Beach Water Quality Update",
             "description": self.format_alert_summary(alerts),
             "color": color,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_iso(),
             "footer": {
                 "text": "Surfrider SF Blue Water Task Force"
             },

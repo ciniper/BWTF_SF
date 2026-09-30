@@ -22,6 +22,7 @@ from features.alerts.cso_alerts import (
     get_cso_eligible_stations,
 )
 from features.alerts.notifiers import email_transport_configured
+from shared.clock import now_pacific, utc_iso
 
 CARRIER_OPTIONS = [
     ("verizon", "Verizon"),
@@ -109,7 +110,7 @@ class AlertsRoutes:
                     "longitude": s.longitude
                 } for s in stations],
                 "summary": {
-                    "timestamp": datetime.now().isoformat(),
+                    "timestamp": utc_iso(),
                     "total_stations": len(stations),
                     "safe_count": len([s for s in stations if s.status.value == "safe"]),
                     "posted_count": len([s for s in stations if s.status.value == "posted"]),
@@ -218,7 +219,7 @@ class AlertsRoutes:
             raw_rows = json.loads(raw_text)
             payload = {
                 "source_url": self.sfpuc_api.API_URL,
-                "fetched_at": datetime.now().isoformat(),
+                "fetched_at": utc_iso(),
                 "count": len(raw_rows),
                 "rows": raw_rows,
             }
@@ -546,7 +547,7 @@ class AlertsRoutes:
 
         return render_template(
             "alerts/dashboard.html",
-            generated=datetime.now().strftime('%B %d, %Y at %I:%M %p'),
+            generated=now_pacific().strftime('%B %-d, %Y at %-I:%M %p %Z'),
             bwtf_logo=BWTF_LOGO_URL,
             error_html=error_html,
             rain_html=rain_html,

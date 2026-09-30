@@ -403,7 +403,9 @@ function renderLive(data) {
     }
     renderLiveToggle(data.live_corrections);
     const refreshEl = document.getElementById('refreshInfo');
-    refreshEl.textContent = data.last_refresh ? 'Last updated: ' + new Date(data.last_refresh).toLocaleTimeString() + ' · auto-refreshes every 30 min'
+    // a stamp without an offset is UTC (snapshots written before the engine stamped aware times): say so, or the browser reads it as local
+    const stamp = data.last_refresh && !/([+-]\d\d:?\d\d|Z)$/.test(data.last_refresh) ? data.last_refresh + 'Z' : data.last_refresh;
+    refreshEl.textContent = stamp ? 'Last updated: ' + new Date(stamp).toLocaleTimeString() + ' · auto-refreshes every 30 min'
                           + (data.stale_note ? ' · ' + data.stale_note : '') : '';
     showPanels({ beaches: true });
 

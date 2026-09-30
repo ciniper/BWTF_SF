@@ -35,6 +35,7 @@ if __package__ in (None, ""):
 
 from shared.stations import STATIONS
 from shared.outfalls import OUTFALLS, STATION_OUTFALLS
+from shared.clock import now_pacific, now_pacific_naive, utc_iso
 
 
 # ─── CSO Outfall-to-Beach Mapping ────────────────────────────────────────────
@@ -297,7 +298,7 @@ class SFPUCRealTimeAPI:
                     cso_station_id=station.cso_station_id,
                     latitude=station.latitude,
                     longitude=station.longitude,
-                    detected_at=datetime.now()  # API doesn't provide exact CSO time
+                    detected_at=now_pacific_naive()  # API doesn't provide exact CSO time
                 )
                 cso_events.append(event)
         
@@ -344,7 +345,7 @@ class SFPUCRealTimeAPI:
         cso_events = [s for s in stations if s.has_cso]
         
         summary = {
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": utc_iso(),
             "total_stations": len(stations),
             "safe_count": len([s for s in stations if s.status == StationStatus.SAFE]),
             "posted_count": len([s for s in stations if s.status == StationStatus.POSTED]),
@@ -369,7 +370,7 @@ class SFPUCRealTimeAPI:
         lines = [
             "=" * 60,
             "🌊 SFPUC REAL-TIME BEACH WATER QUALITY STATUS",
-            f"📅 Updated: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+            f"📅 Updated: {now_pacific().strftime('%Y-%m-%d %H:%M %Z')}",
             "=" * 60,
             ""
         ]

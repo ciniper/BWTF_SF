@@ -38,6 +38,7 @@ from shared import city_history
 from shared.datasf import BEACH_SAMPLES_URL, DATASET_FLOOR
 from shared.standards import ENTERO_CAUTION, STANDARDS, exceeds, parse_result, single_sample_max
 from shared.stations import STATIONS
+from shared.clock import now_pacific_naive
 
 SOURCES = ("city", "bwtf", "both", "all")   # as on Graphs: City / Surfrider / Both = only the beaches both programs sample / All
 
@@ -289,7 +290,7 @@ def build_bwtf_sample_day(bwtf_name: str, date: str = "", bwtf_client: Optional[
     if date:
         events = bwtf_client.fetch_event_history(since=datetime.strptime(date, "%Y-%m-%d"), max_pages=20)
     else:
-        today = datetime.now()
+        today = now_pacific_naive()
         events = bwtf_client.fetch_event_history(since=today - timedelta(days=60), max_pages=5)
         if not any(e.get("site_name") == bwtf_name for e in events):
             events = bwtf_client.fetch_event_history(since=today - timedelta(days=400), max_pages=20)
@@ -307,7 +308,7 @@ def build_sample_day(station: str, date: str = "", sf_gov_monitor=None) -> dict:
         d = datetime.strptime(date, "%Y-%m-%d")
         records = fetch_city_records(sf_gov_monitor, [station], d, d)
     else:
-        today = datetime.now()
+        today = now_pacific_naive()
         records = fetch_city_records(sf_gov_monitor, [station], today - timedelta(days=60), today)
         if not records:
             records = fetch_city_records(sf_gov_monitor, [station], today - timedelta(days=400), today)

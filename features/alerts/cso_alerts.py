@@ -27,6 +27,7 @@ from features.alerts.subscriptions import SiteSubscription
 
 
 from shared.paths import DATA_DIR
+from shared.clock import utc_iso
 
 SIMULATED_CSO_PATH = DATA_DIR / "simulated_cso_events.json"
 BWTF_LOGO_URL = "https://bwtf.surfrider.org/images/BWTF-Logo_White.png"
@@ -115,7 +116,7 @@ class SimulatedCSOStore:
             return normalized
         self.path.write_text(json.dumps({
             "station_ids": sorted(normalized), "kinds": normalized, "recipients": targets,
-            "updated_at": datetime.utcnow().isoformat(),
+            "updated_at": utc_iso(),
         }, indent=2))
         return normalized
 
