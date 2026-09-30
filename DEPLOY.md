@@ -202,7 +202,7 @@ until they exist — the Python writers catch a missing table and log it:
 |---|---|---|
 | `forecast_history` | the production forecast refresh (`features/forecast/page.py` → rpc `bwtf_record_forecast`) | Pacific day: the day's first snapshot (the start-of-day forecast) and its last |
 | `feed_station_days` | every watcher tick (`bwtf_shadow_tick` → `bwtf_record_feed_day`) | station-day: raw posted / CSO flags, colours, worst and last classified status, the raw station object |
-| `feed_sample_dates` | the same tick (018) | (station, sample date) → the tick the map first showed it, status and colours then; `approx` rows were backfilled from `feed_station_days` at day precision |
+| `feed_sample_dates` | the same tick (018) | (station, sample date) → the tick the map first showed it, status and colours then; `approx` rows were backfilled from `feed_station_days` at day precision; `note` (019) = a hand-entered caveat the timeline shows on hover (the 09/28 round: seen live at ~4:15 PM PT, not confirmed by the watcher) |
 | `samples` | the production refresh (`shared/samples_mirror.mirror`) and the backfill below | lab result (station, date, analyte, raw value), stamped `first_seen_at` |
 
 After applying, backfill the samples mirror once from this laptop (DataSF from 2020-07-27, DO NOTHING on rows already there):
