@@ -210,6 +210,23 @@ def icon_tile(x, y, name, size=40):
             f'<use class="icn" href="#i-{name}" x="{x + 8}" y="{y + 8}" width="{size - 16}" height="{size - 16}"/>')
 
 
+FIT_SCRIPT = """<script>
+/* fit every box label to its box in this browser's font: start at full size, shrink only as far as it must */
+(function () {
+  function fit() {
+    document.querySelectorAll('svg text[data-maxw]').forEach(function (t) {
+      var max = +t.dataset.maxw, full = +t.dataset.fs || parseFloat(getComputedStyle(t).fontSize);
+      t.style.fontSize = full + 'px';
+      var len = t.getComputedTextLength();
+      if (len > max) t.style.fontSize = (full * max / len * 0.98).toFixed(2) + 'px';
+    });
+  }
+  fit();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+})();
+</script>"""
+
+
 def _fit(text: str, avail: float, size: float, per_char: float, floor: float) -> float:
     """A font size at which `text` fits in `avail` px (rough width = chars × per_char × size), never below `floor`."""
     need = len(text) * per_char * size
@@ -221,8 +238,8 @@ def node(x, y, w, h, icon, title, sub, hub=False):
     avail = w - 60 - 10
     ts, ss = _fit(title, avail, 16, 0.58, 12), _fit(sub, avail, 13, 0.52, 10.5)
     return (f'<rect class="box{" hub" if hub else ""}" x="{x}" y="{y}" width="{w}" height="{h}" rx="14"/>{tile}'
-            f'<text class="t" style="font-size:{ts:.1f}px" x="{x + 60}" y="{y + h / 2 - 3}">{esc(title)}</text>'
-            f'<text class="s" style="font-size:{ss:.1f}px" x="{x + 60}" y="{y + h / 2 + 14}">{esc(sub)}</text>')
+            f'<text class="t" data-maxw="{avail:.0f}" data-fs="16" style="font-size:{ts:.1f}px" x="{x + 60}" y="{y + h / 2 - 3}">{esc(title)}</text>'
+            f'<text class="s" data-maxw="{avail:.0f}" data-fs="13" style="font-size:{ss:.1f}px" x="{x + 60}" y="{y + h / 2 + 14}">{esc(sub)}</text>')
 
 
 def pipeline_svg(sv: dict, wx_label: str, n_events: int = 0, n_sample_days: int = 0) -> str:
@@ -230,15 +247,15 @@ def pipeline_svg(sv: dict, wx_label: str, n_events: int = 0, n_sample_days: int 
     once; rain, live; observations, live), the model row in the middle, the
     outputs on the right. Dashed = used once to fit; solid = flows every
     30 minutes. No two arrows cross."""
-    a = ['<svg class="pipe" viewBox="0 0 1240 620" role="img"><title>How rain becomes a beach percentage</title>'
+    a = ['<svg class="pipe" viewBox="0 0 1290 620" role="img"><title>How rain becomes a beach percentage</title>'
          '<defs><marker id="pa" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#0072BC"/></marker>'
          '<marker id="pg" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#8a949b"/></marker></defs>']
     a.append('<text class="col" x="20" y="40">THE RECORD · used once, to fit the model</text>')
     a.append('<text class="col" x="20" y="222">LIVE · every 30 minutes</text>')
     a.append('<text class="col" x="320" y="240">THE MODEL · fixed since training</text>')
-    a.append('<text class="col" x="1030" y="350">WHAT GOES OUT</text>')
+    a.append('<text class="col" x="1075" y="350">WHAT GOES OUT</text>')
     # the record (fitted on, once)
-    a.append(node(20, 52, 250, 56, "logo:logos/sf-city-seal.png", "City lab results, past", f"{n_sample_days:,} sampled days: the curves"))
+    a.append(node(20, 52, 250, 56, "logo:logos/sf-city-seal.png", "City lab results, past", f"{n_sample_days:,} sampled days"))
     a.append(node(20, 116, 250, 56, "logo:logos/water-boards.png", "Filed overflows (CIWQS)", f"{n_events:,} events: the labels"))
     # rain, live
     a.append(node(20, 234, 250, 56, "logo:logos/noaa.svg", "Two NOAA gauges", "Downtown · Oceanside, daily"))
@@ -248,14 +265,14 @@ def pipeline_svg(sv: dict, wx_label: str, n_events: int = 0, n_sample_days: int 
     a.append(node(20, 452, 250, 56, "logo:logos/sfpuc.png", "SFPUC beach map", "flags · postings, every minute"))
     a.append(node(20, 516, 250, 56, "logo:logos/sf-city-seal.png", "City lab results, new", "this week's samples (DataSF)"))
     # the model row
-    a.append(node(320, 298, 190, 56, "gauge", "19 rain inputs a day", "totals · lags · peaks · dryness", hub=True))
-    a.append(node(550, 298, 200, 56, "chart", "Stage 1 · 4 basins", "chance the sewers overflow", hub=True))
-    a.append(node(790, 298, 210, 56, "waves", "Stage 2 · 6 beach groups", "how long, and which beaches", hub=True))
-    a.append(node(790, 452, 210, 56, "satellite-dish", f"Live corrections {LR.VERSION.replace('live_', '')}", "observations override", hub=True))
+    a.append(node(320, 298, 205, 56, "gauge", "19 rain inputs a day", "totals · lags · peaks", hub=True))
+    a.append(node(555, 298, 205, 56, "chart", "Stage 1 · 4 basins", "chance of an overflow", hub=True))
+    a.append(node(790, 298, 255, 56, "waves", "Stage 2 · 6 beach groups", "how long, and which beaches", hub=True))
+    a.append(node(790, 452, 255, 56, "satellite-dish", f"Live corrections {LR.VERSION.replace('live_', '')}", "observations override", hub=True))
     # outputs
-    a.append(node(1030, 362, 205, 56, "map-pin", "4 zones × 6 days", "percent, every 30 min"))
-    a.append(node(1030, 426, 205, 56, "bell", f"Alarm line {int(round((sv.get('line') or 0.25) * 100))}%", "the banner words"))
-    a.append(node(1030, 490, 205, 56, "logo:logos/supabase.svg", "History tables", "every forecast, kept"))
+    a.append(node(1075, 362, 205, 56, "map-pin", "4 zones × 6 days", "percent, every 30 min"))
+    a.append(node(1075, 426, 205, 56, "bell", f"Alarm line {int(round((sv.get('line') or 0.25) * 100))}%", "the banner words"))
+    a.append(node(1075, 490, 205, 56, "logo:logos/supabase.svg", "History tables", "every forecast, kept"))
 
     def arrow(d, label=None, lx=None, ly=None, anchor="middle", cls="flow", marker="pa"):
         a.append(f'<path class="{cls}" d="{d}" marker-end="url(#{marker})"/>')
@@ -266,20 +283,20 @@ def pipeline_svg(sv: dict, wx_label: str, n_events: int = 0, n_sample_days: int 
         a.append(f'<circle class="dot" cx="{x}" cy="{y}" r="3.5"/>')
 
     # fitted on: the past samples teach stage 2 how long beaches stay dirty; the filed overflows teach stage 1 which rain overflows
-    arrow("M270,80 H895 V298", "teaches stage 2 how long a beach stays dirty", 580, 72, cls="fit", marker="pg")
-    arrow("M270,144 H650 V298", "teaches stage 1 which rain overflows", 460, 136, cls="fit", marker="pg")
+    arrow("M270,80 H917 V298", "teaches stage 2 how long a beach stays dirty", 590, 72, cls="fit", marker="pg")
+    arrow("M270,144 H657 V298", "teaches stage 1 which rain overflows", 460, 136, cls="fit", marker="pg")
     # rain: three sources become one hourly series, then the day's numbers
     a.append('<path class="flow" d="M270,262 H295 V390 H270"/>'); dot(295, 326)
     arrow("M295,326 H320"); a.append('<text class="al" x="302" y="412" text-anchor="start">one hourly rain series</text>')
-    arrow("M510,326 H550")
-    arrow("M750,326 H790")
-    arrow("M895,354 V452", "% per beach group", 903, 408, "start")
+    arrow("M525,326 H555")
+    arrow("M760,326 H790")
+    arrow("M917,354 V452", "% per beach group", 909, 408, "end")
     # observations into the live corrections
     a.append('<path class="flow" d="M270,544 H295 V480 H270"/>'); dot(295, 480)
     arrow("M295,480 H790", "flags · postings · sample results", 540, 471)
     # live corrections to each output
-    a.append('<path class="flow" d="M1000,480 H1015 V390"/><path class="flow" d="M1015,480 V518"/>'); dot(1015, 480)
-    arrow("M1015,390 H1030"); arrow("M1015,454 H1030"); arrow("M1015,518 H1030")
+    a.append('<path class="flow" d="M1045,480 H1060 V390"/><path class="flow" d="M1060,480 V518"/>'); dot(1060, 480)
+    arrow("M1060,390 H1075"); arrow("M1060,454 H1075"); arrow("M1060,518 H1075")
     # legend
     a.append('<path class="flow" d="M320,600 H360"/><text class="lg" x="368" y="604">flows every 30 minutes</text>'
              '<path class="fit" d="M560,600 H600"/><text class="lg" x="608" y="604">used once, to fit the model; the weights have not changed since</text>')
@@ -375,7 +392,7 @@ def math_section(models: dict, ratios: dict) -> str:
 
     return f"""<details class="more math"><summary>The math behind the weights</summary>
 <div class="card wide">
-<p><b>The model.</b> For a basin and a day, take the 19 inputs x<sub>1</sub> … x<sub>19</sub> (inches, days, or a yes/no). Add {len(names) - 19} <em>bends</em>: for an input f and a knot k, h<sub>f,k</sub> = max(0, x<sub>f</sub> − k), which is zero until the input passes the knot and then rises with it. That is how "the first quarter inch barely matters, the next inch matters a lot" becomes a straight-line model. Together these are the {len(names)} terms t<sub>1</sub> … t<sub>{len(names)}</sub>.</p>
+<p><b>The model.</b> For a basin and a day, take the 19 inputs x<sub>1</sub> … x<sub>19</sub> (inches, days, or a yes/no). Add {len(names) - 19} <em>bends</em>: for an input f and a knot k, h<sub>f,k</sub> = max(0, x<sub>f</sub> − k), which is zero until the input passes the knot and then rises with it. The knots k are chosen by hand, the same for all four basins; the fit learns only the weights. That is how "the first quarter inch barely matters, the next inch matters a lot" becomes a straight-line model. Together these are the {len(names)} terms t<sub>1</sub> … t<sub>{len(names)}</sub>.</p>
 <p><b>Standardise.</b> Each term is centred and scaled by its training mean and standard deviation: z<sub>j</sub> = (t<sub>j</sub> − μ<sub>j</sub>) / σ<sub>j</sub>. So every weight below is "per one standard deviation of that term", and weights are comparable across terms.</p>
 <p><b>Combine.</b> The log-odds of an overflow is a weighted sum: &nbsp;<span class="eq">log(p / (1 − p)) = β<sub>0</sub> + Σ<sub>j</sub> β<sub>j</sub> z<sub>j</sub></span>, &nbsp;and the probability is &nbsp;<span class="eq">p = 1 / (1 + e<sup>−(β<sub>0</sub> + Σ β<sub>j</sub> z<sub>j</sub>)</sup>)</span>. A weight of +0.5 multiplies the odds by e<sup>0.5</sup> ≈ 1.65 for each standard deviation of its term. The "share" in the table above is |β<sub>j</sub>| / Σ|β|.</p>
 <p><b>Fit.</b> The weights minimise the log-loss over the training days plus a penalty (1 / 2C) Σ β<sub>j</sub>², the L2 ridge: a smaller C shrinks all weights toward zero and spreads credit across correlated terms (today's total and the last two days move together, so they share weight). C is chosen per basin by leave-one-season-out cross-validation on the seasons before the holdout. Serving adds a calibration offset that fades to zero by half an inch of three-day rain; for this family the offset is 0, so p is used as fitted.</p>
@@ -572,7 +589,7 @@ def report_works(S: dict, reg: dict, wx_model: str) -> str:
 <section id="inputs"><h2>What comes in</h2><div class="grid3">{inputs}</div></section>
 
 <section id="stage1"><h2>Stage 1 · will the sewers overflow?</h2>
-<p class="lead"><b>Inputs, weights, output.</b> The 19 numbers are the <b>inputs</b>: what goes in each day, computed from the rain. The <b>weights</b> are what the fit learned, 38 per basin, fixed since training. The <b>output</b> is one number per basin per day: the chance the sewers overflow. One model per combined-sewer basin, trained on the days SFPUC filed an overflow. Each is a weights model: the 19 inputs, plus bends at a few rain amounts so the response can steepen, standardised, then an L2 logistic fit. Every basin reads the gauge that predicted it best on the holdout. The two charts are the served models answering "how likely is an overflow today if this much falls?", once after a dry month and once after a wet start to the week.</p>
+<p class="lead"><b>Inputs, weights, output.</b> The 19 numbers are the <b>inputs</b>: what goes in each day, computed from the rain. The <b>weights</b> are what the fit learned, 38 per basin, fixed since training: one for each input and one for each bend. Where the bends sit (the knots) is set by hand and is the same in every basin; the fit learns how much each bend matters. Every station in a basin shares that basin&#39;s stage 1; the beaches differ in stage 2. The <b>output</b> is one number per basin per day: the chance the sewers overflow. One model per combined-sewer basin, trained on the days SFPUC filed an overflow. Each is a weights model: the 19 inputs, plus bends at a few rain amounts so the response can steepen, standardised, then an L2 logistic fit. Every basin reads the gauge that predicted it best on the holdout. The two charts are the served models answering "how likely is an overflow today if this much falls?", once after a dry month and once after a wet start to the week.</p>
 <div class="grid2"><div class="card">{curves_dry}</div><div class="card">{curves_wet}</div></div>
 <div class="card wide">{facts}</div>
 <h3>What each basin weighs</h3>
@@ -607,7 +624,7 @@ def report_works(S: dict, reg: dict, wx_model: str) -> str:
 
 <section id="more"><h2>Deeper</h2><p class="lead">
 <a href="/reports/2026-09_forecast_how_it_is_graded.html">How it is graded</a> · <a href="/reports/2026-09_forecast_{esc(sv["name"])}_model_explorer.html">The served models opened up (weights, what-if editor)</a> · <a href="/reports/2026-09_forecast_stage2_explorer.html">Stage 2 explorer</a> · <a href="/reports/2026-09_model_analysis.html">Model analysis: which set to run</a> · <a href="/reports/2026-09_live_replay.html">Live corrections replay</a> · <a href="/reports/2026-09_live_replay_synthetic.html">Synthetic replay</a> · <a href="/reports/2026-09_weather_models.html">Which weather model</a> · <a href="/forecast">The forecast</a></p></section>
-</div></body></html>'''
+</div>{FIT_SCRIPT}</body></html>'''
     return html
 
 
@@ -795,7 +812,7 @@ def report_graded(S: dict) -> str:
 <li><b>Holdout numbers flatter the weights model</b>: its settings were chosen there. The since-training table is the fairer one.</li>
 <li><b>Postings are precautionary.</b> Against the signs the outfall split scores a small loss on Ocean Beach, where SFPUC posts after Sea Cliff-only overflows whose samples come back clean. The water could not settle it (one sampled case in ten years).</li>
 </ul><p class="lead"><a href="/reports/2026-09_model_analysis.html">The full model analysis</a> · <a href="/reports/2026-09_forecast_how_it_works.html">How it works</a> · <a href="/forecast">The Model check, live</a></p></section>
-</div></body></html>'''
+</div>{FIT_SCRIPT}</body></html>'''
     return html
 
 

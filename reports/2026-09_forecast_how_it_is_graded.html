@@ -93,7 +93,7 @@ svg.tl,svg.lag{display:block;width:100%;height:auto;font-family:Roboto,Arial,san
 <div class="wrap">
 <header class="rh"><img src="/static/brand/bwtf_144x144.png" alt="" class="mark"><div><h1>How the forecast is graded</h1>
 <p class="sub">Every stored day is scored against what the city later filed and measured. The served set is <b>logit_v1_s2v2</b>; its alarm line is <b>25%</b>; a missed bad day costs <b>2</b> false alarms. Nothing here uses a day the model saw while it was being chosen.</p>
-<div class="meta"><span>generated 2026-09-30 04:12</span><span>holdout Jul 2023 → Oct 2025</span><span>since training Nov 2025 → Aug 2026</span><span><a href="/reports/2026-09_forecast_how_it_works.html">← how it works</a></span></div></div></header>
+<div class="meta"><span>generated 2026-09-30 04:28</span><span>holdout Jul 2023 → Oct 2025</span><span>since training Nov 2025 → Aug 2026</span><span><a href="/reports/2026-09_forecast_how_it_works.html">← how it works</a></span></div></div></header>
 <nav><a href="#rulers">Rulers</a><a href="#results">Results</a><a href="#lines">Lines</a><a href="#sets">Sets</a><a href="#stage1">Stage 1</a><a href="#live">Live corrections</a><a href="#weather">Weather input</a><a href="#caveats">Caveats</a></nav>
 
 <section id="rulers"><h2>What counts as a bad day</h2>
@@ -131,4 +131,18 @@ svg.tl,svg.lag{display:block;width:100%;height:auto;font-family:Roboto,Arial,san
 <li><b>Holdout numbers flatter the weights model</b>: its settings were chosen there. The since-training table is the fairer one.</li>
 <li><b>Postings are precautionary.</b> Against the signs the outfall split scores a small loss on Ocean Beach, where SFPUC posts after Sea Cliff-only overflows whose samples come back clean. The water could not settle it (one sampled case in ten years).</li>
 </ul><p class="lead"><a href="/reports/2026-09_model_analysis.html">The full model analysis</a> · <a href="/reports/2026-09_forecast_how_it_works.html">How it works</a> · <a href="/forecast">The Model check, live</a></p></section>
-</div></body></html>
+</div><script>
+/* fit every box label to its box in this browser's font: start at full size, shrink only as far as it must */
+(function () {
+  function fit() {
+    document.querySelectorAll('svg text[data-maxw]').forEach(function (t) {
+      var max = +t.dataset.maxw, full = +t.dataset.fs || parseFloat(getComputedStyle(t).fontSize);
+      t.style.fontSize = full + 'px';
+      var len = t.getComputedTextLength();
+      if (len > max) t.style.fontSize = (full * max / len * 0.98).toFixed(2) + 'px';
+    });
+  }
+  fit();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+})();
+</script></body></html>
