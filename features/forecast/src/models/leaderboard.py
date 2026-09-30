@@ -78,6 +78,24 @@ def add_hinges(X):
     return np.hstack(cols)
 
 
+TERM_NAMES = list(FEATS) + list(HINGE_NAMES)   # the 38 columns add_hinges produces, in order
+
+
+def take_columns(A, idx):
+    """Keep only the selected design columns (module level, so a fitted small pipeline pickles)."""
+    return A[:, idx]
+
+
+def make_small_model(C: float, terms: list):
+    """The weights model on a subset of its 38 terms (logit_v2_small): hinges → select → scale → L2 logistic.
+    Takes the same 19-input DataFrame serving already passes, so nothing downstream changes."""
+    idx = [TERM_NAMES.index(t) for t in terms]
+    return Pipeline([("hinges", FunctionTransformer(add_hinges, validate=False)),
+                     ("select", FunctionTransformer(take_columns, kw_args={"idx": idx}, validate=False)),
+                     ("scale", StandardScaler()),
+                     ("lr", LogisticRegression(C=C, max_iter=5000))])
+
+
 def make_model(family: str, C: float = 0.3):
     if family == "gb":
         return GradientBoostingClassifier(**T.MODEL_PARAMS)

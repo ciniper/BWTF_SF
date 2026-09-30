@@ -119,8 +119,9 @@ def _refit_holdouts(models: dict, chosen: dict, frames: dict, features: list) ->
         if pre["y"].sum() < 5:
             out[key] = None
         elif fam == "logit":
-            import leaderboard as LB
-            out[key] = LB.make_model("logit", m.get("C", 0.3)).fit(pre[features], pre["y"])
+            # clone the source's own pipeline: same design (all 38 terms, or a selected few), same C
+            from sklearn.base import clone
+            out[key] = clone(m["model"]).fit(pre[features], pre["y"])
         else:
             out[key] = T.fit_holdout_model(sub, features)
     return out
@@ -138,7 +139,7 @@ def save(stage1: str, variant: str, name: str, note: str = "") -> Path:
     sources = sorted(set(chosen.values()) | set(T.RAIN_SOURCES) | {h.get("rain_source", "avg") for h in heads.values()})
     frames, notes = T.build_dataset(sources=sources)
     finals = {k: {"model": m["model"], "features": m["features"], "calibration_offset": m["calibration_offset"],
-                  **({"C": m["C"]} if "C" in m else {})} for k, m in models.items()}
+                  **({"C": m["C"]} if "C" in m else {}), **({"terms": m["terms"]} if "terms" in m else {})} for k, m in models.items()}
     holdouts = _refit_holdouts(models, chosen, frames, features)
 
     # fidelity: refit siblings must reproduce the source artifact's stored holdout probabilities

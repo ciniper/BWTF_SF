@@ -231,7 +231,7 @@ def save_candidate(name: str, family: str, finals: dict, holdout_models: dict, c
         with open(d / f"{key}_model.pkl", "wb") as f:
             pickle.dump({"model": fin["model"], "features": fin["features"], "calibration_offset": fin["calibration_offset"],
                          "label": "csd_event_reported", "rain_source": chosen.get(basin_of_key.get(key, "citywide"), "avg"),
-                         "trained_at": now, "version": name, "family": family, **{k: v for k, v in fin.items() if k in ("C",)}}, f)
+                         "trained_at": now, "version": name, "family": family, **{k: v for k, v in fin.items() if k in ("C", "terms")}}, f)
     if stage2:
         (d / "stage2.json").write_text(json.dumps(stage2, indent=1, default=str))
     elif (d / "stage2.json").exists():

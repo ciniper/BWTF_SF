@@ -90,14 +90,21 @@ def export_logit(pipe, features, C=None) -> dict:
     import leaderboard as LB
     lr, sc = pipe.named_steps["lr"], pipe.named_steps["scale"]
     names = list(features) + LB.HINGE_NAMES
-    coef = [float(c) for c in lr.coef_[0]]
-    assert len(names) == len(coef) == len(sc.mean_), "column layout drifted from leaderboard.add_hinges"
+    coef, means, scales = [float(c) for c in lr.coef_[0]], [float(v) for v in sc.mean_], [float(v) for v in sc.scale_]
+    selected = None
+    if "select" in pipe.named_steps:   # a small model (logit_v2_small): expand to all 38 columns, zero weight on the unselected ones — exact
+        idx = pipe.named_steps["select"].kw_args["idx"]
+        full_c, full_m, full_s = [0.0] * len(names), [0.0] * len(names), [1.0] * len(names)
+        for j, i in enumerate(idx):
+            full_c[i], full_m[i], full_s[i] = coef[j], means[j], scales[j]
+        coef, means, scales, selected = full_c, full_m, full_s, [names[i] for i in idx]
+    assert len(names) == len(coef) == len(means), "column layout drifted from leaderboard.add_hinges"
     agg = {f: 0.0 for f in features}
     for n, c in zip(names, coef):
         agg[n.split(">")[0]] += abs(c)
     tot = sum(agg.values()) or 1.0
     return {"family": "logit", "C": C if C is not None else float(lr.C), "intercept": float(lr.intercept_[0]),
-            "names": names, "coef": coef, "means": [float(v) for v in sc.mean_], "scales": [float(v) for v in sc.scale_],
+            "names": names, "coef": coef, "means": means, "scales": scales, "selected": selected,
             "hinges": LB.HINGES, "importances": {f: round(v / tot, 5) for f, v in agg.items()},
             "params": {"penalty": "l2", "max_iter": int(lr.max_iter), "n_hinge_terms": len(LB.HINGE_NAMES)}}
 
