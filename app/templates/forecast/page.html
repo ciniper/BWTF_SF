@@ -166,7 +166,15 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
 {{ topbar() }}
 <div class="container">
-{{ page_head("CSO Forecast", "Sewage-overflow risk for San Francisco's beaches, by zone, updated every 30 minutes.", "today") }}
+{% call page_head("CSO Forecast", "Sewage-overflow risk for San Francisco's beaches, by zone, updated every 30 minutes.", "today", "How this forecast works") %}
+<p><b>What it is.</b> For each beach zone, the chance that a sewage overflow has fouled the water: today and the next five days, as a percentage, refreshed every 30 minutes. It is a rain model. It does not see dry-weather dirtiness, and posted signs always win.</p>
+<p><b>Rain in.</b> What fell comes from two NOAA gauges, Downtown and Oceanside; the last few hours from the SFO airport gauge; the hours ahead from a weather model (ECMWF). On past days the gauges replace everything else.</p>
+<p><b>Stage 1: will the sewers overflow?</b> San Francisco has four combined-sewer basins. For each one, a model trained on ten years of the city's filed overflow reports turns the rain pattern (today's total, the last days' totals, the peak hour) into the chance of an overflow that day.</p>
+<p><b>Stage 2: which beaches, and for how long?</b> An overflow fouls a beach for days. How long, by basin and by the size of the overflow, comes from the city's own bacteria samples after past overflows; which beaches, from the outfalls each one posts. The percentage shown is the combined risk from the last eight days of overflow chances.</p>
+<p><b>Live corrections.</b> When SFPUC's beach map shows an overflow flag, that day becomes certain and the following days follow; when it shows a posting or a clean sample, the following days are held up or capped. Nothing observed, nothing changed. The toggle on the live view shows the model alone.</p>
+<p><b>Reading the number.</b> 25% is the alarm line the alerts use. The banner words follow the same number: 10% low, 25% moderate, 50% high. Per-zone lines are under review.</p>
+<p><b>Is it any good?</b> The Model check tab grades every past day against the city's filed overflows and its samples, zone by zone, at any line. The technical reports (how each model is built, the replays, the weather-model comparison) are linked there.</p>
+{% endcall %}
 
 <div class="mode-bar">
     <button class="mode-btn active" id="btnLive" onclick="setMode('live')"><svg class="ic"><use href="#i-pulse"/></svg> Live forecast</button>
@@ -179,8 +187,8 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
         <button id="viewZones" class="active" onclick="setView('zones')"><svg class="ic"><use href="#i-map-pin"/></svg> Zones</button>
         <button id="viewBasins" onclick="setView('basins')"><svg class="ic"><use href="#i-building-2"/></svg> Basins</button>
     </span>
-    <span class="view-toggle" id="liveToggle" style="display:none" title="Live corrections (live_v1): what the watcher's CSO flags and the published samples do to the model's numbers — an observed discharge becomes certain, an expected one the feed never flagged is downgraded, a flag still up or an elevated sample holds the beach up, a clean sample caps the tail. Off = the two-stage model alone.">
-        <button id="liveBtn" class="active" onclick="toggleLiveCorrections()"><svg class="ic"><use href="#i-satellite-dish"/></svg> Live corrections v1: on</button>
+    <span class="view-toggle" id="liveToggle" style="display:none" title="Live corrections: what the beach map's CSO flags and postings, and the published samples, do to the model's numbers — an observed discharge becomes certain, an expected one the feed never flagged is downgraded, a flag still up or an elevated sample holds the beach up, a clean sample caps the tail. Off = the two-stage model alone.">
+        <button id="liveBtn" class="active" onclick="toggleLiveCorrections()"><svg class="ic"><use href="#i-satellite-dish"/></svg> Live corrections: on</button>
     </span>
     <span class="historical-label" id="histLabel"></span>
 </div>
@@ -201,7 +209,7 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 
 <div class="foot">   {# the page's own source note; the site footer is the frame's #}
     <p><svg class="ic"><use href="#i-info"/></svg> Rain: NOAA gauges (Downtown 047772, Oceanside 047767), KSFO hourly, ECMWF forecast · Discharges: SFPUC CIWQS reports · Beach status: SFPUC · Bacteria: DataSF</p>
-    <p>Community-science tool, not an official advisory — posted signs and SFPUC or health-department notices always win. <a href="/reports/2026-09_forecast_{{ served_name }}_model_explorer.html">How the model works</a> · <a href="/reports/2026-09_forecast_stage2_explorer.html">Stage 2: discharge → beach risk</a> · <a href="/reports/2026-09_weather_models.html">Which weather model</a> · <a href="/reports/2026-09_model_analysis.html">Model analysis: which set to run</a> · <a href="/reports/2026-09_live_replay.html">Live corrections: replay</a> · <a href="/reports/2026-09_live_replay_synthetic.html">Live corrections: synthetic replay</a> · <a href="/">Back to dashboard</a> · <a href="/api/build" title="{{ build.message or '' }}">{{ build.label }}</a></p>
+    <p>Community-science tool, not an official advisory — posted signs and SFPUC or health-department notices always win. <a href="/">Back to dashboard</a> · <a href="/api/build" title="{{ build.message or '' }}">{{ build.label }}</a></p>
 </div>
 </div>
 
@@ -227,7 +235,7 @@ let RISK_THRESHOLD = 0.5;   // "HIGH" — the line the model check scores hits a
 const ic = name => `<svg class="ic"><use href="#i-${name}"/></svg>`;
 const esc = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const badge = (kind, icon, label) => `<span class="badge ${kind}">${ic(icon)}${esc(label)}</span>`;
-// Live corrections (live_v1, src/models/live_rules.py): how a number moved and why.
+// Live corrections (live_v2, src/models/live_rules.py): how a number moved and why.
 const RULE_BADGE = {
     cso_onset:             a => ['danger', 'octagon-alert', 'discharge observed'],
     cso_anchor_prev_day:   a => ['danger', 'octagon-alert', 'discharge observed (flag next day)'],
@@ -286,7 +294,7 @@ function rainSourceLabel(day) {
 
 // ─── state / mode / view ────────────────────────────────────────────────────
 let currentMode = 'live', currentView = 'zones', current = null;
-// Live corrections (live_v1): the payload carries the corrected numbers and, under `plain`, the model alone.
+// Live corrections (live_v2): the payload carries the corrected numbers and, under `plain`, the model alone.
 // The toggle swaps which one every renderer reads — no refetch, no recompute.
 let showLiveCorrections = true, lastLiveData = null;
 function eff(day) {
@@ -299,7 +307,7 @@ function renderLiveToggle(info) {
     if (!wrap || !btn) return;
     if (!info || currentMode !== 'live') { wrap.style.display = 'none'; return; }
     wrap.style.display = 'inline-flex';
-    const v = (info.version || 'live_v1').replace(/^live_/, '');   // live_v1 → v1
+    const v = (info.version || 'live_v2').replace(/^live_/, '');   // live_v1 → v1
     if (info.enabled === false) { btn.className = ''; btn.disabled = true; btn.innerHTML = `${ic('satellite-dish')} Live corrections ${esc(v)}: off (${esc(info.source || 'server')})`; return; }
     btn.disabled = false; btn.className = showLiveCorrections ? 'active' : '';
     btn.innerHTML = `${ic('satellite-dish')} Live corrections ${esc(v)}: ${showLiveCorrections ? 'on' : 'off — model alone'}`;
@@ -996,11 +1004,10 @@ function renderScoreWindow(sc) {
     }
 
     html += `<div class="sc-reports"><span class="mute">Reports:</span>
-        ${models.length > 1 ? `<a href="/reports/2026-09_model_leaderboard.html" title="How each candidate was fit and scored">leaderboard</a>` : ''}
         <a href="${scoreModel ? '/reports/2026-09_forecast_' + esc(scoreModel) + '_model_explorer.html' : '/reports/2026-09_forecast_' + esc(SERVED_NAME) + '_model_explorer.html'}" title="The selected model set opened up: inputs, weights or trees, self-check">inside this model</a>
         <a href="/reports/2026-09_forecast_stage2_explorer.html" title="How a discharge probability becomes beach risk — shared by every model set">stage 2</a>
         <a href="/reports/2026-09_model_analysis.html" title="Every model set ranked by cost, from several angles, with charts and recommendations">model analysis</a>
-        <a href="/reports/2026-09_live_replay.html" title="Live corrections (live_v1) replayed day by day over the 2016-17 feed archive and graded against the model alone">live replay</a>
+        <a href="/reports/2026-09_live_replay.html" title="The live rules replayed day by day over the 2016-17 feed archive and graded against the model alone">live replay</a>
         <a href="/reports/2026-09_live_replay_synthetic.html" title="The same replay over every out-of-sample day with a synthetic feed built from the filed discharges, degraded with the archive's miss and lag rates">synthetic replay</a>
         <a href="/reports/2026-09_weather_models.html" title="Which weather model should stand in for the gauges on the forecast days: ECMWF, GFS, ICON and their mean against the two NOAA gauges, Feb 2024 → Aug 2026">weather models</a>
     </div></div>`;

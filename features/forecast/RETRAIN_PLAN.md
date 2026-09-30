@@ -229,7 +229,7 @@ per-event Westside data 2013–2017.
 `src/models/train_v4.py` (imports the shared formulas from train_v2.py, which
 stays as the reference implementation). Artifacts `data/models/v4/`, promoted
 into `data/models/` with `--promote`. Full write-up with the numbers:
-`reports/2026-09_forecast_v4.html` (regenerate with `src/models/report_v4.py`).
+`reports/2026-09_forecast_v4.html` (retired from `reports/` on 2026-09-29 — the explorers and the analysis report replaced it; regenerate with `src/models/report_v4.py` if ever needed).
 
 What changed:
 
