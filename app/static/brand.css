@@ -24,7 +24,8 @@
    One palette, one radius scale, one set of status colours. Pages should read
    these instead of re-declaring hex values. */
 :root{--brand:#0072BC;--brand-deep:#005a96;--sky:#85BFDF;--ink:#26272A;--muted:#54576F;--faint:#8a949b;--line:#d9e4e8;--sand:#E3EBF2;--sand2:#eef3f7;
-      --safe:#237059;--caution:#c99a12;--posted:#d4763a;--discharge:#b5310a;--unknown:#98a3ab;--r:14px;--r-lg:20px}
+      --safe:#237059;--caution:#c99a12;--posted:#d4763a;--discharge:#b5310a;--unknown:#98a3ab;--r:14px;--r-lg:20px;--page-w:1100px}
+body.wide{--page-w:1280px}   /* data pages (tables, charts): header, sub-tabs, content and footer all follow */
 
 /* ── Kit: page basics and the shared controls (redesign, 2026-09-29) ─────────────
    brand.css loads BEFORE each page's own <style>, so a page may still specialise a
@@ -32,7 +33,7 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--sand);color:var(--ink);font-family:'Roboto','Segoe UI',Arial,sans-serif}
 a{color:var(--brand)}
-.wrap{max-width:1100px;margin:0 auto;padding:24px}
+.wrap{max-width:var(--page-w);margin:0 auto;padding:24px}
 .controls{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:center;margin:0 0 12px}
 .ctl-label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
 .seg-toggle{display:inline-flex;border:2px solid var(--line);border-radius:999px;overflow:hidden;background:#fff}
@@ -57,7 +58,7 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
 
 /* ── Frame: top bar ───────────────────────────────────────────────────────── */
 .topbar{background:#fff;border-bottom:1px solid var(--line);position:relative;z-index:30;font-family:'Roboto','Segoe UI',Arial,sans-serif}
-.topbar .in{max-width:1100px;margin:0 auto;padding:8px 24px;display:flex;align-items:center;gap:14px}
+.topbar .in{max-width:var(--page-w);margin:0 auto;padding:8px 24px;display:flex;align-items:center;gap:14px}
 .topbar .mark{display:flex;align-items:center;gap:9px;color:var(--ink);text-decoration:none;white-space:nowrap}
 .topbar .mark img{width:30px;height:30px;border-radius:8px}
 .topbar .mark span{display:flex;flex-direction:column;line-height:1}
@@ -102,7 +103,7 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
 
 /* ── Frame: footer (every page) ───────────────────────────────────────────── */
 .site-footer{background:#343b44;padding:26px 0 30px;margin:0;color:rgba(255,255,255,.78);font-size:14px;line-height:1.7;text-align:center;font-family:'Roboto','Segoe UI',Arial,sans-serif}   /* full-bleed band; the column sits inside */
-.site-footer .in{max-width:1100px;margin:0 auto;padding:0 24px}
+.site-footer .in{max-width:var(--page-w);margin:0 auto;padding:0 24px}
 .site-footer .hotline{color:#fff;font-weight:700;margin:0 0 6px}
 .site-footer .advisory{color:#ff8a66;font-weight:600;margin:0 0 10px}
 .site-footer a{color:#7ab8e0;text-decoration:none}

@@ -157,6 +157,22 @@ def test_render_landing_offline_shows_hubs_and_hood():
     assert "Data Tools Dashboard" not in html and 'id="water"' in html and 'id="record"' in html                                          # hub anchors the nav points at
 
 
+def test_data_pages_widen_the_whole_frame_and_the_board_pages_stay_narrow():
+    """One page-width variable drives header, sub-tabs, content and footer; the data pages
+    (tables, charts) opt into the wider column with body.wide (Chase, 2026-09-29)."""
+    css = (ROOT / "app/static/brand.css").read_text()
+    assert "--page-w:1100px" in css and "body.wide{--page-w:1280px}" in css
+    for sel in (".wrap{", ".topbar .in{", ".site-footer .in{"):
+        rule = css[css.index(sel):]; rule = rule[:rule.index("}")]
+        assert "max-width:var(--page-w)" in rule, sel
+    wide = {"graphs", "samples", "comparison", "discharges", "postings", "site_analysis", "cso_history"}
+    for name in wide:
+        assert '<body class="wide">' in (ROOT / f"app/templates/{name}/page.html").read_text(), name
+    for name in ("landing.html", "today/page.html", "about/index.html", "forecast/page.html", "signup/page.html"):
+        t = (ROOT / "app/templates" / name).read_text()
+        assert 'class="wide"' not in t and "max-width:1100px" not in t, name          # the board and prose pages read the variable, at its default
+
+
 if __name__ == "__main__":
     failures = 0
     for name, fn in sorted(globals().items()):

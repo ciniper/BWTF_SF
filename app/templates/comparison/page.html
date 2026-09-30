@@ -8,7 +8,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/brand.css">
 <style>
-          .wrap{max-width:1040px;margin:0 auto;padding:24px}
           .legend{display:flex;flex-wrap:wrap;gap:14px;margin:0 0 18px}
           .legend div{background:#fff;border:1px solid #d9e4e8;border-radius:14px;padding:10px 14px;font-size:13px;color:#54576F}
           .legend b{color:#26272a}
@@ -60,7 +59,7 @@
           .modal__links{color:#54576F;font-size:13px;margin:10px 0 0}.modal__links a{color:#0072BC;font-weight:700;margin-right:14px}
         </style>
 </head>
-<body>
+<body class="wide">
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
 {{ topbar() }}
 <div class="wrap">
