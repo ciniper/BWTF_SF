@@ -56,7 +56,7 @@ def test_today_page_is_the_board_plus_the_experimental_row_and_the_api_route_exi
     assert 'id="today-map"' in h and 'id="zones"' in h and 'id="layers"' in h and "Experimental" in h and 'id="tg-bwtf"' in h and 'data-layer="replay"' in h and 'id="replay-ctl" hidden' in h and "/api/today/" in h
     assert h.index('id="layers"') < h.index('class="board') and 'class="extras"' not in h                                            # the strip sits above the board; the old row is gone
     assert h.count('class="site" data-zone=') == 20 and 'id="zone-sites"' in h and 'data-sample-station=' in h and "{{" not in h        # a chip per station under the zone tiles, each opening the popover
-    assert ' hidden>' in h.split('id="zone-sites"')[1][:200]                                                                            # chips wait for a zone tap
+    assert ' hidden>' in h.split('id="zone-sites"')[1][:200] and ".site-chips[hidden]{display:none}" in (ROOT / "app/static/brand.css").read_text()   # chips wait for a zone tap — and the attribute must win over the strip's display:flex
     assert 'id="tg-city" checked' in h and 'id="tg-bwtf">' in h and 'data-layer="bwtf"' not in h and h.index('id="tg-bwtf"') < h.index('data-layer="rain"')   # two source switches: city on, Surfrider off (Chase, 2026-09-30)
     assert 'if (!q.has("layers")) want.add("bwtf")' not in (ROOT / "app/templates/_today_board.html").read_text()
     assert 'class="topbar"' in h and 'href="/today" class="on" aria-current="page">Today' in h and 'class="hubs"' not in h    # the board, not the hubs
