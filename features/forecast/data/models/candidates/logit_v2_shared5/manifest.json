@@ -1,0 +1,437 @@
+{
+ "name": "logit_v2_shared5",
+ "family": "logit",
+ "note": "The same 5 terms in every basin, each basin its own weights (Chase 2026-09-30): today's rain and yesterday's, cut into bands at shared bends (precip_avg:0-0.5, precip_avg:0.5-1, precip_avg:1+, rain_lag1d:0-0.5, rain_lag1d:0.5+); every weight \u2265 0, so more rain never lowers the risk. C per basin by pre-holdout season CV. Served rain sources and training rows. Stage 2 v1.",
+ "created_at": "2026-09-30T12:08:36",
+ "trained_through": "2025-10-31",
+ "span": [
+  "2016-03-01",
+  "2026-08-17"
+ ],
+ "holdout_start": "2023-07-01",
+ "rain_sources": {
+  "westside": "avg",
+  "north_shore": "SF Downtown",
+  "central": "SF Downtown",
+  "southeast": "SF Downtown",
+  "citywide": "avg"
+ },
+ "per_basin": {
+  "westside": {
+   "source": "avg",
+   "C": 3.0,
+   "terms": [
+    "precip_avg:0-0.5",
+    "precip_avg:0.5-1",
+    "precip_avg:1+",
+    "rain_lag1d:0-0.5",
+    "rain_lag1d:0.5+"
+   ],
+   "slope_per_inch": {
+    "precip_avg:0-0.5": 13.0298,
+    "precip_avg:0.5-1": 2.8232,
+    "precip_avg:1+": 3.3999,
+    "rain_lag1d:0-0.5": 3.4725,
+    "rain_lag1d:0.5+": 0.042
+   },
+   "season_cv_pre_holdout": {
+    "n": 2038,
+    "pos": 39,
+    "roc_auc": 0.9899629301830403,
+    "pr_auc": 0.668976975994203,
+    "brier": 0.011145400922106802
+   },
+   "season_cv_by_C": {
+    "0.03": 0.6520201176562921,
+    "0.1": 0.6480106146077165,
+    "0.3": 0.6561464435312655,
+    "1.0": 0.6651155536159506,
+    "3.0": 0.668976975994203
+   },
+   "holdout": {
+    "n": 854,
+    "pos": 12,
+    "roc_auc": 0.9958432304038004,
+    "pr_auc": 0.8110239297739298,
+    "brier": 0.005728394195854615
+   },
+   "n_events": 51
+  },
+  "north_shore": {
+   "source": "SF Downtown",
+   "C": 3.0,
+   "terms": [
+    "precip_avg:0-0.5",
+    "precip_avg:0.5-1",
+    "precip_avg:1+",
+    "rain_lag1d:0-0.5",
+    "rain_lag1d:0.5+"
+   ],
+   "slope_per_inch": {
+    "precip_avg:0-0.5": 15.4379,
+    "precip_avg:0.5-1": 6.2952,
+    "precip_avg:1+": 4.8012,
+    "rain_lag1d:0-0.5": 1.8989,
+    "rain_lag1d:0.5+": 0.0
+   },
+   "season_cv_pre_holdout": {
+    "n": 2647,
+    "pos": 31,
+    "roc_auc": 0.9958814244845615,
+    "pr_auc": 0.7448571590614774,
+    "brier": 0.005584653447542526
+   },
+   "season_cv_by_C": {
+    "0.03": 0.7107119621219913,
+    "0.1": 0.712040222179697,
+    "0.3": 0.730483144394115,
+    "1.0": 0.7412299810764768,
+    "3.0": 0.7448571590614774
+   },
+   "holdout": {
+    "n": 854,
+    "pos": 9,
+    "roc_auc": 0.9996055226824457,
+    "pr_auc": 0.9626543209876546,
+    "brier": 0.002090895166047407
+   },
+   "n_events": 40
+  },
+  "central": {
+   "source": "SF Downtown",
+   "C": 0.03,
+   "terms": [
+    "precip_avg:0-0.5",
+    "precip_avg:0.5-1",
+    "precip_avg:1+",
+    "rain_lag1d:0-0.5",
+    "rain_lag1d:0.5+"
+   ],
+   "slope_per_inch": {
+    "precip_avg:0-0.5": 7.2677,
+    "precip_avg:0.5-1": 8.3208,
+    "precip_avg:1+": 0.0,
+    "rain_lag1d:0-0.5": 2.423,
+    "rain_lag1d:0.5+": 0.0
+   },
+   "season_cv_pre_holdout": {
+    "n": 2647,
+    "pos": 58,
+    "roc_auc": 0.9938266671994247,
+    "pr_auc": 0.707226029792554,
+    "brier": 0.009521270201917122
+   },
+   "season_cv_by_C": {
+    "0.03": 0.707226029792554,
+    "0.1": 0.704655305020779,
+    "0.3": 0.7064847686357301,
+    "1.0": 0.7026609109112709,
+    "3.0": 0.7006261952054635
+   },
+   "holdout": {
+    "n": 854,
+    "pos": 20,
+    "roc_auc": 0.9995803357314148,
+    "pr_auc": 0.9870370370370374,
+    "brier": 0.004211667743804482
+   },
+   "n_events": 78
+  },
+  "southeast": {
+   "source": "SF Downtown",
+   "C": 0.03,
+   "terms": [
+    "precip_avg:0-0.5",
+    "precip_avg:0.5-1",
+    "precip_avg:1+",
+    "rain_lag1d:0-0.5",
+    "rain_lag1d:0.5+"
+   ],
+   "slope_per_inch": {
+    "precip_avg:0-0.5": 6.6528,
+    "precip_avg:0.5-1": 7.8925,
+    "precip_avg:1+": 1.0676,
+    "rain_lag1d:0-0.5": 3.0131,
+    "rain_lag1d:0.5+": 0.0
+   },
+   "season_cv_pre_holdout": {
+    "n": 2647,
+    "pos": 61,
+    "roc_auc": 0.9930996665525592,
+    "pr_auc": 0.7939351061243384,
+    "brier": 0.009329351738129632
+   },
+   "season_cv_by_C": {
+    "0.03": 0.7939351061243384,
+    "0.1": 0.7840773078245572,
+    "0.3": 0.7767152547408686,
+    "1.0": 0.7737180477501212,
+    "3.0": 0.76953857068199
+   },
+   "holdout": {
+    "n": 854,
+    "pos": 17,
+    "roc_auc": 0.9981727458008294,
+    "pr_auc": 0.8662724050267303,
+    "brier": 0.005003192488808076
+   },
+   "n_events": 78
+  },
+  "citywide": {
+   "source": "avg",
+   "C": 0.1,
+   "terms": [
+    "precip_avg:0-0.5",
+    "precip_avg:0.5-1",
+    "precip_avg:1+",
+    "rain_lag1d:0-0.5",
+    "rain_lag1d:0.5+"
+   ],
+   "slope_per_inch": {
+    "precip_avg:0-0.5": 10.0104,
+    "precip_avg:0.5-1": 6.7808,
+    "precip_avg:1+": 0.6265,
+    "rain_lag1d:0-0.5": 4.0219,
+    "rain_lag1d:0.5+": 0.0
+   },
+   "season_cv_pre_holdout": {
+    "n": 2038,
+    "pos": 58,
+    "roc_auc": 0.9917842215256009,
+    "pr_auc": 0.8026238114310191,
+    "brier": 0.011426027813719947
+   },
+   "season_cv_by_C": {
+    "0.03": 0.8010742340422561,
+    "0.1": 0.8026238114310191,
+    "0.3": 0.8000585392296886,
+    "1.0": 0.7977311345621921,
+    "3.0": 0.7962309985467602
+   },
+   "holdout": {
+    "n": 854,
+    "pos": 20,
+    "roc_auc": 0.997841726618705,
+    "pr_auc": 0.8824417556557651,
+    "brier": 0.00520478647787865
+   },
+   "n_events": 78
+  }
+ },
+ "stage1": {
+  "name": "logit_v2_shared5",
+  "from": "fit",
+  "family": "logit"
+ },
+ "stage2": {
+  "variant": "v1",
+  "kind": "basin composition",
+  "impact_table_refit": false,
+  "fitted_at": null
+ },
+ "zone_confusion_holdout": {
+  "ocean": {
+   "0.1": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 72,
+     "fn": 1,
+     "tn": 772
+    },
+    "vs_bacteria_elevated": {
+     "tp": 17,
+     "fp": 15,
+     "fn": 10,
+     "tn": 115
+    }
+   },
+   "0.25": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 33,
+     "fn": 1,
+     "tn": 811
+    },
+    "vs_bacteria_elevated": {
+     "tp": 16,
+     "fp": 11,
+     "fn": 11,
+     "tn": 119
+    }
+   },
+   "0.5": {
+    "vs_discharge_posting": {
+     "tp": 8,
+     "fp": 12,
+     "fn": 2,
+     "tn": 832
+    },
+    "vs_bacteria_elevated": {
+     "tp": 12,
+     "fp": 3,
+     "fn": 15,
+     "tn": 127
+    }
+   }
+  },
+  "baker_china": {
+   "0.1": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 41,
+     "fn": 1,
+     "tn": 803
+    },
+    "vs_bacteria_elevated": {
+     "tp": 6,
+     "fp": 10,
+     "fn": 33,
+     "tn": 120
+    }
+   },
+   "0.25": {
+    "vs_discharge_posting": {
+     "tp": 8,
+     "fp": 17,
+     "fn": 2,
+     "tn": 827
+    },
+    "vs_bacteria_elevated": {
+     "tp": 4,
+     "fp": 6,
+     "fn": 35,
+     "tn": 124
+    }
+   },
+   "0.5": {
+    "vs_discharge_posting": {
+     "tp": 7,
+     "fp": 6,
+     "fn": 3,
+     "tn": 838
+    },
+    "vs_bacteria_elevated": {
+     "tp": 3,
+     "fp": 3,
+     "fn": 36,
+     "tn": 127
+    }
+   }
+  },
+  "north": {
+   "0.1": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 54,
+     "fn": 0,
+     "tn": 791
+    },
+    "vs_bacteria_elevated": {
+     "tp": 17,
+     "fp": 13,
+     "fn": 11,
+     "tn": 116
+    }
+   },
+   "0.25": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 28,
+     "fn": 0,
+     "tn": 817
+    },
+    "vs_bacteria_elevated": {
+     "tp": 16,
+     "fp": 8,
+     "fn": 12,
+     "tn": 121
+    }
+   },
+   "0.5": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 2,
+     "fn": 0,
+     "tn": 843
+    },
+    "vs_bacteria_elevated": {
+     "tp": 8,
+     "fp": 1,
+     "fn": 20,
+     "tn": 128
+    }
+   }
+  },
+  "east": {
+   "0.1": {
+    "vs_discharge_posting": {
+     "tp": 20,
+     "fp": 114,
+     "fn": 0,
+     "tn": 720
+    },
+    "vs_bacteria_elevated": {
+     "tp": 76,
+     "fp": 19,
+     "fn": 61,
+     "tn": 103
+    }
+   },
+   "0.25": {
+    "vs_discharge_posting": {
+     "tp": 20,
+     "fp": 79,
+     "fn": 0,
+     "tn": 755
+    },
+    "vs_bacteria_elevated": {
+     "tp": 65,
+     "fp": 13,
+     "fn": 72,
+     "tn": 109
+    }
+   },
+   "0.5": {
+    "vs_discharge_posting": {
+     "tp": 18,
+     "fp": 41,
+     "fn": 2,
+     "tn": 793
+    },
+    "vs_bacteria_elevated": {
+     "tp": 51,
+     "fp": 4,
+     "fn": 86,
+     "tn": 118
+    }
+   }
+  }
+ },
+ "design": {
+  "precip_avg": [
+   0.5,
+   1.0
+  ],
+  "rain_lag1d": [
+   0.5
+  ]
+ },
+ "terms": [
+  "precip_avg:0-0.5",
+  "precip_avg:0.5-1",
+  "precip_avg:1+",
+  "rain_lag1d:0-0.5",
+  "rain_lag1d:0.5+"
+ ],
+ "constraint": "every weight >= 0",
+ "C_grid": [
+  0.03,
+  0.1,
+  0.3,
+  1.0,
+  3.0
+ ],
+ "input_rules_post": [
+  "gauge_outage_v1"
+ ]
+}

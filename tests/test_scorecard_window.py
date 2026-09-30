@@ -357,8 +357,10 @@ def test_candidate_models_unpickle_anywhere_and_explorers_are_built():
             assert hasattr(pk["model"], "predict_proba"), key
             assert pk["features"], key
             if pk.get("family") == "logit":
-                fn = pk["model"].named_steps["hinges"].func
-                assert fn.__module__ == "leaderboard", f"{key}: hinge transform pickled as {fn.__module__}.{fn.__name__}"
+                fn = pk["model"].steps[0][1].func          # add_hinges, or add_bands for the shared-terms sets
+                assert fn.__module__ == "leaderboard", f"{key}: design transform pickled as {fn.__module__}.{fn.__name__}"
+                lr = pk["model"].named_steps["lr"]
+                assert type(lr).__module__ in ("leaderboard", "sklearn.linear_model._logistic"), f"{key}: {type(lr)}"
         print(f"   candidate {m['name']}: {len(models)} models unpickle with a plain import")
     reports = Path(__file__).resolve().parents[1] / "reports"
     for name in (f"2026-09_forecast_{C.served_info()['name']}_model_explorer.html", "2026-09_forecast_stage2_explorer.html", "2026-09_model_analysis.html", "2026-09_live_replay.html", "2026-09_live_replay_synthetic.html",

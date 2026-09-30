@@ -46,7 +46,7 @@ input[type=range]{width:160px}
 .kbd{font-size:12px;color:#54576F}
 .heat td{text-align:center;font-variant-numeric:tabular-nums}
 .tree-node{cursor:default}
-.formula{font-family:ui-monospace,Menlo,monospace;background:#26272a;color:#e3ebf2;border-radius:12px;padding:12px 14px;font-size:13px;overflow-x:auto}
+.formula{font-family:ui-monospace,Menlo,monospace;background:#26272a;color:#e3ebf2;border-radius:12px;padding:12px 14px;font-size:13px;overflow-x:auto;white-space:pre-wrap}
 .fine{font-size:12.5px;color:#54576F}
 .ok-check{color:#237059;font-weight:700}.bad-check{color:#b5310a;font-weight:700}
 footer{color:#54576F;font-size:12.5px;text-align:center;padding:16px}
@@ -168,7 +168,8 @@ const MS = D.model_set || {name:'gb_v1', label:'gb_v1 (served)', served:true, fa
 const famOf = m => m.family || 'gb';
 const ANY_LOGIT = MODEL_ORDER.some(k => famOf(D.models[k]) === 'logit');
 const ALL_LOGIT = MODEL_ORDER.every(k => famOf(D.models[k]) === 'logit');
-const FAMILY_LABEL = ALL_LOGIT ? 'weights model (logistic regression with hinge terms)' : ANY_LOGIT ? 'mixed: gradient boosting and weights models' : 'gradient boosting';
+const BANDS = ALL_LOGIT && MODEL_ORDER.every(k => D.models[k].bands);   // a shared-terms set: the same rain bands in every basin, weights ≥ 0
+const FAMILY_LABEL = BANDS ? 'weights model on the same rain bands in every basin, every weight ≥ 0' : ALL_LOGIT ? 'weights model (logistic regression with hinge terms)' : ANY_LOGIT ? 'mixed: gradient boosting and weights models' : 'gradient boosting';
 const nameOf = k => k === 'citywide' ? 'City-wide' : D.basins[k].name;
 const esc = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const pct = p => Math.round(p * 100) + '%';
@@ -184,13 +185,13 @@ document.getElementById('title').textContent = 'How the SF CSO forecast works' +
 document.getElementById('sub').textContent = MS.served
   ? 'The served gb_v1 models, opened up: where the rain numbers come from, what the models are given, the trees they are made of, and how a discharge probability becomes a beach-risk percentage. Everything on this page is computed from the deployed model files — the page runs the real trees in your browser.'
   : `The ${MS.name} candidate set, opened up — stage 1 is ${MS.stage1_name || MS.name}, a ${FAMILY_LABEL}${MS.stage1_from && MS.stage1_from !== 'fit' ? ' taken from ' + (MS.stage1_from === 'served' || MS.stage1_from === 'v4' ? 'the served bundle' : MS.stage1_from) : ''}; stage 2 is ${MS.stage2 && MS.stage2.variant !== 'v1' ? MS.stage2.variant + ', the outfall split (outfall shares' + (MS.stage2.impact_table_refit ? ', impact table refit' : '') + ')' : 'v1, the basin composition the served bundle ships'}. It is NOT what the live forecast runs; it exists to be compared with the served gb_v1 in the Model check on identical days and labels. Same rain gauges, same 19 features, same volume heads; the page runs this set's own arithmetic. ${MS.note ? MS.note : ''}`;
-const nHinge = ANY_LOGIT ? (Object.values(D.models).find(m => famOf(m) === 'logit').coef.length - D.features.all.length) : 0;
+const nHinge = ANY_LOGIT && !BANDS ? (Object.values(D.models).find(m => famOf(m) === 'logit').coef.length - D.features.all.length) : 0;
 document.getElementById('meta').innerHTML = [
   (MS.served ? 'served models ' : 'candidate ') + esc(D.version) + ' · fit ' + esc((D.trained_at||'').slice(0,10)),
   'training window ' + esc((D.train_window||[]).join(' → ')),
   'holdout from ' + esc(D.holdout_start),
   D.rescored_at ? 'scorecard rescored through ' + esc(D.span[1]) : '',
-  ANY_LOGIT ? esc(D.features.all.length) + ' features + ' + nHinge + ' hinge terms · L2 logistic, C per basin' : esc(D.features.all.length) + ' features · ' + esc(D.model_params.n_estimators) + ' trees × depth ' + esc(D.model_params.max_depth) + ' per model',
+  BANDS ? esc(D.models[MODEL_ORDER[0]].coef.length) + ' rain bands, the same in every basin · L2 logistic, every weight ≥ 0, C per basin' : ANY_LOGIT ? esc(D.features.all.length) + ' features + ' + nHinge + ' hinge terms · L2 logistic, C per basin' : esc(D.features.all.length) + ' features · ' + esc(D.model_params.n_estimators) + ' trees × depth ' + esc(D.model_params.max_depth) + ' per model',
   'stage 1: ' + esc(MS.stage1_name || (MS.served ? 'gb_v1' : MS.name)),
   MS.stage2 && MS.stage2.variant !== 'v1' ? 'stage 2: ' + esc(MS.stage2.variant) + ' (outfall split' + (MS.stage2.impact_table_refit ? ', impact table refit' : '') + ')' : 'stage 2: v1 (basin composition, as served)',
 ].filter(Boolean).map(t => '<span>' + t + '</span>').join('');
@@ -302,7 +303,10 @@ const vec = f => FEATS.map(k => f[k]);
 // columns = the 19 features, then max(0, x_f − knot) for every hinge knot in
 // m.hinges order; each column is standardised with the scaler's mean/sd and
 // multiplied by its weight; the intercept is added; sigmoid → P_raw.
-function hingeVec(m, x) { const out = x.slice(); for (const [f, ks] of Object.entries(m.hinges)) { const v = x[FEATS.indexOf(f)]; for (const k of ks) out.push(Math.max(0, v - k)); } return out; }
+// A shared-terms model (m.bands) has no hinges: its columns are the rain inside
+// each band, clip(x_f − lo, 0, hi − lo) (port of leaderboard.add_bands).
+function hingeVec(m, x) { if (m.bands) return m.bands.map(b => { const v = Math.max(0, x[FEATS.indexOf(b.f)] - b.lo); return b.hi == null ? v : Math.min(v, b.hi - b.lo); });
+  const out = x.slice(); for (const [f, ks] of Object.entries(m.hinges)) { const v = x[FEATS.indexOf(f)]; for (const k of ks) out.push(Math.max(0, v - k)); } return out; }
 function logitTerms(m, x) { const h = hingeVec(m, x); return h.map((v, i) => { const z = (v - m.means[i]) / (m.scales[i] || 1); return {name: m.names[i], value: v, mean: m.means[i], sd: m.scales[i], z, w: m.coef[i], contrib: m.coef[i] * z}; }); }
 function logitRaw(m, x) { let s = m.intercept; for (const t of logitTerms(m, x)) s += t.contrib; return s; }
 const rawScore = (m, x) => famOf(m) === 'logit' ? logitRaw(m, x) : gbRaw(m, x);
@@ -436,15 +440,16 @@ function renderOutputs() {
   const anyLogit = Object.values(D.models).find(m => famOf(m) === 'logit');
   const gbText = `A gradient-boosted model is a sum of small decision trees. Each tree looks at a few features, walks to a leaf and adds that leaf's value; the sum is a log-odds score that a sigmoid turns into a probability, then a small dry-day offset is subtracted. Feature importance is how much of the trees' total split gain each feature earned.`;
   const lgText = anyLogit ? `A weights model is one straight line in log-odds: every input column is standardised (subtract the training mean, divide by the training sd), multiplied by its weight, and the ${anyLogit.coef.length} products plus an intercept are summed; a sigmoid turns the sum into a probability. The columns are the 19 features plus ${anyLogit.coef.length - FEATS.length} hinge terms max(0, x − knot) at fixed rain knots, which let the line bend at the depths where the sewers start to overflow. The weights were fit by L2-penalised logistic regression (C chosen per basin by pre-holdout season cross-validation; smaller C = more shrinkage). "Weight share" below is each base feature's share of Σ|weight| over its column and its hinges.` : '';
+  const bandsText = BANDS ? `Every basin asks the same questions and answers with its own weights. The columns are today's rain (precip_avg) and yesterday's (rain_lag1d), each cut into bands at the same bends for every basin: a band holds the rain that fell between one bend and the next (clip(x − lo, 0, hi − lo)), so an input's bands add back up to the input, and a band's weight is the slope of the risk inside that band. Every weight is held at zero or above, so more rain never lowers the risk; a weight of exactly 0 means that band adds nothing in that basin. Columns are standardised (subtract the training mean, divide by the training sd), multiplied by their weights and summed with an intercept; a sigmoid turns the sum into a probability. Fit by L2-penalised logistic regression with the weights bounded at 0 (C chosen per basin by pre-holdout season cross-validation; smaller C = more shrinkage).` : '';
   document.getElementById('stage1Title').textContent = ALL_LOGIT ? 'Stage 1: P(discharge today), one weights model per basin' : ANY_LOGIT ? 'Stage 1: P(discharge today), one model per basin (mixed families)' : 'Stage 1: P(discharge today), one gradient-boosted model per basin';
-  document.getElementById('stage1Lead').innerHTML = ALL_LOGIT ? esc(lgText) : ANY_LOGIT ? esc(lgText) + ' ' + esc(gbText) : `Each basin has its own model: ${esc(gbDesc)}. ${esc(gbText)}`;
+  document.getElementById('stage1Lead').innerHTML = BANDS ? esc(bandsText) : ALL_LOGIT ? esc(lgText) : ANY_LOGIT ? esc(lgText) + ' ' + esc(gbText) : `Each basin has its own model: ${esc(gbDesc)}. ${esc(gbText)}`;
   const gbFormula = `score(x) = init + ${mp.learning_rate} × Σ<sub>k=1..${mp.n_estimators}</sub> leaf<sub>k</sub>(x)        init = log-odds of the training discharge rate`;
-  const lgFormula = anyLogit ? `score(x) = b + Σ<sub>i=1..${anyLogit.coef.length}</sub> w<sub>i</sub> · ( h<sub>i</sub>(x) − μ<sub>i</sub> ) / σ<sub>i</sub>        h = the 19 features, then max(0, x<sub>f</sub> − knot) for each hinge; μ, σ = training mean and sd of that column` : '';
+  const lgFormula = BANDS ? `score(x) = b + Σ<sub>i=1..${anyLogit.coef.length}</sub> w<sub>i</sub> · ( h<sub>i</sub>(x) − μ<sub>i</sub> ) / σ<sub>i</sub>        h<sub>i</sub> = clip(x<sub>f</sub> − lo<sub>i</sub>, 0, hi<sub>i</sub> − lo<sub>i</sub>), the rain inside band i; w<sub>i</sub> ≥ 0; μ, σ = training mean and sd of that column` : anyLogit ? `score(x) = b + Σ<sub>i=1..${anyLogit.coef.length}</sub> w<sub>i</sub> · ( h<sub>i</sub>(x) − μ<sub>i</sub> ) / σ<sub>i</sub>        h = the 19 features, then max(0, x<sub>f</sub> − knot) for each hinge; μ, σ = training mean and sd of that column` : '';
   document.getElementById('gbFormula').innerHTML = (ALL_LOGIT ? lgFormula : ANY_LOGIT ? lgFormula + '\n' + gbFormula : gbFormula) + `\nP<sub>raw</sub> = 1 / (1 + e<sup>−score</sup>)\nP = clip( P<sub>raw</sub> − offset × clip(1 − rain_3d_cum × 2, 0, 1), 0, 1 )      offset = mean P<sub>raw</sub> on dry training days (fades out as 3-day rain → 0.5")` + (ALL_LOGIT && MODEL_ORDER.every(k => !D.models[k].calibration_offset) ? ' — 0 for this set: the weights models carry no dry-day offset' : '');
   let html = '';
   for (const k of MODEL_ORDER) {
     const m = D.models[k], h = D.holdout[k] || {}, isL = famOf(m) === 'logit';
-    let rows = `<tr><td class="fine">family</td><td><b>${isL ? 'weights (logistic + hinges)' : 'gradient boosting'}</b>${isL ? ` · C = ${esc(m.C)}` : ''}</td></tr>
+    let rows = `<tr><td class="fine">family</td><td><b>${isL ? (m.bands ? 'weights on shared rain bands, all ≥ 0' : 'weights (logistic + hinges)') : 'gradient boosting'}</b>${isL ? ` · C = ${esc(m.C)}` : ''}</td></tr>
       <tr><td class="fine">rain source</td><td><b>${esc(m.rain_source === 'avg' ? 'two-gauge mean' : m.rain_source)}</b></td></tr>`;
     if (isL) rows += `<tr><td class="fine">intercept b</td><td>log-odds ${m.intercept.toFixed(3)} → ${(sigmoid(m.intercept)*100).toFixed(2)}% for a day at the training mean of every column</td></tr>`;
     else rows += `<tr><td class="fine">prior (init)</td><td>log-odds ${m.init_raw.toFixed(3)} → ${(sigmoid(m.init_raw)*100).toFixed(2)}% of covered training days had a discharge</td></tr>`;
@@ -511,7 +516,7 @@ function renderWeights(k, m) {
   rows.push(`<tr><td colspan="6"><b>intercept b</b></td><td class="num"><b>${m.intercept >= 0 ? '+' : ''}${m.intercept.toFixed(3)}</b></td><td></td></tr>`);
   rows.push(`<tr><td colspan="6"><b>score = b + Σ w·z</b></td><td class="num"><b>${score.toFixed(3)}</b></td><td class="fine">→ P<sub>raw</sub> = sigmoid(score) = <b>${(sigmoid(score)*100).toFixed(2)}%</b>${m.calibration_offset ? ` → minus offset ${(m.calibration_offset*100).toFixed(2)} × ${rf.toFixed(2)} = <b>${(predictP(m, f)*100).toFixed(2)}%</b>` : ' (no dry-day offset for this model)'}</td></tr>`);
   document.getElementById('treeSvg').innerHTML = `<table>${rows.join('')}</table>`;
-  document.getElementById('treeNote').innerHTML = `Columns whose value today sits exactly at the training mean (z = 0) contribute nothing, however large their weight — that is what makes a hinge term <code>f&gt;knot</code> switch on only once today's value passes the knot. A column standardised to z = +1 (one training sd above the mean) moves the log-odds by exactly its weight.`;
+  document.getElementById('treeNote').innerHTML = m.bands ? `A band holds only the rain between its two bends, so it moves off its dry-day value only once the rain passes the lower bend, and stops growing at the upper one. Every weight is ≥ 0: a band can raise the odds or add nothing, never lower them. A column standardised to z = +1 (one training sd above the mean) moves the log-odds by exactly its weight.` : `Columns whose value today sits exactly at the training mean (z = 0) contribute nothing, however large their weight — that is what makes a hinge term <code>f&gt;knot</code> switch on only once today's value passes the knot. A column standardised to z = +1 (one training sd above the mean) moves the log-odds by exactly its weight.`;
 }
 function renderTree() {
   const k = document.getElementById('treeModel').value || MODEL_ORDER[0], ti = +document.getElementById('treeIdx').value;

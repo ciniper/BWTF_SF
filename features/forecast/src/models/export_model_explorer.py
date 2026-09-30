@@ -86,25 +86,34 @@ def export_logit(pipe, features, C=None) -> dict:
     column order leaderboard.add_hinges builds), the scaler's mean/sd per
     column, one weight per standardised column, the intercept. Full precision.
     ``importances`` is the analogue of the trees' split-gain share: each base
-    feature's share of Σ|weight per sd| over its own column and its hinges."""
+    feature's share of Σ|weight per sd| over its own column and its hinges.
+    A shared-terms model (logit_v2_shared*, a "bands" pipeline) ships its band
+    columns instead — [{f, lo, hi}], value clip(x_f − lo, 0, hi − lo) — and the
+    page builds those; every weight of such a model is ≥ 0."""
     import leaderboard as LB
     lr, sc = pipe.named_steps["lr"], pipe.named_steps["scale"]
-    names = list(features) + LB.HINGE_NAMES
     coef, means, scales = [float(c) for c in lr.coef_[0]], [float(v) for v in sc.mean_], [float(v) for v in sc.scale_]
-    selected = None
-    if "select" in pipe.named_steps:   # a small model (logit_v2_small): expand to all 38 columns, zero weight on the unselected ones — exact
-        idx = pipe.named_steps["select"].kw_args["idx"]
-        full_c, full_m, full_s = [0.0] * len(names), [0.0] * len(names), [1.0] * len(names)
-        for j, i in enumerate(idx):
-            full_c[i], full_m[i], full_s[i] = coef[j], means[j], scales[j]
-        coef, means, scales, selected = full_c, full_m, full_s, [names[i] for i in idx]
+    if "bands" in pipe.named_steps:
+        cols = LB.band_columns(pipe.named_steps["bands"].kw_args["design"])
+        names = [LB.band_name(*c) for c in cols]
+        assert len(names) == len(coef) == len(means), "column layout drifted from leaderboard.add_bands"
+        agg = {f: 0.0 for f in features}
+        for (f, _, _), c in zip(cols, coef):
+            agg[f] += abs(c)
+        tot = sum(agg.values()) or 1.0
+        return {"family": "logit", "C": C if C is not None else float(lr.C), "intercept": float(lr.intercept_[0]),
+                "names": names, "coef": coef, "means": means, "scales": scales, "hinges": {},
+                "bands": [{"f": f, "lo": lo, "hi": hi} for f, lo, hi in cols], "nonneg": True,
+                "importances": {f: round(v / tot, 5) for f, v in agg.items() if v},
+                "params": {"penalty": "l2", "constraint": "every weight >= 0", "max_iter": int(lr.max_iter), "n_band_terms": len(cols)}}
+    names = list(features) + LB.HINGE_NAMES
     assert len(names) == len(coef) == len(means), "column layout drifted from leaderboard.add_hinges"
     agg = {f: 0.0 for f in features}
     for n, c in zip(names, coef):
         agg[n.split(">")[0]] += abs(c)
     tot = sum(agg.values()) or 1.0
     return {"family": "logit", "C": C if C is not None else float(lr.C), "intercept": float(lr.intercept_[0]),
-            "names": names, "coef": coef, "means": means, "scales": scales, "selected": selected,
+            "names": names, "coef": coef, "means": means, "scales": scales,
             "hinges": LB.HINGES, "importances": {f: round(v / tot, 5) for f, v in agg.items()},
             "params": {"penalty": "l2", "max_iter": int(lr.max_iter), "n_hinge_terms": len(LB.HINGE_NAMES)}}
 

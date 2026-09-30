@@ -8,6 +8,9 @@ Families
          L2 logistic regression. One coefficient per (transformed) feature,
          readable as "how many log-odds per standard deviation". C chosen by
          leave-one-season-out CV on the pre-holdout seasons only.
+         The shared-terms variant (make_shared_model, built by shared_logit.py)
+         cuts today's and yesterday's rain into bands at bends shared by every
+         basin and holds every weight ≥ 0.
 
 Rain sources
   the two production sources per basin (two-gauge mean, local NOAA gauge)
@@ -34,6 +37,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import average_precision_score, brier_score_loss, roc_auc_score
@@ -78,22 +82,93 @@ def add_hinges(X):
     return np.hstack(cols)
 
 
-TERM_NAMES = list(FEATS) + list(HINGE_NAMES)   # the 38 columns add_hinges produces, in order
+# ── the shared-terms weights model (logit_v2_shared5 / logit_v2_shared8, 2026-09-30) ──
+# Every basin asks the same questions (how much rain today, how much yesterday)
+# and answers with its own weights. Each rain input is cut into bands at its
+# bends: a band holds the rain that fell between one bend and the next, so its
+# weight is the slope of the risk inside that band. Every weight is held at zero
+# or above, so more rain never lowers the risk (Chase: "no odd weights"). The
+# bends are shared by all basins; the weights are each basin's own.
+SHARED_DESIGNS = {
+    "shared5": {"precip_avg": (0.5, 1.0), "rain_lag1d": (0.5,)},
+    "shared8": {"precip_avg": (0.5, 0.75, 1.0, 1.5), "rain_lag1d": (0.25, 0.5)},
+}
 
 
-def take_columns(A, idx):
-    """Keep only the selected design columns (module level, so a fitted small pipeline pickles)."""
-    return A[:, idx]
+def band_columns(design: dict) -> list:
+    """[(feature, lo, hi)] in column order; hi None = open-ended."""
+    out = []
+    for f, knots in design.items():
+        edges = [0.0, *knots, None]
+        out += [(f, lo, hi) for lo, hi in zip(edges[:-1], edges[1:])]
+    return out
 
 
-def make_small_model(C: float, terms: list):
-    """The weights model on a subset of its 38 terms (logit_v2_small): hinges → select → scale → L2 logistic.
-    Takes the same 19-input DataFrame serving already passes, so nothing downstream changes."""
-    idx = [TERM_NAMES.index(t) for t in terms]
-    return Pipeline([("hinges", FunctionTransformer(add_hinges, validate=False)),
-                     ("select", FunctionTransformer(take_columns, kw_args={"idx": idx}, validate=False)),
+def band_name(f: str, lo: float, hi) -> str:
+    return f"{f}:{lo:g}-{hi:g}" if hi is not None else f"{f}:{lo:g}+"
+
+
+def add_bands(X, design):
+    """19 base features (DataFrame, or ndarray in FEATS order) → the rain in each
+    band, clip(x − lo, 0, hi − lo). An input's bands sum back to the input."""
+    cols = []
+    for f, lo, hi in band_columns(design):
+        x = X[f].to_numpy(dtype=float) if hasattr(X, "columns") else np.asarray(X, dtype=float)[:, FEATS.index(f)]
+        v = np.maximum(0.0, x - lo)
+        cols.append(np.minimum(v, hi - lo) if hi is not None else v)
+    return np.column_stack(cols)
+
+
+class NonNegLogit(BaseEstimator, ClassifierMixin):
+    """L2 logistic regression with every weight ≥ 0: scikit-learn's objective
+    (½‖w‖² + C · Σ log-loss, intercept unpenalised), solved by L-BFGS-B with
+    bounds. Same C scale as LogisticRegression, so the C grid means the same."""
+
+    def __init__(self, C: float = 1.0, max_iter: int = 5000):
+        self.C = C
+        self.max_iter = max_iter
+
+    def fit(self, X, y):
+        from scipy.optimize import minimize
+        from scipy.special import expit
+        X = np.asarray(X, dtype=float)
+        s = 2.0 * np.asarray(y).astype(int) - 1.0
+        k = X.shape[1]
+
+        def objective(theta):
+            w, b = theta[:k], theta[k]
+            m = -s * (X @ w + b)
+            g = -s * expit(m)                       # d log-loss / d score, per day
+            return (0.5 * w @ w + self.C * np.logaddexp(0.0, m).sum(),
+                    np.concatenate([w + self.C * (X.T @ g), [self.C * g.sum()]]))
+
+        res = minimize(objective, np.zeros(k + 1), jac=True, method="L-BFGS-B",
+                       bounds=[(0.0, None)] * k + [(None, None)],
+                       options={"maxiter": self.max_iter, "ftol": 1e-12, "gtol": 1e-8})
+        self.classes_ = np.array([0, 1])
+        self.coef_ = res.x[:k][None, :]
+        self.intercept_ = res.x[k:]
+        self.n_iter_ = np.array([res.nit])
+        return self
+
+    def decision_function(self, X):
+        return np.asarray(X, dtype=float) @ self.coef_[0] + self.intercept_[0]
+
+    def predict_proba(self, X):
+        from scipy.special import expit
+        p = expit(self.decision_function(X))
+        return np.column_stack([1.0 - p, p])
+
+    def predict(self, X):
+        return (self.decision_function(X) > 0).astype(int)
+
+
+def make_shared_model(C: float, design: dict):
+    """bands → standardise → L2 logistic with weights ≥ 0. Takes the same 19-input
+    DataFrame serving already passes, so nothing downstream changes."""
+    return Pipeline([("bands", FunctionTransformer(add_bands, kw_args={"design": design}, validate=False)),
                      ("scale", StandardScaler()),
-                     ("lr", LogisticRegression(C=C, max_iter=5000))])
+                     ("lr", NonNegLogit(C=C))])
 
 
 def make_model(family: str, C: float = 0.3):
