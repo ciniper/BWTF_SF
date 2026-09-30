@@ -11,6 +11,8 @@
 <style>
   body{margin:0;background:var(--sand);color:var(--ink);font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:15px;line-height:1.55}
   .wrap{max-width:var(--page-w);margin:0 auto;padding:20px 24px 40px}
+  .card .more{margin:10px 0 0;padding-top:10px;border-top:1px solid var(--sand2);color:var(--muted);font-size:14px}
+  .card .more a{font-weight:600}
   .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
   .card{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:18px 20px}
   .card h2{margin:0 0 8px;font-size:17px;font-weight:900}
@@ -45,6 +47,7 @@
         <li><b>CIWQS self-monitoring reports</b> — every combined-sewer discharge SFPUC reported to regulators since 2016.</li>
         <li><b>NOAA rain gauges, NWS forecasts and NOAA tides</b> — the inputs to the overflow forecast and the conditions chips.</li>
       </ul>
+      <p class="more">How these feeds move from the city's map to your inbox, minute by minute, is drawn out on <a href="/architecture">How it's built</a>. The collection steps behind the records pages are on <a href="/records">How we get the records</a>.</p>
     </section>
     <section class="card">
       <h2>What the colours mean</h2>
