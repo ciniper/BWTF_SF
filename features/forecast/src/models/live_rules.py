@@ -1,4 +1,4 @@
-"""Live corrections (live_v1) — what observed CSO flags and bacteria results do
+"""Live corrections (live_v2) — what observed CSO flags and bacteria results do
 to the forecast once it is running. Not a third stage: two sets of conditional
 edits, one before stage 2 (on the discharge probabilities) and one after it (on
 the composed beach risk); on most days they do nothing at all. Serving-side only: the stage-1 models, the
@@ -43,6 +43,16 @@ Stage 2 (per group-day, after composition — ``adjust_groups``):
   flag_hold               while the feed's CSO flag stays up after the onset,
                           the group's risk holds at the large-event curve
 
+Where the samples come from (live_v2, 2026-09-29): SFPUC's beach map, as the
+pg_cron watcher records it (Supabase ``feed_station_days``) — a station posted
+for bacteria says its latest sample, dated by the map, was over standard; a
+station clear all day with a new sample date says that sample was clean. The
+map shows a result one to two days after sampling; DataSF's lab record follows
+about five days after and overrides the map wherever it has published the same
+station-day. live_v1 read DataSF alone, which reached the three-day horizon too
+late to move a forecast day. The arithmetic is unchanged, so both replays grade
+live_v2 exactly as they graded live_v1 (``live_dashboard._feed_sample_flags``).
+
 Every adjustment is recorded (rule, from, to) so the page can say why a
 number moved; with no watcher data and no samples the output is byte-identical
 to the plain composition (tests/test_live_rules.py). Switch: env
@@ -55,7 +65,7 @@ from __future__ import annotations
 import copy
 from datetime import date, timedelta
 
-VERSION = "live_v1"
+VERSION = "live_v2"
 
 # Zone-level next-sample transition rates from the scorecard's sample record
 # (pairs of sampled days ≤ 3 days apart; "tail" = a discharge in the zone within
@@ -99,6 +109,7 @@ RULES = {
         "tail_days": 7,
         "tail_min_p": 0.5,             # a sample day counts as "in a discharge tail" when an onset was
                                        # observed, or the (adjusted) basin probability reached this, within tail_days
+        "sources": ("feed", "datasf"), # live_v2: the SFPUC map's postings and sample dates first (1–2 days), DataSF (≈5 days) overriding where published
         "floor_elevated_tail": _policy_floors(SAMPLE_RATES["floor_elevated_tail"]),   # {east: 0.80}, the rest off
         "cap_clean_tail":      dict(SAMPLE_RATES["cap_clean_tail"]),                    # caps are kept everywhere
         "floor_elevated_dry":  _policy_floors(SAMPLE_RATES["floor_elevated_dry"]),    # all under 0.5 → off

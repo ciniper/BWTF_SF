@@ -165,7 +165,7 @@ precautionary, and the East is often dirty with no posting and no rain.
   directly; **v2** (the outfall split) first scales it by the share of the basin's discharges that reach the group's
   own outfalls. A set is named `<stage1>` or `<stage1>_s2v2`.
 - **Live.** Past complete days use the two NOAA gauges (with the outage rule); today uses NWS hours so far plus the
-  ECMWF forecast; forecast days use ECMWF. Live corrections (`live_v1`, `src/models/live_rules.py`, since 2026-09-26) then adjust the
+  ECMWF forecast; forecast days use ECMWF. Live corrections (`live_v2` since 2026-09-29: the sample rules read SFPUC's beach map first and DataSF overrides where published; `live_v1`, 2026-09-26, read DataSF alone; `src/models/live_rules.py`) then adjust the
   composition from what was observed: a watcher CSO onset sets that basin-day to 1 (and anchors the day before), an
   expected discharge the feed never flagged is downgraded by Bayes with a recall that grows with each quiet day after it
   (0.60 the morning after, 0.87, then 0.95; bayside only, while the watcher is ticking), a flag still up holds the beach at the large-event curve, and published samples cap (clean) the persistence term at

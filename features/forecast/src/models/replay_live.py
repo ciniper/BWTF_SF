@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Replay — grades live corrections (live_v1) against the plain two-stage model.
+"""Replay — grades the live corrections (live_rules.VERSION) against the plain two-stage model.
 
 For every day of an era with feed-flag data, recompose the beach risk using
 only what was known by the end of that day — the served stage-1 probabilities
@@ -21,7 +21,7 @@ Eras with flag data:
   * 2026-08-20 → … — our watcher's alert_log. Joins the replay once the hindcast
     artifact is rescored past that date (it ends 2026-08-17 at this writing).
 
-Variants: plain (models alone) · live_v1 (all rules) · no_downgrade (recall 0)
+Variants: plain (models alone) · <VERSION> (all rules) · no_downgrade (recall 0)
 · no_samples · cso_flags_only. Self-check: the plain recomposition must match
 the artifact's stored group risks (≤ 0.001) before any grading counts.
 
@@ -58,6 +58,7 @@ for p in (HERE, HERE.parent / "collectors", HERE.parents[3]):
     if str(p) not in sys.path:
         sys.path.insert(0, str(p))
 import live_rules as LR  # noqa: E402
+LIVE = LR.VERSION   # the variant named after the rule set's version (live_v2 since 2026-09-29; same arithmetic as live_v1)
 import posting_label as PL  # noqa: E402
 import train_v4 as T  # noqa: E402
 from groups import BASIN_KEYS, GROUPS_BY_BASIN, ZONE_GROUPS, zone_risks  # noqa: E402
@@ -102,7 +103,7 @@ def variants() -> dict:
     allf = copy.deepcopy(full)   # the counterfactual: every empirical floor applied, including those under 0.5 (live_v1 before 2026-09-27)
     for key in ("floor_elevated_tail", "floor_elevated_dry"):
         allf["samples"][key] = dict(LR.SAMPLE_RATES[key])
-    return {"live_v1": full, "no_downgrade": nodg, "no_samples": full, "cso_flags_only": nodg, "all_floors": allf}
+    return {LIVE: full, "no_downgrade": nodg, "no_samples": full, "cso_flags_only": nodg, "all_floors": allf}
 
 
 NO_SAMPLES = {"no_samples", "cso_flags_only"}
@@ -340,23 +341,23 @@ def render_html(res: dict) -> str:
     sections = []
     for thr in ("0.5", "0.25"):
         sections.append(f'<h2>{int(float(thr)*100)}% line</h2><h3>Discharge days + samples (primary ruler)</h3>{table("combined", thr)}<h3>Discharge days only</h3>{table("discharge", thr)}<h3>Beach postings</h3>{table("posted", thr)}')
-    zone_rows = ['<table><tr><th>Zone (50%, primary ruler)</th><th>plain</th><th>live_v1</th></tr>']
+    zone_rows = [f'<table><tr><th>Zone (50%, primary ruler)</th><th>plain</th><th>{LIVE}</th></tr>']
     for z in ZONE_ORDER:
-        a, b = v["plain"]["grades"]["0.5"]["combined"]["zones"][z], v["live_v1"]["grades"]["0.5"]["combined"]["zones"][z]
+        a, b = v["plain"]["grades"]["0.5"]["combined"]["zones"][z], v[LIVE]["grades"]["0.5"]["combined"]["zones"][z]
         f = lambda c: f'{c["tp"]} of {c["tp"]+c["fn"]} caught · {c["fp"]} false (clean-sample {c["fp_sample"]}, quiet {c["fp_quiet"]}) · cost {c["fp"] + WFN * c["fn"]}'  # noqa: E731
         zone_rows.append(f'<tr><td>{esc(ZONES[z].label)}</td><td>{f(a)}</td><td>{f(b)}</td></tr>')
     zone_rows.append('</table>')
     r = res["rules"]
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Live corrections replay — live_v1 vs the model alone</title><link rel="icon" href="/static/brand/favicon.ico">
+<title>Live corrections replay — {LIVE} vs the model alone</title><link rel="icon" href="/static/brand/favicon.ico">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <style>{css} tr.best td{{background:#e0f0ea}}</style></head><body><div class="wrap">
-<header><h1>Live corrections replay: live_v1 vs the model alone</h1>
+<header><h1>Live corrections replay: {LIVE} vs the model alone</h1>
 <p class="sub">Every day of the era recomposed with only what was known by the <b>end of the day before</b> — the start-of-day forecast — the served stage-1 probabilities, the feed's CSO onsets and flag days, samples published a day later — through <code>src/models/live_rules.py</code> exactly as serving does, then graded on the Model check's three rulers. A discharge day is never credited for its own flag; the corrections are judged on the tail they shape. Cost = false alarms + {WFN} × misses.</p>
 <div class="meta"><span>era {esc(res["era"][0])} → {esc(res["era"][1])} ({v["plain"]["n_days"]} days)</span><span>{res["flag_days"]} flag basin-days · {res["onset_days"]} onset basin-days ({esc(", ".join(res["onset_basins"]))})</span><span>self-check: plain recomposition vs stored risks, worst Δ {res["self_check_worst_delta"]}</span><span>downgrade recall by quiet days {esc(json.dumps(r["downgrade"]["recall_by_quiet_days"]))}</span></div></header>
 <section><h2>Read this first</h2>
 <p class="lead">The only era with feed-flag data today is the 2016-17 Poo Bot archive. Its stage-1 probabilities are <b>in-sample</b> (the served models trained on these seasons), so every variant is flattered by the same amount — read the difference between rows, not the rows. <b>Read the bayside subtotal as the clean comparison:</b> North Shore and East labels come from CIWQS, independent of the feed. The Westside has no CIWQS per-event records before 2018, so its discharge labels in this era <i>are</i> the archive's feed onsets — the onset rule catches them by construction and that column is marked circular (the sample part of the primary ruler is still independent there). Snapshots came twice a day, so a flag that came and went between them is missed. The watcher era (Aug 2026 →) joins this page once the hindcast artifact is rescored past it.</p>
-<p class="lead">Variants: <b>plain</b> = the two-stage model alone · <b>live_v1</b> = every rule · <b>no_downgrade</b> = live_v1 with the no-flag downgrade off · <b>no_samples</b> = live_v1 without the sample floors and caps · <b>cso_flags_only</b> = onset, anchor, large volume and flag hold only.</p></section>
+<p class="lead">Variants: <b>plain</b> = the two-stage model alone · <b>{LIVE}</b> = every rule · <b>no_downgrade</b> = {LIVE} with the no-flag downgrade off · <b>no_samples</b> = {LIVE} without the sample floors and caps · <b>cso_flags_only</b> = onset, anchor, large volume and flag hold only.</p></section>
 <section>{"".join(sections)}</section>
 <section><h2>Per zone, 50% line, primary ruler</h2>{"".join(zone_rows)}</section>
 <footer>Generated by <code>features/forecast/src/models/replay_live.py</code>. Design: <code>features/forecast/LIVE_COMPOSITION_DESIGN.md</code>. <a href="/forecast">Back to the forecast</a> · <a href="/reports/2026-09_model_analysis.html">Model analysis</a></footer>
@@ -448,7 +449,7 @@ def run_synthetic(write: bool = True, seeds=SYN_SEEDS) -> dict:
     res["feed"]["true_onset_days"] = st_p["true_onset_days"]
     r_perf = replay(days, table, vol_pred, on_p, fl_p, era, LR.RULES, use_samples=True, cutoff="start")
     dv = graded_days(days, r_perf)
-    res["variants"]["live_v1_perfect_feed"] = {"grades": grade(dv, label), "n_days": len(dv),
+    res["variants"][f"{LIVE}_perfect_feed"] = {"grades": grade(dv, label), "n_days": len(dv),
                                                 "days_changed": {z: sum(1 for d in dv if abs(zone_risks(r_perf[d["date"]]).get(z, 0) - zone_risks(plain[d["date"]]).get(z, 0)) >= 0.05) for z in ZONE_ORDER}}
     # the degraded feed: several draws
     per_seed: dict = {name: [] for name in variants()}
@@ -507,10 +508,10 @@ def render_synthetic_html(res: dict) -> str:
     sections = []
     for thr in ("0.5", "0.25"):
         sections.append(f'<h2>{int(float(thr)*100)}% line</h2><h3>Discharge days + samples (primary ruler)</h3>{table("combined", thr)}<h3>Discharge days only</h3>{table("discharge", thr)}<h3>Beach postings (through Feb 2026)</h3>{table("posted", thr)}')
-    zone_rows = ['<table><tr><th>Zone (50%, primary ruler)</th><th>plain</th><th>live_v1 (mean of draws)</th><th>no_downgrade (mean)</th></tr>']
+    zone_rows = [f'<table><tr><th>Zone (50%, primary ruler)</th><th>plain</th><th>{LIVE} (mean of draws)</th><th>no_downgrade (mean)</th></tr>']
     ff = lambda c: f'{f1(c["tp"])} of {f1(c["tp"]+c["fn"])} caught · {f1(c["fp"])} false (clean-sample {f1(c["fp_sample"])}, quiet {f1(c["fp_quiet"])}) · cost {f1(c["fp"] + WFN * c["fn"])}'  # noqa: E731
     for z in ZONE_ORDER:
-        zone_rows.append(f'<tr><td>{esc(ZONES[z].label)}</td><td>{ff(v["plain"]["grades"]["0.5"]["combined"]["zones"][z])}</td><td>{ff(v["live_v1"]["grades"]["0.5"]["combined"]["zones"][z])}</td><td>{ff(v["no_downgrade"]["grades"]["0.5"]["combined"]["zones"][z])}</td></tr>')
+        zone_rows.append(f'<tr><td>{esc(ZONES[z].label)}</td><td>{ff(v["plain"]["grades"]["0.5"]["combined"]["zones"][z])}</td><td>{ff(v[LIVE]["grades"]["0.5"]["combined"]["zones"][z])}</td><td>{ff(v["no_downgrade"]["grades"]["0.5"]["combined"]["zones"][z])}</td></tr>')
     zone_rows.append('</table>')
     fd = res["feed"]
     draws = fd.get("draws", [])
@@ -522,8 +523,8 @@ def render_synthetic_html(res: dict) -> str:
 <p class="sub">The filed record standing in for the feed over every out-of-sample day: each CIWQS discharge day becomes an onset, <b>{fd["miss_rate"]:.0%} are never flagged and {fd["lag_rate"]:.0%} of the rest appear a day late</b> (the 2016-17 archive's measured imperfections), and the flag stays up on the days BeachWatch shows a CSO posting for the basin's beaches (else {fd["fallback_flag_days"]} days). Every day is recomposed with what was known by the <b>end of the day before</b> — the start-of-day forecast — through <code>src/models/live_rules.py</code>, then graded on the three rulers. Degraded variants are the mean of {len(fd["seeds"])} random draws (range in grey). Cost = false alarms + {WFN} × misses.</p>
 <div class="meta"><span>era {esc(res["era"][0])} → {esc(res["era"][1])} ({v["plain"]["n_days"]} days; holdout-fit probabilities to Oct 2025, served ones after)</span><span>{fd.get("true_onset_days")} true onset basin-days; per draw ≈ {sum(s["dropped"] for s in draws)/max(len(draws),1):.0f} dropped, {sum(s["lagged"] for s in draws)/max(len(draws),1):.0f} lagged</span><span>self-check: plain recomposition vs stored risks, worst Δ {res["self_check_worst_delta"]}</span><span>downgrade R by quiet days {esc(json.dumps(res["rules"]["downgrade"]["recall_by_quiet_days"]["southeast"]))} (bayside), Westside off</span></div></header>
 <section><h2>Read this first</h2>
-<p class="lead">This is the test the 2016-17 archive is too small for: {v["plain"]["n_days"]} out-of-sample days with an honest stage 1. Its price is that the feed is synthetic. Silence here means "truly no discharge" except for the dropped onsets, so the <b>degradation is the only thing that makes the no-flag downgrade's cost visible</b>; read <i>live_v1_perfect_feed</i> as an upper bound and the degraded mean as the estimate. A discharge day is never credited for its own flag (start-of-day grading), so the discharge-day ruler is fair here, but multi-day events do let a flagged first day lift the second — as a real feed would.</p>
-<p class="lead">Variants: <b>plain</b> = the two-stage model alone · <b>live_v1</b> = every rule, degraded feed · <b>live_v1_perfect_feed</b> = every rule, nothing dropped or late · <b>no_downgrade</b> · <b>no_samples</b> · <b>cso_flags_only</b> · <b>all_floors</b> = the counterfactual with every empirical sample floor applied, including those under 50% (what live_v1 did before 2026-09-27; today only the East's 0.80 tail floor is a floor, and the clean-sample caps stay).</p></section>
+<p class="lead">This is the test the 2016-17 archive is too small for: {v["plain"]["n_days"]} out-of-sample days with an honest stage 1. Its price is that the feed is synthetic. Silence here means "truly no discharge" except for the dropped onsets, so the <b>degradation is the only thing that makes the no-flag downgrade's cost visible</b>; read <i>{LIVE}_perfect_feed</i> as an upper bound and the degraded mean as the estimate. A discharge day is never credited for its own flag (start-of-day grading), so the discharge-day ruler is fair here, but multi-day events do let a flagged first day lift the second — as a real feed would.</p>
+<p class="lead">Variants: <b>plain</b> = the two-stage model alone · <b>{LIVE}</b> = every rule, degraded feed · <b>{LIVE}_perfect_feed</b> = every rule, nothing dropped or late · <b>no_downgrade</b> · <b>no_samples</b> · <b>cso_flags_only</b> · <b>all_floors</b> = the counterfactual with every empirical sample floor applied, including those under 50% (what {LIVE} did before 2026-09-27; today only the East's 0.80 tail floor is a floor, and the clean-sample caps stay).</p></section>
 <section>{"".join(sections)}</section>
 <section><h2>Per zone, 50% line, primary ruler</h2>{"".join(zone_rows)}</section>
 <footer>Generated by <code>features/forecast/src/models/replay_live.py --synthetic</code>. The real-feed replay over 2016-17: <a href="/reports/2026-09_live_replay.html">live replay</a>. Design: <code>features/forecast/LIVE_COMPOSITION_DESIGN.md</code>. <a href="/forecast">Back to the forecast</a></footer>

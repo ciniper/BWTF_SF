@@ -57,6 +57,20 @@ except Exception:
 MODEL_DIR = Path(__file__).parent / "data" / "models"
 PORT = 8091
 LOCAL_TZ = ZoneInfo("America/Los_Angeles")
+STATION_BY_SFPUC_ID = {s.sfpuc_id: code for code, s in STATIONS.items()}   # the feed's numeric station id → registry code
+
+
+def _parse_feed_date(s):
+    """The beach map's sample_date (MM/DD/YY, MM/DD/YYYY or ISO) → date, or None."""
+    if not s:
+        return None
+    s = str(s).strip()[:10]
+    for fmt in ("%m/%d/%y", "%m/%d/%Y", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(s, fmt).date()
+        except ValueError:
+            continue
+    return None
 
 # Basin / group / zone geography is shared with training (src/models/groups.py)
 # so serving can never disagree with what the models were fit on. Every
@@ -758,7 +772,7 @@ class LiveData:
                 "simulated": "eq.false", "source": f"in.({','.join(REALTIME_SOURCES)})",
                 "created_at": f"gte.{(start - timedelta(days=10)).isoformat()}T00:00:00+00:00",
                 "order": "created_at.asc", "limit": "1000"})
-            state = _supabase.select("watcher_state", {"select": "station_id,status"})
+            state = _supabase.select("watcher_state_shadow", {"select": "station_id,status,sim_active"})   # the watcher's live state (012 dropped watcher_state)
         except Exception as e:  # noqa: BLE001
             print(f"CSO flag windows unavailable: {e}")
             return {}
@@ -792,7 +806,7 @@ class LiveData:
                     d0 = open_since.pop(sid)
                     if basin:
                         mark(basin, d0, d - timedelta(days=1))
-        now_cso = {str(r.get("station_id")) for r in (state or []) if r.get("status") == "cso"}
+        now_cso = {str(r.get("station_id")) for r in (state or []) if r.get("status") == "cso" and not r.get("sim_active")}
         for sid, d0 in open_since.items():
             basin = OBSERVED_STATION_BASIN.get(sid)
             if basin:
@@ -802,6 +816,39 @@ class LiveData:
             if basin:
                 mark(basin, today, today)
         return flagged
+
+    def _feed_sample_flags(self, start, end) -> dict:
+        """{(group, date): elevated} from SFPUC's beach map as the watcher recorded
+        it (Supabase ``feed_station_days``, migration 012) — live_v2. A station
+        posted for bacteria (status 'posted', not the precautionary 'cso') says
+        its latest sample, dated by the map, was over standard; a station the map
+        showed clear all day with a sample date says that sample came back clean.
+        A day the sign came down is ambiguous and says nothing. The map shows a
+        result one to two days after sampling, DataSF about five days after, so
+        this is what lets a result reach the forecast days at all."""
+        if _supabase is None or not _supabase.is_configured():
+            return {}
+        try:
+            rows = _supabase.select("feed_station_days", {
+                "select": "station_id,day,status_max,status_last,raw_last",
+                "day": f"gte.{start.isoformat()}", "order": "day.asc", "limit": "2000"})
+        except Exception as e:  # noqa: BLE001
+            print(f"feed sample flags unavailable: {e}")
+            return {}
+        out: dict = {}
+        for r in rows:
+            code = STATION_BY_SFPUC_ID.get(str(r.get("station_id")))
+            g = GROUP_OF_STATION.get(code) if code else None
+            raw = r.get("raw_last") if isinstance(r.get("raw_last"), dict) else {}
+            sd = _parse_feed_date(raw.get("sample_date"))
+            if not g or sd is None or not (start <= sd <= end):
+                continue
+            last, worst = r.get("status_last"), r.get("status_max")
+            if last == "posted":                      # posted for bacteria: the latest sample was over standard
+                out[(g, sd)] = True
+            elif last == "ok" and worst == "ok":      # clear all day, with this sample date: that sample was clean
+                out.setdefault((g, sd), False)        # an elevated sibling station in the group wins
+        return out
 
     def _sample_flags(self, start, end) -> dict:
         """{(group, date): elevated} from the lab results already published for [start, end]."""
@@ -840,13 +887,16 @@ class LiveData:
         health = self._watcher_health()
         self._live_watcher = health
         flags = self._cso_flag_days(start, end, today) if health.get("mode") else {}
-        samples = self._sample_flags(start, end) if str(end) >= self.DATASF_FLOOR else {}
+        datasf = self._sample_flags(start, end) if str(end) >= self.DATASF_FLOOR else {}
+        feed = self._feed_sample_flags(start, end)
+        samples = {**feed, **datasf}   # live_v2: the map's results first, DataSF's lab record overriding wherever it has published
+        sample_sources = {"feed": len(feed), "datasf": len(datasf)}
         rain = {d: float(frames["avg"].iloc[i].get("precip_inches", 0.0) or 0.0) for i, d in enumerate(dates)}
         watcher_from = datetime.strptime(self.WATCHER_SINCE, "%Y-%m-%d").date()
         probs2, vols2, notes = _lr.adjust_stage1(probs, vols, dates, observed or {}, flags, rain, today,
                                                  watcher_from=watcher_from, watcher_ok=bool(health.get("ok")))
         return {"enabled": True, "source": source, "probs": probs2, "vols": vols2, "notes": notes, "flags": flags,
-                "samples": samples, "onsets": observed or {}, "health": health, "today": today}
+                "samples": samples, "sample_sources": sample_sources, "onsets": observed or {}, "health": health, "today": today}
 
     def _day_payload(self, frames: dict, idx: int, feats: list, probs: list, vols: list,
                      dates: list, observed: dict, live: dict | None = None) -> dict:
@@ -877,7 +927,8 @@ class LiveData:
                 day_predictions["citywide"] = max(day_predictions.values()) if day_predictions else 0.0
             rules_block = {"version": _lr.VERSION, "enabled": True, "source": live.get("source"),
                            "stage1": live["notes"].get(str(dates[idx]), {}), "groups": gnotes,
-                           "flags_active": sorted(live["flags"].get(dates[idx], ())), "watcher_ok": bool(live["health"].get("ok"))}
+                           "flags_active": sorted(live["flags"].get(dates[idx], ())), "watcher_ok": bool(live["health"].get("ok")),
+                           "sample_sources": live.get("sample_sources")}
             probs_live = p2[idx]
         f = feats[idx]["avg"]
         row = frames["avg"].iloc[idx]
