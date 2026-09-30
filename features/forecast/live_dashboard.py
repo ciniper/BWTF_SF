@@ -4,7 +4,7 @@ Live CSO Forecast Dashboard
 
 Real-time dashboard that shows:
 1. Current CSO risk based on actual observed rainfall
-2. 5-day forecast based on ECMWF/GFS weather model predictions
+2. 5-day forecast based on the ICON weather model's rain (Open-Meteo)
 3. Current SFPUC beach status (what's actually posted right now)
 
 Data flow:
@@ -106,16 +106,19 @@ OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 SFPUC_API_URL = "https://infrastructure.sfwater.org/lims.asmx/getBeaches"
 
 # Open-Meteo params for SF.
-# Model: ECMWF IFS rather than Open-Meteo's default "best_match" (a GFS/HRRR
-# blend in North America). Two reasons (2026-09-04): the stage-1 model was
-# trained on ERA5 — ECMWF's reanalysis — so IFS is the like-for-like
-# inference source; and best_match reported 0.0 mm for 2026-09-03 while SF
-# gauges logged an evening of light rain that IFS did forecast (~5 mm).
-# Caveat: Open-Meteo interpolates IFS's 3-hourly precipitation to hourly, so
-# the peak-intensity features (rain_max1h/3h) from FORECAST hours are
-# smoother than ERA5's native hourly — revisit if a recalibration shows
-# forecast-day risk running low. Past hours are overridden with gauge
-# observations (see _overlay_observed_rain), so this only affects future days.
+# Model: ICON (DWD, `icon_seamless`) since 2026-09-30 (Chase: "easy decision").
+# The stage-1 models were trained on gauge inches, so the weather model is an
+# input standing in for the gauges on the forecast days, and it is graded as
+# one: against the two NOAA gauges, Feb 2024 → Aug 2026, ICON is the closest
+# single model (wet-day MAE 0.22" vs ECMWF 0.23", GFS 0.26"; no wet or dry
+# lean) and its hourly rain is native, so the peak-intensity features it
+# produces match the ERA5 hourly the models were trained on. ECMWF IFS
+# (served 2026-09-04 → 2026-09-30) runs wet and its three-hourly rain, spread
+# to hourly by Open-Meteo, halved the peaks; Open-Meteo's default "best_match"
+# (a GFS/HRRR blend) reported 0.0 mm for 2026-09-03 while gauges logged real
+# rain. The comparison: reports/2026-09_weather_models.html
+# (src/models/weather_models_eval.py). Past hours are overridden with gauge
+# observations (see _overlay_observed_rain), so the model only affects future days.
 METEO_PARAMS = {
     "latitude": 37.7749,
     "longitude": -122.4194,
@@ -123,7 +126,7 @@ METEO_PARAMS = {
     "past_days": 7,
     "forecast_days": 6,
     "timezone": "America/Los_Angeles",
-    "models": "ecmwf_ifs025",
+    "models": "icon_seamless",
 }
 
 # Observed rain for past hours: NWS hourly gauge observations at SFO (KSFO —
@@ -634,7 +637,7 @@ class LiveData:
     def _daily_frames(self, rain_df: pd.DataFrame, today) -> dict:
         """{rain source: daily feature frame} from the hourly series.
 
-        The hourly series (Open-Meteo model + KSFO gauge overlay + ECMWF
+        The hourly series (Open-Meteo model + KSFO gauge overlay + ICON
         forecast) supplies every day's intensity features and the totals for
         today and the forecast days. COMPLETE past days are re-based onto the
         NOAA daily gauges the models were trained on: 'avg' = mean of Downtown
@@ -1549,6 +1552,7 @@ class LiveData:
             **{k: sv.get(k) for k in ("name", "stage1", "stage2", "artifact", "family", "line", "promoted_at")},
             "trained_at": first.get("trained_at"),
             "live_corrections": _lr.VERSION,
+            "weather_model": METEO_PARAMS.get("models"),   # the input standing in for the gauges on forecast days (ICON since 2026-09-30)
             "input_rules": list(INPUT_RULES_LIVE),
             "build": None,
         }
@@ -1935,8 +1939,8 @@ function render(data) {
     // Timeline
     const rainSourceLabel = day => {
         const src = day.rain_source || (day.is_forecast ? 'forecast' : 'model');
-        return {observed: '📊 SFO gauge', mixed: '📊 gauge + 📡 ECMWF',
-                model: '📡 model hindcast', forecast: '📡 ECMWF forecast'}[src] || src;
+        return {observed: '📊 SFO gauge', mixed: '📊 gauge + 📡 ICON',
+                model: '📡 model hindcast', forecast: '📡 ICON forecast'}[src] || src;
     };
     const timeline = document.getElementById('timeline');
     timeline.innerHTML = '';
@@ -2206,7 +2210,7 @@ def main():
 ║  SF CSO Live Forecast Dashboard                              ║
 ╠══════════════════════════════════════════════════════════════╣
 ║  🌐 Open: http://localhost:{PORT}                               ║
-║  📡 Data: Open-Meteo (ECMWF) + SFPUC real-time               ║
+║  📡 Data: Open-Meteo (ICON) + SFPUC real-time                ║
 ║  🔄 Auto-refreshes every 30 minutes                          ║
 ║  Press Ctrl+C to stop                                        ║
 ╚══════════════════════════════════════════════════════════════╝

@@ -70,8 +70,8 @@ def test_overlay_survives_gauge_failure():
     assert set(out["rain_source"]) == {"model"}
 
 
-def test_meteo_uses_ecmwf():
-    assert ld.METEO_PARAMS["models"] == "ecmwf_ifs025"
+def test_meteo_uses_icon():
+    assert ld.METEO_PARAMS["models"] == "icon_seamless"   # the closest single model to the gauges (reports/2026-09_weather_models.html); ECMWF 2026-09-04 → 09-30
 
 
 if __name__ == "__main__":

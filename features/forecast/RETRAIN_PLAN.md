@@ -200,7 +200,7 @@ antecedent windows; dry-weather exceedances at enclosed sites), PLOS One
 
 ## Inference rain source (changed 2026-09-04)
 
-Live dashboard now uses ECMWF IFS (`models=ecmwf_ifs025`) instead of
+Live dashboard used ECMWF IFS (`models=ecmwf_ifs025`) from 2026-09-04 to 2026-09-30 (then ICON `icon_seamless`, the closest single model to the gauges — `reports/2026-09_weather_models.html`) instead of
 Open-Meteo `best_match` (GFS/HRRR blend) — like-for-like with the ERA5
 training data, and best_match reported 0.0 mm for 2026-09-03 while SF gauges
 logged light rain that IFS did forecast. Past hours are overridden with KSFO

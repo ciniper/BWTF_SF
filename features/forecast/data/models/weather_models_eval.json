@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-29 22:59",
+ "generated": "2026-09-30 01:27",
  "window": [
   "2024-02-01",
   "2026-08-27"
@@ -8,7 +8,7 @@
   "name": "logit_v1_s2v2",
   "stage1": "logit_v1",
   "line": 0.25,
-  "weather_model": "ecmwf_ifs025"
+  "weather_model": "icon_seamless"
  },
  "input_rules": [
   "gauge_outage_v1"

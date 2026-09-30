@@ -16,7 +16,7 @@ should do) with the numbers we have, and lays out the replay that would grade it
 ## 0. What the live forecast does today
 
 - Past complete days are scored on the two NOAA gauges (with the gauge-outage rule); today on NWS hours so
-  far plus the ECMWF forecast; the next five days on ECMWF. Stage 2 composes the last eight days.
+  far plus the weather model's forecast (ICON since 2026-09-30, ECMWF before); the next five days on it. Stage 2 composes the last eight days.
 - **Observed CSO:** a watcher transition into `cso` for a station sets that basin-day's stage 1 probability to
   **1** on the onset day. That is the only live correction. It never lowers anything, and samples are not used.
 

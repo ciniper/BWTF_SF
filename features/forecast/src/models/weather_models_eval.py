@@ -12,7 +12,7 @@ Open-Meteo archives each model's past forecasts (the model run covering each
 day: a day-0 / day-1 lead, the page's Today and Tomorrow rows). ECMWF IFS 0.25°
 is archived from Feb 2024, GFS and ICON earlier, so the comparison window is
 Feb 2024 → the end of the hourly record: two wet seasons. Inputs compared:
-ECMWF IFS (served since 2026-09-04), GFS, ICON, and the mean of the three
+ECMWF IFS (served 2026-09-04 → 09-30), GFS, ICON (served since 2026-09-30), and the mean of the three
 (the multi-model ensemble mean). ERA5, the training-time hourly source, is
 shown as a reference row: it is a reanalysis, not a forecast.
 
@@ -68,7 +68,7 @@ LAT, LON = 37.7749, -122.4194          # the point serving asks Open-Meteo for
 TZ = "America/Los_Angeles"
 ARCHIVE_URL = "https://historical-forecast-api.open-meteo.com/v1/forecast"
 WX_MODELS = {"ecmwf_ifs025": "ECMWF IFS", "gfs_seamless": "GFS", "icon_seamless": "ICON"}
-SERVED_WX = "ecmwf_ifs025"
+SERVED_WX = "icon_seamless"   # served since 2026-09-30 (ECMWF IFS 2026-09-04 → 09-30)
 INPUTS = {**WX_MODELS, "mean3": "mean of the three"}          # the candidate inputs
 REFERENCE = {"era5": "ERA5 reanalysis (training-time hourly source)"}
 START = pd.Timestamp("2024-02-01")     # first month the archive holds all three models
@@ -353,7 +353,7 @@ def build_html(r: dict) -> str:
                + "; ".join(f"{esc(label[k])} {ver['avg'][k]['wet_mae_in']:.2f}\" ({ver['avg'][k]['wet_bias_in']:+.2f}\")" for k in rank_mae[1:])
                + f". At the half-inch mark the best skill score is the {esc(label[rank_csi[0]])} (CSI {t5(rank_csi[0])['csi']:.2f}: it catches {pc(t5(rank_csi[0])['pod'])} of the gauges' half-inch days and {pc(t5(rank_csi[0])['far'])} of its own half-inch calls are false); "
                + "; ".join(f"{esc(label[k])} CSI {t5(k)['csi']:.2f} ({pc(t5(k)['pod'])} caught, {pc(t5(k)['far'])} false)" for k in rank_csi[1:])
-               + f". The served ECMWF IFS sits at {sv['wet_mae_in']:.2f}\" MAE and CSI {t5(SERVED_WX)['csi']:.2f}; the mean of the three at {m3['wet_mae_in']:.2f}\" and {t5('mean3')['csi']:.2f}. "
+               + f". ICON, served since 2026-09-30, sits at {sv['wet_mae_in']:.2f}\" MAE and CSI {t5(SERVED_WX)['csi']:.2f}; ECMWF IFS, served before it, at {ver['avg']['ecmwf_ifs025']['wet_mae_in']:.2f}\" and {t5('ecmwf_ifs025')['csi']:.2f}; the mean of the three at {m3['wet_mae_in']:.2f}\" and {t5('mean3')['csi']:.2f}. "
                + (f"Among single models {esc(WX_MODELS[best_single])} is closest." if best_single != SERVED_WX else "The served model is the closest single model."))
 
     def vtable(g: str) -> str:
@@ -379,7 +379,7 @@ tr.best td{{background:#e0f0ea}} tr.ref td{{color:#8a8d9b;font-style:italic}} .v
 td.num,th.num{{text-align:right;font-variant-numeric:tabular-nums}} .small{{font-size:13px;color:#54576F}} td.big{{font-weight:700}}
 </style></head><body><div class="wrap">
 <header><h1>Which weather model stands in for the gauges</h1>
-<p class="sub">The stage 1 models were trained on the rain that fell: the two NOAA gauges for daily totals, ERA5 hourly for peak intensity. A weather model is an <b>input</b> — on the forecast days its rain is fed where the gauge reading would go — so it is graded here as an input: how close its rain for a day comes to what the gauges then recorded. Three Open-Meteo models are archived for the whole window, plus their mean; the page has served ECMWF IFS since 2026-09-04. Every number is the model run covering the day itself (day-0 / day-1 lead, the page's Today and Tomorrow rows).</p>
+<p class="sub">The stage 1 models were trained on the rain that fell: the two NOAA gauges for daily totals, ERA5 hourly for peak intensity. A weather model is an <b>input</b> — on the forecast days its rain is fed where the gauge reading would go — so it is graded here as an input: how close its rain for a day comes to what the gauges then recorded. Three Open-Meteo models are archived for the whole window, plus their mean; the page served ECMWF IFS from 2026-09-04 and ICON since 2026-09-30. Every number is the model run covering the day itself (day-0 / day-1 lead, the page's Today and Tomorrow rows).</p>
 <div class="meta"><span>window {esc(r['window'][0])} → {esc(r['window'][1])}</span><span>archive starts: {esc(", ".join(f"{WX_MODELS[m]} {r['archive_first_day'][m]}" for m in WX_MODELS))}</span><span>wet day = gauge ≥ {WET_DAY_IN}"</span><span>gauge record as served: {esc(", ".join(r['input_rules']) or 'raw')}</span><span>generated {esc(r['generated'])}</span></div></header>
 <nav><a href="#verdict">Verdict</a><a href="#gauges">Against each gauge</a><a href="#seasons">By season</a><a href="#storms">The biggest days</a><a href="#intensity">Peak intensity</a><a href="#appendix">Appendix: through stage 1</a><a href="#caveats">Caveats</a></nav>
 <section id="verdict"><div class="verdict">{verdict}</div>
