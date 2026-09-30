@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""logit_v2_shared5 / logit_v2_shared8 — one set of terms for every basin, each
+"""logit_v2_shared5 / shared6 / shared8 — one set of terms for every basin, each
 basin its own weights, no odd weights.
 
 Chase, 2026-09-30: the sites should share the same terms (daily rain, bends)
@@ -22,6 +22,12 @@ Design (leaderboard.SHARED_DESIGNS): today's rain (precip_avg) and yesterday's
 (rain_lag1d), each cut into bands at shared bends —
     shared5: today 0 / 0.5 / 1",  yesterday 0 / 0.5"            (5 terms)
     shared8: today 0 / 0.5 / 0.75 / 1 / 1.5",  yesterday 0 / 0.25 / 0.5"   (8 terms)
+    shared6: shared5 + the peak 6-hour burst (rain_max6h), one weight ≥ 0      (6 terms)
+             — Chase asked whether the 2-day total or peak intensity matter: a 2-day
+             bend drew a zero weight in almost every basin (today + yesterday already
+             sum to it); the burst drew ≈ 2 log-odds per inch everywhere. The hindcast
+             scores it on ERA5 bursts; live, today's past hours come from SFO and the
+             forecast hours from ICON (6 h vs ERA5: r = 0.73 on wet days since 2024).
 A band's weight is the slope of the risk inside it and is held ≥ 0
 (leaderboard.NonNegLogit), so more rain never lowers the risk in any basin.
 C per basin by pre-holdout leave-one-season-out PR-AUC (the leaderboard rule);
@@ -101,7 +107,7 @@ def fit_design(design_key: str, frames: dict, chosen_src: dict, use_archive: dic
         sl = slopes(final, design)
         print(f"   {basin:12} ({chosen_src[basin]}): {len(sub)} days, {int(sub['y'].sum())} discharge days | C={C} "
               f"CV PR-AUC {cvs[C].get('pr_auc', float('nan')):.3f} | holdout PR-AUC {ho.get('pr_auc', float('nan')):.3f} | "
-              + " ".join(f"{t.split(':')[1]}{'t' if t.startswith('precip') else 'y'} {v:.2f}" for t, v in sl.items()), flush=True)
+              + " ".join(f"{ {'precip_avg': 'today', 'rain_lag1d': 'yday'}.get(t.split(':')[0], t.split(':')[0])} {t.split(':')[1]} {v:.2f}" for t, v in sl.items()), flush=True)
         finals[key] = {"model": final, "features": list(L.FEATS), "calibration_offset": 0.0, "C": C, "terms": terms}
         holdouts[key] = ho_model
         per_basin[key] = {"source": chosen_src[basin], "C": C, "terms": terms, "slope_per_inch": sl,

@@ -92,14 +92,20 @@ def add_hinges(X):
 SHARED_DESIGNS = {
     "shared5": {"precip_avg": (0.5, 1.0), "rain_lag1d": (0.5,)},
     "shared8": {"precip_avg": (0.5, 0.75, 1.0, 1.5), "rain_lag1d": (0.25, 0.5)},
+    # shared5 + the peak 6-hour burst (Chase: "does 2 day matter or peak intensity?"). A 2-day bend
+    # at 1 / 1.5 / 2" drew a zero weight in almost every basin (today + yesterday already sum to it); the
+    # burst drew ≈ 2 log-odds per inch in every basin, and 6 h is the burst ICON tracks best vs ERA5.
+    "shared6": {"precip_avg": (0.5, 1.0), "rain_lag1d": (0.5,), "rain_max6h": ()},
 }
 
 
 def band_columns(design: dict) -> list:
-    """[(feature, lo, hi)] in column order; hi None = open-ended."""
+    """[(feature, lo, hi)] in column order; hi None = open-ended. A key ending in
+    ">" keeps only the part above its first knot: a bend with no band below it
+    ({"rain_2d_cum>": (1.5,)} → the 2-day total's excess over 1.5")."""
     out = []
-    for f, knots in design.items():
-        edges = [0.0, *knots, None]
+    for key, knots in design.items():
+        f, edges = (key[:-1], [*knots, None]) if key.endswith(">") else (key, [0.0, *knots, None])
         out += [(f, lo, hi) for lo, hi in zip(edges[:-1], edges[1:])]
     return out
 

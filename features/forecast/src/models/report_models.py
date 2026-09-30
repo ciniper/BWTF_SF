@@ -51,7 +51,7 @@ LINES = [0.25, 0.5]
 WEIGHTINGS = [("a miss costs 2 false alarms", 1, 2), ("1 : 1", 1, 1), ("a miss costs 4 false alarms", 1, 4), ("a miss costs 6 false alarms", 1, 6),
               ("a miss costs 10 false alarms", 1, 10), ("a false alarm costs 2 misses", 2, 1)]
 PRIMARY = ("a miss costs 2 false alarms", 1, 2)
-COLORS = ["#0072BC", "#b5310a", "#7b4bb5", "#237059", "#b97e00", "#d4763a", "#54576F", "#0b8a8a"]
+COLORS = ["#0072BC", "#b5310a", "#7b4bb5", "#237059", "#b97e00", "#d4763a", "#54576F", "#0b8a8a", "#8f2508", "#5b8def"]   # wraps (k % len) past ten sets
 
 
 # ── data ────────────────────────────────────────────────────────────────────
@@ -165,7 +165,9 @@ def esc(x) -> str:
 
 
 def svg_lines(series: list[dict], xs: list[float], ylabel: str, xlabel: str, width=900, height=300, xfmt=lambda v: f"{int(v*100)}%", mark_x=None) -> str:
-    pl, pr, pt, pb = 52, 16, 14, 40
+    per_row = 4                                   # legend wraps: 4 sets per row above the plot
+    rows = -(-len(series) // per_row)
+    pl, pr, pt, pb = 52, 16, 14 + 17 * rows, 40
     ymax = max(max(s["y"]) for s in series) * 1.08 or 1
     X = lambda v: pl + (v - xs[0]) / (xs[-1] - xs[0]) * (width - pl - pr)
     Y = lambda v: pt + (1 - v / ymax) * (height - pt - pb)
@@ -179,10 +181,11 @@ def svg_lines(series: list[dict], xs: list[float], ylabel: str, xlabel: str, wid
         out.append(f'<line x1="{X(mark_x):.1f}" y1="{pt}" x2="{X(mark_x):.1f}" y2="{height-pb}" stroke="#26272a" stroke-dasharray="3 3"/>')
     for k, s in enumerate(series):
         pts = " ".join(f"{'M' if i == 0 else 'L'}{X(x):.1f},{Y(y):.1f}" for i, (x, y) in enumerate(zip(xs, s["y"])))
-        out.append(f'<path d="{pts}" fill="none" stroke="{s.get("color", COLORS[k])}" stroke-width="2.4" stroke-dasharray="{s.get("dash", "")}"/>')
+        out.append(f'<path d="{pts}" fill="none" stroke="{s.get("color", COLORS[k % len(COLORS)])}" stroke-width="2.4" stroke-dasharray="{s.get("dash", "")}"/>')
         for x, y in zip(xs, s["y"]):
-            out.append(f'<circle cx="{X(x):.1f}" cy="{Y(y):.1f}" r="3.2" fill="{s.get("color", COLORS[k])}"><title>{esc(s["label"])} · {xfmt(x)}: {y:.0f}</title></circle>')
-        out.append(f'<rect x="{pl + 8 + k*200}" y="{pt}" width="12" height="12" fill="{s.get("color", COLORS[k])}"/><text x="{pl + 24 + k*200}" y="{pt+10}" font-size="11.5" fill="#26272a">{esc(s["label"])}</text>')
+            out.append(f'<circle cx="{X(x):.1f}" cy="{Y(y):.1f}" r="3.2" fill="{s.get("color", COLORS[k % len(COLORS)])}"><title>{esc(s["label"])} · {xfmt(x)}: {y:.0f}</title></circle>')
+        lx, ly = pl + 8 + (k % per_row) * ((width - pl - pr) // per_row), 8 + 17 * (k // per_row)
+        out.append(f'<rect x="{lx}" y="{ly}" width="12" height="12" fill="{s.get("color", COLORS[k % len(COLORS)])}"/><text x="{lx + 16}" y="{ly + 10}" font-size="11.5" fill="#26272a">{esc(s["label"])}</text>')
     out.append(f'<text x="{(pl+width-pr)/2:.0f}" y="{height-26}" text-anchor="middle" font-size="11.5" fill="#26272a">{esc(xlabel)}</text>')
     out.append(f'<text x="14" y="{(pt+height-pb)/2:.0f}" text-anchor="middle" font-size="11.5" fill="#26272a" transform="rotate(-90 14 {(pt+height-pb)/2:.0f})">{esc(ylabel)}</text></svg>')
     return "".join(out)
@@ -190,7 +193,10 @@ def svg_lines(series: list[dict], xs: list[float], ylabel: str, xlabel: str, wid
 
 def svg_grouped_bars(groups: list[str], series: list[dict], ylabel: str, width=900, height=280, yfmt=lambda v: f"{v:.2f}", ymax=None, stacked_key=None) -> str:
     """series[k] = {label, values[len(groups)], color, (stack: values2 drawn on top in lighter tone)}"""
-    pl, pr, pt, pb = 52, 16, 36, 46
+    per_row = 4                                   # legend wraps: 4 entries per row above the plot
+    rows = -(-(len(series) + (1 if stacked_key else 0)) // per_row)
+    pl, pr, pt, pb = 52, 16, 19 + 17 * rows, 46
+    height += 17 * max(0, rows - 1)
     vals = [v + (s.get("stack", [0]*len(groups))[i]) for s in series for i, v in enumerate(s["values"])]
     ymax = ymax or (max(vals) * 1.15 if vals and max(vals) > 0 else 1)
     n, m = len(groups), len(series)
@@ -213,17 +219,22 @@ def svg_grouped_bars(groups: list[str], series: list[dict], ylabel: str, width=9
             lab = s.get("labels")
             if lab:
                 out.append(f'<text x="{x + (bw-2)/2:.1f}" y="{Y(v + (st[i] if st else 0)) - 4:.1f}" text-anchor="middle" font-size="10" fill="#26272a">{esc(lab[i])}</text>')
+    col_w = (width - pl - pr) // per_row
     for k, s in enumerate(series):
-        out.append(f'<rect x="{pl + 8 + k*190}" y="8" width="12" height="12" fill="{s["color"]}"/><text x="{pl + 24 + k*190}" y="18" font-size="11.5" fill="#26272a">{esc(s["label"])}</text>')
+        lx, ly = pl + 8 + (k % per_row) * col_w, 8 + 17 * (k // per_row)
+        out.append(f'<rect x="{lx}" y="{ly}" width="12" height="12" fill="{s["color"]}"/><text x="{lx + 16}" y="{ly + 10}" font-size="11.5" fill="#26272a">{esc(s["label"])}</text>')
     if stacked_key:
-        out.append(f'<rect x="{pl + 8 + m*190}" y="8" width="12" height="12" fill="#54576F" fill-opacity=".35"/><text x="{pl + 24 + m*190}" y="18" font-size="11.5" fill="#26272a">lighter = {esc(stacked_key)}</text>')
+        lx, ly = pl + 8 + (m % per_row) * col_w, 8 + 17 * (m // per_row)
+        out.append(f'<rect x="{lx}" y="{ly}" width="12" height="12" fill="#54576F" fill-opacity=".35"/><text x="{lx + 16}" y="{ly + 10}" font-size="11.5" fill="#26272a">lighter = {esc(stacked_key)}</text>')
     out.append(f'<text x="14" y="{(pt+height-pb)/2:.0f}" text-anchor="middle" font-size="11.5" fill="#26272a" transform="rotate(-90 14 {(pt+height-pb)/2:.0f})">{esc(ylabel)}</text></svg>')
     return "".join(out)
 
 
 def svg_calibration(cals: list[dict], width=900, height=300) -> str:
     """cals[k] = {label, color, points: [{predicted, observed, n}]}"""
-    pl, pr, pt, pb = 52, 16, 14, 40
+    per_row = 4                                   # legend wraps: 4 sets per row above the plot
+    rows = -(-len(cals) // per_row)
+    pl, pr, pt, pb = 52, 16, 14 + 17 * rows, 40
     X = lambda v: pl + v * (width - pl - pr)
     Y = lambda v: pt + (1 - v) * (height - pt - pb)
     out = [f'<svg viewBox="0 0 {width} {height}" width="100%" style="display:block">']
@@ -236,7 +247,8 @@ def svg_calibration(cals: list[dict], width=900, height=300) -> str:
         out.append(f'<path d="{path}" fill="none" stroke="{c["color"]}" stroke-width="2"/>')
         for p in pts:
             out.append(f'<circle cx="{X(p["predicted"]):.1f}" cy="{Y(p["observed"]):.1f}" r="{min(9, 3 + np.sqrt(p["n"])/2):.1f}" fill="{c["color"]}" fill-opacity=".75"><title>{esc(c["label"])} · band {esc(p["band"])}: predicted {p["predicted"]:.0%}, observed {p["observed"]:.0%} ({p["hits"]} of {p["n"]} basin-days)</title></circle>')
-        out.append(f'<rect x="{pl + 8 + k*200}" y="{pt}" width="12" height="12" fill="{c["color"]}"/><text x="{pl + 24 + k*200}" y="{pt+10}" font-size="11.5" fill="#26272a">{esc(c["label"])}</text>')
+        lx, ly = pl + 8 + (k % per_row) * ((width - pl - pr) // per_row), 8 + 17 * (k // per_row)
+        out.append(f'<rect x="{lx}" y="{ly}" width="12" height="12" fill="{c["color"]}"/><text x="{lx + 16}" y="{ly + 10}" font-size="11.5" fill="#26272a">{esc(c["label"])}</text>')
     out.append(f'<text x="{(pl+width-pr)/2:.0f}" y="{height-26}" text-anchor="middle" font-size="11.5" fill="#26272a">predicted probability (mean of the band)</text>')
     out.append(f'<text x="14" y="{(pt+height-pb)/2:.0f}" text-anchor="middle" font-size="11.5" fill="#26272a" transform="rotate(-90 14 {(pt+height-pb)/2:.0f})">share of basin-days that discharged</text></svg>')
     return "".join(out)
@@ -255,9 +267,9 @@ def svg_scatter_ops(sets_eval: list[tuple[dict, dict]], zk: str, wname: str, wid
         Y = lambda v: pt + (1 - (v / posted if posted else 0)) * (height - pt - pb)
         pts = [(c[str(t)]["vs_discharge_posting"]["fp"], c[str(t)]["vs_discharge_posting"]["tp"], t) for t in LINE_GRID]
         path = " ".join(f"{'M' if i == 0 else 'L'}{X(fp):.1f},{Y(tp):.1f}" for i, (fp, tp, _) in enumerate(pts))
-        out.append(f'<path d="{path}" fill="none" stroke="{COLORS[k]}" stroke-width="1.8" stroke-dasharray="{"" if k % 2 == 0 else "5 4"}"/>')
+        out.append(f'<path d="{path}" fill="none" stroke="{COLORS[k % len(COLORS)]}" stroke-width="1.8" stroke-dasharray="{"" if k % 2 == 0 else "5 4"}"/>')
         for fp, tp, t in pts:
-            out.append(f'<circle cx="{X(fp):.1f}" cy="{Y(tp):.1f}" r="{5 if t == 0.5 else 2.6}" fill="{COLORS[k]}" fill-opacity="{1 if t == 0.5 else .7}"><title>{esc(s["name"])} · {int(t*100)}% line: caught {tp} of {posted}, {fp} false alarms</title></circle>')
+            out.append(f'<circle cx="{X(fp):.1f}" cy="{Y(tp):.1f}" r="{5 if t == 0.5 else 2.6}" fill="{COLORS[k % len(COLORS)]}" fill-opacity="{1 if t == 0.5 else .7}"><title>{esc(s["name"])} · {int(t*100)}% line: caught {tp} of {posted}, {fp} false alarms</title></circle>')
     Yl = lambda v: pt + (1 - v) * (height - pt - pb)
     for v in (0, .5, 1):
         out.append(f'<line x1="{pl}" y1="{Yl(v):.1f}" x2="{width-pr}" y2="{Yl(v):.1f}" stroke="#e3ebf2"/><text x="{pl-5}" y="{Yl(v)+4:.1f}" text-anchor="end" font-size="10.5" fill="#54576F">{int(v*100)}%</text>')
@@ -468,9 +480,9 @@ def build_html(sets: list[dict], evals: list[dict], narrative: str, label=None) 
 
     # cost vs line chart (oos, primary weighting), all zones
     xs = list(LINE_GRID)
-    series = [{"label": s["label"], "y": [cost_combined(e["windows"]["oos"]["combined"], t, PRIMARY[1], PRIMARY[2])["total"] for t in xs], "color": COLORS[k], "dash": "" if k % 2 == 0 else "6 4"} for k, (s, e) in enumerate(se)]
+    series = [{"label": s["label"], "y": [cost_combined(e["windows"]["oos"]["combined"], t, PRIMARY[1], PRIMARY[2])["total"] for t in xs], "color": COLORS[k % len(COLORS)], "dash": "" if k % 2 == 0 else "6 4"} for k, (s, e) in enumerate(se)]
     cost_chart = svg_lines(series, xs, f"cost vs discharge days + samples ({PRIMARY[0]})", "alarm line", mark_x=0.5)
-    series_c = [{"label": s["label"], "y": [cost(e["windows"]["oos"]["confusion"], e["windows"]["oos"]["tail"], t, PRIMARY[1], PRIMARY[2])["total"] for t in xs], "color": COLORS[k], "dash": "" if k % 2 == 0 else "6 4"} for k, (s, e) in enumerate(se)]
+    series_c = [{"label": s["label"], "y": [cost(e["windows"]["oos"]["confusion"], e["windows"]["oos"]["tail"], t, PRIMARY[1], PRIMARY[2])["total"] for t in xs], "color": COLORS[k % len(COLORS)], "dash": "" if k % 2 == 0 else "6 4"} for k, (s, e) in enumerate(se)]
     cost_chart_clean = svg_lines(series_c, xs, "cost vs discharge days only (every tail day a false alarm)", "alarm line", mark_x=0.5)
 
     # stage 1: PR-AUC per basin, holdout and post, for each distinct stage 1
@@ -484,10 +496,10 @@ def build_html(sets: list[dict], evals: list[dict], narrative: str, label=None) 
             for n, (s, e) in stage1_sets.items()) + '</tr>')
     s1_rows.append('</table>')
     pr_bars = svg_grouped_bars([BASIN_NAME[k] for k in BASIN_ORDER],
-                               [{"label": f"{n} · holdout", "values": [e["windows"]["holdout"]["basins"][k]["pr_auc"] for k in BASIN_ORDER], "color": COLORS[i*2]} for i, (n, (s, e)) in enumerate(stage1_sets.items())] +
+                               [{"label": f"{n} · holdout", "values": [e["windows"]["holdout"]["basins"][k]["pr_auc"] for k in BASIN_ORDER], "color": COLORS[(i * 2) % len(COLORS)]} for i, (n, (s, e)) in enumerate(stage1_sets.items())] +
                                [{"label": f"{n} · since training", "values": [e["windows"]["post"]["basins"][k]["pr_auc"] for k in BASIN_ORDER], "color": COLORS[i*2+1]} for i, (n, (s, e)) in enumerate(stage1_sets.items())],
                                "stage 1 PR-AUC (discharge days vs quiet days)", ymax=1.0)
-    cal_chart = svg_calibration([{"label": n, "color": COLORS[i*2], "points": e["windows"]["oos"]["calibration"]} for i, (n, (s, e)) in enumerate(stage1_sets.items())])
+    cal_chart = svg_calibration([{"label": n, "color": COLORS[(i * 2) % len(COLORS)], "points": e["windows"]["oos"]["calibration"]} for i, (n, (s, e)) in enumerate(stage1_sets.items())])
     cal_table = ['<table><tr><th>Predicted band</th>' + "".join(f'<th class="num">{esc(n)}: discharged / basin-days</th>' for n in stage1_sets) + '</tr>']
     for bi in range(5):
         cal_table.append('<tr><td>' + esc(next(iter(stage1_sets.values()))[1]["windows"]["oos"]["calibration"][bi]["band"]) + '</td>' + "".join(
@@ -496,14 +508,14 @@ def build_html(sets: list[dict], evals: list[dict], narrative: str, label=None) 
 
     # zone false alarms at 50% (oos): stacked clean + tail, with caught labels
     fa_bars = svg_grouped_bars([ZONES[zk].label for zk in ZONE_ORDER],
-                               [{"label": s["label"], "color": COLORS[k],
+                               [{"label": s["label"], "color": COLORS[k % len(COLORS)],
                                  "values": [e["windows"]["oos"]["confusion"][zk]["0.5"]["vs_discharge_posting"]["fp"] - e["windows"]["oos"]["tail"][zk]["0.5"] for zk in ZONE_ORDER],
                                  "stack": [e["windows"]["oos"]["tail"][zk]["0.5"] for zk in ZONE_ORDER],
                                  "labels": [f'{e["windows"]["oos"]["confusion"][zk]["0.5"]["vs_discharge_posting"]["tp"]}/{e["windows"]["oos"]["confusion"][zk]["0.5"]["vs_discharge_posting"]["tp"] + e["windows"]["oos"]["confusion"][zk]["0.5"]["vs_discharge_posting"]["fn"]}' for zk in ZONE_ORDER]}
                                 for k, (s, e) in enumerate(se)],
                                "false alarms at the 50% line (label = discharge days caught)", yfmt=lambda v: f"{v:.0f}", stacked_key="within 7 days after a real discharge")
     vol_bars = svg_grouped_bars([ZONES[zk].label for zk in ZONE_ORDER],
-                                [{"label": s["label"], "color": COLORS[k],
+                                [{"label": s["label"], "color": COLORS[k % len(COLORS)],
                                   "values": [(e["windows"]["oos"]["volume"][zk]["0.5"]["caught_mg"] / e["windows"]["oos"]["volume"][zk]["0.5"]["total_mg"]) if e["windows"]["oos"]["volume"][zk]["0.5"]["total_mg"] else 0 for zk in ZONE_ORDER]}
                                  for k, (s, e) in enumerate(se)],
                                 "share of discharged volume (MG) on caught days, 50% line", yfmt=lambda v: f"{v:.0%}", ymax=1.0)
