@@ -9,12 +9,13 @@
 <link rel="stylesheet" href="/static/brand.css">
 <style>
   body{margin:0;background:#E3EBF2;color:#26272a;font-family:'Roboto','Segoe UI',Arial,sans-serif;line-height:1.55}
-  .wrap{max-width:960px;margin:0 auto;padding:24px}
+  .wrap{max-width:var(--page-w);margin:0 auto;padding:24px}
   .jump{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 18px}
   .jump a{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:999px;border:2px solid #d9e4e8;background:#fff;color:#26272a;font-weight:700;font-size:13.5px;text-decoration:none}
   .jump a:hover{border-color:#0072BC;color:#0072BC}
   .jump .ic{color:#0072BC}
   section.rec{background:#fff;border:1px solid #d9e4e8;border-radius:20px;padding:22px 24px;margin:0 0 18px;scroll-margin-top:16px}
+  section.rec p,section.rec ol,section.rec ul{max-width:92ch}   /* the card fills the frame; the reading lines do not */
   .rec-head{display:flex;align-items:center;gap:12px;margin:0 0 4px}
   .rec-head h2{margin:0;font-size:21px;font-weight:900}
   .rec-sub{margin:0 0 14px;color:#54576F;font-size:14px}

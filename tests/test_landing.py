@@ -168,7 +168,7 @@ def test_one_frame_width_on_every_page():
     for f in sorted((ROOT / "app/templates").rglob("*.html")):
         t = f.read_text()
         assert 'class="wide"' not in t and "max-width:1100px" not in t and "max-width:1040px" not in t, f.name
-        if f.parent.name not in ("alerts", "manage", "unsubscribe") and f.name not in ("records.html", "architecture.html"):   # form cards and the two long reads keep a narrower column inside the same frame
+        if f.parent.name not in ("alerts", "manage", "unsubscribe"):                    # only the form cards keep a narrower column inside the same frame
             assert not re.search(r"\.(wrap|container)\s*\{[^}]*max-width:\s*\d+px", t), f.name
 
 if __name__ == "__main__":
