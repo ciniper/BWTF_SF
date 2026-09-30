@@ -105,7 +105,7 @@
   <div class="panel">
   <svg class="arch d" viewBox="0 0 1000 600" role="img" aria-labelledby="archTitle archDesc">
     <title id="archTitle">Infrastructure of the SF beach water quality site</title>
-    <desc id="archDesc">Four live sources (SFPUC beach map, DataSF lab results, Surfrider BWTF, weather and tides) feed the Vercel web app on each visit. SFPUC and DataSF are also read on a schedule by Supabase, which runs the alert watcher every minute and the forecast every 30 minutes, sends alerts through Brevo to subscribers and pings Healthchecks. State records (CIWQS, BeachWatch) are pulled quarterly by hand into GitHub, which deploys the app to Vercel. Visitors use the site on Vercel.</desc>
+    <desc id="archDesc">Four live sources (SFPUC beach map, the city's lab results on DataSF, Surfrider BWTF, weather and tides) feed the Vercel web app on each visit. SFPUC and DataSF are also read on a schedule by Supabase, which runs the alert watcher every minute and the forecast every 30 minutes, sends alerts through Brevo to subscribers and pings Healthchecks. State records (CIWQS, BeachWatch) are pulled quarterly by hand into GitHub, which deploys the app to Vercel. Visitors use the site on Vercel.</desc>
     <defs>
       <marker id="arr" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#0072BC"/></marker>
       <marker id="arrG" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#8a949b"/></marker>
@@ -137,7 +137,7 @@
 
     <!-- sources -->
     {{ node(20, 50, 220, 64, "logo:logos/sfpuc.png", "SFPUC beach map", "posted & sewage flags", "SFPUC's live beach feed (getBeaches): read by the watcher every minute and by the site on each visit", tile="sfpuc") }}
-    {{ node(20, 128, 220, 64, "logo:logos/sf-city-seal.png", "DataSF", "city lab results", "The city's beach lab results: mirrored into Supabase every 30 minutes and read live by the pages", tile="datasf") }}
+    {{ node(20, 128, 220, 64, "logo:logos/sf-city-seal.png", "City lab results", "DataSF · SFPUC · Poo Bot", "The city's beach lab results: DataSF from Jul 2020 (mirrored into Supabase every 30 minutes and read live by the pages), SFPUC's own lab export for 2000–2020, and the 2016–17 Poo Bot feed archive", tile="datasf") }}
     {{ node(20, 206, 220, 64, "logo:brand/bwtf_144x144.png", "Surfrider BWTF", "volunteer samples", "The Blue Water Task Force database, read live by the pages", tile="bwtf") }}
     {{ node(20, 284, 220, 64, "logo:logos/noaa.svg", "Weather & tides", "NOAA · NWS · Open-Meteo", "Rain gauges, rain forecast and tides: the forecast's inputs", tile="weather") }}
     {{ node(20, 452, 220, 64, "logo:logos/water-boards.png", "State records", "CIWQS · BeachWatch", "Discharge reports and beach postings, pulled by script each quarter (see /records)", tile="state") }}
@@ -195,7 +195,7 @@
     <path class="live" d="M350 523H362V203H354" marker-end="url(#arrM)"/>
 
     {{ mnode(10, 26, "logo:logos/sfpuc.png", "SFPUC map", "SFPUC's live beach feed: read by the watcher every minute and by the site on each visit", tile="sfpuc") }}
-    {{ mnode(194, 26, "logo:logos/sf-city-seal.png", "DataSF", "The city's beach lab results: mirrored into Supabase every 30 minutes and read live by the pages", tile="datasf") }}
+    {{ mnode(194, 26, "logo:logos/sf-city-seal.png", "City lab results", "The city's beach lab results: DataSF from Jul 2020, SFPUC's lab export for 2000–2020, the 2016–17 Poo Bot feed archive", tile="datasf") }}
     {{ mnode(10, 80, "logo:brand/bwtf_144x144.png", "Surfrider", "The Blue Water Task Force database, read live by the pages", tile="bwtf") }}
     {{ mnode(194, 80, "logo:logos/noaa.svg", "Weather", "Rain gauges, rain forecast and tides (NOAA, NWS, Open-Meteo)", tile="weather") }}
 

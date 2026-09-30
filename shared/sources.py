@@ -43,7 +43,7 @@ BWTF_SF_SINCE = "2023-09-01"     # the chapter's first SF collections in the BWT
 WATCHER_SINCE = "2026-08-20"     # features/forecast/live_dashboard.LiveData.WATCHER_SINCE — the fallback when alert_log is unreachable
 
 TILES = {
-    "sfpuc": "SFPUC beach map", "datasf": "DataSF", "bwtf": "Surfrider BWTF", "weather": "Weather & tides",
+    "sfpuc": "SFPUC beach map", "datasf": "City lab results", "bwtf": "Surfrider BWTF", "weather": "Weather & tides",
     "state": "State records", "supabase": "Supabase", "vercel": "Vercel", "github": "GitHub", "brevo": "Brevo",
     "healthchecks": "Healthchecks", "subscribers": "Subscribers", "visitors": "Visitors",
 }
