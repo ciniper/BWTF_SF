@@ -3,7 +3,7 @@
     a dot per station; zone tiles zoom the map, a station opens the sample popover.
     Three macros so the two pages share one implementation:
       board_styles()                     the <style> block
-      board_section(board, conditions, sites=false)   the markup; sites adds a tile per station under the map (/today)
+      board_section(board, conditions, sites=false)   the markup; sites lists every station as a chip under the zone tiles (/today)
       board_script(board)                the map + tiles JS; the layers JS activates itself when the page has a #layers strip (/today)
     Pages must load Leaflet 1.9.4 (CSS + deferred JS) and /static/sample_popover.js themselves. -#}
 
@@ -77,7 +77,7 @@
   .of-pop b{display:block;font-size:14px;margin-bottom:2px}
   .of-pop .mut{color:var(--muted)}
   .board.replaying .eyebrow{color:var(--brand)}
-  .board.replaying .zone .risk,.board.replaying .zone .rainline,.board.replaying .zone .meta,.board.replaying .site-tile .meta{display:none}   /* today's risk, rain and sample dates are not that day's */
+  .board.replaying .zone .risk,.board.replaying .zone .rainline,.board.replaying .zone .meta,.board.replaying .site small{display:none}   /* today's risk, rain and sample dates are not that day's */
   @media (max-width:760px){.layers .replay-ctl{flex-basis:100%}.layers .replay-ctl input{flex:1}.layers .layer-status{margin-left:0}}
   .conds{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 0}
   .conds span{background:var(--sand2);border-radius:999px;padding:6px 12px;font-size:13px;color:var(--muted)}
@@ -114,7 +114,7 @@
           </button>
           {% endfor %}
         </div>
-        <p class="zones-hint">Tap a zone to see only its stations{% if sites %} below and on the map{% else %} on the map{% endif %}; tap a station for its latest lab results.</p>
+        <p class="zones-hint">Tap a zone to see only its stations; tap a station for its latest lab results.</p>
         {% endif %}
       </div>
       <div class="map-wrap">
@@ -124,12 +124,8 @@
       </div>
     </div>
     {% if sites %}
-    <div class="sites" id="sites" aria-label="Every monitoring station, as the city shows it">
-      {% for z in board.zones %}{% for s in z.stations %}
-      <button type="button" class="site-tile {{ s.status }}" data-zone="{{ z.key }}" data-station="{{ s.source }}" data-sample-station="{{ s.source }}" data-sample-name="{{ s.full_name }}" data-sample-feed-date="{{ s.sampled }}" title="Latest lab results">
-        <div class="nm">{{ s.full_name }}</div><div class="st">{{ {"safe": "Safe", "posted": "Posted", "discharge": "Discharge", "caution": "Caution", "unknown": "Not sampled"}[s.status] }}</div><div class="meta">{{ s.sampled_text }}</div>
-      </button>
-      {% endfor %}{% endfor %}
+    <div class="site-chips" id="zone-sites" aria-label="Every monitoring station, as the city shows it">
+      {% for z in board.zones %}{% for s in z.stations %}<button type="button" class="site" data-zone="{{ z.key }}" data-station="{{ s.source }}" data-sample-station="{{ s.source }}" data-sample-name="{{ s.full_name }}" data-sample-feed-date="{{ s.sampled }}" title="Latest lab results"><i class="status-dot {{ s.status }}"></i>{{ s.full_name }}<small>{{ s.sampled_text }}</small></button>{% endfor %}{% endfor %}
     </div>
     {% endif %}
     {% if conditions %}
@@ -158,7 +154,7 @@ function focusZone(key) {
   if (!ACTIVE) return fitAll();
   MAP.fitBounds(L.latLngBounds(MARKERS[ACTIVE].map(m => m.getLatLng())).pad(0.4), {maxZoom: 14});
 }
-function filterSites() { document.querySelectorAll("#sites .site-tile").forEach(t => { t.hidden = !!ACTIVE && t.dataset.zone !== ACTIVE; }); }
+function filterSites() { document.querySelectorAll("#zone-sites .site").forEach(c => { c.hidden = !!ACTIVE && c.dataset.zone !== ACTIVE; }); }
 function initMap() {
   if (!window.L || !document.getElementById("today-map")) return;
   MAP = L.map("today-map", {scrollWheelZoom: false, zoomControl: true, attributionControl: false}).setView([37.765, -122.44], 11);
@@ -223,7 +219,7 @@ function snapshotBoard() {
   if (ORIG) return;
   ORIG = {eyebrow: document.querySelector(".board .eyebrow").innerHTML, h1: $("today-h").innerHTML, lead: (document.querySelector(".board .lead") || {}).innerHTML, tone: document.querySelector(".board").className,
           tiles: Object.fromEntries(ZONES.map(z => { const t = tileParts(z.key); return [z.key, t ? {cls: t.b.className.replace(" focus", ""), st: t.st.innerHTML, dots: t.dots.map(d => d.className)} : null]; })),
-          sites: [...document.querySelectorAll("#sites .site-tile")].map(t => [t.dataset.station, t.className, t.querySelector(".st").textContent])};
+          sites: [...document.querySelectorAll("#zone-sites .site .status-dot")].map(d => [d.parentElement.dataset.station, d.className])};
 }
 function restoreBoard() {
   if (!ORIG) return;
@@ -232,7 +228,7 @@ function restoreBoard() {
   document.querySelector(".board").className = ORIG.tone;
   for (const z of ZONES) { const t = tileParts(z.key), o = ORIG.tiles[z.key]; if (!t || !o) continue; t.b.className = o.cls + (t.b.classList.contains("focus") ? " focus" : ""); t.b.style.borderColor = ""; t.st.innerHTML = o.st; t.dots.forEach((d, i) => d.className = o.dots[i]); }
   for (const m of allMarkers()) m.setStyle({fillColor: COL[m.__s.status] || COL.unknown, radius: m.__s.status === "posted" || m.__s.status === "discharge" ? 9 : 7});
-  for (const [src, cls, word] of ORIG.sites || []) { const t = document.querySelector('#sites .site-tile[data-station="' + src + '"]'); if (t) { t.className = cls; t.querySelector(".st").textContent = word; } }
+  for (const [src, cls] of ORIG.sites || []) { const d = document.querySelector('#zone-sites .site[data-station="' + src + '"] .status-dot'); if (d) d.className = cls; }
 }
 // Risk view: every zone and its stations take the colour of the zone's overflow risk today
 function applyRisk() {
@@ -259,7 +255,7 @@ function applyReplay() {
       const c = ((REPLAY.stations[st.source] || {})[day]) || "unknown"; zc[c]++; counts[c]++;
       if (RANK_ST[c] > RANK_ST[zw] || zw === "unknown") zw = c === "unknown" && zw !== "unknown" ? zw : c;
       const m = allMarkers().find(m => m.__s === st); if (m) m.setStyle({fillColor: COL[c], radius: c === "posted" || c === "discharge" ? 9 : 7});
-      const tile = document.querySelector('#sites .site-tile[data-station="' + st.source + '"]'); if (tile) { tile.className = "site-tile " + c; tile.querySelector(".st").textContent = {safe: "Not posted", posted: "Posted", discharge: "Discharge", unknown: "Not recorded"}[c]; }
+      const chip = document.querySelector('#zone-sites .site[data-station="' + st.source + '"] .status-dot'); if (chip) chip.className = "status-dot " + c;
       if (t) t.dots[i].className = "status-dot " + c;
     });
     if (RANK_ST[zw] > RANK_ST[worst]) worst = zw;

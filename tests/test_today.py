@@ -53,12 +53,12 @@ def test_today_page_is_the_board_plus_the_experimental_row_and_the_api_route_exi
         T.SFBWTFClient = orig
     assert 'id="today-map"' in h and 'id="zones"' in h and 'id="layers"' in h and "Experimental" in h and 'data-layer="bwtf"' in h and 'data-layer="replay"' in h and 'id="replay-ctl" hidden' in h and "/api/today/" in h
     assert h.index('id="layers"') < h.index('class="board') and 'class="extras"' not in h                                            # the strip sits above the board; the old row is gone
-    assert h.count('class="site-tile ') == 20 and 'data-sample-station=' in h and "{{" not in h                                           # a tile per station, each opening the popover
+    assert h.count('class="site" data-zone=') == 20 and 'id="zone-sites"' in h and 'data-sample-station=' in h and "{{" not in h        # a chip per station under the zone tiles, each opening the popover
     assert 'class="topbar"' in h and 'href="/today" class="on" aria-current="page">Today' in h and 'class="hubs"' not in h    # the board, not the hubs
     landing = c.get("/").data.decode() if False else None  # noqa: F841
     with app.test_client() as c:
         m = c.get("/").data.decode()
-    assert 'id="layers"' not in m and 'id="sites"' not in m and 'id="today-map"' in m and '<a href="/today"' in m                       # Main keeps the plain board                                       # Main keeps the plain board and links to Today
+    assert 'id="layers"' not in m and 'id="zone-sites"' not in m and 'id="today-map"' in m and '<a href="/today"' in m                  # Main keeps the plain board                                       # Main keeps the plain board and links to Today
     assert "board_section" in (ROOT / "app/templates/landing.html").read_text() and "board_section" in (ROOT / "app/templates/today/page.html").read_text()   # one implementation
 
 

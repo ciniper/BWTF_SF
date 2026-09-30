@@ -527,18 +527,18 @@ const ZONE_GROUPS_BY_BASIN = { westside: [...(ZONE_GROUPS.ocean || []), ...(ZONE
                                north_shore: ZONE_GROUPS.north || [], southeast: ['Southeast'], central: ['Mission Creek'] };
 
 function renderBeaches(beaches) {
-    // the kit's site tiles (brand.css .sites/.site-tile), the same as the Today board's: name, status in the heading face, sample date
+    // the kit's site chips (brand.css .site-chips/.site), the same as the Today board's: status dot, name, sample date; the whole chip opens the sample popover
     const grid = document.getElementById('beachGrid');
-    grid.className = 'sites'; grid.innerHTML = '';
+    grid.className = 'site-chips'; grid.innerHTML = '';
     if (!beaches.length) { grid.innerHTML = '<div class="mute">Unable to fetch beach status</div>'; return; }
     const order = { cso: 0, posted: 1, safe: 2, not_sampled: 3, unknown: 4 };
     beaches.sort((a, b) => (order[a.status] || 9) - (order[b.status] || 9));
-    const WORD = { cso: 'Discharge', posted: 'Posted', safe: 'Safe', not_sampled: 'Not sampled', unknown: 'Not sampled' };
+    const DOT = { cso: 'discharge', posted: 'posted', safe: 'safe', not_sampled: 'unknown', unknown: 'unknown' };
     beaches.forEach(b => {
-        const item = document.createElement(b.source ? 'button' : 'div');
-        if (b.source) { item.type = 'button'; item.dataset.sampleStation = b.source; item.dataset.sampleName = b.name; item.dataset.sampleFeedDate = b.sample_date_iso || ''; item.title = 'Latest lab results'; }   // the whole tile opens the sample popover
-        item.className = 'site-tile ' + esc(b.status);
-        item.innerHTML = `<div class="nm">${esc(b.name)}</div><div class="st">${WORD[b.status] || esc(b.status)}</div><div class="meta">${b.sample_date ? 'sampled ' + esc(b.sample_date) : 'no sample date'}</div>`;
+        const item = document.createElement(b.source ? 'button' : 'span');
+        if (b.source) { item.type = 'button'; item.dataset.sampleStation = b.source; item.dataset.sampleName = b.name; item.dataset.sampleFeedDate = b.sample_date_iso || ''; item.title = 'Latest lab results'; }
+        item.className = 'site';
+        item.innerHTML = `<i class="status-dot ${DOT[b.status] || 'unknown'}"></i>${esc(b.name)}<small>${b.sample_date ? 'sampled ' + esc(b.sample_date) : 'no sample date'}</small>`;
         grid.appendChild(item);
     });
 }
