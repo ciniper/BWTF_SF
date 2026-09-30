@@ -91,10 +91,7 @@
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
 {{ topbar() }}
 <div class="wrap">
-  <div class="hero">
-    <h1>How it's built</h1>
-    <p>Where the data comes from, where it lives, and who it reaches.</p>
-  </div>
+  {{ page_head("How it's built", "Where the data comes from, where it lives, and who it reaches.") }}
 
   <div class="panel">
   <svg class="arch d" viewBox="0 0 1000 600" role="img" aria-labelledby="archTitle archDesc">
