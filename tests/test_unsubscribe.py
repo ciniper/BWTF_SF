@@ -94,7 +94,7 @@ def test_python_renderer_matches_the_sql_footer_logic_and_version():
     for k in ("subject", "sms_text"):
         assert plain[k] == linked[k]                      # only the footer moves
     assert render._fallback(tr, False, None, "  ") == plain   # blank URL = none
-    assert render.RENDERER_VERSION == "019"
+    assert render.RENDERER_VERSION == "020"
     assert render.unsubscribe_url(TOKEN) == URL and render.unsubscribe_url("") is None
     # render_alert passes the URL to the pg renderer
     seen = []

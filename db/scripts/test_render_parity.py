@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Parity test: the pg renderer (bwtf_render_alert, migration 019) must match
+"""Parity test: the pg renderer (bwtf_render_alert, migration 020) must match
 the Python fallback byte-for-byte — subject, sms_text, text_body, html_body.
 
 If this fails after a format change, update whichever side lagged (format

@@ -1,5 +1,5 @@
-"""The alert email in the site's voice (migration 019; features/alerts/render._fallback is its
-byte-for-byte port — db/scripts/test_render_parity.py checks the two agree once 019 is applied).
+"""The alert email in the site's voice (migration 020; features/alerts/render._fallback is its
+byte-for-byte port — db/scripts/test_render_parity.py checks the two agree once 020 is applied).
 Offline: the Python port only."""
 import pathlib
 import sys
@@ -20,12 +20,12 @@ def test_one_station_is_named_and_several_are_counted():
     assert 'Ocean Beach at Sloat Boulevard is <span style="color:#d4763a">posted for bacteria</span>.</h1>' in one["html_body"]   # the name in black, the status in colour
     assert 'border:2px solid #d4763a;border-radius:20px' in one["html_body"]                       # the card's border takes the grade
     two = render._fallback([POSTED, CSO], True, None, UNSUB)
-    assert two["subject"] == "TEST Beach alert: sewage discharge at 1 beach, 1 beach posted"
-    assert '<span style="color:#b5310a">Sewage discharge</span> at 1 beach. 1 beach is <span style="color:#d4763a">posted for bacteria</span>.' in two["html_body"]
+    assert two["subject"] == "TEST Beach alert: sewage discharge at 1 beach, bacteria posting at 1 beach"
+    assert '<span style="color:#b5310a">Sewage discharge</span> at 1 beach. <span style="color:#d4763a">Bacteria posting</span> at 1 beach.' in two["html_body"]   # two parallel phrases, no "1 beach. 1 beach"
     assert "Discharging: Islais Creek. Posted: Ocean Beach at Sloat Boulevard. From SFPUC's beach map" in two["html_body"]
     assert 'border:2px solid #b5310a;border-radius:20px' in two["html_body"] and "TEST SF Beach Water Quality Alert" in two["html_body"]
     three = render._fallback([CSO, CSO, POSTED, POSTED], False, "East Beaches", UNSUB)
-    assert three["subject"] == "Beach alert: sewage discharge at 2 beaches, 2 beaches posted" and '2 beaches are <span style="color:#d4763a">posted for bacteria</span>.' in three["html_body"]
+    assert three["subject"] == "Beach alert: sewage discharge at 2 beaches, bacteria postings at 2 beaches" and '<span style="color:#d4763a">Bacteria postings</span> at 2 beaches.' in three["html_body"]
 
 
 def test_the_email_speaks_the_sites_language():
@@ -39,7 +39,7 @@ def test_the_email_speaks_the_sites_language():
     assert 'href="https://bwtf-sf.vercel.app/manage?t=abc"' in html and 'href="https://bwtf-sf.vercel.app/unsubscribe?t=abc"' in html
     assert html.count("/static/emailmaps/") == 2 and "/static/brand/bwtf_144x144.png" in html
     assert "<b>SFPUC's guidance:</b> avoid water contact at a posted beach, and for 72 hours after a discharge or heavy rain." in html
-    assert text.startswith("Beach alert: sewage discharge at 1 beach, 1 beach posted\n\n- Ocean Beach at Sloat Boulevard: posted for bacteria.\n- Islais Creek: sewage discharge.")
+    assert text.startswith("Beach alert: sewage discharge at 1 beach, bacteria posting at 1 beach\n\n- Ocean Beach at Sloat Boulevard: posted for bacteria.\n- Islais Creek: sewage discharge.")
     assert sms == "Beach alert: Ocean Beach at Sloat Boulevard — posted for bacteria; Islais Creek — sewage discharge. SFPUC: avoid water contact. https://bwtf-sf.vercel.app/"
     for k in ("Avoid water contact and check conditions", "New events at your selected sites", "View SFPUC Beach Map"):
         assert k not in html                                                                                       # the old copy is gone
@@ -52,8 +52,8 @@ def test_without_an_unsubscribe_link_the_footer_says_how_to_stop():
 
 
 def test_migration_and_port_carry_the_same_stamp_and_the_same_words():
-    sql = (ROOT / "db/migrations/019_email_board_style.sql").read_text()
-    assert render.RENDERER_VERSION == "019" and "renderer_ver text := '019'" in sql
+    sql = (ROOT / "db/migrations/020_email_board_style.sql").read_text()
+    assert render.RENDERER_VERSION == "020" and "renderer_ver text := '020'" in sql
     body = sql.split("create or replace function public.bwtf_render_alert(")[1]
     for phrase in ("SF Beach Water Quality Alert", ">Live status</a>", "take precedence", "Surfrider SF &middot; Blue Water Task Force",
                    '<span style="color:#b5310a">sewage discharge</span>.', '<span style="color:#d4763a">posted for bacteria</span>.', "SFPUC''s guidance:"):

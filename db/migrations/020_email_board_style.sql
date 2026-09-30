@@ -1,22 +1,22 @@
--- 019 — the alert email in the site's voice (Chase, 2026-09-30: "I like the email direction").
+-- 020 — the alert email in the site's voice (Chase, 2026-09-30: "I like the email direction").
 --
 -- What changes, and only this: bwtf_render_alert's output. The header reads "SF BEACH WATER
 -- QUALITY ALERT" over the site's mark; the card is the Today board's — a 2px border in the grade
 -- colour, an eyebrow, a headline that states the fact in counts, the status phrase alone in its
--- colour ("Sewage discharge at 1 beach. 1 beach is posted for bacteria."), a facts line
+-- colour ("Sewage discharge at 1 beach. Bacteria posting at 1 beach."), a facts line
 -- naming the beaches, one row per station with its map thumbnail and one factual line, SFPUC's
 -- guidance stated once and attributed, one button — "Live status" — to the site's board. SFPUC's
 -- own map moves to the small print, which also drops "always win" for "take precedence". No
 -- timestamp in the body (the message's own Date header carries it; the Python port must match
 -- byte for byte and cannot share a clock with the database).
 --
--- bwtf_dispatch_live is restated verbatim from 017 with renderer_ver '019', so every
+-- bwtf_dispatch_live is restated verbatim from 017 with renderer_ver '020', so every
 -- alert_deliveries row names the renderer that wrote it. Signatures unchanged.
 --
 -- Apply in the Supabase SQL editor with no simulation active (bwtf_shadow_tick and the live
 -- dispatcher read these at call time; nothing is queued). Then:
 --   venv/bin/python db/scripts/test_render_parity.py     -- pg == Python, with and without the link
---   select renderer, count(*) from alert_deliveries group by 1;   -- new rows say 019
+--   select renderer, count(*) from alert_deliveries group by 1;   -- new rows say 020
 
 create or replace function public.bwtf_render_alert(
   p_transitions jsonb, p_simulated boolean, p_zone text default null,
@@ -69,7 +69,7 @@ begin
   else
     subject := prefix || 'Beach alert: ' || concat_ws(', ',
       case when n_cso > 0 then 'sewage discharge at ' || n_cso || ' beach' || case when n_cso > 1 then 'es' else '' end end,
-      case when n_posted > 0 then n_posted || ' beach' || case when n_posted > 1 then 'es' else '' end || ' posted' end);
+      case when n_posted > 0 then 'bacteria posting' || case when n_posted > 1 then 's' else '' end || ' at ' || n_posted || ' beach' || case when n_posted > 1 then 'es' else '' end end);
   end if;
 
   -- headline in the board's voice: counts, coloured by grade; one station is named outright
@@ -80,7 +80,7 @@ begin
   else
     headline := concat_ws(' ',
       case when n_cso > 0 then '<span style="color:#b5310a">Sewage discharge</span> at ' || n_cso || ' beach' || case when n_cso > 1 then 'es' else '' end || '.' end,
-      case when n_posted > 0 then n_posted || ' beach' || case when n_posted > 1 then 'es are' else ' is' end || ' <span style="color:#d4763a">posted for bacteria</span>.' end);
+      case when n_posted > 0 then '<span style="color:#d4763a">Bacteria posting' || case when n_posted > 1 then 's' else '' end || '</span> at ' || n_posted || ' beach' || case when n_posted > 1 then 'es' else '' end || '.' end);
   end if;
   facts := case when n_cso > 0 then 'Discharging: ' || names_cso || '. ' else '' end
         || case when n_posted > 0 then 'Posted: ' || names_post || '. ' else '' end
@@ -156,7 +156,7 @@ end $$;
 revoke all on function public.bwtf_render_alert(jsonb, boolean, text, text) from public, anon, authenticated;
 grant execute on function public.bwtf_render_alert(jsonb, boolean, text, text) to service_role;
 
--- ── dispatch: 017's loop, restated so every delivery row is stamped '019' ────────────────
+-- ── dispatch: 017's loop, restated so every delivery row is stamped '020' ────────────────
 create or replace function public.bwtf_dispatch_live(
   p_transitions jsonb, p_recipients jsonb, p_simulated boolean
 ) returns jsonb
@@ -175,7 +175,7 @@ declare
   out_all    jsonb := '[]'::jsonb;
   -- 015: the delivery row for the message about to be sent
   del_id       bigint;
-  renderer_ver text := '019';   -- bwtf_render_alert's migration; bump when the renderer changes
+  renderer_ver text := '020';   -- bwtf_render_alert's migration; bump when the renderer changes
   -- /015
   -- 017: this recipient's unsubscribe link
   site_url   text;

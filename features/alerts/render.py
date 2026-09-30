@@ -31,7 +31,7 @@ MAP_URL = "https://webapps.sfpuc.org/sapps/beachesandbay.html"
 # alert_deliveries row (015) so an old message is never mistaken for a
 # re-render with a newer template. Bump with the SQL (015's renderer_ver and
 # tests/test_alert_deliveries.py hold it to the latest renderer migration).
-RENDERER_VERSION = "019"
+RENDERER_VERSION = "020"
 SITE_URL = os.environ.get("SITE_URL", "https://bwtf-sf.vercel.app").rstrip("/")
 
 
@@ -61,7 +61,7 @@ def render_alert(transitions: list[dict], simulated: bool, zone: str | None = No
 
 def _fallback(transitions: list[dict], simulated: bool, zone: str | None = None,
               unsubscribe_url: str | None = None) -> dict:
-    """Byte-for-byte Python port of bwtf_render_alert (migration 019 — do not restyle here;
+    """Byte-for-byte Python port of bwtf_render_alert (migration 020 — do not restyle here;
     format changes belong in migration SQL; db/scripts/test_render_parity.py enforces this)."""
     prefix = "TEST " if simulated else ""
     n = len(transitions)
@@ -83,14 +83,14 @@ def _fallback(transitions: list[dict], simulated: bool, zone: str | None = None,
     else:
         subject = f"{prefix}Beach alert: " + ", ".join(filter(None, [
             f"sewage discharge at {beaches(n_cso)}" if n_cso > 0 else None,
-            f"{beaches(n_posted)} posted" if n_posted > 0 else None]))
+            "bacteria posting" + ("s" if n_posted > 1 else "") + f" at {beaches(n_posted)}" if n_posted > 0 else None]))
 
     if n == 1:   # names and counts stay black; only the status phrase takes its colour
         headline = name1 + (' has a <span style="color:#b5310a">sewage discharge</span>.' if cso1 else ' is <span style="color:#d4763a">posted for bacteria</span>.')
     else:
         headline = " ".join(filter(None, [
             f'<span style="color:#b5310a">Sewage discharge</span> at {beaches(n_cso)}.' if n_cso > 0 else None,
-            f"{n_posted} beach" + ("es are" if n_posted > 1 else " is") + ' <span style="color:#d4763a">posted for bacteria</span>.' if n_posted > 0 else None]))
+            '<span style="color:#d4763a">Bacteria posting' + ("s" if n_posted > 1 else "") + f'</span> at {beaches(n_posted)}.' if n_posted > 0 else None]))
     facts = ((f"Discharging: {', '.join(t['station_name'] for t in cso)}. " if n_cso > 0 else "")
              + (f"Posted: {', '.join(t['station_name'] for t in posted)}. " if n_posted > 0 else "")
              + "From SFPUC's beach map, which this site checks every minute.")
