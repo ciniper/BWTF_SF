@@ -217,59 +217,80 @@ def node(x, y, w, h, icon, title, sub, hub=False):
 
 
 def pipeline_svg(sv: dict, wx_label: str, n_events: int = 0, n_sample_days: int = 0) -> str:
-    """The whole thing in one picture. A band on top shows what each stage was
-    FITTED on, once (dashed). The left column is what flows in live, every 30
-    minutes (solid): rain into the 19 numbers, the city's observations into the
-    live corrections. Both paths meet in the outputs on the right."""
-    a = ['<svg class="pipe" viewBox="0 0 1220 500" role="img"><title>How rain becomes a beach percentage</title>'
+    """One source column on the left in three groups (the record, fitted on
+    once; rain, live; observations, live), the model row in the middle, the
+    outputs on the right. Dashed = used once to fit; solid = flows every
+    30 minutes. No two arrows cross."""
+    a = ['<svg class="pipe" viewBox="0 0 1240 620" role="img"><title>How rain becomes a beach percentage</title>'
          '<defs><marker id="pa" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#0072BC"/></marker>'
          '<marker id="pg" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#8a949b"/></marker></defs>']
-    a.append('<text class="col" x="530" y="30">FITTED ON, ONCE (at training time)</text>')
-    a.append('<text class="col" x="20" y="98">WHAT COMES IN, LIVE</text><text class="col" x="310" y="136">THE MODEL, fixed since training</text><text class="col" x="1000" y="200">WHAT GOES OUT</text>')
-    # the training band
-    a.append(node(530, 44, 190, 54, "logo:logos/water-boards.png", "Filed overflows (CIWQS)", f"{n_events:,} events: the labels"))
-    a.append(node(760, 44, 200, 54, "logo:logos/sf-city-seal.png", "City lab results, past", f"{n_sample_days:,} sampled days near overflows"))
-    a.append('<path class="fit" d="M625,98 V150" marker-end="url(#pg)"/><path class="fit" d="M860,98 V150" marker-end="url(#pg)"/>')
-    a.append('<text class="fl" x="632" y="130">learns which rain overflows</text><text class="fl" x="867" y="130">learns how long beaches stay dirty</text>')
-    # the model row
-    a.append(node(310, 150, 180, 54, "gauge", "19 numbers a day", "totals · lags · peaks · dryness", hub=True))
-    a.append(node(530, 150, 190, 54, "chart", "Stage 1 · 4 basins", "chance the sewers overflow", hub=True))
-    a.append(node(760, 150, 200, 54, "waves", "Stage 2 · 6 beach groups", "how long, and which beaches", hub=True))
+    a.append('<text class="col" x="20" y="40">THE RECORD · used once, to fit the model</text>')
+    a.append('<text class="col" x="20" y="222">LIVE · every 30 minutes</text>')
+    a.append('<text class="col" x="320" y="240">THE MODEL · fixed since training</text>')
+    a.append('<text class="col" x="1030" y="350">WHAT GOES OUT</text>')
+    # the record (fitted on, once)
+    a.append(node(20, 52, 250, 56, "logo:logos/sf-city-seal.png", "City lab results, past", f"{n_sample_days:,} sampled days: the curves"))
+    a.append(node(20, 116, 250, 56, "logo:logos/water-boards.png", "Filed overflows (CIWQS)", f"{n_events:,} events: the labels"))
     # rain, live
-    a.append(node(20, 112, 240, 54, "logo:logos/noaa.svg", "Two NOAA gauges", "Downtown · Oceanside, daily"))
-    a.append(node(20, 174, 240, 54, "logo:logos/noaa.svg", "SFO airport gauge", "NWS · today's hours so far"))
-    a.append(node(20, 236, 240, 54, "cloud-rain", f"{wx_label} weather model", "Open-Meteo · the hours ahead"))
+    a.append(node(20, 234, 250, 56, "logo:logos/noaa.svg", "Two NOAA gauges", "Downtown · Oceanside, daily"))
+    a.append(node(20, 298, 250, 56, "logo:logos/noaa.svg", "SFO airport gauge", "NWS · today's hours so far"))
+    a.append(node(20, 362, 250, 56, "cloud-rain", f"{wx_label} weather model", "Open-Meteo · the hours ahead"))
     # observations, live
-    a.append(node(20, 330, 240, 54, "logo:logos/sfpuc.png", "SFPUC beach map", "flags · postings, every minute"))
-    a.append(node(20, 392, 240, 54, "logo:logos/sf-city-seal.png", "City lab results, new", "this week's samples (DataSF)"))
-    a.append(node(760, 330, 200, 54, "satellite-dish", f"Live corrections {LR.VERSION.replace('live_', '')}", "observations override the model", hub=True))
+    a.append(node(20, 452, 250, 56, "logo:logos/sfpuc.png", "SFPUC beach map", "flags · postings, every minute"))
+    a.append(node(20, 516, 250, 56, "logo:logos/sf-city-seal.png", "City lab results, new", "this week's samples (DataSF)"))
+    # the model row
+    a.append(node(320, 298, 190, 56, "gauge", "19 numbers a day", "totals · lags · peaks · dryness", hub=True))
+    a.append(node(550, 298, 200, 56, "chart", "Stage 1 · 4 basins", "chance the sewers overflow", hub=True))
+    a.append(node(790, 298, 210, 56, "waves", "Stage 2 · 6 beach groups", "how long, and which beaches", hub=True))
+    a.append(node(790, 452, 210, 56, "satellite-dish", f"Live corrections {LR.VERSION.replace('live_', '')}", "observations override", hub=True))
     # outputs
-    a.append(node(1000, 214, 200, 54, "map-pin", "4 zones × 6 days", "a percentage, every 30 min"))
-    a.append(node(1000, 276, 200, 54, "bell", f"Alarm line {int(round((sv.get('line') or 0.25) * 100))}%", "the banner words"))
-    a.append(node(1000, 338, 200, 54, "logo:logos/supabase.svg", "History tables", "every forecast, kept"))
+    a.append(node(1030, 362, 205, 56, "map-pin", "4 zones × 6 days", "percent, every 30 min"))
+    a.append(node(1030, 426, 205, 56, "bell", f"Alarm line {int(round((sv.get('line') or 0.25) * 100))}%", "the banner words"))
+    a.append(node(1030, 490, 205, 56, "logo:logos/supabase.svg", "History tables", "every forecast, kept"))
 
-    def arrow(d, label=None, lx=None, ly=None, anchor="middle"):
-        a.append(f'<path class="flow" d="{d}" marker-end="url(#pa)"/>')
+    def arrow(d, label=None, lx=None, ly=None, anchor="middle", cls="flow", marker="pa"):
+        a.append(f'<path class="{cls}" d="{d}" marker-end="url(#{marker})"/>')
         if label:
-            a.append(f'<text class="al" x="{lx}" y="{ly}" text-anchor="{anchor}">{esc(label)}</text>')
+            a.append(f'<text class="{"al" if cls == "flow" else "fl"}" x="{lx}" y="{ly}" text-anchor="{anchor}">{esc(label)}</text>')
 
     def dot(x, y):
         a.append(f'<circle class="dot" cx="{x}" cy="{y}" r="3.5"/>')
 
-    a.append('<path class="flow" d="M260,139 H285 V263 H260"/>'); dot(285, 201)
-    arrow("M285,201 H310"); a.append('<text class="al" x="292" y="284" text-anchor="start">one hourly rain series</text>')
-    arrow("M490,177 H530", "19 numbers", 510, 222)
-    arrow("M720,177 H760", "P(overflow)", 740, 222)
-    arrow("M860,204 V330", "% per beach group", 868, 272, "start")
-    a.append('<path class="flow" d="M260,419 H285 V357 H260"/>'); dot(285, 357)
-    arrow("M285,357 H760", "flags · postings · sample results", 520, 348)
-    a.append('<path class="flow" d="M960,357 H975 V241"/><path class="flow" d="M975,357 V365"/>'); dot(975, 357)
-    arrow("M975,241 H1000"); arrow("M975,303 H1000"); arrow("M975,365 H1000")
+    # fitted on: the past samples teach stage 2 how long beaches stay dirty; the filed overflows teach stage 1 which rain overflows
+    arrow("M270,80 H895 V298", "teaches stage 2 how long a beach stays dirty after an overflow", 560, 72, cls="fit", marker="pg")
+    arrow("M270,144 H650 V298", "teaches stage 1 which rain makes the sewers overflow", 455, 136, cls="fit", marker="pg")
+    # rain: three sources become one hourly series, then the day's numbers
+    a.append('<path class="flow" d="M270,262 H295 V390 H270"/>'); dot(295, 326)
+    arrow("M295,326 H320"); a.append('<text class="al" x="302" y="412" text-anchor="start">one hourly rain series</text>')
+    arrow("M510,326 H550", "19 numbers", 530, 290)
+    arrow("M750,326 H790", "P(overflow)", 770, 290)
+    arrow("M895,354 V452", "% per beach group", 903, 408, "start")
+    # observations into the live corrections
+    a.append('<path class="flow" d="M270,544 H295 V480 H270"/>'); dot(295, 480)
+    arrow("M295,480 H790", "flags · postings · sample results", 540, 471)
+    # live corrections to each output
+    a.append('<path class="flow" d="M1000,480 H1015 V390"/><path class="flow" d="M1015,480 V518"/>'); dot(1015, 480)
+    arrow("M1015,390 H1030"); arrow("M1015,454 H1030"); arrow("M1015,518 H1030")
     # legend
-    a.append('<path class="flow" d="M310,470 H350"/><text class="lg" x="358" y="474">flows every 30 minutes</text>'
-             '<path class="fit" d="M560,470 H600"/><text class="lg" x="608" y="474">used once, to fit the model; the weights have not changed since</text>')
+    a.append('<path class="flow" d="M320,600 H360"/><text class="lg" x="368" y="604">flows every 30 minutes</text>'
+             '<path class="fit" d="M560,600 H600"/><text class="lg" x="608" y="604">used once, to fit the model; the weights have not changed since</text>')
     a.append("</svg>")
-    return "".join(a)
+    # the same story stacked, for phones
+    steps = [
+        ("logo:logos/water-boards.png", "Fitted once", f"{n_events:,} filed overflows taught stage 1 which rain overflows; {n_sample_days:,} sampled days taught stage 2 how long a beach stays dirty."),
+        ("logo:logos/noaa.svg", "Rain in, live", f"Two NOAA gauges for every past day, the SFO gauge for today's hours, the {wx_label} model for the hours ahead: one hourly series."),
+        ("gauge", "19 numbers a day", "Totals, lags, peaks, dryness."),
+        ("chart", "Stage 1 · 4 basins", "The chance the sewers overflow today."),
+        ("waves", "Stage 2 · 6 beach groups", "How long, and which beaches: a percentage from the last eight days."),
+        ("satellite-dish", f"Live corrections {LR.VERSION.replace('live_', '')}", "The beach map's flags and postings and this week's samples override the model where they have something to say."),
+        ("map-pin", "Out", f"Four zones, six days, every 30 minutes; the alarm line at {int(round((sv.get('line') or 0.25) * 100))}%; every forecast kept."),
+    ]
+    m = ['<ol class="pipe-m">']
+    for icon, title, text in steps:
+        tile = f'<img src="/static/{icon[5:]}" alt="">' if icon.startswith("logo:") else ic(icon)
+        m.append(f'<li><span class="lgi">{tile}</span><div><b>{esc(title)}</b><span>{esc(text)}</span></div></li>')
+    m.append("</ol>")
+    return "".join(a) + "".join(m)
 
 
 def weights_chart(md: dict, top: int = 8, width=320) -> str:
@@ -298,6 +319,85 @@ def weights_chart(md: dict, top: int = 8, width=320) -> str:
     shown = sum(r["value"] for r in rows)
     return svg_hbars(rows, width=width, vmax=max(r["value"] for r in rows), fmt=lambda v: f"{100*v:.0f}%",
                      title=f"the weights · top {top} of {len(names)} terms = {100*shown:.0f}% of the total", label_w=190)
+
+
+
+def math_section(models: dict, ratios: dict) -> str:
+    """The weights model written out, the fitted numbers per basin, and one day worked through."""
+    names = list(leaderboard.FEATS) + [f"{f}>{k:g}" for f, ks in leaderboard.HINGES.items() for k in ks]
+
+    def term_label(n):
+        if ">" in n:
+            f, k = n.split(">")
+            return f'{FEATURE_MEANING.get(f, f)} above {k}"'
+        return FEATURE_MEANING.get(n, n)
+
+    tables = []
+    for b in BASINS:
+        pipe = models[b]["model"]
+        lr, sc = pipe.named_steps["lr"], pipe.named_steps["scale"]
+        coef, mu, sd = lr.coef_[0], sc.mean_, sc.scale_
+        total = float(np.abs(coef).sum()) or 1.0
+        order = np.argsort(-np.abs(coef))
+        rows = "".join(
+            f'<tr><td class="mono">{esc(names[i])}</td><td>{esc(term_label(names[i]))}</td><td class="num">{coef[i]:+.3f}</td>'
+            f'<td class="num">{np.exp(coef[i]):.2f}×</td><td class="num">{100 * abs(coef[i]) / total:.1f}%</td><td class="num mute">{mu[i]:.3f}</td><td class="num mute">{sd[i]:.3f}</td></tr>'
+            for i in order)
+        tables.append(f'<details class="more"><summary>{esc(BASIN_NAME[b])}: all {len(names)} weights, intercept β₀ = {lr.intercept_[0]:+.3f} (C = {models[b].get("C", "—")})</summary>'
+                      f'<table><tr><th>term</th><th>plain meaning</th><th class="num">weight β per SD</th><th class="num">odds × per +1 SD</th><th class="num">share</th><th class="num">mean μ</th><th class="num">SD σ</th></tr>{rows}</table></details>')
+
+    # one day worked through, Westside: an inch today after a dry month
+    b = BASINS[0]
+    pipe = models[b]["model"]
+    lr, sc = pipe.named_steps["lr"], pipe.named_steps["scale"]
+    feats = sweep_features(np.array([1.0]), ratios)
+    t = leaderboard.add_hinges(feats[leaderboard.FEATS])[0]
+    z = (t - sc.mean_) / sc.scale_
+    contrib = lr.coef_[0] * z
+    logit = float(lr.intercept_[0] + contrib.sum())
+    prob = 1 / (1 + np.exp(-logit))
+    order = np.argsort(-np.abs(contrib))
+    ex_rows = "".join(f'<tr><td class="mono">{esc(names[i])}</td><td class="num">{t[i]:.3f}</td><td class="num">{z[i]:+.2f}</td><td class="num">{lr.coef_[0][i]:+.3f}</td><td class="num"><b>{contrib[i]:+.3f}</b></td></tr>' for i in order[:8])
+    rest = float(contrib.sum() - contrib[order[:8]].sum())
+    example = (f'<table><tr><th>term</th><th class="num">value</th><th class="num">standardised z</th><th class="num">weight β</th><th class="num">β · z</th></tr>{ex_rows}'
+               f'<tr><td colspan="4">the other {len(names) - 8} terms together</td><td class="num">{rest:+.3f}</td></tr>'
+               f'<tr class="total"><td colspan="4">intercept β₀ {lr.intercept_[0]:+.3f} + all terms = log-odds</td><td class="num">{logit:+.3f}</td></tr>'
+               f'<tr class="total"><td colspan="4">P(overflow) = 1 / (1 + e<sup>−{logit:.3f}</sup>)</td><td class="num">{100 * prob:.0f}%</td></tr></table>')
+
+    return f"""<details class="more math"><summary>The math behind the weights</summary>
+<div class="card wide">
+<p><b>The model.</b> For a basin and a day, take the 19 inputs x<sub>1</sub> … x<sub>19</sub> (inches, days, or a yes/no). Add {len(names) - 19} <em>bends</em>: for an input f and a knot k, h<sub>f,k</sub> = max(0, x<sub>f</sub> − k), which is zero until the input passes the knot and then rises with it. That is how "the first quarter inch barely matters, the next inch matters a lot" becomes a straight-line model. Together these are the {len(names)} terms t<sub>1</sub> … t<sub>{len(names)}</sub>.</p>
+<p><b>Standardise.</b> Each term is centred and scaled by its training mean and standard deviation: z<sub>j</sub> = (t<sub>j</sub> − μ<sub>j</sub>) / σ<sub>j</sub>. So every weight below is "per one standard deviation of that term", and weights are comparable across terms.</p>
+<p><b>Combine.</b> The log-odds of an overflow is a weighted sum: &nbsp;<span class="eq">log(p / (1 − p)) = β<sub>0</sub> + Σ<sub>j</sub> β<sub>j</sub> z<sub>j</sub></span>, &nbsp;and the probability is &nbsp;<span class="eq">p = 1 / (1 + e<sup>−(β<sub>0</sub> + Σ β<sub>j</sub> z<sub>j</sub>)</sup>)</span>. A weight of +0.5 multiplies the odds by e<sup>0.5</sup> ≈ 1.65 for each standard deviation of its term. The "share" in the table above is |β<sub>j</sub>| / Σ|β|.</p>
+<p><b>Fit.</b> The weights minimise the log-loss over the training days plus a penalty (1 / 2C) Σ β<sub>j</sub>², the L2 ridge: a smaller C shrinks all weights toward zero and spreads credit across correlated terms (today's total and the last two days move together, so they share weight). C is chosen per basin by leave-one-season-out cross-validation on the seasons before the holdout. Serving adds a calibration offset that fades to zero by half an inch of three-day rain; for this family the offset is 0, so p is used as fitted.</p>
+<p><b>One day, worked through.</b> {esc(BASIN_NAME[b])}, one inch today after a dry month, peak hours at their typical shares of the day:</p>{example}
+{"".join(tables)}
+</div></details>"""
+
+
+def simpler_section() -> str:
+    """Could it be simpler? The refits from sparse_logit_eval.py, if they exist."""
+    path = MODEL_DIR / "sparse_logit_eval.json"
+    if not path.exists():
+        return ""
+    d = json.load(open(path))
+    label = {"full38": f"all {d['n_terms_full']} terms (served design)", "raw19": "the 19 inputs, no bends", "top12": "12 terms the served model weighs most", "top8": "8 terms", "top5": "5 terms", "top3": "3 terms",
+             "tiny4": "4 hand-picked: today, today above ½\", last 2 days, wettest hour", "l1": "an L1 fit that picks its own terms"}
+    f3 = lambda s, k, nd=3: (f"{s[k]:.{nd}f}" if s and k in s else "—")  # noqa: E731
+    blocks = []
+    for key, b in d["basins"].items():
+        rows = []
+        for r in b["rows"]:
+            cls = " class='best'" if r["name"] == "full38" else ""
+            terms = ""
+            if r["name"] in ("l1", "top5", "top3"):
+                terms = f'<div class="fine">{esc(", ".join(r["terms"]))}</div>'
+            rows.append(f'<tr{cls}><td>{esc(label.get(r["name"], r["name"]))}{terms}</td><td class="num">{r["n_terms"]}</td><td class="num">{f3(r["cv"], "pr_auc")}</td><td class="num">{f3(r["holdout"], "pr_auc")}</td><td class="num">{f3(r["holdout"], "brier", 4)}</td><td class="num">{f3(r["post"], "pr_auc")}</td><td class="num">{f3(r["post"], "brier", 4)}</td></tr>')
+        blocks.append(f'<h4>{esc(b["name"])} · {b["n_holdout_events"]} overflow days in the holdout, {b["n_post_events"]} since training</h4>'
+                      f'<table><tr><th>design</th><th class="num">terms</th><th class="num">season CV PR-AUC</th><th class="num">holdout PR-AUC</th><th class="num">holdout Brier</th><th class="num">since-training PR-AUC</th><th class="num">since Brier</th></tr>{"".join(rows)}</table>')
+    return f"""<h3>Could it be simpler?</h3>
+<div class="card wide"><p class="fine">Chase, 2026-09-30: "simpler is king". The same design refit with fewer terms, on the same days and labels (<code>src/models/sparse_logit_eval.py</code>, {esc(d["generated"])}). PR-AUC ranks overflow days above quiet ones (1.0 perfect); Brier is the squared error of the probability (lower is better). The holdout exam fits on the seasons before {esc(fmt_month(d["holdout_start"]))} and scores {esc(fmt_month(d["holdout_start"]))} → {esc(fmt_month(d["trained_through"]))}; the since-training exam fits through {esc(fmt_month(d["trained_through"]))} and scores the days after. The "top K" rows rank terms by the served model, which itself saw the holdout, so read them as optimistic; the L1 and hand-picked rows carry no such advantage. Shaded: the served design.</p>{"".join(blocks)}
+<p class="fine"><b>Reading.</b> Eight terms match or beat all {d["n_terms_full"]} in every basin, on the holdout and since training, and the season cross-validation is higher for the smaller designs in three basins of four. Even three to five terms hold within a few points. The 19 inputs are cheap to compute, so the cost of the extra terms is not speed; it is that the model is harder to explain and that correlated terms share credit in ways that shift between fits. A candidate set with about five terms per basin, chosen by cross-validation on the seasons before the holdout, would be the honest test; it would go through the Model check and the analysis report like every candidate before it, and serving already handles the family.</p></div>"""
 
 
 # ── report A: how it works ──────────────────────────────────────────────────
@@ -467,7 +567,9 @@ def report_works(S: dict, reg: dict, wx_model: str) -> str:
 <div class="grid2"><div class="card">{curves_dry}</div><div class="card">{curves_wet}</div></div>
 <div class="card wide">{facts}</div>
 <h3>What each basin weighs</h3>
-<div class="card wide">{weights_table}</div></section>
+<div class="card wide">{weights_table}</div>
+{math_section(models, ratios)}
+{simpler_section()}</section>
 
 <section id="stage2"><h2>Stage 2 · which beaches, and for how long?</h2>
 <p class="lead">An overflow fouls a beach for days. This stage is built from the city's bacteria samples: for each beach group, the lab results after past overflows give the chance the water is still over standard k days later, large and small overflows apart, with the dry-weather background removed. The outfall split (stage 2 {esc(sv["stage2"])}) first scales the basin's chance by the share of its overflows that reach the group at all: Ocean Beach and Aquatic Park do not see every overflow in their basin. The percentage on the page is the combined risk from the last eight days.</p>
@@ -699,10 +801,12 @@ h3{font-size:16px;margin:18px 0 6px;color:#26272a}
 nav{display:flex;flex-wrap:wrap;gap:4px 14px;margin:10px 0 6px;font-size:14px;font-weight:600}nav a{color:#0072BC;text-decoration:none}nav a:hover{text-decoration:underline}
 .panel{background:#fff;border:1px solid #d9e4e8;border-radius:24px;padding:16px;overflow-x:auto}
 svg.pipe{display:block;width:100%;min-width:760px;height:auto;font-family:Roboto,Arial,sans-serif}
+.pipe-m{display:none;list-style:none;margin:0;padding:0}.pipe-m li{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid #eef2f5}.pipe-m li:first-child{border-top:0}.pipe-m b{display:block;font-size:15px}.pipe-m span:last-child{font-size:13.5px;color:#54576F}.pipe-m .lgi img{width:26px;height:26px;object-fit:contain}
+@media(max-width:700px){svg.pipe{display:none}.pipe-m{display:block}.panel{overflow:visible}}
 .box{fill:#fff;stroke:#d9e4e8;stroke-width:1.5}.box.hub{stroke:#0072BC;stroke-width:2}.tile{fill:#E3EBF2}.tile.logo{fill:#fff;stroke:#e3ebf2;stroke-width:1.5}
 .icn{fill:none;stroke:#0072BC;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.t{font-size:15px;font-weight:700;fill:#26272a}.s{font-size:12.5px;fill:#54576F}.col{font-size:11px;font-weight:700;letter-spacing:.14em;fill:#8a949b}
-.flow{fill:none;stroke:#0072BC;stroke-width:2}.fit{fill:none;stroke:#8a949b;stroke-width:2;stroke-dasharray:6 5}.dot{fill:#0072BC}.al{font-size:11px;font-weight:700;fill:#0072BC}.fl{font-size:11px;font-weight:700;fill:#8a949b}.lg{font-size:12px;fill:#54576F}.cap{font-size:12px;fill:#54576F}
+.t{font-size:16px;font-weight:700;fill:#26272a}.s{font-size:13px;fill:#54576F}.col{font-size:11.5px;font-weight:700;letter-spacing:.12em;fill:#8a949b}
+.flow{fill:none;stroke:#0072BC;stroke-width:2}.fit{fill:none;stroke:#8a949b;stroke-width:2;stroke-dasharray:6 5}.dot{fill:#0072BC}.al{font-size:12px;font-weight:700;fill:#0072BC}.fl{font-size:12px;font-weight:700;fill:#8a949b}.lg{font-size:12px;fill:#54576F}.cap{font-size:12px;fill:#54576F}
 .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
 @media(max-width:1000px){.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}.grid3{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:640px){.grid2,.grid3,.grid4{grid-template-columns:1fr}.rh{flex-direction:column}}
@@ -720,7 +824,7 @@ table{width:100%;border-collapse:collapse;font-size:13.5px;background:#fff;borde
 th{text-align:left;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#54576F;padding:8px 10px;border-bottom:1px solid #d9e4e8;background:#f7fafc}td{padding:7px 10px;border-bottom:1px solid #eef2f5;vertical-align:top}
 td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}tr.total td{font-weight:700;border-top:2px solid #d9e4e8}table.plain{border:0}.mono{font-family:ui-monospace,Menlo,monospace;font-size:12.5px}
 table.wt td.heat{font-variant-numeric:tabular-nums;font-weight:600}table.wt .dir{font-size:10px;opacity:.8}
-details.more{margin-top:10px}details.more summary{cursor:pointer;font-weight:700;color:#0072BC}
+details.more{margin-top:10px}details.more summary{cursor:pointer;font-weight:700;color:#0072BC}details.math>.card{margin-top:8px}details.math p{margin:6px 0;color:#26272a;font-size:14px}.eq{font-family:'Times New Roman',Georgia,serif;font-size:16px;white-space:nowrap}details.math table{margin:8px 0 12px}h4{margin:14px 0 6px;font-size:14px;color:#26272a}
 .caps{margin:10px 0 0;padding:0 0 0 18px;color:#54576F;font-size:14px}.caps li{margin:4px 0}.caps b{color:#26272a}
 .levels{display:flex;flex-direction:column;gap:6px;margin:8px 0}.lvl{display:flex;justify-content:space-between;font-size:14px;padding:6px 10px;background:#f7fafc;border-radius:10px}.lvl b{margin:0;font-size:14px}
 svg.tl,svg.lag{display:block;width:100%;height:auto;font-family:Roboto,Arial,sans-serif}
