@@ -50,7 +50,7 @@
   .st-label.bad{border-color:var(--posted);color:var(--posted)}
   /* Surfrider's latest result per site: a diamond in Surfrider blue, filled with the result's grade */
   .bwtf-pin{background:none;border:0}
-  .bwtf-dot{display:block;width:11px;height:11px;margin:1px;transform:rotate(45deg);border:2px solid #317fb2;border-radius:2px;background:#fff}
+  .bwtf-dot{display:block;width:11px;height:11px;margin:1px;transform:rotate(45deg);border:2px solid var(--ink);border-radius:2px;background:#fff}   /* a diamond with a dark ring: Surfrider, never the city's white-ringed circle */
   .bwtf-dot.safe{background:var(--safe)}.bwtf-dot.caution{background:var(--caution)}.bwtf-dot.posted{background:var(--posted)}.bwtf-dot.unknown{background:var(--unknown)}
   .map-legend .bwtf-dot{display:inline-block;width:8px;height:8px;margin:0 2px}
   .map-legend .ring{display:inline-block;width:10px;height:10px;border-radius:50%;border:2px solid var(--brand);background:rgba(0,114,188,.15)}
@@ -114,7 +114,7 @@
           </button>
           {% endfor %}
         </div>
-        <p class="zones-hint">Tap a zone to see only its stations; tap a station for its latest lab results.</p>
+        <p class="zones-hint">Tap a zone to see its stations{% if sites %} and Surfrider's sites there{% endif %}; tap one for its latest lab results.</p>
         {% endif %}
       </div>
       <div class="map-wrap">
@@ -124,7 +124,7 @@
       </div>
     </div>
     {% if sites %}
-    <div class="site-chips" id="zone-sites" aria-label="Every monitoring station, as the city shows it">
+    <div class="site-chips" id="zone-sites" aria-label="The chosen zone's stations, as the city shows them, and Surfrider's sites there" hidden>
       {% for z in board.zones %}{% for s in z.stations %}<button type="button" class="site" data-zone="{{ z.key }}" data-station="{{ s.source }}" data-sample-station="{{ s.source }}" data-sample-name="{{ s.full_name }}" data-sample-feed-date="{{ s.sampled }}" title="Latest lab results"><i class="status-dot {{ s.status }}"></i>{{ s.full_name }}<small>{{ s.sampled_text }}</small></button>{% endfor %}{% endfor %}
     </div>
     {% endif %}
@@ -154,7 +154,8 @@ function focusZone(key) {
   if (!ACTIVE) return fitAll();
   MAP.fitBounds(L.latLngBounds(MARKERS[ACTIVE].map(m => m.getLatLng())).pad(0.4), {maxZoom: 14});
 }
-function filterSites() { document.querySelectorAll("#zone-sites .site").forEach(c => { c.hidden = !!ACTIVE && c.dataset.zone !== ACTIVE; }); }
+// the chips stay hidden until a zone is chosen, then show that zone's stations and Surfrider sites (Chase, 2026-09-29)
+function filterSites() { const box = document.getElementById("zone-sites"); if (box) box.hidden = !ACTIVE; document.querySelectorAll("#zone-sites .site").forEach(c => { c.hidden = !!ACTIVE && c.dataset.zone !== ACTIVE; }); }
 function initMap() {
   if (!window.L || !document.getElementById("today-map")) return;
   MAP = L.map("today-map", {scrollWheelZoom: false, zoomControl: true, attributionControl: false}).setView([37.765, -122.44], 11);
@@ -211,7 +212,7 @@ function renderLegend() {
                     : dot("safe", REPLAY_OFFSET ? "not posted" : "safe") + dot("posted", "posted") + dot("discharge", "discharge") + dot("unknown", REPLAY_OFFSET ? "not recorded" : "not sampled");
   if (LAYER.rain.on) h += '<span><i class="ring"></i>rain, 3 days</span>';
   if (LAYER.outfalls.on) h += '<span><i class="of"></i>outfall · size = year\'s volume</span>';
-  if (LAYER.bwtf.on) h += '<span><i class="bwtf-dot safe"></i>Surfrider latest</span>';
+  if (LAYER.bwtf.on) h += '<span><i class="bwtf-dot safe"></i>Surfrider latest · diamond</span>';
   lg.innerHTML = h;
 }
 function tileParts(key) { const b = document.querySelector('.zone[data-zone="' + key + '"]'); return b ? {b, st: b.querySelector(".st"), dots: [...b.querySelectorAll(".stations .status-dot")]} : null; }
@@ -315,6 +316,19 @@ const BUILD = {
       m.on("click", () => { if (window.SamplePopover) SamplePopover.open({bwtf: s.name, name: s.city_name || s.name, date: s.date}); });
       return m;
     }));
+    // a chip per Surfrider site, filed under its zone next to the city's stations
+    document.querySelectorAll("#zone-sites .site.bwtf").forEach(c => c.remove());
+    const box = document.getElementById("zone-sites");
+    if (box) for (const s of d.sites) {
+      if (!s.zone) continue;
+      const grade = s.over ? "posted" : s.caution ? "caution" : s.value == null ? "unknown" : "safe";
+      const chip = document.createElement("button"); chip.type = "button"; chip.className = "site bwtf"; chip.dataset.zone = s.zone; chip.title = "Surfrider's latest result here";
+      chip.dataset.sampleBwtf = s.name; chip.dataset.sampleName = s.city_name || s.name; chip.dataset.sampleDate = s.date || "";
+      chip.innerHTML = '<i class="bwtf-dot ' + grade + '"></i>' + esc(s.name) + "<small>Surfrider · " + (s.raw ? esc(s.raw) + " MPN" : "no result") + (s.date ? " · " + esc(s.date) : "") + "</small>";
+      const last = [...box.querySelectorAll('.site[data-zone="' + s.zone + '"]')].pop();
+      if (last) last.after(chip); else box.appendChild(chip);
+    }
+    filterSites();
     status(d.sites.length + " Surfrider sites · newest " + (d.newest || "—"));
     return g;
   },
@@ -323,6 +337,7 @@ async function setLayer(key, on, btn) {
   const L_ = LAYER[key];
   if (!on) { if (L_.group) MAP.removeLayer(L_.group); L_.on = false; btn.classList.remove("active");
     if (key === "rain") { document.querySelectorAll(".zone .rainline").forEach(e => e.remove()); document.querySelectorAll(".zone.wet").forEach(e => e.classList.remove("wet")); }
+    if (key === "bwtf") document.querySelectorAll("#zone-sites .site.bwtf").forEach(c => c.remove());
     status(""); renderLegend(); return; }
   btn.disabled = true; status("Loading…");
   try {
@@ -367,6 +382,7 @@ function initLayers() {
   const slider = $("replay");
   slider.addEventListener("input", () => setReplay((slider.max | 0) - (slider.value | 0)));
   const q = new URLSearchParams(location.search), want = new Set((q.get("layers") || "").split(",").filter(Boolean));
+  if (!q.has("layers")) want.add("bwtf");                 // Surfrider's results are on by default; ?layers= without it turns them off
   if (q.get("surfrider") === "1") want.add("bwtf");
   for (const key of want) { const btn = strip.querySelector('.layer[data-layer="' + key + '"]'); if (btn && LAYER[key]) setLayer(key, true, btn); }
   if (q.get("risk") === "1") strip.querySelector('.layer[data-layer="risk"]').click();

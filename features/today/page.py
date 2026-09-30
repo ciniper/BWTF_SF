@@ -66,10 +66,11 @@ def surfrider_layer(lab) -> dict:
             key = resolve_site(s.name)["key"]
         except Exception:  # noqa: BLE001
             key = f"bwtf:{s.name}"
+        zone = zone_for_site(key, s.latitude, s.longitude)
         date_ = s.latest_time.strftime("%Y-%m-%d") if s.latest_time else ""
         newest = max(newest, date_)
         sites.append({
-            "name": s.name, "city_name": BWTF_TO_SFPUC_NAME.get(s.name), "key": key,
+            "name": s.name, "city_name": BWTF_TO_SFPUC_NAME.get(s.name), "key": key, "zone": zone,
             "lat": s.latitude, "lon": s.longitude,
             "value": v, "raw": s.entero_raw, "date": date_,
             "time": s.latest_time.strftime("%H:%M") if s.latest_time else "",
@@ -79,6 +80,18 @@ def surfrider_layer(lab) -> dict:
     sites.sort(key=lambda x: x["name"])
     return {"ok": True, "sites": sites, "newest": newest or None, "limit": limit, "caution": ENTERO_CAUTION,
             "note": "Experimental: the volunteers' latest result per site, on their own schedule; the city does not post on these."}
+
+
+def zone_for_site(key: str, lat, lon) -> Optional[str]:
+    """The zone a Surfrider site belongs to: the zone of the city station it shares a beach
+    with, else the zone of the nearest registry station (Bayview Hunters Point has no city
+    twin). None without coordinates. The Today chips list the site under that zone."""
+    for z in ZONES.values():
+        if key in z.source_ids:
+            return z.key
+    if lat is None or lon is None:
+        return None
+    return min(((st.lat - lat) ** 2 + (st.lon - lon) ** 2, z.key) for z in ZONES.values() for st in z.stations)[1]
 
 
 def build_surfrider_layer(client: Optional[SFBWTFClient] = None) -> dict:

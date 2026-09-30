@@ -59,7 +59,8 @@ def test_both_pages_include_the_shared_script_and_the_route_exists():
     for tpl in ("app/templates/alerts/dashboard.html", "app/templates/forecast/page.html", "app/templates/graphs/page.html", "app/templates/samples/page.html"):
         assert "/static/sample_popover.js" in (ROOT / tpl).read_text(), tpl
     from app import wsgi
-    assert wsgi._COMPARE_GET["/api/sample-day"] == "send_api_sample_day"
+    assert wsgi._COMPARE_GET["/api/sample-day"] == "send_api_sample_day" and wsgi._COMPARE_GET["/api/sample-dates"] == "send_api_sample_dates"
+    assert 'id="sp-prev"' in js and 'id="sp-next"' in js and "/api/sample-dates?" in js and 'e.key === "ArrowLeft"' in js   # ‹ › through the site's samples (Chase, 2026-09-29)
     # Surfrider points and pills open it too (Chase, 2026-09-28): ?bwtf=<site name>, one Enterococcus bar + field notes
     assert "data-sample-bwtf" in js and "{ bwtf: opts.bwtf }" in js and 'd.source === "bwtf"' in js and "sp-field" in js
     assert 'one("bwtf")' in (ROOT / "features/comparison/page.py").read_text() and "build_bwtf_sample_day" in (ROOT / "features/comparison/page.py").read_text()

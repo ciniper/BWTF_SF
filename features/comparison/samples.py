@@ -26,6 +26,7 @@ Stateless: fetch on demand, no background threads, no Supabase.
 """
 from __future__ import annotations
 
+import time
 from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Optional
@@ -313,3 +314,54 @@ def build_sample_day(station: str, date: str = "", sf_gov_monitor=None) -> dict:
         if not records:
             records = fetch_city_records(sf_gov_monitor, [station], today - timedelta(days=400), today)
     return sample_day_payload(records, station, date)
+
+
+# ── every day a site was sampled: the popover's ‹ › arrows step through these ──────────
+_DATES_CACHE: dict[str, tuple[float, dict]] = {}
+_DATES_TTL_S = 600
+
+
+def city_sample_dates(sources: list[str], monitor) -> list[str]:
+    """Every day the city sampled any of these stations, ascending: the lab export before
+    DataSF's floor (shared/city_history), then DataSF grouped by day — one light request."""
+    out: set[str] = set()
+    try:
+        if city_history.available():
+            out.update(str(r.get("sample_date"))[:10] for r in city_history.records(sources) if r.get("sample_date"))
+    except Exception:  # noqa: BLE001 — the export is a bonus; DataSF is the record
+        pass
+    where = (f"analyte in ({','.join(repr(a) for a in ANALYTES)}) AND source in ({','.join(repr(s) for s in sources)})")
+    r = monitor.session.get(monitor.API_URL, params={"$select": "sample_date", "$group": "sample_date", "$where": where,
+                                                     "$order": "sample_date", "$limit": 50000}, timeout=30)
+    r.raise_for_status()
+    out.update(str(row.get("sample_date"))[:10] for row in r.json() if row.get("sample_date"))
+    return sorted(d for d in out if d and d != "None")
+
+
+def bwtf_sample_dates(events: list[dict], bwtf_name: str) -> list[str]:
+    """Pure: every day the volunteers collected at this site, ascending."""
+    return sorted({r["collection_time"].strftime("%Y-%m-%d") for r in _bwtf_rows(events)
+                   if r.get("site_name") == bwtf_name and r.get("collection_time") is not None})
+
+
+def build_sample_dates(station: str = "", bwtf: str = "", sf_gov_monitor=None, bwtf_client: Optional[SFBWTFClient] = None) -> dict:
+    """{ok, source, site, key, dates, latest} — cached ten minutes per site. ``station`` is a
+    DataSF source id; ``bwtf`` a Surfrider site name or site key (resolve_site either way)."""
+    cache_key = f"bwtf:{bwtf}" if bwtf else f"city:{station}"
+    hit = _DATES_CACHE.get(cache_key)
+    if hit and hit[0] > time.time():
+        return hit[1]
+    site = resolve_site(bwtf or station)
+    if bwtf:
+        if not site["bwtf_name"]:
+            raise ValueError(f"Surfrider does not sample {site['name']}")
+        client = bwtf_client or SFBWTFClient()
+        dates = bwtf_sample_dates(client.fetch_event_history(since=datetime(2023, 1, 1), max_pages=80), site["bwtf_name"])
+        out = {"ok": True, "source": "bwtf", "site": site["name"], "key": site["key"], "dates": dates, "latest": dates[-1] if dates else None}
+    else:
+        from features.alerts.monitoring import SFWaterQualityMonitor  # local: avoids the import cycle at module load
+        monitor = sf_gov_monitor or SFWaterQualityMonitor()
+        dates = city_sample_dates(list(site["sources"]), monitor)
+        out = {"ok": True, "source": "city", "site": site["name"], "key": site["key"], "dates": dates, "latest": dates[-1] if dates else None}
+    _DATES_CACHE[cache_key] = (time.time() + _DATES_TTL_S, out)
+    return out

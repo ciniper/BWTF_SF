@@ -291,6 +291,32 @@ def test_default_range_is_the_last_year_and_bad_input_falls_back():
     assert e == datetime(2024, 6, 1) and s == e - timedelta(days=365)
 
 
+def test_sample_dates_list_every_day_a_site_was_sampled_for_the_popover_arrows():
+    import types
+    from datetime import datetime
+    from features.comparison import samples as S
+    events = [{"site_name": "Aquatic Park", "collection_time": datetime(2026, 9, 24, 18, 30), "samples": [{"substance": "Enterococcus", "result_raw": "41"}]},
+              {"site_name": "Aquatic Park", "collection_time": datetime(2026, 9, 17, 9, 0), "samples": [{"substance": "Enterococcus", "result_raw": "10"}]},
+              {"site_name": "Aquatic Park", "collection_time": datetime(2026, 9, 17, 9, 30), "samples": [{"substance": "Enterococcus", "result_raw": "20"}]},   # a second collection the same day: one date
+              {"site_name": "China Beach", "collection_time": datetime(2026, 9, 20, 9, 0), "samples": [{"substance": "Enterococcus", "result_raw": "10"}]}]
+    assert S.bwtf_sample_dates(events, "Aquatic Park") == ["2026-09-17", "2026-09-24"]
+    S._DATES_CACHE.clear()
+    client = types.SimpleNamespace(fetch_event_history=lambda **kw: events)
+    d = S.build_sample_dates(bwtf="Aquatic Park", bwtf_client=client)
+    assert d["ok"] and d["source"] == "bwtf" and d["dates"] == ["2026-09-17", "2026-09-24"] and d["latest"] == "2026-09-24" and d["key"] == "BAY#211_SL"
+    assert S.build_sample_dates(bwtf="Aquatic Park", bwtf_client=types.SimpleNamespace(fetch_event_history=lambda **kw: [])) is d      # cached ten minutes
+    class Resp:
+        def raise_for_status(self): pass
+        def json(self): return [{"sample_date": "2026-09-21T00:00:00.000"}, {"sample_date": "2026-09-28T00:00:00.000"}, {"sample_date": "2026-09-21T00:00:00.000"}]
+    class Sess:
+        def get(self, url, params=None, timeout=None):
+            assert params["$group"] == "sample_date" and "OCEAN#21_SL" in params["$where"] and params["$select"] == "sample_date"; return Resp()
+    monitor = types.SimpleNamespace(session=Sess(), API_URL="https://data.sf.gov/resource/x.json")
+    S._DATES_CACHE.clear()
+    c = S.build_sample_dates(station="OCEAN#21_SL", sf_gov_monitor=monitor)
+    assert c["source"] == "city" and c["dates"][-2:] == ["2026-09-21", "2026-09-28"] and c["latest"] == "2026-09-28"                   # DataSF days (plus the lab export's, when present)
+
+
 if __name__ == "__main__":
     failures = 0
     for name, fn in sorted(globals().items()):

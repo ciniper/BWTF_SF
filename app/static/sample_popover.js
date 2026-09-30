@@ -20,6 +20,8 @@
     ".sp-modal.open{display:flex}.sp-box{background:#fff;border-radius:20px;max-width:820px;width:100%;padding:20px 22px;box-shadow:0 24px 60px rgba(0,0,0,.3);max-height:92vh;overflow:auto}" +
     ".sp-head{display:flex;justify-content:space-between;align-items:center;gap:12px}.sp-head h2{margin:0;font-size:19px;color:#26272a}" +
     ".sp-close{border:none;background:#eef2f4;border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:700;color:#26272a;font-size:14px;font-family:inherit}" +
+    ".sp-nav{display:flex;align-items:center;gap:6px;margin-left:auto}.sp-nav[hidden]{display:none}.sp-nav button{border:2px solid #d9e4e8;background:#fff;border-radius:999px;width:34px;height:34px;font-size:20px;line-height:1;cursor:pointer;color:#26272a;font-family:inherit;padding:0}" +
+    ".sp-nav button:hover:not(:disabled){border-color:#85BFDF}.sp-nav button:disabled{opacity:.3;cursor:default}.sp-nav .sp-pos{font-size:12.5px;color:#54576F;min-width:78px;text-align:center;font-variant-numeric:tabular-nums}" +
     ".sp-stale{background:#fdf3e6;border:1px solid #f0c9a0;color:#7a3e10;border-radius:12px;padding:10px 14px;margin:10px 0 2px;font-size:13.5px;line-height:1.5}.sp-stale[hidden]{display:none}.sp-stale b{display:block;font-size:15px;margin-bottom:2px}" +
     ".sp-note{color:#54576F;font-size:12.5px;margin:6px 0 12px;line-height:1.5}.sp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}.sp-grid.one{grid-template-columns:minmax(200px,340px)}" +
     ".sp-field{color:#54576F;font-size:12.5px;margin:12px 0 0;line-height:1.5}.sp-field:empty{display:none}" +
@@ -34,20 +36,61 @@
     if (el) return el;
     var st = document.createElement("style"); st.textContent = CSS; document.head.appendChild(st);
     el = document.createElement("div"); el.className = "sp-modal"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true");
-    el.innerHTML = '<div class="sp-box"><div class="sp-head"><h2 id="sp-title"></h2><button class="sp-close" type="button">Close &times;</button></div>' +
+    el.innerHTML = '<div class="sp-box"><div class="sp-head"><h2 id="sp-title"></h2><div class="sp-nav" id="sp-nav" hidden><button type="button" id="sp-prev" title="Older sample (←)" aria-label="Older sample">&lsaquo;</button><span class="sp-pos" id="sp-pos"></span><button type="button" id="sp-next" title="Newer sample (→)" aria-label="Newer sample">&rsaquo;</button></div><button class="sp-close" type="button">Close &times;</button></div>' +
       '<div class="sp-stale" id="sp-stale" role="status" hidden></div><p class="sp-note" id="sp-note"></p><div class="sp-grid" id="sp-grid"></div><p class="sp-field" id="sp-field"></p><p class="sp-links" id="sp-links"></p></div>';
     document.body.appendChild(el);
     el.querySelector(".sp-close").addEventListener("click", close);
     el.addEventListener("click", function (e) { if (e.target === el) close(); });
-    document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
+    document.addEventListener("keydown", function (e) {
+      if (!el.classList.contains("open")) return;
+      if (e.key === "Escape") close();
+      else if (e.key === "ArrowLeft") step(-1);
+      else if (e.key === "ArrowRight") step(1);
+    });
+    el.querySelector("#sp-prev").addEventListener("click", function () { step(-1); });
+    el.querySelector("#sp-next").addEventListener("click", function () { step(1); });
     return el;
   }
   function close() { if (!el) return; el.classList.remove("open"); charts.forEach(function (c) { c.destroy(); }); charts = []; }
+  /* ‹ › step through every day the site was sampled (/api/sample-dates, fetched once per site).
+     Chase, 2026-09-29: "select a left arrow to go to the previous sample and right arrow to go to the next (if you're not on the latest)". */
+  var CUR = null, DATES = {};
+  function navKey(opts) { return opts.bwtf ? "bwtf:" + opts.bwtf : "station:" + opts.station; }
+  function updateNav() {
+    var nav = el.querySelector("#sp-nav"); if (!CUR) { nav.hidden = true; return; }
+    var list = DATES[navKey(CUR.opts)];
+    if (!list || list.length < 2 || !CUR.date) { nav.hidden = true; return; }
+    var i = list.indexOf(CUR.date);
+    el.querySelector("#sp-prev").disabled = i <= 0; el.querySelector("#sp-next").disabled = i < 0 || i >= list.length - 1;
+    el.querySelector("#sp-pos").textContent = i < 0 ? list.length + " samples" : (i + 1) + " of " + list.length;
+    el.querySelector("#sp-prev").title = i > 0 ? "Older sample: " + list[i - 1] + " (←)" : "This is the oldest sample";
+    el.querySelector("#sp-next").title = i >= 0 && i < list.length - 1 ? "Newer sample: " + list[i + 1] + " (→)" : "This is the newest sample";
+    nav.hidden = false;
+  }
+  function step(dir) {
+    if (!CUR) return;
+    var list = DATES[navKey(CUR.opts)]; if (!list) return;
+    var i = list.indexOf(CUR.date), j = i + dir;
+    if (i < 0 || j < 0 || j >= list.length) return;
+    var next = Object.assign({}, CUR.opts, { date: list[j] });
+    if (j === list.length - 1) next.date = "";          // back on the newest: the plain view, with the unpublished-sample banner if it applies
+    open(next);
+  }
+  function loadNav(d, opts) {
+    CUR = { opts: opts, date: d.date || "" };
+    var key = navKey(opts);
+    if (DATES[key]) { updateNav(); return; }
+    var q = new URLSearchParams(opts.bwtf ? { bwtf: opts.bwtf } : { station: opts.station });
+    fetch("/api/sample-dates?" + q).then(function (r) { return r.json(); }).then(function (j) {
+      if (j && j.ok && Array.isArray(j.dates)) { DATES[key] = j.dates; if (CUR && navKey(CUR.opts) === key) updateNav(); }
+    }).catch(function () {});
+  }
   function open(opts) {
     var m = modal();
     m.querySelector("#sp-title").textContent = opts.name || opts.station || opts.bwtf;
     m.querySelector("#sp-note").textContent = "Loading the lab results…";
     m.querySelector("#sp-grid").innerHTML = ""; m.querySelector("#sp-links").innerHTML = ""; m.querySelector("#sp-field").textContent = ""; m.querySelector("#sp-stale").hidden = true;
+    CUR = { opts: opts, date: opts.date || "" }; updateNav();
     m.classList.add("open");
     var q = new URLSearchParams(opts.bwtf ? { bwtf: opts.bwtf } : { station: opts.station }); if (opts.date) q.set("date", opts.date);
     Promise.all([fetch("/api/sample-day?" + q).then(function (r) { return r.json(); }), ensureCharts()])
@@ -60,7 +103,8 @@
     var surf = d.source === "bwtf";
     m.querySelector("#sp-title").textContent = d.name || opts.name || opts.station || opts.bwtf;
     charts.forEach(function (c) { c.destroy(); }); charts = [];
-    var stale = m.querySelector("#sp-stale"), newer = !surf && opts.feedDate && (!d.found || opts.feedDate > d.date);
+    var stale = m.querySelector("#sp-stale"), newer = !surf && !opts.date && opts.feedDate && (!d.found || opts.feedDate > d.date);   // the banner belongs to the newest view only
+    loadNav(d, opts);
     if (newer) {   // Chase, 2026-09-29: "if the sample you click on is not available yet, the fact that it's an old sample should be louder"
       var days = d.found ? Math.round((new Date(opts.feedDate + "T12:00:00") - new Date(d.date + "T12:00:00")) / 864e5) : null;
       stale.innerHTML = "<b>Newest sample not published yet</b>The city's map shows a sample taken " + esc(opts.feedDate) + "; its lab numbers are not on SF Gov Open Data yet — they usually follow about five days later. " +

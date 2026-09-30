@@ -34,6 +34,8 @@ def test_surfrider_layer_grades_each_site_and_maps_it_to_the_city_beach():
     assert by["Crissy Field Beach East"]["over"] is True and by["Crissy Field Beach East"]["caution"] is False               # 208: over
     bv = by["Bayview Hunters Point"]
     assert bv["city_name"] is None and bv["key"] == "bwtf:Bayview Hunters Point" and bv["value"] is None and bv["over"] is False and bv["date"] == ""
+    assert v["zone"] == "ocean" and by["Aquatic Park"]["zone"] == "north" and bv["zone"] == "east"                        # the shared beach's zone, else the nearest station's
+    assert T.zone_for_site("bwtf:nowhere", None, None) is None
     assert (bv["lat"], bv["lon"]) == (37.73, -122.38) and "Experimental" in d["note"]
     assert T.surfrider_layer(None) == {**T.surfrider_layer(types.SimpleNamespace(sites=[])), "sites": []}
 
@@ -54,6 +56,8 @@ def test_today_page_is_the_board_plus_the_experimental_row_and_the_api_route_exi
     assert 'id="today-map"' in h and 'id="zones"' in h and 'id="layers"' in h and "Experimental" in h and 'data-layer="bwtf"' in h and 'data-layer="replay"' in h and 'id="replay-ctl" hidden' in h and "/api/today/" in h
     assert h.index('id="layers"') < h.index('class="board') and 'class="extras"' not in h                                            # the strip sits above the board; the old row is gone
     assert h.count('class="site" data-zone=') == 20 and 'id="zone-sites"' in h and 'data-sample-station=' in h and "{{" not in h        # a chip per station under the zone tiles, each opening the popover
+    assert ' hidden>' in h.split('id="zone-sites"')[1][:200] and h.index('data-layer="bwtf"') < h.index('data-layer="rain"')              # chips wait for a zone tap; Surfrider is the first layer
+    assert 'want.add("bwtf")' in (ROOT / "app/templates/_today_board.html").read_text()                                                  # … and on by default
     assert 'class="topbar"' in h and 'href="/today" class="on" aria-current="page">Today' in h and 'class="hubs"' not in h    # the board, not the hubs
     landing = c.get("/").data.decode() if False else None  # noqa: F841
     with app.test_client() as c:

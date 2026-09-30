@@ -12,7 +12,7 @@ from urllib.parse import parse_qs, urlencode, urlparse
 from flask import render_template
 
 from features.comparison.comparison import ANALYTES, build_comparison, build_site_history, build_site_series, graph_sites
-from features.comparison.samples import build_bwtf_sample_day, build_sample_day, build_sample_viewer
+from features.comparison.samples import build_bwtf_sample_day, build_sample_dates, build_sample_day, build_sample_viewer
 from shared import city_history
 from shared.datasf import DATASET_FLOOR  # noqa: F401
 
@@ -80,6 +80,20 @@ class ComparisonRoutes:
                 self._send_json(build_bwtf_sample_day(one("bwtf"), one("date")))
             else:
                 self._send_json(build_sample_day(one("station"), one("date"), sf_gov_monitor=self.combined_monitor.sf_gov_monitor))
+        except ValueError as e:
+            self._send_json({"ok": False, "error": str(e)}, status=404)
+        except Exception as e:
+            self._send_json({"ok": False, "error": str(e)}, status=500)
+
+    def send_api_sample_dates(self):
+        """Every day one site was sampled (city or Surfrider): the popover's ‹ › arrows."""
+        params = parse_qs(urlparse(self.path).query)
+        one = lambda k, d="": (params.get(k) or [d])[0].strip()  # noqa: E731
+        if not one("station") and not one("bwtf"):
+            self._send_json({"ok": False, "error": "missing 'station' (DataSF id) or 'bwtf' (Surfrider site name or site key) parameter"}, status=400)
+            return
+        try:
+            self._send_json(build_sample_dates(one("station"), one("bwtf"), sf_gov_monitor=self.combined_monitor.sf_gov_monitor))
         except ValueError as e:
             self._send_json({"ok": False, "error": str(e)}, status=404)
         except Exception as e:

@@ -103,6 +103,7 @@ _COMPARE_GET = {
     "/api/site-series": "send_api_site_series",
     "/api/samples": "send_api_samples",
     "/api/sample-day": "send_api_sample_day",
+    "/api/sample-dates": "send_api_sample_dates",
 }
 
 # ── Alerts access gate ────────────────────────────────────────────────────────

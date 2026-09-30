@@ -28,10 +28,10 @@
 <div class="wrap">
   <div class="layers" id="layers" role="group" aria-label="Map layers">
     <span class="ctl-label">Layers</span>
+    <button type="button" class="preset layer" data-layer="bwtf" aria-pressed="false" title="Surfrider's latest Enterococcus result at each site the volunteers sample">Surfrider results</button>
     <button type="button" class="preset layer" data-layer="rain" aria-pressed="false" title="The last three daily totals at the forecast's two NOAA gauges">Rain, 3 days</button>
     <button type="button" class="preset layer" data-layer="outfalls" aria-pressed="false" title="The 34 permitted sewer outfalls, sized by the past year's reported discharge">Outfalls</button>
     <button type="button" class="preset layer" data-layer="risk" aria-pressed="false" title="Colour zones and stations by today's overflow risk instead of the city's status">Risk view</button>
-    <button type="button" class="preset layer" data-layer="bwtf" aria-pressed="false" title="Surfrider's latest Enterococcus result at each site the volunteers sample">Surfrider results</button>
     <button type="button" class="preset layer" data-layer="replay" aria-pressed="false" title="Redraw the board as the city's map stood on a past day">Replay</button>
     <span class="replay-ctl" id="replay-ctl" hidden><span class="tick" id="replay-oldest"></span><input type="range" id="replay" min="0" max="7" step="1" value="7" aria-label="Day to replay — today at the right, slide left to go back" aria-valuetext="Today"><output id="replay-out" for="replay">Today</output></span>
     <span class="layer-status" id="layer-status" role="status" aria-live="polite"></span>
