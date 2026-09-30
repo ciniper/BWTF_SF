@@ -1,23 +1,24 @@
 #!/usr/bin/env python3
-"""Which weather model should feed the forecast days?
+"""Which weather model should stand in for the gauges on the forecast days?
 
-The stage 1 models were trained on the rain that fell (two NOAA gauges for the
-daily totals, ERA5 hourly for the peak intensities). A weather model only
-enters at serving time, where the forecast days' rain comes from one Open-Meteo
-model (ECMWF IFS since 2026-09-04). This script asks whether that is the right
-one, and whether several would be better, by replaying the "tomorrow" scenario:
+The stage 1 models were trained on the rain that fell: two NOAA gauges (SF
+Downtown 047772, SF Oceanside 047767) for the daily totals, ERA5 hourly for the
+peak intensities. A weather model is an INPUT: on the forecast days its rain is
+fed where the gauge reading would go. So a weather model is graded here the way
+an input should be — on how close its rain for a day comes to what the gauges
+then recorded — not on what the discharge model does with it.
 
-    for every day D in the window, features are built from the GAUGE record up
-    to D-1 plus the weather model's own rain for D (its daily total and its
-    hourly peaks), exactly as the page builds tomorrow's row; the served stage 1
-    scores those features; the result is graded against the CIWQS discharge
-    record for D.
+Open-Meteo archives each model's past forecasts (the model run covering each
+day: a day-0 / day-1 lead, the page's Today and Tomorrow rows). ECMWF IFS 0.25°
+is archived from Feb 2024, GFS and ICON earlier, so the comparison window is
+Feb 2024 → the end of the hourly record: two wet seasons. Inputs compared:
+ECMWF IFS (served since 2026-09-04), GFS, ICON, and the mean of the three
+(the multi-model ensemble mean). ERA5, the training-time hourly source, is
+shown as a reference row: it is a reanalysis, not a forecast.
 
-Open-Meteo's historical-forecast archive supplies each model's past forecasts
-(the model run covering each day, so a day-0 / day-1 lead — the page's Today
-and Tomorrow rows; longer leads are not archived). The archive holds ECMWF IFS
-0.25° from 2024-02, GFS from before 2021 and ICON from 2023, so the comparison
-window is Feb 2024 → the end of the hourly record: two wet seasons.
+Appendix: the same days replayed through the served stage 1 with each input's
+rain for the day — what the input error does to the forecast. Secondary; the
+verdict rests on the rain.
 
 Outputs
     features/forecast/data/raw/openmeteo_hist_forecast_<model>.csv   (hourly, cached)
@@ -32,7 +33,7 @@ from __future__ import annotations
 import json
 import pickle
 import sys
-from datetime import date, datetime
+from datetime import datetime
 from pathlib import Path
 
 import numpy as np
@@ -68,11 +69,16 @@ TZ = "America/Los_Angeles"
 ARCHIVE_URL = "https://historical-forecast-api.open-meteo.com/v1/forecast"
 WX_MODELS = {"ecmwf_ifs025": "ECMWF IFS", "gfs_seamless": "GFS", "icon_seamless": "ICON"}
 SERVED_WX = "ecmwf_ifs025"
+INPUTS = {**WX_MODELS, "mean3": "mean of the three"}          # the candidate inputs
+REFERENCE = {"era5": "ERA5 reanalysis (training-time hourly source)"}
 START = pd.Timestamp("2024-02-01")     # first month the archive holds all three models
+WET_DAY_IN = 0.1                       # a gauge day at or above this is "wet"
+RAIN_THRESHOLDS = (0.1, 0.25, 0.5, 1.0)
+TOP_DAYS = 25
+GAUGES = ["SF Downtown", "SF Oceanside", "avg"]
+GAUGE_LABEL = {"SF Downtown": "SF Downtown (047772)", "SF Oceanside": "SF Oceanside (047767)", "avg": "two-gauge mean"}
 LINES = (0.25, 0.5)
-MISS_WEIGHT = 2.0                      # Chase: a miss costs two false alarms
-RAIN_THRESHOLDS = (0.25, 0.5, 1.0)     # inches, for the rain contingency tables
-DISAGREE = 0.25                        # max − min basin probability across models
+MISS_WEIGHT = 2.0                      # Chase: a miss costs two false alarms (appendix only)
 
 BASINS = list(BASIN_KEYS.values())     # westside, north_shore, central, southeast
 BASIN_NAME = {v: k for k, v in BASIN_KEYS.items()}
@@ -98,8 +104,7 @@ def fetch_model_hourly(model: str, start: pd.Timestamp, end: pd.Timestamp, refre
             "start_date": y0.strftime("%Y-%m-%d"), "end_date": y1.strftime("%Y-%m-%d"), "timezone": TZ,
         }, timeout=90)
         r.raise_for_status()
-        d = r.json()
-        h = d["hourly"]
+        h = r.json()["hourly"]
         col = next(k for k in h if k != "time")
         frames.append(pd.DataFrame({"timestamp": pd.to_datetime(h["time"]), "precip_mm": h[col]}))
     df = pd.concat(frames).drop_duplicates("timestamp").sort_values("timestamp").reset_index(drop=True)
@@ -109,8 +114,9 @@ def fetch_model_hourly(model: str, start: pd.Timestamp, end: pd.Timestamp, refre
 
 
 def gauge_daily(input_rules: list | None) -> pd.DataFrame:
-    """date × {SF Downtown, SF Oceanside, avg}, the gauge outage rule applied
-    as post-training rescoring applies it; missing days filled as training did."""
+    """date × {SF Downtown, SF Oceanside, avg}: the gauge record as serving and
+    post-training rescoring read it (the outage rule applied, a missing gauge
+    day taking the other gauge, then zero)."""
     rain = pd.read_csv(RAW_DIR / "historical_rain.csv", parse_dates=["date"])
     rp = rain.pivot_table(index="date", columns="rain_station_name", values="precip_inches", aggfunc="first").sort_index()
     cols = list(rp.columns)
@@ -126,7 +132,7 @@ def gauge_daily(input_rules: list | None) -> pd.DataFrame:
 
 
 def daily_from_hourly(h: pd.DataFrame) -> tuple:
-    """(daily totals Series by date, intensity frame by date) from an hourly series."""
+    """(daily totals by date, peak-intensity frame by date) from an hourly series."""
     h = h.copy()
     h["precip_inches"] = h["precip_inches"].astype(float).fillna(0.0)
     h["date"] = pd.to_datetime(h["timestamp"]).dt.normalize()
@@ -135,85 +141,89 @@ def daily_from_hourly(h: pd.DataFrame) -> tuple:
     return daily, inten
 
 
-# ── the tomorrow scenario ───────────────────────────────────────────────────
+def season_of(d: pd.Timestamp) -> str:
+    y = d.year if d.month >= 7 else d.year - 1
+    return f"{y}-{str(y + 1)[2:]}"
+
+
+# ── rain verification ───────────────────────────────────────────────────────
+
+def verify(truth: pd.Series, model: pd.Series) -> dict:
+    """Standard forecast verification of a daily total against a gauge:
+    bias / MAE / RMSE / r on all days and on wet days, season totals, and the
+    contingency table (POD, FAR, CSI, frequency bias) at each threshold."""
+    both = pd.concat([truth.rename("t"), model.rename("m")], axis=1).dropna()
+    err = both["m"] - both["t"]
+    wet = both[both["t"] >= WET_DAY_IN]
+    werr = wet["m"] - wet["t"]
+    out = {
+        "n_days": int(len(both)), "wet_days": int(len(wet)),
+        "bias_in": float(err.mean()), "mae_in": float(err.abs().mean()), "rmse_in": float(np.sqrt((err ** 2).mean())),
+        "r": float(both["t"].corr(both["m"])) if both["t"].std() > 0 else None,
+        "wet_bias_in": float(werr.mean()) if len(wet) else None, "wet_mae_in": float(werr.abs().mean()) if len(wet) else None,
+        "wet_rmse_in": float(np.sqrt((werr ** 2).mean())) if len(wet) else None,
+        "wet_r": float(wet["t"].corr(wet["m"])) if len(wet) > 2 and wet["t"].std() > 0 else None,
+        "total_in": {"gauge": float(both["t"].sum()), "model": float(both["m"].sum())},
+        "thresholds": {},
+    }
+    for t in RAIN_THRESHOLDS:
+        a = both["t"] >= t; b = both["m"] >= t
+        hit = int((a & b).sum()); miss = int((a & ~b).sum()); false = int((~a & b).sum())
+        out["thresholds"][str(t)] = {
+            "gauge_days": int(a.sum()), "model_days": int(b.sum()), "hit": hit, "miss": miss, "false": false,
+            "pod": hit / (hit + miss) if hit + miss else None,
+            "far": false / (hit + false) if hit + false else None,
+            "csi": hit / (hit + miss + false) if hit + miss + false else None,
+            "freq_bias": (hit + false) / (hit + miss) if hit + miss else None,
+        }
+    return out
+
+
+# ── appendix: the tomorrow scenario through stage 1 ─────────────────────────
 
 def scenario_rows(gauge: pd.Series, dates: pd.DatetimeIndex, day_value: pd.Series | None, inten: pd.DataFrame) -> pd.DataFrame:
-    """Features for each D in `dates`: the gauge series up to D-1, then `day_value[D]`
-    (None → the gauge itself, the hindcast ceiling) for D; peak intensities for D
-    from `inten`. Returns one row per date with the 19 features."""
-    g = gauge.copy()
-    idx = {d: i for i, d in enumerate(g.index)}
-    vals = g.values.astype(float)
+    """Features for each D: the gauge series to D-1, `day_value[D]` for D (None →
+    the gauge itself), peak intensities for D from `inten`."""
+    idx = {d: i for i, d in enumerate(gauge.index)}
+    vals = gauge.values.astype(float)
     rows = []
     for d in dates:
         i = idx[d]
-        lo = max(0, i - 31)
-        s = vals[lo:i + 1].copy()
+        s = vals[max(0, i - 31):i + 1].copy()
         if day_value is not None:
             v = day_value.get(d, np.nan)
             s[-1] = float(v) if pd.notna(v) else vals[i]
         f = add_daily_features(pd.DataFrame({"precip_inches": s})).iloc[-1]
         row = {k: float(f[k]) for k in DAILY_FEATURES}
-        if d in inten.index:
-            for k in INTENSITY_FEATURES:
-                row[k] = float(inten.at[d, k]) if pd.notna(inten.at[d, k]) else 0.0
-        else:
-            for k in INTENSITY_FEATURES:
-                row[k] = 0.0
+        for k in INTENSITY_FEATURES:
+            row[k] = float(inten.at[d, k]) if d in inten.index and pd.notna(inten.at[d, k]) else 0.0
         row["date"] = d
-        row["rain_day"] = float(s[-1])
         rows.append(row)
     return pd.DataFrame(rows).set_index("date")
 
 
-def load_stage1(name: str) -> dict:
-    """{basin key: pickle dict} for the served set (data/models) or a candidate."""
-    if name == candidates.SERVED["name"]:
-        out = {}
-        for key in BASINS:
-            with open(MODEL_DIR / f"{key}_model.pkl", "rb") as f:
-                out[key] = pickle.load(f)
-        return out
-    return {k: v for k, v in candidates.load_models(name).items() if k in BASINS}
+def load_served_stage1() -> dict:
+    out = {}
+    for key in BASINS:
+        with open(MODEL_DIR / f"{key}_model.pkl", "rb") as f:
+            out[key] = pickle.load(f)
+    return out
 
 
 def predict(md: dict, feats: pd.DataFrame) -> np.ndarray:
-    """The serving rule: raw probability minus a calibration offset that fades
-    to zero by 0.5" of 3-day rain (live_dashboard._predict_calibrated)."""
-    X = feats[md["features"]]
-    raw = md["model"].predict_proba(X)[:, 1]
+    """The serving rule (live_dashboard._predict_calibrated)."""
+    raw = md["model"].predict_proba(feats[md["features"]])[:, 1]
     factor = np.maximum(0.0, 1.0 - feats["rain_3d_cum"].values * 2.0)
     return np.clip(raw - md.get("calibration_offset", 0.0) * factor, 0.0, 1.0)
 
 
-# ── grading ─────────────────────────────────────────────────────────────────
-
 def grade(y: np.ndarray, p: np.ndarray) -> dict:
-    from sklearn.metrics import average_precision_score, brier_score_loss, roc_auc_score
-    out = {"n": int(len(y)), "pos": int(y.sum())}
-    if 0 < y.sum() < len(y):
-        out["pr_auc"] = float(average_precision_score(y, p))
-        out["roc_auc"] = float(roc_auc_score(y, p))
-    out["brier"] = float(brier_score_loss(y, p))
+    from sklearn.metrics import average_precision_score
+    out = {"n": int(len(y)), "pos": int(y.sum()), "pr_auc": float(average_precision_score(y, p)) if 0 < y.sum() < len(y) else None}
     for line in LINES:
         pred = p >= line
         tp = int((pred & (y == 1)).sum()); fn = int((~pred & (y == 1)).sum()); fp = int((pred & (y == 0)).sum())
         out[f"line_{int(line*100)}"] = {"tp": tp, "fn": fn, "fp": fp, "cost": fp + MISS_WEIGHT * fn}
-    return out
-
-
-def rain_skill(truth: pd.Series, model: pd.Series) -> dict:
-    both = pd.concat([truth.rename("t"), model.rename("m")], axis=1).dropna()
-    wet = both[both["t"] >= 0.1]
-    out = {"n_days": int(len(both)), "bias_in": float((both["m"] - both["t"]).mean()),
-           "wet_days": int(len(wet)), "wet_mae_in": float((wet["m"] - wet["t"]).abs().mean()) if len(wet) else None,
-           "wet_bias_in": float((wet["m"] - wet["t"]).mean()) if len(wet) else None,
-           "total_in": {"gauge": float(both["t"].sum()), "model": float(both["m"].sum())}, "thresholds": {}}
-    for t in RAIN_THRESHOLDS:
-        a = both["t"] >= t; b = both["m"] >= t
-        hit = int((a & b).sum()); miss = int((a & ~b).sum()); false = int((~a & b).sum())
-        out["thresholds"][str(t)] = {"gauge_days": int(a.sum()), "hit": hit, "miss": miss, "false": false,
-                                     "pod": hit / (hit + miss) if hit + miss else None, "far": false / (hit + false) if hit + false else None}
     return out
 
 
@@ -224,8 +234,7 @@ def run(refresh: bool = False) -> dict:
     input_rules = list(served.get("input_rules_post") or [])
     sources = served.get("rain_sources") or {}
     gauges = gauge_daily(input_rules).set_index("date")
-    era5_hourly = pd.read_csv(RAW_DIR / "hourly_rain_openmeteo.csv", parse_dates=["timestamp"])
-    era5_daily, era5_inten = daily_from_hourly(era5_hourly)
+    era5_daily, era5_inten = daily_from_hourly(pd.read_csv(RAW_DIR / "hourly_rain_openmeteo.csv", parse_dates=["timestamp"]))
     labels = build_daily_labels().set_index("date")
 
     end = min(gauges.index.max(), era5_daily.index.max(), labels.index.max())
@@ -235,101 +244,80 @@ def run(refresh: bool = False) -> dict:
         h = fetch_model_hourly(m, START - pd.Timedelta(days=1), end, refresh=refresh)
         d, inten = daily_from_hourly(h)
         first = h.dropna(subset=["precip_mm"])["timestamp"].min()
-        wx[m] = {"daily": d, "inten": inten, "first": str(first.date()) if pd.notna(first) else None}
-
-    sets = [served["name"]] + [c for c in ("gb_v1",) if (MODEL_DIR / "candidates" / c / "manifest.json").exists()]
-    stage1 = {s: load_stage1(s) for s in sets}
-
-    # features per (source, scenario)
-    scen_names = ["gauges"] + list(WX_MODELS)
-    feats = {}
-    for src in sorted(set(sources.get(b, "avg") for b in BASINS)):
-        g = gauges[src]
-        feats[(src, "gauges")] = scenario_rows(g, dates, None, era5_inten)
-        for m in WX_MODELS:
-            feats[(src, m)] = scenario_rows(g, dates, wx[m]["daily"], wx[m]["inten"])
+        wx[m] = {"daily": d.reindex(dates), "inten": inten, "first": str(first.date()) if pd.notna(first) else None}
+    mean3 = pd.concat([wx[m]["daily"] for m in WX_MODELS], axis=1).mean(axis=1)
+    inputs = {**{m: wx[m]["daily"] for m in WX_MODELS}, "mean3": mean3}
+    reference = {"era5": era5_daily.reindex(dates)}
 
     result = {"generated": datetime.now().strftime("%Y-%m-%d %H:%M"), "window": [str(dates[0].date()), str(dates[-1].date())],
               "served": {"name": served["name"], "stage1": served["stage1"], "line": served.get("line"), "weather_model": SERVED_WX},
-              "input_rules": input_rules, "rain_sources": sources, "miss_weight": MISS_WEIGHT,
+              "input_rules": input_rules, "rain_sources": sources, "wet_day_in": WET_DAY_IN,
               "archive_first_day": {m: wx[m]["first"] for m in WX_MODELS},
-              "rain": {}, "stage1": {}, "ensembles": {}, "disagreement": {}, "per_day": []}
+              "gauge_days": {}, "verification": {}, "by_season": {}, "top_days": [], "intensity": {}, "appendix": {}}
 
-    # rain skill per source
+    # 1. verification against each gauge and the mean, all inputs + the reference
+    for g in GAUGES:
+        truth = gauges.loc[dates, g]
+        result["gauge_days"][g] = {"wet_days": int((truth >= WET_DAY_IN).sum()), **{f"ge_{t}": int((truth >= t).sum()) for t in RAIN_THRESHOLDS}}
+        result["verification"][g] = {k: verify(truth, s) for k, s in {**inputs, **reference}.items()}
+
+    # 2. by season (two-gauge mean): wet-day MAE and POD/FAR at 0.5"
+    seasons = pd.Series([season_of(d) for d in dates], index=dates)
+    for s in sorted(seasons.unique()):
+        sel = (seasons == s).values
+        truth = gauges.loc[dates[sel], "avg"]
+        if int((truth >= WET_DAY_IN).sum()) == 0:   # Jul–Aug of the current season: nothing to verify yet
+            continue
+        result["by_season"][s] = {"days": int(sel.sum()), "wet_days": int((truth >= WET_DAY_IN).sum()), "gauge_total_in": float(truth.sum()),
+                                  "inputs": {k: verify(truth, v[sel]) for k, v in inputs.items()}}
+
+    # 3. the biggest gauge days, every input beside them
+    top = gauges.loc[dates, "avg"].sort_values(ascending=False).head(TOP_DAYS).index.sort_values()
+    for d in top:
+        row = {"date": str(d.date()), "season": season_of(d), "downtown_in": round(float(gauges.at[d, "SF Downtown"]), 2),
+               "oceanside_in": round(float(gauges.at[d, "SF Oceanside"]), 2), "mean_in": round(float(gauges.at[d, "avg"]), 2)}
+        for k, s in {**inputs, **reference}.items():
+            v = s.get(d, np.nan)
+            row[k] = round(float(v), 2) if pd.notna(v) else None
+        result["top_days"].append(row)
+
+    # 4. peak intensity: each model's 1h / 3h maxima on wet days against ERA5's (the source the
+    #    intensity features were trained on — a reanalysis, so a reference, not a gauge)
+    wet_mask = (gauges.loc[dates, "avg"] >= WET_DAY_IN).values
+    for m in WX_MODELS:
+        mi = wx[m]["inten"].reindex(dates)
+        ei = era5_inten.reindex(dates)
+        block = {}
+        for k in ("rain_max1h", "rain_max3h"):
+            e = (mi[k] - ei[k])[wet_mask].dropna()
+            block[k] = {"bias_in": float(e.mean()), "mae_in": float(e.abs().mean()), "n": int(len(e)),
+                        "era5_mean_in": float(ei[k][wet_mask].mean()), "model_mean_in": float(mi[k][wet_mask].mean())}
+        result["intensity"][m] = block
+
+    # 5. appendix: the tomorrow scenario through the served stage 1
+    stage1 = load_served_stage1()
+    scen = {"gauges": None, **inputs}
+    feats = {}
     for src in sorted(set(sources.get(b, "avg") for b in BASINS)):
-        truth = gauges.loc[dates, src]
-        result["rain"][src] = {m: rain_skill(truth, wx[m]["daily"].reindex(dates)) for m in WX_MODELS}
-        result["rain"][src]["gauge_wet_days"] = int((truth >= 0.1).sum())
-
-    # stage 1 per set × basin × scenario
-    per_day = {}
-    for s in sets:
-        result["stage1"][s] = {}
-        for b in BASINS:
-            src = stage1[s][b].get("rain_source", sources.get(b, "avg"))
-            if (src, "gauges") not in feats:   # a candidate trained on a source the served set does not use
-                g = gauges[src]
-                feats[(src, "gauges")] = scenario_rows(g, dates, None, era5_inten)
-                for m in WX_MODELS:
-                    feats[(src, m)] = scenario_rows(g, dates, wx[m]["daily"], wx[m]["inten"])
-            covered = labels.loc[dates, f"{BASIN_NAME[b]}_covered"].fillna(0).astype(int).values == 1
-            y = labels.loc[dates, f"{BASIN_NAME[b]}_csd"].fillna(0).astype(int).values[covered]
-            probs = {}
-            for sc in scen_names:
-                p = predict(stage1[s][b], feats[(src, sc)])
-                probs[sc] = p
-                per_day[(s, b, sc)] = p
-            block = {sc: grade(y, probs[sc][covered]) for sc in scen_names}
-            arr = np.vstack([probs[m] for m in WX_MODELS])
-            block["mean3"] = grade(y, arr.mean(axis=0)[covered])
-            block["max3"] = grade(y, arr.max(axis=0)[covered])
-            block["covered_days"] = int(covered.sum()); block["rain_source"] = src
-            result["stage1"][s][b] = block
-
-        # totals across basins at each line
-        tot = {}
-        for sc in scen_names + ["mean3", "max3"]:
-            tot[sc] = {}
-            for line in LINES:
-                k = f"line_{int(line*100)}"
-                tot[sc][k] = {m: int(sum(result["stage1"][s][b][sc][k][m] for b in BASINS)) for m in ("tp", "fn", "fp")}
-                tot[sc][k]["cost"] = tot[sc][k]["fp"] + MISS_WEIGHT * tot[sc][k]["fn"]
-        result["stage1"][s]["total"] = tot
-
-    # disagreement as a signal (served set): days the three models' basin
-    # probabilities spread by ≥ DISAGREE, and how often a discharge followed
-    s = served["name"]
+        g = gauges[src]
+        for name, s in scen.items():
+            inten = era5_inten if name in ("gauges", "mean3") else wx[name]["inten"]
+            feats[(src, name)] = scenario_rows(g, dates, s, inten)
+    app = {"basins": {}, "total": {}}
     for b in BASINS:
-        arr = np.vstack([per_day[(s, b, m)] for m in WX_MODELS])
-        spread = arr.max(axis=0) - arr.min(axis=0)
+        src = stage1[b].get("rain_source", sources.get(b, "avg"))
         covered = labels.loc[dates, f"{BASIN_NAME[b]}_covered"].fillna(0).astype(int).values == 1
-        y = labels.loc[dates, f"{BASIN_NAME[b]}_csd"].fillna(0).astype(int).values
-        dis = (spread >= DISAGREE) & covered
-        agree_wet = (spread < DISAGREE) & covered & (arr.max(axis=0) >= 0.25)
-        result["disagreement"][b] = {
-            "days": int(dis.sum()), "discharge_days": int(y[dis].sum()),
-            "agree_wet_days": int(agree_wet.sum()), "agree_wet_discharge_days": int(y[agree_wet].sum()),
-            "examples": [{"date": str(d.date()), **{WX_MODELS[m]: round(float(per_day[(s, b, m)][i]), 2) for m in WX_MODELS},
-                          "gauges": round(float(per_day[(s, b, "gauges")][i]), 2), "discharge": int(y[i])}
-                         for i, d in enumerate(dates) if dis[i]][:12],
-        }
-
-    # per-day table for the served set (rain + probabilities), for the report's storm list
-    for i, d in enumerate(dates):
-        row = {"date": str(d.date())}
-        wet = False
-        for b in BASINS:
-            src = sources.get(b, "avg")
-            row[f"{b}_gauge_in"] = round(float(gauges.at[d, src]), 2)
-            for sc in scen_names:
-                row[f"{b}_p_{sc}"] = round(float(per_day[(s, b, sc)][i]), 3)
-            row[f"{b}_csd"] = int(labels.at[d, f"{BASIN_NAME[b]}_csd"]) if d in labels.index and pd.notna(labels.at[d, f"{BASIN_NAME[b]}_csd"]) else 0
-            wet = wet or row[f"{b}_gauge_in"] >= 0.5 or row[f"{b}_csd"] == 1
-        for m in WX_MODELS:
-            v = wx[m]["daily"].get(d, np.nan)
-            row[f"{m}_in"] = round(float(v), 2) if pd.notna(v) else None
-        if wet:
-            result["per_day"].append(row)
+        y = labels.loc[dates, f"{BASIN_NAME[b]}_csd"].fillna(0).astype(int).values[covered]
+        app["basins"][b] = {"rain_source": src, "covered_days": int(covered.sum()),
+                            **{name: grade(y, predict(stage1[b], feats[(src, name)])[covered]) for name in scen}}
+    for name in scen:
+        app["total"][name] = {}
+        for line in LINES:
+            k = f"line_{int(line*100)}"
+            tot = {m: int(sum(app["basins"][b][name][k][m] for b in BASINS)) for m in ("tp", "fn", "fp")}
+            tot["cost"] = tot["fp"] + MISS_WEIGHT * tot["fn"]
+            app["total"][name][k] = tot
+    result["appendix"] = app
     return result
 
 
@@ -339,8 +327,10 @@ def esc(s) -> str:
     return str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
-def f3(v):
-    return "—" if v is None else f"{v:.3f}"
+def f2(v, signed=False):
+    if v is None:
+        return "—"
+    return f"{v:+.2f}" if signed else f"{v:.2f}"
 
 
 def pc(v):
@@ -349,138 +339,121 @@ def pc(v):
 
 def build_html(r: dict) -> str:
     css = (HERE / "stage2_explorer_template.html").read_text().split("<style>")[1].split("</style>")[0]
-    s = r["served"]["name"]
-    line_k = f"line_{int((r['served']['line'] or 0.25)*100)}"
-    scen = ["gauges"] + list(WX_MODELS) + ["mean3", "max3"]
-    label = {"gauges": "gauges (hindcast ceiling)", "mean3": "mean of the three", "max3": "max of the three", **WX_MODELS}
+    label = {**INPUTS, **REFERENCE}
+    ver = r["verification"]
 
-    # verdict from the served set's totals at the served line
-    tot = r["stage1"][s]["total"]
-    options = list(WX_MODELS) + ["mean3"]
-    ranked = sorted(options, key=lambda m: tot[m][line_k]["cost"])
-    best, served_m = ranked[0], SERVED_WX
-    ceiling = tot["gauges"][line_k]["cost"]
-    other_k = "line_50" if line_k != "line_50" else "line_25"
-    ranked50 = sorted(options, key=lambda m: tot[m][other_k]["cost"])
-    cell = lambda m, k: f"{esc(label[m])} {tot[m][k]['cost']:.0f} ({tot[m][k]['tp']} of {tot[m][k]['tp'] + tot[m][k]['fn']} caught, {tot[m][k]['fp']} false alarms)"  # noqa: E731
-    verdict = (f"At the served {int(float(line_k.split('_')[1]))}% line, over {r['window'][0]} → {r['window'][1]}, the cheapest rain for tomorrow's row of the served {esc(s)} stage 1 is the "
-               f"<b>{esc(label[best])}</b>: cost {tot[best][line_k]['cost']:.0f} across the four basins "
-               f"({tot[best][line_k]['tp']} of {tot[best][line_k]['tp'] + tot[best][line_k]['fn']} discharge days caught, {tot[best][line_k]['fp']} false alarms). Then "
-               + "; ".join(cell(m, line_k) for m in ranked[1:])
-               + f". Knowing the day's gauge rain (the hindcast the Model check grades) would cost {ceiling:.0f}. "
-               + f"At the {int(float(other_k.split('_')[1]))}% line the order is " + "; ".join(cell(m, other_k) for m in ranked50) + ". "
-               + (f"The served choice, {esc(WX_MODELS[served_m])}, is the cheapest at the served line." if best == served_m else
-                  f"The served choice, {esc(WX_MODELS[served_m])}, catches the most discharge days of any single model but pays for it in false alarms at the served line."))
+    # ranking on the two-gauge mean: wet-day MAE, then CSI at 0.5"
+    rank_mae = sorted(INPUTS, key=lambda k: ver["avg"][k]["wet_mae_in"])
+    rank_csi = sorted(INPUTS, key=lambda k: -(ver["avg"][k]["thresholds"]["0.5"]["csi"] or 0))
+    best_single = min(WX_MODELS, key=lambda k: ver["avg"][k]["wet_mae_in"])
+    m3, sv = ver["avg"]["mean3"], ver["avg"][SERVED_WX]
+    t5 = lambda k: ver["avg"][k]["thresholds"]["0.5"]  # noqa: E731
+    verdict = (f"Against the two-gauge mean on the {r['gauge_days']['avg']['wet_days']} wet days since {r['window'][0]}, the closest input is the "
+               f"<b>{esc(label[rank_mae[0]])}</b>: mean absolute error {ver['avg'][rank_mae[0]]['wet_mae_in']:.2f}\" per wet day, bias {ver['avg'][rank_mae[0]]['wet_bias_in']:+.2f}\". Then "
+               + "; ".join(f"{esc(label[k])} {ver['avg'][k]['wet_mae_in']:.2f}\" ({ver['avg'][k]['wet_bias_in']:+.2f}\")" for k in rank_mae[1:])
+               + f". At the half-inch mark the best skill score is the {esc(label[rank_csi[0]])} (CSI {t5(rank_csi[0])['csi']:.2f}: it catches {pc(t5(rank_csi[0])['pod'])} of the gauges' half-inch days and {pc(t5(rank_csi[0])['far'])} of its own half-inch calls are false); "
+               + "; ".join(f"{esc(label[k])} CSI {t5(k)['csi']:.2f} ({pc(t5(k)['pod'])} caught, {pc(t5(k)['far'])} false)" for k in rank_csi[1:])
+               + f". The served ECMWF IFS sits at {sv['wet_mae_in']:.2f}\" MAE and CSI {t5(SERVED_WX)['csi']:.2f}; the mean of the three at {m3['wet_mae_in']:.2f}\" and {t5('mean3')['csi']:.2f}. "
+               + (f"Among single models {esc(WX_MODELS[best_single])} is closest." if best_single != SERVED_WX else "The served model is the closest single model."))
+
+    def vtable(g: str) -> str:
+        gd = r["gauge_days"][g]
+        rows = [f"<h3>{esc(GAUGE_LABEL[g])} — {gd['wet_days']} wet days; " + ", ".join(f"{gd[f'ge_{t}']} days ≥ {t}\"" for t in RAIN_THRESHOLDS) + "</h3>",
+                "<table><tr><th>input</th><th class='num'>season total, input / gauge (in)</th><th class='num'>bias, all days</th><th class='num'>MAE, all days</th><th class='num'>wet-day bias</th><th class='num'>wet-day MAE</th><th class='num'>wet-day RMSE</th><th class='num'>r, wet days</th>"
+                + "".join(f"<th class='num'>≥ {t}\": POD / FAR / CSI</th>" for t in RAIN_THRESHOLDS) + "</tr>"]
+        best = min(INPUTS, key=lambda k: ver[g][k]["wet_mae_in"])
+        for k in list(INPUTS) + list(REFERENCE):
+            v = ver[g][k]
+            cls = " class='best'" if k == best else (" class='ref'" if k in REFERENCE else "")
+            rows.append(f"<tr{cls}><td>{esc(label[k])}</td><td class='num'>{v['total_in']['model']:.1f} / {v['total_in']['gauge']:.1f}</td><td class='num'>{f2(v['bias_in'], True)}</td><td class='num'>{f2(v['mae_in'])}</td>"
+                        f"<td class='num'>{f2(v['wet_bias_in'], True)}</td><td class='num'>{f2(v['wet_mae_in'])}</td><td class='num'>{f2(v['wet_rmse_in'])}</td><td class='num'>{f2(v['wet_r'])}</td>"
+                        + "".join(f"<td class='num'>{pc(v['thresholds'][str(t)]['pod'])} / {pc(v['thresholds'][str(t)]['far'])} / {f2(v['thresholds'][str(t)]['csi'])}</td>" for t in RAIN_THRESHOLDS) + "</tr>")
+        rows.append("</table>")
+        return "".join(rows)
 
     parts = [f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Which weather model feeds the forecast days</title><link rel="icon" href="/static/brand/favicon.ico">
+<title>Which weather model stands in for the gauges</title><link rel="icon" href="/static/brand/favicon.ico">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <style>{css}
-tr.best td{{background:#e0f0ea}} .verdict{{background:#0072BC;color:#fff;border-radius:16px;padding:16px 20px;font-size:16px}} .verdict b{{font-size:18px}}
-td.num,th.num{{text-align:right}} .small{{font-size:13px;color:#54576F}}
+tr.best td{{background:#e0f0ea}} tr.ref td{{color:#8a8d9b;font-style:italic}} .verdict{{background:#0072BC;color:#fff;border-radius:16px;padding:16px 20px;font-size:16px}} .verdict b{{font-size:18px}}
+td.num,th.num{{text-align:right;font-variant-numeric:tabular-nums}} .small{{font-size:13px;color:#54576F}} td.big{{font-weight:700}}
 </style></head><body><div class="wrap">
-<header><h1>Which weather model feeds the forecast days</h1>
-<p class="sub">The stage 1 models were trained on the rain that fell — two NOAA gauges for daily totals, ERA5 hourly for peak intensity — so a weather model is not part of the model; it is what stands in for the gauges on the forecast days. This replays the page's <b>Tomorrow</b> row for every day since {esc(r['window'][0])}: the gauge record up to the day before, the weather model's own rain for the day (daily total and hourly peaks), the served <b>{esc(s)}</b> stage 1 on top, graded against the CIWQS discharge record. Three Open-Meteo models are archived for the whole window; the page has served ECMWF IFS since 2026-09-04.</p>
-<div class="meta"><span>window {esc(r['window'][0])} → {esc(r['window'][1])}</span><span>archive starts: {esc(", ".join(f"{WX_MODELS[m]} {r['archive_first_day'][m]}" for m in WX_MODELS))}</span><span>post-training rain rules: {esc(", ".join(r['input_rules']) or 'none')}</span><span>a miss costs {r['miss_weight']:g} false alarms</span><span>generated {esc(r['generated'])}</span></div></header>
-<nav><a href="#verdict">Verdict</a><a href="#rain">Rain accuracy</a><a href="#stage1">Stage 1 with each model's rain</a><a href="#ens">Ensembles</a><a href="#dis">Disagreement</a><a href="#storms">Storm days</a><a href="#caveats">Caveats</a></nav>
-<section id="verdict"><div class="verdict">{verdict}</div></section>
+<header><h1>Which weather model stands in for the gauges</h1>
+<p class="sub">The stage 1 models were trained on the rain that fell: the two NOAA gauges for daily totals, ERA5 hourly for peak intensity. A weather model is an <b>input</b> — on the forecast days its rain is fed where the gauge reading would go — so it is graded here as an input: how close its rain for a day comes to what the gauges then recorded. Three Open-Meteo models are archived for the whole window, plus their mean; the page has served ECMWF IFS since 2026-09-04. Every number is the model run covering the day itself (day-0 / day-1 lead, the page's Today and Tomorrow rows).</p>
+<div class="meta"><span>window {esc(r['window'][0])} → {esc(r['window'][1])}</span><span>archive starts: {esc(", ".join(f"{WX_MODELS[m]} {r['archive_first_day'][m]}" for m in WX_MODELS))}</span><span>wet day = gauge ≥ {WET_DAY_IN}"</span><span>gauge record as served: {esc(", ".join(r['input_rules']) or 'raw')}</span><span>generated {esc(r['generated'])}</span></div></header>
+<nav><a href="#verdict">Verdict</a><a href="#gauges">Against each gauge</a><a href="#seasons">By season</a><a href="#storms">The biggest days</a><a href="#intensity">Peak intensity</a><a href="#appendix">Appendix: through stage 1</a><a href="#caveats">Caveats</a></nav>
+<section id="verdict"><div class="verdict">{verdict}</div>
+<p class="lead">How to read the tables. <b>Bias</b> is input minus gauge (positive = the model is wetter). <b>MAE</b> is the average size of the miss in inches; wet-day figures use only days the gauge read {WET_DAY_IN}" or more, so a model is not rewarded for the dry days everyone gets right. <b>r</b> is the correlation on wet days. The threshold cells read: of the days the gauge reached the threshold, the share the model also did (<b>POD</b>); of the days the model reached it, the share that were false (<b>FAR</b>); and <b>CSI</b> = hits ÷ (hits + misses + false alarms), one number for both, 1.0 being perfect. Lower MAE and higher CSI are better.</p></section>
 """]
 
-    # rain accuracy
-    parts.append('<section id="rain"><h2>Rain accuracy — each model\'s day total against the gauges</h2><p class="lead">Per rain source the served basins use (the two-gauge mean for the Westside, Downtown for the bay basins). Bias is model minus gauge over all days; wet-day error is on days the gauge read 0.1" or more. The threshold rows read: of the days the gauge reached the threshold, how many the model also did (POD), and of the days the model reached it, how many were false (FAR).</p>')
-    for src, block in r["rain"].items():
-        parts.append(f"<h3>{esc(src if src != 'avg' else 'Downtown + Oceanside mean')} — {block['gauge_wet_days']} wet days</h3><table><tr><th>model</th><th class='num'>bias, all days (in)</th><th class='num'>wet-day MAE (in)</th><th class='num'>wet-day bias (in)</th><th class='num'>season total, model / gauge (in)</th>"
-                     + "".join(f"<th class='num'>≥ {t}\" POD / FAR</th>" for t in RAIN_THRESHOLDS) + "</tr>")
-        for m in WX_MODELS:
-            k = block[m]
-            parts.append(f"<tr><td>{esc(WX_MODELS[m])}</td><td class='num'>{k['bias_in']:+.3f}</td><td class='num'>{f3(k['wet_mae_in'])}</td><td class='num'>{k['wet_bias_in']:+.3f}</td><td class='num'>{k['total_in']['model']:.1f} / {k['total_in']['gauge']:.1f}</td>"
-                         + "".join(f"<td class='num'>{pc(k['thresholds'][str(t)]['pod'])} / {pc(k['thresholds'][str(t)]['far'])} <span class='small'>({k['thresholds'][str(t)]['gauge_days']} d)</span></td>" for t in RAIN_THRESHOLDS) + "</tr>")
-        parts.append("</table>")
+    parts.append('<section id="gauges"><h2>Against each gauge</h2><p class="lead">Westside stage 1 reads the two-gauge mean; the bay basins read Downtown alone. The same one-point model value is fed to both, so a model is graded against all three. The grey italic row is ERA5, the reanalysis the intensity features were trained on: not a forecast, a reference for how far even a hindcast sits from the gauges.</p>')
+    for g in GAUGES:
+        parts.append(vtable(g))
     parts.append("</section>")
 
-    # stage 1
-    parts.append('<section id="stage1"><h2>Stage 1 with each model\'s rain for the day</h2><p class="lead">The tomorrow scenario, graded on covered days against the filed discharge days. "gauges" is the hindcast: the gauge total for the day itself, the ceiling any forecast can reach. PR-AUC ranks the days; the line columns count caught discharge days, false alarms and cost at the two operating lines.</p>')
-    for sname, sblock in r["stage1"].items():
-        parts.append(f"<h3>{esc(sname)}{' (served)' if sname == s else ' (candidate)'}</h3>")
-        for b in BASINS:
-            k = sblock[b]
-            parts.append(f"<h4>{esc(BASIN_NAME[b])} — {k['covered_days']} covered days, {k['gauges']['pos']} discharge days, rain source {esc(k['rain_source'])}</h4><table><tr><th>rain for the day</th><th class='num'>PR-AUC</th><th class='num'>ROC-AUC</th><th class='num'>Brier</th>"
-                         + "".join(f"<th class='num'>{int(l*100)}%: caught</th><th class='num'>false alarms</th><th class='num'>cost</th>" for l in LINES) + "</tr>")
-            costs = {sc: k[sc][line_k]["cost"] for sc in WX_MODELS}
-            bestm = min(costs, key=costs.get)
-            for sc in scen:
-                g = k[sc]
-                cls = " class='best'" if sc == bestm else ""
-                parts.append(f"<tr{cls}><td>{esc(label[sc])}</td><td class='num'>{f3(g.get('pr_auc'))}</td><td class='num'>{f3(g.get('roc_auc'))}</td><td class='num'>{g['brier']:.4f}</td>"
-                             + "".join(f"<td class='num'>{g[f'line_{int(l*100)}']['tp']}/{g[f'line_{int(l*100)}']['tp'] + g[f'line_{int(l*100)}']['fn']}</td><td class='num'>{g[f'line_{int(l*100)}']['fp']}</td><td class='num'>{g[f'line_{int(l*100)}']['cost']:.0f}</td>" for l in LINES) + "</tr>")
-            parts.append("</table>")
-        t = sblock["total"]
-        parts.append("<h4>All four basins</h4><table><tr><th>rain for the day</th>" + "".join(f"<th class='num'>{int(l*100)}%: caught</th><th class='num'>false alarms</th><th class='num'>cost</th>" for l in LINES) + "</tr>")
-        bestm = min(WX_MODELS, key=lambda m: t[m][line_k]["cost"])
-        for sc in scen:
-            cls = " class='best'" if sc == bestm else ""
-            parts.append(f"<tr{cls}><td>{esc(label[sc])}</td>" + "".join(f"<td class='num'>{t[sc][f'line_{int(l*100)}']['tp']}/{t[sc][f'line_{int(l*100)}']['tp'] + t[sc][f'line_{int(l*100)}']['fn']}</td><td class='num'>{t[sc][f'line_{int(l*100)}']['fp']}</td><td class='num'>{t[sc][f'line_{int(l*100)}']['cost']:.0f}</td>" for l in LINES) + "</tr>")
-        parts.append("</table>")
-    parts.append("</section>")
+    # seasons
+    parts.append('<section id="seasons"><h2>By season, two-gauge mean</h2><p class="lead">Whether the ranking holds from one winter to the next. Seasons run July to June.</p><table><tr><th>season</th><th class="num">wet days</th><th class="num">gauge total (in)</th>'
+                 + "".join(f"<th class='num'>{esc(label[k])}: total / wet MAE / POD ≥ 0.5\" / FAR</th>" for k in INPUTS) + "</tr>")
+    for s, blk in r["by_season"].items():
+        parts.append(f"<tr><td>{esc(s)}</td><td class='num'>{blk['wet_days']}</td><td class='num'>{blk['gauge_total_in']:.1f}</td>"
+                     + "".join(f"<td class='num'>{blk['inputs'][k]['total_in']['model']:.1f} / {f2(blk['inputs'][k]['wet_mae_in'])} / {pc(blk['inputs'][k]['thresholds']['0.5']['pod'])} / {pc(blk['inputs'][k]['thresholds']['0.5']['far'])}</td>" for k in INPUTS) + "</tr>")
+    parts.append("</table></section>")
 
-    # ensembles
-    parts.append(f'<section id="ens"><h2>Ensembles</h2><p class="lead">Two ways to use all three at once, without retraining: run stage 1 on each model\'s rain and take the <b>mean</b> of the three probabilities (a hedge), or the <b>max</b> (the cautious reading). Rain is never averaged before the model — the thresholds are nonlinear. Their rows are in the tables above; at the served line the mean costs {r["stage1"][s]["total"]["mean3"][line_k]["cost"]:.0f} and the max {r["stage1"][s]["total"]["max3"][line_k]["cost"]:.0f} across the basins, against {min(r["stage1"][s]["total"][m][line_k]["cost"] for m in WX_MODELS):.0f} for the best single model.</p></section>')
+    # top days
+    parts.append(f'<section id="storms"><h2>The {TOP_DAYS} biggest gauge days</h2><p class="lead">Ranked by the two-gauge mean, in date order. Inches per input beside the two gauges; bold marks an input within a quarter inch of the gauge mean.</p><table><tr><th>date</th><th>season</th><th class="num">Downtown</th><th class="num">Oceanside</th><th class="num">mean</th>'
+                 + "".join(f"<th class='num'>{esc(label[k])}</th>" for k in list(INPUTS) + list(REFERENCE)) + "</tr>")
+    for row in r["top_days"]:
+        parts.append(f"<tr><td>{row['date']}</td><td>{row['season']}</td><td class='num'>{row['downtown_in']:.2f}</td><td class='num'>{row['oceanside_in']:.2f}</td><td class='num'>{row['mean_in']:.2f}</td>"
+                     + "".join(("<td class='num'>—</td>" if row[k] is None else f"<td class='num{' big' if abs(row[k] - row['mean_in']) <= 0.25 else ''}'>{row[k]:.2f}</td>") for k in list(INPUTS) + list(REFERENCE)) + "</tr>")
+    parts.append("</table></section>")
 
-    # disagreement
-    parts.append(f'<section id="dis"><h2>Disagreement as a signal</h2><p class="lead">The README\'s rule of thumb: at one to two days out the models should agree, and disagreement is itself worth flagging. Here a day "disagrees" when the three models\' basin probabilities (served set) spread by {int(DISAGREE*100)} points or more; "agree wet" is a spread under that with at least one model at 25% or more.</p><table><tr><th>basin</th><th class="num">disagreeing days</th><th class="num">…with a discharge</th><th class="num">agree-wet days</th><th class="num">…with a discharge</th></tr>')
-    for b in BASINS:
-        d = r["disagreement"][b]
-        parts.append(f"<tr><td>{esc(BASIN_NAME[b])}</td><td class='num'>{d['days']}</td><td class='num'>{d['discharge_days']}</td><td class='num'>{d['agree_wet_days']}</td><td class='num'>{d['agree_wet_discharge_days']}</td></tr>")
-    parts.append("</table>")
-    for b in BASINS:
-        ex = r["disagreement"][b]["examples"]
-        if ex:
-            parts.append(f"<h4>{esc(BASIN_NAME[b])}: the disagreeing days</h4><table><tr><th>date</th>" + "".join(f"<th class='num'>{esc(WX_MODELS[m])}</th>" for m in WX_MODELS) + "<th class='num'>gauges</th><th class='num'>discharge</th></tr>")
-            for e in ex:
-                parts.append(f"<tr><td>{e['date']}</td>" + "".join(f"<td class='num'>{e[WX_MODELS[m]]:.2f}</td>" for m in WX_MODELS) + f"<td class='num'>{e['gauges']:.2f}</td><td class='num'>{'yes' if e['discharge'] else ''}</td></tr>")
-            parts.append("</table>")
-    parts.append("</section>")
+    # intensity
+    parts.append('<section id="intensity"><h2>Peak intensity</h2><p class="lead">Three of the 19 features are the day\'s peak 1-, 3- and 6-hour rain. They were trained on ERA5 hourly, so each model\'s peaks on wet days are compared with ERA5\'s for the same days. ECMWF\'s precipitation is three-hourly, spread to hourly by Open-Meteo; GFS and ICON are hourly natively. A reference, not a gauge check: no hourly gauge record exists for the city for this window.</p><table><tr><th>model</th><th class="num">wet days</th><th class="num">peak 1h: model mean / ERA5 mean (in)</th><th class="num">bias / MAE</th><th class="num">peak 3h: model mean / ERA5 mean (in)</th><th class="num">bias / MAE</th></tr>')
+    for m in WX_MODELS:
+        b = r["intensity"][m]
+        parts.append(f"<tr><td>{esc(WX_MODELS[m])}</td><td class='num'>{b['rain_max1h']['n']}</td><td class='num'>{b['rain_max1h']['model_mean_in']:.3f} / {b['rain_max1h']['era5_mean_in']:.3f}</td><td class='num'>{f2(b['rain_max1h']['bias_in'], True)} / {f2(b['rain_max1h']['mae_in'])}</td>"
+                     f"<td class='num'>{b['rain_max3h']['model_mean_in']:.3f} / {b['rain_max3h']['era5_mean_in']:.3f}</td><td class='num'>{f2(b['rain_max3h']['bias_in'], True)} / {f2(b['rain_max3h']['mae_in'])}</td></tr>")
+    parts.append("</table></section>")
 
-    # storm days
-    parts.append('<section id="storms"><h2>Storm days — rain and served-model probability by source</h2><p class="lead">Every day a basin\'s gauge read 0.5" or more or a discharge was filed. Inches per weather model beside the gauges; then each basin\'s stage 1 probability with the gauge rain and with each model\'s rain for the day. Bold marks a filed discharge.</p><table><tr><th>date</th>'
-                 + "".join(f"<th class='num'>{esc(WX_MODELS[m])} in</th>" for m in WX_MODELS)
-                 + "".join(f"<th class='num'>{esc(BASIN_NAME[b])} gauge in</th><th class='num'>p gauges</th>" + "".join(f"<th class='num'>p {esc(WX_MODELS[m])}</th>" for m in WX_MODELS) for b in BASINS) + "</tr>")
-    for row in r["per_day"]:
-        parts.append(f"<tr><td>{row['date']}</td>" + "".join(f"<td class='num'>{'—' if row[f'{m}_in'] is None else f'{row[f'{m}_in']:.2f}'}</td>" for m in WX_MODELS)
-                     + "".join((f"<td class='num'>{'<b>' if row[f'{b}_csd'] else ''}{row[f'{b}_gauge_in']:.2f}{'</b>' if row[f'{b}_csd'] else ''}</td><td class='num'>{row[f'{b}_p_gauges']:.2f}</td>"
-                                + "".join(f"<td class='num'>{row[f'{b}_p_{m}']:.2f}</td>" for m in WX_MODELS)) for b in BASINS) + "</tr>")
+    # appendix
+    app = r["appendix"]; s = r["served"]["name"]
+    parts.append(f'<section id="appendix"><h2>Appendix: what the input error does to the forecast</h2><p class="lead">Secondary. The page\'s Tomorrow row replayed for every day in the window: the gauge record to the day before, the input\'s rain for the day, the served <b>{esc(s)}</b> stage 1 on top, graded against the filed discharge days (a miss costs {MISS_WEIGHT:g} false alarms). "gauges" is the hindcast — the day\'s own gauge rain, the ceiling. This mixes the input\'s error with the discharge model\'s own; the verdict above rests on the rain alone.</p><table><tr><th>rain for the day</th>'
+                 + "".join(f"<th class='num'>{int(l*100)}% line: caught</th><th class='num'>false alarms</th><th class='num'>cost</th>" for l in LINES) + "".join(f"<th class='num'>PR-AUC {esc(BASIN_NAME[b])}</th>" for b in BASINS) + "</tr>")
+    for name in ["gauges"] + list(INPUTS):
+        t = app["total"][name]
+        parts.append(f"<tr><td>{esc(label.get(name, name))}</td>" + "".join(f"<td class='num'>{t[f'line_{int(l*100)}']['tp']}/{t[f'line_{int(l*100)}']['tp'] + t[f'line_{int(l*100)}']['fn']}</td><td class='num'>{t[f'line_{int(l*100)}']['fp']}</td><td class='num'>{t[f'line_{int(l*100)}']['cost']:.0f}</td>" for l in LINES)
+                     + "".join(f"<td class='num'>{f2(app['basins'][b][name].get('pr_auc'))}</td>" for b in BASINS) + "</tr>")
     parts.append("</table></section>")
 
     parts.append("""<section id="caveats"><h2>Caveats</h2><ul>
-<li><b>Lead time.</b> Open-Meteo's archive keeps the model run covering each day, a day-0 / day-1 forecast. It says nothing about the page's day-3 to day-5 rows, where the models differ most; those need the previous-runs archive, which only reaches back a few weeks.</li>
-<li><b>One grid cell.</b> Every model is read at one point for the whole city, so the same number stands in for the Westside mean and for Downtown. The gauges differ by a factor of two on some storm days (Oceanside vs Downtown).</li>
-<li><b>Hourly peaks.</b> ECMWF's precipitation is three-hourly, interpolated to hourly by Open-Meteo; its peak-intensity features run smoother than ERA5's. GFS and ICON are hourly natively.</li>
-<li><b>Two seasons.</b> Feb 2024 to the end of the record is two wet seasons and a few dozen discharge days per basin; a few storms decide the ranking. The Oceanside record ends July 2026, the bay side August.</li>
-<li><b>Stage 1 only.</b> The final beach percentage composes eight days of probabilities; only the day itself is a forecast here, so stage 2 is not part of the question.</li>
+<li><b>Lead time.</b> Open-Meteo's archive keeps the model run covering each day — a day-0 / day-1 forecast. It says nothing about the page's day-3 to day-5 rows, where models differ most; the previous-runs archive that would answer that only reaches back a few weeks. Logging the page's own forecast days from now on is the way to measure those leads.</li>
+<li><b>One grid cell.</b> Every model is read at one point for the whole city, while the two gauges differ by a factor of two on some storm days. Part of every model's "error" against Oceanside or Downtown alone is that spatial gap, which is why the two-gauge mean is the fairest yardstick.</li>
+<li><b>Calendar days.</b> Gauge days are NOAA observation days; the model hours are summed over the same local calendar day. A storm crossing midnight lands in the same day for both, but small offsets in the gauge reading time can move a few tenths from one day to the next.</li>
+<li><b>Two seasons.</b> About a hundred wet days and forty half-inch days; a few storms decide the ranking. Re-run each spring (the script caches the archive; <code>--refresh</code> refetches).</li>
 </ul></section></div></body></html>""")
     return "".join(parts)
 
 
 def main():
-    refresh = "--refresh" in sys.argv
-    r = run(refresh=refresh)
+    r = run(refresh="--refresh" in sys.argv)
     OUT_JSON.write_text(json.dumps(r, indent=1))
     OUT_HTML.write_text(build_html(r))
-    s = r["served"]["name"]
-    line_k = f"line_{int((r['served']['line'] or 0.25)*100)}"
+    label = {**INPUTS, **REFERENCE}
     print(f"window {r['window'][0]} → {r['window'][1]}; archive first days {r['archive_first_day']}")
-    for src, block in r["rain"].items():
-        print(f"rain [{src}] wet days {block['gauge_wet_days']}: " + "; ".join(
-            f"{WX_MODELS[m]} bias {block[m]['bias_in']:+.3f} wet-MAE {block[m]['wet_mae_in']:.3f} POD/FAR@0.5 {pc(block[m]['thresholds']['0.5']['pod'])}/{pc(block[m]['thresholds']['0.5']['far'])}" for m in WX_MODELS))
-    for sname, sb in r["stage1"].items():
-        t = sb["total"]
-        print(f"[{sname}] totals @{line_k}: " + "; ".join(f"{sc} cost {t[sc][line_k]['cost']:.0f} ({t[sc][line_k]['tp']}/{t[sc][line_k]['tp'] + t[sc][line_k]['fn']} caught, {t[sc][line_k]['fp']} FA)" for sc in ["gauges"] + list(WX_MODELS) + ["mean3", "max3"]))
-        for b in BASINS:
-            k = sb[b]
-            print(f"   {b:12s} pos {k['gauges']['pos']:3d}: " + "; ".join(f"{sc} PR {f3(k[sc].get('pr_auc'))} cost {k[sc][line_k]['cost']:.0f}" for sc in ["gauges"] + list(WX_MODELS) + ["mean3"]))
-    for b in BASINS:
-        d = r["disagreement"][b]
-        print(f"disagree {b}: {d['days']} days, {d['discharge_days']} with a discharge; agree-wet {d['agree_wet_days']} days, {d['agree_wet_discharge_days']} with a discharge")
+    for g in GAUGES:
+        gd = r["gauge_days"][g]
+        print(f"vs {g} ({gd['wet_days']} wet days, {gd['ge_0.5']} ≥ 0.5\"):")
+        for k in list(INPUTS) + list(REFERENCE):
+            v = r["verification"][g][k]; t = v["thresholds"]["0.5"]
+            print(f"   {label[k]:44s} total {v['total_in']['model']:6.1f}/{v['total_in']['gauge']:6.1f}  wet bias {v['wet_bias_in']:+.3f}  wet MAE {v['wet_mae_in']:.3f}  RMSE {v['wet_rmse_in']:.3f}  r {f2(v['wet_r'])}  ≥0.5\" POD {pc(t['pod'])} FAR {pc(t['far'])} CSI {f2(t['csi'])} fbias {f2(t['freq_bias'])}")
+    for s, blk in r["by_season"].items():
+        print(f"season {s}: wet {blk['wet_days']} gauge {blk['gauge_total_in']:.1f}\" | " + "; ".join(f"{label[k]} {blk['inputs'][k]['total_in']['model']:.1f}\" MAE {f2(blk['inputs'][k]['wet_mae_in'])} POD {pc(blk['inputs'][k]['thresholds']['0.5']['pod'])}" for k in INPUTS))
+    for m in WX_MODELS:
+        b = r["intensity"][m]["rain_max1h"]
+        print(f"peak 1h {WX_MODELS[m]}: model {b['model_mean_in']:.3f} vs ERA5 {b['era5_mean_in']:.3f} (bias {b['bias_in']:+.3f}, MAE {b['mae_in']:.3f})")
+    line_k = f"line_{int((r['served']['line'] or 0.25)*100)}"
+    t = r["appendix"]["total"]
+    print(f"appendix @{line_k}: " + "; ".join(f"{label.get(n, n)} cost {t[n][line_k]['cost']:.0f} ({t[n][line_k]['tp']}/{t[n][line_k]['tp'] + t[n][line_k]['fn']}, {t[n][line_k]['fp']} FA)" for n in ["gauges"] + list(INPUTS)))
     print(f"wrote {OUT_JSON.relative_to(REPO)} and {OUT_HTML.relative_to(REPO)}")
 
 
