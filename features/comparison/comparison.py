@@ -34,6 +34,7 @@ from shared import city_history
 from shared.datasf import DATASET_FLOOR
 from shared.stations import STATIONS
 from shared.zones import ZONES, ZONE_OF_SOURCE
+from shared.clock import now_pacific_naive, utc_iso
 
 # The BWTF lab's sites with no city counterpart (the lab's site list, 2026-09)
 # and the zone each sits in (shared/zones.py keys). The samples viewer
@@ -79,7 +80,7 @@ BWTF_TO_SFPUC_NAME = {
 def parse_range(start: str = "", end: str = "") -> tuple[datetime, datetime]:
     """YYYY-MM-DD strings -> (start, end) datetimes; the default is the last
     DEFAULT_DAYS ending today. Bad or reversed input falls back the same way."""
-    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    today = now_pacific_naive().replace(hour=0, minute=0, second=0, microsecond=0)
 
     def parse(s):
         try:
@@ -174,7 +175,7 @@ def _fetch_city_latest(monitor: SFWaterQualityMonitor, sources: list[str], days:
     """Latest city result for `analyte` per SF Gov source id (raw + parsed)."""
     if not sources:
         return {}
-    start = datetime.now() - timedelta(days=days)
+    start = now_pacific_naive() - timedelta(days=days)
     source_filter = " OR ".join(f"source='{s}'" for s in sources)
     params = {
         "$select": "source,sample_date,analyte,data,data_as_of",
@@ -502,7 +503,7 @@ def build_comparison(
     }
 
     return {
-        "generated_at": datetime.now().isoformat(),
+        "generated_at": utc_iso(),
         "standard": {"analyte": cfg["label"], "code": analyte, "single_sample_max": limit, "units": "MPN/100mL"},
         "analytes": [{"code": code, "label": meta["label"]} for code, meta in ANALYTES.items()],
         "bwtf_measures": analyte == "ENTERO",   # whether BWTF has data for this analyte
@@ -551,7 +552,7 @@ def build_site_history(
     cfg = ANALYTES[analyte]
     site = resolve_site(site_name)
     if days and not start:
-        since, until = datetime.now() - timedelta(days=days), datetime.now()
+        since, until = now_pacific_naive() - timedelta(days=days), now_pacific_naive()
     else:
         since, until = parse_range(start, end)
     until_end = until + timedelta(days=1)

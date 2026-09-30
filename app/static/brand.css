@@ -141,6 +141,13 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
 }
 
 /* ── Kit: small shared pieces ─────────────────────────────────────────────── */
+/* Site chips — one monitoring station as a pill: status dot, name, sample date. The Today board (under the zone tiles) and the CSO Forecast's beach status. */
+.site-chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0}
+.site-chips .site{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:#fff;font:inherit;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer}
+.site-chips .site:hover{border-color:var(--sky)}
+.site-chips .site[hidden]{display:none}
+.site-chips .site small{color:var(--faint);font-weight:500;font-size:12px}
+
 .status-dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none;vertical-align:middle}
 .status-dot.safe{background:var(--safe)}.status-dot.caution{background:var(--caution)}.status-dot.posted{background:var(--posted)}
 .status-dot.discharge{background:var(--discharge)}.status-dot.unknown{background:var(--unknown)}

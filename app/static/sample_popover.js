@@ -20,6 +20,7 @@
     ".sp-modal.open{display:flex}.sp-box{background:#fff;border-radius:20px;max-width:820px;width:100%;padding:20px 22px;box-shadow:0 24px 60px rgba(0,0,0,.3);max-height:92vh;overflow:auto}" +
     ".sp-head{display:flex;justify-content:space-between;align-items:center;gap:12px}.sp-head h2{margin:0;font-size:19px;color:#26272a}" +
     ".sp-close{border:none;background:#eef2f4;border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:700;color:#26272a;font-size:14px;font-family:inherit}" +
+    ".sp-stale{background:#fdf3e6;border:1px solid #f0c9a0;color:#7a3e10;border-radius:12px;padding:10px 14px;margin:10px 0 2px;font-size:13.5px;line-height:1.5}.sp-stale[hidden]{display:none}.sp-stale b{display:block;font-size:15px;margin-bottom:2px}" +
     ".sp-note{color:#54576F;font-size:12.5px;margin:6px 0 12px;line-height:1.5}.sp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}.sp-grid.one{grid-template-columns:minmax(200px,340px)}" +
     ".sp-field{color:#54576F;font-size:12.5px;margin:12px 0 0;line-height:1.5}.sp-field:empty{display:none}" +
     ".sp-cell{border:1px solid #d9e4e8;border-radius:14px;padding:10px 12px}.sp-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#54576F;font-weight:700;margin:0 0 4px}" +
@@ -34,7 +35,7 @@
     var st = document.createElement("style"); st.textContent = CSS; document.head.appendChild(st);
     el = document.createElement("div"); el.className = "sp-modal"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true");
     el.innerHTML = '<div class="sp-box"><div class="sp-head"><h2 id="sp-title"></h2><button class="sp-close" type="button">Close &times;</button></div>' +
-      '<p class="sp-note" id="sp-note"></p><div class="sp-grid" id="sp-grid"></div><p class="sp-field" id="sp-field"></p><p class="sp-links" id="sp-links"></p></div>';
+      '<div class="sp-stale" id="sp-stale" role="status" hidden></div><p class="sp-note" id="sp-note"></p><div class="sp-grid" id="sp-grid"></div><p class="sp-field" id="sp-field"></p><p class="sp-links" id="sp-links"></p></div>';
     document.body.appendChild(el);
     el.querySelector(".sp-close").addEventListener("click", close);
     el.addEventListener("click", function (e) { if (e.target === el) close(); });
@@ -46,7 +47,7 @@
     var m = modal();
     m.querySelector("#sp-title").textContent = opts.name || opts.station || opts.bwtf;
     m.querySelector("#sp-note").textContent = "Loading the lab results…";
-    m.querySelector("#sp-grid").innerHTML = ""; m.querySelector("#sp-links").innerHTML = ""; m.querySelector("#sp-field").textContent = "";
+    m.querySelector("#sp-grid").innerHTML = ""; m.querySelector("#sp-links").innerHTML = ""; m.querySelector("#sp-field").textContent = ""; m.querySelector("#sp-stale").hidden = true;
     m.classList.add("open");
     var q = new URLSearchParams(opts.bwtf ? { bwtf: opts.bwtf } : { station: opts.station }); if (opts.date) q.set("date", opts.date);
     Promise.all([fetch("/api/sample-day?" + q).then(function (r) { return r.json(); }), ensureCharts()])
@@ -59,24 +60,32 @@
     var surf = d.source === "bwtf";
     m.querySelector("#sp-title").textContent = d.name || opts.name || opts.station || opts.bwtf;
     charts.forEach(function (c) { c.destroy(); }); charts = [];
+    var stale = m.querySelector("#sp-stale"), newer = !surf && opts.feedDate && (!d.found || opts.feedDate > d.date);
+    if (newer) {   // Chase, 2026-09-29: "if the sample you click on is not available yet, the fact that it's an old sample should be louder"
+      var days = d.found ? Math.round((new Date(opts.feedDate + "T12:00:00") - new Date(d.date + "T12:00:00")) / 864e5) : null;
+      stale.innerHTML = "<b>Newest sample not published yet</b>The city's map shows a sample taken " + esc(opts.feedDate) + "; its lab numbers are not on SF Gov Open Data yet — they usually follow about five days later. " +
+        (d.found ? "Below is the last <b style=\"display:inline;font-size:inherit\">published</b> sample, " + esc(d.date) + (days ? " (" + days + " day" + (days > 1 ? "s" : "") + " older)" : "") + "." : "Nothing older has been published for this station either.");
+      stale.hidden = false;
+    }
     if (!d.found) { note.textContent = (surf ? "No Surfrider sample at this site" : "No published lab results for this station") + (opts.date ? " on " + opts.date : "") + "."; return; }
     var parts = ["Sampled " + d.date + (surf && d.times && d.times.length ? " at " + d.times.join(" and ") : "")];
     if (surf) parts.push("Surfrider Blue Water Task Force volunteer lab");
     if (d.n_samples > 1) parts.push(surf ? d.n_samples + " collections that day" : d.n_samples + " samples that day (the city's dataset carries the date but not the time)");
-    if (opts.feedDate && opts.feedDate > d.date) parts.push("lab numbers for the " + opts.feedDate + " sample not yet published");
     parts.push(d.units + " · dashed line = state single-sample limit" + (d.caution ? ", dotted = caution tier (" + d.caution + ")" : ""));
     note.textContent = parts.join(" · ");
     var f = d.field || {};
     fieldEl.textContent = [f.tested_by ? "Tested by " + f.tested_by : "", f.air ? "air " + f.air : "", f.water ? "water " + f.water : "", f.sky ? "sky " + f.sky : "", f.wind ? "wind " + f.wind : "",
                            f.tide ? "tide " + f.tide : "", f.waves ? "waves " + f.waves : "", f.rain ? "rain " + f.rain : ""].filter(Boolean).join(" · ") + (f.comments ? " — " + f.comments : "");
-    grid.className = "sp-grid" + (d.analytes.length === 1 ? " one" : "");
-    grid.innerHTML = d.analytes.map(function (a) {
+    var shown = d.analytes.filter(function (a) { return (d.cells[a.code] || []).length; });   // an indicator the lab did not run is left out, not shown as "not reported"
+    if (!shown.length) shown = d.analytes.slice(0, 1);
+    grid.className = "sp-grid" + (shown.length === 1 ? " one" : "");
+    grid.innerHTML = shown.map(function (a) {
       var vals = d.cells[a.code] || [];
       var chips = vals.length ? vals.map(function (v) { return '<span class="sp-val' + (v.over ? " over" : v.caution ? " caution" : "") + '">' + esc(v.raw) + "</span>"; }).join("") : '<span class="sp-val none">not reported</span>';
       var why = (a.code === "COLI_TOTAL" && d.ratio_applied) ? ' <span title="' + esc(d.ratio_note) + '">(ratio rule)</span>' : "";
       return '<div class="sp-cell"><div class="sp-label">' + esc(a.label) + " · limit " + fmt(d.limits[a.code]) + why + '</div><div class="sp-chart"><canvas data-code="' + esc(a.code) + '"></canvas></div><div class="sp-vals">' + chips + "</div></div>";
     }).join("");
-    d.analytes.forEach(function (a) {
+    shown.forEach(function (a) {
       var vals = d.cells[a.code] || [], limit = d.limits[a.code], canvas = grid.querySelector('canvas[data-code="' + a.code + '"]');
       if (!vals.length) { canvas.parentElement.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:#98a3ab;font-size:12.5px">no result</div>'; return; }
       var labels = vals.length > 1 ? vals.map(function (_, i) { return "sample " + (i + 1); }) : ["result"];

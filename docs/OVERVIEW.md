@@ -82,7 +82,7 @@ three hubs. Status colours mean the same thing everywhere: safe, caution, posted
 
 | Route | Page | What it shows | Data behind it |
 |---|---|---|---|
-| `/today` | Today | The Main page's board as a tab of the Today & alerts hub, with an experimental-layers row: Surfrider's latest Enterococcus result per site as diamonds on the map (`/api/today/surfrider`, graded by the shared rule; toggle, off by default, `?surfrider=1` pre-enables). Board markup/JS shared with `/` via `app/templates/_today_board.html` | SFPUC feed, forecast cache, BWTF GraphQL |
+| `/today` | Today | The Main page's board as a tab of the Today & alerts hub, with a **Layers** strip above it (`features/today/page.py`): **Rain, 3 days** (`/api/today/rain`: the three newest daily totals at the forecast's two NOAA gauges via ACIS, drawn as gauge circles, each zone tile reading its own gauge); **Outfalls** (`/api/today/outfalls`: the 34 outfalls sized by the trailing twelve months of reported volume from the Discharge Ledger's record, popup naming the beaches SFPUC posts); **Risk view** (zones and stations recoloured by today's overflow probability, client-side from the board's tile data); **Surfrider results** (`/api/today/surfrider`: the volunteers' latest Enterococcus result per site as diamonds); and a **Replay** slider (`/api/today/replay`: what SFPUC's map showed at the last check of each recorded day, from `feed_station_days`, in the feed's own vocabulary — posted / discharge / not posted / not recorded). Every layer is marked Experimental; `?layers=rain,outfalls,bwtf&risk=1&replay=2` deep-links. Board markup/JS shared with `/` via `app/templates/_today_board.html` | SFPUC feed, forecast cache, ACIS, CIWQS record, Supabase, BWTF GraphQL |
 | `/` | Dashboard (landing) | Live status hero (SFPUC summary, rain, tide) above three hubs — Today & alerts (signup button, CSO Forecast, Sewage Alert System), The water record (Site Report Card, Source Comparison, BWTF Sample Log), Postings & discharges (Discharge Ledger, Beach Postings, Online Postings Timeline) — each row carrying a live fact when its source answers within 2.5 s (`app/landing.py` HUBS / `_live_facts`), plus an Under the hood strip (model check, analysis, replays, build) | SFPUC feed, Supabase (forecast snapshot, samples mirror, alert_log), BWTF GraphQL, CIWQS csv |
 | `/signup` | Get Beach Alerts | Public, zone-based email signup (four zones, bad-news-only alerts) | Supabase `subscribers` |
 | `/alerts` | Sewage Alert System | Operator dashboard: live station status, bacteria, subscriber list, simulations, dispatch log. Behind a passphrase (`ALERTS_PASSPHRASE`) | SFPUC feed, DataSF, Supabase |
@@ -235,3 +235,24 @@ Cron: `bwtf-shadow-tick` every minute; `bwtf-forecast-refresh` at :05 and :35 (�
 - The SFPUC feed is undocumented and internal; the watcher's dead-man ping is what tells us if it changes shape.
 - The root `README.md`'s notification, scheduling and architecture sections describe the original command-line monitor
   and its Slack/Discord/SMS channels; production alerting is the pg_cron watcher + Brevo email described above.
+
+## 8. Time
+
+The site runs on Vercel, whose clock is UTC; the beaches are in San Francisco, seven or eight hours
+behind. Three rules, in force since 2026-09-30 (`shared/clock.py`, guarded by `tests/test_clock.py`):
+
+- **Anything a person reads is Pacific.** Server-rendered dates and times (the board's "checked" time,
+  "Updated" stamps, alert emails' "Generated" line) come from `now_pacific()`; a page's "today"
+  (date pickers, default ranges, overdue checks) from `today_pacific()`. Daylight saving follows the
+  zone database, not a hand-set offset.
+- **Everything stored is an instant in UTC.** Every timestamp column is `timestamptz`; Python writes
+  `utc_iso()` (an offset in the string). Rows written before 2026-09-30 carried naive strings, but they
+  were UTC and Postgres read them as UTC, so the stored instants are right — `subscribers.updated_at`
+  matches its database-default `created_at` to the second. The SQL watcher computes its Pacific day
+  itself (`now() at time zone 'America/Los_Angeles'`), so `feed_station_days.day` and
+  `feed_sample_dates` were always the beach's day.
+- **One caveat for anyone reading raw rows.** The forecast snapshot JSON (`forecast_predictions.snapshot`
+  and every `forecast_history` row) carries a `last_refresh` string; before 2026-09-30 it has no offset
+  and means UTC, after it has `+00:00`. The forecast page reads an offset-less stamp as UTC. A SQL
+  client shows every `timestamptz` in the session's zone — usually UTC — so convert before comparing
+  with a beach day.

@@ -27,6 +27,7 @@ from flask import render_template
 import features.discharges.page as discharges_page
 import features.postings.page as postings_page
 from shared import sources as sources_registry
+from shared.clock import today_pacific
 
 
 def _freshness() -> dict:
@@ -46,7 +47,7 @@ def _freshness() -> dict:
             out["postings"]["through"] = datetime.strptime(p["known_through"], "%Y-%m-%d").strftime("%b %Y")
     except Exception:  # noqa: BLE001
         pass
-    today = date.today().isoformat()
+    today = today_pacific().isoformat()
     for block in out.values():
         block["overdue"] = bool(block.get("next_due")) and block["next_due"] < today
     return out

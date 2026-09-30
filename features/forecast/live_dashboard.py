@@ -29,7 +29,7 @@ import numpy as np
 import pandas as pd
 import requests
 import xml.etree.ElementTree as ET
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 from threading import Thread, Lock
@@ -440,7 +440,7 @@ class LiveData:
                 self.rain_forecast = rain_df[rain_df["timestamp"] > now_local].to_dict("records") if rain_df is not None else []
                 self.predictions = predictions
                 self.beach_status = beach_status
-                self.last_refresh = datetime.now()
+                self.last_refresh = datetime.now(timezone.utc)   # aware: the page's 'Last updated' converts it to the visitor's clock
                 self.error = None
 
         except Exception as e:
@@ -942,7 +942,7 @@ class LiveData:
             return {"error": f"Invalid date: {date_str}"}
 
         start = target - timedelta(days=14)
-        end = min(target + timedelta(days=5), datetime.now())
+        end = min(target + timedelta(days=5), _now_local())
         params = {
             "latitude": 37.7749, "longitude": -122.4194,
             "hourly": "precipitation,temperature_2m,wind_speed_10m,wind_direction_10m",
@@ -950,13 +950,13 @@ class LiveData:
             "timezone": "America/Los_Angeles",
         }
         try:
-            if (datetime.now() - end).days > 5:
+            if (_now_local() - end).days > 5:
                 url = "https://archive-api.open-meteo.com/v1/archive"
             else:
                 url = OPEN_METEO_URL
                 params["models"] = METEO_PARAMS["models"]
-                params["past_days"] = (datetime.now() - start).days
-                params["forecast_days"] = max(1, (end - datetime.now()).days + 1)
+                params["past_days"] = (_now_local() - start).days
+                params["forecast_days"] = max(1, (end - _now_local()).days + 1)
                 del params["start_date"]
                 del params["end_date"]
             r = requests.get(url, params=params, timeout=30)
@@ -1535,7 +1535,7 @@ class LiveData:
 def refresh_loop(live_data: LiveData, interval_seconds: int = 1800):
     """Refresh data every 30 minutes"""
     while True:
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] Refreshing live data...")
+        print(f"[{_now_local().strftime('%H:%M:%S')}] Refreshing live data...")
         live_data.refresh()
         if live_data.error:
             print(f"  ⚠️ Error: {live_data.error}")
@@ -1598,7 +1598,7 @@ class LiveDashboardHandler(http.server.BaseHTTPRequestHandler):
 
     def generate_html(self):
         data_start = "2020-07-27"  # Earliest bacteria data in SF Gov API
-        today_str = datetime.now().strftime("%Y-%m-%d")
+        today_str = _now_local().strftime("%Y-%m-%d")
         html = HTML_TEMPLATE.replace("__MIN_DATE__", data_start).replace("__MAX_DATE__", today_str).replace("__DEFAULT_DATE__", today_str)
         return html
 

@@ -49,6 +49,7 @@ from shared.stations import (  # noqa: E402 — needs the sys.path bootstrap abo
 # Bacteria standards live in shared/standards.py (one source; the ratio rule
 # and the parse rule travel with the numbers).
 from shared.standards import STANDARDS  # noqa: E402
+from shared.clock import now_pacific, now_pacific_naive
 
 # Minimum number of weekly samples required for geometric mean calculation (AB 411)
 GEOMETRIC_MEAN_MIN_SAMPLES = 5
@@ -140,7 +141,7 @@ class SFWaterQualityMonitor:
             List of WaterQualitySample objects
         """
         # Calculate date range
-        end_date = datetime.now()
+        end_date = now_pacific_naive()
         start_date = end_date - timedelta(days=days)
         
         # Build query
@@ -298,7 +299,7 @@ class SFWaterQualityMonitor:
         Returns:
             Dict with geometric_mean, sample_count, exceeds, standard, or None if insufficient data
         """
-        now = datetime.now()
+        now = now_pacific_naive()
         window_start = now - timedelta(days=GEOMETRIC_MEAN_WINDOW_DAYS)
         
         # Filter to matching samples within the 30-day window
@@ -400,7 +401,7 @@ class SFWaterQualityMonitor:
                            f"Total Coliform {total_val:.0f} MPN/100mL exceeds conditional limit of 1,000 "
                            f"(fecal/total ratio: {ratio:.2f} > 0.1)",
                     severity="advisory",
-                    sample_date=datetime.now(),
+                    sample_date=now_pacific_naive(),
                     details={
                         "analyte": "COLI_TOTAL",
                         "value": total_val,
@@ -433,7 +434,7 @@ class SFWaterQualityMonitor:
                 message=f"POTENTIAL CSO EVENT: Multiple bay stations showing elevated bacteria.{basin_info} "
                        f"Call 1-877-SFBEACH (1-877-732-3224) or 415-242-2214 for current conditions.",
                 severity="warning",
-                sample_date=datetime.now(),
+                sample_date=now_pacific_naive(),
                 details={
                     "affected_stations": sorted(bay_station_ids),
                     "station_count": len(bay_station_ids),
@@ -479,7 +480,7 @@ class SFWaterQualityMonitor:
         lines = [
             "=" * 60,
             "🏖️  SF BEACH WATER QUALITY STATUS REPORT",
-            f"📅 Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+            f"📅 Generated: {now_pacific().strftime('%Y-%m-%d %H:%M %Z')}",
             "=" * 60,
             ""
         ]
@@ -577,7 +578,7 @@ class CombinedWaterQualityMonitor:
                         station_name="All SF Beaches",
                         message=rain_advisory.message,
                         severity=severity,
-                        sample_date=datetime.now(),
+                        sample_date=now_pacific_naive(),
                         details={
                             "total_inches": rain_advisory.total_recent_inches,
                             "cso_risk": rain_advisory.cso_risk,
@@ -603,7 +604,7 @@ class CombinedWaterQualityMonitor:
                             message=f"CSO ALERT: Combined Sewer Discharge at {station.station_name}. "
                                    f"Avoid water contact. Call 1-877-SFBEACH for details.",
                             severity="warning",
-                            sample_date=station.sample_date or datetime.now(),
+                            sample_date=station.sample_date or now_pacific_naive(),
                             details={
                                 "cso_station_id": station.cso_station_id,
                                 "latitude": station.latitude,
@@ -623,7 +624,7 @@ class CombinedWaterQualityMonitor:
                             message=f"POSTED: {station.station_name} - Elevated bacteria levels. "
                                    f"Avoid water contact.",
                             severity="advisory",
-                            sample_date=station.sample_date or datetime.now(),
+                            sample_date=station.sample_date or now_pacific_naive(),
                             details={
                                 "posted_station_id": station.posted_station_id,
                                 "latitude": station.latitude,
@@ -651,7 +652,7 @@ class CombinedWaterQualityMonitor:
         lines = [
             "=" * 60,
             "🏖️  SF BEACH WATER QUALITY - COMBINED STATUS REPORT",
-            f"📅 Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+            f"📅 Generated: {now_pacific().strftime('%Y-%m-%d %H:%M %Z')}",
             "=" * 60,
             ""
         ]

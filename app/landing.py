@@ -10,6 +10,7 @@ from html import escape as _esc
 from flask import render_template
 
 from shared.zones import ZONES
+from shared.clock import now_pacific
 
 BWTF_LOGO_URL = "https://bwtf.surfrider.org/images/BWTF-Logo_White.png"
 SURFRIDER_LOGO_URL = "https://f.hubspotusercontent20.net/hubfs/20811975/SF-Horizontal-Logo_RGB_Black_crop_small.png"
@@ -269,7 +270,7 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
     per zone with every registry station's status, coordinates and DataSF id —
     the tiles' dots and the city map's markers (Chase, 2026-09-29: lead with the
     answer; the map like SFPUC's, zone tiles zoom it)."""
-    now = now or datetime.now()
+    now = now or now_pacific()
     risks = risks or {}
     by_id = {str(getattr(st, "station_id", "")): st for st in stations}   # SFPUC id → live feed row
     status_text = {"safe": "safe", "posted": "posted for bacteria", "discharge": "sewage discharge", "unknown": "not sampled"}
@@ -283,7 +284,8 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
             status = _station_status(st) if st is not None else "unknown"
             d = getattr(st, "sample_date", None) if st is not None else None
             sts.append({"name": _short(reg.name), "full_name": reg.name, "status": status, "status_text": status_text[status],
-                        "source": source, "lat": reg.lat, "lon": reg.lon, "sampled": d.strftime("%Y-%m-%d") if d else ""})
+                        "source": source, "lat": reg.lat, "lon": reg.lon, "sampled": d.strftime("%Y-%m-%d") if d else "",
+                        "sampled_text": f"sampled {d:%b %-d}" if d else "no sample date"})
         z_posted = [x["name"] for x in sts if x["status"] == "posted"]
         z_cso = [x["name"] for x in sts if x["status"] == "discharge"]
         z_safe = sum(1 for x in sts if x["status"] == "safe")
@@ -422,7 +424,7 @@ def board_context(sfpuc_api, env_context=None, live_facts: bool = True) -> dict:
         board["tone"], message = _status_banner(summary)
         board["headline"] = board["headline_html"] = message.split("</svg> ", 1)[-1]
     return {"board": board, "conditions": _conditions_lines(env_context), "facts": facts,
-            "generated": datetime.now().strftime("%B %-d, %Y at %-I:%M %p")}
+            "generated": now_pacific().strftime("%B %-d, %Y at %-I:%M %p %Z")}
 
 
 def render_landing(sfpuc_api, env_context=None, live_facts: bool = True) -> str:

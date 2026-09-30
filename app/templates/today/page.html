@@ -26,8 +26,19 @@
 {% include "_icons.html" %}{% from "_frame.html" import topbar, footer, tabbar with context %}
 {{ topbar() }}
 <div class="wrap">
-  {{ board_section(board, conditions, extras=true) }}
-  <p class="foot-note">This is the Main page's board with room to experiment. The city's statuses come from SFPUC's beach map, checked every minute; the overflow risk from the <a href="/forecast">CSO Forecast</a>. Surfrider's results are the volunteers' latest Enterococcus reading per site — see <a href="/samples?source=bwtf&scope=all">every sample</a> or <a href="/graphs">the graphs</a>. Updated {{ generated }}.</p>
+  <div class="layers" id="layers" role="group" aria-label="Map layers">
+    <span class="ctl-label">Layers</span>
+    <button type="button" class="preset layer" data-layer="rain" aria-pressed="false" title="The last three daily totals at the forecast's two NOAA gauges">Rain, 3 days</button>
+    <button type="button" class="preset layer" data-layer="outfalls" aria-pressed="false" title="The 34 permitted sewer outfalls, sized by the past year's reported discharge">Outfalls</button>
+    <button type="button" class="preset layer" data-layer="risk" aria-pressed="false" title="Colour zones and stations by today's overflow risk instead of the city's status">Risk view</button>
+    <button type="button" class="preset layer" data-layer="bwtf" aria-pressed="false" title="Surfrider's latest Enterococcus result at each site the volunteers sample">Surfrider results</button>
+    <button type="button" class="preset layer" data-layer="replay" aria-pressed="false" title="Redraw the board as the city's map stood on a past day">Replay</button>
+    <span class="replay-ctl" id="replay-ctl" hidden><span class="tick" id="replay-oldest"></span><input type="range" id="replay" min="0" max="7" step="1" value="7" aria-label="Day to replay — today at the right, slide left to go back" aria-valuetext="Today"><output id="replay-out" for="replay">Today</output></span>
+    <span class="layer-status" id="layer-status" role="status" aria-live="polite"></span>
+    <span class="layer-note">The Main board, with layers you can switch on: why a beach is posted and what is around it. <b>Experimental</b> — the city does not post on any of these.</span>
+  </div>
+  {{ board_section(board, conditions, sites=true) }}
+  <p class="foot-note">Statuses from SFPUC's beach map, checked every minute; overflow risk from the <a href="/forecast">CSO Forecast</a>; rain from NOAA's two city gauges; outfalls from SFPUC's reports to regulators; Surfrider's results from the volunteers' lab. Updated {{ generated }}.</p>
 </div>
 {{ footer() }}
 {{ tabbar() }}

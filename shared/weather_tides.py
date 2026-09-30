@@ -24,6 +24,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, List
 from enum import Enum
+from shared.clock import now_pacific, now_pacific_naive, utc_iso
 
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -183,7 +184,7 @@ class WeatherAPI:
         recent_rain = []
         upcoming_rain = []
         total_recent_inches = 0.0
-        now = datetime.now()
+        now = now_pacific_naive()   # NOAA predictions are requested in lst_ldt (Pacific, naive); the server clock is UTC
         
         # ── Check recent observations ──
         obs = self.get_recent_observations()
@@ -351,7 +352,7 @@ class TidesAPI:
         Returns:
             List of TidePrediction objects
         """
-        now = datetime.now()
+        now = now_pacific_naive()   # NOAA predictions are requested in lst_ldt (Pacific, naive); the server clock is UTC
         end = now + timedelta(hours=hours)
         
         params = {
@@ -405,7 +406,7 @@ class TidesAPI:
         if not predictions:
             return None
         
-        now = datetime.now()
+        now = now_pacific_naive()   # NOAA predictions are requested in lst_ldt (Pacific, naive); the server clock is UTC
         
         # Find next high and low tides
         next_high = None
@@ -461,7 +462,7 @@ class TidesAPI:
             )
         
         # Show next 24 hours of predictions
-        now = datetime.now()
+        now = now_pacific_naive()   # NOAA predictions are requested in lst_ldt (Pacific, naive); the server clock is UTC
         upcoming = [p for p in info.predictions if now < p.time < now + timedelta(hours=24)]
         if upcoming:
             lines.append("   Next 24 hours:")
@@ -514,7 +515,7 @@ class EnvironmentalContext:
                 overall_risk = "moderate"
         
         return {
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": utc_iso(),
             "rain_advisory": {
                 "is_active": rain_advisory.is_active,
                 "severity": rain_advisory.severity.value,
@@ -547,7 +548,7 @@ class EnvironmentalContext:
         lines = [
             "=" * 60,
             "🌤️  ENVIRONMENTAL CONDITIONS",
-            f"📅 {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+            f"📅 {now_pacific().strftime('%Y-%m-%d %H:%M %Z')}",
             "=" * 60,
             ""
         ]

@@ -33,6 +33,7 @@ from pathlib import Path
 from flask import render_template
 
 from shared import supabase as sb
+from shared.clock import now_utc, today_pacific
 
 # Treat this directory as the forecaster's project root (preserves its
 # `from src.models...` imports and __file__-relative data/config paths).
@@ -260,8 +261,8 @@ def _with_meta(snap: dict | None, generated_at: datetime | None,
 def _memory_snapshot_fresh() -> bool:
     """True when the in-process engine already computed within the window
     (covers Supabase-less checkouts and the just-computed case)."""
-    last = _engine.LIVE.last_refresh  # naive local time, set by the engine
-    return bool(last) and (datetime.now() - last).total_seconds() < FRESH_SECONDS
+    last = _engine.LIVE.last_refresh  # aware UTC, set by the engine
+    return bool(last) and (now_utc() - last).total_seconds() < FRESH_SECONDS
 
 
 def _compute_and_store(row, now: datetime):
@@ -333,7 +334,7 @@ def _render_page() -> str:
     _load_engine()
     if _engine is None and _read_row() is None:
         return _unavailable_html()
-    today = datetime.now().strftime("%Y-%m-%d")
+    today = today_pacific().isoformat()   # the date picker's ceiling and default: the beach's today, not UTC's
     # The page shell lives in app/templates/forecast/page.html (extracted from the
     # engine's HTML_TEMPLATE with the /forecast/api namespacing + back-to-dashboard
     # button baked in); live_dashboard.py is left untouched. Predictions load
