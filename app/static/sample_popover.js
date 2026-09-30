@@ -23,6 +23,7 @@
     ".sp-nav{display:flex;align-items:center;gap:6px;margin-left:auto}.sp-nav[hidden]{display:none}.sp-nav button{border:2px solid #d9e4e8;background:#fff;border-radius:999px;width:34px;height:34px;font-size:20px;line-height:1;cursor:pointer;color:#26272a;font-family:inherit;padding:0}" +
     ".sp-nav button:hover:not(:disabled){border-color:#85BFDF}.sp-nav button:disabled{opacity:.3;cursor:default}.sp-nav .sp-pos{font-size:12.5px;color:#54576F;min-width:78px;text-align:center;font-variant-numeric:tabular-nums}" +
     ".sp-stale{background:#fdf3e6;border:1px solid #f0c9a0;color:#7a3e10;border-radius:12px;padding:10px 14px;margin:10px 0 2px;font-size:13.5px;line-height:1.5}.sp-stale[hidden]{display:none}.sp-stale b{display:block;font-size:15px;margin-bottom:2px}" +
+    ".sp-date{margin:4px 0 0;font-size:16px;font-weight:700;color:#0072BC}.sp-date:empty{display:none}" +
     ".sp-note{color:#54576F;font-size:12.5px;margin:6px 0 12px;line-height:1.5}.sp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}.sp-grid.one{grid-template-columns:minmax(200px,340px)}" +
     ".sp-field{color:#54576F;font-size:12.5px;margin:12px 0 0;line-height:1.5}.sp-field:empty{display:none}" +
     ".sp-cell{border:1px solid #d9e4e8;border-radius:14px;padding:10px 12px}.sp-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#54576F;font-weight:700;margin:0 0 4px}" +
@@ -37,7 +38,7 @@
     var st = document.createElement("style"); st.textContent = CSS; document.head.appendChild(st);
     el = document.createElement("div"); el.className = "sp-modal"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true");
     el.innerHTML = '<div class="sp-box"><div class="sp-head"><h2 id="sp-title"></h2><div class="sp-nav" id="sp-nav" hidden><button type="button" id="sp-prev" title="Older sample (←)" aria-label="Older sample">&lsaquo;</button><span class="sp-pos" id="sp-pos"></span><button type="button" id="sp-next" title="Newer sample (→)" aria-label="Newer sample">&rsaquo;</button></div><button class="sp-close" type="button">Close &times;</button></div>' +
-      '<div class="sp-stale" id="sp-stale" role="status" hidden></div><p class="sp-note" id="sp-note"></p><div class="sp-grid" id="sp-grid"></div><p class="sp-field" id="sp-field"></p><p class="sp-links" id="sp-links"></p></div>';
+      '<p class="sp-date" id="sp-date"></p><div class="sp-stale" id="sp-stale" role="status" hidden></div><p class="sp-note" id="sp-note"></p><div class="sp-grid" id="sp-grid"></div><p class="sp-field" id="sp-field"></p><p class="sp-links" id="sp-links"></p></div>';
     document.body.appendChild(el);
     el.querySelector(".sp-close").addEventListener("click", close);
     el.addEventListener("click", function (e) { if (e.target === el) close(); });
@@ -88,7 +89,7 @@
   function open(opts) {
     var m = modal();
     m.querySelector("#sp-title").textContent = opts.name || opts.station || opts.bwtf;
-    m.querySelector("#sp-note").textContent = "Loading the lab results…";
+    m.querySelector("#sp-note").textContent = "Loading the lab results…"; m.querySelector("#sp-date").textContent = "";
     m.querySelector("#sp-grid").innerHTML = ""; m.querySelector("#sp-links").innerHTML = ""; m.querySelector("#sp-field").textContent = ""; m.querySelector("#sp-stale").hidden = true;
     CUR = { opts: opts, date: opts.date || "" }; updateNav();
     m.classList.add("open");
@@ -112,7 +113,9 @@
       stale.hidden = false;
     }
     if (!d.found) { note.textContent = (surf ? "No Surfrider sample at this site" : "No published lab results for this station") + (opts.date ? " on " + opts.date : "") + "."; return; }
-    var parts = ["Sampled " + d.date + (surf && d.times && d.times.length ? " at " + d.times.join(" and ") : "")];
+    var dt = new Date(d.date + "T12:00:00");
+    m.querySelector("#sp-date").textContent = "Sampled " + dt.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" }) + (surf && d.times && d.times.length ? " at " + d.times.join(" and ") : "");
+    var parts = [];
     if (surf) parts.push("Surfrider Blue Water Task Force volunteer lab");
     if (d.n_samples > 1) parts.push(surf ? d.n_samples + " collections that day" : d.n_samples + " samples that day (the city's dataset carries the date but not the time)");
     parts.push(d.units + " · dashed line = state single-sample limit" + (d.caution ? ", dotted = caution tier (" + d.caution + ")" : ""));

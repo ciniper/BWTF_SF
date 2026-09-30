@@ -27,8 +27,10 @@
 {{ topbar() }}
 <div class="wrap">
   <div class="layers" id="layers" role="group" aria-label="Map layers">
-    <span class="ctl-label">Layers</span>
-    <button type="button" class="preset layer" data-layer="bwtf" aria-pressed="false" title="Surfrider's latest Enterococcus result at each site the volunteers sample">Surfrider results</button>
+    <span class="ctl-label">Show</span>
+    <label class="switch" title="The city's twenty monitoring stations, as SFPUC's map shows them"><input type="checkbox" id="tg-city" checked><span class="track"></span><span class="lbl">City stations</span></label>
+    <label class="switch" title="Surfrider's latest Enterococcus result at each site the volunteers sample"><input type="checkbox" id="tg-bwtf"><span class="track"></span><span class="lbl">Surfrider results</span></label>
+    <span class="ctl-label sep">Layers</span>
     <button type="button" class="preset layer" data-layer="rain" aria-pressed="false" title="The last three daily totals at the forecast's two NOAA gauges">Rain, 3 days</button>
     <button type="button" class="preset layer" data-layer="outfalls" aria-pressed="false" title="The 34 permitted sewer outfalls, sized by the past year's reported discharge">Outfalls</button>
     <button type="button" class="preset layer" data-layer="risk" aria-pressed="false" title="Colour zones and stations by today's overflow risk instead of the city's status">Risk view</button>

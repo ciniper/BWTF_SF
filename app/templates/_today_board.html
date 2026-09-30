@@ -58,6 +58,14 @@
   /* the Layers strip (/today): plain chips, a replay slider, one line of orientation */
   .layers{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin:0 0 12px;padding:10px 14px;background:#fff;border:1px solid var(--line);border-radius:var(--r)}
   .layers .ctl-label{margin-right:2px}
+  .layers .ctl-label.sep{margin-left:10px;padding-left:14px;border-left:1px solid var(--line)}
+  .layers .switch{display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-weight:700;font-size:13px;color:var(--ink);position:relative}
+  .layers .switch input{position:absolute;opacity:0;width:0;height:0}
+  .layers .track{width:34px;height:20px;border-radius:999px;background:#cfd8e0;position:relative;transition:background .15s;flex:none}
+  .layers .track::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+  .layers input:checked+.track{background:var(--brand)}.layers input:checked+.track::after{left:16px}
+  .layers input:focus-visible+.track{outline:3px solid var(--sky);outline-offset:2px}
+  .layers input:disabled+.track{opacity:.45}
   .layers .preset:disabled{opacity:.45;cursor:not-allowed}
   .layers .replay-ctl{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}   /* appears when the Replay chip is on: oldest day · slider · chosen day; today sits at the right */
   .layers .replay-ctl[hidden]{display:none}
@@ -148,14 +156,14 @@ function focusZone(key) {
   document.querySelectorAll(".zone").forEach(b => { const on = b.dataset.zone === ACTIVE; b.classList.toggle("focus", on); b.setAttribute("aria-pressed", on ? "true" : "false"); });
   // only the chosen zone's stations stay on the map (Chase, 2026-09-29: "if you click a zone, it only shows those sites"); re-added in rank order
   for (const m of ALL_ORDERED) MAP.removeLayer(m);
-  for (const m of ALL_ORDERED) if (!ACTIVE || m.__z.key === ACTIVE) m.addTo(MAP);
+  if (CITY_ON) for (const m of ALL_ORDERED) if (!ACTIVE || m.__z.key === ACTIVE) m.addTo(MAP);
   document.getElementById("map-reset").hidden = !ACTIVE;
   filterSites();
   if (!ACTIVE) return fitAll();
   MAP.fitBounds(L.latLngBounds(MARKERS[ACTIVE].map(m => m.getLatLng())).pad(0.4), {maxZoom: 14});
 }
 // the chips stay hidden until a zone is chosen, then show that zone's stations and Surfrider sites (Chase, 2026-09-29)
-function filterSites() { const box = document.getElementById("zone-sites"); if (box) box.hidden = !ACTIVE; document.querySelectorAll("#zone-sites .site").forEach(c => { c.hidden = !!ACTIVE && c.dataset.zone !== ACTIVE; }); }
+function filterSites() { const box = document.getElementById("zone-sites"); if (box) box.hidden = !ACTIVE; document.querySelectorAll("#zone-sites .site").forEach(c => { c.hidden = (!c.classList.contains("bwtf") && !CITY_ON) || (!!ACTIVE && c.dataset.zone !== ACTIVE); }); }
 function initMap() {
   if (!window.L || !document.getElementById("today-map")) return;
   MAP = L.map("today-map", {scrollWheelZoom: false, zoomControl: true, attributionControl: false}).setView([37.765, -122.44], 11);
@@ -209,7 +217,7 @@ function renderLegend() {
   const lg = $("map-legend"); if (!lg) return;
   const dot = (c, t) => '<span><i class="status-dot ' + c + '"></i>' + t + "</span>";
   let h = RISK_VIEW ? dot("safe", "under 10%") + dot("caution", "10–25%") + dot("posted", "25–50%") + dot("discharge", "50% or more") + '<span class="mut">overflow risk today</span>'
-                    : dot("safe", REPLAY_OFFSET ? "not posted" : "safe") + dot("posted", "posted") + dot("discharge", "discharge") + dot("unknown", REPLAY_OFFSET ? "not recorded" : "not sampled");
+                    : CITY_ON ? dot("safe", REPLAY_OFFSET ? "not posted" : "safe") + dot("posted", "posted") + dot("discharge", "discharge") + dot("unknown", REPLAY_OFFSET ? "not recorded" : "not sampled") : "";
   if (LAYER.rain.on) h += '<span><i class="ring"></i>rain, 3 days</span>';
   if (LAYER.outfalls.on) h += '<span><i class="of"></i>outfall · size = year\'s volume</span>';
   if (LAYER.bwtf.on) h += '<span><i class="bwtf-dot safe"></i>Surfrider latest · diamond</span>';
@@ -311,7 +319,7 @@ const BUILD = {
   bwtf(d) {
     const g = L.layerGroup(d.sites.filter(s => s.lat != null && s.lon != null).map(s => {
       const grade = s.over ? "posted" : s.caution ? "caution" : s.value == null ? "unknown" : "safe";
-      const m = L.marker([s.lat, s.lon], {icon: L.divIcon({className: "bwtf-pin", html: '<i class="bwtf-dot ' + grade + '"></i>', iconSize: [15, 15], iconAnchor: [7, 7]}), zIndexOffset: 1000, keyboard: false});
+      const m = L.marker([s.lat, s.lon], {icon: L.divIcon({className: "bwtf-pin", html: '<i class="bwtf-dot ' + grade + '"></i>', iconSize: [15, 15], iconAnchor: [7, 7]}), zIndexOffset: 1000 + 100 * (RANK_ST[grade] || 0), keyboard: false});   // the same hierarchy as the city's markers
       m.bindTooltip("Surfrider · " + s.name + " · " + (s.raw || "no result") + (s.raw ? " MPN/100 mL" : "") + (s.date ? " · " + s.date : ""), {direction: "auto", offset: [9, 0], className: "st-label"});
       m.on("click", () => { if (window.SamplePopover) SamplePopover.open({bwtf: s.name, name: s.city_name || s.name, date: s.date}); });
       return m;
@@ -333,17 +341,18 @@ const BUILD = {
     return g;
   },
 };
+function markOn(btn, on) { if (!btn) return; if (btn.tagName === "INPUT") btn.checked = on; else btn.classList.toggle("active", on); }
 async function setLayer(key, on, btn) {
   const L_ = LAYER[key];
-  if (!on) { if (L_.group) MAP.removeLayer(L_.group); L_.on = false; btn.classList.remove("active");
+  if (!on) { if (L_.group) MAP.removeLayer(L_.group); L_.on = false; markOn(btn, false);
     if (key === "rain") { document.querySelectorAll(".zone .rainline").forEach(e => e.remove()); document.querySelectorAll(".zone.wet").forEach(e => e.classList.remove("wet")); }
     if (key === "bwtf") document.querySelectorAll("#zone-sites .site.bwtf").forEach(c => c.remove());
     status(""); renderLegend(); return; }
   btn.disabled = true; status("Loading…");
   try {
     if (!L_.data) L_.data = await fetchJSON("/api/today/" + (key === "bwtf" ? "surfrider" : key));
-    L_.group = BUILD[key](L_.data); L_.group.addTo(MAP); L_.on = true; btn.classList.add("active");
-  } catch (e) { status("Could not load " + key + ": " + e.message); }
+    L_.group = BUILD[key](L_.data); L_.group.addTo(MAP); L_.on = true; markOn(btn, true);
+  } catch (e) { status("Could not load " + key + ": " + e.message); markOn(btn, false); }
   btn.disabled = false; renderLegend();
 }
 function setReplay(offset) {
@@ -369,8 +378,19 @@ async function enableReplay(btn) {
   return true;
 }
 function disableReplay(btn) { $("replay-ctl").hidden = true; btn.classList.remove("active"); setReplay(0); }
+let CITY_ON = true;
+function setCity(on) {
+  CITY_ON = on;
+  for (const m of ALL_ORDERED) MAP.removeLayer(m);
+  if (on) for (const m of ALL_ORDERED) if (!ACTIVE || m.__z.key === ACTIVE) m.addTo(MAP);
+  document.querySelectorAll("#zone-sites .site:not(.bwtf)").forEach(c => { c.hidden = !on || (!!ACTIVE && c.dataset.zone !== ACTIVE); });
+  renderLegend();
+}
 function initLayers() {
   const strip = $("layers"); if (!strip) return;
+  const city = $("tg-city"), bw = $("tg-bwtf");
+  if (city) city.addEventListener("change", () => setCity(city.checked));
+  if (bw) bw.addEventListener("change", () => setLayer("bwtf", bw.checked, bw));
   for (const btn of strip.querySelectorAll(".layer")) {
     const key = btn.dataset.layer;
     btn.addEventListener("click", async () => {
@@ -382,9 +402,9 @@ function initLayers() {
   const slider = $("replay");
   slider.addEventListener("input", () => setReplay((slider.max | 0) - (slider.value | 0)));
   const q = new URLSearchParams(location.search), want = new Set((q.get("layers") || "").split(",").filter(Boolean));
-  if (!q.has("layers")) want.add("bwtf");                 // Surfrider's results are on by default; ?layers= without it turns them off
-  if (q.get("surfrider") === "1") want.add("bwtf");
-  for (const key of want) { const btn = strip.querySelector('.layer[data-layer="' + key + '"]'); if (btn && LAYER[key]) setLayer(key, true, btn); }
+  if (q.get("surfrider") === "1") want.add("bwtf");        // Surfrider is off by default (Chase, 2026-09-30); ?layers=bwtf or ?surfrider=1 turns it on
+  if (q.get("city") === "0" && city) { city.checked = false; setCity(false); }
+  for (const key of want) { const btn = key === "bwtf" ? bw : strip.querySelector('.layer[data-layer="' + key + '"]'); if (btn && LAYER[key]) setLayer(key, true, btn); }
   if (q.get("risk") === "1") strip.querySelector('.layer[data-layer="risk"]').click();
   if (q.get("replay")) { const rb = strip.querySelector('.layer[data-layer="replay"]'); enableReplay(rb).then(ok => { if (ok) setReplay(q.get("replay") | 0); }); }
 }
