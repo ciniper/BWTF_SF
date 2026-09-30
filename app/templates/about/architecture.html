@@ -1,5 +1,5 @@
-{%- macro node(x, y, w, h, icon, title, sub, tip) -%}
-<g class="node" transform="translate({{ x }},{{ y }})"><title>{{ tip }}</title>
+{%- macro node(x, y, w, h, icon, title, sub, tip, tile="") -%}
+<g class="node{% if tile %} src{% endif %}" transform="translate({{ x }},{{ y }})"{% if tile %} data-tile="{{ tile }}" tabindex="0" role="button" aria-label="{{ title }}: sources and dates"{% endif %}><title>{{ tip }}</title>
   <rect class="box" width="{{ w }}" height="{{ h }}" rx="16"/>
   {% if icon.startswith("logo:") %}<rect class="tile logo" x="12" y="{{ (h - 40) / 2 }}" width="40" height="40" rx="11"/>
   <image href="/static/{{ icon[5:] }}" x="18" y="{{ (h - 28) / 2 }}" width="28" height="28" preserveAspectRatio="xMidYMid meet"/>
@@ -9,8 +9,8 @@
   <text class="s" x="64" y="{{ h / 2 + 15 }}">{{ sub }}</text>
 </g>
 {%- endmacro -%}
-{%- macro mnode(x, y, icon, title, tip, w=156) -%}
-<g class="node" transform="translate({{ x }},{{ y }})"><title>{{ tip }}</title>
+{%- macro mnode(x, y, icon, title, tip, w=156, tile="") -%}
+<g class="node{% if tile %} src{% endif %}" transform="translate({{ x }},{{ y }})"{% if tile %} data-tile="{{ tile }}" tabindex="0" role="button" aria-label="{{ title }}: sources and dates"{% endif %}><title>{{ tip }}</title>
   <rect class="box" width="{{ w }}" height="46" rx="13"/>
   {% if icon.startswith("logo:") %}<rect class="tile logo" x="7" y="7" width="32" height="32" rx="9"/>
   <image href="/static/{{ icon[5:] }}" x="12" y="12" width="22" height="22" preserveAspectRatio="xMidYMid meet"/>
@@ -72,6 +72,18 @@
   svg.arch.m{display:none;min-width:0;max-width:420px;margin:0 auto}
   @media (max-width:700px){svg.arch.d{display:none}svg.arch.m{display:block}.panel{padding:12px 8px}.hover-hint{display:none}}
   .foot{color:#8a949b;font-size:13px;margin-top:12px}
+  .node.src{cursor:pointer}
+  .node.src:focus{outline:none}
+  .node.src:focus .box,.node.src.on .box{stroke:#0072BC;stroke-width:2.5}
+  .srcpanel{background:#fff;border:1px solid #d9e4e8;border-radius:24px;padding:18px 22px;margin-top:14px}
+  .srchead{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+  .srchead h2{margin:0 0 4px;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:26px;letter-spacing:.05em;text-transform:uppercase;color:#26272a}
+  .srcclose{background:#343b44;color:#fff;border:0;border-radius:999px;padding:6px 12px;font-weight:700;font-size:12px;cursor:pointer}
+  .srcitem{padding:12px 0;border-top:1px solid #edf2f5}.srcitem:first-of-type{border-top:0}
+  .srcitem .n{font-weight:700;font-size:15px}.srcitem .kind{font-weight:500;color:#8a949b;font-size:12px;margin-left:6px}
+  .srcitem .w{color:#54576F;font-size:13.5px;margin:2px 0 8px}
+  .srcitem dl{display:grid;grid-template-columns:84px 1fr;gap:3px 12px;margin:0;font-size:13px}.srcitem dt{color:#8a949b;font-weight:600}.srcitem dd{margin:0}
+  .srcnote{color:#8a949b;font-size:12px;margin-top:6px}
   @media (max-width:560px){.wrap{padding:16px}}
 </style>
 </head>
@@ -87,7 +99,7 @@
   <div class="panel">
   <svg class="arch d" viewBox="0 0 1000 600" role="img" aria-labelledby="archTitle archDesc">
     <title id="archTitle">Infrastructure of the SF beach water quality site</title>
-    <desc id="archDesc">Four live sources (SFPUC beach map, DataSF lab results, Surfrider BWTF, weather and tides) feed the Vercel web app on each visit. SFPUC and DataSF are also read on a schedule by Supabase, which runs the alert watcher every minute and the forecast every 30 minutes, sends alerts through Brevo to subscribers and pings Healthchecks. State records (CIWQS, BeachWatch) are pulled quarterly by hand into GitHub, which deploys the app to Vercel. Visitors use the site on Vercel.</desc>
+    <desc id="archDesc">Four live sources (SFPUC beach map, the city's lab results on DataSF, Surfrider BWTF, weather and tides) feed the Vercel web app on each visit. SFPUC and DataSF are also read on a schedule by Supabase, which runs the alert watcher every minute and the forecast every 30 minutes, sends alerts through Brevo to subscribers and pings Healthchecks. State records (CIWQS, BeachWatch) are pulled quarterly by hand into GitHub, which deploys the app to Vercel. Visitors use the site on Vercel.</desc>
     <defs>
       <marker id="arr" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#0072BC"/></marker>
       <marker id="arrG" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#8a949b"/></marker>
@@ -118,14 +130,14 @@
     <path class="live" d="M640 368H756" marker-end="url(#arr)"/>
 
     <!-- sources -->
-    {{ node(20, 50, 220, 64, "logo:logos/sfpuc.png", "SFPUC beach map", "posted & sewage flags", "SFPUC's live beach feed (getBeaches): read by the watcher every minute and by the site on each visit") }}
-    {{ node(20, 128, 220, 64, "logo:logos/sf-city-seal.png", "DataSF", "city lab results", "The city's beach lab results: mirrored into Supabase every 30 minutes and read live by the pages") }}
-    {{ node(20, 206, 220, 64, "logo:brand/bwtf_144x144.png", "Surfrider BWTF", "volunteer samples", "The Blue Water Task Force database, read live by the pages") }}
-    {{ node(20, 284, 220, 64, "logo:logos/noaa.svg", "Weather & tides", "NOAA · NWS · Open-Meteo", "Rain gauges, rain forecast and tides: the forecast's inputs") }}
-    {{ node(20, 452, 220, 64, "logo:logos/water-boards.png", "State records", "CIWQS · BeachWatch", "Discharge reports and beach postings, pulled by script each quarter (see /records)") }}
+    {{ node(20, 50, 220, 64, "logo:logos/sfpuc.png", "SFPUC beach map", "posted & sewage flags", "SFPUC's live beach feed (getBeaches): read by the watcher every minute and by the site on each visit", tile="sfpuc") }}
+    {{ node(20, 128, 220, 64, "logo:logos/sf-city-seal.png", "City lab results", "DataSF · SFPUC · Poo Bot", "The city's beach lab results: DataSF from Jul 2020 (mirrored into Supabase every 30 minutes and read live by the pages), SFPUC's own lab export for 2000–2020, and the 2016–17 Poo Bot feed archive", tile="datasf") }}
+    {{ node(20, 206, 220, 64, "logo:brand/bwtf_144x144.png", "Surfrider BWTF", "volunteer samples", "The Blue Water Task Force database, read live by the pages", tile="bwtf") }}
+    {{ node(20, 284, 220, 64, "logo:logos/noaa.svg", "Weather & tides", "NOAA · NWS · Open-Meteo", "Rain gauges, rain forecast and tides: the forecast's inputs", tile="weather") }}
+    {{ node(20, 452, 220, 64, "logo:logos/water-boards.png", "State records", "CIWQS · BeachWatch", "Discharge reports and beach postings, pulled by script each quarter (see /records)", tile="state") }}
 
     <!-- backend -->
-    <g class="node" transform="translate(380,40)"><title>Supabase: the Postgres database. pg_cron runs the alert watcher every minute and triggers the forecast every 30 minutes; it keeps subscribers, the alert log and history tables.</title>
+    <g class="node src" data-tile="supabase" tabindex="0" role="button" aria-label="Supabase: sources and dates" transform="translate(380,40)"><title>Supabase: the Postgres database. pg_cron runs the alert watcher every minute and triggers the forecast every 30 minutes; it keeps subscribers, the alert log and history tables.</title>
       <rect class="box hub" width="260" height="212" rx="18"/>
       <rect class="tile logo" x="12" y="12" width="40" height="40" rx="11"/>
       <image href="/static/logos/supabase.svg" x="19" y="19" width="26" height="26"/>
@@ -135,20 +147,20 @@
       {{ chip(114, "clock", "Forecast", "30 min") }}
       {{ chip(156, "inbox", "Subscribers & history", "") }}
     </g>
-    <g class="node" transform="translate(380,330)"><title>Vercel: the Flask web app (app/wsgi.py) — every page and API; main auto-deploys</title>
+    <g class="node src" data-tile="vercel" tabindex="0" role="button" aria-label="Vercel: sources and dates" transform="translate(380,330)"><title>Vercel: the Flask web app (app/wsgi.py) — every page and API; main auto-deploys</title>
       <rect class="box hub" width="260" height="76" rx="16"/>
       <rect class="tile logo" x="12" y="18" width="40" height="40" rx="11"/>
       <image href="/static/logos/vercel.svg" x="21" y="27" width="22" height="22"/>
       <text class="t" x="64" y="35">Vercel</text>
       <text class="s" x="64" y="53">the website (Flask)</text>
     </g>
-    {{ node(380, 452, 260, 64, "logo:logos/github.svg", "GitHub", "code + records", "ciniper/BWTF_SF: the code and the committed record CSVs; a push to main deploys") }}
+    {{ node(380, 452, 260, 64, "logo:logos/github.svg", "GitHub", "code + records", "ciniper/BWTF_SF: the code and the committed record CSVs; a push to main deploys", tile="github") }}
 
     <!-- people -->
-    {{ node(760, 40, 220, 64, "logo:logos/brevo.svg", "Brevo", "sends the alerts", "Email service: Supabase hands it each alert; delivery status is read back") }}
-    {{ node(760, 140, 220, 64, "users", "Subscribers", "email & text alerts", "People signed up at /signup for their beach zones") }}
-    {{ node(760, 240, 220, 56, "logo:logos/healthchecks.svg", "Healthchecks", "is the watcher alive?", "healthchecks.io: pinged by every watcher run; silence raises an alarm") }}
-    {{ node(760, 336, 220, 64, "globe", "Visitors", "anyone, any browser", "The public website") }}
+    {{ node(760, 40, 220, 64, "logo:logos/brevo.svg", "Brevo", "sends the alerts", "Email service: Supabase hands it each alert; delivery status is read back", tile="brevo") }}
+    {{ node(760, 140, 220, 64, "users", "Subscribers", "email & text alerts", "People signed up at /signup for their beach zones", tile="subscribers") }}
+    {{ node(760, 240, 220, 56, "logo:logos/healthchecks.svg", "Healthchecks", "is the watcher alive?", "healthchecks.io: pinged by every watcher run; silence raises an alarm", tile="healthchecks") }}
+    {{ node(760, 336, 220, 64, "globe", "Visitors", "anyone, any browser", "The public website", tile="visitors") }}
 
     <!-- legend -->
     <g transform="translate(300,560)">
@@ -176,12 +188,12 @@
     <text class="lbl" x="180" y="490" text-anchor="middle">quarterly</text>
     <path class="live" d="M350 523H362V203H354" marker-end="url(#arrM)"/>
 
-    {{ mnode(10, 26, "logo:logos/sfpuc.png", "SFPUC map", "SFPUC's live beach feed: read by the watcher every minute and by the site on each visit") }}
-    {{ mnode(194, 26, "logo:logos/sf-city-seal.png", "DataSF", "The city's beach lab results: mirrored into Supabase every 30 minutes and read live by the pages") }}
-    {{ mnode(10, 80, "logo:brand/bwtf_144x144.png", "Surfrider", "The Blue Water Task Force database, read live by the pages") }}
-    {{ mnode(194, 80, "logo:logos/noaa.svg", "Weather", "Rain gauges, rain forecast and tides (NOAA, NWS, Open-Meteo)") }}
+    {{ mnode(10, 26, "logo:logos/sfpuc.png", "SFPUC map", "SFPUC's live beach feed: read by the watcher every minute and by the site on each visit", tile="sfpuc") }}
+    {{ mnode(194, 26, "logo:logos/sf-city-seal.png", "City lab results", "The city's beach lab results: DataSF from Jul 2020, SFPUC's lab export for 2000–2020, the 2016–17 Poo Bot feed archive", tile="datasf") }}
+    {{ mnode(10, 80, "logo:brand/bwtf_144x144.png", "Surfrider", "The Blue Water Task Force database, read live by the pages", tile="bwtf") }}
+    {{ mnode(194, 80, "logo:logos/noaa.svg", "Weather", "Rain gauges, rain forecast and tides (NOAA, NWS, Open-Meteo)", tile="weather") }}
 
-    <g class="node" transform="translate(10,180)"><title>Supabase: the database and scheduler. Runs the alert watcher every minute and the forecast every 30 minutes; keeps subscribers and history.</title>
+    <g class="node src" data-tile="supabase" tabindex="0" role="button" aria-label="Supabase: sources and dates" transform="translate(10,180)"><title>Supabase: the database and scheduler. Runs the alert watcher every minute and the forecast every 30 minutes; keeps subscribers and history.</title>
       <rect class="box hub" width="156" height="132" rx="14"/>
       <rect class="tile logo" x="7" y="7" width="32" height="32" rx="9"/>
       <image href="/static/logos/supabase.svg" x="12" y="12" width="22" height="22"/>
@@ -189,18 +201,18 @@
       {{ mchip(52, "Watcher", "1 min") }}
       {{ mchip(90, "Forecast", "30 min") }}
     </g>
-    <g class="node" transform="translate(194,180)"><title>Vercel: the Flask web app, every page and API; main auto-deploys</title>
+    <g class="node src" data-tile="vercel" tabindex="0" role="button" aria-label="Vercel: sources and dates" transform="translate(194,180)"><title>Vercel: the Flask web app, every page and API; main auto-deploys</title>
       <rect class="box hub" width="156" height="46" rx="13"/>
       <rect class="tile logo" x="7" y="7" width="32" height="32" rx="9"/>
       <image href="/static/logos/vercel.svg" x="13" y="13" width="20" height="20"/>
       <text class="t m" x="47" y="28">Vercel</text>
     </g>
-    {{ mnode(194, 246, "globe", "Visitors", "The public website") }}
-    {{ mnode(10, 340, "logo:logos/brevo.svg", "Brevo", "Email service: Supabase hands it each alert") }}
-    {{ mnode(194, 340, "logo:logos/healthchecks.svg", "Healthchecks", "healthchecks.io: pinged by every watcher run; silence raises an alarm") }}
-    {{ mnode(10, 412, "users", "Subscribers", "People signed up at /signup for their beach zones") }}
-    {{ mnode(10, 500, "logo:logos/water-boards.png", "State records", "CIWQS discharge reports and BeachWatch postings, pulled by script each quarter") }}
-    {{ mnode(194, 500, "logo:logos/github.svg", "GitHub", "The code and the committed record CSVs; a push to main deploys") }}
+    {{ mnode(194, 246, "globe", "Visitors", "The public website", tile="visitors") }}
+    {{ mnode(10, 340, "logo:logos/brevo.svg", "Brevo", "Email service: Supabase hands it each alert", tile="brevo") }}
+    {{ mnode(194, 340, "logo:logos/healthchecks.svg", "Healthchecks", "healthchecks.io: pinged by every watcher run; silence raises an alarm", tile="healthchecks") }}
+    {{ mnode(10, 412, "users", "Subscribers", "People signed up at /signup for their beach zones", tile="subscribers") }}
+    {{ mnode(10, 500, "logo:logos/water-boards.png", "State records", "CIWQS discharge reports and BeachWatch postings, pulled by script each quarter", tile="state") }}
+    {{ mnode(194, 500, "logo:logos/github.svg", "GitHub", "The code and the committed record CSVs; a push to main deploys", tile="github") }}
 
     <g transform="translate(22,600)">
       <path class="live" d="M0 0H28"/><text class="lbl" x="34" y="4">live</text>
@@ -210,8 +222,50 @@
   </svg>
   </div>
 
-  <p class="foot"><span class="hover-hint">Hover a box for details. </span> How the records are gathered: <a href="/records">How we get the records</a>. · {{ build.label if build else '' }}</p>
+  <section class="srcpanel" id="srcPanel" hidden aria-live="polite">
+    <div class="srchead"><h2 id="srcTitle">Sources</h2><button type="button" class="srcclose" id="srcClose">Close</button></div>
+    <div id="srcBody"></div>
+  </section>
+
+  <p class="foot">Click a box for its sources and their dates. How the records are gathered: <a href="/records">How we get the records</a>. · {{ build.label if build else '' }}</p>
 </div>
 {{ footer() }}
 {{ tabbar() }}
+<script>
+(function () {
+  var panel = document.getElementById('srcPanel'), title = document.getElementById('srcTitle'), body = document.getElementById('srcBody');
+  var data = null, loading = null;
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function span(e) { if (!e.first && !e.last) return null; if (e.first && e.last) return e.first + ' → ' + e.last; return e.first ? 'from ' + e.first : e.last; }
+  function render(tile) {
+    var items = data.tiles[tile] || [], label = data.labels[tile] || tile;
+    title.textContent = label;
+    if (!items.length) { body.innerHTML = '<p class="srcnote">Nothing registered for this box.</p>'; return; }
+    body.innerHTML = items.map(function (e) {
+      var rows = [
+        ['Coverage', span(e)],
+        ['Refresh', [e.cadence, e.refreshed ? 'last ' + e.refreshed : null, e.next_due ? 'next due ' + e.next_due : null].filter(Boolean).join(' · ')],
+        ['Stored', e.stored],
+        ['Used by', (e.used_by || []).join(', ')]
+      ].filter(function (r) { return r[1]; });
+      return '<div class="srcitem"><div class="n">' + esc(e.name) + '<span class="kind">' + esc(e.kind) + '</span></div><div class="w">' + esc(e.what) + '</div><dl>' +
+        rows.map(function (r) { return '<dt>' + r[0] + '</dt><dd>' + esc(r[1]) + '</dd>'; }).join('') + '</dl>' + (e.note ? '<div class="srcnote">' + esc(e.note) + '</div>' : '') + '</div>';
+    }).join('');
+    if (tile === 'supabase' && !data.supabase_reachable) body.innerHTML += '<p class="srcnote">Table dates need the database, which did not answer.</p>';
+  }
+  function mark(tile) { document.querySelectorAll('.node.src').forEach(function (n) { n.classList.toggle('on', n.dataset.tile === tile); }); }
+  function open(tile) {
+    mark(tile); panel.hidden = false; if (!data) { title.textContent = 'Loading…'; body.innerHTML = ''; }
+    loading = loading || fetch('/api/sources').then(function (r) { return r.json(); }).then(function (d) { data = d; });
+    loading.then(function () { render(tile); panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); },
+                 function () { title.textContent = 'Sources'; body.innerHTML = '<p class="srcnote">Could not load the source list.</p>'; });
+  }
+  document.querySelectorAll('.node.src').forEach(function (n) {
+    n.addEventListener('click', function () { open(n.dataset.tile); });
+    n.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); open(n.dataset.tile); } });
+  });
+  document.getElementById('srcClose').addEventListener('click', function () { panel.hidden = true; mark(null); });
+  window.__sources = { open: open };
+})();
+</script>
 </body></html>

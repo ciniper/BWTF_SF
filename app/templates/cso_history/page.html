@@ -25,6 +25,11 @@
   .smark.hist{opacity:.5}
   .lagbar{position:absolute;height:4px;background:#8fb8d8;border-radius:2px;cursor:pointer}   /* top set per lane, below the dots */
   .pub{position:absolute;top:4px;width:2px;background:#54576F;margin-left:-1px;pointer-events:none}   /* height set per row */
+  .smark.pending{background:#fff;border:2px solid #8fb8d8;width:8px;height:8px;margin-left:-4px;top:6px}   /* graded on the map, numbers not yet public */
+  .lagbar.pending{background:repeating-linear-gradient(90deg,#8fb8d8 0 5px,transparent 5px 8px)}   /* open-ended: runs to now */
+  .mapmark{position:absolute;width:2px;height:8px;margin-left:-1px;background:#0072BC;pointer-events:none;z-index:1}   /* when SFPUC's map first showed the sample date; top set per lane */
+  .swatch.pending{width:8px;height:8px;border-radius:50%;background:#fff;border:2px solid #8fb8d8}
+  .swatch.mapmark{width:2px;height:12px;border-radius:0;background:#0072BC}
 
   #tablebox{overflow-x:auto}   /* the table's last columns were clipped on phones */
   .board{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:18px 18px 10px;overflow-x:auto}
@@ -92,10 +97,12 @@
         <span class="key" style="color:#8a949b">On SFPUC's map:</span>
         <span class="key"><span class="swatch posted"></span>posted — elevated bacteria</span>
         <span class="key"><span class="swatch cso"></span>CSO discharge flag</span>
-        <span class="key" style="color:#8a949b;margin-left:6px">In the lab dataset:</span>
-        <span class="key"><span class="swatch clean"></span>sample collected — clean</span>
+        <span class="key" style="color:#8a949b;margin-left:6px">Lab samples:</span>
+        <span class="key"><span class="swatch clean"></span>collected — clean</span>
         <span class="key"><span class="swatch elevated"></span>over standard</span>
-        <span class="key"><span class="swatch lag"></span>days until the result appeared online</span>
+        <span class="key"><span class="swatch pending"></span>graded on the map, numbers not yet public</span>
+        <span class="key"><span class="swatch mapmark"></span>shown on SFPUC's map</span>
+        <span class="key"><span class="swatch lag"></span>days until the numbers appeared online</span>
       </div>
     </div>
     <div class="board">
@@ -207,21 +214,27 @@
       var LANE_TOP = 17, LANE_STEP = 6, BAR_H = 4;
       var lanes = 0; sd.forEach(function(d){ if (d.lane != null) lanes = Math.max(lanes, d.lane + 1); });
       srow.style.height = (lanes ? LANE_TOP + BAR_H + (lanes - 1) * LANE_STEP + 3 : 20) + 'px';
-      var ticks = {};
+      var ticks = {}, nowMs = Date.now();
       sd.forEach(function(d){
         var dayMs = new Date(d.date + 'T20:00:00Z').getTime();          // ~noon Pacific on the collection day
         var fsMs = d.first_seen ? new Date(d.first_seen).getTime() : null;
-        if (Math.max(dayMs, fsMs || 0) < t0) return;                      // outside the selected range
-        if (fsMs && d.lane != null && fsMs > dayMs) {
-          var lag = document.createElement('div'); lag.className = 'lagbar';
-          lag.style.left = pos(dayMs) + '%'; lag.style.width = Math.max(0.3, pos(fsMs) - pos(dayMs)) + '%';
+        var endMs = fsMs || (d.pending ? nowMs : null);                   // a pending sample's bar runs to now
+        if (Math.max(dayMs, endMs || 0) < t0) return;                     // outside the selected range
+        if (endMs && d.lane != null && endMs > dayMs) {
+          var lag = document.createElement('div'); lag.className = 'lagbar' + (d.pending ? ' pending' : '');
+          lag.style.left = pos(dayMs) + '%'; lag.style.width = Math.max(0.3, pos(endMs) - pos(dayMs)) + '%';
           lag.style.top = (LANE_TOP + d.lane * LANE_STEP) + 'px';
           lag.addEventListener('mousemove', function(ev){ showSampleTip(ev, s, d); }); lag.addEventListener('mouseleave', hideTip);
           strack.appendChild(lag);
-          ticks[fsMs] = true;                                             // one publish tick per moment, however many bars end there
+          if (fsMs) ticks[fsMs] = true;                                   // one publish tick per moment, however many bars end there
+          if (d.map_seen && !d.map_censored) {                            // where SFPUC's map first showed this sample date
+            var mm = document.createElement('span'); mm.className = 'mapmark';
+            mm.style.left = pos(new Date(d.map_seen).getTime()) + '%'; mm.style.top = (LANE_TOP + d.lane * LANE_STEP - 2) + 'px';
+            strack.appendChild(mm);
+          }
         }
         var m = document.createElement('span');
-        m.className = 'smark ' + (d.elevated ? 'elevated' : 'clean') + (d.source === 'backfill' ? ' hist' : '');
+        m.className = 'smark ' + (d.pending ? 'pending' : d.elevated ? 'elevated' : 'clean') + (d.source === 'backfill' ? ' hist' : '');
         m.style.left = pos(dayMs) + '%';
         m.addEventListener('mousemove', function(ev){ showSampleTip(ev, s, d); }); m.addEventListener('mouseleave', hideTip);
         strack.appendChild(m);
@@ -239,11 +252,18 @@
   function showSampleTip(ev, s, d){
     var tip = document.getElementById('tooltip');
     var when = new Date(d.date + 'T20:00:00Z').toLocaleDateString('en-US', {timeZone:'America/Los_Angeles', month:'short', day:'numeric', year:'numeric'});
+    var days = function(n){ return '<b>' + n + (n === 1 ? ' day' : ' days') + '</b>'; };
+    var result = d.pending ? '<b>numbers not yet published</b>'
+      : (d.elevated ? '<b style="color:#f3b7a5">over standard</b>' : 'clean') + (d.n > 1 ? ' (' + d.n + ' results)' : '');
+    var map = !d.map_seen ? 'On SFPUC\'s map: not observed'
+      : d.map_censored ? 'On SFPUC\'s map: by ' + fmtDay(d.map_seen) + ' (already there when we began reading the feed)'
+      : 'On SFPUC\'s map: ' + (d.map_approx ? fmtDay(d.map_seen) : fmt(d.map_seen)) + ' — ' + days(d.map_lag_days) + ' after collection';
     var pub = d.first_seen
-      ? 'Appeared online: ' + fmt(d.first_seen) + ' — <b>' + d.lag_days + (d.lag_days === 1 ? ' day' : ' days') + '</b> after collection'
-      : 'Appeared online: not observed (loaded from the city\'s history — collection day only)';
-    tip.innerHTML = '<b>' + s.station_name + '</b><br>Lab sample collected ' + when + ' · ' +
-      (d.elevated ? '<b style="color:#f3b7a5">over standard</b>' : 'clean') + (d.n > 1 ? ' (' + d.n + ' results)' : '') + '<br>' + pub;
+      ? 'Numbers online: ' + fmt(d.first_seen) + ' — ' + days(d.lag_days) + ' after collection' +
+        (d.map_lag_days != null ? ' (' + (d.lag_days - d.map_lag_days) + ' after the map)' : '')
+      : d.pending ? 'Numbers online: not yet — ' + days(d.pending_days) + ' since collection'
+      : 'Numbers online: not observed (loaded from the city\'s history — collection day only)';
+    tip.innerHTML = '<b>' + s.station_name + '</b><br>Lab sample collected ' + when + ' · ' + result + '<br>' + map + '<br>' + pub;
     tip.style.display = 'block';
     var x = Math.min(ev.clientX + 14, window.innerWidth - 300);
     tip.style.left = x + 'px'; tip.style.top = (ev.clientY + 14) + 'px';
@@ -285,12 +305,16 @@
     var byId = {}; DATA.stations.forEach(function(s){ byId[s.station_id] = s.station_name; });
     Object.keys(DATA.samples || {}).forEach(function(sid){ (DATA.samples[sid] || []).forEach(function(d){ srows.push([byId[sid] || sid, d]); }); });
     srows.sort(function(a, b){ return a[1].date < b[1].date ? 1 : a[1].date > b[1].date ? -1 : 0; });
-    html += '<h3 style="font-size:14px;margin:18px 0 6px">Lab samples — the day collected, and when the result appeared in the city\'s dataset</h3>' +
-      '<table><thead><tr><th>Station</th><th>Collected</th><th>Result</th><th>Appeared online</th><th>Days until online</th></tr></thead><tbody>';
+    html += '<h3 style="font-size:14px;margin:18px 0 6px">Lab samples — collected, shown on SFPUC\'s map, and the numbers in the city\'s dataset</h3>' +
+      '<table><thead><tr><th>Station</th><th>Collected</th><th>Result</th><th>On SFPUC\'s map</th><th>Numbers online</th><th>Days until online</th></tr></thead><tbody>';
     if (srows.length) srows.forEach(function(r){ var d = r[1];
-      html += '<tr><td>' + r[0] + '</td><td>' + d.date + '</td><td>' + (d.elevated ? 'over standard' : 'clean') + (d.n > 1 ? ' (' + d.n + ')' : '') + '</td><td>' +
-        (d.first_seen ? fmt(d.first_seen) : '<span class="muted">not observed</span>') + '</td><td>' + (d.lag_days != null ? d.lag_days + (d.lag_days === 1 ? ' day' : ' days') : '—') + '</td></tr>'; });
-    else html += '<tr><td colspan="5" class="muted">No samples in the record window.</td></tr>';
+      var dayStr = function(n){ return n + (n === 1 ? ' day' : ' days'); };
+      html += '<tr><td>' + r[0] + '</td><td>' + d.date + '</td><td>' +
+        (d.pending ? '<span class="muted">not yet published</span>' : (d.elevated ? 'over standard' : 'clean') + (d.n > 1 ? ' (' + d.n + ')' : '')) + '</td><td>' +
+        (d.map_seen ? (d.map_censored ? 'by ' : '') + fmtDay(d.map_seen) : '<span class="muted">—</span>') + '</td><td>' +
+        (d.first_seen ? fmt(d.first_seen) : '<span class="muted">' + (d.pending ? 'not yet' : 'not observed') + '</span>') + '</td><td>' +
+        (d.lag_days != null ? dayStr(d.lag_days) : d.pending ? dayStr(d.pending_days) + ' so far' : '—') + '</td></tr>'; });
+    else html += '<tr><td colspan="6" class="muted">No samples in the record window.</td></tr>';
     document.getElementById('tablebox').innerHTML = html + '</tbody></table>';
   }
 
@@ -311,8 +335,12 @@
       (data.monitoring_since ? 'We have read SFPUC\'s beach map since ' + fmt(data.monitoring_since) + ' (Pacific time). ' : '') +
       'Times are the minute our watcher first saw a change: once a minute via the in-database watcher since Aug 16, 2026 (every 2 minutes before that). ' +
       'Signs that went up before we logged sign-downs show “not recorded”. Simulated test events are excluded. ' +
-      'Lab-sample dots are the collection day from the city\'s dataset; the bar to the right runs until the result appeared online' +
-      (data.sample_lag && data.sample_lag.n ? ' (median so far <b>' + data.sample_lag.median_days + ' days</b> over ' + data.sample_lag.n + ' sample-days, measured since ' + data.sample_lag.measured_since + ')' : ' (measured from ' + ((data.sample_lag || {}).measured_since || '2026-09-27') + ' on; nothing published yet since then)') +
+      'Lab-sample dots are the collection day from the city\'s dataset; the bar to the right runs until the numbers appeared online' +
+      (data.sample_lag && data.sample_lag.n ? ' (median so far <b>' + data.sample_lag.median_days + (data.sample_lag.median_days === 1 ? ' day' : ' days') + '</b> over ' + data.sample_lag.n + ' sample-days, measured since ' + data.sample_lag.measured_since + ')' : ' (measured from ' + ((data.sample_lag || {}).measured_since || '2026-09-27') + ' on; nothing published yet since then)') +
+      '. The blue tick on a bar is the day SFPUC\'s map first showed that sample date — the city has graded the sample, and posted the beach if need be, before the public can read the number' +
+      (function(m){ if (!m) return ''; var dd = function(n){ return '<b>' + n + (n === 1 ? ' day' : ' days') + '</b>'; };
+        return (m.n ? ' (median ' + dd(m.median_days) + ' after collection over ' + m.n + ' sample-days' + (m.after_map_n ? '; the numbers followed a median ' + dd(m.after_map_median_days) + ' later' : '') + ', read since ' + m.measured_since + ')' : ' (read since ' + m.measured_since + ')') +
+        (m.pending ? '. <b>' + m.pending + '</b> sample-day' + (m.pending === 1 ? ' is' : 's are') + ' on the map right now with the numbers still unpublished — the hollow dots, dashed to today' : ''); })((data.sample_lag || {}).map) +
       '. Faded dots are the city\'s history loaded in one go — collection day only. ' + (data.sample_note ? data.sample_note + ' ' : '') +
       'Live station status: <a href="https://webapps.sfpuc.org/sapps/beachesandbay.html" target="_blank" rel="noopener">SFPUC beach map</a>.';
     render(); renderTable();

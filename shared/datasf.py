@@ -11,4 +11,4 @@ scans the tree for stray copies.
 DATASET_ID = "v3fv-x3ux"
 BEACH_SAMPLES_URL = f"https://data.sf.gov/resource/{DATASET_ID}.json"
 DATASET_PAGE_URL = f"https://data.sf.gov/Energy-and-Environment/Beach-Water-Quality-Monitoring/{DATASET_ID}"
-DATASET_FLOOR = "2020-07-27"  # the city publishes nothing earlier (Site Report Card and the sample viewer both start here)
+DATASET_FLOOR = "2020-07-27"  # DataSF publishes nothing earlier; 2000 → Jul 2020 comes from SFPUC's lab export via shared/city_history.py

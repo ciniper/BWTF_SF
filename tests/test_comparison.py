@@ -155,7 +155,7 @@ def test_sample_day_payload_grades_one_station_day_with_both_values_and_the_rati
     assert [v["raw"] for v in d["cells"]["ENTERO"]] == ["20", "399"] and [v["over"] for v in d["cells"]["ENTERO"]] == [False, True]
     ST = standards.STANDARDS
     assert d["limits"] == {"ENTERO": ST["ENTERO"]["single_sample_max"], "COLI_FECAL": ST["COLI_FECAL"]["single_sample_max"],
-                           "COLI_TOTAL": ST["COLI_TOTAL"]["single_sample_max_ratio"]}   # fecal is 13% of total → the ratio limit
+                           "COLI_E": ST["COLI_E"]["single_sample_max"], "COLI_TOTAL": ST["COLI_TOTAL"]["single_sample_max_ratio"]}   # fecal is 13% of total → the ratio limit
     assert d["cells"]["COLI_TOTAL"][0]["over"] is True and d["over"] is True and d["caution"] == standards.ENTERO_CAUTION
     assert d["ratio_applied"] is True and "10%" in d["ratio_note"] and e_ratio_off(recs, baker) is False
     assert d["results_url"].startswith("https://data.sf.gov/resource/") and "2024-02-20T00%3A00%3A00" in d["results_url"] and "OCEAN%2315_SL" in d["results_url"]
@@ -163,7 +163,7 @@ def test_sample_day_payload_grades_one_station_day_with_both_values_and_the_rati
     e = S.sample_day_payload(recs, baker, "2024-02-13")
     assert e["cells"]["ENTERO"][0]["caution"] is True and e["over"] is False and e["limits"]["COLI_TOTAL"] == ST["COLI_TOTAL"]["single_sample_max"]
     none = S.sample_day_payload(recs, baker, "2024-01-01")
-    assert none["found"] is False and none["n_samples"] == 0 and none["cells"] == {"ENTERO": [], "COLI_FECAL": [], "COLI_TOTAL": []}
+    assert none["found"] is False and none["n_samples"] == 0 and none["cells"] == {"ENTERO": [], "COLI_FECAL": [], "COLI_E": [], "COLI_TOTAL": []}
     try:
         S.sample_day_payload(recs, "NOPE"); assert False, "unknown station must raise"
     except ValueError:

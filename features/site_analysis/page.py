@@ -35,8 +35,8 @@ Plus a date range (?start=YYYY-MM-DD&end=YYYY-MM-DD; the dataset's floor is
 Other methodology notes baked into the payload (the page shows them):
   * Censored values ("<10", ">24196") keep their magnitude; "<x" is below
     every threshold in play and ">x" is far above, so sign-stripping is safe.
-  * Stations sampled only sporadically/reactively (< ROUTINE_MIN samples in
-    the full record) are flagged — their rates reflect when the city chose
+  * Stations sampled only sporadically/reactively (under ROUTINE_PER_YEAR samples
+    in a typical year of the window, or of the full record — see _routine) are flagged — their rates reflect when the city chose
     to sample, not typical conditions, and must not be ranked against
     weekly sites.
 
@@ -50,7 +50,7 @@ from __future__ import annotations
 
 import json
 import time
-from collections import defaultdict
+from collections import defaultdict, Counter
 from datetime import datetime, timedelta
 
 import requests
@@ -58,6 +58,7 @@ from flask import render_template
 
 from shared.stations import STATIONS as _CANONICAL_STATIONS
 
+from shared import city_history  # noqa: E402
 from shared.datasf import BEACH_SAMPLES_URL, DATASET_FLOOR  # noqa: E402
 from shared.standards import (  # noqa: E402
     ENTERO_CAUTION, GEOMETRIC_MEAN_MIN_SAMPLES, GEOMETRIC_MEAN_WINDOW_DAYS, STANDARDS, parse_result,
@@ -68,15 +69,17 @@ SOCRATA_URL = BEACH_SAMPLES_URL  # shared/datasf.py
 ANALYTE = "ENTERO"
 SSM = STANDARDS["ENTERO"]["single_sample_max"]   # CA single-sample maximum, Enterococcus (shared/standards.py)
 CAUTION = ENTERO_CAUTION                        # BWTF/state caution tier
-# The standards the page can grade on (the "Standard" toggle). The three
-# indicators are the ones the state posting rule lists for marine water; "ANY"
-# is that rule itself. E. coli is left out: the rule does not use it for ocean
-# and bay water and the city reports it for few shoreline samples.
+# The standards the page can grade on (the "Standard" toggle): the three
+# indicators the state posting rule lists for marine water, plus E. coli — the
+# indicator the city ran in place of fecal coliform from Jul 2002 to Jul 2020
+# (shared/city_history.py), so the 26-year record is graded on what was
+# measured. "ANY" = over on any indicator measured in the sample.
 POSTING_INDICATORS = ("ENTERO", "COLI_FECAL", "COLI_TOTAL")
-INDICATORS = {code: STANDARDS[code]["description"] for code in POSTING_INDICATORS}
+INDICATOR_CODES = ("ENTERO", "COLI_FECAL", "COLI_E", "COLI_TOTAL")
+INDICATORS = {code: STANDARDS[code]["description"] for code in INDICATOR_CODES}
 INDICATORS["ANY"] = "All (any over)"
 DEFAULT_INDICATOR = ANALYTE
-ROUTINE_MIN = 300  # fewer full-record samples than this = sporadic/reactive
+ROUTINE_PER_YEAR = 20  # a station sampled fewer times than this in a typical year of the window is sporadic/reactive
 WET_MONTHS = {11, 12, 1, 2, 3, 4}
 
 # Raw rows are cached (the dataset refreshes daily); stats are recomputed
@@ -93,9 +96,10 @@ STATIONS = {
 
 
 def _fetch_rows() -> list[dict]:
-    """All rows for the three posting indicators from DataSF (paged; ~20k rows)."""
-    rows, offset = [], 0
-    where = "analyte in (" + ",".join(f"'{a}'" for a in POSTING_INDICATORS) + ")"
+    """Every city row for the four indicators: SFPUC's lab export for 2000 →
+    Jul 2020 (shared/city_history.py) ahead of DataSF from its floor (paged)."""
+    rows, offset = list(city_history.records(analytes=INDICATOR_CODES)), 0
+    where = "analyte in (" + ",".join(f"'{a}'" for a in INDICATOR_CODES) + ")"
     while True:
         batch = requests.get(SOCRATA_URL, params={
             "$limit": 50000, "$offset": offset, "$order": ":id",
@@ -123,7 +127,7 @@ def _parse_rows(rows: list[dict]) -> dict[str, list]:
     by_key: dict = defaultdict(dict)
     for r in rows:
         sid, a, v = r.get("source"), r.get("analyte"), _value(r.get("data"))
-        if sid not in STATIONS or a not in POSTING_INDICATORS or v is None or not r.get("sample_date"):
+        if sid not in STATIONS or a not in INDICATOR_CODES or v is None or not r.get("sample_date"):
             continue
         d = datetime.fromisoformat(r["sample_date"][:19])
         by_key[(sid, d)][a] = max(v, by_key[(sid, d)].get(a, v))
@@ -142,7 +146,7 @@ def _over(indicator: str, vals: dict) -> bool | None:
     ratio limit when the same sample's fecal share is over the threshold.
     ANY: bad when any measured indicator is."""
     if indicator == "ANY":
-        flags = [f for f in (_over(a, vals) for a in POSTING_INDICATORS) if f is not None]
+        flags = [f for f in (_over(a, vals) for a in INDICATOR_CODES) if f is not None]
         return any(flags) if flags else None
     v = vals.get(indicator)
     if v is None:
@@ -155,7 +159,7 @@ def bad_text(indicator: str) -> str:
     total = STANDARDS["COLI_TOTAL"]
     ratio = f"{total['single_sample_max_ratio']:,} when fecal coliform is over {total['ratio_threshold']:.0%} of total"
     if indicator == "ANY":
-        return f"any of the three indicators at or over its state single-sample limit (total coliform's falls to {ratio})"
+        return f"any indicator measured in the sample at or over its state single-sample limit (total coliform's falls to {ratio})"
     s = STANDARDS[indicator]
     txt = f"{s['description']} at or over the state single-sample limit, {s['single_sample_max']:,} MPN/100mL"
     return txt + (f" ({ratio})" if indicator == "COLI_TOTAL" else "")
@@ -171,6 +175,30 @@ def _weekly_only(pairs: list[tuple]) -> list[tuple]:
             seen_weeks.add(wk)
             out.append((d, v))
     return out
+
+
+def _routine(full_pairs: list[tuple], start: datetime | None, end: datetime | None) -> bool:
+    """Is this a weekly-programme station? Judged on the samples per calendar
+    year inside the window (the full record when there is none): the median
+    year must reach ROUTINE_PER_YEAR, so a station SFPUC visits only after
+    discharges (Ocean Beach at Pacheco, Vicente and Fort Funston since 2004)
+    reads sporadic even though 26 years of visits add up. Windows under a year
+    are judged on the station's last year of record instead, so a short custom
+    range does not mark every station sporadic."""
+    dates = [d for d, _ in full_pairs]
+    if not dates:
+        return False
+    lo, hi = start or dates[0], end or dates[-1]
+    if (hi - lo).days < 365:
+        hi = dates[-1]
+        lo = hi - timedelta(days=365)
+        return sum(1 for d in dates if lo <= d <= hi) >= ROUTINE_PER_YEAR
+    counts = Counter(d.year for d in dates if lo <= d <= hi)
+    if not counts:
+        return False
+    full_years = [y for y in counts if lo.year < y < hi.year] or list(counts)   # partial edge years drop out when a full one exists
+    per_year = sorted(counts[y] for y in full_years)
+    return per_year[len(per_year) // 2] >= ROUTINE_PER_YEAR
 
 
 def _compute(rows: list[dict], start: datetime | None, end: datetime | None,
@@ -197,9 +225,7 @@ def _compute(rows: list[dict], start: datetime | None, end: datetime | None,
         flagged = [(d, _over(indicator, vals)) for d, vals in pairs]
         entry = {
             "id": sid, "name": name, "group": group, "lat": lat, "lon": lon,
-            # sporadic flag is judged on the FULL record so short custom
-            # ranges don't mark every station sporadic
-            "routine": len(full_pairs) >= ROUTINE_MIN,
+            "routine": _routine(full_pairs, start, end),
             "samples": len(pairs),
         }
         if pairs:
@@ -233,11 +259,11 @@ def _compute(rows: list[dict], start: datetime | None, end: datetime | None,
     return {
         "analyte": ANALYTE, "ssm": SSM, "caution": CAUTION,
         "indicator": indicator, "indicator_label": INDICATORS[indicator], "bad_text": bad_text(indicator),
-        "routine_min": ROUTINE_MIN,
+        "routine_per_year": ROUTINE_PER_YEAR,
         "mode": "weekly" if weekly else "all",
         "start": start.strftime("%Y-%m-%d") if start else None,
         "end": end.strftime("%Y-%m-%d") if end else None,
-        "dataset_floor": DATASET_FLOOR,
+        "dataset_floor": city_history.city_record_floor(), "datasf_from": DATASET_FLOOR, "history": city_history.provenance(),
         "newest_sample": newest.strftime("%Y-%m-%d") if newest else None,
         "total_samples": sum(s["samples"] for s in sites),
         "sites": sites,
@@ -306,7 +332,8 @@ def standards_context() -> dict:
     return {
         "standards": rows, "graded_on": DEFAULT_INDICATOR, "graded_on_name": STANDARDS[DEFAULT_INDICATOR]["description"],
         "indicators": [{"code": c, "label": l, "title": "bad = " + bad_text(c)} for c, l in INDICATORS.items()],
-        "ssm": SSM, "caution": CAUTION,
+        "ssm": SSM, "caution": CAUTION, "floor": city_history.city_record_floor(), "datasf_from": DATASET_FLOOR,
+        "history": city_history.provenance(),
         "gm_window_days": GEOMETRIC_MEAN_WINDOW_DAYS, "gm_min_samples": GEOMETRIC_MEAN_MIN_SAMPLES,
         "below_detection": int(parse_result("<10")), "over_range": int(parse_result(">24196")),
     }

@@ -1,0 +1,3010 @@
+{
+ "2011": [
+  {
+   "smr_document_id": "726630",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for March 2011",
+   "period": "03/01/2011 to 03/31/2011",
+   "due": "04/30/2011",
+   "received": "04/28/2011"
+  },
+  {
+   "smr_document_id": "726631",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for April 2011",
+   "period": "04/01/2011 to 04/30/2011",
+   "due": "05/30/2011",
+   "received": "05/26/2011"
+  },
+  {
+   "smr_document_id": "726632",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for May 2011",
+   "period": "05/01/2011 to 05/31/2011",
+   "due": "06/30/2011",
+   "received": "06/27/2011"
+  },
+  {
+   "smr_document_id": "726633",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for June 2011",
+   "period": "06/01/2011 to 06/30/2011",
+   "due": "07/30/2011",
+   "received": "07/25/2011"
+  },
+  {
+   "smr_document_id": "726634",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for July 2011",
+   "period": "07/01/2011 to 07/31/2011",
+   "due": "08/30/2011",
+   "received": "08/26/2011"
+  },
+  {
+   "smr_document_id": "781895",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for August 2011",
+   "period": "08/01/2011 to 08/31/2011",
+   "due": "09/30/2011",
+   "received": "09/23/2011"
+  },
+  {
+   "smr_document_id": "781896",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for September 2011",
+   "period": "09/01/2011 to 09/30/2011",
+   "due": "10/30/2011",
+   "received": "10/28/2011"
+  },
+  {
+   "smr_document_id": "781897",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for October 2011",
+   "period": "10/01/2011 to 10/31/2011",
+   "due": "11/30/2011",
+   "received": "11/30/2011"
+  },
+  {
+   "smr_document_id": "781898",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for November 2011",
+   "period": "11/01/2011 to 11/30/2011",
+   "due": "12/30/2011",
+   "received": "12/23/2011"
+  },
+  {
+   "smr_document_id": "781899",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for December 2011",
+   "period": "12/01/2011 to 12/31/2011",
+   "due": "01/30/2012",
+   "received": "01/31/2012"
+  },
+  {
+   "smr_document_id": "724770",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for March 2011",
+   "period": "03/01/2011 to 03/31/2011",
+   "due": "04/30/2011",
+   "received": "04/29/2011"
+  },
+  {
+   "smr_document_id": "724771",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for April 2011",
+   "period": "04/01/2011 to 04/30/2011",
+   "due": "05/30/2011",
+   "received": "05/27/2011"
+  },
+  {
+   "smr_document_id": "724772",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for May 2011",
+   "period": "05/01/2011 to 05/31/2011",
+   "due": "06/30/2011",
+   "received": "06/30/2011"
+  },
+  {
+   "smr_document_id": "724773",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for June 2011",
+   "period": "06/01/2011 to 06/30/2011",
+   "due": "07/30/2011",
+   "received": "07/29/2011"
+  },
+  {
+   "smr_document_id": "724774",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for July 2011",
+   "period": "07/01/2011 to 07/31/2011",
+   "due": "08/30/2011",
+   "received": "08/30/2011"
+  },
+  {
+   "smr_document_id": "724775",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for August 2011",
+   "period": "08/01/2011 to 08/31/2011",
+   "due": "09/30/2011",
+   "received": "09/30/2011"
+  },
+  {
+   "smr_document_id": "724776",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for September 2011",
+   "period": "09/01/2011 to 09/30/2011",
+   "due": "10/30/2011",
+   "received": "10/28/2011"
+  },
+  {
+   "smr_document_id": "724777",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for October 2011",
+   "period": "10/01/2011 to 10/31/2011",
+   "due": "11/30/2011",
+   "received": "11/30/2011"
+  },
+  {
+   "smr_document_id": "724778",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for November 2011",
+   "period": "11/01/2011 to 11/30/2011",
+   "due": "12/30/2011",
+   "received": "12/30/2011"
+  },
+  {
+   "smr_document_id": "724779",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for December 2011",
+   "period": "12/01/2011 to 12/31/2011",
+   "due": "01/30/2012",
+   "received": "01/30/2012"
+  }
+ ],
+ "2012": [
+  {
+   "smr_document_id": "781900",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for January 2012",
+   "period": "01/01/2012 to 01/31/2012",
+   "due": "03/01/2012",
+   "received": "02/29/2012"
+  },
+  {
+   "smr_document_id": "781901",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for February 2012",
+   "period": "02/01/2012 to 02/29/2012",
+   "due": "03/30/2012",
+   "received": "03/21/2012"
+  },
+  {
+   "smr_document_id": "781902",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for March 2012",
+   "period": "03/01/2012 to 03/31/2012",
+   "due": "04/30/2012",
+   "received": "04/25/2012"
+  },
+  {
+   "smr_document_id": "781903",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for April 2012",
+   "period": "04/01/2012 to 04/30/2012",
+   "due": "05/30/2012",
+   "received": "05/24/2012"
+  },
+  {
+   "smr_document_id": "781904",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for May 2012",
+   "period": "05/01/2012 to 05/31/2012",
+   "due": "06/30/2012",
+   "received": "06/28/2012"
+  },
+  {
+   "smr_document_id": "781905",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for June 2012",
+   "period": "06/01/2012 to 06/30/2012",
+   "due": "07/30/2012",
+   "received": "07/24/2012"
+  },
+  {
+   "smr_document_id": "781906",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for July 2012",
+   "period": "07/01/2012 to 07/31/2012",
+   "due": "08/30/2012",
+   "received": "08/31/2012"
+  },
+  {
+   "smr_document_id": "781907",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for August 2012",
+   "period": "08/01/2012 to 08/31/2012",
+   "due": "09/30/2012",
+   "received": "09/25/2012"
+  },
+  {
+   "smr_document_id": "781908",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for September 2012",
+   "period": "09/01/2012 to 09/30/2012",
+   "due": "10/30/2012",
+   "received": "10/23/2012"
+  },
+  {
+   "smr_document_id": "781909",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for October 2012",
+   "period": "10/01/2012 to 10/31/2012",
+   "due": "11/30/2012",
+   "received": "11/28/2012"
+  },
+  {
+   "smr_document_id": "781910",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for November 2012",
+   "period": "11/01/2012 to 11/30/2012",
+   "due": "12/30/2012",
+   "received": "12/28/2012"
+  },
+  {
+   "smr_document_id": "781911",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for December 2012",
+   "period": "12/01/2012 to 12/31/2012",
+   "due": "01/30/2013",
+   "received": "01/29/2013"
+  },
+  {
+   "smr_document_id": "724780",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for January 2012",
+   "period": "01/01/2012 to 01/31/2012",
+   "due": "03/01/2012",
+   "received": "02/29/2012"
+  },
+  {
+   "smr_document_id": "724781",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for February 2012",
+   "period": "02/01/2012 to 02/29/2012",
+   "due": "03/30/2012",
+   "received": "03/29/2012"
+  },
+  {
+   "smr_document_id": "724782",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for March 2012",
+   "period": "03/01/2012 to 03/31/2012",
+   "due": "04/30/2012",
+   "received": "04/30/2012"
+  },
+  {
+   "smr_document_id": "724783",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for April 2012",
+   "period": "04/01/2012 to 04/30/2012",
+   "due": "05/30/2012",
+   "received": "05/30/2012"
+  },
+  {
+   "smr_document_id": "724784",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for May 2012",
+   "period": "05/01/2012 to 05/31/2012",
+   "due": "06/30/2012",
+   "received": "06/28/2012"
+  },
+  {
+   "smr_document_id": "724785",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for June 2012",
+   "period": "06/01/2012 to 06/30/2012",
+   "due": "07/30/2012",
+   "received": "07/30/2012"
+  },
+  {
+   "smr_document_id": "724786",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for July 2012",
+   "period": "07/01/2012 to 07/31/2012",
+   "due": "08/30/2012",
+   "received": "08/30/2012"
+  },
+  {
+   "smr_document_id": "724787",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for August 2012",
+   "period": "08/01/2012 to 08/31/2012",
+   "due": "09/30/2012",
+   "received": "09/27/2012"
+  },
+  {
+   "smr_document_id": "724788",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for September 2012",
+   "period": "09/01/2012 to 09/30/2012",
+   "due": "10/30/2012",
+   "received": "10/30/2012"
+  },
+  {
+   "smr_document_id": "724789",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for October 2012",
+   "period": "10/01/2012 to 10/31/2012",
+   "due": "11/30/2012",
+   "received": "11/30/2012"
+  },
+  {
+   "smr_document_id": "724790",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for November 2012",
+   "period": "11/01/2012 to 11/30/2012",
+   "due": "12/30/2012",
+   "received": "12/21/2012"
+  },
+  {
+   "smr_document_id": "724791",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for December 2012",
+   "period": "12/01/2012 to 12/31/2012",
+   "due": "01/30/2013",
+   "received": "01/30/2013"
+  }
+ ],
+ "2013": [
+  {
+   "smr_document_id": "781912",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for January 2013",
+   "period": "01/01/2013 to 01/31/2013",
+   "due": "03/02/2013",
+   "received": "02/28/2013"
+  },
+  {
+   "smr_document_id": "781913",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for February 2013",
+   "period": "02/01/2013 to 02/28/2013",
+   "due": "03/30/2013",
+   "received": "03/28/2013"
+  },
+  {
+   "smr_document_id": "781914",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for March 2013",
+   "period": "03/01/2013 to 03/31/2013",
+   "due": "04/30/2013",
+   "received": "04/30/2013"
+  },
+  {
+   "smr_document_id": "781915",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for April 2013",
+   "period": "04/01/2013 to 04/30/2013",
+   "due": "05/30/2013",
+   "received": "05/23/2013"
+  },
+  {
+   "smr_document_id": "781916",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for May 2013",
+   "period": "05/01/2013 to 05/31/2013",
+   "due": "06/30/2013",
+   "received": "06/25/2013"
+  },
+  {
+   "smr_document_id": "781917",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for June 2013",
+   "period": "06/01/2013 to 06/30/2013",
+   "due": "07/30/2013",
+   "received": "07/29/2013"
+  },
+  {
+   "smr_document_id": "781918",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for July 2013",
+   "period": "07/01/2013 to 07/31/2013",
+   "due": "08/30/2013",
+   "received": "08/27/2013"
+  },
+  {
+   "smr_document_id": "781919",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for August 2013",
+   "period": "08/01/2013 to 08/31/2013",
+   "due": "09/30/2013",
+   "received": "09/24/2013"
+  },
+  {
+   "smr_document_id": "781920",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for September 2013",
+   "period": "09/01/2013 to 09/30/2013",
+   "due": "10/30/2013",
+   "received": "10/28/2013"
+  },
+  {
+   "smr_document_id": "781921",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for October 2013",
+   "period": "10/01/2013 to 10/31/2013",
+   "due": "11/30/2013",
+   "received": "11/27/2013"
+  },
+  {
+   "smr_document_id": "781922",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for November 2013",
+   "period": "11/01/2013 to 11/30/2013",
+   "due": "12/30/2013",
+   "received": "12/27/2013"
+  },
+  {
+   "smr_document_id": "781923",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for December 2013",
+   "period": "12/01/2013 to 12/31/2013",
+   "due": "01/30/2014",
+   "received": "01/28/2014"
+  },
+  {
+   "smr_document_id": "724792",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for January 2013",
+   "period": "01/01/2013 to 01/31/2013",
+   "due": "03/02/2013",
+   "received": "02/28/2013"
+  },
+  {
+   "smr_document_id": "724793",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for February 2013",
+   "period": "02/01/2013 to 02/28/2013",
+   "due": "03/30/2013",
+   "received": "03/29/2013"
+  },
+  {
+   "smr_document_id": "1207873",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for March 2013",
+   "period": "03/01/2013 to 03/31/2013",
+   "due": "04/30/2013",
+   "received": "04/30/2013"
+  },
+  {
+   "smr_document_id": "1232066",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for April 2013",
+   "period": "04/01/2013 to 04/30/2013",
+   "due": "05/30/2013",
+   "received": "05/23/2013"
+  },
+  {
+   "smr_document_id": "1255667",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for May 2013",
+   "period": "05/01/2013 to 05/31/2013",
+   "due": "06/30/2013",
+   "received": "06/26/2013"
+  },
+  {
+   "smr_document_id": "1279441",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for June 2013",
+   "period": "06/01/2013 to 06/30/2013",
+   "due": "07/30/2013",
+   "received": "07/30/2013"
+  },
+  {
+   "smr_document_id": "1308638",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for July 2013",
+   "period": "07/01/2013 to 07/31/2013",
+   "due": "08/30/2013",
+   "received": "08/30/2013"
+  },
+  {
+   "smr_document_id": "1323045",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for August 2013",
+   "period": "08/01/2013 to 08/31/2013",
+   "due": "09/30/2013",
+   "received": "09/30/2013"
+  },
+  {
+   "smr_document_id": "1335124",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for September 2013",
+   "period": "09/01/2013 to 09/30/2013",
+   "due": "10/30/2013",
+   "received": "10/30/2013"
+  },
+  {
+   "smr_document_id": "1348834",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for October 2013",
+   "period": "10/01/2013 to 10/31/2013",
+   "due": "12/02/2013",
+   "received": "11/27/2013"
+  },
+  {
+   "smr_document_id": "1348835",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for November 2013",
+   "period": "11/01/2013 to 11/30/2013",
+   "due": "12/30/2013",
+   "received": "12/24/2013"
+  },
+  {
+   "smr_document_id": "1348836",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for December 2013",
+   "period": "12/01/2013 to 12/31/2013",
+   "due": "01/30/2014",
+   "received": "01/29/2014"
+  }
+ ],
+ "2014": [
+  {
+   "smr_document_id": "781924",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for January 2014",
+   "period": "01/01/2014 to 01/31/2014",
+   "due": "03/02/2014",
+   "received": "02/27/2014"
+  },
+  {
+   "smr_document_id": "781925",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for February 2014",
+   "period": "02/01/2014 to 02/28/2014",
+   "due": "03/30/2014",
+   "received": "03/25/2014"
+  },
+  {
+   "smr_document_id": "781926",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for March 2014",
+   "period": "03/01/2014 to 03/31/2014",
+   "due": "04/30/2014",
+   "received": "04/24/2014"
+  },
+  {
+   "smr_document_id": "781927",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for April 2014",
+   "period": "04/01/2014 to 04/30/2014",
+   "due": "05/30/2014",
+   "received": "05/29/2014"
+  },
+  {
+   "smr_document_id": "781928",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for May 2014",
+   "period": "05/01/2014 to 05/31/2014",
+   "due": "06/30/2014",
+   "received": "06/30/2014"
+  },
+  {
+   "smr_document_id": "781929",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for June 2014",
+   "period": "06/01/2014 to 06/30/2014",
+   "due": "07/30/2014",
+   "received": "07/25/2014"
+  },
+  {
+   "smr_document_id": "781930",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for July 2014",
+   "period": "07/01/2014 to 07/31/2014",
+   "due": "08/30/2014",
+   "received": "08/29/2014"
+  },
+  {
+   "smr_document_id": "781931",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for August 2014",
+   "period": "08/01/2014 to 08/31/2014",
+   "due": "09/30/2014",
+   "received": "09/29/2014"
+  },
+  {
+   "smr_document_id": "1495963",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for September 2014",
+   "period": "09/01/2014 to 09/30/2014",
+   "due": "10/30/2014",
+   "received": "10/28/2014"
+  },
+  {
+   "smr_document_id": "1509918",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for October 2014",
+   "period": "10/01/2014 to 10/31/2014",
+   "due": "11/30/2014",
+   "received": "11/25/2014"
+  },
+  {
+   "smr_document_id": "1523001",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for November 2014",
+   "period": "11/01/2014 to 11/30/2014",
+   "due": "12/30/2014",
+   "received": "12/24/2014"
+  },
+  {
+   "smr_document_id": "1531358",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for December 2014",
+   "period": "12/01/2014 to 12/31/2014",
+   "due": "01/30/2015",
+   "received": "01/28/2015"
+  },
+  {
+   "smr_document_id": "1348837",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for January 2014",
+   "period": "01/01/2014 to 01/31/2014",
+   "due": "03/03/2014",
+   "received": "02/28/2014"
+  },
+  {
+   "smr_document_id": "1348838",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for February 2014",
+   "period": "02/01/2014 to 02/28/2014",
+   "due": "03/31/2014",
+   "received": "03/28/2014"
+  },
+  {
+   "smr_document_id": "1348839",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for March 2014",
+   "period": "03/01/2014 to 03/31/2014",
+   "due": "04/30/2014",
+   "received": "04/30/2014"
+  },
+  {
+   "smr_document_id": "1348840",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for April 2014",
+   "period": "04/01/2014 to 04/30/2014",
+   "due": "05/30/2014",
+   "received": "05/30/2014"
+  },
+  {
+   "smr_document_id": "1348841",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for May 2014",
+   "period": "05/01/2014 to 05/31/2014",
+   "due": "06/30/2014",
+   "received": "06/30/2014"
+  },
+  {
+   "smr_document_id": "1348842",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for June 2014",
+   "period": "06/01/2014 to 06/30/2014",
+   "due": "07/30/2014",
+   "received": "07/30/2014"
+  },
+  {
+   "smr_document_id": "1348843",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for July 2014",
+   "period": "07/01/2014 to 07/31/2014",
+   "due": "09/01/2014",
+   "received": "08/29/2014"
+  },
+  {
+   "smr_document_id": "1348844",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for August 2014",
+   "period": "08/01/2014 to 08/31/2014",
+   "due": "09/30/2014",
+   "received": "09/30/2014"
+  },
+  {
+   "smr_document_id": "1348845",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for September 2014",
+   "period": "09/01/2014 to 09/30/2014",
+   "due": "10/30/2014",
+   "received": "10/30/2014"
+  },
+  {
+   "smr_document_id": "1348846",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for October 2014",
+   "period": "10/01/2014 to 10/31/2014",
+   "due": "12/01/2014",
+   "received": "11/25/2014"
+  },
+  {
+   "smr_document_id": "1348847",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for November 2014",
+   "period": "11/01/2014 to 11/30/2014",
+   "due": "12/30/2014",
+   "received": "12/24/2014"
+  },
+  {
+   "smr_document_id": "1348848",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for December 2014",
+   "period": "12/01/2014 to 12/31/2014",
+   "due": "01/30/2015",
+   "received": "01/30/2015"
+  }
+ ],
+ "2015": [
+  {
+   "smr_document_id": "1547109",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for January 2015",
+   "period": "01/01/2015 to 01/31/2015",
+   "due": "03/02/2015",
+   "received": "02/26/2015"
+  },
+  {
+   "smr_document_id": "1568767",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for February 2015",
+   "period": "02/01/2015 to 02/28/2015",
+   "due": "03/30/2015",
+   "received": "03/26/2015"
+  },
+  {
+   "smr_document_id": "1583387",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for March 2015",
+   "period": "03/01/2015 to 03/31/2015",
+   "due": "04/30/2015",
+   "received": "04/28/2015"
+  },
+  {
+   "smr_document_id": "1598402",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for April 2015",
+   "period": "04/01/2015 to 04/30/2015",
+   "due": "05/30/2015",
+   "received": "05/20/2015"
+  },
+  {
+   "smr_document_id": "1616321",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for May 2015",
+   "period": "05/01/2015 to 05/31/2015",
+   "due": "06/30/2015",
+   "received": "06/25/2015"
+  },
+  {
+   "smr_document_id": "1636866",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for June 2015",
+   "period": "06/01/2015 to 06/30/2015",
+   "due": "07/30/2015",
+   "received": "07/29/2015"
+  },
+  {
+   "smr_document_id": "1648059",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for July 2015",
+   "period": "07/01/2015 to 07/31/2015",
+   "due": "08/30/2015",
+   "received": "08/24/2015"
+  },
+  {
+   "smr_document_id": "1662469",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for August 2015",
+   "period": "08/01/2015 to 08/31/2015",
+   "due": "09/30/2015",
+   "received": "09/29/2015"
+  },
+  {
+   "smr_document_id": "1673268",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for September 2015",
+   "period": "09/01/2015 to 09/30/2015",
+   "due": "10/30/2015",
+   "received": "10/26/2015"
+  },
+  {
+   "smr_document_id": "1684425",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for October 2015",
+   "period": "10/01/2015 to 10/31/2015",
+   "due": "11/30/2015",
+   "received": "11/23/2015"
+  },
+  {
+   "smr_document_id": "1696794",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for November 2015",
+   "period": "11/01/2015 to 11/30/2015",
+   "due": "12/30/2015",
+   "received": "12/17/2015"
+  },
+  {
+   "smr_document_id": "1709980",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for December 2015",
+   "period": "12/01/2015 to 12/31/2015",
+   "due": "01/30/2016",
+   "received": "01/27/2016"
+  },
+  {
+   "smr_document_id": "1348849",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for January 2015",
+   "period": "01/01/2015 to 01/31/2015",
+   "due": "03/02/2015",
+   "received": "03/02/2015"
+  },
+  {
+   "smr_document_id": "1348850",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for February 2015",
+   "period": "02/01/2015 to 02/28/2015",
+   "due": "03/30/2015",
+   "received": "03/30/2015"
+  },
+  {
+   "smr_document_id": "1348851",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for March 2015",
+   "period": "03/01/2015 to 03/31/2015",
+   "due": "04/30/2015",
+   "received": "04/30/2015"
+  },
+  {
+   "smr_document_id": "1348852",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for April 2015",
+   "period": "04/01/2015 to 04/30/2015",
+   "due": "06/01/2015",
+   "received": "05/29/2015"
+  },
+  {
+   "smr_document_id": "1348853",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for May 2015",
+   "period": "05/01/2015 to 05/31/2015",
+   "due": "06/30/2015",
+   "received": "06/30/2015"
+  },
+  {
+   "smr_document_id": "1348854",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for June 2015",
+   "period": "06/01/2015 to 06/30/2015",
+   "due": "07/30/2015",
+   "received": "07/30/2015"
+  },
+  {
+   "smr_document_id": "1348855",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for July 2015",
+   "period": "07/01/2015 to 07/31/2015",
+   "due": "08/31/2015",
+   "received": "08/28/2015"
+  },
+  {
+   "smr_document_id": "1348856",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for August 2015",
+   "period": "08/01/2015 to 08/31/2015",
+   "due": "09/30/2015",
+   "received": "09/25/2015"
+  },
+  {
+   "smr_document_id": "1348857",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for September 2015",
+   "period": "09/01/2015 to 09/30/2015",
+   "due": "10/30/2015",
+   "received": "10/30/2015"
+  },
+  {
+   "smr_document_id": "1348858",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for October 2015",
+   "period": "10/01/2015 to 10/31/2015",
+   "due": "11/30/2015",
+   "received": "11/30/2015"
+  },
+  {
+   "smr_document_id": "1348859",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for November 2015",
+   "period": "11/01/2015 to 11/30/2015",
+   "due": "12/30/2015",
+   "received": "12/30/2015"
+  },
+  {
+   "smr_document_id": "1348860",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for December 2015",
+   "period": "12/01/2015 to 12/31/2015",
+   "due": "02/01/2016",
+   "received": "01/29/2016"
+  }
+ ],
+ "2016": [
+  {
+   "smr_document_id": "1721777",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for January 2016",
+   "period": "01/01/2016 to 01/31/2016",
+   "due": "03/02/2016",
+   "received": "02/29/2016"
+  },
+  {
+   "smr_document_id": "1734601",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for February 2016",
+   "period": "02/01/2016 to 02/29/2016",
+   "due": "03/30/2016",
+   "received": "03/28/2016"
+  },
+  {
+   "smr_document_id": "1752174",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for March 2016",
+   "period": "03/01/2016 to 03/31/2016",
+   "due": "04/30/2016",
+   "received": "04/28/2016"
+  },
+  {
+   "smr_document_id": "1762316",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for April 2016",
+   "period": "04/01/2016 to 04/30/2016",
+   "due": "05/30/2016",
+   "received": "05/30/2016"
+  },
+  {
+   "smr_document_id": "1775124",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for May 2016",
+   "period": "05/01/2016 to 05/31/2016",
+   "due": "06/30/2016",
+   "received": "06/23/2016"
+  },
+  {
+   "smr_document_id": "1786157",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for June 2016",
+   "period": "06/01/2016 to 06/30/2016",
+   "due": "07/30/2016",
+   "received": "07/28/2016"
+  },
+  {
+   "smr_document_id": "1797830",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for July 2016",
+   "period": "07/01/2016 to 07/31/2016",
+   "due": "08/30/2016",
+   "received": "08/24/2016"
+  },
+  {
+   "smr_document_id": "1811129",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for August 2016",
+   "period": "08/01/2016 to 08/31/2016",
+   "due": "09/30/2016",
+   "received": "09/27/2016"
+  },
+  {
+   "smr_document_id": "1826320",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for September 2016",
+   "period": "09/01/2016 to 09/30/2016",
+   "due": "10/30/2016",
+   "received": "10/27/2016"
+  },
+  {
+   "smr_document_id": "1835660",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for October 2016",
+   "period": "10/01/2016 to 10/31/2016",
+   "due": "11/30/2016",
+   "received": "11/30/2016"
+  },
+  {
+   "smr_document_id": "1847716",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for November 2016",
+   "period": "11/01/2016 to 11/30/2016",
+   "due": "12/30/2016",
+   "received": "12/29/2016"
+  },
+  {
+   "smr_document_id": "1860022",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for December 2016",
+   "period": "12/01/2016 to 12/31/2016",
+   "due": "01/30/2017",
+   "received": "01/30/2017"
+  },
+  {
+   "smr_document_id": "1348861",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for January 2016",
+   "period": "01/01/2016 to 01/31/2016",
+   "due": "03/02/2016",
+   "received": "03/01/2016"
+  },
+  {
+   "smr_document_id": "1348862",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for February 2016",
+   "period": "02/01/2016 to 02/29/2016",
+   "due": "03/30/2016",
+   "received": "03/30/2016"
+  },
+  {
+   "smr_document_id": "1348863",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for March 2016",
+   "period": "03/01/2016 to 03/31/2016",
+   "due": "05/02/2016",
+   "received": "04/29/2016"
+  },
+  {
+   "smr_document_id": "1348864",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for April 2016",
+   "period": "04/01/2016 to 04/30/2016",
+   "due": "05/30/2016",
+   "received": "05/30/2016"
+  },
+  {
+   "smr_document_id": "1348865",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for May 2016",
+   "period": "05/01/2016 to 05/31/2016",
+   "due": "06/30/2016",
+   "received": "06/30/2016"
+  },
+  {
+   "smr_document_id": "1348866",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for June 2016",
+   "period": "06/01/2016 to 06/30/2016",
+   "due": "08/01/2016",
+   "received": "07/29/2016"
+  },
+  {
+   "smr_document_id": "1348867",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for July 2016",
+   "period": "07/01/2016 to 07/31/2016",
+   "due": "08/30/2016",
+   "received": "08/30/2016"
+  },
+  {
+   "smr_document_id": "1348868",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for August 2016",
+   "period": "08/01/2016 to 08/31/2016",
+   "due": "09/30/2016",
+   "received": "09/30/2016"
+  },
+  {
+   "smr_document_id": "1348869",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for September 2016",
+   "period": "09/01/2016 to 09/30/2016",
+   "due": "10/31/2016",
+   "received": "10/31/2016"
+  },
+  {
+   "smr_document_id": "1348870",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for October 2016",
+   "period": "10/01/2016 to 10/31/2016",
+   "due": "11/30/2016",
+   "received": "11/30/2016"
+  },
+  {
+   "smr_document_id": "1348871",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for November 2016",
+   "period": "11/01/2016 to 11/30/2016",
+   "due": "12/30/2016",
+   "received": "12/30/2016"
+  },
+  {
+   "smr_document_id": "1348872",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for December 2016",
+   "period": "12/01/2016 to 12/31/2016",
+   "due": "01/30/2017",
+   "received": "01/25/2017"
+  }
+ ],
+ "2017": [
+  {
+   "smr_document_id": "1871743",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for January 2017",
+   "period": "01/01/2017 to 01/31/2017",
+   "due": "03/02/2017",
+   "received": "02/28/2017"
+  },
+  {
+   "smr_document_id": "1884832",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for February 2017",
+   "period": "02/01/2017 to 02/28/2017",
+   "due": "03/30/2017",
+   "received": "03/29/2017"
+  },
+  {
+   "smr_document_id": "1897493",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for March 2017",
+   "period": "03/01/2017 to 03/31/2017",
+   "due": "04/30/2017",
+   "received": "04/27/2017"
+  },
+  {
+   "smr_document_id": "1909267",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for April 2017",
+   "period": "04/01/2017 to 04/30/2017",
+   "due": "05/30/2017",
+   "received": "05/26/2017"
+  },
+  {
+   "smr_document_id": "1921433",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for May 2017",
+   "period": "05/01/2017 to 05/31/2017",
+   "due": "06/30/2017",
+   "received": "06/26/2017"
+  },
+  {
+   "smr_document_id": "1934509",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for June 2017",
+   "period": "06/01/2017 to 06/30/2017",
+   "due": "07/30/2017",
+   "received": "07/27/2017"
+  },
+  {
+   "smr_document_id": "1949531",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for July 2017",
+   "period": "07/01/2017 to 07/31/2017",
+   "due": "08/30/2017",
+   "received": "08/29/2017"
+  },
+  {
+   "smr_document_id": "1960344",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for August 2017",
+   "period": "08/01/2017 to 08/31/2017",
+   "due": "09/30/2017",
+   "received": "09/28/2017"
+  },
+  {
+   "smr_document_id": "1971144",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for September 2017",
+   "period": "09/01/2017 to 09/30/2017",
+   "due": "10/30/2017",
+   "received": "10/27/2017"
+  },
+  {
+   "smr_document_id": "1980576",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for October 2017",
+   "period": "10/01/2017 to 10/31/2017",
+   "due": "11/30/2017",
+   "received": "11/29/2017"
+  },
+  {
+   "smr_document_id": "1992087",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for November 2017",
+   "period": "11/01/2017 to 11/30/2017",
+   "due": "12/30/2017",
+   "received": "12/28/2017"
+  },
+  {
+   "smr_document_id": "2019032",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for December 2017",
+   "period": "12/01/2017 to 12/31/2017",
+   "due": "01/30/2018",
+   "received": "01/30/2018"
+  },
+  {
+   "smr_document_id": "2019055",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for January 2017",
+   "period": "01/01/2017 to 01/31/2017",
+   "due": "03/02/2017",
+   "received": "09/13/2023"
+  },
+  {
+   "smr_document_id": "1348874",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for February 2017",
+   "period": "02/01/2017 to 02/28/2017",
+   "due": "03/30/2017",
+   "received": "03/30/2017"
+  },
+  {
+   "smr_document_id": "1348875",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for March 2017",
+   "period": "03/01/2017 to 03/31/2017",
+   "due": "05/01/2017",
+   "received": "04/28/2017"
+  },
+  {
+   "smr_document_id": "1348876",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for April 2017",
+   "period": "04/01/2017 to 04/30/2017",
+   "due": "05/30/2017",
+   "received": "05/26/2017"
+  },
+  {
+   "smr_document_id": "1348877",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for May 2017",
+   "period": "05/01/2017 to 05/31/2017",
+   "due": "06/30/2017",
+   "received": "06/30/2017"
+  },
+  {
+   "smr_document_id": "1348878",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for June 2017",
+   "period": "06/01/2017 to 06/30/2017",
+   "due": "07/31/2017",
+   "received": "07/26/2017"
+  },
+  {
+   "smr_document_id": "1348879",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for July 2017",
+   "period": "07/01/2017 to 07/31/2017",
+   "due": "08/30/2017",
+   "received": "08/30/2017"
+  },
+  {
+   "smr_document_id": "1348880",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for August 2017",
+   "period": "08/01/2017 to 08/31/2017",
+   "due": "10/02/2017",
+   "received": "09/29/2017"
+  },
+  {
+   "smr_document_id": "1348881",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for September 2017",
+   "period": "09/01/2017 to 09/30/2017",
+   "due": "10/30/2017",
+   "received": "10/30/2017"
+  },
+  {
+   "smr_document_id": "1348882",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for October 2017",
+   "period": "10/01/2017 to 10/31/2017",
+   "due": "11/30/2017",
+   "received": "11/30/2017"
+  },
+  {
+   "smr_document_id": "1348883",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for November 2017",
+   "period": "11/01/2017 to 11/30/2017",
+   "due": "01/01/2018",
+   "received": "12/29/2017"
+  },
+  {
+   "smr_document_id": "2019056",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for December 2017",
+   "period": "12/01/2017 to 12/31/2017",
+   "due": "01/30/2018",
+   "received": "01/30/2018"
+  }
+ ],
+ "2018": [
+  {
+   "smr_document_id": "2019036",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for January 2018",
+   "period": "01/01/2018 to 01/31/2018",
+   "due": "03/02/2018",
+   "received": "03/02/2018"
+  },
+  {
+   "smr_document_id": "2019037",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for February 2018",
+   "period": "02/01/2018 to 02/28/2018",
+   "due": "03/30/2018",
+   "received": "03/30/2018"
+  },
+  {
+   "smr_document_id": "2019038",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for March 2018",
+   "period": "03/01/2018 to 03/31/2018",
+   "due": "04/30/2018",
+   "received": "04/30/2018"
+  },
+  {
+   "smr_document_id": "2019039",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for April 2018",
+   "period": "04/01/2018 to 04/30/2018",
+   "due": "05/30/2018",
+   "received": "05/29/2018"
+  },
+  {
+   "smr_document_id": "2019040",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for May 2018",
+   "period": "05/01/2018 to 05/31/2018",
+   "due": "06/30/2018",
+   "received": "06/27/2018"
+  },
+  {
+   "smr_document_id": "2019041",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for June 2018",
+   "period": "06/01/2018 to 06/30/2018",
+   "due": "07/30/2018",
+   "received": "07/25/2018"
+  },
+  {
+   "smr_document_id": "2019042",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for July 2018",
+   "period": "07/01/2018 to 07/31/2018",
+   "due": "08/30/2018",
+   "received": "08/24/2018"
+  },
+  {
+   "smr_document_id": "2019043",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for August 2018",
+   "period": "08/01/2018 to 08/31/2018",
+   "due": "09/30/2018",
+   "received": "09/25/2018"
+  },
+  {
+   "smr_document_id": "2019044",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for September 2018",
+   "period": "09/01/2018 to 09/30/2018",
+   "due": "10/30/2018",
+   "received": "10/26/2018"
+  },
+  {
+   "smr_document_id": "2019045",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for October 2018",
+   "period": "10/01/2018 to 10/31/2018",
+   "due": "11/30/2018",
+   "received": "11/29/2018"
+  },
+  {
+   "smr_document_id": "2019046",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for November 2018",
+   "period": "11/01/2018 to 11/30/2018",
+   "due": "12/30/2018",
+   "received": "12/28/2018"
+  },
+  {
+   "smr_document_id": "2019047",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for December 2018",
+   "period": "12/01/2018 to 12/31/2018",
+   "due": "01/30/2019",
+   "received": "01/30/2019"
+  },
+  {
+   "smr_document_id": "2019060",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for January 2018",
+   "period": "01/01/2018 to 01/31/2018",
+   "due": "03/02/2018",
+   "received": "03/01/2018"
+  },
+  {
+   "smr_document_id": "2019061",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for February 2018",
+   "period": "02/01/2018 to 02/28/2018",
+   "due": "03/30/2018",
+   "received": "03/29/2018"
+  },
+  {
+   "smr_document_id": "2019062",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for March 2018",
+   "period": "03/01/2018 to 03/31/2018",
+   "due": "04/30/2018",
+   "received": "04/30/2018"
+  },
+  {
+   "smr_document_id": "2019063",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for April 2018",
+   "period": "04/01/2018 to 04/30/2018",
+   "due": "05/30/2018",
+   "received": "05/29/2018"
+  },
+  {
+   "smr_document_id": "2019064",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for May 2018",
+   "period": "05/01/2018 to 05/31/2018",
+   "due": "07/02/2018",
+   "received": "06/27/2018"
+  },
+  {
+   "smr_document_id": "2019065",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for June 2018",
+   "period": "06/01/2018 to 06/30/2018",
+   "due": "07/30/2018",
+   "received": "07/26/2018"
+  },
+  {
+   "smr_document_id": "2019066",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for July 2018",
+   "period": "07/01/2018 to 07/31/2018",
+   "due": "08/30/2018",
+   "received": "08/27/2018"
+  },
+  {
+   "smr_document_id": "2019067",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for August 2018",
+   "period": "08/01/2018 to 08/31/2018",
+   "due": "10/01/2018",
+   "received": "09/25/2018"
+  },
+  {
+   "smr_document_id": "2019068",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for September 2018",
+   "period": "09/01/2018 to 09/30/2018",
+   "due": "10/30/2018",
+   "received": "10/25/2018"
+  },
+  {
+   "smr_document_id": "2019069",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for October 2018",
+   "period": "10/01/2018 to 10/31/2018",
+   "due": "11/30/2018",
+   "received": "11/29/2018"
+  },
+  {
+   "smr_document_id": "2019070",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for November 2018",
+   "period": "11/01/2018 to 11/30/2018",
+   "due": "12/31/2018",
+   "received": "12/28/2018"
+  },
+  {
+   "smr_document_id": "2019071",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for December 2018",
+   "period": "12/01/2018 to 12/31/2018",
+   "due": "01/30/2019",
+   "received": "01/30/2019"
+  }
+ ],
+ "2019": [
+  {
+   "smr_document_id": "2019051",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for January 2019",
+   "period": "01/01/2019 to 01/31/2019",
+   "due": "03/02/2019",
+   "received": "03/04/2019"
+  },
+  {
+   "smr_document_id": "2170290",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for February 2019",
+   "period": "02/01/2019 to 02/28/2019",
+   "due": "03/30/2019",
+   "received": "03/29/2019"
+  },
+  {
+   "smr_document_id": "2172637",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for March 2019",
+   "period": "03/01/2019 to 03/31/2019",
+   "due": "04/30/2019",
+   "received": "04/27/2019"
+  },
+  {
+   "smr_document_id": "2172638",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for April 2019",
+   "period": "04/01/2019 to 04/30/2019",
+   "due": "05/30/2019",
+   "received": "05/29/2019"
+  },
+  {
+   "smr_document_id": "2184869",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for May 2019",
+   "period": "05/01/2019 to 05/31/2019",
+   "due": "06/30/2019",
+   "received": "06/28/2019"
+  },
+  {
+   "smr_document_id": "2194476",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for June 2019",
+   "period": "06/01/2019 to 06/30/2019",
+   "due": "07/30/2019",
+   "received": "07/30/2019"
+  },
+  {
+   "smr_document_id": "2204947",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for July 2019",
+   "period": "07/01/2019 to 07/31/2019",
+   "due": "08/30/2019",
+   "received": "08/30/2019"
+  },
+  {
+   "smr_document_id": "2215156",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for August 2019",
+   "period": "08/01/2019 to 08/31/2019",
+   "due": "09/30/2019",
+   "received": "09/30/2019"
+  },
+  {
+   "smr_document_id": "2224969",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for September 2019",
+   "period": "09/01/2019 to 09/30/2019",
+   "due": "10/30/2019",
+   "received": "10/29/2019"
+  },
+  {
+   "smr_document_id": "2238918",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for October 2019",
+   "period": "10/01/2019 to 10/31/2019",
+   "due": "11/30/2019",
+   "received": "11/25/2019"
+  },
+  {
+   "smr_document_id": "2249916",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for November 2019",
+   "period": "11/01/2019 to 11/30/2019",
+   "due": "12/30/2019",
+   "received": "12/26/2019"
+  },
+  {
+   "smr_document_id": "2257796",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for December 2019",
+   "period": "12/01/2019 to 12/31/2019",
+   "due": "01/30/2020",
+   "received": "01/30/2020"
+  },
+  {
+   "smr_document_id": "2019076",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for January 2019",
+   "period": "01/01/2019 to 01/31/2019",
+   "due": "03/04/2019",
+   "received": "03/01/2019"
+  },
+  {
+   "smr_document_id": "2019077",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for February 2019",
+   "period": "02/01/2019 to 02/28/2019",
+   "due": "04/01/2019",
+   "received": "03/29/2019"
+  },
+  {
+   "smr_document_id": "2172898",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for March 2019",
+   "period": "03/01/2019 to 03/31/2019",
+   "due": "04/30/2019",
+   "received": "04/30/2019"
+  },
+  {
+   "smr_document_id": "2172899",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for April 2019",
+   "period": "04/01/2019 to 04/30/2019",
+   "due": "05/30/2019",
+   "received": "05/29/2019"
+  },
+  {
+   "smr_document_id": "2184937",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for May 2019",
+   "period": "05/01/2019 to 05/31/2019",
+   "due": "07/01/2019",
+   "received": "07/01/2019"
+  },
+  {
+   "smr_document_id": "2194675",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for June 2019",
+   "period": "06/01/2019 to 06/30/2019",
+   "due": "07/30/2019",
+   "received": "07/30/2019"
+  },
+  {
+   "smr_document_id": "2205012",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for July 2019",
+   "period": "07/01/2019 to 07/31/2019",
+   "due": "08/30/2019",
+   "received": "09/30/2019"
+  },
+  {
+   "smr_document_id": "2215228",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for August 2019",
+   "period": "08/01/2019 to 08/31/2019",
+   "due": "09/30/2019",
+   "received": "09/30/2019"
+  },
+  {
+   "smr_document_id": "2225198",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for September 2019",
+   "period": "09/01/2019 to 09/30/2019",
+   "due": "10/30/2019",
+   "received": "10/30/2019"
+  },
+  {
+   "smr_document_id": "2238987",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for October 2019",
+   "period": "10/01/2019 to 10/31/2019",
+   "due": "12/02/2019",
+   "received": "11/25/2019"
+  },
+  {
+   "smr_document_id": "2249984",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for November 2019",
+   "period": "11/01/2019 to 11/30/2019",
+   "due": "12/30/2019",
+   "received": "12/26/2019"
+  },
+  {
+   "smr_document_id": "2257863",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for December 2019",
+   "period": "12/01/2019 to 12/31/2019",
+   "due": "01/30/2020",
+   "received": "01/29/2020"
+  }
+ ],
+ "2020": [
+  {
+   "smr_document_id": "2287794",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for January 2020",
+   "period": "01/01/2020 to 01/31/2020",
+   "due": "03/02/2020",
+   "received": "02/27/2020"
+  },
+  {
+   "smr_document_id": "2287795",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for February 2020",
+   "period": "02/01/2020 to 02/29/2020",
+   "due": "03/30/2020",
+   "received": "03/30/2020"
+  },
+  {
+   "smr_document_id": "2326461",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for March 2020",
+   "period": "03/01/2020 to 03/31/2020",
+   "due": "04/30/2020",
+   "received": "04/30/2020"
+  },
+  {
+   "smr_document_id": "2326462",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for April 2020",
+   "period": "04/01/2020 to 04/30/2020",
+   "due": "05/31/2020",
+   "received": "05/31/2020"
+  },
+  {
+   "smr_document_id": "2326463",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for May 2020",
+   "period": "05/01/2020 to 05/31/2020",
+   "due": "06/30/2020",
+   "received": "06/29/2020"
+  },
+  {
+   "smr_document_id": "2326464",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for June 2020",
+   "period": "06/01/2020 to 06/30/2020",
+   "due": "07/31/2020",
+   "received": "07/30/2020"
+  },
+  {
+   "smr_document_id": "2326465",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for July 2020",
+   "period": "07/01/2020 to 07/31/2020",
+   "due": "08/31/2020",
+   "received": "08/31/2020"
+  },
+  {
+   "smr_document_id": "2326466",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for August 2020",
+   "period": "08/01/2020 to 08/31/2020",
+   "due": "09/30/2020",
+   "received": "09/29/2020"
+  },
+  {
+   "smr_document_id": "2326467",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for September 2020",
+   "period": "09/01/2020 to 09/30/2020",
+   "due": "10/31/2020",
+   "received": "10/30/2020"
+  },
+  {
+   "smr_document_id": "2326468",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for October 2020",
+   "period": "10/01/2020 to 10/31/2020",
+   "due": "11/30/2020",
+   "received": "11/30/2020"
+  },
+  {
+   "smr_document_id": "2326469",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for November 2020",
+   "period": "11/01/2020 to 11/30/2020",
+   "due": "12/31/2020",
+   "received": "12/30/2020"
+  },
+  {
+   "smr_document_id": "2326470",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for December 2020",
+   "period": "12/01/2020 to 12/31/2020",
+   "due": "01/31/2021",
+   "received": "01/29/2021"
+  },
+  {
+   "smr_document_id": "2288698",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for January 2020",
+   "period": "01/01/2020 to 01/31/2020",
+   "due": "03/02/2020",
+   "received": "02/27/2020"
+  },
+  {
+   "smr_document_id": "2288699",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for February 2020",
+   "period": "02/01/2020 to 02/29/2020",
+   "due": "03/30/2020",
+   "received": "03/30/2020"
+  },
+  {
+   "smr_document_id": "2288700",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for March 2020",
+   "period": "03/01/2020 to 03/31/2020",
+   "due": "04/30/2020",
+   "received": "04/29/2020"
+  },
+  {
+   "smr_document_id": "2303030",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for April 2020",
+   "period": "04/01/2020 to 04/30/2020",
+   "due": "06/01/2020",
+   "received": "05/31/2020"
+  },
+  {
+   "smr_document_id": "2312519",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for May 2020",
+   "period": "05/01/2020 to 05/31/2020",
+   "due": "06/30/2020",
+   "received": "06/22/2020"
+  },
+  {
+   "smr_document_id": "2321859",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for June 2020",
+   "period": "06/01/2020 to 06/30/2020",
+   "due": "07/30/2020",
+   "received": "07/29/2020"
+  },
+  {
+   "smr_document_id": "2333329",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for July 2020",
+   "period": "07/01/2020 to 07/31/2020",
+   "due": "08/31/2020",
+   "received": "08/31/2020"
+  },
+  {
+   "smr_document_id": "2343107",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for August 2020",
+   "period": "08/01/2020 to 08/31/2020",
+   "due": "09/30/2020",
+   "received": "09/28/2020"
+  },
+  {
+   "smr_document_id": "2354068",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for September 2020",
+   "period": "09/01/2020 to 09/30/2020",
+   "due": "10/30/2020",
+   "received": "10/29/2020"
+  },
+  {
+   "smr_document_id": "2365715",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for October 2020",
+   "period": "10/01/2020 to 10/31/2020",
+   "due": "11/30/2020",
+   "received": "11/30/2020"
+  },
+  {
+   "smr_document_id": "2376756",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for November 2020",
+   "period": "11/01/2020 to 11/30/2020",
+   "due": "12/30/2020",
+   "received": "12/29/2020"
+  },
+  {
+   "smr_document_id": "2384527",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for December 2020",
+   "period": "12/01/2020 to 12/31/2020",
+   "due": "02/01/2021",
+   "received": "01/29/2021"
+  }
+ ],
+ "2021": [
+  {
+   "smr_document_id": "2326474",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for January 2021",
+   "period": "01/01/2021 to 01/31/2021",
+   "due": "02/28/2021",
+   "received": "03/01/2021"
+  },
+  {
+   "smr_document_id": "2326475",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for February 2021",
+   "period": "02/01/2021 to 02/28/2021",
+   "due": "03/31/2021",
+   "received": "03/29/2021"
+  },
+  {
+   "smr_document_id": "2326476",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for March 2021",
+   "period": "03/01/2021 to 03/31/2021",
+   "due": "04/30/2021",
+   "received": "04/29/2021"
+  },
+  {
+   "smr_document_id": "2326477",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for April 2021",
+   "period": "04/01/2021 to 04/30/2021",
+   "due": "05/31/2021",
+   "received": "05/27/2021"
+  },
+  {
+   "smr_document_id": "2326478",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for May 2021",
+   "period": "05/01/2021 to 05/31/2021",
+   "due": "06/30/2021",
+   "received": "06/28/2021"
+  },
+  {
+   "smr_document_id": "2326479",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for June 2021",
+   "period": "06/01/2021 to 06/30/2021",
+   "due": "07/31/2021",
+   "received": "07/28/2021"
+  },
+  {
+   "smr_document_id": "2326480",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for July 2021",
+   "period": "07/01/2021 to 07/31/2021",
+   "due": "08/31/2021",
+   "received": "08/26/2021"
+  },
+  {
+   "smr_document_id": "2326481",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for August 2021",
+   "period": "08/01/2021 to 08/31/2021",
+   "due": "09/30/2021",
+   "received": "09/27/2021"
+  },
+  {
+   "smr_document_id": "2326482",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for September 2021",
+   "period": "09/01/2021 to 09/30/2021",
+   "due": "10/31/2021",
+   "received": "10/29/2021"
+  },
+  {
+   "smr_document_id": "2326483",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for October 2021",
+   "period": "10/01/2021 to 10/31/2021",
+   "due": "11/30/2021",
+   "received": "11/29/2021"
+  },
+  {
+   "smr_document_id": "2326484",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for November 2021",
+   "period": "11/01/2021 to 11/30/2021",
+   "due": "12/31/2021",
+   "received": "12/29/2021"
+  },
+  {
+   "smr_document_id": "2326485",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for December 2021",
+   "period": "12/01/2021 to 12/31/2021",
+   "due": "01/31/2022",
+   "received": "01/24/2022"
+  },
+  {
+   "smr_document_id": "2416007",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for January 2021",
+   "period": "01/01/2021 to 01/31/2021",
+   "due": "03/02/2021",
+   "received": "03/01/2021"
+  },
+  {
+   "smr_document_id": "2416008",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for February 2021",
+   "period": "02/01/2021 to 02/28/2021",
+   "due": "03/30/2021",
+   "received": "03/29/2021"
+  },
+  {
+   "smr_document_id": "2416009",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for March 2021",
+   "period": "03/01/2021 to 03/31/2021",
+   "due": "04/30/2021",
+   "received": "04/30/2021"
+  },
+  {
+   "smr_document_id": "2429342",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for April 2021",
+   "period": "04/01/2021 to 04/30/2021",
+   "due": "05/31/2021",
+   "received": "05/27/2021"
+  },
+  {
+   "smr_document_id": "2440992",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for May 2021",
+   "period": "05/01/2021 to 05/31/2021",
+   "due": "06/30/2021",
+   "received": "06/28/2021"
+  },
+  {
+   "smr_document_id": "2465072",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for June 2021",
+   "period": "06/01/2021 to 06/30/2021",
+   "due": "07/30/2021",
+   "received": "07/28/2021"
+  },
+  {
+   "smr_document_id": "2477427",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for July 2021",
+   "period": "07/01/2021 to 07/31/2021",
+   "due": "08/30/2021",
+   "received": "08/27/2021"
+  },
+  {
+   "smr_document_id": "2485451",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for August 2021",
+   "period": "08/01/2021 to 08/31/2021",
+   "due": "09/30/2021",
+   "received": "09/27/2021"
+  },
+  {
+   "smr_document_id": "2494974",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for September 2021",
+   "period": "09/01/2021 to 09/30/2021",
+   "due": "11/01/2021",
+   "received": "10/29/2021"
+  },
+  {
+   "smr_document_id": "2505923",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for October 2021",
+   "period": "10/01/2021 to 10/31/2021",
+   "due": "11/30/2021",
+   "received": "11/30/2021"
+  },
+  {
+   "smr_document_id": "2516206",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for November 2021",
+   "period": "11/01/2021 to 11/30/2021",
+   "due": "12/30/2021",
+   "received": "12/23/2021"
+  },
+  {
+   "smr_document_id": "2524068",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for December 2021",
+   "period": "12/01/2021 to 12/31/2021",
+   "due": "01/31/2022",
+   "received": "01/27/2022"
+  }
+ ],
+ "2022": [
+  {
+   "smr_document_id": "2326489",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for January 2022",
+   "period": "01/01/2022 to 01/31/2022",
+   "due": "02/28/2022",
+   "received": "03/01/2022"
+  },
+  {
+   "smr_document_id": "2326490",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for February 2022",
+   "period": "02/01/2022 to 02/28/2022",
+   "due": "03/31/2022",
+   "received": "03/25/2022"
+  },
+  {
+   "smr_document_id": "2326491",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for March 2022",
+   "period": "03/01/2022 to 03/31/2022",
+   "due": "04/30/2022",
+   "received": "04/28/2022"
+  },
+  {
+   "smr_document_id": "2326492",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for April 2022",
+   "period": "04/01/2022 to 04/30/2022",
+   "due": "05/31/2022",
+   "received": "05/27/2022"
+  },
+  {
+   "smr_document_id": "2326493",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for May 2022",
+   "period": "05/01/2022 to 05/31/2022",
+   "due": "06/30/2022",
+   "received": "06/27/2022"
+  },
+  {
+   "smr_document_id": "2326494",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for June 2022",
+   "period": "06/01/2022 to 06/30/2022",
+   "due": "07/31/2022",
+   "received": "07/28/2022"
+  },
+  {
+   "smr_document_id": "2326495",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for July 2022",
+   "period": "07/01/2022 to 07/31/2022",
+   "due": "08/31/2022",
+   "received": "08/26/2022"
+  },
+  {
+   "smr_document_id": "2326496",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for August 2022",
+   "period": "08/01/2022 to 08/31/2022",
+   "due": "09/30/2022",
+   "received": "09/29/2022"
+  },
+  {
+   "smr_document_id": "2326497",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for September 2022",
+   "period": "09/01/2022 to 09/30/2022",
+   "due": "10/31/2022",
+   "received": "10/25/2022"
+  },
+  {
+   "smr_document_id": "2326498",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for October 2022",
+   "period": "10/01/2022 to 10/31/2022",
+   "due": "11/30/2022",
+   "received": "11/28/2022"
+  },
+  {
+   "smr_document_id": "2326499",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for November 2022",
+   "period": "11/01/2022 to 11/30/2022",
+   "due": "12/31/2022",
+   "received": "12/28/2022"
+  },
+  {
+   "smr_document_id": "2326500",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for December 2022",
+   "period": "12/01/2022 to 12/31/2022",
+   "due": "01/31/2023",
+   "received": "01/27/2023"
+  },
+  {
+   "smr_document_id": "2553857",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for January 2022",
+   "period": "01/01/2022 to 01/31/2022",
+   "due": "03/02/2022",
+   "received": "02/28/2022"
+  },
+  {
+   "smr_document_id": "2553858",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for February 2022",
+   "period": "02/01/2022 to 02/28/2022",
+   "due": "03/30/2022",
+   "received": "03/24/2022"
+  },
+  {
+   "smr_document_id": "2553859",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for March 2022",
+   "period": "03/01/2022 to 03/31/2022",
+   "due": "05/02/2022",
+   "received": "04/28/2022"
+  },
+  {
+   "smr_document_id": "2566381",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for April 2022",
+   "period": "04/01/2022 to 04/30/2022",
+   "due": "05/30/2022",
+   "received": "05/27/2022"
+  },
+  {
+   "smr_document_id": "2574344",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for May 2022",
+   "period": "05/01/2022 to 05/31/2022",
+   "due": "06/30/2022",
+   "received": "06/27/2022"
+  },
+  {
+   "smr_document_id": "2582734",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for June 2022",
+   "period": "06/01/2022 to 06/30/2022",
+   "due": "08/01/2022",
+   "received": "07/28/2022"
+  },
+  {
+   "smr_document_id": "2593394",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for July 2022",
+   "period": "07/01/2022 to 07/31/2022",
+   "due": "08/30/2022",
+   "received": "08/30/2022"
+  },
+  {
+   "smr_document_id": "2606783",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for August 2022",
+   "period": "08/01/2022 to 08/31/2022",
+   "due": "09/30/2022",
+   "received": "09/29/2022"
+  },
+  {
+   "smr_document_id": "2616945",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for September 2022",
+   "period": "09/01/2022 to 09/30/2022",
+   "due": "10/31/2022",
+   "received": "10/27/2022"
+  },
+  {
+   "smr_document_id": "2628408",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for October 2022",
+   "period": "10/01/2022 to 10/31/2022",
+   "due": "11/30/2022",
+   "received": "11/28/2022"
+  },
+  {
+   "smr_document_id": "2636704",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for November 2022",
+   "period": "11/01/2022 to 11/30/2022",
+   "due": "12/30/2022",
+   "received": "12/28/2022"
+  },
+  {
+   "smr_document_id": "2644145",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for December 2022",
+   "period": "12/01/2022 to 12/31/2022",
+   "due": "01/30/2023",
+   "received": "01/27/2023"
+  }
+ ],
+ "2023": [
+  {
+   "smr_document_id": "2326504",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for January 2023",
+   "period": "01/01/2023 to 01/31/2023",
+   "due": "02/28/2023",
+   "received": "02/28/2023"
+  },
+  {
+   "smr_document_id": "2326505",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for February 2023",
+   "period": "02/01/2023 to 02/28/2023",
+   "due": "03/31/2023",
+   "received": "03/29/2023"
+  },
+  {
+   "smr_document_id": "2326506",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for March 2023",
+   "period": "03/01/2023 to 03/31/2023",
+   "due": "04/30/2023",
+   "received": "04/27/2023"
+  },
+  {
+   "smr_document_id": "2326507",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for April 2023",
+   "period": "04/01/2023 to 04/30/2023",
+   "due": "05/31/2023",
+   "received": "05/25/2023"
+  },
+  {
+   "smr_document_id": "2326508",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for May 2023",
+   "period": "05/01/2023 to 05/31/2023",
+   "due": "06/30/2023",
+   "received": "06/27/2023"
+  },
+  {
+   "smr_document_id": "2326509",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for June 2023",
+   "period": "06/01/2023 to 06/30/2023",
+   "due": "07/31/2023",
+   "received": "07/28/2023"
+  },
+  {
+   "smr_document_id": "2326510",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for July 2023",
+   "period": "07/01/2023 to 07/31/2023",
+   "due": "08/31/2023",
+   "received": "08/29/2023"
+  },
+  {
+   "smr_document_id": "2326511",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for August 2023",
+   "period": "08/01/2023 to 08/31/2023",
+   "due": "09/30/2023",
+   "received": "10/18/2023"
+  },
+  {
+   "smr_document_id": "2326512",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for September 2023",
+   "period": "09/01/2023 to 09/30/2023",
+   "due": "10/31/2023",
+   "received": "10/24/2023"
+  },
+  {
+   "smr_document_id": "2326513",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for October 2023",
+   "period": "10/01/2023 to 10/31/2023",
+   "due": "11/30/2023",
+   "received": "11/29/2023"
+  },
+  {
+   "smr_document_id": "2326514",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for November 2023",
+   "period": "11/01/2023 to 11/30/2023",
+   "due": "12/31/2023",
+   "received": "12/26/2023"
+  },
+  {
+   "smr_document_id": "2326515",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for December 2023",
+   "period": "12/01/2023 to 12/31/2023",
+   "due": "01/31/2024",
+   "received": "01/30/2024"
+  },
+  {
+   "smr_document_id": "2673079",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for January 2023",
+   "period": "01/01/2023 to 01/31/2023",
+   "due": "03/02/2023",
+   "received": "03/02/2023"
+  },
+  {
+   "smr_document_id": "2673080",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for February 2023",
+   "period": "02/01/2023 to 02/28/2023",
+   "due": "03/30/2023",
+   "received": "03/29/2023"
+  },
+  {
+   "smr_document_id": "2673081",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for March 2023",
+   "period": "03/01/2023 to 03/31/2023",
+   "due": "05/01/2023",
+   "received": "05/01/2023"
+  },
+  {
+   "smr_document_id": "2686816",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for April 2023",
+   "period": "04/01/2023 to 04/30/2023",
+   "due": "05/30/2023",
+   "received": "05/24/2023"
+  },
+  {
+   "smr_document_id": "2696426",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for May 2023",
+   "period": "05/01/2023 to 05/31/2023",
+   "due": "06/30/2023",
+   "received": "06/27/2023"
+  },
+  {
+   "smr_document_id": "2705506",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for June 2023",
+   "period": "06/01/2023 to 06/30/2023",
+   "due": "07/31/2023",
+   "received": "07/28/2023"
+  },
+  {
+   "smr_document_id": "2717584",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for July 2023",
+   "period": "07/01/2023 to 07/31/2023",
+   "due": "08/30/2023",
+   "received": "08/28/2023"
+  },
+  {
+   "smr_document_id": "2727446",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for August 2023",
+   "period": "08/01/2023 to 08/31/2023",
+   "due": "10/02/2023",
+   "received": "10/18/2023"
+  },
+  {
+   "smr_document_id": "2736510",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for September 2023",
+   "period": "09/01/2023 to 09/30/2023",
+   "due": "10/30/2023",
+   "received": "10/26/2023"
+  },
+  {
+   "smr_document_id": "2747244",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for October 2023",
+   "period": "10/01/2023 to 10/31/2023",
+   "due": "11/30/2023",
+   "received": "11/29/2023"
+  },
+  {
+   "smr_document_id": "2756347",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for November 2023",
+   "period": "11/01/2023 to 11/30/2023",
+   "due": "01/01/2024",
+   "received": "12/26/2023"
+  },
+  {
+   "smr_document_id": "2762730",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for December 2023",
+   "period": "12/01/2023 to 12/31/2023",
+   "due": "01/30/2024",
+   "received": "01/27/2024"
+  }
+ ],
+ "2024": [
+  {
+   "smr_document_id": "2326519",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for January 2024",
+   "period": "01/01/2024 to 01/31/2024",
+   "due": "02/29/2024",
+   "received": "02/29/2024"
+  },
+  {
+   "smr_document_id": "2326520",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for February 2024",
+   "period": "02/01/2024 to 02/29/2024",
+   "due": "03/31/2024",
+   "received": "03/29/2024"
+  },
+  {
+   "smr_document_id": "2326521",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for March 2024",
+   "period": "03/01/2024 to 03/31/2024",
+   "due": "04/30/2024",
+   "received": "04/30/2024"
+  },
+  {
+   "smr_document_id": "2326522",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for April 2024",
+   "period": "04/01/2024 to 04/30/2024",
+   "due": "05/31/2024",
+   "received": "05/30/2024"
+  },
+  {
+   "smr_document_id": "2326523",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for May 2024",
+   "period": "05/01/2024 to 05/31/2024",
+   "due": "06/30/2024",
+   "received": "07/01/2024"
+  },
+  {
+   "smr_document_id": "2326524",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for June 2024",
+   "period": "06/01/2024 to 06/30/2024",
+   "due": "07/31/2024",
+   "received": "07/29/2024"
+  },
+  {
+   "smr_document_id": "2326525",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for July 2024",
+   "period": "07/01/2024 to 07/31/2024",
+   "due": "08/31/2024",
+   "received": "08/29/2024"
+  },
+  {
+   "smr_document_id": "2326526",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for August 2024",
+   "period": "08/01/2024 to 08/31/2024",
+   "due": "09/30/2024",
+   "received": "09/30/2024"
+  },
+  {
+   "smr_document_id": "2326527",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for September 2024",
+   "period": "09/01/2024 to 09/30/2024",
+   "due": "10/31/2024",
+   "received": "10/30/2024"
+  },
+  {
+   "smr_document_id": "2326528",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for October 2024",
+   "period": "10/01/2024 to 10/31/2024",
+   "due": "11/30/2024",
+   "received": "11/26/2024"
+  },
+  {
+   "smr_document_id": "2896193",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for November 2024",
+   "period": "11/01/2024 to 11/30/2024",
+   "due": "12/31/2024",
+   "received": "12/27/2024"
+  },
+  {
+   "smr_document_id": "2903885",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for December 2024",
+   "period": "12/01/2024 to 12/31/2024",
+   "due": "01/31/2025",
+   "received": "01/30/2025"
+  },
+  {
+   "smr_document_id": "2788057",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for January 2024",
+   "period": "01/01/2024 to 01/31/2024",
+   "due": "03/04/2024",
+   "received": "02/29/2024"
+  },
+  {
+   "smr_document_id": "2788058",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for February 2024",
+   "period": "02/01/2024 to 02/29/2024",
+   "due": "04/01/2024",
+   "received": "03/29/2024"
+  },
+  {
+   "smr_document_id": "2788059",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for March 2024",
+   "period": "03/01/2024 to 03/31/2024",
+   "due": "04/30/2024",
+   "received": "04/30/2024"
+  },
+  {
+   "smr_document_id": "2803894",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for April 2024",
+   "period": "04/01/2024 to 04/30/2024",
+   "due": "05/30/2024",
+   "received": "05/29/2024"
+  },
+  {
+   "smr_document_id": "2819060",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for May 2024",
+   "period": "05/01/2024 to 05/31/2024",
+   "due": "07/01/2024",
+   "received": "07/01/2024"
+  },
+  {
+   "smr_document_id": "2829619",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for June 2024",
+   "period": "06/01/2024 to 06/30/2024",
+   "due": "07/30/2024",
+   "received": "07/29/2024"
+  },
+  {
+   "smr_document_id": "2839445",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for July 2024",
+   "period": "07/01/2024 to 07/31/2024",
+   "due": "08/30/2024",
+   "received": "08/29/2024"
+  },
+  {
+   "smr_document_id": "2850296",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for August 2024",
+   "period": "08/01/2024 to 08/31/2024",
+   "due": "09/30/2024",
+   "received": "09/30/2024"
+  },
+  {
+   "smr_document_id": "2858531",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for September 2024",
+   "period": "09/01/2024 to 09/30/2024",
+   "due": "10/30/2024",
+   "received": "10/30/2024"
+  },
+  {
+   "smr_document_id": "2869097",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for October 2024",
+   "period": "10/01/2024 to 10/31/2024",
+   "due": "12/02/2024",
+   "received": "11/27/2024"
+  },
+  {
+   "smr_document_id": "2896083",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for November 2024",
+   "period": "11/01/2024 to 11/30/2024",
+   "due": "12/30/2024",
+   "received": "12/24/2024"
+  },
+  {
+   "smr_document_id": "2903771",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for December 2024",
+   "period": "12/01/2024 to 12/31/2024",
+   "due": "01/30/2025",
+   "received": "01/27/2025"
+  }
+ ],
+ "2025": [
+  {
+   "smr_document_id": "2938234",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for January 2025",
+   "period": "01/01/2025 to 01/31/2025",
+   "due": "02/28/2025",
+   "received": "02/27/2025"
+  },
+  {
+   "smr_document_id": "2938235",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for February 2025",
+   "period": "02/01/2025 to 02/28/2025",
+   "due": "03/31/2025",
+   "received": "03/31/2025"
+  },
+  {
+   "smr_document_id": "2938236",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for March 2025",
+   "period": "03/01/2025 to 03/31/2025",
+   "due": "04/30/2025",
+   "received": "04/28/2025"
+  },
+  {
+   "smr_document_id": "2953419",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for April 2025",
+   "period": "04/01/2025 to 04/30/2025",
+   "due": "05/31/2025",
+   "received": "05/28/2025"
+  },
+  {
+   "smr_document_id": "2964656",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for May 2025",
+   "period": "05/01/2025 to 05/31/2025",
+   "due": "06/30/2025",
+   "received": "06/25/2025"
+  },
+  {
+   "smr_document_id": "2976103",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for June 2025",
+   "period": "06/01/2025 to 06/30/2025",
+   "due": "07/31/2025",
+   "received": "07/25/2025"
+  },
+  {
+   "smr_document_id": "2987686",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for July 2025",
+   "period": "07/01/2025 to 07/31/2025",
+   "due": "08/31/2025",
+   "received": "08/25/2025"
+  },
+  {
+   "smr_document_id": "2995711",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for August 2025",
+   "period": "08/01/2025 to 08/31/2025",
+   "due": "09/30/2025",
+   "received": "09/25/2025"
+  },
+  {
+   "smr_document_id": "3003489",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for September 2025",
+   "period": "09/01/2025 to 09/30/2025",
+   "due": "10/31/2025",
+   "received": "10/22/2025"
+  },
+  {
+   "smr_document_id": "3018740",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for October 2025",
+   "period": "10/01/2025 to 10/31/2025",
+   "due": "11/30/2025",
+   "received": "12/01/2025"
+  },
+  {
+   "smr_document_id": "3049126",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for November 2025",
+   "period": "11/01/2025 to 11/30/2025",
+   "due": "12/30/2025",
+   "received": "12/24/2025"
+  },
+  {
+   "smr_document_id": "3049127",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for December 2025",
+   "period": "12/01/2025 to 12/31/2025",
+   "due": "01/30/2026",
+   "received": "01/28/2026"
+  },
+  {
+   "smr_document_id": "2936134",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for January 2025",
+   "period": "01/01/2025 to 01/31/2025",
+   "due": "03/03/2025",
+   "received": "02/28/2025"
+  },
+  {
+   "smr_document_id": "2936135",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for February 2025",
+   "period": "02/01/2025 to 02/28/2025",
+   "due": "03/31/2025",
+   "received": "03/31/2025"
+  },
+  {
+   "smr_document_id": "2936136",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for March 2025",
+   "period": "03/01/2025 to 03/31/2025",
+   "due": "04/30/2025",
+   "received": "04/28/2025"
+  },
+  {
+   "smr_document_id": "2953303",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for April 2025",
+   "period": "04/01/2025 to 04/30/2025",
+   "due": "05/30/2025",
+   "received": "05/28/2025"
+  },
+  {
+   "smr_document_id": "2964541",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for May 2025",
+   "period": "05/01/2025 to 05/31/2025",
+   "due": "06/30/2025",
+   "received": "06/30/2025"
+  },
+  {
+   "smr_document_id": "2975720",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for June 2025",
+   "period": "06/01/2025 to 06/30/2025",
+   "due": "07/30/2025",
+   "received": "07/25/2025"
+  },
+  {
+   "smr_document_id": "2987561",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for July 2025",
+   "period": "07/01/2025 to 07/31/2025",
+   "due": "09/01/2025",
+   "received": "08/25/2025"
+  },
+  {
+   "smr_document_id": "2995475",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for August 2025",
+   "period": "08/01/2025 to 08/31/2025",
+   "due": "09/30/2025",
+   "received": "09/26/2025"
+  },
+  {
+   "smr_document_id": "3003027",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for September 2025",
+   "period": "09/01/2025 to 09/30/2025",
+   "due": "10/30/2025",
+   "received": "10/27/2025"
+  },
+  {
+   "smr_document_id": "3018618",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for October 2025",
+   "period": "10/01/2025 to 10/31/2025",
+   "due": "12/01/2025",
+   "received": "11/26/2025"
+  },
+  {
+   "smr_document_id": "3025768",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for November 2025",
+   "period": "11/01/2025 to 11/30/2025",
+   "due": "12/30/2025",
+   "received": "12/29/2025"
+  },
+  {
+   "smr_document_id": "3032362",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for December 2025",
+   "period": "12/01/2025 to 12/31/2025",
+   "due": "01/30/2026",
+   "received": "01/27/2026"
+  }
+ ],
+ "2026": [
+  {
+   "smr_document_id": "3065632",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for January 2026",
+   "period": "01/01/2026 to 01/31/2026",
+   "due": "03/02/2026",
+   "received": "02/26/2026"
+  },
+  {
+   "smr_document_id": "3065633",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for February 2026",
+   "period": "02/01/2026 to 02/28/2026",
+   "due": "03/30/2026",
+   "received": "03/27/2026"
+  },
+  {
+   "smr_document_id": "3065634",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for March 2026",
+   "period": "03/01/2026 to 03/31/2026",
+   "due": "04/30/2026",
+   "received": "04/27/2026"
+  },
+  {
+   "smr_document_id": "3079319",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for April 2026",
+   "period": "04/01/2026 to 04/30/2026",
+   "due": "05/30/2026",
+   "received": "05/27/2026"
+  },
+  {
+   "smr_document_id": "3095906",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for May 2026",
+   "period": "05/01/2026 to 05/31/2026",
+   "due": "06/30/2026",
+   "received": "06/29/2026"
+  },
+  {
+   "smr_document_id": "3106901",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for June 2026",
+   "period": "06/01/2026 to 06/30/2026",
+   "due": "07/30/2026",
+   "received": "07/22/2026"
+  },
+  {
+   "smr_document_id": "3116575",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for July 2026",
+   "period": "07/01/2026 to 07/31/2026",
+   "due": "08/30/2026",
+   "received": "08/27/2026"
+  },
+  {
+   "smr_document_id": "3124551",
+   "facility_place_id": "256498",
+   "report_name": "Monthly SMR ( MONNPDES ) report for August 2026",
+   "period": "08/01/2026 to 08/31/2026",
+   "due": "09/30/2026",
+   "received": "09/24/2026"
+  },
+  {
+   "smr_document_id": "3063421",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for January 2026",
+   "period": "01/01/2026 to 01/31/2026",
+   "due": "03/02/2026",
+   "received": "02/26/2026"
+  },
+  {
+   "smr_document_id": "3063422",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for February 2026",
+   "period": "02/01/2026 to 02/28/2026",
+   "due": "03/30/2026",
+   "received": "03/30/2026"
+  },
+  {
+   "smr_document_id": "3063423",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for March 2026",
+   "period": "03/01/2026 to 03/31/2026",
+   "due": "04/30/2026",
+   "received": "04/27/2026"
+  },
+  {
+   "smr_document_id": "3079191",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for April 2026",
+   "period": "04/01/2026 to 04/30/2026",
+   "due": "06/01/2026",
+   "received": "05/27/2026"
+  },
+  {
+   "smr_document_id": "3095775",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for May 2026",
+   "period": "05/01/2026 to 05/31/2026",
+   "due": "06/30/2026",
+   "received": "06/29/2026"
+  },
+  {
+   "smr_document_id": "3106492",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for June 2026",
+   "period": "06/01/2026 to 06/30/2026",
+   "due": "07/30/2026",
+   "received": "07/24/2026"
+  },
+  {
+   "smr_document_id": "3116441",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for July 2026",
+   "period": "07/01/2026 to 07/31/2026",
+   "due": "08/31/2026",
+   "received": "08/28/2026"
+  },
+  {
+   "smr_document_id": "3124302",
+   "facility_place_id": "256499",
+   "report_name": "Monthly SMR ( MONNPDES ) report for August 2026",
+   "period": "08/01/2026 to 08/31/2026",
+   "due": "09/30/2026",
+   "received": "09/23/2026"
+  }
+ ]
+}

@@ -7,7 +7,9 @@
                    Freshness comes from the same manifests the record pages
                    read, so a refresh moves this page too.
 ``/architecture``  one diagram of the infrastructure — sources, Supabase,
-                   Vercel, GitHub, Brevo, the people on the other end.
+                   Vercel, GitHub, Brevo, the people on the other end. Each
+                   box opens the sources registered for it with their date
+                   coverage (``/api/sources`` ← ``shared/sources.py``).
 ``/about``         who runs the site, what it draws on, what the colours
                    mean, the disclaimer — the framing behind the ⓘ link.
 
@@ -17,12 +19,14 @@ body_bytes)`` — the contract ``app/wsgi.py`` dispatches.
 """
 from __future__ import annotations
 
+import json
 from datetime import date, datetime
 
 from flask import render_template
 
 import features.discharges.page as discharges_page
 import features.postings.page as postings_page
+from shared import sources as sources_registry
 
 
 def _freshness() -> dict:
@@ -63,9 +67,15 @@ def handle_architecture(query, body):
     return 200, "text/html; charset=utf-8", render_template("about/architecture.html").encode()
 
 
+def handle_sources(query, body):
+    """Every source with its date coverage (shared/sources.py) — the panel behind the diagram's tiles."""
+    return 200, "application/json", json.dumps(sources_registry.registry(), default=str).encode()
+
+
 GET_ROUTES = {
     "/about": handle_about,
     "/records": handle_records,
     "/architecture": handle_architecture,
+    "/api/sources": handle_sources,
 }
 POST_ROUTES: dict = {}

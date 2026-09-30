@@ -21,6 +21,14 @@ python aggregate.py        # dedupe/normalize -> sf_csd_events.csv + coverage gr
 python parse_old_sep.py    # optional: legacy Bayside format (2013 - Sep 2016), hours/counts only
 ```
 
+Archive step (2026-09-29, `archive_pdfs.py`): after `harvest_index.py`, run
+`python archive_pdfs.py --from-year 2013` in `features/forecast/data/csd/pdf_archive/`
+to keep the summary-type attachments themselves (the evidence behind every row)
+under `pdf_archive/pdfs/` (gitignored, ~1 GB) with `pdf_manifest.csv` (size,
+sha256, whether the record cites the file) and `attachments_all.csv` (every
+attachment CIWQS lists, downloaded or not) committed beside the record. It skips
+files already present, so a refresh only fetches the new quarter.
+
 Run from a scratch directory with this directory on `PYTHONPATH` (batch_parse
 imports parse_csd); the scripts read/write their working files where they run.
 For a refresh, include one already-covered month as a control (its rows must
