@@ -68,7 +68,7 @@ a{color:#0072BC}
 </section>
 
 <section id="rain"><h2>Rain sources</h2>
-<p class="lead">Two NOAA daily gauges define "rain" for training and for every past day; live hours come from the SFO airport gauge and the ECMWF forecast. Each basin model was trained on one rain source and is served the same one.</p>
+<p class="lead">Two NOAA daily gauges define "rain" for training and for every past day; live hours come from the SFO airport gauge and the ICON weather model. Each basin model was trained on one rain source and is served the same one.</p>
 <div class="grid g2">
   <div class="card"><b class="t">The two gauges (NOAA COOP via ACIS)</b><table id="gaugeTable"></table></div>
   <div class="card"><b class="t">Which rain each basin model sees</b><table id="basinSourceTable"></table>
@@ -202,7 +202,7 @@ document.getElementById('setName').textContent = MS.label;
   const boxes = [
     {id:'g', x:10,  y:20,  w:150, h:56, t:['NOAA gauges','047772 · 047767'], href:'#rain'},
     {id:'k', x:10,  y:92,  w:150, h:56, t:['KSFO hourly obs','recent hours'], href:'#rain'},
-    {id:'e', x:10,  y:164, w:150, h:56, t:['ECMWF IFS forecast','today + 5 days'], href:'#rain'},
+    {id:'e', x:10,  y:164, w:150, h:56, t:['ICON forecast (Open-Meteo)','today + 5 days'], href:'#rain'},
     {id:'h', x:10,  y:236, w:150, h:56, t:['Open-Meteo hourly','peak intensity'], href:'#rain'},
     {id:'s', x:210, y:92,  w:170, h:90, t:['Daily rain per source','avg · Downtown · Oceanside'], href:'#rain'},
     {id:'f', x:430, y:92,  w:150, h:90, t:['19 features','totals, lags, moisture,','peaks, dry spell'], href:'#inputs'},

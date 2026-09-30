@@ -14,7 +14,7 @@
   "westside"
  ],
  "rules": {
-  "version": "live_v1",
+  "version": "live_v2",
   "cso": {
    "onset_p": 1.0,
    "anchor_prev_day": {
@@ -56,6 +56,10 @@
    "horizon_days": 3,
    "tail_days": 7,
    "tail_min_p": 0.5,
+   "sources": [
+    "feed",
+    "datasf"
+   ],
    "floor_elevated_tail": {
     "ocean": 0.0,
     "baker_china": 0.0,
@@ -496,7 +500,7 @@
    },
    "n_days": 298
   },
-  "live_v1": {
+  "live_v2": {
    "grades": {
     "0.25": {
      "combined": {
