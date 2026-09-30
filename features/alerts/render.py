@@ -85,12 +85,12 @@ def _fallback(transitions: list[dict], simulated: bool, zone: str | None = None,
             f"sewage discharge at {beaches(n_cso)}" if n_cso > 0 else None,
             f"{beaches(n_posted)} posted" if n_posted > 0 else None]))
 
-    if n == 1:
-        headline = f'<span style="color:{tone}">{name1}</span>' + (" has a sewage discharge." if cso1 else " is posted for bacteria.")
+    if n == 1:   # names and counts stay black; only the status phrase takes its colour
+        headline = name1 + (' has a <span style="color:#b5310a">sewage discharge</span>.' if cso1 else ' is <span style="color:#d4763a">posted for bacteria</span>.')
     else:
         headline = " ".join(filter(None, [
-            f'<span style="color:#b5310a">Sewage discharge at {beaches(n_cso)}.</span>' if n_cso > 0 else None,
-            f'<span style="color:#d4763a">{n_posted} beach' + ("es are" if n_posted > 1 else " is") + " posted for bacteria.</span>" if n_posted > 0 else None]))
+            f'<span style="color:#b5310a">Sewage discharge</span> at {beaches(n_cso)}.' if n_cso > 0 else None,
+            f"{n_posted} beach" + ("es are" if n_posted > 1 else " is") + ' <span style="color:#d4763a">posted for bacteria</span>.' if n_posted > 0 else None]))
     facts = ((f"Discharging: {', '.join(t['station_name'] for t in cso)}. " if n_cso > 0 else "")
              + (f"Posted: {', '.join(t['station_name'] for t in posted)}. " if n_posted > 0 else "")
              + "From SFPUC's beach map, which this site checks every minute.")

@@ -50,9 +50,12 @@
   .st-label.bad{border-color:var(--posted);color:var(--posted)}
   /* Surfrider's latest result per site: a diamond in Surfrider blue, filled with the result's grade */
   .bwtf-pin{background:none;border:0}
-  .bwtf-dot{display:block;width:11px;height:11px;margin:1px;transform:rotate(45deg);border:2px solid var(--ink);border-radius:2px;background:#fff}   /* a diamond with a dark ring: Surfrider, never the city's white-ringed circle */
+  .bwtf-dot{display:block;width:11px;height:11px;margin:1px;transform:rotate(45deg);border:1px solid rgba(38,39,42,.55);border-radius:2px;background:#fff;box-shadow:0 0 0 1px #fff}   /* Surfrider's diamond: a hairline ring so the grade colour reads true (Chase: the thick ring looked blue) */
   .bwtf-dot.safe{background:var(--safe)}.bwtf-dot.caution{background:var(--caution)}.bwtf-dot.posted{background:var(--posted)}.bwtf-dot.unknown{background:var(--unknown)}
   .map-legend .bwtf-dot{display:inline-block;width:8px;height:8px;margin:0 2px}
+  .map-legend .shape{display:inline-flex;align-items:center;gap:4px;color:var(--muted)}
+  .map-legend .shape .status-dot,.map-legend .shape .bwtf-dot{background:#8a949b}
+  .map-legend .divider{width:1px;height:12px;background:var(--line);margin:0 2px}
   .map-legend .ring{display:inline-block;width:10px;height:10px;border-radius:50%;border:2px solid var(--brand);background:rgba(0,114,188,.15)}
   .map-legend .of{display:inline-block;width:9px;height:9px;border-radius:50%;background:#7a5a3a}
   /* the Layers strip (/today): plain chips, a replay slider, one line of orientation */
@@ -214,13 +217,23 @@ const band = pct => pct == null ? "unknown" : pct >= 50 ? "discharge" : pct >= 2
 const RANK_ST = {unknown: 0, safe: 1, caution: 1, posted: 2, discharge: 3};
 
 function renderLegend() {
+  // colours once (both shapes share them), then the shape key when Surfrider is on: ● city · ◆ Surfrider
   const lg = $("map-legend"); if (!lg) return;
   const dot = (c, t) => '<span><i class="status-dot ' + c + '"></i>' + t + "</span>";
-  let h = RISK_VIEW ? dot("safe", "under 10%") + dot("caution", "10–25%") + dot("posted", "25–50%") + dot("discharge", "50% or more") + '<span class="mut">overflow risk today</span>'
-                    : CITY_ON ? dot("safe", REPLAY_OFFSET ? "not posted" : "safe") + dot("posted", "posted") + dot("discharge", "discharge") + dot("unknown", REPLAY_OFFSET ? "not recorded" : "not sampled") : "";
+  let h = "";
+  if (RISK_VIEW) h = dot("safe", "under 10%") + dot("caution", "10–25%") + dot("posted", "25–50%") + dot("discharge", "50% or more") + '<span class="mut">overflow risk today</span>';
+  else {
+    const parts = [];
+    if (CITY_ON || LAYER.bwtf.on) parts.push(dot("safe", REPLAY_OFFSET ? "not posted" : "safe"));
+    if (LAYER.bwtf.on) parts.push(dot("caution", "caution"));
+    if (CITY_ON || LAYER.bwtf.on) parts.push(dot("posted", "posted"));
+    if (CITY_ON) parts.push(dot("discharge", "discharge"), dot("unknown", REPLAY_OFFSET ? "not recorded" : "not sampled"));
+    else if (LAYER.bwtf.on) parts.push(dot("unknown", "no result"));
+    h = parts.join("");
+    if (LAYER.bwtf.on) h += '<i class="divider"></i><span class="shape"><i class="status-dot"></i>city</span><span class="shape"><i class="bwtf-dot"></i>Surfrider</span>';
+  }
   if (LAYER.rain.on) h += '<span><i class="ring"></i>rain, 3 days</span>';
   if (LAYER.outfalls.on) h += '<span><i class="of"></i>outfall · size = year\'s volume</span>';
-  if (LAYER.bwtf.on) h += '<span><i class="bwtf-dot safe"></i>Surfrider latest · diamond</span>';
   lg.innerHTML = h;
 }
 function tileParts(key) { const b = document.querySelector('.zone[data-zone="' + key + '"]'); return b ? {b, st: b.querySelector(".st"), dots: [...b.querySelectorAll(".stations .status-dot")]} : null; }

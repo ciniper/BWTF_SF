@@ -2,8 +2,8 @@
 --
 -- What changes, and only this: bwtf_render_alert's output. The header reads "SF BEACH WATER
 -- QUALITY ALERT" over the site's mark; the card is the Today board's — a 2px border in the grade
--- colour, an eyebrow, a headline that states the fact in counts and colour ("Sewage discharge at
--- 1 beach. 1 beach is posted for bacteria." / "Islais Creek has a sewage discharge."), a facts line
+-- colour, an eyebrow, a headline that states the fact in counts, the status phrase alone in its
+-- colour ("Sewage discharge at 1 beach. 1 beach is posted for bacteria."), a facts line
 -- naming the beaches, one row per station with its map thumbnail and one factual line, SFPUC's
 -- guidance stated once and attributed, one button — "Live status" — to the site's board. SFPUC's
 -- own map moves to the small print, which also drops "always win" for "take precedence". No
@@ -73,13 +73,14 @@ begin
   end if;
 
   -- headline in the board's voice: counts, coloured by grade; one station is named outright
+  -- names and counts stay black; only the status phrase takes its colour (Chase, 2026-09-30)
   if n_matched = 1 then
-    headline := '<span style="color:' || tone || '">' || name1 || '</span>'
-             || case when cso1 then ' has a sewage discharge.' else ' is posted for bacteria.' end;
+    headline := name1 || case when cso1 then ' has a <span style="color:#b5310a">sewage discharge</span>.'
+                                        else ' is <span style="color:#d4763a">posted for bacteria</span>.' end;
   else
     headline := concat_ws(' ',
-      case when n_cso > 0 then '<span style="color:#b5310a">Sewage discharge at ' || n_cso || ' beach' || case when n_cso > 1 then 'es' else '' end || '.</span>' end,
-      case when n_posted > 0 then '<span style="color:#d4763a">' || n_posted || ' beach' || case when n_posted > 1 then 'es are' else ' is' end || ' posted for bacteria.</span>' end);
+      case when n_cso > 0 then '<span style="color:#b5310a">Sewage discharge</span> at ' || n_cso || ' beach' || case when n_cso > 1 then 'es' else '' end || '.' end,
+      case when n_posted > 0 then n_posted || ' beach' || case when n_posted > 1 then 'es are' else ' is' end || ' <span style="color:#d4763a">posted for bacteria</span>.' end);
   end if;
   facts := case when n_cso > 0 then 'Discharging: ' || names_cso || '. ' else '' end
         || case when n_posted > 0 then 'Posted: ' || names_post || '. ' else '' end

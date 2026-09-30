@@ -17,15 +17,15 @@ CSO = {"station_id": "4613", "station_name": "Islais Creek", "to": "cso"}
 def test_one_station_is_named_and_several_are_counted():
     one = render._fallback([POSTED], False, "Ocean Beach", UNSUB)
     assert one["subject"] == "Beach alert: Ocean Beach at Sloat Boulevard posted for bacteria"
-    assert '<span style="color:#d4763a">Ocean Beach at Sloat Boulevard</span> is posted for bacteria.</h1>' in one["html_body"]
+    assert 'Ocean Beach at Sloat Boulevard is <span style="color:#d4763a">posted for bacteria</span>.</h1>' in one["html_body"]   # the name in black, the status in colour
     assert 'border:2px solid #d4763a;border-radius:20px' in one["html_body"]                       # the card's border takes the grade
     two = render._fallback([POSTED, CSO], True, None, UNSUB)
     assert two["subject"] == "TEST Beach alert: sewage discharge at 1 beach, 1 beach posted"
-    assert '<span style="color:#b5310a">Sewage discharge at 1 beach.</span> <span style="color:#d4763a">1 beach is posted for bacteria.</span>' in two["html_body"]
+    assert '<span style="color:#b5310a">Sewage discharge</span> at 1 beach. 1 beach is <span style="color:#d4763a">posted for bacteria</span>.' in two["html_body"]
     assert "Discharging: Islais Creek. Posted: Ocean Beach at Sloat Boulevard. From SFPUC's beach map" in two["html_body"]
     assert 'border:2px solid #b5310a;border-radius:20px' in two["html_body"] and "TEST SF Beach Water Quality Alert" in two["html_body"]
     three = render._fallback([CSO, CSO, POSTED, POSTED], False, "East Beaches", UNSUB)
-    assert three["subject"] == "Beach alert: sewage discharge at 2 beaches, 2 beaches posted" and "2 beaches are posted for bacteria." in three["html_body"]
+    assert three["subject"] == "Beach alert: sewage discharge at 2 beaches, 2 beaches posted" and '2 beaches are <span style="color:#d4763a">posted for bacteria</span>.' in three["html_body"]
 
 
 def test_the_email_speaks_the_sites_language():
@@ -56,7 +56,7 @@ def test_migration_and_port_carry_the_same_stamp_and_the_same_words():
     assert render.RENDERER_VERSION == "019" and "renderer_ver text := '019'" in sql
     body = sql.split("create or replace function public.bwtf_render_alert(")[1]
     for phrase in ("SF Beach Water Quality Alert", ">Live status</a>", "take precedence", "Surfrider SF &middot; Blue Water Task Force",
-                   "has a sewage discharge.", "is posted for bacteria.", "SFPUC''s guidance:"):
+                   '<span style="color:#b5310a">sewage discharge</span>.', '<span style="color:#d4763a">posted for bacteria</span>.', "SFPUC''s guidance:"):
         assert phrase in body, phrase
     assert "always win" not in body and "View SFPUC Beach Map" not in body
 
