@@ -269,7 +269,10 @@ def main(model_name: str | None = None) -> None:
             X = fr[rain_source[key]].iloc[[i]]
             expected[key] = {"p": round(float(T.calibrated(finals[key], X)[0]), 6)}
             if basin in head_objs:
-                expected[key]["volume_mg"] = round(float(T.predicted_volume(head_objs[basin], X)[0]), 4)
+                # a volume head reads the rain source it was trained on, not the
+                # stage-1 model's (build_scorecard, live_dashboard and the page do too)
+                Xv = fr[head_objs[basin].get("rain_source", rain_source[key])].iloc[[i]]
+                expected[key]["volume_mg"] = round(float(T.predicted_volume(head_objs[basin], Xv)[0]), 4)
         stored = sc_by_date.get(ds, {})
         samples.append({"date": ds, "season": int(base.iloc[i]["season"]), "history": hist, "features": feats,
                         "expected": expected,

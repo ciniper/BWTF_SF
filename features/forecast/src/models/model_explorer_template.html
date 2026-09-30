@@ -148,7 +148,7 @@ x(k, size) = attributable P(elevated) = (p<sub>table</sub> − baseline) / (1 �
 </section>
 
 <section id="check"><h2>Self-check: this page vs scikit-learn</h2>
-<p class="lead">For each real storm below, the exporter recorded the features and probabilities scikit-learn produced from the pickles. The page recomputes them from the raw daily rain with its own JavaScript and compares.</p>
+<p class="lead">For each real storm below, the exporter recorded the features, probabilities and volume-head volumes scikit-learn produced from the pickles (each volume head on the rain source it was trained on). The page recomputes them from the raw daily rain with its own JavaScript and compares.</p>
 <table id="checkTable"></table>
 <p class="fine" id="checkSummary"></p>
 </section>
@@ -602,7 +602,7 @@ function renderWalk() {
 // ─── self-check ─────────────────────────────────────────────────────────────
 function selfCheck() {
   const rows = ['<tr><th>Storm day</th><th class="num">max |Δ feature| (3 sources)</th><th class="num">max |Δ P| (5 models)</th><th class="num">max |Δ volume| MG</th><th>zone risk vs stored scorecard</th><th>what happened</th></tr>'];
-  let worstF = 0, worstP = 0, worstZ = 0, n = 0;
+  let worstF = 0, worstP = 0, worstV = 0, worstZ = 0, n = 0;
   const saved = {g: S.g, intensity: S.intensity, dates: S.dates, sample: S.sample};
   for (const s of D.samples) {
     S.dates = s.history.dates; S.g = {'SF Downtown': s.history['SF Downtown'], 'SF Oceanside': s.history['SF Oceanside']}; S.intensity = s.history.intensity;
@@ -612,14 +612,14 @@ function selfCheck() {
     let dP = 0, dV = 0; for (const k of MODEL_ORDER) { dP = Math.max(dP, Math.abs(probs[last][k] - s.expected[k].p)); if (s.expected[k].volume_mg != null && vols[last][k] != null) dV = Math.max(dV, Math.abs(vols[last][k] - s.expected[k].volume_mg)); }
     const comp = compose(D.impact_smoothed, probs, vols, last), z = zoneRisks(comp.perGroup);
     let dZ = 0, zs = []; for (const zk of ZONE_ORDER) { const st = s.stored.zones[zk]; if (st != null) { dZ = Math.max(dZ, Math.abs(z[zk] - st)); zs.push(`${esc(D.zones[zk].label.split(' ')[0])} ${pct(z[zk])}${Math.abs(z[zk]-st) > 0.0015 ? ' <span class="bad-check">≠ ' + pct(st) + '</span>' : ''}`); } }
-    worstF = Math.max(worstF, dF); worstP = Math.max(worstP, dP); worstZ = Math.max(worstZ, dZ); n++;
+    worstF = Math.max(worstF, dF); worstP = Math.max(worstP, dP); worstV = Math.max(worstV, dV); worstZ = Math.max(worstZ, dZ); n++;
     const hap = BASINS.filter(b => s.labels[D.basins[b].name] && s.labels[D.basins[b].name].discharge).map(b => `${esc(nameOf(b))} ${s.labels[D.basins[b].name].volume_mg} MG`);
     rows.push(`<tr><td><b>${fmtDate(s.date)}</b>${s.stored.post_training ? ' <span class="badge info">post-training</span>' : ''}</td><td class="num ${dF < 1e-4 ? 'ok-check' : 'bad-check'}">${dF.toExponential(1)}</td><td class="num ${dP < 1e-4 ? 'ok-check' : 'bad-check'}">${dP.toExponential(1)}</td><td class="num ${dV < 1e-2 ? 'ok-check' : 'bad-check'}">${dV.toExponential(1)}</td><td class="fine">${zs.join(' · ') || '—'}</td><td class="fine">${hap.length ? hap.join(', ') : 'no discharge reported'}</td></tr>`);
   }
   Object.assign(S, saved);
   document.getElementById('checkTable').innerHTML = rows.join('');
-  const ok = worstF < 1e-4 && worstP < 1e-4 && worstZ < 0.0015;
-  document.getElementById('checkSummary').innerHTML = `${ok ? '<span class="ok-check">✓ PASS</span>' : '<span class="bad-check">✗ MISMATCH</span>'} — over ${n} storms: features within ${worstF.toExponential(1)}, probabilities within ${worstP.toExponential(1)}, zone risks within ${worstZ.toFixed(4)} of the scorecard artifact (which stores 3 decimals).`;
+  const ok = worstF < 1e-4 && worstP < 1e-4 && worstV < 1e-2 && worstZ < 0.0015;
+  document.getElementById('checkSummary').innerHTML = `${ok ? '<span class="ok-check">✓ PASS</span>' : '<span class="bad-check">✗ MISMATCH</span>'} — over ${n} storms: features within ${worstF.toExponential(1)}, probabilities within ${worstP.toExponential(1)}, volumes within ${worstV.toExponential(1)} MG, zone risks within ${worstZ.toFixed(4)} of the scorecard artifact (which stores 3 decimals).`;
 }
 
 // ─── boot ───────────────────────────────────────────────────────────────────
