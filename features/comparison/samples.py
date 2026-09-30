@@ -359,6 +359,8 @@ def build_sample_dates(station: str = "", bwtf: str = "", sf_gov_monitor=None, b
         dates = bwtf_sample_dates(client.fetch_event_history(since=datetime(2023, 1, 1), max_pages=80), site["bwtf_name"])
         out = {"ok": True, "source": "bwtf", "site": site["name"], "key": site["key"], "dates": dates, "latest": dates[-1] if dates else None}
     else:
+        if not site["sources"]:
+            raise ValueError(f"unknown station {station!r}")   # a 404, not an empty "source in ()" sent to DataSF
         from features.alerts.monitoring import SFWaterQualityMonitor  # local: avoids the import cycle at module load
         monitor = sf_gov_monitor or SFWaterQualityMonitor()
         dates = city_sample_dates(list(site["sources"]), monitor)

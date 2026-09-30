@@ -315,6 +315,14 @@ def test_sample_dates_list_every_day_a_site_was_sampled_for_the_popover_arrows()
     S._DATES_CACHE.clear()
     c = S.build_sample_dates(station="OCEAN#21_SL", sf_gov_monitor=monitor)
     assert c["source"] == "city" and c["dates"][-2:] == ["2026-09-21", "2026-09-28"] and c["latest"] == "2026-09-28"                   # DataSF days (plus the lab export's, when present)
+    # an id DataSF has never heard of is a 404 from us, not a malformed query sent to Socrata
+    class Never:
+        def get(self, *a, **kw): raise AssertionError("DataSF must not be asked about an unknown station")
+    try:
+        S.build_sample_dates(station="4602", sf_gov_monitor=types.SimpleNamespace(session=Never(), API_URL="https://data.sf.gov/resource/x.json"))
+        assert False, "expected ValueError"
+    except ValueError as e:
+        assert "unknown station '4602'" in str(e)
 
 
 if __name__ == "__main__":
