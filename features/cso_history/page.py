@@ -29,7 +29,7 @@ handler returns ``(status, content_type, body_bytes)`` — the contract
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 
 from flask import render_template
 
@@ -45,6 +45,7 @@ _ROW_LIMIT = 5000
 _ASSUME_ONGOING_HOURS = 24
 _PACIFIC = ZoneInfo("America/Los_Angeles")
 _SAMPLE_LOOKBACK_DAYS = 21      # samples collected up to this long before monitoring began still show
+_FEED_HISTORY_SINCE = "2026-09-27"   # feed_station_days began (012): a sample date the map already showed that day was there before we watched
 _SFPUC_OF_SOURCE = {sid: s.sfpuc_id for sid, s in STATIONS.items()}    # DataSF station id → SFPUC feed id (the timeline's key)
 _NAME_OF_SFPUC = {s.sfpuc_id: s.sfpuc_name for s in STATIONS.values()}
 
@@ -107,14 +108,100 @@ def _fetch_sample_rows(since_day: str) -> list[dict]:
     })
 
 
-def build_sample_days(rows: list[dict]) -> dict[str, list[dict]]:
-    """{SFPUC station id: [{date, elevated, n, source, first_seen, lag_days}]},
-    one entry per station-day. ``elevated`` = any analyte over its limit that
-    day; ``first_seen`` = when the mirror first saw the day's results (the
-    earliest row); ``lag_days`` = the Pacific day first seen minus the
-    collection day — only for days whose rows the production refresh picked up
-    in real time (source ``refresh``); a day with any backfilled row has no
-    honest lag and shows the collection day alone."""
+def parse_feed_date(text) -> str | None:
+    """The feed's sample_date (MM/DD/YY, occasionally MM/DD/YYYY) as ISO, else None."""
+    if not text:
+        return None
+    for fmt in ("%m/%d/%y", "%m/%d/%Y"):
+        try:
+            return datetime.strptime(str(text).strip(), fmt).date().isoformat()
+        except ValueError:
+            continue
+    return None
+
+
+def _fetch_feed_sample_rows(since_day: str) -> list[dict]:
+    """feed_sample_dates (migration 018): the tick that first showed each sample date on SFPUC's map."""
+    return sb.select("feed_sample_dates", {
+        "select": "station_id,sample_date,first_seen_at,approx,status_first,posting_color_first",
+        "sample_date": f"gte.{since_day}",
+        "order": "sample_date.asc",
+        "limit": str(_ROW_LIMIT),
+    })
+
+
+def _fetch_feed_sample_rows_from_days(since_day: str) -> list[dict]:
+    """Until 018 is applied: the same rows derived from feed_station_days (012), to the day."""
+    rows = sb.select("feed_station_days", {
+        "select": "station_id,day,first_seen_at,status_last,posting_color,feed_sample_date:raw_last->>sample_date",
+        "day": f"gte.{since_day}",
+        "order": "day.asc",
+        "limit": str(_ROW_LIMIT),
+    })
+    return derive_feed_sample_rows(rows)
+
+
+def derive_feed_sample_rows(day_rows: list[dict]) -> list[dict]:
+    """feed_sample_dates-shaped rows from station-day rows: for each (station,
+    sample date) the first day whose last tick showed it, flagged ``approx``."""
+    seen: dict[tuple[str, str], dict] = {}
+    for r in sorted(day_rows, key=lambda r: str(r.get("day") or "")):
+        sd = parse_feed_date(r.get("feed_sample_date"))
+        sid = str(r.get("station_id") or "")
+        if not sd or not sid or (sid, sd) in seen:
+            continue
+        seen[(sid, sd)] = {"station_id": sid, "sample_date": sd, "first_seen_at": r.get("first_seen_at"), "approx": True,
+                           "status_first": r.get("status_last") or "ok", "posting_color_first": r.get("posting_color")}
+    return list(seen.values())
+
+
+def build_feed_dates(rows: list[dict]) -> dict[tuple[str, str], dict]:
+    """{(SFPUC station id, ISO sample date): {seen, seen_day, approx, censored, status}}.
+    ``seen`` = when SFPUC's map first showed that sample date for the station:
+    the tick for rows the watcher recorded (018), noon Pacific of the day for
+    rows derived from the station-day table (``approx``). ``censored``: the map
+    already showed the date on the first day we recorded the feed, so all we
+    know is "by then"."""
+    out: dict[tuple[str, str], dict] = {}
+    for r in rows:
+        sid = str(r.get("station_id") or "")
+        day = str(r.get("sample_date") or "")[:10]
+        fs = _parse_ts(r.get("first_seen_at"))
+        if sid not in _NAME_OF_SFPUC or len(day) != 10 or fs is None:
+            continue
+        approx = bool(r.get("approx"))
+        seen_day = fs.astimezone(_PACIFIC).date()
+        censored = approx and seen_day.isoformat() <= _FEED_HISTORY_SINCE
+        seen = datetime.combine(seen_day, time(12, 0), tzinfo=_PACIFIC) if approx else fs
+        out[(sid, day)] = {"seen": _iso(seen), "seen_day": seen_day.isoformat(), "approx": approx,
+                           "censored": censored, "status": r.get("status_first") or "ok"}
+    return out
+
+
+def _map_fields(f: dict | None, day: str) -> dict:
+    """The map-feed part of a sample-day entry (see build_sample_days)."""
+    if not f:
+        return {"map_seen": None, "map_lag_days": None, "map_approx": False, "map_censored": False}
+    lag = None if f["censored"] else (date.fromisoformat(f["seen_day"]) - date.fromisoformat(day)).days
+    return {"map_seen": f["seen"], "map_lag_days": lag, "map_approx": f["approx"], "map_censored": f["censored"]}
+
+
+def build_sample_days(rows: list[dict], feed: dict | None = None, now: datetime | None = None) -> dict[str, list[dict]]:
+    """{SFPUC station id: [{date, elevated, n, source, first_seen, lag_days,
+    map_seen, map_lag_days, map_approx, map_censored, lane}]}, one entry per
+    station-day. ``elevated`` = any analyte over its limit that day;
+    ``first_seen`` = when the mirror first saw the day's results (the earliest
+    row); ``lag_days`` = the Pacific day first seen minus the collection day —
+    only for days whose rows the production refresh picked up in real time
+    (source ``refresh``); a day with any backfilled row has no honest lag and
+    shows the collection day alone. ``feed`` (build_feed_dates) adds when
+    SFPUC's map first showed the sample date (``map_seen``, ``map_lag_days``);
+    a date the map shows that the lab dataset has not published yet becomes a
+    ``pending`` entry — result unknown, ``pending_days`` since collection as of
+    ``now`` — the "graded and posted online, numbers not yet public" state."""
+    feed = feed or {}
+    now = now or datetime.now(timezone.utc)
+    today = now.astimezone(_PACIFIC).date()
     days: dict[tuple[str, str], dict] = {}
     for r in rows:
         sfpuc = _SFPUC_OF_SOURCE.get(str(r.get("station_id") or ""))
@@ -133,36 +220,57 @@ def build_sample_days(rows: list[dict]) -> dict[str, list[dict]]:
     for (sfpuc, day), e in sorted(days.items()):
         real = e["source"] == "refresh" and e["first_seen"] is not None
         lag = (e["first_seen"].astimezone(_PACIFIC).date() - datetime.strptime(day, "%Y-%m-%d").date()).days if real else None
-        out.setdefault(sfpuc, []).append({"date": day, "elevated": e["elevated"], "n": e["n"], "source": e["source"],
-                                          "first_seen": _iso(e["first_seen"]) if real else None, "lag_days": lag})
+        entry = {"date": day, "elevated": e["elevated"], "n": e["n"], "source": e["source"],
+                 "first_seen": _iso(e["first_seen"]) if real else None, "lag_days": lag}
+        entry.update(_map_fields(feed.get((sfpuc, day)), day))
+        out.setdefault(sfpuc, []).append(entry)
+    # the map is ahead of the lab dataset: sample dates it shows whose numbers are not published yet
+    for (sfpuc, day), f in sorted(feed.items()):
+        if (sfpuc, day) in days or day > today.isoformat():
+            continue
+        entry = {"date": day, "elevated": None, "n": 0, "source": "feed", "first_seen": None, "lag_days": None,
+                 "pending": True, "pending_days": (today - date.fromisoformat(day)).days}
+        entry.update(_map_fields(f, day))
+        out.setdefault(sfpuc, []).append(entry)
     for entries in out.values():
-        assign_lanes(entries)
+        entries.sort(key=lambda e: e["date"])
+        assign_lanes(entries, now)
     return out
 
 
 MIN_BAR_LAG_DAYS = 2   # a lag of 0–1 days is shorter than the dot itself: tooltip only, no bar
 
 
-def assign_lanes(entries: list[dict]) -> int:
+def assign_lanes(entries: list[dict], now: datetime | None = None) -> int:
     """Give each publish-lag bar a lane so overlapping bars stack instead of
     smearing (a storm week's resamples are all published together). A bar
-    spans the collection day to first_seen; sorted by start, each takes the
-    first lane whose previous bar has ended. Entries without a bar (no
-    first_seen, or a lag under MIN_BAR_LAG_DAYS) get lane None. Returns the
-    number of lanes used (0 when no bars)."""
-    bars = [e for e in entries if e.get("first_seen") and (e.get("lag_days") or 0) >= MIN_BAR_LAG_DAYS]
+    spans the collection day to first_seen — or to ``now`` for a pending
+    entry (the map shows the sample, the numbers are not out); sorted by
+    start, each takes the first lane whose previous bar has ended. Entries
+    without a bar (no first_seen and not pending, or a lag under
+    MIN_BAR_LAG_DAYS) get lane None. Returns the number of lanes used."""
+    now_iso = _iso(now) if now else None
+
+    def bar_end(e: dict) -> str | None:
+        if e.get("first_seen") and (e.get("lag_days") or 0) >= MIN_BAR_LAG_DAYS:
+            return e["first_seen"]
+        if e.get("pending") and now_iso and (e.get("pending_days") or 0) >= MIN_BAR_LAG_DAYS:
+            return now_iso
+        return None
+
+    bars = [(e, end) for e in entries for end in [bar_end(e)] if end]
     for e in entries:
         e["lane"] = None
-    lane_end: list[str] = []          # per lane, the ISO first_seen of its last bar
-    for e in sorted(bars, key=lambda e: (e["date"], e["first_seen"])):
+    lane_end: list[str] = []          # per lane, the ISO end of its last bar
+    for e, end in sorted(bars, key=lambda t: (t[0]["date"], t[1])):
         start = e["date"] + "T20:00:00Z"   # ~noon Pacific on the collection day, the same anchor the page draws
         lane = 0
         while lane < len(lane_end) and lane_end[lane] > start:
             lane += 1
         if lane == len(lane_end):
-            lane_end.append(e["first_seen"])
+            lane_end.append(end)
         else:
-            lane_end[lane] = e["first_seen"]
+            lane_end[lane] = end
         e["lane"] = lane
     return len(lane_end)
 
@@ -315,12 +423,21 @@ def handle_events(query, body):
                       "stations": [], "event_count": 0,
                       "note": f"event history temporarily unavailable ({type(exc).__name__})"})
     stations = build_station_windows(rows, _fetch_roster(), now)
-    samples, sample_note = {}, None
+    samples, notes = {}, []
+    since_day = ((_parse_ts(monitoring_since) or now) - timedelta(days=_SAMPLE_LOOKBACK_DAYS)).date().isoformat()
+    feed: dict = {}
+    try:   # when SFPUC's map first showed each sample date (018; the station-day table to the day until it is applied)
+        try:
+            feed_rows = _fetch_feed_sample_rows(since_day)
+        except Exception:
+            feed_rows = _fetch_feed_sample_rows_from_days(since_day)
+        feed = build_feed_dates(feed_rows)
+    except Exception as exc:
+        notes.append(f"map sample dates temporarily unavailable ({type(exc).__name__})")
     try:
-        since_day = ((_parse_ts(monitoring_since) or now) - timedelta(days=_SAMPLE_LOOKBACK_DAYS)).date().isoformat()
-        samples = build_sample_days(_fetch_sample_rows(since_day))
+        samples = build_sample_days(_fetch_sample_rows(since_day), feed, now)
     except Exception as exc:  # the samples row is an addition; its absence must not blank the events
-        sample_note = f"sample dates temporarily unavailable ({type(exc).__name__})"
+        notes.append(f"sample dates temporarily unavailable ({type(exc).__name__})")
     known = {s["station_id"] for s in stations}
     extra = [{"station_id": sid, "station_name": _NAME_OF_SFPUC.get(sid, sid), "current_status": None, "windows": []}
              for sid in samples if sid not in known]
@@ -328,7 +445,10 @@ def handle_events(query, body):
         eventful = [s for s in stations if s["windows"]]
         quiet = sorted([s for s in stations if not s["windows"]] + extra, key=lambda s: s["station_name"].lower())
         stations = eventful + quiet
-    lags = [d["lag_days"] for v in samples.values() for d in v if d["lag_days"] is not None]
+    entries = [d for v in samples.values() for d in v]
+    lags = [d["lag_days"] for d in entries if d["lag_days"] is not None]
+    map_lags = [d["map_lag_days"] for d in entries if d.get("map_lag_days") is not None]
+    after_map = [d["lag_days"] - d["map_lag_days"] for d in entries if d["lag_days"] is not None and d.get("map_lag_days") is not None]
     return _json({
         "generated_at": _iso(now),
         "monitoring_since": monitoring_since,
@@ -336,8 +456,13 @@ def handle_events(query, body):
         "event_count": sum(len(s["windows"]) for s in stations),
         "samples": samples,
         "sample_lag": {"n": len(lags), "median_days": _median(lags),
-                       "measured_since": "2026-09-27"},   # the mirror's first real-time pickup (migration 012)
-        "sample_note": sample_note,
+                       "measured_since": "2026-09-27",   # the mirror's first real-time pickup (migration 012)
+                       # collection → SFPUC's map; map → the numbers online; sample dates on the map with no numbers yet
+                       "map": {"n": len(map_lags), "median_days": _median(map_lags),
+                               "after_map_n": len(after_map), "after_map_median_days": _median(after_map),
+                               "pending": sum(1 for d in entries if d.get("pending")),
+                               "measured_since": _FEED_HISTORY_SINCE}},
+        "sample_note": " ".join(notes) or None,
     })
 
 
