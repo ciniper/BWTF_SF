@@ -235,3 +235,24 @@ Cron: `bwtf-shadow-tick` every minute; `bwtf-forecast-refresh` at :05 and :35 (�
 - The SFPUC feed is undocumented and internal; the watcher's dead-man ping is what tells us if it changes shape.
 - The root `README.md`'s notification, scheduling and architecture sections describe the original command-line monitor
   and its Slack/Discord/SMS channels; production alerting is the pg_cron watcher + Brevo email described above.
+
+## 8. Time
+
+The site runs on Vercel, whose clock is UTC; the beaches are in San Francisco, seven or eight hours
+behind. Three rules, in force since 2026-09-30 (`shared/clock.py`, guarded by `tests/test_clock.py`):
+
+- **Anything a person reads is Pacific.** Server-rendered dates and times (the board's "checked" time,
+  "Updated" stamps, alert emails' "Generated" line) come from `now_pacific()`; a page's "today"
+  (date pickers, default ranges, overdue checks) from `today_pacific()`. Daylight saving follows the
+  zone database, not a hand-set offset.
+- **Everything stored is an instant in UTC.** Every timestamp column is `timestamptz`; Python writes
+  `utc_iso()` (an offset in the string). Rows written before 2026-09-30 carried naive strings, but they
+  were UTC and Postgres read them as UTC, so the stored instants are right — `subscribers.updated_at`
+  matches its database-default `created_at` to the second. The SQL watcher computes its Pacific day
+  itself (`now() at time zone 'America/Los_Angeles'`), so `feed_station_days.day` and
+  `feed_sample_dates` were always the beach's day.
+- **One caveat for anyone reading raw rows.** The forecast snapshot JSON (`forecast_predictions.snapshot`
+  and every `forecast_history` row) carries a `last_refresh` string; before 2026-09-30 it has no offset
+  and means UTC, after it has `+00:00`. The forecast page reads an offset-less stamp as UTC. A SQL
+  client shows every `timestamptz` in the session's zone — usually UTC — so convert before comparing
+  with a beach day.
