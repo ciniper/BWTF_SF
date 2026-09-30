@@ -17,6 +17,22 @@ from shared import city_history
 from shared.datasf import DATASET_FLOOR  # noqa: F401
 
 
+DEFAULT_GRAPH_SITE_NAME = "Ocean Beach at Lincoln"   # a fresh Graphs visit opens here: both programs sample it, the city year-round
+                                                     # (Ocean Beach at Vicente, the other dual Ocean Beach site, is winter-only for the city — three months would show no city samples)
+
+
+def _site_groups() -> tuple[list[dict], list[tuple[str, list[dict]]]]:
+    """Every site the picker offers, and the same grouped by zone label in zone order — the one
+    list behind the site picker on Graphs and Samples (app/templates/_site_picker.html)."""
+    sites = graph_sites()
+    groups = []
+    for g in dict.fromkeys(x["group"] for x in sites):
+        items = [x for x in sites if x["group"] == g]
+        if items:
+            groups.append((g, items))
+    return sites, groups
+
+
 class ComparisonRoutes:
     """Comparison-page routes, mixed into the unified server handler."""
 
@@ -158,18 +174,15 @@ class ComparisonRoutes:
 
     def send_graphs_page(self):
         """Water Quality Graphs: site + range + view, drawn client-side from /api/site-series."""
-        sites = graph_sites()
-        groups = []
-        for g in dict.fromkeys(x["group"] for x in sites):
-            items = [x for x in sites if x["group"] == g]
-            if items:
-                groups.append((g, items))
-        self._send_page("graphs/page.html", sites=sites, site_groups=groups, dataset_floor=city_history.city_record_floor(), datasf_from=DATASET_FLOOR,
+        sites, groups = _site_groups()
+        first = next((s["key"] for s in sites if s["name"] == DEFAULT_GRAPH_SITE_NAME), "")
+        self._send_page("graphs/page.html", sites=sites, site_groups=groups, first_site=first, dataset_floor=city_history.city_record_floor(), datasf_from=DATASET_FLOOR,
                         analytes=[{"code": c, "label": m["label"]} for c, m in ANALYTES.items()])
 
     def send_samples_page(self):
-        """Samples: every result from both programs, the latest-by-site strip, field notes three ways."""
-        self._send_page("samples/page.html", dataset_floor=city_history.city_record_floor(), datasf_from=DATASET_FLOOR)
+        """Samples: every result from both programs, one row per sample (a row opens that day's results
+        as a graph), the site picker Graphs uses, field notes three ways."""
+        self._send_page("samples/page.html", site_groups=_site_groups()[1], dataset_floor=city_history.city_record_floor(), datasf_from=DATASET_FLOOR)
 
     def generate_comparison_html(self, data, scope="dual"):
         """Render the source-comparison dashboard (Surfrider BWTF vs. public city data).

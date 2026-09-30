@@ -1,0 +1,18 @@
+{# The site picker Graphs and Samples share (behaviour: app/static/site_picker.js; styles: brand.css).
+   site_groups: [(zone label, [site dicts with key, name, city, bwtf])] from features/comparison/page.py.
+   all_label:   offer an "All sites" tile first (Samples) — its key is "".
+   cross:       (label, id, href) for one link beside "Change site" to the sibling page over the same
+                site and range; the page keeps its href in step.
+   first_site:  the key a fresh visit opens on when the page has no All tile (Graphs). #}
+{% macro site_picker(site_groups, all_label=none, cross=none, first_site=none) %}
+  <div class="site-bar" id="siteBar">
+    <span class="ctl-label">Site</span>
+    <span class="site-now" id="siteNow"><b id="siteName">—</b><small id="siteZone"></small></span>
+    <button class="preset" id="siteChange" type="button" aria-controls="tiles" aria-expanded="false">Change site</button>
+    {% if cross %}<a class="preset cross" id="{{ cross[1] }}" href="{{ cross[2] }}">{{ cross[0] }}</a>{% endif %}
+  </div>
+  <div class="tiles" id="tiles" aria-label="Site">
+    {% if all_label %}<div class="tile-group" data-group=""><div class="tile-row"><button class="tile" type="button" data-key="" data-name="{{ all_label }}" data-city="1" data-bwtf="1">{{ all_label }}</button></div></div>{% endif %}
+    {% for group, items in site_groups %}<div class="tile-group" data-group="{{ group }}"><div class="tile-group-name">{{ group }}</div><div class="tile-row">{% for s in items %}<button class="tile" type="button" data-key="{{ s.key }}" data-name="{{ s.name }}" data-city="{{ 1 if s.city else 0 }}" data-bwtf="{{ 1 if s.bwtf else 0 }}"{% if first_site and s.key == first_site %} data-first="1"{% endif %}>{{ s.name }}</button>{% endfor %}</div></div>{% endfor %}
+  </div>
+{% endmacro %}

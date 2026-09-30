@@ -91,9 +91,10 @@
     <input type="date" id="startDate" min="2016-10-01">
     <span style="color:#54576F">→</span>
     <input type="date" id="endDate" min="2016-10-01">
-    <button class="group-btn preset active" data-days="">Full record</button>
-    <button class="group-btn preset" data-days="1826">Last 5 yrs</button>
+    <button class="group-btn preset" data-days="91">Last 3 mo</button>
+    <button class="group-btn preset" data-days="365">Last 12 mo</button>
     <button class="group-btn preset" data-days="1096">Last 3 yrs</button>
+    <button class="group-btn preset" data-days="">Full record</button>
   </div>
 
   <div class="note" id="covNote"></div>
@@ -498,26 +499,23 @@ async function load() {
     STATE.water = b.dataset.water; render();
   });
 
-  document.querySelectorAll(".preset").forEach(btn => btn.addEventListener("click", () => {
-    document.querySelectorAll(".preset").forEach(x => x.classList.toggle("active", x===btn));
-    const days = btn.dataset.days;
-    if (!days) { STATE.start = sd.value = ""; STATE.end = ed.value = ""; }
-    else {
-      const from = new Date(new Date(newest) - days * 864e5);
-      STATE.start = sd.value = from.toISOString().slice(0,10);
-      STATE.end = ed.value = "";
-    }
-    render();
-  }));
+  const DAY = 864e5, near = (iso, ms) => !!iso && Math.abs(new Date(iso) - ms) <= 1.5 * DAY;
+  function markPreset() {   // light the preset whose window matches the dates shown: N days back from the newest record, or the whole ledger
+    const toEnd = near(STATE.end, new Date(newest));
+    document.querySelectorAll(".preset").forEach(x => { const d = x.dataset.days;
+      x.classList.toggle("active", toEnd && (d ? near(STATE.start, new Date(newest) - d * DAY) : !!STATE.start && STATE.start <= sd.min)); });
+  }
+  function applyPreset(days) {   // both dates always filled: a window ending on the newest record, or the ledger's first day to its newest
+    STATE.end = ed.value = newest;
+    STATE.start = sd.value = days ? new Date(new Date(newest) - days * DAY).toISOString().slice(0, 10) : sd.min;
+    markPreset(); render();
+  }
+  document.querySelectorAll(".preset").forEach(btn => btn.addEventListener("click", () => applyPreset(+btn.dataset.days)));
   for (const [el, key] of [[sd, "start"], [ed, "end"]]) {
-    el.addEventListener("change", e => {
-      STATE[key] = e.target.value;
-      document.querySelectorAll(".preset").forEach(x => x.classList.remove("active"));
-      render();
-    });
+    el.addEventListener("change", e => { STATE[key] = e.target.value; markPreset(); render(); });
   }
   buildPicker();
-  render();
+  applyPreset(365);   // opens on the last twelve months: discharges come with rain, so three months would be empty all dry season
   initRaw();
 }
 load();

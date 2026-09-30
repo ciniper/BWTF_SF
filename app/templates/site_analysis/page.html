@@ -91,9 +91,10 @@
     <input type="date" id="startDate" min="{{ floor }}">
     <span style="color:#54576F">→</span>
     <input type="date" id="endDate" min="{{ floor }}">
-    <button class="group-btn preset" data-days="">Full record</button>
-    <button class="group-btn preset" data-days="730">Last 2 yrs</button>
+    <button class="group-btn preset" data-days="91">Last 3 mo</button>
     <button class="group-btn preset" data-days="365">Last 12 mo</button>
+    <button class="group-btn preset" data-days="1096">Last 3 yrs</button>
+    <button class="group-btn preset" data-days="">Full record</button>
   </div>
 
   <div class="map-board">
@@ -182,7 +183,8 @@
 
 <script>
 let DATA = null, activeGroup = "";
-const STATE = { mode: "weekly", indicator: "{{ graded_on }}", start: "", end: "" };
+const STATE = { mode: "weekly", indicator: "{{ graded_on }}", start: new Date(Date.now() - 91 * 864e5).toISOString().slice(0, 10), end: "" };   // opens on the last three months; a blank end runs through the newest sample
+document.getElementById("startDate").value = STATE.start;
 
 // ─── Site map ────────────────────────────────────────────────────────────────
 let MAP = null, markerLayer = null;
@@ -292,8 +294,8 @@ async function load() {
     (DATA.stale_note ? " · cached (" + DATA.stale_note + ")" : "");
   const sd = document.getElementById("startDate"), ed = document.getElementById("endDate");
   sd.max = ed.max = DATA.newest_sample;
-  if (!sd.value && DATA.start) sd.value = DATA.start;
-  if (!ed.value && DATA.end) ed.value = DATA.end;
+  if (!sd.value) sd.value = DATA.start || DATA.dataset_floor;
+  if (!ed.value) ed.value = DATA.end || DATA.newest_sample;   // both dates always read: a blank end means the newest sample
   markPreset();
   initMap();
   render();
@@ -323,23 +325,18 @@ document.getElementById("stdToggle").addEventListener("click", e => {
   load();
 });
 
-function markPreset() {   // light the preset in play: no dates = Full record; a start N days before the newest sample (a day of slack) = that preset
-  const newest = new Date(DATA ? DATA.newest_sample : Date.now()), DAY = 864e5;
+function markPreset() {   // light the preset in play: a start N days before today (a day of slack), an end at the newest sample or blank
+  const now = Date.now(), DAY = 864e5, near = (iso, ms) => !!iso && Math.abs(new Date(iso) - ms) <= 1.5 * DAY;
+  const newest = DATA ? new Date(DATA.newest_sample).getTime() : now, toEnd = !STATE.end || near(STATE.end, newest) || near(STATE.end, now);
   document.querySelectorAll(".preset").forEach(b => { const d = b.dataset.days;
-    b.classList.toggle("active", d ? !STATE.end && !!STATE.start && Math.abs(new Date(STATE.start) - (newest - d * DAY)) <= 1.5 * DAY : !STATE.start && !STATE.end); });
+    b.classList.toggle("active", toEnd && (d ? near(STATE.start, now - d * DAY) : !!STATE.start && STATE.start <= document.getElementById("startDate").min)); });
 }
 
 document.querySelectorAll(".preset").forEach(btn => btn.addEventListener("click", () => {
-  const days = btn.dataset.days;
+  const days = +btn.dataset.days;
   const sd = document.getElementById("startDate"), ed = document.getElementById("endDate");
-  if (!days) { sd.value = ""; ed.value = ""; STATE.start = ""; STATE.end = ""; }
-  else {
-    const newest = new Date(DATA ? DATA.newest_sample : Date.now());
-    const from = new Date(newest - days * 864e5);
-    STATE.start = sd.value = from.toISOString().slice(0, 10);
-    STATE.end = ed.value = "";
-    ed.value = "";
-  }
+  STATE.start = sd.value = days ? new Date(Date.now() - days * 864e5).toISOString().slice(0, 10) : sd.min;   // both dates always filled
+  STATE.end = ed.value = DATA ? DATA.newest_sample : new Date().toISOString().slice(0, 10);
   markPreset();
   load();
 }));

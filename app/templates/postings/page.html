@@ -66,9 +66,9 @@
     <span class="ctl-label">Years:</span>
     <input type="number" id="yearFrom" min="1999" step="1"> <span style="color:#54576F">→</span>
     <input type="number" id="yearTo" min="1999" step="1">
-    <button class="group-btn preset" data-years="">Full record</button>
-    <button class="group-btn preset" data-years="10">Last 10 yrs</button>
     <button class="group-btn preset" data-years="3">Last 3 yrs</button>
+    <button class="group-btn preset" data-years="10">Last 10 yrs</button>
+    <button class="group-btn preset" data-years="">Full record</button>
   </div>
 
   <div class="fresh-note" id="freshNote" style="display:none"></div>
@@ -179,10 +179,13 @@ function wire() {
   ct.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; STATE.cause = b.dataset.cause; ct.querySelectorAll("button").forEach(x => x.classList.toggle("active", x === b)); render(); });
   const yf = document.getElementById("yearFrom"), yt = document.getElementById("yearTo");
   yf.max = yt.max = D.lastYear; yf.placeholder = D.firstYear; yt.placeholder = D.lastYear;
-  const setYears = (f, t) => { STATE.from = f; STATE.to = t; yf.value = f ?? ""; yt.value = t ?? ""; render(); };
+  const setYears = (f, t) => { STATE.from = f; STATE.to = t; yf.value = f ?? ""; yt.value = t ?? "";
+    document.querySelectorAll(".preset").forEach(b => { const n = +b.dataset.years; b.classList.toggle("active", t === D.lastYear && f === (n ? D.lastYear - n + 1 : D.firstYear)); });   // light the preset in play
+    render(); };
   yf.addEventListener("change", () => setYears(yf.value ? +yf.value : null, STATE.to));
   yt.addEventListener("change", () => setYears(STATE.from, yt.value ? +yt.value : null));
-  document.querySelectorAll(".preset").forEach(b => b.addEventListener("click", () => { const n = b.dataset.years; n ? setYears(D.lastYear - n + 1, D.lastYear) : setYears(null, null); }));
+  document.querySelectorAll(".preset").forEach(b => b.addEventListener("click", () => { const n = +b.dataset.years; setYears(n ? D.lastYear - n + 1 : D.firstYear, D.lastYear); }));   // Full record fills both boxes too
+  setYears(D.lastYear - 2, D.lastYear);   // opens on the last three years (postings are counted by year), never the full record
   document.querySelectorAll("#tbl th").forEach(th => th.addEventListener("click", () => { const k = th.dataset.k; STATE.sort = {k, dir: STATE.sort.k === k ? -STATE.sort.dir : (k === "name" || k === "zone" || k === "last" ? 1 : -1)}; renderStations(view()); }));
 }
 fetch("/postings/api/advisories").then(r => r.json()).then(d => {
@@ -205,7 +208,7 @@ fetch("/postings/api/advisories").then(r => r.json()).then(d => {
       + (R.next_due ? ' · next refresh due <b>' + R.next_due + '</b>' : '') + (overdue ? ' — <b>overdue</b>' : '') + '.</span>';
   }
   document.getElementById("foot").textContent = "Source: " + d.source + (d.fetched_at ? " · fetched " + d.fetched_at.slice(0, 10) : "") + " · stored at features/forecast/data/beachwatch/ (collector: src/collectors/beachwatch.py --refresh) · the same record is the forecast's third grading ruler (Model check → graded against beach postings).";
-  wire(); render();
+  wire();
   document.getElementById("loading").style.display = "none"; document.getElementById("content").style.display = "";
 }).catch(e => { document.getElementById("loading").textContent = "Could not load the posting record: " + e; });
 </script>

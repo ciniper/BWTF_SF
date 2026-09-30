@@ -9,9 +9,6 @@
 <style>
   .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-weight:700;font-size:13px;margin-right:6px}
   .pill.city{background:#eef1f3;color:#3f474d} .pill.bwtf{background:#e3f1fa;color:#0072BC} .pill.over{background:#d15c5c;color:#fff} .pill.na{background:#f3f6f9;color:#98a3ab;font-weight:600}
-  .latest{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin:0 0 6px}
-  .lt{background:#f6f9fb;border:1px solid #d9e4e8;border-radius:12px;padding:10px 12px;font-size:13px}
-  .lt b{display:block;margin-bottom:6px} .lt a{text-decoration:none;color:inherit} .lt:hover{border-color:#85BFDF}
   table.viewer{border-collapse:collapse;width:100%;font-size:13px;background:#fff}
   table.viewer th{text-align:left;color:#54576F;font-weight:700;padding:8px 10px;border-bottom:2px solid #d9e4e8;white-space:nowrap}
   table.viewer td{padding:8px 10px;border-bottom:1px solid #eef2f4;vertical-align:middle}
@@ -23,7 +20,7 @@
   .src{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700} .src--bwtf{background:#e3f1fa;color:#0072BC} .src--city{background:#eef1f3;color:#3f474d}
   .v-time{color:#8a949b;font-size:11px;margin-left:5px}
   tr.v-over td{background:#fff7f5}
-  .v-sitelink{color:inherit;text-decoration:none;border-bottom:1px dotted #0072BC;cursor:pointer} .v-sitelink:hover{color:#0072BC}
+  tr.v-row{cursor:pointer} tr.v-row:hover td{background:#f3f8fc}   /* a row opens that day's results as a graph */
   .caret{color:#0072BC;font-weight:700;cursor:pointer;margin-left:6px;user-select:none}
   tr.notes td{background:#f6f9fb;padding:10px 16px 14px;border-bottom:1px solid #d9e4e8}
   .field{font-size:13px;color:#3f474d} .field-grid{display:flex;flex-wrap:wrap;gap:6px 18px;margin:8px 0 4px;color:#54576F} .field-note{font-style:italic;color:#54576F;margin-top:6px}
@@ -31,20 +28,15 @@
 </style>
 </head>
 <body>
-{% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
+{% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}{% from "_site_picker.html" import site_picker %}
 {{ topbar() }}
 <div class="wrap">
   {% call page_head("Samples", "Every published result from both programs, one row per sample, with the volunteers' field notes.", "water") %}
     
     <p>Every published result from both programs, one row per sample: the city's lab (SFPUC, on SF Gov Open Data) and Surfrider's volunteer lab.
     A day the city sampled twice shows both values. Surfrider rows carry the volunteer's field notes — open them row by row, show them as columns, or hide them.
-    Plots of the same samples are on <a href="/graphs">Graphs</a>.</p>
+    Click a row for that day's results as a graph; the same samples plotted over time are on <a href="/graphs">Graphs</a>.</p>
   {% endcall %}
-
-  <div class="board">
-    <h2>Latest by site</h2><p class="sub">The newest result each program has for the beaches both sample. Click a site for its latest results as graphs.</p>
-    <div class="latest" id="latest"><span class="status">Loading…</span></div>
-  </div>
 
   <div class="controls">
     <span class="ctl-label">Source</span>
@@ -54,13 +46,12 @@
       <button class="seg-btn" data-source="both" title="Only the beaches both programs sample, both labs' rows">Both</button>
       <button class="seg-btn active" data-source="all" title="Every site, whichever lab has results">All</button>
     </div>
-    <select id="v-site" aria-label="Site"><option value="">Any site in view</option></select>
-    <button class="preset" id="v-graph" disabled title="Pick a site, then see it on the Graphs page over this range">Graph this site →</button>
   </div>
+  {{ site_picker(site_groups, all_label="All sites", cross=("Graph this site →", "v-graph", "/graphs")) }}
   <div class="controls">
     <span class="ctl-label">Range</span>
     <input type="date" id="v-start" aria-label="Start date" min="{{ dataset_floor }}"> <span style="color:#54576F">→</span> <input type="date" id="v-end" aria-label="End date">
-    <button class="preset v-preset" data-days="91">Last 3 mo</button><button class="preset v-preset" data-days="365">Last 12 mo</button><button class="preset v-preset" data-days="730">Last 2 yrs</button><button class="preset v-preset" data-days="">Full record</button>
+    <button class="preset v-preset" data-days="91">Last 3 mo</button><button class="preset v-preset" data-days="365">Last 12 mo</button><button class="preset v-preset" data-days="1096">Last 3 yrs</button><button class="preset v-preset" data-days="">Full record</button>
     <span class="ctl-label" style="margin-left:8px">Field notes</span>
     <div class="seg-toggle" id="v-notes"><button class="seg-btn" data-notes="hidden">Hidden</button><button class="seg-btn active" data-notes="expand">Expandable</button><button class="seg-btn" data-notes="columns">Columns</button></div>
   </div>
@@ -78,10 +69,11 @@
 </div>
 <script src="/static/charts.js"></script>
 <script src="/static/sample_popover.js" defer></script>
+<script src="/static/site_picker.js"></script>
 <script>
 var FLOOR = "{{ dataset_floor }}";
 var params = new URLSearchParams(location.search);
-var VDATA = null;
+var VDATA = null, ROWS = [];
 var VIEW = { site: params.get("site") || "", start: params.get("start") || "", end: params.get("end") || "",
              source: ["city", "bwtf", "both", "all"].indexOf(params.get("source")) >= 0 ? params.get("source") : (params.get("scope") === "dual" ? "both" : "all"),   // old links: scope=dual meant today's Both
              notes: ["hidden", "expand", "columns"].indexOf(params.get("notes")) >= 0 ? params.get("notes") : "expand" };
@@ -96,7 +88,15 @@ function markPreset() {   // light the preset whose window matches the dates sho
   document.querySelectorAll(".v-preset").forEach(function (b) { b.classList.toggle("active", b.dataset.days ? isoNear(start, now - b.dataset.days * DAY) && isoNear(end, now) : !!start && start <= FLOOR && isoNear(end, now)); });
 }
 markPreset();
-function syncUrl() { var u = new URL(location.href); u.search = ""; if (VIEW.site) u.searchParams.set("site", VIEW.site); if (VIEW.source !== "all") u.searchParams.set("source", VIEW.source); if (VIEW.notes !== "expand") u.searchParams.set("notes", VIEW.notes); if (VIEW.start) u.searchParams.set("start", VIEW.start); if (VIEW.end) u.searchParams.set("end", VIEW.end); history.replaceState(null, "", u); }
+var tileFits = function (t) { return VIEW.source === "all" ? true : VIEW.source === "both" ? (t.dataset.city === "1" && t.dataset.bwtf === "1") : VIEW.source === "city" ? t.dataset.city === "1" : t.dataset.bwtf === "1"; };
+SitePicker.init({ key: VIEW.site, onPick: function (key) { VIEW.site = key; vRender(); } });   // the picker Graphs uses, plus an All sites tile
+VIEW.site = SitePicker.filter(tileFits);
+function graphHref() {   // the Graphs link follows site, source and range
+  var q = new URLSearchParams(); if (VIEW.site) q.set("site", VIEW.site); if (VIEW.source !== "all") q.set("source", VIEW.source);
+  var st = VIEW.start || (VDATA && VDATA.start), en = VIEW.end || (VDATA && VDATA.end); if (st) q.set("start", st); if (en) q.set("end", en);
+  return "/graphs?" + q;
+}
+function syncUrl() { var u = new URL(location.href); u.search = ""; if (VIEW.site) u.searchParams.set("site", VIEW.site); if (VIEW.source !== "all") u.searchParams.set("source", VIEW.source); if (VIEW.notes !== "expand") u.searchParams.set("notes", VIEW.notes); if (VIEW.start) u.searchParams.set("start", VIEW.start); if (VIEW.end) u.searchParams.set("end", VIEW.end); history.replaceState(null, "", u); $("v-graph").href = graphHref(); }
 function vCell(vals) {
   if (!vals || !vals.length) return '<span style="color:#98a3ab">—</span>';
   return vals.map(function (v) { return '<span class="v-val' + (v.over ? " over" : (v.caution ? " caution" : "")) + '">' + vEsc(v.raw) + "</span>"; }).join('<span class="v-sep">·</span>');
@@ -110,10 +110,6 @@ function fieldBlock(f) {
 }
 function vRender() {
   if (!VDATA) return;
-  var sel = $("v-site"), inView = VDATA.sites;   // the server already narrowed the sites to the Source choice
-  var keep = inView.some(function (s) { return s.key === VIEW.site; }) ? VIEW.site : "";
-  sel.innerHTML = '<option value="">Any site in view</option>' + inView.map(function (s) { return '<option value="' + vEsc(s.key) + '">' + vEsc(s.name) + (s.city ? "" : " (Surfrider only)") + "</option>"; }).join("");
-  sel.value = VIEW.site = keep;
   var rows = VDATA.rows.filter(function (r) { return (!VIEW.site || r.site_key === VIEW.site) && (VIEW.source !== "city" || r.source === "SFPUC") && (VIEW.source !== "bwtf" || r.source === "BWTF"); });
   var cols = VIEW.notes === "columns" ? VDATA.field_columns : [];
   $("v-head").innerHTML = "<th>Date</th><th>Site</th><th>Source</th>" + VDATA.analytes.map(function (a) { return '<th class="num">' + vEsc(a.label) + "</th>"; }).join("") + cols.map(function (c) { return "<th>" + vEsc(c.label) + "</th>"; }).join("");
@@ -121,20 +117,20 @@ function vRender() {
   rows.forEach(function (r, i) {
     var c = r.cells || {}, isB = r.source === "BWTF", f = r.field || null;
     var caret = VIEW.notes === "expand" && isB ? '<span class="caret" data-i="' + i + '" title="Field notes">▸</span>' : "";
-    html += "<tr" + (r.over ? ' class="v-over"' : "") + ">" +
+    html += '<tr class="v-row' + (r.over ? " v-over" : "") + '" data-i="' + i + '" title="This day&#39;s results as a graph">' +
       "<td>" + r.date + (r.time ? '<span class="v-time">' + vEsc(r.time) + "</span>" : "") + caret + "</td>" +
-      '<td><b><a class="v-sitelink" data-key="' + vEsc(r.site_key) + '" data-name="' + vEsc(r.site) + '" title="Graphs for this site over this range">' + vEsc(r.site) + "</a></b>" + (r.n_samples > 1 ? '<span class="v-dup">' + r.n_samples + " samples that day</span>" : "") + "</td>" +
+      "<td><b>" + vEsc(r.site) + "</b>" + (r.n_samples > 1 ? '<span class="v-dup">' + r.n_samples + " samples that day</span>" : "") + "</td>" +
       '<td><span class="src ' + (isB ? "src--bwtf" : "src--city") + '"' + (r.history ? ' title="SFPUC lab export — before SF Gov Open Data began (Jul 2020)"' : "") + '>' + (isB ? "Surfrider" : "SFPUC") + "</span></td>" +
       VDATA.analytes.map(function (a) { return '<td class="num">' + vCell(c[a.code]) + "</td>"; }).join("") +
       cols.map(function (col) { return '<td class="fc">' + (f ? vEsc(f[col.key]) : "") + "</td>"; }).join("") + "</tr>";
     if (VIEW.notes === "expand" && isB) html += '<tr class="notes" id="notes-' + i + '" style="display:none"><td colspan="' + (3 + VDATA.analytes.length) + '">' + fieldBlock(f) + "</td></tr>";
   });
+  ROWS = rows;
   $("v-rows").innerHTML = html;
   var over = rows.filter(function (r) { return r.over; }).length, dbl = rows.filter(function (r) { return r.n_samples > 1; }).length;
   $("v-status").textContent = rows.length.toLocaleString() + " rows · " + rows.filter(function (r) { return r.source === "SFPUC"; }).length.toLocaleString() + " SFPUC · " +
     rows.filter(function (r) { return r.source === "BWTF"; }).length.toLocaleString() + " Surfrider · " + over.toLocaleString() + " over a limit · " + dbl + " double-sampled day" + (dbl === 1 ? "" : "s") + " · " + VDATA.start + " → " + VDATA.end + (rows.length ? "" : " · no samples in this view");
   $("v-table").style.display = rows.length ? "" : "none";
-  $("v-graph").disabled = !VIEW.site;
   syncUrl();
 }
 function vLoad() {
@@ -146,28 +142,17 @@ function vLoad() {
     vRender();
   }).catch(function (e) { $("v-status").textContent = "Could not load samples: " + e; });
 }
-function loadLatest() {
-  fetch("/api/compare").then(function (r) { return r.json(); }).then(function (d) {
-    var rows = (d.rows || []).filter(function (r) { return r.bwtf_site; });
-    $("latest").innerHTML = rows.map(function (r) {
-      var city = r.city_raw == null ? '<span class="pill na">City — none in 60 days</span>' : '<span class="pill ' + (r.city_exceeds ? "over" : "city") + '">City ' + vEsc(r.city_raw) + " · " + (r.city_date || "").slice(5).replace("-", "/") + (r.city_n > 1 ? " ×" + r.city_n : "") + "</span>";
-      var bw = r.bwtf_raw == null ? '<span class="pill na">Surfrider — not measured</span>' : '<span class="pill ' + (r.bwtf_exceeds ? "over" : "bwtf") + '" role="button" tabindex="0" style="cursor:pointer" data-sample-bwtf="' + vEsc(r.site_key) + '" data-sample-name="' + vEsc(r.site_name) + '" data-sample-date="' + vEsc(r.bwtf_date || "") + '">Surfrider ' + vEsc(r.bwtf_raw) + " · " + (r.bwtf_date || "").slice(5).replace("-", "/") + "</span>";
-      var open = r.site_key && r.site_key.indexOf("bwtf:") !== 0 ? ' data-sample-station="' + vEsc(r.site_key) + '" data-sample-name="' + vEsc(r.site_name) + '"' : "";
-      return '<div class="lt"' + open + ' style="' + (open ? "cursor:pointer" : "") + '"><b>' + vEsc(r.site_name) + "</b>" + city + bw + "</div>";
-    }).join("") || '<span class="status">No comparison data right now.</span>';
-  }).catch(function () { $("latest").innerHTML = '<span class="status">Latest results unavailable right now.</span>'; });
-}
-$("v-source").addEventListener("click", function (e) { var b = e.target.closest(".seg-btn"); if (!b || b.dataset.source === VIEW.source) return; document.querySelectorAll("#v-source .seg-btn").forEach(function (x) { x.classList.toggle("active", x === b); }); VIEW.source = b.dataset.source; vLoad(); });
+$("v-source").addEventListener("click", function (e) { var b = e.target.closest(".seg-btn"); if (!b || b.dataset.source === VIEW.source) return; document.querySelectorAll("#v-source .seg-btn").forEach(function (x) { x.classList.toggle("active", x === b); }); VIEW.source = b.dataset.source; VIEW.site = SitePicker.filter(tileFits); vLoad(); });
 $("v-notes").addEventListener("click", function (e) { var b = e.target.closest(".seg-btn"); if (!b) return; document.querySelectorAll("#v-notes .seg-btn").forEach(function (x) { x.classList.toggle("active", x === b); }); VIEW.notes = b.dataset.notes; vRender(); });
-$("v-site").addEventListener("change", function (e) { VIEW.site = e.target.value; vRender(); });
-$("v-graph").addEventListener("click", function () { if (!VIEW.site) return; var q = new URLSearchParams({ site: VIEW.site }); if (VIEW.start || (VDATA && VDATA.start)) q.set("start", VIEW.start || VDATA.start); if (VIEW.end || (VDATA && VDATA.end)) q.set("end", VIEW.end || VDATA.end); location.href = "/graphs?" + q; });
 $("v-rows").addEventListener("click", function (e) {
   var caret = e.target.closest(".caret"); if (caret) { var tr = $("notes-" + caret.dataset.i); var open = tr.style.display === "none"; tr.style.display = open ? "" : "none"; caret.textContent = open ? "▾" : "▸"; return; }
-  var a = e.target.closest(".v-sitelink"); if (a) { e.preventDefault(); var q = new URLSearchParams({ site: a.dataset.key }); if (VDATA) { q.set("start", VIEW.start || VDATA.start); q.set("end", VIEW.end || VDATA.end); } location.href = "/graphs?" + q; }
+  var row = e.target.closest("tr.v-row"); if (!row || !window.SamplePopover) return;
+  var r = ROWS[+row.dataset.i]; if (!r) return;   // that day's results as a graph; ‹ › then step through the site's other days
+  SamplePopover.open(r.source === "BWTF" ? { bwtf: r.site_key, name: r.site, date: r.date } : { station: r.site_key, name: r.site, date: r.date });
 });
 ["v-start", "v-end"].forEach(function (id) { $(id).addEventListener("change", function (e) { VIEW[id === "v-start" ? "start" : "end"] = e.target.value; markPreset(); vLoad(); }); });
 document.querySelectorAll(".v-preset").forEach(function (btn) { btn.addEventListener("click", function () { var end = new Date().toISOString().slice(0, 10); VIEW.end = end; VIEW.start = btn.dataset.days ? new Date(Date.now() - btn.dataset.days * DAY).toISOString().slice(0, 10) : FLOOR; $("v-start").value = VIEW.start; $("v-end").value = VIEW.end; markPreset(); vLoad(); }); });
-vLoad(); loadLatest();
+vLoad();
 </script>
 <script src="/static/tables.js" defer></script>
 {{ footer() }}
