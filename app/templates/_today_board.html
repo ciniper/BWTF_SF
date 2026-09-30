@@ -59,9 +59,11 @@
   .layers{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin:0 0 12px;padding:10px 14px;background:#fff;border:1px solid var(--line);border-radius:var(--r)}
   .layers .ctl-label{margin-right:2px}
   .layers .preset:disabled{opacity:.45;cursor:not-allowed}
-  .layers .replay{display:inline-flex;align-items:center;gap:8px;padding:0 4px 0 10px;border-left:1px solid var(--line);margin-left:4px;font-size:13px;font-weight:700;color:var(--muted)}
-  .layers .replay input{width:120px;accent-color:var(--brand)}
-  .layers .replay output{min-width:88px;color:var(--ink);font-weight:600}
+  .layers .replay-ctl{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}   /* appears when the Replay chip is on: oldest day · slider · chosen day; today sits at the right */
+  .layers .replay-ctl[hidden]{display:none}
+  .layers .replay-ctl .tick{font-weight:600}
+  .layers .replay-ctl input{width:140px;accent-color:var(--brand)}
+  .layers .replay-ctl output{min-width:88px;color:var(--ink);font-weight:700}
   .layers .layer-note{flex-basis:100%;color:var(--muted);font-size:13px;margin-top:2px}
   .layers .layer-note b{color:var(--posted)}
   .layers .layer-status{color:var(--brand);font-weight:600;font-size:13px;margin-left:auto}
@@ -76,7 +78,7 @@
   .of-pop .mut{color:var(--muted)}
   .board.replaying .eyebrow{color:var(--brand)}
   .board.replaying .zone .risk,.board.replaying .zone .rainline,.board.replaying .zone .meta{display:none}   /* today's risk, rain and sample dates are not that day's */
-  @media (max-width:760px){.layers .replay{border-left:0;padding-left:0;margin-left:0}.layers .layer-status{margin-left:0}}
+  @media (max-width:760px){.layers .replay-ctl{flex-basis:100%}.layers .replay-ctl input{flex:1}.layers .layer-status{margin-left:0}}
   .conds{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 0}
   .conds span{background:var(--sand2);border-radius:999px;padding:6px 12px;font-size:13px;color:var(--muted)}
   .conds .ic{color:var(--brand)}
@@ -308,7 +310,7 @@ const BUILD = {
 async function setLayer(key, on, btn) {
   const L_ = LAYER[key];
   if (!on) { if (L_.group) MAP.removeLayer(L_.group); L_.on = false; btn.classList.remove("active");
-    if (key === "rain") document.querySelectorAll(".zone .rainline").forEach(e => e.remove()), document.querySelectorAll(".zone.wet").forEach(e => e.classList.remove("wet"));
+    if (key === "rain") { document.querySelectorAll(".zone .rainline").forEach(e => e.remove()); document.querySelectorAll(".zone.wet").forEach(e => e.classList.remove("wet")); }
     status(""); renderLegend(); return; }
   btn.disabled = true; status("Loading…");
   try {
@@ -319,39 +321,44 @@ async function setLayer(key, on, btn) {
 }
 function setReplay(offset) {
   const slider = $("replay"), out = $("replay-out"), riskBtn = document.querySelector('.layer[data-layer="risk"]');
-  REPLAY_OFFSET = Math.max(0, Math.min(7, offset | 0)); slider.value = REPLAY_OFFSET;
+  const max = slider.max | 0;
+  REPLAY_OFFSET = Math.max(0, Math.min(max, offset | 0)); slider.value = max - REPLAY_OFFSET;   // today at the right end; sliding left goes back
   const label = REPLAY_OFFSET === 0 ? "Today" : REPLAY_OFFSET === 1 ? "Yesterday" : REPLAY && REPLAY.days ? fmtDay(REPLAY.days[REPLAY.days.length - 1 - REPLAY_OFFSET]) : REPLAY_OFFSET + " days ago";
   out.textContent = label; slider.setAttribute("aria-valuetext", label);
   if (REPLAY_OFFSET && RISK_VIEW) { RISK_VIEW = false; riskBtn.classList.remove("active"); }
   riskBtn.disabled = REPLAY_OFFSET > 0;
   applyReplay();
 }
+async function enableReplay(btn) {
+  if (!REPLAY) {
+    status("Loading the map's past week…");
+    try { REPLAY = await fetchJSON("/api/today/replay"); status(""); } catch (e) { status("Replay unavailable: " + e.message); return false; }
+  }
+  // the slider reaches only as far back as the record goes (the record began late Sep 2026)
+  const oldest = REPLAY.covered && REPLAY.covered.length ? REPLAY.days.length - 1 - REPLAY.days.indexOf(REPLAY.covered[0]) : 0;
+  if (!oldest) { status("The map's record has no earlier days yet."); return false; }
+  const slider = $("replay"); slider.max = oldest; $("replay-oldest").textContent = fmtDay(REPLAY.covered[0]);
+  $("replay-ctl").hidden = false; btn.classList.add("active"); setReplay(0);
+  return true;
+}
+function disableReplay(btn) { $("replay-ctl").hidden = true; btn.classList.remove("active"); setReplay(0); }
 function initLayers() {
   const strip = $("layers"); if (!strip) return;
   for (const btn of strip.querySelectorAll(".layer")) {
     const key = btn.dataset.layer;
     btn.addEventListener("click", async () => {
       if (key === "risk") { RISK_VIEW = !RISK_VIEW; btn.classList.toggle("active", RISK_VIEW); if (RISK_VIEW && REPLAY_OFFSET) setReplay(0); applyRisk(); return; }
+      if (key === "replay") { if (btn.classList.contains("active")) disableReplay(btn); else await enableReplay(btn); return; }
       await setLayer(key, !LAYER[key].on, btn);
     });
   }
   const slider = $("replay");
-  slider.addEventListener("input", async () => {
-    const off = slider.value | 0;
-    if (off && !REPLAY) {
-      status("Loading the map's past week…");
-      try { REPLAY = await fetchJSON("/api/today/replay"); status(""); } catch (e) { status("Replay unavailable: " + e.message); slider.value = 0; return; }
-      // the slider only reaches as far back as the record goes (the record began late Sep 2026)
-      const oldest = REPLAY.covered && REPLAY.covered.length ? REPLAY.days.length - 1 - REPLAY.days.indexOf(REPLAY.covered[0]) : 0;
-      slider.max = Math.max(1, oldest); if (!oldest) status("The map's record has no earlier days yet.");
-    }
-    setReplay(off);
-  });
+  slider.addEventListener("input", () => setReplay((slider.max | 0) - (slider.value | 0)));
   const q = new URLSearchParams(location.search), want = new Set((q.get("layers") || "").split(",").filter(Boolean));
   if (q.get("surfrider") === "1") want.add("bwtf");
   for (const key of want) { const btn = strip.querySelector('.layer[data-layer="' + key + '"]'); if (btn && LAYER[key]) setLayer(key, true, btn); }
   if (q.get("risk") === "1") strip.querySelector('.layer[data-layer="risk"]').click();
-  if (q.get("replay")) { slider.value = q.get("replay"); slider.dispatchEvent(new Event("input")); }
+  if (q.get("replay")) { const rb = strip.querySelector('.layer[data-layer="replay"]'); enableReplay(rb).then(ok => { if (ok) setReplay(q.get("replay") | 0); }); }
 }
 window.addEventListener("DOMContentLoaded", initMap);
 </script>

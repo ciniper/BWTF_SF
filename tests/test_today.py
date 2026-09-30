@@ -51,7 +51,7 @@ def test_today_page_is_the_board_plus_the_experimental_row_and_the_api_route_exi
             h = c.get("/today").data.decode()
     finally:
         T.SFBWTFClient = orig
-    assert 'id="today-map"' in h and 'id="zones"' in h and 'id="layers"' in h and "Experimental" in h and 'data-layer="bwtf"' in h and 'id="replay"' in h and "/api/today/" in h
+    assert 'id="today-map"' in h and 'id="zones"' in h and 'id="layers"' in h and "Experimental" in h and 'data-layer="bwtf"' in h and 'data-layer="replay"' in h and 'id="replay-ctl" hidden' in h and "/api/today/" in h
     assert h.index('id="layers"') < h.index('class="board') and 'class="extras"' not in h                                            # the strip sits above the board; the old row is gone
     assert 'class="topbar"' in h and 'href="/today" class="on" aria-current="page">Today' in h and 'class="hubs"' not in h    # the board, not the hubs
     landing = c.get("/").data.decode() if False else None  # noqa: F841
