@@ -238,7 +238,7 @@ def build_sample_days(rows: list[dict], feed: dict | None = None, now: datetime 
     return out
 
 
-MIN_BAR_LAG_DAYS = 2   # a lag of 0–1 days is shorter than the dot itself: tooltip only, no bar
+MIN_BAR_LAG_DAYS = 0   # every wait draws a bar, even a day's (Chase, 2026-09-29; it was 2 — a short bar is thinner than the dot in the all-time view, and that is fine)
 
 
 def assign_lanes(entries: list[dict], now: datetime | None = None) -> int:
@@ -247,8 +247,8 @@ def assign_lanes(entries: list[dict], now: datetime | None = None) -> int:
     spans the collection day to first_seen — or to ``now`` for a pending
     entry (the map shows the sample, the numbers are not out); sorted by
     start, each takes the first lane whose previous bar has ended. Entries
-    without a bar (no first_seen and not pending, or a lag under
-    MIN_BAR_LAG_DAYS) get lane None. Returns the number of lanes used."""
+    without a bar (no first_seen and not pending) get lane None. Returns the
+    number of lanes used."""
     now_iso = _iso(now) if now else None
 
     def bar_end(e: dict) -> str | None:

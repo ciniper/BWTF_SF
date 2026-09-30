@@ -40,9 +40,10 @@ def test_lanes_stack_overlapping_publish_bars_and_skip_short_lags():
     entries = [mk("2026-11-02", "2026-11-06T22:00:00Z", 4), mk("2026-11-03", "2026-11-06T22:00:00Z", 3), mk("2026-11-04", "2026-11-06T22:00:00Z", 2),
                mk("2026-11-09", "2026-11-12T22:00:00Z", 3),
                mk("2026-11-16", None, None),                     # history: no bar
-               mk("2026-11-23", "2026-11-24T18:00:00Z", 1)]      # published next day: tooltip only, no bar
+               mk("2026-11-23", "2026-11-24T18:00:00Z", 1)]      # published next day: a short bar, still a bar (Chase, 2026-09-29)
     assert P.assign_lanes(entries) == 3
-    assert [e["lane"] for e in entries] == [0, 1, 2, 0, None, None]
+    assert [e["lane"] for e in entries] == [0, 1, 2, 0, None, 0]
+    assert P.MIN_BAR_LAG_DAYS == 0
     # non-overlapping weekly bars share lane 0
     weekly = [mk("2026-10-05", "2026-10-09T22:00:00Z", 4), mk("2026-10-12", "2026-10-16T22:00:00Z", 4)]
     assert P.assign_lanes(weekly) == 1 and [e["lane"] for e in weekly] == [0, 0]
@@ -92,11 +93,11 @@ def test_feed_sample_dates_say_when_the_map_first_showed_each_sample():
     ap = P.build_sample_days([], {("4613", "2026-10-05"): feed[("4613", "2026-10-05")], ("4613", "2026-10-09"): dict(feed[("4613", "2026-10-05")], seen_day="2026-10-10")},
                              datetime(2026, 10, 8, 18, 0, tzinfo=timezone.utc))["4613"]
     assert [e["date"] for e in ap] == ["2026-10-05"] and ap[0]["map_lag_days"] == 1 and ap[0]["pending_days"] == 3
-    # a pending bar ends at now and takes a lane like any other; under MIN_BAR_LAG_DAYS it has none
+    # a pending bar ends at now and takes a lane like any other, a day-old one included
     e1 = {"date": "2026-09-28", "first_seen": None, "lag_days": None, "pending": True, "pending_days": 3}
     e2 = {"date": "2026-09-29", "first_seen": "2026-10-01T16:00:00Z", "lag_days": 2}
     e3 = {"date": "2026-09-30", "first_seen": None, "lag_days": None, "pending": True, "pending_days": 1}
-    assert P.assign_lanes([e1, e2, e3], now) == 2 and [e["lane"] for e in (e1, e2, e3)] == [0, 1, None]
+    assert P.assign_lanes([e1, e2, e3], now) == 3 and [e["lane"] for e in (e1, e2, e3)] == [0, 1, 2]
     assert P.assign_lanes([dict(e1)]) == 0   # no ``now`` → a pending entry cannot draw a bar
 
 
@@ -120,7 +121,7 @@ def test_migration_018_adds_only_marked_blocks_to_the_feed_day_function():
 
 def test_page_carries_the_samples_row_and_the_events_payload_has_the_keys():
     html = (ROOT / "app/templates/cso_history/page.html").read_text()
-    for needle in ("className = 'row srow'", "showSampleTip", "smark", "swatch lag", "DATA.samples", "sample_lag", "Numbers online", "d.lane", "window.__timeline",
+    for needle in ("className = 'row srow'", "showSampleTip", "smark", "swatch lag", "DATA.samples", "sample_lag", "Numbers online", "d.lane", "window.__timeline", "minute not recorded",
                    "swatch pending", "swatch mapmark", "className = 'mapmark'", "d.pending ? 'pending'", "lagbar.pending", "d.map_censored", "sample_lag || {}).map"):
         assert needle in html, needle
     # the unconfigured path keeps the old shape; the configured path adds samples + sample_lag (exercised against Supabase when available)

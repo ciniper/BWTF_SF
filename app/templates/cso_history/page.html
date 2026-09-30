@@ -203,7 +203,7 @@
       row.appendChild(name); row.appendChild(track); row.appendChild(dot);
       chart.appendChild(row);
 
-      // the samples row: collection day (dot) and, when we watched it arrive, the bar until it appeared online
+      // the samples row: collection day (dot) and, when we watched it arrive, the bar until it appeared online — every wait, even a day's
       var sd = (DATA.samples || {})[s.station_id] || [];
       if (!sd.length) return;
       var srow = document.createElement('div'); srow.className = 'row srow';
@@ -257,7 +257,7 @@
       : (d.elevated ? '<b style="color:#f3b7a5">over standard</b>' : 'clean') + (d.n > 1 ? ' (' + d.n + ' results)' : '');
     var map = !d.map_seen ? 'On SFPUC\'s map: not observed'
       : d.map_censored ? 'On SFPUC\'s map: by ' + fmtDay(d.map_seen) + ' (already there when we began reading the feed)'
-      : 'On SFPUC\'s map: ' + (d.map_approx ? fmtDay(d.map_seen) : fmt(d.map_seen)) + ' — ' + days(d.map_lag_days) + ' after collection';
+      : 'On SFPUC\'s map: ' + (d.map_approx ? fmtDay(d.map_seen) + ' (day known, minute not recorded)' : fmt(d.map_seen)) + ' — ' + days(d.map_lag_days) + ' after collection';
     var pub = d.first_seen
       ? 'Numbers online: ' + fmt(d.first_seen) + ' — ' + days(d.lag_days) + ' after collection' +
         (d.map_lag_days != null ? ' (' + (d.lag_days - d.map_lag_days) + ' after the map)' : '')
@@ -311,7 +311,7 @@
       var dayStr = function(n){ return n + (n === 1 ? ' day' : ' days'); };
       html += '<tr><td>' + r[0] + '</td><td>' + d.date + '</td><td>' +
         (d.pending ? '<span class="muted">not yet published</span>' : (d.elevated ? 'over standard' : 'clean') + (d.n > 1 ? ' (' + d.n + ')' : '')) + '</td><td>' +
-        (d.map_seen ? (d.map_censored ? 'by ' : '') + fmtDay(d.map_seen) : '<span class="muted">—</span>') + '</td><td>' +
+        (d.map_seen ? (d.map_censored ? 'by ' + fmtDay(d.map_seen) : d.map_approx ? fmtDay(d.map_seen) : fmt(d.map_seen)) : '<span class="muted">—</span>') + '</td><td>' +
         (d.first_seen ? fmt(d.first_seen) : '<span class="muted">' + (d.pending ? 'not yet' : 'not observed') + '</span>') + '</td><td>' +
         (d.lag_days != null ? dayStr(d.lag_days) : d.pending ? dayStr(d.pending_days) + ' so far' : '—') + '</td></tr>'; });
     else html += '<tr><td colspan="6" class="muted">No samples in the record window.</td></tr>';
