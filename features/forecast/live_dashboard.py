@@ -4,7 +4,7 @@ Live CSO Forecast Dashboard
 
 Real-time dashboard that shows:
 1. Current CSO risk based on actual observed rainfall
-2. 5-day forecast based on ECMWF/GFS weather model predictions
+2. 5-day forecast based on the ICON weather model's rain (Open-Meteo)
 3. Current SFPUC beach status (what's actually posted right now)
 
 Data flow:
@@ -57,6 +57,20 @@ except Exception:
 MODEL_DIR = Path(__file__).parent / "data" / "models"
 PORT = 8091
 LOCAL_TZ = ZoneInfo("America/Los_Angeles")
+STATION_BY_SFPUC_ID = {s.sfpuc_id: code for code, s in STATIONS.items()}   # the feed's numeric station id → registry code
+
+
+def _parse_feed_date(s):
+    """The beach map's sample_date (MM/DD/YY, MM/DD/YYYY or ISO) → date, or None."""
+    if not s:
+        return None
+    s = str(s).strip()[:10]
+    for fmt in ("%m/%d/%y", "%m/%d/%Y", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(s, fmt).date()
+        except ValueError:
+            continue
+    return None
 
 # Basin / group / zone geography is shared with training (src/models/groups.py)
 # so serving can never disagree with what the models were fit on. Every
@@ -92,16 +106,19 @@ OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 SFPUC_API_URL = "https://infrastructure.sfwater.org/lims.asmx/getBeaches"
 
 # Open-Meteo params for SF.
-# Model: ECMWF IFS rather than Open-Meteo's default "best_match" (a GFS/HRRR
-# blend in North America). Two reasons (2026-09-04): the stage-1 model was
-# trained on ERA5 — ECMWF's reanalysis — so IFS is the like-for-like
-# inference source; and best_match reported 0.0 mm for 2026-09-03 while SF
-# gauges logged an evening of light rain that IFS did forecast (~5 mm).
-# Caveat: Open-Meteo interpolates IFS's 3-hourly precipitation to hourly, so
-# the peak-intensity features (rain_max1h/3h) from FORECAST hours are
-# smoother than ERA5's native hourly — revisit if a recalibration shows
-# forecast-day risk running low. Past hours are overridden with gauge
-# observations (see _overlay_observed_rain), so this only affects future days.
+# Model: ICON (DWD, `icon_seamless`) since 2026-09-30 (Chase: "easy decision").
+# The stage-1 models were trained on gauge inches, so the weather model is an
+# input standing in for the gauges on the forecast days, and it is graded as
+# one: against the two NOAA gauges, Feb 2024 → Aug 2026, ICON is the closest
+# single model (wet-day MAE 0.22" vs ECMWF 0.23", GFS 0.26"; no wet or dry
+# lean) and its hourly rain is native, so the peak-intensity features it
+# produces match the ERA5 hourly the models were trained on. ECMWF IFS
+# (served 2026-09-04 → 2026-09-30) runs wet and its three-hourly rain, spread
+# to hourly by Open-Meteo, halved the peaks; Open-Meteo's default "best_match"
+# (a GFS/HRRR blend) reported 0.0 mm for 2026-09-03 while gauges logged real
+# rain. The comparison: reports/2026-09_weather_models.html
+# (src/models/weather_models_eval.py). Past hours are overridden with gauge
+# observations (see _overlay_observed_rain), so the model only affects future days.
 METEO_PARAMS = {
     "latitude": 37.7749,
     "longitude": -122.4194,
@@ -109,7 +126,7 @@ METEO_PARAMS = {
     "past_days": 7,
     "forecast_days": 6,
     "timezone": "America/Los_Angeles",
-    "models": "ecmwf_ifs025",
+    "models": "icon_seamless",
 }
 
 # Observed rain for past hours: NWS hourly gauge observations at SFO (KSFO —
@@ -620,7 +637,7 @@ class LiveData:
     def _daily_frames(self, rain_df: pd.DataFrame, today) -> dict:
         """{rain source: daily feature frame} from the hourly series.
 
-        The hourly series (Open-Meteo model + KSFO gauge overlay + ECMWF
+        The hourly series (Open-Meteo model + KSFO gauge overlay + ICON
         forecast) supplies every day's intensity features and the totals for
         today and the forecast days. COMPLETE past days are re-based onto the
         NOAA daily gauges the models were trained on: 'avg' = mean of Downtown
@@ -758,7 +775,7 @@ class LiveData:
                 "simulated": "eq.false", "source": f"in.({','.join(REALTIME_SOURCES)})",
                 "created_at": f"gte.{(start - timedelta(days=10)).isoformat()}T00:00:00+00:00",
                 "order": "created_at.asc", "limit": "1000"})
-            state = _supabase.select("watcher_state", {"select": "station_id,status"})
+            state = _supabase.select("watcher_state_shadow", {"select": "station_id,status,sim_active"})   # the watcher's live state (012 dropped watcher_state)
         except Exception as e:  # noqa: BLE001
             print(f"CSO flag windows unavailable: {e}")
             return {}
@@ -792,7 +809,7 @@ class LiveData:
                     d0 = open_since.pop(sid)
                     if basin:
                         mark(basin, d0, d - timedelta(days=1))
-        now_cso = {str(r.get("station_id")) for r in (state or []) if r.get("status") == "cso"}
+        now_cso = {str(r.get("station_id")) for r in (state or []) if r.get("status") == "cso" and not r.get("sim_active")}
         for sid, d0 in open_since.items():
             basin = OBSERVED_STATION_BASIN.get(sid)
             if basin:
@@ -802,6 +819,39 @@ class LiveData:
             if basin:
                 mark(basin, today, today)
         return flagged
+
+    def _feed_sample_flags(self, start, end) -> dict:
+        """{(group, date): elevated} from SFPUC's beach map as the watcher recorded
+        it (Supabase ``feed_station_days``, migration 012) — live_v2. A station
+        posted for bacteria (status 'posted', not the precautionary 'cso') says
+        its latest sample, dated by the map, was over standard; a station the map
+        showed clear all day with a sample date says that sample came back clean.
+        A day the sign came down is ambiguous and says nothing. The map shows a
+        result one to two days after sampling, DataSF about five days after, so
+        this is what lets a result reach the forecast days at all."""
+        if _supabase is None or not _supabase.is_configured():
+            return {}
+        try:
+            rows = _supabase.select("feed_station_days", {
+                "select": "station_id,day,status_max,status_last,raw_last",
+                "day": f"gte.{start.isoformat()}", "order": "day.asc", "limit": "2000"})
+        except Exception as e:  # noqa: BLE001
+            print(f"feed sample flags unavailable: {e}")
+            return {}
+        out: dict = {}
+        for r in rows:
+            code = STATION_BY_SFPUC_ID.get(str(r.get("station_id")))
+            g = GROUP_OF_STATION.get(code) if code else None
+            raw = r.get("raw_last") if isinstance(r.get("raw_last"), dict) else {}
+            sd = _parse_feed_date(raw.get("sample_date"))
+            if not g or sd is None or not (start <= sd <= end):
+                continue
+            last, worst = r.get("status_last"), r.get("status_max")
+            if last == "posted":                      # posted for bacteria: the latest sample was over standard
+                out[(g, sd)] = True
+            elif last == "ok" and worst == "ok":      # clear all day, with this sample date: that sample was clean
+                out.setdefault((g, sd), False)        # an elevated sibling station in the group wins
+        return out
 
     def _sample_flags(self, start, end) -> dict:
         """{(group, date): elevated} from the lab results already published for [start, end]."""
@@ -840,13 +890,16 @@ class LiveData:
         health = self._watcher_health()
         self._live_watcher = health
         flags = self._cso_flag_days(start, end, today) if health.get("mode") else {}
-        samples = self._sample_flags(start, end) if str(end) >= self.DATASF_FLOOR else {}
+        datasf = self._sample_flags(start, end) if str(end) >= self.DATASF_FLOOR else {}
+        feed = self._feed_sample_flags(start, end)
+        samples = {**feed, **datasf}   # live_v2: the map's results first, DataSF's lab record overriding wherever it has published
+        sample_sources = {"feed": len(feed), "datasf": len(datasf)}
         rain = {d: float(frames["avg"].iloc[i].get("precip_inches", 0.0) or 0.0) for i, d in enumerate(dates)}
         watcher_from = datetime.strptime(self.WATCHER_SINCE, "%Y-%m-%d").date()
         probs2, vols2, notes = _lr.adjust_stage1(probs, vols, dates, observed or {}, flags, rain, today,
                                                  watcher_from=watcher_from, watcher_ok=bool(health.get("ok")))
         return {"enabled": True, "source": source, "probs": probs2, "vols": vols2, "notes": notes, "flags": flags,
-                "samples": samples, "onsets": observed or {}, "health": health, "today": today}
+                "samples": samples, "sample_sources": sample_sources, "onsets": observed or {}, "health": health, "today": today}
 
     def _day_payload(self, frames: dict, idx: int, feats: list, probs: list, vols: list,
                      dates: list, observed: dict, live: dict | None = None) -> dict:
@@ -877,7 +930,8 @@ class LiveData:
                 day_predictions["citywide"] = max(day_predictions.values()) if day_predictions else 0.0
             rules_block = {"version": _lr.VERSION, "enabled": True, "source": live.get("source"),
                            "stage1": live["notes"].get(str(dates[idx]), {}), "groups": gnotes,
-                           "flags_active": sorted(live["flags"].get(dates[idx], ())), "watcher_ok": bool(live["health"].get("ok"))}
+                           "flags_active": sorted(live["flags"].get(dates[idx], ())), "watcher_ok": bool(live["health"].get("ok")),
+                           "sample_sources": live.get("sample_sources")}
             probs_live = p2[idx]
         f = feats[idx]["avg"]
         row = frames["avg"].iloc[idx]
@@ -1498,6 +1552,7 @@ class LiveData:
             **{k: sv.get(k) for k in ("name", "stage1", "stage2", "artifact", "family", "line", "promoted_at")},
             "trained_at": first.get("trained_at"),
             "live_corrections": _lr.VERSION,
+            "weather_model": METEO_PARAMS.get("models"),   # the input standing in for the gauges on forecast days (ICON since 2026-09-30)
             "input_rules": list(INPUT_RULES_LIVE),
             "build": None,
         }
@@ -1884,8 +1939,8 @@ function render(data) {
     // Timeline
     const rainSourceLabel = day => {
         const src = day.rain_source || (day.is_forecast ? 'forecast' : 'model');
-        return {observed: '📊 SFO gauge', mixed: '📊 gauge + 📡 ECMWF',
-                model: '📡 model hindcast', forecast: '📡 ECMWF forecast'}[src] || src;
+        return {observed: '📊 SFO gauge', mixed: '📊 gauge + 📡 ICON',
+                model: '📡 model hindcast', forecast: '📡 ICON forecast'}[src] || src;
     };
     const timeline = document.getElementById('timeline');
     timeline.innerHTML = '';
@@ -2155,7 +2210,7 @@ def main():
 ║  SF CSO Live Forecast Dashboard                              ║
 ╠══════════════════════════════════════════════════════════════╣
 ║  🌐 Open: http://localhost:{PORT}                               ║
-║  📡 Data: Open-Meteo (ECMWF) + SFPUC real-time               ║
+║  📡 Data: Open-Meteo (ICON) + SFPUC real-time                ║
 ║  🔄 Auto-refreshes every 30 minutes                          ║
 ║  Press Ctrl+C to stop                                        ║
 ╚══════════════════════════════════════════════════════════════╝

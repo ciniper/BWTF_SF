@@ -16,7 +16,7 @@ should do) with the numbers we have, and lays out the replay that would grade it
 ## 0. What the live forecast does today
 
 - Past complete days are scored on the two NOAA gauges (with the gauge-outage rule); today on NWS hours so
-  far plus the ECMWF forecast; the next five days on ECMWF. Stage 2 composes the last eight days.
+  far plus the weather model's forecast (ICON since 2026-09-30, ECMWF before); the next five days on it. Stage 2 composes the last eight days.
 - **Observed CSO:** a watcher transition into `cso` for a station sets that basin-day's stage 1 probability to
   **1** on the onset day. That is the only live correction. It never lowers anything, and samples are not used.
 
@@ -140,3 +140,15 @@ table are untouched.
 - Whether the feed's one-day lag holds today (compare alert_log onsets with the 2025-26 CIWQS dates once filed).
 - Posting-lift behaviour vs samples: how often SFPUC lifts a posting on a clean sample that the next sample
   contradicts (BeachWatch reopen dates vs DataSF), per zone.
+
+## 7. live_v2 (2026-09-29): the samples come from the beach map first
+
+live_v1 read bacteria results from DataSF alone. Measured this week, DataSF publishes about five days after sampling (the Monday 21 September round appeared on the 26th; as of the 29th nothing newer than the 23rd exists), while the sample rules act on the three days after a sample. By the time DataSF had a result, the days it could move were past: the rules could relabel history but never touch today or a forecast day.
+
+SFPUC's beach map is faster. The watcher polls it every minute and has recorded it per station-day since 2026-09-27 (`feed_station_days`, migration 012) and its transitions since 2026-08-20 (`alert_log`): Sunnydale Cove was sampled on the 21st and posted on the map on the 23rd at 08:55; Baker Beach at Lobos Creek was posted on the 22nd and cleared on the 23rd after its resample. One to two days, against five.
+
+**Reading the map as results** (`live_dashboard._feed_sample_flags`): for each station-day the watcher recorded, the map's `sample_date` names the latest sample. A station posted for bacteria (status `posted`, not the precautionary `cso`) → that sample was over standard. A station clear all day (`status_max = ok`) with a sample date → that sample was clean. A day the sign came down is ambiguous and says nothing; an elevated station outranks a clean sibling within a beach group. DataSF's lab record overrides the map wherever it has published the same group-day, so the map only fills the days DataSF has not reached. The rule arithmetic (§4) is unchanged; both replays grade live_v2 exactly as they graded live_v1, and the version is bumped because what is known when has changed.
+
+**Fixed with it:** `_cso_flag_days` still read `watcher_state`, dropped by migration 012, so every call failed and returned no flag windows: the flag hold and the no-flag downgrade's flag windows have been empty in production since 2026-09-27. It now reads `watcher_state_shadow` and ignores simulated rows.
+
+**To measure next:** the map's own lag for clean results (when `raw_last.sample_date` advances in `feed_station_days` relative to the date it names), and a real-arrival replay variant once a season of `feed_station_days` exists (§5).

@@ -121,7 +121,7 @@ Every date range on the site offers the same presets, smallest first — Last 3 
 | Source | What | Coverage | Code | Stored | Used by |
 |---|---|---|---|---|---|
 | **NOAA ACIS daily gauges** — SF Downtown `047772`, SF Oceanside `047767` | Daily precipitation totals; the series the models were trained on | 2016 → today (longer available) | `collectors/historical.py`, `live_dashboard._daily_frames` | `features/forecast/data/raw/historical_rain.csv` | Stage 1 features; past days re-based onto these gauges. The **gauge outage rule** (`rain_features.GAUGE_OUTAGE_RULE`) masks a gauge reporting exact 0.00 for ≥2 days while the other gauge records ≥0.5" |
-| **Open-Meteo** (ECMWF IFS 0.25° via `api.open-meteo.com`) | Hourly forecast for the next 5 days; hourly archive for peak-intensity features | Live + archive | `live_dashboard.py` (`METEO_PARAMS`) | `data/raw/hourly_rain_openmeteo.csv` | Forecast days; `rain_max1h/3h/6h` features |
+| **Open-Meteo** (ICON `icon_seamless` via `api.open-meteo.com`; ECMWF IFS 2026-09-04 → 09-30) | Hourly forecast for the next 5 days; hourly archive for peak-intensity features | Live + archive | `live_dashboard.py` (`METEO_PARAMS`) | `data/raw/hourly_rain_openmeteo.csv` | Forecast days; `rain_max1h/3h/6h` features |
 | **NWS** (`api.weather.gov`: KSFO observations, MTR gridpoint hourly forecast) | Recent hours observed; the rain advisory (avoid water contact 72 h after rain) | Live | `live_dashboard.py`, `shared/weather_tides.py` | — | Today's partial-day rain; alerts page advisory |
 | **NOAA CO-OPS** station 9414290 | Tide predictions (and met observations in an exploratory collector) | Live | `shared/weather_tides.py`, `collectors/noaa_met.py` | — | Alerts page context |
 | **CoCoRaHS via ACIS** (Potrero / Dogpatch gauge) | A third daily gauge on the east side, since 1998 | Historical | `collectors/cocorahs.py` | `data/raw/historical_rain_cocorahs.csv` | Model leaderboard only — tested and found a worse rain source |
@@ -167,7 +167,7 @@ precautionary, and the East is often dirty with no posting and no rain.
   directly; **v2** (the outfall split) first scales it by the share of the basin's discharges that reach the group's
   own outfalls. A set is named `<stage1>` or `<stage1>_s2v2`.
 - **Live.** Past complete days use the two NOAA gauges (with the outage rule); today uses NWS hours so far plus the
-  ECMWF forecast; forecast days use ECMWF. Live corrections (`live_v1`, `src/models/live_rules.py`, since 2026-09-26) then adjust the
+  ICON forecast (since 2026-09-30; ECMWF before); forecast days use ICON. Live corrections (`live_v2` since 2026-09-29: the sample rules read SFPUC's beach map first and DataSF overrides where published; `live_v1`, 2026-09-26, read DataSF alone; `src/models/live_rules.py`) then adjust the
   composition from what was observed: a watcher CSO onset sets that basin-day to 1 (and anchors the day before), an
   expected discharge the feed never flagged is downgraded by Bayes with a recall that grows with each quiet day after it
   (0.60 the morning after, 0.87, then 0.95; bayside only, while the watcher is ticking), a flag still up holds the beach at the large-event curve, and published samples cap (clean) the persistence term at
@@ -191,7 +191,7 @@ precautionary, and the East is often dirty with no posting and no rain.
 | Refresh discharge records | Quarterly: the CIWQS pipeline (`collectors/csd_ciwqs/README.md`), then `train_v4.py --rescore --promote` adds the new months to the Model check as post-training days (no retraining) |
 | Refresh postings | `collectors/beachwatch.py --refresh`, then `tests/test_beachwatch.py` |
 | Grade the live corrections | `venv/bin/python features/forecast/src/models/replay_live.py` → `reports/2026-09_live_replay.html` (the 2016-17 real feed) and `--synthetic` → `reports/2026-09_live_replay_synthetic.html` (every out-of-sample day, feed built from the filed discharges and degraded); re-run after a rescore (the watcher era joins once the artifact extends past Aug 2026) |
-| Retrain / new candidates | `RETRAIN_PLAN.md`; candidates via `leaderboard.py`, `candidates.py`, `stage2_variants.py`; regenerate explorers (`export_model_explorer.py [--model NAME]`, `export_stage2_explorer.py`) and the report (`report_models.py`) after any rescore |
+| Retrain / new candidates | `RETRAIN_PLAN.md`; candidates via `leaderboard.py`, `candidates.py`, `stage2_variants.py`; regenerate explorers (`export_model_explorer.py [--model NAME]`, `export_stage2_explorer.py`) and the report (`report_models.py`) after any rescore; after a promotion, rescore or rule change also `export_how_it_works.py` (the two plain reports: how it works / how it is graded) |
 | Database changes | `db/migrations/NNN_*.sql`, applied by hand in Supabase with no simulation active |
 | Secrets | Env vars only (`DEPLOY.md`): Supabase URL/key, Brevo, `ALERTS_PASSPHRASE`, healthchecks URL. Nothing in the repo |
 

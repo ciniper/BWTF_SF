@@ -152,11 +152,12 @@ def test_live_dashboard_wiring_is_the_identity_without_observations_and_moves_wi
     eng._watcher_health = lambda: {"ok": False, "mode": None, "reason": "supabase not configured"}
     eng._cso_flag_days = lambda s, e, t: {}
     eng._sample_flags = lambda s, e: {}
+    eng._feed_sample_flags = lambda s, e: {}
     live = eng._live_context(frames, probs, vols, DATES, {}, TODAY)
     plain = eng._day_payload(frames, 7, feats, probs, vols, DATES, {}, None)
     ruled = eng._day_payload(frames, 7, feats, probs, vols, DATES, {}, live)
     assert ruled["predictions"] == plain["predictions"] and ruled["impact_groups"] == plain["impact_groups"] and ruled["zones"] == plain["zones"]
-    assert ruled["live_corrections"] == {"version": "live_v1", "enabled": True, "source": "default", "stage1": {}, "groups": {}, "flags_active": [], "watcher_ok": False}
+    assert ruled["live_corrections"] == {"version": LR.VERSION, "enabled": True, "source": "default", "stage1": {}, "groups": {}, "flags_active": [], "watcher_ok": False, "sample_sources": {"feed": 0, "datasf": 0}}
     assert ruled["discharge_probs_live"] == probs[7] and plain["live_corrections"] is None
     assert ruled["plain"]["predictions"] == plain["predictions"] and ruled["plain"]["zones"] == plain["zones"]   # the plain composition rides along
 
@@ -166,6 +167,7 @@ def test_live_dashboard_wiring_is_the_identity_without_observations_and_moves_wi
     eng._watcher_health = lambda: {"ok": True, "mode": "live", "reason": "ok"}
     eng._cso_flag_days = lambda s, e, t: {DATES[6]: {"southeast"}, DATES[7]: {"southeast"}}
     eng._sample_flags = lambda s, e: {("Ocean Beach", DATES[6]): False}
+    eng._feed_sample_flags = lambda s, e: {}
     live = eng._live_context(frames, probs, vols, DATES, onsets, TODAY)
     assert live["probs"][6]["southeast"] == 1.0 and live["notes"][str(DATES[6])]["southeast"]["rule"] == "cso_onset"
     assert live["probs"][5]["southeast"] == 1.0 and live["notes"][str(DATES[5])]["southeast"]["rule"] == "cso_anchor_prev_day"   # 0.3" fell the day before (≥ 0.25")
@@ -201,7 +203,7 @@ def test_live_dashboard_wiring_is_the_identity_without_observations_and_moves_wi
         off = eng._live_context(frames, probs, vols, DATES, onsets, TODAY)
         assert off == {"enabled": False, "source": "env"}
         pay = eng._day_payload(frames, 7, feats, probs, vols, DATES, onsets, off)
-        assert pay["predictions"] == plain["predictions"] and pay["live_corrections"] == {"version": "live_v1", "enabled": False, "source": "env"}
+        assert pay["predictions"] == plain["predictions"] and pay["live_corrections"] == {"version": LR.VERSION, "enabled": False, "source": "env"}
     finally:
         os.environ.pop("LIVE_CORRECTIONS", None)
     os.environ["LIVE_CORRECTIONS"] = "on"
@@ -215,17 +217,17 @@ def test_live_dashboard_wiring_is_the_identity_without_observations_and_moves_wi
 def test_replay_report_exists_and_its_self_check_held():
     """replay_live.py wrote the archive-era replay: plain recomposition matched the
     stored risks, every variant is graded on the three rulers, and on the bayside
-    zones (labels independent of the feed) live_v1 is no worse than the model
+    zones (labels independent of the feed) the live rules are no worse than the model
     alone at the 50% line."""
     import json
     res = json.loads((ROOT / "reports" / "2026-09_live_replay.json").read_text())
     assert res["self_check_worst_delta"] <= 0.001, res["self_check_worst_delta"]
-    assert set(res["variants"]) >= {"plain", "live_v1", "no_downgrade", "no_samples", "cso_flags_only"}
+    assert set(res["variants"]) >= {"plain", LR.VERSION, "no_downgrade", "no_samples", "cso_flags_only"}
     for name, v in res["variants"].items():
         for t_ in ("0.25", "0.5"):
             g = v["grades"][t_]
             assert {"combined", "discharge", "posted"} <= set(g) and all("bayside" in g[r] for r in ("combined", "discharge", "posted")), (name, t_)
-    plain, live = res["variants"]["plain"]["grades"]["0.5"]["combined"]["bayside"], res["variants"]["live_v1"]["grades"]["0.5"]["combined"]["bayside"]
+    plain, live = res["variants"]["plain"]["grades"]["0.5"]["combined"]["bayside"], res["variants"][LR.VERSION]["grades"]["0.5"]["combined"]["bayside"]
     assert live["cost"] <= plain["cost"] and live["tp"] >= plain["tp"], (plain, live)
     assert res["variants"]["plain"]["days_changed"] == {z: 0 for z in res["variants"]["plain"]["days_changed"]}
     assert (ROOT / "reports" / "2026-09_live_replay.html").exists()
@@ -235,8 +237,8 @@ def test_replay_report_exists_and_its_self_check_held():
     # 8-day product) the recomposition from rounded p lands within 0.002 of the stored risk, so the check is
     # "within rounding", 0.0025, not 0.001 (which held for the v1 composition alone)
     assert syn["self_check_worst_delta"] <= 0.0025 and syn["cutoff"] == "start" and len(syn["feed"]["seeds"]) >= 3
-    assert {"plain", "live_v1", "live_v1_perfect_feed", "no_downgrade", "no_samples", "cso_flags_only", "all_floors"} <= set(syn["variants"])
-    pl, lv, pf = (syn["variants"][k]["grades"]["0.5"]["combined"] for k in ("plain", "live_v1", "live_v1_perfect_feed"))
+    assert {"plain", LR.VERSION, LR.VERSION + "_perfect_feed", "no_downgrade", "no_samples", "cso_flags_only", "all_floors"} <= set(syn["variants"])
+    pl, lv, pf = (syn["variants"][k]["grades"]["0.5"]["combined"] for k in ("plain", LR.VERSION, LR.VERSION + "_perfect_feed"))
     assert lv["tp"] > pl["tp"] and pf["cost"] <= lv["cost"], (pl["tp"], lv["tp"], pf["cost"], lv["cost"])   # more confirmed-persistence days caught; the perfect feed is the bound
     assert syn["feed"]["draws"] and all(d["dropped"] > 0 and d["lagged"] > 0 for d in syn["feed"]["draws"])
     assert (ROOT / "reports" / "2026-09_live_replay_synthetic.html").exists()
