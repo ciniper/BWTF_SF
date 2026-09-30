@@ -1,0 +1,3002 @@
+{
+ "generated": "2026-09-29 21:51",
+ "window": [
+  "2024-02-01",
+  "2026-08-27"
+ ],
+ "served": {
+  "name": "logit_v1_s2v2",
+  "stage1": "logit_v1",
+  "line": 0.25,
+  "weather_model": "ecmwf_ifs025"
+ },
+ "input_rules": [
+  "gauge_outage_v1"
+ ],
+ "rain_sources": {
+  "westside": "avg",
+  "north_shore": "SF Downtown",
+  "central": "SF Downtown",
+  "southeast": "SF Downtown",
+  "citywide": "avg"
+ },
+ "miss_weight": 2.0,
+ "archive_first_day": {
+  "ecmwf_ifs025": "2024-02-02",
+  "gfs_seamless": "2024-01-31",
+  "icon_seamless": "2024-01-31"
+ },
+ "rain": {
+  "SF Downtown": {
+   "ecmwf_ifs025": {
+    "n_days": 939,
+    "bias_in": 0.00858385114001311,
+    "wet_days": 105,
+    "wet_mae_in": 0.23485189351331057,
+    "wet_bias_in": 0.018680914885638472,
+    "total_in": {
+     "gauge": 54.55000000000001,
+     "model": 62.61023622047231
+    },
+    "thresholds": {
+     "0.25": {
+      "gauge_days": 68,
+      "hit": 54,
+      "miss": 14,
+      "false": 19,
+      "pod": 0.7941176470588235,
+      "far": 0.2602739726027397
+     },
+     "0.5": {
+      "gauge_days": 35,
+      "hit": 27,
+      "miss": 8,
+      "false": 16,
+      "pod": 0.7714285714285715,
+      "far": 0.37209302325581395
+     },
+     "1.0": {
+      "gauge_days": 12,
+      "hit": 9,
+      "miss": 3,
+      "false": 6,
+      "pod": 0.75,
+      "far": 0.4
+     }
+    }
+   },
+   "gfs_seamless": {
+    "n_days": 939,
+    "bias_in": -0.008023697517043625,
+    "wet_days": 105,
+    "wet_mae_in": 0.251456317960255,
+    "wet_bias_in": -0.07145781777277863,
+    "total_in": {
+     "gauge": 54.55000000000001,
+     "model": 47.01574803149604
+    },
+    "thresholds": {
+     "0.25": {
+      "gauge_days": 68,
+      "hit": 48,
+      "miss": 20,
+      "false": 8,
+      "pod": 0.7058823529411765,
+      "far": 0.14285714285714285
+     },
+     "0.5": {
+      "gauge_days": 35,
+      "hit": 18,
+      "miss": 17,
+      "false": 10,
+      "pod": 0.5142857142857142,
+      "far": 0.35714285714285715
+     },
+     "1.0": {
+      "gauge_days": 12,
+      "hit": 8,
+      "miss": 4,
+      "false": 3,
+      "pod": 0.6666666666666666,
+      "far": 0.2727272727272727
+     }
+    }
+   },
+   "icon_seamless": {
+    "n_days": 939,
+    "bias_in": 0.0029990859768725983,
+    "wet_days": 105,
+    "wet_mae_in": 0.2247146606674163,
+    "wet_bias_in": 0.0064574428196468095,
+    "total_in": {
+     "gauge": 54.55000000000001,
+     "model": 57.36614173228337
+    },
+    "thresholds": {
+     "0.25": {
+      "gauge_days": 68,
+      "hit": 60,
+      "miss": 8,
+      "false": 15,
+      "pod": 0.8823529411764706,
+      "far": 0.2
+     },
+     "0.5": {
+      "gauge_days": 35,
+      "hit": 27,
+      "miss": 8,
+      "false": 17,
+      "pod": 0.7714285714285715,
+      "far": 0.38636363636363635
+     },
+     "1.0": {
+      "gauge_days": 12,
+      "hit": 7,
+      "miss": 5,
+      "false": 3,
+      "pod": 0.5833333333333334,
+      "far": 0.3
+     }
+    }
+   },
+   "gauge_wet_days": 105
+  },
+  "avg": {
+   "ecmwf_ifs025": {
+    "n_days": 939,
+    "bias_in": 0.010596630692728766,
+    "wet_days": 101,
+    "wet_mae_in": 0.2343244718172602,
+    "wet_bias_in": 0.04345209324081931,
+    "total_in": {
+     "gauge": 52.66,
+     "model": 62.61023622047231
+    },
+    "thresholds": {
+     "0.25": {
+      "gauge_days": 66,
+      "hit": 54,
+      "miss": 12,
+      "false": 19,
+      "pod": 0.8181818181818182,
+      "far": 0.2602739726027397
+     },
+     "0.5": {
+      "gauge_days": 33,
+      "hit": 25,
+      "miss": 8,
+      "false": 18,
+      "pod": 0.7575757575757576,
+      "far": 0.4186046511627907
+     },
+     "1.0": {
+      "gauge_days": 12,
+      "hit": 9,
+      "miss": 3,
+      "false": 6,
+      "pod": 0.75,
+      "far": 0.4
+     }
+    }
+   },
+   "gfs_seamless": {
+    "n_days": 939,
+    "bias_in": -0.006010917964327968,
+    "wet_days": 101,
+    "wet_mae_in": 0.2591985655258439,
+    "wet_bias_in": -0.052907148982615025,
+    "total_in": {
+     "gauge": 52.66,
+     "model": 47.01574803149604
+    },
+    "thresholds": {
+     "0.25": {
+      "gauge_days": 66,
+      "hit": 47,
+      "miss": 19,
+      "false": 9,
+      "pod": 0.7121212121212122,
+      "far": 0.16071428571428573
+     },
+     "0.5": {
+      "gauge_days": 33,
+      "hit": 18,
+      "miss": 15,
+      "false": 10,
+      "pod": 0.5454545454545454,
+      "far": 0.35714285714285715
+     },
+     "1.0": {
+      "gauge_days": 12,
+      "hit": 8,
+      "miss": 4,
+      "false": 3,
+      "pod": 0.6666666666666666,
+      "far": 0.2727272727272727
+     }
+    }
+   },
+   "icon_seamless": {
+    "n_days": 939,
+    "bias_in": 0.005011865529588254,
+    "wet_days": 101,
+    "wet_mae_in": 0.21553130116161212,
+    "wet_bias_in": 0.02758712091681534,
+    "total_in": {
+     "gauge": 52.66,
+     "model": 57.36614173228337
+    },
+    "thresholds": {
+     "0.25": {
+      "gauge_days": 66,
+      "hit": 57,
+      "miss": 9,
+      "false": 18,
+      "pod": 0.8636363636363636,
+      "far": 0.24
+     },
+     "0.5": {
+      "gauge_days": 33,
+      "hit": 26,
+      "miss": 7,
+      "false": 18,
+      "pod": 0.7878787878787878,
+      "far": 0.4090909090909091
+     },
+     "1.0": {
+      "gauge_days": 12,
+      "hit": 8,
+      "miss": 4,
+      "false": 2,
+      "pod": 0.6666666666666666,
+      "far": 0.2
+     }
+    }
+   },
+   "gauge_wet_days": 101
+  }
+ },
+ "stage1": {
+  "logit_v1_s2v2": {
+   "westside": {
+    "gauges": {
+     "n": 912,
+     "pos": 21,
+     "pr_auc": 0.7441087512861373,
+     "roc_auc": 0.9855699855699855,
+     "brier": 0.010531800579413813,
+     "line_25": {
+      "tp": 15,
+      "fn": 6,
+      "fp": 7,
+      "cost": 19.0
+     },
+     "line_50": {
+      "tp": 11,
+      "fn": 10,
+      "fp": 2,
+      "cost": 22.0
+     }
+    },
+    "ecmwf_ifs025": {
+     "n": 912,
+     "pos": 21,
+     "pr_auc": 0.6735309529528597,
+     "roc_auc": 0.9770188659077549,
+     "brier": 0.014526715603456055,
+     "line_25": {
+      "tp": 15,
+      "fn": 6,
+      "fp": 20,
+      "cost": 32.0
+     },
+     "line_50": {
+      "tp": 14,
+      "fn": 7,
+      "fp": 9,
+      "cost": 23.0
+     }
+    },
+    "gfs_seamless": {
+     "n": 912,
+     "pos": 21,
+     "pr_auc": 0.5732667840016755,
+     "roc_auc": 0.9755758644647534,
+     "brier": 0.015459409975079368,
+     "line_25": {
+      "tp": 10,
+      "fn": 11,
+      "fp": 5,
+      "cost": 27.0
+     },
+     "line_50": {
+      "tp": 8,
+      "fn": 13,
+      "fp": 3,
+      "cost": 29.0
+     }
+    },
+    "icon_seamless": {
+     "n": 912,
+     "pos": 21,
+     "pr_auc": 0.5837011908500171,
+     "roc_auc": 0.9836994281438726,
+     "brier": 0.01540806056883108,
+     "line_25": {
+      "tp": 13,
+      "fn": 8,
+      "fp": 15,
+      "cost": 31.0
+     },
+     "line_50": {
+      "tp": 11,
+      "fn": 10,
+      "fp": 9,
+      "cost": 29.0
+     }
+    },
+    "mean3": {
+     "n": 912,
+     "pos": 21,
+     "pr_auc": 0.6572595693991576,
+     "roc_auc": 0.9842873176206509,
+     "brier": 0.012703939705482066,
+     "line_25": {
+      "tp": 15,
+      "fn": 6,
+      "fp": 15,
+      "cost": 27.0
+     },
+     "line_50": {
+      "tp": 11,
+      "fn": 10,
+      "fp": 4,
+      "cost": 24.0
+     }
+    },
+    "max3": {
+     "n": 912,
+     "pos": 21,
+     "pr_auc": 0.6601324557100912,
+     "roc_auc": 0.9845545401100956,
+     "brier": 0.016320620976034,
+     "line_25": {
+      "tp": 16,
+      "fn": 5,
+      "fp": 26,
+      "cost": 36.0
+     },
+     "line_50": {
+      "tp": 15,
+      "fn": 6,
+      "fp": 14,
+      "cost": 26.0
+     }
+    },
+    "covered_days": 912,
+    "rain_source": "avg"
+   },
+   "north_shore": {
+    "gauges": {
+     "n": 939,
+     "pos": 8,
+     "pr_auc": 1.0,
+     "roc_auc": 1.0,
+     "brier": 0.001572177869613952,
+     "line_25": {
+      "tp": 8,
+      "fn": 0,
+      "fp": 5,
+      "cost": 5.0
+     },
+     "line_50": {
+      "tp": 8,
+      "fn": 0,
+      "fp": 1,
+      "cost": 1.0
+     }
+    },
+    "ecmwf_ifs025": {
+     "n": 939,
+     "pos": 8,
+     "pr_auc": 0.6335565476190476,
+     "roc_auc": 0.9616004296455424,
+     "brier": 0.006855674901913924,
+     "line_25": {
+      "tp": 6,
+      "fn": 2,
+      "fp": 12,
+      "cost": 16.0
+     },
+     "line_50": {
+      "tp": 5,
+      "fn": 3,
+      "fp": 6,
+      "cost": 12.0
+     }
+    },
+    "gfs_seamless": {
+     "n": 939,
+     "pos": 8,
+     "pr_auc": 0.7038934426229508,
+     "roc_auc": 0.9884532760472611,
+     "brier": 0.0051289232574015685,
+     "line_25": {
+      "tp": 6,
+      "fn": 2,
+      "fp": 4,
+      "cost": 8.0
+     },
+     "line_50": {
+      "tp": 5,
+      "fn": 3,
+      "fp": 3,
+      "cost": 9.0
+     }
+    },
+    "icon_seamless": {
+     "n": 939,
+     "pos": 8,
+     "pr_auc": 0.709837962962963,
+     "roc_auc": 0.9873791621911924,
+     "brier": 0.005053617262075796,
+     "line_25": {
+      "tp": 5,
+      "fn": 3,
+      "fp": 7,
+      "cost": 13.0
+     },
+     "line_50": {
+      "tp": 5,
+      "fn": 3,
+      "fp": 2,
+      "cost": 8.0
+     }
+    },
+    "mean3": {
+     "n": 939,
+     "pos": 8,
+     "pr_auc": 0.7234848484848484,
+     "roc_auc": 0.9884532760472611,
+     "brier": 0.00468137436863418,
+     "line_25": {
+      "tp": 6,
+      "fn": 2,
+      "fp": 6,
+      "cost": 10.0
+     },
+     "line_50": {
+      "tp": 5,
+      "fn": 3,
+      "fp": 3,
+      "cost": 9.0
+     }
+    },
+    "max3": {
+     "n": 939,
+     "pos": 8,
+     "pr_auc": 0.7260057471264367,
+     "roc_auc": 0.9893931256713211,
+     "brier": 0.008710042941032057,
+     "line_25": {
+      "tp": 6,
+      "fn": 2,
+      "fp": 17,
+      "cost": 21.0
+     },
+     "line_50": {
+      "tp": 6,
+      "fn": 2,
+      "fp": 8,
+      "cost": 12.0
+     }
+    },
+    "covered_days": 939,
+    "rain_source": "SF Downtown"
+   },
+   "central": {
+    "gauges": {
+     "n": 939,
+     "pos": 19,
+     "pr_auc": 0.8872708701881002,
+     "roc_auc": 0.9975972540045768,
+     "brier": 0.006059357346841286,
+     "line_25": {
+      "tp": 19,
+      "fn": 0,
+      "fp": 9,
+      "cost": 9.0
+     },
+     "line_50": {
+      "tp": 16,
+      "fn": 3,
+      "fp": 5,
+      "cost": 11.0
+     }
+    },
+    "ecmwf_ifs025": {
+     "n": 939,
+     "pos": 19,
+     "pr_auc": 0.7104776146017204,
+     "roc_auc": 0.9797482837528605,
+     "brier": 0.012519880852420659,
+     "line_25": {
+      "tp": 14,
+      "fn": 5,
+      "fp": 18,
+      "cost": 28.0
+     },
+     "line_50": {
+      "tp": 14,
+      "fn": 5,
+      "fp": 9,
+      "cost": 19.0
+     }
+    },
+    "gfs_seamless": {
+     "n": 939,
+     "pos": 19,
+     "pr_auc": 0.5268350436506812,
+     "roc_auc": 0.9863844393592678,
+     "brier": 0.015612494395130527,
+     "line_25": {
+      "tp": 11,
+      "fn": 8,
+      "fp": 13,
+      "cost": 29.0
+     },
+     "line_50": {
+      "tp": 11,
+      "fn": 8,
+      "fp": 10,
+      "cost": 26.0
+     }
+    },
+    "icon_seamless": {
+     "n": 939,
+     "pos": 19,
+     "pr_auc": 0.7519213170875263,
+     "roc_auc": 0.9904462242562929,
+     "brier": 0.01060413143380024,
+     "line_25": {
+      "tp": 15,
+      "fn": 4,
+      "fp": 15,
+      "cost": 23.0
+     },
+     "line_50": {
+      "tp": 13,
+      "fn": 6,
+      "fp": 10,
+      "cost": 22.0
+     }
+    },
+    "mean3": {
+     "n": 939,
+     "pos": 19,
+     "pr_auc": 0.753986615379804,
+     "roc_auc": 0.9907322654462242,
+     "brier": 0.010503109970634653,
+     "line_25": {
+      "tp": 16,
+      "fn": 3,
+      "fp": 16,
+      "cost": 22.0
+     },
+     "line_50": {
+      "tp": 12,
+      "fn": 7,
+      "fp": 8,
+      "cost": 22.0
+     }
+    },
+    "max3": {
+     "n": 939,
+     "pos": 19,
+     "pr_auc": 0.5736082454895823,
+     "roc_auc": 0.9893592677345537,
+     "brier": 0.016788475768577633,
+     "line_25": {
+      "tp": 17,
+      "fn": 2,
+      "fp": 27,
+      "cost": 31.0
+     },
+     "line_50": {
+      "tp": 16,
+      "fn": 3,
+      "fp": 17,
+      "cost": 23.0
+     }
+    },
+    "covered_days": 939,
+    "rain_source": "SF Downtown"
+   },
+   "southeast": {
+    "gauges": {
+     "n": 939,
+     "pos": 16,
+     "pr_auc": 0.8780660597572363,
+     "roc_auc": 0.9974945828819068,
+     "brier": 0.005895370632264267,
+     "line_25": {
+      "tp": 15,
+      "fn": 1,
+      "fp": 9,
+      "cost": 11.0
+     },
+     "line_50": {
+      "tp": 14,
+      "fn": 2,
+      "fp": 6,
+      "cost": 10.0
+     }
+    },
+    "ecmwf_ifs025": {
+     "n": 939,
+     "pos": 16,
+     "pr_auc": 0.8138602716727716,
+     "roc_auc": 0.986660346695558,
+     "brier": 0.008006929396848907,
+     "line_25": {
+      "tp": 15,
+      "fn": 1,
+      "fp": 17,
+      "cost": 19.0
+     },
+     "line_50": {
+      "tp": 15,
+      "fn": 1,
+      "fp": 8,
+      "cost": 10.0
+     }
+    },
+    "gfs_seamless": {
+     "n": 939,
+     "pos": 16,
+     "pr_auc": 0.5787464979331396,
+     "roc_auc": 0.9862540628385699,
+     "brier": 0.014209363539439536,
+     "line_25": {
+      "tp": 11,
+      "fn": 5,
+      "fp": 16,
+      "cost": 26.0
+     },
+     "line_50": {
+      "tp": 11,
+      "fn": 5,
+      "fp": 11,
+      "cost": 21.0
+     }
+    },
+    "icon_seamless": {
+     "n": 939,
+     "pos": 16,
+     "pr_auc": 0.7571308659185665,
+     "roc_auc": 0.991535752979415,
+     "brier": 0.010170902896396904,
+     "line_25": {
+      "tp": 12,
+      "fn": 4,
+      "fp": 17,
+      "cost": 25.0
+     },
+     "line_50": {
+      "tp": 11,
+      "fn": 5,
+      "fp": 10,
+      "cost": 20.0
+     }
+    },
+    "mean3": {
+     "n": 939,
+     "pos": 16,
+     "pr_auc": 0.8103117034272802,
+     "roc_auc": 0.9935671722643554,
+     "brier": 0.008521889075517234,
+     "line_25": {
+      "tp": 15,
+      "fn": 1,
+      "fp": 19,
+      "cost": 21.0
+     },
+     "line_50": {
+      "tp": 13,
+      "fn": 3,
+      "fp": 7,
+      "cost": 13.0
+     }
+    },
+    "max3": {
+     "n": 939,
+     "pos": 16,
+     "pr_auc": 0.650848434645147,
+     "roc_auc": 0.9918066088840737,
+     "brier": 0.016060030370397608,
+     "line_25": {
+      "tp": 15,
+      "fn": 1,
+      "fp": 31,
+      "cost": 33.0
+     },
+     "line_50": {
+      "tp": 15,
+      "fn": 1,
+      "fp": 17,
+      "cost": 19.0
+     }
+    },
+    "covered_days": 939,
+    "rain_source": "SF Downtown"
+   },
+   "total": {
+    "gauges": {
+     "line_25": {
+      "tp": 57,
+      "fn": 7,
+      "fp": 30,
+      "cost": 44.0
+     },
+     "line_50": {
+      "tp": 49,
+      "fn": 15,
+      "fp": 14,
+      "cost": 44.0
+     }
+    },
+    "ecmwf_ifs025": {
+     "line_25": {
+      "tp": 50,
+      "fn": 14,
+      "fp": 67,
+      "cost": 95.0
+     },
+     "line_50": {
+      "tp": 48,
+      "fn": 16,
+      "fp": 32,
+      "cost": 64.0
+     }
+    },
+    "gfs_seamless": {
+     "line_25": {
+      "tp": 38,
+      "fn": 26,
+      "fp": 38,
+      "cost": 90.0
+     },
+     "line_50": {
+      "tp": 35,
+      "fn": 29,
+      "fp": 27,
+      "cost": 85.0
+     }
+    },
+    "icon_seamless": {
+     "line_25": {
+      "tp": 45,
+      "fn": 19,
+      "fp": 54,
+      "cost": 92.0
+     },
+     "line_50": {
+      "tp": 40,
+      "fn": 24,
+      "fp": 31,
+      "cost": 79.0
+     }
+    },
+    "mean3": {
+     "line_25": {
+      "tp": 52,
+      "fn": 12,
+      "fp": 56,
+      "cost": 80.0
+     },
+     "line_50": {
+      "tp": 41,
+      "fn": 23,
+      "fp": 22,
+      "cost": 68.0
+     }
+    },
+    "max3": {
+     "line_25": {
+      "tp": 54,
+      "fn": 10,
+      "fp": 101,
+      "cost": 121.0
+     },
+     "line_50": {
+      "tp": 52,
+      "fn": 12,
+      "fp": 56,
+      "cost": 80.0
+     }
+    }
+   }
+  },
+  "gb_v1": {
+   "westside": {
+    "gauges": {
+     "n": 912,
+     "pos": 21,
+     "pr_auc": 0.7865691423054104,
+     "roc_auc": 0.984180428624873,
+     "brier": 0.009190210475002257,
+     "line_25": {
+      "tp": 15,
+      "fn": 6,
+      "fp": 6,
+      "cost": 18.0
+     },
+     "line_50": {
+      "tp": 15,
+      "fn": 6,
+      "fp": 2,
+      "cost": 14.0
+     }
+    },
+    "ecmwf_ifs025": {
+     "n": 912,
+     "pos": 21,
+     "pr_auc": 0.609615633379575,
+     "roc_auc": 0.9781412003634227,
+     "brier": 0.01591628514968126,
+     "line_25": {
+      "tp": 15,
+      "fn": 6,
+      "fp": 20,
+      "cost": 32.0
+     },
+     "line_50": {
+      "tp": 14,
+      "fn": 7,
+      "fp": 13,
+      "cost": 27.0
+     }
+    },
+    "gfs_seamless": {
+     "n": 912,
+     "pos": 21,
+     "pr_auc": 0.5436194375621267,
+     "roc_auc": 0.9770990326545882,
+     "brier": 0.018005530974090186,
+     "line_25": {
+      "tp": 10,
+      "fn": 11,
+      "fp": 9,
+      "cost": 31.0
+     },
+     "line_50": {
+      "tp": 9,
+      "fn": 12,
+      "fp": 8,
+      "cost": 32.0
+     }
+    },
+    "icon_seamless": {
+     "n": 912,
+     "pos": 21,
+     "pr_auc": 0.5571467048208731,
+     "roc_auc": 0.9817219817219817,
+     "brier": 0.015723364191809055,
+     "line_25": {
+      "tp": 14,
+      "fn": 7,
+      "fp": 17,
+      "cost": 31.0
+     },
+     "line_50": {
+      "tp": 12,
+      "fn": 9,
+      "fp": 10,
+      "cost": 28.0
+     }
+    },
+    "mean3": {
+     "n": 912,
+     "pos": 21,
+     "pr_auc": 0.6527219390457781,
+     "roc_auc": 0.9818823152156486,
+     "brier": 0.013718495422488626,
+     "line_25": {
+      "tp": 14,
+      "fn": 7,
+      "fp": 15,
+      "cost": 29.0
+     },
+     "line_50": {
+      "tp": 10,
+      "fn": 11,
+      "fp": 8,
+      "cost": 30.0
+     }
+    },
+    "max3": {
+     "n": 912,
+     "pos": 21,
+     "pr_auc": 0.549786534153378,
+     "roc_auc": 0.9797979797979798,
+     "brier": 0.021360583454522214,
+     "line_25": {
+      "tp": 15,
+      "fn": 6,
+      "fp": 29,
+      "cost": 41.0
+     },
+     "line_50": {
+      "tp": 14,
+      "fn": 7,
+      "fp": 22,
+      "cost": 36.0
+     }
+    },
+    "covered_days": 912,
+    "rain_source": "avg"
+   },
+   "north_shore": {
+    "gauges": {
+     "n": 939,
+     "pos": 8,
+     "pr_auc": 1.0,
+     "roc_auc": 1.0,
+     "brier": 0.0017720175536775208,
+     "line_25": {
+      "tp": 8,
+      "fn": 0,
+      "fp": 7,
+      "cost": 7.0
+     },
+     "line_50": {
+      "tp": 8,
+      "fn": 0,
+      "fp": 2,
+      "cost": 2.0
+     }
+    },
+    "ecmwf_ifs025": {
+     "n": 939,
+     "pos": 8,
+     "pr_auc": 0.7768793706293706,
+     "roc_auc": 0.9769065520945219,
+     "brier": 0.007405071546226245,
+     "line_25": {
+      "tp": 6,
+      "fn": 2,
+      "fp": 15,
+      "cost": 19.0
+     },
+     "line_50": {
+      "tp": 6,
+      "fn": 2,
+      "fp": 7,
+      "cost": 11.0
+     }
+    },
+    "gfs_seamless": {
+     "n": 939,
+     "pos": 8,
+     "pr_auc": 0.695255439005439,
+     "roc_auc": 0.9832169709989259,
+     "brier": 0.008712046819574791,
+     "line_25": {
+      "tp": 6,
+      "fn": 2,
+      "fp": 10,
+      "cost": 14.0
+     },
+     "line_50": {
+      "tp": 6,
+      "fn": 2,
+      "fp": 7,
+      "cost": 11.0
+     }
+    },
+    "icon_seamless": {
+     "n": 939,
+     "pos": 8,
+     "pr_auc": 0.6518046013817731,
+     "roc_auc": 0.9775107411385606,
+     "brier": 0.007359894881710502,
+     "line_25": {
+      "tp": 5,
+      "fn": 3,
+      "fp": 13,
+      "cost": 19.0
+     },
+     "line_50": {
+      "tp": 5,
+      "fn": 3,
+      "fp": 6,
+      "cost": 12.0
+     }
+    },
+    "mean3": {
+     "n": 939,
+     "pos": 8,
+     "pr_auc": 0.7194767441860466,
+     "roc_auc": 0.9838882921589689,
+     "brier": 0.005982875486533359,
+     "line_25": {
+      "tp": 6,
+      "fn": 2,
+      "fp": 13,
+      "cost": 17.0
+     },
+     "line_50": {
+      "tp": 5,
+      "fn": 3,
+      "fp": 5,
+      "cost": 11.0
+     }
+    },
+    "max3": {
+     "n": 939,
+     "pos": 8,
+     "pr_auc": 0.7268639887244539,
+     "roc_auc": 0.985499462943072,
+     "brier": 0.013867767742080725,
+     "line_25": {
+      "tp": 6,
+      "fn": 2,
+      "fp": 23,
+      "cost": 27.0
+     },
+     "line_50": {
+      "tp": 6,
+      "fn": 2,
+      "fp": 15,
+      "cost": 19.0
+     }
+    },
+    "covered_days": 939,
+    "rain_source": "SF Downtown"
+   },
+   "central": {
+    "gauges": {
+     "n": 939,
+     "pos": 19,
+     "pr_auc": 0.8886278496185613,
+     "roc_auc": 0.9974256292906178,
+     "brier": 0.007313264548986057,
+     "line_25": {
+      "tp": 17,
+      "fn": 2,
+      "fp": 8,
+      "cost": 12.0
+     },
+     "line_50": {
+      "tp": 16,
+      "fn": 3,
+      "fp": 7,
+      "cost": 13.0
+     }
+    },
+    "ecmwf_ifs025": {
+     "n": 939,
+     "pos": 19,
+     "pr_auc": 0.6713431344092825,
+     "roc_auc": 0.9810068649885584,
+     "brier": 0.014400969211433128,
+     "line_25": {
+      "tp": 14,
+      "fn": 5,
+      "fp": 17,
+      "cost": 27.0
+     },
+     "line_50": {
+      "tp": 14,
+      "fn": 5,
+      "fp": 12,
+      "cost": 22.0
+     }
+    },
+    "gfs_seamless": {
+     "n": 939,
+     "pos": 19,
+     "pr_auc": 0.6224968832863007,
+     "roc_auc": 0.9814073226544622,
+     "brier": 0.01576970391982355,
+     "line_25": {
+      "tp": 12,
+      "fn": 7,
+      "fp": 13,
+      "cost": 27.0
+     },
+     "line_50": {
+      "tp": 10,
+      "fn": 9,
+      "fp": 9,
+      "cost": 27.0
+     }
+    },
+    "icon_seamless": {
+     "n": 939,
+     "pos": 19,
+     "pr_auc": 0.7854826615480808,
+     "roc_auc": 0.9917620137299771,
+     "brier": 0.012540229556712227,
+     "line_25": {
+      "tp": 15,
+      "fn": 4,
+      "fp": 18,
+      "cost": 26.0
+     },
+     "line_50": {
+      "tp": 15,
+      "fn": 4,
+      "fp": 11,
+      "cost": 19.0
+     }
+    },
+    "mean3": {
+     "n": 939,
+     "pos": 19,
+     "pr_auc": 0.7510917020613621,
+     "roc_auc": 0.9905034324942792,
+     "brier": 0.01086807503391395,
+     "line_25": {
+      "tp": 15,
+      "fn": 4,
+      "fp": 22,
+      "cost": 30.0
+     },
+     "line_50": {
+      "tp": 13,
+      "fn": 6,
+      "fp": 9,
+      "cost": 21.0
+     }
+    },
+    "max3": {
+     "n": 939,
+     "pos": 19,
+     "pr_auc": 0.7194916053574796,
+     "roc_auc": 0.9910755148741419,
+     "brier": 0.01892026770250469,
+     "line_25": {
+      "tp": 17,
+      "fn": 2,
+      "fp": 27,
+      "cost": 31.0
+     },
+     "line_50": {
+      "tp": 17,
+      "fn": 2,
+      "fp": 20,
+      "cost": 24.0
+     }
+    },
+    "covered_days": 939,
+    "rain_source": "SF Downtown"
+   },
+   "southeast": {
+    "gauges": {
+     "n": 939,
+     "pos": 16,
+     "pr_auc": 0.9202965539362598,
+     "roc_auc": 0.9982394366197183,
+     "brier": 0.005428748569762151,
+     "line_25": {
+      "tp": 15,
+      "fn": 1,
+      "fp": 10,
+      "cost": 12.0
+     },
+     "line_50": {
+      "tp": 15,
+      "fn": 1,
+      "fp": 6,
+      "cost": 8.0
+     }
+    },
+    "ecmwf_ifs025": {
+     "n": 939,
+     "pos": 16,
+     "pr_auc": 0.7127650240761654,
+     "roc_auc": 0.988556338028169,
+     "brier": 0.012422612459308402,
+     "line_25": {
+      "tp": 15,
+      "fn": 1,
+      "fp": 22,
+      "cost": 24.0
+     },
+     "line_50": {
+      "tp": 15,
+      "fn": 1,
+      "fp": 15,
+      "cost": 17.0
+     }
+    },
+    "gfs_seamless": {
+     "n": 939,
+     "pos": 16,
+     "pr_auc": 0.5797586594533105,
+     "roc_auc": 0.9856446370530878,
+     "brier": 0.013762950084847354,
+     "line_25": {
+      "tp": 11,
+      "fn": 5,
+      "fp": 16,
+      "cost": 26.0
+     },
+     "line_50": {
+      "tp": 11,
+      "fn": 5,
+      "fp": 9,
+      "cost": 19.0
+     }
+    },
+    "icon_seamless": {
+     "n": 939,
+     "pos": 16,
+     "pr_auc": 0.6797332861806484,
+     "roc_auc": 0.988962621885157,
+     "brier": 0.01370164307979252,
+     "line_25": {
+      "tp": 14,
+      "fn": 2,
+      "fp": 21,
+      "cost": 25.0
+     },
+     "line_50": {
+      "tp": 11,
+      "fn": 5,
+      "fp": 15,
+      "cost": 25.0
+     }
+    },
+    "mean3": {
+     "n": 939,
+     "pos": 16,
+     "pr_auc": 0.7762153526328515,
+     "roc_auc": 0.9923483206933912,
+     "brier": 0.010307878223819221,
+     "line_25": {
+      "tp": 15,
+      "fn": 1,
+      "fp": 21,
+      "cost": 23.0
+     },
+     "line_50": {
+      "tp": 11,
+      "fn": 5,
+      "fp": 8,
+      "cost": 18.0
+     }
+    },
+    "max3": {
+     "n": 939,
+     "pos": 16,
+     "pr_auc": 0.6430243207087781,
+     "roc_auc": 0.9905877573131094,
+     "brier": 0.019867045011694815,
+     "line_25": {
+      "tp": 15,
+      "fn": 1,
+      "fp": 35,
+      "cost": 37.0
+     },
+     "line_50": {
+      "tp": 15,
+      "fn": 1,
+      "fp": 25,
+      "cost": 27.0
+     }
+    },
+    "covered_days": 939,
+    "rain_source": "avg"
+   },
+   "total": {
+    "gauges": {
+     "line_25": {
+      "tp": 55,
+      "fn": 9,
+      "fp": 31,
+      "cost": 49.0
+     },
+     "line_50": {
+      "tp": 54,
+      "fn": 10,
+      "fp": 17,
+      "cost": 37.0
+     }
+    },
+    "ecmwf_ifs025": {
+     "line_25": {
+      "tp": 50,
+      "fn": 14,
+      "fp": 74,
+      "cost": 102.0
+     },
+     "line_50": {
+      "tp": 49,
+      "fn": 15,
+      "fp": 47,
+      "cost": 77.0
+     }
+    },
+    "gfs_seamless": {
+     "line_25": {
+      "tp": 39,
+      "fn": 25,
+      "fp": 48,
+      "cost": 98.0
+     },
+     "line_50": {
+      "tp": 36,
+      "fn": 28,
+      "fp": 33,
+      "cost": 89.0
+     }
+    },
+    "icon_seamless": {
+     "line_25": {
+      "tp": 48,
+      "fn": 16,
+      "fp": 69,
+      "cost": 101.0
+     },
+     "line_50": {
+      "tp": 43,
+      "fn": 21,
+      "fp": 42,
+      "cost": 84.0
+     }
+    },
+    "mean3": {
+     "line_25": {
+      "tp": 50,
+      "fn": 14,
+      "fp": 71,
+      "cost": 99.0
+     },
+     "line_50": {
+      "tp": 39,
+      "fn": 25,
+      "fp": 30,
+      "cost": 80.0
+     }
+    },
+    "max3": {
+     "line_25": {
+      "tp": 53,
+      "fn": 11,
+      "fp": 114,
+      "cost": 136.0
+     },
+     "line_50": {
+      "tp": 52,
+      "fn": 12,
+      "fp": 82,
+      "cost": 106.0
+     }
+    }
+   }
+  }
+ },
+ "ensembles": {},
+ "disagreement": {
+  "westside": {
+   "days": 34,
+   "discharge_days": 11,
+   "agree_wet_days": 8,
+   "agree_wet_discharge_days": 5,
+   "examples": [
+    {
+     "date": "2024-02-01",
+     "ECMWF IFS": 0.0,
+     "GFS": 0.06,
+     "ICON": 0.83,
+     "gauges": 0.96,
+     "discharge": 1
+    },
+    {
+     "date": "2024-02-04",
+     "ECMWF IFS": 0.88,
+     "GFS": 0.5,
+     "ICON": 0.56,
+     "gauges": 0.46,
+     "discharge": 1
+    },
+    {
+     "date": "2024-02-05",
+     "ECMWF IFS": 0.79,
+     "GFS": 0.01,
+     "ICON": 0.0,
+     "gauges": 0.01,
+     "discharge": 0
+    },
+    {
+     "date": "2024-02-18",
+     "ECMWF IFS": 0.61,
+     "GFS": 0.1,
+     "ICON": 0.79,
+     "gauges": 0.06,
+     "discharge": 0
+    },
+    {
+     "date": "2024-02-19",
+     "ECMWF IFS": 0.5,
+     "GFS": 0.0,
+     "ICON": 0.36,
+     "gauges": 0.02,
+     "discharge": 0
+    },
+    {
+     "date": "2024-03-02",
+     "ECMWF IFS": 0.6,
+     "GFS": 0.36,
+     "ICON": 0.14,
+     "gauges": 0.06,
+     "discharge": 0
+    },
+    {
+     "date": "2024-03-23",
+     "ECMWF IFS": 0.6,
+     "GFS": 0.02,
+     "ICON": 0.46,
+     "gauges": 0.04,
+     "discharge": 0
+    },
+    {
+     "date": "2024-03-29",
+     "ECMWF IFS": 0.82,
+     "GFS": 0.92,
+     "ICON": 0.55,
+     "gauges": 0.21,
+     "discharge": 0
+    },
+    {
+     "date": "2024-04-13",
+     "ECMWF IFS": 0.46,
+     "GFS": 0.04,
+     "ICON": 0.41,
+     "gauges": 0.21,
+     "discharge": 0
+    },
+    {
+     "date": "2024-05-04",
+     "ECMWF IFS": 0.8,
+     "GFS": 0.23,
+     "ICON": 0.84,
+     "gauges": 0.78,
+     "discharge": 0
+    },
+    {
+     "date": "2024-11-20",
+     "ECMWF IFS": 0.23,
+     "GFS": 0.03,
+     "ICON": 0.38,
+     "gauges": 0.2,
+     "discharge": 0
+    },
+    {
+     "date": "2024-11-21",
+     "ECMWF IFS": 0.02,
+     "GFS": 0.06,
+     "ICON": 0.8,
+     "gauges": 0.94,
+     "discharge": 0
+    }
+   ]
+  },
+  "north_shore": {
+   "days": 17,
+   "discharge_days": 2,
+   "agree_wet_days": 6,
+   "agree_wet_discharge_days": 4,
+   "examples": [
+    {
+     "date": "2024-02-04",
+     "ECMWF IFS": 0.93,
+     "GFS": 0.62,
+     "ICON": 0.65,
+     "gauges": 0.64,
+     "discharge": 0
+    },
+    {
+     "date": "2024-02-05",
+     "ECMWF IFS": 0.62,
+     "GFS": 0.02,
+     "ICON": 0.01,
+     "gauges": 0.02,
+     "discharge": 0
+    },
+    {
+     "date": "2024-03-29",
+     "ECMWF IFS": 0.43,
+     "GFS": 0.96,
+     "ICON": 0.19,
+     "gauges": 0.04,
+     "discharge": 0
+    },
+    {
+     "date": "2024-05-04",
+     "ECMWF IFS": 0.33,
+     "GFS": 0.03,
+     "ICON": 0.3,
+     "gauges": 0.26,
+     "discharge": 0
+    },
+    {
+     "date": "2024-11-21",
+     "ECMWF IFS": 0.0,
+     "GFS": 0.01,
+     "ICON": 0.42,
+     "gauges": 0.02,
+     "discharge": 0
+    },
+    {
+     "date": "2024-12-12",
+     "ECMWF IFS": 0.23,
+     "GFS": 0.12,
+     "ICON": 0.67,
+     "gauges": 0.24,
+     "discharge": 0
+    },
+    {
+     "date": "2024-12-27",
+     "ECMWF IFS": 0.01,
+     "GFS": 0.3,
+     "ICON": 0.02,
+     "gauges": 0.02,
+     "discharge": 0
+    },
+    {
+     "date": "2025-02-04",
+     "ECMWF IFS": 0.45,
+     "GFS": 0.95,
+     "ICON": 0.67,
+     "gauges": 1.0,
+     "discharge": 1
+    },
+    {
+     "date": "2025-10-13",
+     "ECMWF IFS": 0.54,
+     "GFS": 0.01,
+     "ICON": 0.03,
+     "gauges": 0.11,
+     "discharge": 0
+    },
+    {
+     "date": "2025-12-22",
+     "ECMWF IFS": 0.74,
+     "GFS": 0.37,
+     "ICON": 0.01,
+     "gauges": 0.98,
+     "discharge": 1
+    },
+    {
+     "date": "2025-12-24",
+     "ECMWF IFS": 0.45,
+     "GFS": 0.01,
+     "ICON": 0.16,
+     "gauges": 0.15,
+     "discharge": 0
+    },
+    {
+     "date": "2026-01-05",
+     "ECMWF IFS": 0.54,
+     "GFS": 0.95,
+     "ICON": 0.42,
+     "gauges": 0.49,
+     "discharge": 0
+    }
+   ]
+  },
+  "central": {
+   "days": 31,
+   "discharge_days": 9,
+   "agree_wet_days": 13,
+   "agree_wet_discharge_days": 8,
+   "examples": [
+    {
+     "date": "2024-02-01",
+     "ECMWF IFS": 0.02,
+     "GFS": 0.1,
+     "ICON": 0.64,
+     "gauges": 0.89,
+     "discharge": 1
+    },
+    {
+     "date": "2024-02-05",
+     "ECMWF IFS": 0.86,
+     "GFS": 0.58,
+     "ICON": 0.08,
+     "gauges": 0.16,
+     "discharge": 0
+    },
+    {
+     "date": "2024-02-18",
+     "ECMWF IFS": 0.46,
+     "GFS": 1.0,
+     "ICON": 0.79,
+     "gauges": 0.03,
+     "discharge": 0
+    },
+    {
+     "date": "2024-03-02",
+     "ECMWF IFS": 0.75,
+     "GFS": 0.24,
+     "ICON": 0.19,
+     "gauges": 0.13,
+     "discharge": 0
+    },
+    {
+     "date": "2024-03-23",
+     "ECMWF IFS": 0.35,
+     "GFS": 0.01,
+     "ICON": 0.3,
+     "gauges": 0.02,
+     "discharge": 0
+    },
+    {
+     "date": "2024-03-29",
+     "ECMWF IFS": 0.73,
+     "GFS": 1.0,
+     "ICON": 0.54,
+     "gauges": 0.14,
+     "discharge": 0
+    },
+    {
+     "date": "2024-04-13",
+     "ECMWF IFS": 0.43,
+     "GFS": 0.15,
+     "ICON": 0.4,
+     "gauges": 0.18,
+     "discharge": 0
+    },
+    {
+     "date": "2024-05-04",
+     "ECMWF IFS": 0.8,
+     "GFS": 0.16,
+     "ICON": 0.82,
+     "gauges": 0.75,
+     "discharge": 1
+    },
+    {
+     "date": "2024-11-21",
+     "ECMWF IFS": 0.02,
+     "GFS": 0.03,
+     "ICON": 0.86,
+     "gauges": 0.13,
+     "discharge": 0
+    },
+    {
+     "date": "2024-12-16",
+     "ECMWF IFS": 0.18,
+     "GFS": 0.11,
+     "ICON": 0.82,
+     "gauges": 0.43,
+     "discharge": 1
+    },
+    {
+     "date": "2024-12-24",
+     "ECMWF IFS": 0.05,
+     "GFS": 0.32,
+     "ICON": 0.06,
+     "gauges": 0.04,
+     "discharge": 0
+    },
+    {
+     "date": "2024-12-27",
+     "ECMWF IFS": 0.04,
+     "GFS": 0.79,
+     "ICON": 0.11,
+     "gauges": 0.05,
+     "discharge": 0
+    }
+   ]
+  },
+  "southeast": {
+   "days": 32,
+   "discharge_days": 6,
+   "agree_wet_days": 14,
+   "agree_wet_discharge_days": 9,
+   "examples": [
+    {
+     "date": "2024-02-01",
+     "ECMWF IFS": 0.01,
+     "GFS": 0.07,
+     "ICON": 0.32,
+     "gauges": 0.77,
+     "discharge": 0
+    },
+    {
+     "date": "2024-02-05",
+     "ECMWF IFS": 0.83,
+     "GFS": 0.51,
+     "ICON": 0.04,
+     "gauges": 0.08,
+     "discharge": 0
+    },
+    {
+     "date": "2024-02-17",
+     "ECMWF IFS": 0.16,
+     "GFS": 0.52,
+     "ICON": 0.12,
+     "gauges": 0.06,
+     "discharge": 0
+    },
+    {
+     "date": "2024-02-18",
+     "ECMWF IFS": 0.51,
+     "GFS": 1.0,
+     "ICON": 0.81,
+     "gauges": 0.07,
+     "discharge": 0
+    },
+    {
+     "date": "2024-02-19",
+     "ECMWF IFS": 0.25,
+     "GFS": 0.0,
+     "ICON": 0.23,
+     "gauges": 0.01,
+     "discharge": 0
+    },
+    {
+     "date": "2024-03-02",
+     "ECMWF IFS": 0.7,
+     "GFS": 0.21,
+     "ICON": 0.15,
+     "gauges": 0.11,
+     "discharge": 0
+    },
+    {
+     "date": "2024-03-23",
+     "ECMWF IFS": 0.42,
+     "GFS": 0.02,
+     "ICON": 0.36,
+     "gauges": 0.03,
+     "discharge": 0
+    },
+    {
+     "date": "2024-03-29",
+     "ECMWF IFS": 0.74,
+     "GFS": 1.0,
+     "ICON": 0.57,
+     "gauges": 0.18,
+     "discharge": 0
+    },
+    {
+     "date": "2024-05-04",
+     "ECMWF IFS": 0.78,
+     "GFS": 0.17,
+     "ICON": 0.79,
+     "gauges": 0.74,
+     "discharge": 1
+    },
+    {
+     "date": "2024-11-21",
+     "ECMWF IFS": 0.02,
+     "GFS": 0.04,
+     "ICON": 0.85,
+     "gauges": 0.17,
+     "discharge": 0
+    },
+    {
+     "date": "2024-12-16",
+     "ECMWF IFS": 0.08,
+     "GFS": 0.05,
+     "ICON": 0.65,
+     "gauges": 0.22,
+     "discharge": 0
+    },
+    {
+     "date": "2024-12-24",
+     "ECMWF IFS": 0.07,
+     "GFS": 0.35,
+     "ICON": 0.08,
+     "gauges": 0.05,
+     "discharge": 0
+    }
+   ]
+  }
+ },
+ "per_day": [
+  {
+   "date": "2024-02-01",
+   "westside_gauge_in": 0.88,
+   "westside_p_gauges": 0.959,
+   "westside_p_ecmwf_ifs025": 0.004,
+   "westside_p_gfs_seamless": 0.063,
+   "westside_p_icon_seamless": 0.827,
+   "westside_csd": 1,
+   "north_shore_gauge_in": 1.07,
+   "north_shore_p_gauges": 0.781,
+   "north_shore_p_ecmwf_ifs025": 0.003,
+   "north_shore_p_gfs_seamless": 0.013,
+   "north_shore_p_icon_seamless": 0.206,
+   "north_shore_csd": 1,
+   "central_gauge_in": 1.07,
+   "central_p_gauges": 0.886,
+   "central_p_ecmwf_ifs025": 0.023,
+   "central_p_gfs_seamless": 0.1,
+   "central_p_icon_seamless": 0.64,
+   "central_csd": 1,
+   "southeast_gauge_in": 1.07,
+   "southeast_p_gauges": 0.774,
+   "southeast_p_ecmwf_ifs025": 0.014,
+   "southeast_p_gfs_seamless": 0.071,
+   "southeast_p_icon_seamless": 0.317,
+   "southeast_csd": 0,
+   "ecmwf_ifs025_in": 0.0,
+   "gfs_seamless_in": 0.11,
+   "icon_seamless_in": 0.47
+  },
+  {
+   "date": "2024-02-04",
+   "westside_gauge_in": 1.16,
+   "westside_p_gauges": 0.462,
+   "westside_p_ecmwf_ifs025": 0.88,
+   "westside_p_gfs_seamless": 0.503,
+   "westside_p_icon_seamless": 0.561,
+   "westside_csd": 1,
+   "north_shore_gauge_in": 1.31,
+   "north_shore_p_gauges": 0.639,
+   "north_shore_p_ecmwf_ifs025": 0.933,
+   "north_shore_p_gfs_seamless": 0.623,
+   "north_shore_p_icon_seamless": 0.651,
+   "north_shore_csd": 0,
+   "central_gauge_in": 1.31,
+   "central_p_gauges": 0.937,
+   "central_p_ecmwf_ifs025": 0.93,
+   "central_p_gfs_seamless": 0.979,
+   "central_p_icon_seamless": 0.949,
+   "central_csd": 1,
+   "southeast_gauge_in": 1.31,
+   "southeast_p_gauges": 0.962,
+   "southeast_p_ecmwf_ifs025": 0.987,
+   "southeast_p_gfs_seamless": 0.989,
+   "southeast_p_icon_seamless": 0.97,
+   "southeast_csd": 1,
+   "ecmwf_ifs025_in": 1.84,
+   "gfs_seamless_in": 1.3,
+   "icon_seamless_in": 1.31
+  },
+  {
+   "date": "2024-02-20",
+   "westside_gauge_in": 1.03,
+   "westside_p_gauges": 0.332,
+   "westside_p_ecmwf_ifs025": 0.001,
+   "westside_p_gfs_seamless": 0.017,
+   "westside_p_icon_seamless": 0.072,
+   "westside_csd": 0,
+   "north_shore_gauge_in": 1.5,
+   "north_shore_p_gauges": 0.706,
+   "north_shore_p_ecmwf_ifs025": 0.001,
+   "north_shore_p_gfs_seamless": 0.005,
+   "north_shore_p_icon_seamless": 0.018,
+   "north_shore_csd": 1,
+   "central_gauge_in": 1.5,
+   "central_p_gauges": 0.835,
+   "central_p_ecmwf_ifs025": 0.002,
+   "central_p_gfs_seamless": 0.013,
+   "central_p_icon_seamless": 0.072,
+   "central_csd": 1,
+   "southeast_gauge_in": 1.5,
+   "southeast_p_gauges": 0.898,
+   "southeast_p_ecmwf_ifs025": 0.002,
+   "southeast_p_gfs_seamless": 0.018,
+   "southeast_p_icon_seamless": 0.084,
+   "southeast_csd": 1,
+   "ecmwf_ifs025_in": 0.0,
+   "gfs_seamless_in": 0.28,
+   "icon_seamless_in": 0.6
+  },
+  {
+   "date": "2024-03-01",
+   "westside_gauge_in": 0.99,
+   "westside_p_gauges": 0.424,
+   "westside_p_ecmwf_ifs025": 0.207,
+   "westside_p_gfs_seamless": 0.011,
+   "westside_p_icon_seamless": 0.114,
+   "westside_csd": 0,
+   "north_shore_gauge_in": 1.17,
+   "north_shore_p_gauges": 0.282,
+   "north_shore_p_ecmwf_ifs025": 0.027,
+   "north_shore_p_gfs_seamless": 0.004,
+   "north_shore_p_icon_seamless": 0.015,
+   "north_shore_csd": 0,
+   "central_gauge_in": 1.17,
+   "central_p_gauges": 0.684,
+   "central_p_ecmwf_ifs025": 0.146,
+   "central_p_gfs_seamless": 0.166,
+   "central_p_icon_seamless": 0.083,
+   "central_csd": 1,
+   "southeast_gauge_in": 1.17,
+   "southeast_p_gauges": 0.655,
+   "southeast_p_ecmwf_ifs025": 0.129,
+   "southeast_p_gfs_seamless": 0.271,
+   "southeast_p_icon_seamless": 0.072,
+   "southeast_csd": 0,
+   "ecmwf_ifs025_in": 0.67,
+   "gfs_seamless_in": 0.44,
+   "icon_seamless_in": 0.59
+  },
+  {
+   "date": "2024-03-29",
+   "westside_gauge_in": 0.52,
+   "westside_p_gauges": 0.212,
+   "westside_p_ecmwf_ifs025": 0.818,
+   "westside_p_gfs_seamless": 0.92,
+   "westside_p_icon_seamless": 0.546,
+   "westside_csd": 0,
+   "north_shore_gauge_in": 0.55,
+   "north_shore_p_gauges": 0.037,
+   "north_shore_p_ecmwf_ifs025": 0.427,
+   "north_shore_p_gfs_seamless": 0.959,
+   "north_shore_p_icon_seamless": 0.187,
+   "north_shore_csd": 0,
+   "central_gauge_in": 0.55,
+   "central_p_gauges": 0.137,
+   "central_p_ecmwf_ifs025": 0.726,
+   "central_p_gfs_seamless": 0.998,
+   "central_p_icon_seamless": 0.545,
+   "central_csd": 0,
+   "southeast_gauge_in": 0.55,
+   "southeast_p_gauges": 0.176,
+   "southeast_p_ecmwf_ifs025": 0.739,
+   "southeast_p_gfs_seamless": 0.999,
+   "southeast_p_icon_seamless": 0.573,
+   "southeast_csd": 0,
+   "ecmwf_ifs025_in": 1.06,
+   "gfs_seamless_in": 2.1,
+   "icon_seamless_in": 0.9
+  },
+  {
+   "date": "2024-04-04",
+   "westside_gauge_in": 0.52,
+   "westside_p_gauges": 0.032,
+   "westside_p_ecmwf_ifs025": 0.02,
+   "westside_p_gfs_seamless": 0.001,
+   "westside_p_icon_seamless": 0.028,
+   "westside_csd": 0,
+   "north_shore_gauge_in": 0.52,
+   "north_shore_p_gauges": 0.008,
+   "north_shore_p_ecmwf_ifs025": 0.005,
+   "north_shore_p_gfs_seamless": 0.001,
+   "north_shore_p_icon_seamless": 0.006,
+   "north_shore_csd": 0,
+   "central_gauge_in": 0.52,
+   "central_p_gauges": 0.037,
+   "central_p_ecmwf_ifs025": 0.023,
+   "central_p_gfs_seamless": 0.002,
+   "central_p_icon_seamless": 0.028,
+   "central_csd": 0,
+   "southeast_gauge_in": 0.52,
+   "southeast_p_gauges": 0.034,
+   "southeast_p_ecmwf_ifs025": 0.021,
+   "southeast_p_gfs_seamless": 0.002,
+   "southeast_p_icon_seamless": 0.027,
+   "southeast_csd": 0,
+   "ecmwf_ifs025_in": 0.47,
+   "gfs_seamless_in": 0.09,
+   "icon_seamless_in": 0.47
+  },
+  {
+   "date": "2024-04-13",
+   "westside_gauge_in": 0.69,
+   "westside_p_gauges": 0.209,
+   "westside_p_ecmwf_ifs025": 0.456,
+   "westside_p_gfs_seamless": 0.039,
+   "westside_p_icon_seamless": 0.414,
+   "westside_csd": 0,
+   "north_shore_gauge_in": 0.69,
+   "north_shore_p_gauges": 0.033,
+   "north_shore_p_ecmwf_ifs025": 0.094,
+   "north_shore_p_gfs_seamless": 0.01,
+   "north_shore_p_icon_seamless": 0.085,
+   "north_shore_csd": 0,
+   "central_gauge_in": 0.69,
+   "central_p_gauges": 0.182,
+   "central_p_ecmwf_ifs025": 0.429,
+   "central_p_gfs_seamless": 0.148,
+   "central_p_icon_seamless": 0.404,
+   "central_csd": 0,
+   "southeast_gauge_in": 0.69,
+   "southeast_p_gauges": 0.181,
+   "southeast_p_ecmwf_ifs025": 0.413,
+   "southeast_p_gfs_seamless": 0.196,
+   "southeast_p_icon_seamless": 0.397,
+   "southeast_csd": 0,
+   "ecmwf_ifs025_in": 0.89,
+   "gfs_seamless_in": 0.55,
+   "icon_seamless_in": 0.81
+  },
+  {
+   "date": "2024-05-04",
+   "westside_gauge_in": 1.01,
+   "westside_p_gauges": 0.777,
+   "westside_p_ecmwf_ifs025": 0.803,
+   "westside_p_gfs_seamless": 0.234,
+   "westside_p_icon_seamless": 0.843,
+   "westside_csd": 0,
+   "north_shore_gauge_in": 0.94,
+   "north_shore_p_gauges": 0.263,
+   "north_shore_p_ecmwf_ifs025": 0.325,
+   "north_shore_p_gfs_seamless": 0.028,
+   "north_shore_p_icon_seamless": 0.303,
+   "north_shore_csd": 0,
+   "central_gauge_in": 0.94,
+   "central_p_gauges": 0.75,
+   "central_p_ecmwf_ifs025": 0.799,
+   "central_p_gfs_seamless": 0.163,
+   "central_p_icon_seamless": 0.824,
+   "central_csd": 1,
+   "southeast_gauge_in": 0.94,
+   "southeast_p_gauges": 0.741,
+   "southeast_p_ecmwf_ifs025": 0.784,
+   "southeast_p_gfs_seamless": 0.17,
+   "southeast_p_icon_seamless": 0.785,
+   "southeast_csd": 1,
+   "ecmwf_ifs025_in": 0.99,
+   "gfs_seamless_in": 0.61,
+   "icon_seamless_in": 0.95
+  },
+  {
+   "date": "2024-11-19",
+   "westside_gauge_in": 0.55,
+   "westside_p_gauges": 0.009,
+   "westside_p_ecmwf_ifs025": 0.001,
+   "westside_p_gfs_seamless": 0.001,
+   "westside_p_icon_seamless": 0.001,
+   "westside_csd": 0,
+   "north_shore_gauge_in": 0.55,
+   "north_shore_p_gauges": 0.004,
+   "north_shore_p_ecmwf_ifs025": 0.001,
+   "north_shore_p_gfs_seamless": 0.001,
+   "north_shore_p_icon_seamless": 0.001,
+   "north_shore_csd": 0,
+   "central_gauge_in": 0.55,
+   "central_p_gauges": 0.019,
+   "central_p_ecmwf_ifs025": 0.001,
+   "central_p_gfs_seamless": 0.001,
+   "central_p_icon_seamless": 0.001,
+   "central_csd": 0,
+   "southeast_gauge_in": 0.55,
+   "southeast_p_gauges": 0.016,
+   "southeast_p_ecmwf_ifs025": 0.001,
+   "southeast_p_gfs_seamless": 0.001,
+   "southeast_p_icon_seamless": 0.001,
+   "southeast_csd": 0,
+   "ecmwf_ifs025_in": 0.0,
+   "gfs_seamless_in": 0.0,
+   "icon_seamless_in": 0.0
+  },
+  {
+   "date": "2024-11-21",
+   "westside_gauge_in": 1.43,
+   "westside_p_gauges": 0.939,
+   "westside_p_ecmwf_ifs025": 0.023,
+   "westside_p_gfs_seamless": 0.055,
+   "westside_p_icon_seamless": 0.801,
+   "westside_csd": 0,
+   "north_shore_gauge_in": 0.38,
+   "north_shore_p_gauges": 0.022,
+   "north_shore_p_ecmwf_ifs025": 0.004,
+   "north_shore_p_gfs_seamless": 0.007,
+   "north_shore_p_icon_seamless": 0.417,
+   "north_shore_csd": 0,
+   "central_gauge_in": 0.38,
+   "central_p_gauges": 0.13,
+   "central_p_ecmwf_ifs025": 0.016,
+   "central_p_gfs_seamless": 0.031,
+   "central_p_icon_seamless": 0.862,
+   "central_csd": 0,
+   "southeast_gauge_in": 0.38,
+   "southeast_p_gauges": 0.166,
+   "southeast_p_ecmwf_ifs025": 0.02,
+   "southeast_p_gfs_seamless": 0.038,
+   "southeast_p_icon_seamless": 0.85,
+   "southeast_csd": 0,
+   "ecmwf_ifs025_in": 0.26,
+   "gfs_seamless_in": 0.3,
+   "icon_seamless_in": 1.04
+  },
+  {
+   "date": "2024-11-22",
+   "westside_gauge_in": 1.5,
+   "westside_p_gauges": 0.99,
+   "westside_p_ecmwf_ifs025": 0.999,
+   "westside_p_gfs_seamless": 0.978,
+   "westside_p_icon_seamless": 0.998,
+   "westside_csd": 1,
+   "north_shore_gauge_in": 2.97,
+   "north_shore_p_gauges": 1.0,
+   "north_shore_p_ecmwf_ifs025": 0.991,
+   "north_shore_p_gfs_seamless": 0.987,
+   "north_shore_p_icon_seamless": 0.994,
+   "north_shore_csd": 1,
+   "central_gauge_in": 2.97,
+   "central_p_gauges": 0.966,
+   "central_p_ecmwf_ifs025": 0.976,
+   "central_p_gfs_seamless": 0.993,
+   "central_p_icon_seamless": 0.981,
+   "central_csd": 1,
+   "southeast_gauge_in": 2.97,
+   "southeast_p_gauges": 0.999,
+   "southeast_p_ecmwf_ifs025": 0.994,
+   "southeast_p_gfs_seamless": 0.998,
+   "southeast_p_icon_seamless": 0.993,
+   "southeast_csd": 1,
+   "ecmwf_ifs025_in": 1.93,
+   "gfs_seamless_in": 2.14,
+   "icon_seamless_in": 1.95
+  },
+  {
+   "date": "2024-12-12",
+   "westside_gauge_in": 0.81,
+   "westside_p_gauges": 0.476,
+   "westside_p_ecmwf_ifs025": 0.727,
+   "westside_p_gfs_seamless": 0.744,
+   "westside_p_icon_seamless": 0.959,
+   "westside_csd": 0,
+   "north_shore_gauge_in": 0.96,
+   "north_shore_p_gauges": 0.24,
+   "north_shore_p_ecmwf_ifs025": 0.229,
+   "north_shore_p_gfs_seamless": 0.125,
+   "north_shore_p_icon_seamless": 0.665,
+   "north_shore_csd": 0,
+   "central_gauge_in": 0.96,
+   "central_p_gauges": 0.809,
+   "central_p_ecmwf_ifs025": 0.738,
+   "central_p_gfs_seamless": 0.861,
+   "central_p_icon_seamless": 0.932,
+   "central_csd": 1,
+   "southeast_gauge_in": 0.96,
+   "southeast_p_gauges": 0.806,
+   "southeast_p_ecmwf_ifs025": 0.713,
+   "southeast_p_gfs_seamless": 0.805,
+   "southeast_p_icon_seamless": 0.909,
+   "southeast_csd": 1,
+   "ecmwf_ifs025_in": 0.93,
+   "gfs_seamless_in": 0.91,
+   "icon_seamless_in": 1.21
+  },
+  {
+   "date": "2024-12-14",
+   "westside_gauge_in": 1.43,
+   "westside_p_gauges": 0.972,
+   "westside_p_ecmwf_ifs025": 0.998,
+   "westside_p_gfs_seamless": 0.984,
+   "westside_p_icon_seamless": 0.996,
+   "westside_csd": 1,
+   "north_shore_gauge_in": 1.42,
+   "north_shore_p_gauges": 0.961,
+   "north_shore_p_ecmwf_ifs025": 0.998,
+   "north_shore_p_gfs_seamless": 0.956,
+   "north_shore_p_icon_seamless": 0.999,
+   "north_shore_csd": 1,
+   "central_gauge_in": 1.42,
+   "central_p_gauges": 0.983,
+   "central_p_ecmwf_ifs025": 0.987,
+   "central_p_gfs_seamless": 0.994,
+   "central_p_icon_seamless": 0.992,
+   "central_csd": 1,
+   "southeast_gauge_in": 1.42,
+   "southeast_p_gauges": 0.962,
+   "southeast_p_ecmwf_ifs025": 0.989,
+   "southeast_p_gfs_seamless": 0.993,
+   "southeast_p_icon_seamless": 0.99,
+   "southeast_csd": 1,
+   "ecmwf_ifs025_in": 2.0,
+   "gfs_seamless_in": 1.69,
+   "icon_seamless_in": 2.15
+  },
+  {
+   "date": "2024-12-16",
+   "westside_gauge_in": 0.66,
+   "westside_p_gauges": 0.047,
+   "westside_p_ecmwf_ifs025": 0.032,
+   "westside_p_gfs_seamless": 0.011,
+   "westside_p_icon_seamless": 0.303,
+   "westside_csd": 0,
+   "north_shore_gauge_in": 0.73,
+   "north_shore_p_gauges": 0.06,
+   "north_shore_p_ecmwf_ifs025": 0.02,
+   "north_shore_p_gfs_seamless": 0.013,
+   "north_shore_p_icon_seamless": 0.214,
+   "north_shore_csd": 0,
+   "central_gauge_in": 0.73,
+   "central_p_gauges": 0.427,
+   "central_p_ecmwf_ifs025": 0.178,
+   "central_p_gfs_seamless": 0.106,
+   "central_p_icon_seamless": 0.817,
+   "central_csd": 1,
+   "southeast_gauge_in": 0.73,
+   "southeast_p_gauges": 0.222,
+   "southeast_p_ecmwf_ifs025": 0.083,
+   "southeast_p_gfs_seamless": 0.054,
+   "southeast_p_icon_seamless": 0.655,
+   "southeast_csd": 0,
+   "ecmwf_ifs025_in": 0.5,
+   "gfs_seamless_in": 0.34,
+   "icon_seamless_in": 0.81
+  },
+  {
+   "date": "2025-02-01",
+   "westside_gauge_in": 0.49,
+   "westside_p_gauges": 0.16,
+   "westside_p_ecmwf_ifs025": 0.272,
+   "westside_p_gfs_seamless": 0.01,
+   "westside_p_icon_seamless": 0.537,
+   "westside_csd": 0,
+   "north_shore_gauge_in": 0.6,
+   "north_shore_p_gauges": 0.027,
+   "north_shore_p_ecmwf_ifs025": 0.028,
+   "north_shore_p_gfs_seamless": 0.002,
+   "north_shore_p_icon_seamless": 0.08,
+   "north_shore_csd": 0,
+   "central_gauge_in": 0.6,
+   "central_p_gauges": 0.127,
+   "central_p_ecmwf_ifs025": 0.125,
+   "central_p_gfs_seamless": 0.006,
+   "central_p_icon_seamless": 0.355,
+   "central_csd": 0,
+   "southeast_gauge_in": 0.6,
+   "southeast_p_gauges": 0.185,
+   "southeast_p_ecmwf_ifs025": 0.182,
+   "southeast_p_gfs_seamless": 0.01,
+   "southeast_p_icon_seamless": 0.464,
+   "southeast_csd": 0,
+   "ecmwf_ifs025_in": 0.61,
+   "gfs_seamless_in": 0.22,
+   "icon_seamless_in": 0.72
+  },
+  {
+   "date": "2025-02-04",
+   "westside_gauge_in": 2.78,
+   "westside_p_gauges": 0.996,
+   "westside_p_ecmwf_ifs025": 0.697,
+   "westside_p_gfs_seamless": 0.688,
+   "westside_p_icon_seamless": 0.813,
+   "westside_csd": 1,
+   "north_shore_gauge_in": 2.89,
+   "north_shore_p_gauges": 0.999,
+   "north_shore_p_ecmwf_ifs025": 0.449,
+   "north_shore_p_gfs_seamless": 0.953,
+   "north_shore_p_icon_seamless": 0.674,
+   "north_shore_csd": 1,
+   "central_gauge_in": 2.89,
+   "central_p_gauges": 0.913,
+   "central_p_ecmwf_ifs025": 0.783,
+   "central_p_gfs_seamless": 0.998,
+   "central_p_icon_seamless": 0.899,
+   "central_csd": 1,
+   "southeast_gauge_in": 2.89,
+   "southeast_p_gauges": 0.999,
+   "southeast_p_ecmwf_ifs025": 0.846,
+   "southeast_p_gfs_seamless": 1.0,
+   "southeast_p_icon_seamless": 0.938,
+   "southeast_csd": 1,
+   "ecmwf_ifs025_in": 1.2,
+   "gfs_seamless_in": 2.65,
+   "icon_seamless_in": 1.28
+  },
+  {
+   "date": "2025-02-06",
+   "westside_gauge_in": 0.64,
+   "westside_p_gauges": 0.048,
+   "westside_p_ecmwf_ifs025": 0.42,
+   "westside_p_gfs_seamless": 0.011,
+   "westside_p_icon_seamless": 0.196,
+   "westside_csd": 0,
+   "north_shore_gauge_in": 0.58,
+   "north_shore_p_gauges": 0.034,
+   "north_shore_p_ecmwf_ifs025": 0.211,
+   "north_shore_p_gfs_seamless": 0.02,
+   "north_shore_p_icon_seamless": 0.118,
+   "north_shore_csd": 0,
+   "central_gauge_in": 0.58,
+   "central_p_gauges": 0.408,
+   "central_p_ecmwf_ifs025": 0.398,
+   "central_p_gfs_seamless": 0.052,
+   "central_p_icon_seamless": 0.248,
+   "central_csd": 0,
+   "southeast_gauge_in": 0.58,
+   "southeast_p_gauges": 0.084,
+   "southeast_p_ecmwf_ifs025": 0.066,
+   "southeast_p_gfs_seamless": 0.005,
+   "southeast_p_icon_seamless": 0.032,
+   "southeast_csd": 0,
+   "ecmwf_ifs025_in": 0.89,
+   "gfs_seamless_in": 0.48,
+   "icon_seamless_in": 0.78
+  },
+  {
+   "date": "2025-02-13",
+   "westside_gauge_in": 1.78,
+   "westside_p_gauges": 0.97,
+   "westside_p_ecmwf_ifs025": 0.988,
+   "westside_p_gfs_seamless": 0.928,
+   "westside_p_icon_seamless": 0.98,
+   "westside_csd": 1,
+   "north_shore_gauge_in": 1.91,
+   "north_shore_p_gauges": 0.989,
+   "north_shore_p_ecmwf_ifs025": 0.989,
+   "north_shore_p_gfs_seamless": 0.994,
+   "north_shore_p_icon_seamless": 0.995,
+   "north_shore_csd": 1,
+   "central_gauge_in": 1.91,
+   "central_p_gauges": 0.972,
+   "central_p_ecmwf_ifs025": 0.983,
+   "central_p_gfs_seamless": 0.994,
+   "central_p_icon_seamless": 0.987,
+   "central_csd": 1,
+   "southeast_gauge_in": 1.91,
+   "southeast_p_gauges": 0.993,
+   "southeast_p_ecmwf_ifs025": 0.992,
+   "southeast_p_gfs_seamless": 0.999,
+   "southeast_p_icon_seamless": 0.99,
+   "southeast_csd": 1,
+   "ecmwf_ifs025_in": 1.78,
+   "gfs_seamless_in": 2.46,
+   "icon_seamless_in": 1.85
+  },
+  {
+   "date": "2025-03-14",
+   "westside_gauge_in": 0.55,
+   "westside_p_gauges": 0.22,
+   "westside_p_ecmwf_ifs025": 0.194,
+   "westside_p_gfs_seamless": 0.044,
+   "westside_p_icon_seamless": 0.685,
+   "westside_csd": 0,
+   "north_shore_gauge_in": 0.54,
+   "north_shore_p_gauges": 0.021,
+   "north_shore_p_ecmwf_ifs025": 0.023,
+   "north_shore_p_gfs_seamless": 0.006,
+   "north_shore_p_icon_seamless": 0.184,
+   "north_shore_csd": 0,
+   "central_gauge_in": 0.54,
+   "central_p_gauges": 0.092,
+   "central_p_ecmwf_ifs025": 0.095,
+   "central_p_gfs_seamless": 0.017,
+   "central_p_icon_seamless": 0.593,
+   "central_csd": 0,
+   "southeast_gauge_in": 0.54,
+   "southeast_p_gauges": 0.124,
+   "southeast_p_ecmwf_ifs025": 0.123,
+   "southeast_p_gfs_seamless": 0.025,
+   "southeast_p_icon_seamless": 0.629,
+   "southeast_csd": 0,
+   "ecmwf_ifs025_in": 0.59,
+   "gfs_seamless_in": 0.31,
+   "icon_seamless_in": 0.85
+  },
+  {
+   "date": "2025-10-13",
+   "westside_gauge_in": 0.69,
+   "westside_p_gauges": 0.419,
+   "westside_p_ecmwf_ifs025": 0.895,
+   "westside_p_gfs_seamless": 0.046,
+   "westside_p_icon_seamless": 0.213,
+   "westside_csd": 1,
+   "north_shore_gauge_in": 0.75,
+   "north_shore_p_gauges": 0.108,
+   "north_shore_p_ecmwf_ifs025": 0.536,
+   "north_shore_p_gfs_seamless": 0.009,
+   "north_shore_p_icon_seamless": 0.027,
+   "north_shore_csd": 0,
+   "central_gauge_in": 0.75,
+   "central_p_gauges": 0.462,
+   "central_p_ecmwf_ifs025": 0.861,
+   "central_p_gfs_seamless": 0.047,
+   "central_p_icon_seamless": 0.157,
+   "central_csd": 1,
+   "southeast_gauge_in": 0.75,
+   "southeast_p_gauges": 0.466,
+   "southeast_p_ecmwf_ifs025": 0.856,
+   "southeast_p_gfs_seamless": 0.052,
+   "southeast_p_icon_seamless": 0.167,
+   "southeast_csd": 1,
+   "ecmwf_ifs025_in": 1.07,
+   "gfs_seamless_in": 0.44,
+   "icon_seamless_in": 0.59
+  },
+  {
+   "date": "2025-11-13",
+   "westside_gauge_in": 1.43,
+   "westside_p_gauges": 0.904,
+   "westside_p_ecmwf_ifs025": 0.944,
+   "westside_p_gfs_seamless": 0.89,
+   "westside_p_icon_seamless": 0.82,
+   "westside_csd": 1,
+   "north_shore_gauge_in": 1.28,
+   "north_shore_p_gauges": 0.664,
+   "north_shore_p_ecmwf_ifs025": 0.857,
+   "north_shore_p_gfs_seamless": 0.987,
+   "north_shore_p_icon_seamless": 0.781,
+   "north_shore_csd": 1,
+   "central_gauge_in": 1.28,
+   "central_p_gauges": 0.921,
+   "central_p_ecmwf_ifs025": 0.936,
+   "central_p_gfs_seamless": 0.996,
+   "central_p_icon_seamless": 0.991,
+   "central_csd": 1,
+   "southeast_gauge_in": 1.28,
+   "southeast_p_gauges": 0.941,
+   "southeast_p_ecmwf_ifs025": 0.958,
+   "southeast_p_gfs_seamless": 0.996,
+   "southeast_p_icon_seamless": 0.983,
+   "southeast_csd": 1,
+   "ecmwf_ifs025_in": 1.44,
+   "gfs_seamless_in": 1.99,
+   "icon_seamless_in": 1.54
+  },
+  {
+   "date": "2025-11-17",
+   "westside_gauge_in": 0.49,
+   "westside_p_gauges": 0.147,
+   "westside_p_ecmwf_ifs025": 0.537,
+   "westside_p_gfs_seamless": 0.059,
+   "westside_p_icon_seamless": 0.631,
+   "westside_csd": 1,
+   "north_shore_gauge_in": 0.67,
+   "north_shore_p_gauges": 0.058,
+   "north_shore_p_ecmwf_ifs025": 0.139,
+   "north_shore_p_gfs_seamless": 0.011,
+   "north_shore_p_icon_seamless": 0.21,
+   "north_shore_csd": 0,
+   "central_gauge_in": 0.67,
+   "central_p_gauges": 0.538,
+   "central_p_ecmwf_ifs025": 0.615,
+   "central_p_gfs_seamless": 0.074,
+   "central_p_icon_seamless": 0.762,
+   "central_csd": 1,
+   "southeast_gauge_in": 0.67,
+   "southeast_p_gauges": 0.679,
+   "southeast_p_ecmwf_ifs025": 0.679,
+   "southeast_p_gfs_seamless": 0.122,
+   "southeast_p_icon_seamless": 0.812,
+   "southeast_csd": 1,
+   "ecmwf_ifs025_in": 0.85,
+   "gfs_seamless_in": 0.41,
+   "icon_seamless_in": 0.83
+  },
+  {
+   "date": "2025-12-22",
+   "westside_gauge_in": 1.39,
+   "westside_p_gauges": 0.934,
+   "westside_p_ecmwf_ifs025": 0.947,
+   "westside_p_gfs_seamless": 0.67,
+   "westside_p_icon_seamless": 0.096,
+   "westside_csd": 1,
+   "north_shore_gauge_in": 1.82,
+   "north_shore_p_gauges": 0.979,
+   "north_shore_p_ecmwf_ifs025": 0.735,
+   "north_shore_p_gfs_seamless": 0.371,
+   "north_shore_p_icon_seamless": 0.014,
+   "north_shore_csd": 1,
+   "central_gauge_in": 1.82,
+   "central_p_gauges": 0.982,
+   "central_p_ecmwf_ifs025": 0.92,
+   "central_p_gfs_seamless": 0.822,
+   "central_p_icon_seamless": 0.051,
+   "central_csd": 1,
+   "southeast_gauge_in": 1.82,
+   "southeast_p_gauges": 0.994,
+   "southeast_p_ecmwf_ifs025": 0.914,
+   "southeast_p_gfs_seamless": 0.848,
+   "southeast_p_icon_seamless": 0.075,
+   "southeast_csd": 1,
+   "ecmwf_ifs025_in": 1.11,
+   "gfs_seamless_in": 0.98,
+   "icon_seamless_in": 0.47
+  },
+  {
+   "date": "2025-12-24",
+   "westside_gauge_in": 0.93,
+   "westside_p_gauges": 0.531,
+   "westside_p_ecmwf_ifs025": 0.726,
+   "westside_p_gfs_seamless": 0.009,
+   "westside_p_icon_seamless": 0.303,
+   "westside_csd": 1,
+   "north_shore_gauge_in": 0.73,
+   "north_shore_p_gauges": 0.148,
+   "north_shore_p_ecmwf_ifs025": 0.454,
+   "north_shore_p_gfs_seamless": 0.014,
+   "north_shore_p_icon_seamless": 0.163,
+   "north_shore_csd": 0,
+   "central_gauge_in": 0.73,
+   "central_p_gauges": 0.546,
+   "central_p_ecmwf_ifs025": 0.829,
+   "central_p_gfs_seamless": 0.065,
+   "central_p_icon_seamless": 0.523,
+   "central_csd": 0,
+   "southeast_gauge_in": 0.73,
+   "southeast_p_gauges": 0.231,
+   "southeast_p_ecmwf_ifs025": 0.56,
+   "southeast_p_gfs_seamless": 0.018,
+   "southeast_p_icon_seamless": 0.215,
+   "southeast_csd": 1,
+   "ecmwf_ifs025_in": 0.91,
+   "gfs_seamless_in": 0.33,
+   "icon_seamless_in": 0.79
+  },
+  {
+   "date": "2025-12-25",
+   "westside_gauge_in": 0.86,
+   "westside_p_gauges": 0.36,
+   "westside_p_ecmwf_ifs025": 0.412,
+   "westside_p_gfs_seamless": 0.033,
+   "westside_p_icon_seamless": 0.094,
+   "westside_csd": 1,
+   "north_shore_gauge_in": 0.68,
+   "north_shore_p_gauges": 0.085,
+   "north_shore_p_ecmwf_ifs025": 0.226,
+   "north_shore_p_gfs_seamless": 0.032,
+   "north_shore_p_icon_seamless": 0.058,
+   "north_shore_csd": 0,
+   "central_gauge_in": 0.68,
+   "central_p_gauges": 0.619,
+   "central_p_ecmwf_ifs025": 0.85,
+   "central_p_gfs_seamless": 0.554,
+   "central_p_icon_seamless": 0.474,
+   "central_csd": 1,
+   "southeast_gauge_in": 0.68,
+   "southeast_p_gauges": 0.648,
+   "southeast_p_ecmwf_ifs025": 0.866,
+   "southeast_p_gfs_seamless": 0.626,
+   "southeast_p_icon_seamless": 0.49,
+   "southeast_csd": 1,
+   "ecmwf_ifs025_in": 0.89,
+   "gfs_seamless_in": 0.6,
+   "icon_seamless_in": 0.69
+  },
+  {
+   "date": "2025-12-26",
+   "westside_gauge_in": 0.33,
+   "westside_p_gauges": 0.037,
+   "westside_p_ecmwf_ifs025": 0.004,
+   "westside_p_gfs_seamless": 0.014,
+   "westside_p_icon_seamless": 0.219,
+   "westside_csd": 1,
+   "north_shore_gauge_in": 0.43,
+   "north_shore_p_gauges": 0.02,
+   "north_shore_p_ecmwf_ifs025": 0.003,
+   "north_shore_p_gfs_seamless": 0.01,
+   "north_shore_p_icon_seamless": 0.038,
+   "north_shore_csd": 0,
+   "central_gauge_in": 0.43,
+   "central_p_gauges": 0.297,
+   "central_p_ecmwf_ifs025": 0.03,
+   "central_p_gfs_seamless": 0.154,
+   "central_p_icon_seamless": 0.473,
+   "central_csd": 1,
+   "southeast_gauge_in": 0.43,
+   "southeast_p_gauges": 0.211,
+   "southeast_p_ecmwf_ifs025": 0.023,
+   "southeast_p_gfs_seamless": 0.117,
+   "southeast_p_icon_seamless": 0.372,
+   "southeast_csd": 0,
+   "ecmwf_ifs025_in": 0.04,
+   "gfs_seamless_in": 0.21,
+   "icon_seamless_in": 0.52
+  },
+  {
+   "date": "2025-12-31",
+   "westside_gauge_in": 0.71,
+   "westside_p_gauges": 0.157,
+   "westside_p_ecmwf_ifs025": 0.353,
+   "westside_p_gfs_seamless": 0.002,
+   "westside_p_icon_seamless": 0.063,
+   "westside_csd": 0,
+   "north_shore_gauge_in": 0.54,
+   "north_shore_p_gauges": 0.026,
+   "north_shore_p_ecmwf_ifs025": 0.188,
+   "north_shore_p_gfs_seamless": 0.002,
+   "north_shore_p_icon_seamless": 0.031,
+   "north_shore_csd": 0,
+   "central_gauge_in": 0.54,
+   "central_p_gauges": 0.085,
+   "central_p_ecmwf_ifs025": 0.527,
+   "central_p_gfs_seamless": 0.003,
+   "central_p_icon_seamless": 0.097,
+   "central_csd": 0,
+   "southeast_gauge_in": 0.54,
+   "southeast_p_gauges": 0.06,
+   "southeast_p_ecmwf_ifs025": 0.4,
+   "southeast_p_gfs_seamless": 0.003,
+   "southeast_p_icon_seamless": 0.063,
+   "southeast_csd": 0,
+   "ecmwf_ifs025_in": 0.84,
+   "gfs_seamless_in": 0.11,
+   "icon_seamless_in": 0.62
+  },
+  {
+   "date": "2026-01-01",
+   "westside_gauge_in": 0.65,
+   "westside_p_gauges": 0.277,
+   "westside_p_ecmwf_ifs025": 0.2,
+   "westside_p_gfs_seamless": 0.126,
+   "westside_p_icon_seamless": 0.287,
+   "westside_csd": 0,
+   "north_shore_gauge_in": 0.71,
+   "north_shore_p_gauges": 0.086,
+   "north_shore_p_ecmwf_ifs025": 0.034,
+   "north_shore_p_gfs_seamless": 0.023,
+   "north_shore_p_icon_seamless": 0.06,
+   "north_shore_csd": 0,
+   "central_gauge_in": 0.71,
+   "central_p_gauges": 0.324,
+   "central_p_ecmwf_ifs025": 0.136,
+   "central_p_gfs_seamless": 0.094,
+   "central_p_icon_seamless": 0.247,
+   "central_csd": 0,
+   "southeast_gauge_in": 0.71,
+   "southeast_p_gauges": 0.301,
+   "southeast_p_ecmwf_ifs025": 0.137,
+   "southeast_p_gfs_seamless": 0.094,
+   "southeast_p_icon_seamless": 0.235,
+   "southeast_csd": 0,
+   "ecmwf_ifs025_in": 0.54,
+   "gfs_seamless_in": 0.48,
+   "icon_seamless_in": 0.63
+  },
+  {
+   "date": "2026-01-03",
+   "westside_gauge_in": 0.13,
+   "westside_p_gauges": 0.002,
+   "westside_p_ecmwf_ifs025": 0.003,
+   "westside_p_gfs_seamless": 0.001,
+   "westside_p_icon_seamless": 0.013,
+   "westside_csd": 1,
+   "north_shore_gauge_in": 0.1,
+   "north_shore_p_gauges": 0.003,
+   "north_shore_p_ecmwf_ifs025": 0.004,
+   "north_shore_p_gfs_seamless": 0.002,
+   "north_shore_p_icon_seamless": 0.012,
+   "north_shore_csd": 0,
+   "central_gauge_in": 0.1,
+   "central_p_gauges": 0.008,
+   "central_p_ecmwf_ifs025": 0.013,
+   "central_p_gfs_seamless": 0.005,
+   "central_p_icon_seamless": 0.045,
+   "central_csd": 0,
+   "southeast_gauge_in": 0.1,
+   "southeast_p_gauges": 0.008,
+   "southeast_p_ecmwf_ifs025": 0.012,
+   "southeast_p_gfs_seamless": 0.005,
+   "southeast_p_icon_seamless": 0.038,
+   "southeast_csd": 0,
+   "ecmwf_ifs025_in": 0.22,
+   "gfs_seamless_in": 0.0,
+   "icon_seamless_in": 0.38
+  },
+  {
+   "date": "2026-01-04",
+   "westside_gauge_in": 0.42,
+   "westside_p_gauges": 0.031,
+   "westside_p_ecmwf_ifs025": 0.089,
+   "westside_p_gfs_seamless": 0.01,
+   "westside_p_icon_seamless": 0.175,
+   "westside_csd": 1,
+   "north_shore_gauge_in": 0.48,
+   "north_shore_p_gauges": 0.024,
+   "north_shore_p_ecmwf_ifs025": 0.065,
+   "north_shore_p_gfs_seamless": 0.022,
+   "north_shore_p_icon_seamless": 0.159,
+   "north_shore_csd": 0,
+   "central_gauge_in": 0.48,
+   "central_p_gauges": 0.109,
+   "central_p_ecmwf_ifs025": 0.282,
+   "central_p_gfs_seamless": 0.73,
+   "central_p_icon_seamless": 0.559,
+   "central_csd": 0,
+   "southeast_gauge_in": 0.48,
+   "southeast_p_gauges": 0.137,
+   "southeast_p_ecmwf_ifs025": 0.284,
+   "southeast_p_gfs_seamless": 0.868,
+   "southeast_p_icon_seamless": 0.536,
+   "southeast_csd": 0,
+   "ecmwf_ifs025_in": 0.77,
+   "gfs_seamless_in": 0.74,
+   "icon_seamless_in": 0.93
+  },
+  {
+   "date": "2026-01-05",
+   "westside_gauge_in": 1.2,
+   "westside_p_gauges": 0.598,
+   "westside_p_ecmwf_ifs025": 0.621,
+   "westside_p_gfs_seamless": 0.818,
+   "westside_p_icon_seamless": 0.416,
+   "westside_csd": 1,
+   "north_shore_gauge_in": 1.07,
+   "north_shore_p_gauges": 0.492,
+   "north_shore_p_ecmwf_ifs025": 0.54,
+   "north_shore_p_gfs_seamless": 0.952,
+   "north_shore_p_icon_seamless": 0.421,
+   "north_shore_csd": 0,
+   "central_gauge_in": 1.07,
+   "central_p_gauges": 0.894,
+   "central_p_ecmwf_ifs025": 0.905,
+   "central_p_gfs_seamless": 0.991,
+   "central_p_icon_seamless": 0.839,
+   "central_csd": 1,
+   "southeast_gauge_in": 1.07,
+   "southeast_p_gauges": 0.883,
+   "southeast_p_ecmwf_ifs025": 0.887,
+   "southeast_p_gfs_seamless": 0.992,
+   "southeast_p_icon_seamless": 0.829,
+   "southeast_csd": 1,
+   "ecmwf_ifs025_in": 1.04,
+   "gfs_seamless_in": 1.69,
+   "icon_seamless_in": 1.12
+  },
+  {
+   "date": "2026-02-16",
+   "westside_gauge_in": 1.07,
+   "westside_p_gauges": 0.781,
+   "westside_p_ecmwf_ifs025": 0.921,
+   "westside_p_gfs_seamless": 0.264,
+   "westside_p_icon_seamless": 0.595,
+   "westside_csd": 1,
+   "north_shore_gauge_in": 1.07,
+   "north_shore_p_gauges": 0.423,
+   "north_shore_p_ecmwf_ifs025": 0.825,
+   "north_shore_p_gfs_seamless": 0.2,
+   "north_shore_p_icon_seamless": 0.156,
+   "north_shore_csd": 0,
+   "central_gauge_in": 1.07,
+   "central_p_gauges": 0.819,
+   "central_p_ecmwf_ifs025": 0.912,
+   "central_p_gfs_seamless": 0.932,
+   "central_p_icon_seamless": 0.52,
+   "central_csd": 0,
+   "southeast_gauge_in": 1.07,
+   "southeast_p_gauges": 0.854,
+   "southeast_p_ecmwf_ifs025": 0.953,
+   "southeast_p_gfs_seamless": 0.972,
+   "southeast_p_icon_seamless": 0.576,
+   "southeast_csd": 0,
+   "ecmwf_ifs025_in": 1.43,
+   "gfs_seamless_in": 1.09,
+   "icon_seamless_in": 0.87
+  },
+  {
+   "date": "2026-02-17",
+   "westside_gauge_in": 0.84,
+   "westside_p_gauges": 0.783,
+   "westside_p_ecmwf_ifs025": 0.79,
+   "westside_p_gfs_seamless": 0.306,
+   "westside_p_icon_seamless": 0.745,
+   "westside_csd": 1,
+   "north_shore_gauge_in": 0.84,
+   "north_shore_p_gauges": 0.243,
+   "north_shore_p_ecmwf_ifs025": 0.257,
+   "north_shore_p_gfs_seamless": 0.059,
+   "north_shore_p_icon_seamless": 0.222,
+   "north_shore_csd": 0,
+   "central_gauge_in": 0.84,
+   "central_p_gauges": 0.8,
+   "central_p_ecmwf_ifs025": 0.811,
+   "central_p_gfs_seamless": 0.463,
+   "central_p_icon_seamless": 0.795,
+   "central_csd": 0,
+   "southeast_gauge_in": 0.84,
+   "southeast_p_gauges": 0.744,
+   "southeast_p_ecmwf_ifs025": 0.755,
+   "southeast_p_gfs_seamless": 0.389,
+   "southeast_p_icon_seamless": 0.736,
+   "southeast_csd": 0,
+   "ecmwf_ifs025_in": 0.86,
+   "gfs_seamless_in": 0.53,
+   "icon_seamless_in": 0.81
+  },
+  {
+   "date": "2026-02-19",
+   "westside_gauge_in": 0.77,
+   "westside_p_gauges": 0.196,
+   "westside_p_ecmwf_ifs025": 0.067,
+   "westside_p_gfs_seamless": 0.008,
+   "westside_p_icon_seamless": 0.025,
+   "westside_csd": 1,
+   "north_shore_gauge_in": 0.77,
+   "north_shore_p_gauges": 0.157,
+   "north_shore_p_ecmwf_ifs025": 0.034,
+   "north_shore_p_gfs_seamless": 0.009,
+   "north_shore_p_icon_seamless": 0.018,
+   "north_shore_csd": 0,
+   "central_gauge_in": 0.77,
+   "central_p_gauges": 0.783,
+   "central_p_ecmwf_ifs025": 0.328,
+   "central_p_gfs_seamless": 0.063,
+   "central_p_icon_seamless": 0.146,
+   "central_csd": 0,
+   "southeast_gauge_in": 0.77,
+   "southeast_p_gauges": 0.733,
+   "southeast_p_ecmwf_ifs025": 0.278,
+   "southeast_p_gfs_seamless": 0.059,
+   "southeast_p_icon_seamless": 0.12,
+   "southeast_csd": 0,
+   "ecmwf_ifs025_in": 0.5,
+   "gfs_seamless_in": 0.26,
+   "icon_seamless_in": 0.43
+  },
+  {
+   "date": "2026-04-10",
+   "westside_gauge_in": 0.6,
+   "westside_p_gauges": 0.075,
+   "westside_p_ecmwf_ifs025": 0.344,
+   "westside_p_gfs_seamless": 0.066,
+   "westside_p_icon_seamless": 0.101,
+   "westside_csd": 0,
+   "north_shore_gauge_in": 0.54,
+   "north_shore_p_gauges": 0.011,
+   "north_shore_p_ecmwf_ifs025": 0.074,
+   "north_shore_p_gfs_seamless": 0.023,
+   "north_shore_p_icon_seamless": 0.022,
+   "north_shore_csd": 0,
+   "central_gauge_in": 0.54,
+   "central_p_gauges": 0.058,
+   "central_p_ecmwf_ifs025": 0.356,
+   "central_p_gfs_seamless": 0.991,
+   "central_p_icon_seamless": 0.113,
+   "central_csd": 0,
+   "southeast_gauge_in": 0.54,
+   "southeast_p_gauges": 0.059,
+   "southeast_p_ecmwf_ifs025": 0.339,
+   "southeast_p_gfs_seamless": 0.996,
+   "southeast_p_icon_seamless": 0.106,
+   "southeast_csd": 0,
+   "ecmwf_ifs025_in": 0.89,
+   "gfs_seamless_in": 1.19,
+   "icon_seamless_in": 0.72
+  },
+  {
+   "date": "2026-04-11",
+   "westside_gauge_in": 0.71,
+   "westside_p_gauges": 0.468,
+   "westside_p_ecmwf_ifs025": 0.902,
+   "westside_p_gfs_seamless": 0.077,
+   "westside_p_icon_seamless": 0.692,
+   "westside_csd": 1,
+   "north_shore_gauge_in": 0.73,
+   "north_shore_p_gauges": 0.089,
+   "north_shore_p_ecmwf_ifs025": 0.481,
+   "north_shore_p_gfs_seamless": 0.013,
+   "north_shore_p_icon_seamless": 0.166,
+   "north_shore_csd": 0,
+   "central_gauge_in": 0.73,
+   "central_p_gauges": 0.577,
+   "central_p_ecmwf_ifs025": 0.891,
+   "central_p_gfs_seamless": 0.965,
+   "central_p_icon_seamless": 0.675,
+   "central_csd": 1,
+   "southeast_gauge_in": 0.73,
+   "southeast_p_gauges": 0.689,
+   "southeast_p_ecmwf_ifs025": 0.906,
+   "southeast_p_gfs_seamless": 0.986,
+   "southeast_p_icon_seamless": 0.745,
+   "southeast_csd": 1,
+   "ecmwf_ifs025_in": 1.0,
+   "gfs_seamless_in": 0.85,
+   "icon_seamless_in": 0.8
+  },
+  {
+   "date": "2026-04-13",
+   "westside_gauge_in": 0.61,
+   "westside_p_gauges": 0.058,
+   "westside_p_ecmwf_ifs025": 0.004,
+   "westside_p_gfs_seamless": 0.001,
+   "westside_p_icon_seamless": 0.002,
+   "westside_csd": 0,
+   "north_shore_gauge_in": 0.61,
+   "north_shore_p_gauges": 0.031,
+   "north_shore_p_ecmwf_ifs025": 0.003,
+   "north_shore_p_gfs_seamless": 0.002,
+   "north_shore_p_icon_seamless": 0.002,
+   "north_shore_csd": 0,
+   "central_gauge_in": 0.61,
+   "central_p_gauges": 0.214,
+   "central_p_ecmwf_ifs025": 0.012,
+   "central_p_gfs_seamless": 0.005,
+   "central_p_icon_seamless": 0.007,
+   "central_csd": 0,
+   "southeast_gauge_in": 0.61,
+   "southeast_p_gauges": 0.171,
+   "southeast_p_ecmwf_ifs025": 0.013,
+   "southeast_p_gfs_seamless": 0.005,
+   "southeast_p_icon_seamless": 0.008,
+   "southeast_csd": 0,
+   "ecmwf_ifs025_in": 0.12,
+   "gfs_seamless_in": 0.0,
+   "icon_seamless_in": 0.04
+  },
+  {
+   "date": "2026-04-20",
+   "westside_gauge_in": 0.77,
+   "westside_p_gauges": 0.395,
+   "westside_p_ecmwf_ifs025": 0.665,
+   "westside_p_gfs_seamless": 0.068,
+   "westside_p_icon_seamless": 0.051,
+   "westside_csd": 0,
+   "north_shore_gauge_in": 0.93,
+   "north_shore_p_gauges": 0.172,
+   "north_shore_p_ecmwf_ifs025": 0.299,
+   "north_shore_p_gfs_seamless": 0.019,
+   "north_shore_p_icon_seamless": 0.01,
+   "north_shore_csd": 0,
+   "central_gauge_in": 0.93,
+   "central_p_gauges": 0.868,
+   "central_p_ecmwf_ifs025": 0.711,
+   "central_p_gfs_seamless": 0.112,
+   "central_p_icon_seamless": 0.039,
+   "central_csd": 0,
+   "southeast_gauge_in": 0.93,
+   "southeast_p_gauges": 0.82,
+   "southeast_p_ecmwf_ifs025": 0.638,
+   "southeast_p_gfs_seamless": 0.106,
+   "southeast_p_icon_seamless": 0.034,
+   "southeast_csd": 0,
+   "ecmwf_ifs025_in": 1.03,
+   "gfs_seamless_in": 0.56,
+   "icon_seamless_in": 0.45
+  },
+  {
+   "date": "2026-04-22",
+   "westside_gauge_in": 0.16,
+   "westside_p_gauges": 0.025,
+   "westside_p_ecmwf_ifs025": 0.013,
+   "westside_p_gfs_seamless": 0.017,
+   "westside_p_icon_seamless": 0.039,
+   "westside_csd": 1,
+   "north_shore_gauge_in": 0.31,
+   "north_shore_p_gauges": 0.012,
+   "north_shore_p_ecmwf_ifs025": 0.005,
+   "north_shore_p_gfs_seamless": 0.008,
+   "north_shore_p_icon_seamless": 0.011,
+   "north_shore_csd": 0,
+   "central_gauge_in": 0.31,
+   "central_p_gauges": 0.05,
+   "central_p_ecmwf_ifs025": 0.018,
+   "central_p_gfs_seamless": 0.123,
+   "central_p_icon_seamless": 0.044,
+   "central_csd": 0,
+   "southeast_gauge_in": 0.31,
+   "southeast_p_gauges": 0.041,
+   "southeast_p_ecmwf_ifs025": 0.015,
+   "southeast_p_gfs_seamless": 0.141,
+   "southeast_p_icon_seamless": 0.035,
+   "southeast_csd": 0,
+   "ecmwf_ifs025_in": 0.22,
+   "gfs_seamless_in": 0.33,
+   "icon_seamless_in": 0.34
+  },
+  {
+   "date": "2026-05-28",
+   "westside_gauge_in": 0.49,
+   "westside_p_gauges": 0.053,
+   "westside_p_ecmwf_ifs025": 0.032,
+   "westside_p_gfs_seamless": 0.048,
+   "westside_p_icon_seamless": 0.018,
+   "westside_csd": 0,
+   "north_shore_gauge_in": 0.6,
+   "north_shore_p_gauges": 0.013,
+   "north_shore_p_ecmwf_ifs025": 0.005,
+   "north_shore_p_gfs_seamless": 0.009,
+   "north_shore_p_icon_seamless": 0.003,
+   "north_shore_csd": 0,
+   "central_gauge_in": 0.6,
+   "central_p_gauges": 0.068,
+   "central_p_ecmwf_ifs025": 0.021,
+   "central_p_gfs_seamless": 0.115,
+   "central_p_icon_seamless": 0.011,
+   "central_csd": 0,
+   "southeast_gauge_in": 0.6,
+   "southeast_p_gauges": 0.067,
+   "southeast_p_ecmwf_ifs025": 0.022,
+   "southeast_p_gfs_seamless": 0.154,
+   "southeast_p_icon_seamless": 0.012,
+   "southeast_csd": 0,
+   "ecmwf_ifs025_in": 0.41,
+   "gfs_seamless_in": 0.49,
+   "icon_seamless_in": 0.29
+  }
+ ]
+}
