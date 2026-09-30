@@ -30,7 +30,7 @@
    brand.css loads BEFORE each page's own <style>, so a page may still specialise a
    rule; these are the defaults every page used to re-declare. */
 *{box-sizing:border-box}
-body{margin:0;background:var(--sand);color:var(--ink);font-family:'Roboto','Segoe UI',Arial,sans-serif}
+body{margin:0;background:var(--sand);color:var(--ink);font-family:'Roboto','Segoe UI',Arial,sans-serif;min-height:100vh;display:flex;flex-direction:column}   /* flex column so the footer reaches the bottom on short pages */
 a{color:var(--brand)}
 .wrap{max-width:var(--page-w);margin:0 auto;padding:24px}
 .controls{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:center;margin:0 0 12px}
@@ -101,14 +101,21 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
 .page-head .how-body p{margin:0 0 8px}.page-head .how-body p:last-child{margin:0}
 
 /* ── Frame: footer (every page) ───────────────────────────────────────────── */
-.site-footer{background:#343b44;padding:26px 0 30px;margin:0;color:rgba(255,255,255,.78);font-size:14px;line-height:1.7;text-align:center;font-family:'Roboto','Segoe UI',Arial,sans-serif}   /* full-bleed band; the column sits inside */
+.site-footer{background:#343b44;padding:26px 0 24px;margin:auto 0 0;color:rgba(255,255,255,.78);font-size:14px;line-height:1.6;text-align:left;font-family:'Roboto','Segoe UI',Arial,sans-serif}   /* full-bleed band, left-aligned like the header; margin-top:auto pins it to the bottom */
 .site-footer .in{max-width:var(--page-w);margin:0 auto;padding:0 24px}
-.site-footer .hotline{color:#fff;font-weight:700;margin:0 0 10px}
+.site-footer .cols{display:flex;justify-content:space-between;align-items:flex-start;gap:20px 40px;flex-wrap:wrap}
+.site-footer .who p,.site-footer .reach p{margin:0}
+.site-footer .footer-logo{display:inline-block;background:#fff;border-radius:8px;padding:5px 10px;margin:0 0 10px}   /* Surfrider's colours as shipped, on a small white tile */
+.site-footer .footer-logo img{display:block;height:26px;width:auto}
+.site-footer .org{color:#fff;font-weight:700}
+.site-footer .note{color:rgba(255,255,255,.7)}
+.site-footer .reach{text-align:right}
+.site-footer .hotline{color:#fff;font-weight:700;margin:0 0 4px}
+.site-footer .hotline .with-ic{align-items:flex-start}
+.site-footer .hotline .ic{margin-top:4px;flex-shrink:0}   /* the phone icon stays on the first line when the number wraps on phones */
 .site-footer a{color:#7ab8e0;text-decoration:none}
 .site-footer a:hover{text-decoration:underline}
-.site-footer .sources{margin-top:12px;font-size:13px;color:#8a949b}
-.site-footer .footer-logo{display:inline-block;background:#fff;border-radius:12px;padding:8px 16px;margin:0 0 14px}
-.site-footer .footer-logo img{display:block;height:34px;width:auto}
+.site-footer .sources{display:flex;justify-content:space-between;gap:8px 20px;flex-wrap:wrap;margin:18px 0 0;padding-top:12px;border-top:1px solid rgba(255,255,255,.14);font-size:13px;color:#8a949b}
 
 /* ── Frame: phone tab bar (hidden on wide screens) ────────────────────────── */
 .tabbar{display:none}
@@ -128,6 +135,8 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
   .tabbar a .ic{width:20px;height:20px}
   .tabbar a.on{color:var(--brand)}
   body{padding-bottom:72px}
+  .site-footer .cols{flex-direction:column;gap:16px}
+  .site-footer .reach{text-align:left}
 }
 
 /* ── Kit: small shared pieces ─────────────────────────────────────────────── */
