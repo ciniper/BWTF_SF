@@ -15,7 +15,7 @@ svg.pipe{display:block;width:100%;min-width:760px;height:auto;font-family:Roboto
 .box{fill:#fff;stroke:#d9e4e8;stroke-width:1.5}.box.hub{stroke:#0072BC;stroke-width:2}.tile{fill:#E3EBF2}.tile.logo{fill:#fff;stroke:#e3ebf2;stroke-width:1.5}
 .icn{fill:none;stroke:#0072BC;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .t{font-size:15px;font-weight:700;fill:#26272a}.s{font-size:12.5px;fill:#54576F}.col{font-size:11px;font-weight:700;letter-spacing:.14em;fill:#8a949b}
-.flow{fill:none;stroke:#0072BC;stroke-width:2}
+.flow{fill:none;stroke:#0072BC;stroke-width:2}.dot{fill:#0072BC}.al{font-size:11px;font-weight:700;fill:#0072BC}.cap{font-size:12px;fill:#54576F}
 .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
 @media(max-width:1000px){.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}.grid3{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:640px){.grid2,.grid3,.grid4{grid-template-columns:1fr}.rh{flex-direction:column}}
@@ -33,6 +33,7 @@ table{width:100%;border-collapse:collapse;font-size:13.5px;background:#fff;borde
 th{text-align:left;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#54576F;padding:8px 10px;border-bottom:1px solid #d9e4e8;background:#f7fafc}td{padding:7px 10px;border-bottom:1px solid #eef2f5;vertical-align:top}
 td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}tr.total td{font-weight:700;border-top:2px solid #d9e4e8}table.plain{border:0}.mono{font-family:ui-monospace,Menlo,monospace;font-size:12.5px}
 details.more{margin-top:10px}details.more summary{cursor:pointer;font-weight:700;color:#0072BC}
+.caps{margin:10px 0 0;padding:0 0 0 18px;color:#54576F;font-size:14px}.caps li{margin:4px 0}.caps b{color:#26272a}
 .levels{display:flex;flex-direction:column;gap:6px;margin:8px 0}.lvl{display:flex;justify-content:space-between;font-size:14px;padding:6px 10px;background:#f7fafc;border-radius:10px}.lvl b{margin:0;font-size:14px}
 svg.tl,svg.lag{display:block;width:100%;height:auto;font-family:Roboto,Arial,sans-serif}
 .strips .weekhead{display:grid;grid-template-columns:220px repeat(8,1fr);gap:4px;font-size:11px;color:#8a949b;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;text-align:center}
@@ -89,7 +90,7 @@ svg.tl,svg.lag{display:block;width:100%;height:auto;font-family:Roboto,Arial,san
 <div class="wrap">
 <header class="rh"><img src="/static/brand/bwtf_144x144.png" alt="" class="mark"><div><h1>How the forecast is graded</h1>
 <p class="sub">Every stored day is scored against what the city later filed and measured. The served set is <b>logit_v1_s2v2</b>; its alarm line is <b>25%</b>; a missed bad day costs <b>2</b> false alarms. Nothing here uses a day the model saw while it was being chosen.</p>
-<div class="meta"><span>generated 2026-09-30 01:29</span><span>holdout Jul 2023 → Oct 2025</span><span>since training Nov 2025 → Aug 2026</span><span><a href="/reports/2026-09_forecast_how_it_works.html">← how it works</a></span></div></div></header>
+<div class="meta"><span>generated 2026-09-30 02:00</span><span>holdout Jul 2023 → Oct 2025</span><span>since training Nov 2025 → Aug 2026</span><span><a href="/reports/2026-09_forecast_how_it_works.html">← how it works</a></span></div></div></header>
 <nav><a href="#rulers">Rulers</a><a href="#results">Results</a><a href="#lines">Lines</a><a href="#sets">Sets</a><a href="#stage1">Stage 1</a><a href="#live">Live corrections</a><a href="#weather">Weather input</a><a href="#caveats">Caveats</a></nav>
 
 <section id="rulers"><h2>What counts as a bad day</h2>
