@@ -273,7 +273,7 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
     now = now or now_pacific()
     risks = risks or {}
     by_id = {str(getattr(st, "station_id", "")): st for st in stations}   # SFPUC id → live feed row
-    status_text = {"safe": "safe", "posted": "posted for bacteria", "discharge": "sewage discharge", "unknown": "not sampled"}
+    status_text = {"safe": "safe", "posted": "posted", "discharge": "sewage discharge", "unknown": "not sampled"}   # "posted" is SFPUC's status word; the cause is not in the feed
     tiles, posted, discharging, n_safe, n_graded = [], [], [], 0, 0
     posted_by_zone: dict[str, list] = {}
     cso_by_zone: dict[str, list] = {}
@@ -321,7 +321,7 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
         tone = "danger"
         parts = [("discharge", f"Sewage discharge at {n_cso} {plural(n_cso, 'beach', 'beaches')}.")]
         if n_posted:
-            parts.append(("posted", f"{n_posted} {plural(n_posted, 'beach is', 'beaches are')} posted for bacteria."))
+            parts.append(("posted", f"Posted at {n_posted} {plural(n_posted, 'beach', 'beaches')}."))   # parallel to the discharge phrase, so two counts never sit side by side (Chase, 2026-09-30)
         if n_safe:
             parts.append(("", f"{n_safe} {plural(n_safe, 'meets', 'meet')} state standards." if n_posted
                           else f"{n_safe} other {plural(n_safe, 'beach meets', 'beaches meet')} state standards."))
@@ -329,7 +329,7 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
         tone, parts = "warn", [("warn", "Beach status is unavailable right now.")]
     elif n_posted:
         tone = "warn"
-        parts = [("posted", f"{n_posted} {plural(n_posted, 'beach is', 'beaches are')} posted for bacteria.")]
+        parts = [("posted", f"Posted at {n_posted} {plural(n_posted, 'beach', 'beaches')}.")]
         if n_safe:
             parts.append(("", f"{n_safe} {plural(n_safe, 'other meets', 'others meet')} state standards."))
     else:
@@ -341,8 +341,8 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
     lead = []
     if n_cso:
         lead.append("Discharging: " + describe(cso_by_zone) + ".")
-    if n_posted:
-        lead.append("Posted: " + describe(posted_by_zone) + ".")
+    if n_posted:   # the status word is SFPUC's; the reason, in their terms, follows — the feed does not say which applies
+        lead.append("Posted: " + describe(posted_by_zone) + ". SFPUC posts a beach when samples show bacteria above State standards, and sometimes as a precaution.")
     if not n_cso and n_graded:
         lead.append("No active sewage discharge.")
     zr = risks.get("zones") or {}

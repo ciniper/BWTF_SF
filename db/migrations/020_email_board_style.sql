@@ -3,9 +3,10 @@
 -- What changes, and only this: bwtf_render_alert's output. The header reads "SF BEACH WATER
 -- QUALITY ALERT" over the site's mark; the card is the Today board's — a 2px border in the grade
 -- colour, an eyebrow, a headline that states the fact in counts, the status phrase alone in its
--- colour ("Sewage discharge at 1 beach. Bacteria posting at 1 beach."), a facts line
--- naming the beaches, one row per station with its map thumbnail and one factual line, SFPUC's
--- guidance stated once and attributed, one button — "Live status" — to the site's board. SFPUC's
+-- colour ("Sewage discharge at 1 beach. Posted at 1 beach."), a facts line
+-- naming the beaches, one row per station with its map thumbnail and one factual line in SFPUC's own
+-- terms ("posted" is their status word; the reason sits under it), SFPUC's rainfall sentence quoted
+-- once, one button — "Live status" — to the site's board. SFPUC's
 -- own map moves to the small print, which also drops "always win" for "take precedence". No
 -- timestamp in the body (the message's own Date header carries it; the Python port must match
 -- byte for byte and cannot share a clock with the database).
@@ -65,37 +66,37 @@ begin
 
   -- subject: one station is named; several are counted
   if n_matched = 1 then
-    subject := prefix || 'Beach alert: ' || name1 || case when cso1 then ' — sewage discharge' else ' posted for bacteria' end;
+    subject := prefix || 'Beach alert: ' || name1 || case when cso1 then ' — sewage discharge' else ' — posted' end;
   else
     subject := prefix || 'Beach alert: ' || concat_ws(', ',
       case when n_cso > 0 then 'sewage discharge at ' || n_cso || ' beach' || case when n_cso > 1 then 'es' else '' end end,
-      case when n_posted > 0 then 'bacteria posting' || case when n_posted > 1 then 's' else '' end || ' at ' || n_posted || ' beach' || case when n_posted > 1 then 'es' else '' end end);
+      case when n_posted > 0 then 'posted at ' || n_posted || ' beach' || case when n_posted > 1 then 'es' else '' end end);
   end if;
 
   -- headline in the board's voice: counts, coloured by grade; one station is named outright
   -- names and counts stay black; only the status phrase takes its colour (Chase, 2026-09-30)
   if n_matched = 1 then
     headline := name1 || case when cso1 then ' has a <span style="color:#b5310a">sewage discharge</span>.'
-                                        else ' is <span style="color:#d4763a">posted for bacteria</span>.' end;
+                                        else ' is <span style="color:#d4763a">posted</span>.' end;
   else
     headline := concat_ws(' ',
       case when n_cso > 0 then '<span style="color:#b5310a">Sewage discharge</span> at ' || n_cso || ' beach' || case when n_cso > 1 then 'es' else '' end || '.' end,
-      case when n_posted > 0 then '<span style="color:#d4763a">Bacteria posting' || case when n_posted > 1 then 's' else '' end || '</span> at ' || n_posted || ' beach' || case when n_posted > 1 then 'es' else '' end || '.' end);
+      case when n_posted > 0 then '<span style="color:#d4763a">Posted</span> at ' || n_posted || ' beach' || case when n_posted > 1 then 'es' else '' end || '.' end);
   end if;
   facts := case when n_cso > 0 then 'Discharging: ' || names_cso || '. ' else '' end
         || case when n_posted > 0 then 'Posted: ' || names_post || '. ' else '' end
         || 'From SFPUC''s beach map, which this site checks every minute.';
 
   select prefix || 'Beach alert: '
-         || string_agg(t->>'station_name' || ' — ' || case t->>'to' when 'cso' then 'sewage discharge' else 'posted for bacteria' end, '; ' order by ord)
-         || '. SFPUC: avoid water contact. ' || site || '/'
+         || string_agg(t->>'station_name' || ' — ' || case t->>'to' when 'cso' then 'sewage discharge' else 'posted' end, '; ' order by ord)
+         || '. Live status: ' || site || '/'
     into sms_text
     from jsonb_array_elements(p_transitions) with ordinality as x(t, ord);
   sms_text := left(sms_text, 320);
 
   select subject || E'\n\n'
-         || string_agg('- ' || (t->>'station_name') || ': ' || case t->>'to' when 'cso' then 'sewage discharge.' else 'posted for bacteria.' end, E'\n' order by ord)
-         || E'\n\nSFPUC''s guidance: avoid water contact at a posted beach, and for 72 hours after a discharge or heavy rain.\n\n'
+         || string_agg('- ' || (t->>'station_name') || ': ' || case t->>'to' when 'cso' then 'sewage discharge.' else 'posted.' end, E'\n' order by ord)
+         || E'\n\nFrom SFPUC: beach users should be aware that during and immediately after rainfall, nearshore bacteria concentrations may be elevated, even when there has not been a combined sewer discharge.\n\n'
          || 'Live status: ' || site || E'/\nSFPUC''s map: ' || map_url || E'\n\n'
          || E'Community science by Surfrider SF''s Blue Water Task Force, not an official advisory; posted signs and notices from SFPUC or the health department take precedence.\n'
          || case when unsub is null then 'Reply to this email with "unsubscribe" to stop alerts.'
@@ -112,10 +113,10 @@ begin
       || '<td style="padding:10px 14px;vertical-align:middle;">'
       || '<div style="font-weight:700;font-size:15px;color:#26272a;">' || (t->>'station_name') || '</div>'
       || '<div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-top:2px;color:'
-      || case t->>'to' when 'cso' then '#b5310a;">Sewage discharge' else '#d4763a;">Posted for bacteria' end || '</div>'
+      || case t->>'to' when 'cso' then '#b5310a;">Sewage discharge' else '#d4763a;">Posted' end || '</div>'
       || '<div style="font-size:13px;color:#54576F;margin-top:3px;line-height:1.45;">'
-      || case t->>'to' when 'cso' then 'A combined-sewer discharge reported by SFPUC; the posting stays up about 72 hours after it ends.'
-                       else 'The latest sample was over the state single-sample limit; the sign stays up until a clean resample.' end
+      || case t->>'to' when 'cso' then 'A combined sewer discharge reported by SFPUC; the beach is posted proactively and sampled until it clears.'
+                       else 'SFPUC posts a beach when samples show bacteria above State standards, and sometimes as a precaution; repeat samples are collected until it clears.' end
       || '</div></td></tr></table>', '' order by ord)
     into rows_html
     from jsonb_array_elements(p_transitions) with ordinality as x(t, ord);
@@ -141,7 +142,7 @@ begin
       || '<h1 style="margin:6px 0 0;font-size:26px;line-height:1.15;font-weight:900;letter-spacing:.01em;color:#26272a;">' || headline || '</h1>'
       || '<p style="margin:8px 0 16px;color:#54576F;font-size:14px;line-height:1.5;">' || facts || '</p>'
       || rows_html
-      || '<p style="margin:14px 0 0;font-size:13.5px;color:#26272a;line-height:1.5;"><b>SFPUC''s guidance:</b> avoid water contact at a posted beach, and for 72 hours after a discharge or heavy rain.</p>'
+      || '<p style="margin:14px 0 0;font-size:13.5px;color:#26272a;line-height:1.5;"><b>From SFPUC:</b> beach users should be aware that during and immediately after rainfall, nearshore bacteria concentrations may be elevated, even when there has not been a combined sewer discharge.</p>'
       || '<p style="margin:16px 0 4px;"><a href="' || site || '/" style="display:inline-block;background:#0072BC;color:#ffffff;text-decoration:none;padding:11px 18px;border-radius:999px;font-weight:700;font-size:14px;">Live status</a></p>'
       || '</td></tr>'
       || '<tr><td style="padding:14px 8px 0;font-size:12px;color:#54576F;line-height:1.55;">'

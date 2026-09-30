@@ -79,30 +79,30 @@ def _fallback(transitions: list[dict], simulated: bool, zone: str | None = None,
     col = lambda t: "#b5310a" if is_cso(t) else "#d4763a"  # noqa: E731
 
     if n == 1:
-        subject = f"{prefix}Beach alert: {name1}" + (" — sewage discharge" if cso1 else " posted for bacteria")
+        subject = f"{prefix}Beach alert: {name1}" + (" — sewage discharge" if cso1 else " — posted")
     else:
         subject = f"{prefix}Beach alert: " + ", ".join(filter(None, [
             f"sewage discharge at {beaches(n_cso)}" if n_cso > 0 else None,
-            "bacteria posting" + ("s" if n_posted > 1 else "") + f" at {beaches(n_posted)}" if n_posted > 0 else None]))
+            f"posted at {beaches(n_posted)}" if n_posted > 0 else None]))
 
     if n == 1:   # names and counts stay black; only the status phrase takes its colour
-        headline = name1 + (' has a <span style="color:#b5310a">sewage discharge</span>.' if cso1 else ' is <span style="color:#d4763a">posted for bacteria</span>.')
+        headline = name1 + (' has a <span style="color:#b5310a">sewage discharge</span>.' if cso1 else ' is <span style="color:#d4763a">posted</span>.')
     else:
         headline = " ".join(filter(None, [
             f'<span style="color:#b5310a">Sewage discharge</span> at {beaches(n_cso)}.' if n_cso > 0 else None,
-            '<span style="color:#d4763a">Bacteria posting' + ("s" if n_posted > 1 else "") + f'</span> at {beaches(n_posted)}.' if n_posted > 0 else None]))
+            f'<span style="color:#d4763a">Posted</span> at {beaches(n_posted)}.' if n_posted > 0 else None]))
     facts = ((f"Discharging: {', '.join(t['station_name'] for t in cso)}. " if n_cso > 0 else "")
              + (f"Posted: {', '.join(t['station_name'] for t in posted)}. " if n_posted > 0 else "")
              + "From SFPUC's beach map, which this site checks every minute.")
 
     sms_text = (f"{prefix}Beach alert: "
-                + "; ".join(f"{t['station_name']} — " + ("sewage discharge" if is_cso(t) else "posted for bacteria") for t in transitions)
-                + f". SFPUC: avoid water contact. {site}/")[:320]
+                + "; ".join(f"{t['station_name']} — " + ("sewage discharge" if is_cso(t) else "posted") for t in transitions)
+                + f". Live status: {site}/")[:320]
 
     text_body = (
         subject + "\n\n"
-        + "\n".join(f"- {t['station_name']}: " + ("sewage discharge." if is_cso(t) else "posted for bacteria.") for t in transitions)
-        + "\n\nSFPUC's guidance: avoid water contact at a posted beach, and for 72 hours after a discharge or heavy rain.\n\n"
+        + "\n".join(f"- {t['station_name']}: " + ("sewage discharge." if is_cso(t) else "posted.") for t in transitions)
+        + "\n\nFrom SFPUC: beach users should be aware that during and immediately after rainfall, nearshore bacteria concentrations may be elevated, even when there has not been a combined sewer discharge.\n\n"
         + f"Live status: {site}/\nSFPUC's map: {MAP_URL}\n\n"
         + "Community science by Surfrider SF's Blue Water Task Force, not an official advisory; posted signs and notices from SFPUC or the health department take precedence.\n"
         + ('Reply to this email with "unsubscribe" to stop alerts.' if unsub is None
@@ -117,10 +117,10 @@ def _fallback(transitions: list[dict], simulated: bool, zone: str | None = None,
         '<td style="padding:10px 14px;vertical-align:middle;">'
         f'<div style="font-weight:700;font-size:15px;color:#26272a;">{t["station_name"]}</div>'
         '<div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-top:2px;color:'
-        + ('#b5310a;">Sewage discharge' if is_cso(t) else '#d4763a;">Posted for bacteria') + "</div>"
+        + ('#b5310a;">Sewage discharge' if is_cso(t) else '#d4763a;">Posted') + "</div>"
         '<div style="font-size:13px;color:#54576F;margin-top:3px;line-height:1.45;">'
-        + ("A combined-sewer discharge reported by SFPUC; the posting stays up about 72 hours after it ends." if is_cso(t)
-           else "The latest sample was over the state single-sample limit; the sign stays up until a clean resample.")
+        + ("A combined sewer discharge reported by SFPUC; the beach is posted proactively and sampled until it clears." if is_cso(t)
+           else "SFPUC posts a beach when samples show bacteria above State standards, and sometimes as a precaution; repeat samples are collected until it clears.")
         + "</div></td></tr></table>"
         for t in transitions
     )
@@ -145,7 +145,7 @@ def _fallback(transitions: list[dict], simulated: bool, zone: str | None = None,
         f'<h1 style="margin:6px 0 0;font-size:26px;line-height:1.15;font-weight:900;letter-spacing:.01em;color:#26272a;">{headline}</h1>'
         f'<p style="margin:8px 0 16px;color:#54576F;font-size:14px;line-height:1.5;">{facts}</p>'
         + rows_html
-        + "<p style=\"margin:14px 0 0;font-size:13.5px;color:#26272a;line-height:1.5;\"><b>SFPUC's guidance:</b> avoid water contact at a posted beach, and for 72 hours after a discharge or heavy rain.</p>"
+        + "<p style=\"margin:14px 0 0;font-size:13.5px;color:#26272a;line-height:1.5;\"><b>From SFPUC:</b> beach users should be aware that during and immediately after rainfall, nearshore bacteria concentrations may be elevated, even when there has not been a combined sewer discharge.</p>"
         f'<p style="margin:16px 0 4px;"><a href="{site}/" style="display:inline-block;background:#0072BC;color:#ffffff;text-decoration:none;padding:11px 18px;border-radius:999px;font-weight:700;font-size:14px;">Live status</a></p>'
         "</td></tr>"
         '<tr><td style="padding:14px 8px 0;font-size:12px;color:#54576F;line-height:1.55;">'
