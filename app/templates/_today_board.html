@@ -3,7 +3,7 @@
     a dot per station; zone tiles zoom the map, a station opens the sample popover.
     Three macros so the two pages share one implementation:
       board_styles()                     the <style> block
-      board_section(board, conditions)   the markup
+      board_section(board, conditions, sites=false)   the markup; sites adds a tile per station under the map (/today)
       board_script(board)                the map + tiles JS; the layers JS activates itself when the page has a #layers strip (/today)
     Pages must load Leaflet 1.9.4 (CSS + deferred JS) and /static/sample_popover.js themselves. -#}
 
@@ -17,28 +17,20 @@
   .board h1 em{font-style:normal}
   .board h1 em.posted,.board h1 em.warn{color:var(--posted)}.board h1 em.discharge{color:var(--discharge)}.board h1 em.good{color:var(--safe)}
   .board .lead{font-size:16px;color:var(--muted);margin:0 0 16px}
-  .zones{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:10px}
-  /* the Forecast page's day tile (Chase, 2026-09-29): centred, one line per fact so every tile is the same height, border by grade */
-  .zone{border:2px solid var(--line);border-radius:var(--r);padding:12px 10px 11px;color:inherit;background:#fff;display:flex;flex-direction:column;align-items:center;width:100%;min-width:0;text-align:center;cursor:pointer;font:inherit}
-  .zone:hover{background:var(--sand2)}
-  .zone.focus{outline:3px solid var(--sky);outline-offset:2px}
-  .zone.safe{border-color:var(--safe)}.zone.posted{border-color:var(--posted)}.zone.discharge{border-color:var(--discharge)}.zone.caution{border-color:var(--caution)}
-  .zone .nm{font-size:13px;font-weight:700;color:var(--muted);max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .zone .st{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:26px;line-height:1.05;letter-spacing:.02em;margin:4px 0 2px;color:var(--safe);white-space:nowrap}
-  .zone.posted .st{color:var(--posted)}.zone.discharge .st{color:var(--discharge)}.zone.unknown .st{color:var(--faint)}.zone.caution .st{color:var(--caution)}
-  .zone .risk{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);white-space:nowrap}
-  .zone .risk b{color:var(--safe);font-size:13px}.zone .risk b.hi{color:var(--posted)}
-  .zone .bar{width:100%;height:4px;border-radius:2px;background:var(--sand);margin:8px 0 9px;overflow:hidden}
-  .zone .bar i{display:block;height:100%;border-radius:2px;background:var(--safe)}.zone .bar i.hi{background:var(--posted)}
-  .zone .stations{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;min-height:9px}
+  .zones{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .zone{border:1px solid var(--line);border-radius:var(--r);padding:12px 13px 11px;color:inherit;background:#fff;display:block;width:100%;text-align:left;cursor:pointer;font:inherit}
+  .zone:hover{border-color:var(--sky)}
+  .zone.focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(0,114,188,.14)}
+  .zone.safe{border-color:var(--safe)}.zone.posted{border-color:var(--posted)}.zone.discharge{border-color:var(--discharge)}   /* same grade colours as the card, thin */
+  .zone.posted.focus,.zone.discharge.focus{box-shadow:0 0 0 3px rgba(0,114,188,.14)}
+  .zone .st{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px}
+  .zone.posted .st{color:var(--posted)}.zone.discharge .st{color:var(--discharge)}.zone.unknown .st{color:var(--faint)}
+  .zone .nm{font-size:16px;font-weight:900;margin:5px 0 1px;line-height:1.2}
+  .zone .risk{font-size:13px;color:var(--muted)}
+  .zone .risk b{color:var(--safe)}.zone .risk b.hi{color:var(--posted)}
+  .zone .stations{display:flex;flex-wrap:wrap;gap:4px;margin:9px 0 5px;min-height:9px}
   .zone .stations .status-dot{width:9px;height:9px}
-  .zone .meta{font-size:12px;color:var(--faint);margin-top:6px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  /* the chosen zone's stations, listed under the tiles */
-  .zone-sites{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0}
-  .zone-sites[hidden]{display:none}
-  .zone-sites .site{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:#fff;font:inherit;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer}
-  .zone-sites .site:hover{border-color:var(--sky)}
-  .zone-sites .site small{color:var(--faint);font-weight:500;font-size:12px}
+  .zone .meta{font-size:13px;color:var(--faint)}
   .zones-hint{font-size:13px;color:var(--faint);margin:8px 0 0}
   .map-wrap{position:relative;isolation:isolate;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;min-height:400px;background:var(--sand2)}   /* isolate: Leaflet's z-indexes stay inside the map */
   #today-map{position:absolute;inset:0}
@@ -85,7 +77,7 @@
   .of-pop b{display:block;font-size:14px;margin-bottom:2px}
   .of-pop .mut{color:var(--muted)}
   .board.replaying .eyebrow{color:var(--brand)}
-  .board.replaying .zone .risk,.board.replaying .zone .bar,.board.replaying .zone .rainline,.board.replaying .zone .meta{display:none}   /* today's risk, rain and sample dates are not that day's */
+  .board.replaying .zone .risk,.board.replaying .zone .rainline,.board.replaying .zone .meta,.board.replaying .site-tile .meta{display:none}   /* today's risk, rain and sample dates are not that day's */
   @media (max-width:760px){.layers .replay-ctl{flex-basis:100%}.layers .replay-ctl input{flex:1}.layers .layer-status{margin-left:0}}
   .conds{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 0}
   .conds span{background:var(--sand2);border-radius:999px;padding:6px 12px;font-size:13px;color:var(--muted)}
@@ -95,7 +87,7 @@
     .board{padding:18px 16px}
     .board h1{font-size:34px}
     .board .lead{font-size:14px;margin-bottom:12px}
-    .zone{padding:10px 8px 9px}.zone .st{font-size:22px}
+    .zone{padding:11px}.zone .nm{font-size:15px}
     .map-wrap{min-height:260px}
     .conds{overflow:auto;flex-wrap:nowrap;margin:12px -16px 0;padding:0 16px;scrollbar-width:none}.conds span{flex:none}
   }
@@ -103,7 +95,7 @@
 </style>
 {%- endmacro %}
 
-{% macro board_section(board, conditions) -%}
+{% macro board_section(board, conditions, sites=false) -%}
   <section class="board tone-{{ board.tone }}" aria-labelledby="today-h">
     <div class="grid">
       <div class="left">
@@ -114,17 +106,15 @@
         <div class="zones" id="zones">
           {% for z in board.zones %}
           <button type="button" class="zone {{ z.status }}" data-zone="{{ z.key }}" aria-pressed="false" title="Zoom the map to {{ z.label }}">
+            <div class="st"><i class="status-dot {{ z.status }}"></i>{{ z.status_text }}</div>
             <div class="nm">{{ z.label }}</div>
-            <div class="st">{{ z.status_text }}</div>
-            <div class="risk">{% if z.risk is not none %}<b{% if z.risk >= 25 %} class="hi"{% endif %}>{{ z.risk }}%</b> overflow risk{% else %}risk unavailable{% endif %}</div>
-            <div class="bar"><i{% if z.risk is not none and z.risk >= 25 %} class="hi"{% endif %} style="width:{{ z.risk if z.risk is not none else 0 }}%"></i></div>
+            <div class="risk">{% if z.risk is not none %}<b{% if z.risk >= 25 %} class="hi"{% endif %}>{{ z.risk }}%</b> overflow risk today{% else %}overflow risk unavailable{% endif %}</div>
             <div class="stations">{% for s in z.stations %}<i class="status-dot {{ s.status }}" title="{{ s.full_name }} · {{ s.status_text }}"></i>{% endfor %}</div>
             <div class="meta">{{ z.meta }}</div>
           </button>
           {% endfor %}
         </div>
-        <p class="zones-hint">Tap a zone to see only its stations; tap a station for its latest lab results.</p>
-        <div class="zone-sites" id="zone-sites" hidden></div>
+        <p class="zones-hint">Tap a zone to see only its stations{% if sites %} below and on the map{% else %} on the map{% endif %}; tap a station for its latest lab results.</p>
         {% endif %}
       </div>
       <div class="map-wrap">
@@ -133,6 +123,15 @@
         <div class="map-legend" id="map-legend"><span><i class="status-dot safe"></i>safe</span><span><i class="status-dot posted"></i>posted</span><span><i class="status-dot discharge"></i>discharge</span><span><i class="status-dot unknown"></i>not sampled</span><span id="lg-bwtf" hidden><i class="bwtf-dot safe"></i>Surfrider latest</span></div>
       </div>
     </div>
+    {% if sites %}
+    <div class="sites" id="sites" aria-label="Every monitoring station, as the city shows it">
+      {% for z in board.zones %}{% for s in z.stations %}
+      <button type="button" class="site-tile {{ s.status }}" data-zone="{{ z.key }}" data-station="{{ s.source }}" data-sample-station="{{ s.source }}" data-sample-name="{{ s.full_name }}" data-sample-feed-date="{{ s.sampled }}" title="Latest lab results">
+        <div class="nm">{{ s.full_name }}</div><div class="st">{{ {"safe": "Safe", "posted": "Posted", "discharge": "Discharge", "caution": "Caution", "unknown": "Not sampled"}[s.status] }}</div><div class="meta">{{ s.sampled_text }}</div>
+      </button>
+      {% endfor %}{% endfor %}
+    </div>
+    {% endif %}
     {% if conditions %}
     <div class="conds">{% for c in conditions %}<span class="with-ic">{{ c|safe }}</span>{% endfor %}<span>Status as the city reports it, checked every minute</span></div>
     {% endif %}
@@ -155,19 +154,11 @@ function focusZone(key) {
   for (const m of ALL_ORDERED) MAP.removeLayer(m);
   for (const m of ALL_ORDERED) if (!ACTIVE || m.__z.key === ACTIVE) m.addTo(MAP);
   document.getElementById("map-reset").hidden = !ACTIVE;
-  renderZoneSites();
+  filterSites();
   if (!ACTIVE) return fitAll();
   MAP.fitBounds(L.latLngBounds(MARKERS[ACTIVE].map(m => m.getLatLng())).pad(0.4), {maxZoom: 14});
 }
-function renderZoneSites() {
-  const el = document.getElementById("zone-sites"); if (!el) return;
-  const z = ZONES.find(z => z.key === ACTIVE);
-  if (!z) { el.hidden = true; el.innerHTML = ""; return; }
-  const e = t => String(t == null ? "" : t).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
-  el.innerHTML = z.stations.map((s, i) => '<button type="button" class="site" data-i="' + i + '" title="Latest lab results"><i class="status-dot ' + e(s.status) + '"></i>' + e(s.full_name) + '<small>' + (s.sampled ? "sampled " + e(s.sampled) : "not sampled") + "</small></button>").join("");
-  el.hidden = false;
-  el.querySelectorAll(".site").forEach(b => b.addEventListener("click", () => { const s = z.stations[b.dataset.i | 0]; if (window.SamplePopover) SamplePopover.open({station: s.source, name: s.full_name, feedDate: s.sampled}); }));
-}
+function filterSites() { document.querySelectorAll("#sites .site-tile").forEach(t => { t.hidden = !!ACTIVE && t.dataset.zone !== ACTIVE; }); }
 function initMap() {
   if (!window.L || !document.getElementById("today-map")) return;
   MAP = L.map("today-map", {scrollWheelZoom: false, zoomControl: true, attributionControl: false}).setView([37.765, -122.44], 11);
@@ -231,7 +222,8 @@ function tileParts(key) { const b = document.querySelector('.zone[data-zone="' +
 function snapshotBoard() {
   if (ORIG) return;
   ORIG = {eyebrow: document.querySelector(".board .eyebrow").innerHTML, h1: $("today-h").innerHTML, lead: (document.querySelector(".board .lead") || {}).innerHTML, tone: document.querySelector(".board").className,
-          tiles: Object.fromEntries(ZONES.map(z => { const t = tileParts(z.key); return [z.key, t ? {cls: t.b.className.replace(" focus", ""), st: t.st.innerHTML, dots: t.dots.map(d => d.className)} : null]; }))};
+          tiles: Object.fromEntries(ZONES.map(z => { const t = tileParts(z.key); return [z.key, t ? {cls: t.b.className.replace(" focus", ""), st: t.st.innerHTML, dots: t.dots.map(d => d.className)} : null]; })),
+          sites: [...document.querySelectorAll("#sites .site-tile")].map(t => [t.dataset.station, t.className, t.querySelector(".st").textContent])};
 }
 function restoreBoard() {
   if (!ORIG) return;
@@ -240,6 +232,7 @@ function restoreBoard() {
   document.querySelector(".board").className = ORIG.tone;
   for (const z of ZONES) { const t = tileParts(z.key), o = ORIG.tiles[z.key]; if (!t || !o) continue; t.b.className = o.cls + (t.b.classList.contains("focus") ? " focus" : ""); t.b.style.borderColor = ""; t.st.innerHTML = o.st; t.dots.forEach((d, i) => d.className = o.dots[i]); }
   for (const m of allMarkers()) m.setStyle({fillColor: COL[m.__s.status] || COL.unknown, radius: m.__s.status === "posted" || m.__s.status === "discharge" ? 9 : 7});
+  for (const [src, cls, word] of ORIG.sites || []) { const t = document.querySelector('#sites .site-tile[data-station="' + src + '"]'); if (t) { t.className = cls; t.querySelector(".st").textContent = word; } }
 }
 // Risk view: every zone and its stations take the colour of the zone's overflow risk today
 function applyRisk() {
@@ -248,7 +241,7 @@ function applyRisk() {
   for (const z of ZONES) {
     const c = band(z.risk), t = tileParts(z.key); if (!t) continue;
     t.b.className = "zone " + c + (t.b.classList.contains("focus") ? " focus" : "");
-    t.st.textContent = z.risk == null ? "Risk unavailable" : z.risk + "% risk";
+    t.st.innerHTML = '<i class="status-dot ' + c + '"></i>' + (z.risk == null ? "risk unavailable" : z.risk + "% overflow risk today");
     t.dots.forEach(d => d.className = "status-dot " + c);
   }
   for (const m of allMarkers()) m.setStyle({fillColor: COL[band(m.__z.risk)], radius: 7});
@@ -266,12 +259,13 @@ function applyReplay() {
       const c = ((REPLAY.stations[st.source] || {})[day]) || "unknown"; zc[c]++; counts[c]++;
       if (RANK_ST[c] > RANK_ST[zw] || zw === "unknown") zw = c === "unknown" && zw !== "unknown" ? zw : c;
       const m = allMarkers().find(m => m.__s === st); if (m) m.setStyle({fillColor: COL[c], radius: c === "posted" || c === "discharge" ? 9 : 7});
+      const tile = document.querySelector('#sites .site-tile[data-station="' + st.source + '"]'); if (tile) { tile.className = "site-tile " + c; tile.querySelector(".st").textContent = {safe: "Not posted", posted: "Posted", discharge: "Discharge", unknown: "Not recorded"}[c]; }
       if (t) t.dots[i].className = "status-dot " + c;
     });
     if (RANK_ST[zw] > RANK_ST[worst]) worst = zw;
     if (!t) continue;
     t.b.className = "zone " + zw + (t.b.classList.contains("focus") ? " focus" : "");
-    t.st.textContent = zw === "discharge" ? "Sewage discharge" : zw === "posted" ? (zc.posted + " beach" + (zc.posted > 1 ? "es" : "") + " posted") : zw === "safe" ? "Not posted" : "Not recorded";
+    t.st.innerHTML = '<i class="status-dot ' + zw + '"></i>' + (zw === "discharge" ? "Sewage discharge" : zw === "posted" ? (zc.posted + " beach" + (zc.posted > 1 ? "es" : "") + " posted") : zw === "safe" ? "Not posted" : "Not recorded");
   }
   const n = w => w + " beach" + (w > 1 ? "es" : "");
   const parts = [];

@@ -67,16 +67,6 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 /* Beach status */
 .beach-section { background: #fff; border: 1px solid var(--line); border-radius: var(--r); padding: 20px; margin-bottom: 20px; }
 .beach-section h2 { color: #26272a; font-size: 1.05em; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
-.beach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
-.beach-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px; font-size: 0.85em; background: #f3f6f9; }
-.beach-item.clickable { cursor: pointer; }
-.beach-item.clickable:hover { background: #e8eef5; }
-.beach-date { color: #8a93a3; font-size: .9em; }
-.beach-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-.beach-dot.safe { background: #237059; }
-.beach-dot.posted { background: #d4763a; }
-.beach-dot.cso { background: #b5310a; animation: blink 1.5s infinite; }
-.beach-dot.not_sampled { background: #8a93a3; }
 
 /* Ground truth overlay (historical mode) */
 .ground-truth { background: #fff; border-radius: var(--r); padding: 20px; margin-bottom: 20px; border: 2px solid var(--line); }
@@ -537,24 +527,18 @@ const ZONE_GROUPS_BY_BASIN = { westside: [...(ZONE_GROUPS.ocean || []), ...(ZONE
                                north_shore: ZONE_GROUPS.north || [], southeast: ['Southeast'], central: ['Mission Creek'] };
 
 function renderBeaches(beaches) {
+    // the kit's site tiles (brand.css .sites/.site-tile), the same as the Today board's: name, status in the heading face, sample date
     const grid = document.getElementById('beachGrid');
-    grid.innerHTML = '';
+    grid.className = 'sites'; grid.innerHTML = '';
     if (!beaches.length) { grid.innerHTML = '<div class="mute">Unable to fetch beach status</div>'; return; }
     const order = { cso: 0, posted: 1, safe: 2, not_sampled: 3, unknown: 4 };
     beaches.sort((a, b) => (order[a.status] || 9) - (order[b.status] || 9));
+    const WORD = { cso: 'Discharge', posted: 'Posted', safe: 'Safe', not_sampled: 'Not sampled', unknown: 'Not sampled' };
     beaches.forEach(b => {
-        const item = document.createElement('div');
-        item.className = 'beach-item';
-        const label = b.status === 'cso' ? badge('danger', 'octagon-alert', 'CSO') : b.status === 'posted' ? badge('warn', 'triangle-alert', 'Posted')
-                    : b.status === 'safe' ? badge('ok', 'circle-check', 'Safe') : badge('muted', 'circle-dashed', 'No data');
-        // the whole chip opens the sample popover (app/static/sample_popover.js); the chip itself stays plain: dot, name, sample date, status
-        if (b.source) {
-            item.classList.add('clickable');
-            item.dataset.sampleStation = b.source; item.dataset.sampleName = b.name; item.dataset.sampleFeedDate = b.sample_date_iso || '';
-            item.title = 'Latest lab results'; item.setAttribute('role', 'button'); item.tabIndex = 0;
-        }
-        const date = b.sample_date ? `<span class="beach-date">${esc(b.sample_date)}</span>` : '';
-        item.innerHTML = `<span class="beach-dot ${esc(b.status)}"></span><span>${esc(b.name)}</span>${date}<span style="margin-left:auto;">${label}</span>`;
+        const item = document.createElement(b.source ? 'button' : 'div');
+        if (b.source) { item.type = 'button'; item.dataset.sampleStation = b.source; item.dataset.sampleName = b.name; item.dataset.sampleFeedDate = b.sample_date_iso || ''; item.title = 'Latest lab results'; }   // the whole tile opens the sample popover
+        item.className = 'site-tile ' + esc(b.status);
+        item.innerHTML = `<div class="nm">${esc(b.name)}</div><div class="st">${WORD[b.status] || esc(b.status)}</div><div class="meta">${b.sample_date ? 'sampled ' + esc(b.sample_date) : 'no sample date'}</div>`;
         grid.appendChild(item);
     });
 }

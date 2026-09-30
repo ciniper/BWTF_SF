@@ -283,7 +283,8 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
             status = _station_status(st) if st is not None else "unknown"
             d = getattr(st, "sample_date", None) if st is not None else None
             sts.append({"name": _short(reg.name), "full_name": reg.name, "status": status, "status_text": status_text[status],
-                        "source": source, "lat": reg.lat, "lon": reg.lon, "sampled": d.strftime("%Y-%m-%d") if d else ""})
+                        "source": source, "lat": reg.lat, "lon": reg.lon, "sampled": d.strftime("%Y-%m-%d") if d else "",
+                        "sampled_text": f"sampled {d:%b %-d}" if d else "no sample date"})
         z_posted = [x["name"] for x in sts if x["status"] == "posted"]
         z_cso = [x["name"] for x in sts if x["status"] == "discharge"]
         z_safe = sum(1 for x in sts if x["status"] == "safe")

@@ -37,7 +37,7 @@
     <span class="layer-status" id="layer-status" role="status" aria-live="polite"></span>
     <span class="layer-note">The Main board, with layers you can switch on: why a beach is posted and what is around it. <b>Experimental</b> — the city does not post on any of these.</span>
   </div>
-  {{ board_section(board, conditions) }}
+  {{ board_section(board, conditions, sites=true) }}
   <p class="foot-note">Statuses from SFPUC's beach map, checked every minute; overflow risk from the <a href="/forecast">CSO Forecast</a>; rain from NOAA's two city gauges; outfalls from SFPUC's reports to regulators; Surfrider's results from the volunteers' lab. Updated {{ generated }}.</p>
 </div>
 {{ footer() }}

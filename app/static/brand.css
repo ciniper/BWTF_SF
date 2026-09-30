@@ -141,6 +141,18 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
 }
 
 /* ── Kit: small shared pieces ─────────────────────────────────────────────── */
+/* Site tiles — one monitoring station: name, status in the heading face, sample date. Today board (#sites) and the CSO Forecast's beach status. Equal heights: two-line name box, one line each below. */
+.sites{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));grid-auto-rows:1fr;gap:8px}
+.site-tile{border:2px solid var(--line);border-radius:var(--r);padding:10px 8px 9px;background:#fff;color:inherit;display:flex;flex-direction:column;align-items:center;text-align:center;font:inherit;cursor:pointer;min-width:0}
+.site-tile:hover{background:var(--sand2)}
+.site-tile[hidden]{display:none}
+.site-tile.safe{border-color:var(--safe)}.site-tile.posted{border-color:var(--posted)}.site-tile.discharge,.site-tile.cso{border-color:var(--discharge)}.site-tile.caution{border-color:var(--caution)}
+.site-tile .nm{font-size:13px;font-weight:700;color:var(--ink);line-height:1.25;height:2.5em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.site-tile .st{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:22px;line-height:1.05;letter-spacing:.03em;margin:4px 0 2px;color:var(--safe);white-space:nowrap}
+.site-tile.posted .st{color:var(--posted)}.site-tile.discharge .st,.site-tile.cso .st{color:var(--discharge)}.site-tile.unknown .st,.site-tile.not_sampled .st{color:var(--faint)}.site-tile.caution .st{color:var(--caution)}
+.site-tile .meta{font-size:12px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.site-tile .meta:empty{display:none}
+
 .status-dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none;vertical-align:middle}
 .status-dot.safe{background:var(--safe)}.status-dot.caution{background:var(--caution)}.status-dot.posted{background:var(--posted)}
 .status-dot.discharge{background:var(--discharge)}.status-dot.unknown{background:var(--unknown)}
