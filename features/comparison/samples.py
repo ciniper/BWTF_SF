@@ -9,8 +9,10 @@ both), each BWTF row is one volunteer collection with its time. The
     one-day payloads at the bottom feed the sample popover: the city's
     (``sample_day_payload``) and Surfrider's (``bwtf_sample_day_payload``).
 
-  * Range: any window; the default is the last year. The city's dataset
-    starts at DATASET_FLOOR (2020-07-27); BWTF's SF record starts Sep 2023.
+  * Range: any window; the default is the last year. City results run from
+    2000-01-03: SFPUC's lab export until DataSF begins (DATASET_FLOOR,
+    2020-07-27), DataSF from then on (shared/city_history.py; rows before the
+    floor carry ``history``). BWTF's SF record starts Sep 2023.
   * Source, as on Graphs: ``all`` (default) = every city station plus
     BWTF-only sites, both labs; ``both`` = only the six beaches both programs
     sample (BWTF_TO_SFPUC_NAME); ``city`` / ``bwtf`` = one lab's sites and rows.
@@ -32,6 +34,7 @@ from features.comparison.bwtf_api import BWTF_REPORT_URL, ENTERO_SUBSTANCE, SF_L
 from features.comparison.comparison import ANALYTES, BWTF_TO_SFPUC_NAME, DEFAULT_DAYS, fetch_city_records, parse_range, resolve_site  # noqa: F401
 from urllib.parse import quote, urlencode
 
+from shared import city_history
 from shared.datasf import BEACH_SAMPLES_URL, DATASET_FLOOR
 from shared.standards import ENTERO_CAUTION, STANDARDS, exceeds, parse_result, single_sample_max
 from shared.stations import STATIONS
@@ -144,7 +147,7 @@ def build_samples(city_records: list[dict], bwtf_history: list[dict], start: dat
         raw = str(r.get("data") if r.get("data") is not None else "").strip()
         city[(s["key"], r["sample_date"][:10])][a].append({"raw": raw, "value": parse_result(raw)})
     for (key, day), cells in city.items():
-        rows.append(_row(by_key[key], day, None, "SFPUC", cells))
+        rows.append(dict(_row(by_key[key], day, None, "SFPUC", cells), history=day < DATASET_FLOOR))
 
     events = defaultdict(lambda: defaultdict(list)); fields = {}
     for h in _bwtf_rows(bwtf_history):
@@ -163,7 +166,8 @@ def build_samples(city_records: list[dict], bwtf_history: list[dict], start: dat
     rows.sort(key=lambda r: r["date"], reverse=True)
     return {
         "start": start.strftime("%Y-%m-%d"), "end": end.strftime("%Y-%m-%d"), "source": source, "site": site,
-        "floor": DATASET_FLOOR, "default_days": DEFAULT_DAYS, "caution": ENTERO_CAUTION,
+        "floor": city_history.city_record_floor(), "datasf_from": DATASET_FLOOR, "history": city_history.provenance(),
+        "default_days": DEFAULT_DAYS, "caution": ENTERO_CAUTION,
         "sites": [dict({k: s[k] for k in ("key", "name", "group", "dual", "city")}, bwtf=s["bwtf_name"] is not None) for s in sites],
         "analytes": [{"code": c, "label": m["label"], "limit": m["limit"]} for c, m in ANALYTES.items()],
         "field_columns": [{"key": k, "label": l} for k, l in FIELD_COLUMNS],
@@ -190,7 +194,7 @@ def build_sample_viewer(start: str = "", end: str = "", source: str = "", site: 
     source = normalise_source(source, scope)
     history = bwtf_client.fetch_event_history(since=s, max_pages=20)   # events carry the field notes
     wanted = [x["key"] for x in viewer_sites(history) if x["city"] and source != "bwtf" and site_fits(x, source) and (not site or x["key"] == site)]
-    city_start = max(s, datetime.strptime(DATASET_FLOOR, "%Y-%m-%d"))
+    city_start = max(s, datetime.strptime(city_history.city_record_floor(), "%Y-%m-%d"))
     records = fetch_city_records(sf_gov_monitor, wanted, city_start, e) if wanted and city_start <= e else []
     return build_samples(records, history, s, e, source, site)
 
@@ -234,7 +238,8 @@ def sample_day_payload(city_records: list[dict], station: str, date: str = "") -
         "ratio_note": f"fecal over {STANDARDS['COLI_TOTAL']['ratio_threshold']:.0%} of total, so the limit drops to {STANDARDS['COLI_TOTAL']['single_sample_max_ratio']:,}",
         "caution": ENTERO_CAUTION, "units": "MPN/100mL",
         "analytes": [{"code": c, "label": m["label"]} for c, m in ANALYTES.items()],
-        "results_url": results_url(station, date) if date else None,
+        "results_url": results_url(station, date) if date and date >= DATASET_FLOOR else None,   # the export's days have no DataSF page
+        "history": bool(date) and date < DATASET_FLOOR,
         "viewer_url": f"/samples?site={quote(station, safe='')}",
         "graph_url": f"/graphs?site={quote(station, safe='')}",
     }

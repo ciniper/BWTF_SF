@@ -85,6 +85,7 @@
     <div class="seg-toggle" id="v-notes"><button class="seg-btn" data-notes="hidden">Hidden</button><button class="seg-btn active" data-notes="expand">Expandable</button><button class="seg-btn" data-notes="columns">Columns</button></div>
   </div>
   <p class="status" id="v-status">Loading samples…</p>
+  <p class="foot">City rows are SF Gov Open Data from {{ datasf_from }} and, before that, SFPUC's own lab export (Jan 2000 → Jul 2020). Enterococcus and E. coli were first measured in Jul 2002 at the bay stations and Oct 2003 on the ocean beaches (only total coliform before); until Aug 2020 the city ran E. coli where it now runs fecal coliform, so one of those two columns is empty depending on the year.</p>
   <div class="board tbl">
   <table class="viewer" id="v-table" style="display:none">
     <thead><tr id="v-head"></tr></thead>
@@ -143,7 +144,7 @@ function vRender() {
     html += "<tr" + (r.over ? ' class="v-over"' : "") + ">" +
       "<td>" + r.date + (r.time ? '<span class="v-time">' + vEsc(r.time) + "</span>" : "") + caret + "</td>" +
       '<td><b><a class="v-sitelink" data-key="' + vEsc(r.site_key) + '" data-name="' + vEsc(r.site) + '" title="Graphs for this site over this range">' + vEsc(r.site) + "</a></b>" + (r.n_samples > 1 ? '<span class="v-dup">' + r.n_samples + " samples that day</span>" : "") + "</td>" +
-      '<td><span class="src ' + (isB ? "src--bwtf" : "src--city") + '">' + (isB ? "Surfrider" : "SFPUC") + "</span></td>" +
+      '<td><span class="src ' + (isB ? "src--bwtf" : "src--city") + '"' + (r.history ? ' title="SFPUC lab export — before SF Gov Open Data began (Jul 2020)"' : "") + '>' + (isB ? "Surfrider" : "SFPUC") + "</span></td>" +
       VDATA.analytes.map(function (a) { return '<td class="num">' + vCell(c[a.code]) + "</td>"; }).join("") +
       cols.map(function (col) { return '<td class="fc">' + (f ? vEsc(f[col.key]) : "") + "</td>"; }).join("") + "</tr>";
     if (VIEW.notes === "expand" && isB) html += '<tr class="notes" id="notes-' + i + '" style="display:none"><td colspan="' + (3 + VDATA.analytes.length) + '">' + fieldBlock(f) + "</td></tr>";

@@ -34,7 +34,13 @@ external validation.
    Under the 2009 permit, SFPUC's monthly filings reported only a *count* of CSODs
    per month (cover-letter narrative; scanned PDFs). Per-event Westside tables begin
    with the Jan 2018 SMR. The underlying telemetry exists at SFPUC (their tables cite
-   TELOG/SCADA data tags) → see `records_request_draft.md`.
+   TELOG/SCADA data tags) → see `records_request_draft.md`. **Two partial substitutes
+   (2026-09-29):** the scanned 2013–2017 Oceanside cover letters state a monthly CSD
+   count ("There were four combined sewer discharges during this reporting period",
+   season-to-date, design criterion 8/yr — Feb 2017 letter) that could be transcribed by
+   hand or OCR into 60 monthly counts; and SFPUC's STARDB export shows OCEAN#20/#21/#22
+   were sampled *only after* Westside CSDs from 2004, so their sample dates are
+   approximate discharge dates 2004–2017 — `data/sfpuc_stardb_2000_2020/NOTES.md`.
 2. **Bayside per-outfall volumes before Oct 2016** — legacy reports give per-day
    discharge *hours* and counts per outfall (or outfall group), volumes only as
    basin-month estimates. Legacy CSV covers this era. SFPUC demonstrably can
@@ -126,8 +132,45 @@ CIWQS eSMR At-A-Glance party search (see gap 3 for the request sequence) and
 writes `smr_documents.json`; the data.ca.gov eSMR datastore (`smr_document_id`
 column, SQL API) remains available via `--datastore` as a cross-check.
 
+## PDF archive (2026-09-29)
+
+The attachments behind the record are kept locally under `pdf_archive/pdfs/`
+(gitignored — 487 files, 477 MB) and described by two committed manifests:
+`pdf_archive/pdf_manifest.csv` (one row per archived file: facility, month,
+CIWQS document and attachment ids, bytes, sha256, and `parsed` = the record
+cites it) and `pdf_archive/attachments_all.csv` (every attachment CIWQS lists
+for every SFPUC monthly SMR, 1,646 across 372 documents 2011 → Aug 2026,
+downloaded or not). `pdf_archive/ciwqs_documents.csv` is the party-search
+listing with due/received dates. Rebuild or extend with
+`src/collectors/csd_ciwqs/archive_pdfs.py --from-year 2013` after
+`harvest_index.py`; files already present are not re-fetched.
+
+What was archived: the summary-type attachments (`download_pdfs.py`'s rule —
+attType 2, "wet weather", "SMR/DMR") from 2013 on: monthly SMR bodies (213 files,
+365 MB — the 2013–2017 Oceanside ones are 8–11 MB scans), cover letters (146,
+50 MB), flow / WW summaries (40, 10 MB), drainage narratives (12, 23 MB), and
+a few quarterlies and lab sheets. All 74 files the events CSV cites are present
+(31 MB between them; the Dec 2016 Bayside row cites the drainage PDF it was
+transcribed from, attachment 1883351). One archived attachment is a `.doc`, not
+a PDF. Not archived: toxicity, shoreline-bacteria, DMR and PCB attachments
+(1,076 files; sizes unknown) — `--all-attachments` would take them.
+
+Completeness check (2026-09-29): every one of the 327 grid months has exactly
+one CIWQS document and none has been replaced (all 74 cited document ids are
+still the listed filing); re-parsing the 47 archived attachments the record does
+not cite found no discharge row the record lacks (38 have no CSD table — cover
+letters, and the 2021 "CSD Data" sheets are discharge-sample chemistry, not
+event tables; the 2016–17 Bayside originals were superseded by the Sep 2023
+revisions the aggregator prefers, newest attachment id winning). The one filing
+outside the grid is Oceanside **Aug 2026** (document 3124551, received
+09/24/2026 — the day of the last refresh, after it ran): table present, zero
+events. 44 documents from 2011–2012 predate the grid on purpose.
+
 ## Refresh log
 
+- **2026-09-29** — no data change. Archived the source attachments (see "PDF archive")
+  and re-checked completeness against CIWQS's full listing: Oceanside Aug 2026 (zero
+  events) is the only filing not yet in the grid; add it at the Dec 2026 refresh or now.
 - **2026-09-24** — Nov 2025 – Jul 2026, both plants, plus Bayside Aug 2026
   (received 09/23/2026, table present, zero events; Oceanside's Aug not filed
   yet) — 19 SMR documents, 42 PDFs. 97 events, no changes to earlier months.
