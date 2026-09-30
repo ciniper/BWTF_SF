@@ -340,12 +340,23 @@ def _render_page() -> str:
     # client-side via the /forecast/api/* endpoints.
     return render_template(
         "forecast/page.html",
+        served_name=_served_name(),
         min_date="2016-03-19",   # Poo Bot archive floor (discharges + samples); DataSF bacteria from 2020-07-27
         max_date=today,
         default_date=today,
         zones_json=json.dumps(_zones_for_template()),
         groups_json=json.dumps(_groups_for_template()),
     )
+
+
+def _served_name() -> str:
+    """The served model set's name from data/models/served.json (promote.py), for
+    the footer's 'How the model works' link; gb_v1 if the descriptor is missing."""
+    try:
+        with open(Path(__file__).resolve().parent / "data" / "models" / "served.json") as f:
+            return str(json.load(f).get("name") or "gb_v1")
+    except Exception:  # noqa: BLE001
+        return "gb_v1"
 
 
 def _zones_for_template() -> list:
