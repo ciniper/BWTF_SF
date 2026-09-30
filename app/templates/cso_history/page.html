@@ -126,6 +126,7 @@
   var fmtOpts = {timeZone:'America/Los_Angeles', month:'short', day:'numeric', hour:'numeric', minute:'2-digit'};
   function fmt(iso){ return iso ? new Date(iso).toLocaleString('en-US', fmtOpts) : '—'; }
   function fmtDay(ms){ return new Date(ms).toLocaleDateString('en-US', {timeZone:'America/Los_Angeles', month:'short', day:'numeric'}); }
+  function esc(s){ var d = document.createElement('div'); d.textContent = String(s == null ? '' : s); return d.innerHTML; }   // hand-entered notes go through innerHTML
   function dur(a, b){
     var m = Math.round((b - a)/60000);
     if (m < 60) return m + ' min';
@@ -257,7 +258,7 @@
       : (d.elevated ? '<b style="color:#f3b7a5">over standard</b>' : 'clean') + (d.n > 1 ? ' (' + d.n + ' results)' : '');
     var map = !d.map_seen ? 'On SFPUC\'s map: not observed'
       : d.map_censored ? 'On SFPUC\'s map: by ' + fmtDay(d.map_seen) + ' (already there when we began reading the feed)'
-      : 'On SFPUC\'s map: ' + (d.map_approx ? fmtDay(d.map_seen) + ' (day known, minute not recorded)' : fmt(d.map_seen)) + ' — ' + days(d.map_lag_days) + ' after collection';
+      : 'On SFPUC\'s map: ' + (d.map_note ? fmt(d.map_seen) + ' (' + esc(d.map_note) + ')' : d.map_approx ? fmtDay(d.map_seen) + ' (day known, minute not recorded)' : fmt(d.map_seen)) + ' — ' + days(d.map_lag_days) + ' after collection';
     var pub = d.first_seen
       ? 'Numbers online: ' + fmt(d.first_seen) + ' — ' + days(d.lag_days) + ' after collection' +
         (d.map_lag_days != null ? ' (' + (d.lag_days - d.map_lag_days) + ' after the map)' : '')
@@ -311,7 +312,7 @@
       var dayStr = function(n){ return n + (n === 1 ? ' day' : ' days'); };
       html += '<tr><td>' + r[0] + '</td><td>' + d.date + '</td><td>' +
         (d.pending ? '<span class="muted">not yet published</span>' : (d.elevated ? 'over standard' : 'clean') + (d.n > 1 ? ' (' + d.n + ')' : '')) + '</td><td>' +
-        (d.map_seen ? (d.map_censored ? 'by ' + fmtDay(d.map_seen) : d.map_approx ? fmtDay(d.map_seen) : fmt(d.map_seen)) : '<span class="muted">—</span>') + '</td><td>' +
+        (d.map_seen ? (d.map_censored ? 'by ' + fmtDay(d.map_seen) : d.map_note ? fmt(d.map_seen) + ' <span class="muted">(not confirmed)</span>' : d.map_approx ? fmtDay(d.map_seen) : fmt(d.map_seen)) : '<span class="muted">—</span>') + '</td><td>' +
         (d.first_seen ? fmt(d.first_seen) : '<span class="muted">' + (d.pending ? 'not yet' : 'not observed') + '</span>') + '</td><td>' +
         (d.lag_days != null ? dayStr(d.lag_days) : d.pending ? dayStr(d.pending_days) + ' so far' : '—') + '</td></tr>'; });
     else html += '<tr><td colspan="6" class="muted">No samples in the record window.</td></tr>';

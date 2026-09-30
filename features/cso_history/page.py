@@ -123,7 +123,7 @@ def parse_feed_date(text) -> str | None:
 def _fetch_feed_sample_rows(since_day: str) -> list[dict]:
     """feed_sample_dates (migration 018): the tick that first showed each sample date on SFPUC's map."""
     return sb.select("feed_sample_dates", {
-        "select": "station_id,sample_date,first_seen_at,approx,status_first,posting_color_first",
+        "select": "station_id,sample_date,first_seen_at,approx,status_first,posting_color_first,note",   # note: 019
         "sample_date": f"gte.{since_day}",
         "order": "sample_date.asc",
         "limit": str(_ROW_LIMIT),
@@ -156,10 +156,12 @@ def derive_feed_sample_rows(day_rows: list[dict]) -> list[dict]:
 
 
 def build_feed_dates(rows: list[dict]) -> dict[tuple[str, str], dict]:
-    """{(SFPUC station id, ISO sample date): {seen, seen_day, approx, censored, status}}.
+    """{(SFPUC station id, ISO sample date): {seen, seen_day, approx, censored, status, note}}.
     ``seen`` = when SFPUC's map first showed that sample date for the station:
     the tick for rows the watcher recorded (018), noon Pacific of the day for
-    rows derived from the station-day table (``approx``). ``censored``: the map
+    rows derived from the station-day table (``approx``) — unless the row
+    carries a ``note`` (019: a hand-entered observation), in which case the
+    row's time stands and the note travels with it. ``censored``: the map
     already showed the date on the first day we recorded the feed, so all we
     know is "by then"."""
     out: dict[tuple[str, str], dict] = {}
@@ -170,20 +172,21 @@ def build_feed_dates(rows: list[dict]) -> dict[tuple[str, str], dict]:
         if sid not in _NAME_OF_SFPUC or len(day) != 10 or fs is None:
             continue
         approx = bool(r.get("approx"))
+        note = (r.get("note") or "").strip() or None
         seen_day = fs.astimezone(_PACIFIC).date()
-        censored = approx and seen_day.isoformat() <= _FEED_HISTORY_SINCE
-        seen = datetime.combine(seen_day, time(12, 0), tzinfo=_PACIFIC) if approx else fs
+        censored = approx and not note and seen_day.isoformat() <= _FEED_HISTORY_SINCE
+        seen = datetime.combine(seen_day, time(12, 0), tzinfo=_PACIFIC) if (approx and not note) else fs
         out[(sid, day)] = {"seen": _iso(seen), "seen_day": seen_day.isoformat(), "approx": approx,
-                           "censored": censored, "status": r.get("status_first") or "ok"}
+                           "censored": censored, "status": r.get("status_first") or "ok", "note": note}
     return out
 
 
 def _map_fields(f: dict | None, day: str) -> dict:
     """The map-feed part of a sample-day entry (see build_sample_days)."""
     if not f:
-        return {"map_seen": None, "map_lag_days": None, "map_approx": False, "map_censored": False}
+        return {"map_seen": None, "map_lag_days": None, "map_approx": False, "map_censored": False, "map_note": None}
     lag = None if f["censored"] else (date.fromisoformat(f["seen_day"]) - date.fromisoformat(day)).days
-    return {"map_seen": f["seen"], "map_lag_days": lag, "map_approx": f["approx"], "map_censored": f["censored"]}
+    return {"map_seen": f["seen"], "map_lag_days": lag, "map_approx": f["approx"], "map_censored": f["censored"], "map_note": f.get("note")}
 
 
 def build_sample_days(rows: list[dict], feed: dict | None = None, now: datetime | None = None) -> dict[str, list[dict]]:
