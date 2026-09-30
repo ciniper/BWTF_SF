@@ -21,27 +21,30 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 .mode-btn:hover { border-color: var(--sky); }
 .date-picker { font-family: inherit; background: #fff; border: 2px solid var(--line); border-radius: 10px; padding: 7px 10px; color: var(--ink); font-size: 13px; font-weight: 600; cursor: pointer; }
 .date-picker:focus { border-color: #0072BC; outline: none; }
-.historical-label { color: #b97e00; font-size: 0.85em; font-weight: 600; }
+.historical-label { color: var(--caution); font-size: 0.85em; font-weight: 600; }
 
-.risk-banner { text-align: center; padding: 16px 22px; border-radius: 14px; margin-bottom: 20px; font-size: 1.2em; font-weight: 600; }
-.risk-none { background: #237059; color: #fff; }
-.risk-low { background: #b97e00; color: #fff; }
-.risk-moderate { background: #d4763a; color: #fff; }
-.risk-high { background: #b5310a; color: #fff; }
-.risk-extreme { background: #8f2508; color: #fff; animation: pulse 2s infinite; }
-@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.7;} }
+.risk-banner { background: #fff; border: 2px solid var(--line); border-radius: var(--r-lg); padding: 16px 22px 18px; margin-bottom: 16px; color: var(--ink); }   /* the board's card: border by grade, headline in Bebas, facts underneath */
+.risk-banner .eyebrow { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin: 0 0 4px; }
+.risk-banner h2 { margin: 0; font-family: 'Bebas Neue', sans-serif; font-weight: 400; font-size: 32px; line-height: 1.05; letter-spacing: .01em; color: var(--ink); }
+.risk-banner h2 em { font-style: normal; }
+.risk-banner .sub { margin: 6px 0 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+.risk-banner .sub:empty { display: none; }
+.risk-none { border-color: var(--safe); } .risk-none h2 em { color: var(--safe); }
+.risk-low { border-color: var(--caution); } .risk-low h2 em { color: var(--caution); }
+.risk-moderate { border-color: var(--posted); } .risk-moderate h2 em { color: var(--posted); }
+.risk-high { border-color: var(--discharge); } .risk-high h2 em { color: var(--discharge); }
+.risk-extreme { border-color: #8f2508; } .risk-extreme h2 em { color: #8f2508; }
 
 /* Forecast timeline */
 .timeline { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 10px; margin-bottom: 20px; }  /* 7 live days or 8 hindcast days on one row */
 @media (max-width: 800px) { .timeline { grid-template-columns: repeat(4, 1fr); } }
 @media (max-width: 600px) { .timeline { display: flex; overflow-x: auto; gap: 10px; padding-bottom: 6px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; } .day-card { flex: 0 0 124px; scroll-snap-align: start; } }   /* phones: the week is a strip you swipe, not seven columns squeezed past the screen edge */
-.day-card { background: #ffffff; border-radius: 16px; padding: 14px; text-align: center; border: 2px solid transparent; transition: border-color 0.3s, transform 0.2s; cursor: pointer; }
-.day-card.today { border-color: #0072BC; }
-.day-card.selected { border-color: #b97e00; background: #fff7e6; }
-.day-card:hover { transform: translateY(-2px); border-color: #8a93a3; }
-.day-card.selected:hover { border-color: #b97e00; }
+.day-card { background: #fff; border-radius: var(--r); padding: 14px; text-align: center; border: 2px solid var(--line); cursor: pointer; }   /* the Main board's zone tile: border by grade */
+.day-card.g-none { border-color: var(--safe); } .day-card.g-low { border-color: var(--caution); } .day-card.g-moderate { border-color: var(--posted); } .day-card.g-high { border-color: var(--discharge); } .day-card.g-extreme { border-color: #8f2508; }
+.day-card.selected { outline: 3px solid var(--sky); outline-offset: 2px; }
+.day-card:hover { background: var(--sand2); }
 .day-label { font-size: 0.82em; color: #54576F; margin-bottom: 4px; }
-.day-label.today-label { color: #0072BC; font-weight: 700; }
+.day-label.today-label { color: var(--brand); font-weight: 700; }
 .day-rain { font-size: 0.85em; color: #8a93a3; margin-bottom: 8px; }
 .day-rain .amount { color: #0072BC; font-weight: 600; }
 .day-rain .ic { color: #0072BC; }
@@ -54,7 +57,7 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 /* Basin detail */
 .basins { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
 @media (max-width: 700px) { .basins { grid-template-columns: 1fr; } }
-.basin-card { background: #ffffff; border-radius: 16px; padding: 16px; border-left: 4px solid #d9e4e8; }
+.basin-card { background: #fff; border-radius: var(--r); padding: 16px; border: 2px solid var(--line); }
 .basin-name { font-size: 0.9em; color: #54576F; margin-bottom: 6px; }
 .basin-prob { font-size: 1.8em; font-weight: 700; }
 .basin-bar { height: 6px; border-radius: 3px; background: #d9e4e8; margin-top: 8px; overflow: hidden; }
@@ -62,7 +65,7 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 .basin-detail { font-size: 0.82em; color: #8a93a3; margin-top: 8px; }
 
 /* Beach status */
-.beach-section { background: #ffffff; border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+.beach-section { background: #fff; border: 1px solid var(--line); border-radius: var(--r); padding: 20px; margin-bottom: 20px; }
 .beach-section h2 { color: #26272a; font-size: 1.05em; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
 .beach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
 .beach-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px; font-size: 0.85em; background: #f3f6f9; }
@@ -76,7 +79,7 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 .beach-dot.not_sampled { background: #8a93a3; }
 
 /* Ground truth overlay (historical mode) */
-.ground-truth { background: #ffffff; border-radius: 16px; padding: 20px; margin-bottom: 20px; border: 2px solid #d9e4e8; }
+.ground-truth { background: #fff; border-radius: var(--r); padding: 20px; margin-bottom: 20px; border: 2px solid var(--line); }
 .ground-truth.has-cso { border-color: #b5310a; }
 .ground-truth h2 { color: #26272a; font-size: 1.05em; margin-bottom: 4px; display: flex; align-items: center; gap: 10px; }
 .ground-truth .gt-subtitle { color: #54576F; font-size: 0.85em; margin-bottom: 14px; }
@@ -110,12 +113,12 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 .tbl .sample-link { color: inherit; text-decoration: none; border-bottom: 1px dotted #0072BC; }
 .tbl .sample-link:hover { color: #0072BC; }
 
-.refresh-info { font-size: 0.82em; color: #8a93a3; text-align: center; margin-bottom: 15px; }
+.refresh-info { font-size: 13px; color: var(--faint); margin-bottom: 14px; }
 .mode-btn .ic, .risk-banner .ic { width: 1.15em; height: 1.15em; }
 .basin-name { display: flex; align-items: center; gap: 6px; }
 .basin-name .ic { color: #0072BC; font-size: 1.15em; }
 .day-rain, .day-source { display: flex; justify-content: center; align-items: center; gap: 4px; }
-.risk-banner { display: flex; justify-content: center; align-items: center; gap: 10px; }
+.risk-banner .ic { vertical-align: -2px; }
 .historical-label { display: inline-flex; align-items: center; gap: 5px; }
 </style>
 <style></style>
@@ -126,7 +129,7 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 .zone-stations { font-size: 0.82em; color: #8a93a3; margin-top: 6px; line-height: 1.45; }
 .card-badges { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; margin-top: 8px; min-height: 22px; }
 .card-badges .badge { font-size: 0.82em; }
-.day-card.bad { border-color: #b5310a; } .day-card.clear { border-color: #237059; } .day-card.unknown { border-color: transparent; }
+.day-card.bad { border-color: var(--discharge); } .day-card.clear { border-color: var(--safe); } .day-card.unknown { border-color: var(--line); }
 .status-line { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .tbl { width: 100%; border-collapse: collapse; font-size: 0.85em; }
 .tbl th { text-align: left; font-size: 0.75em; letter-spacing: .08em; text-transform: uppercase; color: #54576F; padding: 6px 8px; border-bottom: 1px solid #d9e4e8; }
@@ -248,7 +251,7 @@ function riskInfo(prob) {
     if (prob >= 0.75) return { label: 'EXTREME', color: '#8f2508', bg: '#f8dcd6', cls: 'extreme' };
     if (prob >= 0.50) return { label: 'HIGH', color: '#b5310a', bg: '#f8dcd6', cls: 'high' };
     if (prob >= 0.25) return { label: 'MODERATE', color: '#d4763a', bg: '#fbe9d9', cls: 'moderate' };
-    if (prob >= 0.10) return { label: 'LOW', color: '#b97e00', bg: '#fbf0d6', cls: 'low' };
+    if (prob >= 0.10) return { label: 'LOW', color: '#c99a12', bg: '#fbf0d6', cls: 'low' };
     return { label: 'MINIMAL', color: '#237059', bg: '#e0f0ea', cls: 'none' };
 }
 
@@ -352,7 +355,7 @@ async function loadData() {
         }
     } catch (e) {
         banner.className = 'risk-banner risk-low';
-        banner.innerHTML = ic('triangle-alert') + ' ' + esc(e.message || e);
+        banner.className = 'risk-banner'; banner.innerHTML = '<div class="eyebrow">CSO forecast</div><h2>Forecast unavailable.</h2><p class="sub">' + esc(e.message || e) + '</p>';
         document.getElementById('histLabel').innerHTML = ic('circle-x') + ' ' + esc(e.message || e);
     }
 }
@@ -363,16 +366,37 @@ function showPanels({ check = false, actual = false, beaches = false }) {
     document.getElementById('beachSection').style.display = beaches ? 'block' : 'none';
 }
 
-function setBanner(maxRisk, prefix) {
+function levelWord(r) { return r.label.charAt(0) + r.label.slice(1).toLowerCase(); }   // MINIMAL → Minimal
+// The banner is the board's card: an eyebrow (mode · day), a headline that states the level and the day,
+// and a facts line — no advice (Chase, 2026-09-29: "the subtext stays low, no advice about what to do").
+function setBanner(maxRisk, { when = 'today', eyebrow = '', sub = '' } = {}) {
     const banner = document.getElementById('riskBanner');
+    if (maxRisk == null) { banner.className = 'risk-banner'; banner.innerHTML = (eyebrow ? '<div class="eyebrow">' + eyebrow + '</div>' : '') + '<h2>' + (sub || 'Forecast is being computed.') + '</h2>'; return; }
     const r = riskInfo(maxRisk);
     banner.className = 'risk-banner risk-' + r.cls;
-    // the alarm fires at the served set's operating line (ALARM_LINE), the labels stay honest probability bands
-    const msg = maxRisk >= ALARM_LINE ? ic('octagon-alert') + ' ' + r.label + ' SEWAGE RISK — avoid water contact at affected beaches'
-              : maxRisk >= Math.min(0.25, ALARM_LINE) ? ic('triangle-alert') + ' ' + r.label + ' SEWAGE RISK — monitor conditions closely'
-              : maxRisk >= 0.10 ? ic('circle-alert') + ' ' + r.label + ' SEWAGE RISK — some rain, worth watching'
-              : ic('circle-check') + ' MINIMAL SEWAGE RISK — conditions favorable for beach recreation';
-    banner.innerHTML = (prefix || '') + msg;
+    banner.innerHTML = (eyebrow ? '<div class="eyebrow">' + eyebrow + '</div>' : '') +
+        '<h2><em>' + levelWord(r) + '</em> sewer-overflow risk ' + when + '.</h2><p class="sub" id="bannerSub">' + sub + '</p>';
+}
+// "today" / "tomorrow" / "on Thu Oct 01"
+function whenWord(day) {
+    if (current.mode === 'live') return day.is_today ? 'today' : day.day_offset === 1 ? 'tomorrow' : 'on ' + esc(day.label);
+    return 'on ' + esc(fmtDate(day.date));
+}
+// Facts for a prediction day: the highest zone and its number (or "in every zone"), the day's rain, and what the days ahead do.
+function liveFacts(day, m) {
+    const zr = zonesOf(day), vals = ZONE_ORDER.map(zk => zr[zk] || 0);
+    const worstKey = ZONE_ORDER[vals.indexOf(Math.max(...vals))], z = ZONES.find(z => z.key === worstKey);
+    const spread = Math.max(...vals) - Math.min(...vals);
+    const facts = [spread < 0.02 ? pct(m) + '% in every zone' : pct(m) + '% at ' + esc(z ? z.label : worstKey) + ', the highest'];
+    if (day.rain_inches != null) facts.push(fmtIn(day.rain_inches) + ' of rain ' + (day.is_forecast ? 'forecast' : 'so far') + (day.rain_3d_cum != null ? ', ' + fmtIn(day.rain_3d_cum) + ' over three days' : ''));
+    if (day.is_today && current.days) {
+        const future = current.days.filter(d => d.is_forecast);
+        if (future.length) {
+            const peak = future.reduce((a, d) => worstZone(d) > worstZone(a) ? d : a, future[0]), pk = worstZone(peak), last = future[future.length - 1];
+            facts.push(pk > m + 0.10 && pk >= 0.10 ? 'rising to ' + pct(pk) + '% ' + esc(peak.label) : 'staying ' + (Math.max(m, pk) < 0.10 ? 'under 10%' : 'near ' + pct(Math.max(m, pk)) + '%') + ' through ' + esc(last.label));
+        }
+    }
+    return facts.join(' · ');
 }
 
 // ─── LIVE ───────────────────────────────────────────────────────────────────
@@ -380,7 +404,7 @@ function renderLive(data) {
     const preds = data.predictions || {};
     // forecast only: a cached snapshot from before 2026-09-06 may still carry yesterday
     const days = Object.values(preds).filter(d => d.day_offset >= 0).sort((a, b) => a.day_offset - b.day_offset);
-    if (!days.length) { setBanner(0, ic('hourglass') + ' Forecast is being computed — '); return; }
+    if (!days.length) { setBanner(null, { eyebrow: 'CSO forecast', sub: 'Forecast is being computed.' }); return; }
     const today = days.find(d => d.is_today) || days[0];
     lastLiveData = data;
     if (data.model) {   // the served set's descriptor (model stamp): name for the copy, operating line for the alarm and the Model check default
@@ -399,7 +423,7 @@ function renderLive(data) {
     days.forEach(day => {
         const m = worstZone(day), r = riskInfo(m);
         const card = document.createElement('div');
-        card.className = 'day-card' + (day.is_today ? ' today' : '');
+        card.className = 'day-card g-' + r.cls + (day.is_today ? ' today' : '');
         card.dataset.date = day.date;
         card.innerHTML = `
             <div class="day-label ${day.is_today ? 'today-label' : ''}">${esc(day.label)}</div>
@@ -442,35 +466,25 @@ function renderBanner(day) {
         const bad = Object.entries(zones).filter(([, z]) => z.bad).map(([zk]) => (ZONES.find(z => z.key === zk) || {}).label);
         const allKnown = Object.values(zones).length && Object.values(zones).every(z => z.bad != null);
         banner.className = 'risk-banner ' + (bad.length ? 'risk-high' : allKnown ? 'risk-none' : 'risk-low');
-        banner.innerHTML = ic('calendar') + ' ' + dayTitle(day) + ': ' + (bad.length
-            ? ic('octagon-alert') + ' ' + bad.map(esc).join(', ') + (bad.length > 1 ? ' had bad days' : ' had a bad day')
-            : allKnown ? ic('circle-check') + ' no discharges, no elevated samples at any zone'
-            : ic('circle-dashed') + ' partial records — see zones below');
+        banner.innerHTML = '<div class="eyebrow">What happened · ' + dayTitle(day) + '</div><h2>' + (bad.length
+            ? '<em>' + bad.map(esc).join(', ') + '</em> had a bad day.'
+            : allKnown ? '<em>No discharges</em>, no elevated samples, at any zone.'
+            : 'Partial records for this day.') + '</h2><p class="sub">' + (bad.length ? 'A discharge, a posting or an elevated sample in the zone; the zones below say which.' : allKnown ? '' : 'See the zones below for what is known.') + '</p>';
         return;
     }
     const m = worstZone(day);
     if (current.mode === 'check') {
-        setBanner(m, ic('calendar') + ' ' + dayTitle(day) + ' hindcast: ');
+        let sub = '';
         const ad = (current.actual.days || {})[day.date];
         if (ad) {
             const counts = {};
             ZONE_ORDER.forEach(zk => { const v = verdict(zonesOf(day)[zk] || 0, ad.zones[zk]).label; counts[v] = (counts[v] || 0) + 1; });
-            const parts = ['hit', 'miss', 'false alarm', 'quiet, correct', 'no ground truth'].filter(k => counts[k]).map(k => counts[k] + ' ' + k);
-            banner.innerHTML += '<br><span style="font-size:0.8em;opacity:0.9;">vs what happened: ' + parts.join(' · ') + '</span>';
+            sub = 'vs what happened: ' + ['hit', 'miss', 'false alarm', 'quiet, correct', 'no ground truth'].filter(k => counts[k]).map(k => counts[k] + ' ' + k).join(' · ');
         }
+        setBanner(m, { when: whenWord(day), eyebrow: 'Model check · hindcast · ' + dayTitle(day), sub });
         return;
     }
-    setBanner(m, dayTitle(day) + ': ');
-    if (day.is_today) {
-        const future = current.days.filter(d => d.is_forecast);
-        if (future.length) {
-            const futureMax = Math.max(...future.map(worstZone));
-            if (futureMax > m + 0.15 && futureMax >= 0.25) {
-                banner.innerHTML += '<br><span style="font-size: 0.82em;opacity:0.9;">' + ic('trending-up') +
-                    ' Higher risk coming: ' + riskInfo(futureMax).label + ' (' + pct(futureMax) + '%) in the forecast</span>';
-            }
-        }
-    }
+    setBanner(m, { when: whenWord(day), eyebrow: 'CSO forecast · ' + dayTitle(day), sub: liveFacts(day, m) });
 }
 
 // Zone (or basin) cards for one prediction day; `actual` (model check) adds
@@ -485,7 +499,7 @@ function renderPredictionCards(day, actual) {
             const z = ZONES.find(z => z.key === zk); if (!z) continue;
             const p = zr[zk] || 0, r = riskInfo(p);
             const card = document.createElement('div');
-            card.className = 'basin-card'; card.style.borderLeftColor = r.color;
+            card.className = 'basin-card'; card.style.borderColor = r.color;
             card.innerHTML = `
                 <div class="basin-name">${ic(ZONE_ICON[zk])} ${esc(z.label)}</div>
                 <div class="basin-prob" style="color:${r.color}">${pct(p)}% <span style="font-size:.45em;font-weight:600;letter-spacing:.05em">${r.label}</span></div>
@@ -507,7 +521,7 @@ function renderPredictionCards(day, actual) {
             const s1 = (live.stage1 || {})[key];
             const observed = (day.observed_cso || []).includes(key) && !s1;   // the rule badge says it when the rules ran
             const card = document.createElement('div');
-            card.className = 'basin-card'; card.style.borderLeftColor = r.color;
+            card.className = 'basin-card'; card.style.borderColor = r.color;
             card.innerHTML = `
                 <div class="basin-name">${ic(meta.icon)} ${esc(meta.name)}</div>
                 <div class="basin-prob" style="color:${r.color}">${pct(p)}%</div>
@@ -605,7 +619,7 @@ function renderActualDetail(day) {
         const st = zoneActualStatus(za);
         const color = st.cls === 'bad' ? '#b5310a' : st.cls === 'clear' ? '#237059' : '#d9e4e8';
         const card = document.createElement('div');
-        card.className = 'basin-card'; card.style.borderLeftColor = color;
+        card.className = 'basin-card'; card.style.borderColor = color;
         const lines = [];
         if (za && za.discharge_stations.length) lines.push(ic('octagon-alert') + ' Discharge would post: ' + za.discharge_stations.map(esc).join(', '));
         if (za && za.posted_stations.length) lines.push(ic('triangle-alert') + ' Posted by SFPUC: ' + za.posted_stations.map(esc).join(', '));
@@ -665,7 +679,7 @@ function renderCheck(h, a, sc, target) {
     const days = Object.values(preds).sort((x, y) => x.day_offset - y.day_offset);
     current = { mode: 'check', days, byDate: preds, actual: a, scorecard: sc, target };
     const tday = preds[target] || days[0];
-    if (!tday) { setBanner(0, ic('calendar') + ' ' + esc(target) + ': no hindcast — '); return; }
+    if (!tday) { setBanner(null, { eyebrow: 'Model check · ' + esc(target), sub: 'No hindcast for this day.' }); return; }
     document.getElementById('refreshInfo').textContent = 'Hindcast = today\'s models scored on the rain that actually fell. Verdicts use the ' + pct(RISK_THRESHOLD) + '% (' + riskInfo(RISK_THRESHOLD).label + ') line.';
     showPanels({ check: true });
 
@@ -677,7 +691,7 @@ function renderCheck(h, a, sc, target) {
         const verdicts = ad ? ZONE_ORDER.map(zk => verdict(zonesOf(day)[zk] || 0, ad.zones[zk])) : [];
         const miss = verdicts.filter(v => v.label === 'miss').length, fa = verdicts.filter(v => v.label === 'false alarm').length, hit = verdicts.filter(v => v.label === 'hit').length;
         const card = document.createElement('div');
-        card.className = 'day-card' + (day.date === target ? ' today' : '');
+        card.className = 'day-card g-' + r.cls + (day.date === target ? ' today' : '');
         card.dataset.date = day.date;
         card.innerHTML = `
             <div class="day-label ${day.date === target ? 'today-label' : ''}">${esc(day.label)}</div>
