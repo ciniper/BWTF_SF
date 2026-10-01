@@ -1,4 +1,4 @@
-"""The Today tab (/today): the Main page's board with an experimental Surfrider layer
+"""The Today page (the home page, at / and /today): the board with its Layers, a Surfrider layer
 (features/today/page.py). Offline: stubbed clients."""
 import pathlib
 import sys
@@ -59,12 +59,13 @@ def test_today_page_is_the_board_plus_the_experimental_row_and_the_api_route_exi
     assert ' hidden>' in h.split('id="zone-sites"')[1][:200] and ".site-chips[hidden]{display:none}" in (ROOT / "app/static/brand.css").read_text()   # chips wait for a zone tap — and the attribute must win over the strip's display:flex
     assert 'id="tg-city" checked' in h and 'id="tg-bwtf">' in h and 'data-layer="bwtf"' not in h and h.index('id="tg-bwtf"') < h.index('data-layer="rain"')   # two source switches: city on, Surfrider off (Chase, 2026-09-30)
     assert 'if (!q.has("layers")) want.add("bwtf")' not in (ROOT / "app/templates/_today_board.html").read_text()
-    assert 'class="topbar"' in h and 'href="/today" class="on" aria-current="page">Today' in h and 'class="hubs"' not in h    # the board, not the hubs
-    landing = c.get("/").data.decode() if False else None  # noqa: F841
+    assert 'class="topbar"' in h and 'href="/" class="on" aria-current="page">Today' in h                                       # /today is the home page: its tab, named /, lights
+    assert 'class="hubs"' in h and 'class="hood"' in h and h.index('id="zone-sites"') < h.index('class="hubs"')                   # the Main page's directory, below the board (Chase, 2026-09-30)
+    assert ".hub .cta{" in h and "\n  .cta{" not in h                                                                            # the card's button style must not reach the frame's Get beach alerts
     with app.test_client() as c:
-        m = c.get("/").data.decode()
-    assert 'id="layers"' not in m and 'id="zone-sites"' not in m and 'id="today-map"' in m and '<a href="/today"' in m                  # Main keeps the plain board                                       # Main keeps the plain board and links to Today
-    assert "board_section" in (ROOT / "app/templates/landing.html").read_text() and "board_section" in (ROOT / "app/templates/today/page.html").read_text()   # one implementation
+        root = c.get("/")
+        assert root.status_code == 200 and "Location" not in root.headers and 'id="layers"' in root.data.decode()             # the root serves Today itself, no redirect (2026-10-01)
+    assert "board_section" in (ROOT / "app/templates/today/page.html").read_text()
 
 
 def test_rain_layer_takes_the_three_most_recent_reported_totals_per_gauge_and_each_zone_reads_its_gauge():

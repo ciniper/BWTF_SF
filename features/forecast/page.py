@@ -318,7 +318,7 @@ def _unavailable_html() -> str:
   h1{{color:#38bdf8;font-size:1.5em;margin:0 0 8px}}
 </style></head>
 <body><div class="wrap">
-  <a href="/">← Back to dashboard</a>
+  <a href="/">← Back to Today</a>
   <h1>CSO Forecast — temporarily unavailable</h1>
   <p>The forecast engine needs the machine-learning dependencies, which don't appear to be installed in this environment.</p>
   <div class="card">

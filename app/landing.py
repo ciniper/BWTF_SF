@@ -1,8 +1,12 @@
-"""Landing page — current conditions + overall CSO status + links to the feature pages.
+"""The Today board's builder and the site's page directory.
 
-Reuses the shared SFPUC client (status summary) and the optional weather/tide
-context. Everything is wrapped defensively so a flaky upstream never blanks the
-hub page. The markup lives in ``app/templates/landing.html`` (Jinja2).
+``today_board`` / ``board_context`` build the board the home page (/, also /today) opens on;
+``HUBS`` is the one list of pages, behind both the shared two-tier tabs (``nav_model``)
+and the hub cards under Today's board (``hubs_with_facts`` with live facts from
+``_live_facts``). The module name is historical: it rendered the Main page at ``/``,
+deleted 2026-09-30 (Chase: "wholesale delete the main page"); Today has served ``/`` since
+2026-10-01 and keeps answering at /today too (``PAGE_ALIASES``).
+Everything is wrapped defensively so a flaky upstream never blanks the board.
 """
 from datetime import datetime
 
@@ -12,7 +16,6 @@ from flask import render_template
 from shared.zones import ZONES
 from shared.clock import now_pacific
 
-BWTF_LOGO_URL = "https://bwtf.surfrider.org/images/BWTF-Logo_White.png"
 SURFRIDER_LOGO_URL = "https://f.hubspotusercontent20.net/hubfs/20811975/SF-Horizontal-Logo_RGB_Black_crop_small.png"
 
 # The nine feature pages, grouped into three hubs by the question a visitor is
@@ -27,9 +30,9 @@ HUBS = [
         "primary": ("/signup", "Get beach alerts",
                     "Pick your beach areas and get an email when the city posts one for bacteria or a sewage discharge. No digest, no marketing."),
         "rows": [
-            ("/today", "Today",
-             "The Main page's board with room to experiment: the city map with Surfrider's latest results as a toggle.",
-             "the board · Surfrider on the map"),
+            ("/", "Today",
+             "Every beach's status on the city map, by zone, with layers for rain, outfalls, overflow risk, Surfrider's results and a replay of past days.",
+             "the board · layers"),
             ("/forecast", "CSO Forecast",
              "Machine-learning forecast of combined-sewer-overflow risk from rainfall — a warning before discharges happen.",
              "risk from rain · next 3 days"),
@@ -77,7 +80,7 @@ HUBS = [
 
 def nav_model() -> list[dict]:
     """The three hubs for the shared two-tier tab bar (app/templates/_frame.html):
-    row one is Main + the hubs, row two the active hub's pages as tabs (Chase,
+    row one is the hubs (the logo goes home), row two the active hub's pages as tabs (Chase,
     2026-09-29: "almost like they are within the same main page"). Each hub opens
     on its first page; a row's subpage (Source Comparison) gets its own tab; the
     Today hub's signup CTA closes its row. ``paths`` light the hub. Set as the
@@ -102,6 +105,18 @@ UNDER_THE_HOOD = [
     ("/records", "How we get the records"),
     ("/forecast#check", "Model check"),
 ]   # the model reports stay reachable from Model check; Chase dropped them from the strip (2026-09-29)
+
+# The home page answers at two addresses: "/" is its name (tabs, logo, links, the canonical tag),
+# "/today" serves the same page for every alert email and text since migration 021 links there.
+# Never make one redirect to the other: whichever side redirects pays a round trip on every visit.
+HOME_URL = "https://bwtf-sf.vercel.app/"
+PAGE_ALIASES = {"/today": "/", "/index.html": "/"}
+
+
+def canonical_path(path: str) -> str:
+    """The name a request's page goes by in the tabs: /today and /index.html are the home page."""
+    return PAGE_ALIASES.get(path, path)
+
 
 # Pages behind the coordinators' passphrase: a lock icon in the tabs and the hub rows, and last in their row.
 GATED = {"/alerts"}
@@ -228,15 +243,16 @@ def _live_facts(budget: float = FACTS_BUDGET_SECONDS, sources: dict | None = Non
     return out
 
 
-def hubs_with_facts(facts: dict | None) -> list[dict]:
-    """HUBS with each row as a dict, the live fact substituted where one came back."""
+def hubs_with_facts(facts: dict | None, skip: tuple = ()) -> list[dict]:
+    """HUBS with each row as a dict, the live fact substituted where one came back. ``skip``
+    leaves out rows by href — the page the cards sit on, so it never links to itself."""
     facts = facts or {}
     rendered = []
     for h in HUBS:
         rows = [{"href": r[0], "title": r[1], "blurb": r[2], "gated": r[0] in GATED,
                  "fact": facts.get(r[0], r[3]), "live": r[0] in facts,
                  "sub": r[4] if len(r) > 4 else None}   # optional (href, label): a subpage under this row
-                for r in h["rows"]]
+                for r in h["rows"] if r[0] not in skip]
         rendered.append({**h, "rows": rows})
     return rendered
 
@@ -263,7 +279,7 @@ def _join(names: list[str]) -> str:
 
 
 def today_board(stations: list, risks: dict | None = None, samples_fact: str = "", now: datetime | None = None) -> dict:
-    """Pure: the landing page's first screen. ``stations`` are SFPUC station
+    """Pure: the Today board, the home page's first screen. ``stations`` are SFPUC station
     objects (station_id = SFPUC id, station_name, status, has_cso, sample_date);
     ``risks`` is _forecast_risks(); ``samples_fact`` the samples row's live fact.
     Returns the headline (plain + HTML), the lead sentence, a tone, and one tile
@@ -408,8 +424,8 @@ def _conditions_lines(env_context) -> list[str]:
 
 
 def board_context(sfpuc_api, env_context=None, live_facts: bool = True) -> dict:
-    """Everything the Today board needs — shared by the Main page and /today:
-    the board, the conditions chips, the live facts, a timestamp."""
+    """Everything the Today page needs: the board, the conditions chips, the live facts
+    (the hub cards' and the board's), a timestamp."""
     try:
         stations = list(sfpuc_api.fetch_stations()) if hasattr(sfpuc_api, "fetch_stations") else []
     except Exception:
@@ -426,16 +442,3 @@ def board_context(sfpuc_api, env_context=None, live_facts: bool = True) -> dict:
     return {"board": board, "conditions": _conditions_lines(env_context), "facts": facts,
             "generated": now_pacific().strftime("%B %-d, %Y at %-I:%M %p %Z")}
 
-
-def render_landing(sfpuc_api, env_context=None, live_facts: bool = True) -> str:
-    ctx = board_context(sfpuc_api, env_context, live_facts)
-    return render_template(
-        "landing.html",
-        bwtf_logo=BWTF_LOGO_URL,
-        board=ctx["board"],
-        conditions=ctx["conditions"],
-        hubs=hubs_with_facts(ctx["facts"]),
-        hood=UNDER_THE_HOOD,
-        pages=PAGES,
-        generated=ctx["generated"],
-    )

@@ -63,7 +63,7 @@ from features.alerts.monitoring import CombinedWaterQualityMonitor
 from features.alerts.subscriptions import SubscriptionStore
 from features.alerts.cso_alerts import SimulatedCSOStore
 from shared.sfpuc_api import SFPUCRealTimeAPI
-from app.landing import nav_model, render_landing
+from app.landing import canonical_path, nav_model
 from app.build_info import build_info
 
 try:
@@ -235,16 +235,6 @@ def _forecast_view(handler):
     return view
 
 
-def _landing_view():
-    sfpuc = SFPUCRealTimeAPI()
-    env = EnvironmentalContext() if HAS_WEATHER else None
-    try:
-        html = render_landing(sfpuc, env)
-    except Exception as e:  # never blank the hub page on a flaky upstream
-        html = f"<!doctype html><meta charset='utf-8'><h1>Dashboard</h1><pre>{e}</pre>"
-    return Response(html, content_type="text/html; charset=utf-8")
-
-
 _REPORTS_DIR = Path(__file__).resolve().parents[1] / "reports"
 
 
@@ -262,14 +252,16 @@ def create_app():
     app.jinja_env.globals["SURFRIDER_LOGO_URL"] = SURFRIDER_LOGO_URL
     app.jinja_env.globals["BASEMAP"] = basemap()  # shared/basemap.py: the one tile layer every map draws
     app.jinja_env.globals["NAV"] = nav_model()   # app/landing.py: the three hubs, for the shared top bar (_frame.html)
+    app.jinja_env.globals["canonical_path"] = canonical_path   # /today and /index.html light the home page's tabs
     # Signs the session cookie that remembers an unlocked alerts gate. Without
     # FLASK_SECRET_KEY set, a random key is generated per boot — everything
     # works, but everyone re-enters the passphrase after each deploy/restart.
     app.secret_key = os.environ.get("FLASK_SECRET_KEY") or secrets.token_hex(32)
 
-    # Landing
-    app.add_url_rule("/", "landing", _landing_view, methods=["GET"])
-    app.add_url_rule("/index.html", "landing_index", _landing_view, methods=["GET"])
+    # Home: the root IS the Today page (2026-10-01) — served directly, no redirect; /today and
+    # /index.html serve the same page (alert emails link /today), and its canonical tag names /
+    app.add_url_rule("/", "home", _forecast_view(today_page.handle_page), methods=["GET"])
+    app.add_url_rule("/index.html", "home_index", _forecast_view(today_page.handle_page), methods=["GET"])
     # Browsers ask for /favicon.ico regardless of <link> tags; the BWTF icon
     # (Surfrider's own favicon + manifest PNGs) lives with the brand assets.
     app.add_url_rule("/favicon.ico", "favicon",
@@ -318,7 +310,7 @@ def create_app():
     for path, handler in about_page.GET_ROUTES.items():
         app.add_url_rule(path, f"about-get:{path}", _forecast_view(handler), methods=["GET"])
 
-    # Today: the Main page's board as a tab, with experimental layers (/today, /api/today/surfrider)
+    # Today: the home page (also at /) — the board, its layers (/api/today/*), the page directory below it
     for path, handler in today_page.GET_ROUTES.items():
         app.add_url_rule(path, f"today-get:{path}", _forecast_view(handler), methods=["GET"])
 
