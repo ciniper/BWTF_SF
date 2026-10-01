@@ -29,7 +29,7 @@
   .lagbar.pending{background:repeating-linear-gradient(90deg,#8fb8d8 0 5px,transparent 5px 8px)}   /* open-ended: runs to now */
   .mapmark{position:absolute;width:2px;height:8px;margin-left:-1px;background:#0072BC;pointer-events:none;z-index:1}   /* when SFPUC's map first showed the sample date; top set per lane */
   .swatch.pending{width:8px;height:8px;border-radius:50%;background:#fff;border:2px solid #8fb8d8}
-  .swatch.mapmark{width:2px;height:12px;border-radius:0;background:#0072BC}
+  .swatch.mapmark{position:static;margin-left:0;width:2px;height:12px;border-radius:0;background:#0072BC}   /* the lane mark is absolute; the legend's copy must stay in the row */
 
   #tablebox{overflow-x:auto}   /* the table's last columns were clipped on phones */
   .board{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:18px 18px 10px;overflow-x:auto}
