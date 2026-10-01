@@ -30,6 +30,7 @@
   svg.chart{width:100%;height:240px;display:block}
   .legend{display:flex;gap:16px;font-size:12.5px;color:#54576F;font-weight:600;margin:6px 0 0}
   .legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:5px}
+  .legend i.hatch{background:repeating-linear-gradient(45deg,#98a3ab 0 2px,#fff 2px 5px);border:1px solid #98a3ab;box-sizing:border-box}
   .notes{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:16px 20px;margin-top:18px;font-size:13.5px;color:#3f474d;line-height:1.55}
   .notes h2{font-size:15px;margin:0 0 8px;color:#26272a}
   .fresh-note{display:flex;gap:8px;align-items:center;background:#fff;border:1px solid #d9e4e8;border-radius:12px;padding:10px 14px;margin:0 0 14px;font-size:13px;color:#3f474d}
@@ -95,7 +96,7 @@
         </div>
       </div>
       <svg class="chart" id="chart" viewBox="0 0 1000 240" preserveAspectRatio="none"></svg>
-      <div class="legend"><span><i style="background:#b5310a"></i>Sewage discharge</span><span><i style="background:#0072BC"></i>Rain advisory</span><span><i style="background:#98a3ab"></i>Other / unknown</span></div>
+      <div class="legend"><span><i style="background:#b5310a"></i>Sewage discharge</span><span><i style="background:#0072BC"></i>Rain advisory</span><span><i style="background:#98a3ab"></i>Other / unknown</span><span id="legendPartial"></span></div>
     </div>
 
     <div class="board">
@@ -140,6 +141,7 @@ function uniqueDays(counted) {   // calendar day → the worst cause posted anyw
   return days;
 }
 const yearDays = y => { const s = Math.max(Date.UTC(y, 0, 1), utc(D.first)), e = Math.min(Date.UTC(y, 11, 31), utc(D.known_through)); return e >= s ? Math.round((e - s) / DAY) + 1 : 0; };   // the days of a year the record covers
+const fullDays = y => (y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0)) ? 366 : 365, partialYear = y => yearDays(y) < fullDays(y);   // a year the record only partly covers (the latest one, until SF files the rest)
 const TITLES = {
   days: ["Days with any posting, by year", "— a day counts once however many beaches in view were posted · coloured by its worst cause"],
   pct: ["Share of days with any posting, by year", "— of the days the record covers in each year · coloured by the day's worst cause"],
@@ -180,13 +182,20 @@ function renderChart(counted, ud) {   // the headline chart: days with any posti
   const label = (y, c) => m === "pct" ? by[y][c].toFixed(1) + "% of " + yearDays(y) + " days" : fmt(by[y][c]) + (m === "days" ? " days with a posting" : " posted station-days");
   document.getElementById("chartTitle").innerHTML = esc(TITLES[m][0]) + " <span>" + esc(TITLES[m][1]) + "</span>";
   const W = 1000, H = 240, padL = 44, padB = 26, padT = 10, bw = (W - padL - 8) / ys.length;
-  let s = "";
+  let s = `<defs><pattern id="hatch" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(45)"><rect width="7" height="7" fill="rgba(255,255,255,.55)"/><line x1="0" y1="0" x2="0" y2="7" stroke="#fff" stroke-width="2.5"/></pattern></defs>`;
   for (let g = 0; g <= 4; g++) { const val = max * g / 4, yy = padT + (H - padT - padB) * (1 - g / 4);
     s += `<line x1="${padL}" x2="${W}" y1="${yy}" y2="${yy}" stroke="#eef2f4"/><text x="${padL - 6}" y="${yy + 4}" font-size="11" text-anchor="end" fill="#54576F">${tick(val)}</text>`; }
-  ys.forEach((y, i) => { let base = H - padB; const x = padL + i * bw + bw * 0.12, w = bw * 0.76;
-    for (const c of ["other", "rain", "cso"]) { const h = (H - padT - padB) * by[y][c] / max; if (h > 0) { s += `<rect x="${x}" y="${base - h}" width="${w}" height="${h}" fill="${C[c]}"><title>${y} · ${esc(D.cause_labels[c] || c)}: ${label(y, c)}</title></rect>`; base -= h; } }
+  const partials = ys.filter(partialYear);
+  ys.forEach((y, i) => { let base = H - padB; const x = padL + i * bw + bw * 0.12, w = bw * 0.76, part = partialYear(y), note = part ? ` · partial year: the record covers ${yearDays(y)} of ${fullDays(y)} days` : "";
+    for (const c of ["other", "rain", "cso"]) { const h = (H - padT - padB) * by[y][c] / max; if (h > 0) { s += `<rect x="${x}" y="${base - h}" width="${w}" height="${h}" fill="${C[c]}"><title>${y} · ${esc(D.cause_labels[c] || c)}: ${label(y, c)}${note}</title></rect>`; base -= h; } }
+    if (part) {   // hatch the bar and say so: a short year is not a quiet one
+      const top = base < H - padB ? base : H - padB - 2;
+      s += `<rect x="${x}" y="${top}" width="${w}" height="${H - padB - top}" fill="url(#hatch)" pointer-events="none"/>`;
+      if (bw >= 40) s += `<text x="${x + w / 2}" y="${Math.max(padT + 9, top - 4)}" font-size="10" text-anchor="middle" fill="#54576F">partial</text>`;
+    }
     if (ys.length <= 14 || i % Math.ceil(ys.length / 14) === 0) s += `<text x="${x + w / 2}" y="${H - 8}" font-size="11" text-anchor="middle" fill="#54576F">${y}</text>`; });
   document.getElementById("chart").innerHTML = s;
+  document.getElementById("legendPartial").innerHTML = partials.length ? '<i class="hatch"></i>hatched = partial year — ' + esc(partials.map(y => `${y}: the record covers ${yearDays(y)} of ${fullDays(y)} days`).join("; ")) + (partials.includes(D.lastYear) ? " · SF files with the State months late" : "") : "";
 }
 function renderStations(v) {
   const per = {};
