@@ -67,7 +67,7 @@ def test_graphs_and_samples_share_the_site_picker_and_link_to_each_other():
     assert 'site_picker(site_groups, cross=("Samples →", "toSamples", "/samples"), first_site=first_site)' in g and '$("toSamples").href = "/samples?" + q' in g
     assert 'site_picker(site_groups, all_label="All sites", cross=("Graph this site →", "v-graph", "/graphs"))' in s and '$("v-graph").href = graphHref()' in s
     for page in (g, s):
-        assert "/static/site_picker.js" in page and "SitePicker.init({" in page and "SitePicker.filter(tileFits)" in page
+        assert "asset('site_picker.js')" in page and "SitePicker.init({" in page and "SitePicker.filter(tileFits)" in page
         assert ".tile{" not in page and ".site-bar{" not in page   # styles live in the kit
     assert "Latest by site" not in s and 'id="v-site"' not in s and "/api/compare" not in s   # the strip and the select are gone
     assert 'tr class="v-row' in s and "SamplePopover.open(r.source" in s                        # a row opens that day's results as a graph

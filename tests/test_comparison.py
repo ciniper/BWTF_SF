@@ -172,7 +172,7 @@ def test_sample_day_payload_grades_one_station_day_with_both_values_and_the_rati
     js = (ROOT / "app" / "static" / "sample_popover.js").read_text()
     assert "/api/sample-day?" in js and "data-sample-station" in js
     for tpl in ("app/templates/alerts/dashboard.html", "app/templates/forecast/page.html"):
-        assert "/static/sample_popover.js" in (ROOT / tpl).read_text(), tpl
+        assert "asset('sample_popover.js')" in (ROOT / tpl).read_text(), tpl
 
 
 def test_site_series_grades_every_indicator_per_day_and_pairs_same_day_samples():

@@ -45,10 +45,13 @@ Order: the no-tradeoff wins first, then caching once Chase has made its calls.
   may be (suggest 60 s; the watcher and the emails are unaffected — they never go through the site), how long the data
   feeds may be (suggest ~10 min; DataSF changes daily), and confirm what stays uncached (the `/alerts` passphrase pages,
   `/manage`, `/unsubscribe`, `/signup` and every POST, `/api/build`).
-- [ ] **Static files cacheable.** `/static/*` (brand.css, kit.js, sample_popover.js, charts.js, the logo) is served by the
-  Python function with `cache-control: no-cache`, so every page view asks the app for each file again. Stamp each URL with
-  the build (`?v=<sha>`) and send a year-long `immutable` cache for stamped requests only (unstamped stays as is), or let
-  Vercel serve `/static` as plain static files.
+- [x] **Static files cacheable** (branch `perf/static-cache`, `app/assets.py`). `/static/*` used to be sent `no-cache` and
+  in full on every page view (6–8 files a page, ~0.3 s each, the stylesheet holding the first paint). Templates now link
+  through `asset("brand.css")` = `/static/brand.css?v=<content SHA-1>`; only a request carrying the file's CURRENT stamp
+  gets `max-age=31536000, s-maxage=…, immutable`. Unstamped (email images, a script loading a script, exported reports)
+  and stale stamps keep `no-cache`. A content stamp, not the build: unchanged files survive deploys and local edits never
+  serve a stale copy. Pages are not cached by this, so status is always fresh. `tests/test_static_cache.py` fails on any
+  bare `/static/` link in a template.
 - [ ] **Region: probably already right — confirm.** The function runs in Vercel's `iad1` (Washington DC). Supabase reports
   ~32 ms of database work per request (`x-envoy-upstream-service-time`) while a reused connection from SF takes ~100 ms, so
   the project is most likely in us-east, next to the function. Check Supabase → Project Settings → General; only if it is

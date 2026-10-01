@@ -44,7 +44,7 @@ def test_every_feature_page_sits_in_exactly_one_hub_and_every_link_resolves():
         for tpl in ROOT.glob("app/templates/**/*.html"):
             body = tpl.read_text()
             if "<table" in body or "<tbody" in body:
-                assert "/static/tables.js" in body, tpl
+                assert "asset('tables.js')" in body, tpl
         tables_js = (ROOT / "app/static/tables.js").read_text()
         assert "Show all " in tables_js and "MutationObserver" in tables_js and "var N = 50" in tables_js and 'classList.contains("notes")' in tables_js
         assert "slice(0, 40)" not in (ROOT / "app/templates/postings/page.html").read_text() and "slice(0, 300)" not in (ROOT / "app/templates/cso_history/page.html").read_text()

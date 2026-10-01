@@ -75,7 +75,9 @@ fail the state standard; this project makes that information timely, searchable 
 (the three hubs as drop-down menus built from `app/landing.py` `HUBS` via the `NAV` Jinja global, plus the "Get beach alerts"
 button), a compact page head (`page_head(title, lead, hub)`; the old blue-hero paragraph sits behind a "How to read this"
 drawer), the site footer, and a phone tab bar under 760 px. Design tokens (palette, status colours, radii) and the frame's
-styles live in `app/static/brand.css`; pages still carry their own component CSS for now. The home page is **Today**,
+styles live in `app/static/brand.css`; pages still carry their own component CSS for now. Templates link every static file
+through `asset("…")` (`app/assets.py`): the address carries the file's content stamp, and only the current stamp is cached
+for a year, so browsers keep the stylesheet, scripts and logo between visits and never hold a stale copy. The home page is **Today**,
 served at `/` (since 2026-10-01; the Main page that lived there was deleted on 2026-09-30) and at `/today`, the address every
 alert email links to. Both serve the page directly, never a redirect, and its canonical tag names `/`: the **Today board** (`landing.today_board`), a
 plain-sentence headline from SFPUC's live station statuses ("Posted at 1 beach. 19 others meet state standards."), one tile per

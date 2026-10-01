@@ -63,6 +63,7 @@ from features.alerts.monitoring import CombinedWaterQualityMonitor
 from features.alerts.subscriptions import SubscriptionStore
 from features.alerts.cso_alerts import SimulatedCSOStore
 from shared.sfpuc_api import SFPUCRealTimeAPI
+from app.assets import asset, cache_stamped_static
 from app.landing import canonical_path, nav_model
 from app.build_info import build_info
 
@@ -253,6 +254,8 @@ def create_app():
     app.jinja_env.globals["BASEMAP"] = basemap()  # shared/basemap.py: the one tile layer every map draws
     app.jinja_env.globals["NAV"] = nav_model()   # app/landing.py: the three hubs, for the shared top bar (_frame.html)
     app.jinja_env.globals["canonical_path"] = canonical_path   # /today and /index.html light the home page's tabs
+    app.jinja_env.globals["asset"] = asset                     # app/assets.py: /static links stamped with their contents
+    app.after_request(cache_stamped_static)                    # …and a year-long cache only for a current stamp
     # Signs the session cookie that remembers an unlocked alerts gate. Without
     # FLASK_SECRET_KEY set, a random key is generated per boot — everything
     # works, but everyone re-enters the passphrase after each deploy/restart.

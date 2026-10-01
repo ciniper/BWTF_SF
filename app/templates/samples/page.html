@@ -1,11 +1,11 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
-<link rel="icon" href="/static/brand/favicon.ico"><link rel="apple-touch-icon" sizes="144x144" href="/static/brand/bwtf_144x144.png">
+<link rel="icon" href="{{ asset('brand/favicon.ico') }}"><link rel="apple-touch-icon" sizes="144x144" href="{{ asset('brand/bwtf_144x144.png') }}">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Samples — Surfrider SF Blue Water Task Force</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/brand.css">
+<link rel="stylesheet" href="{{ asset('brand.css') }}">
 <style>
   .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-weight:700;font-size:13px;margin-right:6px}
   .pill.city{background:#eef1f3;color:#3f474d} .pill.bwtf{background:#e3f1fa;color:#0072BC} .pill.over{background:#d15c5c;color:#fff} .pill.na{background:#f3f6f9;color:#98a3ab;font-weight:600}
@@ -67,9 +67,9 @@
   The city's dataset carries the date but not the time, so a routine sample and a storm-day resample share a date and both are shown. Surfrider times are local. Sources: <a href="{{ DATASF_DATASET_URL }}" target="_blank" rel="noopener">SF Gov Open Data</a> · <a href="https://bwtf.surfrider.org/explore/76" target="_blank" rel="noopener">Surfrider BWTF (SF)</a>.</p>
 
 </div>
-<script src="/static/charts.js"></script>
-<script src="/static/sample_popover.js" defer></script>
-<script src="/static/site_picker.js"></script>
+<script src="{{ asset('charts.js') }}"></script>
+<script src="{{ asset('sample_popover.js') }}" defer></script>
+<script src="{{ asset('site_picker.js') }}"></script>
 <script>
 var FLOOR = "{{ dataset_floor }}";
 var params = new URLSearchParams(location.search);
@@ -154,7 +154,7 @@ $("v-rows").addEventListener("click", function (e) {
 document.querySelectorAll(".v-preset").forEach(function (btn) { btn.addEventListener("click", function () { var end = new Date().toISOString().slice(0, 10); VIEW.end = end; VIEW.start = btn.dataset.days ? new Date(Date.now() - btn.dataset.days * DAY).toISOString().slice(0, 10) : FLOOR; $("v-start").value = VIEW.start; $("v-end").value = VIEW.end; markPreset(); vLoad(); }); });
 vLoad();
 </script>
-<script src="/static/tables.js" defer></script>
+<script src="{{ asset('tables.js') }}" defer></script>
 {{ footer() }}
 {{ tabbar() }}
 </body></html>
