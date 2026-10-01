@@ -39,7 +39,7 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 .timeline { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 10px; margin-bottom: 20px; }  /* 7 live days or 8 hindcast days on one row */
 @media (max-width: 800px) { .timeline { grid-template-columns: repeat(4, 1fr); } }
 @media (max-width: 600px) { .timeline { display: flex; overflow-x: auto; gap: 10px; padding-bottom: 6px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; } .day-card { flex: 0 0 124px; scroll-snap-align: start; } }   /* phones: the week is a strip you swipe, not seven columns squeezed past the screen edge */
-.day-card { background: #fff; border-radius: var(--r); padding: 14px; text-align: center; border: 2px solid var(--line); cursor: pointer; }   /* the Main board's zone tile: border by grade */
+.day-card { background: #fff; border-radius: var(--r); padding: 14px; text-align: center; border: 2px solid var(--line); cursor: pointer; }   /* the Today board's zone tile: border by grade */
 .day-card.g-none { border-color: var(--safe); } .day-card.g-low { border-color: var(--caution); } .day-card.g-moderate { border-color: var(--posted); } .day-card.g-high { border-color: var(--discharge); } .day-card.g-extreme { border-color: #8f2508; }
 .day-card.selected { outline: 3px solid var(--sky); outline-offset: 2px; }
 .day-card:hover { background: var(--sand2); }
@@ -209,7 +209,7 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 
 <div class="foot">   {# the page's own source note; the site footer is the frame's #}
     <p><svg class="ic"><use href="#i-info"/></svg> Rain: NOAA gauges (Downtown 047772, Oceanside 047767), KSFO hourly, ICON forecast (Open-Meteo) · Discharges: SFPUC CIWQS reports · Beach status: SFPUC · Bacteria: DataSF</p>
-    <p>Community-science tool, not an official advisory — posted signs and SFPUC or health-department notices always win. <a href="/">Back to dashboard</a> · <a href="/api/build" title="{{ build.message or '' }}">{{ build.label }}</a></p>
+    <p>Community-science tool, not an official advisory — posted signs and SFPUC or health-department notices take precedence. <a href="/today">Back to Today</a> · <a href="/api/build" title="{{ build.message or '' }}">{{ build.label }}</a></p>
 </div>
 </div>
 

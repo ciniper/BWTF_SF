@@ -1,8 +1,10 @@
-"""Today — the Main page's board as a tab of its own, with room to experiment
-(Chase, 2026-09-29: "a mimic of the main page hero with some extra features").
+"""Today — the home page: the board, a Layers strip above it, and the page directory below it.
+Born 2026-09-29 as the Main page's board with room to experiment; the Main page itself was
+deleted 2026-09-30 and ``/`` now redirects here (Chase: "wholesale delete the main page").
 
 ``/today``                the Today board (app/landing.board_context → the shared
-                          _today_board.html macros) plus a Layers strip above it.
+                          _today_board.html macros), the Layers strip above it, and the
+                          hub cards + Under the hood strip below it (render_page).
 ``/api/today/surfrider``  Surfrider's latest Enterococcus result at every site the
                           volunteers sample, with coordinates, graded by the shared
                           rule — drawn on the map as diamonds when toggled on.
@@ -29,7 +31,7 @@ from zoneinfo import ZoneInfo
 import requests
 from flask import render_template
 
-from app.landing import board_context
+from app.landing import UNDER_THE_HOOD, board_context, hubs_with_facts
 from features.comparison.bwtf_api import SFBWTFClient
 from features.comparison.comparison import BWTF_TO_SFPUC_NAME, resolve_site
 from shared import supabase as sb
@@ -259,6 +261,14 @@ def build_replay_layer(now: Optional[datetime] = None, days: int = REPLAY_DAYS) 
 
 # ── routes ─────────────────────────────────────────────────────────────────────────────
 
+def render_page(ctx: dict) -> str:
+    """The home page from a board_context: the board, then the page directory that used to sit
+    under the Main page's board — the three hub cards (live facts where they answered; no card
+    row for Today itself) and the Under the hood strip."""
+    return render_template("today/page.html", board=ctx["board"], conditions=ctx["conditions"], generated=ctx["generated"],
+                           hubs=hubs_with_facts(ctx.get("facts"), skip=("/today",)), hood=UNDER_THE_HOOD)
+
+
 def handle_page(query, body):
     sfpuc = SFPUCRealTimeAPI()
     env = EnvironmentalContext() if EnvironmentalContext else None
@@ -266,8 +276,7 @@ def handle_page(query, body):
         ctx = board_context(sfpuc, env)
     except Exception as e:  # noqa: BLE001 — never blank the page on a flaky upstream
         return 500, "text/html; charset=utf-8", f"<!doctype html><meta charset='utf-8'><h1>Today</h1><pre>{e}</pre>".encode()
-    html = render_template("today/page.html", board=ctx["board"], conditions=ctx["conditions"], generated=ctx["generated"])
-    return 200, "text/html; charset=utf-8", html.encode()
+    return 200, "text/html; charset=utf-8", render_page(ctx).encode()
 
 
 def _layer_route(build: Callable[[], dict]):

@@ -63,7 +63,7 @@ from features.alerts.monitoring import CombinedWaterQualityMonitor
 from features.alerts.subscriptions import SubscriptionStore
 from features.alerts.cso_alerts import SimulatedCSOStore
 from shared.sfpuc_api import SFPUCRealTimeAPI
-from app.landing import nav_model, render_landing
+from app.landing import nav_model
 from app.build_info import build_info
 
 try:
@@ -235,14 +235,13 @@ def _forecast_view(handler):
     return view
 
 
-def _landing_view():
-    sfpuc = SFPUCRealTimeAPI()
-    env = EnvironmentalContext() if HAS_WEATHER else None
-    try:
-        html = render_landing(sfpuc, env)
-    except Exception as e:  # never blank the hub page on a flaky upstream
-        html = f"<!doctype html><meta charset='utf-8'><h1>Dashboard</h1><pre>{e}</pre>"
-    return Response(html, content_type="text/html; charset=utf-8")
+def _home_view():
+    """The site's root opens the Today board. The Main page that lived here was deleted (Chase,
+    2026-09-30: "wholesale delete the main page"); its hub cards moved below Today's board. The
+    query string rides along, so ?layers=…&surfrider=1 deep links keep working. 302, not 301:
+    browsers cache a permanent redirect for good, and a future home page may want the address back."""
+    qs = request.query_string.decode()
+    return redirect("/today" + ("?" + qs if qs else ""), code=302)
 
 
 _REPORTS_DIR = Path(__file__).resolve().parents[1] / "reports"
@@ -267,9 +266,9 @@ def create_app():
     # works, but everyone re-enters the passphrase after each deploy/restart.
     app.secret_key = os.environ.get("FLASK_SECRET_KEY") or secrets.token_hex(32)
 
-    # Landing
-    app.add_url_rule("/", "landing", _landing_view, methods=["GET"])
-    app.add_url_rule("/index.html", "landing_index", _landing_view, methods=["GET"])
+    # Home: the root opens the Today board (the Main page was deleted 2026-09-30)
+    app.add_url_rule("/", "home", _home_view, methods=["GET"])
+    app.add_url_rule("/index.html", "home_index", _home_view, methods=["GET"])
     # Browsers ask for /favicon.ico regardless of <link> tags; the BWTF icon
     # (Surfrider's own favicon + manifest PNGs) lives with the brand assets.
     app.add_url_rule("/favicon.ico", "favicon",
@@ -318,7 +317,7 @@ def create_app():
     for path, handler in about_page.GET_ROUTES.items():
         app.add_url_rule(path, f"about-get:{path}", _forecast_view(handler), methods=["GET"])
 
-    # Today: the Main page's board as a tab, with experimental layers (/today, /api/today/surfrider)
+    # Today: the home page — the board, its layers (/api/today/*), and the page directory below it
     for path, handler in today_page.GET_ROUTES.items():
         app.add_url_rule(path, f"today-get:{path}", _forecast_view(handler), methods=["GET"])
 

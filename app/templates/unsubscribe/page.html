@@ -39,7 +39,7 @@
       <p class="mute">You are subscribed to {{ sites }} site{{ '' if sites == 1 else 's' }}. One click and no more emails; you can sign up again any time. Rather <a class="link" href="/manage?t={{ token }}">change your sites</a> instead?</p>
       <form method="post" action="/unsubscribe?t={{ token }}" class="row">
         <button type="submit">Unsubscribe</button>
-        <a class="btn plain" href="/">Keep my alerts</a>
+        <a class="btn plain" href="/today">Keep my alerts</a>
       </form>
     {% elif state == 'done' %}
       <p>Done. <span class="email">{{ email }}</span> will get no more beach alerts.</p>
@@ -59,7 +59,7 @@
     {% endif %}
   </div>
 </div>
-<p class="mute" style="text-align:center;margin-top:16px"><a class="link" href="/">SF Beach Water Quality dashboard</a></p>
+<p class="mute" style="text-align:center;margin-top:16px"><a class="link" href="/today">SF Beach Water Quality dashboard</a></p>
 </div>{{ footer() }}
 {{ tabbar() }}
 </body></html>
