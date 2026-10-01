@@ -1,6 +1,7 @@
-"""Today — the home page: the board, a Layers strip above it, and the page directory below it.
-Born 2026-09-29 as the Main page's board with room to experiment; the Main page itself was
-deleted 2026-09-30 and ``/`` now redirects here (Chase: "wholesale delete the main page").
+"""Today — the home page, served at ``/`` and at ``/today`` (alert emails link there): the board,
+a Layers strip above it, and the page directory below it. Born 2026-09-29 as the Main page's
+board with room to experiment; the Main page was deleted 2026-09-30 (Chase: "wholesale delete
+the main page") and Today took the root 2026-10-01, with a canonical tag naming ``/``.
 
 ``/today``                the Today board (app/landing.board_context → the shared
                           _today_board.html macros), the Layers strip above it, and the
@@ -31,7 +32,7 @@ from zoneinfo import ZoneInfo
 import requests
 from flask import render_template
 
-from app.landing import UNDER_THE_HOOD, board_context, hubs_with_facts
+from app.landing import HOME_URL, UNDER_THE_HOOD, board_context, hubs_with_facts
 from features.comparison.bwtf_api import SFBWTFClient
 from features.comparison.comparison import BWTF_TO_SFPUC_NAME, resolve_site
 from shared import supabase as sb
@@ -266,7 +267,7 @@ def render_page(ctx: dict) -> str:
     under the Main page's board — the three hub cards (live facts where they answered; no card
     row for Today itself) and the Under the hood strip."""
     return render_template("today/page.html", board=ctx["board"], conditions=ctx["conditions"], generated=ctx["generated"],
-                           hubs=hubs_with_facts(ctx.get("facts"), skip=("/today",)), hood=UNDER_THE_HOOD)
+                           hubs=hubs_with_facts(ctx.get("facts"), skip=("/",)), hood=UNDER_THE_HOOD, canonical=HOME_URL)
 
 
 def handle_page(query, body):

@@ -12,11 +12,11 @@
       {% call page_head("Graphs", "one-line lead", "water") %} …the longer explanation… {% endcall %} -#}
 
 {% macro topbar() -%}
-{%- set p = request.path %}
+{%- set p = canonical_path(request.path) %}
 {%- set ns = namespace(hub=None) %}{% for h in NAV %}{% if p in h.paths %}{% set ns.hub = h %}{% endif %}{% endfor %}
 <header class="topbar">
   <div class="in">
-    <a class="mark" href="/today"><img src="/static/brand/bwtf_144x144.png" alt=""><span><b>SF Beach Water</b><small>Surfrider SF · Blue Water Task Force</small></span></a>
+    <a class="mark" href="/"><img src="/static/brand/bwtf_144x144.png" alt=""><span><b>SF Beach Water</b><small>Surfrider SF · Blue Water Task Force</small></span></a>
     <nav class="tabs" aria-label="Sections">
       {%- for h in NAV %}
       <a href="{{ h.href }}"{% if ns.hub and ns.hub.key == h.key %} class="on"{% endif %}>{{ h.title }}</a>
@@ -70,7 +70,7 @@
 {%- endmacro %}
 
 {% macro tabbar() -%}
-{%- set p = request.path %}
+{%- set p = canonical_path(request.path) %}
 <nav class="tabbar" aria-label="Sections">
   {%- for h in NAV %}
   <a href="{{ h.href }}"{% if p in h.paths %} class="on"{% endif %}><svg class="ic"><use href="#i-{{ {'today': 'bell', 'water': 'flask', 'record': 'clipboard'}[h.key] }}"/></svg>{{ {'today': 'Today', 'water': 'Water record', 'record': 'Postings'}[h.key] }}</a>
