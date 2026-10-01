@@ -103,6 +103,10 @@ SHARED_DESIGNS = {
     # and refuses to save if it no longer lands here.
     "half": {"precip_avg": (0.25, 0.5, 1.0), "rain_2d_cum": (0.5, 1.0, 2.0), "rain_3d_cum": (1.0, 2.0), "rain_5d_cum": (),
              "rain_lag1d": (), "rain_lag5d": (), "wet_prior_3d": (), "peak_3d": (0.5, 1.0), "dry_spell_days": ()},
+    # Chase's four inputs (2026-10-01: today, yesterday, 2 days ago, wettest 3 hours), bends searched by
+    # shared_logit.choose_bends on pre-holdout season CV: bends on 2-days-ago or the burst scored worse,
+    # so they enter as straight lines. The build re-runs the search and refuses to save if it moves.
+    "four": {"precip_avg": (0.25, 0.5, 1.0), "rain_lag1d": (0.25, 0.5), "rain_lag2d": (), "rain_max3h": ()},
 }
 
 

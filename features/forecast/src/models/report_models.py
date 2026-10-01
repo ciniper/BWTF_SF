@@ -51,7 +51,7 @@ LINES = [0.25, 0.5]
 WEIGHTINGS = [("a miss costs 2 false alarms", 1, 2), ("1 : 1", 1, 1), ("a miss costs 4 false alarms", 1, 4), ("a miss costs 6 false alarms", 1, 6),
               ("a miss costs 10 false alarms", 1, 10), ("a false alarm costs 2 misses", 2, 1)]
 PRIMARY = ("a miss costs 2 false alarms", 1, 2)
-COLORS = ["#0072BC", "#b5310a", "#7b4bb5", "#237059", "#b97e00", "#d4763a", "#54576F", "#0b8a8a", "#8f2508", "#5b8def", "#2e9e6b", "#c9a227"]   # wraps (k % len) past twelve
+COLORS = ["#0072BC", "#b5310a", "#7b4bb5", "#237059", "#b97e00", "#d4763a", "#54576F", "#0b8a8a", "#8f2508", "#5b8def", "#2e9e6b", "#c9a227", "#6b4226", "#d63f8c"]   # wraps (k % len) past fourteen
 
 
 # ── data ────────────────────────────────────────────────────────────────────

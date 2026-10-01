@@ -100,44 +100,103 @@ HALF_TERMS = 19
 FULL_DESIGN = {f: tuple(L.HINGES.get(f, ())) for f in L.FEATS}
 
 
-def backward_select(frames: dict, chosen_src: dict, use_archive: dict, target_terms: int = HALF_TERMS) -> tuple[dict, list]:
-    from sklearn.metrics import log_loss
-    from sklearn.preprocessing import StandardScaler
-    cols = L.band_columns(FULL_DESIGN)
-    groups = {f: [i for i, c in enumerate(cols) if c[0] == f] for f in FULL_DESIGN}
-    data = {}
+def pre_holdout_rows(frames: dict, chosen_src: dict, use_archive: dict) -> dict:
+    """{basin: (19-input frame, y, season)} over the seasons before the holdout — all a design search may see."""
+    out = {}
     for basin in T.APP_BASINS:
         sub = basin_rows(basin, frames, chosen_src, use_archive)
-        pre = (sub["date"] < T.HOLDOUT_START).values
-        data[basin] = (L.add_bands(sub[L.FEATS], FULL_DESIGN)[pre], sub["y"].values[pre].astype(int), sub["season"].values[pre])
+        pre = sub[sub["date"] < T.HOLDOUT_START]
+        out[basin] = (pre[L.FEATS].reset_index(drop=True), pre["y"].values.astype(int), pre["season"].values)
+    return out
 
-    def cv_ll(basin, idx, C):
-        A, y, se = data[basin]
-        X = A[:, idx]
-        p = np.full(len(y), np.nan)
-        for s in np.unique(se):
-            tr, te = se != s, se == s
-            if y[tr].sum() < 5:
-                continue
-            sc = StandardScaler().fit(X[tr])
-            p[te] = L.NonNegLogit(C=C).fit(sc.transform(X[tr]), y[tr]).predict_proba(sc.transform(X[te]))[:, 1]
-        k = ~np.isnan(p)
-        return log_loss(y[k], np.clip(p[k], 1e-6, 1 - 1e-6))
+
+def mean_cv_log_loss(data: dict, design: dict) -> float:
+    """The design-search score: mean over the four basins of pooled leave-one-season-out log loss on
+    the pre-holdout seasons, each basin at its best C; scaler + weights ≥ 0 fit inside every fold."""
+    from sklearn.metrics import log_loss
+    from sklearn.preprocessing import StandardScaler
+    per = []
+    for basin, (F, y, se) in data.items():
+        X = L.add_bands(F, design)
+        best = None
+        for C in C_GRID:
+            p = np.full(len(y), np.nan)
+            for s in np.unique(se):
+                tr, te = se != s, se == s
+                if y[tr].sum() < 5:
+                    continue
+                sc = StandardScaler().fit(X[tr])
+                p[te] = L.NonNegLogit(C=C).fit(sc.transform(X[tr]), y[tr]).predict_proba(sc.transform(X[te]))[:, 1]
+            k = ~np.isnan(p)
+            ll = log_loss(y[k], np.clip(p[k], 1e-6, 1 - 1e-6))
+            best = ll if best is None else min(best, ll)
+        per.append(best)
+    return float(np.mean(per))
+
+
+def backward_select(frames: dict, chosen_src: dict, use_archive: dict, target_terms: int = HALF_TERMS) -> tuple[dict, list]:
+    data = pre_holdout_rows(frames, chosen_src, use_archive)
+    groups = {f: len(L.band_columns({f: k})) for f, k in FULL_DESIGN.items()}
 
     def score(inputs):
-        idx = [i for f in inputs for i in groups[f]]
-        return float(np.mean([min(cv_ll(b, idx, C) for C in C_GRID) for b in T.APP_BASINS]))
+        return mean_cv_log_loss(data, {f: FULL_DESIGN[f] for f in inputs})
 
+    cols = L.band_columns(FULL_DESIGN)
     keep = list(FULL_DESIGN)
     path = [{"inputs": list(keep), "terms": len(cols), "cv_log_loss": score(keep), "dropped": None}]
     print(f"   start: {len(keep)} inputs, {len(cols)} terms, mean season-CV log loss {path[0]['cv_log_loss']:.5f}", flush=True)
-    while sum(len(groups[f]) for f in keep) > target_terms and len(keep) > 1:
+    while sum(groups[f] for f in keep) > target_terms and len(keep) > 1:
         best = min(((score([g for g in keep if g != f]), f) for f in keep), key=lambda t: t[0])
         keep.remove(best[1])
-        n = sum(len(groups[f]) for f in keep)
+        n = sum(groups[f] for f in keep)
         path.append({"inputs": list(keep), "terms": n, "cv_log_loss": best[0], "dropped": best[1]})
         print(f"   drop {best[1]:20} → {len(keep)} inputs, {n} terms, mean season-CV log loss {best[0]:.5f}", flush=True)
     return {f: FULL_DESIGN[f] for f in keep}, path
+
+
+# ── "four" (Chase 2026-10-01: "just today, yesterday, 2d ago, and wettest 3 hours with the
+# number of bends as you choose") ── the inputs are Chase's; the bends are searched. Coordinate
+# descent: starting from no bends anywhere, for one input at a time try every option in
+# BEND_OPTIONS with the others held, keep the fewest-bend option within BEND_TOL of that input's
+# best score (mean_cv_log_loss, pre-holdout seasons only), and loop over the inputs until a full
+# round changes nothing.
+FOUR_INPUTS = ("precip_avg", "rain_lag1d", "rain_lag2d", "rain_max3h")
+BEND_OPTIONS = {
+    "precip_avg": [(), (0.5,), (1.0,), (0.5, 1.0), (0.25, 0.5, 1.0), (0.5, 0.75, 1.0), (0.5, 1.0, 1.5), (0.25, 0.5, 0.75, 1.0, 1.5)],
+    "rain_lag1d": [(), (0.25,), (0.5,), (1.0,), (0.25, 0.5), (0.5, 1.0)],
+    "rain_lag2d": [(), (0.25,), (0.5,), (1.0,), (0.5, 1.0)],
+    "rain_max3h": [(), (0.1,), (0.2,), (0.3,), (0.5,), (0.2, 0.4), (0.25, 0.5)],
+}
+BEND_TOL = 3e-5   # a log-loss gain smaller than this does not earn an extra bend
+
+
+def choose_bends(frames: dict, chosen_src: dict, use_archive: dict, inputs=FOUR_INPUTS, options=None, max_rounds: int = 4) -> tuple[dict, list]:
+    options = options or BEND_OPTIONS
+    data = pre_holdout_rows(frames, chosen_src, use_archive)
+    design = {f: () for f in inputs}
+    cache = {}
+
+    def score(d):
+        key = tuple(d[f] for f in inputs)
+        if key not in cache:
+            cache[key] = mean_cv_log_loss(data, d)
+        return cache[key]
+
+    path = [{"round": 0, "design": {f: list(k) for f, k in design.items()}, "cv_log_loss": score(design)}]
+    print(f"   start (no bends): mean season-CV log loss {path[0]['cv_log_loss']:.5f}", flush=True)
+    for rnd in range(1, max_rounds + 1):
+        changed = False
+        for f in inputs:
+            tried = {opt: score({**design, f: opt}) for opt in options[f]}
+            top = min(tried.values())
+            pick = min((o for o, s in tried.items() if s <= top + BEND_TOL), key=lambda o: (len(o), tried[o]))
+            print(f"   round {rnd} {f:12} " + "  ".join(f"{list(o) or 'none'} {s:.5f}" for o, s in tried.items()) + f"  → {list(pick) or 'none'}", flush=True)
+            if pick != design[f]:
+                design[f], changed = pick, True
+        path.append({"round": rnd, "design": {f: list(k) for f, k in design.items()}, "cv_log_loss": score(design)})
+        if not changed:
+            break
+    return design, path
 
 
 def slopes(model, design: dict) -> dict:
@@ -191,6 +250,9 @@ def main(design_keys: list, dry_run: bool = False):
         if dk == "half":
             picked, selection = backward_select(frames, chosen_src, use_archive)
             assert picked == design, f"backward selection now picks {picked}, SHARED_DESIGNS['half'] records {design}"
+        elif dk == "four":
+            picked, selection = choose_bends(frames, chosen_src, use_archive)
+            assert picked == design, f"the bend search now picks {picked}, SHARED_DESIGNS['four'] records {design}"
         print(f"── {name}: {json.dumps({f: list(k) for f, k in design.items()})}", flush=True)
         finals, holdouts, per_basin, terms = fit_design(dk, frames, chosen_src, use_archive)
         if dry_run:
