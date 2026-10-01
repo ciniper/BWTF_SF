@@ -57,6 +57,7 @@ import requests
 from flask import render_template
 
 from shared.stations import STATIONS as _CANONICAL_STATIONS
+from shared.zones import ZONES, zone_for_station
 
 from shared import city_history  # noqa: E402
 from shared.datasf import BEACH_SAMPLES_URL, DATASET_FLOOR  # noqa: E402
@@ -87,11 +88,13 @@ WET_MONTHS = {11, 12, 1, 2, 3, 4}
 _CACHE_TTL_SECONDS = 6 * 3600
 _cache: dict = {"at": 0.0, "rows": None}
 
-# station id -> (display name, shoreline group, lat, lon), from the canonical
-# registry in shared/stations.py (coordinates are SFPUC's fixed monitoring
-# points, embedded there rather than fetched live).
+# station id -> (display name, zone key, lat, lon), from the canonical
+# registries in shared/stations.py and shared/zones.py (coordinates are
+# SFPUC's fixed monitoring points, embedded there rather than fetched live).
+# Zones, not the stations' older three-way shoreline group: the same four
+# groups people sign up for and the Graphs / Samples / Postings pages use.
 STATIONS = {
-    sid: (s.name, s.group, s.lat, s.lon) for sid, s in _CANONICAL_STATIONS.items()
+    sid: (s.name, zone_for_station(s).key, s.lat, s.lon) for sid, s in _CANONICAL_STATIONS.items()
 }
 
 
@@ -215,7 +218,7 @@ def _compute(rows: list[dict], start: datetime | None, end: datetime | None,
 
     sites = []
     for sid, full_pairs in all_samples.items():
-        name, group, lat, lon = STATIONS[sid]
+        name, zone, lat, lon = STATIONS[sid]
         # only samples that measured the chosen indicator take part (the
         # weekly regime then picks the first such sample of each site-week)
         measured = [(d, vals) for d, vals in full_pairs if _over(indicator, vals) is not None]
@@ -224,7 +227,7 @@ def _compute(rows: list[dict], start: datetime | None, end: datetime | None,
                  if (start is None or d >= start) and (end is None or d <= end)]
         flagged = [(d, _over(indicator, vals)) for d, vals in pairs]
         entry = {
-            "id": sid, "name": name, "group": group, "lat": lat, "lon": lon,
+            "id": sid, "name": name, "zone": zone, "zone_label": ZONES[zone].label, "lat": lat, "lon": lon,
             "routine": _routine(full_pairs, start, end),
             "samples": len(pairs),
         }
@@ -330,6 +333,7 @@ def standards_context() -> dict:
             "ratio_pct": round(100 * s["ratio_threshold"]) if "ratio_threshold" in s else None,
         })
     return {
+        "zones": [{"key": k, "label": z.label} for k, z in ZONES.items()],
         "standards": rows, "graded_on": DEFAULT_INDICATOR, "graded_on_name": STANDARDS[DEFAULT_INDICATOR]["description"],
         "indicators": [{"code": c, "label": l, "title": "bad = " + bad_text(c)} for c, l in INDICATORS.items()],
         "ssm": SSM, "caution": CAUTION, "floor": city_history.city_record_floor(), "datasf_from": DATASET_FLOOR,

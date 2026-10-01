@@ -482,7 +482,8 @@ def build_comparison(
                             site_key=sources[0] if sources else "bwtf:" + site.name,
                             dual=bool(sources), bwtf_site=True))
     covered = {r.site_key for r in rows}
-    for sid, st in sorted(STATIONS.items(), key=lambda kv: (kv[1].group, kv[1].name)):
+    zone_rank = {k: i for i, k in enumerate(ZONES)}
+    for sid, st in sorted(STATIONS.items(), key=lambda kv: (zone_rank.get(ZONE_OF_SOURCE.get(kv[0]), 99), kv[1].name)):   # zone order, as everywhere
         if sid in covered:
             continue
         rows.append(row_for(st.name, st.lat, st.lon, [sid], st.sfpuc_name, (None, None, None),

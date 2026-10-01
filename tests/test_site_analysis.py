@@ -51,6 +51,23 @@ def test_indicator_toggle_grades_the_same_samples_four_ways():
     assert [i["code"] for i in ctx["indicators"]] == list(P.INDICATORS) and ctx["graded_on"] == P.DEFAULT_INDICATOR
 
 
+def test_report_card_groups_sites_by_zone_and_offers_year_presets():
+    """Chase, 2026-10-01: the report card uses the four zones (shared/zones.py), not the stations' older
+    three-way shoreline group, and its range presets run 1 year → 3 → 5 → Full record."""
+    from shared.zones import ZONES, ZONE_OF_SOURCE
+    sid = next(iter(P.STATIONS))
+    out = P._compute(_rows(sid, "2024-01-01", ENTERO=50), None, None, False, "ENTERO")
+    site = next(x for x in out["sites"] if x["id"] == sid)
+    assert site["zone"] == ZONE_OF_SOURCE[sid] and site["zone_label"] == ZONES[site["zone"]].label and "group" not in site
+    assert {z for _, z, _, _ in P.STATIONS.values()} == set(ZONES)
+    ctx = P.standards_context()
+    assert [z["key"] for z in ctx["zones"]] == list(ZONES) and ctx["zones"][1]["label"] == "Baker & China Beach"
+    tpl = (ROOT / "app/templates/site_analysis/page.html").read_text()
+    assert 'data-zone="{{ z.key }}"' in tpl and "East Bayshore" not in tpl and "activeGroup" not in tpl and ".chip.z-baker_china" in tpl
+    assert [d for d in ("365", "1096", "1826", "") if f'data-days="{d}">' in tpl] == ["365", "1096", "1826", ""] and 'data-days="1826">5 years<' in tpl and "Last 3 mo" not in tpl
+    assert "Date.now() - 365 * 864e5" in tpl   # opens on the smallest preset
+
+
 if __name__ == "__main__":
     failures = 0
     for name, fn in sorted(globals().items()):
