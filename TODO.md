@@ -32,6 +32,39 @@ This roadmap has four parts:
 - [ ] Provide a stable, versioned, documented API if external consumers exist.
 - [ ] Apply the shared branding/identity kit from A1.
 
+### A3. Site speed (measured 2026-10-01)
+Production, warm: home page 2.0–2.6 s to first byte, Source Comparison 1.7–2.3 s, `/api/samples` 1.8–2.4 s,
+`/analysis/api/summary` 5.0 s cold then 0.9 s; most other pages 0.3–0.5 s. Every response is sent
+`cache-control: public, max-age=0` and Vercel's edge reports `x-vercel-cache: MISS`, so each visit rebuilds the page.
+Order: the no-tradeoff wins first, then caching once Chase has made its calls.
+- [x] **Build the home page's slow lookups at the same time** (branch `perf/easy-wins`): `landing.board_context` used to
+  fetch SFPUC's feed (~0.9 s), then the hub cards' live facts (≤ 2.5 s budget, ~1 s), then NWS rain (~0.6 s), then NOAA
+  tides (~0.6 s); now the four run together. Same content; 2.7–3.3 s → 0.9–1.0 s per build, measured from SF.
+- [ ] **Edge caching — needs Chase's decisions.** Send `Cache-Control: public, s-maxage=…, stale-while-revalidate=…` so
+  Vercel's edge answers most visits in hundredths of a second and rebuilds in the background. Decide: how stale the board
+  may be (suggest 60 s; the watcher and the emails are unaffected — they never go through the site), how long the data
+  feeds may be (suggest ~10 min; DataSF changes daily), and confirm what stays uncached (the `/alerts` passphrase pages,
+  `/manage`, `/unsubscribe`, `/signup` and every POST, `/api/build`).
+- [ ] **Static files cacheable.** `/static/*` (brand.css, kit.js, sample_popover.js, charts.js, the logo) is served by the
+  Python function with `cache-control: no-cache`, so every page view asks the app for each file again. Stamp each URL with
+  the build (`?v=<sha>`) and send a year-long `immutable` cache for stamped requests only (unstamped stays as is), or let
+  Vercel serve `/static` as plain static files.
+- [ ] **Region: probably already right — confirm.** The function runs in Vercel's `iad1` (Washington DC). Supabase reports
+  ~32 ms of database work per request (`x-envoy-upstream-service-time`) while a reused connection from SF takes ~100 ms, so
+  the project is most likely in us-east, next to the function. Check Supabase → Project Settings → General; only if it is
+  on the West Coast move the function to `sfo1` (`"regions"` in vercel.json).
+- [ ] **Self-host Leaflet** (CSS + JS from unpkg) and consider the Google font: third-party stylesheets in the head hold the
+  first paint on a cold visit.
+- [ ] *Minor:* `shared/supabase.py` opens a new TLS connection per call (`requests.request`, no Session); a shared Session
+  would reuse it. Small on Vercel when Supabase sits in the same region.
+- [ ] **Measure cold starts before acting.** One production load of the home page took 8.6 s, the next 2.0 s — that looks
+  like Vercel starting a fresh instance. It is not import time (the app imports in 0.15 s; pandas / scikit-learn load only
+  on the pages that use them), so the suspects are the size of the one function's bundle (pandas, numpy, scipy and
+  scikit-learn ship with every page) and scale-to-zero between visits. Log a week of first-byte times to see how often a
+  visitor meets one; if often, look at Vercel's fluid compute or splitting the forecast engine into its own function.
+  Edge caching (above) would also hide most of them.
+- Not worth it (checked): a bigger Supabase compute tier — the database part is ~32 ms of each call, the rest is network.
+
 ---
 
 # B. Sewage alert system

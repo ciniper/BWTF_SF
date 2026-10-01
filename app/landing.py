@@ -395,7 +395,8 @@ def _status_banner(summary: dict) -> tuple[str, str]:
     return ("warn", "Status is loading or temporarily unavailable — open the alert page for details.")
 
 
-def _conditions_lines(env_context) -> list[str]:
+def _rain_line(env_context) -> list[str]:
+    """The board's rain chip (NWS), or nothing when the lookup fails."""
     lines = []
     if not env_context:
         return lines
@@ -410,6 +411,14 @@ def _conditions_lines(env_context) -> list[str]:
             lines.append('<svg class="ic"><use href="#i-circle-check"/></svg> No recent or forecast rain — conditions favorable')
     except Exception:
         pass
+    return lines
+
+
+def _tide_line(env_context) -> list[str]:
+    """The board's tide chip (NOAA), or nothing when the lookup fails."""
+    lines = []
+    if not env_context:
+        return lines
     try:
         tide = env_context.tides.get_tide_info()
         if tide:
@@ -423,22 +432,42 @@ def _conditions_lines(env_context) -> list[str]:
     return lines
 
 
+def _conditions_lines(env_context) -> list[str]:
+    return _rain_line(env_context) + _tide_line(env_context)
+
+
+def _stations(sfpuc_api) -> list:
+    try:
+        return list(sfpuc_api.fetch_stations()) if hasattr(sfpuc_api, "fetch_stations") else []
+    except Exception:
+        return []
+
+
 def board_context(sfpuc_api, env_context=None, live_facts: bool = True) -> dict:
     """Everything the Today page needs: the board, the conditions chips, the live facts
-    (the hub cards' and the board's), a timestamp."""
+    (the hub cards' and the board's), a timestamp.
+
+    The four slow lookups — SFPUC's beach feed, the live facts, NWS rain, NOAA tides — run at the
+    same time, so the page waits for the slowest one instead of all four in a row (2026-10-01:
+    ~2.5 s in a row, ~1 s together). Each job catches its own failures, so one slow or broken
+    source still never blanks the page; the facts keep their own 2.5 s budget."""
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=4, thread_name_prefix="board") as pool:
+        f_stations = pool.submit(_stations, sfpuc_api)
+        f_facts = pool.submit(_live_facts) if live_facts else None
+        f_rain = pool.submit(_rain_line, env_context)
+        f_tide = pool.submit(_tide_line, env_context)
+        stations = f_stations.result()
+        facts = f_facts.result() if f_facts else {}
+        conditions = f_rain.result() + f_tide.result()   # rain first, then tide, as before
     try:
-        stations = list(sfpuc_api.fetch_stations()) if hasattr(sfpuc_api, "fetch_stations") else []
-    except Exception:
-        stations = []
-    try:
-        summary = sfpuc_api.get_status_summary() if not stations else {}
+        summary = sfpuc_api.get_status_summary() if not stations else {}   # the fallback, only when the feed came back empty
     except Exception:
         summary = {}
-    facts = _live_facts() if live_facts else {}
     board = today_board(stations, facts.get("_forecast"), facts.get("/samples", ""))
     if not stations and summary:   # a client that only knows the summary: keep the old banner sentence as the headline
         board["tone"], message = _status_banner(summary)
         board["headline"] = board["headline_html"] = message.split("</svg> ", 1)[-1]
-    return {"board": board, "conditions": _conditions_lines(env_context), "facts": facts,
+    return {"board": board, "conditions": conditions, "facts": facts,
             "generated": now_pacific().strftime("%B %-d, %Y at %-I:%M %p %Z")}
 

@@ -172,6 +172,32 @@ def test_today_page_offline_shows_the_board_then_the_hubs_and_hood():
     assert not (ROOT / "app/templates/landing.html").exists() and not hasattr(L, "render_landing")
 
 
+def test_the_board_waits_for_its_slowest_source_not_all_four_in_a_row():
+    """SFPUC's feed, the live facts, rain and tides are fetched at the same time (2026-10-01)."""
+    import types
+    nap = 0.4
+    def slow(value):
+        def fn(*a, **kw): time.sleep(nap); return value
+        return fn
+    sfpuc = types.SimpleNamespace(fetch_stations=slow([]), get_status_summary=lambda: {"safe_count": 3})
+    env = types.SimpleNamespace(weather=types.SimpleNamespace(get_rain_advisory=slow(types.SimpleNamespace(is_active=False, upcoming_rain=True))),
+                                tides=types.SimpleNamespace(get_tide_info=slow(types.SimpleNamespace(current_trend="rising", next_high=None))))
+    saved = L._FACT_SOURCES
+    L._FACT_SOURCES = {"/forecast": slow("today 2% risk")}
+    try:
+        t0 = time.time(); ctx = L.board_context(sfpuc, env); took = time.time() - t0
+    finally:
+        L._FACT_SOURCES = saved
+    assert took < 2.5 * nap, took                                                       # four 0.4 s sources in a row would take 1.6 s
+    assert ctx["facts"] == {"/forecast": "today 2% risk"}
+    assert [("Rain in the forecast" in c, "Tide" in c) for c in ctx["conditions"]] == [(True, False), (False, True)]   # rain chip first, then tide
+    assert "meeting California water-quality standards" in ctx["board"]["headline"]     # the summary fallback still runs when the feed is empty
+    broken = types.SimpleNamespace(fetch_stations=lambda: 1 / 0, get_status_summary=lambda: 1 / 0)
+    bad_env = types.SimpleNamespace(weather=types.SimpleNamespace(get_rain_advisory=lambda: 1 / 0), tides=types.SimpleNamespace(get_tide_info=lambda: 1 / 0))
+    out = L.board_context(broken, bad_env, live_facts=False)                               # every source failing still renders a board
+    assert out["conditions"] == [] and out["board"]["feed_ok"] is False
+
+
 def test_one_frame_width_on_every_page():
     """One page-width variable drives header, sub-tabs, content and footer, and no page
     overrides it — the frame must not jump between pages (Chase, 2026-09-29)."""
