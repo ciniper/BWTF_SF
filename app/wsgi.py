@@ -54,6 +54,7 @@ import features.unsubscribe.page as unsubscribe_page
 import features.manage.page as manage_page
 import features.site_analysis.page as site_analysis_page
 import features.postings.page as postings_page
+import features.alerts.costs as costs_page
 from features.alerts.page import AlertsRoutes
 from features.comparison.page import ComparisonRoutes
 from shared.datasf import DATASET_PAGE_URL
@@ -282,6 +283,10 @@ def create_app():
         app.add_url_rule(path, f"alert-get:{path}", view, methods=["GET"])
     for path, method_name in _ALERT_POST.items():
         app.add_url_rule(path, f"alert-post:{path}", _gated_api(_mixin_view(method_name)), methods=["POST"])
+    # Running costs: the alerts dashboard's third tab (features/alerts/costs.py), behind the same passphrase
+    for path, handler in costs_page.GET_ROUTES.items():
+        gate = _gated_api if path.startswith("/alerts/api/") else _gated_page
+        app.add_url_rule(path, f"costs-get:{path}", gate(_forecast_view(handler)), methods=["GET"])
 
     # Comparison page + its GET APIs
     for path, method_name in _COMPARE_GET.items():

@@ -110,7 +110,7 @@ UNDER_THE_HOOD = [
 # "/today" serves the same page for every alert email and text since migration 021 links there.
 # Never make one redirect to the other: whichever side redirects pays a round trip on every visit.
 HOME_URL = "https://bwtf-sf.vercel.app/"
-PAGE_ALIASES = {"/today": "/", "/index.html": "/"}
+PAGE_ALIASES = {"/today": "/", "/index.html": "/", "/alerts/costs": "/alerts"}   # Running costs is a tab of the alerts dashboard
 
 
 def canonical_path(path: str) -> str:
