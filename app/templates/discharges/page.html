@@ -91,10 +91,10 @@
     <input type="date" id="startDate" min="2016-10-01">
     <span style="color:#54576F">→</span>
     <input type="date" id="endDate" min="2016-10-01">
-    <button class="group-btn preset" data-days="91">Last 3 mo</button>
-    <button class="group-btn preset" data-days="365">Last 12 mo</button>
-    <button class="group-btn preset" data-days="1096">Last 3 yrs</button>
-    <button class="group-btn preset" data-days="">Full record</button>
+    <button class="group-btn preset" data-years="1">1 year</button>
+    <button class="group-btn preset" data-years="3">3 years</button>
+    <button class="group-btn preset" data-years="5">5 years</button>
+    <button class="group-btn preset" data-years="">Full record</button>
   </div>
 
   <div class="note" id="covNote"></div>
@@ -500,22 +500,23 @@ async function load() {
   });
 
   const DAY = 864e5, near = (iso, ms) => !!iso && Math.abs(new Date(iso) - ms) <= 1.5 * DAY;
-  function markPreset() {   // light the preset whose window matches the dates shown: N days back from the newest record, or the whole ledger
+  const yearStart = n => (new Date().getFullYear() - (n - 1)) + "-01-01";   // calendar windows (Chase, 2026-10-01): this year; this year and the two before; and the four before
+  function markPreset() {   // light the preset whose window matches the dates shown: January 1 of the window's first year to the newest record, or the whole ledger
     const toEnd = near(STATE.end, new Date(newest));
-    document.querySelectorAll(".preset").forEach(x => { const d = x.dataset.days;
-      x.classList.toggle("active", toEnd && (d ? near(STATE.start, new Date(newest) - d * DAY) : !!STATE.start && STATE.start <= sd.min)); });
+    document.querySelectorAll(".preset").forEach(x => { const n = +x.dataset.years;
+      x.classList.toggle("active", toEnd && (n ? STATE.start === yearStart(n) : !!STATE.start && STATE.start <= sd.min)); });
   }
-  function applyPreset(days) {   // both dates always filled: a window ending on the newest record, or the ledger's first day to its newest
+  function applyPreset(years) {   // both dates always filled: January 1 of the window's first year to the newest record, or the ledger's first day to its newest
     STATE.end = ed.value = newest;
-    STATE.start = sd.value = days ? new Date(new Date(newest) - days * DAY).toISOString().slice(0, 10) : sd.min;
+    STATE.start = sd.value = years ? yearStart(years) : sd.min;
     markPreset(); render();
   }
-  document.querySelectorAll(".preset").forEach(btn => btn.addEventListener("click", () => applyPreset(+btn.dataset.days)));
+  document.querySelectorAll(".preset").forEach(btn => btn.addEventListener("click", () => applyPreset(+btn.dataset.years)));
   for (const [el, key] of [[sd, "start"], [ed, "end"]]) {
     el.addEventListener("change", e => { STATE[key] = e.target.value; markPreset(); render(); });
   }
   buildPicker();
-  applyPreset(365);   // opens on the last twelve months: discharges come with rain, so three months would be empty all dry season
+  applyPreset(3);   // opens on this year and the two before it (as Beach Postings does): the current calendar year alone is thin until the winter storms
   initRaw();
 }
 load();

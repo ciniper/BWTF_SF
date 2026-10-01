@@ -12,8 +12,9 @@ sys.path.insert(0, str(ROOT))
 T = lambda rel: (ROOT / rel).read_text()  # noqa: E731
 DAY_PRESETS = [("91", "Last 3 mo"), ("365", "Last 12 mo"), ("1096", "Last 3 yrs"), ("", "Full record")]
 YEAR_PRESETS = [("365", "1 year"), ("1096", "3 years"), ("1826", "5 years"), ("", "Full record")]   # pages whose record spans decades (Chase, 2026-10-01)
-RANGE_PAGES = ("graphs", "samples", "comparison", "discharges")
+RANGE_PAGES = ("graphs", "samples", "comparison")
 YEAR_PAGES = ("site_analysis",)
+CALENDAR_PRESETS = [("1", "1 year"), ("3", "3 years"), ("5", "5 years"), ("", "Full record")]   # whole calendar years: Beach Postings, the Discharge Ledger (Chase, 2026-10-01)
 
 
 def presets(html, attr="data-days"):
@@ -29,21 +30,23 @@ def test_every_range_page_offers_the_same_four_presets_smallest_first():
         html = T(f"app/templates/{page}/page.html")
         assert presets(html) == YEAR_PRESETS, page
         assert 'preset active" data-days' not in html, page
-    assert presets(T("app/templates/postings/page.html"), "data-years") == [("1", "1 year"), ("3", "3 years"), ("5", "5 years"), ("", "Full record")]
+    assert presets(T("app/templates/postings/page.html"), "data-years") == CALENDAR_PRESETS
+    d = T("app/templates/discharges/page.html")   # the ledger: this calendar year, this + the two before, this + the four before, all — anchored on today's year
+    assert presets(d, "data-years") == CALENDAR_PRESETS and "data-days" not in d and 'const yearStart = n => (new Date().getFullYear() - (n - 1)) + "-01-01"' in d
 
 
 def test_nothing_opens_on_the_full_record():
     from features.comparison import comparison as C
     assert C.DEFAULT_DAYS == 91                                                                    # Graphs, Samples: the API's default window
     assert "var HIST = { start: isoDaysAgo(91)" in T("app/templates/comparison/page.html")          # the Compare page's history modal
-    assert "applyPreset(365);" in T("app/templates/discharges/page.html")                          # the ledger: twelve months (three are dry-season empty)
+    assert "applyPreset(3);" in T("app/templates/discharges/page.html")                            # the ledger: this year and the two before (a lone calendar year is thin until the storms)
     assert "start: new Date(Date.now() - 365 * 864e5)" in T("app/templates/site_analysis/page.html")   # its smallest preset is a year
     assert "setYears(D.lastYear - 2, D.lastYear);" in T("app/templates/postings/page.html")
 
 
 def test_a_preset_fills_both_date_boxes():
     d = T("app/templates/discharges/page.html")
-    assert "STATE.end = ed.value = newest;" in d and 'STATE.start = sd.value = days ? ' in d and 'sd.value = ""' not in d and 'ed.value = ""' not in d
+    assert "STATE.end = ed.value = newest;" in d and 'STATE.start = sd.value = years ? yearStart(years) : sd.min' in d and 'sd.value = ""' not in d and 'ed.value = ""' not in d
     a = T("app/templates/site_analysis/page.html")
     assert "STATE.end = ed.value = DATA ? DATA.newest_sample" in a and 'sd.value = ""; ed.value = ""' not in a
     p = T("app/templates/postings/page.html")
