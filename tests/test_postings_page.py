@@ -41,7 +41,7 @@ def test_page_and_csv_routes():
     with app.test_client() as c:   # registered in the app, linked from its neighbours
         assert c.get("/postings").status_code == 200 and c.get("/postings/api/advisories").status_code == 200
         assert 'href="/postings"' in c.get("/discharges").data.decode() and 'href="/postings"' in c.get("/analysis").data.decode()
-        landing = c.get("/").data.decode()   # a row in the "Postings & discharges" hub on the main dashboard (app/landing.py HUBS)
+        landing = c.get("/today").data.decode()   # a row in the "Postings & discharges" hub card under the Today board (app/landing.py HUBS)
         assert '<a href="/postings"' in landing and "Beach Postings" in landing
 
 
