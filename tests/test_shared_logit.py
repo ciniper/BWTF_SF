@@ -1,4 +1,4 @@
-"""logit_v2_shared5 / shared6 / shared8 (2026-09-30): the same terms in every basin, each basin its own weights, no odd weights.
+"""logit_v2_shared5 / shared6 / shared8 / half (2026-09-30): the same terms in every basin, each basin its own weights, no odd weights.
 
 The shared pipeline must take the same 19-input frame serving already passes,
 pickle through the importable leaderboard module, and clone for holdout
@@ -26,7 +26,7 @@ import leaderboard as L  # noqa: E402
 import candidates as C  # noqa: E402
 
 BASINS = ("westside", "north_shore", "central", "southeast", "citywide")
-SETS = {"logit_v2_shared5": "shared5", "logit_v2_shared6": "shared6", "logit_v2_shared8": "shared8"}
+SETS = {"logit_v2_shared5": "shared5", "logit_v2_shared6": "shared6", "logit_v2_shared8": "shared8", "logit_v2_half": "half"}
 
 
 def _toy(n=600, seed=0):

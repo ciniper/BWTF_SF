@@ -80,6 +80,66 @@ def season_cv(sub: pd.DataFrame, design: dict, C: float) -> dict:
     return L.scores(np.concatenate(ys), np.concatenate(ps)) if ys else {}
 
 
+def basin_rows(basin: str, frames: dict, chosen_src: dict, use_archive: dict) -> pd.DataFrame:
+    """The served training rows for one basin (or citywide): its rain source, its archive-label decision."""
+    sub = T.target_frame(frames[chosen_src[basin]], basin)
+    if basin != "citywide" and not use_archive.get(basin, True):
+        sub = sub[sub[f"{basin}_label_source"] != "poobot"]
+    elif basin == "citywide" and not all(use_archive.values()):
+        sub = sub[~(sub[[f"{b}_label_source" for b in T.APP_BASINS]] == "poobot").any(axis=1)]
+    return sub.reset_index(drop=True)
+
+
+# ── "half" (Chase 2026-09-30: "a model with half as many factors as before but still several") ──
+# Start from all 19 inputs, each banded at the served model's knots (38 terms, the served
+# count), and drop one whole input (with its bands) at a time — the one whose removal
+# hurts least (lowest mean over the four basins of pre-holdout season-CV log loss, each
+# basin at its best C) — until at most HALF_TERMS terms remain. Weights ≥ 0 throughout;
+# the same inputs for every basin. Nothing after Jun 2023 is seen while choosing.
+HALF_TERMS = 19
+FULL_DESIGN = {f: tuple(L.HINGES.get(f, ())) for f in L.FEATS}
+
+
+def backward_select(frames: dict, chosen_src: dict, use_archive: dict, target_terms: int = HALF_TERMS) -> tuple[dict, list]:
+    from sklearn.metrics import log_loss
+    from sklearn.preprocessing import StandardScaler
+    cols = L.band_columns(FULL_DESIGN)
+    groups = {f: [i for i, c in enumerate(cols) if c[0] == f] for f in FULL_DESIGN}
+    data = {}
+    for basin in T.APP_BASINS:
+        sub = basin_rows(basin, frames, chosen_src, use_archive)
+        pre = (sub["date"] < T.HOLDOUT_START).values
+        data[basin] = (L.add_bands(sub[L.FEATS], FULL_DESIGN)[pre], sub["y"].values[pre].astype(int), sub["season"].values[pre])
+
+    def cv_ll(basin, idx, C):
+        A, y, se = data[basin]
+        X = A[:, idx]
+        p = np.full(len(y), np.nan)
+        for s in np.unique(se):
+            tr, te = se != s, se == s
+            if y[tr].sum() < 5:
+                continue
+            sc = StandardScaler().fit(X[tr])
+            p[te] = L.NonNegLogit(C=C).fit(sc.transform(X[tr]), y[tr]).predict_proba(sc.transform(X[te]))[:, 1]
+        k = ~np.isnan(p)
+        return log_loss(y[k], np.clip(p[k], 1e-6, 1 - 1e-6))
+
+    def score(inputs):
+        idx = [i for f in inputs for i in groups[f]]
+        return float(np.mean([min(cv_ll(b, idx, C) for C in C_GRID) for b in T.APP_BASINS]))
+
+    keep = list(FULL_DESIGN)
+    path = [{"inputs": list(keep), "terms": len(cols), "cv_log_loss": score(keep), "dropped": None}]
+    print(f"   start: {len(keep)} inputs, {len(cols)} terms, mean season-CV log loss {path[0]['cv_log_loss']:.5f}", flush=True)
+    while sum(len(groups[f]) for f in keep) > target_terms and len(keep) > 1:
+        best = min(((score([g for g in keep if g != f]), f) for f in keep), key=lambda t: t[0])
+        keep.remove(best[1])
+        n = sum(len(groups[f]) for f in keep)
+        path.append({"inputs": list(keep), "terms": n, "cv_log_loss": best[0], "dropped": best[1]})
+        print(f"   drop {best[1]:20} → {len(keep)} inputs, {n} terms, mean season-CV log loss {best[0]:.5f}", flush=True)
+    return {f: FULL_DESIGN[f] for f in keep}, path
+
+
 def slopes(model, design: dict) -> dict:
     """Each band's weight in plain units: log-odds per inch of rain inside the band (≥ 0 by construction)."""
     lr, sc = model.named_steps["lr"], model.named_steps["scale"]
@@ -127,6 +187,10 @@ def main(design_keys: list, dry_run: bool = False):
     for dk in design_keys:
         name = name_of(dk)
         design = L.SHARED_DESIGNS[dk]
+        selection = None
+        if dk == "half":
+            picked, selection = backward_select(frames, chosen_src, use_archive)
+            assert picked == design, f"backward selection now picks {picked}, SHARED_DESIGNS['half'] records {design}"
         print(f"── {name}: {json.dumps({f: list(k) for f, k in design.items()})}", flush=True)
         finals, holdouts, per_basin, terms = fit_design(dk, frames, chosen_src, use_archive)
         if dry_run:
@@ -135,7 +199,7 @@ def main(design_keys: list, dry_run: bool = False):
                 f"yesterday's, cut into bands at shared bends ({', '.join(terms)}); every weight ≥ 0, so more rain never lowers "
                 f"the risk. C per basin by pre-holdout season CV. Served rain sources and training rows. Stage 2 v1.")
         d = candidates.save_candidate(name, "logit", finals, holdouts, dict(chosen_src), list(L.FEATS), per_basin, note=note,
-                                      extra={"design": {f: list(k) for f, k in design.items()}, "terms": terms,
+                                      extra={"design": {f: list(k) for f, k in design.items()}, "terms": terms, "selection_path": selection,
                                              "constraint": "every weight >= 0", "C_grid": C_GRID},
                                       stage1_name=name)
         print(f"candidate → {d.relative_to(REPO)}", flush=True)

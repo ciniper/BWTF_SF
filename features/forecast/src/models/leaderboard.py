@@ -96,6 +96,13 @@ SHARED_DESIGNS = {
     # at 1 / 1.5 / 2" drew a zero weight in almost every basin (today + yesterday already sum to it); the
     # burst drew ≈ 2 log-odds per inch in every basin, and 6 h is the burst ICON tracks best vs ERA5.
     "shared6": {"precip_avg": (0.5, 1.0), "rain_lag1d": (0.5,), "rain_max6h": ()},
+    # half the served model's 38 terms (Chase: "half as many factors as before but still several"):
+    # shared_logit.backward_select dropped whole inputs from all 19 (banded at the served knots), least
+    # useful first by pre-holdout season-CV log loss, until 19 terms were left. Drop order: max1h, max3h,
+    # max6h, lag3d, antecedent_moisture, 7d, 30d, 14d, lag7d, lag2d. The build re-runs the selection
+    # and refuses to save if it no longer lands here.
+    "half": {"precip_avg": (0.25, 0.5, 1.0), "rain_2d_cum": (0.5, 1.0, 2.0), "rain_3d_cum": (1.0, 2.0), "rain_5d_cum": (),
+             "rain_lag1d": (), "rain_lag5d": (), "wet_prior_3d": (), "peak_3d": (0.5, 1.0), "dry_spell_days": ()},
 }
 
 

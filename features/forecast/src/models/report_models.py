@@ -51,7 +51,7 @@ LINES = [0.25, 0.5]
 WEIGHTINGS = [("a miss costs 2 false alarms", 1, 2), ("1 : 1", 1, 1), ("a miss costs 4 false alarms", 1, 4), ("a miss costs 6 false alarms", 1, 6),
               ("a miss costs 10 false alarms", 1, 10), ("a false alarm costs 2 misses", 2, 1)]
 PRIMARY = ("a miss costs 2 false alarms", 1, 2)
-COLORS = ["#0072BC", "#b5310a", "#7b4bb5", "#237059", "#b97e00", "#d4763a", "#54576F", "#0b8a8a", "#8f2508", "#5b8def"]   # wraps (k % len) past ten sets
+COLORS = ["#0072BC", "#b5310a", "#7b4bb5", "#237059", "#b97e00", "#d4763a", "#54576F", "#0b8a8a", "#8f2508", "#5b8def", "#2e9e6b", "#c9a227"]   # wraps (k % len) past twelve
 
 
 # ── data ────────────────────────────────────────────────────────────────────
@@ -497,7 +497,7 @@ def build_html(sets: list[dict], evals: list[dict], narrative: str, label=None) 
     s1_rows.append('</table>')
     pr_bars = svg_grouped_bars([BASIN_NAME[k] for k in BASIN_ORDER],
                                [{"label": f"{n} · holdout", "values": [e["windows"]["holdout"]["basins"][k]["pr_auc"] for k in BASIN_ORDER], "color": COLORS[(i * 2) % len(COLORS)]} for i, (n, (s, e)) in enumerate(stage1_sets.items())] +
-                               [{"label": f"{n} · since training", "values": [e["windows"]["post"]["basins"][k]["pr_auc"] for k in BASIN_ORDER], "color": COLORS[i*2+1]} for i, (n, (s, e)) in enumerate(stage1_sets.items())],
+                               [{"label": f"{n} · since training", "values": [e["windows"]["post"]["basins"][k]["pr_auc"] for k in BASIN_ORDER], "color": COLORS[(i * 2 + 1) % len(COLORS)]} for i, (n, (s, e)) in enumerate(stage1_sets.items())],
                                "stage 1 PR-AUC (discharge days vs quiet days)", ymax=1.0)
     cal_chart = svg_calibration([{"label": n, "color": COLORS[(i * 2) % len(COLORS)], "points": e["windows"]["oos"]["calibration"]} for i, (n, (s, e)) in enumerate(stage1_sets.items())])
     cal_table = ['<table><tr><th>Predicted band</th>' + "".join(f'<th class="num">{esc(n)}: discharged / basin-days</th>' for n in stage1_sets) + '</tr>']
