@@ -2,7 +2,7 @@
 <g class="node{% if tile %} src{% endif %}" transform="translate({{ x }},{{ y }})"{% if tile %} data-tile="{{ tile }}" tabindex="0" role="button" aria-label="{{ title }}: sources and dates"{% endif %}><title>{{ tip }}</title>
   <rect class="box" width="{{ w }}" height="{{ h }}" rx="16"/>
   {% if icon.startswith("logo:") %}<rect class="tile logo" x="12" y="{{ (h - 40) / 2 }}" width="40" height="40" rx="11"/>
-  <image href="/static/{{ icon[5:] }}" x="18" y="{{ (h - 28) / 2 }}" width="28" height="28" preserveAspectRatio="xMidYMid meet"/>
+  <image href="{{ asset(icon[5:]) }}" x="18" y="{{ (h - 28) / 2 }}" width="28" height="28" preserveAspectRatio="xMidYMid meet"/>
   {% else %}<rect class="tile" x="12" y="{{ (h - 40) / 2 }}" width="40" height="40" rx="11"/>
   <use class="icn" href="#i-{{ icon }}" x="20" y="{{ (h - 24) / 2 }}" width="24" height="24"/>{% endif %}
   <text class="t" x="64" y="{{ h / 2 - 3 }}">{{ title }}</text>
@@ -13,7 +13,7 @@
 <g class="node{% if tile %} src{% endif %}" transform="translate({{ x }},{{ y }})"{% if tile %} data-tile="{{ tile }}" tabindex="0" role="button" aria-label="{{ title }}: sources and dates"{% endif %}><title>{{ tip }}</title>
   <rect class="box" width="{{ w }}" height="46" rx="13"/>
   {% if icon.startswith("logo:") %}<rect class="tile logo" x="7" y="7" width="32" height="32" rx="9"/>
-  <image href="/static/{{ icon[5:] }}" x="12" y="12" width="22" height="22" preserveAspectRatio="xMidYMid meet"/>
+  <image href="{{ asset(icon[5:]) }}" x="12" y="12" width="22" height="22" preserveAspectRatio="xMidYMid meet"/>
   {% else %}<rect class="tile" x="7" y="7" width="32" height="32" rx="9"/>
   <use class="icn" href="#i-{{ icon }}" x="13" y="13" width="20" height="20"/>{% endif %}
   <text class="t m" x="47" y="28">{{ title }}</text>
@@ -37,13 +37,13 @@
 {%- endmacro -%}
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
-<link rel="icon" href="/static/brand/favicon.ico"><link rel="apple-touch-icon" sizes="144x144" href="/static/brand/bwtf_144x144.png">
+<link rel="icon" href="{{ asset('brand/favicon.ico') }}"><link rel="apple-touch-icon" sizes="144x144" href="{{ asset('brand/bwtf_144x144.png') }}">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>How It's Built — Surfrider SF Blue Water Task Force</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/brand.css">
+<link rel="stylesheet" href="{{ asset('brand.css') }}">
 <style>
   .wrap{max-width:var(--page-w);margin:0 auto;padding:24px}
   .panel{background:#fff;border:1px solid #d9e4e8;border-radius:24px;padding:18px 14px;overflow-x:auto}
@@ -137,7 +137,7 @@
     <g class="node src" data-tile="supabase" tabindex="0" role="button" aria-label="Supabase: sources and dates" transform="translate(380,40)"><title>Supabase: the Postgres database. pg_cron runs the alert watcher every minute and triggers the forecast every 30 minutes; it keeps subscribers, the alert log and history tables.</title>
       <rect class="box hub" width="260" height="212" rx="18"/>
       <rect class="tile logo" x="12" y="12" width="40" height="40" rx="11"/>
-      <image href="/static/logos/supabase.svg" x="19" y="19" width="26" height="26"/>
+      <image href="{{ asset('logos/supabase.svg') }}" x="19" y="19" width="26" height="26"/>
       <text class="t" x="64" y="29">Supabase</text>
       <text class="s" x="64" y="46">database + scheduler</text>
       {{ chip(72, "clock", "Alert watcher", "1 min") }}
@@ -147,7 +147,7 @@
     <g class="node src" data-tile="vercel" tabindex="0" role="button" aria-label="Vercel: sources and dates" transform="translate(380,330)"><title>Vercel: the Flask web app (app/wsgi.py) — every page and API; main auto-deploys</title>
       <rect class="box hub" width="260" height="76" rx="16"/>
       <rect class="tile logo" x="12" y="18" width="40" height="40" rx="11"/>
-      <image href="/static/logos/vercel.svg" x="21" y="27" width="22" height="22"/>
+      <image href="{{ asset('logos/vercel.svg') }}" x="21" y="27" width="22" height="22"/>
       <text class="t" x="64" y="35">Vercel</text>
       <text class="s" x="64" y="53">the website (Flask)</text>
     </g>
@@ -193,7 +193,7 @@
     <g class="node src" data-tile="supabase" tabindex="0" role="button" aria-label="Supabase: sources and dates" transform="translate(10,180)"><title>Supabase: the database and scheduler. Runs the alert watcher every minute and the forecast every 30 minutes; keeps subscribers and history.</title>
       <rect class="box hub" width="156" height="132" rx="14"/>
       <rect class="tile logo" x="7" y="7" width="32" height="32" rx="9"/>
-      <image href="/static/logos/supabase.svg" x="12" y="12" width="22" height="22"/>
+      <image href="{{ asset('logos/supabase.svg') }}" x="12" y="12" width="22" height="22"/>
       <text class="t m" x="47" y="28">Supabase</text>
       {{ mchip(52, "Watcher", "1 min") }}
       {{ mchip(90, "Forecast", "30 min") }}
@@ -201,7 +201,7 @@
     <g class="node src" data-tile="vercel" tabindex="0" role="button" aria-label="Vercel: sources and dates" transform="translate(194,180)"><title>Vercel: the Flask web app, every page and API; main auto-deploys</title>
       <rect class="box hub" width="156" height="46" rx="13"/>
       <rect class="tile logo" x="7" y="7" width="32" height="32" rx="9"/>
-      <image href="/static/logos/vercel.svg" x="13" y="13" width="20" height="20"/>
+      <image href="{{ asset('logos/vercel.svg') }}" x="13" y="13" width="20" height="20"/>
       <text class="t m" x="47" y="28">Vercel</text>
     </g>
     {{ mnode(194, 246, "globe", "Visitors", "The public website", tile="visitors") }}

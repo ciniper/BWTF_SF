@@ -57,7 +57,7 @@ def test_both_pages_include_the_shared_script_and_the_route_exists():
     assert "barSeries: barSeries" in charts and "skipNull: true" in charts.split("function barSeries")[1]          # the Graphs page's Bars choice, one slot per sample day
     assert "p.over ? COLORS.OVER" not in charts.split("function seriesChart")[1].split("function pairedBars")[0]   # dots keep their series colour (Chase, 2026-09-28)
     for tpl in ("app/templates/alerts/dashboard.html", "app/templates/forecast/page.html", "app/templates/graphs/page.html", "app/templates/samples/page.html"):
-        assert "/static/sample_popover.js" in (ROOT / tpl).read_text(), tpl
+        assert "asset('sample_popover.js')" in (ROOT / tpl).read_text(), tpl
     from app import wsgi
     assert wsgi._COMPARE_GET["/api/sample-day"] == "send_api_sample_day" and wsgi._COMPARE_GET["/api/sample-dates"] == "send_api_sample_dates"
     assert 'id="sp-prev"' in js and 'id="sp-next"' in js and "/api/sample-dates?" in js and 'e.key === "ArrowLeft"' in js   # ‹ › through the site's samples (Chase, 2026-09-29)

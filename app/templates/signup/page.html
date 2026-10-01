@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
-<link rel="icon" href="/static/brand/favicon.ico"><link rel="apple-touch-icon" sizes="144x144" href="/static/brand/bwtf_144x144.png">
+<link rel="icon" href="{{ asset('brand/favicon.ico') }}"><link rel="apple-touch-icon" sizes="144x144" href="{{ asset('brand/bwtf_144x144.png') }}">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Get Beach Alerts — Surfrider SF Blue Water Task Force</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<link rel="stylesheet" href="/static/brand.css">
+<link rel="stylesheet" href="{{ asset('brand.css') }}">
 <style>
 
   .panel{display:grid;grid-template-columns:5fr 6fr;background:#fff;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(38,39,42,.08)}
@@ -62,7 +62,7 @@
       <p>We watch SFPUC's beach map around the clock. When a beach you follow is posted for bacteria or has a sewage discharge, you get an email within minutes.</p>
       <p>Nothing else lands in your inbox: no confirmation, no digest, no marketing. All-clear emails are on the roadmap.</p>
       <p>To stop, reply "unsubscribe" to any alert. To change areas, sign up again and the new ones replace the old.</p>
-      <div class="disclaimer"><img class="illus" src="/static/brand/shield-flask.png" alt=""><div>Community science, not an official advisory.
+      <div class="disclaimer"><img class="illus" src="{{ asset('brand/shield-flask.png') }}" alt=""><div>Community science, not an official advisory.
       Posted signs and SFPUC or health-department notices always win.</div></div>
     </div>
     <div class="right">

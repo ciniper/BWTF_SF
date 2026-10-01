@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-<link rel="icon" href="/static/brand/favicon.ico"><link rel="apple-touch-icon" sizes="144x144" href="/static/brand/bwtf_144x144.png">
+<link rel="icon" href="{{ asset('brand/favicon.ico') }}"><link rel="apple-touch-icon" sizes="144x144" href="{{ asset('brand/bwtf_144x144.png') }}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="refresh" content="120">
     <title>SF Beach Water Quality Dashboard</title>
@@ -731,7 +731,7 @@
         .dhtml { width: 100%; max-width: 720px; height: 460px; border: 1px solid rgba(38,39,42,0.1); border-radius: 8px; background: #fff; }
         .dnone { margin: 8px 0 0; }
     </style>
-<link rel="stylesheet" href="/static/brand.css">
+<link rel="stylesheet" href="{{ asset('brand.css') }}">
 </head>
 <body>
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
@@ -1003,8 +1003,8 @@
         }
 
     </script>
-    <script src="/static/sample_popover.js" defer></script>
-<script src="/static/tables.js" defer></script>
+    <script src="{{ asset('sample_popover.js') }}" defer></script>
+<script src="{{ asset('tables.js') }}" defer></script>
 {{ footer() }}
 {{ tabbar() }}
 </body>

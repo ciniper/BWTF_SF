@@ -1,12 +1,12 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
-<link rel="icon" href="/static/brand/favicon.ico"><link rel="apple-touch-icon" sizes="144x144" href="/static/brand/bwtf_144x144.png">
+<link rel="icon" href="{{ asset('brand/favicon.ico') }}"><link rel="apple-touch-icon" sizes="144x144" href="{{ asset('brand/bwtf_144x144.png') }}">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Source Comparison — BWTF vs. SFPUC | SF Beach Water Quality</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/brand.css">
+<link rel="stylesheet" href="{{ asset('brand.css') }}">
 <style>
           .legend{display:flex;flex-wrap:wrap;gap:14px;margin:0 0 18px}
           .legend div{background:#fff;border:1px solid #d9e4e8;border-radius:14px;padding:10px 14px;font-size:13px;color:#54576F}
@@ -143,8 +143,8 @@
     <p class="modal__links" id="hist-links"></p>
   </div>
 </div>
-<script src="/static/charts.js"></script>
-<script src="/static/sample_popover.js" defer></script>
+<script src="{{ asset('charts.js') }}"></script>
+<script src="{{ asset('sample_popover.js') }}" defer></script>
 <script>
 var FLOOR = "{{ dataset_floor }}", ANALYTE = "{{ analyte_code }}";
 var isoDaysAgo = function (days, end) { var e = end ? new Date(end) : new Date(); return new Date(e - days * 864e5).toISOString().slice(0, 10); };
@@ -222,7 +222,7 @@ document.querySelectorAll(".row-click").forEach(function (el) {
   el.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
 });
 </script>
-<script src="/static/tables.js" defer></script>
+<script src="{{ asset('tables.js') }}" defer></script>
 {{ footer() }}
 {{ tabbar() }}
 </body></html>

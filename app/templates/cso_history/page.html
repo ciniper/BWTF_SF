@@ -1,12 +1,12 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
-<link rel="icon" href="/static/brand/favicon.ico"><link rel="apple-touch-icon" sizes="144x144" href="/static/brand/bwtf_144x144.png">
+<link rel="icon" href="{{ asset('brand/favicon.ico') }}"><link rel="apple-touch-icon" sizes="144x144" href="{{ asset('brand/bwtf_144x144.png') }}">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Online Postings Timeline — Surfrider SF Blue Water Task Force</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/brand.css">
+<link rel="stylesheet" href="{{ asset('brand.css') }}">
 <style>
   .legend{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;margin-left:auto;font-size:13px;font-weight:600;color:#54576F}
   .legend .key{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
@@ -362,7 +362,7 @@
   window.__timeline = { getData: function(){ return DATA; }, setData: function(d){ DATA = d; render(); renderTable(); } };
 })();
 </script>
-<script src="/static/tables.js" defer></script>
+<script src="{{ asset('tables.js') }}" defer></script>
 {{ footer() }}
 {{ tabbar() }}
 </body></html>
