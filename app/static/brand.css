@@ -68,7 +68,7 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
 .seg-btn:focus-visible{outline-offset:-3px}
 
 /* ── Frame: top bar ───────────────────────────────────────────────────────── */
-.topbar{background:#fff;border-bottom:1px solid var(--line);position:relative;z-index:30;font-family:'Roboto','Segoe UI',Arial,sans-serif}
+.topbar{background:#fff;border-bottom:1px solid var(--line);position:relative;z-index:30;font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:14px;line-height:1.2}   /* the frame sets its own type: a page's body rule (Today's line-height:1.5) would otherwise resize the bar between pages (Chase, 2026-09-30: no jumping) */
 .topbar .in{max-width:var(--page-w);margin:0 auto;padding:8px 24px;display:flex;align-items:center;gap:14px}
 .topbar .mark{display:flex;align-items:center;gap:9px;color:var(--ink);text-decoration:none;white-space:nowrap}
 .topbar .mark img{width:30px;height:30px;border-radius:8px}
@@ -90,7 +90,7 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
 .topbar .subtabs a.on{color:var(--brand);border-color:var(--brand)}
 .topbar .subtabs a.gated{margin-left:auto;color:var(--faint)}
 .topbar .subtabs a .ic{width:13px;height:13px;margin-left:5px;vertical-align:-2px}
-.topbar .cta{margin-left:6px;background:var(--brand);color:#fff;border-radius:999px;padding:9px 16px;font-weight:700;font-size:14px;text-decoration:none;white-space:nowrap}
+.topbar .cta{margin:0 0 0 6px;background:var(--brand);color:#fff;border-radius:999px;padding:9px 16px;font-weight:700;font-size:14px;text-decoration:none;white-space:nowrap}   /* margin in full: the landing page's own .cta margin used to push it down */
 .topbar .cta:hover{background:var(--brand-deep)}
 
 /* ── Frame: page head (replaces the blue hero on tool pages) ─────────────── */
@@ -120,14 +120,14 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
 .site-footer .footer-logo{display:inline-block;background:#fff;border-radius:8px;padding:5px 10px;margin:0 0 10px}   /* Surfrider's colours as shipped, on a small white tile */
 .site-footer .footer-logo img{display:block;height:26px;width:auto}
 .site-footer .org{color:#fff;font-weight:700}
-.site-footer .note{color:rgba(255,255,255,.7)}
+.site-footer .footer-note{color:rgba(255,255,255,.7)}   /* footer- prefix on note, hotline, links, sources: pages have their own .note/.links/.sources/.hotline rules, and those restyled the footer on About, Discharges, Signup, Forecast, Manage and Alerts (2026-09-30) */
 .site-footer .reach{text-align:right}
-.site-footer .hotline{color:#fff;font-weight:700;margin:0 0 4px}
-.site-footer .hotline .with-ic{align-items:flex-start}
-.site-footer .hotline .ic{margin-top:4px;flex-shrink:0}   /* the phone icon stays on the first line when the number wraps on phones */
+.site-footer .footer-hotline{color:#fff;font-weight:700;margin:0 0 4px}
+.site-footer .footer-hotline .with-ic{align-items:flex-start}
+.site-footer .footer-hotline .ic{margin-top:4px;flex-shrink:0}   /* the phone icon stays on the first line when the number wraps on phones */
 .site-footer a{color:#7ab8e0;text-decoration:none}
 .site-footer a:hover{text-decoration:underline}
-.site-footer .sources{display:flex;justify-content:space-between;gap:8px 20px;flex-wrap:wrap;margin:18px 0 0;padding-top:12px;border-top:1px solid rgba(255,255,255,.14);font-size:13px;color:#8a949b}
+.site-footer .footer-sources{display:flex;justify-content:space-between;gap:8px 20px;flex-wrap:wrap;margin:18px 0 0;padding-top:12px;border-top:1px solid rgba(255,255,255,.14);font-size:13px;color:#8a949b}
 
 /* ── Frame: phone tab bar (hidden on wide screens) ────────────────────────── */
 .tabbar{display:none}
@@ -142,7 +142,7 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
   .page-head .ph-main{padding-right:0}
   .page-head h1{font-size:30px}
   .page-head .ph-link{position:static;margin-top:10px}
-  .tabbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:40;background:#fff;border-top:1px solid var(--line);justify-content:space-around;padding:8px 6px calc(8px + env(safe-area-inset-bottom));font-family:'Roboto','Segoe UI',Arial,sans-serif}
+  .tabbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:40;background:#fff;border-top:1px solid var(--line);justify-content:space-around;padding:8px 6px calc(8px + env(safe-area-inset-bottom));font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:11px;line-height:1.2}
   .tabbar a{font-size:11px;font-weight:700;color:var(--muted);text-decoration:none;text-align:center;line-height:1.2;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:56px}
   .tabbar a .ic{width:20px;height:20px}
   .tabbar a.on{color:var(--brand)}

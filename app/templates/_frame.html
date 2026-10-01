@@ -53,11 +53,11 @@
     <div class="who">
       <a class="footer-logo" href="https://sf.surfrider.org/" target="_blank" rel="noopener" aria-label="Surfrider Foundation San Francisco"><img src="{{ SURFRIDER_LOGO_URL }}" alt="Surfrider Foundation"></a>
       <p class="org">Surfrider Foundation San Francisco · Blue Water Task Force</p>
-      <p class="note">Community science, not an official advisory.</p>
+      <p class="footer-note">Community science, not an official advisory.</p>
     </div>
     <div class="reach">
-      <p class="hotline"><span class="with-ic"><svg class="ic"><use href="#i-phone"/></svg> Beach Hotline: 1-877-SFBEACH (1-877-732-3224) or 415-242-2214</span></p>
-      <p class="links">
+      <p class="footer-hotline"><span class="with-ic"><svg class="ic"><use href="#i-phone"/></svg> Beach Hotline: 1-877-SFBEACH (1-877-732-3224) or 415-242-2214</span></p>
+      <p class="footer-links">
         <a href="https://webapps.sfpuc.org/sapps/beachesandbay.html" target="_blank" rel="noopener">SFPUC Beach Map</a> ·
         <a href="{{ DATASF_DATASET_URL }}" target="_blank" rel="noopener">SF Gov Data</a> ·
         <a href="https://sf.surfrider.org/programs/blue-water-task-force" target="_blank" rel="noopener">Surfrider BWTF</a> ·
@@ -66,7 +66,7 @@
       </p>
     </div>
   </div>
-  <p class="sources"><span>Sources: SFPUC beach map, SF Gov Open Data, Surfrider BWTF, NWS, NOAA.</span><a href="/api/build" title="{{ build.message if build else '' }}">{{ build.label if build else '' }}</a></p>
+  <p class="footer-sources"><span>Sources: SFPUC beach map, SF Gov Open Data, Surfrider BWTF, NWS, NOAA.</span><a href="/api/build" title="{{ build.message if build else '' }}">{{ build.label if build else '' }}</a></p>
 </div></footer>
 {%- endmacro %}
 
