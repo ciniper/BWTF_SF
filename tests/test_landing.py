@@ -1,7 +1,7 @@
 """The page directory (app/landing.py HUBS): the feature pages grouped into three hubs, each row
 with a static fact that a live one replaces when its source answers in time — the shared tabs and
 the hub cards under the Today board. The Main page at / that first showed the cards was deleted
-2026-09-30; / redirects to /today. Offline: stubbed status client, facts injected or disabled."""
+2026-09-30; since 2026-10-01 Today IS / (and still answers at /today). Offline: stubbed status client, facts injected or disabled."""
 import pathlib
 import re, sys
 import time
@@ -11,7 +11,7 @@ sys.path.insert(0, str(ROOT))
 
 from app import landing as L  # noqa: E402
 
-FEATURE_PAGES = {"/today", "/signup", "/alerts", "/forecast", "/samples", "/graphs", "/compare", "/cso-history", "/analysis", "/discharges", "/postings"}
+FEATURE_PAGES = {"/", "/signup", "/alerts", "/forecast", "/samples", "/graphs", "/compare", "/cso-history", "/analysis", "/discharges", "/postings"}
 
 
 def test_every_feature_page_sits_in_exactly_one_hub_and_every_link_resolves():
@@ -125,19 +125,23 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
     down = L.today_board([], {}, "")
     assert down["tone"] == "warn" and down["headline_html"] == '<em class="warn">Beach status is unavailable right now.</em>'    # orange, like a posting
     nav = L.nav_model()
-    assert [h["key"] for h in nav] == ["today", "water", "record"] and [h["href"] for h in nav] == ["/today", "/analysis", "/discharges"]   # a hub opens on its first page
+    assert [h["key"] for h in nav] == ["today", "water", "record"] and [h["href"] for h in nav] == ["/", "/analysis", "/discharges"]   # a hub opens on its first page; Today's is the root
     assert [r["title"] for r in nav[1]["rows"]] == ["Site Report Card", "Samples", "Graphs", "Source Comparison"] and "/compare" in nav[1]["paths"]  # subpage = its own tab
-    assert [r["href"] for r in nav[0]["rows"]] == ["/today", "/forecast", "/signup", "/alerts"] and "/" not in nav[0]["paths"]                          # the hub opens on Today; the locked page last
+    assert [r["href"] for r in nav[0]["rows"]] == ["/", "/forecast", "/signup", "/alerts"] and "/" in nav[0]["paths"]                                  # the hub opens on Today, at the root; the locked page last
+    assert L.canonical_path("/today") == L.canonical_path("/index.html") == "/" and L.canonical_path("/graphs") == "/graphs"
     assert [r["gated"] for r in nav[0]["rows"]] == [False, False, False, True] and L.UNDER_THE_HOOD == [("/architecture", "How it's built"), ("/records", "How we get the records"), ("/forecast#check", "Model check")]
     from app.wsgi import app
     with app.test_client() as c:
         g = c.get("/graphs").data.decode()
         assert 'class="subtabs"' in g and g.count('aria-current="page"') == 1 and '<a href="/samples">Samples</a>' in g and 'href="/graphs" class="on" aria-current="page">Graphs' in g
         assert "The water record</a>" in g and 'class="crumbs"' not in g and "navhub" not in g
-        home = c.get("/")
-        assert home.status_code == 302 and home.headers["Location"] == "/today"                        # the Main page is gone: the root opens Today
-        assert c.get("/?layers=rain&surfrider=1").headers["Location"] == "/today?layers=rain&surfrider=1" and c.get("/index.html").headers["Location"] == "/today"   # deep links ride along
-        assert ">Main</a>" not in g and "Main</a>" not in g and 'class="mark" href="/today"' in g     # no Main tab in either bar; the logo opens Today
+        for u in ("/", "/today"):   # Today IS the home page: served at the root, and at /today for the alert emails — never a redirect (2026-10-01)
+            r = c.get(u); body = r.data.decode()
+            assert r.status_code == 200 and "Location" not in r.headers and 'id="today-map"' in body and 'class="hubs"' in body, u
+            assert '<link rel="canonical" href="https://bwtf-sf.vercel.app/">' in body, u                  # search engines index the root
+            assert 'href="/" class="on" aria-current="page">Today' in body and 'aria-current="page"' in body.split('class="tabbar"')[0], u   # the Today tab lights at both addresses
+        assert c.get("/index.html").status_code == 200 and "Location" not in c.get("/index.html").headers
+        assert ">Main</a>" not in g and "Main</a>" not in g and 'class="mark" href="/"' in g          # no Main tab in either bar; the logo goes home
         f = c.get("/forecast").data.decode()
         assert 'class=" gated" title="Coordinators only' in f and f.index('href="/signup"', f.index('class="subtabs"')) < f.index('href="/alerts"', f.index('class="subtabs"'))   # lock icon, rightmost
         a = c.get("/about").data.decode()
@@ -164,7 +168,7 @@ def test_today_page_offline_shows_the_board_then_the_hubs_and_hood():
     assert 'id="today"' in html and 'id="water"' in html and 'id="record"' in html                                                       # the hub anchors
     assert html.index('class="board') < html.index('class="hubs"') < html.index('class="hood"') < html.index('class="site-footer"')   # board, then the directory
     cards = html[html.index('class="hubs"'):html.index('class="hood"')]
-    assert '<li><a href="/today"' not in cards and '<li><a href="/forecast"' in cards and '<li><a href="/postings"' in cards        # no card row links to the page it sits on
+    assert '<li><a href="/"' not in cards and '<li><a href="/today"' not in cards and '<li><a href="/forecast"' in cards and '<li><a href="/postings"' in cards        # no card row links to the page it sits on
     assert not (ROOT / "app/templates/landing.html").exists() and not hasattr(L, "render_landing")
 
 

@@ -63,7 +63,7 @@ from features.alerts.monitoring import CombinedWaterQualityMonitor
 from features.alerts.subscriptions import SubscriptionStore
 from features.alerts.cso_alerts import SimulatedCSOStore
 from shared.sfpuc_api import SFPUCRealTimeAPI
-from app.landing import nav_model
+from app.landing import canonical_path, nav_model
 from app.build_info import build_info
 
 try:
@@ -235,15 +235,6 @@ def _forecast_view(handler):
     return view
 
 
-def _home_view():
-    """The site's root opens the Today board. The Main page that lived here was deleted (Chase,
-    2026-09-30: "wholesale delete the main page"); its hub cards moved below Today's board. The
-    query string rides along, so ?layers=…&surfrider=1 deep links keep working. 302, not 301:
-    browsers cache a permanent redirect for good, and a future home page may want the address back."""
-    qs = request.query_string.decode()
-    return redirect("/today" + ("?" + qs if qs else ""), code=302)
-
-
 _REPORTS_DIR = Path(__file__).resolve().parents[1] / "reports"
 
 
@@ -261,14 +252,16 @@ def create_app():
     app.jinja_env.globals["SURFRIDER_LOGO_URL"] = SURFRIDER_LOGO_URL
     app.jinja_env.globals["BASEMAP"] = basemap()  # shared/basemap.py: the one tile layer every map draws
     app.jinja_env.globals["NAV"] = nav_model()   # app/landing.py: the three hubs, for the shared top bar (_frame.html)
+    app.jinja_env.globals["canonical_path"] = canonical_path   # /today and /index.html light the home page's tabs
     # Signs the session cookie that remembers an unlocked alerts gate. Without
     # FLASK_SECRET_KEY set, a random key is generated per boot — everything
     # works, but everyone re-enters the passphrase after each deploy/restart.
     app.secret_key = os.environ.get("FLASK_SECRET_KEY") or secrets.token_hex(32)
 
-    # Home: the root opens the Today board (the Main page was deleted 2026-09-30)
-    app.add_url_rule("/", "home", _home_view, methods=["GET"])
-    app.add_url_rule("/index.html", "home_index", _home_view, methods=["GET"])
+    # Home: the root IS the Today page (2026-10-01) — served directly, no redirect; /today and
+    # /index.html serve the same page (alert emails link /today), and its canonical tag names /
+    app.add_url_rule("/", "home", _forecast_view(today_page.handle_page), methods=["GET"])
+    app.add_url_rule("/index.html", "home_index", _forecast_view(today_page.handle_page), methods=["GET"])
     # Browsers ask for /favicon.ico regardless of <link> tags; the BWTF icon
     # (Surfrider's own favicon + manifest PNGs) lives with the brand assets.
     app.add_url_rule("/favicon.ico", "favicon",
@@ -317,7 +310,7 @@ def create_app():
     for path, handler in about_page.GET_ROUTES.items():
         app.add_url_rule(path, f"about-get:{path}", _forecast_view(handler), methods=["GET"])
 
-    # Today: the home page — the board, its layers (/api/today/*), and the page directory below it
+    # Today: the home page (also at /) — the board, its layers (/api/today/*), the page directory below it
     for path, handler in today_page.GET_ROUTES.items():
         app.add_url_rule(path, f"today-get:{path}", _forecast_view(handler), methods=["GET"])
 

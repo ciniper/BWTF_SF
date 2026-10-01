@@ -1,10 +1,11 @@
 """The Today board's builder and the site's page directory.
 
-``today_board`` / ``board_context`` build the board the home page (/today) opens on;
+``today_board`` / ``board_context`` build the board the home page (/, also /today) opens on;
 ``HUBS`` is the one list of pages, behind both the shared two-tier tabs (``nav_model``)
 and the hub cards under Today's board (``hubs_with_facts`` with live facts from
 ``_live_facts``). The module name is historical: it rendered the Main page at ``/``,
-deleted 2026-09-30 (Chase: "wholesale delete the main page"); ``/`` now redirects to /today.
+deleted 2026-09-30 (Chase: "wholesale delete the main page"); Today has served ``/`` since
+2026-10-01 and keeps answering at /today too (``PAGE_ALIASES``).
 Everything is wrapped defensively so a flaky upstream never blanks the board.
 """
 from datetime import datetime
@@ -29,7 +30,7 @@ HUBS = [
         "primary": ("/signup", "Get beach alerts",
                     "Pick your beach areas and get an email when the city posts one for bacteria or a sewage discharge. No digest, no marketing."),
         "rows": [
-            ("/today", "Today",
+            ("/", "Today",
              "Every beach's status on the city map, by zone, with layers for rain, outfalls, overflow risk, Surfrider's results and a replay of past days.",
              "the board · layers"),
             ("/forecast", "CSO Forecast",
@@ -104,6 +105,18 @@ UNDER_THE_HOOD = [
     ("/records", "How we get the records"),
     ("/forecast#check", "Model check"),
 ]   # the model reports stay reachable from Model check; Chase dropped them from the strip (2026-09-29)
+
+# The home page answers at two addresses: "/" is its name (tabs, logo, links, the canonical tag),
+# "/today" serves the same page for every alert email and text since migration 021 links there.
+# Never make one redirect to the other: whichever side redirects pays a round trip on every visit.
+HOME_URL = "https://bwtf-sf.vercel.app/"
+PAGE_ALIASES = {"/today": "/", "/index.html": "/"}
+
+
+def canonical_path(path: str) -> str:
+    """The name a request's page goes by in the tabs: /today and /index.html are the home page."""
+    return PAGE_ALIASES.get(path, path)
+
 
 # Pages behind the coordinators' passphrase: a lock icon in the tabs and the hub rows, and last in their row.
 GATED = {"/alerts"}
