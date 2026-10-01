@@ -22,9 +22,8 @@
   tr.sporadic td{color:#98a3ab}
   .name{font-weight:700;white-space:nowrap}
   .chip{display:inline-block;margin-left:8px;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;vertical-align:1px}
-  .chip.east{background:#fdeee2;color:#b25b1e}
-  .chip.ocean{background:#e3f1fa;color:#0072BC}
-  .chip.north{background:#e8f4ea;color:#2f7d4c}
+  .chip.z-ocean{background:#e3f1fa;color:#0072BC} .chip.z-baker_china{background:#efe9f8;color:#5b3fa0}
+  .chip.z-north{background:#e8f4ea;color:#2f7d4c} .chip.z-east{background:#fdeee2;color:#b25b1e}
   .chip.sporadic{background:#eef1f3;color:#98a3ab}
   .barcell{min-width:190px}
   .bar{display:inline-block;height:13px;border-radius:4px;background:#0072BC;vertical-align:middle;margin-right:8px}
@@ -70,10 +69,8 @@
   {% endcall %}
 
   <div class="controls" id="groupBtns">
-    <button class="group-btn active" data-group="">All sites</button>
-    <button class="group-btn" data-group="East Bayshore">East Bayshore</button>
-    <button class="group-btn" data-group="Ocean">Ocean</button>
-    <button class="group-btn" data-group="North Shore">North Shore</button>
+    <button class="group-btn active" data-zone="">All sites</button>
+    {% for z in zones %}<button class="group-btn" data-zone="{{ z.key }}">{{ z.label }}</button>{% endfor %}
     <span class="legend" id="metaLine"></span>
   </div>
 
@@ -91,9 +88,9 @@
     <input type="date" id="startDate" min="{{ floor }}">
     <span style="color:#54576F">→</span>
     <input type="date" id="endDate" min="{{ floor }}">
-    <button class="group-btn preset" data-days="91">Last 3 mo</button>
-    <button class="group-btn preset" data-days="365">Last 12 mo</button>
-    <button class="group-btn preset" data-days="1096">Last 3 yrs</button>
+    <button class="group-btn preset" data-days="365">1 year</button>
+    <button class="group-btn preset" data-days="1096">3 years</button>
+    <button class="group-btn preset" data-days="1826">5 years</button>
     <button class="group-btn preset" data-days="">Full record</button>
   </div>
 
@@ -182,8 +179,8 @@
 </div>
 
 <script>
-let DATA = null, activeGroup = "";
-const STATE = { mode: "weekly", indicator: "{{ graded_on }}", start: new Date(Date.now() - 91 * 864e5).toISOString().slice(0, 10), end: "" };   // opens on the last three months; a blank end runs through the newest sample
+let DATA = null, activeZone = "";
+const STATE = { mode: "weekly", indicator: "{{ graded_on }}", start: new Date(Date.now() - 365 * 864e5).toISOString().slice(0, 10), end: "" };   // opens on the last year (the smallest preset); a blank end runs through the newest sample
 document.getElementById("startDate").value = STATE.start;
 
 // ─── Site map ────────────────────────────────────────────────────────────────
@@ -203,7 +200,7 @@ function updateMap() {
   markerLayer.clearLayers();
   for (const s of DATA.sites) {
     const p = s.exceed_pct;
-    const dimmed = activeGroup && s.group !== activeGroup;
+    const dimmed = activeZone && s.zone !== activeZone;
     const grey = !s.routine || p === null;
     const color = grey ? "#8a949b" : p >= 25 ? "#b5310a" : p >= 12 ? "#d4763a" : "#0072BC";
     const r = grey ? 6 : 6 + Math.min(p, 40) * 0.5;
@@ -215,7 +212,7 @@ function updateMap() {
     });
     m.bindTooltip(shortName(s.name), {permanent: true, direction: "right",
                                       offset: [r > 8 ? r - 2 : 6, 0], className: "st-label"});
-    m.bindPopup(`<b>${s.name}</b> (${s.group})<br>` +
+    m.bindPopup(`<b>${s.name}</b> (${s.zone_label})<br>` +
       (s.samples ? `${pctTxt(p)} of ${s.samples} samples bad in this view (${DATA.indicator_label})<br>` +
                    `wet ${pctTxt(s.wet.pct)} · dry ${pctTxt(s.dry.pct)}` +
                    (s.routine ? "" : "<br><i>sporadically sampled — not rankable</i>")
@@ -224,9 +221,8 @@ function updateMap() {
   }
 }
 
-const groupChip = g => g === "East Bayshore" ? '<span class="chip east">East</span>'
-                    : g === "Ocean"          ? '<span class="chip ocean">Ocean</span>'
-                    :                          '<span class="chip north">North</span>';
+const ZONE_SHORT = {ocean: "Ocean Beach", baker_china: "Baker & China", north: "North", east: "East"};   // the zone chip beside a site's name
+const zoneChip = s => `<span class="chip z-${s.zone}">${ZONE_SHORT[s.zone] || s.zone_label}</span>`;
 const pctTxt = p => p === null || p === undefined ? "—" : p.toFixed(1) + "%";
 
 function barCell(p, sporadic) {
@@ -239,12 +235,12 @@ function barCell(p, sporadic) {
 function render() {
   const tb = document.getElementById("rows");
   tb.innerHTML = "";
-  const sites = DATA.sites.filter(s => !activeGroup || s.group === activeGroup);
+  const sites = DATA.sites.filter(s => !activeZone || s.zone === activeZone);
   for (const s of sites) {
     const tr = document.createElement("tr");
     tr.className = "site" + (s.routine ? "" : " sporadic");
     tr.innerHTML = `
-      <td class="name">${s.name}${groupChip(s.group)}${s.routine ? "" : '<span class="chip sporadic">sporadic</span>'}</td>
+      <td class="name">${s.name}${zoneChip(s)}${s.routine ? "" : '<span class="chip sporadic">sporadic</span>'}</td>
       <td class="barcell">${barCell(s.exceed_pct, !s.routine)}</td>
       <td class="num cautioncol">${pctTxt(s.caution_pct)}</td>
       <td class="num">${pctTxt(s.wet.pct)}</td>
@@ -305,7 +301,7 @@ document.getElementById("groupBtns").addEventListener("click", e => {
   const btn = e.target.closest(".group-btn");
   if (!btn) return;
   document.querySelectorAll("#groupBtns .group-btn").forEach(b => b.classList.toggle("active", b === btn));
-  activeGroup = btn.dataset.group;
+  activeZone = btn.dataset.zone;
   render();
 });
 

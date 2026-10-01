@@ -114,8 +114,9 @@ def test_consumers_use_the_registry():
     assert monitoring.SFPUC_TO_SFGOV_SOURCES is SFPUC_TO_SFGOV_SOURCES
     assert monitoring.STATION_DRAINAGE_BASINS is STATION_BASINS
     assert set(monitoring.BWTF_PRIORITY_SITES) <= set(STATIONS)
-    assert site_analysis.STATIONS == {
-        sid: (s.name, s.group, s.lat, s.lon) for sid, s in STATIONS.items()
+    from shared.zones import zone_for_station
+    assert site_analysis.STATIONS == {   # the report card groups by zone (shared/zones.py), not the older shoreline group (Chase, 2026-10-01)
+        sid: (s.name, zone_for_station(s).key, s.lat, s.lon) for sid, s in STATIONS.items()
     }
 
 

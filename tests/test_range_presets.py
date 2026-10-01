@@ -11,7 +11,9 @@ sys.path.insert(0, str(ROOT))
 
 T = lambda rel: (ROOT / rel).read_text()  # noqa: E731
 DAY_PRESETS = [("91", "Last 3 mo"), ("365", "Last 12 mo"), ("1096", "Last 3 yrs"), ("", "Full record")]
-RANGE_PAGES = ("graphs", "samples", "comparison", "discharges", "site_analysis")
+YEAR_PRESETS = [("365", "1 year"), ("1096", "3 years"), ("1826", "5 years"), ("", "Full record")]   # pages whose record spans decades (Chase, 2026-10-01)
+RANGE_PAGES = ("graphs", "samples", "comparison", "discharges")
+YEAR_PAGES = ("site_analysis",)
 
 
 def presets(html, attr="data-days"):
@@ -23,7 +25,11 @@ def test_every_range_page_offers_the_same_four_presets_smallest_first():
         html = T(f"app/templates/{page}/page.html")
         assert presets(html) == DAY_PRESETS, page
         assert 'preset active" data-days=""' not in html and 'preset active" data-days' not in html, page   # nothing is lit before the dates are known
-    assert presets(T("app/templates/postings/page.html"), "data-years") == [("3", "Last 3 yrs"), ("10", "Last 10 yrs"), ("", "Full record")]
+    for page in YEAR_PAGES:   # the Site Report Card grades 2000 → today: 1 year / 3 / 5 / Full record, smallest first
+        html = T(f"app/templates/{page}/page.html")
+        assert presets(html) == YEAR_PRESETS, page
+        assert 'preset active" data-days' not in html, page
+    assert presets(T("app/templates/postings/page.html"), "data-years") == [("1", "1 year"), ("3", "3 years"), ("5", "5 years"), ("", "Full record")]
 
 
 def test_nothing_opens_on_the_full_record():
@@ -31,7 +37,7 @@ def test_nothing_opens_on_the_full_record():
     assert C.DEFAULT_DAYS == 91                                                                    # Graphs, Samples: the API's default window
     assert "var HIST = { start: isoDaysAgo(91)" in T("app/templates/comparison/page.html")          # the Compare page's history modal
     assert "applyPreset(365);" in T("app/templates/discharges/page.html")                          # the ledger: twelve months (three are dry-season empty)
-    assert "start: new Date(Date.now() - 91 * 864e5)" in T("app/templates/site_analysis/page.html")
+    assert "start: new Date(Date.now() - 365 * 864e5)" in T("app/templates/site_analysis/page.html")   # its smallest preset is a year
     assert "setYears(D.lastYear - 2, D.lastYear);" in T("app/templates/postings/page.html")
 
 
