@@ -108,6 +108,9 @@ for key, rec in sorted(best.items(), key=lambda kv: (kv[0][0], kv[0][1] or 0, kv
 
 for e in events: e.pop('_cid')
 events.sort(key=lambda e: (e['event_date'], e['facility'], e['outfall_id']))
+# Fail loudly, before anything is written, on an outfall shared/outfalls.py lacks (registry_check.py)
+from registry_check import assert_registered  # noqa: E402
+assert_registered(events)
 EVENT_FIELDS = ['event_date', 'facility', 'outfall_id', 'outfall_name', 'basin', 'receiving_water', 'start_time',
                 'duration_min', 'duration_flag', 'volume_MG', 'volume_qualifier', 'source_document', 'ciwqs_document_id', 'report_period']
 if events:
