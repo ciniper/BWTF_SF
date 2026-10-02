@@ -39,6 +39,7 @@ from src.models.impact import compose, impact_fraction, smooth_table  # noqa: E4
 from src.models.rain_features import DAILY_FEATURES, INTENSITY_FEATURES, add_daily_features, hourly_intensity  # noqa: E402
 from src.models.scorecard import basin_metrics, zone_confusion, zone_confusion_combined, zone_confusion_posted, zone_fp_tail  # noqa: E402
 from shared.sources import registry  # noqa: E402
+from shared.risk_levels import LEVELS  # noqa: E402  (the public levels, Chase, 2026-10-01)
 from shared.zones import ZONES  # noqa: E402
 
 _main = sys.modules.get("__main__")
@@ -59,7 +60,6 @@ ZONE_ICON = {"ocean": "waves", "baker_china": "umbrella", "north": "anchor", "ea
 GROUP_ORDER = ["Ocean Beach", "Baker-China", "Crissy Field", "Aquatic Park", "Mission Creek", "Southeast"]
 LINE_GRID = tuple(round(x, 2) for x in np.arange(0.05, 0.80, 0.05))
 MISS_WEIGHT = 2                                       # Chase: a miss costs two false alarms
-LEVELS = [(0.5, "HIGH", "#b5310a"), (0.25, "MODERATE", "#d4763a"), (0.1, "LOW", "#b97e00"), (0.0, "MINIMAL", "#237059")]
 BRAND, INK, MUTED, LINE, SAND = "#0072BC", "#26272a", "#54576F", "#d9e4e8", "#E3EBF2"
 PALETTE = ["#0072BC", "#d4763a", "#237059", "#b5310a", "#7b5ea7", "#b97e00"]
 
@@ -271,7 +271,7 @@ def pipeline_svg(sv: dict, wx_label: str, n_events: int = 0, n_sample_days: int 
     a.append(node(790, 452, 255, 56, "satellite-dish", f"Live corrections {LR.VERSION.replace('live_', '')}", "observations override", hub=True))
     # outputs
     a.append(node(1075, 362, 205, 56, "map-pin", "4 zones × 6 days", "percent, every 30 min"))
-    a.append(node(1075, 426, 205, 56, "bell", f"Alarm line {int(round((sv.get('line') or 0.25) * 100))}%", "the banner words"))
+    a.append(node(1075, 426, 205, 56, "bell", "Risk levels", f"{LEVELS[0].label} to {LEVELS[-1].label}"))   # the banner's word is a fixed level, not the served line (Chase, 2026-10-01)
     a.append(node(1075, 490, 205, 56, "logo:logos/supabase.svg", "History tables", "every forecast, kept"))
 
     def arrow(d, label=None, lx=None, ly=None, anchor="middle", cls="flow", marker="pa"):
@@ -309,7 +309,7 @@ def pipeline_svg(sv: dict, wx_label: str, n_events: int = 0, n_sample_days: int 
         ("chart", "Stage 1 · 4 basins", "The chance the sewers overflow today."),
         ("waves", "Stage 2 · 6 beach groups", "How long, and which beaches: a percentage from the last eight days."),
         ("satellite-dish", f"Live corrections {LR.VERSION.replace('live_', '')}", "The beach map's flags and postings and this week's samples override the model where they have something to say."),
-        ("map-pin", "Out", f"Four zones, six days, every 30 minutes; the alarm line at {int(round((sv.get('line') or 0.25) * 100))}%; every forecast kept."),
+        ("map-pin", "Out", f"Four zones, six days, every 30 minutes; four fixed risk levels, {LEVELS[0].label} to {LEVELS[-1].label}; every forecast kept."),
     ]
     m = ['<ol class="pipe-m">']
     for icon, title, text in steps:
@@ -543,7 +543,7 @@ def report_works(S: dict, reg: dict, wx_model: str) -> str:
       <div class="card rule"><span class="lgi">{ic("circle-check")}</span><div><b>A sample comes back clean</b><p>Within a week of an overflow it caps the lingering part of the risk at how often a clean bottle is followed by a bad one. Never zero.</p>{cap_bars}</div></div>'''
 
     # outputs
-    level_rows = "".join(f'<div class="lvl"><b style="color:{c}">{name}</b><span>{"≥" if lo else "<"} {int((lo if lo else 0.1) * 100)}%</span></div>' for lo, name, c in LEVELS)
+    level_rows = "".join(f'<div class="lvl"><b style="color:{lv.color}">{lv.label}</b><span>{lv.lo}–{lv.hi}%</span></div>' for lv in reversed(LEVELS))
     zone_rows = "".join(f'<tr><td>{ic(ZONE_ICON[z])} <b>{esc(ZONE_LABEL[z])}</b></td><td>{esc(", ".join(ZONE_GROUPS[z]))}</td><td class="num">{sum(len(SITE_GROUPS[g][1]) for g in ZONE_GROUPS[z])}</td></tr>' for z in ZONE_ORDER)
 
     # training timeline
@@ -610,7 +610,7 @@ def report_works(S: dict, reg: dict, wx_model: str) -> str:
 <section id="outputs"><h2>What goes out</h2>
 <div class="grid3">
 <div class="card"><b>Four zones, six days</b><table class="plain"><tr><th>zone</th><th>beach groups</th><th class="num">stations</th></tr>{zone_rows}</table><p class="fine">A zone shows the worst of its groups; a basin the worst of its groups; the city the worst basin.</p></div>
-<div class="card"><b>One number, four words</b><div class="levels">{level_rows}</div><p class="fine">The alarm line is <strong>{int(round((sv.get("line") or 0.25) * 100))}%</strong>: the Model check grades at it by default and the banner turns there. Per-zone lines are under review.</p></div>
+<div class="card"><b>One number, four words</b><div class="levels">{level_rows}</div><p class="fine">Fixed levels on the whole percent shown, the same on every page.</p></div>
 <div class="card"><b>Every 30 minutes</b><p class="fine">A scheduler recomputes the forecast at :05 and :35, stores it, and the page always serves the stored copy. Each day's first and last forecast go to the history tables with the model's name, so a model swap never breaks the record. The Model check grades every stored day.</p><p class="fine">Since {esc((sv.get("promoted_at") or "")[:10])} the stamp reads {esc(sv["name"])}; before that {esc(retired or "—")}.</p></div>
 </div></section>
 

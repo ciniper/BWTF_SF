@@ -29,18 +29,19 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 .risk-banner h2 em { font-style: normal; }
 .risk-banner .sub { margin: 6px 0 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
 .risk-banner .sub:empty { display: none; }
-.risk-none { border-color: var(--safe); } .risk-none h2 em { color: var(--safe); }
-.risk-low { border-color: var(--caution); } .risk-low h2 em { color: var(--caution); }
-.risk-moderate { border-color: var(--posted); } .risk-moderate h2 em { color: var(--posted); }
-.risk-high { border-color: var(--discharge); } .risk-high h2 em { color: var(--discharge); }
-.risk-extreme { border-color: #8f2508; } .risk-extreme h2 em { color: #8f2508; }
+{# the risk levels colour the banner: one table, shared/risk_levels.py (Low / Medium / High / Extreme on the whole percent shown, Chase, 2026-10-01) #}
+{% for l in RISK_LEVELS.levels %}.risk-{{ l.key }} { border-color: {{ l.color }}; } .risk-{{ l.key }} h2 em { color: {{ l.color }}; }
+{% endfor %}/* "What happened" grades a day by what was observed, not by a risk level */
+.risk-banner.st-safe { border-color: var(--safe); } .risk-banner.st-safe h2 em { color: var(--safe); }
+.risk-banner.st-caution { border-color: var(--caution); } .risk-banner.st-caution h2 em { color: var(--caution); }
+.risk-banner.st-discharge { border-color: var(--discharge); } .risk-banner.st-discharge h2 em { color: var(--discharge); }
 
 /* Forecast timeline */
 .timeline { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 10px; margin-bottom: 20px; }  /* 7 live days or 8 hindcast days on one row */
 @media (max-width: 800px) { .timeline { grid-template-columns: repeat(4, 1fr); } }
 @media (max-width: 600px) { .timeline { display: flex; overflow-x: auto; gap: 10px; padding-bottom: 6px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; } .day-card { flex: 0 0 124px; scroll-snap-align: start; } }   /* phones: the week is a strip you swipe, not seven columns squeezed past the screen edge */
 .day-card { background: #fff; border-radius: var(--r); padding: 14px; text-align: center; border: 2px solid var(--line); cursor: pointer; }   /* the Today board's zone tile: border by grade */
-.day-card.g-none { border-color: var(--safe); } .day-card.g-low { border-color: var(--caution); } .day-card.g-moderate { border-color: var(--posted); } .day-card.g-high { border-color: var(--discharge); } .day-card.g-extreme { border-color: #8f2508; }
+{% for l in RISK_LEVELS.levels %}.day-card.g-{{ l.key }} { border-color: {{ l.color }}; } {% endfor %}
 .day-card.selected { outline: 3px solid var(--sky); outline-offset: 2px; }
 .day-card:hover { background: var(--sand2); }
 .day-label { font-size: 0.82em; color: #54576F; margin-bottom: 4px; }
@@ -172,7 +173,7 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 <p><b>Stage 1: will the sewers overflow?</b> San Francisco has four combined-sewer basins. For each one, a model trained on ten years of the city's filed overflow reports turns the rain pattern (today's total, the last days' totals, the peak hour) into the chance of an overflow that day.</p>
 <p><b>Stage 2: which beaches, and for how long?</b> An overflow fouls a beach for days. How long, by basin and by the size of the overflow, comes from the city's own bacteria samples after past overflows; which beaches, from the outfalls each one posts. The percentage shown is the combined risk from the last eight days of overflow chances.</p>
 <p><b>Live corrections.</b> When SFPUC's beach map shows an overflow flag, that day becomes certain and the following days follow; when it shows a posting or a clean sample, the following days are held up or capped. Nothing observed, nothing changed. The toggle on the live view shows the model alone.</p>
-<p><b>Reading the number.</b> 25% is the alarm line the alerts use. The banner words follow the same number: 10% low, 25% moderate, 50% high. Per-zone lines are under review.</p>
+<p><b>Reading the number.</b> The word with each percentage is a fixed risk level, the same on every page: {% for l in RISK_LEVELS.levels %}{{ l.label }} {{ l.lo }}–{{ l.hi }}%{{ ', ' if not loop.last else '.' }}{% endfor %} No alert reads this number: alerts follow what the city's beach map shows.</p>
 <p><b>Is it any good?</b> The Model check tab grades every past day against the city's filed overflows and its samples, zone by zone, at any line. Two plain reports go deeper: <a href="/reports/2026-09_forecast_how_it_works.html">how the forecast works</a> and <a href="/reports/2026-09_forecast_how_it_is_graded.html">how it is graded</a>; the technical pages are linked from the Model check.</p>
 {% endcall %}
 
@@ -193,7 +194,7 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
     <span class="historical-label" id="histLabel"></span>
 </div>
 
-<div class="risk-banner risk-none" id="riskBanner"><svg class="ic"><use href="#i-hourglass"/></svg> Loading…</div>
+<div class="risk-banner risk-{{ RISK_LEVELS.levels[0].key }}" id="riskBanner"><svg class="ic"><use href="#i-hourglass"/></svg> Loading…</div>
 <div class="refresh-info" id="refreshInfo"></div>
 
 <div class="timeline" id="timeline"></div>
@@ -227,10 +228,10 @@ const BASIN_META = {
     citywide:    { icon: 'map-pin',    name: 'City-wide',              desc: 'any basin discharging' },
 };
 const BASIN_ORDER = ['westside', 'north_shore', 'central', 'southeast', 'citywide'];
-let ALARM_LINE = 0.5;       // the served set's operating line (data.model.line; promote.py --line): the banner alarms at it and the Model check grades at it by default
+let ALARM_LINE = 0.5;       // the served set's operating line (data.model.line; promote.py --line): the Model check grades at it by default; the banner words are the fixed risk levels, not this line
 let SERVED_NAME = 'the served';
 let userSetThreshold = false;   // once the Model check's line selector is used, the served default stops overriding it
-let RISK_THRESHOLD = 0.5;   // "HIGH" — the line the model check scores hits and misses on by default (Chase, 2026-09-25); the scorecard's selector moves it (10 / 25 / 50)
+let RISK_THRESHOLD = 0.5;   // the line the model check scores hits and misses on by default (Chase, 2026-09-25); the scorecard's selector moves it (10 / 25 / 50)
 
 const ic = name => `<svg class="ic"><use href="#i-${name}"/></svg>`;
 const esc = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -258,12 +259,12 @@ function liveBadgesZone(day, zk) {
 const pct = p => Math.round((p || 0) * 100);
 const fmtIn = v => (v == null || isNaN(v)) ? '—' : Number(v).toFixed(2) + '"';
 
+// The risk levels, injected once from shared/risk_levels.py (Chase, 2026-10-01: Low 0–20, Medium 21–50, High 51–80,
+// Extreme 81–100). A level is read off the whole percent shown (pct), so the word always matches the number beside it.
+const RISK_LEVELS = {{ RISK_LEVELS | tojson }};
 function riskInfo(prob) {
-    if (prob >= 0.75) return { label: 'EXTREME', color: '#8f2508', bg: '#f8dcd6', cls: 'extreme' };
-    if (prob >= 0.50) return { label: 'HIGH', color: '#b5310a', bg: '#f8dcd6', cls: 'high' };
-    if (prob >= 0.25) return { label: 'MODERATE', color: '#d4763a', bg: '#fbe9d9', cls: 'moderate' };
-    if (prob >= 0.10) return { label: 'LOW', color: '#c99a12', bg: '#fbf0d6', cls: 'low' };
-    return { label: 'MINIMAL', color: '#237059', bg: '#e0f0ea', cls: 'none' };
+    const lv = RISK_LEVELS.levels, w = pct(prob), found = lv.findIndex(l => w <= l.hi), rank = found < 0 ? lv.length - 1 : found;
+    return { label: lv[rank].label, color: lv[rank].color, bg: lv[rank].tint, cls: lv[rank].key, rank };
 }
 
 // Zone risk for a prediction day: server field, else worst of its groups,
@@ -365,7 +366,6 @@ async function loadData() {
             document.getElementById('histLabel').innerHTML = ic('calendar') + ' ' + esc(date);
         }
     } catch (e) {
-        banner.className = 'risk-banner risk-low';
         banner.className = 'risk-banner'; banner.innerHTML = '<div class="eyebrow">CSO forecast</div><h2>Forecast unavailable.</h2><p class="sub">' + esc(e.message || e) + '</p>';
         document.getElementById('histLabel').innerHTML = ic('circle-x') + ' ' + esc(e.message || e);
     }
@@ -377,7 +377,6 @@ function showPanels({ check = false, actual = false, beaches = false }) {
     document.getElementById('beachSection').style.display = beaches ? 'block' : 'none';
 }
 
-function levelWord(r) { return r.label.charAt(0) + r.label.slice(1).toLowerCase(); }   // MINIMAL → Minimal
 // The banner is the board's card: an eyebrow (mode · day), a headline that states the level and the day,
 // and a facts line — no advice (Chase, 2026-09-29: "the subtext stays low, no advice about what to do").
 function setBanner(maxRisk, { when = 'today', eyebrow = '', sub = '' } = {}) {
@@ -386,7 +385,7 @@ function setBanner(maxRisk, { when = 'today', eyebrow = '', sub = '' } = {}) {
     const r = riskInfo(maxRisk);
     banner.className = 'risk-banner risk-' + r.cls;
     banner.innerHTML = (eyebrow ? '<div class="eyebrow">' + eyebrow + '</div>' : '') +
-        '<h2><em>' + levelWord(r) + '</em> sewer-overflow risk ' + when + '.</h2><p class="sub" id="bannerSub">' + sub + '</p>';
+        '<h2><em>' + esc(r.label) + '</em> sewer-overflow risk ' + when + '.</h2><p class="sub" id="bannerSub">' + sub + '</p>';
 }
 // "today" / "tomorrow" / "on Thu Oct 01"
 function whenWord(day) {
@@ -404,7 +403,8 @@ function liveFacts(day, m) {
         const future = current.days.filter(d => d.is_forecast);
         if (future.length) {
             const peak = future.reduce((a, d) => worstZone(d) > worstZone(a) ? d : a, future[0]), pk = worstZone(peak), last = future[future.length - 1];
-            facts.push(pk > m + 0.10 && pk >= 0.10 ? 'rising to ' + pct(pk) + '% ' + esc(peak.label) : 'staying ' + (Math.max(m, pk) < 0.10 ? 'under 10%' : 'near ' + pct(Math.max(m, pk)) + '%') + ' through ' + esc(last.label));
+            // "rising" = the level goes up (Chase, 2026-10-01), not a fixed number of points
+            facts.push(riskInfo(pk).rank > riskInfo(m).rank ? 'rising to ' + pct(pk) + '% ' + esc(peak.label) : 'staying ' + (riskInfo(Math.max(m, pk)).rank === 0 ? 'low' : 'near ' + pct(Math.max(m, pk)) + '%') + ' through ' + esc(last.label));
         }
     }
     return facts.join(' · ');
@@ -418,7 +418,7 @@ function renderLive(data) {
     if (!days.length) { setBanner(null, { eyebrow: 'CSO forecast', sub: 'Forecast is being computed.' }); return; }
     const today = days.find(d => d.is_today) || days[0];
     lastLiveData = data;
-    if (data.model) {   // the served set's descriptor (model stamp): name for the copy, operating line for the alarm and the Model check default
+    if (data.model) {   // the served set's descriptor (model stamp): name for the copy, operating line for the Model check default (the banner reads the fixed risk levels)
         SERVED_NAME = data.model.name || SERVED_NAME;
         if (data.model.line != null && !userSetThreshold) { ALARM_LINE = data.model.line; RISK_THRESHOLD = data.model.line; }
     }
@@ -478,7 +478,7 @@ function renderBanner(day) {
         const zones = day.zones || {};
         const bad = Object.entries(zones).filter(([, z]) => z.bad).map(([zk]) => (ZONES.find(z => z.key === zk) || {}).label);
         const allKnown = Object.values(zones).length && Object.values(zones).every(z => z.bad != null);
-        banner.className = 'risk-banner ' + (bad.length ? 'risk-high' : allKnown ? 'risk-none' : 'risk-low');
+        banner.className = 'risk-banner ' + (bad.length ? 'st-discharge' : allKnown ? 'st-safe' : 'st-caution');
         banner.innerHTML = '<div class="eyebrow">What happened · ' + dayTitle(day) + '</div><h2>' + (bad.length
             ? '<em>' + bad.map(esc).join(', ') + '</em> had a bad day.'
             : allKnown ? '<em>No discharges</em>, no elevated samples, at any zone.'
@@ -515,7 +515,7 @@ function renderPredictionCards(day, actual) {
             card.className = 'basin-card'; card.style.borderColor = r.color;
             card.innerHTML = `
                 <div class="basin-name">${ic(ZONE_ICON[zk])} ${esc(z.label)}</div>
-                <div class="basin-prob" style="color:${r.color}">${pct(p)}% <span style="font-size:.45em;font-weight:600;letter-spacing:.05em">${r.label}</span></div>
+                <div class="basin-prob" style="color:${r.color}">${pct(p)}% <span style="font-size:.45em;font-weight:600;letter-spacing:.05em;text-transform:uppercase">${r.label}</span></div>
                 <div class="basin-bar"><div class="basin-bar-fill" style="width:${pct(p)}%;background:${r.color}"></div></div>
                 <div class="basin-detail">${ic('droplets')} ${fmtIn(zoneRain(day, zk))} today · 3d ${fmtIn(day.rain_3d_cum)} · ${esc(z.gauge)} gauge</div>
                 <div class="zone-stations">${z.stations.map(esc).join(' · ')}</div>
@@ -936,7 +936,7 @@ function renderScoreWindow(sc) {
                 ${models.map(m => `<option value="${esc(m.key)}"${m.key === (sc.model || '') ? ' selected' : ''}>${esc(m.label)} — stage 1 ${esc(m.stage1 || m.family || '?')} · stage 2 ${esc(m.stage2 || 'v1')}</option>`).join('')}
             </select>` : ''}
             <select class="date-picker" onchange="setRiskLine(this.value)" title="A day counts as predicted-bad when its risk reaches this line; hits, misses and false alarms everywhere on this view follow it">
-                ${[[0.1, '10% line (LOW)'], [0.25, '25% line (MODERATE)'], [0.5, '50% line (HIGH)']].map(([v, l]) => `<option value="${v}"${v === RISK_THRESHOLD ? ' selected' : ''}>${l}</option>`).join('')}
+                ${[[0.1, '10% line'], [0.25, '25% line'], [0.5, '50% line']].map(([v, l]) => `<option value="${v}"${v === RISK_THRESHOLD ? ' selected' : ''}>${l}</option>`).join('')}
             </select>
             <select class="date-picker" onchange="setScoreLabel(this.value)" title="What counts as a bad day. Discharge days + samples (primary): a discharge day is bad, a sampled day is what the sample says, an unsampled day in the week after a discharge is not graded. Discharge days only: every day after a discharge is quiet. Beach postings: the State BeachWatch record of signs up for a sewage or rain cause.">
                 ${w.combined_confusion ? `<option value="combined"${useCombined ? ' selected' : ''}>graded against discharge days + samples</option>` : ''}

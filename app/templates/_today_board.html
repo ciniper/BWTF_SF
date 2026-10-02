@@ -27,7 +27,9 @@
   .zone.posted .st{color:var(--posted)}.zone.discharge .st{color:var(--discharge)}.zone.unknown .st{color:var(--faint)}
   .zone .nm{font-size:16px;font-weight:900;margin:5px 0 1px;line-height:1.2}
   .zone .risk{font-size:13px;color:var(--muted)}
-  .zone .risk b{color:var(--safe)}.zone .risk b.hi{color:var(--posted)}
+  /* the risk levels (shared/risk_levels.py, Chase, 2026-10-01): the tile's number, and the Risk view's tiles and dots */
+  {% for l in RISK_LEVELS.levels %}.zone .risk b.lvl-{{ l.key }},.zone.lvl-{{ l.key }} .st{color:{{ l.color }}}.zone.lvl-{{ l.key }}{border-color:{{ l.color }}}.status-dot.lvl-{{ l.key }}{background:{{ l.color }}}
+  {% endfor %}
   .zone .stations{display:flex;flex-wrap:wrap;gap:4px;margin:9px 0 5px;min-height:9px}
   .zone .stations .status-dot{width:9px;height:9px}
   .zone .meta{font-size:13px;color:var(--faint)}
@@ -119,7 +121,7 @@
           <button type="button" class="zone {{ z.status }}" data-zone="{{ z.key }}" aria-pressed="false" title="Zoom the map to {{ z.label }}">
             <div class="st"><i class="status-dot {{ z.status }}"></i>{{ z.status_text }}</div>
             <div class="nm">{{ z.label }}</div>
-            <div class="risk">{% if z.risk is not none %}<b{% if z.risk >= 25 %} class="hi"{% endif %}>{{ z.risk }}%</b> overflow risk today{% else %}overflow risk unavailable{% endif %}</div>
+            <div class="risk">{% if z.risk is not none %}<b class="lvl-{{ z.level }}">{{ z.risk }}%</b> overflow risk today{% else %}overflow risk unavailable{% endif %}</div>
             <div class="stations">{% for s in z.stations %}<i class="status-dot {{ s.status }}" title="{{ s.full_name }} · {{ s.status_text }}"></i>{% endfor %}</div>
             <div class="meta">{{ z.meta }}</div>
           </button>
@@ -212,8 +214,11 @@ const status = t => { const el = $("layer-status"); if (el) el.textContent = t |
 const fmtIn = v => v == null ? "—" : Number(v).toFixed(2) + '"';
 const fmtDay = iso => new Date(iso + "T12:00:00").toLocaleDateString(undefined, {weekday: "short", month: "short", day: "numeric"});
 const shortSpan = w => !w ? "" : new Date(w[0] + "T12:00:00").toLocaleDateString(undefined, {month: "short", day: "numeric"}) + "–" + new Date(w[1] + "T12:00:00").toLocaleDateString(undefined, {day: "numeric"});
-// risk bands as the Forecast page draws them, in the board's colours
-const band = pct => pct == null ? "unknown" : pct >= 50 ? "discharge" : pct >= 25 ? "posted" : pct >= 10 ? "caution" : "safe";
+// The risk levels, injected once from shared/risk_levels.py, as the Forecast page draws them (Chase, 2026-10-01:
+// Low 0–20, Medium 21–50, High 51–80, Extreme 81–100 on the whole percent shown). A zone's risk is already that percent.
+const RISK_LEVELS = {{ RISK_LEVELS|tojson }};
+for (const l of RISK_LEVELS.levels) COL["lvl-" + l.key] = l.color;
+const band = pct => pct == null ? "unknown" : "lvl-" + (RISK_LEVELS.levels.find(l => pct <= l.hi) || RISK_LEVELS.levels[RISK_LEVELS.levels.length - 1]).key;
 const RANK_ST = {unknown: 0, safe: 1, caution: 1, posted: 2, discharge: 3};
 
 function renderLegend() {
@@ -221,7 +226,7 @@ function renderLegend() {
   const lg = $("map-legend"); if (!lg) return;
   const dot = (c, t) => '<span><i class="status-dot ' + c + '"></i>' + t + "</span>";
   let h = "";
-  if (RISK_VIEW) h = dot("safe", "under 10%") + dot("caution", "10–25%") + dot("posted", "25–50%") + dot("discharge", "50% or more") + '<span class="mut">overflow risk today</span>';
+  if (RISK_VIEW) h = RISK_LEVELS.levels.map(l => dot("lvl-" + l.key, l.label + " " + l.lo + "–" + l.hi + "%")).join("") + '<span class="mut">overflow risk today</span>';
   else {
     const parts = [];
     if (CITY_ON || LAYER.bwtf.on) parts.push(dot("safe", REPLAY_OFFSET ? "not posted" : "safe"));

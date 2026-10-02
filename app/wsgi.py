@@ -59,6 +59,7 @@ from features.alerts.page import AlertsRoutes
 from features.comparison.page import ComparisonRoutes
 from shared.datasf import DATASET_PAGE_URL
 from shared.basemap import basemap
+from shared import risk_levels
 from features.alerts.cso_alerts import SURFRIDER_LOGO_URL
 from features.alerts.monitoring import CombinedWaterQualityMonitor
 from features.alerts.subscriptions import SubscriptionStore
@@ -253,6 +254,7 @@ def create_app():
     app.jinja_env.globals["DATASF_DATASET_URL"] = DATASET_PAGE_URL  # shared/datasf.py
     app.jinja_env.globals["SURFRIDER_LOGO_URL"] = SURFRIDER_LOGO_URL
     app.jinja_env.globals["BASEMAP"] = basemap()  # shared/basemap.py: the one tile layer every map draws
+    app.jinja_env.globals["RISK_LEVELS"] = risk_levels.export()   # shared/risk_levels.py: Low / Medium / High / Extreme on every page (Chase, 2026-10-01)
     app.jinja_env.globals["NAV"] = nav_model()   # app/landing.py: the three hubs, for the shared top bar (_frame.html)
     app.jinja_env.globals["canonical_path"] = canonical_path   # /today and /index.html light the home page's tabs
     app.jinja_env.globals["asset"] = asset                     # app/assets.py: /static links stamped with their contents

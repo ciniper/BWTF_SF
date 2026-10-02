@@ -15,6 +15,7 @@ from flask import render_template
 
 from shared.zones import ZONES
 from shared.clock import now_pacific
+from shared.risk_levels import LEVELS, level_of, level_of_percent, whole_percent
 
 SURFRIDER_LOGO_URL = "https://f.hubspotusercontent20.net/hubfs/20811975/SF-Horizontal-Logo_RGB_Black_crop_small.png"
 
@@ -144,8 +145,9 @@ def _fact_forecast() -> str:
         return ""
     ahead = [max((float(v) for v in (d.get("zones") or {}).values()), default=0.0)
              for d in days if (d.get("day_offset") or 0) > 0]
-    tail = " · rising" if ahead and max(ahead) >= max(risk + 0.10, 0.25) else ""
-    return f"today {round(risk * 100)}% risk{tail}"
+    rank = lambda p: LEVELS.index(level_of(p))  # noqa: E731
+    tail = " · rising" if ahead and rank(max(ahead)) > rank(risk) else ""   # rising = the risk level goes up ahead (Chase, 2026-10-01)
+    return f"today {whole_percent(risk)}% risk{tail}"
 
 
 def _fact_samples() -> str:
@@ -197,7 +199,8 @@ def _fact_timeline() -> str:
 
 def _forecast_risks() -> dict:
     """Today's overflow risk per zone (0–100) and the days ahead, from the forecast cache row —
-    what the Today board's zone tiles show. Empty dict when there is no snapshot."""
+    what the Today board's zone tiles show, rounded as the Forecast page rounds (halves up), so
+    both pages show the same number and level. Empty dict when there is no snapshot."""
     from features.forecast import page as fp
     row = fp._read_row()
     snap = (row or {}).get("snapshot") or {}
@@ -205,8 +208,8 @@ def _forecast_risks() -> dict:
     today = next((d for d in days if d.get("is_today")), None)
     if not today or not isinstance(today.get("zones"), dict):
         return {}
-    zones = {k: round(float(v) * 100) for k, v in today["zones"].items() if isinstance(v, (int, float))}
-    ahead = [(d.get("label") or d.get("date") or "", round(max((float(v) for v in (d.get("zones") or {}).values()), default=0.0) * 100))
+    zones = {k: whole_percent(v) for k, v in today["zones"].items() if isinstance(v, (int, float))}
+    ahead = [(d.get("label") or d.get("date") or "", whole_percent(max((float(v) for v in (d.get("zones") or {}).values()), default=0.0)))
              for d in days if (d.get("day_offset") or 0) > 0]
     return {"zones": zones, "ahead": ahead}
 
@@ -316,7 +319,9 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
         dates = [x["sampled"] for x in sts if x["sampled"]]
         sampled = f"sampled {datetime.strptime(max(dates), '%Y-%m-%d'):%b %-d}" if dates else "no sample date"
         meta = (" · ".join(z_cso + z_posted) + f" · {sampled}") if (z_cso or z_posted) else f"{len(sts)} stations · {sampled}"
-        tiles.append({"key": zk, "label": z.label, "status": status, "status_text": text, "risk": (risks.get("zones") or {}).get(zk),
+        risk = (risks.get("zones") or {}).get(zk)
+        tiles.append({"key": zk, "label": z.label, "status": status, "status_text": text, "risk": risk,
+                      "level": level_of_percent(risk).key if risk is not None else None,   # the tile's number colour (shared/risk_levels.py)
                       "stations": sts, "meta": meta})
     # The headline reads like a public notice and keeps one shape at any severity: counts only
     # (Chase, 2026-09-29: "beaches" and "posted"). The names go first in the subhead, where a whole
@@ -366,9 +371,10 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
         worst = max(zr.values())
         where = "in every zone" if len(set(zr.values())) == 1 else f"at most ({ZONES[max(zr, key=zr.get)].label})"
         ahead = risks.get("ahead") or []
-        if ahead and max(p for _, p in ahead) < 10:
+        rank = lambda w: LEVELS.index(level_of_percent(w))  # noqa: E731
+        if ahead and rank(max([worst] + [p for _, p in ahead])) == 0:     # Low today and every day ahead
             trend = f", staying low through {ahead[-1][0]}"
-        elif ahead and max(p for _, p in ahead) >= worst + 10:
+        elif ahead and rank(max(p for _, p in ahead)) > rank(worst):     # rising = the level goes up (Chase, 2026-10-01), not a 10-point jump
             lbl, pk = max(ahead, key=lambda t: t[1]); trend = f", rising to {pk}% by {lbl}"
         else:
             trend = ""
