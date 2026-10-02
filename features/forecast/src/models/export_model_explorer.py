@@ -38,6 +38,7 @@ import train_v4 as T  # noqa: E402  (frame builder, calibration, volume — the 
 from groups import BASIN_KEYS, GROUPS_BY_BASIN, SITE_GROUPS, ZONE_GROUPS  # noqa: E402
 from impact import smooth_table  # noqa: E402
 from rain_features import DAILY_FEATURES, INTENSITY_FEATURES  # noqa: E402
+from shared import risk_levels  # noqa: E402
 from shared.outfalls import OUTFALLS  # noqa: E402
 from shared.stations import STATIONS  # noqa: E402
 from shared.zones import ZONES  # noqa: E402
@@ -343,7 +344,8 @@ def main(model_name: str | None = None) -> None:
         "samples": samples,
         "calibration": "p = clip(raw_p − offset × clip(1 − rain_3d_cum × 2, 0, 1), 0, 1): the dry-day offset (mean predicted probability on training days with < 0.01\" rain) is subtracted in full on dry days and fades out as the trailing 3-day rain approaches 0.5\".",
     }
-    html = TEMPLATE.read_text().replace("__DATA__", json.dumps(data, separators=(",", ":"), default=str))
+    html = TEMPLATE.read_text().replace("__DATA__", json.dumps(data, separators=(",", ":"), default=str))\
+        .replace("__RISK_LEVELS__", json.dumps(risk_levels.export(), separators=(",", ":")))   # Low / Medium / High / Extreme, the page colours (A3)
     out_path.write_text(html)
     n_nodes = sum(len(t["f"]) for m in models.values() for t in m.get("trees", [])) + sum(len(t["f"]) for h in heads.values() for t in h["trees"])
     n_w = sum(len(m.get("coef", [])) for m in models.values())

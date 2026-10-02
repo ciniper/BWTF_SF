@@ -175,7 +175,8 @@ const esc = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({'&':'&amp;
 const pct = p => Math.round(p * 100) + '%';
 const f2 = v => v == null ? '—' : Number(v).toFixed(2);
 const f3 = v => v == null ? '—' : Number(v).toFixed(3);
-const riskColor = p => p >= .75 ? '#8f2508' : p >= .5 ? '#b5310a' : p >= .25 ? '#d4763a' : p >= .1 ? '#b97e00' : '#237059';
+const RISK_LEVELS = __RISK_LEVELS__;   // shared/risk_levels.py: Low 0–20 · Medium 21–50 · High 51–80 · Extreme 81–100 on the shown percent
+const riskColor = p => { const w = Math.round((p || 0) * 100); return (RISK_LEVELS.levels.find(l => w <= l.hi) || RISK_LEVELS.levels[RISK_LEVELS.levels.length - 1]).color; };
 const fmtDate = s => new Date(s + 'T12:00:00').toLocaleDateString(undefined, {month:'short', day:'numeric', year:'numeric'});
 const fmtMon = s => new Date(s + 'T12:00:00').toLocaleDateString(undefined, {month:'short', year:'numeric'});
 

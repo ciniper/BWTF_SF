@@ -36,6 +36,7 @@ import train_v4 as T  # noqa: E402
 from export_model_explorer import export_gb  # noqa: E402
 from groups import BASIN_KEYS, GROUPS_BY_BASIN, SITE_GROUPS, ZONE_GROUPS  # noqa: E402
 from impact import smooth_table  # noqa: E402
+from shared import risk_levels  # noqa: E402
 from shared.stations import STATIONS  # noqa: E402
 from shared.zones import ZONES  # noqa: E402
 
@@ -207,7 +208,8 @@ def main() -> None:
         "model_sets": model_sets, "stage2_variants": stage2_variants,
         "live_override": "Live serving adds one input the hindcast does not have: a day the watcher saw a CSO onset in a basin gets p = 1 for that basin (live_dashboard._fetch_observed_cso → impact.compose observed=…). A day with no flag keeps the model's probability — absence of a flag is never treated as 'no discharge' (see TODO: discount by the feed's miss rate).",
     }
-    html = TEMPLATE.read_text().replace("__DATA__", json.dumps(data, separators=(",", ":"), default=str))
+    html = TEMPLATE.read_text().replace("__DATA__", json.dumps(data, separators=(",", ":"), default=str))\
+        .replace("__RISK_LEVELS__", json.dumps(risk_levels.export(), separators=(",", ":")))   # Low / Medium / High / Extreme, the page colours (A3)
     OUT.write_text(html)
     print(f"wrote {OUT.relative_to(REPO)}: {OUT.stat().st_size / 1e6:.2f} MB — {len(model_sets)} model sets "
           f"({', '.join(m['name'] for m in model_sets)}), {n} days {dates[0]} → {dates[-1]}, "

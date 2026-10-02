@@ -225,6 +225,25 @@ def test_the_how_it_works_report_shows_the_levels_not_a_line():
         assert not re.search(r"\b(?:MINIMAL|MODERATE)\b|the banner words|the banner turns|Alarm line \d", text)
 
 
+def test_the_explorer_pages_colour_by_the_levels():
+    """The model and stage 2 explorers (templates, exporters and every committed page) colour a risk by
+    the one table, not by hand-typed cutoffs (the old 10/25/50/75 colours were still there 2026-10-01)."""
+    models = ROOT / "features/forecast/src/models"
+    line = None
+    for t in ("model_explorer_template.html", "stage2_explorer_template.html"):
+        text = (models / t).read_text()
+        assert "const RISK_LEVELS = __RISK_LEVELS__;" in text and not re.search(r"p >= \.\d+ \? '#", text), t
+        line = next(l for l in text.splitlines() if "RISK_LEVELS = __RISK_LEVELS__" in l)
+    for e in ("export_model_explorer.py", "export_stage2_explorer.py"):
+        assert '.replace("__RISK_LEVELS__", json.dumps(risk_levels.export()' in (models / e).read_text(), e
+    filled = line.replace("__RISK_LEVELS__", json.dumps(R.export(), separators=(",", ":")))
+    pages = sorted((ROOT / "reports").glob("2026-09_forecast_*explorer.html"))
+    assert len(pages) >= 15, len(pages)
+    for p in pages:
+        text = p.read_text()
+        assert filled in text and "__RISK_LEVELS__" not in text and not re.search(r"p >= \.\d+ \? '#", text), p.name
+
+
 def test_risk_levels_is_wired_where_risk_is_shown():
     page = (ROOT / "app/templates/forecast/page.html").read_text()
     board = (ROOT / "app/templates/_today_board.html").read_text()
