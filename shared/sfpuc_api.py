@@ -251,6 +251,12 @@ class SFPUCRealTimeAPI:
             print(f"Error parsing SFPUC response: {e}")
             return []
         
+        return self.stations_from_items(data)
+
+    def stations_from_items(self, data: list) -> List[SFPUCStation]:
+        """The feed's station entries (as getBeaches sends them, or as the watcher stores them in
+        feed_station_days.raw_last) → SFPUCStation objects. One parser for both paths, so the board
+        reads the same thing whichever copy it gets."""
         stations = []
         for item in data:
             try:

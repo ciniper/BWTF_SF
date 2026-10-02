@@ -35,6 +35,7 @@ import requests
 from flask import render_template
 
 from app.landing import BOARD_FACTS, HOME_URL, board_context
+from shared.feed_copy import latest_feed
 from features.comparison.bwtf_api import SFBWTFClient
 from features.comparison.comparison import BWTF_TO_SFPUC_NAME, resolve_site
 from shared import supabase as sb
@@ -266,7 +267,9 @@ def render_page(ctx: dict) -> str:
 def handle_page(query, body):
     sfpuc = SFPUCRealTimeAPI()
     try:   # no weather or tides (their pills moved to UI overflow), and only the facts the board reads
-        ctx = board_context(sfpuc, None, fact_keys=BOARD_FACTS)
+        live = ((query or {}).get("feed") or [""])[0] == "live"   # ?feed=live: read SFPUC directly — for side-by-side tests
+        ctx = board_context(sfpuc, None, fact_keys=BOARD_FACTS,
+                            feed_copy=None if live else latest_feed)   # the watcher's minute-fresh copy of SFPUC's feed; live when stale
     except Exception as e:  # noqa: BLE001 — never blank the page on a flaky upstream
         return 500, "text/html; charset=utf-8", f"<!doctype html><meta charset='utf-8'><h1>Today</h1><pre>{e}</pre>".encode()
     return 200, "text/html; charset=utf-8", render_page(ctx).encode()

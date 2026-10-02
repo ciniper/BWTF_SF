@@ -136,7 +136,7 @@
 {%- endmacro %}
 
 {% macro board_section(board, sites=false) -%}
-  <section class="board tone-{{ board.tone }}" aria-labelledby="today-h">
+  <section class="board tone-{{ board.tone }}" aria-labelledby="today-h" data-feed="{{ board.feed_source or 'live' }}"{% if board.feed_age_s is not none %} data-feed-age="{{ board.feed_age_s }}"{% endif %}>
     <div class="grid">
       <div class="left">
         <div class="eyebrow">Beach status · {{ board.date }} · {% if board.feed_ok %}SFPUC map checked {{ board.checked }}{% else %}SFPUC map unreachable{% endif %}</div>

@@ -63,6 +63,13 @@ Order: the no-tradeoff wins first, then caching once Chase has made its calls.
 - [x] **Real-visitor measurement** (branch `obs/vercel-insights`): Vercel Web Analytics + Speed Insights in the shared
   frame, production only, URLs sent without query strings, the token pages left out. Chase enables both in the
   Vercel dashboard; see DEPLOY.md.
+- [x] **The board reads the watcher's stored copy of SFPUC's feed** (branch `perf/board-from-watcher`, Chase 2026-10-02:
+  "ok with testing out"). `shared/feed_copy.latest_feed` takes each station's `feed_station_days.raw_last` from the
+  watcher's newest tick when it is under 5 minutes old; otherwise SFPUC live, as before. Same parser both ways
+  (`SFPUCRealTimeAPI.stations_from_items`); identical boards in 10/10 paired runs; build 789 → 507 ms median from SF.
+  The "checked" time is the watcher's tick; `data-feed` on the board says which path ran; `?feed=live` forces the old
+  path for side-by-side tests. Next slowest: NOAA tides (~440 ms, predictions — cacheable for hours) and the
+  newest-samples card (~410 ms).
 - [ ] **Measure cold starts before acting** — read it off Speed Insights once a week of visits is in. One production load of the home page took 8.6 s, the next 2.0 s — that looks
   like Vercel starting a fresh instance. It is not import time (the app imports in 0.15 s; pandas / scikit-learn load only
   on the pages that use them), so the suspects are the size of the one function's bundle (pandas, numpy, scipy and

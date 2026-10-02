@@ -13,7 +13,7 @@ from html import escape as _esc
 from flask import render_template
 
 from shared.zones import ZONES
-from shared.clock import now_pacific
+from shared.clock import PACIFIC, now_pacific
 from shared.risk_levels import LEVELS, level_of, level_of_percent, whole_percent
 
 SURFRIDER_LOGO_URL = "https://f.hubspotusercontent20.net/hubfs/20811975/SF-Horizontal-Logo_RGB_Black_crop_small.png"
@@ -509,29 +509,52 @@ def _stations(sfpuc_api) -> list:
 BOARD_FACTS = ("_forecast", "/samples")
 
 
-def board_context(sfpuc_api, env_context=None, live_facts: bool = True, fact_keys: tuple | None = None) -> dict:
+def _board_stations(sfpuc_api, feed_copy=None) -> tuple:
+    """(stations, checked_at, source): the watcher's minute-fresh copy when ``feed_copy`` returns one
+    (shared/feed_copy.latest_feed), else SFPUC's feed live — exactly the old path."""
+    if feed_copy is not None and hasattr(sfpuc_api, "stations_from_items"):
+        try:
+            copy = feed_copy()
+        except Exception:  # noqa: BLE001
+            copy = None
+        if copy:
+            stations = sfpuc_api.stations_from_items(copy["items"])
+            if stations:
+                return stations, copy["checked_at"], "watcher"
+    return _stations(sfpuc_api), None, "live"
+
+
+def board_context(sfpuc_api, env_context=None, live_facts: bool = True, fact_keys: tuple | None = None,
+                  feed_copy=None) -> dict:
     """Everything the Today page needs: the board, the conditions chips, the live facts
     (``fact_keys`` of them, every one when None), a timestamp.
 
     The four slow lookups — SFPUC's beach feed, the live facts, NWS rain, NOAA tides — run at the
     same time, so the page waits for the slowest one instead of all four in a row (2026-10-01:
     ~2.5 s in a row, ~1 s together). Each job catches its own failures, so one slow or broken
-    source still never blanks the page; the facts keep their own 2.5 s budget."""
+    source still never blanks the page; the facts keep their own 2.5 s budget.
+
+    ``feed_copy`` (the Today page passes shared/feed_copy.latest_feed) lets the board read the watcher's
+    stored copy of SFPUC's feed instead of calling SFPUC — the slowest of the four (2026-10-02). The board's
+    "checked" time is then the watcher's tick, and ``board["feed_source"]`` says which path ran."""
     from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=4, thread_name_prefix="board") as pool:
-        f_stations = pool.submit(_stations, sfpuc_api)
+        f_stations = pool.submit(_board_stations, sfpuc_api, feed_copy)
         sources = None if fact_keys is None else {k: _FACT_SOURCES[k] for k in fact_keys}
         f_facts = pool.submit(_live_facts, FACTS_BUDGET_SECONDS, sources) if live_facts else None
         f_rain = pool.submit(_rain_line, env_context)
         f_tide = pool.submit(_tide_line, env_context)
-        stations = f_stations.result()
+        stations, checked_at, feed_source = f_stations.result()
         facts = f_facts.result() if f_facts else {}
         conditions = f_rain.result() + f_tide.result()   # rain first, then tide, as before
     try:
         summary = sfpuc_api.get_status_summary() if not stations else {}   # the fallback, only when the feed came back empty
     except Exception:
         summary = {}
-    board = today_board(stations, facts.get("_forecast"), facts.get("/samples", ""))
+    board = today_board(stations, facts.get("_forecast"), facts.get("/samples", ""),
+                        now=checked_at.astimezone(PACIFIC) if checked_at else None)   # "SFPUC map checked" = when it was checked
+    board["feed_source"] = feed_source
+    board["feed_age_s"] = max(0, int((now_pacific() - checked_at).total_seconds())) if checked_at else None
     if not stations and summary:   # a client that only knows the summary: keep the old banner sentence as the headline
         board["tone"], message = _status_banner(summary)
         board["headline"] = board["headline_html"] = message.split("</svg> ", 1)[-1]
