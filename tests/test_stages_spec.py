@@ -87,37 +87,51 @@ def test_every_rule_id_is_in_the_catalog():
     assert SP.NODE["x.claim"]["claims"] == tuple(SP.CLAIMS)
 
 
+def _protocol_s7() -> str:
+    return (ROOT / "features" / "forecast" / "STAGES_PROTOCOL.md").read_text().split("## 7.", 1)[1].split("\n## ", 1)[0]
+
+
+def _protocol_first_match() -> dict:
+    """STAGES_PROTOCOL.md §7's first-match table: stage code → (ids in order, the 'also' column's ids)."""
+    ids = lambda t: re.findall(r"X-[A-Z0-9]+(?:-[A-Z0-9]+)*", t)  # noqa: E731
+    return {m.group(1): (ids(m.group(2)), ids(m.group(3)))
+            for m in re.finditer(r"^\| (S[1-5]|OUT) \| ([^|]*)\| ([^|]*)\|", _protocol_s7(), re.M)}
+
+
 def test_the_exclusions_module_names_every_catalog_rule():
-    """Once src/models/exclusions.py exists (P4), it must implement every rule the figure names,
-    and name none the catalog lacks (a dropped rule such as X-E2E-SCOPE coming back)."""
-    p = MODELS / "exclusions.py"
-    if not p.exists():
-        print("  (exclusions.py not built yet: skipped)")
-        return
-    src = p.read_text()
+    """src/models/exclusions.py (P4b) implements every rule the figure names and none the catalog lacks
+    (a dropped rule such as X-E2E-SCOPE coming back), in both directions, with the protocol's order."""
+    import exclusions as X
+    assert set(X.RULES) == set(SP.EXCLUSIONS), set(X.RULES) ^ set(SP.EXCLUSIONS)
+    assert len(X.RULES) == 36
+    for x, r in X.RULES.items():
+        assert r.kind == {"fit": "fit_only"}.get(SP.EXCLUSIONS[x]["kind"], SP.EXCLUSIONS[x]["kind"]), x
+        assert set(r.stages) == {c for c, ids in SP.EXCLUSIONS_BY_STAGE.items() if x in ids}, x
+        assert r.chip == SP.EXCLUSIONS[x]["chip"] and r.plain == SP.EXCLUSIONS[x]["plain"], x   # words read, never copied
+    protocol = _protocol_first_match()
+    assert {c: tuple(first) for c, (first, _) in protocol.items()} == X.STAGE_ORDER
+    for code, (first, also) in protocol.items():
+        mine = list(SP.STAGE_OF_CODE[code]["exclusions"])
+        assert mine[:len(first)] == first, (code, mine, first)
+    src = (MODELS / "exclusions.py").read_text()
     missing = [x for x in SP.EXCLUSIONS if x not in src]
     assert not missing, missing
     extra = set(re.findall(r"""["'](X-[A-Z0-9]+(?:-[A-Z0-9]+)*)["']""", src)) - set(SP.EXCLUSIONS)
     assert not extra, extra
+    for x in SP.EXCLUSIONS:                                   # the plain words live in stages_spec only
+        assert SP.EXCLUSIONS[x]["plain"] not in src, x
 
 
 def test_the_stage_lists_follow_the_frozen_protocol():
     """STAGES_PROTOCOL.md §7 (frozen at P0) is the first-match order: each stage's list starts with
     it, holds the row's other rules, and the catalog is exactly the protocol's rule table."""
-    p = ROOT / "features" / "forecast" / "STAGES_PROTOCOL.md"
-    if not p.exists():
-        print("  (STAGES_PROTOCOL.md not written yet: skipped)")
-        return
-    sec = p.read_text().split("## 7.", 1)[1].split("\n## ", 1)[0]
-    ids = lambda t: re.findall(r"X-[A-Z0-9]+(?:-[A-Z0-9]+)*", t)  # noqa: E731
-    rows = {m.group(1): (ids(m.group(2)), ids(m.group(3)))
-            for m in re.finditer(r"^\| (S[1-5]|OUT) \| ([^|]*)\| ([^|]*)\|", sec, re.M)}
+    rows = _protocol_first_match()
     assert set(rows) == {s["code"] for s in SP.STAGES}, set(rows)
     for code, (first, also) in rows.items():
         mine = list(SP.STAGE_OF_CODE[code]["exclusions"])
         assert mine[:len(first)] == first, (code, mine, first)
         assert set(also) <= set(mine), (code, set(also) - set(mine))
-    table = {m.group(1) for m in re.finditer(r"^\| (X-[A-Z0-9-]+)", sec, re.M)}
+    table = {m.group(1) for m in re.finditer(r"^\| (X-[A-Z0-9-]+)", _protocol_s7(), re.M)}
     assert table == set(SP.EXCLUSIONS), (table ^ set(SP.EXCLUSIONS))
 
 
@@ -193,6 +207,7 @@ def test_the_svg_is_well_formed():
 def test_dashes_until_scored():
     svg, ph = F.render("sfpuc4_v1")
     for s in ("floor —", "lead 1 —", "oracle —", "chained —", "no filing — · feed archive —", "— overflow days",
+              "days nobody sampled — · resamples —",
               "dry-weather exceedances —", "unsampled days after one —"):
         assert s in svg, s
     assert svg.count('class="lead na"') == 6
@@ -262,8 +277,8 @@ def test_the_inset_draws_the_geography():
         split = [(ins["basins"][b], ins["zones"][z]) for b, z, s in ins["links"] if s]
         assert split == [("Westside", "Ocean Beach"), ("Westside", "Baker & China")], (geo, split)
         assert sorted({z for _, z, _ in ins["links"]}) == [0, 1, 2, 3], geo   # every zone is reached
-        if (ROOT / "shared" / "geography.py").exists():
-            assert "fallback" not in ins["source"], (geo, ins["source"])      # the real geography, not the stand-in
+        assert ins["source"] == geo, (geo, ins["source"])                 # the geography itself: there is no stand-in
+    assert not hasattr(SP, "FALLBACK_INSET") and "fallback_inset" not in SP.spec_dict()
 
 
 def test_risk_levels_box_shows_the_shared_bands():
@@ -277,6 +292,15 @@ def test_risk_levels_box_shows_the_shared_bands():
         for lv in RL.LEVELS:
             assert f'fill="{lv.color}">{lv.label}</tspan>' in svg and f"{lv.label} {lv.lo}–{lv.hi}" in ph
         assert not re.search(r"calibrated|1 in 3|false alarm|\bmiss(es)?\b", v, re.I)
+
+
+def test_s4_chip_lists_the_first_look_rule():
+    """X-S4-RESAMPLE is the rule behind S4's first-look primary (Part B 4): the chip names it, with a count."""
+    items = [x for line in SP.NODE["x.s4"]["items"] for _, x in line]
+    assert items == ["X-S4-UNSAMPLED", "X-S4-RESAMPLE", "X-S4-HISTUNK"], items
+    assert SP.EXCLUSIONS["X-S4-RESAMPLE"]["counted"]
+    svg = F.render("sfpuc4_v1", None, {"X-S4-RESAMPLE": 628})[0]
+    assert "resamples 628" in svg and "resamples 628" in F.render("sfpuc4_v1", None, {"X-S4-RESAMPLE": 628})[1]
 
 
 def test_out_chip_lists_only_what_out_leaves_out():

@@ -25,7 +25,6 @@ Preview (standalone HTML, logos as file:// paths, for visual QC):
 """
 from __future__ import annotations
 
-import importlib
 import itertools
 import math
 import numbers
@@ -41,6 +40,7 @@ try:
 except ImportError:                                   # run as a script, or imported from src/models on sys.path
     import stages_spec as SP  # noqa: E402
     import svgkit as K  # noqa: E402
+from shared import geography  # noqa: E402  (imports only the registries; reads no file)
 
 D = "—"
 STYLE = {"data": ("flow", "pa"), "fit": ("fit", "pg"), "score": ("grade", "pk"), "oracle": ("orc", "po"),
@@ -183,22 +183,11 @@ def inset_data(geo: str) -> dict:
     from shared.zones import ZONES
     zones = [(k, _short_zone(z.label)) for k, z in ZONES.items()]
     zi = {k: i for i, (k, _) in enumerate(zones)}
-    try:
-        geography = importlib.import_module("shared.geography")
-    except ModuleNotFoundError as e:     # only a missing module falls back: a broken or changed one must fail here
-        if e.name != "shared.geography":
-            raise
-        geography = None
-    if geography is not None:
-        g = geography.get(geo)
-        names = [b.name for b in g.basins]
-        bi = {b.key: i for i, b in enumerate(g.basins)}
-        pairs = [(bi[lk.basin], lk.zone) for lk in g.links]
-        source = g.version
-    else:
-        # TODO(P2): shared/geography.py is landing in a parallel commit; drop this fallback (and SP.FALLBACK_INSET) once it has.
-        names, pairs = SP.pick(SP.FALLBACK_INSET, geo)
-        source = f"{geo} (fallback)"
+    g = geography.get(geo)                 # KeyError on an unknown geography; there is no stand-in
+    names = [b.name for b in g.basins]
+    bi = {b.key: i for i, b in enumerate(g.basins)}
+    pairs = [(bi[lk.basin], lk.zone) for lk in g.links]
+    source = g.version
     links = sorted({(b, zi[z]) for b, z in pairs})
     fan = {b: sum(1 for bb, _ in links if bb == b) for b, _ in links}
     return dict(basins=[re.sub(r"\s*\(.*\)$", "", n) for n in names], basin_full=list(names), zones=[z for _, z in zones],

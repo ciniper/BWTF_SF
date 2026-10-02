@@ -285,7 +285,7 @@ NODES = (
     dict(id="x.s3", kind="exclusion", stage="S3", col=2, row=5, title="not scored",
          items=((("identity links: checked only", "X-S3-ID"),), (("no basin overflow (oracle)", "X-S3-QUIET"),))),
     dict(id="x.s4", kind="exclusion", stage="S4", col=3, row=5, title="not scored",
-         items=((("days nobody sampled", "X-S4-UNSAMPLED"),), (("overflow history unknown", "X-S4-HISTUNK"),))),
+         items=((("days nobody sampled", "X-S4-UNSAMPLED"), ("resamples", "X-S4-RESAMPLE")), (("overflow history unknown", "X-S4-HISTUNK"),))),
     dict(id="x.out", kind="exclusion", stage="OUT", col=4, row=5, title="not scored",
          items=((("unsampled days after one", "X-E2E-UNK"),), (("overflow history unknown", "X-E2E-UNCOV"),))),
     dict(id="x.claim", kind="claim", stage="CLAIM", col=0, row=6, span=5, title="the forecast does not claim", claims=tuple(CLAIMS)),
@@ -359,14 +359,6 @@ def legend_layout(per_char: float = 5.9, gap: float = 18) -> tuple:
     return tuple(xs)
 
 
-# Before shared/geography.py lands (another P2 commit), the inset falls back to
-# the design's five links (§1.3). TODO: delete once geography.get() is in.
-FALLBACK_INSET = by_geo(
-    (("Westside", "North Shore", "Central", "South"), ((0, "ocean"), (0, "baker_china"), (1, "north"), (2, "east"), (3, "east"))),
-    (("Westside", "North Shore", "Central", "Southeast"), ((0, "ocean"), (0, "baker_china"), (1, "north"), (2, "east"), (3, "east"))),
-)
-
-
 def nodes(geo: str) -> tuple:
     """NODES resolved for one geography, each with its box."""
     if geo not in GEOS:
@@ -385,7 +377,7 @@ def spec_dict() -> dict:
     return dict(geos=GEOS, title=TITLE, stages=STAGES, exclusions=EXCLUSIONS, claims=CLAIMS, risk_levels=RISK_LEVELS,
                 level_edges=LEVEL_EDGES, view=VIEW, colx=COLX, cw=CW, rows=ROWS, bands=BANDS, head=HEAD, nodes=NODES,
                 edges=EDGES, legend=LEGEND_ARROWS, legend_chained=LEGEND_CHAINED, legend_not_scored=LEGEND_NOT_SCORED,
-                legend_y=LEGEND_Y, fallback_inset=FALLBACK_INSET, phone=PHONE_ORDER)
+                legend_y=LEGEND_Y, phone=PHONE_ORDER)
 
 
 SPEC_VERSION = hashlib.sha1(json.dumps(spec_dict(), sort_keys=True, ensure_ascii=False, default=list).encode()).hexdigest()[:10]
