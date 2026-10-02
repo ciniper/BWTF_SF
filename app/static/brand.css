@@ -137,8 +137,9 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
   .topbar .about span{display:none}
   .topbar .subtabs .in{padding:0 8px}
   .topbar .subtabs a{padding:10px 11px 9px;font-size:13px}
-  .topbar .in{padding:8px 14px}
-  .topbar .cta{padding:8px 13px;font-size:13px}
+  .topbar .in{padding:8px 14px;gap:10px}
+  .topbar .about{padding:6px}
+  .topbar .cta{margin-left:0;padding:8px 13px;font-size:13px}
   .page-head .ph-main{padding-right:0}
   .page-head h1{font-size:30px}
   .page-head .ph-link{position:static;margin-top:10px}
@@ -149,6 +150,19 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
   body{padding-bottom:72px}
   .site-footer .cols{flex-direction:column;gap:16px}
   .site-footer .reach{text-align:left}
+}
+/* The phone bar needs ~363px, so the narrowest phones tighten it in two steps instead of scrolling every page sideways
+   (it was 367px wide at 360 and 320px, 2026-10-02). Spacing first, so 360px Android phones keep the full-size wordmark;
+   the type only shrinks below 360. The labels stay as they are. */
+@media (max-width:374px){
+  .topbar .in{padding:8px 12px;gap:8px}
+  .topbar .cta{padding:8px 11px}
+}
+@media (max-width:359px){
+  .topbar .in{padding:8px 10px}
+  .topbar .mark{gap:7px}
+  .topbar .mark b{font-size:18px}
+  .topbar .cta{padding:8px 10px;font-size:12px}
 }
 
 /* ── Kit: small shared pieces ─────────────────────────────────────────────── */
