@@ -81,7 +81,19 @@ def covered_dates(facility_prefix: str) -> pd.DatetimeIndex:
     return pd.DatetimeIndex([]).append(dates) if dates else pd.DatetimeIndex([])
 
 
-def build_daily_labels() -> pd.DataFrame:
+def facility_covered_dates(facility: str) -> pd.DatetimeIndex:
+    """covered_dates for a registry facility name (Outfall.facility / geography
+    Basin.facility: 'Oceanside' | 'Bayside'). The coverage grid writes the permit
+    as 'Southeast/Bayside (CA0037664)', so match on its name parts; exactly one
+    grid facility must match."""
+    grid = load_coverage()["facility"].unique()
+    hits = [f for f in grid if facility in f.split(" (")[0].split("/")]
+    if len(hits) != 1:
+        raise KeyError(f"facility {facility!r} matches {hits} in {COVERAGE_CSV.name}")
+    return covered_dates(hits[0])
+
+
+def build_daily_labels(geo=None) -> pd.DataFrame:
     """
     One row per calendar day over the covered span, with per-basin ground truth.
 
@@ -93,19 +105,31 @@ def build_daily_labels() -> pd.DataFrame:
                          for that month (0 → treat label as unknown, not negative)
     Plus citywide:
         csd_any, csd_volume_mg, csd_outfalls  (over covered basins that day)
+
+    ``geo`` (a shared.geography.Geography) relabels the same ledger rows: B runs
+    over geo.basins' display names, each event takes its basin from its outfall
+    through the geography (an outfall the geography lacks raises), and coverage
+    follows Basin.facility. None = the served geo_v1 frame, built as v4 was;
+    geo=GEO_V1 reproduces it exactly (tests/test_geography.py).
     """
     ev = load_events()
-    all_basins = list(APP_BASINS)
-
-    ocean_cov = covered_dates("Oceanside")
-    bay_cov = covered_dates("Southeast")
+    if geo is None:
+        all_basins, ev_basin = list(APP_BASINS), ev["app_basin"]
+        ocean_cov = covered_dates("Oceanside")
+        bay_cov = covered_dates("Southeast")
+        cov_of = {b: ocean_cov if b == "Westside" else bay_cov for b in all_basins}
+    else:
+        all_basins = [b.name for b in geo.basins]
+        ev_basin = ev["outfall_id"].map({o: geo.basin(geo.basin_of_outfall(o)).name for o in ev["outfall_id"].unique()})
+        fac = {f: facility_covered_dates(f) for f in dict.fromkeys(b.facility for b in geo.basins)}
+        cov_of = {b.name: fac[b.facility] for b in geo.basins}
 
     start = ev["event_date"].min().replace(day=1)
-    end = max(ocean_cov.max(), bay_cov.max())  # last month in the CIWQS coverage grid (re-harvested quarterly)
+    end = max(c.max() for c in cov_of.values())  # last month in the CIWQS coverage grid (re-harvested quarterly)
     days = pd.DataFrame({"date": pd.date_range(start, end)})
 
     for basin in all_basins:
-        b = ev[ev["app_basin"] == basin]
+        b = ev[ev_basin == basin]
         daily = b.groupby("event_date").agg(
             volume=("volume_MG", "sum"),
             outfalls=("outfall_id", "nunique"),
@@ -113,8 +137,7 @@ def build_daily_labels() -> pd.DataFrame:
         days[f"{basin}_csd"] = days["date"].isin(daily.index).astype(int)
         days[f"{basin}_volume_mg"] = days["date"].map(daily["volume"]).fillna(0.0)
         days[f"{basin}_outfalls"] = days["date"].map(daily["outfalls"]).fillna(0).astype(int)
-        cov_idx = ocean_cov if basin == "Westside" else bay_cov
-        days[f"{basin}_covered"] = days["date"].isin(cov_idx).astype(int)
+        days[f"{basin}_covered"] = days["date"].isin(cov_of[basin]).astype(int)
 
     cov_cols = [f"{b}_covered" for b in all_basins]
     csd_cols = [f"{b}_csd" for b in all_basins]

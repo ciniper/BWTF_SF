@@ -187,7 +187,21 @@ def archive_recall(arch: dict) -> dict:
             "precision_vs_ciwqs_pm1d": round(precision, 3) if precision is not None else None}
 
 
-def apply_archive_labels(df: pd.DataFrame, arch: dict, rain_avg: pd.Series) -> dict:
+def geo_onsets(onsets: pd.DataFrame, geo) -> pd.DataFrame:
+    """Archive onsets relabelled through a geography (Part B 22): each row's basin
+    comes from its outfall_ids, and a structure string whose outfalls span basins
+    becomes one row per basin carrying only that basin's ids — split, never
+    truncated to the first basin or dropped. `basin` holds the display name."""
+    rows = []
+    for _, r in onsets.iterrows():
+        ids = str(r["outfall_ids"]).split("|")
+        for key in geo.basins_of(ids):
+            mine = [o for o in ids if geo.basin_of_outfall(o) == key]
+            rows.append({**r.to_dict(), "basin": geo.basin(key).name, "outfall_ids": "|".join(mine)})
+    return pd.DataFrame(rows, columns=onsets.columns)
+
+
+def apply_archive_labels(df: pd.DataFrame, arch: dict, rain_avg: pd.Series, geo=None) -> dict:
     """Mark archive dates covered where CIWQS is not, and stamp onset days.
 
     Onset shift: the feed was polled ~07:00 and ~15:00, so a discharge that
@@ -195,18 +209,22 @@ def apply_archive_labels(df: pd.DataFrame, arch: dict, rain_avg: pd.Series) -> d
     morning snapshot shows a new structure and yesterday was the rainy day
     (≥0.2", more than today), the event is dated yesterday — the convention
     CIWQS event_date uses.
+
+    ``geo``: basins and onset basins follow that geography (geo_onsets);
+    None = the served reading (the feed's first basin, every listed outfall).
     """
     notes = {"shifted_onsets": 0, "onset_days": {}, "new_covered_days": {}}
     covered = df["date"].isin(arch["covered_dates"])
     rain = rain_avg.reindex(df["date"]).fillna(0).values
     date_pos = {d: i for i, d in enumerate(df["date"])}
-    for basin in APP_BASINS:
+    onsets = arch["onsets"] if geo is None else geo_onsets(arch["onsets"], geo)
+    for basin in (APP_BASINS if geo is None else [b.name for b in geo.basins]):
         newly = covered & (df[f"{basin}_covered"] == 0)
         df.loc[newly, f"{basin}_covered"] = 1
         df.loc[newly, f"{basin}_volume_known"] = 0
         df.loc[newly, f"{basin}_label_source"] = "poobot"
         notes["new_covered_days"][basin] = int(newly.sum())
-        ons = arch["onsets"][arch["onsets"]["basin"] == basin]
+        ons = onsets[onsets["basin"] == basin]
         stamped = set()
         for _, r in ons.iterrows():
             d = r["date"].normalize()
@@ -227,17 +245,22 @@ def apply_archive_labels(df: pd.DataFrame, arch: dict, rain_avg: pd.Series) -> d
 
 # ── Dataset ─────────────────────────────────────────────────────────────────
 
-def build_dataset(end: pd.Timestamp = TRAIN_END, sources: list = None, input_rules: list | None = None) -> tuple:
+def build_dataset(end: pd.Timestamp = TRAIN_END, sources: list = None, input_rules: list | None = None,
+                  geo=None) -> tuple:
     """Returns ({rain_source: feature+label frame}, notes). Label columns are
     identical across sources; only the rain features differ. `end` is the
     training window's last day (TRAIN_END) or, for --rescore, the last day the
     refreshed inputs cover. `sources` defaults to RAIN_SOURCES; the leaderboard
     passes extra gauges (see rain_series). ``input_rules``: see rain_series —
-    None reproduces the record the served models were trained on."""
-    labels = build_daily_labels()
+    None reproduces the record the served models were trained on. ``geo`` (a
+    shared.geography.Geography): per-basin label columns, coverage and archive
+    onsets follow it, named by its basins' display names (csd_labels.
+    build_daily_labels); None = the served geo_v1 frames, as v4 was trained."""
+    basins = APP_BASINS if geo is None else [b.name for b in geo.basins]
+    labels = build_daily_labels(geo=geo)
     days = pd.DataFrame({"date": pd.date_range(TRAIN_START, end)})
     df = days.merge(labels, on="date", how="left")
-    for basin in APP_BASINS:
+    for basin in basins:
         for col, fill in ((f"{basin}_csd", 0), (f"{basin}_volume_mg", 0.0), (f"{basin}_outfalls", 0), (f"{basin}_covered", 0)):
             df[col] = df[col].fillna(fill)
         df[f"{basin}_volume_known"] = df[f"{basin}_covered"].astype(int)
@@ -247,14 +270,16 @@ def build_dataset(end: pd.Timestamp = TRAIN_END, sources: list = None, input_rul
     arch = archive_tables()
     recall = archive_recall(arch)
     notes = {"archive_recall": recall, "archive_used": False}
+    if geo is not None:
+        notes["geography"] = geo.version   # the recall gate stays the feed's own check, in geo_v1 terms
     if recall["recall"] is not None and recall["recall"] >= ARCHIVE_MIN_RECALL:
         notes["archive_used"] = True
-        notes["archive_labels"] = apply_archive_labels(df, arch, rain_avg)
+        notes["archive_labels"] = apply_archive_labels(df, arch, rain_avg, geo=geo)
 
-    cov_cols = [f"{b}_covered" for b in APP_BASINS]
-    df["csd_any"] = (df[[f"{b}_csd" for b in APP_BASINS]].sum(axis=1) > 0).astype(int)
-    df["csd_volume_mg"] = df[[f"{b}_volume_mg" for b in APP_BASINS]].sum(axis=1)
-    df["csd_outfalls"] = df[[f"{b}_outfalls" for b in APP_BASINS]].sum(axis=1)
+    cov_cols = [f"{b}_covered" for b in basins]
+    df["csd_any"] = (df[[f"{b}_csd" for b in basins]].sum(axis=1) > 0).astype(int)
+    df["csd_volume_mg"] = df[[f"{b}_volume_mg" for b in basins]].sum(axis=1)
+    df["csd_outfalls"] = df[[f"{b}_outfalls" for b in basins]].sum(axis=1)
     df["fully_covered"] = (df[cov_cols].sum(axis=1) == len(cov_cols)).astype(int)
     df["season"] = wet_season(df["date"])
 
@@ -270,7 +295,11 @@ def build_dataset(end: pd.Timestamp = TRAIN_END, sources: list = None, input_rul
     return out, notes
 
 
-def target_frame(df: pd.DataFrame, basin: str) -> pd.DataFrame:
+def target_frame(df: pd.DataFrame, basin: str, geo=None) -> pd.DataFrame:
+    """Covered days of one basin (or 'citywide') with y = its discharge label.
+    With ``geo``, `basin` may be the geography's key or display name ('south')."""
+    if geo is not None and basin != "citywide":
+        basin = geo.basin(basin).name
     if basin == "citywide":
         sub = df[df["fully_covered"] == 1].copy()
         sub["y"] = sub["csd_any"]
