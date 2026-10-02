@@ -115,7 +115,11 @@ UNMONITORED_KM = 1.5                                  # C-UNMON
 RUNOFF_RAIN_IN, RUNOFF_DAYS = 0.1, 3                  # C-DRY / C-RUNOFF: two-gauge rain D−2…D
 
 COLUMNS = ("date", "stage", "unit_type", "unit", "entry", "lead", "tier", "sel", "p", "q", "b", "v_hat",
-           "y", "y2", "n_sampled", "stratum", "excl", "tags")       # rows.csv.gz (design §7)
+           "y", "y2", "n_sampled", "stratum", "excl", "tags", "variant")   # rows.csv.gz (design §7)
+# 'variant' (added for S5, stages_s5): the live correction an S5 row carries; '' on every other stage. Rows
+# built without it validate as variant ''. S5's variants share one conditional set (the feed defines it), so
+# X-POWER is decided per variant and ``counts`` takes one variant's rows at a time.
+OPTIONAL_COLUMNS = ("variant",)
 WINDOWS = ("T0", "T1", "T1-holdout", "T2")             # protocol §2; T3 is never emitted
 IN_SAMPLE = "T3"
 ENTRIES = ("oracle", "rain", "L0", "L1", "L2", "L3", "L4", "L5", "L0s", "L1s")   # protocol §3
@@ -651,17 +655,20 @@ def skeleton(stage: str, units, start, end, entry: str = "oracle", tier: str = "
                       "tier": tier, "sel": ""})
     for c in ("p", "q", "b", "v_hat", "y", "y2", "n_sampled"):
         f[c] = np.nan
-    f["stratum"] = f["excl"] = f["tags"] = ""
+    f["stratum"] = f["excl"] = f["tags"] = f["variant"] = ""
     return f[list(COLUMNS)]
 
 
 def _validate(rows: pd.DataFrame, code: str, ctx: Context, table: str) -> pd.DataFrame:
     if table not in TABLES[code]:
         raise KeyError(f"{code} has no table {table!r}; it has {tuple(TABLES[code])}")
-    missing = [c for c in COLUMNS if c not in rows.columns]
+    missing = [c for c in COLUMNS if c not in rows.columns and c not in OPTIONAL_COLUMNS]
     if missing:
         raise ValueError(f"rows lack columns {missing}")
     r = rows.copy()
+    r["variant"] = r["variant"].fillna("").astype(str) if "variant" in r.columns else ""
+    if code != "S5" and (r["variant"] != "").any():
+        raise ValueError(f"{code} rows carry variants {sorted(set(r['variant']) - {''})}: only S5 rows have a variant")
     r["date"] = pd.to_datetime(r["date"]).dt.normalize()
     if r["date"].isna().any():
         raise ValueError("a row has no date")
@@ -971,8 +978,9 @@ def _power(rows: pd.DataFrame, code: str, ctx: Context) -> np.ndarray:
     blk = ctx.blocks.reindex(pd.DatetimeIndex(rows["date"]))
     storm_block = np.where(blk["block_kind"].to_numpy() == "storm", blk["block"].to_numpy(dtype=float), np.nan)
     f = pd.DataFrame({"unit": rows["unit"].to_numpy(), "entry": rows["entry"].to_numpy(), "tier": rows["tier"].to_numpy(),
+                      "variant": rows["variant"].to_numpy() if "variant" in rows.columns else "",
                       "pos": scored & _positive(code, y), "blk": np.where(scored, storm_block, np.nan)})
-    keys = ["unit", "entry", "tier"]
+    keys = ["unit", "entry", "tier", "variant"]       # S5's variants each count their own (identical) set
     n_pos = f.groupby(keys)["pos"].transform("sum")
     n_blk = f.groupby(keys)["blk"].transform("nunique")
     return ((n_pos < POWER_MIN_POSITIVES) | (n_blk < POWER_MIN_STORM_BLOCKS)).to_numpy()
@@ -1035,6 +1043,12 @@ def counts(rows: pd.DataFrame, table: str = "score") -> dict:
     r = rows.copy()
     for c in ("excl", "tags", "stratum"):
         r[c] = r[c].fillna("").astype(str)
+    if "variant" in r.columns:
+        per_stage = r.assign(_v=r["variant"].fillna("").astype(str)).groupby("stage")["_v"].unique()
+        mixed = {s: sorted(v) for s, v in per_stage.items() if len(v) > 1}
+        if mixed:
+            raise ValueError(f"rows hold several S5 variants {mixed}: count one variant at a time (they share one "
+                             "conditional set, so each would be counted once per variant)")
     keys = ["stage", "unit", "entry", "tier"]
     blank = r[keys].isna().any(axis=1) | (r[keys].astype(str) == "").any(axis=1)
     if blank.any():                                    # groupby would drop such a row from every cell, silently

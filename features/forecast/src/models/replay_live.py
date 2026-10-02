@@ -245,6 +245,28 @@ def _p_used(b: dict) -> float:
     return float(b["ph"] if b.get("ph") is not None else b["p"])
 
 
+def per_day_risks(onsets: dict, flags: dict, era: tuple, variant: str = LIVE, cutoff: str = "start") -> dict:
+    """{date: {"groups": {group: risk}, "zones": {zone: risk}}} — the per-day risks
+    the replay already computes for one variant on one feed, returned instead of
+    graded: ``replay`` for a rule set of ``variants()``, ``plain_recomposition``
+    for 'plain'. Same artifact, inputs and arguments as ``main`` and
+    ``run_synthetic`` (``onsets`` / ``flags`` / ``era`` as ``archive_flags`` or
+    ``synthetic_feed`` return them). Additive (STAGES_DESIGN.md §7 step 6):
+    stages_s5 checks its basin_swap against these day by day; main(),
+    run_synthetic() and their JSON are unchanged."""
+    sc, days, table = load_artifact()
+    vol_pred = predicted_volumes(days, sc)
+    if variant == "plain":
+        risks = plain_recomposition(days, table, vol_pred, era)[0]
+    else:
+        rule_sets = variants()
+        if variant not in rule_sets:
+            raise KeyError(f"unknown replay variant {variant!r}; known: plain, {', '.join(rule_sets)}")
+        risks = replay(days, table, vol_pred, onsets, flags, era, rule_sets[variant],
+                       use_samples=variant not in NO_SAMPLES, cutoff=cutoff)
+    return {d: {"groups": dict(g), "zones": zone_risks(g)} for d, g in risks.items()}
+
+
 def graded_days(days: list, risks: dict) -> list:
     """The artifact's era days with each zone's risk replaced by the variant's composition (labels untouched)."""
     out = []
