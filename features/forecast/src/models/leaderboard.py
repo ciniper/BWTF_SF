@@ -206,18 +206,36 @@ def scores(y, p) -> dict:
             "pr_auc": float(average_precision_score(y, p)), "brier": float(brier_score_loss(y, p))}
 
 
-def season_cv(sub: pd.DataFrame, family: str, C: float) -> dict:
-    """Leave-one-season-out over the PRE-holdout seasons, pooled predictions."""
+OOF_COLUMNS = ("date", "season", "y", "p")
+
+
+def oof_frame(parts: list) -> pd.DataFrame:
+    """Pooled out-of-fold predictions, one row per held-out day in fold order:
+    date, season (the fold that held it out), y, p. ``parts`` = [(held-out rows, p)]."""
+    if not parts:
+        return pd.DataFrame({c: pd.Series(dtype=t) for c, t in zip(OOF_COLUMNS, ("datetime64[ns]", "int64", "int64", "float64"))})
+    return pd.concat([pd.DataFrame({"date": te["date"].to_numpy(), "season": te["season"].to_numpy(),
+                                    "y": te["y"].to_numpy(), "p": p}) for te, p in parts], ignore_index=True)
+
+
+def season_cv(sub: pd.DataFrame, family: str, C: float, return_oof: bool = False):
+    """Leave-one-season-out over the PRE-holdout seasons, pooled predictions.
+    ``return_oof`` (stages S2, STAGES_DESIGN.md §8 P7a): also return the pooled
+    out-of-fold predictions, (scores, oof_frame); False returns the scores alone."""
     pre = sub[sub["date"] < T.HOLDOUT_START]
     seasons = sorted(pre["season"].unique())
     ys, ps = [], []
+    parts = []
     for s in seasons:
         tr, te = pre[pre["season"] != s], pre[pre["season"] == s]
         if tr["y"].sum() < 5 or len(te) == 0:
             continue
         m = make_model(family, C).fit(tr[FEATS], tr["y"])
         ys.append(te["y"].values); ps.append(m.predict_proba(te[FEATS])[:, 1])
-    return scores(np.concatenate(ys), np.concatenate(ps)) if ys else {}
+        if return_oof:
+            parts.append((te, ps[-1]))
+    out = scores(np.concatenate(ys), np.concatenate(ps)) if ys else {}
+    return (out, oof_frame(parts)) if return_oof else out
 
 
 def holdout(sub: pd.DataFrame, family: str, C: float):

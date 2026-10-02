@@ -67,17 +67,23 @@ def name_of(design_key: str) -> str:
     return f"logit_v2_{design_key}"
 
 
-def season_cv(sub: pd.DataFrame, design: dict, C: float) -> dict:
-    """Pooled leave-one-season-out over the pre-holdout seasons, the leaderboard's rule."""
+def season_cv(sub: pd.DataFrame, design: dict, C: float, return_oof: bool = False):
+    """Pooled leave-one-season-out over the pre-holdout seasons, the leaderboard's rule.
+    ``return_oof``: also return the pooled out-of-fold predictions, (scores,
+    leaderboard.oof_frame) — date, season, y, p (stages S2, STAGES_DESIGN.md §8 P7a)."""
     pre = sub[sub["date"] < T.HOLDOUT_START]
     ys, ps = [], []
+    parts = []
     for s in sorted(pre["season"].unique()):
         tr, te = pre[pre["season"] != s], pre[pre["season"] == s]
         if tr["y"].sum() < 5 or len(te) == 0:
             continue
         m = L.make_shared_model(C, design).fit(tr[L.FEATS], tr["y"])
         ys.append(te["y"].values); ps.append(m.predict_proba(te[L.FEATS])[:, 1])
-    return L.scores(np.concatenate(ys), np.concatenate(ps)) if ys else {}
+        if return_oof:
+            parts.append((te, ps[-1]))
+    out = L.scores(np.concatenate(ys), np.concatenate(ps)) if ys else {}
+    return (out, L.oof_frame(parts)) if return_oof else out
 
 
 def basin_rows(basin: str, frames: dict, chosen_src: dict, use_archive: dict) -> pd.DataFrame:
