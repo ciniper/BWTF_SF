@@ -1,15 +1,11 @@
-# BWTF five-stage forecast — scoring protocol `stages_v2`
+# BWTF five-stage forecast — scoring protocol `stages_v1`
 
-Freeze date: 2026-10-01 (the date of the commit that adds this version). The prospective window T0 starts the next day, 2026-10-02.
-protocol sha256: 7e44361ae88d373913208cd97dd0b87965bb830a219f35ae1f2121c519fa175b
+Freeze date: 2026-10-01 (the date of the commit that adds this file). The prospective window T0 starts the next day, 2026-10-02.
+protocol sha256: 3dea312e3e939645cb906a7e01f632375ec28aadd9cdd76db3a2ae0eff117a6d
 
 This file is the frozen scoring protocol for branch `forecast-stages`. Every score that `stages_build`, the stages report, the Model check's Stages tab or a promotion uses is computed under it. The contract it implements is `STAGES_DESIGN.md`: §3.0 and §5.1–5.6 of Part C, adapted by the owner decisions (Part A) and the red-team resolutions (Part B), which override Part C. Decisions are Chase's, 2026-10-01, unless marked otherwise.
 
-**Changing it.** After the freeze nothing here is edited in place. A change is a new protocol version (`stages_v3`) with its own freeze date and its own T0; the version it replaces moves, unedited, to `protocols/` (`protocols/stages_v1.md` holds the first). Every score records the protocol it was made under (`manifest.protocol = "stages_v2@<sha>"`), and scores made under different versions are never compared. `<sha>` is the sha256 of this file with its `protocol sha256:` line (at the top) reading `protocol sha256: <filled at commit>`; once that line holds the digest, `tests/test_served_golden.py` fails on any edit.
-
-**Changes from `stages_v1`** (same day, 2026-10-01, before any score was computed: only the exclusion counts of `exclusions.catalog_counts` had been seen). Two rules read literally did something the design never meant:
-1. **Coverage (§1).** v1's status rule made Bayside's February, April–July and September 2016 "no discharge" statements count as known, while the same rule's next sentence called those Poo Bot archive days unknown. The old statements are not trustworthy: the grid marks Bayside 2015-02 "no discharge", and the legacy record lists a discharge on 2015-02-08. v2 counts a facility-month as known only inside the continuous CIWQS ledger (§1; Bayside from 2016-10, Oceanside from 2017-12), which is the design's reading and the served training frames'.
-2. **X-LEDGER-SUSPECT (§7).** v1 tested each basin on its own ("no event for the basin"), so a CSO posting in a zone fed by two basins flagged the basin that did not overflow even when the other one did. It also counted extreme samples on dry days, which are dry-weather exceedances (C-DRY), not missed overflows. Under v1, South was suspect on 438 days and S3 lost 64 of East's 100 overflow days. v2 tests the zone (no feeding basin has an event in the window) and needs a wet day in the window. Bayside, February 2026 is flagged under both versions.
+**Changing it.** After the freeze nothing here is edited in place. A change is a new protocol version (`stages_v2`) with its own freeze date and its own T0. Every score records the protocol it was made under (`manifest.protocol = "stages_v1@<sha>"`), and scores made under different versions are never compared. `<sha>` is the sha256 of this file with its `protocol sha256:` line (at the top) reading `protocol sha256: <filled at commit>`; once that line holds the digest, `tests/test_served_golden.py` fails on any edit.
 
 ---
 
@@ -21,7 +17,7 @@ This file is the frozen scoring protocol for branch `forecast-stages`. Every sco
 | **Stages** | S1 rain forecast vs gauges · S2 basin rain → basin overflow · S3 basin → zone · S4 zone overflow → water quality · S5 live corrections · OUT the public number |
 | **The public claim (A1)** | OUT = the chance that a zone's beaches are affected by a sewer overflow on day D: the overflow day itself, or one still lingering. OUT has no rain-runoff background term. Rain runoff with no overflow and dry-weather exceedances are things the forecast *does not claim*. |
 | **S4** | S4 is scored against lab samples as a stage check, with a rain background term. The S4 score is never the public claim. |
-| **Coverage, one rule** | `ledger_known(basin, D)`: D's month lies in the facility's **continuous ledger** and its status is `events_parsed`, `table_present_zero_events` or `no_table_stated_no_discharge`. The continuous ledger is read from the coverage grid, never typed: walk back from the facility's last grid month over months with one of those statuses, then open the ledger at the first of them with a filed CSD table (`events_parsed` or `table_present_zero_events`). A "no discharge" statement can sit inside the ledger but cannot open it. On the committed grid: Bayside from 2016-10, Oceanside from 2017-12. Statuses before the ledger opens are not trusted, and a filed event before it is an error. Poo Bot archive days (2016-03-19 → 2017-01-10) that the continuous ledger does not cover are **not** known (X-S2-ARCHIVE); they serve only as S5's real archive feed. S2, S3, S4 history and OUT all use this rule. |
+| **Coverage, one rule** | `ledger_known(basin, D)`: a CIWQS record exists for the basin's facility-month with status `events_parsed`, `table_present_zero_events` or `no_table_stated_no_discharge`. Poo Bot archive days (2016-03-19 → 2017-01-10) are **not** known. They serve only as S5's real archive feed. S2, S3, S4 history and OUT all use this rule. |
 
 **Truth per stage:**
 - **S1:** ACIS daily totals, with `gauge_outage_v1` masking on every day. 'T' counts as 0.
@@ -227,7 +223,7 @@ Other blocks:
 | X-S1-PEAK | peak-hour truth: every day, until KSFO hourly history is committed |
 | X-S2-ARCHIVE | `label_source = poobot` |
 | X-S2-UNCOV | not `ledger_known` |
-| X-LEDGER-SUSPECT (Part B 8) | a trigger in zone z on day D: a CSO-cause BeachWatch posting onset, or a sample ≥ 10× the standard. The trigger counts when D−3…D+1 holds a wet day (§6) and **no basin feeding z** has a ledger event in D−3…D+1. Then every feeding basin's `ledger_known` days in D−3…D+1 are suspect (example: Bayside, February 2026). Excluded from S2 and S3, and counted and listed. |
+| X-LEDGER-SUSPECT (Part B 8) | a `ledger_known` basin-day in D−3…D+1 around a CSO-cause BeachWatch posting onset, or a sample ≥ 10× the standard, in the basin's zones, when the ledger has no event for the basin in that window (example: Bayside, February 2026). Excluded from S2 and S3, and counted and listed. |
 | X-S2-CARRY | an event that started before D is still active on D, and none starts on D |
 | X-S2-VOLQ | volume_MG is null or carries a '<' qualifier |
 | X-S2-OUTAGEIN (tag) | a masked gauge-day in the row's 30-day input window |

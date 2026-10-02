@@ -22,19 +22,23 @@ first-look and few-stations flags (X-S4-RESAMPLE, X-S4-FEW) and the posting end
 (X-PL-END). This module labels; it never excludes. A frame says what is true
 and what is known, and the exclusion rules decide what is scored.
 
-**One coverage rule (§3.0).** ``ledger_known(basin, D)``: the basin's facility
-filed a CIWQS report for D's month with status events_parsed,
-table_present_zero_events or no_table_stated_no_discharge. That is
-csd_labels' coverage grid read per facility (``facility_covered_dates``),
-never re-derived. Poo Bot archive days (2016-03-19 → 2017-01-10) are not known:
-the feed's onsets are S5's real archive feed, never truth (``archive_onsets``).
-So the served scorecard's labels differ from these inside that window, where
-it took Westside onsets and Bay-side extra onsets from the feed (Part C fix 22);
-outside it they agree (tests/test_truth.py). One more difference, by the
-protocol's words: the grid files Bayside Feb, Apr–Jul and Sep 2016 as
-no-discharge months (stated, or a zero-event table), so they are known here,
-while the served frames start the Bay-side ledger at its first event month
-(build_daily_labels, 2016-10) and never labelled them.
+**One coverage rule (protocol §1).** ``ledger_known(basin, D)``: D's month lies
+in the facility's continuous ledger and the basin's facility filed it with
+status events_parsed, table_present_zero_events or
+no_table_stated_no_discharge. The continuous ledger is the unbroken run of
+those months that ends at the facility's last grid month, opened by its first
+month with a filed CSD table (``ledger_start``: Bayside 2016-10, Oceanside
+2017-12 on the committed grid, derived, never typed). Statuses before it are
+not trusted: Bayside's 2016 "no discharge" statements (Feb, Apr–Jul, Sep) are
+not known. All of it is csd_labels' coverage grid read per facility
+(``facility_covered_dates``), never re-derived. Poo Bot archive days
+(2016-03-19 → 2017-01-10) the continuous ledger does not cover are not known
+either: the feed's onsets are S5's real archive feed, never truth
+(``archive_onsets``). So the served scorecard's labels differ from these
+inside that window, where it took Westside onsets and Bay-side extra onsets
+from the feed (Part C fix 22); outside it they agree (tests/test_truth.py).
+The served frames start the Bay-side ledger at the same month
+(build_daily_labels, 2016-10), and Westside's at the same grid month.
 
 **Geography.** Every ledger frame takes a ``shared.geography.Geography``
 (``geography.get('geo_v1' | 'sfpuc4_v1')``, or its version string). An event's
@@ -87,6 +91,8 @@ TRACE_IN = 0.001                                       # collectors/historical.p
 TAIL_DAYS = 7                                          # OUT's tail k = 1…7 (impact.compose, scorecard.TAIL_DAYS)
 HISTORY_DAYS = 7                                       # "the history known": every feeding basin known on D−7…D
 LEVELS = ("basin", "link", "zone")
+GRID_STATUSES = ("events_parsed", "table_present_zero_events", "no_table_stated_no_discharge", "no_event_table_found")
+TABLE_STATUSES = ("events_parsed", "table_present_zero_events")   # a CSD table was filed: only these open the continuous ledger
 
 
 # ── plumbing ───────────────────────────────────────────────────────────────
@@ -306,8 +312,60 @@ def ledger_end() -> pd.Timestamp:
 
 
 @functools.lru_cache(maxsize=None)
+def _continuous_ledger(facility: str) -> tuple[pd.Timestamp, pd.Timestamp]:
+    """(first day, last day) of the facility's continuous ledger, read from csd_labels' coverage grid.
+
+    Walk back from the facility's last grid month over covered months (csd_labels' three statuses)
+    until one is not covered; the run opens at its first month with a filed CSD table
+    (TABLE_STATUSES), so a "no discharge" statement can sit inside the ledger but never start it.
+    The grid must hold every month from its first to its last, each with a status it knows, and its
+    last month must be covered, and no filed event of the facility may fall before the start (an
+    unfiled month a refresh puts inside the ledger would cut the run there and drop every event before
+    it): anything else raises rather than move the start silently.
+    """
+    cov = csd_labels.load_coverage()
+    name = csd_labels.facility_grid_name(facility)
+    g = cov[cov["facility"] == name]
+    other = sorted(set(g["status"]) - set(GRID_STATUSES))
+    if other:
+        raise ValueError(f"{name}: coverage statuses {other} are not in {GRID_STATUSES}")
+    g = g.assign(_m=g["year"].astype(int) * 12 + g["month"].astype(int) - 1).sort_values("_m")
+    m, covered = g["_m"].to_numpy(), g["covered"].to_numpy(dtype=bool)
+    if (np.diff(m) != 1).any():
+        raise ValueError(f"{name}: the coverage grid skips or repeats a month")
+    month = lambda k: pd.Timestamp(int(k) // 12, int(k) % 12 + 1, 1)  # noqa: E731
+    if not covered[-1]:
+        raise ValueError(f"{name}: the last grid month {month(m[-1]):%Y-%m} is {g['status'].iloc[-1]!r}; "
+                         "no continuous ledger ends there")
+    i = len(m) - 1
+    while i > 0 and covered[i - 1]:
+        i -= 1
+    table = np.flatnonzero(g["status"].isin(TABLE_STATUSES).to_numpy()[i:])
+    if not len(table):
+        raise ValueError(f"{name}: no filed CSD table in the run from {month(m[i]):%Y-%m}")
+    start = month(m[i + table[0]])
+    ev = csd_labels.load_events()
+    early = ev.loc[ev["outfall_id"].map(lambda o: OUTFALLS[o].facility).eq(facility) & (ev["event_date"] < start), "event_date"]
+    if len(early):
+        cut = f"the grid's {month(m[i - 1]):%Y-%m} is {g['status'].iloc[i - 1]!r} and breaks the run" if i else "the grid starts after them"
+        raise ValueError(f"{name}: {len(early)} filed events fall before the continuous ledger's start {start:%Y-%m} "
+                         f"(the first on {early.min():%Y-%m-%d}): {cut}")
+    return start, month(m[-1]) + pd.offsets.MonthEnd(0)
+
+
+def ledger_start(facility: str) -> pd.Timestamp:
+    """The first day of the facility's continuous ledger (Basin.facility: 'Bayside' | 'Oceanside'), derived
+    from the coverage grid: 2016-10-01 and 2017-12-01 on the committed grid (tests/test_truth.py). No day
+    before it is ledger_known."""
+    return _continuous_ledger(facility)[0]
+
+
+@functools.lru_cache(maxsize=None)
 def _facility_known(facility: str) -> pd.DatetimeIndex:
-    return pd.DatetimeIndex(csd_labels.facility_covered_dates(facility)).normalize().unique()
+    """The facility's covered days inside its continuous ledger (protocol §1's two conditions)."""
+    lo, hi = _continuous_ledger(facility)
+    d = pd.DatetimeIndex(csd_labels.facility_covered_dates(facility)).normalize().unique()
+    return d[(d >= lo) & (d <= hi)]
 
 
 @functools.lru_cache(maxsize=1)
@@ -328,21 +386,20 @@ def _check_events_known(geo: G.Geography) -> None:
         d = ev.loc[ev["basin"] == b.key, "date"]
         bad = d[~d.isin(_facility_known(b.facility))]
         if len(bad):
-            raise ValueError(f"{geo.version} {b.key}: ledger events on days its facility ({b.facility}) did not file: "
-                             f"{sorted(str(x.date()) for x in bad.unique())[:5]}")
+            raise ValueError(f"{geo.version} {b.key}: ledger events on days its facility ({b.facility}) did not file "
+                             f"inside its continuous ledger: {sorted(str(x.date()) for x in bad.unique())[:5]}")
 
 
 def ledger_known(geo, start=TRUTH_START, end=None) -> pd.DataFrame:
     """One row per (basin, day): date, basin, known, archive.
 
-    ``known`` is the one coverage rule (§3.0): the basin's facility filed D's
-    month (csd_labels' grid); the feed never makes a day known. ``archive``
-    marks a Poo Bot feed snapshot day in a month the grid does not cover
-    (X-S2-ARCHIVE, applied before X-S2-UNCOV); it is not known either.
-    Bayside's 2016 no-discharge months (Feb, Apr–Jul, Sep) are known by this
-    rule, so their snapshot days are not archive here, though the served
-    frames took them from the feed (label_source 'poobot': they start the
-    Bay-side ledger at its first event month). See the module notes.
+    ``known`` is the one coverage rule (protocol §1): D's month lies in the
+    facility's continuous ledger (from ``ledger_start``) and the facility filed
+    it (csd_labels' grid); the feed never makes a day known. ``archive`` marks a
+    Poo Bot feed snapshot day the continuous ledger does not cover
+    (X-S2-ARCHIVE, applied before X-S2-UNCOV); it is not known either. So
+    Bayside's 2016 snapshot days before 2016-10 are archive, as in the served
+    frames (label_source 'poobot'). See the module notes.
     """
     geo = _geo(geo)
     days = _days(start, ledger_end() if end is None else end)

@@ -10,8 +10,10 @@ Pins that:
     row raises;
   - C-DRY + C-RUNOFF per zone are the sampled exceedance zone-days with no overflow on D−7…D and the
     history known (Part B 3: negatives of the claim, never excluded), counted independently here;
-  - X-LEDGER-SUSPECT lists Bayside's February 2026 (Part B 8), and is exactly protocol §7's per-basin
-    sentence, recomputed here;
+  - X-LEDGER-SUSPECT lists Bayside's February 2026 (Part B 8), and is exactly protocol §7's sentence
+    (stages_v2: a trigger in zone z counts when its window holds a wet day and no basin feeding z filed an
+    event in it), recomputed here; a dry window and an event at the zone's other basin flag nothing, and no
+    zone overflow day is ever suspect;
   - a context's facts on a day do not depend on where it starts (a build over part of the record);
   - oracle and chained rows stay paired (X-S4-HISTUNK on every entry);
   - the catalog counts for both geographies, as of 2026-08-17 (Part B 23). Where a pinned count
@@ -61,25 +63,25 @@ CATALOG_COMMON = {
     # holds 1 / 16 of them, so 37 / 415 here.
     ("s1", "X-S1-MISSING"): [37, 415, 0],
     ("s1", "X-S1-OUTAGE"): [37, 341, 0],
-    # design: Westside 283 + 374, each Bay basin 183 + 31. The protocol's coverage rule (§1) makes Bayside's
-    # 2016 no-discharge months known (truth.py; tests/test_truth.py UNKNOWN_BASIN_DAYS), leaving Mar and Aug 2016.
-    ("s2", "X-S2-UNCOV"): [374, 24, 24, 24],
-    ("s2", "X-S2-ARCHIVE"): [283, 38, 38, 38],
-    # design: Ocean / Baker & China 657 (same); North / East 214 → 62, the Bayside 2016 months again
-    ("s3", "X-S3-UNCOV"): [657, 657, 62, 62],
+    # design: Westside 283 + 374, each Bay basin 183 + 31 (same): every day before the continuous ledger
+    # (protocol §1; truth.ledger_start, tests/test_truth.py UNKNOWN_BASIN_DAYS) is unknown
+    ("s2", "X-S2-UNCOV"): [374, 31, 31, 31],
+    ("s2", "X-S2-ARCHIVE"): [283, 183, 183, 183],
+    # design: Ocean / Baker & China 657, North / East 214 (same)
+    ("s3", "X-S3-UNCOV"): [657, 657, 214, 214],
     # design: 10 of 20 Baker & China–only days to 2026-02-28 (same: 22 such days to AS_OF, 2 after the last filing)
     ("s3", "X-S3-NOTCLEAN"): [5, 10, 0, 0],
     ("s3", "X-PL-END"): [0, 2, 0, 1],
     # design: 3,371 / 3,339 / 3,349 / 3,061 (same)
     ("s4", "X-S4-UNSAMPLED"): [3371, 3339, 3349, 3061],
-    # design: 61 / 65 / 34 / 49 → North and East lose the Bayside 2016 months (sampled − SAMPLED_HIST_KNOWN in test_truth)
-    ("s4", "X-S4-HISTUNK"): [61, 65, 13, 23],
+    # design: 61 / 65 / 34 / 49 (same; sampled − SAMPLED_HIST_KNOWN in test_truth)
+    ("s4", "X-S4-HISTUNK"): [61, 65, 34, 49],
     # Part B 4's rule; no design figure. East resamples half its covered sample-days.
-    ("s4", "X-S4-RESAMPLE"): [61, 84, 91, 392],
+    ("s4", "X-S4-RESAMPLE"): [61, 84, 90, 387],
     # strata on the first-look rows left scored. Design 28 / 24 / 26 / 58 day-of and 36/14/9/8 % few were counted
     # on every sampled day with the history known, before X-S4-RESAMPLE existed (and with feed onsets, East +4).
     ("s4", "X-S4-DAYOF"): [23, 18, 20, 20],
-    ("s4", "X-S4-FEW"): [5, 6, 4, 19],
+    ("s4", "X-S4-FEW"): [5, 6, 4, 18],
     # tag on the scored zone-days of 2020-07 → 2021; the design's ≈ 848 counts results, not zone-days
     ("s4", "X-S4-ANALYTE"): [78, 81, 80, 75],
     # station-days 2016-03-01 → AS_OF, DataSF + Poo Bot. The design's 46–54 are DataSF alone (46 / 54 / 53); the
@@ -89,55 +91,58 @@ CATALOG_COMMON = {
     # feed's snapshot days in it
     ("s5", "X-S5-CIRC"): [298, 298, 0, 0],
     ("s5", "X-S5-INSAMPLE"): [298, 298, 298, 298],
-    # design 664 / 664 / 220 / 220 → the Bayside 2016 months
-    ("out", "X-E2E-UNCOV"): [664, 664, 76, 76],
+    # design 664 / 664 / 220 / 220. North / East: the 214 days before 2016-10 and the ledger's first 7 days, whose
+    # week reaches back before it (2016-10-01 → 07, none an overflow day), as Ocean's 664 is 657 + Westside's first 7
+    ("out", "X-E2E-UNCOV"): [664, 664, 221, 221],
     # design 172 / 224 / 203 / 248: the design counted feed-onset tails (Part C fix 22); the truth is ledger-only
     ("out", "X-E2E-UNK"): [172, 224, 197, 242],
     # the posting ruler after OUT's own rules: 170 days after 2026-02-28 (design), less the uncovered and
     # unsampled-tail days among them
     ("out", "X-PL-END"): [153, 142, 170, 166],
 }
-# X-LEDGER-SUSPECT (Part B 8; no design figure) is read as protocol §7 words it, per basin: a basin feeding the
-# triggered zone is suspect when it filed no event in D−3…D+1, even if the zone's other basin did. So East's two
-# basins differ, and so do the geographies: under SFPUC4 South (Candlestick only) is flagged on 438 days, 259 of them
-# around East triggers Central's events explain; GEO_V1's Southeast holds Islais and is flagged on 210. A zone row
-# is suspect when any feeding basin's day is, so S3 East leaves out 443 / 239 zone-days — 64 / 14 of them East
-# overflow days, which is why S3 East keeps only 36 / 86 identity days of its 100. The zone reading (either basin
-# explains an East trigger) would flag 179 days in both basins and both geographies (test_bayside_…).
+# X-LEDGER-SUSPECT (Part B 8; no design figure) as protocol §7 words it under stages_v2: a trigger in zone z counts
+# when D−3…D+1 holds a wet day and no basin feeding z filed an event in it; then every feeding basin's known days
+# in the window are suspect. So East's two basins are flagged together, on the same 81 days, and the geographies
+# agree (20 / 55 / 81 / 81 basin-days, 45 episodes each). No zone overflow day is suspect: S3 East checks all 100
+# of its overflow days as identity days. (stages_v1 tested each basin alone and counted dry windows: South 438 /
+# Southeast 210 basin-days, and S3 East lost 64 / 14 of its 100 overflow days.)
 CATALOG_BY_GEO = {
     "geo_v1": {   # basins westside, north_shore, central (Mission Creek), southeast (Islais + Candlestick)
-        ("s2", "X-S2-CARRY"): [3, 4, 15, 14],
-        ("s2", "X-LEDGER-SUSPECT"): [40, 75, 208, 210],
-        ("s2", "X-S2-OUTAGEIN"): [656, 153, 135, 128],
+        ("s2", "X-S2-CARRY"): [3, 4, 16, 14],
+        ("s2", "X-LEDGER-SUSPECT"): [20, 55, 81, 81],
+        ("s2", "X-S2-OUTAGEIN"): [661, 153, 139, 141],
         ("s2", "X-S2-VOLQ"): [16, 9, 9, 6],
         # design: "all covered days except Westside 65, North 42, East 100" — first match also takes the suspect
         # and carry days; Ocean keeps 63 of Westside's 65 (2 are Ocean Beach carry-overs while Baker & China fired)
-        ("s3", "X-S3-QUIET"): [3057, 3060, 3639, 3421],
-        ("s3", "X-S3-CARRY"): [5, 0, 4, 14],
-        ("s3", "X-LEDGER-SUSPECT"): [40, 40, 75, 239],
+        ("s3", "X-S3-QUIET"): [3077, 3080, 3507, 3411],
+        ("s3", "X-S3-CARRY"): [5, 0, 4, 16],
+        ("s3", "X-LEDGER-SUSPECT"): [20, 20, 55, 81],
         # North Shore's cell is two links in GEO_V1, neither the basin's only one, so no zone-day is identity here.
         # (The served adapter's Crissy Field share is 1 at both sizes, so its North oracle is exact all the same:
         # an open question for the build, not for the truth.)
-        ("s3", "X-S3-ID"): [0, 0, 0, 86],
-        # design: Baker & China 7 of 54, East 6 of 100 (counted on the chained entry's scored rows); East loses 1
-        # to X-LEDGER-SUSPECT
-        ("s3", "X-S3-GEO"): [0, 7, 0, 5],
+        ("s3", "X-S3-ID"): [0, 0, 0, 100],
+        # design: Baker & China 7 of 54, East 6 of 100 (same; counted on the chained entry's scored rows)
+        ("s3", "X-S3-GEO"): [0, 7, 0, 6],
     },
     "sfpuc4_v1": {   # basins westside, north_shore, central, south
         ("s2", "X-S2-CARRY"): [3, 4, 17, 3],     # design §4.3: Central 17, North Shore 4, South 3, Westside 3 (same)
-        ("s2", "X-LEDGER-SUSPECT"): [40, 75, 184, 438],
-        ("s2", "X-S2-OUTAGEIN"): [656, 153, 136, 117],
+        ("s2", "X-LEDGER-SUSPECT"): [20, 55, 81, 81],
+        ("s2", "X-S2-OUTAGEIN"): [661, 153, 140, 141],
         ("s2", "X-S2-VOLQ"): [16, 9, 15, 2],     # basin event days with a blank or '<' volume (5 null + 45 '<' events)
-        ("s3", "X-S3-QUIET"): [3057, 3060, 3639, 3275],
-        ("s3", "X-S3-CARRY"): [5, 0, 4, 6],
-        ("s3", "X-LEDGER-SUSPECT"): [40, 40, 75, 443],
-        # design: North Shore 42, Central 97, South 23 link-days checked (zone-days here: East's 100 less the 64
-        # X-LEDGER-SUSPECT takes first)
-        ("s3", "X-S3-ID"): [0, 0, 42, 36],
-        ("s3", "X-S3-GEO"): [0, 7, 0, 3],        # design: Baker & China 7, East 6 (East loses 3 to X-LEDGER-SUSPECT)
+        ("s3", "X-S3-QUIET"): [3077, 3080, 3507, 3411],
+        ("s3", "X-S3-CARRY"): [5, 0, 4, 16],
+        ("s3", "X-LEDGER-SUSPECT"): [20, 20, 55, 81],
+        # design: North Shore 42, Central 97, South 23 link-days checked (zone-days here: North's 42, East's 100)
+        ("s3", "X-S3-ID"): [0, 0, 42, 100],
+        ("s3", "X-S3-GEO"): [0, 7, 0, 6],        # design: Baker & China 7, East 6 (same)
     },
 }
-SUSPECT_EPISODES = {"geo_v1": 101, "sfpuc4_v1": 127}
+SUSPECT_EPISODES = {"geo_v1": 45, "sfpuc4_v1": 45}
+SUSPECT_BASIN_DAYS = {"westside": 20, "north_shore": 55, "central": 81, "south": 81}   # SFPUC4; GEO_V1's the same
+# What became of every trigger whose window reaches TRUTH_START, to AS_OF (the same in both geographies): it counted,
+# its window was dry (no wet day), or a basin feeding its zone filed an event in the window.
+TRIGGER_OUTCOMES = {"cso_posting_onset": {"counted": 39, "dry": 1, "explained": 150},
+                    "sample_10x": {"counted": 33, "dry": 29, "explained": 152}}
 # Rules whose counts read BeachWatch (X-PL-END, X-LEDGER-SUSPECT's posting triggers) or follow X-LEDGER-SUSPECT
 # in first-match order: a BeachWatch pull after POSTINGS_PULL may move them, so they are pinned for that pull only.
 POSTING_BOUND = {("s2", "X-S2-CARRY"), ("s2", "X-LEDGER-SUSPECT"), ("s2", "X-S2-OUTAGEIN"), ("s3", "X-S3-QUIET"),
@@ -145,12 +150,12 @@ POSTING_BOUND = {("s2", "X-S2-CARRY"), ("s2", "X-LEDGER-SUSPECT"), ("s2", "X-S2-
                  ("s3", "X-S3-NOTCLEAN"), ("s3", "X-PL-END"), ("out", "X-PL-END")}
 
 # claims (TRUTH_START → AS_OF), per zone. Design §4.2: C-DRY 10 / 45 / 38 / 121, C-RUNOFF 4 / 10 / 17 / 49
-# (294 = 14 / 55 / 55 / 170). North +1 and East +5 are the Bayside 2016 months now known; East +4 more are
-# exceedances in the tails of the feed onsets the design counted as overflows (2016-10-24, 12-23, 12-24, 12-25).
-# Baker & China 2023-05-08 had exactly 0.10" on D−2…D (0.08 + 0 + 0.02): runoff by the rule (≥ 0.1"), dry in the
-# design, whose rolling sum read 0.0999….
-C_DRY = {"days": {"ocean": 10, "baker_china": 44, "north": 39, "east": 126}, "episodes": {"ocean": 9, "baker_china": 38, "north": 33, "east": 89}}
-C_RUNOFF = {"days": {"ocean": 4, "baker_china": 11, "north": 17, "east": 53}, "episodes": {"ocean": 4, "baker_china": 9, "north": 15, "east": 34}}
+# (294 = 14 / 55 / 55 / 170). East +4 (1 dry, 3 runoff) are exceedances in the tails of the feed onsets the design
+# counted as overflows (2016-10-24, 12-23, 12-24, 12-25). Baker & China 2023-05-08 had exactly 0.10" on D−2…D
+# (0.08 + 0 + 0.02): runoff by the rule (≥ 0.1"), dry in the design, whose rolling sum read 0.0999…. (stages_v1
+# also counted Bayside's 2016 "no discharge" months: North 39 / 17, East 126 / 53.)
+C_DRY = {"days": {"ocean": 10, "baker_china": 44, "north": 38, "east": 122}, "episodes": {"ocean": 9, "baker_china": 38, "north": 32, "east": 87}}
+C_RUNOFF = {"days": {"ocean": 4, "baker_china": 11, "north": 17, "east": 52}, "episodes": {"ocean": 4, "baker_china": 9, "north": 15, "east": 33}}
 C_OTHER = {"ocean": 17, "baker_china": 129, "north": 135, "east": 417}            # design 698 (same), 2016-10-16 → 2026-02-28
 C_UNMON = {"CSD-004": 1.7, "CSD-017": 2.6, "CSD-018": 2.5, "CSD-037": 1.8}        # design's km; 70 event-days (same)
 
@@ -672,16 +677,18 @@ def test_the_other_claims():
 # ── X-LEDGER-SUSPECT (Part B 8) ─────────────────────────────────────────────
 
 def test_bayside_february_2026_is_suspect():
-    """Bayside filed no event in February 2026 while East and North were posted for CSO on the 17th and East
-    read 10× the standard from the 16th to the 20th: every Bay-side basin is listed — under SFPUC4 Central and
-    South (East) and North Shore (North); under GEO_V1 Central, Southeast and North Shore."""
+    """Bayside filed no event in February 2026 while it rained, East and North were posted for CSO on the 17th and
+    East read 10× the standard from the 16th to the 20th: every Bay-side basin is listed, East's two together —
+    Central and South (Central and Southeast under GEO_V1) 13 → 21 February, North Shore 14 → 18 February."""
+    want = {"east": ("2026-02-13", "2026-02-21"), "north": ("2026-02-14", "2026-02-18")}
     for version, bay in (("sfpuc4_v1", ("north_shore", "central", "south")), ("geo_v1", ("north_shore", "central", "southeast"))):
         eps = X.ledger_suspect(version, end=AS_OF)
         feb = [e for e in eps if e["start"] <= "2026-02-17" <= e["end"]]
         assert sorted(e["basin"] for e in feb) == sorted(bay), (version, feb)
         for e in feb:
-            whys = {(r["zone"], r["why"]) for r in e["reasons"]}
             zone = "north" if e["basin"] == "north_shore" else "east"
+            assert e["zones"] == [zone] and (e["start"], e["end"]) == want[zone], (version, e)
+            whys = {(r["zone"], r["why"]) for r in e["reasons"]}
             assert (zone, "sample_10x") in whys or zone == "north", (version, e)
             if _pull_is_committed():
                 assert (zone, "cso_posting_onset") in whys, (version, e)
@@ -692,43 +699,131 @@ def test_bayside_february_2026_is_suspect():
             assert e["reasons"] and {r["why"] for r in e["reasons"]} <= {"cso_posting_onset", "sample_10x"}
             for d in pd.date_range(e["start"], e["end"]):
                 assert b.loc[(e["basin"], d), "known"] and b.loc[(e["basin"], d), "y"] == 0, (version, e["basin"], d)
-    # the default is protocol §7's per-basin reading; Part B 8's zone reading (kept for the owner) is its subset,
-    # and the same in both geographies
+    # one rule, read on the zone: East's two basins are flagged on the same days, and the geographies agree
     days = lambda eps: {(e["basin"], d) for e in eps for d in pd.date_range(e["start"], e["end"])}  # noqa: E731
-    per_basin = days(X.ledger_suspect("sfpuc4_v1", end=AS_OF))
-    assert per_basin == days(X.ledger_suspect("sfpuc4_v1", end=AS_OF, explained_by="basin"))
-    zone = days(X.ledger_suspect("sfpuc4_v1", end=AS_OF, explained_by="zone"))
-    assert zone < per_basin
-    v1 = days(X.ledger_suspect("geo_v1", end=AS_OF, explained_by="zone"))
-    rename = {"south": "southeast"}
-    assert {(rename.get(bk, bk), d) for bk, d in zone} == v1
-    _raises(ValueError, X.ledger_suspect, "sfpuc4_v1", end=AS_OF, explained_by="either")
+    s4, v1 = days(X.ledger_suspect("sfpuc4_v1", end=AS_OF)), days(X.ledger_suspect("geo_v1", end=AS_OF))
+    assert {d for bk, d in s4 if bk == "central"} == {d for bk, d in s4 if bk == "south"}
+    assert {({"south": "southeast"}.get(bk, bk), d) for bk, d in s4} == v1
     if _pull_is_committed():
-        assert sum(1 for bk, _ in per_basin if bk == "south") == 438
-        assert sum(1 for bk, _ in zone if bk == "south") == 179                 # what the zone reading would leave out
+        assert {k: sum(1 for bk, _ in s4 if bk == k) for k in G.SFPUC4_V1.keys} == SUSPECT_BASIN_DAYS
+
+
+def test_no_zone_overflow_day_is_ever_suspect():
+    """Under stages_v2 an event at any basin feeding the zone explains a trigger for all of them, and zones that share
+    a basin share all their feeding basins, so neither a basin event day nor a zone overflow day is suspect, in either
+    geography: S3 keeps every East overflow day (stages_v1 left out 64 under SFPUC4, 14 under GEO_V1)."""
+    for version in G.VERSIONS:
+        geo = G.get(version)
+        feeding = {z: set(T.feeding_basins(geo, z)) for z in ZONES}
+        assert all(feeding[a] == feeding[b] for a in ZONES for b in ZONES if feeding[a] & feeding[b]), version
+        ctx = X.context(geo, end=AS_OF)
+        z, b = ctx.frames["zone"], ctx.frames["basin"]
+        assert z["suspect"].any() and b["suspect"].any(), version            # not empty by accident
+        lost = z[z["suspect"].to_numpy(dtype=bool) & (z["y"] == 1).to_numpy()]
+        assert lost.empty, (version, list(lost.index[:5]))
+        assert not (b["suspect"].to_numpy(dtype=bool) & (b["y"] == 1).to_numpy()).any(), version
+        r = X.skeleton("s3", ["east"], ctx.start, ctx.end, entry="rain")
+        r["y"] = z.loc["east", "y"].reindex(pd.DatetimeIndex(r["date"])).to_numpy()
+        out = X.apply(r, "s3", ctx)
+        over = (r["y"] == 1).to_numpy()
+        assert over.sum() == 100 and (out.loc[over, "excl"] == "").all(), (version, out.loc[over, "excl"].value_counts().to_dict())
+
+
+def _suspect_on(trigger_rows, events=(), wet=(), unrecorded=(), geo="sfpuc4_v1"):
+    """X._suspect's flagged (basin, day) set on a hand-built January 2020: triggers [(day, zone, why)], ledger events
+    [(basin, day)], wet days (0.5" two-gauge mean, else 0.0) and days with no rain record; every basin is known."""
+    geo = G.get(geo)
+    lo, hi = pd.Timestamp("2020-01-01"), pd.Timestamp("2020-01-31")
+    rain = pd.Series(0.0, index=pd.date_range("2019-12-01", hi, name="date"))
+    rain[pd.DatetimeIndex(list(wet))] = 0.5
+    rain[pd.DatetimeIndex(list(unrecorded))] = np.nan
+    fired = {(bk, pd.Timestamp(d)) for bk, d in events}
+
+    def onsets(g, start, end):
+        dd = pd.date_range(start, end, name="date")
+        return pd.concat([pd.DataFrame({"date": dd, "basin": bk, "known": True,
+                                        "y": pd.array([int((bk, d) in fired) for d in dd], dtype="Int8")}) for bk in g.keys],
+                         ignore_index=True)
+
+    def blocks(start=None, end=None):
+        r = rain.loc[:end]
+        return pd.DataFrame({"date": r.index, "rain": r.to_numpy(), "wet": (r >= 0.1).to_numpy()})
+
+    def triggers(g, sources, start, end):
+        t = pd.DataFrame([(pd.Timestamp(d), z, w, "fixture") for d, z, w in trigger_rows], columns=["date", "zone", "why", "detail"])
+        return t[(t["date"] >= start) & (t["date"] <= end)].reset_index(drop=True)
+    real = X._triggers, T.basin_onsets, T.blocks
+    try:
+        X._triggers, T.basin_onsets, T.blocks = triggers, onsets, blocks
+        return X._suspect(geo, (), lo, hi)[1]
+    finally:
+        X._triggers, T.basin_onsets, T.blocks = real
+
+
+def test_a_dry_window_and_an_explained_trigger_flag_nothing():
+    """The rule's two conditions on a fixture: a 10× sample with no wet day in D−3…D+1 is a dry-weather exceedance and
+    flags nothing; one wet day on D−3 or D+1 makes it count (D−4 and D+2 do not); a day with no rain record in an
+    otherwise dry window raises. A CSO posting in East that Central's event explains flags neither East basin, even
+    South, which filed nothing; an event outside the window, or at a basin that does not feed East, explains nothing."""
+    D = pd.Timestamp("2020-01-15")
+    day = lambda k: D + pd.Timedelta(days=k)  # noqa: E731
+    win = {(bk, day(k)) for bk in ("central", "south") for k in range(-3, 2)}
+    tenx = [(D, "east", "sample_10x")]
+    assert _suspect_on(tenx) == set(), "a dry-window 10× sample is C-DRY, not a missed overflow"
+    assert _suspect_on(tenx, wet=[day(-3)]) == _suspect_on(tenx, wet=[day(1)]) == win
+    assert _suspect_on(tenx, wet=[day(-4), day(2)]) == set()
+    try:
+        _suspect_on(tenx, unrecorded=[day(-1)])
+        raise AssertionError("an unrecorded day in a dry window must raise: unknown is not dry")
+    except ValueError:
+        pass
+    assert _suspect_on(tenx, wet=[D], unrecorded=[day(-1)]) == win, "a wet day decides it whatever the other days hold"
+    post = [(D, "east", "cso_posting_onset")]
+    assert _suspect_on(post, wet=[D]) == win
+    assert _suspect_on(post, wet=[D], events=[("central", day(-2))]) == set(), "Central's event explains East: South is not flagged"
+    assert _suspect_on(post, wet=[D], events=[("south", day(1))]) == set()
+    assert _suspect_on(post, wet=[D], events=[("central", day(2))]) == win, "D+2 is outside the window"
+    assert _suspect_on(post, wet=[D], events=[("westside", D), ("north_shore", D)]) == win, "basins that do not feed East"
+    # a trigger whose window reaches back before the context's start still flags the days inside it
+    assert _suspect_on([(pd.Timestamp("2020-01-01"), "north", "sample_10x")], wet=["2019-12-29"]) == \
+        {("north_shore", pd.Timestamp("2020-01-01")), ("north_shore", pd.Timestamp("2020-01-02"))}
+    assert _suspect_on(post, wet=[D], geo="geo_v1") == {({"south": "southeast"}.get(bk, bk), d) for bk, d in win}
 
 
 def test_ledger_suspect_is_the_protocols_sentence():
-    """X-LEDGER-SUSPECT recomputed here from protocol §7's words, on the committed data: a ledger_known basin-day
-    in D−3…D+1 around a CSO-cause posting onset or a sample ≥ 10× the standard in one of the basin's zones, when
-    the ledger has no event for the basin in that window (read as of AS_OF). The context's basin facts are exactly
-    that set, and a zone row is suspect when any of its feeding basins' days is."""
+    """X-LEDGER-SUSPECT recomputed here from protocol §7's words (stages_v2), on the committed data: a trigger (a
+    CSO-cause posting onset, or a sample ≥ 10× the standard) in zone z on day D counts when D−3…D+1 holds a wet day
+    (the masked two-gauge mean ≥ 0.10") and no basin feeding z has a ledger event in D−3…D+1 (all read as of AS_OF);
+    then every feeding basin's ledger_known days in D−3…D+1 are suspect. The context's basin facts are exactly that
+    set, and a zone row is suspect when any of its feeding basins' days is."""
+    lo = T.TRUTH_START - pd.Timedelta(days=1)                     # the first trigger whose window reaches TRUTH_START
+    rain = T.gauge_rain(lo - pd.Timedelta(days=3), AS_OF)[T.MEAN_SERIES]
+    assert rain.notna().all()
+    wet = set(rain.index[rain >= 0.1])
     for version in G.VERSIONS:
         geo = G.get(version)
-        b = T.basin_onsets(geo, T.TRUTH_START - pd.Timedelta(days=4), AS_OF)
+        b = T.basin_onsets(geo, lo - pd.Timedelta(days=3), AS_OF)
         on = b["y"].eq(1).fillna(False).to_numpy(dtype=bool)
         fired = set(zip(b.loc[on, "basin"], b.loc[on, "date"]))
         known = set(zip(b.loc[b["known"], "basin"], b.loc[b["known"], "date"]))
         p = T.postings()
-        p = p[(p["cause_class"] == "cso") & p["class_onset"] & (p["date"] <= AS_OF)]
-        el = T.zone_elevated(geo, end=AS_OF)
+        p = p[(p["cause_class"] == "cso") & p["class_onset"] & (p["date"] >= lo) & (p["date"] <= AS_OF)]
+        el = T.zone_elevated(geo, start=lo, end=AS_OF)
         el = el[el["max_ratio"] >= 10]
-        want = set()
-        for z, day in list(zip(p["zone"], p["date"])) + list(zip(el["zone"], el["date"])):
+        want, tally = set(), {}
+        for why, z, day in [("cso_posting_onset", z, d) for z, d in zip(p["zone"], p["date"])] + \
+                           [("sample_10x", z, d) for z, d in zip(el["zone"], el["date"])]:
             win = [d for d in pd.date_range(day - pd.Timedelta(days=3), day + pd.Timedelta(days=1)) if d <= AS_OF]
-            for bk in {lk.basin for lk in geo.links if lk.zone == z}:
-                if not any((bk, d) in fired for d in win):
-                    want |= {(bk, d) for d in win if d >= T.TRUTH_START and (bk, d) in known}
+            feeding = {lk.basin for lk in geo.links if lk.zone == z}
+            if not wet & set(win):
+                outcome = "dry"
+            elif any((bk, d) in fired for bk in feeding for d in win):
+                outcome = "explained"
+            else:
+                outcome = "counted"
+                want |= {(bk, d) for bk in feeding for d in win if d >= T.TRUTH_START and (bk, d) in known}
+            tally.setdefault(why, {}).setdefault(outcome, 0)
+            tally[why][outcome] += 1
         ctx = X.context(geo, end=AS_OF)
         f = ctx.frames["basin"]
         assert set(f.index[f["suspect"].to_numpy(dtype=bool)]) == want, version
@@ -737,6 +832,8 @@ def test_ledger_suspect_is_the_protocols_sentence():
             feeding = T.feeding_basins(geo, z)
             got = set(zf.loc[z].index[zf.loc[z, "suspect"].to_numpy(dtype=bool)])
             assert got == {d for bk, d in want if bk in feeding}, (version, z)
+        if _pull_is_committed():
+            assert tally == TRIGGER_OUTCOMES, (version, tally)
 
 
 def test_notclean_reads_two_days_either_side():
@@ -759,10 +856,13 @@ def test_notclean_reads_two_days_either_side():
 def test_a_contexts_facts_do_not_depend_on_its_start():
     """A context built from a later start holds, day for day, the facts of the full record's context: a build
     whose rows start mid-record (a holdout refit, one season) leaves out exactly what the full record would.
-    The starts sit where an event a day or two before the start explains a trigger after it."""
+    The starts sit where X-LEDGER-SUSPECT reads its window before the start: on 2016-10-29 an East event the day
+    before explains an East sample after it (a clipped window would flag Central and South 29 → 31 October), and
+    on 2026-02-20 the wet days before it make Bayside's February triggers count (a clipped window would drop
+    Central and South on 20 and 21 February)."""
     for version in G.VERSIONS:
         full = X.context(version, end=AS_OF)
-        for start in ("2016-12-18", "2023-03-24"):
+        for start in ("2016-10-29", "2026-02-20"):
             part = X.context(version, start=start, end=AS_OF)
             for ut, f in part.frames.items():
                 g = full.frames[ut].loc[f.index]
@@ -794,8 +894,8 @@ def test_catalog_counts_as_of():
         import stages_flowchart as F
         fc = X.figure_counts(cat, X.claims(version))
         svg = F.render(version, None, fc)[0]
-        for words in ("no filing 446", "feed archive 397", "days nobody sampled 13,120", "resamples 628", "overflow history unknown 162",
-                      "unsampled days after one 835", "dry-weather exceedances 219", "rain runoff, no overflow 85",
+        for words in ("no filing 467", "feed archive 832", "days nobody sampled 13,120", "resamples 622", "overflow history unknown 209",
+                      "unsampled days after one 835", "dry-weather exceedances 214", "rain runoff, no overflow 84",
                       "shore far from a station 4"):
             assert words in svg, (version, words)
 

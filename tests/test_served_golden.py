@@ -189,28 +189,66 @@ def test_pins_carry_an_as_of_date():
 
 
 PROTOCOL_SHA_PLACEHOLDER = "protocol sha256: <filled at commit>"
+PROTOCOL = ROOT / "features" / "forecast" / "STAGES_PROTOCOL.md"
+PROTOCOLS = ROOT / "features" / "forecast" / "protocols"
+# Every protocol version that has been replaced, moved to protocols/ unedited, with the digest its sha line holds.
+ARCHIVED_PROTOCOLS = {"stages_v1": "3dea312e3e939645cb906a7e01f632375ec28aadd9cdd76db3a2ae0eff117a6d"}
+PROTOCOL_MUST = ("Freeze date: 2026-10-01", "0.205", "0.505", "0.805", "T0", "T1-holdout", "T2", "T3",
+                 "90%", "MDE", "first-match", "oracle", "rain known", "optimistic", "as served")
+RETIRED_WORDS = r"\b(?:[Cc]ost\w*|King|cheapest|Platt|alarm line|[Gg]roups?|Southeast)\b"
+
+
+def _protocol_version(text: str) -> str:
+    import re
+    m = re.match(r"# .*scoring protocol `([^`]+)`\n", text)
+    assert m, "a protocol's first line names its version: '# … scoring protocol `stages_vN`'"
+    return m.group(1)
+
+
+def _protocol_digest(text: str) -> tuple:
+    """(the digest its sha line holds, or None while it reads the placeholder; the sha256 of the text with that
+    line reading the placeholder). Exactly one sha line."""
+    import hashlib
+    import re
+    filled = re.findall(r"^protocol sha256: ([0-9a-f]{64})$", text, re.M)
+    open_lines = re.findall(rf"^{re.escape(PROTOCOL_SHA_PLACEHOLDER)}$", text, re.M)
+    assert len(filled) + len(open_lines) == 1, "a protocol needs exactly one sha line"
+    body = text.replace(f"protocol sha256: {filled[0]}", PROTOCOL_SHA_PLACEHOLDER, 1) if filled else text
+    return (filled[0] if filled else None), hashlib.sha256(body.encode()).hexdigest()
 
 
 def test_the_scoring_protocol_is_frozen_beside_the_design():
-    """The protocol's sections are there, it names no retired word, and once its
-    sha line holds a digest (filled at commit) any later edit fails: a change
-    is a new version, stages_v2, never an edit in place."""
-    import hashlib
+    """The current protocol is the version the code implements (stages_spec.PROTOCOL_VERSION), its sections are
+    there, it names no retired word, and once its sha line holds a digest (filled at commit) any later edit fails:
+    a change is a new version, never an edit in place."""
     import re
-    text = (ROOT / "features" / "forecast" / "STAGES_PROTOCOL.md").read_text()
-    for must in ("Freeze date: 2026-10-01", "0.205", "0.505", "0.805", "T0", "T1-holdout", "T2", "T3",
-                 "90%", "MDE", "first-match", "oracle", "rain known", "optimistic", "as served"):
+    sys.path.insert(0, str(ROOT / "features" / "forecast" / "src" / "models"))
+    import stages_spec as SP
+    text = PROTOCOL.read_text()
+    assert _protocol_version(text) == SP.PROTOCOL_VERSION == "stages_v2", (_protocol_version(text), SP.PROTOCOL_VERSION)
+    assert SP.PROTOCOL_VERSION not in ARCHIVED_PROTOCOLS, "the current version is not an archived one"
+    for must in PROTOCOL_MUST:
         assert must in text, must
-    retired = re.findall(r"\b(?:[Cc]ost\w*|King|cheapest|Platt|alarm line|[Gg]roups?|Southeast)\b", text)
+    retired = re.findall(RETIRED_WORDS, text)
     assert not retired, f"the protocol ranks and sets nothing by cost and uses no retired word (Part A): {retired}"
-    filled = re.findall(r"^protocol sha256: ([0-9a-f]{64})$", text, re.M)
-    open_lines = re.findall(rf"^{re.escape(PROTOCOL_SHA_PLACEHOLDER)}$", text, re.M)
-    assert len(filled) + len(open_lines) == 1, "the protocol needs exactly one sha line"
-    if not filled:
-        return
-    body = text.replace(f"protocol sha256: {filled[0]}", PROTOCOL_SHA_PLACEHOLDER, 1)
-    assert hashlib.sha256(body.encode()).hexdigest() == filled[0], \
-        "STAGES_PROTOCOL.md changed after its freeze: write stages_v2 instead of editing stages_v1"
+    filled, digest = _protocol_digest(text)
+    assert filled is None or digest == filled, \
+        f"STAGES_PROTOCOL.md changed after its freeze: write the next version instead of editing {SP.PROTOCOL_VERSION}"
+
+
+def test_archived_protocols_never_change():
+    """Every replaced version sits in protocols/ unedited: its sha line holds a digest, that digest verifies and is
+    the one pinned here, its title is its file name, and it names no retired word either."""
+    import re
+    files = {f.stem: f for f in PROTOCOLS.iterdir() if f.is_file()}
+    assert set(files) == set(ARCHIVED_PROTOCOLS) and all(f.suffix == ".md" for f in files.values()), sorted(files)
+    for version, f in files.items():
+        text = f.read_text()
+        assert _protocol_version(text) == version, (f.name, _protocol_version(text))
+        filled, digest = _protocol_digest(text)
+        assert filled is not None, f"protocols/{f.name}: an archived protocol's sha line holds its digest"
+        assert digest == filled == ARCHIVED_PROTOCOLS[version], f"protocols/{f.name} changed: archived versions never do"
+        assert not re.findall(RETIRED_WORDS, text), f.name
 
 
 if __name__ == "__main__":

@@ -45,13 +45,12 @@ the rest on a skeleton of every unit-day, which is what the stages report's
 exclusions ledger and the figure's chips show before any model row exists.
 
 **Readings the words leave open, and what this module does:**
-- X-LEDGER-SUSPECT follows protocol §7's words, per basin: a basin feeding the
-  triggered zone is suspect when *it* filed no event in D−3…D+1, even if the
-  zone's other basin did (East: Central alone explains a posting, South is
-  still flagged). Part B 8's looser words ("the posting has no ledger event")
-  would flag neither; that reading is ``ledger_suspect(..., explained_by=
-  'zone')``, for the owner, never the context's. A zone row (S3) is suspect
-  when any feeding basin's day is, as X-S3-UNCOV reads coverage.
+- X-LEDGER-SUSPECT tests the zone, as protocol §7 words it: a trigger counts
+  when D−3…D+1 holds a wet day (§6: ``truth.blocks``' wet) and no basin
+  feeding the zone filed an event in it (East: Central's event explains a
+  posting, so South is not flagged). A window with no wet day and a day no
+  gauge recorded raises: unknown is not dry. A zone row (S3) is suspect when
+  any feeding basin's day is, as X-S3-UNCOV reads coverage.
 - X-S2-OUTAGEIN reads the gauges behind the basin's rain series over the 30
   input days that are gauge days: D−29…D for the oracle and rain known, up to
   D−L−1 for lead L, and the 7-day window for as served.
@@ -105,7 +104,6 @@ POST_START = train_v4.TRAIN_END + pd.Timedelta(days=1)   # 2025-11-01: post_sele
 POWER_MIN_POSITIVES, POWER_MIN_STORM_BLOCKS = 10, 8   # X-POWER
 SUSPECT_BEFORE, SUSPECT_AFTER = 3, 1                  # X-LEDGER-SUSPECT: D−3…D+1
 SUSPECT_RATIO = 10.0                                  # … or a sample ≥ 10× the standard
-SUSPECT_READING = "basin"                             # … "when the ledger has no event for the basin in that window"
 NOTCLEAN_DAYS = 2                                     # X-S3-NOTCLEAN: a sibling zone's link within ±2 days
 INPUT_DAYS = 30                                       # X-S2-OUTAGEIN: the 30-day input window (rain_30d_cum)
 AS_SERVED_DAYS = 7                                    # as served: METEO_PARAMS past_days=7 (protocol §3)
@@ -258,8 +256,15 @@ def _feed_of(entry: str) -> str:
 
 @functools.lru_cache(maxsize=1)
 def freeze_date() -> pd.Timestamp:
-    """The protocol's freeze date (its first lines): T0 starts the next day, and X-SEL post_selected ends here."""
-    m = re.search(r"^Freeze date: (\d{4}-\d{2}-\d{2})", PROTOCOL.read_text(), re.M)
+    """The protocol's freeze date (its first lines): T0 starts the next day, and X-SEL post_selected ends here.
+    The file must be the protocol these rules implement (stages_spec.PROTOCOL_VERSION): a newer version
+    raises until the code follows it."""
+    text = PROTOCOL.read_text()
+    title = re.search(r"^# .*scoring protocol `([^`]+)`", text, re.M)
+    if not title or title.group(1) != SP.PROTOCOL_VERSION:
+        raise ValueError(f"{PROTOCOL.name} is protocol {title.group(1) if title else '(no title)'}, "
+                         f"these rules implement {SP.PROTOCOL_VERSION}")
+    m = re.search(r"^Freeze date: (\d{4}-\d{2}-\d{2})", text, re.M)
     if not m:
         raise ValueError(f"{PROTOCOL.name} states no 'Freeze date:'")
     return pd.Timestamp(m.group(1))
@@ -307,28 +312,33 @@ def _triggers(geo: G.Geography, sources: tuple, start, end) -> pd.DataFrame:
     ], ignore_index=True).sort_values(["date", "zone", "why"], kind="stable").reset_index(drop=True)
 
 
-def _suspect(geo: G.Geography, sources: tuple, start, end, explained_by: str = SUSPECT_READING) -> tuple[list, set]:
+def _suspect(geo: G.Geography, sources: tuple, start, end) -> tuple[list, set]:
     """(episodes, {(basin, date)}): see ``ledger_suspect``. Uses the data through ``end`` only.
 
-    Whether the ledger has an event in a trigger's window is read over the whole window (as far as
-    ``end``), never only the part inside [start, end]: a context starting mid-record must flag the same
-    days as the full record does (an event the day before ``start`` still explains a trigger)."""
-    if explained_by not in ("zone", "basin"):
-        raise ValueError(f"explained_by must be 'zone' or 'basin', not {explained_by!r}")
+    A trigger's window (its wet days and the ledger's events) is read whole, as far as ``end``, never
+    only the part inside [start, end]: a context starting mid-record must flag the same days as the
+    full record does (an event or a wet day before ``start`` still decides a trigger after it)."""
     start, end = _ts(start), _ts(end)
     lo = start - pd.Timedelta(days=SUSPECT_AFTER)          # the first trigger whose window reaches `start`
     ons = T.basin_onsets(geo, lo - pd.Timedelta(days=SUSPECT_BEFORE), end)
     on = ons["y"].eq(1).fillna(False).to_numpy(dtype=bool)
     fired = set(zip(ons.loc[on, "basin"], ons.loc[on, "date"]))
     known = set(zip(ons.loc[ons["known"], "basin"], ons.loc[ons["known"], "date"]))
+    rain = T.blocks(end=end).set_index("date")[["rain", "wet"]]   # protocol §6's wet day: masked two-gauge mean ≥ 0.10"
     flagged: dict = {}
     for tr in _triggers(geo, sources, lo, end).itertuples(index=False):
         win = _days(tr.date - pd.Timedelta(days=SUSPECT_BEFORE), tr.date + pd.Timedelta(days=SUSPECT_AFTER))
-        win = win[win <= end]                               # the ledger as of `end`: nothing after it is read
+        win = win[win <= end]                               # the record as of `end`: nothing after it is read
+        r = rain.reindex(win)
+        if not r["wet"].fillna(False).astype(bool).any():
+            if r["rain"].isna().any():
+                raise ValueError(f"X-LEDGER-SUSPECT: no wet day in {win[0].date()} → {win[-1].date()} around a {tr.zone} "
+                                 "trigger, and a day of it has no rain record: unknown is not dry")
+            continue                                        # a dry window: a dry-weather exceedance, not a missed overflow
         feeding = T.feeding_basins(geo, tr.zone)
-        quiet = {b: not any((b, d) in fired for d in win) for b in feeding}
-        hit = [b for b in feeding if quiet[b]] if explained_by == "basin" else (list(feeding) if all(quiet.values()) else [])
-        for b in hit:
+        if any((b, d) in fired for b in feeding for d in win):
+            continue                                        # a basin feeding the zone filed an event: explained
+        for b in feeding:
             for d in win[win >= start]:
                 if (b, d) in known:
                     flagged.setdefault((b, d), []).append(tr)
@@ -354,18 +364,17 @@ def _suspect(geo: G.Geography, sources: tuple, start, end, explained_by: str = S
     return episodes, set(flagged)
 
 
-def ledger_suspect(geo, start=T.TRUTH_START, end=None, sources=SMP.DEFAULT_SOURCES,
-                   explained_by: str = SUSPECT_READING) -> list[dict]:
+def ledger_suspect(geo, start=T.TRUTH_START, end=None, sources=SMP.DEFAULT_SOURCES) -> list[dict]:
     """X-LEDGER-SUSPECT's windows (Part B 8; protocol §7), merged into episodes per basin, with reasons.
 
     A trigger is a CSO-cause BeachWatch posting onset (``truth.postings``: cause_class 'cso' and a new
     class that day) or a zone sample-day with a result ≥ 10× its standard (``zone_elevated.max_ratio``),
-    in a zone on day D. A basin feeding that zone whose ledger files no event in D−3…D+1 has its
-    ledger_known days in D−3…D+1 suspect: listed here, left out of S2 and S3. That is protocol §7's
-    sentence, "when the ledger has no event for the basin in that window" (``explained_by='basin'``, the
-    default and what ``context`` uses). ``explained_by='zone'`` is the other reading of Part B 8 ("the
-    posting has no ledger event"): an event at either of East's basins explains an East trigger, so
-    neither is flagged. It is kept for the owner's comparison only; under stages_v1 the words rule.
+    in zone z on day D. It counts when D−3…D+1 holds a wet day (protocol §6: the masked two-gauge mean
+    ≥ 0.10", ``truth.blocks``) and no basin feeding z has a ledger event in D−3…D+1. Then every feeding
+    basin's ledger_known days in D−3…D+1 are suspect: listed here, left out of S2 and S3. One rule: a
+    trigger in a dry window is a dry-weather exceedance (C-DRY), and an event at any feeding basin
+    explains the trigger for all of them. In both geographies zones that share a basin share all their
+    feeding basins, so no zone overflow day is suspect (tests/test_exclusions.py checks the data).
 
     Returns one dict per episode (consecutive suspect days of one basin): basin, basin_name, start, end
     (ISO dates), n_days, zones, reasons [{date, zone, why ('cso_posting_onset' | 'sample_10x'), detail}].
@@ -373,7 +382,7 @@ def ledger_suspect(geo, start=T.TRUTH_START, end=None, sources=SMP.DEFAULT_SOURC
     """
     geo = _geo(geo)
     end = _data_end(tuple(sources)) if end is None else _ts(end)
-    return _suspect(geo, tuple(sources), _ts(start), end, explained_by)[0]
+    return _suspect(geo, tuple(sources), _ts(start), end)[0]
 
 
 # ── the context ────────────────────────────────────────────────────────────
@@ -483,11 +492,16 @@ def _index(f: pd.DataFrame, unit: str) -> pd.DataFrame:
 
 
 def _window_any(fired: pd.DataFrame, back: int, ahead: int) -> pd.DataFrame:
-    """date × unit bool → True where the unit fired on some day of D−back…D+ahead."""
+    """date × unit bool (every day) → True where the unit fired on some day of D−back…D+ahead that the frame
+    holds. The window ends at D+ahead before it is shifted back onto D, so a frame's first days still read
+    the `back` days before them (a frame that starts `back` days before a context reads every D−back of
+    it), and nothing after the frame's last day is read."""
     x = fired.astype(int)
     if ahead:
-        x = x.shift(-ahead).fillna(0)
-    return x.rolling(back + ahead + 1, min_periods=1).max().astype(bool)
+        tail = pd.date_range(x.index[-1] + pd.Timedelta(days=1), periods=ahead, name=x.index.name)
+        x = pd.concat([x, pd.DataFrame(0, index=tail, columns=x.columns)])
+    out = x.rolling(back + ahead + 1, min_periods=1).max()
+    return (out.shift(-ahead).iloc[:len(fired)] if ahead else out).astype(bool)
 
 
 @functools.lru_cache(maxsize=8)

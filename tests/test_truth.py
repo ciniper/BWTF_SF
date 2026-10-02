@@ -12,6 +12,8 @@ wherever its labels came from the same ledger:
   - out_label(GEO_V1) is scorecard.combined_label read on the ledger, with Part
     B 3's change (an exceedance with no overflow is a negative of the claim);
     every difference is classified by its reason and the counts are pinned;
+  - a day is known only inside its facility's continuous ledger (protocol §1), whose
+    start is derived from the coverage grid (Bayside 2016-10, Oceanside 2017-12);
   - counts against the design (§2.3, §3.3, §3.4, §4.3), each with an as-of date
     so a quarterly refresh that only adds later days stays green (Part B 23);
   - storms are verify's defaults on the masked two-gauge mean, and a missing
@@ -64,12 +66,14 @@ WINDOW_TAIL = (T.ARCHIVE_START, T.ARCHIVE_END + pd.Timedelta(days=T.TAIL_DAYS)) 
 
 # In the archive window the scorecard took Westside's labels and some Bay-side onsets from the feed.
 # (zone, scorecard discharge, truth y) → zone-days; None = not known. The six True/False rows are design
-# Part C fix 22's list exactly (feed onsets on days the ledger knows and files nothing for the zone).
+# Part C fix 22's list exactly (feed onsets on days the ledger knows and files nothing for the zone). The
+# 183 North / East (False, None) days are the feed's snapshot days before Bayside's continuous ledger
+# (2016-10): X-S2-ARCHIVE's 183 (stages_v1 knew the 2016 "no discharge" months and listed 38 + 7 here).
 WINDOW_LABEL_DIFFS = {
     ("ocean", False, None): 278, ("ocean", True, None): 5,
     ("baker_china", False, None): 279, ("baker_china", True, None): 4,
-    ("north", False, None): 38, ("north", None, False): 7, ("north", True, False): 2,
-    ("east", False, None): 38, ("east", None, False): 7, ("east", True, False): 4,
+    ("north", False, None): 183, ("north", True, False): 2,
+    ("east", False, None): 183, ("east", True, False): 4,
 }
 WINDOW_VALUE_DIFFS = [("2016-10-17", "east"), ("2016-11-23", "east"), ("2016-12-16", "north"), ("2016-12-16", "east"),
                       ("2016-12-23", "north"), ("2016-12-23", "east")]
@@ -78,23 +82,27 @@ WINDOW_VALUE_DIFFS = [("2016-10-17", "east"), ("2016-11-23", "east"), ("2016-12-
 #   part_b3          combined 'scope' (an exceedance with no overflow in the week) is a good day of the claim
 #   feed_onset       the scorecard's discharge on D or in its week came from the feed, not the ledger
 #   feed_only_day    the scorecard knew D through the feed archive; the ledger does not cover it
-#   legacy_month     Bayside 2016 months the grid files as "no discharge": the ledger knows them, the
-#                    scorecard (no feed snapshot that day) did not
 #   history_unknown  D is known but a day of D−7…D−1 is not; combined_label checks D alone (§3.6: "a quiet
 #                    day with the history known")
+# (stages_v1 also had legacy_month, 6 North and 6 East days of Bayside's 2016 "no discharge" months; under
+# stages_v2 the continuous ledger starts 2016-10, so neither label knows them.)
 OUT_DIFFS = {
     "ocean": {"feed_only_day": 225, "feed_onset": 6, "history_unknown": 7, "part_b3": 14},
     "baker_china": {"feed_only_day": 227, "feed_onset": 4, "history_unknown": 7, "part_b3": 55},
-    "north": {"feed_only_day": 32, "feed_onset": 8, "history_unknown": 13, "legacy_month": 6, "part_b3": 56},
-    "east": {"feed_only_day": 34, "feed_onset": 11, "history_unknown": 12, "legacy_month": 6, "part_b3": 175},
+    "north": {"feed_only_day": 158, "feed_onset": 8, "history_unknown": 6, "part_b3": 55},
+    "east": {"feed_only_day": 158, "feed_onset": 11, "history_unknown": 6, "part_b3": 170},
 }
 
+# Each facility's continuous ledger (protocol §1): the unbroken run of filed months ending at its last grid month,
+# opened by a filed CSD table. Derived from the grid by truth.ledger_start, as of AS_OF; the protocol states the same
+# two months. Bayside's run of covered months reaches back to 2016-09, a "no discharge" statement with no table.
+LEDGER_START = {"Bayside": pd.Timestamp("2016-10-01"), "Oceanside": pd.Timestamp("2017-12-01")}
+
 # Ledger-unknown basin-days, TRUTH_START → AS_OF: (archive = X-S2-ARCHIVE, uncovered = X-S2-UNCOV).
-# Design §4.3: Westside 283 + 374 (same); each Bay basin 183 + 31. The protocol's rule is the facility-month
-# status (§1), and the grid files Bayside Feb, Apr, May, Jun, Jul and Sep 2016 as "no discharge" (stated, or a
-# zero-event table); the served frames never labelled them because build_daily_labels starts at the first
-# event month (2016-10). By the protocol's words they are known: only Mar and Aug 2016 stay unknown.
-UNKNOWN_BASIN_DAYS = {"westside": (283, 374), "north_shore": (38, 24), "central": (38, 24), "south": (38, 24)}
+# Design §4.3: Westside 283 + 374, each Bay basin 183 + 31 (all the same). Every day before the continuous ledger
+# is unknown, and the feed's snapshot days among them are archive. (stages_v1 knew Bayside's 2016 "no discharge"
+# months: 38 + 24 per Bay basin.)
+UNKNOWN_BASIN_DAYS = {"westside": (283, 374), "north_shore": (183, 31), "central": (183, 31), "south": (183, 31)}
 
 # §4.3 X-S2-CARRY (SFPUC4): Central 17, North Shore 4, South 3, Westside 3, as the design says.
 CARRY = {"basin": {"westside": 3, "north_shore": 4, "central": 17, "south": 3},
@@ -108,10 +116,10 @@ ZONE_DAYS = {"ocean": 43, "baker_china": 54, "north": 42, "east": 100}
 ZONE_GEO_ONLY = {"ocean": 0, "baker_china": 7, "north": 0, "east": 6}
 
 # §3.4 power: sampled zone-days (DataSF + Poo Bot), TRUTH_START → AS_OF: the design's 451 / 483 / 473 / 761.
-# With the history known (scored after X-S4-HISTUNK) the design has 390 / 418 / 439 / 712: Westside matches;
-# North and East gain the Bayside 2016 "no discharge" months above.
+# With the history known (scored after X-S4-HISTUNK) the design has 390 / 418 / 439 / 712 (all the same; stages_v1's
+# 460 / 738 for North / East counted Bayside's 2016 "no discharge" months).
 SAMPLED = {"ocean": 451, "baker_china": 483, "north": 473, "east": 761}
-SAMPLED_HIST_KNOWN = {"ocean": 390, "baker_china": 418, "north": 460, "east": 738}
+SAMPLED_HIST_KNOWN = {"ocean": 390, "baker_china": 418, "north": 439, "east": 712}
 
 # Rain storms (protocol §6) on the gauge record 2016-01-01 → AS_OF, and storm-level zone truth (§3.3 a).
 N_STORMS, N_BLOCKS, N_STORMS_IN_SPAN = 146, 482, 141
@@ -274,8 +282,6 @@ def _out_reason(day: dict, zk: str, verdict: str, row, by_date: dict, ledger_y: 
         return "feed_onset"
     if day["zones"][zk]["discharge"] is not None and not row.known and row.why == "uncovered":
         return "feed_only_day"
-    if day["zones"][zk]["discharge"] is None and row.known and verdict == "unknown" and row.label != "unknown":
-        return "legacy_month"
     if row.known and not row.hist_known and row.why == "uncovered" and verdict in ("good", "scope"):
         return "history_unknown"
     return f"unexplained: combined {verdict}, truth {row.label}/{row.why}"
@@ -350,6 +356,110 @@ def test_basin_event_days_as_of():
     def bay(f, keys):
         return f[f["basin"].isin(keys)].assign(on=lambda x: x["y"] == 1).groupby("date")["on"].any()
     assert bay(v1, ["central", "southeast"]).equals(bay(b, ["central", "south"]))
+
+
+def test_continuous_ledger_starts_as_of():
+    """Protocol §1: a facility-month is known only inside the facility's continuous ledger. Its start is derived
+    from the coverage grid (pinned here as of AS_OF), every grid month from it to the last is filed, it opens on a
+    filed CSD table, and no day before it is known in either geography."""
+    import re
+    import csd_labels
+    assert {f: T.ledger_start(f) for f in LEDGER_START} == LEDGER_START
+    # the frozen protocol states the same two months (§1 and its Changes block): a refresh that moves the derived
+    # start cannot be repinned here without meeting the protocol's words
+    stated = re.findall(r"Bayside from (\d{4}-\d{2}), Oceanside from (\d{4}-\d{2})", (FORECAST / "STAGES_PROTOCOL.md").read_text())
+    assert stated and set(stated) == {(f"{LEDGER_START['Bayside']:%Y-%m}", f"{LEDGER_START['Oceanside']:%Y-%m}")}, stated
+    cov = csd_labels.load_coverage()
+    for f, start in LEDGER_START.items():
+        g = cov[cov["facility"] == csd_labels.facility_grid_name(f)]
+        month = pd.to_datetime(dict(year=g["year"], month=g["month"], day=1))
+        run = g[month >= start]
+        assert run["covered"].all() and len(run) == len(pd.date_range(start, month.max(), freq="MS")), f
+        assert g.loc[month == start, "status"].item() in T.TABLE_STATUSES, f
+        before = g[month < start].assign(_m=month[month < start]).sort_values("_m")
+        # the run cannot reach further back: the month before is unfiled, or a statement with no table (Bayside 2016-09)
+        assert (not before["covered"].iloc[-1]) or before["status"].iloc[-1] not in T.TABLE_STATUSES, f
+    for geo in (G.SFPUC4_V1, G.GEO_V1):
+        lk = T.ledger_known(geo, end=AS_OF)
+        for b in geo.basins:
+            k = lk[(lk["basin"] == b.key) & lk["known"]]
+            assert k["date"].min() == T.ledger_start(b.facility), (geo.version, b.key)
+            assert len(k) == len(pd.date_range(k["date"].min(), k["date"].max())), "the continuous ledger has no hole"
+
+
+def _grid(rows) -> pd.DataFrame:
+    """A coverage grid as csd_labels.load_coverage returns it: (facility, 'YYYY-MM', status) rows."""
+    f = pd.DataFrame([(fac, int(m[:4]), int(m[5:]), st, 0) for fac, m, st in rows],
+                     columns=["facility", "year", "month", "status", "n_event_rows"])
+    f["covered"] = f["status"].isin(T.GRID_STATUSES[:3])
+    return f
+
+
+def test_continuous_ledger_on_a_fixture_grid():
+    """The start moves with the grid (derived, never typed): a "no discharge" statement can sit inside the run but
+    never open it, an unfiled month ends the run backwards, and a grid that skips a month, ends on an unfiled
+    month, holds a status nobody knows, has no CSD table in its run or has filed events before its start (an
+    unfiled month a refresh put inside the ledger) raises instead of guessing."""
+    import csd_labels
+    ocean, bay = "Oceanside (CA0037681)", "Southeast/Bayside (CA0037664)"
+    stated, table, zero, found = "no_table_stated_no_discharge", "events_parsed", "table_present_zero_events", "no_event_table_found"
+    good = [(bay, "2015-01", stated), (bay, "2015-02", found), (bay, "2015-03", stated), (bay, "2015-04", zero),
+            (bay, "2015-05", table), (bay, "2015-06", stated), (bay, "2015-07", zero),
+            (ocean, "2015-01", table), (ocean, "2015-02", table), (ocean, "2015-03", found), (ocean, "2015-04", table),
+            (ocean, "2015-05", stated), (ocean, "2015-06", zero), (ocean, "2015-07", table)]
+    real = csd_labels.load_coverage
+
+    def use(rows):
+        csd_labels.load_coverage = lambda: _grid(rows)
+        T._continuous_ledger.cache_clear()
+        T._facility_known.cache_clear()
+    try:
+        use(good)
+        assert T.ledger_start("Bayside") == pd.Timestamp("2015-04-01"), "the 2015-03 statement does not open the run"
+        assert T.ledger_start("Oceanside") == pd.Timestamp("2015-04-01")
+        lk = T.ledger_known(G.SFPUC4_V1, start="2015-01-01", end="2015-07-31")
+        for b, lo in (("westside", "2015-04-01"), ("central", "2015-04-01"), ("south", "2015-04-01")):
+            k = lk[lk["basin"] == b].set_index("date")["known"]
+            assert not k[:"2015-03-31"].any() and k[lo:].all(), b      # 2015-06's statement inside the run is known
+        assert not lk["archive"].any()
+        for facility, bad in (("Bayside", [r for r in good if (r[0], r[1]) != (bay, "2015-05")]),   # a month missing
+                              ("Bayside", good + [(bay, "2015-08", found)]),                       # the last month unfiled
+                              ("Oceanside", good[:-1] + [(ocean, "2015-07", "maybe")]),            # a status nobody knows
+                              ("Bayside", [(bay, "2015-01", found), (bay, "2015-02", stated)])):    # no table in the run
+            use(bad)
+            try:
+                T.ledger_start(facility)
+                raise AssertionError(f"a broken grid must raise: {bad[-2:]}")
+            except ValueError:
+                pass
+        # A later refresh that leaves one month inside the committed ledger unfiled (a table that did not parse) would
+        # cut the run there: with filed events before the cut it raises, in ledger_known too, rather than drop them.
+        # Before the first event the cut only moves the start, as the words say (and the pins above fail).
+        def refreshed(facility, ym, status):
+            c = real()
+            c.loc[(c["facility"] == csd_labels.facility_grid_name(facility)) & (c["year"] == int(ym[:4]))
+                  & (c["month"] == int(ym[5:])), "status"] = status
+            return c.assign(covered=c["status"].isin(T.GRID_STATUSES[:3]))
+        for facility, ym in (("Bayside", "2022-07"), ("Bayside", "2026-06"), ("Oceanside", "2020-08")):
+            g = refreshed(facility, ym, found)
+            csd_labels.load_coverage = lambda g=g: g
+            T._continuous_ledger.cache_clear()
+            T._facility_known.cache_clear()
+            for call in (lambda: T.ledger_start(facility), lambda: T.ledger_known(G.SFPUC4_V1, end=AS_OF)):
+                try:
+                    call()
+                    raise AssertionError(f"an unfiled {facility} {ym} inside the ledger must raise")
+                except ValueError as e:
+                    assert f"{ym} is 'no_event_table_found' and breaks the run" in str(e), str(e)
+        g = refreshed("Oceanside", "2017-12", found)
+        csd_labels.load_coverage = lambda: g
+        T._continuous_ledger.cache_clear()
+        T._facility_known.cache_clear()
+        assert T.ledger_start("Oceanside") == pd.Timestamp("2018-01-01")
+    finally:
+        csd_labels.load_coverage = real
+        T._continuous_ledger.cache_clear()
+        T._facility_known.cache_clear()
 
 
 def test_ledger_unknown_basin_days_as_of():
@@ -584,14 +694,18 @@ def test_archive_onsets_split_a_multi_basin_string():
 
 
 def test_the_feed_never_makes_a_day_known_or_an_overflow():
-    """Part C fix 22 / protocol §1: truth is the ledger. ``known`` is the facility's filed months and nothing
-    else, no archive day is known, and a feed onset the ledger lacks is never a positive."""
+    """Part C fix 22 / protocol §1: truth is the ledger. ``known`` is the facility's filed months inside its
+    continuous ledger and nothing else, no archive day is known, and a feed onset the ledger lacks is never a
+    positive."""
     import csd_labels
     for geo in (G.SFPUC4_V1, G.GEO_V1):
         lk = T.ledger_known(geo, end=AS_OF)
         for b in geo.basins:
             g = lk[lk["basin"] == b.key]
-            assert g["known"].equals(g["date"].isin(csd_labels.facility_covered_dates(b.facility))), (geo.version, b.key)
+            filed = g["date"].isin(csd_labels.facility_covered_dates(b.facility))
+            assert g["known"].equals(filed & (g["date"] >= T.ledger_start(b.facility))), (geo.version, b.key)
+            # the archive is exactly the feed's snapshot days the continuous ledger does not cover
+            assert g["archive"].equals(g["date"].isin(T._archive_days()) & ~g["known"]), (geo.version, b.key)
         assert not (lk["archive"] & lk["known"]).any()
         zo = T.zone_overflow(geo, end=AS_OF).set_index(["zone", "date"])
         ev = set(zip(T.ledger_events(geo)["zone"], T.ledger_events(geo)["date"]))

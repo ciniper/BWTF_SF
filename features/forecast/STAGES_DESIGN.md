@@ -38,6 +38,8 @@ Terminology (public and code): **basin** (4, SFPUC's), **zone** (4, public), **o
 21. **Line grid.** One grid shared by scorecard and every report: (0.05, 0.10, 0.15, 0.205, 0.25, 0.30, 0.40, 0.505, 0.60, 0.75, 0.805). Rename the Model check's 'far' (fp/(fp+tn)) to POFD; FAR = fp/(tp+fp) everywhere.
 22. **Archive onsets** take their basin from `outfall_ids` through the geography; multi-basin strings are split, never truncated or dropped.
 23. **Pinned counts carry an as-of date** so quarterly data refreshes do not break tests.
+24. **Coverage = the continuous ledger** (protocol `stages_v2` §1, 2026-10-01). A facility-month is known only inside the unbroken run of covered months that ends at the facility's last grid month, opened at its first filed CSD table: Bayside from 2016-10, Oceanside from 2017-12. Older "no discharge" statements are not trusted (the grid marks Bayside 2015-02 "no discharge"; the legacy record lists a discharge on 2015-02-08). §3.0's coverage rule below is read this way.
+25. **X-LEDGER-SUSPECT tests the zone, in wet weather** (protocol `stages_v2` §7). A trigger counts only when no basin feeding its zone has a ledger event in D−3…D+1 and the window holds a wet day. Read per basin (v1), it flagged South on 438 days and left 64 of East's 100 overflow days out of S3; v2 leaves out none and still flags Bayside, February 2026.
 
 ## Part C — Merged design (verbatim)
 

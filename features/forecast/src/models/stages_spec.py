@@ -31,6 +31,12 @@ from shared import risk_levels as _RL  # noqa: E402
 
 GEOS = ("sfpuc4_v1", "geo_v1")
 
+# The scoring protocol this code implements: the version STAGES_PROTOCOL.md's
+# title names, and what a score's manifest records (manifest.protocol =
+# "<version>@<sha>"). Not the pipeline name ("stages_v1") that served.json
+# stamps carry.
+PROTOCOL_VERSION = "stages_v2"
+
 
 def by_geo(sfpuc4, geo_v1) -> dict:
     return {"sfpuc4_v1": sfpuc4, "geo_v1": geo_v1}
@@ -68,7 +74,7 @@ EXCLUSIONS = {
     "X-ALL-INSAMPLE": _x("ALL", "exclude", "days the fit saw", "Days the scored weights were fitted on are never scored, so the count is 0 by construction.", False),
     "X-POWER": _x("ALL", "tag", "too few to decide", "Fewer than 10 positive days or 8 storms: the score is shown with its range and never decides anything.", False),
     "X-SEL": _x("ALL", "tag", "days used to pick the set", "Days in a window that was used to pick the served set; scores there favour it.", False),
-    "X-LEDGER-SUSPECT": _x("ALL", "exclude", "ledger likely incomplete", "One of the basin's zones was posted for an overflow, or a sample read 10× the standard, yet the filed months show no overflow from 3 days before to the day after: listed, not scored."),
+    "X-LEDGER-SUSPECT": _x("ALL", "exclude", "ledger likely incomplete", "A zone was posted for an overflow, or a sample there read 10× the standard, in wet weather (rain on a day from 3 days before to the day after), yet no basin draining to it filed an overflow in those days: listed, not scored."),
     "X-PL-END": _x("ALL", "exclude", "after the last posting record", "Days after 28 Feb 2026, the last BeachWatch filing: the posting ruler cannot grade them."),
     # S1
     "X-S1-MISSING": _x("S1", "exclude", "missing", "The gauge reported nothing that day; the two-gauge mean uses the other gauge."),
@@ -78,7 +84,7 @@ EXCLUSIONS = {
     "X-S1-PEAK": _x("S1", "exclude", "peak hours", "Peak-hour rain is not scored until the airport's hourly record is kept.", False),
     # S2
     "X-S2-ARCHIVE": _x("S2", "exclude", "feed archive", "Days labelled from the 2016-17 beach-map archive: late, and the same data S5 corrects with."),
-    "X-S2-UNCOV": _x("S2", "exclude", "no filing", "The plant filed no report for that month, and unknown is not “no overflow”."),
+    "X-S2-UNCOV": _x("S2", "exclude", "no filing", "The month is outside the plant's unbroken run of filed reports, and unknown is not “no overflow”."),
     "X-S2-CARRY": _x("S2", "exclude", "carry-over", "An overflow from the day before was still running and none started that day."),
     "X-S2-VOLQ": _x("S2", "exclude", "size not measured", "The filed volume is blank or “less than”: left out of the size score."),
     "X-S2-OUTAGEIN": _x("S2", "tag", "dead gauge in the inputs", "A masked gauge day sits in the 30 days of rain the day's inputs read."),

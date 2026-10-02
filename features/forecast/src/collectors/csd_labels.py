@@ -81,16 +81,21 @@ def covered_dates(facility_prefix: str) -> pd.DatetimeIndex:
     return pd.DatetimeIndex([]).append(dates) if dates else pd.DatetimeIndex([])
 
 
-def facility_covered_dates(facility: str) -> pd.DatetimeIndex:
-    """covered_dates for a registry facility name (Outfall.facility / geography
-    Basin.facility: 'Oceanside' | 'Bayside'). The coverage grid writes the permit
+def facility_grid_name(facility: str) -> str:
+    """The coverage grid's name for a registry facility name (Outfall.facility /
+    geography Basin.facility: 'Oceanside' | 'Bayside'). The grid writes the permit
     as 'Southeast/Bayside (CA0037664)', so match on its name parts; exactly one
     grid facility must match."""
     grid = load_coverage()["facility"].unique()
     hits = [f for f in grid if facility in f.split(" (")[0].split("/")]
     if len(hits) != 1:
         raise KeyError(f"facility {facility!r} matches {hits} in {COVERAGE_CSV.name}")
-    return covered_dates(hits[0])
+    return hits[0]
+
+
+def facility_covered_dates(facility: str) -> pd.DatetimeIndex:
+    """covered_dates for a registry facility name (see facility_grid_name)."""
+    return covered_dates(facility_grid_name(facility))
 
 
 def build_daily_labels(geo=None) -> pd.DataFrame:
