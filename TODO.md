@@ -56,8 +56,11 @@ Order: the no-tradeoff wins first, then caching once Chase has made its calls.
   ~32 ms of database work per request (`x-envoy-upstream-service-time`) while a reused connection from SF takes ~100 ms, so
   the project is most likely in us-east, next to the function. Check Supabase → Project Settings → General; only if it is
   on the West Coast move the function to `sfo1` (`"regions"` in vercel.json).
-- [ ] **Self-host Leaflet** (CSS + JS from unpkg) and consider the Google font: third-party stylesheets in the head hold the
-  first paint on a cold visit.
+- [x] **Connection hints for the map** (branch `perf/map-preconnect`): the four Leaflet pages preconnect to the tile server
+  (`basemap()["origin"]`, follows the basemap choice) and to unpkg, so a first visit opens both while the page arrives
+  instead of after Leaflet runs — ~0.1–0.15 s sooner to the first tile, estimated from the connection-setup times.
+- [ ] **Self-host Leaflet** (CSS + JS from unpkg, ~45 KB): skips the unpkg connection, ~0.1 s more on a first visit;
+  the cost is updating it ourselves (pinned to 1.9.4 anyway). Not the tiles: Esri's terms don't allow re-serving them.
 - [ ] *Minor:* `shared/supabase.py` opens a new TLS connection per call (`requests.request`, no Session); a shared Session
   would reuse it. Small on Vercel when Supabase sits in the same region.
 - [x] **Real-visitor measurement** (branch `obs/vercel-insights`): Vercel Web Analytics + Speed Insights in the shared

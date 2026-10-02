@@ -33,6 +33,22 @@ def test_every_map_page_draws_the_shared_basemap():
         assert "{{ BASEMAP.url|tojson }}" in (ROOT / tpl).read_text(), tpl
 
 
+def test_map_pages_open_the_tile_and_leaflet_connections_early():
+    """A preconnect to the tile server and to unpkg on every page that loads Leaflet, ahead of Leaflet's
+    own tags (2026-10-02). The origin follows the basemap choice; a templated host gets no hint."""
+    assert B.basemap()["origin"] == "https://server.arcgisonline.com"
+    assert B.tile_origin("https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png") is None
+    from app.wsgi import app
+    pages = [p for p in sorted((ROOT / "app/templates").rglob("*.html")) if "leaflet@1.9.4/dist/leaflet.js" in p.read_text()]
+    assert len(pages) == 4, [p.name for p in pages]
+    with app.test_client() as c:
+        for u in ("/", "/signup", "/discharges", "/analysis"):
+            h = c.get(u).data.decode()
+            tiles = h.index('<link rel="preconnect" href="https://server.arcgisonline.com">')
+            unpkg = h.index('<link rel="preconnect" href="https://unpkg.com">')
+            assert tiles < h.index("leaflet.css") and unpkg < h.index("leaflet.css"), u
+
+
 if __name__ == "__main__":
     failures = 0
     for name, fn in sorted(globals().items()):
