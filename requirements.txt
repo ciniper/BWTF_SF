@@ -13,9 +13,10 @@ pandas>=2.0.0
 numpy>=1.24.0
 scipy>=1.10.0
 scikit-learn==1.8.0   # pinned: the forecast models were trained on 1.8.0; 1.9.0 breaks the pickles
-pyyaml>=6.0
-beautifulsoup4>=4.11.0
-lxml>=4.9.0
+
+# Not deployed (every Vercel deployment stores its own copy of each package):
+# only the exploratory Weather Underground collector needs these —
+# pip install beautifulsoup4 lxml pyyaml to run it.
 
 # Optional — only for model (re)training and notebooks:
 # matplotlib>=3.7.0
