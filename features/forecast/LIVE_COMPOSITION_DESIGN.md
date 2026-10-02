@@ -103,7 +103,9 @@ model's own composition resumes.
 - **Clean sample in a discharge tail:** cap the group's persistence term at P(elevated next | clean now) — East
   67%, Ocean Beach 42%, North Shore 67% (n=9, weak), Baker–China 36%. Do **not** zero the tail on one clean
   bottle. This departs from SFPUC practice (a clean sample lifts the posting); the East data say that practice
-  is optimistic there.
+  is optimistic there. The capped persistence recombines with the group's own day term, the basin's p after
+  the stage 2 split, and the result never exceeds the composed risk. (Until 2026-10-01 it recombined with the
+  basin's whole p, so under the outfall split a clean bottle raised Westside groups whose share is under 1.)
 - **Elevated sample with no discharge in the prior week (dry weather):** the same floor at the dry-weather rate
   (East 38%, Baker–China 20%, North Shore 16%, Ocean Beach 6%) for three days. Every rate is under 0.5, so
   under the policy above this rule is off today; the rates are recorded. This is the seed of the non-rain

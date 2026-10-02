@@ -90,7 +90,7 @@ def test_stage2_sample_rules_and_flag_hold():
     probs_by_date = {DATES[3]: {"southeast": 0.9, "westside": 0.9, "north_shore": 0.1}}   # a discharge two days before the sample
     risks = {"Southeast": 0.30, "Ocean Beach": 0.50, "Baker-China": 0.20, "Crissy": 0.10}
     persist = {"Southeast": 0.28, "Ocean Beach": 0.45, "Baker-China": 0.18, "Crissy": 0.08}
-    today_terms = {"southeast": 0.03, "westside": 0.1, "north_shore": 0.02}
+    today_terms = {"Southeast": 0.03, "Ocean Beach": 0.1, "Baker-China": 0.1, "Crissy": 0.02}   # per group, after the split
     samples = {("Southeast", DATES[4]): True,        # elevated in a tail → floor at 0.80
                ("Ocean Beach", DATES[4]): False,      # clean in a tail → cap the persistence at 0.42, recombine with today's 0.1
                ("Crissy", DATES[4]): True,            # elevated, no discharge near → the dry floor is off (rate 0.16 < 0.5): nothing
@@ -112,6 +112,109 @@ def test_stage2_sample_rules_and_flag_hold():
     # nothing observed → identity
     out5, n5 = LR.adjust_groups(risks, persist, today_terms, day, {}, {}, {}, {}, zone_of, basin_of, large)
     assert out5 == risks and n5 == {}
+
+
+def _stage2_v2():
+    """(spec, split, impact table) of the outfall split, stage 2 v2 (served since 2026-09-28), loaded as LiveData loads it."""
+    import impact as IM
+    import stage2 as S2
+    spec = json.loads(S2.variant_path("v2").read_text())
+    return spec, S2.make_split(spec), IM.smooth_table(spec["impact_table"])
+
+
+def test_clean_sample_cap_never_raises_a_group():
+    """A clean sample in a discharge tail can only lower a group's risk. The cap
+    recombines with the group's own day term after the stage 2 split; until
+    2026-10-01 it used the basin's whole p, which raised every group whose
+    share is under 1 (Ocean Beach, Baker-China, Aquatic Park). Swept over storm
+    shapes and sizes and today's probability and size, under v1 (no split) and
+    the outfall split, with every group sampled clean the day before."""
+    import impact as IM
+    from groups import GROUPS_BY_BASIN, ZONE_GROUPS
+    spec, split, table = _stage2_v2()
+    assert min(spec["shares"][g]["small"]["p"] for g in ("Ocean Beach", "Baker-China", "Aquatic Park")) < 0.85   # the sweep has shares under 1
+    v1_table = IM.smooth_table(json.loads((ROOT / "features/forecast/data/models/impact_table.json").read_text()))
+    zone_of = {g: zk for zk, gs in ZONE_GROUPS.items() for g in gs}
+    basin_of = {g: bk for bk, gs in GROUPS_BY_BASIN.items() for g in gs}
+    caps = LR.RULES["samples"]["cap_clean_tail"]
+    days = DATES[:8]
+    n = bound = basin_p_would_raise = 0
+    for split_, table_ in ((None, v1_table), (split, table)):
+        for storm in ([1], [2], [1, 2], [1, 2, 3], [3, 4, 5]):
+            for v_storm in (0.5, 3.7, 60.0):
+                for p_today in (0.0, 0.05, 0.3, 0.7, 0.95):
+                    for v_today in (0.5, 5.0, 60.0):
+                        probs = [{b: (1.0 if 7 - i in storm else 0.0) for b in GROUPS_BY_BASIN} for i in range(8)]
+                        vols = [{b: (v_storm if 7 - i in storm else 1.0) for b in GROUPS_BY_BASIN} for i in range(8)]
+                        probs[7], vols[7] = {b: p_today for b in GROUPS_BY_BASIN}, {b: v_today for b in GROUPS_BY_BASIN}
+                        _, groups = IM.compose(table_, GROUPS_BY_BASIN, probs, vols, 7, days, {}, split=split_)
+                        p_only = [dict(p) for p in probs]
+                        p_only[7] = {b: 0.0 for b in GROUPS_BY_BASIN}
+                        _, persist = IM.compose(table_, GROUPS_BY_BASIN, p_only, vols, 7, days, {}, split=split_)
+                        today = IM.day_terms(GROUPS_BY_BASIN, probs[7], vols[7], split=split_)
+                        samples = {(g, days[6]): False for g in groups}
+                        out, notes = LR.adjust_groups(groups, persist, today, days[7], samples, dict(zip(days, probs)), {}, {},
+                                                      zone_of, basin_of, lambda g, k: 0.0)
+                        for g in groups:
+                            n += 1
+                            case = (split_ is not None, storm, v_storm, p_today, v_today, g, groups[g], persist[g], out[g])
+                            # the day term is the composition's own: recombined with the persistence it gives the risk back
+                            assert abs(1 - (1 - persist[g]) * (1 - today[g]) - groups[g]) <= 0.001 + 1e-9, case
+                            assert out[g] <= groups[g], case
+                            assert g not in notes or (notes[g]["rule"] == "sample_clean_cap" and notes[g]["to"] <= notes[g]["from"]), (case, notes[g])
+                            capped = min(groups[g], 1 - (1 - min(persist[g], caps[zone_of[g]])) * (1 - today[g]))
+                            assert abs(out[g] - capped) <= 0.0005 + 1e-9, (case, capped)
+                            if groups[g] - capped > 0.001:
+                                bound += 1
+                                assert out[g] < groups[g], case     # a binding cap lowers the number
+                            # the pre-2026-10-01 recombination, with the basin's own p
+                            basin_p_would_raise += 1 - (1 - min(persist[g], caps[zone_of[g]])) * (1 - probs[7][basin_of[g]]) > groups[g] + 0.001
+    assert n == 2 * 5 * 3 * 5 * 3 * 6 and bound > 50 and basin_p_would_raise > 50, (n, bound, basin_p_would_raise)
+    print(f"   {n} group-days, the cap bound on {bound}; the basin-p recombination would have raised {basin_p_would_raise}")
+
+
+def test_westside_clean_sample_under_the_outfall_split():
+    """The Westside case, through LiveData's own wiring with the outfall split on:
+    a two-day 60 MG storm, then today p = 0.9 for a 0.5 MG event, which the split
+    gives Ocean Beach at about half and Baker-China at 0.8. A clean sample at
+    both yesterday: Ocean Beach's persistence (0.77) is over its 0.42 cap, so
+    the cap lowers it and recombines with Ocean Beach's own 0.47, not the
+    basin's 0.9 (which gave 0.94 > its 0.88). Baker-China's persistence (0.34)
+    is under its 0.36 cap, so it keeps its composed risk (the basin-p
+    recombination took it 0.82 → 0.93, the bug the stages golden caught on
+    2026-02-17)."""
+    import pandas as pd
+    import stage2 as S2
+    from features.forecast import live_dashboard as ld
+    spec, split, table = _stage2_v2()
+    eng = ld.LiveData.__new__(ld.LiveData)
+    eng.stage2, eng.split, eng.impact_table = spec, split, table
+    rain = [0.0, 0.0, 0.0, 0.0, 0.0, 2.0, 1.5, 0.6, 0.0, 0.0]
+    frames = {"avg": pd.DataFrame({"date": pd.to_datetime(DATES), "precip_inches": rain, "rain_source": ["observed"] * 8 + ["forecast"] * 2})}
+    feats = [{"avg": {"precip_avg": r, "rain_2d_cum": 0.0, "rain_3d_cum": 0.0}} for r in rain]
+    probs = [{b: 0.0 for b in BASINS} for _ in DATES]
+    vols = [{b: 1.0 for b in BASINS} for _ in DATES]
+    for i, p, v in ((5, 1.0, 60.0), (6, 1.0, 60.0), (7, 0.9, 0.5)):
+        probs[i]["westside"], vols[i]["westside"] = p, v
+    eng._live_corrections_enabled = lambda: (True, "default")
+    eng._watcher_health = lambda: {"ok": False, "mode": None, "reason": "test"}
+    eng._cso_flag_days = lambda s, e, t: {}
+    eng._sample_flags = lambda s, e: {("Ocean Beach", DATES[6]): False, ("Baker-China", DATES[6]): False}
+    eng._feed_sample_flags = lambda s, e: {}
+    live = eng._live_context(frames, probs, vols, DATES, {}, TODAY)
+    pay = eng._day_payload(frames, 7, feats, probs, vols, DATES, {}, live)
+    composed, rules = pay["plain"]["impact_groups"], pay["live_corrections"]["groups"]   # nothing moved stage 1, so plain = the composition
+    term = {g: 0.9 * S2.group_share(spec, g, 0.5) for g in ("Ocean Beach", "Baker-China")}
+    assert 0.45 < term["Ocean Beach"] < 0.5 and 0.7 < term["Baker-China"] < 0.75, term
+    cap_ob, cap_bc = LR.RULES["samples"]["cap_clean_tail"]["ocean"], LR.RULES["samples"]["cap_clean_tail"]["baker_china"]
+    assert pay["impact_groups"]["Ocean Beach"] == round(1 - (1 - cap_ob) * (1 - term["Ocean Beach"]), 3) < composed["Ocean Beach"], (pay["impact_groups"], composed)
+    assert rules["Ocean Beach"] == {"rule": "sample_clean_cap", "from": composed["Ocean Beach"], "to": pay["impact_groups"]["Ocean Beach"]}
+    assert 1 - (1 - cap_ob) * (1 - 0.9) > composed["Ocean Beach"]                       # what the basin's p would have done
+    assert pay["impact_groups"]["Baker-China"] == composed["Baker-China"] and "Baker-China" not in rules
+    assert 1 - (1 - cap_bc) * (1 - 0.9) > composed["Baker-China"] + 0.05
+    assert all(pay["impact_groups"][g] <= composed[g] for g in composed)
+    assert pay["zones"]["ocean"] == pay["impact_groups"]["Ocean Beach"] and pay["zones"]["baker_china"] == composed["Baker-China"]
+    print(f"   Ocean Beach {composed['Ocean Beach']} → {pay['impact_groups']['Ocean Beach']} (cap binds), Baker-China {composed['Baker-China']} kept (cap does not bind)")
 
 
 def test_sample_rates_refit_reproduces_the_constants():

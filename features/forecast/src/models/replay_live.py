@@ -62,7 +62,7 @@ LIVE = LR.VERSION   # the variant named after the rule set's version (live_v2 si
 import posting_label as PL  # noqa: E402
 import train_v4 as T  # noqa: E402
 from groups import BASIN_KEYS, GROUPS_BY_BASIN, ZONE_GROUPS, zone_risks  # noqa: E402
-from impact import compose as _compose, impact_fraction, smooth_table  # noqa: E402
+from impact import compose as _compose, day_terms, impact_fraction, smooth_table  # noqa: E402
 
 SPLIT = [None]   # the served stage 2 split, set by load_artifact; every composition here goes through it
 
@@ -214,8 +214,9 @@ def replay(days: list, table: dict, vol_pred: dict, onsets: dict, flags: dict, e
         p_only[j] = {b: 0.0 for b in p_only[j]}
         _, persist = compose(table, GROUPS_BY_BASIN, p_only, v2, j, win, {})
         smp = {k: v for k, v in samples_all.items() if k[1] <= known} if use_samples else {}
+        today = day_terms(GROUPS_BY_BASIN, p2[j], v2[j], split=SPLIT[0])
         probs_by_date = {d: p2[k] for k, d in enumerate(win)}
-        adjusted, _ = LR.adjust_groups(groups, persist, p2[j], D, smp, probs_by_date, on_k, fl_k, _ZONE_OF_GROUP, _BASIN_OF_GROUP, large, rules=rules)
+        adjusted, _ = LR.adjust_groups(groups, persist, today, D, smp, probs_by_date, on_k, fl_k, _ZONE_OF_GROUP, _BASIN_OF_GROUP, large, rules=rules)
         out[str(D)] = adjusted
     return out
 
