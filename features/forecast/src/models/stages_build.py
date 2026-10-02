@@ -99,14 +99,31 @@ Paired: chained − oracle on the intersection of scored rows; as served − lea
 the OUT error budget ladder; S5 corrected − plain and the §8 primary
 link_zone_swap − basin_swap; and, for a set that is not the served one,
 candidate − served on identical rows (``vs_served``, read from the served set's
-rows.csv.gz).
+rows.csv.gz). S3 adds lead 1 (and every chained entry) scored on the oracle's own
+rows against the oracle's reference (``score_on_rows``: scores["s3_on_oracle_rows"]).
+
+**The figure (scores["figure"]).** Every post-training cell is X-POWER, so each
+stage's pills show the window where it has power: S1 its whole Previous Runs
+window at lead 1 and the floor; S2, S3, S4 and OUT cross-season (T2, labelled
+development; an existing set's S2 development (selection-contaminated), protocol
+§2); S5 its protocol window, as the change in Brier of the set's own correction
+rule (basin_swap = live_v2) on the perfect feed and the degraded feeds' mean. A
+set the build does not refit per season shows what it has (FIGURE_FALLBACK).
+Each pill carries the words for its window and its post-training cell (T1, with
+its CI) for the tooltip; S3's chained pill is lead 1 on the oracle's rows (every
+day in the tooltip); S5's tooltip adds link/zone injection; the figure carries a
+one-line caption. scores["figures"] keeps one figure per window, and
+scores["figure_counts"] adds S5's own rules from the build's rows (0 where the
+rows never hit one) to the truth catalog's counts.
 
 **Artifacts (``write``):** data/models/stages/<set>/manifest.json, scores.json,
 and rows.csv.gz for the served set only. Nothing else in data/models/ is
 written. The manifest holds the sha256 of every input file and of every module
 of this repository the build imported (``stale_files``): a change to either
 makes the artifacts stale until the build is rerun (the served set first: a
-candidate's vs_served reads its rows). ``preview`` draws the scored figure (stages_flowchart.page) into an
+candidate's vs_served reads its rows). s1_scores.json is pinned by its content
+without built_at (``input_sha``), so rebuilding S1 on unchanged data stales
+nothing. ``preview`` draws the scored figure (stages_flowchart.page) into an
 HTML file that no route serves (default: the system temp directory, outside the repo).
 
     venv/bin/python features/forecast/src/models/stages_build.py --set served [--root served|candidates]
@@ -140,10 +157,12 @@ for _p in (REPO, FORECAST, HERE, HERE.parent / "collectors"):
 import candidates as CAND  # noqa: E402  (served.json, candidate manifests and stage 2 specs)
 import compose_v2 as C  # noqa: E402
 import exclusions as X  # noqa: E402
+import samples as SMP  # noqa: E402  (the lab records S4's truth reads)
 import stage2 as STG2  # noqa: E402  (read only: the served S3 split fitter)
 import stage2_variants as SV  # noqa: E402  (read only: the rain sources the served split was fit on)
 import stages_entries as E  # noqa: E402
 import stages_flowchart as F  # noqa: E402
+import stages_s1 as S1  # noqa: E402  (read only: the S1 rows, for the figure's post-training cells)
 import stages_s2 as S2  # noqa: E402
 import stages_s5 as S5  # noqa: E402
 import stages_spec as SP  # noqa: E402
@@ -167,7 +186,20 @@ ROW_STAGES = ("s2", "s3", "s4", "out", "s5")
 WARMUP_DAYS = S5.HISTORY_DAYS                      # 8: live_v2's 9-day window; compose needs 7
 HISTORY = len(C.LAGS) - 1                          # 7: S4 / OUT read D−7 … D
 B_PROTOCOL, SEED, LEVEL = 2000, 0, 0.9             # protocol §6
-FIGURE_WINDOW = "T1"                               # the scored figure's window: post-training, confirmation
+# The scored figure: each stage's pills show its powered window (protocol §2, §6): S1 its whole Previous Runs
+# window, S2 → OUT the cross-season folds (nine seasons, each scored by weights that never saw it), S5 its protocol
+# window. A set not refit per season shows the first of FIGURE_FALLBACK it has. Every pill's tooltip gives the
+# post-training (T1) value beside the shown one; scores["figures"] keeps one figure per window.
+FIGURE_WINDOWS = {"m.s2": "T2", "m.s3": "T2", "m.s4": "T2", "m.out": "T2", "m.s5": "S5"}
+FIGURE_FALLBACK = ("T2", "T1-holdout", "T1")
+POST_WINDOW = "T1"
+S1_WINDOW = "previous_runs"
+S1_FLOOR = "SF Oceanside as SF Downtown"           # the S1 oracle pill (either-wet MAE is the same both ways)
+NODE_SCORES = {"m.s2": "s2", "m.s3": "s3", "m.s4": "s4", "m.out": "out", "m.s5": "s5"}
+NODE_CODE = {"m.s2": "S2", "m.s3": "S3", "m.s4": "S4", "m.out": "OUT"}
+CAPTION_WINDOW = {"T1-holdout": "the holdout", "T1": "post-training days only"}
+S5_RULE_WORDS = {"basin_swap": "the served correction rule (basin_swap = live_v2)", "link_zone_swap": "link/zone injection"}
+MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 LADDER = ("truth_at_s4", "truth_at_s3", "rain", "L1")   # protocol §3: the OUT error budget
 S5_WINDOW = ("T1-holdout", "T1")                   # protocol §8: 2023-07-01 → the data end
 EPS = 1e-12                                        # same-model predictions in different batch sizes (stages_s2)
@@ -713,9 +745,19 @@ def _storm_blocks(dates, blocks: pd.DataFrame) -> tuple:
     return b["block"].to_numpy(dtype=float), (b["block_kind"] == "storm").to_numpy()
 
 
-def bundle(y, p, ref, blk, storm, strata, n_boot: int) -> dict:
+def _span(dates) -> dict:
+    """{span: [first, last] ISO days, n_seasons: July–June seasons among them} of a cell's rows."""
+    d = pd.DatetimeIndex(pd.to_datetime(dates))
+    if not len(d):
+        return {"span": None, "n_seasons": 0}
+    return {"span": [str(d.min().date()), str(d.max().date())],
+            "n_seasons": int(len(np.unique(np.where(d.month >= 7, d.year, d.year - 1))))}
+
+
+def bundle(y, p, ref, blk, storm, strata, n_boot: int, dates=None) -> dict:
     """One unit × window: verify.scores_bundle plus the sample-climatology BSS, the MDE of a paired Brier
-    difference on these rows (2.49 × the block SE of forecast − reference), the storm-block count and X-POWER."""
+    difference on these rows (2.49 × the block SE of forecast − reference), the storm-block count and X-POWER;
+    with ``dates``, the rows' span and seasons (``_span``: the figure's tooltips say which days a score is on)."""
     y, p, ref = (np.asarray(a, dtype=float) for a in (y, p, ref))
     out = V.scores_bundle(y, p, ref, blk, edges=RL.edges(), n=n_boot, seed=SEED, level=LEVEL)
     n_storm = int(len(np.unique(np.asarray(blk)[np.asarray(storm, bool)]))) if len(y) else 0
@@ -723,6 +765,8 @@ def bundle(y, p, ref, blk, storm, strata, n_boot: int) -> dict:
     out["mde"] = V.clean(V.mde(V.paired_se(y, p, ref, blk)))
     out["n_storm_blocks"] = n_storm
     out["low_power"] = bool(out["n_pos"] < X.POWER_MIN_POSITIVES or n_storm < X.POWER_MIN_STORM_BLOCKS)
+    if dates is not None:
+        out.update(_span(dates))
     return out
 
 
@@ -748,7 +792,37 @@ def score_stage(rows: pd.DataFrame, stage: str, blocks: pd.DataFrame, n_boot: in
             for u, gu in [("pooled", g)] + list(g.groupby("unit", sort=False)):
                 m = (g["unit"] == u).to_numpy() if u != "pooled" else np.ones(len(g), bool)
                 out.setdefault(u, {}).setdefault(e, {})[t] = bundle(gu["y"], gu["p"], gu["ref"], blk[m], storm[m],
-                                                                    gu["unit"].to_numpy(), n_boot)
+                                                                    gu["unit"].to_numpy(), n_boot, gu["date"])
+    return out
+
+
+def score_on_rows(rows: pd.DataFrame, base: str, blocks: pd.DataFrame, n_boot: int) -> dict:
+    """{unit | 'pooled': {entry: {window: bundle}}}: every other entry scored on ``base``'s scored rows only, the
+    unit-days both scored, against the reference ``base`` is scored with there, so the two skills are paired and
+    comparable (S3: chained on the oracle's Westside overflow days, where the oracle is scored)."""
+    sc = rows[rows["excl"] == ""]
+    out: dict = {}
+    for t in _windows(sc):
+        st = sc[sc["tier"] == t]
+        on = st[st["entry"] == base].set_index(["unit", "date"])
+        if not len(on):
+            continue
+        for e, g in st[st["entry"] != base].groupby("entry", sort=False):
+            mine = g.set_index(["unit", "date"])
+            common = on.index.intersection(mine.index)
+            if not len(common):
+                continue
+            mine, theirs = mine.loc[common], on.loc[common]
+            y = mine["y"].to_numpy(dtype=float)
+            if not np.array_equal(y, theirs["y"].to_numpy(dtype=float)):
+                raise AssertionError(f"{e} on {base}'s rows {t}: the same unit-days carry different truths")
+            p, ref = mine["p"].to_numpy(dtype=float), theirs["ref"].to_numpy(dtype=float)
+            units = common.get_level_values("unit").to_numpy()
+            dates = common.get_level_values("date")
+            blk, storm = _storm_blocks(dates, blocks)
+            for u in ["pooled"] + list(pd.unique(units)):
+                m = np.ones(len(common), bool) if u == "pooled" else units == u
+                out.setdefault(u, {}).setdefault(e, {})[t] = bundle(y[m], p[m], ref[m], blk[m], storm[m], units[m], n_boot, dates[m])
     return out
 
 
@@ -884,7 +958,7 @@ def score_s5(rows: pd.DataFrame, feeds: dict, n_boot: int) -> tuple:
             y = plain["y"].to_numpy(dtype=float)[m]
             for v, gv in by_v.items():
                 cell = bundle(y, gv["p"].to_numpy(dtype=float)[m], gv["ref"].to_numpy(dtype=float)[m], blk[m],
-                              np.ones(int(m.sum()), bool), units[m], n_boot)
+                              np.ones(int(m.sum()), bool), units[m], n_boot, plain.index.get_level_values("date")[m])
                 cell.pop("n_storm_blocks")
                 cell["low_power"] = bool(cell["n_pos"] < X.POWER_MIN_POSITIVES or cell["n_blocks"] < X.POWER_MIN_STORM_BLOCKS)
                 cell["delta_vs_plain"] = _delta(y, gv["p"].to_numpy(dtype=float)[m], gv["b"].to_numpy(dtype=float)[m], blk[m], n_boot)
@@ -897,72 +971,251 @@ def score_s5(rows: pd.DataFrame, feeds: dict, n_boot: int) -> tuple:
 
 # ── the figure ──────────────────────────────────────────────────────────────
 
-def _pill(cell: dict | None) -> dict | None:
-    """A bundle as a figure pill: BSS with its 90% CI, n, positives and X-POWER."""
+def _month(d) -> str:
+    d = pd.Timestamp(d)
+    return f"{MONTHS[d.month - 1]} {d.year}"
+
+
+def span_words(span) -> str:
+    """'Jul 2016 – Jun 2025' for [first, last] ISO days ('' for none)."""
+    return f"{_month(span[0])} – {_month(span[1])}" if span else ""
+
+
+def _union(spans) -> list | None:
+    spans = [s for s in spans if s]
+    return [min(s[0] for s in spans), max(s[1] for s in spans)] if spans else None
+
+
+def t2_label(stage: str, geo) -> str:
+    """Protocol §2's label for a cross-season (T2) score: 'development'; an existing (GEO_V1) set's S2 'development
+    (selection-contaminated)', its C grids and design searches having been chosen on those seasons."""
+    return S2.T2_LABEL if stage == "s2" and geo.version == "geo_v1" else "development"
+
+
+def window_words(window: str, cell: dict, stage: str, geo) -> str:
+    """Where a pill's number comes from, as its tooltip says it (no ids): the window and the days its rows span;
+    cross-season with the protocol's label (§2: development; an existing set's S2 'development
+    (selection-contaminated)', its C grids and design searches having been chosen on those seasons)."""
+    sp = span_words(cell.get("span"))
+    if window == "T2":
+        n = int(cell.get("n_seasons") or 0)
+        return f"{n} season{'' if n == 1 else 's'}, each scored by weights that never saw it, {sp}: {t2_label(stage, geo)}"
+    if window == "T1-holdout":
+        return f"holdout, {sp}: development only"
+    if window == "T1":
+        return f"post-training, {sp}"
+    if window == "S5":
+        return sp
+    raise KeyError(f"no words for window {window!r}")
+
+
+def _dress(out: dict | None, words=None, post: dict | None = None, also=None) -> dict | None:
+    """A pill with its window's words, its post-training pill (``post``, flat) and the other numbers its
+    tooltip gives (``also``: [pill with 'what'])."""
+    if out is None:
+        return None
+    if words:
+        out["window"] = words
+    if post:
+        out["post"] = {k: v for k, v in post.items() if k not in ("post", "also")}
+    if also:
+        out["also"] = [{k: v for k, v in a.items() if k not in ("post", "also")} for a in also]
+    return out
+
+
+def _pill(cell: dict | None, words: str | None = None, post: dict | None = None, also=None) -> dict | None:
+    """A bundle as a figure pill: BSS with its 90% CI, n, positives, X-POWER and the days it spans."""
     if not cell or cell.get("bss") is None:
         return None
     lo, hi = cell["ci"]["bss"]
-    return {"v": cell["bss"], "lo": lo, "hi": hi, "n": cell["n"], "pos": cell["n_pos"], "low_power": cell["low_power"]}
+    return _dress({"v": cell["bss"], "lo": lo, "hi": hi, "n": cell["n"], "pos": cell["n_pos"], "low_power": cell["low_power"],
+                   "span": cell.get("span"), "n_seasons": cell.get("n_seasons")}, words, post, also)
 
 
-def _delta_pill(d: dict | None, n_pos=None, low_power=None) -> dict | None:
-    if not d or d.get("delta") is None:
+def _delta_pill(cell: dict | None) -> dict | None:
+    """An S5 cell as a pill: the change in Brier, corrected − no correction (delta_vs_plain), with its CI."""
+    d = (cell or {}).get("delta_vs_plain") or {}
+    if d.get("delta") is None:
         return None
-    return {"v": d["delta"], "lo": d["lo"], "hi": d["hi"], "n": d["n"], "pos": n_pos, "low_power": low_power}
+    return {"v": d["delta"], "lo": d["lo"], "hi": d["hi"], "n": d["n"], "pos": cell["n_pos"], "low_power": cell["low_power"],
+            "span": cell.get("span"), "n_seasons": cell.get("n_seasons")}
 
 
-def s1_figure(s1: dict) -> dict:
-    """m.s1's pills from stages_s1: the floor (one gauge as a forecast of the other; either-wet MAE is the same
-    both ways) and the served model at lead 1 on the two-gauge mean, either-wet MAE (protocol §4.1)."""
-    fl = s1["floor"]["SF Oceanside as SF Downtown"]
-    m = s1["by_lead"]["1"]["avg"]["models"][s1["served_model"]]
-    pick = lambda c: {"v": c["continuous"]["either_wet"]["mae"], "lo": c["ci"]["continuous"]["either_wet"]["mae"][0],  # noqa: E731
-                      "hi": c["ci"]["continuous"]["either_wet"]["mae"][1], "n": c["continuous"]["either_wet"]["n"],
-                      "pos": c["n_either_wet"], "low_power": c["n_either_wet"] < X.POWER_MIN_POSITIVES}
-    return {"oracle": pick(fl), "chained": pick(m)}
+def _seed_mean(cells: list) -> dict | None:
+    """The degraded feeds' cells as one pill: the mean change in Brier over the seeds, a CI from the lowest
+    seed's lower bound to the highest seed's upper bound, X-POWER when any seed is."""
+    cells = [c for c in cells if _delta_pill(c)]
+    if not cells:
+        return None
+    ds = [c["delta_vs_plain"] for c in cells]
+    return {"v": float(np.mean([d["delta"] for d in ds])), "lo": min(d["lo"] for d in ds), "hi": max(d["hi"] for d in ds),
+            "n": int(round(np.mean([d["n"] for d in ds]))), "pos": int(round(np.mean([c["n_pos"] for c in cells]))),
+            "low_power": any(c["low_power"] for c in cells), "span": _union([c.get("span") for c in cells]),
+            "n_seasons": max(int(c.get("n_seasons") or 0) for c in cells), "seeds": len(cells)}
 
 
-def figure(scores: dict, window: str, s1: dict | None, geo) -> dict:
-    """figure{node id: {oracle, chained, lead}} for stages_flowchart.render, on one window: pooled BSS per stage
-    (oracle vs lead 1), S3's oracle on the zones it scores (the Westside split), OUT's lead strip L0 … L5, and
-    S5's change in Brier (the set's own live corrections − none) on the perfect feed and the degraded feeds."""
-    pooled = lambda st, e: ((scores.get(st) or {}).get("pooled") or {}).get(e, {}).get(window)  # noqa: E731
+def s1_figure(s1: dict, post: dict | None = None) -> dict:
+    """m.s1's pills from stages_s1, on S1's whole Previous Runs window: the floor (one gauge as a forecast of the
+    other; either-wet MAE is the same both ways) and the served model at lead 1 on the two-gauge mean, either-wet
+    MAE (protocol §4.1); ``post`` (stages_s1.post_training) gives the same cells on post-training days."""
+    def cell(c, words):
+        if not c:
+            return None
+        ew, ci = c["continuous"]["either_wet"], c["ci"]["continuous"]["either_wet"]["mae"]
+        span = [c["first"], c["last"]]
+        return {"v": ew["mae"], "lo": ci[0], "hi": ci[1], "n": ew["n"], "pos": c["n_either_wet"],
+                "low_power": c["n_either_wet"] < X.POWER_MIN_POSITIVES, "span": span, "window": f"{words}, {span_words(span)}"}
+    post = post or {}
+    fl, m = s1["floor"][S1_FLOOR], s1["by_lead"]["1"]["avg"]["models"][s1["served_model"]]
+    return {"oracle": _dress(cell(fl, "SF Oceanside as a forecast of SF Downtown"), None,
+                             cell((post.get("floor") or {}).get(S1_FLOOR), "post-training")),
+            "chained": _dress(cell(m, "lead 1, two-gauge mean"), None, cell(post.get("lead1"), "post-training"))}
+
+
+def _cell(scores: dict, key: str, entry: str, window: str, unit: str = "pooled") -> dict | None:
+    return (((scores.get(key) or {}).get(unit) or {}).get(entry) or {}).get(window)
+
+
+def window_for(scores: dict, node: str, want: str, fallback: bool = True) -> str:
+    """The window a node's pills show: ``want``, else (``fallback``) the first of FIGURE_FALLBACK the set has
+    (a set the build does not refit per season, gb, has post-training only)."""
+    key = NODE_SCORES[node]
+    if key == "s5":
+        has = lambda w: any(w in c for c in ((scores.get("s5") or {}).get("pooled") or {}).values())  # noqa: E731
+    else:
+        has = lambda w: _cell(scores, key, "oracle", w) is not None  # noqa: E731
+    if has(want) or not fallback:
+        return want
+    return next((w for w in FIGURE_FALLBACK if has(w)), want)
+
+
+def figure_windows(scores: dict, windows=None, fallback: bool = True) -> dict:
+    """{node: window} the figure shows: ``windows`` (a window for every node, or {node: window}; default the
+    powered FIGURE_WINDOWS), each through ``window_for``; S1 is its own Previous Runs window."""
+    want = {n: windows for n in FIGURE_WINDOWS} if isinstance(windows, str) else dict(windows or FIGURE_WINDOWS)
+    return {"m.s1": S1_WINDOW, **{n: window_for(scores, n, w, fallback) for n, w in want.items()}}
+
+
+def figure(scores: dict, windows, s1: dict | None, geo, s1_post: dict | None = None, fallback: bool = False) -> dict:
+    """figure{node id: {oracle, chained, lead}, caption} for stages_flowchart.render.
+
+    ``windows``: one window for every node (scores['figures'][w]) or {node: window} (FIGURE_WINDOWS, the
+    powered figure, with ``fallback``: ``figure_windows``). S1 is its own Previous Runs window in every
+    figure. Per node: S2 and S4 pooled BSS, oracle vs lead 1; S3's oracle on the zones it scores (the
+    Westside split) and lead 1 on the oracle's own rows, paired (lead 1 on every day in the tooltip); OUT's
+    oracle, lead 1 and the lead strip L0 … L5; S5's change in Brier, corrected − no correction, for the
+    set's own correction rule (GEO_V1: basin_swap = live_v2) on the perfect feed and the degraded feeds'
+    mean, link/zone injection in the tooltip. Every pill carries the words for its window and, unless it is
+    post-training already, its post-training (T1) pill."""
+    shown = figure_windows(scores, windows, fallback)
     fig = {}
     if s1:
-        fig["m.s1"] = s1_figure(s1)
-    for st, node in (("s2", "m.s2"), ("s3", "m.s3"), ("s4", "m.s4")):
+        fig["m.s1"] = s1_figure(s1, s1_post)
+
+    def pill(key, e, w, stage, what=""):
+        c = _cell(scores, key, e, w)
+        p1 = _cell(scores, key, e, POST_WINDOW) if w != POST_WINDOW else None
+        return _pill(c, c and what + window_words(w, c, stage, geo), _pill(p1, p1 and window_words(POST_WINDOW, p1, stage, geo)))
+    for st, node in (("s2", "m.s2"), ("s4", "m.s4"), ("out", "m.out")):
         if st in scores:
-            fig[node] = {"oracle": _pill(pooled(st, "oracle")), "chained": _pill(pooled(st, "L1"))}
-    if "out" in scores:
-        fig["m.out"] = {"oracle": _pill(pooled("out", "oracle")), "chained": _pill(pooled("out", "L1")),
-                        "lead": [_pill(pooled("out", f"L{i}")) for i in range(6)]}
+            w = shown[node]
+            fig[node] = {"oracle": pill(st, "oracle", w, st), "chained": pill(st, "L1", w, st)}
+            if st == "out":
+                fig[node]["lead"] = [pill(st, f"L{i}", w, st) for i in range(6)]
+    if "s3" in scores:
+        w = shown["m.s3"]
+        every = pill("s3", "L1", w, "s3")
+        fig["m.s3"] = {"oracle": pill("s3", "oracle", w, "s3", "the Westside split on its overflow days, "),
+                       "chained": _dress(pill("s3_on_oracle_rows", "L1", w, "s3", "on the oracle's own days, "),
+                                         also=[dict(every, what="lead 1 on every day")] if every else None)}
     if "s5" in scores:
-        variant = "basin_swap" if geo.version == "geo_v1" else S5.PRIMARY[0]   # what the set serves (Part B 15)
-        cell = lambda f: (((scores["s5"].get("pooled") or {}).get(f) or {}).get(window) or {}).get(variant)  # noqa: E731
-        o = cell("oracle")
-        degr = [cell(f) for f in sorted(scores["s5"]["pooled"]) if f.startswith("degraded:")]
-        degr = [c for c in degr if c]
-        ch = None
-        if degr:
-            ds = [c["delta_vs_plain"] for c in degr]
-            ch = {"v": float(np.mean([d["delta"] for d in ds])), "lo": min(d["lo"] for d in ds), "hi": max(d["hi"] for d in ds),
-                  "n": int(round(np.mean([d["n"] for d in ds]))), "pos": int(round(np.mean([c["n_pos"] for c in degr]))),
-                  "low_power": any(c["low_power"] for c in degr)}
-        fig["m.s5"] = {"oracle": _delta_pill(o and o["delta_vs_plain"], o and o["n_pos"], o and o["low_power"]), "chained": ch}
-    return V.clean(fig)
+        w = shown["m.s5"]
+        rule = "basin_swap" if geo.version == "geo_v1" else S5.PRIMARY[0]      # what the set serves (Part B 15)
+        alt = next(v for v in S5.PRIMARY if v != rule)
+        pooled5 = scores["s5"].get("pooled") or {}
+        seeds = sorted(f for f in pooled5 if f.startswith("degraded:"))
+        cell = lambda f, ww, v: ((pooled5.get(f) or {}).get(ww) or {}).get(v)  # noqa: E731
+
+        def s5_pill(ww, v, chained):
+            p = _seed_mean([cell(f, ww, v) for f in seeds]) if chained else _delta_pill(cell("oracle", ww, v))
+            return _dress(p, p and window_words(ww, p, "s5", geo))
+        fig["m.s5"] = {}
+        for k, chained in (("oracle", False), ("chained", True)):
+            main = s5_pill(w, rule, chained)
+            if main:
+                feed = (f"the mean of {main['seeds']} degraded feeds (its range runs from the lowest seed's 90% CI bound to "
+                        "the highest's)" if chained else "the perfect feed")
+                a = s5_pill(w, alt, chained)
+                main = _dress(main, f"{S5_RULE_WORDS[rule]} − no correction, lower is better; {feed}, {main['window']}",
+                              s5_pill(POST_WINDOW, rule, chained) if w != POST_WINDOW else None,
+                              [dict(a, what=S5_RULE_WORDS[alt])] if a else None)
+            fig["m.s5"][k] = main
+    fig = V.clean(fig)
+    fig["caption"] = figure_caption(fig, shown, t2_label("s2", geo))
+    return fig
 
 
-def figure_counts(geo, as_of, s1: dict | None = None) -> tuple:
+def figure_caption(fig: dict, shown: dict, s2_label: str = "development") -> str:
+    """The one line under the figure title: in plain words, which window each stage's pills show, and that the
+    post-training scores are in the tooltips. Cross-season says it is development (protocol §2), with S2's own
+    label (``t2_label``) when it differs: a phone has no tooltip, so the label must be on the face."""
+    parts = []
+    c1 = (fig.get("m.s1") or {}).get("chained") or {}
+    if c1.get("span"):
+        parts.append(f"S1 one day ahead, {span_words(c1['span'])}")
+    by_window: dict = {}
+    for n in ("m.s2", "m.s3", "m.s4", "m.out"):
+        if n in fig:
+            by_window.setdefault(shown[n], []).append(n)
+    for w, nodes in by_window.items():
+        oracle = [fig[n].get("oracle") or {} for n in nodes]
+        span = _union([o.get("span") for o in oracle])
+        if not span:
+            continue
+        who = "S2 to OUT" if len(nodes) == 4 else ", ".join(NODE_CODE[n] for n in nodes)
+        if w == "T2":
+            n_s = max(int(o.get("n_seasons") or 0) for o in oracle)
+            words = (f"{n_s} season{'' if n_s == 1 else 's'} ({span_words(span)}), each scored by weights that never saw it: "
+                     "development scores")
+            if "m.s2" in nodes and s2_label != "development":
+                words += f", S2's {s2_label.removeprefix('development').strip(' ()')}"
+        else:
+            words = f"{CAPTION_WINDOW.get(w, w)} ({span_words(span)})"
+        chained = _union([(fig[n].get("chained") or {}).get("span") for n in nodes])
+        if chained and chained[0] > span[0]:
+            words += f"; one day ahead from {_month(chained[0])}"
+        parts.append(f"{who} on {words}")
+    s5 = (fig.get("m.s5") or {}).get("oracle") or {}
+    if s5.get("span"):
+        parts.append(f"S5 {span_words(s5['span'])}")
+    line = f"Pills: {' · '.join(parts)}." if parts else ""
+    pills = [(n, p) for n, v in fig.items() if isinstance(v, dict) for p in (v.get("oracle"), v.get("chained")) if isinstance(p, dict)]
+    post = _union([p["post"].get("span") for _, p in pills if p.get("post")])
+    if post:
+        every = all(p.get("post") for n, p in pills if shown.get(n) != POST_WINDOW)
+        line += f" Post-training ({span_words(post)}) is in {'each pill’s tooltip' if every else 'the other pills’ tooltips'}."
+    return line
+
+
+def figure_counts(geo, as_of, s1: dict | None = None, s5_counts: dict | None = None) -> tuple:
     """(chip counts for stages_flowchart, the truth catalog, the claims): exclusions.figure_counts of the catalog
     and the claims as of the data end; the S1 model gaps (X-S1-NWPGAP, a weather-model fact the truth cannot
-    count) from stages_s1 for the served model at lead 1 on the two-gauge mean, the chained pill's rows; and the
-    slots (n_city_days: days any basin filed an overflow)."""
+    count) from stages_s1 for the served model at lead 1 on the two-gauge mean, the chained pill's rows; S5's own
+    rules from the build's rows (``s5_counts`` = scores['exclusions']['s5']: zone-days summed over the zones,
+    every feed and every window; an S5 rule the rows never hit is 0); and the slots (n_city_days: days any basin
+    filed an overflow)."""
     cat = X.catalog_counts(geo, as_of=as_of)
     cl = X.claims(geo, as_of=as_of)
     fc = X.figure_counts(cat, cl)
     if s1:
         cell = s1["exclusions"][s1["served_model"]]["previous_runs"][T.MEAN_SERIES]["L1"]["T1"]
-        fc["exclusions"]["X-S1-NWPGAP"] = int(cell["excluded"].get("X-S1-NWPGAP", 0))
+        n = int(cell["excluded"].get("X-S1-NWPGAP", 0))
+        fc["exclusions"]["X-S1-NWPGAP"] = fc["stages"].setdefault("s1", {})["X-S1-NWPGAP"] = n
+    if s5_counts is not None:
+        tot = {x: int(sum(units.values())) for x, units in s5_counts.items()}
+        own = {x: tot.get(x, 0) for x in SP.STAGE["s5"]["exclusions"] if SP.EXCLUSIONS[x]["group"] == "S5"}
+        fc["exclusions"].update(own)
+        fc["stages"]["s5"] = {**tot, **own}
     ev = T.ledger_events(geo)
     fc["slots"] = {"n_city_days": int(ev.loc[ev["date"] <= pd.Timestamp(as_of), "date"].nunique())}
     return fc, cat, cl
@@ -986,6 +1239,25 @@ def _sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+# Inputs whose file holds a build clock: hashed without it, so rebuilding them on unchanged data (same scores,
+# a new built_at) leaves every manifest that pins them current. Their other bytes still count, as code does.
+UNSTAMPED = {S1_SCORES: ("built_at",)}
+
+
+def input_sha(path: Path) -> str:
+    """The sha256 a manifest pins for an input: the file's bytes, or for an UNSTAMPED json its content with the
+    clock keys dropped (sorted keys, compact separators), so only a change in what it says makes it stale."""
+    path = Path(path)
+    drop = next((keys for p, keys in UNSTAMPED.items() if Path(p).resolve() == path.resolve()), None)
+    if drop is None:
+        return _sha(path)
+    doc = json.loads(path.read_text())
+    if not isinstance(doc, dict):
+        raise ValueError(f"{path.name} is not a json object: cannot drop {drop}")
+    body = {k: v for k, v in doc.items() if k not in drop}
+    return hashlib.sha256(json.dumps(body, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()).hexdigest()
+
+
 def code_files() -> list:
     """Every module of this repository the build has imported (this one included; never tests/ or a venv), for
     the manifest's code sha256s: the artifacts are stale when any of them changes, as when an input does."""
@@ -1004,21 +1276,24 @@ def code_files() -> list:
 
 
 def stale_files(manifest_: dict) -> list:
-    """The manifest's inputs and code files that are missing or changed since it was written."""
-    files = {**manifest_["inputs"], **manifest_.get("code", {})}
-    return [f for f, h in files.items() if not (REPO / f).exists() or _sha(REPO / f) != h]
+    """The manifest's inputs and code files that are missing or changed since it was written (inputs by
+    ``input_sha``, so an UNSTAMPED input's clock never makes it stale; code by its bytes)."""
+    stale = [f for f, h in manifest_["inputs"].items() if not (REPO / f).exists() or input_sha(REPO / f) != h]
+    return stale + [f for f, h in manifest_.get("code", {}).items() if not (REPO / f).exists() or _sha(REPO / f) != h]
 
 
 def input_files(bundle: SetBundle, model: str) -> list:
     """Every file the build reads, repo-relative, for the manifest's sha256s."""
     raw = T4.RAW_DIR
     sd = T4.SERVE_DIR if bundle.is_served else CAND.candidate_dir(bundle.name)
-    files = [X.PROTOCOL, FORECAST / "live_dashboard.py", S1_SCORES, raw / "historical_rain.csv", raw / "hourly_rain_openmeteo.csv",
+    files = [X.PROTOCOL, FORECAST / "live_dashboard.py", S1_SCORES, S1.OUT_DIR / f"{model}.csv.gz", raw / "historical_rain.csv",
+             raw / "hourly_rain_openmeteo.csv",
              raw / "historical_bacteria.csv", raw / f"openmeteo_prev_runs_{model}.csv", raw / f"openmeteo_hist_forecast_{model}.csv",
              FORECAST / "data" / "csd" / "sf_csd_events.csv", FORECAST / "data" / "csd" / "sf_csd_monthly_coverage.csv",
              FORECAST / "data" / "poobot" / "samples.csv", FORECAST / "data" / "poobot" / "discharge_onsets.csv",
              FORECAST / "data" / "poobot" / "feed_status.csv", T4.SERVE_DIR / "served.json", T4.SERVE_DIR / "eval_report.json",
              T4.SERVE_DIR / "impact_table.json"]
+    files += [SMP.SOURCE_FILES[n] for n in SMP.PRECEDENCE]          # S4's truth reads all three (design D10)
     files += sorted(sd.glob("*_model.pkl")) + sorted(T4.SERVE_DIR.glob("*_volume.pkl"))
     files += [sd / n for n in ("stage2.json", "manifest.json") if (sd / n).exists()]
     import beachwatch as BW
@@ -1055,7 +1330,7 @@ def build(set_name: str = "served", root: str = "served", entries=ENTRIES, tiers
     fd = S5.feeds(geo, end=end)
     if feeds is not None:
         fd = {k: v for k, v in fd.items() if k in set(feeds) | {"watcher"}}
-    ctx = X.context(geo, end=end).with_inputs(nwp=E.nwp_hours(model), feeds=fd,
+    ctx = X.context(geo, end=end).with_inputs(nwp=E.nwp_hours(model), feeds=fd, unmasked=E.issue_time_unmasked(),
                                                rain_series={k: s2set.models[k]["rain_source"] for k in s2set.keys})
     blocks = T.blocks(end=end).set_index("date")
     tr = truths(geo, end)
@@ -1257,7 +1532,8 @@ def make_scores(bundle: SetBundle, rows: dict, rung: pd.DataFrame, ctx: X.Contex
     """scores.json (design §7, protocol §4–§6): per stage {unit | pooled: {entry: {window: bundle}}} with each row's
     reference from its fold's training days; s2_volume; s5 and the paired comparisons; the exclusion counts and
     the partition of the build's rows; the claims and the truth catalog; the figure's counts; the integrity
-    checks; the figure per window. No clock, so a rebuild on the same inputs gives the same file."""
+    checks; the figure on each stage's powered window (``figure``, FIGURE_WINDOWS) and one per window. No clock,
+    so a rebuild on the same inputs gives the same file."""
     geo = bundle.geo
     out = {"schema": SCORES_SCHEMA, "set": bundle.name, "geography": geo.version, "protocol": S2.protocol_stamp(),
            "as_of": str(end.date()), "windows": {**{t: dict(S2._TIER_TEXT[t]) for t in TIERS},
@@ -1283,6 +1559,8 @@ def make_scores(bundle: SetBundle, rows: dict, rung: pd.DataFrame, ctx: X.Contex
             r["ref"] = references(r, pools[st])
         rows[st]["ref"] = r["ref"].to_numpy()
         out[st] = score_stage(r, st, blocks, n_boot)
+        if st == "s3":
+            out["s3_on_oracle_rows"] = score_on_rows(r, "oracle", blocks, n_boot)
         if st == "s2":
             out["s2_volume"] = score_volume(r, ctx, ctx_by_tier, basin_vol, blocks, n_boot)
         for e in sorted(set(r["entry"]) - {"oracle"}):
@@ -1311,15 +1589,17 @@ def make_scores(bundle: SetBundle, rows: dict, rung: pd.DataFrame, ctx: X.Contex
     out["exclusions"] = {st: c["exclusions"].get(st, {}) for st, c in counts.items()}
     out["partition"] = {st: c["partition"].get(st, {}) for st, c in counts.items()}
     s1 = json.loads(S1_SCORES.read_text()) if S1_SCORES.exists() else None
-    fc, cat, cl = figure_counts(geo, end, s1)
+    s1_post = S1.post_training(s1["served_model"]) if s1 else None
+    fc, cat, cl = figure_counts(geo, end, s1, out["exclusions"].get("s5") if len(rows.get("s5", ())) else None)
     out["claims"] = cl
     out["catalog"] = cat
     out["figure_counts"] = fc
     out["integrity"] = integrity
     out["dropped"] = dropped
-    out["figures"] = {w: figure(out, w, s1, geo) for w in TIERS}
-    out["figure_window"] = FIGURE_WINDOW
-    out["figure"] = out["figures"].get(FIGURE_WINDOW, {})
+    out["figures"] = {w: figure(out, w, s1, geo, s1_post) for w in TIERS}
+    out["figure_window"] = figure_windows(out)
+    out["figure_post_window"] = POST_WINDOW
+    out["figure"] = figure(out, FIGURE_WINDOWS, s1, geo, s1_post, fallback=True)
     return V.clean(out)
 
 
@@ -1384,7 +1664,8 @@ def manifest(bundle: SetBundle, entries, tiers, steps, model: str, end, n_boot: 
                         "freeze": str(X.freeze_date().date()), "seasons": list(S2.T2_SEASONS), "data_end": str(end.date()),
                         "tiers": list(tiers), "t2_label": S2.T2_LABEL},
             "entries": list(entries), "steps": list(steps), "weather_model": model, "bootstrap": {"n": n_boot, "seed": SEED},
-            "inputs": {str(p.relative_to(REPO)): _sha(p) for p in input_files(bundle, model)},
+            "inputs": {str(p.relative_to(REPO)): input_sha(p) for p in input_files(bundle, model)},
+            "inputs_unstamped": {str(Path(p).relative_to(REPO)): list(k) for p, k in UNSTAMPED.items()},
             "code": {str(p.relative_to(REPO)): _sha(p) for p in code_files()}}
 
 
@@ -1456,7 +1737,10 @@ def main(argv=None) -> None:
               steps=tuple(a.steps.split(",")), seasons=tuple(int(s) for s in a.seasons.split(",")) if a.seasons else None)
     fig = b.scores.get("figure") or {}
     for node, v in fig.items():
-        print(f"  {node:6} " + "  ".join(f"{k} {x['v']:+.3f}" for k, x in v.items() if isinstance(x, dict) and x and x.get("v") is not None))
+        if isinstance(v, dict):
+            print(f"  {node:6} " + "  ".join(f"{k} {x['v']:+.3f}" for k, x in v.items() if isinstance(x, dict) and x and x.get("v") is not None))
+    if fig.get("caption"):
+        print(f"  {fig['caption']}")
     if a.write:
         for p in write(b):
             print(f"wrote {p.relative_to(REPO)} ({p.stat().st_size / 1e6:.2f} MB)")

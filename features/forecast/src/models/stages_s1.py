@@ -472,6 +472,25 @@ def build(served: str | None = None) -> tuple[dict, dict]:
     return by_model, res
 
 
+def post_training(served: str | None = None, model_rows: pd.DataFrame | None = None, fl: pd.DataFrame | None = None,
+                  ctx: X.Context | None = None) -> dict:
+    """S1's figure cells on post-training days only (protocol §2's T1 dates, 2025-11-01 → the data end), the days
+    the other stages' post-training scores cover: the served model at lead 1 on the two-gauge mean (the S1
+    primary) and the floor, either-wet MAE with ISO-week CIs as in s1_scores.json. S1 has no fitted weights, so
+    these days are no cleaner than the rest of its window; stages_build puts them in the figure's tooltips.
+    Reads the written rows (``load_rows``) and rebuilds the floor's unless given."""
+    served = served or served_model()
+    lo, hi = X.POST_START, window_end()
+    r = load_rows(served) if model_rows is None else model_rows
+    fl = floor_rows(ctx) if fl is None else fl
+    out = {"window": [str(lo.date()), str(hi.date())], "model": served,
+           "lead1": _suite(_scored(r, PRIMARY["lead"], PRIMARY["series"], lo=lo, hi=hi)), "floor": {}}
+    for g in GAUGES:
+        other = GAUGES[1] if g == GAUGES[0] else GAUGES[0]
+        out["floor"][f"{other} as {g}"] = _suite(_scored(fl, -1, g, lo=lo, hi=hi))
+    return out
+
+
 def peak_partition(model_rows: pd.DataFrame, ctx: X.Context | None = None) -> dict:
     """The peak table's partition through exclusions itself (table 'peak': S1's order, then X-S1-PEAK)."""
     ctx = (ctx or context()).with_inputs(nwp=E.nwp_hours(model_rows["model"].iloc[0]))

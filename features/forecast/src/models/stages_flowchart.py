@@ -8,11 +8,17 @@ leaves out, and what the forecast does not claim (STAGES_DESIGN.md §1).
     svg, phone_html = render("geo_v1", scores=fig, counts=n)    # a scored set
 
 `scores` is scores.json["figure"] ({node id: {"oracle": {"v", "lo", "hi", "n",
-"pos", "low_power"}, "chained": {...}, "lead": [{"v"} × 6]}}); `counts` maps a
-rule id (X-… / C-…) or a count slot (n_city_days) to a number, flat or as
-{"exclusions": {…}, "claims": {…}}. Missing values print "—", never a
-placeholder. The page that embeds the figure includes svgkit.FIT_SCRIPT once
-and the icon sprite (svgkit.sprite()); logos are /static/ URLs.
+"pos", "low_power"}, "chained": {...}, "lead": [{"v"} × 6]}, "caption": str});
+a pill may also carry "window" (the words for where its number comes from),
+"post" (the post-training pill) and "also" ([pill with "what"]), which its
+tooltip prints beside its own CI. `counts` maps a rule id (X-… / C-…) or a
+count slot (n_city_days) to a number, flat or as {"exclusions": {…},
+"claims": {…}, "stages": {stage: {…}}} (a chip reads its own stage's count
+first). Missing values print "—", never a placeholder; a pill fades only when
+its own cell is X-POWER. ``caption(scores)`` is the one line the page prints
+under the figure title. The page that embeds the figure includes
+svgkit.FIT_SCRIPT once and the icon sprite (svgkit.sprite()); logos are
+/static/ URLs.
 
 The S3 inset draws the geography's own links from shared/geography.py. Node
 text follows the geography it is drawn for (Part B 15): the served GEO_V1 set
@@ -109,18 +115,27 @@ def _val(entry):
     return _num(entry["v"] if isinstance(entry, dict) and "v" in entry else entry)
 
 
+UNIT_FMTS = ("bss", "inches", "delta")
+METRIC_WORD = {"bss": "BSS", "inches": "wet-day error", "delta": "change in Brier"}   # never BSS or skill for a change
+
+
 def fmt_score(v, unit_fmt: str) -> str:
-    """BSS to 2 dp; S1's wet-day error in inches (0.21″). A real minus sign."""
+    """BSS to 2 dp; S1's wet-day error in inches (0.21″); S5's change in Brier signed to 3 dp (−0.035, +0.080).
+    A real minus sign."""
+    if unit_fmt not in UNIT_FMTS:
+        raise KeyError(f"unknown unit_fmt {unit_fmt!r}; known: {UNIT_FMTS}")
     if v is None:
         return D
-    return (f"{v:.2f}″" if unit_fmt == "inches" else f"{v:.2f}").replace("-", "−")
+    s = f"{v:.2f}″" if unit_fmt == "inches" else (f"{v:+.3f}" if unit_fmt == "delta" else f"{v:.2f}")
+    return s.replace("-", "−")
 
 
-def _score_tip(label: str, entry, unit_fmt: str) -> str:
+def _cell_words(entry, unit_fmt: str) -> str:
+    """'BSS 0.54 [−0.07, 0.76], n = 854, 12 positives; too few to decide' for one cell."""
     v = _val(entry)
     if v is None:
-        return f"{label}: not scored yet"
-    s = f"{label}: {'wet-day error' if unit_fmt == 'inches' else 'BSS'} {fmt_score(v, unit_fmt)}"
+        return "not scored yet"
+    s = f"{METRIC_WORD[unit_fmt]} {fmt_score(v, unit_fmt)}"
     if isinstance(entry, dict):
         if _num(entry.get("lo")) is not None and _num(entry.get("hi")) is not None:
             s += f" [{fmt_score(_num(entry['lo']), unit_fmt)}, {fmt_score(_num(entry['hi']), unit_fmt)}]"
@@ -130,6 +145,24 @@ def _score_tip(label: str, entry, unit_fmt: str) -> str:
             s += f", {_whole(entry['pos'])} positives"
         if entry.get("low_power"):
             s += "; too few to decide"
+    return s
+
+
+def _score_tip(label: str, entry, unit_fmt: str) -> str:
+    """A pill's tooltip: its number with CI, n and positives; where it comes from; any other numbers the build
+    gave beside it ("also"); and the post-training number with its own CI ("post")."""
+    if _val(entry) is None:
+        return f"{label}: not scored yet"
+    s = f"{label}: {_cell_words(entry, unit_fmt)}"
+    if isinstance(entry, dict):
+        if isinstance(entry.get("window"), str) and entry["window"]:
+            s += f" · {entry['window']}"
+        for a in entry.get("also") or ():
+            if isinstance(a, dict) and _val(a) is not None:
+                s += f" · {a.get('what', 'also')}: {_cell_words(a, unit_fmt)}"
+        post = entry.get("post")
+        if isinstance(post, dict):
+            s += f" · {post.get('window') or 'post-training'}: {_cell_words(post, unit_fmt)}"
     return s
 
 
@@ -161,6 +194,20 @@ def _slots(counts) -> dict:
 
 
 WORD_SLOTS = ("weather_model",)       # slots filled with words; every other {slot} is a count
+
+
+def _count_of(counts: dict, stage: str, rule: str):
+    """A rule's count as a stage's chip reads it: the stage's own total when the counts carry one (``stages``,
+    exclusions.figure_counts: X-LEDGER-SUSPECT is basin-days in S2's chip, zone-days in S3's), else the flat one."""
+    own = (counts.get("stages") or {}).get(str(stage).lower())
+    if isinstance(own, dict) and rule in own:
+        return own[rule]
+    return counts.get(rule)
+
+
+def fmt_rule(counts: dict, stage: str, rule: str) -> str:
+    v = _count_of(counts, stage, rule)
+    return D if v is None else _whole(v)
 
 
 def _fill(line: str, counts: dict) -> str:
@@ -221,13 +268,20 @@ def _tile(x, y, n: dict, static: str) -> str:
     return K.logo_tile(x, y, n["logo"], static=static) if n.get("logo") else K.icon_tile(x, y, n["icon"])
 
 
-def _node_tip(n: dict) -> str:
+def _node_tip(n: dict, counts: dict | None = None) -> str:
     s = SP.STAGE_OF_CODE.get(n["stage"])
     if n["kind"] in ("stage", "output") and s:
         return f"{n['id']} · truth: {s['truth']}; oracle: {s['oracle']}; chained: {s['chained']}"
     if n["kind"] == "exclusion" and s:
-        rules = [f"{x} {SP.EXCLUSIONS[x]['chip']}: {SP.EXCLUSIONS[x]['plain']}" for x in s["exclusions"]]
-        return f"{n['id']} · " + " | ".join(rules)
+        rules = []
+        for x in s["exclusions"]:
+            e = SP.EXCLUSIONS[x]
+            words = f"{x} {e['chip']}: {e['plain']}"
+            v = _count_of(counts or {}, s["id"], x)
+            if e.get("zero") and v is not None and _whole(v) == "0":
+                words += f" (0: {e['zero']})"
+            rules.append(words)
+        return f"{n['id']} · " + " | ".join(rules) + (f" | {n['tip']}" if n.get("tip") else "")
     if n["kind"] == "claim":
         return f"{n['id']} · " + " | ".join(f"{c}: {SP.CLAIMS[c]['plain']}" for c in n["claims"])
     return f"{n['id']}" + (f" · {n['tip']}" if n.get("tip") else "")
@@ -253,7 +307,7 @@ def _pill(cls: str, label: str, entry, unit_fmt: str, x, y, w) -> str:
 def render_node(n: dict, ins: dict, scores: dict, counts: dict, static: str) -> str:
     x, y, w, h = n["box"]
     k = n["kind"]
-    o = [f'<a href="#{n["anchor"]}"><title>{K.esc(_node_tip(n))}</title>'
+    o = [f'<a href="#{n["anchor"]}"><title>{K.esc(_node_tip(n, counts))}</title>'
          f'<rect class="{BOX_CLASS[k]}" x="{x}" y="{y}" width="{w}" height="{h}" rx="{12 if k in ("exclusion", "claim") else 14}"/>']
     if k == "claim":
         o.append(K.text("col up", n["title"], x + 16, y + 19, w - 32, 11.5, PC["col up"], 9))
@@ -266,8 +320,8 @@ def render_node(n: dict, ins: dict, scores: dict, counts: dict, static: str) -> 
     elif k == "exclusion":
         o.append(K.text("xh", n["title"], x + 14, y + 17, w - 28, 10.5, PC["xh"], 8))
         for i, line in enumerate(n["items"]):
-            words = " · ".join(f"{t} {fmt_count(counts, rid)}" if SP.EXCLUSIONS[rid]["counted"] else t for t, rid in line)
-            o.append(K.text("xs", words, x + 14, y + 32 + i * 14, w - 28, 11.5, PC["xs"], 8.5))
+            words = " · ".join(f"{t} {fmt_rule(counts, n['stage'], rid)}" if SP.EXCLUSIONS[rid]["counted"] else t for t, rid in line)
+            o.append(K.text("xs", words, x + 14, y + SP.CHIP_TOP + i * SP.CHIP_LINE, w - 28, 11.5, PC["xs"], 8.5))
     elif k in ("stage", "output"):
         s = SP.STAGE_OF_CODE[n["stage"]]
         sc = scores.get(n["id"]) or {}
@@ -278,28 +332,31 @@ def render_node(n: dict, ins: dict, scores: dict, counts: dict, static: str) -> 
         o.append(K.text("q", n["q"], x + 62, y + 47, w - 62 - 8, 12, PC["q"], 9))
         if n.get("inset"):
             o.append(inset_svg(x, y + 54, ins))
+        both = bool(n.get("pills")) and bool(n.get("lead"))     # OUT: the lead strip, then the pills like every card
         for i, line in enumerate(n.get("lines", ())):
-            o.append(K.text("s", _fill(line, counts), x + 14, y + (66 if wide else 72) + i * 16, w - 28, 13, PC["s"], 10))
+            o.append(K.text("s", _fill(line, counts), x + 14, y + (66 if wide or both else 72) + i * 16, w - 28, 13, PC["s"], 10))
         if n.get("pills"):
             cy = y + h - (26 if wide else 30)
             pw = 118 if wide else (w - 28 - 8) / 2
             px = x + w - 14 - 2 * pw - 8 if wide else x + 14
-            o.append(K.text("m", n["metric"], x + 14, cy + 14 if wide else cy - 6, (px - x - 22) if wide else w - 28, 11, PC["m"], 8.5))
+            if not both:                                          # OUT's pills read the strip's label above them
+                o.append(K.text("m", n["metric"], x + 14, cy + 14 if wide else cy - 6, (px - x - 22) if wide else w - 28, 11, PC["m"], 8.5))
             (a, b), keys = n["pills"], ("oracle", "chained")
             o.append(_pill("or", a, sc.get(keys[0]), s["unit_fmt"], px, cy, pw))
             o.append(_pill("ch", b, sc.get(keys[1]), s["unit_fmt"], px + pw + 8, cy, pw))
         if n.get("lead"):
-            cy = y + h - 48
-            o.append(K.text("m", n["metric"], x + 14, cy - 6, w - 28, 11, PC["m"], 8.5))
+            # label, bar baseline, day words and the tallest bar: above the pills on OUT, at the card's foot alone
+            label_y, base, day_y, tall = (y + 79, y + 104, y + 115, 20) if both else (y + h - 54, y + h - 22, y + h - 10, 26)
+            o.append(K.text("m", n["metric"], x + 14, label_y, w - 28, 11, PC["m"], 8.5))
             lead = list(sc.get("lead") or [])[:6]
             lead += [None] * (6 - len(lead))
             for i, entry in enumerate(lead):
                 v, bx = _val(entry), x + 14 + i * 33
-                bh = 4 if v is None else max(2.0, 26 * min(max(v, 0.0), 1.0))
-                day = "today" if i == 0 else f"+{i}"
-                o.append(f'<g><title>{K.esc(_score_tip(day, entry, "bss"))}</title><rect class="lead{" na" if v is None else ""}" '
-                         f'x="{bx}" y="{cy + 26 - bh:.1f}" width="24" height="{bh:.1f}" rx="3"/>'
-                         f'<text class="ax" x="{bx + 12}" y="{cy + 38}" text-anchor="middle">{day}</text></g>')
+                bh = 4 if v is None else max(2.0, tall * min(max(v, 0.0), 1.0))
+                op = ' opacity=".55"' if isinstance(entry, dict) and entry.get("low_power") else ""
+                o.append(f'<g{op}><title>{K.esc(_score_tip(SP.LEAD_TIPS[i], entry, "bss"))}</title><rect class="lead{" na" if v is None else ""}" '
+                         f'x="{bx}" y="{base - bh:.1f}" width="24" height="{bh:.1f}" rx="3"/>'
+                         f'<text class="ax" x="{bx + 12}" y="{day_y}" text-anchor="middle">{SP.LEAD_DAYS[i]}</text></g>')
     else:
         o.append(_tile(x + 10, y + (min(h, 56) - 40) / 2 + (6 if h > 60 else 0), n, static))
         lines = [_fill(line, counts) for line in n["lines"]]
@@ -347,13 +404,23 @@ def legend_svg() -> str:
     return "".join(o)
 
 
+def caption(scores=None) -> str:
+    """The one line the page prints under the figure's title: which window each stage's pills show and where the
+    post-training scores are, as stages_build wrote it into the figure ('' unscored)."""
+    fig = (scores or {}).get("figure", scores or {})
+    c = fig.get("caption") if isinstance(fig, dict) else None
+    return c if isinstance(c, str) else ""
+
+
 def svg(geo: str, scores=None, counts=None, static: str = K.STATIC) -> str:
     fig = (scores or {}).get("figure", scores or {})
     cnt = _slots(_counts_of(scores, counts))
     ns, es, ins = SP.nodes(geo), SP.edges(geo), inset_data(geo)
     vw, vh = SP.VIEW
+    cap = caption(scores)
     s = [f'<svg class="pipe" viewBox="0 0 {vw} {vh}" role="img" data-geo="{geo}" data-spec="{SP.SPEC_VERSION}">'
-         f'<title>{K.esc(SP.TITLE)} · geography {geo}, inset from {K.esc(ins["source"])}, spec {SP.SPEC_VERSION}</title><defs>']
+         f'<title>{K.esc(SP.TITLE)}{" · " + K.esc(cap) if cap else ""} · geography {geo}, inset from {K.esc(ins["source"])}, '
+         f'spec {SP.SPEC_VERSION}</title><defs>']
     for mid, col in MARKERS:
         s.append(f'<marker id="{mid}" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="{col}"/></marker>')
     s.append("</defs>")
@@ -382,7 +449,7 @@ def _not_scored(stage: dict, chip, counts: dict) -> str:
         items = [it for line in chip["items"] for it in line]
     else:
         items = [(SP.EXCLUSIONS[x]["chip"], x) for x in stage["exclusions"] if SP.EXCLUSIONS[x]["kind"] == "exclude"]
-    return ", ".join(f"{t} {fmt_count(counts, rid)}" if SP.EXCLUSIONS[rid]["counted"] else t for t, rid in items)
+    return ", ".join(f"{t} {fmt_rule(counts, stage['id'], rid)}" if SP.EXCLUSIONS[rid]["counted"] else t for t, rid in items)
 
 
 def phone(geo: str, scores=None, counts=None, static: str = K.STATIC) -> str:
@@ -414,11 +481,12 @@ def phone(geo: str, scores=None, counts=None, static: str = K.STATIC) -> str:
         parts.append(f"Graded on {st['truth']}.")
         if n.get("pills"):
             (a, b), u = n["pills"], st["unit_fmt"]
-            parts.append(f"{_cap(n['metric'])}: {a} {fmt_score(_val(sc.get('oracle')), u)} · {b} {fmt_score(_val(sc.get('chained')), u)}.")
+            parts.append(f"{_cap(n.get('pill_metric') or n['metric'])}: {a} {fmt_score(_val(sc.get('oracle')), u)} · "
+                         f"{b} {fmt_score(_val(sc.get('chained')), u)}.")
         if n.get("lead"):
             lead = list(sc.get("lead") or [])[:6]
             lead += [None] * (6 - len(lead))
-            parts.append(f"{_cap(n['metric'])}: " + " · ".join(f"{'today' if i == 0 else f'+{i}'} {fmt_score(_val(e), 'bss')}" for i, e in enumerate(lead)) + ".")
+            parts.append(f"{_cap(n['metric'])}: " + " · ".join(f"{SP.LEAD_DAYS[i]} {fmt_score(_val(e), 'bss')}" for i, e in enumerate(lead)) + ".")
         chip = N.get(st["chip"]) if st["chip"] else None
         m.append(_li(n, title, [" ".join(parts), f"Not scored: {_not_scored(st, chip, cnt)}."], static))
     m.append("</ol>")
@@ -472,6 +540,15 @@ def check(geo: str) -> list:
     for a, b in itertools.combinations(labels, 2):
         if K.rects_overlap(labels[a], labels[b]):
             bad.append(("label-on-label", a, b))
+    for n in ns:                                   # a chip's lines fit its box, even at the smallest type with 6-digit counts
+        if n["kind"] == "exclusion":
+            x, y, w, h = n["box"]
+            if SP.CHIP_TOP + SP.CHIP_LINE * (len(n["items"]) - 1) + 4 > h:
+                bad.append(("chip-overflow", n["id"], f"{len(n['items'])} lines in {h} px"))
+            for line in n["items"]:
+                words = " · ".join(f"{t} 00,000" if SP.EXCLUSIONS[rid]["counted"] else t for t, rid in line)
+                if len(words) * PC["xs"] * 8.5 > w - 28:
+                    bad.append(("chip-text", n["id"], words))
     ins = inset_data(geo)
     for (b1, z1, _), (b2, z2, _) in itertools.combinations(ins["links"], 2):
         if (b1 - b2) * (z1 - z2) < 0:
@@ -487,11 +564,15 @@ def check(geo: str) -> list:
 
 def page(geo: str, scores=None, counts=None, static: str = K.STATIC) -> str:
     fig, ph = render(geo, scores, counts, static)
+    cap = caption(scores)
+    cap = f'<p class="figcap">{K.esc(cap)}</p>' if cap else ""
     return (f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
             f'<title>Stages figure · {geo}</title><style>body{{margin:0;background:#fff;font-family:Roboto,Arial,sans-serif;color:#26272a}}'
             f'.wrap{{max-width:1440px;margin:0 auto;padding:24px}}h3{{font-size:15px;margin:18px 0 8px}}'
+            f'.figcap{{font-size:13px;color:#54576F;margin:-2px 0 10px}}'
             f'.phone{{max-width:380px;border:1px solid #d9e4e8;border-radius:24px;padding:12px 16px}}.phone .pipe-m{{display:block}}{CSS}</style></head>'
-            f'<body>{K.sprite()}<div class="wrap"><h3>Figure 1 · {geo} · spec {SP.SPEC_VERSION}</h3><div class="panel">{fig}{ph}</div>'
+            f'<body>{K.sprite()}<div class="wrap"><h3>Figure 1 · {geo} · spec {SP.SPEC_VERSION}</h3>'
+            f'{cap}<div class="panel">{fig}{ph}</div>'
             f'<h3>Phone list (what a ≤ 700 px screen shows instead)</h3><div class="phone">{ph}</div></div>{K.FIT_SCRIPT}</body></html>')
 
 

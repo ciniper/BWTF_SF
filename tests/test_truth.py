@@ -49,6 +49,7 @@ for p in (ROOT, FORECAST / "src" / "models", FORECAST / "src" / "collectors", CI
     if str(p) not in sys.path:
         sys.path.insert(0, str(p))
 
+import samples as SMP  # noqa: E402
 import scorecard as SC  # noqa: E402
 import truth as T  # noqa: E402
 import verify  # noqa: E402
@@ -115,11 +116,17 @@ VOLQ_BASIN_DAYS = {"westside": 16, "north_shore": 9, "central": 15, "south": 2}
 ZONE_DAYS = {"ocean": 43, "baker_china": 54, "north": 42, "east": 100}
 ZONE_GEO_ONLY = {"ocean": 0, "baker_china": 7, "north": 0, "east": 6}
 
-# §3.4 power: sampled zone-days (DataSF + Poo Bot), TRUTH_START → AS_OF: the design's 451 / 483 / 473 / 761.
-# With the history known (scored after X-S4-HISTUNK) the design has 390 / 418 / 439 / 712 (all the same; stages_v1's
-# 460 / 738 for North / East counted Bayside's 2016 "no discharge" months).
+# §3.4 power: sampled zone-days on the served sources (DataSF + Poo Bot, samples.DEFAULT_SOURCES), TRUTH_START →
+# AS_OF: the design's 451 / 483 / 473 / 761. With the history known (scored after X-S4-HISTUNK) the design has
+# 390 / 418 / 439 / 712 (all the same; stages_v1's 460 / 738 for North / East counted Bayside's 2016 "no discharge"
+# months).
 SAMPLED = {"ocean": 451, "baker_china": 483, "north": 473, "east": 761}
 SAMPLED_HIST_KNOWN = {"ocean": 390, "baker_china": 418, "north": 439, "east": 712}
+# The stages' S4 truth (samples.D10_SOURCES, design §3.4 and owner decision D10) adds STARDB 2016-10 → 2020-07:
+# +235 / +259 / +257 / +419 sampled zone-days (the design: "≈ 258 / 281 / 277 / 467"), +170 / +190 / +257 / +419 with
+# the history known (Westside's STARDB days before Oceanside's ledger, 2017-12, are not).
+SAMPLED_D10 = {"ocean": 686, "baker_china": 742, "north": 730, "east": 1180}
+SAMPLED_D10_HIST_KNOWN = {"ocean": 560, "baker_china": 608, "north": 696, "east": 1131}
 
 # Rain storms (protocol §6) on the gauge record 2016-01-01 → AS_OF, and storm-level zone truth (§3.3 a).
 N_STORMS, N_BLOCKS, N_STORMS_IN_SPAN = 146, 482, 141
@@ -235,7 +242,7 @@ def test_zone_overflow_reproduces_the_scorecard_outside_the_archive_window():
 
 def test_zone_elevated_is_the_scorecards_elevated_label():
     sc = _scorecard()
-    el = T.zone_elevated(G.GEO_V1, end=sc["span"][1])
+    el = T.zone_elevated(G.GEO_V1, SMP.DEFAULT_SOURCES, end=sc["span"][1])      # the samples the served set was fit on
     mine = {(z, d.strftime("%Y-%m-%d")): bool(y) for z, d, y in zip(el["zone"], el["date"], el["y"])}
     bad = [(day["date"], zk) for day in sc["days"] for zk, z in day["zones"].items()
            if z["elevated"] != mine.get((zk, day["date"]))]
@@ -289,7 +296,7 @@ def _out_reason(day: dict, zk: str, verdict: str, row, by_date: dict, ledger_y: 
 
 def test_out_label_is_the_combined_label_on_the_ledger():
     sc = _scorecard()
-    ol = T.out_label(G.GEO_V1, end=sc["span"][1])
+    ol = T.out_label(G.GEO_V1, SMP.DEFAULT_SOURCES, end=sc["span"][1])          # the samples the served set was fit on
     rows = {(z, d.strftime("%Y-%m-%d")): r for z, d, r in zip(ol["zone"], ol["date"], ol.itertuples(index=False))}
     zo = T.zone_overflow(G.GEO_V1, end=sc["span"][1])
     ledger_y = {(z, d.strftime("%Y-%m-%d")): (None if _na(y) else int(y)) for z, d, y in zip(zo["zone"], zo["date"], zo["y"])}
@@ -525,9 +532,22 @@ def test_zone_overflow_days_and_geography_tag_as_of():
 
 
 def test_sampled_zone_days_as_of():
-    el = T.zone_elevated(G.SFPUC4_V1, end=AS_OF)
-    assert {z: int(len(g)) for z, g in el.groupby("zone", sort=False)} == SAMPLED
-    assert {z: int(g["hist_known"].sum()) for z, g in el.groupby("zone", sort=False)} == SAMPLED_HIST_KNOWN
+    served = T.zone_elevated(G.SFPUC4_V1, SMP.DEFAULT_SOURCES, end=AS_OF)
+    assert {z: int(len(g)) for z, g in served.groupby("zone", sort=False)} == SAMPLED
+    assert {z: int(g["hist_known"].sum()) for z, g in served.groupby("zone", sort=False)} == SAMPLED_HIST_KNOWN
+    el = T.zone_elevated(G.SFPUC4_V1, end=AS_OF)                                 # the stages' truth: D10's three records
+    assert {z: int(len(g)) for z, g in el.groupby("zone", sort=False)} == SAMPLED_D10
+    assert {z: int(g["hist_known"].sum()) for z, g in el.groupby("zone", sort=False)} == SAMPLED_D10_HIST_KNOWN
+    # D10 adds STARDB's 2016-10 → 2020-07 sample-days and changes no served-source day outside that window
+    a = served.set_index(["zone", "date"])
+    b = el.set_index(["zone", "date"])
+    added = b.index.difference(a.index)
+    d = added.get_level_values("date")
+    assert len(added) == sum(SAMPLED_D10.values()) - sum(SAMPLED.values()) and d.min() >= pd.Timestamp("2016-10-01") and d.max() <= pd.Timestamp("2020-07-31")
+    assert a.index.isin(b.index).all(), "every served-source sample-day is still a sample-day"
+    out = (a.index.get_level_values("date") < pd.Timestamp("2016-10-01")) | (a.index.get_level_values("date") > pd.Timestamp("2020-07-31"))
+    assert (a.loc[out, "y"] == b.loc[a.index[out], "y"]).all(), "outside STARDB's window the truth is the served sources'"
+    assert set(";".join(el["sources"]).split(";")) == {"datasf", "stardb", "poobot"}
     assert (el["n_stations_sampled"] <= el["n_stations"]).all() and (el["few"] == (2 * el["n_stations_sampled"] < el["n_stations"])).all()
     assert el["max_ratio"].notna().all() and ((el["max_ratio"] > 1) >= (el["y"] == 1)).all()
     assert el.groupby("zone")["n_stations"].first().to_dict() == {k: len(z.station_ids) for k, z in ZONES.items()}

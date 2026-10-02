@@ -7,7 +7,8 @@ of what was dropped; "over standard" exactly as shared/standards.py decides it
 the registry (STARDB's stale basin/zone columns ignored); the first-look flag
 (an exceedance in the zone on D−1 or D−2 makes D a resample, Part B 4); and
 the default sources reproduce train_v4.load_samples, which the served models
-were fit on.
+were fit on; and the stages' S4 truth, D10_SOURCES (design §3.4, owner decision
+D10), clips each record to its window before the merge.
 
 Run: venv/bin/python tests/test_samples.py
 """
@@ -150,6 +151,51 @@ def test_default_sources_reproduce_train_v4_station_day_exceedances():
     assert (a.reindex(b.index) == b).all(), int((a.reindex(b.index) != b).sum())
     assert len(old) == len(new)                                     # result for result, too
     assert set(new["source"]) == {"datasf", "poobot"}
+
+
+def test_a_window_clips_its_source_before_the_merge():
+    """(name, first, last) keeps that source's rows inside the window only, counted as outside_window; a row a
+    window drops cannot supersede another source's (the merge runs after the clip)."""
+    d_in, d_out = "2016-11-07", "2016-09-30"
+    with fixture_sources(stardb=[(d_in, OB, ENT, "900"), (d_out, OB, ENT, "900")],
+                         poobot=[(d_in, OB, ENT, "20"), (d_out, OB, ENT, "20"), ("2017-02-01", OB, ENT, "20")]):
+        df = S.load_samples((("stardb", "2016-10-01", "2020-07-31"), ("poobot", "2015-12-01", "2017-01-31")))
+        plain = S.load_samples(("stardb", "poobot"))
+    key = df.set_index(["date", "source"])["value"].to_dict()
+    assert key == {(pd.Timestamp(d_in), "stardb"): 900.0, (pd.Timestamp(d_out), "poobot"): 20.0}, key
+    rep = df.attrs["report"]
+    assert rep["dropped"]["outside_window"] == {"stardb": 1, "poobot": 1} and rep["windows"]["stardb"] == ["2016-10-01", "2020-07-31"]
+    assert rep["dropped"]["superseded"] == {"poobot": {"by_stardb": 1}}
+    assert len(plain) == 3 and plain.attrs["report"]["dropped"]["outside_window"] == {"stardb": 0, "poobot": 0}   # unclipped: STARDB wins both days
+    for bad in ((("stardb", "2020-01-01", "2019-01-01"),), ("stardb", "stardb"), ("mars",), (("poobot", None, None), "poobot")):
+        try:
+            S.load_samples(bad)
+        except ValueError:
+            continue
+        raise AssertionError(f"{bad!r} did not raise")
+
+
+def test_d10_is_the_design_and_the_served_default_is_unchanged():
+    """D10_SOURCES is design §3.4's truth exactly — DataSF 2020-07 →, Poo Bot 2015-12 → 2017-01, STARDB 2016-10 →
+    2020-07 — and nothing served moved: DEFAULT_SOURCES is still DataSF + Poo Bot (what train_v4.load_samples and
+    the served models read; test_default_sources_reproduce_… pins the rows), and no served-path module reads the
+    stages' records."""
+    assert S.DEFAULT_SOURCES == ("datasf", "poobot")
+    assert S.windows(S.D10_SOURCES) == {"datasf": (pd.Timestamp("2020-07-01"), None),
+                                        "stardb": (pd.Timestamp("2016-10-01"), pd.Timestamp("2020-07-31")),
+                                        "poobot": (pd.Timestamp("2015-12-01"), pd.Timestamp("2017-01-31"))}
+    df = S.load_samples(S.D10_SOURCES)
+    assert not df.duplicated(S.KEY).any()
+    span = {src: (g["date"].min(), g["date"].max()) for src, g in df.groupby("source")}
+    assert span["datasf"][0] >= pd.Timestamp("2020-07-01") and span["poobot"][1] <= pd.Timestamp("2017-01-31")
+    assert span["stardb"][0] >= pd.Timestamp("2016-10-01") and span["stardb"][1] <= pd.Timestamp("2020-07-31")
+    rep = df.attrs["report"]                                     # as of 2026-10-02: the 2016-10 → 2017-01 Poo Bot results are STARDB's
+    assert rep["dropped"]["superseded"] == {"poobot": {"by_stardb": 981}, "stardb": {"by_datasf": 45}}, rep["dropped"]["superseded"]
+    assert rep["superseded_value_differs"] == {}
+    for f in ("train_v4.py", "train_v2.py", "scorecard.py", "impact.py", "stage2.py", "live_rules.py"):
+        text = (FORECAST / "src" / "models" / f).read_text()
+        assert "D10_SOURCES" not in text and "import samples" not in text, f
+    assert "D10_SOURCES" not in (FORECAST / "live_dashboard.py").read_text()
 
 
 def test_zone_sample_days_on_the_record():

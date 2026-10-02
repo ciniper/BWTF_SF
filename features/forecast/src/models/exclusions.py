@@ -51,9 +51,19 @@ exclusions ledger and the figure's chips show before any model row exists.
   posting, so South is not flagged). A window with no wet day and a day no
   gauge recorded raises: unknown is not dry. A zone row (S3) is suspect when
   any feeding basin's day is, as X-S3-UNCOV reads coverage.
-- X-S2-OUTAGEIN reads the gauges behind the basin's rain series over the 30
-  input days that are gauge days: D−29…D for the oracle and rain known, up to
-  D−L−1 for lead L, and the 7-day window for as served.
+- X-S2-OUTAGEIN reads the gauges behind the basin's rain series over the
+  input days that are gauge days, on the record the row's entry read: D−29…D
+  for the oracle and rain known (the whole record's gauge_outage_v1 mask);
+  D−29…D−L−1 for lead L, and as served the live frame's 7 past days
+  D−L−7…D−L−1 (stages_entries.SERVED_PAST_DAYS), both on the issue day's
+  record: a gauge-day the whole-record mask hides that the gauges through
+  I − 1 could not yet call an outage (stages_entries.issue_time_unmasked) was
+  read as filed, so it is not a masked day of that row's window. Lead rows
+  need it as a build input (``Context.unmasked``); without it they raise.
+- S4's truth and OUT's label read the stages' sample record,
+  samples.D10_SOURCES (design §3.4, owner decision D10: DataSF 2020-07 →,
+  Poo Bot 2015-12 → 2017-01, STARDB 2016-10 → 2020-07, de-duplicated), so do
+  the sample triggers of X-LEDGER-SUSPECT and the claims.
 - X-S3-NOTCLEAN: a zone's sibling is another zone its feeding basins reach.
 - X-S5-CIRC: "Westside" is the basin whose ledger knows no day of the feed
   archive window, so its archive-era truth can only have been the feed.
@@ -368,7 +378,7 @@ def _suspect(geo: G.Geography, sources: tuple, start, end) -> tuple[list, set]:
     return episodes, set(flagged)
 
 
-def ledger_suspect(geo, start=T.TRUTH_START, end=None, sources=SMP.DEFAULT_SOURCES) -> list[dict]:
+def ledger_suspect(geo, start=T.TRUTH_START, end=None, sources=SMP.D10_SOURCES) -> list[dict]:
     """X-LEDGER-SUSPECT's windows (Part B 8; protocol §7), merged into episodes per basin, with reasons.
 
     A trigger is a CSO-cause BeachWatch posting onset (``truth.postings``: cause_class 'cso' and a new
@@ -407,7 +417,9 @@ class Context:
     C-RUNOFF); postings_end: BeachWatch's last filing (X-PL-END); suspect: ``ledger_suspect``'s
     episodes; circ_zones: the zones X-S5-CIRC covers.
     The build adds what only it has: nwp (one weather model's archive, (date, lead) → archived hours),
-    feeds ({feed: DataFrame[date, zone, basin]}, S5) and watcher (date → healthy, S5 live era).
+    feeds ({feed: DataFrame[date, zone, basin]}, S5), watcher (date → healthy, S5 live era) and unmasked
+    (DataFrame[issue, date, gauge]: stages_entries.issue_time_unmasked, the gauge-days the issue day's
+    record had not yet masked; X-S2-OUTAGEIN on lead rows).
     """
     geo: G.Geography
     start: pd.Timestamp
@@ -425,10 +437,13 @@ class Context:
     feeds: dict | None = None
     watcher: pd.Series | None = None
     peak_truth: bool = False      # X-S1-PEAK fires on every day until KSFO hourly truth is committed
+    unmasked: pd.DataFrame | None = None
 
-    def with_inputs(self, nwp=None, feeds=None, watcher=None, rain_series=None) -> "Context":
+    def with_inputs(self, nwp=None, feeds=None, watcher=None, rain_series=None, unmasked=None) -> "Context":
         """A copy with a build's inputs added (checked); see ``context``."""
         kw = {}
+        if unmasked is not None:
+            kw["unmasked"] = _check_unmasked(unmasked)
         if nwp is not None:
             kw["nwp"] = _check_nwp(nwp)
         if feeds is not None:
@@ -473,6 +488,23 @@ def _check_feed(geo: G.Geography, name, f: pd.DataFrame) -> pd.DataFrame:
     if basins - set(geo.keys):
         raise KeyError(f"feed {name!r} names basins {geo.version} lacks: {sorted(basins - set(geo.keys))}")
     return out.reset_index(drop=True)
+
+
+def _check_unmasked(u: pd.DataFrame) -> pd.DataFrame:
+    """stages_entries.issue_time_unmasked's frame, checked: (issue, date, gauge), each gauge-day before its issue day."""
+    need = {"issue", "date", "gauge"}
+    if not need <= set(u.columns):
+        raise ValueError(f"unmasked needs columns {sorted(need)}, has {sorted(u.columns)}")
+    f = pd.DataFrame({"issue": pd.to_datetime(u["issue"]).dt.normalize(), "date": pd.to_datetime(u["date"]).dt.normalize(),
+                      "gauge": u["gauge"].astype(str)})
+    bad = set(f["gauge"]) - set(T.GAUGE_SERIES)
+    if bad:
+        raise KeyError(f"unmasked names gauges that are not {T.GAUGE_SERIES}: {sorted(bad)}")
+    if (f["date"] >= f["issue"]).any():
+        raise ValueError("an unmasked gauge-day is not before its issue day: the issue day reads the gauges through I − 1")
+    if f.duplicated().any():
+        raise ValueError("unmasked repeats an (issue, date, gauge)")
+    return f.reset_index(drop=True)
 
 
 def _check_rain_series(geo: G.Geography, rs: dict) -> dict:
@@ -605,13 +637,15 @@ def _aligned(*frames, ref) -> None:
             raise AssertionError(f"truth frames are not aligned by {col} and day")
 
 
-def context(geo, start=T.TRUTH_START, end=None, sources=SMP.DEFAULT_SOURCES, nwp=None, feeds=None, watcher=None,
-            rain_series=None) -> Context:
+def context(geo, start=T.TRUTH_START, end=None, sources=SMP.D10_SOURCES, nwp=None, feeds=None, watcher=None,
+            rain_series=None, unmasked=None) -> Context:
     """The rules' context for ``geo`` over [start, end] (default end: the last day the ledger grid, the
-    gauges and the samples all cover). Optional build inputs: nwp (DataFrame date, lead, n_hours: one
+    gauges and the samples all cover). ``sources``: the lab record S4 and OUT are graded on (default the
+    stages' S4 truth, samples.D10_SOURCES). Optional build inputs: nwp (DataFrame date, lead, n_hours: one
     weather model's archive), feeds ({'oracle' | 'archive' | 'degraded[:seed]' | 'watcher': DataFrame
-    date, zone, basin}), watcher (Series date → healthy) and rain_series ({basin: series}, the set's own
-    stamp; default the geography's). See ``perfect_feed`` and ``archive_feed`` for the two truth feeds."""
+    date, zone, basin}), watcher (Series date → healthy), rain_series ({basin: series}, the set's own
+    stamp; default the geography's) and unmasked (stages_entries.issue_time_unmasked(), for S2 lead rows).
+    See ``perfect_feed`` and ``archive_feed`` for the two truth feeds."""
     geo = _geo(geo)
     sources = tuple(sources)
     hi = _data_end(sources)
@@ -622,7 +656,7 @@ def context(geo, start=T.TRUTH_START, end=None, sources=SMP.DEFAULT_SOURCES, nwp
     if start > end:
         raise ValueError(f"start {start.date()} is after end {end.date()}")
     ctx = _truth_context(geo, start, end, sources)
-    return ctx.with_inputs(nwp=nwp, feeds=feeds, watcher=watcher, rain_series=rain_series)
+    return ctx.with_inputs(nwp=nwp, feeds=feeds, watcher=watcher, rain_series=rain_series, unmasked=unmasked)
 
 
 def perfect_feed(geo, start=T.TRUTH_START, end=None) -> pd.DataFrame:
@@ -791,12 +825,20 @@ def _nwp(gap: bool):
 
 
 def _outage_in(v, ctx):
-    """A gauge_outage_v1 day among the gauge days of the row's 30-day input window (lead-aware)."""
+    """A masked gauge day among the gauge days of the row's input window, on the record its entry read.
+
+    Window: D−29…D for the oracle and rain known; D−29…D−L−1 for lead L; as served, the live frame's 7 past
+    days D−L−7…D−L−1. Rain known reads the whole record's gauge_outage_v1 mask (``ctx.outage``). A lead entry
+    reads the gauges through its issue day I − 1 as I knew them: the gauge-days the whole record masks but I
+    could not yet call an outage (``ctx.unmasked``, stages_entries.issue_time_unmasked) were read as filed, so
+    they are not masked days of its window."""
     gauges_of = {T.MEAN_SERIES: T.GAUGE_SERIES, **{g: (g,) for g in T.GAUGE_SERIES}}
-    lead = np.where(np.isnan(v.lead), -1, v.lead).astype(int)
+    has_lead = ~np.isnan(v.lead)
+    lead = np.where(has_lead, v.lead, -1).astype(int)
     last = v.date - pd.to_timedelta(lead + 1, unit="D")                       # oracle / rain: lead −1 → D
-    served = np.array([e.endswith("s") for e in v.entry])
-    first = v.date - pd.to_timedelta(np.where(served, AS_SERVED_DAYS - 1, INPUT_DAYS - 1), unit="D")
+    served = np.array([_lead_of(e) is not None and e.endswith("s") for e in v.entry])
+    back = np.where(served, lead + AS_SERVED_DAYS, INPUT_DAYS - 1)            # as served: I − 7 = D − L − 7
+    first = v.date - pd.to_timedelta(back, unit="D")
     cum = ctx.outage
     pos = lambda d: np.searchsorted(cum.index.to_numpy(), d.to_numpy(), side="right") - 1  # noqa: E731
     i_last, i_before = pos(last), pos(first - pd.Timedelta(days=1))
@@ -806,6 +848,21 @@ def _outage_in(v, ctx):
         for g in gauges_of[ctx.rain_series[b]]:
             c = np.r_[0, cum[g].to_numpy()]                                   # c[i + 1] = outage days through index i
             n[m] += c[i_last[m] + 1] - c[i_before[m] + 1]
+    if has_lead.any():
+        if ctx.unmasked is None:
+            raise ValueError("S2 lead rows read the gauges as their issue day knew them: "
+                             "context(..., unmasked=stages_entries.issue_time_unmasked())")
+        u = ctx.unmasked
+        if len(u):
+            issue = (v.date - pd.to_timedelta(lead, unit="D")).to_numpy()
+            cells = {k: pd.DatetimeIndex(g["date"]).sort_values().to_numpy() for k, g in u.groupby(["issue", "gauge"])}
+            for i in np.flatnonzero(has_lead):
+                for g in gauges_of[ctx.rain_series[v.unit[i]]]:
+                    d = cells.get((pd.Timestamp(issue[i]), g))
+                    if d is not None:
+                        n[i] -= np.count_nonzero((d >= first[i].to_datetime64()) & (d <= last[i].to_datetime64()))
+        if (n < 0).any():
+            raise AssertionError("an issue day's unmasked gauge-day is not a whole-record outage day: the mask and the record disagree")
     return n > 0
 
 
@@ -1106,7 +1163,7 @@ def unmonitored() -> dict:
     return out
 
 
-def claims(geo, as_of=AS_OF, sources=SMP.DEFAULT_SOURCES) -> dict:
+def claims(geo, as_of=AS_OF, sources=SMP.D10_SOURCES) -> dict:
     """What the forecast does not claim, from TRUTH_START to ``as_of`` (§4.2; protocol §7, Part B 3).
 
       C-DRY     a sampled exceedance with every feeding basin known on D−7…D, no zone overflow on
@@ -1182,7 +1239,7 @@ def _with_units(d: dict, units) -> dict:
     return {x: {u: int(n.get(u, 0)) for u in units} for x, n in d.items()}
 
 
-def catalog_counts(geo, as_of=AS_OF, sources=SMP.DEFAULT_SOURCES) -> dict:
+def catalog_counts(geo, as_of=AS_OF, sources=SMP.D10_SOURCES) -> dict:
     """Every §4.3 count the truth decides alone, per unit, from TRUTH_START to ``as_of``.
 
     Each stage's skeleton (every unit × day, the oracle entry) goes through the same first-match code as
@@ -1259,16 +1316,19 @@ def _single_zone_days(ctx: Context, rows: pd.DataFrame) -> np.ndarray:
 
 
 def figure_counts(catalog: dict, claim: dict | None = None) -> dict:
-    """{'exclusions': {id: n}, 'claims': {id: n}}: the totals the figure's chips print (stages_flowchart
-    takes this as ``counts``). An exclusion's total is summed over its units; a rule two stages share
-    (X-LEDGER-SUSPECT, X-PL-END) takes its first stage's. C-DRY, C-RUNOFF and C-OTHER are days, C-UNMON
-    the outfalls."""
+    """{'exclusions': {id: n}, 'stages': {stage: {id: n}}, 'claims': {id: n}}: the totals the figure's chips
+    print (stages_flowchart takes this as ``counts``). An exclusion's total is summed over its units. A chip
+    reads its own stage's total ('stages': X-LEDGER-SUSPECT is basin-days in S2's chip, zone-days in S3's);
+    the flat 'exclusions' gives a rule two stages share (X-LEDGER-SUSPECT, X-PL-END) its first stage's.
+    C-DRY, C-RUNOFF and C-OTHER are days, C-UNMON the outfalls."""
     tot: dict = {}
+    by_stage: dict = {}
     for stage, rules in catalog["exclusions"].items():
         for x, units in rules.items():
-            if RULES[x].kind != "fit_only" and x not in tot:
-                tot[x] = int(sum(units.values()))
-    out = {"exclusions": tot, "claims": {}}
+            if RULES[x].kind != "fit_only":
+                by_stage.setdefault(stage, {})[x] = int(sum(units.values()))
+                tot.setdefault(x, by_stage[stage][x])
+    out = {"exclusions": tot, "stages": by_stage, "claims": {}}
     if claim:
         for cid in ("C-DRY", "C-RUNOFF", "C-OTHER"):
             out["claims"][cid] = int(sum(claim[cid]["days"].values()))

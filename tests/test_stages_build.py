@@ -20,7 +20,16 @@ degraded:1 in T1; a 50-resample bootstrap (the CLI and ``write`` use the protoco
   - the CIs resample storm blocks (truth.blocks), seed 0; paired deltas, the ladder's drops and the S5
     primary (link_zone_swap − basin_swap) are the Brier differences on the shared rows, recomputed here;
   - the figure block holds every scored node, and the scored figure renders its numbers;
-  - the protocol stamp is the protocol file's sha; a rebuild gives the same scores.json;
+  - the figure shows each stage's powered window (S1 Previous Runs, S2 → OUT cross-season labelled
+    development, S5 its protocol window) with the post-training value and CI in each tooltip, fades only
+    the pills whose own cell is X-POWER, and carries a one-line caption; a set with post-training only shows it;
+  - S5's pills are the change in Brier of the served rule (perfect feed; the degraded feeds' mean), signed,
+    never BSS, link/zone injection in the tooltip; S5's chip prints the build's counts, 0 with its reason;
+  - OUT's card has oracle and lead-1 pills beside its lead strip; S3's chained pill is lead 1 on the oracle's
+    own rows, against its reference (every day in the tooltip);
+  - S4 is graded on design D10's three records (STARDB scores the 2019-20 season);
+  - the protocol stamp is the protocol file's sha; s1_scores.json is pinned without its built_at, every
+    other input and the code by their bytes; a rebuild gives the same scores.json;
   - writing goes only under data/models/stages/<set>/, rows only for the served set, never with B < 2,000.
 
 Counts are as of the committed data's end, 2026-08-17 (Part B 23).
@@ -445,22 +454,230 @@ def test_cis_resample_storm_blocks_and_paired_scores_are_the_brier_differences()
 
 
 def test_the_figure_has_every_scored_node_and_renders_its_numbers():
+    """One figure per window (scores['figures']); on post-training every node has both pills and they print."""
     sc = _b().scores
-    fig = sc["figure"]
+    fig = sc["figures"]["T1"]
     nodes = {s["node"] for s in SP.STAGES}
-    assert set(fig) == nodes, sorted(set(fig) ^ nodes)
+    assert set(fig) - {"caption"} == nodes, sorted(set(fig) ^ nodes)
+    assert set(sc["figure"]) - {"caption"} == nodes and set(sc["figures"]) == {"T1", "T1-holdout", "T2"}
     for node in nodes:
         for k in ("oracle", "chained"):
             assert fig[node][k] and fig[node][k]["v"] is not None, (node, k)
     assert len(fig["m.out"]["lead"]) == 6 and fig["m.out"]["lead"][1]["v"] == fig["m.out"]["chained"]["v"]
     svg, phone = F.render("geo_v1", fig, sc["figure_counts"])
-    for node in nodes - {"m.out"}:
+    for node in nodes:
         unit = SP.STAGE_OF_CODE[SP.NODE[node]["stage"]]["unit_fmt"]
         for k in ("oracle", "chained"):
             assert F.fmt_score(fig[node][k]["v"], unit) in svg, (node, k)
     assert F.fmt_count(F.flat_counts(sc["figure_counts"]), "X-S4-UNSAMPLED") in svg
     assert "{n_city_days}" not in svg and F.fmt_count(sc["figure_counts"]["slots"], "n_city_days") in svg
-    assert sc["figure_window"] == "T1" and set(sc["figures"]) == {"T1", "T1-holdout", "T2"}
+
+
+def _pills(fig: dict) -> list:
+    return [(n, k, e) for n, v in fig.items() if isinstance(v, dict) for k in ("oracle", "chained") for e in [v.get(k)] if isinstance(e, dict)]
+
+
+def test_the_figure_shows_each_stages_powered_window_with_post_training_in_the_tooltip():
+    """Fix A1: every post-training cell is X-POWER, so the figure shows each stage where it has power — S1 its
+    Previous Runs window, S2 → OUT cross-season (T2, labelled development; an existing set's S2 development
+    (selection-contaminated)), S5 its protocol window — with the post-training value and its CI in the tooltip;
+    a pill fades only when its own cell is X-POWER; a one-line caption says so."""
+    sc = _b().scores
+    fig, shown = sc["figure"], sc["figure_window"]
+    assert shown == {"m.s1": "previous_runs", "m.s2": "T2", "m.s3": "T2", "m.s4": "T2", "m.out": "T2", "m.s5": "S5"}
+    assert sc["figure_post_window"] == "T1"
+    for st, node in (("s2", "m.s2"), ("s4", "m.s4"), ("out", "m.out")):
+        t2, t1 = sc[st]["pooled"]["oracle"]["T2"], sc[st]["pooled"]["oracle"]["T1"]
+        o = fig[node]["oracle"]
+        assert (o["v"], o["lo"], o["n"], o["low_power"]) == (t2["bss"], t2["ci"]["bss"][0], t2["n"], t2["low_power"]), st
+        assert (o["post"]["v"], o["post"]["hi"], o["post"]["n"]) == (t1["bss"], t1["ci"]["bss"][1], t1["n"]), st
+        assert o["span"][0] >= "2019-07-01" and o["span"][1] <= "2020-06-30" and o["n_seasons"] == 1, (st, o["span"])
+        assert ("development (selection-contaminated)" in o["window"]) == (st == "s2") and ": development" in o["window"], st
+        assert o["post"]["window"].startswith("post-training, Nov 2025"), o["post"]["window"]
+    # chained is lead 1 on the same window: 2019-20 predates the forecast archive, so "—" (never another window)
+    assert fig["m.s2"]["chained"] is None and fig["m.out"]["lead"][1] is None and sc["figures"]["T1"]["m.s2"]["chained"]
+    assert sc["figures"]["T1"]["m.s2"]["oracle"]["v"] == sc["s2"]["pooled"]["oracle"]["T1"]["bss"] != fig["m.s2"]["oracle"]["v"]
+    # S1: the whole Previous Runs window; its post-training cells (stages_s1.post_training) in the tooltip
+    s1 = json.loads(B.S1_SCORES.read_text())
+    m = s1["by_lead"]["1"]["avg"]["models"][s1["served_model"]]
+    post = B.S1.post_training(s1["served_model"])
+    c = fig["m.s1"]["chained"]
+    assert c["v"] == m["continuous"]["either_wet"]["mae"] and c["span"] == ["2024-01-20", "2026-08-17"]
+    assert c["post"]["v"] == post["lead1"]["continuous"]["either_wet"]["mae"] and c["post"]["span"] == ["2025-11-01", "2026-08-17"]
+    assert fig["m.s1"]["oracle"]["post"]["v"] == post["floor"][B.S1_FLOOR]["continuous"]["either_wet"]["mae"]
+    # a pill fades only when its own cell is X-POWER: one faded element per X-POWER pill or lead bar, no more
+    svg = F.render("geo_v1", fig, sc["figure_counts"])[0]
+    lead = [e for e in fig["m.out"]["lead"] if isinstance(e, dict)]
+    assert svg.count('opacity=".55"') == sum(bool(e["low_power"]) for _, _, e in _pills(fig)) + sum(bool(e["low_power"]) for e in lead)
+    assert any(not e["low_power"] for _, _, e in _pills(fig)) and any(e["post"]["low_power"] for _, _, e in _pills(fig) if e.get("post"))
+    t = re.search(r"<title>(oracle: BSS [^<]*selection-contaminated[^<]*)</title>", svg).group(1)
+    assert "post-training, Nov 2025 – Aug 2026: BSS" in t and t.count("[") == 2, t        # both CIs
+    # the caption: one plain line, in the figure's title and under the page's
+    cap = fig["caption"]
+    assert cap == F.caption(sc) and cap.startswith("Pills: S1 one day ahead, Jan 2024 – Aug 2026 · S2 to OUT on 1 season"), cap
+    assert "each scored by weights that never saw it" in cap and cap.endswith("Post-training (Nov 2025 – Aug 2026) is in each pill’s tooltip."), cap
+    assert "never saw it: development scores, S2's selection-contaminated" in cap, cap      # protocol §2's label, on the face
+    assert "\n" not in cap and not re.search(r"\bT[0-3]\b|geo_v1|sfpuc4|X-[A-Z]|\bBSS\b|cost", cap), cap
+    assert f'</h3><p class="figcap">{F.K.esc(cap)}</p>' in F.page("geo_v1", fig, sc["figure_counts"]) and F.K.esc(cap) in svg
+    # a set the build does not refit per season (gb: post-training only) shows what it has, and says so
+    gb = {"s2": {"pooled": {"oracle": {"T1": sc["s2"]["pooled"]["oracle"]["T1"]}}}}
+    assert B.window_for(gb, "m.s2", "T2") == "T1" and B.window_for(gb, "m.s2", "T2", fallback=False) == "T2"
+    gbf = B.figure(gb, B.FIGURE_WINDOWS, None, B.G.GEO_V1, fallback=True)
+    assert "post" not in gbf["m.s2"]["oracle"] and "S2 on post-training days only" in gbf["caption"], gbf["caption"]
+
+
+def test_s5_pills_are_the_change_in_brier_of_the_served_rule():
+    """Fix A2: S5's pills are ΔBrier (corrected − no correction) for the set's own rule (GEO_V1: basin_swap =
+    live_v2): the perfect feed, and the degraded feeds' mean over seeds, signed, lower is better; never called
+    BSS or skill. The tooltip adds link/zone injection's value and the post-training one."""
+    sc = _b().scores
+    p = sc["figure"]["m.s5"]
+    s5 = sc["s5"]["pooled"]
+    d = s5["oracle"]["S5"]["basin_swap"]["delta_vs_plain"]
+    assert (p["oracle"]["v"], p["oracle"]["lo"], p["oracle"]["hi"]) == (d["delta"], d["lo"], d["hi"])
+    seeds = [f for f in s5 if f.startswith("degraded:")]
+    assert seeds and p["chained"]["seeds"] == len(seeds)
+    assert abs(p["chained"]["v"] - np.mean([s5[f]["S5"]["basin_swap"]["delta_vs_plain"]["delta"] for f in seeds])) < 1e-12
+    assert p["oracle"]["also"] == [dict(p["oracle"]["also"][0], v=s5["oracle"]["S5"]["link_zone_swap"]["delta_vs_plain"]["delta"],
+                                        what="link/zone injection")]
+    assert p["oracle"]["post"]["v"] == s5["oracle"]["T1"]["basin_swap"]["delta_vs_plain"]["delta"]
+    assert SP.STAGE["s5"]["unit_fmt"] == "delta" and "lower is better" in SP.NODE["m.s5"]["metric"]
+    assert F.fmt_score(-0.035, "delta") == "−0.035" and F.fmt_score(0.08, "delta") == "+0.080" and F.fmt_score(0.123, "bss") == "0.12"
+    svg, ph = F.render("geo_v1", sc["figure"], sc["figure_counts"])
+    for k in ("oracle", "chained"):
+        words = F.fmt_score(p[k]["v"], "delta")
+        assert words[0] in "+−" and f"{k} {words}" in svg and f"{k} {words}" in ph, (k, words)
+    tips = re.findall(r"<title>((?:oracle|chained): change in Brier [^<]*)</title>", svg)
+    assert len(tips) == 2 and all("lower is better" in t and "link/zone injection: change in Brier" in t for t in tips), tips
+    assert not any(re.search(r"\bBSS\b|skill", t) for t in tips), tips
+    shown = re.sub(r"<[^>]+>", " ", re.sub(r"<title>.*?</title>", " ", svg, flags=re.S))
+    assert "change in Brier (lower is better)" in shown
+
+
+def test_figure_words_on_fixture_cells():
+    """On fixture cells (no build): an S5 pill keeps its cell's seasons, so a cross-season S5 pill (scores['figures']
+    ['T2']) says how many; the degraded feeds' pill is the seeds' mean change in Brier, from the lowest seed's lower
+    bound to the highest's upper; and the caption labels cross-season pills 'development' on the face (an existing
+    set's S2 'selection-contaminated', protocol §2), since a phone shows no tooltip."""
+    span = ["2018-11-22", "2025-02-18"]
+
+    def s5(d, lo, hi, n_seasons):
+        return {"n_pos": 20, "low_power": False, "span": span, "n_seasons": n_seasons,
+                "delta_vs_plain": {"delta": d, "lo": lo, "hi": hi, "n": 100}}
+    pooled = {"oracle": {"T2": {"basin_swap": s5(-0.01, -0.03, 0.01, 3), "link_zone_swap": s5(-0.02, -0.04, 0.0, 3)}},
+              "degraded:1": {"T2": {"basin_swap": s5(0.02, 0.01, 0.05, 2), "link_zone_swap": s5(0.0, -0.01, 0.01, 2)}},
+              "degraded:2": {"T2": {"basin_swap": s5(0.04, 0.0, 0.07, 3), "link_zone_swap": s5(0.0, -0.01, 0.01, 3)}}}
+    fig = B.figure({"s5": {"pooled": pooled}}, "T2", None, B.G.GEO_V1)
+    o, c = fig["m.s5"]["oracle"], fig["m.s5"]["chained"]
+    assert "3 seasons, each scored by weights that never saw it" in o["window"], o["window"]
+    assert abs(c["v"] - 0.03) < 1e-12 and (c["lo"], c["hi"], c["seeds"], c["n_seasons"]) == (0.0, 0.07, 2, 3), c
+    assert "the mean of 2 degraded feeds" in c["window"] and "3 seasons" in c["window"], c["window"]
+    bss = {"bss": 0.5, "ci": {"bss": [0.4, 0.6]}, "n": 100, "n_pos": 20, "low_power": False,
+           "span": ["2016-07-01", "2025-06-30"], "n_seasons": 9}
+    sc = {st: {"pooled": {"oracle": {"T2": bss}}} for st in ("s2", "s4", "out")}
+    for geo, tail in ((B.G.GEO_V1, "development scores, S2's selection-contaminated"), (B.G.SFPUC4_V1, "development scores")):
+        cap = B.figure(sc, B.FIGURE_WINDOWS, None, geo)["caption"]
+        assert cap.startswith(f"Pills: S2, S4, OUT on 9 seasons (Jul 2016 – Jun 2025), each scored by weights that never saw it: {tail}."), cap
+    cap = B.figure({st: sc[st] for st in ("s4", "out")}, B.FIGURE_WINDOWS, None, B.G.GEO_V1)["caption"]
+    assert "development scores" in cap and "selection-contaminated" not in cap, cap          # S2's label only where S2 is
+
+
+def test_s5_chips_print_the_builds_counts():
+    """Fix A3: S5's not-scored chip prints the build's counts (scores['exclusions']['s5'], zone-days over every feed
+    and window), a rule that is 0 by construction prints 0 with the reason in the tooltip, and S5's own copy of
+    OUT's rules does not overwrite OUT's chip."""
+    sc = _b().scores
+    fc = sc["figure_counts"]
+    tot = {x: sum(u.values()) for x, u in sc["exclusions"]["s5"].items()}
+    for x in ("X-S5-SELF", "X-S5-PERFECT-SIBLING", "X-S5-CIRC", "X-S5-QUIET", "X-S5-HEALTH"):
+        assert fc["exclusions"][x] == fc["stages"]["s5"][x] == tot.get(x, 0), x
+    assert fc["exclusions"]["X-S5-SELF"] > 0 and fc["exclusions"]["X-S5-QUIET"] == fc["exclusions"]["X-S5-HEALTH"] == 0
+    assert fc["exclusions"]["X-E2E-UNK"] == sum(sc["catalog"]["exclusions"]["out"]["X-E2E-UNK"].values())
+    svg, ph = F.render("geo_v1", sc["figure"], fc)
+    for words in (f"the replaced day {fc['exclusions']['X-S5-SELF']:,}", "nothing seen nearby 0", "watcher down 0"):
+        assert words in svg and words in ph, words
+    tip = re.search(r'<a href="#s5"><title>(x\.s5 [^<]*)</title>', svg).group(1)
+    for x in ("X-S5-QUIET", "X-S5-HEALTH"):
+        assert f"(0: {SP.EXCLUSIONS[x]['zero']})" in tip, x
+    assert "(0: " not in tip.split("X-S5-SELF")[1].split("|")[0], "a counted rule with rows has no zero reason"
+
+
+def test_the_out_card_shows_oracle_and_lead_1_pills_and_its_lead_strip():
+    """Fix A4: OUT's card carries oracle and chained (lead 1) pills like every stage card, keeps the lead strip,
+    fades an X-POWER lead bar, and the 'today' bar says lead 0 is the optimistic stitched archive."""
+    sc = _b().scores
+    fig = sc["figures"]["T1"]
+    o, c = fig["m.out"]["oracle"], fig["m.out"]["chained"]
+    assert o["v"] == sc["out"]["pooled"]["oracle"]["T1"]["bss"] and c["v"] == sc["out"]["pooled"]["L1"]["T1"]["bss"] == fig["m.out"]["lead"][1]["v"]
+    svg = F.render("geo_v1", fig, sc["figure_counts"])[0]
+    card = svg.split('<a href="#out"><title>m.out ', 1)[1].split("</a>", 1)[0]
+    assert f"oracle {F.fmt_score(o['v'], 'bss')}" in card and f"chained {F.fmt_score(c['v'], 'bss')}" in card
+    assert card.count('class="lead') == 6 and "stitched short-lead archive" in card.split("+1")[0] and "optimistic" in card
+    faded = sum(bool((e or {}).get("low_power")) for e in fig["m.out"]["lead"])
+    assert faded and card.count('opacity=".55"') == faded + sum(bool(e["low_power"]) for e in (o, c))
+
+
+def test_s3_chained_is_scored_on_the_oracles_rows():
+    """Fix A5: S3's chained pill is lead 1 on the unit-days the oracle scored (the Westside split on overflow days),
+    against the oracle's reference, so the two are paired and comparable; lead 1 on every day is in the tooltip."""
+    b = _b()
+    sc = b.scores
+    f = sc["figures"]["T1-holdout"]["m.s3"]                    # lead 1 exists from Jan 2024, inside the holdout
+    r = b.rows["s3"]
+    r = r[(r["tier"] == "T1-holdout") & (r["excl"] == "")]
+    o, c = (r[r["entry"] == e].set_index(["unit", "date"]) for e in ("oracle", "L1"))
+    common = o.index.intersection(c.index)
+    assert 0 < f["chained"]["n"] == len(common) == sc["s3_on_oracle_rows"]["pooled"]["L1"]["T1-holdout"]["n"] < len(c)
+    y = o.loc[common, "y"].to_numpy()
+    bss = 1 - ((c.loc[common, "p"].to_numpy() - y) ** 2).sum() / ((o.loc[common, "ref"].to_numpy() - y) ** 2).sum()
+    assert abs(f["chained"]["v"] - bss) < 1e-12
+    every = sc["s3"]["pooled"]["L1"]["T1-holdout"]
+    assert f["chained"]["also"][0]["what"] == "lead 1 on every day" and (f["chained"]["also"][0]["v"], f["chained"]["also"][0]["n"]) == (every["bss"], every["n"])
+    assert f["chained"]["v"] != every["bss"] and "on the oracle's own days" in f["chained"]["window"]
+    tip = re.search(r"<title>(chained: BSS [^<]*on the oracle's own days[^<]*)</title>", F.render("geo_v1", sc["figures"]["T1-holdout"])[0]).group(1)
+    assert "lead 1 on every day: BSS" in tip, tip
+
+
+def test_s4_truth_reads_stardb_in_its_window():
+    """Fix B in the build: S4 and OUT are graded on design D10's three records, so the T2 season 2019-20, which DataSF
+    (from 2020-07-27) and Poo Bot (to 2017-01) never sampled, has scored S4 rows from STARDB."""
+    b = _b()
+    r = b.rows["s4"]
+    t2 = r[(r["tier"] == "T2") & (r["excl"] == "")]
+    assert len(t2) > 100 and pd.DatetimeIndex(t2["date"]).min() >= pd.Timestamp("2019-07-01"), len(t2)
+    assert b.scores["s4"]["pooled"]["oracle"]["T2"]["n"] == int((t2["entry"] == "oracle").sum())
+    assert b.scores["figure_counts"]["exclusions"]["X-S4-UNSAMPLED"] == 11950          # as of 2026-08-17 (DataSF + Poo Bot: 13,120)
+    for name in ("stardb", "datasf", "poobot"):
+        assert str(B.SMP.SOURCE_FILES[name].relative_to(ROOT)) in b.manifest["inputs"], name
+
+
+def test_s1_scores_are_pinned_without_their_clock():
+    """Fix D: s1_scores.json's built_at never enters the sha256 a stage manifest pins, so rebuilding S1 on unchanged
+    data stales nothing; any other change to it does. Every other input, and the code, are pinned by their bytes."""
+    doc = json.loads(B.S1_SCORES.read_text())
+    with tempfile.TemporaryDirectory() as tmp:
+        a = Path(tmp) / "s1_scores.json"
+        old = B.UNSTAMPED
+        try:
+            B.UNSTAMPED = {a: ("built_at",)}
+            a.write_text(json.dumps(doc))
+            h = B.input_sha(a)
+            a.write_text(json.dumps({**doc, "built_at": "2099-01-01T00:00:00+00:00"}, indent=1))   # a new clock, other bytes
+            assert B.input_sha(a) == h and hashlib.sha256(a.read_bytes()).hexdigest() != h
+            a.write_text(json.dumps({**doc, "data_end": "2099-01-01"}))
+            assert B.input_sha(a) != h, "a change in what the scores say makes them stale"
+        finally:
+            B.UNSTAMPED = old
+    m = _b().manifest
+    rel = str(B.S1_SCORES.relative_to(ROOT))
+    assert m["inputs"][rel] == B.input_sha(B.S1_SCORES) != hashlib.sha256(B.S1_SCORES.read_bytes()).hexdigest()
+    assert m["inputs_unstamped"] == {rel: ["built_at"]} and B.stale_files({"inputs": {rel: m["inputs"][rel]}}) == []
+    for f, h in m["inputs"].items():
+        if f != rel:
+            assert hashlib.sha256((ROOT / f).read_bytes()).hexdigest() == h, f
+    code = "features/forecast/src/models/stages_build.py"
+    assert m["code"][code] == hashlib.sha256((ROOT / code).read_bytes()).hexdigest()
+    assert B.stale_files({"inputs": {}, "code": {code: "0" * 64}}) == [code], "the code-sha guard stays"
 
 
 def test_the_protocol_stamp_is_the_files_sha():
@@ -473,7 +690,7 @@ def test_the_protocol_stamp_is_the_files_sha():
     assert m["schema"] == "bwtf.stages/1" and m["spec_version"] == SP.SPEC_VERSION and m["geography"] == "geo_v1"
     assert m["components"]["s5"] == "live_v2" and m["components"]["s3"] == "split_v2" and m["components"]["s1"] == E.served_weather_model()
     for f, h in m["inputs"].items():
-        assert hashlib.sha256((ROOT / f).read_bytes()).hexdigest() == h, f
+        assert B.input_sha(ROOT / f) == h, f
 
 
 def test_a_rebuild_gives_the_same_scores():
@@ -534,7 +751,10 @@ def test_the_committed_artifacts_are_current():
     assert "features/forecast/src/models/stages_build.py" in m["code"] and not any(f.startswith("tests/") for f in m["code"])
     stale = B.stale_files(m)
     assert not stale, f"{stale} changed since the build: rerun stages_build --set served --write (then the candidates)"
-    assert sc["protocol"] == m["protocol"] and set(sc["figure"]) == {s["node"] for s in SP.STAGES}
+    assert sc["protocol"] == m["protocol"] and set(sc["figure"]) - {"caption"} == {s["node"] for s in SP.STAGES}
+    assert isinstance(sc["figure"].get("caption"), str) and sc["figure"]["caption"].startswith("Pills: "), sc["figure"].get("caption")
+    # the served set is refit per season: its figure shows every stage's powered window, never a fallback
+    assert sc["figure_window"] == {"m.s1": B.S1_WINDOW, **B.FIGURE_WINDOWS}, sc["figure_window"]
     assert (d / "rows.csv.gz").stat().st_size < 6.5e6
     assert not any((d / n).exists() for n in ("alert_lines.json",))
     # every other set's artifacts too: current, scores only, compared with the served set on its rows

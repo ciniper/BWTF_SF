@@ -55,7 +55,7 @@ def test_every_stage_has_a_box_a_truth_a_metric_and_exclusions():
         assert n.get("metric"), s["id"]
         if s["id"] != "s5":                      # S5 is graded on the later stages' truths
             assert SP.NODE[s["truth_node"]]["kind"] == "truth" and SP.NODE[s["truth_node"]]["stage"] == s["code"]
-            assert SP.NODE[s["chip"]]["kind"] == "exclusion" and SP.NODE[s["chip"]]["stage"] == s["code"]
+        assert SP.NODE[s["chip"]]["kind"] == "exclusion" and SP.NODE[s["chip"]]["stage"] == s["code"], s["id"]   # S5's too
         assert len(set(s["exclusions"])) == len(s["exclusions"]), s["id"]
 
 
@@ -301,6 +301,77 @@ def test_s4_chip_lists_the_first_look_rule():
     assert SP.EXCLUSIONS["X-S4-RESAMPLE"]["counted"]
     svg = F.render("sfpuc4_v1", None, {"X-S4-RESAMPLE": 628})[0]
     assert "resamples 628" in svg and "resamples 628" in F.render("sfpuc4_v1", None, {"X-S4-RESAMPLE": 628})[1]
+
+
+def test_s2_and_s3_chips_list_the_ledger_rules_and_stay_clean():
+    """Fix A6: S2's chip names the ledger-likely-incomplete rule; S3's names it too, with no filing and carry-over.
+    They fit (check(): no overlap, every chip's lines inside its box even at the smallest type), and each chip
+    prints its own stage's count of a rule two stages share."""
+    rules = lambda n: [x for line in SP.NODE[n]["items"] for _, x in line]  # noqa: E731
+    assert "X-LEDGER-SUSPECT" in rules("x.s2") and {"X-S3-UNCOV", "X-S3-CARRY", "X-LEDGER-SUSPECT", "X-S3-QUIET", "X-S3-ID"} == set(rules("x.s3"))
+    assert all(F.check(g) == [] for g in SP.GEOS)
+    counts = {"exclusions": {"X-LEDGER-SUSPECT": 303, "X-S3-UNCOV": 1742, "X-S3-CARRY": 24},
+              "stages": {"s2": {"X-LEDGER-SUSPECT": 303}, "s3": {"X-LEDGER-SUSPECT": 227}}}
+    for out in F.render("geo_v1", None, counts):
+        assert "ledger likely incomplete 303" in out and "ledger likely incomplete 227" in out
+        assert "no filing 1,742" in out and "carry-over 24" in out
+    flat = F.render("geo_v1", None, counts["exclusions"])[0]                    # flat counts: every chip reads the one total
+    assert flat.count("ledger likely incomplete 303") == 2
+    saved = SP.NODES
+    try:   # a fifth line overflows S3's chip; a line too long for the column at the smallest type is caught too
+        x3 = SP.NODE["x.s3"]
+        SP.NODES = tuple(dict(n, items=n["items"] + ((("carry-over", "X-S3-CARRY"),),)) if n is x3 else n for n in saved)
+        assert ("chip-overflow", "x.s3", "5 lines in 82 px") in F.check("sfpuc4_v1")
+        long = ((("no filing", "X-S3-UNCOV"), ("carry-over", "X-S3-CARRY"), ("ledger likely incomplete", "X-LEDGER-SUSPECT")),)
+        SP.NODES = tuple(dict(n, items=long) if n is x3 else n for n in saved)
+        assert any(p[0] == "chip-text" and p[1] == "x.s3" for p in F.check("sfpuc4_v1"))
+    finally:
+        SP.NODES = saved
+
+
+def test_the_out_card_has_pills_and_a_lead_strip():
+    """Fix A4 on a fixture: OUT's card shows oracle and chained (lead 1) pills, keeps the lead strip, fades only the
+    X-POWER bars and pills, and its 'today' bar says lead 0 is the optimistic stitched archive."""
+    assert SP.NODE["m.out"]["pills"] == ("oracle", "chained") and SP.NODE["m.out"]["lead"]
+    lead = [{"v": 0.5, "low_power": True}, {"v": 0.4, "lo": 0.1, "hi": 0.6, "n": 2021, "pos": 88, "low_power": False},
+            {"v": 0.3, "low_power": True}, None, {"v": 0.2}, {"v": 0.1}]
+    fig = {"m.out": {"oracle": {"v": 0.85, "low_power": False}, "chained": dict(lead[1]), "lead": lead}}
+    svg, ph = F.render("sfpuc4_v1", fig)
+    card = svg.split('<a href="#out"><title>m.out ', 1)[1].split("</a>", 1)[0]
+    assert "oracle 0.85" in card and "chained 0.40" in card and card.count('class="lead') == 6
+    assert card.count('opacity=".55"') == 2                                          # the two X-POWER bars, no pill
+    today = re.search(r"<title>(today[^<]*)</title>", card).group(1)
+    assert "lead 0" in today and "optimistic" in today and "stitched short-lead archive" in today, today
+    assert "Skill vs climatology (BSS): oracle 0.85 · chained 0.40." in ph and "today 0.50 · +1 0.40 · +2 0.30 · +3 —" in ph
+
+
+def test_a_pills_tooltip_gives_its_window_and_post_training():
+    """Fix A1's tooltip: the shown number with its CI, where it comes from, any other number the build gave beside it,
+    and the post-training number with its own CI; S5's are changes in Brier, signed, never BSS."""
+    pill = {"v": 0.58, "lo": 0.51, "hi": 0.65, "n": 12118, "pos": 244, "low_power": False, "window": "9 seasons: development",
+            "post": {"v": 0.61, "lo": 0.39, "hi": 0.82, "n": 1105, "pos": 30, "low_power": True, "window": "post-training, Nov 2025 – Aug 2026"}}
+    s5 = {"v": -0.0349, "lo": -0.07, "hi": 0.0012, "n": 188, "pos": 104, "low_power": False, "window": "the perfect feed",
+          "also": [{"v": 0.08, "lo": 0.01, "hi": 0.13, "what": "link/zone injection"}]}
+    svg = F.render("geo_v1", {"m.s2": {"oracle": pill}, "m.s5": {"oracle": s5}})[0]
+    assert ("oracle: BSS 0.58 [0.51, 0.65], n = 12,118, 244 positives · 9 seasons: development · post-training, Nov 2025 – Aug 2026: "
+            "BSS 0.61 [0.39, 0.82], n = 1,105, 30 positives; too few to decide") in svg
+    assert 'opacity=".55"' not in svg, "the shown cell has power: its post-training cell's X-POWER does not fade it"
+    assert ("oracle: change in Brier −0.035 [−0.070, +0.001], n = 188, 104 positives · the perfect feed · link/zone injection: "
+            "change in Brier +0.080 [+0.010, +0.130]") in svg and "oracle −0.035" in svg
+    assert F.caption({"figure": {"caption": "Pills: S2 on 9 seasons."}}) == "Pills: S2 on 9 seasons." and F.caption() == ""
+
+
+def test_s5_has_a_not_scored_chip_with_zero_reasons():
+    """Fix A3 on a fixture: S5's chip lists its rules; a rule 0 by construction prints 0 and its reason is in the tooltip."""
+    items = [x for line in SP.NODE["x.s5"]["items"] for _, x in line]
+    assert set(items) == {x for x in SP.STAGE["s5"]["exclusions"] if SP.EXCLUSIONS[x]["kind"] == "exclude"}
+    assert SP.EXCLUSIONS["X-S5-QUIET"]["zero"] and SP.EXCLUSIONS["X-S5-HEALTH"]["zero"]
+    svg, ph = F.render("geo_v1", None, {"stages": {"s5": {"X-S5-SELF": 541, "X-S5-QUIET": 0, "X-S5-HEALTH": 0}}})
+    assert "the replaced day 541" in svg and "nothing seen nearby 0" in svg and "watcher down 0" in svg and "nothing seen nearby 0" in ph
+    tip = re.search(r'<a href="#s5"><title>(x\.s5 [^<]*)</title>', svg).group(1)
+    assert f"(0: {SP.EXCLUSIONS['X-S5-QUIET']['zero']})" in tip and "archive Westside days —" in svg
+    unscored = F.render("geo_v1")[0]
+    assert "nothing seen nearby —" in unscored and "(0: " not in unscored
 
 
 def test_out_chip_lists_only_what_out_leaves_out():

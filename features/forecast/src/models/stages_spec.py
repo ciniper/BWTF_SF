@@ -63,10 +63,11 @@ LEVEL_EDGES = _RL.edges()
 # kind: exclude = left out of the score; tag = a sensitivity subset, rows stay;
 # stratum = scored apart; fit = affects fitting only. counted = the figure and
 # the report show a count beside it (False: structural, or 0 by construction).
-# chip = the figure's words; plain = one line for the report and the tooltip.
+# chip = the figure's words; plain = one line for the report and the tooltip; zero = why a rule is 0 by
+# construction, which the tooltip adds when its count is 0.
 
-def _x(group, kind, chip, plain, counted=True):
-    return dict(group=group, kind=kind, chip=chip, plain=plain, counted=counted)
+def _x(group, kind, chip, plain, counted=True, zero=None):
+    return dict(group=group, kind=kind, chip=chip, plain=plain, counted=counted, zero=zero)
 
 
 EXCLUSIONS = {
@@ -104,11 +105,13 @@ EXCLUSIONS = {
     "X-S4-FOLLOWUP": _x("S4", "fit", "follow-up-only stations", "Three Ocean Beach stations sampled only after overflows: left out of fitting the no-overflow background."),
     "X-S4-ANALYTE": _x("S4", "tag", "E. coli era", "Samples from mid-2020 through 2021, when the indicator changed."),
     # S5
-    "X-S5-HEALTH": _x("S5", "exclude", "watcher down", "The beach-map watcher was unhealthy, so no correction was made."),
+    "X-S5-HEALTH": _x("S5", "exclude", "watcher down", "The beach-map watcher was unhealthy, so no correction was made.",
+                      zero="the watcher has not yet watched a wet season, so no live day is scored"),
     "X-S5-CIRC": _x("S5", "exclude", "archive Westside days", "Westside in the 2016-17 archive: the truth there is the feed itself."),
     "X-S5-PERFECT-SIBLING": _x("S5", "exclude", "neighbours on the perfect feed", "A neighbouring zone's day on the perfect feed: that feed is the ledger, so it would grade itself."),
     "X-S5-SELF": _x("S5", "exclude", "the replaced day", "The day whose number the observation replaced: right by construction."),
-    "X-S5-QUIET": _x("S5", "exclude", "nothing seen nearby", "No observation in the basin or zone in the week before, so the correction changes nothing."),
+    "X-S5-QUIET": _x("S5", "exclude", "nothing seen nearby", "No observation in the basin or zone in the week before, so the correction changes nothing.",
+                     zero="the scored set holds only the days after an observation, so no scored day can be one"),
     "X-S5-INSAMPLE": _x("S5", "tag", "2016-17 archive", "The archive years, which S2 was fitted on."),
     # OUT
     "X-E2E-UNCOV": _x("OUT", "exclude", "overflow history unknown", "A feeding basin's month was not filed: that day, or the week before a quiet day."),
@@ -181,17 +184,19 @@ STAGES = (
          truth="the later stages' truths, on the days after an observation",
          oracle="a perfect feed: every filed overflow, on time (sibling zones are scored on real or degraded feeds only)",
          chained="the real feeds: the 2016-17 archive, a degraded feed, the watcher",
-         metric="change in Brier on the days after", unit_fmt="bss", pills=("oracle", "chained"),
+         metric="change in Brier on the days after an observation, corrected − no correction (lower is better)",
+         unit_fmt="delta", pills=("oracle", "chained"),
          benchmarks=("no correction", "the served live corrections"),
          exclusions=("X-S5-HEALTH", "X-S5-CIRC", "X-S5-PERFECT-SIBLING", "X-S5-SELF", "X-S5-QUIET", "X-S5-INSAMPLE", "X-POWER"),
-         node="m.s5", truth_node=None, chip=None, anchor="s5"),
+         node="m.s5", truth_node=None, chip="x.s5", anchor="s5"),
     dict(id="out", code="OUT", name="Overflow risk", question="what people see", unit="per zone · 6 days",
          input="S3's same-day chance and S4's overflow tail, with no rain background",
          output="the % per zone, today and five days ahead, every 30 minutes",
          truth="bad beach days: an overflow day, or a sample over standard in the 7 days after one; BeachWatch postings are a second ruler",
-         oracle="each stage's truth in turn (the error budget)",
-         chained="the full chain from the weather model, by lead",
-         metric="skill by lead, chained", unit_fmt="bss", pills=(),
+         oracle="each stage's truth in turn (the error budget); the pill: the true overflow history",
+         chained="the full chain from the weather model, by lead; the pill: one day ahead",
+         metric="skill vs climatology (BSS): oracle and one day ahead, and the chain by lead", unit_fmt="bss",
+         pills=("oracle", "chained"),
          benchmarks=("climatology", "yesterday's state", "the served set", "the retired gradient-boosted set"),
          exclusions=("X-E2E-UNCOV", "X-E2E-UNK", "X-ALL-INSAMPLE", "X-PL-END", "X-POWER", "X-SEL"),
          node="m.out", truth_node="t.out", chip="x.out", anchor="out"),
@@ -206,16 +211,17 @@ PHONE_ORDER = ("s1", "s2", "s3", "s4", "out", "s5", "levels", "claims")
 
 # ── figure 1: canvas and grid (§1.2) ─────────────────────────────────────────
 
-VIEW = (1290, 820)
+VIEW = (1290, 832)
 COLX = (44, 296, 548, 800, 1052)
 CW = 222
 ROWS = {0: (50, 80),      # TRUTH
         1: (220, 152),    # MODEL
         2: (416, 56),     # LIVE a
         3: (480, 56),     # LIVE b
-        4: (544, 56),     # LIVE c
-        5: (632, 54),     # NOT SCORED chips
-        6: (700, 62)}     # DOES NOT CLAIM strip
+        4: (544, 56),     # LIVE c (and S5's NOT SCORED chip, under its band)
+        5: (618, 82),     # NOT SCORED chips: up to four lines (check() flags a chip its lines overflow)
+        6: (712, 62)}     # DOES NOT CLAIM strip
+CHIP_TOP, CHIP_LINE = 32, 14     # a chip's first line sits CHIP_TOP below its top, the next ones CHIP_LINE apart
 BANDS = ((42, 96, "TRUTH"), (212, 168, "MODEL"), (408, 200, "LIVE"))
 HEAD = tuple((f"{s['code']} · {s['name'].upper()}", s["unit"]) for s in STAGES if s["id"] != "s5")
 TITLE = "Five stages from rain to a beach percentage, each scored twice"
@@ -269,7 +275,8 @@ NODES = (
          lines=by_geo(("overflow history + rain", "per zone, days 0–7 after"), ("overflow history only", "per zone, days 0–7 after")),
          metric="skill vs climatology (BSS)"),
     dict(id="m.out", kind="output", stage="OUT", col=4, row=1, icon="map-pin", title="Overflow risk",
-         lines=("% per zone · every 30 min",), metric="skill by lead, chained", lead=True),
+         lines=("% per zone · every 30 min",), metric="skill vs climatology (BSS), by lead", pill_metric="skill vs climatology (BSS)",
+         lead=True),
     # LIVE rows
     dict(id="l.rain", kind="live", stage="S1", col=0, row=2, logo="noaa.svg", title="Rain so far", lines=("gauges, then SFO today",)),
     dict(id="l.map", kind="live", stage="S5", col=1, row=2, logo="sfpuc.png", title="SFPUC beach map",
@@ -279,7 +286,7 @@ NODES = (
     dict(id="m.s5", kind="stage", stage="S5", col=2, row=2, span=2, rows=2, icon="satellite-dish", title="Live corrections", wide=True,
          lines=by_geo(("a CSO flag or named outfall → its zone, after the split", "a lab result → that day’s water quality"),
                       ("a CSO flag → its basin, before the split", "a lab result → that zone’s next few days")),
-         metric="change in Brier on the days after"),
+         metric="change in Brier (lower is better)"),
     dict(id="o.levels", kind="decision", stage="LEVELS", col=4, row=2, rows=2, icon="triangle-alert", title="Risk levels",
          lines=_LEVEL_LINES + ("the same bands on every page",),
          tip="fixed bands on the whole % shown (Chase, 2026-10-01); threshold scores at each edge: " + ", ".join(f"{100 * e:g}%" for e in LEVEL_EDGES)),
@@ -287,13 +294,21 @@ NODES = (
     dict(id="x.s1", kind="exclusion", stage="S1", col=0, row=5, title="not scored",
          items=((("dead-gauge days", "X-S1-OUTAGE"), ("missing", "X-S1-MISSING")), (("model gaps", "X-S1-NWPGAP"), ("peak hours", "X-S1-PEAK")))),
     dict(id="x.s2", kind="exclusion", stage="S2", col=1, row=5, title="not scored",
-         items=((("no filing", "X-S2-UNCOV"), ("feed archive", "X-S2-ARCHIVE")), (("carry-over", "X-S2-CARRY"), ("days the fit saw", "X-ALL-INSAMPLE")))),
+         items=((("no filing", "X-S2-UNCOV"), ("feed archive", "X-S2-ARCHIVE")), (("ledger likely incomplete", "X-LEDGER-SUSPECT"),),
+                (("carry-over", "X-S2-CARRY"), ("days the fit saw", "X-ALL-INSAMPLE")))),
     dict(id="x.s3", kind="exclusion", stage="S3", col=2, row=5, title="not scored",
-         items=((("identity links: checked only", "X-S3-ID"),), (("no basin overflow (oracle)", "X-S3-QUIET"),))),
+         items=((("no filing", "X-S3-UNCOV"), ("carry-over", "X-S3-CARRY")), (("ledger likely incomplete", "X-LEDGER-SUSPECT"),),
+                (("no basin overflow (oracle)", "X-S3-QUIET"),), (("identity links: checked only", "X-S3-ID"),))),
     dict(id="x.s4", kind="exclusion", stage="S4", col=3, row=5, title="not scored",
          items=((("days nobody sampled", "X-S4-UNSAMPLED"), ("resamples", "X-S4-RESAMPLE")), (("overflow history unknown", "X-S4-HISTUNK"),))),
     dict(id="x.out", kind="exclusion", stage="OUT", col=4, row=5, title="not scored",
          items=((("unsampled days after one", "X-E2E-UNK"),), (("overflow history unknown", "X-E2E-UNCOV"),))),
+    # S5's chip sits under its band; its counts are the build's (zone-days over every feed and window it scored)
+    dict(id="x.s5", kind="exclusion", stage="S5", col=2, row=4, span=2, title="not scored",
+         items=((("the replaced day", "X-S5-SELF"), ("neighbours on the perfect feed", "X-S5-PERFECT-SIBLING"), ("nothing seen nearby", "X-S5-QUIET")),
+                (("archive Westside days", "X-S5-CIRC"), ("watcher down", "X-S5-HEALTH"))),
+         tip="counts: zone-days summed over every feed (the perfect feed, the 2016-17 archive, each degraded feed) and window "
+             "S5 is scored on; S5 is graded on OUT's label, so OUT's rules apply to its rows too"),
     dict(id="x.claim", kind="claim", stage="CLAIM", col=0, row=6, span=5, title="the forecast does not claim", claims=tuple(CLAIMS)),
 )
 for _n in NODES:                                    # stage boxes carry their stage's question and pills
@@ -334,7 +349,8 @@ def _edges() -> tuple:
     e("l1", "l.rain", "m.s1", "live", ((155, L_TOP), (155, M_BOT)), "observed rain", (161, LIVE_LABEL_Y, "start"))
     e("l2", "l.map", "m.s5", "live", ((COLX[1] + CW, 444), (COLX[2], 444)))
     e("l3", "l.lab", "m.s5", "live", ((COLX[1] + CW, 508), (COLX[2], 508)))
-    e("o5", "l.perfect", "m.s5", "oracle", ((COLX[1] + CW, 572), (584, 572), (584, ROWS[2][0] + 120)), tip="the oracle feed")
+    gx = COLX[1] + CW + 15                        # the S2|S3 gutter: under the lab-results arrow, into S5's side
+    e("o5", "l.perfect", "m.s5", "oracle", ((COLX[1] + CW, 556), (gx, 556), (gx, 526), (COLX[2], 526)), tip="the oracle feed")
     # a flag enters after the split (SFPUC4) or at the basin, before it (the served set's live_v2)
     e("l4", "m.s5", by_geo("m.s3", "m.s2"), "live",
       by_geo(((659, L_TOP), (659, M_BOT)), ((572, L_TOP), (572, 394), (460, 394), (460, M_BOT))),
@@ -353,7 +369,11 @@ LEGEND_ARROWS = (("data", "flows every 30 minutes"), ("oracle", "oracle: fed the
                  ("decision", "becomes a risk level"))
 LEGEND_CHAINED = "every stage is scored twice: on its true input (oracle) and on the real output of the stage before it (chained)"
 LEGEND_NOT_SCORED = "each rule has a count; ids in tooltips"
-LEGEND_Y = (772, 806)            # chip row, arrow row
+LEGEND_Y = (786, 818)            # chip row, arrow row
+# The lead strip's day words (OUT): lead 0 is the stitched short-lead archive, tagged optimistic (protocol §3).
+LEAD_DAYS = ("today", "+1", "+2", "+3", "+4", "+5")
+LEAD_TIPS = ("today (lead 0, tagged optimistic: read from the stitched short-lead archive, not a forecast stored as issued)",
+             "+1 day (lead 1)", "+2 days (lead 2)", "+3 days (lead 3)", "+4 days (lead 4)", "+5 days (lead 5)")
 
 
 def legend_layout(per_char: float = 5.9, gap: float = 18) -> tuple:
@@ -383,7 +403,8 @@ def spec_dict() -> dict:
     return dict(geos=GEOS, title=TITLE, stages=STAGES, exclusions=EXCLUSIONS, claims=CLAIMS, risk_levels=RISK_LEVELS,
                 level_edges=LEVEL_EDGES, view=VIEW, colx=COLX, cw=CW, rows=ROWS, bands=BANDS, head=HEAD, nodes=NODES,
                 edges=EDGES, legend=LEGEND_ARROWS, legend_chained=LEGEND_CHAINED, legend_not_scored=LEGEND_NOT_SCORED,
-                legend_y=LEGEND_Y, phone=PHONE_ORDER)
+                legend_y=LEGEND_Y, phone=PHONE_ORDER, chip_top=CHIP_TOP, chip_line=CHIP_LINE, lead_days=LEAD_DAYS,
+                lead_tips=LEAD_TIPS)
 
 
 SPEC_VERSION = hashlib.sha1(json.dumps(spec_dict(), sort_keys=True, ensure_ascii=False, default=list).encode()).hexdigest()[:10]

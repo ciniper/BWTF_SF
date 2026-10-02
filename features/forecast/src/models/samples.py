@@ -31,8 +31,13 @@ rule included), never trusted from a stored column.
 The default sources are what the served models were fit on (DataSF + Poo
 Bot), so ``load_samples()`` reproduces ``train_v4.load_samples``' station-day
 exceedances exactly (tests/test_samples.py); ``train_v4`` is on the served
-path and is not edited. STARDB is opt-in (design §3.4 and owner decision
-D10: S4 truth adds STARDB 2016-10 → 2020-07; a builder clips to its window). Before 2002-07 at
+path and is not edited. STARDB is opt-in. A source may come with a window,
+``(name, first day, last day or None)``, and is clipped to it before the
+merge (``attrs["report"]["dropped"]["outside_window"]`` counts what fell
+outside). ``D10_SOURCES`` is the stages' S4 truth (design §3.4, owner
+decision D10): DataSF 2020-07 →, Poo Bot 2015-12 → 2017-01 and STARDB
+2016-10 → 2020-07, de-duplicated by the precedence above. truth.py and
+exclusions.py read it; nothing on the served path does. Before 2002-07 at
 the bay stations and 2003-10 on the ocean beaches STARDB has total coliform
 only, so exceedance rates there are not comparable with later years.
 
@@ -69,6 +74,10 @@ SOURCE_FILES = {
 }
 PRECEDENCE = ("datasf", "stardb", "poobot")         # earlier wins on the same station-day-analyte
 DEFAULT_SOURCES = ("datasf", "poobot")              # what the served models were fit on
+# The stages' S4 truth (design §3.4, owner decision D10): each source on its own window (first day, last day;
+# None = the record's end), then the precedence merge. DataSF's mirror starts 2020-07-27, where STARDB ends
+# (their shared results go to DataSF); Poo Bot's 2016-10 → 2017-01 results are all in STARDB too.
+D10_SOURCES = (("datasf", "2020-07-01", None), ("stardb", "2016-10-01", "2020-07-31"), ("poobot", "2015-12-01", "2017-01-31"))
 RESAMPLE_DAYS = (1, 2)                              # an exceedance on D−1 or D−2 makes D a resample
 KEY = ["station", "date", "analyte"]
 COLUMNS = ["station", "date", "analyte", "value", "value_raw", "standard", "exceeds", "source", "zone"]
@@ -87,23 +96,48 @@ def _read(source: str) -> pd.DataFrame:
     return df.assign(source=source)
 
 
+def windows(sources) -> dict:
+    """{source: (first, last)} for ``sources``: names, or (name, first day, last day) with None for an open end.
+    An unknown name, a name given twice or a window that ends before it starts raises."""
+    out = {}
+    for s in sources:
+        name, lo, hi = (s, None, None) if isinstance(s, str) else tuple(s)
+        if name not in PRECEDENCE:
+            raise ValueError(f"unknown sample source {name!r}; known: {PRECEDENCE}")
+        if name in out:
+            raise ValueError(f"sample source {name!r} is named twice")
+        lo, hi = (None if d is None else pd.Timestamp(d).normalize() for d in (lo, hi))
+        if lo is not None and hi is not None and lo > hi:
+            raise ValueError(f"sample source {name!r}: its window ends {hi.date()}, before it starts {lo.date()}")
+        out[name] = (lo, hi)
+    return out
+
+
 def load_samples(sources=DEFAULT_SOURCES) -> pd.DataFrame:
     """Every lab result from ``sources``, one row per (station, date, analyte).
 
-    Columns: station (registry id), date, analyte, value (MPN/100 mL, '<10' → 5),
+    ``sources``: names, or (name, first day, last day or None), which clips that source to the window before
+    the merge (``D10_SOURCES``). Columns: station (registry id), date, analyte, value (MPN/100 mL, '<10' → 5),
     value_raw, standard (the single-sample limit that applied), exceeds, source,
     zone (shared/zones.py). ``attrs["report"]`` counts what was dropped and why.
     """
-    sources = tuple(sources)
-    unknown = set(sources) - set(PRECEDENCE)
-    if unknown:
-        raise ValueError(f"unknown sample sources {sorted(unknown)}; known: {PRECEDENCE}")
-    rep = {"sources": list(sources), "rows_read": {}, "dropped": {"not_in_registry": {}, "analyte_without_standard": {},
-                                                                  "same_source_repeat": {}, "superseded": {}}}
+    win = windows(tuple(sources))
+    sources = tuple(win)
+    rep = {"sources": list(sources), "windows": {s: [None if d is None else str(d.date()) for d in w] for s, w in win.items()},
+           "rows_read": {}, "dropped": {"outside_window": {}, "not_in_registry": {}, "analyte_without_standard": {},
+                                        "same_source_repeat": {}, "superseded": {}}}
     frames = []
     for src in sources:
         df = _read(src)
         rep["rows_read"][src] = int(len(df))
+        lo, hi = win[src]
+        inside = pd.Series(True, index=df.index)
+        if lo is not None:
+            inside &= df["date"] >= lo
+        if hi is not None:
+            inside &= df["date"] <= hi
+        rep["dropped"]["outside_window"][src] = int((~inside).sum())
+        df = df[inside]
         in_reg = df["station"].isin(STATIONS)
         rep["dropped"]["not_in_registry"][src] = int((~in_reg).sum())
         df = df[in_reg]
@@ -167,10 +201,10 @@ def zone_sample_days(samples: pd.DataFrame) -> pd.DataFrame:
 
 
 if __name__ == "__main__":
-    for srcs in (DEFAULT_SOURCES, PRECEDENCE):
+    for srcs in (DEFAULT_SOURCES, D10_SOURCES, PRECEDENCE):
         df = load_samples(srcs)
         r = df.attrs["report"]
-        print(f"sources {', '.join(srcs)}: {r['rows']} results ({r['by_source']}), spans {r['span']}")
+        print(f"sources {', '.join(r['sources'])} (windows {r['windows']}): {r['rows']} results ({r['by_source']}), spans {r['span']}")
         print(f"  dropped: {r['dropped']}")
         zd = zone_sample_days(df)
         print(f"  zone sample-days {len(zd)}: " + "; ".join(

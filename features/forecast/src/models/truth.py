@@ -52,6 +52,13 @@ ledger does not cover has ``y`` = <NA>, a ledger event on a day its facility
 did not file raises, and so does an outfall the registry or the geography
 lacks, or a zone shared/zones.py lacks.
 
+**Samples (design §3.4, owner decision D10).** S4's truth, and OUT's label
+through it, read the city's three lab records on their own windows,
+de-duplicated (samples.D10_SOURCES): DataSF 2020-07 →, Poo Bot 2015-12 →
+2017-01, STARDB 2016-10 → 2020-07. The served models were fit on DataSF + Poo
+Bot (samples.DEFAULT_SOURCES), which samples.py and train_v4 keep as their
+default; ``sources=samples.DEFAULT_SOURCES`` reproduces the served scorecard.
+
 The day frames are long (one row per unit × day, sorted by unit then date) with
 plain column names. Loaders are cached; every public function returns a new
 frame the caller may change. No module-level IO: files are read on first use.
@@ -619,7 +626,7 @@ def _samples(sources: tuple) -> pd.DataFrame:
     return SMP.load_samples(sources)
 
 
-def zone_elevated(geo, sources=SMP.DEFAULT_SOURCES, start=TRUTH_START, end=None) -> pd.DataFrame:
+def zone_elevated(geo, sources=SMP.D10_SOURCES, start=TRUTH_START, end=None) -> pd.DataFrame:
     """S4 truth, one row per (zone, sampled day).
 
     Columns: date, zone, y (any station × analyte over the AB411 single-sample
@@ -630,8 +637,11 @@ def zone_elevated(geo, sources=SMP.DEFAULT_SOURCES, start=TRUTH_START, end=None)
     sources, known and hist_known (the zone's feeding basins on D and on D−7…D:
     X-S4-HISTUNK), dayof (a zone overflow on D: X-S4-DAYOF).
 
-    ``sources`` as samples.load_samples (DataSF + Poo Bot by default, what the
-    served models were fit on; add 'stardb' for 2016-10 → 2020-07, design D10).
+    ``sources`` as samples.load_samples. The default is the stages' S4 truth,
+    samples.D10_SOURCES (design §3.4, owner decision D10): DataSF 2020-07 →,
+    Poo Bot 2015-12 → 2017-01, STARDB 2016-10 → 2020-07, de-duplicated. The
+    served models were fit on samples.DEFAULT_SOURCES (DataSF + Poo Bot): pass
+    it to compare with the served scorecard.
     The first-look flag is computed on the whole record before clipping, so a
     D−1 exceedance just before ``start`` still counts. ``end`` defaults to the
     last sample.
@@ -707,7 +717,7 @@ OUT_WHY = {
 }
 
 
-def out_label(geo, sources=SMP.DEFAULT_SOURCES, start=TRUTH_START, end=None) -> pd.DataFrame:
+def out_label(geo, sources=SMP.D10_SOURCES, start=TRUTH_START, end=None) -> pd.DataFrame:
     """The OUT label (§3.6, Part B 3; STAGES_PROTOCOL.md §1), one row per (zone, day).
 
     Columns: date, zone, label ('bad' | 'good' | 'unknown'), y (1 bad, 0 good,
@@ -727,8 +737,10 @@ def out_label(geo, sources=SMP.DEFAULT_SOURCES, start=TRUTH_START, end=None) -> 
     The label says what is true. Whether a row is scored is the exclusion rules'
     call: X-E2E-UNCOV reads ``known`` / ``hist_known`` (a clean sample on a day
     the ledger does not cover is good, and is still left out of the score).
-    For GEO_V1 it is scorecard.combined_label read on the ledger, with Part B 3's
-    change; tests/test_truth.py pins every difference with its reason.
+    For GEO_V1 on the served samples (``sources=samples.DEFAULT_SOURCES``) it is
+    scorecard.combined_label read on the ledger, with Part B 3's change;
+    tests/test_truth.py pins every difference with its reason. ``sources``
+    defaults to the stages' S4 truth, samples.D10_SOURCES (zone_elevated).
     """
     geo = _geo(geo)
     lo, hi = _ts(start), ledger_end() if end is None else _ts(end)
