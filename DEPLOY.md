@@ -99,6 +99,30 @@ curl -s https://bwtf-sf.vercel.app/api/build
 gunicorn -w 1 --threads 8 -b 0.0.0.0:8090 app.wsgi:app
 ```
 
+## Before every push: `scripts/check.sh`
+
+There is no CI, and Vercel deploys whatever lands on `main`. Run the whole
+suite and see it pass before every push (Chase, 2026-10-01):
+
+```bash
+scripts/check.sh                  # every tests/test_*.py, one line each; exits 1 on any failure (~90 s)
+scripts/check.sh tests/test_x.py  # just some
+```
+
+It finds the venv in `venv/`, or in the main checkout's `venv/` when it runs
+from a git worktree; `PYTHON=...` overrides both. It blanks `SUPABASE_URL` and
+`SUPABASE_SERVICE_KEY`, so no test can read or write the production database. Among the tests,
+`tests/test_served_golden.py` pins everything the live forecast serves:
+- the served files in `features/forecast/data/models/` (not `scorecard.json.gz`,
+  which the quarterly rescore rewrites);
+- the day payloads built from a fixture storm;
+- the training labels and frames;
+- the scorecard path.
+
+If it goes red, the public forecast moved. Only a promotion commit may move
+those pins, by re-running `tests/fixtures/make_stages_goldens.py`
+(`features/forecast/STAGES_PROTOCOL.md`).
+
 ## Supabase (subscribers + alert state + delivery log)
 
 | Var | Purpose |

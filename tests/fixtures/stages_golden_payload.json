@@ -1,0 +1,2201 @@
+{
+ "as_of": "2026-08-17",
+ "discharge_probs_by_day": {
+  "2026-01-08": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.001,
+   "westside": 0.001
+  },
+  "2026-01-09": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.001,
+   "westside": 0.001
+  },
+  "2026-01-10": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.001,
+   "westside": 0.001
+  },
+  "2026-01-11": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.001,
+   "westside": 0.001
+  },
+  "2026-01-12": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.001,
+   "westside": 0.001
+  },
+  "2026-01-13": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.001,
+   "westside": 0.001
+  },
+  "2026-01-14": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.001,
+   "westside": 0.001
+  },
+  "2026-01-15": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.001,
+   "westside": 0.001
+  },
+  "2026-01-16": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.001,
+   "westside": 0.001
+  },
+  "2026-01-17": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.001,
+   "westside": 0.001
+  },
+  "2026-01-18": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.001,
+   "westside": 0.001
+  },
+  "2026-01-19": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.001,
+   "westside": 0.001
+  },
+  "2026-01-20": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.001,
+   "westside": 0.001
+  },
+  "2026-01-21": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.001,
+   "westside": 0.001
+  },
+  "2026-01-22": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.001,
+   "westside": 0.001
+  },
+  "2026-01-23": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.001,
+   "westside": 0.001
+  },
+  "2026-01-24": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.001,
+   "westside": 0.001
+  },
+  "2026-01-25": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.001,
+   "westside": 0.001
+  },
+  "2026-01-26": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.001,
+   "westside": 0.001
+  },
+  "2026-01-27": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.001,
+   "westside": 0.001
+  },
+  "2026-01-28": {
+   "central": 0.002,
+   "citywide": 0.004,
+   "north_shore": 0.001,
+   "southeast": 0.003,
+   "westside": 0.002
+  },
+  "2026-01-29": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.002,
+   "westside": 0.001
+  },
+  "2026-01-30": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.001,
+   "westside": 0.001
+  },
+  "2026-01-31": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.001,
+   "westside": 0.001
+  },
+  "2026-02-01": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.001,
+   "westside": 0.001
+  },
+  "2026-02-02": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.001,
+   "westside": 0.001
+  },
+  "2026-02-03": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.001,
+   "westside": 0.001
+  },
+  "2026-02-04": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.001,
+   "westside": 0.001
+  },
+  "2026-02-05": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.001,
+   "westside": 0.001
+  },
+  "2026-02-06": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.001,
+   "westside": 0.001
+  },
+  "2026-02-07": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.001,
+   "westside": 0.001
+  },
+  "2026-02-08": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.001,
+   "westside": 0.001
+  },
+  "2026-02-09": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.001,
+   "westside": 0.001
+  },
+  "2026-02-10": {
+   "central": 0.032,
+   "citywide": 0.03,
+   "north_shore": 0.003,
+   "southeast": 0.053,
+   "westside": 0.009
+  },
+  "2026-02-11": {
+   "central": 0.025,
+   "citywide": 0.137,
+   "north_shore": 0.007,
+   "southeast": 0.048,
+   "westside": 0.094
+  },
+  "2026-02-12": {
+   "central": 0.002,
+   "citywide": 0.004,
+   "north_shore": 0.001,
+   "southeast": 0.003,
+   "westside": 0.002
+  },
+  "2026-02-13": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.002,
+   "westside": 0.001
+  },
+  "2026-02-14": {
+   "central": 0.001,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.002,
+   "westside": 0.001
+  },
+  "2026-02-15": {
+   "central": 0.031,
+   "citywide": 0.081,
+   "north_shore": 0.007,
+   "southeast": 0.034,
+   "westside": 0.043
+  },
+  "2026-02-16": {
+   "central": 0.819,
+   "citywide": 0.928,
+   "north_shore": 0.423,
+   "southeast": 0.854,
+   "westside": 0.781
+  },
+  "2026-02-17": {
+   "central": 0.733,
+   "citywide": 0.834,
+   "north_shore": 0.168,
+   "southeast": 0.665,
+   "westside": 0.673
+  },
+  "2026-02-18": {
+   "central": 0.06,
+   "citywide": 0.08,
+   "north_shore": 0.009,
+   "southeast": 0.035,
+   "westside": 0.014
+  },
+  "2026-02-19": {
+   "central": 0.095,
+   "citywide": 0.167,
+   "north_shore": 0.014,
+   "southeast": 0.09,
+   "westside": 0.021
+  },
+  "2026-02-20": {
+   "central": 0.004,
+   "citywide": 0.006,
+   "north_shore": 0.001,
+   "southeast": 0.005,
+   "westside": 0.001
+  },
+  "2026-02-21": {
+   "central": 0.002,
+   "citywide": 0.002,
+   "north_shore": 0.001,
+   "southeast": 0.002,
+   "westside": 0.0
+  },
+  "2026-02-22": {
+   "central": 0.001,
+   "citywide": 0.001,
+   "north_shore": 0.001,
+   "southeast": 0.001,
+   "westside": 0.0
+  }
+ },
+ "frames": {
+  "SF Downtown": {
+   "columns": {
+    "antecedent_moisture": "5e2250c58f05",
+    "date": "6343b77d71c0",
+    "dry_spell_days": "db80134fbe99",
+    "peak_3d": "a7322a103d0a",
+    "precip_avg": "5d390bd24b2f",
+    "precip_inches": "5d390bd24b2f",
+    "precip_max_hourly": "a159708668b9",
+    "rain_14d_cum": "bb27b4cf5600",
+    "rain_2d_cum": "8f6716f122d4",
+    "rain_30d_cum": "a199e9357f85",
+    "rain_3d_cum": "61e68e8096c2",
+    "rain_5d_cum": "8297f7ed5f14",
+    "rain_7d_cum": "7b05b78beb91",
+    "rain_lag1d": "af2ae4c9199d",
+    "rain_lag2d": "b93ca5c0212a",
+    "rain_lag3d": "efc3220bef00",
+    "rain_lag5d": "a5a85b16f27a",
+    "rain_lag7d": "1f10604d81be",
+    "rain_max1h": "a159708668b9",
+    "rain_max3h": "72dca4eee508",
+    "rain_max6h": "c98f281c77c8",
+    "rain_source": "6ada3eb67bb2",
+    "wet_prior_3d": "a9062a7db97b"
+   },
+   "rows": 46,
+   "sha256": "bd4ea55434c5453ea720d6d97a83710e62cf853838135efbf9d3044d59063779",
+   "span": [
+    "2026-01-08",
+    "2026-02-22"
+   ],
+   "years": {
+    "2026": "6a8c90bd985d"
+   }
+  },
+  "SF Oceanside": {
+   "columns": {
+    "antecedent_moisture": "4feccbfe2e00",
+    "date": "6343b77d71c0",
+    "dry_spell_days": "db80134fbe99",
+    "peak_3d": "e0c38898ea63",
+    "precip_avg": "2ffffb68bfea",
+    "precip_inches": "2ffffb68bfea",
+    "precip_max_hourly": "a159708668b9",
+    "rain_14d_cum": "4c1024e0bd77",
+    "rain_2d_cum": "8de6c961388f",
+    "rain_30d_cum": "44787efd8603",
+    "rain_3d_cum": "847734794803",
+    "rain_5d_cum": "5a3e8fc19730",
+    "rain_7d_cum": "922012a2eab3",
+    "rain_lag1d": "ad4f808bddab",
+    "rain_lag2d": "af3c3f6f79ae",
+    "rain_lag3d": "eea65bc82c02",
+    "rain_lag5d": "fd24659754f6",
+    "rain_lag7d": "6e3b07e10b22",
+    "rain_max1h": "a159708668b9",
+    "rain_max3h": "72dca4eee508",
+    "rain_max6h": "c98f281c77c8",
+    "rain_source": "6ada3eb67bb2",
+    "wet_prior_3d": "2e07778c6dc3"
+   },
+   "rows": 46,
+   "sha256": "bb190d9d3c5dc65a2956b4236a0a02193558536b7772d59c2ccefa8d8aaa6847",
+   "span": [
+    "2026-01-08",
+    "2026-02-22"
+   ],
+   "years": {
+    "2026": "0d3c5e01adcd"
+   }
+  },
+  "avg": {
+   "columns": {
+    "antecedent_moisture": "8b3339661de0",
+    "date": "6343b77d71c0",
+    "dry_spell_days": "db80134fbe99",
+    "peak_3d": "d0ff26900200",
+    "precip_avg": "4a80c5dd41c4",
+    "precip_inches": "4a80c5dd41c4",
+    "precip_max_hourly": "a159708668b9",
+    "rain_14d_cum": "ffa21f83be1f",
+    "rain_2d_cum": "23f68a93f326",
+    "rain_30d_cum": "4e0e65e94fb9",
+    "rain_3d_cum": "19a1ba750420",
+    "rain_5d_cum": "ca05dcf363e2",
+    "rain_7d_cum": "2f4e9f16fbd5",
+    "rain_lag1d": "2c12dcda7daa",
+    "rain_lag2d": "3a6210592a60",
+    "rain_lag3d": "f65c1b3c446d",
+    "rain_lag5d": "2190c4a39fd9",
+    "rain_lag7d": "708c9a7d7dd9",
+    "rain_max1h": "a159708668b9",
+    "rain_max3h": "72dca4eee508",
+    "rain_max6h": "c98f281c77c8",
+    "rain_source": "6ada3eb67bb2",
+    "wet_prior_3d": "2e07778c6dc3"
+   },
+   "rows": 46,
+   "sha256": "99b58b1ba12858aa997c64f47bb5a4fb25b54f47f83aae3f7bed2dcbbe05ebe5",
+   "span": [
+    "2026-01-08",
+    "2026-02-22"
+   ],
+   "years": {
+    "2026": "8ee255f0ff98"
+   }
+  }
+ },
+ "live": {
+  "2026-02-17": {
+   "date": "2026-02-17",
+   "day_offset": 0,
+   "discharge_probs": {
+    "central": 0.733,
+    "citywide": 0.834,
+    "north_shore": 0.168,
+    "southeast": 0.665,
+    "westside": 0.673
+   },
+   "discharge_probs_live": {
+    "central": 0.733,
+    "citywide": 0.834,
+    "north_shore": 0.168,
+    "southeast": 0.665,
+    "westside": 0.673
+   },
+   "features": {
+    "antecedent_moisture": 0.4200104963870475,
+    "dry_spell_days": 0,
+    "peak_3d": 1.07,
+    "precip_avg": 0.7480314960629914,
+    "precip_max": 0.1102362204724409,
+    "rain_14d_cum": 2.7180314960629914,
+    "rain_2d_cum": 1.8180314960629915,
+    "rain_30d_cum": 2.8130314960629916,
+    "rain_3d_cum": 2.1980314960629914,
+    "rain_5d_cum": 2.2180314960629914,
+    "rain_7d_cum": 2.438031496062991,
+    "rain_lag1d": 1.07,
+    "rain_lag2d": 0.38,
+    "rain_lag3d": 0.02,
+    "rain_lag5d": 0,
+    "rain_lag7d": 0.26,
+    "rain_max1h": 0.1102362204724409,
+    "rain_max3h": 0.295275590551181,
+    "rain_max6h": 0.4055118110236218,
+    "wet_prior_3d": 1
+   },
+   "gauge_outage": [],
+   "impact_groups": {
+    "Aquatic Park": 0.155,
+    "Baker-China": 0.755,
+    "Crissy Field": 0.232,
+    "Mission Creek": 0.912,
+    "Ocean Beach": 0.81,
+    "Southeast": 0.998
+   },
+   "input_rules": [
+    "gauge_outage_v1"
+   ],
+   "is_forecast": false,
+   "is_today": true,
+   "label": "Today",
+   "live_corrections": {
+    "enabled": true,
+    "flags_active": [
+     "westside"
+    ],
+    "groups": {
+     "Baker-China": {
+      "from": 0.657,
+      "rule": "sample_clean_cap",
+      "to": 0.755
+     },
+     "Mission Creek": {
+      "from": 0.938,
+      "rule": "sample_clean_cap",
+      "to": 0.912
+     },
+     "Ocean Beach": {
+      "from": 0.848,
+      "rule": "sample_clean_cap",
+      "to": 0.81
+     }
+    },
+    "sample_sources": {
+     "datasf": 3,
+     "feed": 3
+    },
+    "source": "golden",
+    "stage1": {},
+    "version": "live_v2",
+    "watcher_ok": true
+   },
+   "observed_cso": [],
+   "plain": {
+    "discharge_probs": {
+     "central": 0.733,
+     "citywide": 0.834,
+     "north_shore": 0.168,
+     "southeast": 0.665,
+     "westside": 0.673
+    },
+    "impact_groups": {
+     "Aquatic Park": 0.168,
+     "Baker-China": 0.614,
+     "Crissy Field": 0.286,
+     "Mission Creek": 0.931,
+     "Ocean Beach": 0.534,
+     "Southeast": 0.945
+    },
+    "predictions": {
+     "central": 0.931,
+     "citywide": 0.945,
+     "north_shore": 0.286,
+     "southeast": 0.945,
+     "westside": 0.614
+    },
+    "zones": {
+     "baker_china": 0.614,
+     "east": 0.945,
+     "north": 0.286,
+     "ocean": 0.534
+    }
+   },
+   "predictions": {
+    "central": 0.912,
+    "citywide": 0.998,
+    "north_shore": 0.232,
+    "southeast": 0.998,
+    "westside": 0.81
+   },
+   "rain_2d_cum": 1.818,
+   "rain_3d_cum": 2.198,
+   "rain_by_gauge": {
+    "SF Downtown": 0.748,
+    "SF Oceanside": 0.748
+   },
+   "rain_inches": 0.748,
+   "rain_source": "mixed",
+   "zones": {
+    "baker_china": 0.755,
+    "east": 0.998,
+    "north": 0.232,
+    "ocean": 0.81
+   }
+  },
+  "2026-02-18": {
+   "date": "2026-02-18",
+   "day_offset": 1,
+   "discharge_probs": {
+    "central": 0.06,
+    "citywide": 0.08,
+    "north_shore": 0.009,
+    "southeast": 0.035,
+    "westside": 0.014
+   },
+   "discharge_probs_live": {
+    "central": 0.06,
+    "citywide": 0.08,
+    "north_shore": 0.009,
+    "southeast": 0.035,
+    "westside": 0.014
+   },
+   "features": {
+    "antecedent_moisture": 0.38240107673845336,
+    "dry_spell_days": 0,
+    "peak_3d": 1.07,
+    "precip_avg": 0.22834645669291231,
+    "precip_max": 0.0275590551181102,
+    "rain_14d_cum": 2.9463779527559035,
+    "rain_2d_cum": 0.9763779527559034,
+    "rain_30d_cum": 3.0413779527559037,
+    "rain_3d_cum": 2.0463779527559036,
+    "rain_5d_cum": 2.4463779527559035,
+    "rain_7d_cum": 2.4463779527559035,
+    "rain_lag1d": 0.7480314960629914,
+    "rain_lag2d": 1.07,
+    "rain_lag3d": 0.38,
+    "rain_lag5d": 0,
+    "rain_lag7d": 0.22,
+    "rain_max1h": 0.0275590551181102,
+    "rain_max3h": 0.07480314960629912,
+    "rain_max6h": 0.17716535433070849,
+    "wet_prior_3d": 1
+   },
+   "gauge_outage": [],
+   "impact_groups": {
+    "Aquatic Park": 0.06,
+    "Baker-China": 0.308,
+    "Crissy Field": 0.117,
+    "Mission Creek": 0.885,
+    "Ocean Beach": 0.428,
+    "Southeast": 0.972
+   },
+   "input_rules": [
+    "gauge_outage_v1"
+   ],
+   "is_forecast": true,
+   "is_today": false,
+   "label": "Tomorrow",
+   "live_corrections": {
+    "enabled": true,
+    "flags_active": [],
+    "groups": {
+     "Baker-China": {
+      "from": 0.306,
+      "rule": "sample_clean_cap",
+      "to": 0.308
+     },
+     "Ocean Beach": {
+      "from": 0.596,
+      "rule": "sample_clean_cap",
+      "to": 0.428
+     }
+    },
+    "sample_sources": {
+     "datasf": 3,
+     "feed": 3
+    },
+    "source": "golden",
+    "stage1": {},
+    "version": "live_v2",
+    "watcher_ok": true
+   },
+   "observed_cso": [],
+   "plain": {
+    "discharge_probs": {
+     "central": 0.06,
+     "citywide": 0.08,
+     "north_shore": 0.009,
+     "southeast": 0.035,
+     "westside": 0.014
+    },
+    "impact_groups": {
+     "Aquatic Park": 0.075,
+     "Baker-China": 0.198,
+     "Crissy Field": 0.178,
+     "Mission Creek": 0.828,
+     "Ocean Beach": 0.222,
+     "Southeast": 0.893
+    },
+    "predictions": {
+     "central": 0.828,
+     "citywide": 0.893,
+     "north_shore": 0.178,
+     "southeast": 0.893,
+     "westside": 0.222
+    },
+    "zones": {
+     "baker_china": 0.198,
+     "east": 0.893,
+     "north": 0.178,
+     "ocean": 0.222
+    }
+   },
+   "predictions": {
+    "central": 0.885,
+    "citywide": 0.972,
+    "north_shore": 0.117,
+    "southeast": 0.972,
+    "westside": 0.428
+   },
+   "rain_2d_cum": 0.976,
+   "rain_3d_cum": 2.046,
+   "rain_by_gauge": {
+    "SF Downtown": 0.228,
+    "SF Oceanside": 0.228
+   },
+   "rain_inches": 0.228,
+   "rain_source": "forecast",
+   "zones": {
+    "baker_china": 0.308,
+    "east": 0.972,
+    "north": 0.117,
+    "ocean": 0.428
+   }
+  },
+  "2026-02-19": {
+   "date": "2026-02-19",
+   "day_offset": 2,
+   "discharge_probs": {
+    "central": 0.095,
+    "citywide": 0.167,
+    "north_shore": 0.014,
+    "southeast": 0.09,
+    "westside": 0.021
+   },
+   "discharge_probs_live": {
+    "central": 0.095,
+    "citywide": 0.167,
+    "north_shore": 0.014,
+    "southeast": 0.09,
+    "westside": 0.021
+   },
+   "features": {
+    "antecedent_moisture": 0.3948250509583137,
+    "dry_spell_days": 0,
+    "peak_3d": 0.7480314960629914,
+    "precip_avg": 0.4251968503937003,
+    "precip_max": 0.1181102362204724,
+    "rain_14d_cum": 3.371574803149604,
+    "rain_2d_cum": 0.6535433070866123,
+    "rain_30d_cum": 3.466574803149604,
+    "rain_3d_cum": 1.4015748031496038,
+    "rain_5d_cum": 2.851574803149604,
+    "rain_7d_cum": 2.8715748031496036,
+    "rain_lag1d": 0.22834645669291231,
+    "rain_lag2d": 0.7480314960629914,
+    "rain_lag3d": 1.07,
+    "rain_lag5d": 0.02,
+    "rain_lag7d": 0,
+    "rain_max1h": 0.1181102362204724,
+    "rain_max3h": 0.2204724409448818,
+    "rain_max6h": 0.3582677165354328,
+    "wet_prior_3d": 1
+   },
+   "gauge_outage": [],
+   "impact_groups": {
+    "Aquatic Park": 0.059,
+    "Baker-China": 0.059,
+    "Crissy Field": 0.117,
+    "Mission Creek": 0.8,
+    "Ocean Beach": 0.432,
+    "Southeast": 0.917
+   },
+   "input_rules": [
+    "gauge_outage_v1"
+   ],
+   "is_forecast": true,
+   "is_today": false,
+   "label": "Thu Feb 19",
+   "live_corrections": {
+    "enabled": true,
+    "flags_active": [],
+    "groups": {
+     "Baker-China": {
+      "from": 0.055,
+      "rule": "sample_clean_cap",
+      "to": 0.059
+     },
+     "Mission Creek": {
+      "from": 0.791,
+      "rule": "sample_elevated_floor",
+      "to": 0.8
+     },
+     "Ocean Beach": {
+      "from": 0.532,
+      "rule": "sample_clean_cap",
+      "to": 0.432
+     }
+    },
+    "sample_sources": {
+     "datasf": 3,
+     "feed": 3
+    },
+    "source": "golden",
+    "stage1": {},
+    "version": "live_v2",
+    "watcher_ok": true
+   },
+   "observed_cso": [],
+   "plain": {
+    "discharge_probs": {
+     "central": 0.095,
+     "citywide": 0.167,
+     "north_shore": 0.014,
+     "southeast": 0.09,
+     "westside": 0.021
+    },
+    "impact_groups": {
+     "Aquatic Park": 0.068,
+     "Baker-China": 0.055,
+     "Crissy Field": 0.174,
+     "Mission Creek": 0.734,
+     "Ocean Beach": 0.14,
+     "Southeast": 0.825
+    },
+    "predictions": {
+     "central": 0.734,
+     "citywide": 0.825,
+     "north_shore": 0.174,
+     "southeast": 0.825,
+     "westside": 0.14
+    },
+    "zones": {
+     "baker_china": 0.055,
+     "east": 0.825,
+     "north": 0.174,
+     "ocean": 0.14
+    }
+   },
+   "predictions": {
+    "central": 0.8,
+    "citywide": 0.917,
+    "north_shore": 0.117,
+    "southeast": 0.917,
+    "westside": 0.432
+   },
+   "rain_2d_cum": 0.654,
+   "rain_3d_cum": 1.402,
+   "rain_by_gauge": {
+    "SF Downtown": 0.425,
+    "SF Oceanside": 0.425
+   },
+   "rain_inches": 0.425,
+   "rain_source": "forecast",
+   "zones": {
+    "baker_china": 0.059,
+    "east": 0.917,
+    "north": 0.117,
+    "ocean": 0.432
+   }
+  },
+  "2026-02-20": {
+   "date": "2026-02-20",
+   "day_offset": 3,
+   "discharge_probs": {
+    "central": 0.004,
+    "citywide": 0.006,
+    "north_shore": 0.001,
+    "southeast": 0.005,
+    "westside": 0.001
+   },
+   "discharge_probs_live": {
+    "central": 0.004,
+    "citywide": 0.006,
+    "north_shore": 0.001,
+    "southeast": 0.005,
+    "westside": 0.001
+   },
+   "features": {
+    "antecedent_moisture": 0.3133728506173126,
+    "dry_spell_days": 1,
+    "peak_3d": 0.4251968503937003,
+    "precip_avg": 0,
+    "precip_max": 0,
+    "rain_14d_cum": 3.371574803149604,
+    "rain_2d_cum": 0.4251968503937001,
+    "rain_30d_cum": 3.466574803149604,
+    "rain_3d_cum": 0.6535433070866123,
+    "rain_5d_cum": 2.471574803149604,
+    "rain_7d_cum": 2.8715748031496036,
+    "rain_lag1d": 0.4251968503937003,
+    "rain_lag2d": 0.22834645669291231,
+    "rain_lag3d": 0.7480314960629914,
+    "rain_lag5d": 0.38,
+    "rain_lag7d": 0,
+    "rain_max1h": 0,
+    "rain_max3h": 0,
+    "rain_max6h": 0,
+    "wet_prior_3d": 1
+   },
+   "gauge_outage": [],
+   "impact_groups": {
+    "Aquatic Park": 0.01,
+    "Baker-China": 0.006,
+    "Crissy Field": 0.056,
+    "Mission Creek": 0.8,
+    "Ocean Beach": 0.1,
+    "Southeast": 0.833
+   },
+   "input_rules": [
+    "gauge_outage_v1"
+   ],
+   "is_forecast": true,
+   "is_today": false,
+   "label": "Fri Feb 20",
+   "live_corrections": {
+    "enabled": true,
+    "flags_active": [],
+    "groups": {
+     "Mission Creek": {
+      "from": 0.719,
+      "rule": "sample_elevated_floor",
+      "to": 0.8
+     }
+    },
+    "sample_sources": {
+     "datasf": 3,
+     "feed": 3
+    },
+    "source": "golden",
+    "stage1": {},
+    "version": "live_v2",
+    "watcher_ok": true
+   },
+   "observed_cso": [],
+   "plain": {
+    "discharge_probs": {
+     "central": 0.004,
+     "citywide": 0.006,
+     "north_shore": 0.001,
+     "southeast": 0.005,
+     "westside": 0.001
+    },
+    "impact_groups": {
+     "Aquatic Park": 0.01,
+     "Baker-China": 0.006,
+     "Crissy Field": 0.08,
+     "Mission Creek": 0.599,
+     "Ocean Beach": 0.092,
+     "Southeast": 0.696
+    },
+    "predictions": {
+     "central": 0.599,
+     "citywide": 0.696,
+     "north_shore": 0.08,
+     "southeast": 0.696,
+     "westside": 0.092
+    },
+    "zones": {
+     "baker_china": 0.006,
+     "east": 0.696,
+     "north": 0.08,
+     "ocean": 0.092
+    }
+   },
+   "predictions": {
+    "central": 0.8,
+    "citywide": 0.833,
+    "north_shore": 0.056,
+    "southeast": 0.833,
+    "westside": 0.1
+   },
+   "rain_2d_cum": 0.425,
+   "rain_3d_cum": 0.654,
+   "rain_by_gauge": {
+    "SF Downtown": 0.0,
+    "SF Oceanside": 0.0
+   },
+   "rain_inches": 0,
+   "rain_source": "forecast",
+   "zones": {
+    "baker_china": 0.006,
+    "east": 0.833,
+    "north": 0.056,
+    "ocean": 0.1
+   }
+  },
+  "2026-02-21": {
+   "date": "2026-02-21",
+   "day_offset": 4,
+   "discharge_probs": {
+    "central": 0.002,
+    "citywide": 0.002,
+    "north_shore": 0.001,
+    "southeast": 0.002,
+    "westside": 0.0
+   },
+   "discharge_probs_live": {
+    "central": 0.002,
+    "citywide": 0.002,
+    "north_shore": 0.001,
+    "southeast": 0.002,
+    "westside": 0.0
+   },
+   "features": {
+    "antecedent_moisture": 0.24872419636409776,
+    "dry_spell_days": 2,
+    "peak_3d": 0.4251968503937003,
+    "precip_avg": 0,
+    "precip_max": 0,
+    "rain_14d_cum": 3.371574803149604,
+    "rain_2d_cum": 0,
+    "rain_30d_cum": 3.466574803149604,
+    "rain_3d_cum": 0.4251968503937001,
+    "rain_5d_cum": 1.4015748031496038,
+    "rain_7d_cum": 2.8515748031496035,
+    "rain_lag1d": 0,
+    "rain_lag2d": 0.4251968503937003,
+    "rain_lag3d": 0.22834645669291231,
+    "rain_lag5d": 1.07,
+    "rain_lag7d": 0.02,
+    "rain_max1h": 0,
+    "rain_max3h": 0,
+    "rain_max6h": 0,
+    "wet_prior_3d": 1
+   },
+   "gauge_outage": [],
+   "impact_groups": {
+    "Aquatic Park": 0.003,
+    "Baker-China": 0.001,
+    "Crissy Field": 0.044,
+    "Mission Creek": 0.52,
+    "Ocean Beach": 0.079,
+    "Southeast": 0.657
+   },
+   "input_rules": [
+    "gauge_outage_v1"
+   ],
+   "is_forecast": true,
+   "is_today": false,
+   "label": "Sat Feb 21",
+   "live_corrections": {
+    "enabled": true,
+    "flags_active": [],
+    "groups": {},
+    "sample_sources": {
+     "datasf": 3,
+     "feed": 3
+    },
+    "source": "golden",
+    "stage1": {},
+    "version": "live_v2",
+    "watcher_ok": true
+   },
+   "observed_cso": [],
+   "plain": {
+    "discharge_probs": {
+     "central": 0.002,
+     "citywide": 0.002,
+     "north_shore": 0.001,
+     "southeast": 0.002,
+     "westside": 0.0
+    },
+    "impact_groups": {
+     "Aquatic Park": 0.003,
+     "Baker-China": 0.001,
+     "Crissy Field": 0.068,
+     "Mission Creek": 0.48,
+     "Ocean Beach": 0.071,
+     "Southeast": 0.599
+    },
+    "predictions": {
+     "central": 0.48,
+     "citywide": 0.599,
+     "north_shore": 0.068,
+     "southeast": 0.599,
+     "westside": 0.071
+    },
+    "zones": {
+     "baker_china": 0.001,
+     "east": 0.599,
+     "north": 0.068,
+     "ocean": 0.071
+    }
+   },
+   "predictions": {
+    "central": 0.52,
+    "citywide": 0.657,
+    "north_shore": 0.044,
+    "southeast": 0.657,
+    "westside": 0.079
+   },
+   "rain_2d_cum": 0,
+   "rain_3d_cum": 0.425,
+   "rain_by_gauge": {
+    "SF Downtown": 0.0,
+    "SF Oceanside": 0.0
+   },
+   "rain_inches": 0,
+   "rain_source": "forecast",
+   "zones": {
+    "baker_china": 0.001,
+    "east": 0.657,
+    "north": 0.044,
+    "ocean": 0.079
+   }
+  },
+  "2026-02-22": {
+   "date": "2026-02-22",
+   "day_offset": 5,
+   "discharge_probs": {
+    "central": 0.001,
+    "citywide": 0.001,
+    "north_shore": 0.001,
+    "southeast": 0.001,
+    "westside": 0.0
+   },
+   "discharge_probs_live": {
+    "central": 0.001,
+    "citywide": 0.001,
+    "north_shore": 0.001,
+    "southeast": 0.001,
+    "westside": 0.0
+   },
+   "features": {
+    "antecedent_moisture": 0.19808890838471932,
+    "dry_spell_days": 3,
+    "peak_3d": 0.0039370078740157,
+    "precip_avg": 0.0039370078740157,
+    "precip_max": 0.0039370078740157,
+    "rain_14d_cum": 3.3555118110236197,
+    "rain_2d_cum": 0.003937007874015478,
+    "rain_30d_cum": 3.47051181102362,
+    "rain_3d_cum": 0.003937007874015478,
+    "rain_5d_cum": 0.6574803149606281,
+    "rain_7d_cum": 2.4755118110236194,
+    "rain_lag1d": 0,
+    "rain_lag2d": 0,
+    "rain_lag3d": 0.4251968503937003,
+    "rain_lag5d": 0.7480314960629914,
+    "rain_lag7d": 0.38,
+    "rain_max1h": 0.0039370078740157,
+    "rain_max3h": 0.003937007874015714,
+    "rain_max6h": 0.0039370078740157,
+    "wet_prior_3d": 1
+   },
+   "gauge_outage": [],
+   "impact_groups": {
+    "Aquatic Park": 0.001,
+    "Baker-China": 0.0,
+    "Crissy Field": 0.042,
+    "Mission Creek": 0.424,
+    "Ocean Beach": 0.078,
+    "Southeast": 0.504
+   },
+   "input_rules": [
+    "gauge_outage_v1"
+   ],
+   "is_forecast": true,
+   "is_today": false,
+   "label": "Sun Feb 22",
+   "live_corrections": {
+    "enabled": true,
+    "flags_active": [],
+    "groups": {},
+    "sample_sources": {
+     "datasf": 3,
+     "feed": 3
+    },
+    "source": "golden",
+    "stage1": {},
+    "version": "live_v2",
+    "watcher_ok": true
+   },
+   "observed_cso": [],
+   "plain": {
+    "discharge_probs": {
+     "central": 0.001,
+     "citywide": 0.001,
+     "north_shore": 0.001,
+     "southeast": 0.001,
+     "westside": 0.0
+    },
+    "impact_groups": {
+     "Aquatic Park": 0.001,
+     "Baker-China": 0.0,
+     "Crissy Field": 0.066,
+     "Mission Creek": 0.341,
+     "Ocean Beach": 0.07,
+     "Southeast": 0.46
+    },
+    "predictions": {
+     "central": 0.341,
+     "citywide": 0.46,
+     "north_shore": 0.066,
+     "southeast": 0.46,
+     "westside": 0.07
+    },
+    "zones": {
+     "baker_china": 0.0,
+     "east": 0.46,
+     "north": 0.066,
+     "ocean": 0.07
+    }
+   },
+   "predictions": {
+    "central": 0.424,
+    "citywide": 0.504,
+    "north_shore": 0.042,
+    "southeast": 0.504,
+    "westside": 0.078
+   },
+   "rain_2d_cum": 0.004,
+   "rain_3d_cum": 0.004,
+   "rain_by_gauge": {
+    "SF Downtown": 0.004,
+    "SF Oceanside": 0.004
+   },
+   "rain_inches": 0.004,
+   "rain_source": "forecast",
+   "zones": {
+    "baker_china": 0.0,
+    "east": 0.504,
+    "north": 0.042,
+    "ocean": 0.078
+   }
+  }
+ },
+ "live_inputs": {
+  "datasf": [
+   [
+    "Ocean Beach",
+    "2026-02-16",
+    false
+   ],
+   [
+    "Baker-China",
+    "2026-02-16",
+    false
+   ],
+   [
+    "Mission Creek",
+    "2026-02-17",
+    true
+   ]
+  ],
+  "feed": [
+   [
+    "Crissy Field",
+    "2026-02-15",
+    true
+   ],
+   [
+    "Mission Creek",
+    "2026-02-16",
+    false
+   ],
+   [
+    "Baker-China",
+    "2026-02-16",
+    true
+   ]
+  ],
+  "flags": {
+   "2026-02-15": [
+    "central"
+   ],
+   "2026-02-16": [
+    "southeast",
+    "westside"
+   ],
+   "2026-02-17": [
+    "westside"
+   ]
+  },
+  "health": {
+   "last_processed_at": null,
+   "mode": "live",
+   "ok": true,
+   "reason": "ok"
+  },
+  "onsets": {
+   "2026-02-15": [
+    "central"
+   ],
+   "2026-02-16": [
+    "southeast",
+    "westside"
+   ]
+  },
+  "watcher_since": "2026-01-08"
+ },
+ "now": "2026-02-17T08:00:00",
+ "outage_days": {
+  "2026-01-29": [
+   "SF Oceanside"
+  ],
+  "2026-01-30": [
+   "SF Oceanside"
+  ],
+  "2026-01-31": [
+   "SF Oceanside"
+  ],
+  "2026-02-01": [
+   "SF Oceanside"
+  ],
+  "2026-02-02": [
+   "SF Oceanside"
+  ],
+  "2026-02-03": [
+   "SF Oceanside"
+  ],
+  "2026-02-04": [
+   "SF Oceanside"
+  ],
+  "2026-02-05": [
+   "SF Oceanside"
+  ],
+  "2026-02-06": [
+   "SF Oceanside"
+  ],
+  "2026-02-07": [
+   "SF Oceanside"
+  ],
+  "2026-02-08": [
+   "SF Oceanside"
+  ],
+  "2026-02-09": [
+   "SF Oceanside"
+  ],
+  "2026-02-10": [
+   "SF Oceanside"
+  ],
+  "2026-02-11": [
+   "SF Oceanside"
+  ],
+  "2026-02-12": [
+   "SF Oceanside"
+  ],
+  "2026-02-13": [
+   "SF Oceanside"
+  ],
+  "2026-02-14": [
+   "SF Oceanside"
+  ],
+  "2026-02-15": [
+   "SF Oceanside"
+  ],
+  "2026-02-16": [
+   "SF Oceanside"
+  ]
+ },
+ "plain": {
+  "2026-02-17": {
+   "discharge_probs": {
+    "central": 0.733,
+    "citywide": 0.834,
+    "north_shore": 0.168,
+    "southeast": 0.665,
+    "westside": 0.673
+   },
+   "discharge_probs_live": null,
+   "features": {
+    "antecedent_moisture": 0.4200104963870475,
+    "dry_spell_days": 0,
+    "peak_3d": 1.07,
+    "precip_avg": 0.7480314960629914,
+    "precip_max": 0.1102362204724409,
+    "rain_14d_cum": 2.7180314960629914,
+    "rain_2d_cum": 1.8180314960629915,
+    "rain_30d_cum": 2.8130314960629916,
+    "rain_3d_cum": 2.1980314960629914,
+    "rain_5d_cum": 2.2180314960629914,
+    "rain_7d_cum": 2.438031496062991,
+    "rain_lag1d": 1.07,
+    "rain_lag2d": 0.38,
+    "rain_lag3d": 0.02,
+    "rain_lag5d": 0,
+    "rain_lag7d": 0.26,
+    "rain_max1h": 0.1102362204724409,
+    "rain_max3h": 0.295275590551181,
+    "rain_max6h": 0.4055118110236218,
+    "wet_prior_3d": 1
+   },
+   "gauge_outage": [],
+   "impact_groups": {
+    "Aquatic Park": 0.168,
+    "Baker-China": 0.614,
+    "Crissy Field": 0.286,
+    "Mission Creek": 0.931,
+    "Ocean Beach": 0.534,
+    "Southeast": 0.945
+   },
+   "input_rules": [
+    "gauge_outage_v1"
+   ],
+   "live_corrections": null,
+   "observed_cso": [],
+   "plain": {
+    "discharge_probs": {
+     "central": 0.733,
+     "citywide": 0.834,
+     "north_shore": 0.168,
+     "southeast": 0.665,
+     "westside": 0.673
+    },
+    "impact_groups": {
+     "Aquatic Park": 0.168,
+     "Baker-China": 0.614,
+     "Crissy Field": 0.286,
+     "Mission Creek": 0.931,
+     "Ocean Beach": 0.534,
+     "Southeast": 0.945
+    },
+    "predictions": {
+     "central": 0.931,
+     "citywide": 0.945,
+     "north_shore": 0.286,
+     "southeast": 0.945,
+     "westside": 0.614
+    },
+    "zones": {
+     "baker_china": 0.614,
+     "east": 0.945,
+     "north": 0.286,
+     "ocean": 0.534
+    }
+   },
+   "predictions": {
+    "central": 0.931,
+    "citywide": 0.945,
+    "north_shore": 0.286,
+    "southeast": 0.945,
+    "westside": 0.614
+   },
+   "rain_2d_cum": 1.818,
+   "rain_3d_cum": 2.198,
+   "rain_by_gauge": {
+    "SF Downtown": 0.748,
+    "SF Oceanside": 0.748
+   },
+   "rain_inches": 0.748,
+   "rain_source": "mixed",
+   "zones": {
+    "baker_china": 0.614,
+    "east": 0.945,
+    "north": 0.286,
+    "ocean": 0.534
+   }
+  },
+  "2026-02-18": {
+   "discharge_probs": {
+    "central": 0.06,
+    "citywide": 0.08,
+    "north_shore": 0.009,
+    "southeast": 0.035,
+    "westside": 0.014
+   },
+   "discharge_probs_live": null,
+   "features": {
+    "antecedent_moisture": 0.38240107673845336,
+    "dry_spell_days": 0,
+    "peak_3d": 1.07,
+    "precip_avg": 0.22834645669291231,
+    "precip_max": 0.0275590551181102,
+    "rain_14d_cum": 2.9463779527559035,
+    "rain_2d_cum": 0.9763779527559034,
+    "rain_30d_cum": 3.0413779527559037,
+    "rain_3d_cum": 2.0463779527559036,
+    "rain_5d_cum": 2.4463779527559035,
+    "rain_7d_cum": 2.4463779527559035,
+    "rain_lag1d": 0.7480314960629914,
+    "rain_lag2d": 1.07,
+    "rain_lag3d": 0.38,
+    "rain_lag5d": 0,
+    "rain_lag7d": 0.22,
+    "rain_max1h": 0.0275590551181102,
+    "rain_max3h": 0.07480314960629912,
+    "rain_max6h": 0.17716535433070849,
+    "wet_prior_3d": 1
+   },
+   "gauge_outage": [],
+   "impact_groups": {
+    "Aquatic Park": 0.075,
+    "Baker-China": 0.198,
+    "Crissy Field": 0.178,
+    "Mission Creek": 0.828,
+    "Ocean Beach": 0.222,
+    "Southeast": 0.893
+   },
+   "input_rules": [
+    "gauge_outage_v1"
+   ],
+   "live_corrections": null,
+   "observed_cso": [],
+   "plain": {
+    "discharge_probs": {
+     "central": 0.06,
+     "citywide": 0.08,
+     "north_shore": 0.009,
+     "southeast": 0.035,
+     "westside": 0.014
+    },
+    "impact_groups": {
+     "Aquatic Park": 0.075,
+     "Baker-China": 0.198,
+     "Crissy Field": 0.178,
+     "Mission Creek": 0.828,
+     "Ocean Beach": 0.222,
+     "Southeast": 0.893
+    },
+    "predictions": {
+     "central": 0.828,
+     "citywide": 0.893,
+     "north_shore": 0.178,
+     "southeast": 0.893,
+     "westside": 0.222
+    },
+    "zones": {
+     "baker_china": 0.198,
+     "east": 0.893,
+     "north": 0.178,
+     "ocean": 0.222
+    }
+   },
+   "predictions": {
+    "central": 0.828,
+    "citywide": 0.893,
+    "north_shore": 0.178,
+    "southeast": 0.893,
+    "westside": 0.222
+   },
+   "rain_2d_cum": 0.976,
+   "rain_3d_cum": 2.046,
+   "rain_by_gauge": {
+    "SF Downtown": 0.228,
+    "SF Oceanside": 0.228
+   },
+   "rain_inches": 0.228,
+   "rain_source": "forecast",
+   "zones": {
+    "baker_china": 0.198,
+    "east": 0.893,
+    "north": 0.178,
+    "ocean": 0.222
+   }
+  },
+  "2026-02-19": {
+   "discharge_probs": {
+    "central": 0.095,
+    "citywide": 0.167,
+    "north_shore": 0.014,
+    "southeast": 0.09,
+    "westside": 0.021
+   },
+   "discharge_probs_live": null,
+   "features": {
+    "antecedent_moisture": 0.3948250509583137,
+    "dry_spell_days": 0,
+    "peak_3d": 0.7480314960629914,
+    "precip_avg": 0.4251968503937003,
+    "precip_max": 0.1181102362204724,
+    "rain_14d_cum": 3.371574803149604,
+    "rain_2d_cum": 0.6535433070866123,
+    "rain_30d_cum": 3.466574803149604,
+    "rain_3d_cum": 1.4015748031496038,
+    "rain_5d_cum": 2.851574803149604,
+    "rain_7d_cum": 2.8715748031496036,
+    "rain_lag1d": 0.22834645669291231,
+    "rain_lag2d": 0.7480314960629914,
+    "rain_lag3d": 1.07,
+    "rain_lag5d": 0.02,
+    "rain_lag7d": 0,
+    "rain_max1h": 0.1181102362204724,
+    "rain_max3h": 0.2204724409448818,
+    "rain_max6h": 0.3582677165354328,
+    "wet_prior_3d": 1
+   },
+   "gauge_outage": [],
+   "impact_groups": {
+    "Aquatic Park": 0.068,
+    "Baker-China": 0.055,
+    "Crissy Field": 0.174,
+    "Mission Creek": 0.734,
+    "Ocean Beach": 0.14,
+    "Southeast": 0.825
+   },
+   "input_rules": [
+    "gauge_outage_v1"
+   ],
+   "live_corrections": null,
+   "observed_cso": [],
+   "plain": {
+    "discharge_probs": {
+     "central": 0.095,
+     "citywide": 0.167,
+     "north_shore": 0.014,
+     "southeast": 0.09,
+     "westside": 0.021
+    },
+    "impact_groups": {
+     "Aquatic Park": 0.068,
+     "Baker-China": 0.055,
+     "Crissy Field": 0.174,
+     "Mission Creek": 0.734,
+     "Ocean Beach": 0.14,
+     "Southeast": 0.825
+    },
+    "predictions": {
+     "central": 0.734,
+     "citywide": 0.825,
+     "north_shore": 0.174,
+     "southeast": 0.825,
+     "westside": 0.14
+    },
+    "zones": {
+     "baker_china": 0.055,
+     "east": 0.825,
+     "north": 0.174,
+     "ocean": 0.14
+    }
+   },
+   "predictions": {
+    "central": 0.734,
+    "citywide": 0.825,
+    "north_shore": 0.174,
+    "southeast": 0.825,
+    "westside": 0.14
+   },
+   "rain_2d_cum": 0.654,
+   "rain_3d_cum": 1.402,
+   "rain_by_gauge": {
+    "SF Downtown": 0.425,
+    "SF Oceanside": 0.425
+   },
+   "rain_inches": 0.425,
+   "rain_source": "forecast",
+   "zones": {
+    "baker_china": 0.055,
+    "east": 0.825,
+    "north": 0.174,
+    "ocean": 0.14
+   }
+  },
+  "2026-02-20": {
+   "discharge_probs": {
+    "central": 0.004,
+    "citywide": 0.006,
+    "north_shore": 0.001,
+    "southeast": 0.005,
+    "westside": 0.001
+   },
+   "discharge_probs_live": null,
+   "features": {
+    "antecedent_moisture": 0.3133728506173126,
+    "dry_spell_days": 1,
+    "peak_3d": 0.4251968503937003,
+    "precip_avg": 0,
+    "precip_max": 0,
+    "rain_14d_cum": 3.371574803149604,
+    "rain_2d_cum": 0.4251968503937001,
+    "rain_30d_cum": 3.466574803149604,
+    "rain_3d_cum": 0.6535433070866123,
+    "rain_5d_cum": 2.471574803149604,
+    "rain_7d_cum": 2.8715748031496036,
+    "rain_lag1d": 0.4251968503937003,
+    "rain_lag2d": 0.22834645669291231,
+    "rain_lag3d": 0.7480314960629914,
+    "rain_lag5d": 0.38,
+    "rain_lag7d": 0,
+    "rain_max1h": 0,
+    "rain_max3h": 0,
+    "rain_max6h": 0,
+    "wet_prior_3d": 1
+   },
+   "gauge_outage": [],
+   "impact_groups": {
+    "Aquatic Park": 0.01,
+    "Baker-China": 0.006,
+    "Crissy Field": 0.08,
+    "Mission Creek": 0.599,
+    "Ocean Beach": 0.092,
+    "Southeast": 0.696
+   },
+   "input_rules": [
+    "gauge_outage_v1"
+   ],
+   "live_corrections": null,
+   "observed_cso": [],
+   "plain": {
+    "discharge_probs": {
+     "central": 0.004,
+     "citywide": 0.006,
+     "north_shore": 0.001,
+     "southeast": 0.005,
+     "westside": 0.001
+    },
+    "impact_groups": {
+     "Aquatic Park": 0.01,
+     "Baker-China": 0.006,
+     "Crissy Field": 0.08,
+     "Mission Creek": 0.599,
+     "Ocean Beach": 0.092,
+     "Southeast": 0.696
+    },
+    "predictions": {
+     "central": 0.599,
+     "citywide": 0.696,
+     "north_shore": 0.08,
+     "southeast": 0.696,
+     "westside": 0.092
+    },
+    "zones": {
+     "baker_china": 0.006,
+     "east": 0.696,
+     "north": 0.08,
+     "ocean": 0.092
+    }
+   },
+   "predictions": {
+    "central": 0.599,
+    "citywide": 0.696,
+    "north_shore": 0.08,
+    "southeast": 0.696,
+    "westside": 0.092
+   },
+   "rain_2d_cum": 0.425,
+   "rain_3d_cum": 0.654,
+   "rain_by_gauge": {
+    "SF Downtown": 0.0,
+    "SF Oceanside": 0.0
+   },
+   "rain_inches": 0,
+   "rain_source": "forecast",
+   "zones": {
+    "baker_china": 0.006,
+    "east": 0.696,
+    "north": 0.08,
+    "ocean": 0.092
+   }
+  },
+  "2026-02-21": {
+   "discharge_probs": {
+    "central": 0.002,
+    "citywide": 0.002,
+    "north_shore": 0.001,
+    "southeast": 0.002,
+    "westside": 0.0
+   },
+   "discharge_probs_live": null,
+   "features": {
+    "antecedent_moisture": 0.24872419636409776,
+    "dry_spell_days": 2,
+    "peak_3d": 0.4251968503937003,
+    "precip_avg": 0,
+    "precip_max": 0,
+    "rain_14d_cum": 3.371574803149604,
+    "rain_2d_cum": 0,
+    "rain_30d_cum": 3.466574803149604,
+    "rain_3d_cum": 0.4251968503937001,
+    "rain_5d_cum": 1.4015748031496038,
+    "rain_7d_cum": 2.8515748031496035,
+    "rain_lag1d": 0,
+    "rain_lag2d": 0.4251968503937003,
+    "rain_lag3d": 0.22834645669291231,
+    "rain_lag5d": 1.07,
+    "rain_lag7d": 0.02,
+    "rain_max1h": 0,
+    "rain_max3h": 0,
+    "rain_max6h": 0,
+    "wet_prior_3d": 1
+   },
+   "gauge_outage": [],
+   "impact_groups": {
+    "Aquatic Park": 0.003,
+    "Baker-China": 0.001,
+    "Crissy Field": 0.068,
+    "Mission Creek": 0.48,
+    "Ocean Beach": 0.071,
+    "Southeast": 0.599
+   },
+   "input_rules": [
+    "gauge_outage_v1"
+   ],
+   "live_corrections": null,
+   "observed_cso": [],
+   "plain": {
+    "discharge_probs": {
+     "central": 0.002,
+     "citywide": 0.002,
+     "north_shore": 0.001,
+     "southeast": 0.002,
+     "westside": 0.0
+    },
+    "impact_groups": {
+     "Aquatic Park": 0.003,
+     "Baker-China": 0.001,
+     "Crissy Field": 0.068,
+     "Mission Creek": 0.48,
+     "Ocean Beach": 0.071,
+     "Southeast": 0.599
+    },
+    "predictions": {
+     "central": 0.48,
+     "citywide": 0.599,
+     "north_shore": 0.068,
+     "southeast": 0.599,
+     "westside": 0.071
+    },
+    "zones": {
+     "baker_china": 0.001,
+     "east": 0.599,
+     "north": 0.068,
+     "ocean": 0.071
+    }
+   },
+   "predictions": {
+    "central": 0.48,
+    "citywide": 0.599,
+    "north_shore": 0.068,
+    "southeast": 0.599,
+    "westside": 0.071
+   },
+   "rain_2d_cum": 0,
+   "rain_3d_cum": 0.425,
+   "rain_by_gauge": {
+    "SF Downtown": 0.0,
+    "SF Oceanside": 0.0
+   },
+   "rain_inches": 0,
+   "rain_source": "forecast",
+   "zones": {
+    "baker_china": 0.001,
+    "east": 0.599,
+    "north": 0.068,
+    "ocean": 0.071
+   }
+  },
+  "2026-02-22": {
+   "discharge_probs": {
+    "central": 0.001,
+    "citywide": 0.001,
+    "north_shore": 0.001,
+    "southeast": 0.001,
+    "westside": 0.0
+   },
+   "discharge_probs_live": null,
+   "features": {
+    "antecedent_moisture": 0.19808890838471932,
+    "dry_spell_days": 3,
+    "peak_3d": 0.0039370078740157,
+    "precip_avg": 0.0039370078740157,
+    "precip_max": 0.0039370078740157,
+    "rain_14d_cum": 3.3555118110236197,
+    "rain_2d_cum": 0.003937007874015478,
+    "rain_30d_cum": 3.47051181102362,
+    "rain_3d_cum": 0.003937007874015478,
+    "rain_5d_cum": 0.6574803149606281,
+    "rain_7d_cum": 2.4755118110236194,
+    "rain_lag1d": 0,
+    "rain_lag2d": 0,
+    "rain_lag3d": 0.4251968503937003,
+    "rain_lag5d": 0.7480314960629914,
+    "rain_lag7d": 0.38,
+    "rain_max1h": 0.0039370078740157,
+    "rain_max3h": 0.003937007874015714,
+    "rain_max6h": 0.0039370078740157,
+    "wet_prior_3d": 1
+   },
+   "gauge_outage": [],
+   "impact_groups": {
+    "Aquatic Park": 0.001,
+    "Baker-China": 0.0,
+    "Crissy Field": 0.066,
+    "Mission Creek": 0.341,
+    "Ocean Beach": 0.07,
+    "Southeast": 0.46
+   },
+   "input_rules": [
+    "gauge_outage_v1"
+   ],
+   "live_corrections": null,
+   "observed_cso": [],
+   "plain": {
+    "discharge_probs": {
+     "central": 0.001,
+     "citywide": 0.001,
+     "north_shore": 0.001,
+     "southeast": 0.001,
+     "westside": 0.0
+    },
+    "impact_groups": {
+     "Aquatic Park": 0.001,
+     "Baker-China": 0.0,
+     "Crissy Field": 0.066,
+     "Mission Creek": 0.341,
+     "Ocean Beach": 0.07,
+     "Southeast": 0.46
+    },
+    "predictions": {
+     "central": 0.341,
+     "citywide": 0.46,
+     "north_shore": 0.066,
+     "southeast": 0.46,
+     "westside": 0.07
+    },
+    "zones": {
+     "baker_china": 0.0,
+     "east": 0.46,
+     "north": 0.066,
+     "ocean": 0.07
+    }
+   },
+   "predictions": {
+    "central": 0.341,
+    "citywide": 0.46,
+    "north_shore": 0.066,
+    "southeast": 0.46,
+    "westside": 0.07
+   },
+   "rain_2d_cum": 0.004,
+   "rain_3d_cum": 0.004,
+   "rain_by_gauge": {
+    "SF Downtown": 0.004,
+    "SF Oceanside": 0.004
+   },
+   "rain_inches": 0.004,
+   "rain_source": "forecast",
+   "zones": {
+    "baker_china": 0.0,
+    "east": 0.46,
+    "north": 0.066,
+    "ocean": 0.07
+   }
+  }
+ },
+ "today": "2026-02-17",
+ "volumes_by_day": {
+  "2026-01-08": {
+   "central": 18.176662812666482,
+   "north_shore": 2.9233854539082014,
+   "southeast": 0.6079804636865012,
+   "westside": 0.5757187436910334
+  },
+  "2026-01-09": {
+   "central": 18.176662812666482,
+   "north_shore": 2.9233854539082014,
+   "southeast": 0.6079804636865012,
+   "westside": 0.5757187436910334
+  },
+  "2026-01-10": {
+   "central": 18.176662812666482,
+   "north_shore": 2.9233854539082014,
+   "southeast": 0.6079804636865012,
+   "westside": 0.5757187436910334
+  },
+  "2026-01-11": {
+   "central": 18.176662812666482,
+   "north_shore": 2.9233854539082014,
+   "southeast": 0.6079804636865012,
+   "westside": 0.5757187436910334
+  },
+  "2026-01-12": {
+   "central": 18.176662812666482,
+   "north_shore": 2.9233854539082014,
+   "southeast": 0.6079804636865012,
+   "westside": 0.5757187436910334
+  },
+  "2026-01-13": {
+   "central": 18.176662812666482,
+   "north_shore": 2.9233854539082014,
+   "southeast": 0.6079804636865012,
+   "westside": 0.5757187436910334
+  },
+  "2026-01-14": {
+   "central": 18.176662812666482,
+   "north_shore": 2.9233854539082014,
+   "southeast": 0.6079804636865012,
+   "westside": 0.5757187436910334
+  },
+  "2026-01-15": {
+   "central": 18.176662812666482,
+   "north_shore": 2.9233854539082014,
+   "southeast": 0.6079804636865012,
+   "westside": 0.5757187436910334
+  },
+  "2026-01-16": {
+   "central": 18.176662812666482,
+   "north_shore": 2.9233854539082014,
+   "southeast": 0.6079804636865012,
+   "westside": 0.5757187436910334
+  },
+  "2026-01-17": {
+   "central": 18.176662812666482,
+   "north_shore": 2.9233854539082014,
+   "southeast": 0.6079804636865012,
+   "westside": 0.5757187436910334
+  },
+  "2026-01-18": {
+   "central": 18.176662812666482,
+   "north_shore": 2.9233854539082014,
+   "southeast": 0.6079804636865012,
+   "westside": 0.5757187436910334
+  },
+  "2026-01-19": {
+   "central": 18.176662812666482,
+   "north_shore": 2.9233854539082014,
+   "southeast": 0.6079804636865012,
+   "westside": 0.5757187436910334
+  },
+  "2026-01-20": {
+   "central": 18.176662812666482,
+   "north_shore": 2.9233854539082014,
+   "southeast": 0.6079804636865012,
+   "westside": 0.5757187436910334
+  },
+  "2026-01-21": {
+   "central": 18.176662812666482,
+   "north_shore": 2.9233854539082014,
+   "southeast": 0.6079804636865012,
+   "westside": 0.5757187436910334
+  },
+  "2026-01-22": {
+   "central": 18.176662812666482,
+   "north_shore": 2.9233854539082014,
+   "southeast": 0.6079804636865012,
+   "westside": 0.5757187436910334
+  },
+  "2026-01-23": {
+   "central": 18.176662812666482,
+   "north_shore": 2.9233854539082014,
+   "southeast": 0.6079804636865012,
+   "westside": 0.5757187436910334
+  },
+  "2026-01-24": {
+   "central": 18.176662812666482,
+   "north_shore": 2.9233854539082014,
+   "southeast": 0.6079804636865012,
+   "westside": 0.5757187436910334
+  },
+  "2026-01-25": {
+   "central": 18.176662812666482,
+   "north_shore": 2.9233854539082014,
+   "southeast": 0.6079804636865012,
+   "westside": 0.5757187436910334
+  },
+  "2026-01-26": {
+   "central": 18.176662812666482,
+   "north_shore": 2.9233854539082014,
+   "southeast": 0.6079804636865012,
+   "westside": 0.5757187436910334
+  },
+  "2026-01-27": {
+   "central": 18.176662812666482,
+   "north_shore": 2.9233854539082014,
+   "southeast": 0.6079804636865012,
+   "westside": 0.5757187436910334
+  },
+  "2026-01-28": {
+   "central": 18.176662812666482,
+   "north_shore": 2.9233854539082014,
+   "southeast": 0.6079804636865012,
+   "westside": 0.5757187436910334
+  },
+  "2026-01-29": {
+   "central": 18.176662812666482,
+   "north_shore": 3.0550789883010894,
+   "southeast": 1.2112304103239369,
+   "westside": 0.6481760318128797
+  },
+  "2026-01-30": {
+   "central": 18.176662812666482,
+   "north_shore": 3.3326425020507715,
+   "southeast": 1.4831759641953803,
+   "westside": 0.6487968102846041
+  },
+  "2026-01-31": {
+   "central": 18.176662812666482,
+   "north_shore": 3.191934760968036,
+   "southeast": 1.4831759641953803,
+   "westside": 0.6867688092153549
+  },
+  "2026-02-01": {
+   "central": 18.176662812666482,
+   "north_shore": 2.9233854539082014,
+   "southeast": 0.6777467092262311,
+   "westside": 0.5757187436910334
+  },
+  "2026-02-02": {
+   "central": 18.176662812666482,
+   "north_shore": 2.9233854539082014,
+   "southeast": 0.8940318328063616,
+   "westside": 1.5873326987454526
+  },
+  "2026-02-03": {
+   "central": 17.431266827416856,
+   "north_shore": 1.837648816635372,
+   "southeast": 0.6079804636865012,
+   "westside": 0.8012584994918942
+  },
+  "2026-02-04": {
+   "central": 16.616738730637223,
+   "north_shore": 1.837648816635372,
+   "southeast": 0.6079804636865012,
+   "westside": 1.183944861242568
+  },
+  "2026-02-05": {
+   "central": 18.176662812666482,
+   "north_shore": 2.9233854539082014,
+   "southeast": 0.6079804636865012,
+   "westside": 0.5757187436910334
+  },
+  "2026-02-06": {
+   "central": 18.176662812666482,
+   "north_shore": 2.9233854539082014,
+   "southeast": 0.6079804636865012,
+   "westside": 0.5757187436910334
+  },
+  "2026-02-07": {
+   "central": 18.176662812666482,
+   "north_shore": 2.9233854539082014,
+   "southeast": 0.6079804636865012,
+   "westside": 0.5757187436910334
+  },
+  "2026-02-08": {
+   "central": 18.176662812666482,
+   "north_shore": 2.9233854539082014,
+   "southeast": 0.6079804636865012,
+   "westside": 0.5757187436910334
+  },
+  "2026-02-09": {
+   "central": 18.176662812666482,
+   "north_shore": 2.9233854539082014,
+   "southeast": 0.6079804636865012,
+   "westside": 0.5757187436910334
+  },
+  "2026-02-10": {
+   "central": 13.825146861388003,
+   "north_shore": 2.6265430752231373,
+   "southeast": 2.342420483500861,
+   "westside": 1.0468526240341642
+  },
+  "2026-02-11": {
+   "central": 6.85170170880458,
+   "north_shore": 1.1264337299889247,
+   "southeast": 3.7866231742318868,
+   "westside": 0.7544772456307163
+  },
+  "2026-02-12": {
+   "central": 18.176662812666482,
+   "north_shore": 1.9296625615805576,
+   "southeast": 1.3067427824607771,
+   "westside": 0.3585348698339684
+  },
+  "2026-02-13": {
+   "central": 17.698819340740794,
+   "north_shore": 3.3326425020507715,
+   "southeast": 1.3334991667032308,
+   "westside": 1.1198202430496806
+  },
+  "2026-02-14": {
+   "central": 17.698819340740794,
+   "north_shore": 3.191934760968036,
+   "southeast": 1.3071782416428255,
+   "westside": 1.168639971169225
+  },
+  "2026-02-15": {
+   "central": 13.016907889843692,
+   "north_shore": 2.3032191425088238,
+   "southeast": 2.670917690248952,
+   "westside": 2.3416589283041707
+  },
+  "2026-02-16": {
+   "central": 73.30717444520566,
+   "north_shore": 1.5485676083303714,
+   "southeast": 16.99362292819475,
+   "westside": 2.7464145275908574
+  },
+  "2026-02-17": {
+   "central": 37.01275371325322,
+   "north_shore": 13.916184481919807,
+   "southeast": 15.850174734584686,
+   "westside": 1.4645414360976623
+  },
+  "2026-02-18": {
+   "central": 23.01804130972744,
+   "north_shore": 6.814661517164283,
+   "southeast": 5.501060056732988,
+   "westside": 2.7573794254931885
+  },
+  "2026-02-19": {
+   "central": 19.946108675227705,
+   "north_shore": 7.136798892253402,
+   "southeast": 9.075967948652448,
+   "westside": 1.1833968785206153
+  },
+  "2026-02-20": {
+   "central": 26.712641636553816,
+   "north_shore": 1.9877136981512,
+   "southeast": 8.537677078449557,
+   "westside": 2.705688193422015
+  },
+  "2026-02-21": {
+   "central": 27.22823982358619,
+   "north_shore": 2.781774481890141,
+   "southeast": 8.15255220892417,
+   "westside": 4.382298777904696
+  },
+  "2026-02-22": {
+   "central": 19.501071098449863,
+   "north_shore": 2.6973989917415913,
+   "southeast": 6.687748650962419,
+   "westside": 3.6827260926237977
+  }
+ },
+ "window": [
+  "2026-01-08",
+  "2026-02-22"
+ ]
+}
