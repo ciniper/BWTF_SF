@@ -69,7 +69,28 @@
 </div></footer>
 {%- endmacro %}
 
-{% macro tabbar() -%}
+{#- Vercel Web Analytics (page views, cookieless) and Speed Insights (real visitors' load times), production
+    only (VERCEL_INSIGHTS, app/wsgi.py) and switched on in the Vercel dashboard. Nothing leaves the page with a
+    query string: unsubscribe and manage links carry private tokens, so URLs are sent without their query, and
+    those two pages skip the scripts altogether (tabbar(insights=false)). The board reloads itself every five
+    minutes; a reload is not a new visit, so Analytics drops it (Speed Insights keeps it: it is a real load). -#}
+{% macro vercel_insights() -%}
+<script>
+  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+  window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
+  (function () {
+    function bare(e) { try { var u = new URL(e.url); u.search = ""; u.hash = ""; return Object.assign({}, e, { url: u.toString() }); } catch (err) { return e; } }
+    function reloaded() { var n = window.performance && performance.getEntriesByType ? performance.getEntriesByType("navigation")[0] : null; return !!n && n.type === "reload"; }
+    window.va("beforeSend", function (e) { return reloaded() ? null : bare(e); });
+    window.si("beforeSend", bare);
+    window.speedInsightsBeforeSend = bare;
+  })();
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
+<script defer src="/_vercel/speed-insights/script.js"></script>
+{%- endmacro %}
+
+{% macro tabbar(insights=true) -%}
 {%- set p = canonical_path(request.path) %}
 <nav class="tabbar" aria-label="Sections">
   {%- for h in NAV %}
@@ -77,4 +98,7 @@
   {%- endfor %}
 </nav>
 <script src="{{ asset('kit.js') }}" defer></script>
+{%- if insights and VERCEL_INSIGHTS %}
+{{ vercel_insights() }}
+{%- endif %}
 {%- endmacro %}

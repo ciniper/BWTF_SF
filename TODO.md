@@ -60,7 +60,10 @@ Order: the no-tradeoff wins first, then caching once Chase has made its calls.
   first paint on a cold visit.
 - [ ] *Minor:* `shared/supabase.py` opens a new TLS connection per call (`requests.request`, no Session); a shared Session
   would reuse it. Small on Vercel when Supabase sits in the same region.
-- [ ] **Measure cold starts before acting.** One production load of the home page took 8.6 s, the next 2.0 s — that looks
+- [x] **Real-visitor measurement** (branch `obs/vercel-insights`): Vercel Web Analytics + Speed Insights in the shared
+  frame, production only, URLs sent without query strings, the token pages left out. Chase enables both in the
+  Vercel dashboard; see DEPLOY.md.
+- [ ] **Measure cold starts before acting** — read it off Speed Insights once a week of visits is in. One production load of the home page took 8.6 s, the next 2.0 s — that looks
   like Vercel starting a fresh instance. It is not import time (the app imports in 0.15 s; pandas / scikit-learn load only
   on the pages that use them), so the suspects are the size of the one function's bundle (pandas, numpy, scipy and
   scikit-learn ship with every page) and scale-to-zero between visits. Log a week of first-byte times to see how often a

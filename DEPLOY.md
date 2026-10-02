@@ -85,6 +85,21 @@ end-to-end), `watcher_config.keepalive_url` now points the hourly pg cron at
 `/forecast/api/data` (Supabase gateway activity + keeps the forecast warm —
 verified firing), and Railway was deleted. `thread_shadow` rows ended with it.
 
+## Vercel Web Analytics + Speed Insights (built 2026-10-02 on branch `obs/vercel-insights`)
+
+The shared frame (`app/templates/_frame.html`, macro `vercel_insights`) adds Vercel's two plain-HTML scripts to
+every page, in production only (`VERCEL_ENV == "production"`). No npm package: this site has no JavaScript build,
+and Vercel's HTML snippet is the documented way in. **Switch both on in the Vercel dashboard, then redeploy** (or
+push anything): Project → **Analytics** → Enable, and Project → **Speed Insights** → Enable. Until they are enabled
+the two script addresses 404 quietly and nothing is collected.
+
+- **Web Analytics**: page views, referrers, countries, devices; cookieless. A self-reload (the Today board and the
+  alerts dashboard refresh every five minutes) is not counted as a visit.
+- **Speed Insights**: real visitors' load times and Core Web Vitals per page — the cold-start question in TODO A3.
+- **Privacy**: URLs are sent without their query string or fragment, and `/manage` and `/unsubscribe` (whose links
+  carry a subscriber's private token) load neither script. `tests/test_vercel_insights.py` pins all three.
+- Plan limits apply on the free tier; the dashboard shows usage.
+
 ## Local
 
 ```bash
