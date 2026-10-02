@@ -1,0 +1,373 @@
+{
+ "schema": "bwtf.openmeteo_forecast_archive/1",
+ "written_at": "2026-10-02T01:02:22+00:00",
+ "point": {
+  "latitude": 37.7749,
+  "longitude": -122.4194
+ },
+ "utc_offset_hours": -7,
+ "day": "fixed UTC−7, 24 hours (Open-Meteo's request-time offset when the caches were first fetched)",
+ "complete_day_hours": 24,
+ "leads": {
+  "0": "short lead: the newest run covering each hour, stitched (≈0–6 h); optimistic; the Historical Forecast archive",
+  "1": "fixed lead: the value predicted 24 h before valid time (precipitation_previous_day1)",
+  "2": "fixed lead: the value predicted 48 h before valid time (precipitation_previous_day2)",
+  "3": "fixed lead: the value predicted 72 h before valid time (precipitation_previous_day3)",
+  "4": "fixed lead: the value predicted 96 h before valid time (precipitation_previous_day4)",
+  "5": "fixed lead: the value predicted 120 h before valid time (precipitation_previous_day5)"
+ },
+ "urls": {
+  "fixed_lead": "https://previous-runs-api.open-meteo.com/v1/forecast",
+  "short_lead": "https://historical-forecast-api.open-meteo.com/v1/forecast"
+ },
+ "models": {
+  "icon_seamless": {
+   "0": {
+    "kind": "short_lead_optimistic",
+    "file": "openmeteo_hist_forecast_icon_seamless.csv",
+    "first_archived_day": "2022-11-16",
+    "last_archived_day": "2026-08-27",
+    "first_complete_day": "2022-11-17",
+    "last_complete_day": "2026-08-27",
+    "complete_days": 1380,
+    "incomplete_days_inside_span": 1,
+    "nan_hours_inside_span": 1
+   },
+   "1": {
+    "kind": "fixed_lead",
+    "file": "openmeteo_prev_runs_icon_seamless.csv",
+    "first_archived_day": "2024-01-19",
+    "last_archived_day": "2026-09-30",
+    "first_complete_day": "2024-01-20",
+    "last_complete_day": "2026-09-30",
+    "complete_days": 981,
+    "incomplete_days_inside_span": 5,
+    "nan_hours_inside_span": 77
+   },
+   "2": {
+    "kind": "fixed_lead",
+    "file": "openmeteo_prev_runs_icon_seamless.csv",
+    "first_archived_day": "2024-01-20",
+    "last_archived_day": "2026-09-30",
+    "first_complete_day": "2024-01-21",
+    "last_complete_day": "2026-09-30",
+    "complete_days": 980,
+    "incomplete_days_inside_span": 5,
+    "nan_hours_inside_span": 77
+   },
+   "3": {
+    "kind": "fixed_lead",
+    "file": "openmeteo_prev_runs_icon_seamless.csv",
+    "first_archived_day": "2024-01-21",
+    "last_archived_day": "2026-09-30",
+    "first_complete_day": "2024-01-22",
+    "last_complete_day": "2026-09-30",
+    "complete_days": 983,
+    "incomplete_days_inside_span": 1,
+    "nan_hours_inside_span": 0
+   },
+   "4": {
+    "kind": "fixed_lead",
+    "file": "openmeteo_prev_runs_icon_seamless.csv",
+    "first_archived_day": "2024-01-22",
+    "last_archived_day": "2026-09-30",
+    "first_complete_day": "2024-01-23",
+    "last_complete_day": "2026-09-30",
+    "complete_days": 982,
+    "incomplete_days_inside_span": 1,
+    "nan_hours_inside_span": 0
+   },
+   "5": {
+    "kind": "fixed_lead",
+    "file": "openmeteo_prev_runs_icon_seamless.csv",
+    "first_archived_day": "2024-01-23",
+    "last_archived_day": "2026-09-30",
+    "first_complete_day": "2024-01-24",
+    "last_complete_day": "2026-09-30",
+    "complete_days": 981,
+    "incomplete_days_inside_span": 1,
+    "nan_hours_inside_span": 0
+   }
+  },
+  "ecmwf_ifs025": {
+   "0": {
+    "kind": "short_lead_optimistic",
+    "file": "openmeteo_hist_forecast_ecmwf_ifs025.csv",
+    "first_archived_day": "2024-02-02",
+    "last_archived_day": "2026-08-27",
+    "first_complete_day": "2024-02-03",
+    "last_complete_day": "2026-08-27",
+    "complete_days": 926,
+    "incomplete_days_inside_span": 12,
+    "nan_hours_inside_span": 258
+   },
+   "1": {
+    "kind": "fixed_lead",
+    "file": "openmeteo_prev_runs_ecmwf_ifs025.csv",
+    "first_archived_day": "2024-02-03",
+    "last_archived_day": "2026-09-30",
+    "first_complete_day": "2024-02-04",
+    "last_complete_day": "2026-09-30",
+    "complete_days": 970,
+    "incomplete_days_inside_span": 1,
+    "nan_hours_inside_span": 0
+   },
+   "2": {
+    "kind": "fixed_lead",
+    "file": "openmeteo_prev_runs_ecmwf_ifs025.csv",
+    "first_archived_day": "2024-02-04",
+    "last_archived_day": "2026-09-30",
+    "first_complete_day": "2024-02-05",
+    "last_complete_day": "2026-09-30",
+    "complete_days": 969,
+    "incomplete_days_inside_span": 1,
+    "nan_hours_inside_span": 0
+   },
+   "3": {
+    "kind": "fixed_lead",
+    "file": "openmeteo_prev_runs_ecmwf_ifs025.csv",
+    "first_archived_day": "2024-02-05",
+    "last_archived_day": "2026-09-30",
+    "first_complete_day": "2024-02-06",
+    "last_complete_day": "2026-09-30",
+    "complete_days": 968,
+    "incomplete_days_inside_span": 1,
+    "nan_hours_inside_span": 0
+   },
+   "4": {
+    "kind": "fixed_lead",
+    "file": "openmeteo_prev_runs_ecmwf_ifs025.csv",
+    "first_archived_day": "2024-02-06",
+    "last_archived_day": "2026-09-30",
+    "first_complete_day": "2024-02-07",
+    "last_complete_day": "2026-09-30",
+    "complete_days": 967,
+    "incomplete_days_inside_span": 1,
+    "nan_hours_inside_span": 0
+   },
+   "5": {
+    "kind": "fixed_lead",
+    "file": "openmeteo_prev_runs_ecmwf_ifs025.csv",
+    "first_archived_day": "2024-02-07",
+    "last_archived_day": "2026-09-30",
+    "first_complete_day": "2024-02-08",
+    "last_complete_day": "2026-09-30",
+    "complete_days": 960,
+    "incomplete_days_inside_span": 7,
+    "nan_hours_inside_span": 129
+   }
+  },
+  "gfs_seamless": {
+   "0": {
+    "kind": "short_lead_optimistic",
+    "file": "openmeteo_hist_forecast_gfs_seamless.csv",
+    "first_archived_day": "2024-01-31",
+    "last_archived_day": "2026-08-27",
+    "first_complete_day": "2024-01-31",
+    "last_complete_day": "2026-08-27",
+    "complete_days": 940,
+    "incomplete_days_inside_span": 0,
+    "nan_hours_inside_span": 0
+   },
+   "1": {
+    "kind": "fixed_lead",
+    "file": "openmeteo_prev_runs_gfs_seamless.csv",
+    "first_archived_day": "2024-01-19",
+    "last_archived_day": "2026-09-30",
+    "first_complete_day": "2024-01-20",
+    "last_complete_day": "2026-09-30",
+    "complete_days": 985,
+    "incomplete_days_inside_span": 1,
+    "nan_hours_inside_span": 0
+   },
+   "2": {
+    "kind": "fixed_lead",
+    "file": "openmeteo_prev_runs_gfs_seamless.csv",
+    "first_archived_day": "2024-01-20",
+    "last_archived_day": "2026-09-30",
+    "first_complete_day": "2024-01-21",
+    "last_complete_day": "2026-09-30",
+    "complete_days": 984,
+    "incomplete_days_inside_span": 1,
+    "nan_hours_inside_span": 0
+   },
+   "3": {
+    "kind": "fixed_lead",
+    "file": "openmeteo_prev_runs_gfs_seamless.csv",
+    "first_archived_day": "2024-01-21",
+    "last_archived_day": "2026-09-30",
+    "first_complete_day": "2024-01-22",
+    "last_complete_day": "2026-09-30",
+    "complete_days": 983,
+    "incomplete_days_inside_span": 1,
+    "nan_hours_inside_span": 0
+   },
+   "4": {
+    "kind": "fixed_lead",
+    "file": "openmeteo_prev_runs_gfs_seamless.csv",
+    "first_archived_day": "2024-01-22",
+    "last_archived_day": "2026-09-30",
+    "first_complete_day": "2024-01-23",
+    "last_complete_day": "2026-09-30",
+    "complete_days": 982,
+    "incomplete_days_inside_span": 1,
+    "nan_hours_inside_span": 0
+   },
+   "5": {
+    "kind": "fixed_lead",
+    "file": "openmeteo_prev_runs_gfs_seamless.csv",
+    "first_archived_day": "2024-01-23",
+    "last_archived_day": "2026-09-30",
+    "first_complete_day": "2024-01-24",
+    "last_complete_day": "2026-09-30",
+    "complete_days": 981,
+    "incomplete_days_inside_span": 1,
+    "nan_hours_inside_span": 0
+   }
+  }
+ },
+ "probe": {
+  "window": [
+   "2024-01-10",
+   "2024-02-20"
+  ],
+  "models": {
+   "icon_seamless": {
+    "grid": [
+     37.75,
+     -122.5
+    ],
+    "0": {
+     "first_hour": "2024-01-10 00:00:00",
+     "first_complete_day": "2024-01-10"
+    },
+    "1": {
+     "first_hour": "2024-01-19 05:00:00",
+     "first_complete_day": "2024-01-20"
+    },
+    "2": {
+     "first_hour": "2024-01-20 05:00:00",
+     "first_complete_day": "2024-01-21"
+    },
+    "3": {
+     "first_hour": "2024-01-21 05:00:00",
+     "first_complete_day": "2024-01-22"
+    },
+    "4": {
+     "first_hour": "2024-01-22 05:00:00",
+     "first_complete_day": "2024-01-23"
+    },
+    "5": {
+     "first_hour": "2024-01-23 05:00:00",
+     "first_complete_day": "2024-01-24"
+    },
+    "lead0_vs_short_lead_cache": {
+     "hours": 1008,
+     "identical": 1008
+    }
+   },
+   "ecmwf_ifs025": {
+    "grid": [
+     37.75,
+     -122.25
+    ],
+    "0": {
+     "first_hour": "2024-02-02 15:00:00",
+     "first_complete_day": "2024-02-03"
+    },
+    "1": {
+     "first_hour": "2024-02-03 15:00:00",
+     "first_complete_day": "2024-02-04"
+    },
+    "2": {
+     "first_hour": "2024-02-04 15:00:00",
+     "first_complete_day": "2024-02-05"
+    },
+    "3": {
+     "first_hour": "2024-02-05 15:00:00",
+     "first_complete_day": "2024-02-06"
+    },
+    "4": {
+     "first_hour": "2024-02-06 15:00:00",
+     "first_complete_day": "2024-02-07"
+    },
+    "5": {
+     "first_hour": "2024-02-07 15:00:00",
+     "first_complete_day": "2024-02-08"
+    },
+    "lead0_vs_short_lead_cache": {
+     "hours": 408,
+     "identical": 408
+    }
+   },
+   "gfs_seamless": {
+    "grid": [
+     37.763283,
+     -122.41286
+    ],
+    "0": {
+     "first_hour": "2024-01-10 00:00:00",
+     "first_complete_day": "2024-01-10"
+    },
+    "1": {
+     "first_hour": "2024-01-19 05:00:00",
+     "first_complete_day": "2024-01-20"
+    },
+    "2": {
+     "first_hour": "2024-01-20 05:00:00",
+     "first_complete_day": "2024-01-21"
+    },
+    "3": {
+     "first_hour": "2024-01-21 05:00:00",
+     "first_complete_day": "2024-01-22"
+    },
+    "4": {
+     "first_hour": "2024-01-22 05:00:00",
+     "first_complete_day": "2024-01-23"
+    },
+    "5": {
+     "first_hour": "2024-01-23 05:00:00",
+     "first_complete_day": "2024-01-24"
+    },
+    "lead0_vs_short_lead_cache": {
+     "hours": 504,
+     "identical": 504
+    }
+   }
+  },
+  "icon_short_lead_first_hour": "2022-11-16 01:00:00"
+ },
+ "fetch_notes": {
+  "prev_runs_icon_seamless": {
+   "fetched_at": "2026-10-02T00:59:48+00:00",
+   "rows": 118055,
+   "lead0_vs_short_lead_cache": {
+    "hours_compared": 22560,
+    "identical": 22560
+   }
+  },
+  "prev_runs_ecmwf_ifs025": {
+   "fetched_at": "2026-10-02T01:00:19+00:00",
+   "rows": 116205,
+   "lead0_vs_short_lead_cache": {
+    "hours_compared": 22254,
+    "identical": 22254
+   }
+  },
+  "prev_runs_gfs_seamless": {
+   "fetched_at": "2026-10-02T01:00:53+00:00",
+   "rows": 118055,
+   "lead0_vs_short_lead_cache": {
+    "hours_compared": 22560,
+    "identical": 22560
+   }
+  },
+  "icon_short_lead_extension": {
+   "model": "icon_seamless",
+   "prepended_hours": 10584,
+   "first": "2022-11-16 00:00:00",
+   "overlap_hours_identical": 48,
+   "fetched_at": "2026-10-02T01:01:28+00:00"
+  }
+ }
+}
