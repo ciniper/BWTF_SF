@@ -1633,7 +1633,7 @@ class LiveData:
         stamp = {
             **{k: sv.get(k) for k in ("name", "stage1", "stage2", "artifact", "family", "line", "promoted_at")},
             "trained_at": first.get("trained_at"),
-            "live_corrections": _lr.VERSION,
+            "live_corrections": (getattr(self, "corrections", None) or {}).get("rule") or _lr.VERSION,   # s5.json's rule once switched (A7)
             "weather_model": METEO_PARAMS.get("models"),   # the input standing in for the gauges on forecast days (ICON since 2026-09-30)
             "input_rules": list(INPUT_RULES_LIVE),
             "build": None,

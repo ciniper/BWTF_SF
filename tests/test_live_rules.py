@@ -446,6 +446,15 @@ def test_corrections_switch_writes_s5_and_switches_back():
     assert not (sd / "s5.json").exists(), "the branch serves live_v2 until the owner promotes the switch"
 
 
+def test_the_model_stamp_names_the_correction_rule_that_runs():
+    """forecast_history rows are graded by their stamp (T0): after the switch it must say link_zone_v1."""
+    from features.forecast import live_dashboard as ld
+    for corrections, rule in ((None, LR.VERSION), ({"rule": ld.LINK_ZONE, "cofire": {"x": 1.0}}, ld.LINK_ZONE)):
+        eng = ld.LiveData.__new__(ld.LiveData)
+        eng.models, eng.corrections = {}, corrections
+        assert eng.model_stamp()["live_corrections"] == rule, (corrections, rule)
+
+
 if __name__ == "__main__":
     failed = 0
     for name, fn in sorted(globals().items()):
