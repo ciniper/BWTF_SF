@@ -8,7 +8,8 @@ each named by its lineup (STAGES_DESIGN.md A8; Part C §8 P9).
 It reads committed artifacts only and never recomputes a score:
 
     data/models/served.json                               the served set's name
-    data/models/stages/<set>/manifest.json, scores.json   every set the stages build scored
+    data/models/stages/<set>/manifest.json, scores.json   every set the stages build scored (the served set's
+                                                          t0_as_served: the live season as the page showed it)
     data/models/stages/_s1/s1_scores.json                 S1 by lead (no set owns it)
     data/models/stages_candidates/<name>/manifest.json    a stage candidate's S2 design
     data/models/stages_candidates/_bakeoff/results.json   the S2 term-set bake-off (A5)
@@ -426,11 +427,22 @@ def unit_table(A: Art, geo: str, cols: list, units: list, windows=("T2", "T1"), 
 
 # ── sections ─────────────────────────────────────────────────────────────────
 
+def live_started(D: dict) -> bool:
+    """Whether the data reach the live season (the rules' T0, from the day after the freeze)."""
+    return _date(D["sets"][0]["scores"].get("as_of")) >= _date(D["protocol"]["t0"])
+
+
 def section_what(D: dict) -> str:
     A = D["sets"][0]["scores"]
     M = D["sets"][0]["manifest"]
     P = D["protocol"]
     power = SP.EXCLUSIONS["X-POWER"]["plain"]
+    live = live_started(D)
+    post_end = M.n("windows", "freeze" if live else "data_end", f="mon")       # post-training stops at the freeze
+    live_words = (f'Every day after the rules froze on {esc(FMT["day"](P["freeze"]))}, scored to the data end on '
+                  f'{A.n("as_of", f="day")}: the public number as the page showed it, below, and each challenger on the same days.'
+                  if live else f'Every day after the rules froze on {esc(FMT["day"](P["freeze"]))}. Nothing is scored there yet: '
+                  f'the data end on {A.n("as_of", f="day")}.')
     return f'''<section id="what"><h2>What this is</h2>
 <p class="lead">The percentage on the forecast page is the end of a chain of five stages. <b>S1</b> forecasts the rain. <b>S2</b> turns rain into the chance that each sewer basin overflows. <b>S3</b> works out which beach zones an overflow reaches. <b>S4</b> asks whether the water is still over the state standard in the days after. <b>S5</b> corrects the chain when SFPUC's beach map or a lab result shows what happened. <b>OUT</b> is the number people see. Each stage is scored twice: on its true input (<b>oracle</b>, the stage on its own) and on the real output of the stage before it (<b>chained</b>, the stage as it runs).</p>
 <div class="card wide defs">
@@ -442,8 +454,8 @@ def section_what(D: dict) -> str:
 <h3>Three windows</h3>
 <div class="grid3">
 <div class="card"><b>{A.n("s2", "pooled", "oracle", "T2", "n_seasons", f="i")} seasons</b><div class="mute">{span_words(A, "s2", "pooled", "oracle", "T2", "span")}</div><p class="fine">Each July–June season is scored by a fit that never saw it: every fitted part is refit without that season. These are development scores: today's design was chosen with these seasons in view.</p></div>
-<div class="card"><b>Post-training</b><div class="mute">{M.n("windows", "post_start", f="mon")} – {M.n("windows", "data_end", f="mon")} · {A.n("out", "pooled", "oracle", "T1", "n_storm_blocks", f="i")} storms</div><p class="fine">Every fitted part was fit on days before {M.n("windows", "post_start", f="mon")}. With so few storms most cells here say too few storms to decide. Today's set was also picked with these days in view, which favours it.</p></div>
-<div class="card"><b>The live season</b><div class="mute">from {esc(FMT["day"](P["t0"]))}</div><p class="fine">Every day after the rules froze on {esc(FMT["day"](P["freeze"]))}. Nothing is scored there yet: the data end on {A.n("as_of", f="day")}.</p></div>
+<div class="card"><b>Post-training</b><div class="mute">{M.n("windows", "post_start", f="mon")} – {post_end} · {A.n("out", "pooled", "oracle", "T1", "n_storm_blocks", f="i")} storms</div><p class="fine">Every fitted part was fit on days before {M.n("windows", "post_start", f="mon")}. With so few storms most cells here say too few storms to decide. Today's set was also picked with these days in view, which favours it.</p></div>
+<div class="card"><b>The live season</b><div class="mute">from {esc(FMT["day"](P["t0"]))}</div><p class="fine">{live_words}</p></div>
 </div>
 <p class="fine">The artifacts also hold a holdout window ({span_words(A, "s2", "pooled", "oracle", "T1-holdout", "span")}), kept for development only; this page shows the other two.</p>
 </section>'''
@@ -735,11 +747,35 @@ def section_out(D: dict) -> str:
 <h3>By lead: today to five days ahead</h3>
 <div class="grid2 lead2"><div class="card">{lead_chart(A)}<p class="fine">Today's score reads a stitched short-lead archive, not forecasts stored as they were issued, so it flatters. “As served” runs the live page's shorter rain history, and {esc(served_words)}.</p></div>
 <div>{stage_table(A, lead_rows)}</div></div>
+{section_live(D)}
 <div class="card" id="levels"><b>Risk levels</b><div class="levels">{lv}</div>
 <p class="fine">Fixed bands on the whole percent the page shows, the same on every page; nothing chooses them from data. Of the bad beach days, the share the forecast put at each level or above one day ahead (caught), and of the days it put there, the share that were not bad:</p>
 {tw(f'<table class="st">{edge_head}{"".join(edge_rows)}</table>')}</div>
 {section_budget(A)}
 </section>'''
+
+
+def section_live(D: dict) -> str:
+    """The live season (the rules' T0) as the page showed it: today's forecast's own stored forecasts, graded by lead
+    (scores['t0_as_served']), pooled and by zone; one plain line until a data refresh covers the season."""
+    A, P = D["sets"][0]["scores"], D["protocol"]
+    head = '<h3 id="live">The live season, as the page showed it</h3>'
+    if A.opt("t0_as_served", "state") != "graded":
+        return (f'{head}<p class="fine">Each day\'s forecast as the page showed it, from {esc(FMT["day"](P["t0"]))}, is graded '
+                f'here once a data refresh covers {esc(_date(P["t0"]).strftime("%B %Y"))} or later.</p>')
+    T, words = ("t0_as_served", "out"), STAGE_WORDS["out"]
+    leads = [f"L{i}" for i in range(6)]
+    rows = "".join(f'<tr><th class="rl">{esc(SP.LEAD_DAYS[i])}</th>{score_cell(A, (*T, "pooled", e, "T0"), words, missing="none yet")}</tr>'
+                   for i, e in enumerate(leads))
+    zones = [u for u in A.get(*T) if u != "pooled"]
+    zhead = "<tr><th></th>" + "".join(f"<th>{esc(d)}</th>" for d in SP.LEAD_DAYS) + "</tr>"
+    zrows = "".join(f'<tr><th class="rl">{esc(zone_label(z))}</th>'
+                    + "".join(score_cell(A, (*T, z, e, "T0"), words, missing="none yet") for e in leads) + "</tr>" for z in zones)
+    c = ("t0_as_served", "counts")
+    return f'''{head}
+<p class="fine">The percentages the page showed each day from {esc(FMT["day"](P["t0"]))}, stored as they were issued, graded on the same truth as above: {A.n(*c, "issue_days", f="i")} days of forecasts; {A.n(*c, "graded", f="i")} zone forecasts graded, {A.n(*c, "waiting", f="i")} waiting for the records that grade them, {A.n(*c, "other_model", f="i")} made by another lineup. These are the forecasts people saw; the challengers' tests run every lineup on the same inputs instead.</p>
+{tw(f'<table class="st"><tr><th>All zones together</th><th>The live season</th></tr>{rows}</table>')}
+<details class="more"><summary>By zone</summary>{tw(f'<table class="st wide">{zhead}{zrows}</table>')}</details>'''
 
 
 def section_budget(A: Art) -> str:
@@ -858,6 +894,8 @@ def challenger_card(D: dict, s: dict) -> str:
             note = '<div class="sm">tested on today\'s chain, where today\'s rule exists</div>'
         if r["id"] == "OUT" and r.get("t0") == "empty":
             note = '<div class="sm">the live season holds no scored day yet</div>'
+        elif r["id"] == "OUT" and r.get("t0") == "scored":
+            note = '<div class="sm">post-training and the live season, judged together</div>'
         for j, p in enumerate(parts):
             pb = (*base, "parts", j)
             first = f'<th class="rl" rowspan="{len(parts)}" title="{esc(tip)}">{test}{note}<div class="sm">overall: {chip(r["status"], STATUS_CLASS.get(r["status"], "na"))}</div></th>' if j == 0 else ""

@@ -594,6 +594,40 @@ def test_s5_pills_are_the_change_in_brier_of_the_served_rule():
     assert "change in Brier (lower is better)" in shown
 
 
+def test_x_power_counts_rain_storm_blocks_in_s5_and_s1_too():
+    """Protocol §6's X-POWER, the same rule everywhere: fewer than 10 positives or fewer than 8 storm blocks, the rain
+    storms of truth.blocks. S5's cells resample observation events but count the storms their rows touch
+    (n_storm_blocks), never the observation events; S1's pills count the storm blocks overlapping their days, so the
+    post-training S1 pills are X-POWER and the Previous Runs ones are not."""
+    b = _b()
+    blocks = T.blocks(end=AS_OF).set_index("date")
+    s5 = b.rows["s5"]
+    checked, differ = 0, 0
+    for feed, by_w in b.scores["s5"]["pooled"].items():
+        for w, by_v in by_w.items():
+            g = s5[(s5["entry"] == feed) & s5["tier"].isin(B.S5_WINDOW if w == "S5" else (w,)) & (s5["excl"] == "")
+                   & (s5["variant"] == "plain")]
+            sid, storm = B._storm_blocks(g["date"], blocks)
+            n = len(np.unique(sid[storm]))
+            for v, cell in by_v.items():
+                assert cell["n_storm_blocks"] == n and cell["low_power"] == (cell["n_pos"] < 10 or n < 8), (feed, w, v)
+                checked, differ = checked + 1, differ + (n != cell["n_blocks"])
+    assert checked and differ, (checked, differ)                     # observation events are not storms
+    s1 = json.loads(B.S1_SCORES.read_text())
+    fig = B.s1_figure(s1, B.S1.post_training(s1["served_model"]), blocks)
+
+    def storms(span):
+        d = blocks.loc[span[0]:span[1]]
+        return d.loc[d["block_kind"] == "storm", "block"].nunique()
+    for k in ("oracle", "chained"):
+        p, post = fig[k], fig[k]["post"]
+        assert p["low_power"] is False and p["pos"] >= 10 and storms(p["span"]) >= 8, (k, p)
+        assert post["low_power"] is True and post["pos"] >= 10 and storms(post["span"]) < 8, (k, post)   # too few storms alone
+    short = dict(s1, by_lead={"1": {"avg": {"models": {s1["served_model"]: dict(
+        s1["by_lead"]["1"]["avg"]["models"][s1["served_model"]], first="2025-12-01", last="2025-12-31")}}}})
+    assert B.s1_figure(short, None, blocks)["chained"]["low_power"] is True
+
+
 def test_figure_words_on_fixture_cells():
     """On fixture cells (no build): an S5 pill keeps its cell's seasons, so a cross-season S5 pill (scores['figures']
     ['T2']) says how many; the degraded feeds' pill is the seeds' mean change in Brier, from the lowest seed's lower
@@ -705,7 +739,12 @@ def test_s5_feed_counts_never_count_a_zone_day_twice():
     assert t2["exclusions"]["X-S5-SELF"] == 7 and t2["feeds"]["s5"]["by_feed"][0]["what"] == "the perfect feed, the cross-season folds"
     assert t2["feeds"]["s5"]["chip"] == "the perfect feed's zone-days in the cross-season folds, each zone-day once", t2["feeds"]
     assert fc["feeds"]["s5"]["chip"] == "the perfect feed's zone-days in S5's window (Jul 2023 – Aug 2026), each zone-day once"
-    assert _raises(lambda: B.figure_counts("geo_v1", AS_OF, None, {"ocean": {"oracle": {"T0": cell()}}}), ValueError)
+    assert B.s5_feed_counts({"ocean": {"oracle": {"T9": cell()}}}, AS_OF)["oracle"]["span"] is None      # counted, no span …
+    assert _raises(lambda: B.figure_counts("geo_v1", AS_OF, None, {"ocean": {"oracle": {"T9": cell()}}}), ValueError)  # … no words
+    # T0 is in S5's window (2023-07-01 → the data end, protocol §8) once the data reach it; before, a T0 row cannot be
+    t0 = B.s5_feed_counts({"ocean": {"oracle": {"T1": cell({"X-S5-SELF": 1}), "T0": cell({"X-S5-SELF": 2})}}}, "2026-12-31")
+    assert t0["oracle"]["tiers"] == ["T1", "T0"] and t0["oracle"]["span"] == ["2025-11-01", "2026-12-31"] and t0["oracle"]["counts"]["X-S5-SELF"] == 3
+    assert _raises(lambda: B.s5_feed_counts({"ocean": {"oracle": {"T0": cell()}}}, AS_OF), ValueError)
 
 
 def test_the_out_card_shows_oracle_and_lead_1_pills_and_its_lead_strip():
@@ -1101,8 +1140,13 @@ def test_a_stub_sfpuc4_candidate_builds_on_a_slice():
     assert b.manifest["components"] == {"s1": E.served_weather_model(), "s2": "stub_s2", "s3": "stub_links", "s4": "stub_zone_v3",
                                         "s5": "link_zone_swap"}
     assert set(b.rows["s2"]["unit"]) == {"westside", "north_shore", "central", "south"}
-    assert {(f.tier, f.fold) for f in cand.folds} == {("T1", "final"), ("T1-holdout", "pre_holdout"), ("T2", "2019-20")}
-    assert [cand.is_rows_fold(f) for f in cand.folds] == [False, False, True] and cand.nested
+    assert {(f.tier, f.fold) for f in cand.folds} == {("T1", "final"), ("T1-holdout", "pre_holdout"), ("T2", "2019-20"),
+                                                      ("T0", "final")}
+    assert [cand.is_rows_fold(f) for f in cand.folds] == [False, False, True, False] and cand.nested
+    # T0 is T1's fold after the freeze: the finals, their heads and specs, not refit (protocol §2)
+    f1, f0 = (next(f for f in cand.folds if f.tier == t) for t in ("T1", "T0"))
+    assert f0.weights is f1.weights and f0.heads is f1.heads and f0.start == X.freeze_date() + pd.Timedelta(days=1)
+    assert cand.specs[("T0", "final")] is cand.specs[("T1", "final")] and cand.s3b[("T0", "final")] is cand.s3b[("T1", "final")]
     # T2's S2 is the bake-off's rows to the digit; T1 its finals through stages_s2's predict path
     s2 = b.rows["s2"]
     t2 = s2[(s2["tier"] == "T2") & (s2["entry"] == "oracle")].set_index(["unit", "date"])["p"].sort_index()
@@ -1133,7 +1177,7 @@ def test_a_stub_sfpuc4_candidate_builds_on_a_slice():
     assert first == pd.Timestamp(STUB_SEASON, 7, 8) and b.scores["dropped"]["no_history_days"]["oracle T2"] == 7
     # the heads in use, every fold (T2's as the bake-off records each outer fold's head): the declared fallback
     # wherever a basin is under the 20-event floor
-    assert set(cand.heads_used) == set(cand.head_records) == {(f.tier, f.fold) for f in cand.folds}
+    assert set(cand.heads_used) == set(cand.head_records) == {(f.tier, f.fold) for f in cand.folds if f.tier != "T0"}  # T0's: T1's
     for key, used in cand.heads_used.items():
         f = next(x for x in cand.folds if (x.tier, x.fold) == key)
         for k, kind in used.items():
@@ -1336,7 +1380,8 @@ def test_the_primaries_state_every_protocol_row():
     # S4 fit at φ = 1 beside fitted shares (a φ = 1 study next to links_v1), or records that do not say, carry one
     assert sc["integrity"]["s4_fit_sizes"] == {"match": True, "folds_off": [], "folds_unstated": []}
     cand = _cand()
-    assert all(s["match"] for s in cand.s4_sizes.values()) and set(cand.s4_sizes) == set(cand.specs)
+    fitted = {k: v for k, v in cand.specs.items() if k[0] != "T0"}           # T0 composes with T1's specs: no fit of its own
+    assert all(s["match"] for s in cand.s4_sizes.values()) and set(cand.s4_sizes) == set(fitted)
     assert B.s4_size_caveat(cand.s4_sizes) is None and "Part B 6" not in pr["S4"].get("caveat", "") and "caveat" not in pr["OUT"]
     # S4's fix clause is tested only where the served table shows the oracle-worse-than-chained defect (its chained −
     # oracle CI wholly below 0), both S4s' Δ on the same rows: the T2 unit-days the candidate's oracle and chained rows
@@ -1369,13 +1414,13 @@ def test_the_primaries_state_every_protocol_row():
     s4 = json.loads(json.dumps(saved.s4_quality))
     for r in s4["fit"]["folds"]:
         r["vol_share"] = {lid: 1.0 for lid in r["vol_share"]}
-    off = B.s4_fit_sizes(s4, cand.specs)
-    assert [k for k, s in sorted(off.items()) if s["match"] is False] == sorted(cand.specs)
+    off = B.s4_fit_sizes(s4, fitted)
+    assert [k for k, s in sorted(off.items()) if s["match"] is False] == sorted(fitted)
     cv = B.s4_size_caveat(off)
     assert "Part B 6" in cv and "westside>ocean 1.0 vs 0.5" in cv and "3 of 3 folds" in cv, cv
     for r in s4["fit"]["folds"]:
         r.pop("vol_share")
-    assert "does not say" in B.s4_size_caveat(B.s4_fit_sizes(s4, cand.specs))
+    assert "does not say" in B.s4_size_caveat(B.s4_fit_sizes(s4, fitted))
     # S3b tests a size term: the stub's logit_logvol shares have one; constant shares would leave S3b nothing to test
     cand = _cand()
     assert B.size_shares(cand)
@@ -1406,13 +1451,14 @@ def test_the_primaries_state_every_protocol_row():
     assert "the served set's build" in s5["reason"] and [p["part"].split(" (")[0] for p in s5["parts"]] == ["perfect feed", "degraded feed"]
     out = pr["OUT"]
     assert "T0" in out["reason"] and "holds no scored day" in out["reason"] and out["t0"] == "empty"
-    # T0 starts the day after the freeze: empty at this data end; once the data run past it, the union waits for the
-    # forecast_history grader (T1 stops at the freeze), never T1 alone in its place
+    # T0 starts the day after the freeze: empty at this data end, so T1 stands alone; once the data run past it, T0 is
+    # shadow-run like T1 and the parts read T1 post ∪ T0 as one window (tests/test_t0.py builds one)
     t0_first = X.freeze_date() + pd.Timedelta(days=1)
     assert B.t0_words(AS_OF)[0] == "empty" and B.t0_words(t0_first - pd.Timedelta(days=1))[0] == "empty"
-    assert B.t0_words(t0_first)[0] == "not graded" and "not yet computable" in B.t0_words(t0_first)[1]
+    assert B.t0_words(t0_first)[0] == "scored" and "T1 post ∪ T0" in B.t0_words(t0_first)[1]
     assert [p["part"] for p in out["parts"]] == ["non-inferiority at +5%, rain known", "pooled MCB, rain known",
                                                  "non-inferiority at +5%, lead 1", "pooled MCB, lead 1"]
+    assert {p["window"] for p in out["parts"]} == {"T1"} and not any("t1_status" in p for p in out["parts"])
     assert out["parts"][0]["delta"] == sc["paired"]["vs_served"]["out"]["pooled"]["rain"]["T1"]["delta"]
     # Holm on CIs: the smaller p clears at 95%, then the other at 90%; one member: its 90% bound
     assert B.holm({"a": {"hi90": -0.1, "hi95": -0.05, "margin": 0.0}, "b": {"hi90": -0.01, "hi95": 0.01, "margin": 0.0}}) == {"a": "pass", "b": "pass"}

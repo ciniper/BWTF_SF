@@ -442,12 +442,16 @@ def test_bad_inputs_raise():
     raises(lambda: fitted.predict({"rain": short}), "different days")
     raises(lambda: fitted.predict({"rain": {s: f[f["date"] < pd.Timestamp("2016-07-01")] for s, f in rain.items()}}), "holds no day")
     raises(lambda: S.fit(_served(), tiers=("T3",)), "X-ALL-INSAMPLE")
-    raises(lambda: S.fit(_served(), tiers=("T0",)), "forecast_history")
     raises(lambda: S.fit(_served(), tiers=("T4",)), "unknown tiers")
     raises(lambda: S.load_set(_served(), root="stages_candidates"), "unknown root")
     raises(lambda: S.load_set("logit_v1", root="served"), "the served set is")
     raises(lambda: S.load_set("no_such_set", root="candidates"), "no candidate")
-    raises(lambda: S.fit("gb_v1", "candidates", tiers=("T1", "T2")), "T1 only")
+    raises(lambda: S.fit("gb_v1", "candidates", tiers=("T1", "T2")), "its finals only")
+    # T0 is T1's fold after the freeze, never refit: the finals themselves (a gb set has it too)
+    t0 = S.fit(_served(), tiers=("T0",))
+    assert [(f.tier, f.fold, f.start) for f in t0.folds] == [("T0", S.FOLD_FINAL, X.freeze_date() + pd.Timedelta(days=1))]
+    assert all(t0.folds[0].weights[k] is t0.set.models[k] and t0.folds[0].heads[k] is t0.set.heads[k] for k in KEYS)
+    assert [f.tier for f in S.fit("gb_v1", "candidates", tiers=S.FINAL_TIERS).folds] == ["T1", "T0"]
 
 
 def test_candidates_logit_v1_and_gb_v1_load_and_reproduce_their_post_training_p():

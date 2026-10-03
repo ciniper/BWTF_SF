@@ -16,7 +16,9 @@ which writes data/forecast_history/t0_first_snapshots.csv, one row per issue day
 for every issue day after the protocol's freeze date (T0 starts the next day). ``model`` is the served
 set's name and ``corrections`` its live-correction rule, both from the snapshot's model stamp. Commit the
 file with the data refresh that covers its target days (the CIWQS ledger arrives quarterly), then rebuild
-the stage scores. ``rows()`` reads and checks the committed file.
+the stage scores. ``rows()`` reads and checks the committed file; stages_build.t0_as_served grades the
+served set's rows with OUT's own scorer (scores["t0_as_served"]; features/forecast/SWAPS.md, "Grading the
+live season").
 """
 from __future__ import annotations
 
@@ -93,11 +95,12 @@ def export(path: Path = SNAPSHOT) -> Path:
 
 
 def rows(path: Path = SNAPSHOT) -> pd.DataFrame | None:
-    """The committed snapshot, checked: T0 issue days only, leads 0–5, target = issue + lead, p a probability,
-    one row per issue day × lead × zone. None when nothing has been exported yet."""
+    """The committed snapshot, checked: T0 issue days only, leads 0–5, target = issue + lead, p a probability (read
+    exactly as written), one row per issue day × lead × zone. None when nothing has been exported yet.
+    stages_build.t0_as_served grades it."""
     if not Path(path).exists():
         return None
-    df = pd.read_csv(path, dtype={"model": str, "corrections": str, "zone": str})
+    df = pd.read_csv(path, dtype={"model": str, "corrections": str, "zone": str}, float_precision="round_trip")
     if tuple(df.columns) != COLUMNS:
         raise ValueError(f"{Path(path).name}: columns {tuple(df.columns)}, expected {COLUMNS}")
     for c in ("issue_date", "target_date"):

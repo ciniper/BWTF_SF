@@ -483,7 +483,7 @@ def _no_weights(window, geo=GEO4) -> C.BasinInputs:
 def test_tier_window_and_fold_leaks_raise():
     """No T3 row: T0 / T1 / T1-holdout rows say what the inputs were fit through (the served table, split and
     heads saw every day to 2025-10-31, so the holdout window is in-sample for them), T2 rows which season they
-    were held out of; T1 stops at the freeze (a later day is T0's); co-firing shares from events off the fit
+    were held out of; T1 stops at the freeze (a later day is T0's, fit as T1); co-firing shares from events off the fit
     days raise (a T2 fold's own season above all); a feed is scored under its own name only; unknown names
     raise. Each raise is checked for its reason."""
     inputs, tt = _inputs()
@@ -496,11 +496,12 @@ def test_tier_window_and_fold_leaks_raise():
     _raises(ValueError, S5.s5_rows, *args, tier="T2", trained_through=tt, match="trained_through does not apply")
     _raises(ValueError, S5.s5_rows, *args, tier="T1", trained_through=tt, held_out_season=2022, match="for T2 rows")
     _raises(ValueError, S5.s5_rows, *args, tier="T9", trained_through=tt, match="unknown tier")
-    # T1 runs to the freeze date, T0 from the day after (a day is scored in one tier)
+    # T1 runs to the freeze date, T0 from the day after (a day is scored in one tier), on T1's S5 parameters
     run = pd.date_range("2025-10-01", "2026-12-31")
-    t1, _, _ = S5._window("T1", tt, run)
-    t0, _, _ = S5._window("T0", tt, run)
+    t1, fit1, _ = S5._window("T1", tt, run)
+    t0, fit0, _ = S5._window("T0", tt, run)
     assert t1.min() == X.POST_START and t1.max() == X.freeze_date() and t0.min() == X.freeze_date() + pd.Timedelta(days=1)
+    assert fit0.equals(fit1) and fit1.max() == X.POST_START - pd.Timedelta(days=1)    # the final fold, not refit
     ev = csd_labels.load_events()
     _raises(ValueError, S5.s5_rows, *args, tier="T1", trained_through=tt, fold_events=ev, match="off the fit days")
     ok = ev[pd.to_datetime(ev["event_date"]) <= tt]

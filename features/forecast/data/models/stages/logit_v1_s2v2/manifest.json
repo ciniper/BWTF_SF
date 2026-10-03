@@ -15,7 +15,7 @@
  "family": "logit",
  "spec_version": "2e03a1eae7",
  "protocol": "stages_v3@22a2695e2e950188d37b753928932c6f6f2dc83296482a4fddf5a373ce86df3f",
- "built_at": "2026-10-03T17:47:13+00:00",
+ "built_at": "2026-10-03T19:43:18+00:00",
  "windows": {
   "holdout_start": "2023-07-01",
   "post_start": "2025-11-01",
@@ -35,7 +35,8 @@
   "tiers": [
    "T1",
    "T1-holdout",
-   "T2"
+   "T2",
+   "T0"
   ],
   "t2_label": "development (selection-contaminated)"
  },
@@ -66,8 +67,8 @@
  },
  "inputs": {
   "features/forecast/STAGES_PROTOCOL.md": "a75d6e6b1779819f66cab2c2d43e64fc753c44530526a2d308225e856751aa23",
-  "features/forecast/live_dashboard.py": "6beda1b181b1b69829a29a052e87a14d05fe6b569498ae61eae520c6b516be36",
-  "features/forecast/data/models/stages/_s1/s1_scores.json": "9d218340854db06d5005938d414da4cf374e417f7b038e3b13113de857a3efcf",
+  "features/forecast/live_dashboard.py": "2c14b2f6a8d480ff09d99fc751e4fd2e40b963371f67195b6aeba183973e1fe7",
+  "features/forecast/data/models/stages/_s1/s1_scores.json": "1e8996b8a63c92be4abc84ff3b9f416fb647ad6c49e87f6c0c9be8f3f13caf7b",
   "features/forecast/data/models/stages/_s1/icon_seamless.csv.gz": "77df2c795f8eb5edca83694198dcc236af4da9ec42098ba307e103ebf40600bb",
   "features/forecast/data/raw/historical_rain.csv": "c4742eb23766ee048bd91a035a769270e207e21d0e39adf140c8b4153afdc7ed",
   "features/forecast/data/raw/hourly_rain_openmeteo.csv": "52b80a86463925937e5fc603b651fd66da4b505c39eb1a045bff70e9a061c256",
@@ -111,6 +112,7 @@
   "features/forecast/src/models/candidates.py": "52283ac19cfdd87e2de0c05aa65c854b12c82e45144941a84b6a181e920b26b2",
   "features/forecast/src/models/compose_v2.py": "5ec043521e955132277f433af32f1e92da80e6121432e367397ef45c22d0bade",
   "features/forecast/src/models/exclusions.py": "35a69815d1dbd915499a04205f17bf2c38e4d46a56833091ead25a9491f7ddcd",
+  "features/forecast/src/models/grade_prospective.py": "3947e63436b8e19c079d8ce4a0087299698575d7623a240e607ab2df93e8f41b",
   "features/forecast/src/models/groups.py": "3a4ecc960d6c7cad8e24e10da2379b32ee4b688637617c233a96d96e942535ce",
   "features/forecast/src/models/impact.py": "c8ab8081dd443b25558f4ebe3cdde8725922d480baab7dc4a6bb6109be7bf536",
   "features/forecast/src/models/leaderboard.py": "c734e8e57cca9766890b5c6e388490efd892bc60fd431318a93e12b488f63f3f",
@@ -122,12 +124,12 @@
   "features/forecast/src/models/scorecard.py": "48b85b4a6bfe95753cd9fceb5f149d808f59a7f368e96edf9fa6ee471d52efdf",
   "features/forecast/src/models/stage2.py": "e2b66927afdef42398212e25c8f7a1b53793a6fe2d4e7117a118eb2ed1a43569",
   "features/forecast/src/models/stage2_variants.py": "b1dfb0aaed0a81a3f74fa0d304cc23a11ba70aaf33c20b30ffa0534d91c5865a",
-  "features/forecast/src/models/stages_build.py": "1eeb76dc48fed09d64e9ae002e27a4a9554719da4ba56f0c1f69608f853a5790",
+  "features/forecast/src/models/stages_build.py": "aa1a0ae3842def703413b55053392f88c0ed046bf671e446fd304a38a9b0fcc6",
   "features/forecast/src/models/stages_entries.py": "eb16171fc9f7e79b3f0c5d65844475f5964f0c090e39bc36faded8694b69ed59",
   "features/forecast/src/models/stages_flowchart.py": "18e98a89ab64af066e17a256b10d0253853e89e9cb75b19b8653a49a4b2a8585",
-  "features/forecast/src/models/stages_s1.py": "b13d54f5158d93bb56afd29252fcc640a4ac24cc31e9cf126c6c86b55c2e8924",
-  "features/forecast/src/models/stages_s2.py": "5a5b8484b5b19edf6c87026c593b1f15b5c5b64f665c475e46d571e2c1335663",
-  "features/forecast/src/models/stages_s5.py": "b67e661e0177ed9cdb5c6bafbfa00f937e6e39a81dd444263d833784ec03a52d",
+  "features/forecast/src/models/stages_s1.py": "7f4cdc28c25c6fde6df7ca8185ac5e06b7cfeb1c1e453af8018f93cc49b905c9",
+  "features/forecast/src/models/stages_s2.py": "716991e719788e7eb1a4ba9def764807de35f678913ff262265009c6adb6cf91",
+  "features/forecast/src/models/stages_s5.py": "ea6fb4a4edf0261c55440086e4829bab996dac8a4caa0112071a912aef7448a1",
   "features/forecast/src/models/stages_spec.py": "12cbaa78483a6664dfa81ce32cdaaa03a376e54e4b491f602b0e3d1c2589daa2",
   "features/forecast/src/models/svgkit.py": "aee2cdbdb552d50d37ae3cb2b2d0469942b101c1854369126ede518fdd0a793f",
   "features/forecast/src/models/train_v2.py": "e3eaff8695280d33b750172efed3afb2fed3e773b2dd1f53ae4aee730c6b3920",

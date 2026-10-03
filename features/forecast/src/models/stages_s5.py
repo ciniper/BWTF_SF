@@ -140,10 +140,10 @@ and with the 8 days before them in the inputs (live_v2's 9-day window). A day th
 inputs' weights saw is never a row (T3): T0 / T1 / T1-holdout rows say what the
 inputs were fit through (trained_through), T2 rows which season they were held out
 of (held_out_season), and the S5 parameters (co-firing shares, sample rates) are
-fit on the days before the window, or on the other T2 seasons for T2; a fold event
-off those days raises. The feed is scored under its own name only (the perfect
-feed's sibling rule reads it). X-S5-INSAMPLE tags the archive years, where the
-served S2 was in-sample.
+fit on the days before the window (T0: T1's, the final fold is not refit), or on
+the other T2 seasons for T2; a fold event off those days raises. The feed is
+scored under its own name only (the perfect feed's sibling rule reads it).
+X-S5-INSAMPLE tags the archive years, where the served S2 was in-sample.
 
 No module-level IO; nothing is written.
 """
@@ -819,7 +819,7 @@ def _window(tier: str, trained_through, run: pd.DatetimeIndex, held_out_season: 
     """(scored days, fit days, held-out season or None) for a tier (protocol §2). Raises on T3, an unknown
     tier, weights that saw the window, a T2 run without the season its weights were held out of, and a T2
     run whose scored days fall outside that season. T1 stops at the freeze date: a later day is T0's (a day
-    is scored in exactly one tier)."""
+    is scored in exactly one tier). T0 is scored by T1's final fold, not refit: its fit days are T1's."""
     if tier == X.IN_SAMPLE:
         raise ValueError("X-ALL-INSAMPLE: T3 rows (the scored weights saw the day) are never emitted")
     if tier not in X.WINDOWS:
@@ -850,7 +850,8 @@ def _window(tier: str, trained_through, run: pd.DatetimeIndex, held_out_season: 
     if _ts(trained_through) >= lo:
         raise ValueError(f"the inputs were fit through {_ts(trained_through).date()}, inside {tier} (from {lo.date()}): "
                          "those rows would be T3")
-    return days[(days >= lo) & (days <= hi)], pd.date_range(T.TRUTH_START, lo - pd.Timedelta(days=1)), None
+    fit_end = (X.POST_START if tier == "T0" else lo) - pd.Timedelta(days=1)    # T0: T1's final fold, not refit
+    return days[(days >= lo) & (days <= hi)], pd.date_range(T.TRUTH_START, fit_end), None
 
 
 def _fold_events(fold_events, fit: pd.DatetimeIndex, season) -> pd.DataFrame:

@@ -17,6 +17,9 @@ heads were fit through 2025-10-31), so every window refits everything S2 fits:
                 2024-25       2016-17 … 2024-25, fit on the other
                               eight (never 2025-26, never the
                               Mar–Jun 2016 rows before the span)
+    T0          final         T1's finals, not refit, on every day     T1's heads
+                              after the freeze (protocol §2's
+                              prospective window, shadow-run)
 
 "The set's own design." A refit is sklearn.clone of the set's pickled pipeline
 (its features, hinge or band design, family and C) fit on the set's own rows:
@@ -40,8 +43,8 @@ included, so a refit carrying one raises. v̂ goes through train_v4.predicted_vo
 on the head's own rain source (a set's basin may read another gauge than its
 head: GEO_V1's `southeast` key reads Downtown, its head the two-gauge mean).
 
-GBM sets (family gb, e.g. gb_v1) are T1 only: no LOSO, no holdout refit (§8 P7).
-Asking for more raises.
+GBM sets (family gb, e.g. gb_v1) score their finals only, T1 and T0: no LOSO, no
+holdout refit (§8 P7). Asking for more raises.
 
 Entries (protocol §3) are frames, built elsewhere (stages_entries): ``frames_by_entry``
 = {entry id (exclusions.ENTRIES): {rain source: frame}}, a frame holding a date
@@ -56,7 +59,8 @@ left out: compose_v2 (S3 → S4 → OUT, the GEO_V1 adapter included) reads basi
 v̂ only, and citywide_p is a scorecard display. ``sel`` is exclusions.selection
 (X-SEL, by date): holdout_selected 2023-07-01 → 2025-10-31 (T1-holdout, and the T2
 seasons 2023-24 and 2024-25 inside it), post_selected 2025-11-01 → the freeze (T1).
-T1 stops at the freeze: a later day is T0's, graded from forecast_history.
+T1 stops at the freeze: a later day is T0's, the same finals on the same kind of
+inputs (stages_build also grades the served set's T0 as served, from forecast_history).
 
 Westside's first scored season is 2017-18 (protocol §2: CIWQS Oceanside opens its
 ledger in 2017-12, truth.ledger_start). Its 2016-17 fold is still fit and emitted, so
@@ -99,10 +103,13 @@ import truth as TR  # noqa: E402  (ledger_start: each basin's first scored T2 se
 from shared import clock  # noqa: E402
 from shared import geography as G  # noqa: E402
 
-TIERS = ("T1", "T1-holdout", "T2")       # protocol §2; T0 is graded from forecast_history, T3 never emitted
+TIERS = ("T1", "T1-holdout", "T2")       # protocol §2's fitted windows (what a spec is fit for); T3 never emitted
+T0 = "T0"                                # protocol §2's prospective window: T1's finals on every day after the freeze
+ALL_TIERS = TIERS + (T0,)
+FINAL_TIERS = ("T1", T0)                 # scored by the finals, never refit: all a gb set has
 ROOTS = ("served", "candidates")
 FAMILIES = ("logit", "gb")
-REFIT_FAMILIES = ("logit",)              # gb is T1 only (§8 P7: no LOSO for the GBM)
+REFIT_FAMILIES = ("logit",)              # gb scores its finals only (§8 P7: no LOSO for the GBM)
 TRAINED_THROUGH = T.TRAIN_END            # 2025-10-31: every scored set's finals and heads end here (T1)
 HOLDOUT_START = T.HOLDOUT_START          # 2023-07-01
 POST_START = X.POST_START                # 2025-11-01
@@ -318,13 +325,16 @@ class Fold:
 
 
 def _plan(tiers: tuple) -> list:
-    """(tier, fold, first scored day, last scored day, held-out season, training-row filter)."""
+    """(tier, fold, first scored day, last scored day, held-out season, training-row filter). T1 stops at the freeze;
+    T0 is T1's fold, not refit, from the day after it to whatever the inputs reach (no last day of its own)."""
     out = []
-    for tier in TIERS:
+    for tier in ALL_TIERS:
         if tier not in tiers:
             continue
         if tier == "T1":
             out.append((tier, FOLD_FINAL, POST_START, X.freeze_date(), None, None))
+        elif tier == T0:
+            out.append((tier, FOLD_FINAL, X.freeze_date() + pd.Timedelta(days=1), pd.Timestamp.max, None, None))
         elif tier == "T1-holdout":
             out.append((tier, FOLD_HOLDOUT, HOLDOUT_START, TRAINED_THROUGH, None,
                         lambda f: f["date"] < HOLDOUT_START))
@@ -342,13 +352,12 @@ def _check_tiers(s2set: S2Set, tiers) -> tuple:
         raise ValueError("no tiers asked for")
     if X.IN_SAMPLE in tiers:
         raise ValueError("X-ALL-INSAMPLE: T3 (the scored weights saw the day) is never emitted")
-    if "T0" in tiers:
-        raise ValueError("T0 is graded from forecast_history (protocol §2), not refit here")
-    bad = [t for t in tiers if t not in TIERS]
+    bad = [t for t in tiers if t not in ALL_TIERS]
     if bad:
-        raise ValueError(f"unknown tiers {bad}; known: {TIERS}")
-    if s2set.family not in REFIT_FAMILIES and set(tiers) - {"T1"}:
-        raise ValueError(f"{s2set.name} is a {s2set.family} set: T1 only (no LOSO, no holdout refit for the GBM; §8 P7)")
+        raise ValueError(f"unknown tiers {bad}; known: {ALL_TIERS}")
+    if s2set.family not in REFIT_FAMILIES and set(tiers) - set(FINAL_TIERS):
+        raise ValueError(f"{s2set.name} is a {s2set.family} set: its finals only, {FINAL_TIERS} (no LOSO, no holdout refit "
+                         "for the GBM; §8 P7)")
     return tiers
 
 
@@ -409,6 +418,8 @@ _TIER_TEXT = {
     "T2": {"name": "cross-season", "weights": "refit per held-out season on the other seasons of 2016-17 … 2024-25",
            "volume_heads": "refit per fold on the same seasons", "label": T2_LABEL,
            "use": "development, calibration reference, power"},
+    T0: {"name": "prospective", "weights": "T1's finals, not refit, on every day after the freeze (shadow-run)",
+         "volume_heads": "T1's heads", "use": "confirmation: OUT's window is T1 post ∪ T0 (protocol §8)"},
 }
 
 
@@ -519,8 +530,8 @@ def _predict(fitted: Fitted, frames_by_entry: dict) -> pd.DataFrame:
 
 
 def check_out_of_fold(rows: pd.DataFrame, fitted: Fitted) -> None:
-    """Raise unless every row is out of fold: tier in TIERS (never T3), fold one that was
-    fit, date inside the fold's window (T1 after the training end, T2 in its season),
+    """Raise unless every row is out of fold: tier in ALL_TIERS (never T3), fold one that was
+    fit, date inside the fold's window (T1 and T0 after the training end, T2 in its season),
     and no (basin, date) its fold's weights or volume head was fit on; sel = X-SEL's."""
     missing = [c for c in COLUMNS if c not in rows.columns]
     if missing:
@@ -528,8 +539,8 @@ def check_out_of_fold(rows: pd.DataFrame, fitted: Fitted) -> None:
     tiers = set(rows["tier"].astype(str))
     if X.IN_SAMPLE in tiers:
         raise ValueError(f"X-ALL-INSAMPLE: {int((rows['tier'] == X.IN_SAMPLE).sum())} rows are T3; T3 is never emitted")
-    if tiers - set(TIERS):
-        raise ValueError(f"unknown tiers {sorted(tiers - set(TIERS))}; known: {TIERS}")
+    if tiers - set(ALL_TIERS):
+        raise ValueError(f"unknown tiers {sorted(tiers - set(ALL_TIERS))}; known: {ALL_TIERS}")
     dup = rows.duplicated(["date", "basin", "entry", "tier"])
     if dup.any():                                   # one fold per day within a tier (protocol §2)
         r = rows[dup].iloc[0]
@@ -545,8 +556,8 @@ def check_out_of_fold(rows: pd.DataFrame, fitted: Fitted) -> None:
         if (d < f.start).any() or (d > f.end).any():
             raise ValueError(f"{tier} {fold} {basin}: a row on {d[(d < f.start) | (d > f.end)][0].date()}, outside "
                              f"{f.start.date()} → {f.end.date()}")
-        if tier == "T1" and (d <= fitted.set.trained_through).any():
-            raise ValueError(f"T1 {basin}: a row on or before the training end {fitted.set.trained_through.date()}")
+        if tier in FINAL_TIERS and (d <= fitted.set.trained_through).any():
+            raise ValueError(f"{tier} {basin}: a row on or before the training end {fitted.set.trained_through.date()}")
         if tier == "T2":
             s = _season_of(fold)
             if s != f.season or (T.wet_season(pd.Series(d)) != s).any():

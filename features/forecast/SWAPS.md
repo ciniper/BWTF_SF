@@ -126,3 +126,53 @@ venv/bin/python features/forecast/src/models/stages_build.py --set gb_v1 --root 
 Then rebuild each stage candidate you are keeping with
 `--set <name> --root stages_candidates --write`. That takes about 4 minutes per
 set; the S1 step takes about 2.
+
+## Grading the live season (T0)
+
+The live season is every day after the rules froze (`STAGES_PROTOCOL.md` §2,
+T0: from 2026-10-03). Once the data reach it, the stages build scores it two
+ways:
+- **Shadow-run.** Every lineup, today's included, runs on the same archived
+  inputs as on post-training days, its fitted parts not refit. Each
+  challenger's test of the public number then reads post-training and the
+  live season as one window.
+- **As served.** For today's forecast only: what the page actually showed,
+  from each day's first forecast stored in Supabase's `forecast_history`,
+  graded on the same truth (`scores.json` → `t0_as_served`, and "The public
+  number" in the stages report). It is never one side of a comparison.
+
+A day is graded only once its truth is in. The overflow ledger comes from
+CIWQS quarterly, so October 2026 is graded after the December 2026 refresh at
+the earliest.
+
+1. Refresh the data (each step needs the network):
+   - the overflow ledger: the run order in
+     `features/forecast/src/collectors/csd_ciwqs/README.md`, appending the new
+     months to `features/forecast/data/csd/`;
+   - the gauges and DataSF's samples:
+     `venv/bin/python features/forecast/src/collectors/historical.py`, and
+     ERA5's hourly rain, which has no command of its own:
+     `venv/bin/python -c "import sys; sys.path.insert(0, 'features/forecast/src/collectors'); import historical; historical.fetch_hourly_rain()"`;
+   - the weather model's archived forecasts:
+     `venv/bin/python features/forecast/src/collectors/openmeteo_previous_runs.py --fetch`.
+     Lead 0's short-lead cache (`data/raw/openmeteo_hist_forecast_<model>.csv`)
+     has no forward fetch yet. Until it reaches the season, the shadow-run's
+     lead entries have no public-number row there (`scores.json` → `dropped`),
+     so the one-day-ahead test reads post-training days only.
+
+   Then, as after any ledger refresh:
+   `venv/bin/python features/forecast/src/models/train_v4.py --rescore --promote`.
+2. Export the snapshot from the main checkout. It needs the Supabase service
+   key in `.env` and only reads:
+
+   ```bash
+   venv/bin/python features/forecast/src/models/grade_prospective.py --export
+   ```
+
+   It writes `features/forecast/data/forecast_history/t0_first_snapshots.csv`,
+   one row per issue day, lead and zone.
+3. Commit the snapshot with the data refresh.
+4. Rebuild the stage scores in the order above (S1, the served set, then every
+   other set), then regenerate the stages report:
+   `venv/bin/python features/forecast/src/models/export_stages_report.py`.
+5. Run `scripts/check.sh`.

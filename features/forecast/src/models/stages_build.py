@@ -33,6 +33,16 @@ to the fold), compose_v2.cofire inside stages_s5. On the full training window
 reads the set's own artifacts (fit through 2025-10-31). A stage 2 v1 set (no
 split; candidates.load_stage2 → None) has identity links and the raw table.
 
+**T0, the prospective window (protocol §2).** T1 stops at the freeze; T0 is T1's
+fold, not refit (the finals, their heads and specs), on every day after it to the
+data end, shadow-run through every stage exactly as T1 (S2 → S3 → S4 → OUT, and
+S5), on the same archived inputs in every set, so a comparison pairs identical
+inputs (Part B 16). Its runs start with the same warm-up, from the same models, so
+a T0 row is the row T1 would give on that day. The served set's T0 is also graded
+as served (``t0_as_served``): what forecast_history says the page showed, never one
+arm of a comparison. While the data end is before T0's first day (2026-10-03),
+T0 holds no row and nothing here differs from a build without it.
+
 **Runs and warm-up (§7 step 5).** compose_v2's lags are row offsets, so each
 (entry, tier, fold) is composed over runs of consecutive days that start
 ``WARMUP_DAYS`` (8: live_v2's 9-day window, which S5 replays) before the fold's
@@ -45,8 +55,8 @@ rows read their own run's D−7…D.
 **A lead entry's S4 and OUT read the issue day's chain (protocol §3).** Lead L is
 the forecast issued on I = D − L "for days on or after the issue day, gauges
 before → S1 → …", which is what the page composes (live_dashboard._day_payload:
-one frame, past days from the gauges, I … I+5 from the forecast) and what T0
-will grade from forecast_history. So the S4 / OUT row of D at lead L reads, on
+one frame, past days from the gauges, I … I+5 from the forecast) and what the
+as-served T0 grades from forecast_history. So the S4 / OUT row of D at lead L reads, on
 each history day d of D−7…D, the S2 output the issue day knew: rain known for
 d < I, and for d = I + j (j = 0 … L) the entry L_j's S2 output on d — the frame
 stages_entries builds for target d from the forecast issued on d − j = I (as
@@ -88,11 +98,14 @@ basin has two links. The context's zone ``identity`` is replaced per fold
 degraded:1…5; the watcher has watched no wet season) and per fold, on the
 rain-known S2 output with the fold's specs, every variant in stages_s5.VARIANTS;
 rows of one (feed, tier) are put through exclusions.apply again together, so
-X-POWER counts the whole window. Blocks are observation events (``s5_blocks``).
+X-POWER counts the whole window. The bootstrap resamples observation events
+(``s5_blocks``, protocol §6's S5 blocks); X-POWER, as everywhere, counts the rain
+storm blocks (truth.blocks) the cell's rows touch, never observation events
+(``score_s5``). S5's window is 2023-07-01 → the data end: T1-holdout ∪ T1 ∪ T0.
 
 **Scores (protocol §4–§6).** Per (stage, unit + pooled, entry, window):
 verify.scores_bundle against the climatology of that fold's training days
-(unit × calendar month ±1; T1 from all T2 seasons, T1-holdout from the days
+(unit × calendar month ±1; T1 and T0 from all T2 seasons, T1-holdout from the days
 before 2023-07-01, a T2 season from the other T2 seasons), pooled by
 Hamill–Juras through the per-row reference; storm blocks from truth.blocks;
 B = 2,000, seed 0, 90% CIs; threshold scores at the risk-level edges only.
@@ -102,6 +115,14 @@ link_zone_swap − basin_swap; and, for a set that is not the served one,
 candidate − served on identical rows (``vs_served``, read from the served set's
 rows.csv.gz). S3 adds lead 1 (and every chained entry) scored on the oracle's own
 rows against the oracle's reference (``score_on_rows``: scores["s3_on_oracle_rows"]).
+
+**The served set's T0, as served (scores["t0_as_served"]; protocol §2; Part B 20,
+28).** grade_prospective.rows (the committed forecast_history snapshot) → the rows
+the served set's name made → OUT by lead (L0 … L5), per zone and pooled, on target
+days up to the data end, with OUT's truth, exclusions and reference; with counts
+(issue days, rows graded, rows waiting for truth, rows under another model). It
+confirms what the public saw and never enters a comparison (its inputs are not the
+shadow-run's: Part B 16). No snapshot, or nothing yet to grade, and it says so.
 
 **The figure (scores["figure"]).** Every post-training cell is X-POWER, so each
 stage's pills show the window where it has power: S1 its whole Previous Runs
@@ -114,8 +135,11 @@ Each pill carries the words for its window and its post-training cell (T1, with
 its CI) for the tooltip; for a GEO_V1 set the post-training words say those days
 also picked the served set, so scores on them favour it (X-SEL post_selected);
 S3's chained pill is lead 1 on the oracle's rows (every day in the tooltip); S5's
-tooltip adds link/zone injection; the figure carries a one-line caption.
-scores["figures"] keeps one figure per window, and scores["figure_counts"] adds
+tooltip adds link/zone injection; the figure carries a one-line caption. A pill is
+X-POWER when its cell is: below 10 positives or 8 storm blocks, S1's included
+(``s1_figure``: either-wet days, and the storm blocks its days touch).
+scores["figures"] keeps one figure per fitted window (T1, T1-holdout, T2; T0 is
+shown as served), and scores["figure_counts"] adds
 S5's own rules from the build's rows to the truth catalog's counts: the chip
 counts the perfect feed in S5's window, so each count is distinct zone-days (0
 where the rows never hit a rule), and its tooltip gives every feed's own
@@ -154,7 +178,8 @@ q₀ composed on the stacked issue-day windows with no background
 budget).
 
 **Comparisons (protocol §8; scores["paired"]).** ``vs_served``: candidate − served
-on the unit-days both scored, from the served set's written rows; across
+on the unit-days both scored, from the served set's written rows, per window, and
+for OUT the union T1 post ∪ T0 (OUT_WINDOW) once T0 holds rows; across
 geographies only the geography-invariant targets (S3 zones, S4, OUT), never
 basin-level S2. ``s2_vs_recipe``: S2 within the candidate's geography, candidate −
 the served recipe refit on its labels (the bake-off's served-recipe rows), on
@@ -177,9 +202,10 @@ is decided by the fallback's existence, the bake-off's head − fallback Δ log-
 per basin beside it (``vs_fallback``); S5 is read
 from the set's own build where basin_swap exists (GEO_V1), else from the served
 set's, with a caveat that it tests the rule on the served set's chain, and decides only for the
-component it tests (link_zone_swap), as S4's row does for S4 v3; OUT is T1 post-training
-alone and says why (T0 holds no day before the data end). A stage candidate's S2 T2 is
-labelled 'development (nested)' (``t2_label``): the A5 procedure's outer-fold rows. scores["promotion"]
+component it tests (link_zone_swap), as S4's row does for S4 v3; OUT reads T1 post ∪ T0
+as one window (vs_served's OUT_WINDOW, on the unit-days both sets scored in either tier)
+once T0 holds days, T1 alone while it is empty, and says which (``t0_words``). A stage
+candidate's S2 T2 is labelled 'development (nested)' (``t2_label``): the A5 procedure's outer-fold rows. scores["promotion"]
 states each §9 criterion as met | not met | not yet computable, with the reason.
 It decides nothing: replacing the served set is the owner's action. A stage candidate tagged ``post_seen``
 (protocol §2: designed after its post-training scores were seen; stages_candidates.tag) has the tag on its
@@ -229,6 +255,7 @@ for _p in (REPO, FORECAST, HERE, HERE.parent / "collectors"):
 import candidates as CAND  # noqa: E402  (served.json, candidate manifests and stage 2 specs)
 import compose_v2 as C  # noqa: E402
 import exclusions as X  # noqa: E402
+import grade_prospective as GP  # noqa: E402  (the committed forecast_history snapshot: the served set's T0 as served)
 import samples as SMP  # noqa: E402  (the lab records S4's truth reads)
 import stage2 as STG2  # noqa: E402  (read only: the served S3 split fitter)
 import stage2_variants as SV  # noqa: E402  (read only: the rain sources the served split was fit on)
@@ -255,7 +282,9 @@ STAGE_ROOT = "stages_candidates"
 ROOTS = S2.ROOTS + (STAGE_ROOT,)
 COMPONENTS = ("s1", "s2", "s3", "s4", "s5")        # design §2.7: manifest components
 S3B_BASIN = "westside"                             # protocol §8 S3b: the Westside split (its key in every geography)
-TIERS = S2.TIERS                                   # T1, T1-holdout, T2 (T0 is graded from forecast_history)
+TIERS = S2.ALL_TIERS                               # T1, T1-holdout, T2, then T0 (T1's finals after the freeze)
+OUT_TIERS = ("T1", S2.T0)                          # protocol §8: OUT's window, T1 post ∪ T0 …
+OUT_WINDOW = "T1 ∪ T0"                             # … scored as one window in vs_served (never a row's tier)
 ENTRIES = X.ENTRIES                                # oracle, rain, L0 … L5, L0s, L1s
 STEPS = ("s2", "s3", "s4", "out", "s5", "scores")
 ROW_STAGES = ("s2", "s3", "s4", "out", "s5")
@@ -277,7 +306,7 @@ CAPTION_WINDOW = {"T1-holdout": "the holdout", "T1": "post-training days only"}
 S5_RULE_WORDS = {"basin_swap": "the served correction rule (basin_swap = live_v2)", "link_zone_swap": "link/zone injection"}
 MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 LADDER = ("truth_at_s4", "truth_at_s3", "rain", "L1")   # protocol §3: the OUT error budget
-S5_WINDOW = ("T1-holdout", "T1")                   # protocol §8: 2023-07-01 → the data end
+S5_WINDOW = ("T1-holdout", "T1", S2.T0)           # protocol §8: 2023-07-01 → the data end
 EPS = 1e-12                                        # same-model predictions in different batch sizes (stages_s2)
 FLOAT_FORMAT = "%.6g"                              # rows.csv.gz: 6 significant digits (the scores use full precision)
 
@@ -419,7 +448,8 @@ class StageCandidate:
         s2         the finals (T1) as a stages_s2.S2Set, keyed by the geography's basins
         folds      stages_s2.Fold per (tier, fold) the build composes: T1 'final' and T1-holdout 'pre_holdout'
                    from the saved models and heads; T2 '2016-17' … '2024-25' from the bake-off's outer-fold
-                   rows (no weights: ``t2`` holds what they predicted), each with the days its parts may have seen
+                   rows (no weights: ``t2`` holds what they predicted), each with the days its parts may have seen;
+                   T0 'final', T1's after the freeze (its specs and S3b benchmark T1's too)
         t2         the bake-off's T2 rows (date, basin, tier, fold, p, v_hat): rain known only, so a T2 fold has
                    no lead entry and no warm-up before its season's first day
         specs      (tier, fold) → {"s3", "s4"}, rebuilt from s3_links.json / s4_quality.json's per-fold records
@@ -701,7 +731,8 @@ def from_saved(saved, seasons=None) -> StageCandidate:
     """A StageCandidate from stages_candidates.load_set's StageSet (its stamps, keys, sha256s and weights ≥ 0 are
     asserted there): S2 finals and holdout siblings as model folds, the T2 rows and the served-recipe arm from the
     bake-off its s2 section names, and every fold's S3 / S4 spec from the spec files' per-fold records, each fit
-    span checked against its fold (check_fit_span). ``seasons`` keeps those T2 seasons (development, tests)."""
+    span checked against its fold (check_fit_span); T0 is the finals' fold after the freeze, with T1's specs.
+    ``seasons`` keeps those T2 seasons (development, tests)."""
     man = saved.manifest
     name = saved.name
     geo = G.stamped(man)
@@ -751,6 +782,12 @@ def from_saved(saved, seasons=None) -> StageCandidate:
     keys = [(f.tier, f.fold) for f in folds]
     s3, s3b = s3_fold_specs(saved.s3_links, geo, keys)
     specs = {k: {"s3": s3[k], "s4": s4_fold_spec(saved.s4_quality, k, geo)} for k in keys}
+    sizes = s4_fit_sizes(saved.s4_quality, specs)
+    # T0 (protocol §2): T1's fold on every day after the freeze, its finals, heads and specs (no fit of its own)
+    t1, t0 = ("T1", S2.FOLD_FINAL), (S2.T0, S2.FOLD_FINAL)
+    start, end, _ = fold_window(*t0)
+    folds.append(dataclasses.replace(folds[0], tier=S2.T0, start=start, end=end))
+    specs[t0], s3b[t0] = specs[t1], s3b[t1]
     parts = tuple((f.weights, f.heads) for f in folds if f.weights and f.fold != S2.FOLD_FINAL)
     fams = {saved.models[k]["family"] for k in geo.keys}
     if len(fams) != 1:
@@ -765,7 +802,7 @@ def from_saved(saved, seasons=None) -> StageCandidate:
                           {"results": _rel(res_path), "rows": _rel(rows_path), "volume": results.get("volume"),
                            "south_floor": results.get("south_floor"), "winner": results.get("winner"),
                            "picked_by_fold": (results.get("nested") or {}).get("picked_by_fold")}, own,
-                          s3_fit_s2(saved.s3_links), records, s4_fit_sizes(saved.s4_quality, specs))
+                          s3_fit_s2(saved.s3_links), records, sizes)
     for f in cand.folds:                                    # every fold's specs fit on days it never scores
         for st in ("s3", "s4"):
             check_fit_span(cand.specs[(f.tier, f.fold)][st], st, f, name)
@@ -796,7 +833,8 @@ def fold_window(tier: str, fold: str) -> tuple:
     for t, f, start, end, season, _ in S2._plan(TIERS):
         if (t, f) == (tier, fold):
             return start, end, season
-    raise KeyError(f"({tier!r}, {fold!r}) is not a protocol §2 fold: T1 final, T1-holdout pre_holdout, T2 2016-17 … 2024-25")
+    raise KeyError(f"({tier!r}, {fold!r}) is not a protocol §2 fold: T1 final, T1-holdout pre_holdout, T2 2016-17 … 2024-25, "
+                   "T0 final")
 
 
 def fold_training_days(tier: str, season: int | None, trained_through) -> pd.DatetimeIndex:
@@ -1589,9 +1627,11 @@ def ladder(out_rows: pd.DataFrame, rung: pd.DataFrame, blocks: pd.DataFrame, n_b
     return res
 
 
-def score_s5(rows: pd.DataFrame, feeds: dict, n_boot: int) -> tuple:
+def score_s5(rows: pd.DataFrame, feeds: dict, blocks: pd.DataFrame, n_boot: int) -> tuple:
     """(s5 scores {unit | pooled: {feed: {window: {variant: bundle + delta_vs_plain}}}}, the §8 primary
-    {feed: {window: {unit | pooled: link_zone_swap − basin_swap}}}). Windows: each tier, and 'S5' = T1-holdout ∪ T1."""
+    {feed: {window: {unit | pooled: link_zone_swap − basin_swap}}}). Windows: each tier, and 'S5' = T1-holdout ∪ T1
+    ∪ T0. The bootstrap resamples observation events (protocol §6's S5 blocks); X-POWER (§6) counts the rain storm
+    blocks the cell's rows touch (truth.blocks, ``blocks``), recorded as n_storm_blocks."""
     sc = rows[rows["excl"] == ""].copy()
     if not len(sc):
         return {}, {}
@@ -1610,20 +1650,65 @@ def score_s5(rows: pd.DataFrame, feeds: dict, n_boot: int) -> tuple:
                 raise AssertionError(f"S5 {feed} {w}: variant {v} is scored on other zone-days than plain")
         units = plain.index.get_level_values("unit").to_numpy()
         blk = plain["_blk"].to_numpy()
+        storm_id, in_storm = _storm_blocks(plain.index.get_level_values("date"), blocks)
         for u in ["pooled"] + list(pd.unique(units)):
             m = np.ones(len(plain), bool) if u == "pooled" else units == u
             y = plain["y"].to_numpy(dtype=float)[m]
+            n_storm = int(len(np.unique(storm_id[m & in_storm])))
             for v, gv in by_v.items():
                 cell = bundle(y, gv["p"].to_numpy(dtype=float)[m], gv["ref"].to_numpy(dtype=float)[m], blk[m],
-                              np.ones(int(m.sum()), bool), units[m], n_boot, plain.index.get_level_values("date")[m])
-                cell.pop("n_storm_blocks")
-                cell["low_power"] = bool(cell["n_pos"] < X.POWER_MIN_POSITIVES or cell["n_blocks"] < X.POWER_MIN_STORM_BLOCKS)
+                              np.zeros(int(m.sum()), bool), units[m], n_boot, plain.index.get_level_values("date")[m])
+                cell["n_storm_blocks"] = n_storm               # the rows' rain storms: blk holds observation events
+                cell["low_power"] = bool(cell["n_pos"] < X.POWER_MIN_POSITIVES or n_storm < X.POWER_MIN_STORM_BLOCKS)
                 cell["delta_vs_plain"] = _delta(y, gv["p"].to_numpy(dtype=float)[m], gv["b"].to_numpy(dtype=float)[m], blk[m], n_boot)
                 out.setdefault(u, {}).setdefault(feed, {}).setdefault(w, {})[v] = cell
             if {"link_zone_swap", "basin_swap"} <= set(by_v):
                 a, b = (by_v[k]["p"].to_numpy(dtype=float)[m] for k in S5.PRIMARY)
                 prim.setdefault(feed, {}).setdefault(w, {})[u] = _delta(y, a, b, blk[m], n_boot)
     return out, prim
+
+
+def t0_as_served(served: str, ctx: X.Context, pool: pd.DataFrame, blocks: pd.DataFrame, n_boot: int, end,
+                 path: Path = GP.SNAPSHOT) -> dict:
+    """scores['t0_as_served']: the served set's T0 as the public saw it (protocol §2: graded from forecast_history
+    rows whose stamp names it, read from the committed snapshot; Part B 20, 28). grade_prospective.rows → the rows
+    whose model is ``served`` and whose target day is on or before the data end → OUT rows by lead (entry L0 … L5,
+    tier T0; ``_rows``, zone by zone, day by day) → OUT's own scorer: exclusions.apply on ``ctx`` (the T0 context),
+    the reference (``references`` on OUT's pool: all T2 seasons) and ``score_stage``, so {unit | pooled: {L0 … L5:
+    {T0: bundle}}}. Never one arm of a paired comparison: its inputs are the page's, not the shadow-run's (Part B 16).
+    counts: issue days in the snapshot; the served set's rows graded, and waiting for truth (a target after the data
+    end); rows under another model; the served set's rows by live-correction rule."""
+    snap = GP.rows(path)
+    if snap is None:
+        return {"state": "no snapshot", "words": f"No forecast_history snapshot is committed yet ({_rel(path)}; "
+                "grade_prospective.py --export writes it): nothing the page showed in the live season is graded."}
+    end = pd.Timestamp(end)
+    mine = snap[snap["model"] == served]
+    due = mine[mine["target_date"] <= end]
+    out = {"state": "graded" if len(due) else "waiting", "snapshot": _rel(path),
+           "counts": {"issue_days": int(snap["issue_date"].nunique()), "graded": int(len(due)),
+                      "waiting": int(len(mine) - len(due)), "other_model": int(len(snap) - len(mine)),
+                      "corrections": {str(k): int(n) for k, n in mine["corrections"].value_counts().items()}}}
+    if not len(due):
+        out["words"] = (f"The snapshot's {len(mine)} forecasts by {served} target days after the data end ({end.date()}): "
+                        "graded once a data refresh covers them.")
+        return out
+    bad = set(due["zone"]) - set(ZONES)
+    if bad:
+        raise KeyError(f"{_rel(path)}: zones {sorted(bad)} are not shared/zones.py's")
+    parts = []
+    for lead in sorted(due["lead"].unique()):
+        for zk in ZONES:
+            g = due[(due["lead"] == lead) & (due["zone"] == zk)].sort_values("target_date")
+            if len(g):
+                days = pd.DatetimeIndex(g["target_date"])
+                parts.append(_rows("out", "zone", pd.DataFrame({zk: g["p"].to_numpy(dtype=float)}, index=days), days,
+                                   f"L{lead}", S2.T0, S2.FOLD_FINAL, ctx.frames["zone"]["out_y"]))
+    rows = X.apply(pd.concat(parts, ignore_index=True), "out", ctx)
+    rows["ref"] = references(rows, pool)
+    out["partition"] = X.counts(rows)["partition"]["out"]
+    out["out"] = score_stage(rows, "out", blocks, n_boot)
+    return out
 
 
 # ── the figure ──────────────────────────────────────────────────────────────
@@ -1728,17 +1813,23 @@ def _seed_mean(cells: list) -> dict | None:
             "n_seasons": max(int(c.get("n_seasons") or 0) for c in cells), "seeds": len(cells)}
 
 
-def s1_figure(s1: dict, post: dict | None = None) -> dict:
+def s1_figure(s1: dict, post: dict | None, blocks: pd.DataFrame) -> dict:
     """m.s1's pills from stages_s1, on S1's whole Previous Runs window: the floor (one gauge as a forecast of the
     other; either-wet MAE is the same both ways) and the served model at lead 1 on the two-gauge mean, either-wet
-    MAE (protocol §4.1); ``post`` (stages_s1.post_training) gives the same cells on post-training days."""
+    MAE (protocol §4.1); ``post`` (stages_s1.post_training) gives the same cells on post-training days. A pill is
+    X-POWER (protocol §6) below 10 either-wet days or 8 storm blocks: s1_scores.json gives a cell's [first, last]
+    days, not its rows' dates, so the storms are truth.blocks' (``blocks``) storm blocks overlapping that span (S1's
+    rows run on every day of it, so these are the storms its days touch)."""
     def cell(c, words):
         if not c:
             return None
         ew, ci = c["continuous"]["either_wet"], c["ci"]["continuous"]["either_wet"]["mae"]
         span = [c["first"], c["last"]]
+        b = blocks.loc[span[0]:span[1]]
+        n_storm = b.loc[b["block_kind"] == "storm", "block"].nunique()
         return {"v": ew["mae"], "lo": ci[0], "hi": ci[1], "n": ew["n"], "pos": c["n_either_wet"],
-                "low_power": c["n_either_wet"] < X.POWER_MIN_POSITIVES, "span": span, "window": f"{words}, {span_words(span)}"}
+                "low_power": bool(c["n_either_wet"] < X.POWER_MIN_POSITIVES or n_storm < X.POWER_MIN_STORM_BLOCKS),
+                "span": span, "window": f"{words}, {span_words(span)}"}
     post = post or {}
     fl, m = s1["floor"][S1_FLOOR], s1["by_lead"]["1"]["avg"]["models"][s1["served_model"]]
     return {"oracle": _dress(cell(fl, "SF Oceanside as a forecast of SF Downtown"), None,
@@ -1771,21 +1862,22 @@ def figure_windows(scores: dict, windows=None, fallback: bool = True) -> dict:
 
 
 def figure(scores: dict, windows, s1: dict | None, geo, s1_post: dict | None = None, fallback: bool = False,
-           nested: bool | None = None, post_seen: bool = False) -> dict:
+           nested: bool | None = None, post_seen: bool = False, blocks: pd.DataFrame | None = None) -> dict:
     """figure{node id: {oracle, chained, lead}, caption} for stages_flowchart.render.
 
     ``windows``: one window for every node (scores['figures'][w]) or {node: window} (FIGURE_WINDOWS, the
     powered figure, with ``fallback``: ``figure_windows``). S1 is its own Previous Runs window in every
-    figure. Per node: S2 and S4 pooled BSS, oracle vs lead 1; S3's oracle on the zones it scores (the
-    Westside split) and lead 1 on the oracle's own rows, paired (lead 1 on every day in the tooltip); OUT's
-    oracle, lead 1 and the lead strip L0 … L5; S5's change in Brier, corrected − no correction, for the
-    set's own correction rule (GEO_V1: basin_swap = live_v2) on the perfect feed and the degraded feeds'
-    mean, link/zone injection in the tooltip. Every pill carries the words for its window and, unless it is
-    post-training already, its post-training (T1) pill; ``post_seen`` tags those (protocol §2)."""
+    figure (its X-POWER reads truth.blocks, ``blocks``). Per node: S2 and S4 pooled BSS, oracle vs lead 1;
+    S3's oracle on the zones it scores (the Westside split) and lead 1 on the oracle's own rows, paired
+    (lead 1 on every day in the tooltip); OUT's oracle, lead 1 and the lead strip L0 … L5; S5's change in
+    Brier, corrected − no correction, for the set's own correction rule (GEO_V1: basin_swap = live_v2) on the
+    perfect feed and the degraded feeds' mean, link/zone injection in the tooltip. Every pill carries the
+    words for its window and, unless it is post-training already, its post-training (T1) pill; ``post_seen``
+    tags those (protocol §2)."""
     shown = figure_windows(scores, windows, fallback)
     fig = {}
     if s1:
-        fig["m.s1"] = s1_figure(s1, s1_post)
+        fig["m.s1"] = s1_figure(s1, s1_post, blocks)
 
     def pill(key, e, w, stage, what=""):
         c = _cell(scores, key, e, w)
@@ -1877,7 +1969,14 @@ def figure_caption(fig: dict, shown: dict, s2_label: str = "development", post_s
 
 S5_CHIP_FEED = "oracle"                             # S5's chip: the perfect feed in S5's window, each zone-day once
 S5_FEED_WORDS = {"oracle": "the perfect feed", "archive": "the 2016-17 archive", "watcher": "the watcher"}
-TIER_SPAN = {"T1-holdout": (S2.HOLDOUT_START, S2.POST_START - pd.Timedelta(days=1)), "T1": (S2.POST_START, None)}
+
+
+def tier_span(tier: str) -> tuple | None:
+    """(first day, last day or None: the data end) of a tier in S5's window (protocol §2: T1 stops at the freeze, T0
+    starts the next day); None for T2, whose seasons are no one span."""
+    one, freeze = pd.Timedelta(days=1), X.freeze_date()
+    return {"T1-holdout": (S2.HOLDOUT_START, S2.POST_START - one), "T1": (S2.POST_START, freeze),
+            S2.T0: (freeze + one, None)}.get(tier)
 
 
 def feed_words(feed: str) -> str:
@@ -1890,7 +1989,7 @@ def feed_words(feed: str) -> str:
 def s5_feed_counts(partition: dict, as_of) -> dict:
     """S5's exclusion counts per feed from the build's partition (scores['partition']['s5']: unit → feed → window →
     cell, one variant), each feed on windows that never overlap, so a count is distinct zone-days: a feed with rows in
-    S5's window (T1-holdout ∪ T1, protocol §8: the perfect feed, each degraded feed) on that window only, else on the
+    S5's window (T1-holdout ∪ T1 ∪ T0, protocol §8: the perfect feed, each degraded feed) on that window only, else on the
     windows it has (the 2016-17 archive: its own season, T2). A feed's T2 seasons and the holdout overlap (2023-24 and
     2024-25 sit in both), and the feeds see the same zone-days, so summing either would count a zone-day twice.
 
@@ -1912,11 +2011,12 @@ def s5_feed_counts(partition: dict, as_of) -> dict:
             for ex in cells[feed][t]:
                 for x, k in ex.items():
                     n[x] = n.get(x, 0) + int(k)
-        span = None
-        if all(t in TIER_SPAN for t in tiers):
-            lo = min(TIER_SPAN[t][0] for t in tiers)
-            hi = max(TIER_SPAN[t][1] or pd.Timestamp(as_of) for t in tiers)
-            span = [str(lo.date()), str(min(hi, pd.Timestamp(as_of)).date())]
+        span, spans = None, [tier_span(t) for t in tiers]
+        if all(spans):
+            lo, hi = min(s[0] for s in spans), min(max(s[1] or pd.Timestamp(as_of) for s in spans), pd.Timestamp(as_of))
+            if lo > hi:
+                raise ValueError(f"S5 feed {feed!r}: rows of {tiers}, which start after the data end ({pd.Timestamp(as_of).date()})")
+            span = [str(lo.date()), str(hi.date())]
         out[feed] = {"tiers": tiers, "span": span, "counts": n}
     return out
 
@@ -2032,7 +2132,7 @@ def stale_files(manifest_: dict) -> list:
 
 def input_files(bundle: SetBundle, model: str) -> list:
     """Every file the build reads, for the manifest's sha256s (a stage candidate's: every file of its directory and
-    the bake-off it names)."""
+    the bake-off it names; the served set's: the forecast_history snapshot, once one is committed)."""
     raw = T4.RAW_DIR
     sd = T4.SERVE_DIR if bundle.is_served or bundle.stage is not None else CAND.candidate_dir(bundle.name)
     files = [X.PROTOCOL, FORECAST / "live_dashboard.py", S1_SCORES, S1.OUT_DIR / f"{model}.csv.gz", raw / "historical_rain.csv",
@@ -2051,6 +2151,8 @@ def input_files(bundle: SetBundle, model: str) -> list:
     if not bundle.is_served:                       # vs_served and the primaries read the served set's written build
         built = STAGES_DIR / served_name()
         files += [built / n for n in SERVED_BUILD_FILES if (built / n).exists()]
+    elif GP.SNAPSHOT.exists():                     # its T0 as served (t0_as_served)
+        files.append(GP.SNAPSHOT)
     import beachwatch as BW
     files += [BW.POSTED_DAYS_CSV, BW.MANIFEST]
     missing = [p for p in files if not p.exists()]
@@ -2062,10 +2164,10 @@ def input_files(bundle: SetBundle, model: str) -> list:
 def build(set_name: str = "served", root: str = "served", entries=ENTRIES, tiers=None, steps=STEPS,
           n_boot: int = B_PROTOCOL, seasons=None, feeds=None, s5_tiers=None, log=print, stage_set=None) -> Build:
     """Score every stage of one set (see the module notes). ``tiers`` default: every tier the set's family
-    refits (gb: T1), or every tier a stage candidate holds folds for. Development and test knobs, all off by
-    default: ``seasons`` keeps the T2 seasons listed, ``feeds`` the S5 feeds listed, ``s5_tiers`` the tiers S5
-    replays, ``stage_set`` a stage candidate already loaded (root stages_candidates); ``n_boot`` below the
-    protocol's 2,000 is for tests and is refused by ``write``."""
+    scores (gb: its finals, T1 and T0), or every tier a stage candidate holds folds for. Development and test
+    knobs, all off by default: ``seasons`` keeps the T2 seasons listed, ``feeds`` the S5 feeds listed,
+    ``s5_tiers`` the tiers S5 replays, ``stage_set`` a stage candidate already loaded (root stages_candidates);
+    ``n_boot`` below the protocol's 2,000 is for tests and is refused by ``write``."""
     t_all = time.time()
     entries = tuple(entries)
     bad = [e for e in entries if e not in ENTRIES]
@@ -2078,7 +2180,7 @@ def build(set_name: str = "served", root: str = "served", entries=ENTRIES, tiers
     s2set, geo, st = bundle.s2, bundle.geo, bundle.stage
     if tiers is None:
         tiers = (tuple(t for t in TIERS if any(f.tier == t for f in st.folds)) if st is not None
-                 else TIERS if s2set.family in S2.REFIT_FAMILIES else ("T1",))
+                 else TIERS if s2set.family in S2.REFIT_FAMILIES else S2.FINAL_TIERS)
     tiers = tuple(tiers)
     model = E.served_weather_model()
     end = E.data_end()
@@ -2235,7 +2337,7 @@ def s5_build(bundle: SetBundle, specs: dict, folds: list, s5_runs: dict, fd: dic
             continue
         inputs = C.BasinInputs(r.p, r.v, r.rain if rain is None else rain)
         kw = ({"held_out_season": f.season} if f.tier == "T2"
-              else {"trained_through": bundle.s2.trained_through if f.tier == "T1" else S2.HOLDOUT_START - pd.Timedelta(days=1)})
+              else {"trained_through": bundle.s2.trained_through if f.tier in S2.FINAL_TIERS else S2.HOLDOUT_START - pd.Timedelta(days=1)})
         for name, feed in fd.items():
             if name == "watcher" or (name.startswith("degraded") and f.tier not in S5_WINDOW):
                 continue                                   # a degraded feed is built for the S5 window only (§8)
@@ -2328,14 +2430,14 @@ def make_scores(bundle: SetBundle, rows: dict, rung: pd.DataFrame, ctx: X.Contex
     served one: vs_served, and for a stage candidate s2_vs_recipe and s3b_vs_constant from ``extra``); the
     exclusion counts and the partition of the build's rows; the claims and the truth catalog; the figure's counts;
     the integrity checks; the figure on each stage's powered window (``figure``, FIGURE_WINDOWS) and one per
-    window; for a set that is not the served one, the §8 primaries and the §9 criteria. No clock, so a rebuild
-    on the same inputs gives the same file."""
+    fitted window; for the served set its T0 as served (``t0_as_served``); for a set that is not the served one,
+    the §8 primaries and the §9 criteria. No clock, so a rebuild on the same inputs gives the same file."""
     extra = extra or {}
     geo = bundle.geo
     nested = bundle.stage.nested if bundle.stage is not None else None
     out = {"schema": SCORES_SCHEMA, "set": bundle.name, "geography": geo.version, "protocol": X.protocol_stamp(),
            "as_of": str(end.date()), "windows": {**{t: dict(S2._TIER_TEXT[t]) for t in TIERS},
-                                                  "S5": "S5's window, 2023-07-01 → the data end: T1-holdout ∪ T1 (protocol §8)"},
+                                                  "S5": "S5's window, 2023-07-01 → the data end: T1-holdout ∪ T1 ∪ T0 (protocol §8)"},
            "bootstrap": {"n": n_boot, "seed": SEED, "level": LEVEL, "protocol": n_boot == B_PROTOCOL},
            "blocks": {"s2-out": "storm blocks from rain (truth.blocks, protocol §6)", "s5": "observation events (s5_blocks)"},
            "reference": "climatology per unit × calendar month ±1 on the fold's training days (protocol §4.2)",
@@ -2391,10 +2493,12 @@ def make_scores(bundle: SetBundle, rows: dict, rung: pd.DataFrame, ctx: X.Contex
     if "s5" in rows and len(rows["s5"]):
         r = rows["s5"]
         r["ref"] = references(r, pools["out"])
-        out["s5"], paired["s5_primary"] = score_s5(r, fd, n_boot)
+        out["s5"], paired["s5_primary"] = score_s5(r, fd, blocks, n_boot)
         paired["s5_primary_rule"] = ("protocol §8: link_zone_swap − basin_swap on the conditional set, superiority (the 90% CI's "
                                      "upper bound below 0) on the perfect feed and on the degraded feed; window 'S5' = 2023-07-01 → "
-                                     "the data end (T1-holdout ∪ T1)")
+                                     "the data end (T1-holdout ∪ T1 ∪ T0)")
+    if bundle.is_served:
+        out["t0_as_served"] = t0_as_served(bundle.name, ctx_by_tier.get(S2.T0, ctx), pools["out"], blocks, n_boot, end)
     art = served_artifacts() if not bundle.is_served else None
     if art is not None:
         paired["vs_served"] = vs_served(rows, art, blocks, n_boot, geo)
@@ -2424,10 +2528,10 @@ def make_scores(bundle: SetBundle, rows: dict, rung: pd.DataFrame, ctx: X.Contex
             "folds_unstated": [f"{t} {fo}" for (t, fo), s in sorted(sz.items()) if s["match"] is None]}
     out["dropped"] = dropped
     seen = bool(bundle.stage is not None and bundle.stage.post_seen)
-    out["figures"] = {w: figure(out, w, s1, geo, s1_post, nested=nested, post_seen=seen) for w in TIERS}
+    out["figures"] = {w: figure(out, w, s1, geo, s1_post, nested=nested, post_seen=seen, blocks=blocks) for w in S2.TIERS}
     out["figure_window"] = figure_windows(out)
     out["figure_post_window"] = POST_WINDOW
-    out["figure"] = figure(out, FIGURE_WINDOWS, s1, geo, s1_post, fallback=True, nested=nested, post_seen=seen)
+    out["figure"] = figure(out, FIGURE_WINDOWS, s1, geo, s1_post, fallback=True, nested=nested, post_seen=seen, blocks=blocks)
     if art is not None:
         out = V.clean(out)
         out["primaries"] = primaries(bundle, out, rows, art, ctx, blocks, n_boot, end)
@@ -2465,8 +2569,11 @@ def vs_served(rows: dict, art: dict, blocks: pd.DataFrame, n_boot: int, geo) -> 
     """Candidate − served on identical rows (Part B 16: both arms built from the same entries and inputs), read
     from the served set's rows.csv.gz (``served_artifacts``): {stage: {unit | pooled: {entry: {window: Δ}}}}; OUT's
     pooled rain-known and lead-1 cells add ΔMCB (CORP miscalibration, protocol §8's "pooled MCB not worse beyond its
-    CI"). Across geographies only the geography-invariant targets (S3 zones, S4, OUT; protocol §8): basin-level S2
-    is compared within one geography. Skipped, with the reason, when the served build cannot be read."""
+    CI"). Once T0 holds rows, OUT adds protocol §8's window T1 post ∪ T0 as one cell (OUT_WINDOW): the unit-days both
+    sets scored in either tier, ordered as one window's rows are (zone by zone, day by day), so the bootstrap reads
+    them as it would a single tier. Across geographies only the geography-invariant targets (S3 zones, S4, OUT;
+    protocol §8): basin-level S2 is compared within one geography. Skipped, with the reason, when the served build
+    cannot be read."""
     if "skipped" in art:
         return {"skipped": art["skipped"]}
     srv, sgeo = art["rows"], art["manifest"]["geography"]
@@ -2482,8 +2589,14 @@ def vs_served(rows: dict, art: dict, blocks: pd.DataFrame, n_boot: int, geo) -> 
             continue
         s = srv[(srv["stage"] == st) & (srv["excl"].fillna("") == "")]
         c = r[r["excl"] == ""]
-        for (e, t), g in c.groupby(["entry", "tier"], sort=False):
-            b = s[(s["entry"] == e) & (s["tier"] == t)]
+        cells = [(e, t, g, [t]) for (e, t), g in c.groupby(["entry", "tier"], sort=False)]
+        if st == "out" and (c["tier"] == S2.T0).any():
+            u = c[c["tier"].isin(OUT_TIERS)]
+            zone = {z: i for i, z in enumerate(pd.unique(u["unit"]))}
+            u = u.sort_values(["unit", "date"], key=lambda x: x.map(zone) if x.name == "unit" else x)
+            cells += [(e, OUT_WINDOW, g, list(OUT_TIERS)) for e, g in u.groupby("entry", sort=False)]
+        for e, t, g, tiers in cells:
+            b = s[(s["entry"] == e) & s["tier"].isin(tiers)]
             common, y, pa, pb = _pair(g, b, f"vs_served {st} {e} {t}")
             if not len(common):
                 continue
@@ -2752,9 +2865,10 @@ def settle_unchanged(rows: list, mine: dict) -> list:
 
 
 def post_seen_caveat(row: dict, why: str) -> dict:
-    """A primary with a part decided on post-training days, for a set tagged post_seen: protocol §2's tag as a caveat
-    (those days' scores were seen before the set was designed, so they do not confirm it). Other rows as they are."""
-    if not any(p.get("window") == POST_WINDOW for p in row.get("parts") or ()):
+    """A primary with a part decided on post-training days (T1, or OUT's T1 post ∪ T0), for a set tagged post_seen:
+    protocol §2's tag as a caveat (those days' scores were seen before the set was designed, so they do not confirm
+    it). Other rows as they are."""
+    if not any(p.get("window") in (POST_WINDOW, OUT_WINDOW) for p in row.get("parts") or ()):
         return row
     cv = f"post_seen (protocol §2): {why}"
     return {**row, "caveat": f"{row['caveat']}; {cv}" if row.get("caveat") else cv}
@@ -2779,15 +2893,14 @@ def size_shares(cand: StageCandidate) -> bool:
 
 def t0_words(end) -> tuple:
     """(state, words) of T0 in OUT's T1 post ∪ T0 (protocol §2, §8): 'empty' while the data end is before T0's first
-    day (the day after the freeze), so T1 post-training stands alone; 'not graded' once it is not, since T1 stops at
-    the freeze (stages_s2) and only the forecast_history grader (P10) scores T0, so the union waits for it."""
+    day (the day after the freeze), so T1 post-training stands alone; 'scored' once it is not: T0 is shadow-run like
+    T1 (its finals, on the same inputs in both arms), so each OUT part reads the union as one window (OUT_WINDOW)."""
     start, end = X.freeze_date() + pd.Timedelta(days=1), pd.Timestamp(end)
     if end < start:
         return "empty", (f"T0 (prospective, from {start.date()}) holds no scored day: the data end ({end.date()}) is "
                          "before it, so T1 post-training stands alone")
-    return "not graded", (f"T0 (prospective, from {start.date()}) holds days to the data end ({end.date()}) that only the "
-                          "forecast_history grader scores (P10), so T1 post ∪ T0 is not yet computable here; each part's "
-                          "T1-only status is its t1_status")
+    return "scored", (f"T0 (prospective, from {start.date()}) holds the days to the data end ({end.date()}), shadow-run "
+                      "on the same inputs in both arms, so each part reads T1 post ∪ T0 as one window")
 
 
 def vs_fallback(cand: StageCandidate) -> dict:
@@ -3068,27 +3181,25 @@ def primaries(bundle: SetBundle, sc: dict, rows: dict, art: dict, ctx: X.Context
                                "in its S5 rows (scores['s5'])")
         out_rows.append(_row("S5", changed["s5"], _combine([sp, sg]), f"computed by stages_s5 on {where} (basin_swap = live_v2 "
                              "exists on GEO_V1's basins only)", perfect, parts=parts, **s5_kw))
-    # OUT · candidate vs served, rain known and lead 1, T1 post ∪ T0
+    # OUT · candidate vs served, rain known and lead 1, T1 post ∪ T0 (T1 alone while T0 is empty)
     t0_state, t0 = t0_words(end)
+    win = "T1" if t0_state == "empty" else OUT_WINDOW
     oparts = []
     for e, words in (("rain", "rain known"), ("L1", "lead 1")):
-        c = (((vs.get("out") or {}).get("pooled") or {}).get(e) or {}).get("T1") if not skipped else None
+        c = (((vs.get("out") or {}).get("pooled") or {}).get(e) or {}).get(win) if not skipped else None
         st, mg = _test(c, "noninferiority")
-        why = (no_served or f"no {words} T1 OUT row both sets scored" if st == NYC else
+        why = (no_served or f"no {words} {win} OUT row both sets scored" if st == NYC else
                "the 90% CI's upper bound " + ("is" if st == PASS else "is not") + " below 5% of the served set's BS on the same rows")
-        oparts.append(_part(f"non-inferiority at +5%, {words}", "T1", st, why, c, margin=mg, entry=e))
+        oparts.append(_part(f"non-inferiority at +5%, {words}", win, st, why, c, margin=mg, entry=e))
         mcb = (c or {}).get("mcb")
         if not mcb or mcb.get("lo") is None:
             sm, why = NYC, "no MCB CI"
         else:
             sm = FAIL if mcb["lo"] > 0 else PASS
             why = "pooled MCB worse beyond its CI" if sm == FAIL else "pooled MCB not worse beyond its CI"
-        oparts.append(_part(f"pooled MCB, {words}", "T1", sm, why, mcb, entry=e))
-    if t0_state != "empty":
-        for p in oparts:
-            p["t1_status"], p["status"] = p["status"], NYC
+        oparts.append(_part(f"pooled MCB, {words}", win, sm, why, mcb, entry=e))
     out_rows.append(_row("OUT", True, _combine(p["status"] for p in oparts), "zone-pooled; " + t0,
-                         ((((vs.get("out") or {}).get("pooled") or {}).get("rain") or {}).get("T1")) if not skipped else None,
+                         ((((vs.get("out") or {}).get("pooled") or {}).get("rain") or {}).get(win)) if not skipped else None,
                          parts=oparts, t0=t0_state, **size_kw))
     out_rows = settle_unchanged(out_rows, components(bundle))
     if cand is not None and cand.post_seen:
