@@ -189,6 +189,7 @@ def test_westside_clean_sample_under_the_outfall_split():
     spec, split, table = _stage2_v2()
     eng = ld.LiveData.__new__(ld.LiveData)
     eng.stage2, eng.split, eng.impact_table = spec, split, table
+    eng.specs = eng._load_specs()   # the composition runs on the stage specs built from the same spec (compose_v2's adapter)
     rain = [0.0, 0.0, 0.0, 0.0, 0.0, 2.0, 1.5, 0.6, 0.0, 0.0]
     frames = {"avg": pd.DataFrame({"date": pd.to_datetime(DATES), "precip_inches": rain, "rain_source": ["observed"] * 8 + ["forecast"] * 2})}
     feats = [{"avg": {"precip_avg": r, "rain_2d_cum": 0.0, "rain_3d_cum": 0.0}} for r in rain]
@@ -244,6 +245,8 @@ def test_live_dashboard_wiring_is_the_identity_without_observations_and_moves_wi
     from features.forecast import live_dashboard as ld
     eng = ld.LiveData.__new__(ld.LiveData)
     eng.impact_table = ld._smooth_table(json.loads((ROOT / "features/forecast/data/models/impact_table.json").read_text()))
+    eng.stage2 = None                 # stage 2 v1: no split
+    eng.specs = eng._load_specs()     # the composition's stage specs, from the same impact_table.json
     rain = [0.0, 0.0, 0.0, 0.4, 1.1, 0.3, 0.05, 0.0, 0.0, 0.0]
     frames = {"avg": pd.DataFrame({"date": pd.to_datetime(DATES), "precip_inches": rain, "rain_source": ["observed"] * 8 + ["forecast"] * 2})}
     feats = [{"avg": {"precip_avg": r, "rain_2d_cum": 0.0, "rain_3d_cum": 0.0}} for r in rain]
@@ -288,7 +291,7 @@ def test_live_dashboard_wiring_is_the_identity_without_observations_and_moves_wi
     assert "Southeast" not in rules["groups"] or rules["groups"]["Southeast"]["rule"] == "flag_hold"
     # the clean Ocean Beach sample caps the persistence term at 0.42 and recombines with today's own term
     p_only = [dict(x) for x in live["probs"]]; p_only[7] = {b: 0.0 for b in p_only[7]}
-    persist = ld._compose_risk(eng.impact_table, ld.GROUPS_BY_BASIN, p_only, live["vols"], 7, DATES, {})[1]["Ocean Beach"]
+    persist = eng._compose_impact(p_only, live["vols"], 7, DATES, {})["_groups"]["Ocean Beach"]
     assert persist > LR.RULES["samples"]["cap_clean_tail"]["ocean"], persist          # the scenario is set up so the cap bites
     assert rules["groups"]["Ocean Beach"]["rule"] == "sample_clean_cap"
     assert today["impact_groups"]["Ocean Beach"] == round(1 - (1 - 0.42) * (1 - live["probs"][7]["westside"]), 3)

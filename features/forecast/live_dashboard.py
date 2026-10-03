@@ -81,7 +81,6 @@ from src.models.groups import (  # noqa: E402
 )
 _ZONE_OF_GROUP = {g: zk for zk, gs in ZONE_GROUPS.items() for g in gs}
 _BASIN_OF_GROUP = {g: bk for bk, gs in GROUPS_BY_BASIN.items() for g in gs}
-from src.models.impact import compose as _compose_risk  # noqa: E402
 from src.models.impact import day_terms as _day_terms  # noqa: E402
 from src.models.impact import impact_fraction as _impact_fraction  # noqa: E402
 from src.models.impact import smooth_table as _smooth_table  # noqa: E402
@@ -93,6 +92,9 @@ from src.models import live_rules as _lr  # noqa: E402  (live corrections live_v
 from src.models import posting_label as _pl  # noqa: E402  (the beach-posting label, BeachWatch-backed)
 from src.models import candidates as _cand  # noqa: E402  (candidate model sets: scorecards + manifests; SERVED = the served set's descriptor)
 from src.models import stage2 as _s2  # noqa: E402  (the served stage 2 spec's split, if data/models/stage2.json exists)
+from src.models import compose_v2 as _C  # noqa: E402  (the one composition serving and the stage scores share: STAGES_DESIGN.md A6)
+from shared import geography as _geography  # noqa: E402
+_GEO = _geography.get("geo_v1")   # the served geography: four basins, the six legacy groups as the adapter's links
 
 # ─── Data source URLs ────────────────────────────────────────────────────────
 
@@ -190,6 +192,7 @@ class LiveData:
         self.stage2 = self._load_stage2()                 # the served stage 2 spec (None = v1, the basin composition)
         self.split = _s2.make_split(self.stage2)          # None for v1; the outfall split's callable for v2/v3
         self.impact_table = self._load_impact_table()
+        self.specs = self._load_specs()                   # the same split and table as stage specs (compose_v2's adapter)
 
     def _load_models(self):
         """The served stage-1 pickles. Weights-model pipelines reference their
@@ -244,13 +247,27 @@ class LiveData:
         measured from beach samples joined to reported discharges
         (train_v4.fit_impact_table), smoothed to a non-increasing decay per
         size class by the shared src/models/impact.smooth_table."""
+        raw = self._raw_impact_table()
+        return _smooth_table(raw) if raw else {}
+
+    def _raw_impact_table(self) -> dict:
+        """The served impact table as fitted, before smoothing: the stage 2 variant's refit table
+        (group-attributed discharge days) when it carries one, else impact_table.json; {} if absent."""
         if getattr(self, "stage2", None) and self.stage2.get("impact_table"):
-            return _smooth_table(self.stage2["impact_table"])   # the variant's refit table (group-attributed discharge days)
+            return self.stage2["impact_table"]
         path = MODEL_DIR / "impact_table.json"
         if not path.exists():
             return {}
         with open(path) as f:
-            return _smooth_table(json.load(f))
+            return json.load(f)
+
+    def _load_specs(self) -> dict:
+        """The served split and impact table as stage specs, {"s3", "s4"} (compose_v2's GEO_V1
+        adapter), built from the same raw files as ``self.split`` and ``self.impact_table``. The
+        composition runs on these, the same code the stage scores run (STAGES_DESIGN.md A6), and
+        equals src/models/impact.compose exactly (tests/test_compose_v2.py, the served goldens).
+        A table with no buckets raises here, at startup, instead of composing with silent fallbacks."""
+        return _C.geo_v1_adapter_specs(stage2=self.stage2, impact_table=self._raw_impact_table())
 
     @property
     def rain_sources(self) -> set:
@@ -401,16 +418,32 @@ class LiveData:
     def _compose_impact(self, day_probs: list, day_volumes: list, idx: int,
                         day_dates: list = None, observed: dict = None) -> dict:
         """Composed beach-impact risk for daily-table row `idx`, per basin
-        (worst group) plus per-group values under "_groups". Where the
-        watcher OBSERVED a CSO onset that day's discharge probability is
-        replaced with certainty. Implementation shared with training:
-        src/models/impact.compose."""
-        composed, groups_out = _compose_risk(self.impact_table, self.BASIN_IMPACT_GROUPS,
-                                             day_probs, day_volumes, idx, day_dates, observed, split=getattr(self, "split", None))
+        (worst group, plus "citywide") and per-group values under "_groups".
+        Where the watcher OBSERVED a CSO onset that day's discharge probability
+        is replaced with certainty. compose_v2 over ``self.specs``: the
+        composition the stage scores run, equal to src/models/impact.compose."""
+        if day_dates is None or len(day_dates) != len(day_probs):
+            raise ValueError("the composition needs one date per row of the daily table")
+        comp = self._compose_run(day_probs, day_volumes, day_dates, observed)
+        block = _C.payload_blocks(_GEO, self.specs["s4"], comp, day_dates[idx])
         # NOTE: keep `composed` flat floats only — the frontend takes
         # Math.max(Object.values(predictions)) and renders a card per key.
-        composed["_groups"] = groups_out
+        composed = dict(block["predictions"])
+        composed["_groups"] = block["impact_groups"]
         return composed
+
+    def _compose_run(self, day_probs: list, day_volumes: list, day_dates: list, observed: dict = None):
+        """compose_v2.compose over the daily table: S2's p and v̂ per basin (a basin with no
+        prediction is 0, as impact.compose skipped it), observed onsets as basin injections
+        (live_v2's basin swap; an onset on a day outside the table is not in this run)."""
+        keys = list(_GEO.keys)
+        index = pd.DatetimeIndex(pd.to_datetime(list(day_dates)))
+        p = pd.DataFrame([[float(row.get(k) or 0.0) for k in keys] for row in day_probs], index=index, columns=keys)
+        v = pd.DataFrame([[float((day_volumes[j] if j < len(day_volumes) else {}).get(k, 0.0) or 0.0) for k in keys]
+                          for j in range(len(index))], index=index, columns=keys)
+        days = set(index.date)
+        seen = {d: set(bs) & set(keys) for d, bs in (observed or {}).items() if d in days}
+        return _C.compose(_GEO, self.specs, _C.BasinInputs(p, v), _C.Inject(basin=seen))
 
     @staticmethod
     def _features_from_row(row) -> dict:
@@ -920,7 +953,7 @@ class LiveData:
             # the persistence-only composition (the day's own discharge term removed) — what a clean sample caps
             p_only = [dict(p) for p in p2]
             p_only[idx] = {b: 0.0 for b in p_only[idx]}
-            _, persist_groups = _compose_risk(self.impact_table, self.BASIN_IMPACT_GROUPS, p_only, v2, idx, dates, {}, split=getattr(self, "split", None))
+            persist_groups = self._compose_impact(p_only, v2, idx, dates, {})["_groups"]
             large_curve = lambda g, k: _impact_fraction(self.impact_table, g, k, _lr.RULES["cso"]["large_volume_mg"])  # noqa: E731
             # the day's own term per group, after the stage 2 split — what a clean sample's capped persistence recombines with
             today_terms = _day_terms(self.BASIN_IMPACT_GROUPS, p2[idx], v2[idx], split=getattr(self, "split", None))

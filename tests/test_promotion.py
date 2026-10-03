@@ -62,13 +62,14 @@ def test_engine_serves_the_split_and_labels_the_served_set():
     probs = [{"westside": 0.9, "southeast": 0.9, "north_shore": 0.0, "central": 0.0, "citywide": 0.9},
              {"westside": 0.0, "southeast": 0.0, "north_shore": 0.0, "central": 0.0, "citywide": 0.0}]
     vols = [{"westside": 1.0, "southeast": 1.0, "north_shore": 0.0, "central": 0.0}, {b: 0.0 for b in ("westside", "southeast", "north_shore", "central")}]
-    with_split = E._compose_impact(probs, vols, 1)["_groups"]
-    saved = E.split
-    E.split = None
+    dates = ["2026-01-01", "2026-01-02"]
+    with_split = E._compose_impact(probs, vols, 1, dates)["_groups"]
+    saved = E.specs   # the composition reads the stage specs (compose_v2's adapter); the same table with identity links = no split
+    E.specs = ld._C.geo_v1_adapter_specs(stage2=None, impact_table=E._raw_impact_table())
     try:
-        no_split = E._compose_impact(probs, vols, 1)["_groups"]
+        no_split = E._compose_impact(probs, vols, 1, dates)["_groups"]
     finally:
-        E.split = saved
+        E.specs = saved
     assert with_split["Ocean Beach"] < no_split["Ocean Beach"] and with_split["Southeast"] == no_split["Southeast"]
     assert abs(with_split["Ocean Beach"] / no_split["Ocean Beach"] - S2.group_share(E.stage2, "Ocean Beach", 1.0)) < 0.02
     # the Model check payload names the served set and carries its per-basin picks, not gb_v1's training report

@@ -603,7 +603,11 @@ def _live_v2(geo, specs: dict, inputs: C.BasinInputs, feed: pd.DataFrame, days: 
         persist_u = C.compose(geo, specs, C.BasinInputs(P0, V2)).out.unit
         persist = {group[u]: float(persist_u.iat[-1, k]) for k, u in enumerate(units)}
         near = {k: v for k, v in smp.items() if today - dt.timedelta(days=HORIZON) <= k[1] <= today}
-        adjusted, _ = LR.adjust_groups(groups, persist, p2[-1], today, near, dict(zip(win, p2)), on_k, fl_k,
+        # the day's own term per group after the split (impact.day_terms; the adapter's links are the groups):
+        # what a clean sample's capped persistence recombines with since main's clean-cap fix (165d96f)
+        lp = comp.s3.link_p
+        today_terms = {group[u]: float(lp.iat[-1, lp.columns.get_loc(u)]) for u in units}
+        adjusted, _ = LR.adjust_groups(groups, persist, today_terms, today, near, dict(zip(win, p2)), on_k, fl_k,
                                        zone_of_group, basin_of_group, large, rules=rules)
         out_r.append({zk: max(adjusted[g] for g in gs) for zk, gs in zone_groups.items()})
         out_p.append(comp.s3.zone_p.iloc[-1])
