@@ -1,0 +1,5227 @@
+{
+ "geography": "sfpuc4_v1",
+ "pipeline": "stages_v1",
+ "kind": "links_v1",
+ "links": {
+  "westside>ocean": {
+   "basin": "westside",
+   "zone": "ocean",
+   "outfalls": [
+    "CSD-001",
+    "CSD-002",
+    "CSD-003"
+   ],
+   "evidence": {
+    "CSD-001": "O",
+    "CSD-002": "O",
+    "CSD-003": "O"
+   },
+   "identity": false,
+   "share": {
+    "kind": "logit_logvol",
+    "coef": {
+     "a": -0.4408968085770523,
+     "b": 1.1008245645128567
+    },
+    "basin_median_mg": 4.13
+   },
+   "vol_share": 0.869258957654723
+  },
+  "westside>baker_china": {
+   "basin": "westside",
+   "zone": "baker_china",
+   "outfalls": [
+    "CSD-004",
+    "CSD-005",
+    "CSD-006",
+    "CSD-007"
+   ],
+   "evidence": {
+    "CSD-004": "G",
+    "CSD-005": "G",
+    "CSD-006": "G",
+    "CSD-007": "O"
+   },
+   "identity": false,
+   "share": {
+    "kind": "logit_logvol",
+    "coef": {
+     "a": 0.5336493148391764,
+     "b": 0.5402132505702508
+    },
+    "basin_median_mg": 4.13
+   },
+   "vol_share": 0.2861632313522507
+  },
+  "north_shore>north": {
+   "basin": "north_shore",
+   "zone": "north",
+   "outfalls": [
+    "CSD-009",
+    "CSD-010",
+    "CSD-011",
+    "CSD-013",
+    "CSD-015",
+    "CSD-017",
+    "CSD-119"
+   ],
+   "evidence": {
+    "CSD-009": "O",
+    "CSD-010": "O",
+    "CSD-011": "O",
+    "CSD-013": "O",
+    "CSD-015": "O",
+    "CSD-017": "G",
+    "CSD-119": "G"
+   },
+   "identity": true,
+   "share": {
+    "kind": "identity"
+   },
+   "vol_share": 1.0
+  },
+  "central>east": {
+   "basin": "central",
+   "zone": "east",
+   "outfalls": [
+    "CSD-018",
+    "CSD-022",
+    "CSD-023",
+    "CSD-024",
+    "CSD-025",
+    "CSD-026",
+    "CSD-027",
+    "CSD-029",
+    "CSD-030",
+    "CSD-030A",
+    "CSD-031",
+    "CSD-031A",
+    "CSD-032",
+    "CSD-033",
+    "CSD-035"
+   ],
+   "evidence": {
+    "CSD-018": "G",
+    "CSD-022": "O",
+    "CSD-023": "O",
+    "CSD-024": "O",
+    "CSD-025": "O",
+    "CSD-026": "O",
+    "CSD-027": "O",
+    "CSD-029": "G",
+    "CSD-030": "G",
+    "CSD-030A": "G",
+    "CSD-031": "O",
+    "CSD-031A": "O",
+    "CSD-032": "O",
+    "CSD-033": "O",
+    "CSD-035": "O"
+   },
+   "identity": true,
+   "share": {
+    "kind": "identity"
+   },
+   "vol_share": 1.0
+  },
+  "south>east": {
+   "basin": "south",
+   "zone": "east",
+   "outfalls": [
+    "CSD-037",
+    "CSD-040",
+    "CSD-041",
+    "CSD-042",
+    "CSD-043"
+   ],
+   "evidence": {
+    "CSD-037": "G",
+    "CSD-040": "O",
+    "CSD-041": "O",
+    "CSD-042": "G",
+    "CSD-043": "O"
+   },
+   "identity": true,
+   "share": {
+    "kind": "identity"
+   },
+   "vol_share": 1.0
+  }
+ },
+ "union": {
+  "east": {
+   "rule": "max"
+  }
+ },
+ "cofire": {
+  "westside>ocean|westside>baker_china": 0.6585365853658537,
+  "westside>baker_china|westside>ocean": 0.7297297297297297,
+  "central>east|south>east": 0.8636363636363636,
+  "south>east|central>east": 0.21348314606741572
+ },
+ "sources": {
+  "s2": {
+   "name": "dev:logit_v1_s2v2",
+   "note": "development stand-in: westside v\u0302 = the logit_v1_s2v2 (GEO_V1) volume head design refit per season set on its own rows; central and south p = the served logit_v1 recipe (19 features + hinges, C 0.03) with every weight \u2265 0, refit on SFPUC4 ledger-known days with the outage-masked rain. Its C was chosen on pre-holdout leave-one-season-out and its hinges have unrecorded provenance, so every T2 score read through it is development (selection-contaminated; protocol \u00a72). The assemble step swaps in the S2 bake-off winner.",
+   "designs": {
+    "central:p": {
+     "rain_source": "SF Downtown",
+     "features": 19,
+     "model": "Pipeline"
+    },
+    "south:p": {
+     "rain_source": "SF Downtown",
+     "features": 19,
+     "model": "Pipeline"
+    },
+    "westside:v_hat": {
+     "rain_source": "avg",
+     "features": 19,
+     "model": "GradientBoostingRegressor"
+    }
+   }
+  },
+  "ledger": "truth.basin_onsets / link_onsets (CIWQS, ledger-known days)",
+  "rain": "stages_entries.frames('rain'): rain known, outage-masked"
+ },
+ "note": "Westside's two links share its overflow by s(v\u0302) = logistic(a + b\u00b7log1p v\u0302), v\u0302 the basin size predicted from rain, fit on v\u0302 out of sample (inner leave-one-season-out); the other links are identity; East is the union of Central and South by the rule chosen nested on chained East Brier.",
+ "fit": {
+  "schema": "bwtf.stages.s3_links/1",
+  "protocol": "stages_v3@22a2695e2e950188d37b753928932c6f6f2dc83296482a4fddf5a373ce86df3f",
+  "as_of": "2026-08-17",
+  "window": {
+   "top": "T1 final: fit on every day through 2025-10-31",
+   "T1-holdout": "refit on days before 2023-07-01",
+   "T2": "refit per held-out season on the other eight of 2016-17 \u2026 2024-25"
+  },
+  "v_hat": "a fit day's v\u0302 is the fold's head design refit without that day's season (inner leave-one-season-out); a scored day's v\u0302 is the fold's head (Part B 2: shares fit on v\u0302 the same way they are used)",
+  "fit_rows": "the S3 oracle's scored rows of the split zones on the fold's training days (X-S3-UNCOV, X-LEDGER-SUSPECT, X-S3-CARRY, X-S3-QUIET)",
+  "union_choice": "per fold, on East Brier (rain known) pooled over inner leave-one-season-out on its T2 seasons: the default max stays unless a challenger is better (the 90% storm-block CI of \u0394 = BS(challenger) \u2212 BS(max) wholly below 0, B = 2000, seed 0); between two better challengers whose difference's CI includes 0, the one with fewer parameters",
+  "folds": [
+   {
+    "tier": "T1",
+    "fold": "final",
+    "scores": [
+     "2025-11-01",
+     "2026-10-02"
+    ],
+    "train_seasons": [
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ],
+    "share_fit_span": [
+     "2018-01-08",
+     "2025-10-13"
+    ],
+    "links": {
+     "westside>ocean": {
+      "share": {
+       "kind": "logit_logvol",
+       "coef": {
+        "a": -0.4408968085770523,
+        "b": 1.1008245645128567
+       },
+       "basin_median_mg": 4.13
+      },
+      "constant": 0.7551020408163265,
+      "vol_share": 0.869258957654723,
+      "n_fit_days": 49,
+      "n_fired": 37,
+      "newton_iterations": 7
+     },
+     "westside>baker_china": {
+      "share": {
+       "kind": "logit_logvol",
+       "coef": {
+        "a": 0.5336493148391764,
+        "b": 0.5402132505702508
+       },
+       "basin_median_mg": 4.13
+      },
+      "constant": 0.803921568627451,
+      "vol_share": 0.2861632313522507,
+      "n_fit_days": 51,
+      "n_fired": 41,
+      "newton_iterations": 6
+     },
+     "north_shore>north": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "central>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "south>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     }
+    },
+    "basin_median_mg": {
+     "westside": 4.13,
+     "north_shore": 8.73,
+     "central": 58.45,
+     "south": 1.145
+    },
+    "cofire": {
+     "westside>ocean|westside>baker_china": 0.6585365853658537,
+     "westside>baker_china|westside>ocean": 0.7297297297297297,
+     "central>east|south>east": 0.8636363636363636,
+     "south>east|central>east": 0.21348314606741572
+    },
+    "union": {
+     "east": {
+      "rule": "max"
+     },
+     "choice": {
+      "brier": {
+       "max": 0.010315857042133027,
+       "noisy_or": 0.010303127824782802,
+       "cofire": 0.010342899993523214
+      },
+      "n": 3088,
+      "inner": {
+       "2016": {
+        "n": 251,
+        "sse": {
+         "max": 6.403411133790462,
+         "noisy_or": 6.305876053811017,
+         "cofire": 6.3650623435132925
+        },
+        "train_seasons": [
+         2015,
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2022,
+         2023,
+         2024,
+         2025
+        ]
+       },
+       "2017": {
+        "n": 347,
+        "sse": {
+         "max": 0.19365907333177,
+         "noisy_or": 0.208257110772572,
+         "cofire": 0.19522133561548602
+        },
+        "train_seasons": [
+         2015,
+         2016,
+         2018,
+         2019,
+         2020,
+         2021,
+         2022,
+         2023,
+         2024,
+         2025
+        ]
+       },
+       "2018": {
+        "n": 358,
+        "sse": {
+         "max": 7.539151886343735,
+         "noisy_or": 7.488150610423283,
+         "cofire": 7.5335865693836315
+        },
+        "train_seasons": [
+         2015,
+         2016,
+         2017,
+         2019,
+         2020,
+         2021,
+         2022,
+         2023,
+         2024,
+         2025
+        ]
+       },
+       "2019": {
+        "n": 360,
+        "sse": {
+         "max": 2.14470935897279,
+         "noisy_or": 2.1329680882089876,
+         "cofire": 2.1480173134362373
+        },
+        "train_seasons": [
+         2015,
+         2016,
+         2017,
+         2018,
+         2020,
+         2021,
+         2022,
+         2023,
+         2024,
+         2025
+        ]
+       },
+       "2020": {
+        "n": 355,
+        "sse": {
+         "max": 3.0984187138236603,
+         "noisy_or": 3.0664908134112028,
+         "cofire": 3.0925914106535153
+        },
+        "train_seasons": [
+         2015,
+         2016,
+         2017,
+         2018,
+         2019,
+         2021,
+         2022,
+         2023,
+         2024,
+         2025
+        ]
+       },
+       "2021": {
+        "n": 352,
+        "sse": {
+         "max": 4.210538956524879,
+         "noisy_or": 4.134933665465184,
+         "cofire": 4.192750052503479
+        },
+        "train_seasons": [
+         2015,
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2022,
+         2023,
+         2024,
+         2025
+        ]
+       },
+       "2022": {
+        "n": 352,
+        "sse": {
+         "max": 4.266897731229491,
+         "noisy_or": 4.377143456933289,
+         "cofire": 4.364811522551885
+        },
+        "train_seasons": [
+         2015,
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2023,
+         2024,
+         2025
+        ]
+       },
+       "2023": {
+        "n": 363,
+        "sse": {
+         "max": 2.4001535025381395,
+         "noisy_or": 2.392453723982033,
+         "cofire": 2.38549734282312
+        },
+        "train_seasons": [
+         2015,
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2022,
+         2024,
+         2025
+        ]
+       },
+       "2024": {
+        "n": 350,
+        "sse": {
+         "max": 1.5984261895518614,
+         "noisy_or": 1.7097851999217228,
+         "cofire": 1.661337289519037
+        },
+        "train_seasons": [
+         2015,
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2022,
+         2023,
+         2025
+        ]
+       }
+      },
+      "lowest": "noisy_or",
+      "why": "no challenger is better than max (each CI of \u0394 includes 0 or lies above it), so the default stays",
+      "n_blocks": 394,
+      "vs_default": {
+       "noisy_or": {
+        "delta": -1.2729217350225877e-05,
+        "lo": -0.00010967963064300374,
+        "hi": 8.83886912247374e-05,
+        "se": 6.143826337151275e-05,
+        "verdict": "no clear difference",
+        "n": 3088,
+        "n_blocks": 394
+       },
+       "cofire": {
+        "delta": 2.704295139018681e-05,
+        "lo": -3.203184687919185e-05,
+        "hi": 0.00010565382076566584,
+        "se": 4.2489308800906706e-05,
+        "verdict": "no clear difference",
+        "n": 3088,
+        "n_blocks": 394
+       }
+      }
+     }
+    }
+   },
+   {
+    "tier": "T1-holdout",
+    "fold": "pre_holdout",
+    "scores": [
+     "2023-07-01",
+     "2025-10-31"
+    ],
+    "train_seasons": [
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022
+    ],
+    "share_fit_span": [
+     "2018-01-08",
+     "2023-03-14"
+    ],
+    "links": {
+     "westside>ocean": {
+      "share": {
+       "kind": "logit_logvol",
+       "coef": {
+        "a": -0.6161481524166772,
+        "b": 1.0839844071085776
+       },
+       "basin_median_mg": 3.775
+      },
+      "constant": 0.7105263157894737,
+      "vol_share": 0.8589675359233636,
+      "n_fit_days": 38,
+      "n_fired": 27,
+      "newton_iterations": 7
+     },
+     "westside>baker_china": {
+      "share": {
+       "kind": "logit_logvol",
+       "coef": {
+        "a": 1.0104491495753918,
+        "b": 0.1973772033274373
+       },
+       "basin_median_mg": 3.775
+      },
+      "constant": 0.7948717948717948,
+      "vol_share": 0.3693606850915683,
+      "n_fit_days": 39,
+      "n_fired": 31,
+      "newton_iterations": 5
+     },
+     "north_shore>north": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "central>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "south>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     }
+    },
+    "basin_median_mg": {
+     "westside": 3.775,
+     "north_shore": 8.120000000000001,
+     "central": 49.17,
+     "south": 1.8
+    },
+    "cofire": {
+     "westside>ocean|westside>baker_china": 0.6129032258064516,
+     "westside>baker_china|westside>ocean": 0.7037037037037037,
+     "central>east|south>east": 0.8235294117647058,
+     "south>east|central>east": 0.2028985507246377
+    },
+    "union": {
+     "east": {
+      "rule": "noisy_or"
+     },
+     "choice": {
+      "brier": {
+       "max": 0.012429893066397335,
+       "noisy_or": 0.012295434734773847,
+       "cofire": 0.012401594988115074
+      },
+      "n": 2375,
+      "inner": {
+       "2016": {
+        "n": 251,
+        "sse": {
+         "max": 7.090035375366266,
+         "noisy_or": 6.912033458570859,
+         "cofire": 7.003757011669443
+        },
+        "train_seasons": [
+         2015,
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2022
+        ]
+       },
+       "2017": {
+        "n": 347,
+        "sse": {
+         "max": 0.20509308784417854,
+         "noisy_or": 0.22843353418695148,
+         "cofire": 0.20796972717409265
+        },
+        "train_seasons": [
+         2015,
+         2016,
+         2018,
+         2019,
+         2020,
+         2021,
+         2022
+        ]
+       },
+       "2018": {
+        "n": 358,
+        "sse": {
+         "max": 7.748648608201104,
+         "noisy_or": 7.668411056051666,
+         "cofire": 7.736507143579868
+        },
+        "train_seasons": [
+         2015,
+         2016,
+         2017,
+         2019,
+         2020,
+         2021,
+         2022
+        ]
+       },
+       "2019": {
+        "n": 360,
+        "sse": {
+         "max": 2.119596262545775,
+         "noisy_or": 2.1052572107747345,
+         "cofire": 2.1602828919371433
+        },
+        "train_seasons": [
+         2015,
+         2016,
+         2017,
+         2018,
+         2020,
+         2021,
+         2022
+        ]
+       },
+       "2020": {
+        "n": 355,
+        "sse": {
+         "max": 3.0657863836012353,
+         "noisy_or": 3.0287244632948456,
+         "cofire": 3.0563770447013994
+        },
+        "train_seasons": [
+         2015,
+         2016,
+         2017,
+         2018,
+         2019,
+         2021,
+         2022
+        ]
+       },
+       "2021": {
+        "n": 352,
+        "sse": {
+         "max": 4.290969710181792,
+         "noisy_or": 4.185589055102217,
+         "cofire": 4.258855335076563
+        },
+        "train_seasons": [
+         2015,
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2022
+        ]
+       },
+       "2022": {
+        "n": 352,
+        "sse": {
+         "max": 5.000866604953322,
+         "noisy_or": 5.073208717106611,
+         "cofire": 5.0300389426347945
+        },
+        "train_seasons": [
+         2015,
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2021
+        ]
+       }
+      },
+      "lowest": "noisy_or",
+      "why": "noisy_or is better than max (the CI of its \u0394 lies wholly below 0)",
+      "n_blocks": 304,
+      "vs_default": {
+       "noisy_or": {
+        "delta": -0.00013445833162348785,
+        "lo": -0.0002463654360266831,
+        "hi": -3.272367519752512e-05,
+        "se": 6.603986976595244e-05,
+        "verdict": "better",
+        "n": 2375,
+        "n_blocks": 304
+       },
+       "cofire": {
+        "delta": -2.82980782822604e-05,
+        "lo": -9.028100019963887e-05,
+        "hi": 3.514473513483325e-05,
+        "se": 3.7702675346232434e-05,
+        "verdict": "no clear difference",
+        "n": 2375,
+        "n_blocks": 304
+       }
+      }
+     }
+    }
+   },
+   {
+    "tier": "T2",
+    "fold": "2016-17",
+    "scores": [
+     "2016-07-01",
+     "2017-06-30"
+    ],
+    "train_seasons": [
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024
+    ],
+    "share_fit_span": [
+     "2018-01-08",
+     "2025-02-13"
+    ],
+    "links": {
+     "westside>ocean": {
+      "share": {
+       "kind": "logit_logvol",
+       "coef": {
+        "a": -0.2620583090513754,
+        "b": 0.991931350137437
+       },
+       "basin_median_mg": 4.13
+      },
+      "constant": 0.7708333333333334,
+      "vol_share": 0.869258957654723,
+      "n_fit_days": 48,
+      "n_fired": 37,
+      "newton_iterations": 7
+     },
+     "westside>baker_china": {
+      "share": {
+       "kind": "logit_logvol",
+       "coef": {
+        "a": 0.4112895614749936,
+        "b": 0.5962836809759046
+       },
+       "basin_median_mg": 4.13
+      },
+      "constant": 0.8,
+      "vol_share": 0.2861632313522507,
+      "n_fit_days": 50,
+      "n_fired": 40,
+      "newton_iterations": 6
+     },
+     "north_shore>north": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "central>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "south>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     }
+    },
+    "basin_median_mg": {
+     "westside": 4.13,
+     "north_shore": 9.645,
+     "central": 68.39,
+     "south": 1.145
+    },
+    "cofire": {
+     "westside>ocean|westside>baker_china": 0.675,
+     "westside>baker_china|westside>ocean": 0.7297297297297297,
+     "central>east|south>east": 0.85,
+     "south>east|central>east": 0.2463768115942029
+    },
+    "union": {
+     "east": {
+      "rule": "max"
+     },
+     "choice": {
+      "brier": {
+       "max": 0.009695031896501241,
+       "noisy_or": 0.009707314103751237,
+       "cofire": 0.009728810505162363
+      },
+      "n": 2837,
+      "inner": {
+       "2017": {
+        "n": 347,
+        "sse": {
+         "max": 0.15062130675473864,
+         "noisy_or": 0.16304831208713033,
+         "cofire": 0.151996316997417
+        },
+        "train_seasons": [
+         2018,
+         2019,
+         2020,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2018": {
+        "n": 358,
+        "sse": {
+         "max": 8.32315572388413,
+         "noisy_or": 8.276263609657285,
+         "cofire": 8.31612411535126
+        },
+        "train_seasons": [
+         2017,
+         2019,
+         2020,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2019": {
+        "n": 360,
+        "sse": {
+         "max": 2.215054926906228,
+         "noisy_or": 2.1963597521802596,
+         "cofire": 2.2297892859261674
+        },
+        "train_seasons": [
+         2017,
+         2018,
+         2020,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2020": {
+        "n": 355,
+        "sse": {
+         "max": 3.2192119636287804,
+         "noisy_or": 3.1816884156813696,
+         "cofire": 3.2118147560873247
+        },
+        "train_seasons": [
+         2017,
+         2018,
+         2019,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2021": {
+        "n": 352,
+        "sse": {
+         "max": 4.5025876514058725,
+         "noisy_or": 4.4239745733209315,
+         "cofire": 4.4827547112564385
+        },
+        "train_seasons": [
+         2017,
+         2018,
+         2019,
+         2020,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2022": {
+        "n": 352,
+        "sse": {
+         "max": 4.446164847395641,
+         "noisy_or": 4.46784093309111,
+         "cofire": 4.468403725799323
+        },
+        "train_seasons": [
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2023,
+         2024
+        ]
+       },
+       "2023": {
+        "n": 363,
+        "sse": {
+         "max": 3.029688306609572,
+         "noisy_or": 3.083138071241799,
+         "cofire": 3.0430704145723038
+        },
+        "train_seasons": [
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2022,
+         2024
+        ]
+       },
+       "2024": {
+        "n": 350,
+        "sse": {
+         "max": 1.6183207637890606,
+         "noisy_or": 1.747336445082373,
+         "cofire": 1.6966820771553928
+        },
+        "train_seasons": [
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2022,
+         2023
+        ]
+       }
+      },
+      "lowest": "max",
+      "why": "no challenger is better than max (each CI of \u0394 includes 0 or lies above it), so the default stays",
+      "n_blocks": 363,
+      "vs_default": {
+       "noisy_or": {
+        "delta": 1.2282207249995555e-05,
+        "lo": -0.00010610211253939268,
+        "hi": 0.0001342414490440659,
+        "se": 7.27401661097387e-05,
+        "verdict": "no clear difference",
+        "n": 2837,
+        "n_blocks": 363
+       },
+       "cofire": {
+        "delta": 3.377860866112144e-05,
+        "lo": -2.7400050811674047e-05,
+        "hi": 0.00010091268605443734,
+        "se": 3.937320716260158e-05,
+        "verdict": "no clear difference",
+        "n": 2837,
+        "n_blocks": 363
+       }
+      }
+     }
+    }
+   },
+   {
+    "tier": "T2",
+    "fold": "2017-18",
+    "scores": [
+     "2017-07-01",
+     "2018-06-30"
+    ],
+    "train_seasons": [
+     2016,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024
+    ],
+    "share_fit_span": [
+     "2018-11-21",
+     "2025-02-13"
+    ],
+    "links": {
+     "westside>ocean": {
+      "share": {
+       "kind": "logit_logvol",
+       "coef": {
+        "a": 0.08934263237764795,
+        "b": 0.7579333848141355
+       },
+       "basin_median_mg": 6.0649999999999995
+      },
+      "constant": 0.7954545454545454,
+      "vol_share": 0.8668249647441681,
+      "n_fit_days": 44,
+      "n_fired": 35,
+      "newton_iterations": 6
+     },
+     "westside>baker_china": {
+      "share": {
+       "kind": "logit_logvol",
+       "coef": {
+        "a": -0.1165102202057337,
+        "b": 0.9224697079437273
+       },
+       "basin_median_mg": 6.0649999999999995
+      },
+      "constant": 0.8,
+      "vol_share": 0.2493164952480146,
+      "n_fit_days": 45,
+      "n_fired": 36,
+      "newton_iterations": 7
+     },
+     "north_shore>north": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "central>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "south>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     }
+    },
+    "basin_median_mg": {
+     "westside": 6.0649999999999995,
+     "north_shore": 8.120000000000001,
+     "central": 54.144999999999996,
+     "south": 0.52
+    },
+    "cofire": {
+     "westside>ocean|westside>baker_china": 0.7222222222222222,
+     "westside>baker_china|westside>ocean": 0.7428571428571429,
+     "central>east|south>east": 0.8947368421052632,
+     "south>east|central>east": 0.19767441860465115
+    },
+    "union": {
+     "east": {
+      "rule": "max"
+     },
+     "choice": {
+      "brier": {
+       "max": 0.010831316865513781,
+       "noisy_or": 0.010903505950984,
+       "cofire": 0.010877328285164424
+      },
+      "n": 2741,
+      "inner": {
+       "2016": {
+        "n": 251,
+        "sse": {
+         "max": 5.866278231352789,
+         "noisy_or": 5.797225653217757,
+         "cofire": 5.843441451220061
+        },
+        "train_seasons": [
+         2018,
+         2019,
+         2020,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2018": {
+        "n": 358,
+        "sse": {
+         "max": 7.057220874013359,
+         "noisy_or": 7.01604148051275,
+         "cofire": 7.057220874013359
+        },
+        "train_seasons": [
+         2016,
+         2019,
+         2020,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2019": {
+        "n": 360,
+        "sse": {
+         "max": 2.142720174209347,
+         "noisy_or": 2.134726275371308,
+         "cofire": 2.1414819306726964
+        },
+        "train_seasons": [
+         2016,
+         2018,
+         2020,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2020": {
+        "n": 355,
+        "sse": {
+         "max": 3.009085288125815,
+         "noisy_or": 2.9828268199545445,
+         "cofire": 3.005211978731066
+        },
+        "train_seasons": [
+         2016,
+         2018,
+         2019,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2021": {
+        "n": 352,
+        "sse": {
+         "max": 3.8924892358196583,
+         "noisy_or": 3.8444109461185656,
+         "cofire": 3.882908689989896
+        },
+        "train_seasons": [
+         2016,
+         2018,
+         2019,
+         2020,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2022": {
+        "n": 352,
+        "sse": {
+         "max": 4.31237700735235,
+         "noisy_or": 4.480390626375865,
+         "cofire": 4.418102218354775
+        },
+        "train_seasons": [
+         2016,
+         2018,
+         2019,
+         2020,
+         2021,
+         2023,
+         2024
+        ]
+       },
+       "2023": {
+        "n": 363,
+        "sse": {
+         "max": 1.8874881758991857,
+         "noisy_or": 1.9822519755269579,
+         "cofire": 1.892180361561178
+        },
+        "train_seasons": [
+         2016,
+         2018,
+         2019,
+         2020,
+         2021,
+         2022,
+         2024
+        ]
+       },
+       "2024": {
+        "n": 350,
+        "sse": {
+         "max": 1.5209805416007645,
+         "noisy_or": 1.648636034569397,
+         "cofire": 1.5742093250926552
+        },
+        "train_seasons": [
+         2016,
+         2018,
+         2019,
+         2020,
+         2021,
+         2022,
+         2023
+        ]
+       }
+      },
+      "lowest": "max",
+      "why": "no challenger is better than max (each CI of \u0394 includes 0 or lies above it), so the default stays",
+      "n_blocks": 345,
+      "vs_default": {
+       "noisy_or": {
+        "delta": 7.218908547021972e-05,
+        "lo": -5.9219951035953755e-05,
+        "hi": 0.00022285360230926476,
+        "se": 8.812189282726701e-05,
+        "verdict": "no clear difference",
+        "n": 2741,
+        "n_blocks": 345
+       },
+       "cofire": {
+        "delta": 4.6011419650642676e-05,
+        "lo": -1.796541060282266e-05,
+        "hi": 0.00013271548543482143,
+        "se": 4.75300234504944e-05,
+        "verdict": "no clear difference",
+        "n": 2741,
+        "n_blocks": 345
+       }
+      }
+     }
+    }
+   },
+   {
+    "tier": "T2",
+    "fold": "2018-19",
+    "scores": [
+     "2018-07-01",
+     "2019-06-30"
+    ],
+    "train_seasons": [
+     2016,
+     2017,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024
+    ],
+    "share_fit_span": [
+     "2018-01-08",
+     "2025-02-13"
+    ],
+    "links": {
+     "westside>ocean": {
+      "share": {
+       "kind": "logit_logvol",
+       "coef": {
+        "a": 0.2638849271850839,
+        "b": 1.0202252973522299
+       },
+       "basin_median_mg": 9.885
+      },
+      "constant": 0.8571428571428571,
+      "vol_share": 0.8589675359233636,
+      "n_fit_days": 35,
+      "n_fired": 30,
+      "newton_iterations": 7
+     },
+     "westside>baker_china": {
+      "share": {
+       "kind": "logit_logvol",
+       "coef": {
+        "a": 0.5163467135859123,
+        "b": 0.5306420926346637
+       },
+       "basin_median_mg": 9.885
+      },
+      "constant": 0.8108108108108109,
+      "vol_share": 0.26773986330013266,
+      "n_fit_days": 37,
+      "n_fired": 30,
+      "newton_iterations": 6
+     },
+     "north_shore>north": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "central>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "south>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     }
+    },
+    "basin_median_mg": {
+     "westside": 9.885,
+     "north_shore": 8.73,
+     "central": 54.144999999999996,
+     "south": 0.79
+    },
+    "cofire": {
+     "westside>ocean|westside>baker_china": 0.7666666666666667,
+     "westside>baker_china|westside>ocean": 0.7666666666666667,
+     "central>east|south>east": 0.9375,
+     "south>east|central>east": 0.20270270270270271
+    },
+    "union": {
+     "east": {
+      "rule": "max"
+     },
+     "choice": {
+      "brier": {
+       "max": 0.009611496505784238,
+       "noisy_or": 0.009621390745923764,
+       "cofire": 0.009652116425008248
+      },
+      "n": 2730,
+      "inner": {
+       "2016": {
+        "n": 251,
+        "sse": {
+         "max": 7.273673164330413,
+         "noisy_or": 7.224634419126571,
+         "cofire": 7.263396781746355
+        },
+        "train_seasons": [
+         2017,
+         2019,
+         2020,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2017": {
+        "n": 347,
+        "sse": {
+         "max": 0.14074020891003092,
+         "noisy_or": 0.14571525194327895,
+         "cofire": 0.14074020891003092
+        },
+        "train_seasons": [
+         2016,
+         2019,
+         2020,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2019": {
+        "n": 360,
+        "sse": {
+         "max": 2.2219564442046553,
+         "noisy_or": 2.2152672175730137,
+         "cofire": 2.2379743670707253
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2020,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2020": {
+        "n": 355,
+        "sse": {
+         "max": 3.1940002517169495,
+         "noisy_or": 3.1785823397639286,
+         "cofire": 3.1927929166149367
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2019,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2021": {
+        "n": 352,
+        "sse": {
+         "max": 4.413114371691642,
+         "noisy_or": 4.366261056533948,
+         "cofire": 4.408093066254846
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2019,
+         2020,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2022": {
+        "n": 352,
+        "sse": {
+         "max": 4.591840289727723,
+         "noisy_or": 4.692570405935679,
+         "cofire": 4.691768878711794
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2019,
+         2020,
+         2021,
+         2023,
+         2024
+        ]
+       },
+       "2023": {
+        "n": 363,
+        "sse": {
+         "max": 2.758800016596961,
+         "noisy_or": 2.7288735157667867,
+         "cofire": 2.748666171857007
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2019,
+         2020,
+         2021,
+         2022,
+         2024
+        ]
+       },
+       "2024": {
+        "n": 350,
+        "sse": {
+         "max": 1.6452607136125939,
+         "noisy_or": 1.714492529728667,
+         "cofire": 1.6668454491068234
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2019,
+         2020,
+         2021,
+         2022,
+         2023
+        ]
+       }
+      },
+      "lowest": "max",
+      "why": "no challenger is better than max (each CI of \u0394 includes 0 or lies above it), so the default stays",
+      "n_blocks": 350,
+      "vs_default": {
+       "noisy_or": {
+        "delta": 9.894240139526195e-06,
+        "lo": -6.385780835429459e-05,
+        "hi": 9.199238724282385e-05,
+        "se": 4.8439429419659616e-05,
+        "verdict": "no clear difference",
+        "n": 2730,
+        "n_blocks": 350
+       },
+       "cofire": {
+        "delta": 4.061991922400983e-05,
+        "lo": -7.808332983794001e-06,
+        "hi": 0.00011118006694791435,
+        "se": 3.73674417010527e-05,
+        "verdict": "no clear difference",
+        "n": 2730,
+        "n_blocks": 350
+       }
+      }
+     }
+    }
+   },
+   {
+    "tier": "T2",
+    "fold": "2019-20",
+    "scores": [
+     "2019-07-01",
+     "2020-06-30"
+    ],
+    "train_seasons": [
+     2016,
+     2017,
+     2018,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024
+    ],
+    "share_fit_span": [
+     "2018-01-08",
+     "2025-02-13"
+    ],
+    "links": {
+     "westside>ocean": {
+      "share": {
+       "kind": "logit_logvol",
+       "coef": {
+        "a": -0.2241918519745502,
+        "b": 1.0155343398364995
+       },
+       "basin_median_mg": 3.995
+      },
+      "constant": 0.7727272727272727,
+      "vol_share": 0.8789019246477949,
+      "n_fit_days": 44,
+      "n_fired": 34,
+      "newton_iterations": 7
+     },
+     "westside>baker_china": {
+      "share": {
+       "kind": "logit_logvol",
+       "coef": {
+        "a": 0.3915753697749224,
+        "b": 0.5341715113186465
+       },
+       "basin_median_mg": 3.995
+      },
+      "constant": 0.782608695652174,
+      "vol_share": 0.26773986330013266,
+      "n_fit_days": 46,
+      "n_fired": 36,
+      "newton_iterations": 6
+     },
+     "north_shore>north": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "central>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "south>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     }
+    },
+    "basin_median_mg": {
+     "westside": 3.995,
+     "north_shore": 9.34,
+     "central": 58.45,
+     "south": 1.145
+    },
+    "cofire": {
+     "westside>ocean|westside>baker_china": 0.6666666666666666,
+     "westside>baker_china|westside>ocean": 0.7058823529411765,
+     "central>east|south>east": 0.8636363636363636,
+     "south>east|central>east": 0.2261904761904762
+    },
+    "union": {
+     "east": {
+      "rule": "max"
+     },
+     "choice": {
+      "brier": {
+       "max": 0.010566467752092057,
+       "noisy_or": 0.010557944833172728,
+       "cofire": 0.010581551660791631
+      },
+      "n": 2728,
+      "inner": {
+       "2016": {
+        "n": 251,
+        "sse": {
+         "max": 6.222283293085499,
+         "noisy_or": 6.115217285182348,
+         "cofire": 6.181159641182341
+        },
+        "train_seasons": [
+         2017,
+         2018,
+         2020,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2017": {
+        "n": 347,
+        "sse": {
+         "max": 0.21302827842905966,
+         "noisy_or": 0.23048195020016393,
+         "cofire": 0.2150797112154689
+        },
+        "train_seasons": [
+         2016,
+         2018,
+         2020,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2018": {
+        "n": 358,
+        "sse": {
+         "max": 7.490312390566359,
+         "noisy_or": 7.431651817061885,
+         "cofire": 7.484006144061725
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2020,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2020": {
+        "n": 355,
+        "sse": {
+         "max": 3.0976770379393224,
+         "noisy_or": 3.062093117269165,
+         "cofire": 3.091276684795942
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2021": {
+        "n": 352,
+        "sse": {
+         "max": 4.125181289541443,
+         "noisy_or": 4.046140894511744,
+         "cofire": 4.106186789593466
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2020,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2022": {
+        "n": 352,
+        "sse": {
+         "max": 4.237910700482527,
+         "noisy_or": 4.351388469711203,
+         "cofire": 4.31369091607425
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2020,
+         2021,
+         2023,
+         2024
+        ]
+       },
+       "2023": {
+        "n": 363,
+        "sse": {
+         "max": 2.0641417534338755,
+         "noisy_or": 2.0596054645782966,
+         "cofire": 2.042889310549872
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2020,
+         2021,
+         2022,
+         2024
+        ]
+       },
+       "2024": {
+        "n": 350,
+        "sse": {
+         "max": 1.3747892842290401,
+         "noisy_or": 1.5054945063804017,
+         "cofire": 1.4321837331665073
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2020,
+         2021,
+         2022,
+         2023
+        ]
+       }
+      },
+      "lowest": "noisy_or",
+      "why": "no challenger is better than max (each CI of \u0394 includes 0 or lies above it), so the default stays",
+      "n_blocks": 351,
+      "vs_default": {
+       "noisy_or": {
+        "delta": -8.522918919328173e-06,
+        "lo": -0.00013882558903490261,
+        "hi": 0.00012101097804190817,
+        "se": 7.953009285870825e-05,
+        "verdict": "no clear difference",
+        "n": 2728,
+        "n_blocks": 351
+       },
+       "cofire": {
+        "delta": 1.5083908699574725e-05,
+        "lo": -4.58164408469004e-05,
+        "hi": 8.614029966531547e-05,
+        "se": 4.112691777014233e-05,
+        "verdict": "no clear difference",
+        "n": 2728,
+        "n_blocks": 351
+       }
+      }
+     }
+    }
+   },
+   {
+    "tier": "T2",
+    "fold": "2020-21",
+    "scores": [
+     "2020-07-01",
+     "2021-06-30"
+    ],
+    "train_seasons": [
+     2016,
+     2017,
+     2018,
+     2019,
+     2021,
+     2022,
+     2023,
+     2024
+    ],
+    "share_fit_span": [
+     "2018-01-08",
+     "2025-02-13"
+    ],
+    "links": {
+     "westside>ocean": {
+      "share": {
+       "kind": "logit_logvol",
+       "coef": {
+        "a": -0.21183368791287205,
+        "b": 0.9286943734448035
+       },
+       "basin_median_mg": 6.0649999999999995
+      },
+      "constant": 0.7659574468085106,
+      "vol_share": 0.8789019246477949,
+      "n_fit_days": 47,
+      "n_fired": 36,
+      "newton_iterations": 7
+     },
+     "westside>baker_china": {
+      "share": {
+       "kind": "logit_logvol",
+       "coef": {
+        "a": 0.3863008465185613,
+        "b": 0.5930683723626211
+       },
+       "basin_median_mg": 6.0649999999999995
+      },
+      "constant": 0.7959183673469388,
+      "vol_share": 0.26773986330013266,
+      "n_fit_days": 49,
+      "n_fired": 39,
+      "newton_iterations": 6
+     },
+     "north_shore>north": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "central>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "south>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     }
+    },
+    "basin_median_mg": {
+     "westside": 6.0649999999999995,
+     "north_shore": 8.73,
+     "central": 69.65,
+     "south": 1.145
+    },
+    "cofire": {
+     "westside>ocean|westside>baker_china": 0.6666666666666666,
+     "westside>baker_china|westside>ocean": 0.7222222222222222,
+     "central>east|south>east": 0.8636363636363636,
+     "south>east|central>east": 0.2261904761904762
+    },
+    "union": {
+     "east": {
+      "rule": "max"
+     },
+     "choice": {
+      "brier": {
+       "max": 0.01088588302438585,
+       "noisy_or": 0.010859088260215937,
+       "cofire": 0.010908111767001282
+      },
+      "n": 2733,
+      "inner": {
+       "2016": {
+        "n": 251,
+        "sse": {
+         "max": 6.744817482895143,
+         "noisy_or": 6.620990672484775,
+         "cofire": 6.699456156557462
+        },
+        "train_seasons": [
+         2017,
+         2018,
+         2019,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2017": {
+        "n": 347,
+        "sse": {
+         "max": 0.1625342076907741,
+         "noisy_or": 0.1781505019233996,
+         "cofire": 0.16401723519837347
+        },
+        "train_seasons": [
+         2016,
+         2018,
+         2019,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2018": {
+        "n": 358,
+        "sse": {
+         "max": 7.9186326076014195,
+         "noisy_or": 7.853217153884547,
+         "cofire": 7.911568707948219
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2019,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2019": {
+        "n": 360,
+        "sse": {
+         "max": 2.1832542020214554,
+         "noisy_or": 2.1673941014789477,
+         "cofire": 2.190143821154689
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2021": {
+        "n": 352,
+        "sse": {
+         "max": 4.386447552393143,
+         "noisy_or": 4.293348300715725,
+         "cofire": 4.365459884971692
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2022": {
+        "n": 352,
+        "sse": {
+         "max": 4.168460531159931,
+         "noisy_or": 4.280862242018923,
+         "cofire": 4.249288215476742
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2021,
+         2023,
+         2024
+        ]
+       },
+       "2023": {
+        "n": 363,
+        "sse": {
+         "max": 2.613229413173231,
+         "noisy_or": 2.5930544876548502,
+         "cofire": 2.595980167361669
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2021,
+         2022,
+         2024
+        ]
+       },
+       "2024": {
+        "n": 350,
+        "sse": {
+         "max": 1.5737423087114295,
+         "noisy_or": 1.6908707550089845,
+         "cofire": 1.635955270545658
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2021,
+         2022,
+         2023
+        ]
+       }
+      },
+      "lowest": "noisy_or",
+      "why": "no challenger is better than max (each CI of \u0394 includes 0 or lies above it), so the default stays",
+      "n_blocks": 349,
+      "vs_default": {
+       "noisy_or": {
+        "delta": -2.6794764169913235e-05,
+        "lo": -0.00014548548535401538,
+        "hi": 9.578747452178586e-05,
+        "se": 7.268721100582875e-05,
+        "verdict": "no clear difference",
+        "n": 2733,
+        "n_blocks": 349
+       },
+       "cofire": {
+        "delta": 2.2228742615431826e-05,
+        "lo": -4.095143790581431e-05,
+        "hi": 9.645649650342592e-05,
+        "se": 4.277695674132909e-05,
+        "verdict": "no clear difference",
+        "n": 2733,
+        "n_blocks": 349
+       }
+      }
+     }
+    }
+   },
+   {
+    "tier": "T2",
+    "fold": "2021-22",
+    "scores": [
+     "2021-07-01",
+     "2022-06-30"
+    ],
+    "train_seasons": [
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2022,
+     2023,
+     2024
+    ],
+    "share_fit_span": [
+     "2018-01-08",
+     "2025-02-13"
+    ],
+    "links": {
+     "westside>ocean": {
+      "share": {
+       "kind": "logit_logvol",
+       "coef": {
+        "a": -0.6389033250139543,
+        "b": 1.1275629158495186
+       },
+       "basin_median_mg": 6.0649999999999995
+      },
+      "constant": 0.7560975609756098,
+      "vol_share": 0.869258957654723,
+      "n_fit_days": 41,
+      "n_fired": 31,
+      "newton_iterations": 7
+     },
+     "westside>baker_china": {
+      "share": {
+       "kind": "logit_logvol",
+       "coef": {
+        "a": 0.9772455263968837,
+        "b": 0.3677390463328292
+       },
+       "basin_median_mg": 6.0649999999999995
+      },
+      "constant": 0.8372093023255814,
+      "vol_share": 0.2598397751338031,
+      "n_fit_days": 43,
+      "n_fired": 36,
+      "newton_iterations": 5
+     },
+     "north_shore>north": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "central>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "south>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     }
+    },
+    "basin_median_mg": {
+     "westside": 6.0649999999999995,
+     "north_shore": 9.34,
+     "central": 68.39,
+     "south": 1.5
+    },
+    "cofire": {
+     "westside>ocean|westside>baker_china": 0.6666666666666666,
+     "westside>baker_china|westside>ocean": 0.7741935483870968,
+     "central>east|south>east": 0.85,
+     "south>east|central>east": 0.21518987341772153
+    },
+    "union": {
+     "east": {
+      "rule": "max"
+     },
+     "choice": {
+      "brier": {
+       "max": 0.010183362973683212,
+       "noisy_or": 0.010211796594688757,
+       "cofire": 0.010220873527132412
+      },
+      "n": 2736,
+      "inner": {
+       "2016": {
+        "n": 251,
+        "sse": {
+         "max": 6.721903751707899,
+         "noisy_or": 6.591945808553281,
+         "cofire": 6.6688143670607065
+        },
+        "train_seasons": [
+         2017,
+         2018,
+         2019,
+         2020,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2017": {
+        "n": 347,
+        "sse": {
+         "max": 0.17582392901004607,
+         "noisy_or": 0.19203166689189827,
+         "cofire": 0.17783248458621895
+        },
+        "train_seasons": [
+         2016,
+         2018,
+         2019,
+         2020,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2018": {
+        "n": 358,
+        "sse": {
+         "max": 7.712812441716675,
+         "noisy_or": 7.650124347648877,
+         "cofire": 7.705112084225786
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2019,
+         2020,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2019": {
+        "n": 360,
+        "sse": {
+         "max": 2.174435632713628,
+         "noisy_or": 2.1588027706827617,
+         "cofire": 2.1779616081160844
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2020,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2020": {
+        "n": 355,
+        "sse": {
+         "max": 3.146814149604921,
+         "noisy_or": 3.1067963439195907,
+         "cofire": 3.1389402608997155
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2022": {
+        "n": 352,
+        "sse": {
+         "max": 3.9455853181612524,
+         "noisy_or": 4.163943992556499,
+         "cofire": 4.075189243483443
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2023,
+         2024
+        ]
+       },
+       "2023": {
+        "n": 363,
+        "sse": {
+         "max": 2.520051183590442,
+         "noisy_or": 2.482414171700583,
+         "cofire": 2.4920273936907265
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2022,
+         2024
+        ]
+       },
+       "2024": {
+        "n": 350,
+        "sse": {
+         "max": 1.4642546894924013,
+         "noisy_or": 1.5934163811149462,
+         "cofire": 1.5284325281716022
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2022,
+         2023
+        ]
+       }
+      },
+      "lowest": "max",
+      "why": "no challenger is better than max (each CI of \u0394 includes 0 or lies above it), so the default stays",
+      "n_blocks": 350,
+      "vs_default": {
+       "noisy_or": {
+        "delta": 2.843362100554518e-05,
+        "lo": -0.00011976680194020198,
+        "hi": 0.0002082527687210202,
+        "se": 0.00010213434701928505,
+        "verdict": "no clear difference",
+        "n": 2736,
+        "n_blocks": 350
+       },
+       "cofire": {
+        "delta": 3.751055344920068e-05,
+        "lo": -4.847694554868699e-05,
+        "hi": 0.00014514140943699673,
+        "se": 6.057870567238491e-05,
+        "verdict": "no clear difference",
+        "n": 2736,
+        "n_blocks": 350
+       }
+      }
+     }
+    }
+   },
+   {
+    "tier": "T2",
+    "fold": "2022-23",
+    "scores": [
+     "2022-07-01",
+     "2023-06-30"
+    ],
+    "train_seasons": [
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2023,
+     2024
+    ],
+    "share_fit_span": [
+     "2018-01-08",
+     "2025-02-13"
+    ],
+    "links": {
+     "westside>ocean": {
+      "share": {
+       "kind": "logit_logvol",
+       "coef": {
+        "a": -0.6735652419871808,
+        "b": 1.3140787212729905
+       },
+       "basin_median_mg": 3.99
+      },
+      "constant": 0.7435897435897436,
+      "vol_share": 0.9322916666666667,
+      "n_fit_days": 39,
+      "n_fired": 29,
+      "newton_iterations": 7
+     },
+     "westside>baker_china": {
+      "share": {
+       "kind": "logit_logvol",
+       "coef": {
+        "a": 0.8688562536306927,
+        "b": 0.231419158590802
+       },
+       "basin_median_mg": 3.99
+      },
+      "constant": 0.7804878048780488,
+      "vol_share": 0.2861632313522507,
+      "n_fit_days": 41,
+      "n_fired": 32,
+      "newton_iterations": 5
+     },
+     "north_shore>north": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "central>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "south>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     }
+    },
+    "basin_median_mg": {
+     "westside": 3.99,
+     "north_shore": 7.245000000000001,
+     "central": 48.5,
+     "south": 1.005
+    },
+    "cofire": {
+     "westside>ocean|westside>baker_china": 0.625,
+     "westside>baker_china|westside>ocean": 0.6896551724137931,
+     "central>east|south>east": 0.8333333333333334,
+     "south>east|central>east": 0.2112676056338028
+    },
+    "union": {
+     "east": {
+      "rule": "max"
+     },
+     "choice": {
+      "brier": {
+       "max": 0.010212379256197635,
+       "noisy_or": 0.010139305273925927,
+       "cofire": 0.010223744760520407
+      },
+      "n": 2736,
+      "inner": {
+       "2016": {
+        "n": 251,
+        "sse": {
+         "max": 6.510302192324939,
+         "noisy_or": 6.420672724743122,
+         "cofire": 6.466290112531531
+        },
+        "train_seasons": [
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2023,
+         2024
+        ]
+       },
+       "2017": {
+        "n": 347,
+        "sse": {
+         "max": 0.21140746507290117,
+         "noisy_or": 0.22811581092207933,
+         "cofire": 0.2139348508187914
+        },
+        "train_seasons": [
+         2016,
+         2018,
+         2019,
+         2020,
+         2021,
+         2023,
+         2024
+        ]
+       },
+       "2018": {
+        "n": 358,
+        "sse": {
+         "max": 7.687444116368502,
+         "noisy_or": 7.660609661426076,
+         "cofire": 7.683459294772833
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2019,
+         2020,
+         2021,
+         2023,
+         2024
+        ]
+       },
+       "2019": {
+        "n": 360,
+        "sse": {
+         "max": 2.1439820889675,
+         "noisy_or": 2.135372400078311,
+         "cofire": 2.145716405166194
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2020,
+         2021,
+         2023,
+         2024
+        ]
+       },
+       "2020": {
+        "n": 355,
+        "sse": {
+         "max": 3.0856857035300584,
+         "noisy_or": 3.0497482946469763,
+         "cofire": 3.078005398261704
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2021,
+         2023,
+         2024
+        ]
+       },
+       "2021": {
+        "n": 352,
+        "sse": {
+         "max": 3.976781839141427,
+         "noisy_or": 3.874553891849257,
+         "cofire": 3.9469289678476756
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2023,
+         2024
+        ]
+       },
+       "2023": {
+        "n": 363,
+        "sse": {
+         "max": 2.543906962269727,
+         "noisy_or": 2.510942909587582,
+         "cofire": 2.516585544949496
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2024
+        ]
+       },
+       "2024": {
+        "n": 350,
+        "sse": {
+         "max": 1.7815592772816742,
+         "noisy_or": 1.8611235362079328,
+         "cofire": 1.9212450904356075
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2023
+        ]
+       }
+      },
+      "lowest": "noisy_or",
+      "why": "no challenger is better than max (each CI of \u0394 includes 0 or lies above it), so the default stays",
+      "n_blocks": 352,
+      "vs_default": {
+       "noisy_or": {
+        "delta": -7.30739822717083e-05,
+        "lo": -0.00014852482425159984,
+        "hi": 8.402168268028199e-08,
+        "se": 4.60944000409998e-05,
+        "verdict": "no clear difference",
+        "n": 2736,
+        "n_blocks": 352
+       },
+       "cofire": {
+        "delta": 1.1365504322772071e-05,
+        "lo": -5.114479923322554e-05,
+        "hi": 9.858083600615773e-05,
+        "se": 4.8345000651316714e-05,
+        "verdict": "no clear difference",
+        "n": 2736,
+        "n_blocks": 352
+       }
+      }
+     }
+    }
+   },
+   {
+    "tier": "T2",
+    "fold": "2023-24",
+    "scores": [
+     "2023-07-01",
+     "2024-06-30"
+    ],
+    "train_seasons": [
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2024
+    ],
+    "share_fit_span": [
+     "2018-01-08",
+     "2025-02-13"
+    ],
+    "links": {
+     "westside>ocean": {
+      "share": {
+       "kind": "logit_logvol",
+       "coef": {
+        "a": -0.4281395930870826,
+        "b": 0.9729451392405951
+       },
+       "basin_median_mg": 3.8600000000000003
+      },
+      "constant": 0.7380952380952381,
+      "vol_share": 0.8440168214768969,
+      "n_fit_days": 42,
+      "n_fired": 31,
+      "newton_iterations": 7
+     },
+     "westside>baker_china": {
+      "share": {
+       "kind": "logit_logvol",
+       "coef": {
+        "a": 0.7395160343536771,
+        "b": 0.4301331989882746
+       },
+       "basin_median_mg": 3.8600000000000003
+      },
+      "constant": 0.813953488372093,
+      "vol_share": 0.29893333333333333,
+      "n_fit_days": 43,
+      "n_fired": 35,
+      "newton_iterations": 6
+     },
+     "north_shore>north": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "central>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "south>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     }
+    },
+    "basin_median_mg": {
+     "westside": 3.8600000000000003,
+     "north_shore": 9.34,
+     "central": 49.839999999999996,
+     "south": 1.5
+    },
+    "cofire": {
+     "westside>ocean|westside>baker_china": 0.6571428571428571,
+     "westside>baker_china|westside>ocean": 0.7419354838709677,
+     "central>east|south>east": 0.8571428571428571,
+     "south>east|central>east": 0.24
+    },
+    "union": {
+     "east": {
+      "rule": "max"
+     },
+     "choice": {
+      "brier": {
+       "max": 0.011438317478594197,
+       "noisy_or": 0.01136377446016159,
+       "cofire": 0.011480129834258732
+      },
+      "n": 2725,
+      "inner": {
+       "2016": {
+        "n": 251,
+        "sse": {
+         "max": 7.055613048451612,
+         "noisy_or": 6.8833247045783335,
+         "cofire": 6.989498661099461
+        },
+        "train_seasons": [
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2022,
+         2024
+        ]
+       },
+       "2017": {
+        "n": 347,
+        "sse": {
+         "max": 0.1844343381537854,
+         "noisy_or": 0.20373377987535252,
+         "cofire": 0.1862003114784342
+        },
+        "train_seasons": [
+         2016,
+         2018,
+         2019,
+         2020,
+         2021,
+         2022,
+         2024
+        ]
+       },
+       "2018": {
+        "n": 358,
+        "sse": {
+         "max": 7.90249765556094,
+         "noisy_or": 7.821407645114618,
+         "cofire": 7.892649867924304
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2019,
+         2020,
+         2021,
+         2022,
+         2024
+        ]
+       },
+       "2019": {
+        "n": 360,
+        "sse": {
+         "max": 2.1720187094128995,
+         "noisy_or": 2.1525972566873515,
+         "cofire": 2.1925698892942074
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2020,
+         2021,
+         2022,
+         2024
+        ]
+       },
+       "2020": {
+        "n": 355,
+        "sse": {
+         "max": 3.128638866660979,
+         "noisy_or": 3.0856831935762794,
+         "cofire": 3.1203037374971823
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2021,
+         2022,
+         2024
+        ]
+       },
+       "2021": {
+        "n": 352,
+        "sse": {
+         "max": 4.394013426077995,
+         "noisy_or": 4.2866423192681085,
+         "cofire": 4.3679940893680085
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2022,
+         2024
+        ]
+       },
+       "2022": {
+        "n": 352,
+        "sse": {
+         "max": 4.415910042341938,
+         "noisy_or": 4.519280284122683,
+         "cofire": 4.530629896131699
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2024
+        ]
+       },
+       "2024": {
+        "n": 350,
+        "sse": {
+         "max": 1.9162890425090393,
+         "noisy_or": 2.0136162207176067,
+         "cofire": 2.003507345561746
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2022
+        ]
+       }
+      },
+      "lowest": "noisy_or",
+      "why": "no challenger is better than max (each CI of \u0394 includes 0 or lies above it), so the default stays",
+      "n_blocks": 352,
+      "vs_default": {
+       "noisy_or": {
+        "delta": -7.45430184326077e-05,
+        "lo": -0.0001949864238956634,
+        "hi": 5.039360932285541e-05,
+        "se": 7.507522340654575e-05,
+        "verdict": "no clear difference",
+        "n": 2725,
+        "n_blocks": 352
+       },
+       "cofire": {
+        "delta": 4.181235566453473e-05,
+        "lo": -4.1044545779709345e-05,
+        "hi": 0.00014914674250630632,
+        "se": 5.8244467954324406e-05,
+        "verdict": "no clear difference",
+        "n": 2725,
+        "n_blocks": 352
+       }
+      }
+     }
+    }
+   },
+   {
+    "tier": "T2",
+    "fold": "2024-25",
+    "scores": [
+     "2024-07-01",
+     "2025-06-30"
+    ],
+    "train_seasons": [
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023
+    ],
+    "share_fit_span": [
+     "2018-01-08",
+     "2024-02-04"
+    ],
+    "links": {
+     "westside>ocean": {
+      "share": {
+       "kind": "logit_logvol",
+       "coef": {
+        "a": -0.5041785190180605,
+        "b": 1.0980527420943236
+       },
+       "basin_median_mg": 3.8550000000000004
+      },
+      "constant": 0.75,
+      "vol_share": 0.8821294788273615,
+      "n_fit_days": 44,
+      "n_fired": 33,
+      "newton_iterations": 7
+     },
+     "westside>baker_china": {
+      "share": {
+       "kind": "logit_logvol",
+       "coef": {
+        "a": 0.6716428331553291,
+        "b": 0.3475199608642271
+       },
+       "basin_median_mg": 3.8550000000000004
+      },
+      "constant": 0.782608695652174,
+      "vol_share": 0.32873599546870574,
+      "n_fit_days": 46,
+      "n_fired": 36,
+      "newton_iterations": 5
+     },
+     "north_shore>north": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "central>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "south>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     }
+    },
+    "basin_median_mg": {
+     "westside": 3.8550000000000004,
+     "north_shore": 7.245000000000001,
+     "central": 58.45,
+     "south": 1.65
+    },
+    "cofire": {
+     "westside>ocean|westside>baker_china": 0.6388888888888888,
+     "westside>baker_china|westside>ocean": 0.696969696969697,
+     "central>east|south>east": 0.8333333333333334,
+     "south>east|central>east": 0.18292682926829268
+    },
+    "union": {
+     "east": {
+      "rule": "max"
+     },
+     "choice": {
+      "brier": {
+       "max": 0.011306360265722524,
+       "noisy_or": 0.011235713989248934,
+       "cofire": 0.011308055027703035
+      },
+      "n": 2738,
+      "inner": {
+       "2016": {
+        "n": 251,
+        "sse": {
+         "max": 6.524477647333999,
+         "noisy_or": 6.415385389929977,
+         "cofire": 6.472254246500714
+        },
+        "train_seasons": [
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2022,
+         2023
+        ]
+       },
+       "2017": {
+        "n": 347,
+        "sse": {
+         "max": 0.19837498494192113,
+         "noisy_or": 0.21569187594315528,
+         "cofire": 0.20068950591081272
+        },
+        "train_seasons": [
+         2016,
+         2018,
+         2019,
+         2020,
+         2021,
+         2022,
+         2023
+        ]
+       },
+       "2018": {
+        "n": 358,
+        "sse": {
+         "max": 7.529352958978646,
+         "noisy_or": 7.474222880913058,
+         "cofire": 7.521714356777735
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2019,
+         2020,
+         2021,
+         2022,
+         2023
+        ]
+       },
+       "2019": {
+        "n": 360,
+        "sse": {
+         "max": 2.1341611433896164,
+         "noisy_or": 2.122442814753579,
+         "cofire": 2.142608627156644
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2020,
+         2021,
+         2022,
+         2023
+        ]
+       },
+       "2020": {
+        "n": 355,
+        "sse": {
+         "max": 3.056282331642337,
+         "noisy_or": 3.025110424190413,
+         "cofire": 3.0491300302522077
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2021,
+         2022,
+         2023
+        ]
+       },
+       "2021": {
+        "n": 352,
+        "sse": {
+         "max": 4.134685275271295,
+         "noisy_or": 4.05621252312058,
+         "cofire": 4.111767194176049
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2022,
+         2023
+        ]
+       },
+       "2022": {
+        "n": 352,
+        "sse": {
+         "max": 4.574068530590765,
+         "noisy_or": 4.662978353190673,
+         "cofire": 4.653572538789292
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2023
+        ]
+       },
+       "2023": {
+        "n": 363,
+        "sse": {
+         "max": 2.805411535399691,
+         "noisy_or": 2.7913406405221464,
+         "cofire": 2.8097181662874564
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2022
+        ]
+       }
+      },
+      "lowest": "noisy_or",
+      "why": "no challenger is better than max (each CI of \u0394 includes 0 or lies above it), so the default stays",
+      "n_blocks": 346,
+      "vs_default": {
+       "noisy_or": {
+        "delta": -7.064627647358941e-05,
+        "lo": -0.0001538522695867339,
+        "hi": 2.3435790330872045e-05,
+        "se": 5.2227147050691116e-05,
+        "verdict": "no clear difference",
+        "n": 2738,
+        "n_blocks": 346
+       },
+       "cofire": {
+        "delta": 1.6947619805116748e-06,
+        "lo": -5.457156056528626e-05,
+        "hi": 7.410504404180675e-05,
+        "se": 3.997145210358264e-05,
+        "verdict": "no clear difference",
+        "n": 2738,
+        "n_blocks": 346
+       }
+      }
+     }
+    }
+   }
+  ],
+  "bootstrap": {
+   "n": 2000,
+   "seed": 0,
+   "level": 0.9,
+   "protocol": true
+  },
+  "scores": {
+   "s2": "dev:logit_v1_s2v2",
+   "windows": {
+    "T2": "cross-season, development: the union rule nested, the shares pre-registered; S2 is dev:logit_v1_s2v2 (sources.s2 says whether its own choices saw these seasons: then selection-contaminated, protocol \u00a72)",
+    "T1-holdout": "development only (protocol \u00a72)",
+    "T1": "post-training, confirmation; low power"
+   },
+   "oracle": {
+    "logit_logvol": {
+     "pooled": {
+      "T1": {
+       "n": 28,
+       "n_pos": 19,
+       "n_blocks": 4,
+       "n_pos_blocks": 4,
+       "prev": 0.6785714285714286,
+       "bs": 0.19055335882073116,
+       "bs_ref": 0.20375030374963243,
+       "bss": 0.0647701853005217,
+       "logs": 0.807520247393379,
+       "clipped": 0,
+       "roc": 0.7777777777777778,
+       "pr": 0.8657240506311712,
+       "lift": 1.2758038640880418,
+       "corp": {
+        "mcb": 0.05471152208603727,
+        "dsc": 0.08227040816326525,
+        "unc": 0.21811224489795913
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.180387622300336,
+         0.2050377504247524
+        ],
+        "bss": [
+         -0.11457603564907126,
+         0.1381490892117454
+        ]
+       },
+       "bss_sample": -0.2245396173397809,
+       "mde": 0.04256689080369718,
+       "n_storm_blocks": 4,
+       "low_power": true,
+       "span": [
+        "2025-11-13",
+        "2026-04-22"
+       ],
+       "n_seasons": 1
+      },
+      "T1-holdout": {
+       "n": 23,
+       "n_pos": 20,
+       "n_blocks": 6,
+       "n_pos_blocks": 6,
+       "prev": 0.8695652173913043,
+       "bs": 0.11087964625662775,
+       "bs_ref": 0.14174790303766854,
+       "bss": 0.2177687014730494,
+       "logs": 0.5038266015186154,
+       "clipped": 0,
+       "roc": 0.7666666666666667,
+       "pr": 0.9649590126599148,
+       "lift": 1.109702864558902,
+       "corp": {
+        "mcb": 0.023923124517497313,
+        "dsc": 0.026465028355387513,
+        "unc": 0.11342155009451795
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.03468539397151496,
+         0.152928560739952
+        ],
+        "bss": [
+         -0.011545950245391855,
+         0.6208490583812459
+        ]
+       },
+       "bss_sample": 0.009909982249641458,
+       "mde": 0.06340147231666515,
+       "n_storm_blocks": 6,
+       "low_power": true,
+       "span": [
+        "2023-11-18",
+        "2025-10-13"
+       ],
+       "n_seasons": 3
+      },
+      "T2": {
+       "n": 98,
+       "n_pos": 77,
+       "n_blocks": 21,
+       "n_pos_blocks": 21,
+       "prev": 0.7857142857142857,
+       "bs": 0.16666970836154518,
+       "bs_ref": 0.18241046624878823,
+       "bss": 0.08629306317201313,
+       "logs": 0.7401769172016771,
+       "clipped": 0,
+       "roc": 0.6567717996289425,
+       "pr": 0.8788582002973371,
+       "lift": 1.1185468003784291,
+       "corp": {
+        "mcb": 0.013567368524511458,
+        "dsc": 0.015265007101741834,
+        "unc": 0.16836734693877556
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.12375701944906317,
+         0.21006903623082437
+        ],
+        "bss": [
+         0.0061099579700247195,
+         0.16881436019573992
+        ]
+       },
+       "bss_sample": 0.008831468858775504,
+       "mde": 0.02123346840306751,
+       "n_storm_blocks": 21,
+       "low_power": false,
+       "span": [
+        "2018-01-08",
+        "2025-02-13"
+       ],
+       "n_seasons": 8
+      }
+     },
+     "baker_china": {
+      "T1": {
+       "n": 14,
+       "n_pos": 13,
+       "n_blocks": 4,
+       "n_pos_blocks": 4,
+       "prev": 0.9285714285714286,
+       "bs": 0.08228538108172999,
+       "bs_ref": 0.08330807858406021,
+       "bss": 0.012276090382978833,
+       "logs": 0.45385784074682084,
+       "clipped": 0,
+       "roc": 0.8461538461538461,
+       "pr": 0.9885883347421807,
+       "lift": 1.0646335912608098,
+       "corp": {
+        "mcb": 0.034666333462682365,
+        "dsc": 0.018707482993197265,
+        "unc": 0.06632653061224489
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.03556239413114962,
+         0.16710766193297188
+        ],
+        "bss": [
+         -0.7739024160800476,
+         0.2272358922273735
+        ]
+       },
+       "bss_sample": -0.2406103609245447,
+       "mde": 0.043664342123276655,
+       "n_storm_blocks": 4,
+       "low_power": true,
+       "span": [
+        "2025-11-13",
+        "2026-04-22"
+       ],
+       "n_seasons": 1
+      },
+      "T1-holdout": {
+       "n": 12,
+       "n_pos": 10,
+       "n_blocks": 6,
+       "n_pos_blocks": 6,
+       "prev": 0.8333333333333334,
+       "bs": 0.14176779935806924,
+       "bs_ref": 0.15710085182736647,
+       "bss": 0.09760005939462546,
+       "logs": 0.6564072107975031,
+       "clipped": 0,
+       "roc": 0.6,
+       "pr": 0.9229292929292928,
+       "lift": 1.1075151515151513,
+       "corp": {
+        "mcb": 0.030656688246958122,
+        "dsc": 0.02777777777777775,
+        "unc": 0.13888888888888887
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.025021779599259237,
+         0.21024858693535145
+        ],
+        "bss": [
+         -0.01986078053508522,
+         0.6687619958858154
+        ]
+       },
+       "bss_sample": -0.02072815537809869,
+       "mde": 0.04906731179036749,
+       "n_storm_blocks": 6,
+       "low_power": true,
+       "span": [
+        "2023-11-18",
+        "2025-10-13"
+       ],
+       "n_seasons": 3
+      },
+      "T2": {
+       "n": 50,
+       "n_pos": 40,
+       "n_blocks": 21,
+       "n_pos_blocks": 20,
+       "prev": 0.8,
+       "bs": 0.16090079293269016,
+       "bs_ref": 0.16310401164364435,
+       "bss": 0.013508059604124711,
+       "logs": 0.7562220004276091,
+       "clipped": 0,
+       "roc": 0.635,
+       "pr": 0.8542887594534943,
+       "lift": 1.0678609493168678,
+       "corp": {
+        "mcb": 0.020838681131447906,
+        "dsc": 0.019937888198757747,
+        "unc": 0.16
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.1081896308121821,
+         0.21679065787661772
+        ],
+        "bss": [
+         -0.11763584499746556,
+         0.09366484349555097
+        ]
+       },
+       "bss_sample": -0.005629955829313582,
+       "mde": 0.025608962033261812,
+       "n_storm_blocks": 21,
+       "low_power": false,
+       "span": [
+        "2018-01-08",
+        "2025-02-13"
+       ],
+       "n_seasons": 8
+      }
+     },
+     "ocean": {
+      "T1": {
+       "n": 14,
+       "n_pos": 6,
+       "n_blocks": 4,
+       "n_pos_blocks": 3,
+       "prev": 0.42857142857142855,
+       "bs": 0.2988213365597323,
+       "bs_ref": 0.3241925289152046,
+       "bss": 0.07825964540382224,
+       "logs": 1.1611826540399375,
+       "clipped": 0,
+       "roc": 0.7708333333333334,
+       "pr": 0.7791666666666666,
+       "lift": 1.8180555555555553,
+       "corp": {
+        "mcb": 0.1500118127502085,
+        "dsc": 0.09608843537414963,
+        "unc": 0.24489795918367344
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.2410263869995053,
+         0.33092964187096946
+        ],
+        "bss": [
+         -0.04627496368920059,
+         0.12527495474664774
+        ]
+       },
+       "bss_sample": -0.22018712428557374,
+       "mde": 0.049450159588594673,
+       "n_storm_blocks": 4,
+       "low_power": true,
+       "span": [
+        "2025-11-13",
+        "2026-04-22"
+       ],
+       "n_seasons": 1
+      },
+      "T1-holdout": {
+       "n": 11,
+       "n_pos": 10,
+       "n_blocks": 6,
+       "n_pos_blocks": 5,
+       "prev": 0.9090909090909091,
+       "bs": 0.07718347923687335,
+       "bs_ref": 0.12499923163072535,
+       "bss": 0.38252837053518873,
+       "logs": 0.33737502775982886,
+       "clipped": 0,
+       "roc": 0.8,
+       "pr": 0.9809090909090908,
+       "lift": 1.079,
+       "corp": {
+        "mcb": 0.01657741863081274,
+        "dsc": 0.02203856749311294,
+        "unc": 0.08264462809917356
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.02689416993865548,
+         0.18156183460501815
+        ],
+        "bss": [
+         -0.15041308032852846,
+         0.7180516373864186
+        ]
+       },
+       "bss_sample": 0.06607990123383245,
+       "mde": 0.09543646967311781,
+       "n_storm_blocks": 6,
+       "low_power": true,
+       "span": [
+        "2023-11-18",
+        "2025-10-13"
+       ],
+       "n_seasons": 3
+      },
+      "T2": {
+       "n": 48,
+       "n_pos": 37,
+       "n_blocks": 21,
+       "n_pos_blocks": 17,
+       "prev": 0.7708333333333334,
+       "bs": 0.17267899526660246,
+       "bs_ref": 0.2025213564624797,
+       "bss": 0.14735414435862726,
+       "logs": 0.7234632888413312,
+       "clipped": 0,
+       "roc": 0.6977886977886978,
+       "pr": 0.9082584069567303,
+       "lift": 1.178281176592515,
+       "corp": {
+        "mcb": 0.026998848207778953,
+        "dsc": 0.030969158496731986,
+        "unc": 0.1766493055555555
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.11497785523477466,
+         0.23209784278099962
+        ],
+        "bss": [
+         -0.02511272603083397,
+         0.2877687865790591
+        ]
+       },
+       "bss_sample": 0.022475663159085557,
+       "mde": 0.054657752973337664,
+       "n_storm_blocks": 21,
+       "low_power": false,
+       "span": [
+        "2018-01-08",
+        "2025-02-13"
+       ],
+       "n_seasons": 8
+      }
+     }
+    },
+    "constant": {
+     "pooled": {
+      "T1": {
+       "n": 28,
+       "n_pos": 19,
+       "n_blocks": 4,
+       "n_pos_blocks": 4,
+       "prev": 0.6785714285714286,
+       "bs": 0.21669215905649972,
+       "bs_ref": 0.20375030374963243,
+       "bss": -0.06351821356188103,
+       "logs": 0.8969060089553018,
+       "clipped": 0,
+       "roc": 0.7865497076023392,
+       "pr": 0.849624060150376,
+       "lift": 1.2520775623268698,
+       "corp": {
+        "mcb": 0.06107991415854058,
+        "dsc": 0.0625,
+        "unc": 0.21811224489795913
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.19339899085754322,
+         0.253047971222636
+        ],
+        "bss": [
+         -0.48498078078408424,
+         0.08194563530812893
+        ]
+       },
+       "bss_sample": -0.3925135467237364,
+       "mde": 0.08252579431592869,
+       "n_storm_blocks": 4,
+       "low_power": true,
+       "span": [
+        "2025-11-13",
+        "2026-04-22"
+       ],
+       "n_seasons": 1
+      },
+      "T1-holdout": {
+       "n": 23,
+       "n_pos": 20,
+       "n_blocks": 6,
+       "n_pos_blocks": 6,
+       "prev": 0.8695652173913043,
+       "bs": 0.13161808390826632,
+       "bs_ref": 0.14174790303766854,
+       "bss": 0.07146362600306189,
+       "logs": 0.6348591100037256,
+       "clipped": 0,
+       "roc": 0.4166666666666667,
+       "pr": 0.8514492753623188,
+       "lift": 0.9791666666666667,
+       "corp": {
+        "mcb": 0.018196533813748375,
+        "dsc": 0.0,
+        "unc": 0.11342155009451795
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.06293629719476727,
+         0.1682313562194791
+        ],
+        "bss": [
+         -0.027379333885434676,
+         0.2563408666522432
+        ]
+       },
+       "bss_sample": -0.17527206689851949,
+       "mde": 0.035030195573809125,
+       "n_storm_blocks": 6,
+       "low_power": true,
+       "span": [
+        "2023-11-18",
+        "2025-10-13"
+       ],
+       "n_seasons": 3
+      },
+      "T2": {
+       "n": 98,
+       "n_pos": 77,
+       "n_blocks": 21,
+       "n_pos_blocks": 21,
+       "prev": 0.7857142857142857,
+       "bs": 0.17987258956984925,
+       "bs_ref": 0.18241046624878823,
+       "bss": 0.013912999243571922,
+       "logs": 0.802788528600685,
+       "clipped": 0,
+       "roc": 0.27736549165120594,
+       "pr": 0.6874979523220287,
+       "lift": 0.8749973938644002,
+       "corp": {
+        "mcb": 0.011505242631073692,
+        "dsc": 0.0,
+        "unc": 0.16836734693877556
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.14187492950674468,
+         0.2169000707763828
+        ],
+        "bss": [
+         -0.02209942906720216,
+         0.05260512945929198
+        ]
+       },
+       "bss_sample": -0.06968478045078519,
+       "mde": 0.010015940150307824,
+       "n_storm_blocks": 21,
+       "low_power": false,
+       "span": [
+        "2018-01-08",
+        "2025-02-13"
+       ],
+       "n_seasons": 8
+      }
+     },
+     "baker_china": {
+      "T1": {
+       "n": 14,
+       "n_pos": 13,
+       "n_blocks": 4,
+       "n_pos_blocks": 4,
+       "prev": 0.9285714285714286,
+       "bs": 0.08186411819629813,
+       "bs_ref": 0.08330807858406021,
+       "bss": 0.017332777472536254,
+       "logs": 0.4602750451913205,
+       "clipped": 0,
+       "roc": 0.5,
+       "pr": 0.9285714285714286,
+       "lift": 1.0,
+       "corp": {
+        "mcb": 0.015537587584053242,
+        "dsc": 0.0,
+        "unc": 0.06632653061224489
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.038446751249519406,
+         0.1600153787004998
+        ],
+        "bss": [
+         -0.2655874115309069,
+         0.15504348677429336
+        ]
+       },
+       "bss_sample": -0.2342590128057258,
+       "mde": 0.02094345422342647,
+       "n_storm_blocks": 4,
+       "low_power": true,
+       "span": [
+        "2025-11-13",
+        "2026-04-22"
+       ],
+       "n_seasons": 1
+      },
+      "T1-holdout": {
+       "n": 12,
+       "n_pos": 10,
+       "n_blocks": 6,
+       "n_pos_blocks": 6,
+       "prev": 0.8333333333333334,
+       "bs": 0.14036817882971728,
+       "bs_ref": 0.15710085182736647,
+       "bss": 0.10650911693360032,
+       "logs": 0.6569052935398522,
+       "clipped": 0,
+       "roc": 0.5,
+       "pr": 0.8333333333333334,
+       "lift": 1.0,
+       "corp": {
+        "mcb": 0.00147928994082841,
+        "dsc": 0.0,
+        "unc": 0.13888888888888887
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.042077580539119024,
+         0.20291674137827984
+        ],
+        "bss": [
+         -0.00526182725684125,
+         0.6150804700116943
+        ]
+       },
+       "bss_sample": -0.010650887573964374,
+       "mde": 0.04244322903940653,
+       "n_storm_blocks": 6,
+       "low_power": true,
+       "span": [
+        "2023-11-18",
+        "2025-10-13"
+       ],
+       "n_seasons": 3
+      },
+      "T2": {
+       "n": 50,
+       "n_pos": 40,
+       "n_blocks": 21,
+       "n_pos_blocks": 20,
+       "prev": 0.8,
+       "bs": 0.165028075478187,
+       "bs_ref": 0.16310401164364435,
+       "bss": -0.01179654513186601,
+       "logs": 0.7453507303361729,
+       "clipped": 0,
+       "roc": 0.295,
+       "pr": 0.7195803050833539,
+       "lift": 0.8994753813541924,
+       "corp": {
+        "mcb": 0.005028075478186983,
+        "dsc": 0.0,
+        "unc": 0.16
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.10489620658923086,
+         0.2236640624700029
+        ],
+        "bss": [
+         -0.051958847355824615,
+         0.03510738095227561
+        ]
+       },
+       "bss_sample": -0.03142547173866861,
+       "mde": 0.010504517131297056,
+       "n_storm_blocks": 21,
+       "low_power": false,
+       "span": [
+        "2018-01-08",
+        "2025-02-13"
+       ],
+       "n_seasons": 8
+      }
+     },
+     "ocean": {
+      "T1": {
+       "n": 14,
+       "n_pos": 6,
+       "n_blocks": 4,
+       "n_pos_blocks": 3,
+       "prev": 0.42857142857142855,
+       "bs": 0.3515201999167013,
+       "bs_ref": 0.3241925289152046,
+       "bss": -0.08429457363789061,
+       "logs": 1.3335369727192834,
+       "clipped": 0,
+       "roc": 0.5,
+       "pr": 0.42857142857142855,
+       "lift": 1.0,
+       "corp": {
+        "mcb": 0.10662224073302787,
+        "dsc": 0.0,
+        "unc": 0.24489795918367344
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.2831892961266139,
+         0.44262807163681794
+        ],
+        "bss": [
+         -0.5341450885791594,
+         0.07770358677523526
+        ]
+       },
+       "bss_sample": -0.435374149659864,
+       "mde": 0.1499504604865218,
+       "n_storm_blocks": 4,
+       "low_power": true,
+       "span": [
+        "2025-11-13",
+        "2026-04-22"
+       ],
+       "n_seasons": 1
+      },
+      "T1-holdout": {
+       "n": 11,
+       "n_pos": 10,
+       "n_blocks": 6,
+       "n_pos_blocks": 5,
+       "prev": 0.9090909090909091,
+       "bs": 0.12207252581213801,
+       "bs_ref": 0.12499923163072535,
+       "bss": 0.023413790472196272,
+       "logs": 0.6108087279643143,
+       "clipped": 0,
+       "roc": 0.5,
+       "pr": 0.9090909090909091,
+       "lift": 1.0,
+       "corp": {
+        "mcb": 0.039427897712964455,
+        "dsc": 0.0,
+        "unc": 0.08264462809917356
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.08379501385041552,
+         0.224145891043398
+        ],
+        "bss": [
+         -0.16321735965074713,
+         0.12928640283458825
+        ]
+       },
+       "bss_sample": -0.47707756232686993,
+       "mde": 0.03171145854148272,
+       "n_storm_blocks": 6,
+       "low_power": true,
+       "span": [
+        "2023-11-18",
+        "2025-10-13"
+       ],
+       "n_seasons": 3
+      },
+      "T2": {
+       "n": 48,
+       "n_pos": 37,
+       "n_blocks": 21,
+       "n_pos_blocks": 17,
+       "prev": 0.7708333333333334,
+       "bs": 0.19533562508199742,
+       "bs_ref": 0.2025213564624797,
+       "bss": 0.035481351231288816,
+       "logs": 0.8626195684595516,
+       "clipped": 0,
+       "roc": 0.22235872235872237,
+       "pr": 0.6589709264658555,
+       "lift": 0.8548812019016504,
+       "corp": {
+        "mcb": 0.018686319526441925,
+        "dsc": 0.0,
+        "unc": 0.1766493055555555
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.13277555372707833,
+         0.2662589174265212
+        ],
+        "bss": [
+         -0.027327164968473806,
+         0.09921299965083184
+        ]
+       },
+       "bss_sample": -0.10578201520619701,
+       "mde": 0.01890194958761976,
+       "n_storm_blocks": 21,
+       "low_power": false,
+       "span": [
+        "2018-01-08",
+        "2025-02-13"
+       ],
+       "n_seasons": 8
+      }
+     }
+    },
+    "identity": {
+     "pooled": {
+      "T1": {
+       "n": 28,
+       "n_pos": 19,
+       "n_blocks": 4,
+       "n_pos_blocks": 4,
+       "prev": 0.6785714285714286,
+       "bs": 0.32142857142857145,
+       "bs_ref": 0.20375030374963243,
+       "bss": -0.5775611889322216,
+       "logs": 3.204267267231517,
+       "clipped": 28,
+       "roc": 0.5,
+       "pr": 0.6785714285714286,
+       "lift": 1.0,
+       "corp": {
+        "mcb": 0.10331632653061232,
+        "dsc": 0.0,
+        "unc": 0.21811224489795913
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.2777777777777778,
+         0.3888888888888889
+        ],
+        "bss": [
+         -1.3150984682713345,
+         -0.3295367065450565
+        ]
+       },
+       "bss_sample": -1.0655737704918038,
+       "mde": 0.12675607408061107,
+       "n_storm_blocks": 4,
+       "low_power": true,
+       "span": [
+        "2025-11-13",
+        "2026-04-22"
+       ],
+       "n_seasons": 1
+      },
+      "T1-holdout": {
+       "n": 23,
+       "n_pos": 20,
+       "n_blocks": 6,
+       "n_pos_blocks": 6,
+       "prev": 0.8695652173913043,
+       "bs": 0.13043478260869565,
+       "bs_ref": 0.14174790303766854,
+       "bss": 0.07981155407968543,
+       "logs": 1.3011400517991145,
+       "clipped": 23,
+       "roc": 0.5,
+       "pr": 0.8695652173913043,
+       "lift": 1.0,
+       "corp": {
+        "mcb": 0.017013232514177704,
+        "dsc": 0.0,
+        "unc": 0.11342155009451795
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.0,
+         0.21428571428571427
+        ],
+        "bss": [
+         -0.09088353359127455,
+         1.0
+        ]
+       },
+       "bss_sample": -0.16470588235294148,
+       "mde": 0.058198187544691,
+       "n_storm_blocks": 6,
+       "low_power": true,
+       "span": [
+        "2023-11-18",
+        "2025-10-13"
+       ],
+       "n_seasons": 3
+      },
+      "T2": {
+       "n": 98,
+       "n_pos": 77,
+       "n_blocks": 21,
+       "n_pos_blocks": 21,
+       "prev": 0.7857142857142857,
+       "bs": 0.21428571428571427,
+       "bs_ref": 0.18241046624878823,
+       "bss": -0.17474462234777488,
+       "logs": 2.136659317110902,
+       "clipped": 98,
+       "roc": 0.5,
+       "pr": 0.7857142857142857,
+       "lift": 1.0,
+       "corp": {
+        "mcb": 0.045918367346938715,
+        "dsc": 0.0,
+        "unc": 0.16836734693877556
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.15053287658197737,
+         0.27722772277227725
+        ],
+        "bss": [
+         -0.2670754007943416,
+         -0.036503970178852964
+        ]
+       },
+       "bss_sample": -0.2743362831858409,
+       "mde": 0.0419809211416288,
+       "n_storm_blocks": 21,
+       "low_power": false,
+       "span": [
+        "2018-01-08",
+        "2025-02-13"
+       ],
+       "n_seasons": 8
+      }
+     },
+     "baker_china": {
+      "T1": {
+       "n": 14,
+       "n_pos": 13,
+       "n_blocks": 4,
+       "n_pos_blocks": 4,
+       "prev": 0.9285714285714286,
+       "bs": 0.07142857142857142,
+       "bs_ref": 0.08330807858406021,
+       "bss": 0.14259730097486312,
+       "logs": 0.7131820502834129,
+       "clipped": 14,
+       "roc": 0.5,
+       "pr": 0.9285714285714286,
+       "lift": 1.0,
+       "corp": {
+        "mcb": 0.005102040816326536,
+        "dsc": 0.0,
+        "unc": 0.06632653061224489
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.0,
+         0.2
+        ],
+        "bss": [
+         -0.32135306553911214,
+         1.0
+        ]
+       },
+       "bss_sample": -0.0769230769230771,
+       "mde": 0.07312296372947356,
+       "n_storm_blocks": 4,
+       "low_power": true,
+       "span": [
+        "2025-11-13",
+        "2026-04-22"
+       ],
+       "n_seasons": 1
+      },
+      "T1-holdout": {
+       "n": 12,
+       "n_pos": 10,
+       "n_blocks": 6,
+       "n_pos_blocks": 6,
+       "prev": 0.8333333333333334,
+       "bs": 0.16666666666666666,
+       "bs_ref": 0.15710085182736647,
+       "bss": -0.06088964335987046,
+       "logs": 1.6621668948350719,
+       "clipped": 12,
+       "roc": 0.5,
+       "pr": 0.8333333333333334,
+       "lift": 1.0,
+       "corp": {
+        "mcb": 0.02777777777777779,
+        "dsc": 0.0,
+        "unc": 0.13888888888888887
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.0,
+         0.2727272727272727
+        ],
+        "bss": [
+         -0.3000294214334909,
+         1.0
+        ]
+       },
+       "bss_sample": -0.20000000000000018,
+       "mde": 0.13022457319039502,
+       "n_storm_blocks": 6,
+       "low_power": true,
+       "span": [
+        "2023-11-18",
+        "2025-10-13"
+       ],
+       "n_seasons": 3
+      },
+      "T2": {
+       "n": 50,
+       "n_pos": 40,
+       "n_blocks": 21,
+       "n_pos_blocks": 20,
+       "prev": 0.8,
+       "bs": 0.2,
+       "bs_ref": 0.16310401164364435,
+       "bss": -0.22621140942239593,
+       "logs": 1.9943115904281519,
+       "clipped": 50,
+       "roc": 0.5,
+       "pr": 0.8,
+       "lift": 1.0,
+       "corp": {
+        "mcb": 0.04000000000000001,
+        "dsc": 0.0,
+        "unc": 0.16
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.10204081632653061,
+         0.2941658630665381
+        ],
+        "bss": [
+         -0.349906061090326,
+         0.028165719880657077
+        ]
+       },
+       "bss_sample": -0.25,
+       "mde": 0.06040893903460214,
+       "n_storm_blocks": 21,
+       "low_power": false,
+       "span": [
+        "2018-01-08",
+        "2025-02-13"
+       ],
+       "n_seasons": 8
+      }
+     },
+     "ocean": {
+      "T1": {
+       "n": 14,
+       "n_pos": 6,
+       "n_blocks": 4,
+       "n_pos_blocks": 3,
+       "prev": 0.42857142857142855,
+       "bs": 0.5714285714285714,
+       "bs_ref": 0.3241925289152046,
+       "bss": -0.7626210367668083,
+       "logs": 5.695352484179621,
+       "clipped": 14,
+       "roc": 0.5,
+       "pr": 0.42857142857142855,
+       "lift": 1.0,
+       "corp": {
+        "mcb": 0.326530612244898,
+        "dsc": 0.0,
+        "unc": 0.24489795918367344
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.4375,
+         0.75
+        ],
+        "bss": [
+         -1.58679706601467,
+         -0.4797452229299364
+        ]
+       },
+       "bss_sample": -1.333333333333334,
+       "mde": 0.24241794241683035,
+       "n_storm_blocks": 4,
+       "low_power": true,
+       "span": [
+        "2025-11-13",
+        "2026-04-22"
+       ],
+       "n_seasons": 1
+      },
+      "T1-holdout": {
+       "n": 11,
+       "n_pos": 10,
+       "n_blocks": 6,
+       "n_pos_blocks": 5,
+       "prev": 0.9090909090909091,
+       "bs": 0.09090909090909091,
+       "bs_ref": 0.12499923163072535,
+       "bss": 0.2727228021876491,
+       "logs": 0.9072925866689793,
+       "clipped": 11,
+       "roc": 0.5,
+       "pr": 0.9090909090909091,
+       "lift": 1.0,
+       "corp": {
+        "mcb": 0.008264462809917356,
+        "dsc": 0.0,
+        "unc": 0.08264462809917356
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.0,
+         0.3333333333333333
+        ],
+        "bss": [
+         -0.33813951783379514,
+         1.0
+        ]
+       },
+       "bss_sample": -0.10000000000000009,
+       "mde": 0.12195448503471806,
+       "n_storm_blocks": 6,
+       "low_power": true,
+       "span": [
+        "2023-11-18",
+        "2025-10-13"
+       ],
+       "n_seasons": 3
+      },
+      "T2": {
+       "n": 48,
+       "n_pos": 37,
+       "n_blocks": 21,
+       "n_pos_blocks": 17,
+       "prev": 0.7708333333333334,
+       "bs": 0.22916666666666666,
+       "bs_ref": 0.2025213564624797,
+       "bss": -0.13156790310716393,
+       "logs": 2.2849381990720983,
+       "clipped": 48,
+       "roc": 0.5,
+       "pr": 0.7708333333333334,
+       "lift": 1.0,
+       "corp": {
+        "mcb": 0.05251736111111116,
+        "dsc": 0.0,
+        "unc": 0.1766493055555555
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.12727272727272726,
+         0.34698314108251993
+        ],
+        "bss": [
+         -0.26816721488343526,
+         0.09414079878144148
+        ]
+       },
+       "bss_sample": -0.2972972972972976,
+       "mde": 0.06637108607709466,
+       "n_storm_blocks": 21,
+       "low_power": false,
+       "span": [
+        "2018-01-08",
+        "2025-02-13"
+       ],
+       "n_seasons": 8
+      }
+     }
+    }
+   },
+   "oracle_paired": {
+    "logit_logvol \u2212 constant": {
+     "pooled": {
+      "T1": {
+       "metric": "brier",
+       "n": 28,
+       "n_blocks": 4,
+       "a": 0.19055335882073116,
+       "b": 0.21669215905649972,
+       "delta": -0.02613880023576856,
+       "lo": -0.05999821663280988,
+       "hi": -0.010546614539658078,
+       "se": 0.016652244492095583,
+       "p_neg": 1.0,
+       "mde": 0.04140538730090135,
+       "mde_pct": 0.19107930568962314,
+       "level": 0.9,
+       "verdict": "better",
+       "noninferior_5pct": true
+      },
+      "T1-holdout": {
+       "metric": "brier",
+       "n": 23,
+       "n_blocks": 6,
+       "a": 0.11087964625662775,
+       "b": 0.13161808390826632,
+       "delta": -0.020738437651638575,
+       "lo": -0.05708393428345966,
+       "hi": 0.011673376958621667,
+       "se": 0.01902737189079868,
+       "p_neg": 0.9265,
+       "mde": 0.047311081868319275,
+       "mde_pct": 0.3594573060438535,
+       "level": 0.9,
+       "verdict": "no clear difference",
+       "noninferior_5pct": false
+      },
+      "T2": {
+       "metric": "brier",
+       "n": 98,
+       "n_blocks": 21,
+       "a": 0.16666970836154518,
+       "b": 0.17987258956984925,
+       "delta": -0.013202881208304068,
+       "lo": -0.026423501550181975,
+       "hi": 0.003145929923438813,
+       "se": 0.009177309091576429,
+       "p_neg": 0.9105,
+       "mde": 0.022819148343466683,
+       "mde_pct": 0.12686284440579207,
+       "level": 0.9,
+       "verdict": "no clear difference",
+       "noninferior_5pct": true
+      }
+     },
+     "baker_china": {
+      "T1": {
+       "metric": "brier",
+       "n": 14,
+       "n_blocks": 4,
+       "a": 0.08228538108172999,
+       "b": 0.08186411819629813,
+       "delta": 0.0004212628854318584,
+       "lo": -0.013030313009687045,
+       "hi": 0.021912877274943482,
+       "se": 0.01038931037475121,
+       "p_neg": 0.465,
+       "mde": 0.025832759065004072,
+       "mde_pct": 0.3155565543753969,
+       "level": 0.9,
+       "verdict": "no clear difference",
+       "noninferior_5pct": false
+      },
+      "T1-holdout": {
+       "metric": "brier",
+       "n": 12,
+       "n_blocks": 6,
+       "a": 0.14176779935806924,
+       "b": 0.14036817882971728,
+       "delta": 0.0013996205283519636,
+       "lo": -0.017055800939859787,
+       "hi": 0.010711671780677622,
+       "se": 0.00832262851196215,
+       "p_neg": 0.4395,
+       "mde": 0.020694006568477367,
+       "mde_pct": 0.14742662290704486,
+       "level": 0.9,
+       "verdict": "no clear difference",
+       "noninferior_5pct": false
+      },
+      "T2": {
+       "metric": "brier",
+       "n": 50,
+       "n_blocks": 21,
+       "a": 0.16090079293269016,
+       "b": 0.165028075478187,
+       "delta": -0.004127282545496824,
+       "lo": -0.022105986120200635,
+       "hi": 0.019566276014869773,
+       "se": 0.012704654805572112,
+       "p_neg": 0.6465,
+       "mde": 0.03158980478569539,
+       "mde_pct": 0.19142079124512879,
+       "level": 0.9,
+       "verdict": "no clear difference",
+       "noninferior_5pct": false
+      }
+     },
+     "ocean": {
+      "T1": {
+       "metric": "brier",
+       "n": 14,
+       "n_blocks": 4,
+       "a": 0.2988213365597323,
+       "b": 0.3515201999167013,
+       "delta": -0.052698863356968995,
+       "lo": -0.14190931054056327,
+       "hi": -0.01701468448353144,
+       "se": 0.04247295416494376,
+       "p_neg": 1.0,
+       "mde": 0.10560793278333719,
+       "mde_pct": 0.3004320457497543,
+       "level": 0.9,
+       "verdict": "better",
+       "noninferior_5pct": true
+      },
+      "T1-holdout": {
+       "metric": "brier",
+       "n": 11,
+       "n_blocks": 6,
+       "a": 0.07718347923687335,
+       "b": 0.12207252581213801,
+       "delta": -0.04488904657526466,
+       "lo": -0.09661812550910033,
+       "hi": 0.018549279696429544,
+       "se": 0.03450035192527591,
+       "p_neg": 0.922,
+       "mde": 0.08578425774144266,
+       "mde_pct": 0.7027318978674962,
+       "level": 0.9,
+       "verdict": "no clear difference",
+       "noninferior_5pct": false
+      },
+      "T2": {
+       "metric": "brier",
+       "n": 48,
+       "n_blocks": 21,
+       "a": 0.17267899526660246,
+       "b": 0.19533562508199742,
+       "delta": -0.022656629815394957,
+       "lo": -0.057258496768630804,
+       "hi": 0.013603982852164373,
+       "se": 0.021662322591567484,
+       "p_neg": 0.842,
+       "mde": 0.05386282054450202,
+       "mde_pct": 0.27574499286493,
+       "level": 0.9,
+       "verdict": "no clear difference",
+       "noninferior_5pct": false
+      }
+     }
+    },
+    "logit_logvol \u2212 identity": {
+     "pooled": {
+      "T1": {
+       "metric": "brier",
+       "n": 28,
+       "n_blocks": 4,
+       "a": 0.19055335882073116,
+       "b": 0.32142857142857145,
+       "delta": -0.1308752126078403,
+       "lo": -0.1944608051896412,
+       "hi": -0.0988159315364451,
+       "se": 0.034759662921443044,
+       "p_neg": 1.0,
+       "mde": 0.08642902801446978,
+       "mde_pct": 0.2688903093783504,
+       "level": 0.9,
+       "verdict": "better",
+       "noninferior_5pct": true
+      },
+      "T1-holdout": {
+       "metric": "brier",
+       "n": 23,
+       "n_blocks": 6,
+       "a": 0.11087964625662775,
+       "b": 0.13043478260869565,
+       "delta": -0.019555136352067903,
+       "lo": -0.08348398793114387,
+       "hi": 0.04395806352681926,
+       "se": 0.04004998452751442,
+       "p_neg": 0.74,
+       "mde": 0.09958327969205524,
+       "mde_pct": 0.7634718109724236,
+       "level": 0.9,
+       "verdict": "no clear difference",
+       "noninferior_5pct": false
+      },
+      "T2": {
+       "metric": "brier",
+       "n": 98,
+       "n_blocks": 21,
+       "a": 0.16666970836154518,
+       "b": 0.21428571428571427,
+       "delta": -0.04761600592416909,
+       "lo": -0.07369839538104336,
+       "hi": -0.02187017644686643,
+       "se": 0.01604220539281081,
+       "p_neg": 0.9985,
+       "mde": 0.03988854041659281,
+       "mde_pct": 0.18614652194409978,
+       "level": 0.9,
+       "verdict": "better",
+       "noninferior_5pct": true
+      }
+     },
+     "baker_china": {
+      "T1": {
+       "metric": "brier",
+       "n": 14,
+       "n_blocks": 4,
+       "a": 0.08228538108172999,
+       "b": 0.07142857142857142,
+       "delta": 0.010856809653158564,
+       "lo": -0.054892838602270566,
+       "hi": 0.059838503456125854,
+       "se": 0.035149927502835035,
+       "p_neg": 0.3175,
+       "mde": 0.08739941108505403,
+       "mde_pct": 1.2235917551907565,
+       "level": 0.9,
+       "verdict": "no clear difference",
+       "noninferior_5pct": false
+      },
+      "T1-holdout": {
+       "metric": "brier",
+       "n": 12,
+       "n_blocks": 6,
+       "a": 0.14176779935806924,
+       "b": 0.16666666666666666,
+       "delta": -0.024898867308597417,
+       "lo": -0.0618625496888926,
+       "hi": 0.04264211218422796,
+       "se": 0.035719035536468824,
+       "p_neg": 0.644,
+       "mde": 0.08881448390360691,
+       "mde_pct": 0.5328869034216415,
+       "level": 0.9,
+       "verdict": "no clear difference",
+       "noninferior_5pct": false
+      },
+      "T2": {
+       "metric": "brier",
+       "n": 50,
+       "n_blocks": 21,
+       "a": 0.16090079293269016,
+       "b": 0.2,
+       "delta": -0.03909920706730985,
+       "lo": -0.08657603537284111,
+       "hi": 0.010324195091605337,
+       "se": 0.02992898029781544,
+       "p_neg": 0.896,
+       "mde": 0.07441765711164774,
+       "mde_pct": 0.3720882855582387,
+       "level": 0.9,
+       "verdict": "no clear difference",
+       "noninferior_5pct": false
+      }
+     },
+     "ocean": {
+      "T1": {
+       "metric": "brier",
+       "n": 14,
+       "n_blocks": 4,
+       "a": 0.2988213365597323,
+       "b": 0.5714285714285714,
+       "delta": -0.2726072348688391,
+       "lo": -0.44928123890374533,
+       "hi": -0.17275880662666843,
+       "se": 0.08541225365971186,
+       "p_neg": 1.0,
+       "mde": 0.21237542150560557,
+       "mde_pct": 0.37165698763480975,
+       "level": 0.9,
+       "verdict": "better",
+       "noninferior_5pct": true
+      },
+      "T1-holdout": {
+       "metric": "brier",
+       "n": 11,
+       "n_blocks": 6,
+       "a": 0.07718347923687335,
+       "b": 0.09090909090909091,
+       "delta": -0.013725611672217558,
+       "lo": -0.18075610717546675,
+       "hi": 0.0825695915735873,
+       "se": 0.08707582585679434,
+       "p_neg": 0.5625,
+       "mde": 0.21651185195231845,
+       "mde_pct": 2.3816303714755027,
+       "level": 0.9,
+       "verdict": "no clear difference",
+       "noninferior_5pct": false
+      },
+      "T2": {
+       "metric": "brier",
+       "n": 48,
+       "n_blocks": 21,
+       "a": 0.17267899526660246,
+       "b": 0.22916666666666666,
+       "delta": -0.05648767140006419,
+       "lo": -0.12825739848254852,
+       "hi": 0.003291990518940984,
+       "se": 0.039544230693800496,
+       "p_neg": 0.9355,
+       "mde": 0.09832573549891174,
+       "mde_pct": 0.42905775490434217,
+       "level": 0.9,
+       "verdict": "no clear difference",
+       "noninferior_5pct": true
+      }
+     }
+    }
+   },
+   "union": {
+    "max": {
+     "east": {
+      "T1": {
+       "n": 276,
+       "n_pos": 8,
+       "n_blocks": 39,
+       "n_pos_blocks": 3,
+       "prev": 0.028985507246376812,
+       "bs": 0.01016829582487543,
+       "bs_ref": 0.027440677800900738,
+       "bss": 0.6294444365167373,
+       "logs": 0.04895923783881263,
+       "clipped": 0,
+       "roc": 0.9958022388059702,
+       "pr": 0.8726076007326007,
+       "lift": 30.104962225274722,
+       "corp": {
+        "mcb": 0.004371194375600066,
+        "dsc": 0.02234824616677169,
+        "unc": 0.02814534761604705
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.0010754832511896736,
+         0.01885079925790458
+        ],
+        "bss": [
+         0.1348167270790191,
+         0.8790838888730823
+        ]
+       },
+       "bss_sample": 0.6387219669982693,
+       "mde": 0.027094241630699803,
+       "n_storm_blocks": 6,
+       "low_power": true,
+       "span": [
+        "2025-11-01",
+        "2026-08-17"
+       ],
+       "n_seasons": 2
+      },
+      "T1-holdout": {
+       "n": 836,
+       "n_pos": 20,
+       "n_blocks": 108,
+       "n_pos_blocks": 8,
+       "prev": 0.023923444976076555,
+       "bs": 0.005907973808681539,
+       "bs_ref": 0.022388681431879557,
+       "bss": 0.7361178313846972,
+       "logs": 0.03228773740251468,
+       "clipped": 3,
+       "roc": 0.9981617647058824,
+       "pr": 0.9192771966165929,
+       "lift": 38.425786818573584,
+       "corp": {
+        "mcb": 0.0024191380830037076,
+        "dsc": 0.01986227803087537,
+        "unc": 0.0233511137565532
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.002272874986571735,
+         0.00947992037753465
+        ],
+        "bss": [
+         0.6209484945068829,
+         0.7861848479891685
+        ]
+       },
+       "bss_sample": 0.7469939177088056,
+       "mde": 0.01887620549704197,
+       "n_storm_blocks": 15,
+       "low_power": false,
+       "span": [
+        "2023-07-01",
+        "2025-10-31"
+       ],
+       "n_seasons": 3
+      },
+      "T2": {
+       "n": 3088,
+       "n_pos": 91,
+       "n_blocks": 394,
+       "n_pos_blocks": 33,
+       "prev": 0.029468911917098446,
+       "bs": 0.010373322378349351,
+       "bs_ref": 0.02784149638877751,
+       "bss": 0.6274150558038727,
+       "logs": 0.053015575761459696,
+       "clipped": 9,
+       "roc": 0.9943899943899944,
+       "pr": 0.8543457677569414,
+       "lift": 28.99142561355423,
+       "corp": {
+        "mcb": 0.0013715119547120166,
+        "dsc": 0.01959868472388341,
+        "unc": 0.028600495147520742
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.007347568002327781,
+         0.013323594645285744
+        ],
+        "bss": [
+         0.54374938543841,
+         0.6954462518743605
+        ]
+       },
+       "bss_sample": 0.6373026996615276,
+       "mde": 0.009489301026375399,
+       "n_storm_blocks": 67,
+       "low_power": false,
+       "span": [
+        "2016-10-01",
+        "2025-06-30"
+       ],
+       "n_seasons": 9
+      }
+     }
+    },
+    "noisy_or": {
+     "east": {
+      "T1": {
+       "n": 276,
+       "n_pos": 8,
+       "n_blocks": 39,
+       "n_pos_blocks": 3,
+       "prev": 0.028985507246376812,
+       "bs": 0.010044771288361577,
+       "bs_ref": 0.027440677800900738,
+       "bss": 0.6339459483747936,
+       "logs": 0.0501206880003811,
+       "clipped": 1,
+       "roc": 0.9953358208955224,
+       "pr": 0.8413576007326007,
+       "lift": 29.026837225274722,
+       "corp": {
+        "mcb": 0.00412689689222631,
+        "dsc": 0.022227473219911784,
+        "unc": 0.02814534761604705
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.001024436880227163,
+         0.018635209402297875
+        ],
+        "bss": [
+         0.11489049175272727,
+         0.8851883149206109
+        ]
+       },
+       "bss_sample": 0.6431107753441084,
+       "mde": 0.02751897205628044,
+       "n_storm_blocks": 6,
+       "low_power": true,
+       "span": [
+        "2025-11-01",
+        "2026-08-17"
+       ],
+       "n_seasons": 2
+      },
+      "T1-holdout": {
+       "n": 836,
+       "n_pos": 20,
+       "n_blocks": 108,
+       "n_pos_blocks": 8,
+       "prev": 0.023923444976076555,
+       "bs": 0.005988097829543999,
+       "bs_ref": 0.022388681431879557,
+       "bss": 0.7325390578376151,
+       "logs": 0.03436387253141331,
+       "clipped": 4,
+       "roc": 0.9981617647058824,
+       "pr": 0.9192771966165929,
+       "lift": 38.425786818573584,
+       "corp": {
+        "mcb": 0.0024992621038661678,
+        "dsc": 0.01986227803087537,
+        "unc": 0.0233511137565532
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.002285424547786118,
+         0.009554526083151098
+        ],
+        "bss": [
+         0.6059884125625624,
+         0.7887992049900883
+        ]
+       },
+       "bss_sample": 0.7435626457918516,
+       "mde": 0.01893358617773058,
+       "n_storm_blocks": 15,
+       "low_power": false,
+       "span": [
+        "2023-07-01",
+        "2025-10-31"
+       ],
+       "n_seasons": 3
+      },
+      "T2": {
+       "n": 3088,
+       "n_pos": 91,
+       "n_blocks": 394,
+       "n_pos_blocks": 33,
+       "prev": 0.029468911917098446,
+       "bs": 0.010355186854783262,
+       "bs_ref": 0.02784149638877751,
+       "bss": 0.6280664404605321,
+       "logs": 0.0539014250602599,
+       "clipped": 12,
+       "roc": 0.9942653275986609,
+       "pr": 0.8526809158164717,
+       "lift": 28.934930418035872,
+       "corp": {
+        "mcb": 0.0013265358376781267,
+        "dsc": 0.019571844130415607,
+        "unc": 0.028600495147520742
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.007367416303018085,
+         0.013270108141163988
+        ],
+        "bss": [
+         0.5464337808797802,
+         0.6954426160808364
+        ]
+       },
+       "bss_sample": 0.6379367978990773,
+       "mde": 0.009479710618253872,
+       "n_storm_blocks": 67,
+       "low_power": false,
+       "span": [
+        "2016-10-01",
+        "2025-06-30"
+       ],
+       "n_seasons": 9
+      }
+     }
+    },
+    "cofire": {
+     "east": {
+      "T1": {
+       "n": 276,
+       "n_pos": 8,
+       "n_blocks": 39,
+       "n_pos_blocks": 3,
+       "prev": 0.028985507246376812,
+       "bs": 0.010240086875482026,
+       "bs_ref": 0.027440677800900738,
+       "bss": 0.6268282092089614,
+       "logs": 0.049873602338627636,
+       "clipped": 1,
+       "roc": 0.9953358208955224,
+       "pr": 0.8413576007326007,
+       "lift": 29.026837225274722,
+       "corp": {
+        "mcb": 0.004322212479346759,
+        "dsc": 0.022227473219911784,
+        "unc": 0.02814534761604705
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.0010541058083593272,
+         0.01898950852383483
+        ],
+        "bss": [
+         0.10456996706220435,
+         0.8814823979352563
+        ]
+       },
+       "bss_sample": 0.6361712416852991,
+       "mde": 0.02727744208447605,
+       "n_storm_blocks": 6,
+       "low_power": true,
+       "span": [
+        "2025-11-01",
+        "2026-08-17"
+       ],
+       "n_seasons": 2
+      },
+      "T1-holdout": {
+       "n": 836,
+       "n_pos": 20,
+       "n_blocks": 108,
+       "n_pos_blocks": 8,
+       "prev": 0.023923444976076555,
+       "bs": 0.00600973721967527,
+       "bs_ref": 0.022388681431879557,
+       "bss": 0.7315725252529646,
+       "logs": 0.03307890218389762,
+       "clipped": 7,
+       "roc": 0.9981617647058824,
+       "pr": 0.9192771966165928,
+       "lift": 38.42578681857358,
+       "corp": {
+        "mcb": 0.002520901493997439,
+        "dsc": 0.01986227803087537,
+        "unc": 0.0233511137565532
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.0022850315746662402,
+         0.009584260254550465
+        ],
+        "bss": [
+         0.6089302881300058,
+         0.78670342394831
+        ]
+       },
+       "bss_sample": 0.742635949517024,
+       "mde": 0.01885889982925143,
+       "n_storm_blocks": 15,
+       "low_power": false,
+       "span": [
+        "2023-07-01",
+        "2025-10-31"
+       ],
+       "n_seasons": 3
+      },
+      "T2": {
+       "n": 3088,
+       "n_pos": 91,
+       "n_blocks": 394,
+       "n_pos_blocks": 33,
+       "prev": 0.029468911917098446,
+       "bs": 0.010397190848772038,
+       "bs_ref": 0.02784149638877751,
+       "bss": 0.6265577573997427,
+       "logs": 0.05399975514056203,
+       "clipped": 24,
+       "roc": 0.9943459943459944,
+       "pr": 0.8481137122220315,
+       "lift": 28.779946630127835,
+       "corp": {
+        "mcb": 0.0013743152352138945,
+        "dsc": 0.0195776195339626,
+        "unc": 0.028600495147520742
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.007364973432540743,
+         0.013340570809402144
+        ],
+        "bss": [
+         0.5437757246876599,
+         0.6945962391496637
+        ]
+       },
+       "bss_sample": 0.6364681522070317,
+       "mde": 0.00946660266907056,
+       "n_storm_blocks": 67,
+       "low_power": false,
+       "span": [
+        "2016-10-01",
+        "2025-06-30"
+       ],
+       "n_seasons": 9
+      }
+     }
+    },
+    "nested": {
+     "east": {
+      "T1": {
+       "n": 276,
+       "n_pos": 8,
+       "n_blocks": 39,
+       "n_pos_blocks": 3,
+       "prev": 0.028985507246376812,
+       "bs": 0.01016829582487543,
+       "bs_ref": 0.027440677800900738,
+       "bss": 0.6294444365167373,
+       "logs": 0.04895923783881263,
+       "clipped": 0,
+       "roc": 0.9958022388059702,
+       "pr": 0.8726076007326007,
+       "lift": 30.104962225274722,
+       "corp": {
+        "mcb": 0.004371194375600066,
+        "dsc": 0.02234824616677169,
+        "unc": 0.02814534761604705
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.0010754832511896736,
+         0.01885079925790458
+        ],
+        "bss": [
+         0.1348167270790191,
+         0.8790838888730823
+        ]
+       },
+       "bss_sample": 0.6387219669982693,
+       "mde": 0.027094241630699803,
+       "n_storm_blocks": 6,
+       "low_power": true,
+       "span": [
+        "2025-11-01",
+        "2026-08-17"
+       ],
+       "n_seasons": 2
+      },
+      "T1-holdout": {
+       "n": 836,
+       "n_pos": 20,
+       "n_blocks": 108,
+       "n_pos_blocks": 8,
+       "prev": 0.023923444976076555,
+       "bs": 0.005988097829543999,
+       "bs_ref": 0.022388681431879557,
+       "bss": 0.7325390578376151,
+       "logs": 0.03436387253141331,
+       "clipped": 4,
+       "roc": 0.9981617647058824,
+       "pr": 0.9192771966165929,
+       "lift": 38.425786818573584,
+       "corp": {
+        "mcb": 0.0024992621038661678,
+        "dsc": 0.01986227803087537,
+        "unc": 0.0233511137565532
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.002285424547786118,
+         0.009554526083151098
+        ],
+        "bss": [
+         0.6059884125625624,
+         0.7887992049900883
+        ]
+       },
+       "bss_sample": 0.7435626457918516,
+       "mde": 0.01893358617773058,
+       "n_storm_blocks": 15,
+       "low_power": false,
+       "span": [
+        "2023-07-01",
+        "2025-10-31"
+       ],
+       "n_seasons": 3
+      },
+      "T2": {
+       "n": 3088,
+       "n_pos": 91,
+       "n_blocks": 394,
+       "n_pos_blocks": 33,
+       "prev": 0.029468911917098446,
+       "bs": 0.010373322378349351,
+       "bs_ref": 0.02784149638877751,
+       "bss": 0.6274150558038727,
+       "logs": 0.053015575761459696,
+       "clipped": 9,
+       "roc": 0.9943899943899944,
+       "pr": 0.8543457677569414,
+       "lift": 28.99142561355423,
+       "corp": {
+        "mcb": 0.0013715119547120166,
+        "dsc": 0.01959868472388341,
+        "unc": 0.028600495147520742
+       },
+       "ci": {
+        "level": 0.9,
+        "bs": [
+         0.007347568002327781,
+         0.013323594645285744
+        ],
+        "bss": [
+         0.54374938543841,
+         0.6954462518743605
+        ]
+       },
+       "bss_sample": 0.6373026996615276,
+       "mde": 0.009489301026375399,
+       "n_storm_blocks": 67,
+       "low_power": false,
+       "span": [
+        "2016-10-01",
+        "2025-06-30"
+       ],
+       "n_seasons": 9
+      }
+     }
+    }
+   },
+   "union_paired": {
+    "noisy_or \u2212 max": {
+     "east": {
+      "T1": {
+       "metric": "brier",
+       "n": 276,
+       "n_blocks": 39,
+       "a": 0.010044771288361577,
+       "b": 0.01016829582487543,
+       "delta": -0.0001235245365138523,
+       "lo": -0.0004085779039122532,
+       "hi": 0.0001769825533832897,
+       "se": 0.00017559177030682414,
+       "p_neg": 0.709,
+       "mde": 0.00043660452258289064,
+       "mde_pct": 0.042937826564289544,
+       "level": 0.9,
+       "verdict": "no clear difference",
+       "noninferior_5pct": true
+      },
+      "T1-holdout": {
+       "metric": "brier",
+       "n": 836,
+       "n_blocks": 108,
+       "a": 0.005988097829543999,
+       "b": 0.005907973808681539,
+       "delta": 8.012402086246019e-05,
+       "lo": -8.461829814122505e-05,
+       "hi": 0.00027214836720483625,
+       "se": 0.0001063766830612299,
+       "p_neg": 0.228,
+       "mde": 0.0002645029481777185,
+       "mde_pct": 0.04477050114694849,
+       "level": 0.9,
+       "verdict": "no clear difference",
+       "noninferior_5pct": true
+      },
+      "T2": {
+       "metric": "brier",
+       "n": 3088,
+       "n_blocks": 394,
+       "a": 0.010355186854783262,
+       "b": 0.010373322378349351,
+       "delta": -1.8135523566088774e-05,
+       "lo": -0.00011882836992305685,
+       "hi": 8.47401881923182e-05,
+       "se": 6.294633069184095e-05,
+       "p_neg": 0.6175,
+       "mde": 0.00015651446882751713,
+       "mde_pct": 0.01508817166949191,
+       "level": 0.9,
+       "verdict": "no clear difference",
+       "noninferior_5pct": true
+      }
+     }
+    },
+    "cofire \u2212 max": {
+     "east": {
+      "T1": {
+       "metric": "brier",
+       "n": 276,
+       "n_blocks": 39,
+       "a": 0.010240086875482026,
+       "b": 0.01016829582487543,
+       "delta": 7.17910506065969e-05,
+       "lo": -0.00011367444511161691,
+       "hi": 0.000305663795200144,
+       "se": 0.00013698301651157775,
+       "p_neg": 0.344,
+       "mde": 0.000340604826874835,
+       "mde_pct": 0.03349674643036929,
+       "level": 0.9,
+       "verdict": "no clear difference",
+       "noninferior_5pct": true
+      },
+      "T1-holdout": {
+       "metric": "brier",
+       "n": 836,
+       "n_blocks": 108,
+       "a": 0.00600973721967527,
+       "b": 0.005907973808681539,
+       "delta": 0.00010176341099373161,
+       "lo": -2.3957174015836152e-05,
+       "hi": 0.0002460556357924541,
+       "se": 8.126426106012195e-05,
+       "p_neg": 0.1045,
+       "mde": 0.00020206154218508404,
+       "mde_pct": 0.03420149593218616,
+       "level": 0.9,
+       "verdict": "no clear difference",
+       "noninferior_5pct": true
+      },
+      "T2": {
+       "metric": "brier",
+       "n": 3088,
+       "n_blocks": 394,
+       "a": 0.010397190848772038,
+       "b": 0.010373322378349351,
+       "delta": 2.3868470422686722e-05,
+       "lo": -3.508293834852388e-05,
+       "hi": 0.00010201023020368272,
+       "se": 4.204266247908475e-05,
+       "p_neg": 0.3205,
+       "mde": 0.0001045380233237561,
+       "mde_pct": 0.010077583585172512,
+       "level": 0.9,
+       "verdict": "no clear difference",
+       "noninferior_5pct": true
+      }
+     }
+    },
+    "nested \u2212 max": {
+     "east": {
+      "T1": {
+       "metric": "brier",
+       "n": 276,
+       "n_blocks": 39,
+       "a": 0.01016829582487543,
+       "b": 0.01016829582487543,
+       "delta": 0.0,
+       "lo": 0.0,
+       "hi": 0.0,
+       "se": 0.0,
+       "p_neg": 0.0,
+       "mde": 0.0,
+       "mde_pct": 0.0,
+       "level": 0.9,
+       "verdict": "no clear difference",
+       "noninferior_5pct": true
+      },
+      "T1-holdout": {
+       "metric": "brier",
+       "n": 836,
+       "n_blocks": 108,
+       "a": 0.005988097829543999,
+       "b": 0.005907973808681539,
+       "delta": 8.012402086246019e-05,
+       "lo": -8.461829814122505e-05,
+       "hi": 0.00027214836720483625,
+       "se": 0.0001063766830612299,
+       "p_neg": 0.228,
+       "mde": 0.0002645029481777185,
+       "mde_pct": 0.04477050114694849,
+       "level": 0.9,
+       "verdict": "no clear difference",
+       "noninferior_5pct": true
+      },
+      "T2": {
+       "metric": "brier",
+       "n": 3088,
+       "n_blocks": 394,
+       "a": 0.010373322378349351,
+       "b": 0.010373322378349351,
+       "delta": 0.0,
+       "lo": 0.0,
+       "hi": 0.0,
+       "se": 0.0,
+       "p_neg": 0.0,
+       "mde": 0.0,
+       "mde_pct": 0.0,
+       "level": 0.9,
+       "verdict": "no clear difference",
+       "noninferior_5pct": true
+      }
+     }
+    }
+   },
+   "s3b": {
+    "comparison": "S3b: BS(logit_logvol) \u2212 BS(constant), S3 oracle (true occurrence, v\u0302 from rain), T2, both Westside zones",
+    "n": 98,
+    "n_blocks": 21,
+    "delta": -0.013202881208304068,
+    "se": 0.009177309091576429,
+    "ci90": [
+     -0.026423501550181975,
+     0.003145929923438813
+    ],
+    "ci95": [
+     -0.02909193417739732,
+     0.00657180032221103
+    ],
+    "p_one_sided": 0.08950000000000002,
+    "superior_unadjusted": false,
+    "mde": 0.022819148343466683,
+    "mde_pct": 0.12686284440579207,
+    "verdict": "no clear difference",
+    "n_boot": 2000,
+    "family": [
+     "S3a",
+     "S3b"
+    ],
+    "alpha": 0.05,
+    "how": "Holm over S3a and S3b at one-sided \u03b1 = 0.05: the smaller p is tested at 0.025 (the 95% CI's upper bound below 0 for a superiority claim), the larger at 0.05 (the 90% CI's); p_one_sided = P*(\u0394* \u2265 0)."
+   },
+   "integrity": {
+    "s3_identity_mismatches": 0,
+    "n_checked": 510,
+    "rules": [
+     "max",
+     "noisy_or",
+     "cofire"
+    ],
+    "by_zone": {
+     "east": {
+      "n_checked": 357,
+      "mismatches": 0
+     },
+     "north": {
+      "n_checked": 153,
+      "mismatches": 0
+     }
+    }
+   }
+  }
+ },
+ "component": "links_v1",
+ "set": "sfpuc4_dev"
+}

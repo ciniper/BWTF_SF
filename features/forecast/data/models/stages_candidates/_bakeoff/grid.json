@@ -1,0 +1,612 @@
+{
+ "schema": "bwtf.stages.s2_sfpuc4/1.grid",
+ "declared_at": "2026-10-02T18:42:30+00:00",
+ "sha256": "aa7c9ced4070fe7c18106437c7e544607f29345c52ca2209f49e0b0373b121db",
+ "grid": {
+  "contenders": {
+   "logit_v1": {
+    "kind": "hinges",
+    "n_terms": 38,
+    "bends": {
+     "recorded": {
+      "precip_avg": [
+       0.25,
+       0.5,
+       1.0
+      ],
+      "rain_2d_cum": [
+       0.5,
+       1.0,
+       2.0
+      ],
+      "rain_3d_cum": [
+       1.0,
+       2.0
+      ],
+      "rain_7d_cum": [
+       2.0
+      ],
+      "rain_max1h": [
+       0.1,
+       0.2
+      ],
+      "rain_max3h": [
+       0.25,
+       0.5
+      ],
+      "rain_max6h": [
+       0.5,
+       1.0
+      ],
+      "antecedent_moisture": [
+       0.2,
+       0.5
+      ],
+      "peak_3d": [
+       0.5,
+       1.0
+      ]
+     },
+     "low": {
+      "precip_avg": [
+       0.1,
+       0.25,
+       0.5
+      ],
+      "rain_2d_cum": [
+       0.25,
+       0.5,
+       1.0
+      ],
+      "rain_3d_cum": [
+       0.5,
+       1.0
+      ],
+      "rain_7d_cum": [
+       1.0
+      ],
+      "rain_max1h": [
+       0.05,
+       0.1
+      ],
+      "rain_max3h": [
+       0.1,
+       0.25
+      ],
+      "rain_max6h": [
+       0.25,
+       0.5
+      ],
+      "antecedent_moisture": [
+       0.1,
+       0.25
+      ],
+      "peak_3d": [
+       0.25,
+       0.5
+      ]
+     },
+     "high": {
+      "precip_avg": [
+       0.5,
+       1.0,
+       1.5
+      ],
+      "rain_2d_cum": [
+       1.0,
+       1.5,
+       3.0
+      ],
+      "rain_3d_cum": [
+       1.5,
+       3.0
+      ],
+      "rain_7d_cum": [
+       3.0
+      ],
+      "rain_max1h": [
+       0.2,
+       0.3
+      ],
+      "rain_max3h": [
+       0.5,
+       1.0
+      ],
+      "rain_max6h": [
+       1.0,
+       1.5
+      ],
+      "antecedent_moisture": [
+       0.5,
+       1.0
+      ],
+      "peak_3d": [
+       1.0,
+       1.5
+      ]
+     }
+    },
+    "terms": {
+     "recorded": [
+      "precip_avg",
+      "rain_2d_cum",
+      "rain_3d_cum",
+      "rain_5d_cum",
+      "rain_7d_cum",
+      "rain_14d_cum",
+      "rain_30d_cum",
+      "rain_lag1d",
+      "rain_lag2d",
+      "rain_lag3d",
+      "rain_lag5d",
+      "rain_lag7d",
+      "antecedent_moisture",
+      "wet_prior_3d",
+      "peak_3d",
+      "dry_spell_days",
+      "rain_max1h",
+      "rain_max3h",
+      "rain_max6h",
+      "precip_avg>0.25",
+      "precip_avg>0.5",
+      "precip_avg>1",
+      "rain_2d_cum>0.5",
+      "rain_2d_cum>1",
+      "rain_2d_cum>2",
+      "rain_3d_cum>1",
+      "rain_3d_cum>2",
+      "rain_7d_cum>2",
+      "rain_max1h>0.1",
+      "rain_max1h>0.2",
+      "rain_max3h>0.25",
+      "rain_max3h>0.5",
+      "rain_max6h>0.5",
+      "rain_max6h>1",
+      "antecedent_moisture>0.2",
+      "antecedent_moisture>0.5",
+      "peak_3d>0.5",
+      "peak_3d>1"
+     ],
+     "low": [
+      "precip_avg",
+      "rain_2d_cum",
+      "rain_3d_cum",
+      "rain_5d_cum",
+      "rain_7d_cum",
+      "rain_14d_cum",
+      "rain_30d_cum",
+      "rain_lag1d",
+      "rain_lag2d",
+      "rain_lag3d",
+      "rain_lag5d",
+      "rain_lag7d",
+      "antecedent_moisture",
+      "wet_prior_3d",
+      "peak_3d",
+      "dry_spell_days",
+      "rain_max1h",
+      "rain_max3h",
+      "rain_max6h",
+      "precip_avg>0.1",
+      "precip_avg>0.25",
+      "precip_avg>0.5",
+      "rain_2d_cum>0.25",
+      "rain_2d_cum>0.5",
+      "rain_2d_cum>1",
+      "rain_3d_cum>0.5",
+      "rain_3d_cum>1",
+      "rain_7d_cum>1",
+      "rain_max1h>0.05",
+      "rain_max1h>0.1",
+      "rain_max3h>0.1",
+      "rain_max3h>0.25",
+      "rain_max6h>0.25",
+      "rain_max6h>0.5",
+      "antecedent_moisture>0.1",
+      "antecedent_moisture>0.25",
+      "peak_3d>0.25",
+      "peak_3d>0.5"
+     ],
+     "high": [
+      "precip_avg",
+      "rain_2d_cum",
+      "rain_3d_cum",
+      "rain_5d_cum",
+      "rain_7d_cum",
+      "rain_14d_cum",
+      "rain_30d_cum",
+      "rain_lag1d",
+      "rain_lag2d",
+      "rain_lag3d",
+      "rain_lag5d",
+      "rain_lag7d",
+      "antecedent_moisture",
+      "wet_prior_3d",
+      "peak_3d",
+      "dry_spell_days",
+      "rain_max1h",
+      "rain_max3h",
+      "rain_max6h",
+      "precip_avg>0.5",
+      "precip_avg>1",
+      "precip_avg>1.5",
+      "rain_2d_cum>1",
+      "rain_2d_cum>1.5",
+      "rain_2d_cum>3",
+      "rain_3d_cum>1.5",
+      "rain_3d_cum>3",
+      "rain_7d_cum>3",
+      "rain_max1h>0.2",
+      "rain_max1h>0.3",
+      "rain_max3h>0.5",
+      "rain_max3h>1",
+      "rain_max6h>1",
+      "rain_max6h>1.5",
+      "antecedent_moisture>0.5",
+      "antecedent_moisture>1",
+      "peak_3d>1",
+      "peak_3d>1.5"
+     ]
+    }
+   },
+   "half": {
+    "kind": "bands",
+    "n_terms": 19,
+    "bends": {
+     "recorded": {
+      "precip_avg": [
+       0.25,
+       0.5,
+       1.0
+      ],
+      "rain_2d_cum": [
+       0.5,
+       1.0,
+       2.0
+      ],
+      "rain_3d_cum": [
+       1.0,
+       2.0
+      ],
+      "rain_5d_cum": [],
+      "rain_lag1d": [],
+      "rain_lag5d": [],
+      "wet_prior_3d": [],
+      "peak_3d": [
+       0.5,
+       1.0
+      ],
+      "dry_spell_days": []
+     },
+     "low": {
+      "precip_avg": [
+       0.1,
+       0.25,
+       0.5
+      ],
+      "rain_2d_cum": [
+       0.25,
+       0.5,
+       1.0
+      ],
+      "rain_3d_cum": [
+       0.5,
+       1.0
+      ],
+      "rain_5d_cum": [],
+      "rain_lag1d": [],
+      "rain_lag5d": [],
+      "wet_prior_3d": [],
+      "peak_3d": [
+       0.25,
+       0.5
+      ],
+      "dry_spell_days": []
+     },
+     "high": {
+      "precip_avg": [
+       0.5,
+       1.0,
+       1.5
+      ],
+      "rain_2d_cum": [
+       1.0,
+       1.5,
+       3.0
+      ],
+      "rain_3d_cum": [
+       1.5,
+       3.0
+      ],
+      "rain_5d_cum": [],
+      "rain_lag1d": [],
+      "rain_lag5d": [],
+      "wet_prior_3d": [],
+      "peak_3d": [
+       1.0,
+       1.5
+      ],
+      "dry_spell_days": []
+     }
+    },
+    "terms": {
+     "recorded": [
+      "precip_avg:0-0.25",
+      "precip_avg:0.25-0.5",
+      "precip_avg:0.5-1",
+      "precip_avg:1+",
+      "rain_2d_cum:0-0.5",
+      "rain_2d_cum:0.5-1",
+      "rain_2d_cum:1-2",
+      "rain_2d_cum:2+",
+      "rain_3d_cum:0-1",
+      "rain_3d_cum:1-2",
+      "rain_3d_cum:2+",
+      "rain_5d_cum:0+",
+      "rain_lag1d:0+",
+      "rain_lag5d:0+",
+      "wet_prior_3d:0+",
+      "peak_3d:0-0.5",
+      "peak_3d:0.5-1",
+      "peak_3d:1+",
+      "dry_spell_days:0+"
+     ],
+     "low": [
+      "precip_avg:0-0.1",
+      "precip_avg:0.1-0.25",
+      "precip_avg:0.25-0.5",
+      "precip_avg:0.5+",
+      "rain_2d_cum:0-0.25",
+      "rain_2d_cum:0.25-0.5",
+      "rain_2d_cum:0.5-1",
+      "rain_2d_cum:1+",
+      "rain_3d_cum:0-0.5",
+      "rain_3d_cum:0.5-1",
+      "rain_3d_cum:1+",
+      "rain_5d_cum:0+",
+      "rain_lag1d:0+",
+      "rain_lag5d:0+",
+      "wet_prior_3d:0+",
+      "peak_3d:0-0.25",
+      "peak_3d:0.25-0.5",
+      "peak_3d:0.5+",
+      "dry_spell_days:0+"
+     ],
+     "high": [
+      "precip_avg:0-0.5",
+      "precip_avg:0.5-1",
+      "precip_avg:1-1.5",
+      "precip_avg:1.5+",
+      "rain_2d_cum:0-1",
+      "rain_2d_cum:1-1.5",
+      "rain_2d_cum:1.5-3",
+      "rain_2d_cum:3+",
+      "rain_3d_cum:0-1.5",
+      "rain_3d_cum:1.5-3",
+      "rain_3d_cum:3+",
+      "rain_5d_cum:0+",
+      "rain_lag1d:0+",
+      "rain_lag5d:0+",
+      "wet_prior_3d:0+",
+      "peak_3d:0-1",
+      "peak_3d:1-1.5",
+      "peak_3d:1.5+",
+      "dry_spell_days:0+"
+     ]
+    }
+   },
+   "shared8": {
+    "kind": "bands",
+    "n_terms": 8,
+    "bends": {
+     "recorded": {
+      "precip_avg": [
+       0.5,
+       0.75,
+       1.0,
+       1.5
+      ],
+      "rain_lag1d": [
+       0.25,
+       0.5
+      ]
+     },
+     "low": {
+      "precip_avg": [
+       0.25,
+       0.5,
+       0.75,
+       1.0
+      ],
+      "rain_lag1d": [
+       0.1,
+       0.25
+      ]
+     },
+     "high": {
+      "precip_avg": [
+       0.75,
+       1.0,
+       1.5,
+       2.0
+      ],
+      "rain_lag1d": [
+       0.5,
+       1.0
+      ]
+     }
+    },
+    "terms": {
+     "recorded": [
+      "precip_avg:0-0.5",
+      "precip_avg:0.5-0.75",
+      "precip_avg:0.75-1",
+      "precip_avg:1-1.5",
+      "precip_avg:1.5+",
+      "rain_lag1d:0-0.25",
+      "rain_lag1d:0.25-0.5",
+      "rain_lag1d:0.5+"
+     ],
+     "low": [
+      "precip_avg:0-0.25",
+      "precip_avg:0.25-0.5",
+      "precip_avg:0.5-0.75",
+      "precip_avg:0.75-1",
+      "precip_avg:1+",
+      "rain_lag1d:0-0.1",
+      "rain_lag1d:0.1-0.25",
+      "rain_lag1d:0.25+"
+     ],
+     "high": [
+      "precip_avg:0-0.75",
+      "precip_avg:0.75-1",
+      "precip_avg:1-1.5",
+      "precip_avg:1.5-2",
+      "precip_avg:2+",
+      "rain_lag1d:0-0.5",
+      "rain_lag1d:0.5-1",
+      "rain_lag1d:1+"
+     ]
+    }
+   },
+   "four": {
+    "kind": "bands",
+    "n_terms": 9,
+    "bends": {
+     "recorded": {
+      "precip_avg": [
+       0.25,
+       0.5,
+       1.0
+      ],
+      "rain_lag1d": [
+       0.25,
+       0.5
+      ],
+      "rain_lag2d": [],
+      "rain_max3h": []
+     },
+     "low": {
+      "precip_avg": [
+       0.1,
+       0.25,
+       0.5
+      ],
+      "rain_lag1d": [
+       0.1,
+       0.25
+      ],
+      "rain_lag2d": [],
+      "rain_max3h": []
+     },
+     "high": {
+      "precip_avg": [
+       0.5,
+       1.0,
+       1.5
+      ],
+      "rain_lag1d": [
+       0.5,
+       1.0
+      ],
+      "rain_lag2d": [],
+      "rain_max3h": []
+     }
+    },
+    "terms": {
+     "recorded": [
+      "precip_avg:0-0.25",
+      "precip_avg:0.25-0.5",
+      "precip_avg:0.5-1",
+      "precip_avg:1+",
+      "rain_lag1d:0-0.25",
+      "rain_lag1d:0.25-0.5",
+      "rain_lag1d:0.5+",
+      "rain_lag2d:0+",
+      "rain_max3h:0+"
+     ],
+     "low": [
+      "precip_avg:0-0.1",
+      "precip_avg:0.1-0.25",
+      "precip_avg:0.25-0.5",
+      "precip_avg:0.5+",
+      "rain_lag1d:0-0.1",
+      "rain_lag1d:0.1-0.25",
+      "rain_lag1d:0.25+",
+      "rain_lag2d:0+",
+      "rain_max3h:0+"
+     ],
+     "high": [
+      "precip_avg:0-0.5",
+      "precip_avg:0.5-1",
+      "precip_avg:1-1.5",
+      "precip_avg:1.5+",
+      "rain_lag1d:0-0.5",
+      "rain_lag1d:0.5-1",
+      "rain_lag1d:1+",
+      "rain_lag2d:0+",
+      "rain_max3h:0+"
+     ]
+    }
+   }
+  },
+  "bend_options": [
+   "recorded",
+   "low",
+   "high"
+  ],
+  "C_grid": [
+   0.01,
+   0.03,
+   0.1,
+   0.3,
+   1.0
+  ],
+  "seasons": [
+   "2016-17",
+   "2017-18",
+   "2018-19",
+   "2019-20",
+   "2020-21",
+   "2021-22",
+   "2022-23",
+   "2023-24",
+   "2024-25"
+  ],
+  "south": {
+   "modes": [
+    "standalone",
+    "pooled"
+   ],
+   "pooled": "central's terms and weights, a South intercept and one scaled slope in [0, 10], unpenalised"
+  },
+  "choices": "per contender: bends shared by every basin, C per basin, the South mode; each minimises the inner leave-one-season-out basin-pooled Brier score (exact ties: the first option, the smaller C, standalone)",
+  "rule": "A5: the lowest basin-pooled Brier score wins; if the 90% storm-block CI of its difference to the next contender includes 0, the one of the two with fewer terms wins (a CI that cannot be drawn counts as including 0)",
+  "bootstrap": {
+   "B": 2000,
+   "seed": 0,
+   "level": 0.9,
+   "blocks": "truth.blocks (protocol \u00a76)"
+  },
+  "volume": {
+   "recipes": [
+    "loglinear",
+    "gbr"
+   ],
+   "loglinear_terms": [
+    "log1p(precip_avg)",
+    "log1p(rain_lag1d)",
+    "log1p(rain_max3h)"
+   ],
+   "floor": 20,
+   "fallback": "pooled_bayside_loglinear",
+   "fallback_facility": "Bayside",
+   "pick": "per basin, design \u00a76 change 7: log-linear replaces the GBR recipe unless it is worse (the 90% storm-block CI of \u0394 log-MAE, log-linear \u2212 GBR, on nine-season leave-one-season-out event days wholly above 0); development",
+   "vs_fallback": "protocol \u00a78 S2 volume: the picked head \u2212 the declared fallback on the same folds, every Bay-side basin; reported, never decided"
+  },
+  "input_rules": [
+   "gauge_outage_v1"
+  ],
+  "geography": "sfpuc4_v1"
+ }
+}

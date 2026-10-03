@@ -21,6 +21,7 @@ I = D − L the issue day of lead L:
                                                stitched short lead, tagged
                                                optimistic; 1–5 = Previous Runs)
   L0s, L1s    as L0 / L1, but the history features read only the 7 gauge days the live page holds
+              (under the history_full_v1 candidate rule, L0 / L1 exactly)
 
 ``oracle`` and ``rain`` are one input (rain known; protocol §3: the S2
 oracle is the rain that fell). The gauge days are train_v4.rain_series —
@@ -74,12 +75,38 @@ the dry spell (capped at the frame) — the known train/serve skew. Every other
 feature reads at most D − 7, which that frame holds, so it is the same in
 every lead entry: it is taken from the issue day's 13-row frame for all of
 them, and as served differs from lead L in HISTORY_FEATURES only, bit for bit
-(a test). ``history='full'`` is the ``history_full_v1`` candidate rule: the
-frame reaches FULL_PAST_DAYS = 35 days back, so the sums and antecedent
-moisture match training; a dry spell longer than the frame (36 + L days)
-still reads capped, which lead L does not (it carries the gauge record's
-count across the frame's start). Not emulated, so that L and Ls read the same
-inputs: the live page's KSFO hours for today; its outage mask, which runs on
+(a test).
+
+**history_full_v1** (``history='full'``; design §6 item 8) is the candidate
+rule that ends the skew. The frame reaches FULL_PAST_DAYS = 35 days back, so
+the 14- and 30-day sums and antecedent moisture read whole windows, and the
+dry spell is a carried count: when the frame is dry from its first day to D,
+the count adds the dry spell the gauges through I − 1 held on the frame's eve
+(I − 36), exactly as lead L carries it. A frame alone cannot do this: dry
+spells run to 188 days on the record (2019-11-25, as of 2026-08-17), and the
+design's 45-day ACIS window would still cap 192 of L1's 936 avg rows (the
+35-day frame capped 232). The carried count is one number the page can know
+at issue time: it is read off the gauges through I − 1, masked as the record
+through I − 1 masks them (``_issue_records``; no committed issue day needs
+that override, so a test makes an outage run uncallable and sees the carry
+follow it). The page must recompute it on each refresh from a gauge record
+that reaches past the spell's last wet day and the first day of any outage
+run touching the spell or the frame: up to 167 days before the issue day on
+the rows that exist (L0 issued 2023-09-26: its spell's last wet day,
+2023-05-06, lies inside the Oceanside run from 2023-04-12; for SF Oceanside a
+record starting at that wet day reads the spell as 144 days, not 143), as of
+2026-08-17, and never carry it over from an earlier refresh, whose record may
+not yet have masked an outage that the record through I − 1 does. So L0s / L1s under
+history_full_v1 ARE L0 / L1, every row, every column, bit for bit (a test):
+no row needs what the page could not know at issue time. Its near features
+stay the 13-row frame's, as in every lead entry, and the page must keep them
+so: run once over the longer frame, pandas' rolling sums round by the longer
+history, and wet_prior_3d (a 3-day sum above 0.1") flips to 1 on an exact
+0.10" sum, where the 13-row frame reads 0 (SF Downtown on 2025-02-10 and
+2026-01-31, at L0 and L1, every weather model, as of 2026-08-17; a test).
+
+Not emulated in any lead entry, so that L and Ls read the same inputs: the
+live page's KSFO hours for today; its outage mask, which runs on
 the 7 ACIS days it fetches rather than the record through I − 1 (the two
 masks differ on 119 of the 1,370 issue days 2022-11-17 → 2026-08-17, inside
 long outages whose start the 7 days cannot see; the whole-record mask differs
@@ -536,7 +563,7 @@ def _lead_tables(model: str, source: str, rules: tuple) -> dict:
     tf = _training_features(source, rules)
     near = _issue_features(gauge, fc, issues, SERVED_PAST_DAYS)
     full = _issue_features(gauge, fc, issues, FULL_PAST_DAYS)
-    # the gauge record's dry spell ending the day before the 35-day frame, for lead L's carry
+    # the gauge record's dry spell ending the day before the 35-day frame: lead L's (and history_full_v1's) carry
     dry_before = tf["dry_spell_days"].reindex(issues - (FULL_PAST_DAYS + 1) * _DAY).to_numpy(dtype=float)
     for I, (series, dry) in _issue_records(source, rules).items():   # the record as the issue day knew it
         k = int(issues.get_indexer([I])[0])
@@ -551,7 +578,11 @@ def _lead_tables(model: str, source: str, rules: tuple) -> dict:
 
 def _lead_values(model: str, source: str, rules: tuple, lead: int, served: bool, history: str,
                  dates: pd.DatetimeIndex) -> np.ndarray:
-    """[date, DAILY_FEATURES] for rows that exist (row status ''), per the entry's window."""
+    """[date, DAILY_FEATURES] for rows that exist (row status ''), per the entry's window: as served today,
+    every feature from the 13-row frame; lead L and history_full_v1, the history features from the 35-day
+    frame with the dry spell carried across its start (one code path, so the two are the same numbers)."""
+    if history not in HISTORY:
+        raise KeyError(f"unknown history {history!r}; known: {tuple(HISTORY)}")
     t = _lead_tables(model, source, rules)
     k = t["issues"].get_indexer(dates - lead * _DAY)
     if (k < 0).any():
@@ -559,17 +590,16 @@ def _lead_values(model: str, source: str, rules: tuple, lead: int, served: bool,
     col = {f: i for i, f in enumerate(RF.DAILY_FEATURES)}
     hist = [col[f] for f in HISTORY_FEATURES]
     vals = t["near"][k, lead, :].copy()                      # the near features: one frame for every lead entry
-    if served:
-        vals[:, hist] = t["near" if history == "served" else "full"][k, lead, :][:, hist]
-    else:
-        full = t["full"][k, lead, :]
-        vals[:, hist] = full[:, hist]
-        d = col["dry_spell_days"]
-        whole = full[:, d] == FULL_PAST_DAYS + lead + 1      # dry from the frame's first day to D: carry the record's count
-        before = t["dry_before"][k]
-        if np.isnan(before[whole]).any():
-            raise AssertionError("the gauge record's dry spell is missing before a frame")
-        vals[whole, d] = full[whole, d] + before[whole]
+    if served and history == "served":
+        return vals                                          # the page today: history truncated at 7 past days
+    full = t["full"][k, lead, :]
+    vals[:, hist] = full[:, hist]
+    d = col["dry_spell_days"]
+    whole = full[:, d] == FULL_PAST_DAYS + lead + 1          # dry from the frame's first day to D: carry the record's count
+    before = t["dry_before"][k]
+    if np.isnan(before[whole]).any():
+        raise AssertionError("the gauge record's dry spell is missing before a frame")
+    vals[whole, d] = full[whole, d] + before[whole]
     return vals
 
 
@@ -607,7 +637,8 @@ def frames(entry: str, sources, model: str = "icon_seamless", start=None, end=No
 
     ``model``: the weather model of the lead entries (ignored by oracle / rain). ``input_rules``: the gauge
     rules (default gauge_outage_v1, every day; () = the raw record). ``history``: as-served entries only —
-    'served' (7 past days, the page today) or 'full' (history_full_v1, 35 days). Each frame's attrs say
+    'served' (7 past days, the page today) or 'full' (history_full_v1: 35 days and the carried dry spell,
+    so L0s / L1s read exactly L0 / L1's features; only attrs "entry" and "history" tell them apart). Each frame's attrs say
     what it is: entry, model, history, input_rules, lead_kind (None for rain known; 'short_lead_optimistic'
     for L0 / L0s, which protocol §3 tags optimistic; 'fixed_lead' for L1 … L5 / L1s), source, span [first,
     last], dropped {reason: [[first, last], …]} (``drops`` gives the days one by one, with the model-day

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """stages_build — every stage of one set, scored on days no fitted component saw
-(P7 orchestration; STAGES_DESIGN.md Part C §7 "How the rows are produced" and the
-artifacts schema, as amended by Part A A3 (no alert_lines.json) and Part B 1, 2,
-9, 14, 16; STAGES_PROTOCOL.md stages_v2 §2–§8, which rules where they differ).
+(P7 orchestration and P8's scoring of stage candidates; STAGES_DESIGN.md Part C §7
+"How the rows are produced" and the artifacts schema, as amended by Part A A3 (no
+alert_lines.json) and Part B 1, 2, 7, 9, 13, 14, 16; STAGES_PROTOCOL.md stages_v3
+§2–§9, which rules where they differ).
 
 The pieces were built and reviewed on their own; this module composes them and
 adds only what no single piece can decide:
@@ -110,23 +111,91 @@ development; an existing set's S2 development (selection-contaminated), protocol
 rule (basin_swap = live_v2) on the perfect feed and the degraded feeds' mean. A
 set the build does not refit per season shows what it has (FIGURE_FALLBACK).
 Each pill carries the words for its window and its post-training cell (T1, with
-its CI) for the tooltip; S3's chained pill is lead 1 on the oracle's rows (every
-day in the tooltip); S5's tooltip adds link/zone injection; the figure carries a
-one-line caption. scores["figures"] keeps one figure per window, and
-scores["figure_counts"] adds S5's own rules from the build's rows (0 where the
-rows never hit one) to the truth catalog's counts.
+its CI) for the tooltip; for a GEO_V1 set the post-training words say those days
+also picked the served set, so scores on them favour it (X-SEL post_selected);
+S3's chained pill is lead 1 on the oracle's rows (every day in the tooltip); S5's
+tooltip adds link/zone injection; the figure carries a one-line caption.
+scores["figures"] keeps one figure per window, and scores["figure_counts"] adds
+S5's own rules from the build's rows to the truth catalog's counts: the chip
+counts the perfect feed in S5's window, so each count is distinct zone-days (0
+where the rows never hit a rule), and its tooltip gives every feed's own
+(``s5_feed_counts``).
+
+**Stage candidates (``--root stages_candidates``; Part B 13, 14; design §7).** A
+set under data/models/stages_candidates/<name>/ is read through
+stages_candidates.load_set, which asserts its stamps, keys, sha256s and weights
+≥ 0 (``local_load_set``, the same contract, when that module is absent), then
+``from_saved`` turns it into what the build scores (``StageCandidate``):
+geography from the manifest (G.stamped; SFPUC4_V1's basins westside,
+north_shore, central, south; no GEO_V1 adapter), and per fold — S2 from the
+candidate's own fits, never refit here: T1 its finals, T1-holdout its siblings
+fit before 2023-07-01, T2 the bake-off's outer-fold rows (stages_s2_sfpuc4's
+nested procedure, rain known; the s2 section names the bake-off), so a T2 fold
+has no lead entry and no warm-up before its season (S4 / OUT start a week in,
+counted in scores["dropped"]); S3 and S4 from the spec files' per-fold records
+(stages_s3_links.fold_spec; s4_quality.json's fit.folds), each fit span checked
+against its fold (``check_fit_span``), and the S2 its shares were fit on recorded
+(``s3_fit_s2``: a development stand-in, or a spec that does not say, puts a
+caveat on S3's primaries, Part B 2), and the link shares φ S4's size classes were
+fit at beside the S3 spec's (``s4_fit_sizes``: S4 fit = S4 use, Part B 6; a
+mismatch puts a caveat on S4's and OUT's primaries). A volume head under the 20-event floor must
+be the declared fallback in every fold, a T2 outer fold's head as the bake-off
+records it (``t2_head_records``; Part B 7: the build fails only if no declared
+fallback exists). The build's rain-known S2 must reproduce the bake-off's own rows
+of those finals and siblings on every tier the served-recipe arm also holds
+(``bakeoff_fidelity``), and the recipe's rows must carry the build's labels
+(``s2_vs_recipe``), so the served-recipe arm read the same inputs (Part B 16).
+S5 runs without live_v2's rule sets (basin_swap and
+its kin, stages_s5.LIVE_V2: GEO_V1's basins only). A zone_v3 S4 background reads the two-gauge
+rain D−2…D the entry knew: rain known for oracle / rain (and S5); for a lead
+entry the issue day's own (the entry frame's precip_avg and lags on D: gauges
+before I, the forecast from I), so a lead's S4 is q = 1 − (1 − b(D))·(1 − q₀(D)),
+q₀ composed on the stacked issue-day windows with no background
+(``issue_levels``). Rows are written for stage candidates too (design §7's size
+budget).
+
+**Comparisons (protocol §8; scores["paired"]).** ``vs_served``: candidate − served
+on the unit-days both scored, from the served set's written rows; across
+geographies only the geography-invariant targets (S3 zones, S4, OUT), never
+basin-level S2. ``s2_vs_recipe``: S2 within the candidate's geography, candidate −
+the served recipe refit on its labels (the bake-off's served-recipe rows), on
+(tier, fold, basin, day). ``s3b_vs_constant``: the S3 oracle on the Westside
+split's zones, the candidate's shares − its constant-share benchmark (both fit
+per fold by stages_s3_links), with the 95% CI Holm's first step reads.
+
+**Primaries and the promotion criteria (protocol §8, §9).** scores["primaries"]
+holds one row per §8 row, its comparison, entry, window and rule in the protocol's
+words (read from the frozen file), the computed Δ with its 90% storm-block CI,
+P(Δ < 0), MDE and margin, and a status: pass | fail | not yet computable | not
+applicable, with the reason; a row whose component is the served set's is not
+applicable, its computed status kept (``settle_unchanged``: §9.1 reads changed
+components). S3a and S3b are one Holm family (``holm``); S4's non-inferiority
+route needs its oracle not worse than its chained, and says whether the served table shows the
+oracle-worse-than-chained defect at all, both S4s' chained − oracle on the same rows (``s4_defect``;
+where the served table shows none, the fix is not tested: a caveat on S4's row alone, the owner's
+reading; ``s4_status``); S2 volume
+is decided by the fallback's existence, the bake-off's head − fallback Δ log-MAE
+per basin beside it (``vs_fallback``); S5 is read
+from the set's own build where basin_swap exists (GEO_V1), else from the served
+set's, with a caveat that it tests the rule on the served set's chain, and decides only for the
+component it tests (link_zone_swap), as S4's row does for S4 v3; OUT is T1 post-training
+alone and says why (T0 holds no day before the data end). A stage candidate's S2 T2 is
+labelled 'development (nested)' (``t2_label``): the A5 procedure's outer-fold rows. scores["promotion"]
+states each §9 criterion as met | not met | not yet computable, with the reason.
+It decides nothing: replacing the served set is the owner's action.
 
 **Artifacts (``write``):** data/models/stages/<set>/manifest.json, scores.json,
-and rows.csv.gz for the served set only. Nothing else in data/models/ is
-written. The manifest holds the sha256 of every input file and of every module
+and rows.csv.gz for the served set and stage candidates. Nothing else in
+data/models/ is written. The manifest holds the sha256 of every input file and of every module
 of this repository the build imported (``stale_files``): a change to either
 makes the artifacts stale until the build is rerun (the served set first: a
-candidate's vs_served reads its rows). s1_scores.json is pinned by its content
+candidate's vs_served reads its rows, so every other set's manifest pins the
+served set's rows.csv.gz and scores.json too). s1_scores.json is pinned by its content
 without built_at (``input_sha``), so rebuilding S1 on unchanged data stales
 nothing. ``preview`` draws the scored figure (stages_flowchart.page) into an
 HTML file that no route serves (default: the system temp directory, outside the repo).
 
-    venv/bin/python features/forecast/src/models/stages_build.py --set served [--root served|candidates]
+    venv/bin/python features/forecast/src/models/stages_build.py --set served [--root served|candidates|stages_candidates]
         [--entries oracle,rain,L1] [--tiers T1,T2] [--steps s2,s3,s4,out,s5,scores] [--write] [--preview PATH]
 """
 from __future__ import annotations
@@ -138,6 +207,7 @@ import gzip
 import hashlib
 import io
 import json
+import re
 import sys
 import tempfile
 import time
@@ -172,13 +242,20 @@ import verify as V  # noqa: E402
 from shared import clock  # noqa: E402
 from shared import geography as G  # noqa: E402
 from shared import risk_levels as RL  # noqa: E402
+from shared.stations import STATIONS  # noqa: E402
 from shared.zones import ZONES  # noqa: E402
 
 SCHEMA = "bwtf.stages/1"
 SCORES_SCHEMA = "bwtf.stages.scores/1"
 STAGES_DIR = FORECAST / "data" / "models" / "stages"            # the only place this module writes
+STAGES_CANDIDATES_DIR = FORECAST / "data" / "models" / "stages_candidates"   # read only (Part B 13)
 S1_SCORES = STAGES_DIR / "_s1" / "s1_scores.json"
-ROOTS = S2.ROOTS
+STAGE_ROOT = "stages_candidates"
+ROOTS = S2.ROOTS + (STAGE_ROOT,)
+STAGE_PIPELINE = "stages_v1"                       # design §2.6: a stage candidate's pipeline stamp
+COMPONENTS = ("s1", "s2", "s3", "s4", "s5")        # design §2.7: manifest components
+S5_INCUMBENT = S5.PRIMARY[1]                       # basin_swap = live_v2: GEO_V1's basins and legacy groups only
+S3B_BASIN = "westside"                             # protocol §8 S3b: the Westside split (its key in every geography)
 TIERS = S2.TIERS                                   # T1, T1-holdout, T2 (T0 is graded from forecast_history)
 ENTRIES = X.ENTRIES                                # oracle, rain, L0 … L5, L0s, L1s
 STEPS = ("s2", "s3", "s4", "out", "s5", "scores")
@@ -211,15 +288,17 @@ FLOAT_FORMAT = "%.6g"                              # rows.csv.gz: 6 significant 
 @dataclass(frozen=True)
 class SetBundle:
     """What a set scores with: its S2 components (stages_s2.S2Set), its stage 2 spec (None = v1, no split), the
-    T1 S3 / S4 specs (its own artifacts), and the rain sources the served S3 / S4 fitters read."""
+    T1 S3 / S4 specs (its own artifacts), and the rain sources the served S3 / S4 fitters read. A stage candidate
+    (``stage``) carries its own folds and specs instead: no stage 2 spec, no variant, no GEO_V1 fitter."""
     name: str
     root: str
     s2: S2.S2Set
     stage2: dict | None
-    variant: str                                   # 'v1' | 'v2'
-    t1_specs: dict                                 # {"s3", "s4"}: compose_v2's GEO_V1 adapter on the set's artifacts
+    variant: str | None                            # 'v1' | 'v2'; None for a stage candidate
+    t1_specs: dict | None                          # {"s3", "s4"}: the GEO_V1 adapter on the set's artifacts, or the stage set's T1
     chosen: dict                                   # basin name → rain source, as stage2_variants fit the split
     descriptor: dict
+    stage: StageCandidate | None = None
 
     @property
     def geo(self) -> G.Geography:
@@ -244,10 +323,22 @@ def resolve(set_name: str, root: str = "served") -> str:
     return set_name
 
 
-def load_set(set_name: str, root: str = "served") -> SetBundle:
+def load_set(set_name: str, root: str = "served", stage_set=None) -> SetBundle:
     """Load the set and assert its stamps: stages_s2.load_set (geography, family, training end, rain sources,
     pickles), then the stage 2 spec the set composes with — the served bundle's stage2.json, which served.json's
-    'stage2' must name, or a candidate's (candidates.load_stage2: none = v1), whose manifest must agree."""
+    'stage2' must name, or a candidate's (candidates.load_stage2: none = v1), whose manifest must agree. Under
+    root stages_candidates: ``load_stage_candidate`` (or ``stage_set``: a StageCandidate, or the StageSet
+    stages_candidates.load_set returned)."""
+    if root == STAGE_ROOT:
+        if stage_set is None:
+            st = load_stage_candidate(set_name)
+        else:
+            st = stage_set if isinstance(stage_set, StageCandidate) else from_saved(stage_set)
+        if st.name != set_name:
+            raise ValueError(f"the stage candidate is {st.name!r}, asked for {set_name!r}")
+        return SetBundle(st.name, root, st.s2, None, None, st.specs.get(("T1", S2.FOLD_FINAL)), {}, st.manifest, st)
+    if stage_set is not None:
+        raise ValueError(f"a stage set is scored under --root {STAGE_ROOT}, not {root!r}")
     name = resolve(set_name, root)
     s2set = S2.load_set(name, root)                            # the stamps: geography (G.stamped), family, training end
     geo = s2set.geo
@@ -280,10 +371,654 @@ def load_set(set_name: str, root: str = "served") -> SetBundle:
 
 
 def components(bundle: SetBundle) -> dict:
-    """Design §2.7: the components behind each stage, by name."""
+    """Design §2.7: the components behind each stage, by name (a stage candidate's from its manifest)."""
+    if bundle.stage is not None:
+        return {c: bundle.stage.manifest["components"][c] for c in COMPONENTS}
     return {"s1": E.served_weather_model(), "s2": bundle.s2.stage1,
             "s3": "split_v2" if bundle.variant == "v2" else "basin_v1",
             "s4": "impact_v2" if bundle.variant == "v2" else "impact_v1", "s5": S5.LR.VERSION}
+
+
+# ── stage candidates (P8; Part B 13; design §7) ─────────────────────────────
+
+# stages_s2_sfpuc4.run's arms in the bake-off's rows.csv.gz: the nested procedure's outer-fold rows are the
+# candidate's T2 S2; the served recipe refit on the same labels is the S2 primary's other arm, per window
+RECIPE_ARMS = {"T2": "served_recipe", "T1": "t1:served_recipe", "T1-holdout": "t1h:served_recipe"}
+BAKEOFF_ROWS = ("arm", "contender", "date", "basin", "tier", "fold", "p", "v_hat", "y", "excl")
+T2_ARM = "procedure"
+SAVER_STAMPS = ("set", "component")                # what stages_candidates adds that compose_v2's checks do not know
+
+
+@dataclass(frozen=True)
+class StageS2Set(S2.S2Set):
+    """stages_s2.S2Set for a stage candidate: an entry frame must hold every column that some fold's weights or
+    head reads, not only the finals' (``parts``: the other model folds' (weights, heads))."""
+    parts: tuple = ()
+
+    def _all(self) -> tuple:
+        return ((self.models, self.heads),) + tuple(self.parts)
+
+    @property
+    def sources(self) -> tuple:
+        return tuple(sorted({d[k]["rain_source"] for w, h in self._all() for d in (w, h) for k in self.keys}))
+
+    def features(self, source: str) -> list:
+        cols = []
+        for w, h in self._all():
+            for k in self.keys:
+                if w[k]["rain_source"] == source:
+                    cols += list(w[k]["features"]) + ["rain_3d_cum"]
+                if h[k]["rain_source"] == source:
+                    cols += list(h[k]["features"])
+        return list(dict.fromkeys(cols))
+
+
+@dataclass(frozen=True)
+class StageCandidate:
+    """A stage candidate as the build scores it, from stages_candidates.load_set (``from_saved``):
+
+        s2         the finals (T1) as a stages_s2.S2Set, keyed by the geography's basins
+        folds      stages_s2.Fold per (tier, fold) the build composes: T1 'final' and T1-holdout 'pre_holdout'
+                   from the saved models and heads; T2 '2016-17' … '2024-25' from the bake-off's outer-fold
+                   rows (no weights: ``t2`` holds what they predicted), each with the days its parts may have seen
+        t2         the bake-off's T2 rows (date, basin, tier, fold, p, v_hat): rain known only, so a T2 fold has
+                   no lead entry and no warm-up before its season's first day
+        specs      (tier, fold) → {"s3", "s4"}, rebuilt from s3_links.json / s4_quality.json's per-fold records
+        s3b        (tier, fold) → S3b's constant-share spec (stages_s3_links.fold_spec, arm 'constant')
+        reference  the served recipe refit on the candidate's labels (date, basin, tier, fold, p, y): the S2
+                   primary's other arm (protocol §8), from the same bake-off rows (y the labels the bake-off read)
+        files      every file read (the candidate's and the bake-off's), for the manifest's sha256s
+        heads_used (tier, fold) → {basin: the head's kind} (the declared fallback where a basin is under the floor),
+                   every fold: T2's from the bake-off's record of each outer fold's head (``t2_head_records``)
+        own_rows   the bake-off's rows of the candidate's own finals and siblings (date, basin, tier, fold, p): the
+                   build's S2 must reproduce them, so the served-recipe arm saw the same inputs (Part B 16)
+        s3_s2      the S2 whose v̂ (and Central / South p) the S3 shares and union rule were fit on, as s3_links.json
+                   says (``s3_fit_s2``): a development stand-in, or a spec that does not say, is scored with a
+                   caveat (Part B 2)
+        head_records (tier, fold) → {basin: {kind, n_events}}: the heads Part B 7's floor rule was checked on
+        s4_sizes   (tier, fold) → the link shares φ S4's size classes were fit at beside the S3 spec's
+                   (``s4_fit_sizes``): a mismatch, or records that do not say, puts a caveat on S4 and OUT"""
+    name: str
+    manifest: dict
+    s2: S2.S2Set
+    folds: tuple
+    t2: pd.DataFrame | None
+    specs: dict
+    s3b: dict
+    reference: pd.DataFrame | None
+    files: tuple = ()
+    heads_used: dict = field(default_factory=dict)
+    bakeoff: dict = field(default_factory=dict)
+    own_rows: pd.DataFrame | None = None
+    s3_s2: dict = field(default_factory=dict)      # which S2 the S3 shares were fit on (``s3_fit_s2``)
+    head_records: dict = field(default_factory=dict)   # (tier, fold) → {basin: {kind, n_events}} (Part B 7)
+    s4_sizes: dict = field(default_factory=dict)       # (tier, fold) → the φ S4 was fit at vs S3's (``s4_fit_sizes``)
+
+    @property
+    def geo(self) -> G.Geography:
+        return self.s2.geo
+
+    @property
+    def nested(self) -> bool:
+        """Whether its T2 choices were made inside the inner folds (protocol §2): the S2 section says so in the
+        bake-off's own words (stages_s2_sfpuc4.T2_NESTED)."""
+        import stages_s2_sfpuc4 as S2C  # noqa: PLC0415
+        return (self.manifest.get("s2") or {}).get("t2") == S2C.T2_NESTED
+
+    def is_rows_fold(self, fold: S2.Fold) -> bool:
+        return not fold.weights
+
+
+def _saved_spec(saved: dict) -> dict:
+    """A spec file as stages_candidates saved it, its saver stamps (set, component) checked and dropped."""
+    missing = [k for k in SAVER_STAMPS if k not in saved]
+    if missing:
+        raise KeyError(f"a saved spec carries the saver's stamps; this one lacks {missing}")
+    return {k: v for k, v in saved.items() if k not in SAVER_STAMPS}
+
+
+def _fold_records(spec: dict, what: str) -> dict:
+    """(tier, fold) → the spec's per-fold record (its fit block's 'folds'), every key once."""
+    recs = (spec.get("fit") or {}).get("folds")
+    if not isinstance(recs, list) or not recs:
+        raise KeyError(f"{what}: no per-fold records (fit.folds), so no fold's spec can be rebuilt (Part B 1)")
+    out = {}
+    for r in recs:
+        key = (r["tier"], r["fold"])
+        if key in out:
+            raise ValueError(f"{what}: fold {key} recorded twice")
+        out[key] = r
+    return out
+
+
+def s3_fold_specs(saved: dict, geo, keys) -> tuple:
+    """({fold: S3 spec}, {fold: S3b's constant-share spec}) from a saved s3_links.json: stages_s3_links.fold_spec
+    for each fold, its ``fit`` set from the record (train_seasons, share_fit_span) so check_fit_span can read it."""
+    import stages_s3_links as S3L  # noqa: PLC0415  (P8b; read only when a stage candidate is scored)
+    spec = _saved_spec(saved)
+    recs = _fold_records(spec, "s3_links.json")
+    out, bench = {}, {}
+    for key in keys:
+        if key not in recs:
+            raise KeyError(f"s3_links.json has no record of fold {key}: refit S3 for it (Part B 1)")
+        r = recs[key]
+        fit = {"span": r.get("share_fit_span"), "seasons": r.get("train_seasons"), "tier": key[0], "fold": key[1]}
+        out[key] = C.check_s3_spec({**S3L.fold_spec(spec, *key), "fit": fit}, geo)
+        bench[key] = C.check_s3_spec({**S3L.fold_spec(spec, *key, arm="constant"), "fit": fit}, geo)
+    return out, bench
+
+
+def s4_fold_spec(saved: dict, key: tuple, geo) -> dict:
+    """One fold's S4 spec from a saved s4_quality.json: the finals' spec with the fold's record (stages_s4_v3's
+    _fold_record: background coefficients, buckets, zone medians, fit span and seasons) in place, checked."""
+    spec = _saved_spec(saved)
+    r = _fold_records(spec, "s4_quality.json").get(key)
+    if r is None:
+        raise KeyError(f"s4_quality.json has no record of fold {key}: refit S4 for it (Part B 1)")
+    top = {k: v for k, v in spec.items() if k != "fit"}
+    out = {**top, "background": {**top["background"], "coef": r["background"]}, "buckets": r["buckets"],
+           "zone_median_mg": r["zone_median_mg"],
+           "fit": {"span": r.get("fit_span"), "seasons": r.get("fit_seasons"), "tier": key[0], "fold": key[1]}}
+    return C.check_s4_spec(out, geo)
+
+
+def bakeoff_files(man: dict, name: str) -> tuple:
+    """(results.json, rows.csv.gz) of the bake-off the candidate's S2 section names (s2.bakeoff)."""
+    rel = man["s2"]["bakeoff"]
+    if not rel:
+        raise KeyError(f"{name}: the manifest's s2 section names no bake-off (s2.bakeoff), so T2 has no rows")
+    p = Path(rel)
+    p = p if p.is_absolute() else REPO / p
+    rows = p.parent / "rows.csv.gz"
+    for f in (p, rows):
+        if not f.exists():
+            raise FileNotFoundError(f"{name}: the bake-off file {f} is missing")
+    return p, rows
+
+
+def bakeoff_rows(path: Path, geo) -> pd.DataFrame:
+    """The bake-off's rows.csv.gz (stages_s2_sfpuc4.write_results), its columns, basins and tiers checked."""
+    r = pd.read_csv(path, parse_dates=["date"], keep_default_na=False, na_values=[""], low_memory=False)
+    if list(r.columns) != list(BAKEOFF_ROWS):
+        raise ValueError(f"{path.name}: columns {list(r.columns)}, not {list(BAKEOFF_ROWS)}")
+    bad = set(r["basin"]) - set(geo.keys)
+    if bad:
+        raise KeyError(f"{path.name}: basins {sorted(bad)} are not {geo.version}'s")
+    if set(r["tier"]) - set(TIERS):
+        raise ValueError(f"{path.name}: tiers {sorted(set(r['tier']) - set(TIERS))}; known {TIERS}")
+    return r
+
+
+DEV_S2_PREFIX = "dev:"                             # stages_s3_links.dev_s2 names its development stand-in "dev:<set>"
+
+
+def s3_fit_s2(saved_s3: dict) -> dict:
+    """{name, stand_in}: the S2 an s3_links.json's shares and union rule were fit on (its sources.s2, as
+    stages_s3_links writes it). Part B 2 fits shares on v̂ the way they are used, so a spec fit on the development
+    stand-in ('dev:…') is scored but carries a caveat until the assemble step refits it on the candidate's own S2;
+    a spec that does not say is reported as unknown (None)."""
+    s2 = (saved_s3.get("sources") or {}).get("s2")
+    if not isinstance(s2, dict) or not s2.get("name"):
+        return {"name": None, "stand_in": None, "note": "s3_links.json does not say which S2 its shares were fit on"}
+    return {"name": str(s2["name"]), "stand_in": str(s2["name"]).startswith(DEV_S2_PREFIX)}
+
+
+PHI_TOL = 1e-9                                     # two specs' link shares φ as json floats
+
+
+def s4_fit_sizes(saved_s4: dict, specs: dict) -> dict:
+    """(tier, fold) → {s4, s3, match}: the link shares φ an s4_quality.json fold record says its size classes were
+    fit at (fit.folds[].vol_share: compose_v2's zone size is the largest φ-sized link per feeding basin) beside the
+    φ of the S3 spec the build composes that fold with. S4 fit = S4 use (Part B 6): a zone median and its buckets
+    fit on sizes at one φ read wrongly at another. match None: the record does not say."""
+    recs = _fold_records(_saved_spec(saved_s4), "s4_quality.json")
+    out = {}
+    for key, sp in specs.items():
+        s3_phi = {lid: float(ln["vol_share"]) for lid, ln in sp["s3"]["links"].items()}
+        rec_phi = (recs.get(key) or {}).get("vol_share")
+        if not isinstance(rec_phi, dict):
+            out[key] = {"s4": None, "s3": s3_phi, "match": None}
+            continue
+        s4_phi = {lid: float(v) for lid, v in rec_phi.items()}
+        same = set(s4_phi) == set(s3_phi) and all(abs(s4_phi[k] - s3_phi[k]) <= PHI_TOL for k in s3_phi)
+        out[key] = {"s4": s4_phi, "s3": s3_phi, "match": bool(same)}
+    return out
+
+
+def s4_size_caveat(sizes: dict) -> str | None:
+    """The caveat S4's and OUT's primaries carry when S4's size classes were fit at other link shares than the S3
+    spec sizes them with (``s4_fit_sizes``), or the S4 records do not say; None when every fold matches."""
+    off = [f"{t} {fo}" for (t, fo), s in sorted(sizes.items()) if s["match"] is False]
+    unknown = [f"{t} {fo}" for (t, fo), s in sorted(sizes.items()) if s["match"] is None]
+    if off:
+        t, fo = next(k for k, s in sorted(sizes.items()) if s["match"] is False)
+        s = sizes[(t, fo)]
+        diff = ", ".join(f"{lid} {s['s4'].get(lid)} vs {v:.3g}" for lid, v in s["s3"].items()
+                         if s["s4"].get(lid) is None or abs(s["s4"][lid] - v) > PHI_TOL)
+        return (f"S4's size classes were fit on zone sizes at other link shares than the S3 spec it composes with sizes "
+                f"them at ({len(off)} of {len(sizes)} folds; {t} {fo}: φ {diff}): S4 fit ≠ S4 use (Part B 6), so this "
+                "score, and OUT's, which reads the same table, is not the candidate's own until S4 is refit on its S3's sizes")
+    if unknown:
+        return (f"s4_quality.json does not say which link shares its size classes were fit at (fit.folds[].vol_share) in "
+                f"{len(unknown)} of {len(sizes)} folds, so S4 fit = S4 use (Part B 6) is unchecked for this score")
+    return None
+
+
+def s3_fit_caveat(s3s2: dict, own_s2: str, cand_name: str) -> str | None:
+    """The caveat S3's primaries carry from ``s3_fit_s2`` (Part B 2: shares fit on the v̂ they are used with): a
+    development stand-in, a spec that does not say which S2 it was fit on (never read as the candidate's own), or
+    one naming another S2 than the candidate's (its set name or its S2 component); None when it names the
+    candidate's own."""
+    name = s3s2.get("name")
+    if s3s2.get("stand_in"):
+        return (f"S3's shares and union rule were fit on the development stand-in S2 {name!r}, not the candidate's "
+                f"own ({own_s2}): Part B 2 fits them on the v̂ they are used with, so this S3 score is not the candidate's "
+                "own until they are refit on its S2")
+    if name is None:
+        return ("s3_links.json does not say which S2 its shares and union rule were fit on, so Part B 2 (fit on the v̂ they "
+                f"are used with, the candidate's {own_s2}) is unchecked for this score")
+    if name not in (cand_name, own_s2):
+        return (f"S3's shares and union rule were fit on the S2 {name!r}, not the candidate's own ({cand_name}: {own_s2}): "
+                "Part B 2 fits them on the v̂ they are used with")
+    return None
+
+
+def _check_rows(r: pd.DataFrame, what: str, geo, v_hat: bool, keep_y: bool = False) -> pd.DataFrame:
+    """Out-of-fold predictions as a fold's S2: every (tier, basin, day) once, each day inside its fold's window
+    (a T2 fold's own season), every basin on every day, p in [0, 1] (and v̂ ≥ 0, finite) — or it raises.
+    ``keep_y``: the label the rows carry too (NaN where the bake-off left it unknown)."""
+    r = r.copy()
+    r["date"] = pd.DatetimeIndex(r["date"])
+    if r.duplicated(["tier", "basin", "date"]).any():
+        raise ValueError(f"{what}: a (tier, basin, day) appears twice")
+    for (t, fo), g in r.groupby(["tier", "fold"], sort=False):
+        start, end, season = fold_window(t, fo)
+        d = pd.DatetimeIndex(g["date"])
+        if (d < start).any() or (d > end).any():
+            raise ValueError(f"{what}: {t} {fo} holds a day outside {start.date()} → {end.date()}")
+        per = g.groupby("basin")["date"].apply(lambda x: frozenset(x))
+        if set(per.index) != set(geo.keys) or len(set(per)) != 1:
+            raise ValueError(f"{what}: {t} {fo} does not hold every basin on the same days")
+    cols = ["p", "v_hat"] if v_hat else ["p"]
+    vals = r[cols].to_numpy(dtype=float)
+    if not np.isfinite(vals).all() or (r["p"] < 0).any() or (r["p"] > 1).any() or (v_hat and (r["v_hat"] < 0).any()):
+        raise ValueError(f"{what}: a p outside [0, 1] or a missing / negative v̂")
+    if keep_y:
+        y = pd.to_numeric(r["y"], errors="raise").to_numpy(dtype=float)
+        if not np.isin(y[np.isfinite(y)], (0.0, 1.0)).all():
+            raise ValueError(f"{what}: a label that is neither 0, 1 nor unknown")
+        cols = cols + ["y"]
+    return r[["date", "basin", "tier", "fold"] + cols].reset_index(drop=True)
+
+
+def _head_kind(h: dict) -> str:
+    return str(h.get("kind", ""))
+
+
+def t2_head_records(results: dict, fold: str, geo, name: str) -> dict:
+    """{basin: {kind, n_events}} of a T2 outer fold's volume heads, as the bake-off records them (results.json's
+    volume.per_basin[basin].recipes[picked].folds: the picked recipe's head fit without that season, whose v̂ the
+    procedure's rows carry), so Part B 7's floor rule is checked on every scored fold, T2 included. A basin or fold
+    the record lacks raises: the rule is never assumed to hold."""
+    per = (results.get("volume") or {}).get("per_basin")
+    if not isinstance(per, dict):
+        raise KeyError(f"{name}: the bake-off's results.json has no volume.per_basin, so T2's volume heads are unchecked "
+                       "(Part B 7)")
+    out = {}
+    for k in geo.keys:
+        b = per.get(k) or {}
+        rec = (((b.get("recipes") or {}).get(b.get("picked")) or {}).get("folds") or {}).get(fold)
+        if not isinstance(rec, dict) or "kind" not in rec or "n_events" not in rec:
+            raise KeyError(f"{name} T2 {fold} {k}: the bake-off records no head (kind, n_events) of its picked volume "
+                           f"recipe {b.get('picked')!r} for this fold, so Part B 7's floor rule cannot be checked")
+        out[k] = {"kind": rec["kind"], "n_events": rec["n_events"]}
+    return out
+
+
+def check_heads(name: str, key: tuple, heads: dict) -> dict:
+    """{basin: head kind} after Part B 7's rule: a head under the 20-event floor must be the declared fallback (the
+    bake-off's pooled Bay-side log-linear head); a basin under the floor without one fails the build. ``heads``:
+    the fold's head dicts, or (T2) the bake-off's records of them (``t2_head_records``)."""
+    import stages_s2_sfpuc4 as S2C  # noqa: PLC0415  (P8a: the declared fallback's kind)
+    out = {}
+    for k, h in heads.items():
+        n = h.get("n_events")
+        if n is None:
+            raise KeyError(f"{name} {key} {k}: the head states no n_events")
+        if int(n) < S2.HEAD_MIN_EVENTS and _head_kind(h) != S2C.FALLBACK_KIND:
+            raise ValueError(f"{name} {key} {k}: {n} known-volume events, under the {S2.HEAD_MIN_EVENTS}-event floor, and "
+                             f"its head is {_head_kind(h)!r}, not the declared fallback {S2C.FALLBACK_KIND!r}: the build "
+                             "fails only if no declared fallback exists (Part B 7)")
+        out[k] = _head_kind(h)
+    return out
+
+
+def from_saved(saved, seasons=None) -> StageCandidate:
+    """A StageCandidate from stages_candidates.load_set's StageSet (its stamps, keys, sha256s and weights ≥ 0 are
+    asserted there): S2 finals and holdout siblings as model folds, the T2 rows and the served-recipe arm from the
+    bake-off its s2 section names, and every fold's S3 / S4 spec from the spec files' per-fold records, each fit
+    span checked against its fold (check_fit_span). ``seasons`` keeps those T2 seasons (development, tests)."""
+    man = saved.manifest
+    name = saved.name
+    geo = G.stamped(man)
+    missing = [c for c in COMPONENTS if c not in man["components"]]
+    if missing or saved.s3_links is None or saved.s4_quality is None:
+        raise FileNotFoundError(f"{name}: the candidate lacks components {missing or ''} "
+                                f"{'s3_links ' if saved.s3_links is None else ''}{'s4_quality' if saved.s4_quality is None else ''}"
+                                ": every stage must be saved before it is scored")
+    s2sec = man["s2"]
+    for k in ("trained_through", "holdout_start", "bakeoff"):
+        if k not in s2sec:
+            raise KeyError(f"{name}: the s2 section states no {k} (a missing stamp is never defaulted)")
+    tt = pd.Timestamp(s2sec["trained_through"])
+    if tt >= S2.POST_START:
+        raise ValueError(f"{name}: trained through {tt.date()}; T1 starts {S2.POST_START.date()}")
+    folds, used, records = [], {}, {}
+    model_parts = [("T1", S2.FOLD_FINAL, saved.models, saved.volume)]
+    if saved.holdout_models:
+        model_parts.append(("T1-holdout", S2.FOLD_HOLDOUT, saved.holdout_models, saved.holdout_volume))
+    for tier, fo, w, h in model_parts:
+        start, end, season = fold_window(tier, fo)
+        seen = fold_training_days(tier, season, tt)
+        if tier == "T1-holdout" and pd.Timestamp(s2sec["holdout_start"]) != S2.HOLDOUT_START:
+            raise ValueError(f"{name}: holdout siblings fit before {s2sec['holdout_start']}, not {S2.HOLDOUT_START.date()}")
+        folds.append(S2.Fold(tier, fo, start, end, season, dict(w), dict(h), {k: seen for k in geo.keys},
+                             {k: {"from": "the saved models and heads"} for k in geo.keys}))
+        used[(tier, fo)] = check_heads(name, (tier, fo), h)
+        records[(tier, fo)] = {k: {"kind": _head_kind(x), "n_events": x.get("n_events")} for k, x in h.items()}
+    res_path, rows_path = bakeoff_files(man, name)
+    results = json.loads(res_path.read_text())
+    rows = bakeoff_rows(rows_path, geo)
+    t2 = rows[(rows["arm"] == T2_ARM) & (rows["tier"] == "T2")]
+    if seasons is not None:
+        t2 = t2[t2["fold"].isin([S2.season_label(s) for s in seasons])]
+    t2 = _check_rows(t2, f"{name} T2 ({T2_ARM})", geo, v_hat=True) if len(t2) else None
+    if t2 is not None:
+        for fo in pd.unique(t2["fold"]):
+            start, end, season = fold_window("T2", fo)
+            seen = fold_training_days("T2", season, tt)
+            folds.append(S2.Fold("T2", fo, start, end, season, {}, {}, {k: seen for k in geo.keys},
+                                 {k: {"from": f"the bake-off's {T2_ARM} rows ({_rel(res_path)})"} for k in geo.keys}))
+            records[("T2", fo)] = t2_head_records(results, fo, geo, name)      # Part B 7 on the outer folds' heads
+            used[("T2", fo)] = check_heads(name, ("T2", fo), records[("T2", fo)])
+    ref = rows[rows["arm"].isin(set(RECIPE_ARMS.values()))]
+    ref = ref[[RECIPE_ARMS[t] == a for t, a in zip(ref["tier"], ref["arm"])]]
+    reference = _check_rows(ref, f"{name} served recipe", geo, v_hat=False, keep_y=True) if len(ref) else None
+    keys = [(f.tier, f.fold) for f in folds]
+    s3, s3b = s3_fold_specs(saved.s3_links, geo, keys)
+    specs = {k: {"s3": s3[k], "s4": s4_fold_spec(saved.s4_quality, k, geo)} for k in keys}
+    parts = tuple((f.weights, f.heads) for f in folds if f.weights and f.fold != S2.FOLD_FINAL)
+    fams = {saved.models[k]["family"] for k in geo.keys}
+    if len(fams) != 1:
+        raise ValueError(f"{name}: its basin models are of families {sorted(fams)}")
+    s2 = StageS2Set(name, STAGE_ROOT, fams.pop(), man["components"]["s2"], geo, tt,
+                    dict(saved.models), dict(saved.volume), {}, {}, parts=parts)
+    files = tuple(sorted(p for p in Path(saved.path).iterdir() if p.is_file())) + (res_path, rows_path)
+    win = results["winner"]["contender"]                    # the bake-off's own rows of the winner's finals / siblings
+    own = rows[rows["arm"].isin({f"t1:{win}", f"t1h:{win}"})]
+    own = _check_rows(own, f"{name} {win}'s own rows", geo, v_hat=False) if len(own) else None
+    cand = StageCandidate(name, man, s2, tuple(folds), t2, specs, s3b, reference, files, used,
+                          {"results": _rel(res_path), "rows": _rel(rows_path), "volume": results.get("volume"),
+                           "south_floor": results.get("south_floor"), "winner": results.get("winner"),
+                           "picked_by_fold": (results.get("nested") or {}).get("picked_by_fold")}, own,
+                          s3_fit_s2(saved.s3_links), records, s4_fit_sizes(saved.s4_quality, specs))
+    for f in cand.folds:                                    # every fold's specs fit on days it never scores
+        for st in ("s3", "s4"):
+            check_fit_span(cand.specs[(f.tier, f.fold)][st], st, f, name)
+    return cand
+
+
+def _rel(path: Path) -> str:
+    try:
+        return str(Path(path).resolve().relative_to(REPO))
+    except ValueError:
+        return str(path)
+
+
+def load_stage_candidate(name: str, root=None, seasons=None) -> StageCandidate:
+    """The stage candidate ``name`` through stages_candidates.load_set (Part B 13's geography-aware loader: every
+    stamp, key and sha256 asserted, every weight ≥ 0), or ``local_load_set`` when that module is absent, then
+    ``from_saved``. ``root`` overrides its directory."""
+    return from_saved(saved_loader()(name, root=root), seasons=seasons)
+
+
+def saved_loader():
+    """stages_candidates.load_set, or ``local_load_set`` (the same contract) when stages_candidates is not there.
+    An import error inside stages_candidates itself is raised, never hidden behind the local loader."""
+    try:
+        import stages_candidates as SC  # noqa: PLC0415  (read only when a stage candidate is scored)
+    except ModuleNotFoundError as e:
+        if e.name != "stages_candidates":
+            raise
+        return local_load_set
+    return SC.load_set if hasattr(SC, "load_set") else local_load_set
+
+
+# stages_candidates' layout, read by the local loader: the manifest schema, the S2 pickles per part (file stem,
+# suffix, fold stamp) and the spec files per stage
+CANDIDATE_SCHEMA = "bwtf.stages_candidates/1"
+SAVED_S2 = {"models": ("model", "", "final"), "volume": ("volume", "", "final"),
+            "holdout_models": ("model", ".pre_holdout", "pre_holdout"), "holdout_volume": ("volume", ".pre_holdout", "pre_holdout")}
+SAVED_SPECS = {"s3_links": ("s3", "s3_links.json"), "s4_quality": ("s4", "s4_quality.json")}
+SAVED_FIELDS = {"model": ("model", "features", "rain_source", "calibration_offset", "family"),
+                "volume": ("model", "features", "rain_source", "target", "n_events", "kind")}
+CITYWIDE = "citywide"
+WEIGHT_TOL = 1e-12                                 # a solver's −0.0 is not a negative weight (stages_candidates' tolerance)
+
+
+@dataclass(frozen=True)
+class SavedSet:
+    """stages_candidates.StageSet's fields, as ``local_load_set`` returns them (what ``from_saved`` reads)."""
+    name: str
+    path: Path
+    manifest: dict
+    models: dict
+    volume: dict
+    holdout_models: dict
+    holdout_volume: dict
+    citywide: dict | None
+    s3_links: dict | None
+    s4_quality: dict | None
+
+
+def _check_weights(est, what: str) -> None:
+    """Every fitted linear weight (a coef_, inside pipelines too) finite and ≥ 0 (A5; Chase: "no odd weights")."""
+    for _, step in (getattr(est, "steps", None) or [(None, est)]):
+        if getattr(step, "steps", None):
+            _check_weights(step, what)
+            continue
+        c = getattr(step, "coef_", None)
+        if c is not None and (not np.isfinite(np.asarray(c, dtype=float)).all() or (np.asarray(c, dtype=float) < -WEIGHT_TOL).any()):
+            raise ValueError(f"{what}: a negative or non-finite weight; a stage candidate keeps every weight ≥ 0")
+
+
+def local_load_set(name: str, root=None) -> SavedSet:
+    """A stage candidate as stages_candidates saved it, with its loader's contract, for when that module is not
+    there: the manifest's schema, name, pipeline, geography and basins; every listed file present with its sha256
+    and no unlisted file; every component the build scores (s1 … s5) named; every pickle and spec stamped with
+    the manifest's geography, pipeline, name and component (a pickle also its fold and basin), never defaulted;
+    finals and heads for every basin, holdout siblings with their heads or neither; every weight ≥ 0. The specs'
+    compose_v2 checks run in ``from_saved`` (s3_fold_specs, s4_fold_spec), with the saver's stamps set aside."""
+    if not isinstance(name, str) or not name or name.startswith("_"):
+        raise ValueError(f"bad stage candidate name {name!r} ('_' directories are working space, never a set)")
+    d = Path(root) / name if root is not None else STAGES_CANDIDATES_DIR / name
+    if not (d / "manifest.json").exists():
+        raise FileNotFoundError(f"no stage candidate {name!r} under {d.parent}")
+    man = json.loads((d / "manifest.json").read_text())
+    missing = [k for k in ("schema", "name", "geography", "pipeline", "basins", "components", "stamps", "files") if k not in man]
+    if missing:
+        raise KeyError(f"{name}: manifest.json lacks {missing} (a missing stamp is never defaulted)")
+    if (man["schema"], man["name"], man["pipeline"]) != (CANDIDATE_SCHEMA, name, STAGE_PIPELINE):
+        raise ValueError(f"{name}: manifest {man['schema']!r} / {man['name']!r} / {man['pipeline']!r}, not "
+                         f"{CANDIDATE_SCHEMA!r} / {name!r} / {STAGE_PIPELINE!r}")
+    geo = G.stamped(man)
+    if list(man["basins"]) != list(geo.keys):
+        raise ValueError(f"{name}: manifest basins {man['basins']} are not {geo.version}'s {list(geo.keys)}")
+    gone = [c for c in COMPONENTS if c not in man["components"]]
+    if gone:
+        raise KeyError(f"{name}: no {gone} component: every stage is saved before it is scored")
+    listed = set(man["files"])
+    on_disk = {p.name for p in d.iterdir() if p.is_file() and p.name != "manifest.json" and not p.name.startswith(".")}
+    if on_disk != listed:
+        raise ValueError(f"{name}: files on disk and in the manifest differ: unlisted {sorted(on_disk - listed)}, "
+                         f"missing {sorted(listed - on_disk)}")
+    bad = [f for f, h in man["files"].items() if _sha(d / f) != h]
+    if bad:
+        raise ValueError(f"{name}: {bad} changed after they were saved (sha256 differs from the manifest)")
+    owned = {f for st in man["stamps"].values() for f in (st.get("files") or ())}
+    if owned != listed:
+        raise ValueError(f"{name}: files no component owns: {sorted(listed - owned)}")
+
+    def stamped(obj: dict, what: str, **extra) -> dict:
+        for k, v in {"geography": geo.version, "pipeline": STAGE_PIPELINE, "set": name, **extra}.items():
+            if k not in obj:
+                raise KeyError(f"{name} {what}: no {k!r} stamp (never defaulted)")
+            if obj[k] != v:
+                raise ValueError(f"{name} {what}: stamped {k}={obj[k]!r}, the manifest says {v!r}")
+        return obj
+
+    def pickle_at(fname: str, stem: str, fold: str, key: str) -> dict:
+        import pickle  # noqa: PLC0415  (the candidate's own pickles, sha256-checked above)
+        with open(d / fname, "rb") as fh:
+            obj = pickle.load(fh)
+        if not isinstance(obj, dict):
+            raise TypeError(f"{name} {fname}: not a stamped dict")
+        stamped(obj, fname, component=man["components"]["s2"], fold=fold, basin=key)
+        lacks = [f for f in SAVED_FIELDS[stem] if f not in obj]
+        if lacks:
+            raise KeyError(f"{name} {fname}: lacks {lacks}")
+        if stem == "model" and obj["calibration_offset"] != 0.0:
+            raise ValueError(f"{name} {fname}: dry-day offset {obj['calibration_offset']}; stage candidates carry none")
+        _check_weights(obj["model"], f"{name} {fname}")
+        return obj
+
+    parts = {}
+    for part, (stem, suffix, fold) in SAVED_S2.items():
+        files = {k: f"{k}_{stem}{suffix}.pkl" for k in geo.keys}
+        held = {k: f for k, f in files.items() if f in listed}
+        if held and len(held) != len(files):
+            raise KeyError(f"{name} s2 {part}: basins {sorted(held)} are not {list(geo.keys)}")
+        parts[part] = {k: pickle_at(f, stem, fold, k) for k, f in held.items()}
+    if not parts["models"] or not parts["volume"] or bool(parts["holdout_models"]) != bool(parts["holdout_volume"]):
+        raise FileNotFoundError(f"{name}: S2 needs its finals and heads, and holdout siblings come with their heads")
+    city = f"{CITYWIDE}_model.pkl"
+    citywide = pickle_at(city, "model", "final", CITYWIDE) if city in listed else None
+    specs = {}
+    for kind, (stage, fname) in SAVED_SPECS.items():
+        if fname not in listed:
+            raise FileNotFoundError(f"{name}: the manifest names an {stage} component but lists no {fname}")
+        specs[kind] = stamped(json.loads((d / fname).read_text()), fname, component=man["components"][stage])
+    return SavedSet(name, d, man, parts["models"], parts["volume"], parts["holdout_models"], parts["holdout_volume"],
+                    citywide, specs["s3_links"], specs["s4_quality"])
+
+
+def fold_window(tier: str, fold: str) -> tuple:
+    """(first scored day, last scored day, held-out season) of a protocol §2 fold (stages_s2._plan's), or KeyError."""
+    for t, f, start, end, season, _ in S2._plan(TIERS):
+        if (t, f) == (tier, fold):
+            return start, end, season
+    raise KeyError(f"({tier!r}, {fold!r}) is not a protocol §2 fold: T1 final, T1-holdout pre_holdout, T2 2016-17 … 2024-25")
+
+
+def fold_training_days(tier: str, season: int | None, trained_through) -> pd.DatetimeIndex:
+    """The days a fold's fitted parts may have seen, protocol §2's refit rule: T1 the record through the training
+    end, T1-holdout the days before 2023-07-01, a T2 fold every day through the training end outside its season."""
+    if tier == "T1":
+        return pd.date_range(T.TRUTH_START, pd.Timestamp(trained_through))
+    if tier == "T1-holdout":
+        return pd.date_range(T.TRUTH_START, S2.HOLDOUT_START - pd.Timedelta(days=1))
+    if tier == "T2":
+        d = pd.date_range(T.TRUTH_START, pd.Timestamp(trained_through))
+        return d[T4.wet_season(pd.Series(d)).to_numpy() != season]
+    raise KeyError(f"no training days for tier {tier!r}")
+
+
+def check_fit_span(spec: dict, stage: str, fold: S2.Fold, name: str) -> dict:
+    """Raise unless a fold's spec states the days it was fit on and they hold none of the fold's own (Part B 1):
+    ``fit.span`` [first, last] ending before a T1 / T1-holdout window; ``fit.seasons`` (July years) without the
+    held-out season for T2. Returns {span, seasons} as stated."""
+    fit = spec.get("fit")
+    if not isinstance(fit, dict) or (fit.get("span") is None and fit.get("seasons") is None):
+        raise ValueError(f"{name} {fold.tier} {fold.fold} {stage}: the spec states no fit span (fit.span / fit.seasons), "
+                         "so nothing proves it never saw the fold's days")
+    span, seasons = fit.get("span"), fit.get("seasons")
+    if fold.tier == "T2":
+        if seasons is None:
+            raise ValueError(f"{name} {fold.tier} {fold.fold} {stage}: a T2 spec states the seasons it was fit on (fit.seasons)")
+        if fold.season in {int(s) for s in seasons}:
+            raise ValueError(f"X-ALL-INSAMPLE: {name} {fold.fold} {stage} was fit on its held-out season {fold.fold}")
+    elif span is None or pd.Timestamp(span[1]) >= fold.start:
+        raise ValueError(f"X-ALL-INSAMPLE: {name} {fold.tier} {stage} was fit through {span and span[1]}, inside its window "
+                         f"(from {fold.start.date()})")
+    return {"span": list(span) if span is not None else None, "seasons": sorted(int(s) for s in seasons) if seasons else None}
+
+
+def stage_fitted(cand: StageCandidate, tiers) -> S2.Fitted:
+    """stages_s2.Fitted from a stage candidate's model folds (nothing is refit), so its predict path, out-of-fold
+    check and X-SEL are stages_s2's; T2 is the bake-off's rows (``t2_pred``), not a model here."""
+    folds = tuple(f for f in cand.folds if f.tier in tiers and not cand.is_rows_fold(f))
+    stamp = {"schema": S2.SCHEMA, "stage": "s2", "set": cand.name, "root": STAGE_ROOT, "geography": cand.geo.version,
+             "basins": list(cand.geo.keys), "protocol": S2.protocol_stamp(),
+             "trained_through": str(cand.s2.trained_through.date()), "tiers": list(tiers),
+             "folds": [{"tier": f.tier, "fold": f.fold} for f in folds]}
+    return S2.Fitted(cand.s2, tuple(t for t in tiers if t != "T2"), folds, stamp)
+
+
+def t2_pred(cand: StageCandidate, folds: list) -> pd.DataFrame:
+    """The bake-off's T2 rows as stages_s2 prediction rows (entry 'oracle': rain known) on the folds kept."""
+    if cand.t2 is None:
+        return pd.DataFrame(columns=list(S2.COLUMNS))
+    keep = {f.fold for f in folds if f.tier == "T2"}
+    r = cand.t2[cand.t2["fold"].isin(keep)]
+    out = pd.DataFrame({"date": r["date"], "basin": r["basin"], "entry": "oracle", "tier": "T2", "fold": r["fold"],
+                        "sel": X.selection(r["date"], cand.geo), "p": r["p"].astype(float), "v_hat": r["v_hat"].astype(float)})
+    return out[list(S2.COLUMNS)].reset_index(drop=True)
+
+
+FIDELITY_TOL = 1e-6                                # rows.csv.gz's 6 significant digits on a probability ≤ 1
+
+
+def bakeoff_fidelity(cand: StageCandidate, pred: pd.DataFrame) -> dict:
+    """The build's rain-known S2 against the bake-off's own rows of the candidate's finals and siblings, on the days
+    both hold: equal to the file's 6 significant digits, or the two read different inputs and the served-recipe arm
+    is no paired arm (Part B 16), which raises. {n, max_abs_diff}. A model-fold tier the build scores and the
+    served-recipe arm holds rows of, with no own row to vouch for the inputs on a day both hold, raises too: the
+    pairing would be unproven (None only when the recipe arm holds no such tier)."""
+    mine = pred[(pred["entry"] == "oracle") & pred["tier"].isin(["T1", "T1-holdout"])]
+    ref_tiers = set(cand.reference["tier"]) if cand.reference is not None else set()
+    paired_tiers = sorted(set(mine["tier"]) & ref_tiers)
+    if cand.own_rows is None:
+        if paired_tiers:
+            raise AssertionError(f"{cand.name}: the bake-off holds served-recipe rows on {paired_tiers} but no row of the "
+                                 "candidate's own fits, so nothing shows both arms read the same inputs (Part B 16)")
+        return {"n": 0, "max_abs_diff": None, "note": "the bake-off holds no rows of the candidate's own fits"}
+    a = mine.set_index(["tier", "fold", "basin", "date"])["p"]
+    b = cand.own_rows.set_index(["tier", "fold", "basin", "date"])["p"]
+    common = a.index.intersection(b.index)
+    unproven = [t for t in paired_tiers if t not in set(common.get_level_values("tier"))]
+    if unproven:
+        raise AssertionError(f"{cand.name}: no day of {unproven} holds both the build's S2 and the bake-off's own rows of "
+                             "the candidate, so the served-recipe arm there is not shown to be paired (Part B 16)")
+    if not len(common):
+        return {"n": 0, "max_abs_diff": None, "note": "no day both hold"}
+    gap = float(np.abs(_as_written(a.loc[common].to_numpy(dtype=float)) - b.loc[common].to_numpy(dtype=float)).max())
+    if gap > FIDELITY_TOL:
+        raise AssertionError(f"{cand.name}: the build's S2 differs from the bake-off's own rows by {gap:.1e}: the two read "
+                             "different inputs, so the served-recipe arm is not paired (Part B 16)")
+    return {"n": int(len(common)), "max_abs_diff": gap}
+
+
+def runs_from_rows(fold: S2.Fold, pred: pd.DataFrame, entry: str, rain: pd.Series | None, keys) -> list:
+    """A rows fold's runs (consecutive days of its window that the rows hold): S2 p and v̂ read from the rows, so
+    no warm-up before the window's first day (S4 / OUT start a week in; S5 eight days in). Columns: ``keys``."""
+    g = pred[(pred["tier"] == fold.tier) & (pred["fold"] == fold.fold) & (pred["entry"] == entry)]
+    p = g.pivot(index="date", columns="basin", values="p")[list(keys)].astype(float).rename_axis(index=None, columns=None)
+    v = g.pivot(index="date", columns="basin", values="v_hat")[list(keys)].astype(float).rename_axis(index=None, columns=None)
+    out = []
+    for r in _runs(pd.DatetimeIndex(sorted(p.index))):
+        out.append(Run(entry, fold.tier, fold.fold, r, r, p.loc[r], v.loc[r],
+                       None if rain is None else rain.reindex(r).astype(float)))
+    return out
 
 
 # ── S3 / S4 fitted per fold (Part B 1) ──────────────────────────────────────
@@ -308,7 +1043,15 @@ def fit_s3_s4(frames: dict, chosen: dict, heads: dict, samples: pd.DataFrame, ev
 
 def fold_specs(bundle: SetBundle, fold: S2.Fold, keep, train: dict, events: pd.DataFrame, samples: pd.DataFrame) -> tuple:
     """({"s3", "s4"}, info) for one S2 fold. T1 (keep None): the set's own artifacts. A refit fold: the served
-    fitters on the fold's training days only (``keep``, stages_s2's own filter), with the fold's volume heads."""
+    fitters on the fold's training days only (``keep``, stages_s2's own filter), with the fold's volume heads. A
+    stage candidate: its own specs for the fold (from_saved), their fit spans checked (``check_fit_span``)."""
+    if bundle.stage is not None:
+        sp = bundle.stage.specs[(fold.tier, fold.fold)]
+        fit = {st: check_fit_span(sp[st], st, fold, bundle.name) for st in ("s3", "s4")}
+        spans = [f["span"] for f in fit.values() if f["span"]]
+        return sp, {"fit": "the candidate's own specs for this fold", "fit_span": _union(spans),
+                    "seasons": sorted({s for f in fit.values() for s in (f["seasons"] or ())}) or None,
+                    "spec_fit": fit, "scored_overlap": 0}
     if keep is None:
         return bundle.t1_specs, {"fit": "the set's artifacts, fit through 2025-10-31", "fit_span": ["2016-03-01", "2025-10-31"]}
     fr = {s: f[keep(f)].reset_index(drop=True) for s, f in train.items()}
@@ -510,16 +1253,44 @@ def issue_inputs(s2set: S2.S2Set, fold: S2.Fold, entry: str, frames: dict, base:
     return inputs, kept, {e: pd.concat(ps) for e, ps in used.items()}
 
 
-def issue_levels(geo, specs: dict, inputs: C.BasinInputs, kept: pd.DatetimeIndex) -> tuple:
+ISSUE_RAIN = ("rain_lag2d", "rain_lag1d", "precip_avg")   # an entry frame's D−2, D−1, D: the issue day's composite rain
+
+
+def issue_background(spec: dict, units, avg: pd.DataFrame, kept: pd.DatetimeIndex) -> pd.DataFrame:
+    """kept × unit: an S4 rain background b(D) as the issue day knew its rain D−2…D — the entry frame's
+    (``avg``: the two-gauge source, stages_entries) precip_avg and lags on D, which hold the gauges before I and
+    the forecast from I on — through compose_v2.background on D alone (its own rain3, hinges and season flag)."""
+    a = avg.set_index("date") if "date" in avg.columns else avg
+    vals = a.reindex(kept)[list(ISSUE_RAIN)]
+    if vals.isna().any().any():
+        raise ValueError(f"the entry frame lacks its rain on {vals.index[vals.isna().any(axis=1)][0].date()}")
+    out = np.empty((len(kept), len(units)))
+    for i, (D, row) in enumerate(zip(kept, vals.to_numpy(dtype=float))):
+        rain = pd.Series(row, index=pd.date_range(D - pd.Timedelta(days=2), D))
+        out[i] = C.background(spec, units, pd.DatetimeIndex([D]), rain)[0]
+    return pd.DataFrame(out, index=kept, columns=list(units))
+
+
+def issue_levels(geo, specs: dict, inputs: C.BasinInputs, kept: pd.DatetimeIndex, avg: pd.DataFrame | None = None) -> tuple:
     """(S4 q_z, OUT r_z) date × zone on the kept targets: compose_v2 on the stacked windows, each window's last
-    row. The stacking reads no date, so it needs an S4 background that reads none (the GEO_V1 adapter's
-    constant); a rain background raises."""
-    if specs["s4"]["background"]["kind"] != "constant":
-        raise ValueError("issue_inputs stacks windows on a synthetic index: an S4 background that reads the date "
-                         "or the rain needs the real 8-day windows")
-    comp = C.compose(geo, specs, inputs)
+    row. The stacking reads no date, so a constant background (the GEO_V1 adapter's) composes as is. A rain
+    background (zone_v3) is applied after: q = 1 − (1 − b(D))·(1 − q₀(D)), q₀ the stacked composition with no
+    background (lingering's own algebra: b enters at D only), b(D) from the issue day's rain (``issue_background``
+    on the entry frame ``avg``). OUT reads no background (A1)."""
+    s4 = specs["s4"]
     last = slice(HISTORY, None, HISTORY + 1)
-    return (comp.s4.zone.iloc[last].set_axis(kept, axis=0), comp.out.zone.iloc[last].set_axis(kept, axis=0))
+    if s4["background"]["kind"] == "constant":
+        comp = C.compose(geo, specs, inputs)
+        return (comp.s4.zone.iloc[last].set_axis(kept, axis=0), comp.out.zone.iloc[last].set_axis(kept, axis=0))
+    if s4["unit"] != "zone" or avg is None:
+        raise ValueError("a rain background on the stacked issue-day windows needs zone units and the entry's own "
+                         "rain (issue_background)")
+    units = C.s4_units(geo, s4)
+    bare = {"s3": specs["s3"], "s4": {**s4, "background": {"kind": "constant", "p": {u: 0.0 for u in units}}}}
+    comp = C.compose(geo, bare, inputs)
+    q0 = comp.s4.zone.iloc[last].set_axis(kept, axis=0)
+    b = issue_background(s4, units, avg, kept)[list(q0.columns)]
+    return 1.0 - (1.0 - b) * (1.0 - q0), comp.out.zone.iloc[last].set_axis(kept, axis=0)
 
 
 # ── rows ────────────────────────────────────────────────────────────────────
@@ -570,6 +1341,7 @@ class Composed:
     rung: list = field(default_factory=list)                   # OUT from the S3 oracle (ladder only)
     unknown: list = field(default_factory=list)                # (stage, zone, date) an oracle row could read as 0
     dropped: dict = field(default_factory=dict)                # (entry, tier) → window days with no S4 / OUT row
+    bench: list = field(default_factory=list)                  # S3b: the S3 oracle under a constant share (paired only)
 
 
 def _full_history(r: Run) -> pd.DatetimeIndex:
@@ -578,10 +1350,13 @@ def _full_history(r: Run) -> pd.DatetimeIndex:
 
 
 def compose_run(geo, specs: dict, r: Run, ctx: X.Context, tr: Truths, n_sampled: pd.Series, out: Composed,
-                steps: tuple, oracle: bool, history: bool = True) -> None:
+                steps: tuple, oracle: bool, history: bool = True, rain: pd.Series | None = None,
+                bench: dict | None = None) -> None:
     """S3, S4 and OUT rows of one run. ``oracle``: the run is the rain-known S2 output used as the oracle
     entry's v̂ (S3: true occurrence; S4 / OUT: the true history). ``history`` False: S3 rows only (a lead
-    entry, whose S4 / OUT read the issue day's chain: ``compose_issue``)."""
+    entry, whose S4 / OUT read the issue day's chain: ``compose_issue``). ``rain``: the two-gauge daily rain
+    an S4 rain background reads (rain known; the GEO_V1 adapter's constant background reads none). ``bench``:
+    S3b's constant-share spec, composed on the oracle input beside the set's own (``Composed.bench``)."""
     z = ctx.frames["zone"]
     full = _full_history(r)
     if not history:
@@ -591,9 +1366,12 @@ def compose_run(geo, specs: dict, r: Run, ctx: X.Context, tr: Truths, n_sampled:
     if oracle:
         yb = tr.basin_y.reindex(r.days)[list(geo.keys)]
         unknown_b = yb.isna()
-        comp = C.compose(geo, specs, C.BasinInputs(r.p, r.v).oracle(yb.fillna(0.0)))
+        comp = C.compose(geo, specs, C.BasinInputs(r.p, r.v, rain).oracle(yb.fillna(0.0)))
+        if bench is not None and "s3" in steps:
+            b3 = C.s3(geo, bench, yb.fillna(0.0), r.v)
+            out.bench.append(_rows("s3", "zone", b3.zone_p, r.window, "oracle", r.tier, r.fold, z["y"]))
         hist, unknown_h = true_history(geo, specs, tr, r.days, r.v)
-        s4 = C.s4(geo, specs["s4"], hist)
+        s4 = C.s4(geo, specs["s4"], hist, rain)
         o = C.out(geo, specs["s4"], hist)
         zq, zr = s4.zone, o.zone
         # which zone-days read an unknown day: S3 the day itself, S4 / OUT the history D−7…D
@@ -607,7 +1385,7 @@ def compose_run(geo, specs: dict, r: Run, ctx: X.Context, tr: Truths, n_sampled:
         out.rung.append(_rows("out", "zone", comp.out.zone, full, "oracle", r.tier, r.fold, z["out_y"]))
         entry = "oracle"
     else:
-        comp = C.compose(geo, specs, C.BasinInputs(r.p, r.v))
+        comp = C.compose(geo, specs, C.BasinInputs(r.p, r.v, rain))
         zq, zr = comp.s4.zone, comp.out.zone
         entry = r.entry
     if "s3" in steps:
@@ -639,7 +1417,7 @@ def compose_issue(geo, specs: dict, s2set: S2.S2Set, fold: S2.Fold, entry: str, 
             gap = max(gap, float(np.abs(p[on].to_numpy() - ref.loc[p.index[on], p.columns].to_numpy()).max()))
     if not len(kept):
         return gap
-    zq, zr = issue_levels(geo, specs, inputs, kept)
+    zq, zr = issue_levels(geo, specs, inputs, kept, frames[entry].get("avg"))
     if "s4" in steps:
         out.rows["s4"].append(_rows("s4", "zone", zq, kept, entry, fold.tier, fold.fold, z["s4_y"],
                                     {"q": zq, "n_sampled": n_sampled}))
@@ -986,24 +1764,38 @@ def _union(spans) -> list | None:
     return [min(s[0] for s in spans), max(s[1] for s in spans)] if spans else None
 
 
-def t2_label(stage: str, geo) -> str:
+T2_NESTED_LABEL = "development (nested)"
+
+
+def t2_label(stage: str, geo, nested: bool | None = None) -> str:
     """Protocol §2's label for a cross-season (T2) score: 'development'; an existing (GEO_V1) set's S2 'development
-    (selection-contaminated)', its C grids and design searches having been chosen on those seasons."""
-    return S2.T2_LABEL if stage == "s2" and geo.version == "geo_v1" else "development"
+    (selection-contaminated)', its C grids and design searches having been chosen on those seasons, and so is a
+    stage candidate's whose S2 does not state nested choices (``nested`` False); a stage candidate's S2 whose choices
+    were made in the inner folds (``nested`` True: the A5 procedure's outer-fold rows, not one contender's own)
+    'development (nested)', so its T2 is never read as a non-nested score."""
+    if stage == "s2" and (geo.version == "geo_v1" or nested is False):
+        return S2.T2_LABEL
+    return T2_NESTED_LABEL if stage == "s2" and nested else "development"
 
 
-def window_words(window: str, cell: dict, stage: str, geo) -> str:
+POST_SELECTED_WORDS = "days also used to pick the served set, so scores on them favour the served set"
+
+
+def window_words(window: str, cell: dict, stage: str, geo, nested: bool | None = None) -> str:
     """Where a pill's number comes from, as its tooltip says it (no ids): the window and the days its rows span;
     cross-season with the protocol's label (§2: development; an existing set's S2 'development
-    (selection-contaminated)', its C grids and design searches having been chosen on those seasons)."""
+    (selection-contaminated)', its C grids and design searches having been chosen on those seasons); post-training
+    for a GEO_V1 set says those days also picked the served set, so the score favours it (X-SEL post_selected,
+    protocol §2: the served set, its split and its line were chosen with them in view), on the stages X-SEL tags."""
     sp = span_words(cell.get("span"))
     if window == "T2":
         n = int(cell.get("n_seasons") or 0)
-        return f"{n} season{'' if n == 1 else 's'}, each scored by weights that never saw it, {sp}: {t2_label(stage, geo)}"
+        return f"{n} season{'' if n == 1 else 's'}, each scored by weights that never saw it, {sp}: {t2_label(stage, geo, nested)}"
     if window == "T1-holdout":
         return f"holdout, {sp}: development only"
     if window == "T1":
-        return f"post-training, {sp}"
+        selected = geo.version == "geo_v1" and "X-SEL" in SP.STAGE[stage]["exclusions"]
+        return f"post-training, {sp}" + (f" ({POST_SELECTED_WORDS})" if selected else "")
     if window == "S5":
         return sp
     raise KeyError(f"no words for window {window!r}")
@@ -1096,7 +1888,8 @@ def figure_windows(scores: dict, windows=None, fallback: bool = True) -> dict:
     return {"m.s1": S1_WINDOW, **{n: window_for(scores, n, w, fallback) for n, w in want.items()}}
 
 
-def figure(scores: dict, windows, s1: dict | None, geo, s1_post: dict | None = None, fallback: bool = False) -> dict:
+def figure(scores: dict, windows, s1: dict | None, geo, s1_post: dict | None = None, fallback: bool = False,
+           nested: bool | None = None) -> dict:
     """figure{node id: {oracle, chained, lead}, caption} for stages_flowchart.render.
 
     ``windows``: one window for every node (scores['figures'][w]) or {node: window} (FIGURE_WINDOWS, the
@@ -1115,7 +1908,8 @@ def figure(scores: dict, windows, s1: dict | None, geo, s1_post: dict | None = N
     def pill(key, e, w, stage, what=""):
         c = _cell(scores, key, e, w)
         p1 = _cell(scores, key, e, POST_WINDOW) if w != POST_WINDOW else None
-        return _pill(c, c and what + window_words(w, c, stage, geo), _pill(p1, p1 and window_words(POST_WINDOW, p1, stage, geo)))
+        return _pill(c, c and what + window_words(w, c, stage, geo, nested),
+                     _pill(p1, p1 and window_words(POST_WINDOW, p1, stage, geo, nested)))
     for st, node in (("s2", "m.s2"), ("s4", "m.s4"), ("out", "m.out")):
         if st in scores:
             w = shown[node]
@@ -1151,7 +1945,7 @@ def figure(scores: dict, windows, s1: dict | None, geo, s1_post: dict | None = N
                               [dict(a, what=S5_RULE_WORDS[alt])] if a else None)
             fig["m.s5"][k] = main
     fig = V.clean(fig)
-    fig["caption"] = figure_caption(fig, shown, t2_label("s2", geo))
+    fig["caption"] = figure_caption(fig, shown, t2_label("s2", geo, nested))
     return fig
 
 
@@ -1197,13 +1991,71 @@ def figure_caption(fig: dict, shown: dict, s2_label: str = "development") -> str
     return line
 
 
-def figure_counts(geo, as_of, s1: dict | None = None, s5_counts: dict | None = None) -> tuple:
+S5_CHIP_FEED = "oracle"                             # S5's chip: the perfect feed in S5's window, each zone-day once
+S5_FEED_WORDS = {"oracle": "the perfect feed", "archive": "the 2016-17 archive", "watcher": "the watcher"}
+TIER_SPAN = {"T1-holdout": (S2.HOLDOUT_START, S2.POST_START - pd.Timedelta(days=1)), "T1": (S2.POST_START, None)}
+
+
+def feed_words(feed: str) -> str:
+    """'oracle' → 'the perfect feed', 'degraded:3' → 'degraded feed 3' (KeyError on an unknown feed)."""
+    if feed.startswith("degraded:"):
+        return f"degraded feed {feed.split(':', 1)[1]}"
+    return S5_FEED_WORDS[feed]
+
+
+def s5_feed_counts(partition: dict, as_of) -> dict:
+    """S5's exclusion counts per feed from the build's partition (scores['partition']['s5']: unit → feed → window →
+    cell, one variant), each feed on windows that never overlap, so a count is distinct zone-days: a feed with rows in
+    S5's window (T1-holdout ∪ T1, protocol §8: the perfect feed, each degraded feed) on that window only, else on the
+    windows it has (the 2016-17 archive: its own season, T2). A feed's T2 seasons and the holdout overlap (2023-24 and
+    2024-25 sit in both), and the feeds see the same zone-days, so summing either would count a zone-day twice.
+
+    {feed: {"tiers": [...], "span": [first, last] | None, "counts": {rule: n}}}: counts are every first-match rule
+    the feed's rows carry (OUT's rules too, S5 being graded on OUT's label), S5's own exclusions present as 0
+    where none; span is S5's window as the tiers give it (None for T2)."""
+    own = [x for x in SP.STAGE["s5"]["exclusions"] if SP.EXCLUSIONS[x]["kind"] == "exclude"]
+    cells: dict = {}
+    for unit, by_feed in partition.items():
+        for feed, by_tier in by_feed.items():
+            feed_words(feed)                                   # an unknown feed raises
+            for tier, cell in by_tier.items():
+                cells.setdefault(feed, {}).setdefault(tier, []).append(cell["excluded"])
+    out = {}
+    for feed in sorted(cells, key=lambda f: (f != S5_CHIP_FEED, f != "archive", f)):
+        tiers = [t for t in S5_WINDOW if t in cells[feed]] or sorted(cells[feed])
+        n = {x: 0 for x in own}
+        for t in tiers:
+            for ex in cells[feed][t]:
+                for x, k in ex.items():
+                    n[x] = n.get(x, 0) + int(k)
+        span = None
+        if all(t in TIER_SPAN for t in tiers):
+            lo = min(TIER_SPAN[t][0] for t in tiers)
+            hi = max(TIER_SPAN[t][1] or pd.Timestamp(as_of) for t in tiers)
+            span = [str(lo.date()), str(min(hi, pd.Timestamp(as_of)).date())]
+        out[feed] = {"tiers": tiers, "span": span, "counts": n}
+    return out
+
+
+def _feed_where(feed: str, c: dict, chip: bool = False) -> str:
+    """Where a feed's counts come from (``s5_feed_counts``' cell): S5's window as its span ("S5's window (…)" on
+    the chip's line); else the 2016-17 archive's own season, or a feed scored only cross-season (T2, its seasons
+    never overlapping), so the words never claim a window the counts do not come from."""
+    if c["span"]:
+        return f"S5's window ({span_words(c['span'])})" if chip else span_words(c["span"])
+    if c["tiers"] == ["T2"]:
+        return "its own season" if feed == "archive" else "the cross-season folds"
+    raise ValueError(f"S5 feed {feed!r} has no words for its windows {c['tiers']}")
+
+
+def figure_counts(geo, as_of, s1: dict | None = None, s5_partition: dict | None = None) -> tuple:
     """(chip counts for stages_flowchart, the truth catalog, the claims): exclusions.figure_counts of the catalog
     and the claims as of the data end; the S1 model gaps (X-S1-NWPGAP, a weather-model fact the truth cannot
     count) from stages_s1 for the served model at lead 1 on the two-gauge mean, the chained pill's rows; S5's own
-    rules from the build's rows (``s5_counts`` = scores['exclusions']['s5']: zone-days summed over the zones,
-    every feed and every window; an S5 rule the rows never hit is 0); and the slots (n_city_days: days any basin
-    filed an overflow)."""
+    rules from the build's rows (``s5_partition`` = scores['partition']['s5']): the chip counts the perfect feed in
+    S5's window (``s5_feed_counts``), so each count is distinct zone-days, and counts['feeds']['s5'] gives every
+    feed's own for the chip's tooltip (an S5 rule the rows never hit is 0; with no perfect-feed rows the chip prints
+    "—"); and the slots (n_city_days: days any basin filed an overflow)."""
     cat = X.catalog_counts(geo, as_of=as_of)
     cl = X.claims(geo, as_of=as_of)
     fc = X.figure_counts(cat, cl)
@@ -1211,11 +2063,20 @@ def figure_counts(geo, as_of, s1: dict | None = None, s5_counts: dict | None = N
         cell = s1["exclusions"][s1["served_model"]]["previous_runs"][T.MEAN_SERIES]["L1"]["T1"]
         n = int(cell["excluded"].get("X-S1-NWPGAP", 0))
         fc["exclusions"]["X-S1-NWPGAP"] = fc["stages"].setdefault("s1", {})["X-S1-NWPGAP"] = n
-    if s5_counts is not None:
-        tot = {x: int(sum(units.values())) for x, units in s5_counts.items()}
-        own = {x: tot.get(x, 0) for x in SP.STAGE["s5"]["exclusions"] if SP.EXCLUSIONS[x]["group"] == "S5"}
-        fc["exclusions"].update(own)
-        fc["stages"]["s5"] = {**tot, **own}
+    if s5_partition is not None:
+        by_feed = s5_feed_counts(s5_partition, as_of)
+        own = [x for x in SP.STAGE["s5"]["exclusions"] if SP.EXCLUSIONS[x]["group"] == "S5" and SP.EXCLUSIONS[x]["kind"] == "exclude"]
+        chip = by_feed.get(S5_CHIP_FEED)
+        for x in own:                                     # the catalog's archive-window counts never stand in
+            fc["exclusions"].pop(x, None)
+        fc["stages"]["s5"] = dict(chip["counts"]) if chip else {}
+        if chip:
+            fc["exclusions"].update({x: chip["counts"][x] for x in own})
+        fc["feeds"] = {"s5": {
+            "chip": (f"{feed_words(S5_CHIP_FEED)}'s zone-days in {_feed_where(S5_CHIP_FEED, chip, chip=True)}, each zone-day once"
+                     if chip else None),
+            "by_feed": [{"what": f"{feed_words(f)}, {_feed_where(f, c)}", "counts": {x: c["counts"].get(x, 0) for x in own}}
+                        for f, c in by_feed.items()]}}
     ev = T.ledger_events(geo)
     fc["slots"] = {"n_city_days": int(ev.loc[ev["date"] <= pd.Timestamp(as_of), "date"].nunique())}
     return fc, cat, cl
@@ -1242,6 +2103,9 @@ def _sha(path: Path) -> str:
 # Inputs whose file holds a build clock: hashed without it, so rebuilding them on unchanged data (same scores,
 # a new built_at) leaves every manifest that pins them current. Their other bytes still count, as code does.
 UNSTAMPED = {S1_SCORES: ("built_at",)}
+# The served set's written build that another set's comparisons read (no clock in either: gzip mtime 0, scores
+# without built_at), so a served rebuild on the same inputs leaves the others current and any other stales them
+SERVED_BUILD_FILES = ("rows.csv.gz", "scores.json")
 
 
 def input_sha(path: Path) -> str:
@@ -1283,9 +2147,10 @@ def stale_files(manifest_: dict) -> list:
 
 
 def input_files(bundle: SetBundle, model: str) -> list:
-    """Every file the build reads, repo-relative, for the manifest's sha256s."""
+    """Every file the build reads, for the manifest's sha256s (a stage candidate's: every file of its directory and
+    the bake-off it names)."""
     raw = T4.RAW_DIR
-    sd = T4.SERVE_DIR if bundle.is_served else CAND.candidate_dir(bundle.name)
+    sd = T4.SERVE_DIR if bundle.is_served or bundle.stage is not None else CAND.candidate_dir(bundle.name)
     files = [X.PROTOCOL, FORECAST / "live_dashboard.py", S1_SCORES, S1.OUT_DIR / f"{model}.csv.gz", raw / "historical_rain.csv",
              raw / "hourly_rain_openmeteo.csv",
              raw / "historical_bacteria.csv", raw / f"openmeteo_prev_runs_{model}.csv", raw / f"openmeteo_hist_forecast_{model}.csv",
@@ -1294,8 +2159,14 @@ def input_files(bundle: SetBundle, model: str) -> list:
              FORECAST / "data" / "poobot" / "feed_status.csv", T4.SERVE_DIR / "served.json", T4.SERVE_DIR / "eval_report.json",
              T4.SERVE_DIR / "impact_table.json"]
     files += [SMP.SOURCE_FILES[n] for n in SMP.PRECEDENCE]          # S4's truth reads all three (design D10)
-    files += sorted(sd.glob("*_model.pkl")) + sorted(T4.SERVE_DIR.glob("*_volume.pkl"))
-    files += [sd / n for n in ("stage2.json", "manifest.json") if (sd / n).exists()]
+    if bundle.stage is not None:
+        files += list(bundle.stage.files)
+    else:
+        files += sorted(sd.glob("*_model.pkl")) + sorted(T4.SERVE_DIR.glob("*_volume.pkl"))
+        files += [sd / n for n in ("stage2.json", "manifest.json") if (sd / n).exists()]
+    if not bundle.is_served:                       # vs_served and the primaries read the served set's written build
+        built = STAGES_DIR / served_name()
+        files += [built / n for n in SERVED_BUILD_FILES if (built / n).exists()]
     import beachwatch as BW
     files += [BW.POSTED_DAYS_CSV, BW.MANIFEST]
     missing = [p for p in files if not p.exists()]
@@ -1305,11 +2176,12 @@ def input_files(bundle: SetBundle, model: str) -> list:
 
 
 def build(set_name: str = "served", root: str = "served", entries=ENTRIES, tiers=None, steps=STEPS,
-          n_boot: int = B_PROTOCOL, seasons=None, feeds=None, s5_tiers=None, log=print) -> Build:
+          n_boot: int = B_PROTOCOL, seasons=None, feeds=None, s5_tiers=None, log=print, stage_set=None) -> Build:
     """Score every stage of one set (see the module notes). ``tiers`` default: every tier the set's family
-    refits (gb: T1). Development and test knobs, all off by default: ``seasons`` keeps the T2 seasons listed,
-    ``feeds`` the S5 feeds listed, ``s5_tiers`` the tiers S5 replays; ``n_boot`` below the protocol's 2,000 is
-    for tests and is refused by ``write``."""
+    refits (gb: T1), or every tier a stage candidate holds folds for. Development and test knobs, all off by
+    default: ``seasons`` keeps the T2 seasons listed, ``feeds`` the S5 feeds listed, ``s5_tiers`` the tiers S5
+    replays, ``stage_set`` a stage candidate already loaded (root stages_candidates); ``n_boot`` below the
+    protocol's 2,000 is for tests and is refused by ``write``."""
     t_all = time.time()
     entries = tuple(entries)
     bad = [e for e in entries if e not in ENTRIES]
@@ -1318,14 +2190,16 @@ def build(set_name: str = "served", root: str = "served", entries=ENTRIES, tiers
     steps = tuple(steps)
     if not steps or set(steps) - set(STEPS):
         raise KeyError(f"steps must be some of {STEPS}, not {steps}")
-    bundle = load_set(set_name, root)
-    s2set, geo = bundle.s2, bundle.geo
+    bundle = load_set(set_name, root, stage_set=stage_set)
+    s2set, geo, st = bundle.s2, bundle.geo, bundle.stage
     if tiers is None:
-        tiers = TIERS if s2set.family in S2.REFIT_FAMILIES else ("T1",)
+        tiers = (tuple(t for t in TIERS if any(f.tier == t for f in st.folds)) if st is not None
+                 else TIERS if s2set.family in S2.REFIT_FAMILIES else ("T1",))
     tiers = tuple(tiers)
     model = E.served_weather_model()
     end = E.data_end()
-    log(f"{bundle.name} ({root}, {s2set.family}, stage 2 {bundle.variant}, {geo.version}); tiers {tiers}; entries {entries}; data to {end.date()}")
+    what = f"stage set {components(bundle)}" if st is not None else f"stage 2 {bundle.variant}"
+    log(f"{bundle.name} ({root}, {s2set.family}, {what}, {geo.version}); tiers {tiers}; entries {entries}; data to {end.date()}")
     # 1 · truth context, once per geography, with the build's inputs
     fd = S5.feeds(geo, end=end)
     if feeds is not None:
@@ -1337,27 +2211,43 @@ def build(set_name: str = "served", root: str = "served", entries=ENTRIES, tiers
     el = T.zone_elevated(geo, ctx.sources, end=end)
     n_sampled = el.set_index(["zone", "date"])["n_stations_sampled"].astype(float)
     n_sampled = n_sampled.reindex(ctx.frames["zone"].index, fill_value=0.0)
-    # 2 · S2 out of fold
+    # 2 · S2 out of fold: a set's own design refit per fold (stages_s2), or a stage candidate's own folds
     t0 = time.time()
     need = sorted(set(s2set.sources) | set(bundle.chosen.values()) | {"avg"})
-    train, _ = T4.build_dataset(sources=need)
-    fitted = S2.fit(bundle.name, root, tiers, train_frames=train)
-    plan = {(p[0], p[1]): p for p in S2._plan(tiers)}
-    folds = [f for f in fitted.folds if f.tier != "T2" or seasons is None or f.season in set(seasons)]
+    if st is None:
+        train, _ = T4.build_dataset(sources=need)
+        fitted = S2.fit(bundle.name, root, tiers, train_frames=train)
+        plan = {(p[0], p[1]): p for p in S2._plan(tiers)}
+        all_folds = list(fitted.folds)
+    else:
+        train, plan = None, None
+        missing = [t for t in tiers if not any(f.tier == t for f in st.folds)]
+        if missing:
+            raise ValueError(f"{st.name} holds no fold of {missing}")
+        fitted = stage_fitted(st, tiers)
+        all_folds = list(fitted.folds) + [f for f in st.folds if f.tier in tiers and st.is_rows_fold(f)]
+    folds = [f for f in all_folds if f.tier != "T2" or seasons is None or f.season in set(seasons)]
     # rain known always (S5's inputs; every issue day's days before it), and every entry a lead's issue day reads
     need_entries = tuple(dict.fromkeys(("oracle",) + tuple(x for e in entries if e != "rain" for x in issue_entries(e))))
     frames = {}
     for e in need_entries:
         frames[e] = E.frames(e, need, model=model, end=end)
-    pred = fitted.predict(frames)
+    pred = fitted.predict(frames) if fitted.folds else pd.DataFrame(columns=list(S2.COLUMNS))
+    if st is not None:                                 # a stage candidate's T2: the bake-off's outer-fold rows
+        pred = pd.concat([pred, t2_pred(st, folds)], ignore_index=True)
     pred = pred[pred.set_index(["tier", "fold"]).index.isin([(f.tier, f.fold) for f in folds])].reset_index(drop=True)
-    log(f"  S2: {len(fitted.folds)} folds fit, {len(pred)} out-of-fold basin-days ({time.time() - t0:.1f}s)")
+    rain_known = frames["oracle"]["avg"].set_index("date")["precip_avg"].astype(float)   # an S4 rain background's input
+    log(f"  S2: {len(all_folds)} folds {'fit' if st is None else 'read'}, {len(pred)} out-of-fold basin-days ({time.time() - t0:.1f}s)")
+    extra = {"reference": st.reference if st is not None else None,
+             "fidelity": bakeoff_fidelity(st, pred) if st is not None else None}
     # 3 · S3 / S4 specs per fold
     t0 = time.time()
-    events, samples = T4.load_events(), T4.load_samples()
+    events, samples = (T4.load_events(), T4.load_samples()) if st is None else (None, None)
     specs, spec_info = {}, {}
     for f in folds:
-        specs[(f.tier, f.fold)], spec_info[(f.tier, f.fold)] = fold_specs(bundle, f, plan[(f.tier, f.fold)][5], train, events, samples)
+        key = (f.tier, f.fold)
+        specs[key], spec_info[key] = fold_specs(bundle, f, plan[key][5] if plan else None, train, events, samples)
+    bench = dict(st.s3b) if st is not None else {}                # S3b: the candidate's shares against a constant one
     log(f"  S3 / S4 specs: {len(specs)} folds ({time.time() - t0:.1f}s)")
     # 4 · runs and compositions
     t0 = time.time()
@@ -1375,23 +2265,29 @@ def build(set_name: str = "served", root: str = "served", entries=ENTRIES, tiers
             win = pd.DatetimeIndex(sorted(pred_p[e].index)) if e in pred_p else pd.DatetimeIndex([])
             if not len(win):
                 continue
-            rs = runs_for(s2set, f, e, frames[e], win)
-            for r in rs:                                   # the warm-up helper is stages_s2's predict path
-                pv = pred_p[e].loc[r.window]
-                s2max = max(s2max, float(np.abs(pv.to_numpy() - r.p.loc[pv.index].to_numpy()).max()))
+            if st is not None and st.is_rows_fold(f):      # the bake-off's rows: S2 read, no warm-up before the window
+                rs = runs_from_rows(f, pred, e, frames[e]["avg"].set_index("date")["precip_avg"] if "avg" in frames[e] else None,
+                                    s2set.keys)
+            else:
+                rs = runs_for(s2set, f, e, frames[e], win)
+                for r in rs:                               # the warm-up helper is stages_s2's predict path
+                    pv = pred_p[e].loc[r.window]
+                    s2max = max(s2max, float(np.abs(pv.to_numpy() - r.p.loc[pv.index].to_numpy()).max()))
             if e == "oracle":
                 if len(rs) != 1:
                     raise AssertionError(f"rain known breaks into {len(rs)} runs in {f.tier} {f.fold}: a gauge day is missing")
                 base = s5_runs[(f.tier, f.fold)] = rs[0]
                 if "oracle" in entries:
-                    compose_run(geo, sp, base, ctx, tr, n_sampled, comp, steps, oracle=True)
+                    compose_run(geo, sp, base, ctx, tr, n_sampled, comp, steps, oracle=True, rain=rain_known,
+                                bench=bench.get((f.tier, f.fold)))
                 if "rain" in entries:
-                    compose_run(geo, sp, dataclasses.replace(base, entry="rain"), ctx, tr, n_sampled, comp, steps, oracle=False)
+                    compose_run(geo, sp, dataclasses.replace(base, entry="rain"), ctx, tr, n_sampled, comp, steps, oracle=False,
+                                rain=rain_known)
                 continue
             if base is None:
                 raise AssertionError(f"{f.tier} {f.fold}: no rain-known run for {e}'s issue days to read")
             for r in rs:                                   # S3 is same-day: the entry's own runs
-                compose_run(geo, sp, r, ctx, tr, n_sampled, comp, steps, oracle=False, history=False)
+                compose_run(geo, sp, r, ctx, tr, n_sampled, comp, steps, oracle=False, history=False, rain=rain_known)
             if {"s4", "out"} & set(steps):                 # S4 / OUT: each target's issue-day chain
                 s2max = max(s2max, compose_issue(geo, sp, s2set, f, e, frames, base, win, ctx, n_sampled, comp, steps, pred_p))
     if s2max > EPS:
@@ -1404,15 +2300,17 @@ def build(set_name: str = "served", root: str = "served", entries=ENTRIES, tiers
     if "s2" in steps:
         keep = set(entries) | ({"oracle"} if "rain" in entries else set())
         rows["s2"] = apply_stage(s2_rows(pred[pred["entry"].isin(keep)], ctx, tr.basin_vol), "s2", ctx_by_tier)
-    for st in ("s3", "s4", "out"):
-        if st in steps and comp.rows[st]:
-            rows[st] = apply_stage(pd.concat(comp.rows[st], ignore_index=True), st, ctx_by_tier)
+    for stg in ("s3", "s4", "out"):
+        if stg in steps and comp.rows[stg]:
+            rows[stg] = apply_stage(pd.concat(comp.rows[stg], ignore_index=True), stg, ctx_by_tier)
     rung = pd.concat(comp.rung, ignore_index=True) if comp.rung else pd.DataFrame(columns=list(X.COLUMNS) + ["fold"])
+    extra["s3b"] = pd.concat(comp.bench, ignore_index=True) if comp.bench else None
     log(f"  exclusions: {', '.join(f'{k} {len(v)}' for k, v in rows.items())} rows ({time.time() - t0:.1f}s)")
     # 6 · S5
     if "s5" in steps and s5_runs:
         t0 = time.time()
-        rows["s5"] = s5_build(bundle, specs, [f for f in folds if s5_tiers is None or f.tier in s5_tiers], s5_runs, fd, ctx)
+        rows["s5"] = s5_build(bundle, specs, [f for f in folds if s5_tiers is None or f.tier in s5_tiers], s5_runs, fd, ctx,
+                              rain=rain_known)
         log(f"  S5: {len(rows['s5'])} rows ({time.time() - t0:.1f}s)")
     integrity = check_integrity(rows, comp, s2max, spec_info, folds)
     # 7 · scores
@@ -1424,29 +2322,41 @@ def build(set_name: str = "served", root: str = "served", entries=ENTRIES, tiers
                    "note": "inputs: the days an entry has no frame (stages_entries: X-S1-NWPGAP / X-S1-NOLEAD), so no row "
                            "at any stage; no_history_days: days of a window with an S2 row but no S4 / OUT row: a lead entry's "
                            "target whose issue day lacks its forecast for one of I … D−1 (rain known: never)"}
-        scores = make_scores(bundle, rows, rung, ctx, ctx_by_tier, blocks, fd, dropped, integrity, tr.basin_vol, n_boot, end, log)
+        scores = make_scores(bundle, rows, rung, ctx, ctx_by_tier, blocks, fd, dropped, integrity, tr.basin_vol, n_boot, end, log,
+                             extra=extra)
         log(f"  scores ({time.time() - t0:.1f}s)")
     man = manifest(bundle, entries, tiers, steps, model, end, n_boot)
     log(f"done in {time.time() - t_all:.1f}s")
     return Build(bundle, rows, scores, man, specs, spec_info, rung, n_boot)
 
 
-def s5_build(bundle: SetBundle, specs: dict, folds: list, s5_runs: dict, fd: dict, ctx: X.Context) -> pd.DataFrame:
+def s5_variants(geo) -> tuple:
+    """stages_s5's variants a geography can replay: every one, less live_v2's rule sets (stages_s5.LIVE_V2:
+    basin_swap and its kin, defined on GEO_V1's basins and legacy groups only) outside GEO_V1."""
+    live = tuple(getattr(S5, "LIVE_V2", (S5_INCUMBENT,)))
+    return S5.VARIANTS if geo.version == "geo_v1" else tuple(v for v in S5.VARIANTS if v not in live)
+
+
+def s5_build(bundle: SetBundle, specs: dict, folds: list, s5_runs: dict, fd: dict, ctx: X.Context,
+             rain: pd.Series | None = None) -> pd.DataFrame:
     """S5 rows for every feed and fold on the rain-known S2 output, then exclusions.apply per (feed, tier) so
-    X-POWER counts the whole window; the excl column must be the same for every variant (one conditional set)."""
+    X-POWER counts the whole window; the excl column must be the same for every variant (one conditional set).
+    ``rain``: the two-gauge rain known over the whole record (an S4 rain background reads D−2 before a run's
+    first day; live_v2 reads the run's own days, the same values); default each run's own."""
     geo = bundle.geo
+    variants = s5_variants(geo)
     parts = []
     for f in folds:
         r = s5_runs.get((f.tier, f.fold))
         if r is None:
             continue
-        inputs = C.BasinInputs(r.p, r.v, r.rain)
+        inputs = C.BasinInputs(r.p, r.v, r.rain if rain is None else rain)
         kw = ({"held_out_season": f.season} if f.tier == "T2"
               else {"trained_through": bundle.s2.trained_through if f.tier == "T1" else S2.HOLDOUT_START - pd.Timedelta(days=1)})
         for name, feed in fd.items():
             if name == "watcher" or (name.startswith("degraded") and f.tier not in S5_WINDOW):
                 continue                                   # a degraded feed is built for the S5 window only (§8)
-            got = S5.s5_rows(geo, specs[(f.tier, f.fold)], inputs, name, feed, tier=f.tier, ctx=ctx, **kw)
+            got = S5.s5_rows(geo, specs[(f.tier, f.fold)], inputs, name, feed, variants=variants, tier=f.tier, ctx=ctx, **kw)
             if len(got):
                 parts.append(got.assign(fold=f.fold))
     if not parts:
@@ -1528,13 +2438,18 @@ def check_integrity(rows: dict, comp: Composed, s2max: float, spec_info: dict, f
 
 
 def make_scores(bundle: SetBundle, rows: dict, rung: pd.DataFrame, ctx: X.Context, ctx_by_tier: dict, blocks: pd.DataFrame,
-                fd: dict, dropped: dict, integrity: dict, basin_vol: pd.DataFrame, n_boot: int, end, log) -> dict:
-    """scores.json (design §7, protocol §4–§6): per stage {unit | pooled: {entry: {window: bundle}}} with each row's
-    reference from its fold's training days; s2_volume; s5 and the paired comparisons; the exclusion counts and
-    the partition of the build's rows; the claims and the truth catalog; the figure's counts; the integrity
-    checks; the figure on each stage's powered window (``figure``, FIGURE_WINDOWS) and one per window. No clock,
-    so a rebuild on the same inputs gives the same file."""
+                fd: dict, dropped: dict, integrity: dict, basin_vol: pd.DataFrame, n_boot: int, end, log,
+                extra: dict | None = None) -> dict:
+    """scores.json (design §7, protocol §4–§9): per stage {unit | pooled: {entry: {window: bundle}}} with each row's
+    reference from its fold's training days; s2_volume; s5 and the paired comparisons (for a set that is not the
+    served one: vs_served, and for a stage candidate s2_vs_recipe and s3b_vs_constant from ``extra``); the
+    exclusion counts and the partition of the build's rows; the claims and the truth catalog; the figure's counts;
+    the integrity checks; the figure on each stage's powered window (``figure``, FIGURE_WINDOWS) and one per
+    window; for a set that is not the served one, the §8 primaries and the §9 criteria. No clock, so a rebuild
+    on the same inputs gives the same file."""
+    extra = extra or {}
     geo = bundle.geo
+    nested = bundle.stage.nested if bundle.stage is not None else None
     out = {"schema": SCORES_SCHEMA, "set": bundle.name, "geography": geo.version, "protocol": S2.protocol_stamp(),
            "as_of": str(end.date()), "windows": {**{t: dict(S2._TIER_TEXT[t]) for t in TIERS},
                                                   "S5": "S5's window, 2023-07-01 → the data end: T1-holdout ∪ T1 (protocol §8)"},
@@ -1542,6 +2457,18 @@ def make_scores(bundle: SetBundle, rows: dict, rung: pd.DataFrame, ctx: X.Contex
            "blocks": {"s2-out": "storm blocks from rain (truth.blocks, protocol §6)", "s5": "observation events (s5_blocks)"},
            "reference": "climatology per unit × calendar month ±1 on the fold's training days (protocol §4.2)",
            "aliases": {"s2": {"rain": "oracle"}}, "edges": list(RL.edges())}
+    if bundle.stage is not None:                       # a new candidate's T2: nested choices are development, not contaminated
+        out["windows"]["T2"]["label"] = t2_label("s2", geo, nested)
+        out["windows"]["T2"]["weights"] = ("S2: the bake-off's outer-fold rows (rain known): the A5 procedure, each season "
+                                           "predicted by the contender, bends, C and South mode chosen without it "
+                                           + ("(nested)" if nested else "(not stated nested)")
+                                           + ", not one contender's own; S3 / S4: the candidate's per-fold records, each "
+                                           "fit without its season")
+        out["windows"]["T2"]["volume_heads"] = "the bake-off's outer-fold heads (its rows' v̂), each fit without its season"
+        out["windows"]["T1-holdout"]["weights"] = "the candidate's holdout siblings, fit on days before 2023-07-01"
+        out["windows"]["T1-holdout"]["volume_heads"] = "its holdout siblings' heads, fit on days before 2023-07-01"
+        out["windows"]["T1"]["weights"] = "the candidate's finals, fit through 2025-10-31"
+        out["windows"]["T1"]["volume_heads"] = "its finals' heads, fit through 2025-10-31"
     pools = {st: _pool(st, ctx, geo, "rain") for st in ("s2", "s3", "s4", "out")}
     no_id = dataclasses.replace(ctx, frames={**ctx.frames, "zone": ctx.frames["zone"].assign(identity=False)})
     pools["s3_oracle"] = _pool("s3", no_id, geo, "oracle")
@@ -1582,32 +2509,48 @@ def make_scores(bundle: SetBundle, rows: dict, rung: pd.DataFrame, ctx: X.Contex
         paired["s5_primary_rule"] = ("protocol §8: link_zone_swap − basin_swap on the conditional set, superiority (the 90% CI's "
                                      "upper bound below 0) on the perfect feed and on the degraded feed; window 'S5' = 2023-07-01 → "
                                      "the data end (T1-holdout ∪ T1)")
-    if not bundle.is_served:
-        paired["vs_served"] = vs_served(rows, blocks, n_boot)
+    art = served_artifacts() if not bundle.is_served else None
+    if art is not None:
+        paired["vs_served"] = vs_served(rows, art, blocks, n_boot, geo)
+    if extra.get("reference") is not None and "s2" in rows:
+        paired["s2_vs_recipe"] = s2_vs_recipe(rows["s2"], extra["reference"], blocks, n_boot)
+    if extra.get("s3b") is not None and "s3" in rows:
+        paired["s3b_vs_constant"] = s3b_vs_constant(rows["s3"], extra["s3b"], geo, blocks, n_boot)
     out["paired"] = paired
     counts = integrity.pop("_counts")
     out["exclusions"] = {st: c["exclusions"].get(st, {}) for st, c in counts.items()}
     out["partition"] = {st: c["partition"].get(st, {}) for st, c in counts.items()}
     s1 = json.loads(S1_SCORES.read_text()) if S1_SCORES.exists() else None
     s1_post = S1.post_training(s1["served_model"]) if s1 else None
-    fc, cat, cl = figure_counts(geo, end, s1, out["exclusions"].get("s5") if len(rows.get("s5", ())) else None)
+    fc, cat, cl = figure_counts(geo, end, s1, out["partition"].get("s5") if len(rows.get("s5", ())) else None)
     out["claims"] = cl
     out["catalog"] = cat
     out["figure_counts"] = fc
     out["integrity"] = integrity
+    if extra.get("fidelity") is not None:
+        out["integrity"]["s2_bakeoff_fidelity"] = extra["fidelity"]
+    if bundle.stage is not None:
+        out["integrity"]["s3_fit_with_s2"] = dict(bundle.stage.s3_s2)
+        sz = bundle.stage.s4_sizes
+        out["integrity"]["s4_fit_sizes"] = {               # Part B 6: S4 fit at the sizes S3 gives it, per fold
+            "match": all(s["match"] for s in sz.values()) if all(s["match"] is not None for s in sz.values()) else None,
+            "folds_off": [f"{t} {fo}" for (t, fo), s in sorted(sz.items()) if s["match"] is False],
+            "folds_unstated": [f"{t} {fo}" for (t, fo), s in sorted(sz.items()) if s["match"] is None]}
     out["dropped"] = dropped
-    out["figures"] = {w: figure(out, w, s1, geo, s1_post) for w in TIERS}
+    out["figures"] = {w: figure(out, w, s1, geo, s1_post, nested=nested) for w in TIERS}
     out["figure_window"] = figure_windows(out)
     out["figure_post_window"] = POST_WINDOW
-    out["figure"] = figure(out, FIGURE_WINDOWS, s1, geo, s1_post, fallback=True)
+    out["figure"] = figure(out, FIGURE_WINDOWS, s1, geo, s1_post, fallback=True, nested=nested)
+    if art is not None:
+        out = V.clean(out)
+        out["primaries"] = primaries(bundle, out, rows, art, ctx, blocks, n_boot, end)
+        out["promotion"] = promotion(out["primaries"])
     return V.clean(out)
 
 
-def vs_served(rows: dict, blocks: pd.DataFrame, n_boot: int) -> dict:
-    """Candidate − served on identical rows (Part B 16: both arms built from the same entries and inputs), read
-    from the served set's rows.csv.gz: {stage: {unit | pooled: {entry: {window: Δ}}}}; OUT's pooled rain-known and
-    lead-1 cells add ΔMCB (CORP miscalibration, protocol §8's "pooled MCB not worse beyond its CI"). Skipped, with
-    the reason, when the served set was not written or was built on other data, other code or another protocol."""
+def served_artifacts() -> dict:
+    """The served set's written build (data/models/stages/<served>/: rows, manifest, scores) that every comparison
+    with it reads, or {'skipped': why} when it was not written or was built on other inputs, code or protocol."""
     d = STAGES_DIR / served_name()
     if not (d / "rows.csv.gz").exists():
         return {"skipped": "the served set's rows are not written: run --set served --write first"}
@@ -1616,31 +2559,117 @@ def vs_served(rows: dict, blocks: pd.DataFrame, n_boot: int) -> dict:
     if stale or theirs["protocol"] != S2.protocol_stamp():
         return {"skipped": f"the served set's rows were built on other inputs or code ({stale or 'protocol'}): rebuild it first"}
     srv = pd.read_csv(d / "rows.csv.gz", parse_dates=["date"], keep_default_na=False, na_values=[""], low_memory=False)
+    sc = json.loads((d / "scores.json").read_text()) if (d / "scores.json").exists() else None
+    return {"rows": srv, "manifest": theirs, "scores": sc}
+
+
+def _pair(a: pd.DataFrame, b: pd.DataFrame, what: str, key=("unit", "date")) -> tuple:
+    """(common index, y, p_a at rows.csv.gz's precision, p_b) on the intersection of two arms' scored rows; the same
+    unit-day with two truths raises."""
+    A, Bf = a.set_index(list(key)), b.set_index(list(key))
+    common = A.index.intersection(Bf.index)
+    ya, yb = A.loc[common, "y"].to_numpy(dtype=float), Bf.loc[common, "y"].to_numpy(dtype=float)
+    if not np.array_equal(ya, yb):
+        raise AssertionError(f"{what}: the same unit-days carry different truths")
+    return common, ya, _as_written(A.loc[common, "p"].to_numpy(dtype=float)), Bf.loc[common, "p"].to_numpy(dtype=float)
+
+
+def vs_served(rows: dict, art: dict, blocks: pd.DataFrame, n_boot: int, geo) -> dict:
+    """Candidate − served on identical rows (Part B 16: both arms built from the same entries and inputs), read
+    from the served set's rows.csv.gz (``served_artifacts``): {stage: {unit | pooled: {entry: {window: Δ}}}}; OUT's
+    pooled rain-known and lead-1 cells add ΔMCB (CORP miscalibration, protocol §8's "pooled MCB not worse beyond its
+    CI"). Across geographies only the geography-invariant targets (S3 zones, S4, OUT; protocol §8): basin-level S2
+    is compared within one geography. Skipped, with the reason, when the served build cannot be read."""
+    if "skipped" in art:
+        return {"skipped": art["skipped"]}
+    srv, sgeo = art["rows"], art["manifest"]["geography"]
+    cross = sgeo != geo.version
     out: dict = {"served": served_name(), "note": "candidate − served on the unit-days both scored, same entries and inputs "
-                                                  "(Part B 16); both arms at rows.csv.gz's 6 significant digits"}
+                                                  "(Part B 16); both arms at rows.csv.gz's 6 significant digits",
+                 "geography": {"candidate": geo.version, "served": sgeo, "invariant_only": cross}}
+    if cross:
+        out["geography"]["s2"] = ("not compared: basin-level S2 is compared within one geography only (protocol §8); "
+                                  "the S2 primary reads s2_vs_recipe")
     for st, r in rows.items():
-        if st == "s5":
+        if st == "s5" or (cross and st == "s2"):
             continue
         s = srv[(srv["stage"] == st) & (srv["excl"].fillna("") == "")]
         c = r[r["excl"] == ""]
         for (e, t), g in c.groupby(["entry", "tier"], sort=False):
-            a = g.set_index(["unit", "date"])
-            b = s[(s["entry"] == e) & (s["tier"] == t)].set_index(["unit", "date"])
-            common = a.index.intersection(b.index)
+            b = s[(s["entry"] == e) & (s["tier"] == t)]
+            common, y, pa, pb = _pair(g, b, f"vs_served {st} {e} {t}")
             if not len(common):
                 continue
-            ya, yb = a.loc[common, "y"].to_numpy(dtype=float), b.loc[common, "y"].to_numpy(dtype=float)
-            if not np.array_equal(ya, yb):
-                raise AssertionError(f"vs_served {st} {e} {t}: the same unit-days carry different truths")
             blk, _ = _storm_blocks(common.get_level_values("date"), blocks)
             units = common.get_level_values("unit").to_numpy()
             for u in ["pooled"] + list(pd.unique(units)):
                 m = np.ones(len(common), bool) if u == "pooled" else units == u
-                pa, pb = _as_written(a.loc[common, "p"].to_numpy(dtype=float)[m]), b.loc[common, "p"].to_numpy(dtype=float)[m]
-                cell = _delta(ya[m], pa, pb, blk[m], n_boot)
+                cell = _delta(y[m], pa[m], pb[m], blk[m], n_boot)
                 if st == "out" and u == "pooled" and e in ("rain", "L1"):
-                    cell["mcb"] = V.clean(V.paired_delta(ya[m], pa, pb, blk[m], metric=_mcb, n=n_boot, seed=SEED, level=LEVEL))
+                    cell["mcb"] = V.clean(V.paired_delta(y[m], pa[m], pb[m], blk[m], metric=_mcb, n=n_boot, seed=SEED, level=LEVEL))
                 out.setdefault(st, {}).setdefault(u, {}).setdefault(e, {})[t] = cell
+    return out
+
+
+def s2_vs_recipe(s2rows: pd.DataFrame, ref: pd.DataFrame, blocks: pd.DataFrame, n_boot: int) -> dict:
+    """The S2 primary within one geography (protocol §8): candidate − the served recipe refit on the candidate's
+    labels (the bake-off's served-recipe rows), on the candidate's scored rain-known rows that the recipe also
+    predicts, paired on (tier, fold, basin, day): {unit | pooled: {window: Δ}}. Both arms at the bake-off file's 6
+    significant digits (``_as_written``), so equal predictions differ by exactly 0; a paired basin-day whose label
+    the bake-off recorded must carry the build's, or the recipe was fit on other labels (Part B 16), which raises."""
+    sc = s2rows[(s2rows["excl"] == "") & (s2rows["entry"] == "oracle")]
+    rf = ref.set_index(["tier", "fold", "basin", "date"])
+    if rf.index.duplicated().any():
+        raise AssertionError("s2_vs_recipe: the served-recipe arm holds a (tier, fold, basin, day) twice")
+    out: dict = {"arm_b": "the served recipe refit on the candidate's labels (stages_s2_sfpuc4's served-recipe rows)",
+                 "note": "candidate − recipe on identical rows: the candidate's scored rain-known S2 rows the recipe predicts"}
+    for t in _windows(sc):
+        g = sc[sc["tier"] == t]
+        on = rf.reindex(pd.MultiIndex.from_arrays([g["tier"], g["fold"], g["unit"], pd.DatetimeIndex(g["date"])]))
+        b = on["p"].to_numpy(dtype=float)
+        m = np.isfinite(b)
+        if not m.any():
+            continue
+        if "y" in on.columns:
+            ry, gy = on["y"].to_numpy(dtype=float)[m], g["y"].to_numpy(dtype=float)[m]
+            off = np.isfinite(ry) & (ry != gy)
+            if off.any():
+                raise AssertionError(f"s2_vs_recipe {t}: {int(off.sum())} paired basin-days carry another label in the bake-off's "
+                                     "rows than in the build's, so the recipe was not refit on the candidate's labels (Part B 16)")
+        y, pa, pb = g["y"].to_numpy(dtype=float)[m], _as_written(g["p"].to_numpy(dtype=float)[m]), b[m]
+        dates, units = pd.DatetimeIndex(g["date"])[m], g["unit"].to_numpy()[m]
+        blk, _ = _storm_blocks(dates, blocks)
+        for u in ["pooled"] + list(pd.unique(units)):
+            mm = np.ones(len(y), bool) if u == "pooled" else units == u
+            out.setdefault(u, {})[t] = {**_delta(y[mm], pa[mm], pb[mm], blk[mm], n_boot), "n_candidate_rows": int(len(g) if u == "pooled"
+                                                                                                                 else (g["unit"] == u).sum())}
+    return out
+
+
+def s3b_vs_constant(s3rows: pd.DataFrame, bench: pd.DataFrame, geo, blocks: pd.DataFrame, n_boot: int) -> dict:
+    """S3b (protocol §8): the S3 oracle on the Westside split's zones (true occurrence, v̂ from rain), the
+    candidate's share − its constant-share benchmark (both fit per fold by stages_s3_links), on the oracle's scored
+    rows: {unit | pooled: {window: Δ}}, the pooled cells with the 95% CI Holm's first step reads (protocol §6)."""
+    zones = [lk.zone for lk in geo.links_from(S3B_BASIN) if not lk.identity]
+    sc = s3rows[(s3rows["excl"] == "") & (s3rows["entry"] == "oracle") & s3rows["unit"].isin(zones)]
+    bp = bench.set_index(["tier", "unit", "date"])["p"]
+    if bp.index.duplicated().any():
+        raise AssertionError("S3b: the benchmark composed a zone-day twice")
+    out: dict = {"zones": zones, "arm_b": "the constant share (no size term), fit per fold (stages_s3_links)"}
+    for t in _windows(sc):
+        g = sc[sc["tier"] == t]
+        b = bp.reindex(pd.MultiIndex.from_arrays([g["tier"], g["unit"], pd.DatetimeIndex(g["date"])])).to_numpy(dtype=float)
+        if not np.isfinite(b).all():
+            raise AssertionError(f"S3b {t}: {int((~np.isfinite(b)).sum())} scored oracle rows have no constant-share benchmark")
+        y, pa = g["y"].to_numpy(dtype=float), g["p"].to_numpy(dtype=float)
+        units, blk = g["unit"].to_numpy(), _storm_blocks(g["date"], blocks)[0]
+        for u in ["pooled"] + list(pd.unique(units)):
+            m = np.ones(len(y), bool) if u == "pooled" else units == u
+            cell = _delta(y[m], pa[m], b[m], blk[m], n_boot)
+            if u == "pooled":
+                d95 = V.paired_delta(y[m], pa[m], b[m], blk[m], n=n_boot, seed=SEED, level=HOLM_LEVEL)
+                cell["ci95"] = V.clean([d95["lo"], d95["hi"]])
+            out.setdefault(u, {})[t] = cell
     return out
 
 
@@ -1655,18 +2684,594 @@ def _mcb(y, p) -> float:
     return V.corp(y, p)["mcb"]
 
 
+# ── the primaries and the promotion criteria (protocol §8, §9) ──────────────
+
+# §8's rows, by the label of their first cell, as the build names them
+PRIMARY_IDS = {"S1": "S1", "S2": "S2", "S2 South floor (Part B 7)": "S2-south-floor", "S2 volume (Part B 7)": "S2-volume",
+               "S3a geography": "S3a", "S3b": "S3b", "S4": "S4", "S5": "S5", "OUT": "OUT"}
+PRIMARY_STAGE = {"S1": "s1", "S2": "s2", "S2-south-floor": "s2", "S2-volume": "s2", "S3a": "s3", "S3b": "s3", "S4": "s4",
+                 "S5": "s5", "OUT": "out"}
+HOLM_FAMILY = ("S3a", "S3b")                      # protocol §6: S3a and S3b form one family
+HOLM_LEVEL = 0.95                                  # Holm's first step at α/2 = 0.025: the 95% CI's bound
+NI_MARGIN = 0.05                                   # protocol §8: non-inferiority at +5% of the incumbent's BS
+PASS, FAIL, NYC, NA = "pass", "fail", "not yet computable", "not applicable"
+MET, NOT_MET = "met", "not met"
+
+
+@functools.lru_cache(maxsize=1)
+def protocol_rules() -> dict:
+    """§8's comparison table and §9's criteria in the frozen protocol's words (STAGES_PROTOCOL.md, its sha checked
+    by protocol_stamp): {definitions: {Superiority, Non-inferiority at +5%}, rows: {id: {label, comparison, entry,
+    window, rule}}, criteria: [§9's five]}. A row or criterion the build does not score raises."""
+    S2.protocol_stamp()
+    text = X.PROTOCOL.read_text()
+
+    def section(n: int) -> str:
+        m = re.search(rf"^## {n}\. [^\n]*\n(.*?)(?=^## |\Z)", text, re.M | re.S)
+        if not m:
+            raise ValueError(f"{X.PROTOCOL.name} has no §{n}")
+        return m.group(1)
+    s8 = section(8)
+    defs = dict(re.findall(r"^- \*\*(Superiority|Non-inferiority at \+5%):\*\* (.+)$", s8, re.M))
+    rows = {}
+    for line in s8.splitlines():
+        if not line.startswith("| ") or line.startswith("| stage "):
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) != 5 or cells[0] not in PRIMARY_IDS:
+            raise KeyError(f"§8 row {cells[0]!r}: not one the build scores ({list(PRIMARY_IDS)})")
+        rows[PRIMARY_IDS[cells[0]]] = dict(zip(("label", "comparison", "entry", "window", "rule"), cells))
+    if list(rows) != list(PRIMARY_IDS.values()) or set(defs) != {"Superiority", "Non-inferiority at +5%"}:
+        raise ValueError(f"§8 holds rows {list(rows)} and definitions {list(defs)}; the build scores {list(PRIMARY_IDS.values())}")
+    crit = re.findall(r"^(\d)\. (.+)$", section(9), re.M)
+    if [int(n) for n, _ in crit] != [1, 2, 3, 4, 5]:
+        raise ValueError(f"§9 lists criteria {[n for n, _ in crit]}, not 1 … 5")
+    return {"definitions": defs, "rows": rows, "criteria": [c for _, c in crit]}
+
+
+def _numbers(d: dict | None) -> dict:
+    """A paired Δ's numbers as a primary row states them: Δ (a − b), its 90% CI, P(Δ < 0), MDE, n, blocks, both arms'
+    scores and the verdict words."""
+    if not d or d.get("delta") is None:
+        return {}
+    return {"delta": d["delta"], "ci": [d.get("lo"), d.get("hi")], "level": d.get("level", LEVEL), "p_neg": d.get("p_neg"),
+            "mde": d.get("mde"), "mde_pct": d.get("mde_pct"), "n": d.get("n"), "n_blocks": d.get("n_blocks"),
+            "bs_a": d.get("a"), "bs_b": d.get("b"), "verdict": d.get("verdict")}
+
+
+def s4_defect(rows: dict, art: dict, blocks: pd.DataFrame, n_boot: int) -> dict | None:
+    """The oracle-worse-than-chained check behind protocol §8's S4 row, both S4s on identical rows: Δ = BS(chained,
+    rain known) − BS(oracle), pooled, T2, the candidate's S4 and the served table, on the unit-days all four arms
+    scored (the candidate's oracle and chained rows, the served set's oracle and chained rows). The served table
+    shows the defect when its Δ's CI is wholly below 0 (protocol §6). {n, candidate, served}; None when there is no
+    such row (no S4 rows, or the served build unreadable). The same unit-day with two truths raises."""
+    c, srv = rows.get("s4"), art.get("rows")
+    if c is None or srv is None or "skipped" in art:
+        return None
+    s = srv[srv["stage"] == "s4"]
+
+    def scored(f: pd.DataFrame, entry: str) -> pd.DataFrame:
+        return f[(f["excl"].fillna("") == "") & (f["entry"] == entry) & (f["tier"] == "T2")].set_index(["unit", "date"])
+    arms = {"cand_oracle": scored(c, "oracle"), "cand_rain": scored(c, "rain"), "srv_oracle": scored(s, "oracle"),
+            "srv_rain": scored(s, "rain")}
+    if any(a.index.duplicated().any() for a in arms.values()):
+        raise AssertionError("S4 defect check: a T2 unit-day scored twice in one arm")
+    common = functools.reduce(lambda a, b: a.intersection(b), [a.index for a in arms.values()])
+    if not len(common):
+        return None
+    y = arms["cand_oracle"].loc[common, "y"].to_numpy(dtype=float)
+    for k, a in arms.items():
+        if not np.array_equal(a.loc[common, "y"].to_numpy(dtype=float), y):
+            raise AssertionError(f"S4 defect check: {k} carries another truth on the same unit-days")
+    p = {k: a.loc[common, "p"].to_numpy(dtype=float) for k, a in arms.items()}
+    blk, _ = _storm_blocks(common.get_level_values("date"), blocks)
+    return {"n": int(len(common)),
+            "candidate": _delta(y, _as_written(p["cand_rain"]), _as_written(p["cand_oracle"]), blk, n_boot),
+            "served": _delta(y, p["srv_rain"], p["srv_oracle"], blk, n_boot)}
+
+
+def s4_status(c4: dict | None, fx: dict | None, sfx: dict | None) -> dict:
+    """Protocol §8's S4 rule on its cells: ``c4`` the primary (S4 − the served table, oracle, T2), ``fx`` / ``sfx``
+    the candidate's / the served table's chained − oracle on identical rows (``s4_defect``). Superiority passes; so
+    does non-inferiority at +5% with the fix (the candidate's oracle not worse than its chained: Δ ≥ 0 and its CI
+    not wholly below 0). The fix is tested only where the served table shows the defect (its Δ's CI wholly below
+    0); a pass where it does not, or where that cannot be read, carries a caveat (the owner's reading). The caveat
+    is S4's alone: OUT does not inherit it. {status, why, caveat, fixed, shown, superior, noninferior, margin}."""
+    sup, _ = _test(c4, "superiority")
+    ni, mg = _test(c4, "noninferiority")
+    fixed = None if not fx or fx.get("delta") is None else bool(fx["delta"] >= 0 and fx.get("verdict") != "better")
+    shown = None if not sfx or sfx.get("hi") is None else bool(sfx["hi"] < 0)
+    caveat = None
+    if NYC in (sup, ni):
+        status, why = NYC, "no T2 S4 oracle row both sets scored"
+    elif sup == PASS:
+        status, why = PASS, "superior: the 90% CI's upper bound is below 0"
+    elif ni == PASS and fixed:
+        status, why = PASS, "non-inferior at +5%, and its oracle is not worse than its chained composition (rain known, T2)"
+        if shown is False:
+            caveat = ("the served table shows no oracle-worse-than-chained defect on these first-look rows (its chained − "
+                      f"oracle Δ {sfx['delta']:+.4f} [{sfx['lo']:+.4f}, {sfx['hi']:+.4f}], on the unit-days both S4s' oracle "
+                      "and chained rows share), so S4's fix is not tested: whether that meets 'a fix for the defect' is the "
+                      "owner's reading")
+        elif shown is None:
+            caveat = "the served table's oracle-vs-chained check is not readable, so whether S4's defect was there to fix is unknown"
+        if caveat:
+            why += f"; {caveat}"
+    elif ni == PASS and fixed is None:
+        status, why = NYC, "non-inferior at +5%, but the oracle-vs-chained check has no T2 rows both S4s scored"
+    else:
+        status, why = FAIL, ("neither superior nor non-inferior at +5%" if ni != PASS else
+                             "non-inferior at +5%, but its oracle scores worse than its chained composition (Δ < 0, or its "
+                             "CI wholly below 0)")
+    return {"status": status, "why": why, "caveat": caveat, "fixed": fixed, "shown": shown, "superior": sup,
+            "noninferior": ni, "margin": mg}
+
+
+def _test(d: dict | None, margin: str) -> tuple:
+    """(status, margin value) of a Δ cell under 'superiority' (upper bound < 0) or 'noninferiority' (upper bound <
+    5% of arm b's BS); an absent cell or a CI that cannot be computed is not yet computable."""
+    if not d or d.get("delta") is None:
+        return NYC, None
+    hi = d.get("hi")
+    m = 0.0 if margin == "superiority" else NI_MARGIN * float(d["b"])
+    if hi is None or not np.isfinite(hi):
+        return NYC, m
+    return (PASS if hi < m else FAIL), m
+
+
+def _combine(statuses) -> str:
+    st = list(statuses)
+    if not st:
+        return NYC
+    if FAIL in st:
+        return FAIL
+    if NYC in st:
+        return NYC
+    return PASS
+
+
+def holm(parts: dict) -> dict:
+    """Holm's step-down over one family at one-sided α = 0.05 (protocol §6), on bootstrap CIs: with p the share of
+    resamples at or beyond the margin, p ≤ α/2 exactly when the 95% CI's upper bound is below the margin and p ≤ α
+    when the 90% CI's is, so the hypothesis with the smaller p passes when its 95% bound clears, and then the other
+    when its 90% bound does (two members; one member: its 90% bound). parts: {id: {hi90, hi95, margin}}; a member
+    with no bound leaves the family not yet computable."""
+    if len(parts) > 2:
+        raise ValueError("this Holm step reads two CI levels: a family of at most two")
+    if any(p.get("hi90") is None or p.get("hi95") is None or p.get("margin") is None for p in parts.values()):
+        return {k: NYC for k in parts}
+    pass90 = {k: p["hi90"] < p["margin"] for k, p in parts.items()}
+    if len(parts) == 1:
+        return {k: PASS if v else FAIL for k, v in pass90.items()}
+    pass95 = {k: p["hi95"] < p["margin"] for k, p in parts.items()}
+    if not any(pass95.values()):
+        return {k: FAIL for k in parts}
+    return {k: PASS if pass90[k] else FAIL for k in parts}
+
+
+def settle_unchanged(rows: list, mine: dict) -> list:
+    """Protocol §9.1 judges changed components only, so a row whose component is the served set's (``changed``
+    False) is 'not applicable' whatever its numbers say: its computed status is kept as ``computed_status`` and its
+    numbers stay (the S2 Δ of a shared S2 is exactly 0; S5's row tests link/zone injection, not a served live_v2)."""
+    out = []
+    for r in rows:
+        if not r["changed"] and r["status"] != NA:
+            r = {**r, "computed_status": r["status"], "status": NA,
+                 "reason": f"its {r['stage'].upper()} is the served set's ({mine[r['stage']]}), so this row decides nothing for "
+                           f"it (protocol §9.1 reads changed components); computed: {r['status']}"
+                           + (f" — {r['reason']}" if r.get("reason") else "")}
+        out.append(r)
+    return out
+
+
+S4_V3_KIND = "zone_v3"                            # compose_v2's S4 v3 spec kind: the only S4 §8's S4 row tests
+if S4_V3_KIND not in C.S4_KINDS:
+    raise ImportError(f"compose_v2.S4_KINDS {C.S4_KINDS} lacks {S4_V3_KIND!r}")
+SIZE_FREE_SHARES = ("identity", "constant")       # the share kinds with no size term (no s(v̂) for S3b to test)
+SIZE_SHARES = tuple(k for k in C.SHARE_KINDS if k not in SIZE_FREE_SHARES)   # compose_v2's kinds with one, never typed
+if set(SIZE_FREE_SHARES) - set(C.SHARE_KINDS):
+    raise ImportError(f"compose_v2.SHARE_KINDS {C.SHARE_KINDS} lacks {sorted(set(SIZE_FREE_SHARES) - set(C.SHARE_KINDS))}")
+
+
+def size_shares(cand: StageCandidate) -> bool:
+    """Whether the candidate's Westside split shares have a size term in every T2 fold's spec (S3b's s(v̂); protocol
+    §8): with identity or constant shares there is no s(v̂) to test against a constant."""
+    links = [lk.id for lk in cand.geo.links_from(S3B_BASIN) if not lk.identity]
+    t2 = [sp["s3"] for (t, _), sp in cand.specs.items() if t == "T2"]
+    return bool(links and t2) and all(s["links"][lid]["share"]["kind"] in SIZE_SHARES for s in t2 for lid in links)
+
+
+def t0_words(end) -> tuple:
+    """(state, words) of T0 in OUT's T1 post ∪ T0 (protocol §2, §8): 'empty' while the data end is before T0's first
+    day (the day after the freeze), so T1 post-training stands alone; 'not graded' once it is not, since T1 stops at
+    the freeze (stages_s2) and only the forecast_history grader (P10) scores T0, so the union waits for it."""
+    start, end = X.freeze_date() + pd.Timedelta(days=1), pd.Timestamp(end)
+    if end < start:
+        return "empty", (f"T0 (prospective, from {start.date()}) holds no scored day: the data end ({end.date()}) is "
+                         "before it, so T1 post-training stands alone")
+    return "not graded", (f"T0 (prospective, from {start.date()}) holds days to the data end ({end.date()}) that only the "
+                          "forecast_history grader scores (P10), so T1 post ∪ T0 is not yet computable here; each part's "
+                          "T1-only status is its t1_status")
+
+
+def vs_fallback(cand: StageCandidate) -> dict:
+    """{basin: declared head − the declared fallback, Δ log-MAE (head, fallback, Δ, its 90% CI, MDE, verdict) and the
+    folds where the head is the fallback}, from the bake-off's per-basin comparison on the same folds and event days
+    (stages_s2_sfpuc4 vs_fallback); {basin: {why}} where it made none (no fallback is declared for an Oceanside
+    basin, Part B 7)."""
+    out = {}
+    for k, v in ((cand.bakeoff.get("volume") or {}).get("per_basin") or {}).items():
+        x = (v or {}).get("vs_fallback") or {}
+        d = x.get("delta")
+        if isinstance(d, dict) and d.get("delta") is not None:
+            out[k] = {"metric": d.get("metric"), "head": d.get("a"), "fallback": d.get("b"), "delta": d["delta"],
+                      "ci": [d.get("lo"), d.get("hi")], "level": d.get("level"), "mde": d.get("mde"), "n": d.get("n"),
+                      "n_blocks": d.get("n_blocks"), "verdict": d.get("verdict"),
+                      "head_is_fallback_in": list(x.get("head_is_fallback_in") or [])}
+        else:
+            out[k] = {"why": x.get("why") or "the bake-off made no head − fallback comparison for this basin"}
+    return out
+
+
+def served_components(art: dict) -> dict:
+    """The served set's components (its written build's manifest, else from its bundle)."""
+    if "manifest" in art:
+        return dict(art["manifest"]["components"])
+    return components(load_set("served"))
+
+
+def changed_components(bundle: SetBundle, served: dict, served_geo: str) -> dict:
+    """{component: whether the candidate's differs from the served set's}: by name, and S2 / S3 by geography too
+    (a basin model or a link set under another geography is another component)."""
+    mine = components(bundle)
+    cross = bundle.geo.version != served_geo
+    return {c: bool(mine[c] != served[c] or (cross and c in ("s2", "s3"))) for c in COMPONENTS}
+
+
+def _row(rid: str, changed: bool, status: str, reason: str, d: dict | None = None, **kw) -> dict:
+    words = protocol_rules()["rows"][rid]
+    return V.clean({"id": rid, "stage": PRIMARY_STAGE[rid], **{k: words[k] for k in ("label", "comparison", "entry", "window", "rule")},
+                    "changed": changed, "status": status, "reason": reason, **_numbers(d), **kw})
+
+
+def _part(name: str, window: str, status: str, reason: str, d: dict | None = None, **kw) -> dict:
+    return V.clean({"part": name, "window": window, "status": status, "reason": reason, **_numbers(d), **kw})
+
+
+def _s3a_cells(rows: dict, art: dict, blocks: pd.DataFrame, n_boot: int) -> tuple:
+    """(Δ at 90%, Δ at 95%) of S3a: East's chained rain-known S3 rows on T2, candidate − served, on identical rows."""
+    srv = art["rows"]
+    c = rows["s3"]
+    a = c[(c["excl"] == "") & (c["entry"] == "rain") & (c["tier"] == "T2") & (c["unit"] == "east")]
+    b = srv[(srv["stage"] == "s3") & (srv["excl"].fillna("") == "") & (srv["entry"] == "rain") & (srv["tier"] == "T2")
+            & (srv["unit"] == "east")]
+    common, y, pa, pb = _pair(a, b, "S3a")
+    if not len(common):
+        return None, None
+    blk, _ = _storm_blocks(common.get_level_values("date"), blocks)
+    return _delta(y, pa, pb, blk, n_boot), V.clean(V.paired_delta(y, pa, pb, blk, n=n_boot, seed=SEED, level=HOLM_LEVEL))
+
+
+def candlestick_sensitivity(rows: dict, art: dict, ctx: X.Context, blocks: pd.DataFrame, n_boot: int) -> dict | None:
+    """A2's sensitivity score beside the S4 row: East's S4 oracle, candidate − served, on T2 East zone-days both
+    scored, graded against the Candlestick stations alone (stages_s4_v3.candlestick_stations: the East stations
+    SFPUC4's station_basin puts in South), first looks read on those stations. Descriptive."""
+    import stages_s4_v3 as S4V3  # noqa: PLC0415  (P8c: which stations are Candlestick)
+    keys = S4V3.candlestick_stations()
+    smp = T._samples(tuple(ctx.sources))
+    zd = SMP.zone_sample_days(smp[smp["station"].isin(keys)])
+    zd = zd[(zd["zone"] == "east") & zd["first_look"].astype(bool)]
+    y = zd.set_index("date")["any_exceedance"].astype(float)
+    c, srv = rows["s4"], art["rows"]
+    a = c[(c["excl"] == "") & (c["entry"] == "oracle") & (c["tier"] == "T2") & (c["unit"] == "east")]
+    b = srv[(srv["stage"] == "s4") & (srv["excl"].fillna("") == "") & (srv["entry"] == "oracle") & (srv["tier"] == "T2")
+            & (srv["unit"] == "east")]
+    common, _, pa, pb = _pair(a, b, "S4 Candlestick")
+    dates = common.get_level_values("date")
+    on = dates.isin(y.index)
+    if not on.any():
+        return None
+    yc = y.reindex(dates[on]).to_numpy(dtype=float)
+    blk, _ = _storm_blocks(dates[on], blocks)
+    return {"stations": [STATIONS[k].sfpuc_id for k in keys], "names": [STATIONS[k].name for k in keys],
+            "truth": "any Candlestick station over the standard, first looks on those stations",
+            **_numbers(_delta(yc, pa[on], pb[on], blk, n_boot))}
+
+
+def primaries(bundle: SetBundle, sc: dict, rows: dict, art: dict, ctx: X.Context, blocks: pd.DataFrame, n_boot: int,
+              end) -> dict:
+    """One row per protocol §8 row (its words, read from the frozen file), with the computed Δ and its 90%
+    storm-block CI, P(Δ < 0), MDE, margin and status (pass | fail | not yet computable | not applicable) and why."""
+    pr = protocol_rules()
+    cand = bundle.stage
+    skipped = art.get("skipped")
+    served_geo = art["manifest"]["geography"] if "manifest" in art else load_set("served").geo.version
+    comps = served_components(art)
+    changed = changed_components(bundle, comps, served_geo)
+    cross = bundle.geo.version != served_geo
+    paired = sc.get("paired") or {}
+    vs = paired.get("vs_served") or {}
+    no_served = f"the served set's build is not readable ({skipped})" if skipped else None
+    out_rows = []
+    # S1 · the weather model, chosen on S1 only (set-independent)
+    m = components(bundle)["s1"]
+    if not changed["s1"]:
+        out_rows.append(_row("S1", False, NA, f"the candidate reads the served weather model ({m}): S1 is set-independent (stages_s1)"))
+    else:
+        s1 = json.loads(S1_SCORES.read_text()) if S1_SCORES.exists() else {}
+        cell = ((s1.get("primary") or {}).get("vs_served") or {}).get(m)
+        if not cell:
+            out_rows.append(_row("S1", True, NYC, f"stages_s1 holds no paired S1 comparison of {m} with the served model"))
+        else:
+            ok = cell.get("verdict") == "better"
+            out_rows.append(_row("S1", True, PASS if ok else FAIL, f"stages_s1's Holm-adjusted verdict: {cell.get('verdict')}",
+                                 cell["mae_either_wet"], metric="either-wet MAE, inches"))
+    # S2 · within one geography: the served component, or the served recipe refit on the candidate's labels
+    if cross:
+        src, arm = paired.get("s2_vs_recipe"), "the served recipe refit on the candidate's labels (the bake-off's rows)"
+        why_none = "the candidate carries no served-recipe arm (the bake-off's rows)"
+    else:
+        src, arm = ((vs.get("s2") or {}) if not skipped else None), "the served component"
+        why_none = no_served or "no S2 row both sets scored"
+        src = {u: {t: c for t, c in (e.get("oracle") or {}).items()} for u, e in (src or {}).items()} if src else None
+    nested = cand.nested if cand is not None else False
+    c2 = ((src or {}).get("pooled") or {})
+    st2, mg2 = _test(c2.get("T2"), "superiority")
+    if st2 != NYC and not nested:
+        st2, why2 = FAIL, ("its T2 is development (selection-contaminated): its choices were not made nested (protocol §2), "
+                           "so T2 cannot confirm it")
+    else:
+        why2 = why_none if st2 == NYC else ("nested T2: the 90% CI's upper bound " + ("is" if st2 == PASS else "is not") + " below 0")
+    st1, mg1 = _test(c2.get("T1"), "noninferiority")
+    why1 = why_none if st1 == NYC else ("the 90% CI's upper bound " + ("is" if st1 == PASS else "is not") + " below 5% of the "
+                                        "incumbent's BS on the same rows")
+    t2_kw = {}
+    if cand is not None and cand.bakeoff.get("picked_by_fold"):     # A5: the outer seasons score the procedure
+        t2_kw["picked_by_fold"] = dict(cand.bakeoff["picked_by_fold"])
+    parts = [_part("superiority", "T2", st2, why2, c2.get("T2"), margin=mg2, nested=nested, **t2_kw),
+             _part("non-inferiority at +5%", "T1", st1, why1, c2.get("T1"), margin=mg1)]
+    out_rows.append(_row("S2", changed["s2"], _combine([st2, st1]), f"candidate − {arm}, basin-pooled, rain known", c2.get("T2"),
+                         parts=parts, arm_b=arm))
+    # S2 South floor (Part B 7)
+    if "south" not in bundle.geo.keys:
+        out_rows.append(_row("S2-south-floor", changed["s2"], NA, f"{bundle.geo.version} has no South basin"))
+    else:
+        cell = ((sc.get("s2") or {}).get("south") or {}).get("oracle", {}).get("T2")
+        lo = ((cell or {}).get("ci") or {}).get("bss", [None, None])[0] if cell else None
+        stf = NYC if lo is None else (PASS if lo > 0 else FAIL)
+        out_rows.append(_row("S2-south-floor", changed["s2"], stf, "no South T2 score" if lo is None else
+                             f"South's T2 BSS {cell['bss']:.3f}, 90% CI lower bound {lo:.3f}" + (" > 0" if stf == PASS else " ≤ 0"),
+                             None, bss=(cell or {}).get("bss"), ci=((cell or {}).get("ci") or {}).get("bss"),
+                             n=(cell or {}).get("n"), n_pos=(cell or {}).get("n_pos")))
+    # S2 volume (Part B 7): a declared fallback must exist and stand in under the floor
+    if cand is None:
+        out_rows.append(_row("S2-volume", changed["s2"], NA, "an existing GEO_V1 set shares the served bundle's volume heads, "
+                             "refit per fold by stages_s2 under the 20-event floor; the declared fallback is a stage candidate's (P8f)"))
+    else:
+        import stages_s2_sfpuc4 as S2C  # noqa: PLC0415  (the declared fallback's kind)
+        fb = sorted(f"{t} {fo} {k}" for (t, fo), ks in cand.heads_used.items() for k, kind in ks.items() if kind == S2C.FALLBACK_KIND)
+        vol = ((sc.get("s2_volume") or {}).get("pooled") or {}).get("oracle", {}).get("T2")
+        per_basin = vs_fallback(cand)
+        parts = [_part("a declared fallback exists and stands in under the floor", "T2", PASS,
+                       "every head under the 20-event floor is the declared fallback, in every fold scored: the finals, the "
+                       "holdout siblings and each T2 outer fold's head as the bake-off records it (from_saved fails the "
+                       "build otherwise)", folds_checked=sorted(f"{t} {fo}" for t, fo in cand.heads_used)),
+                 _part("declared head − fallback, Δ log-MAE on event days", "T2", NA,
+                       "descriptive: this row's rule is the fallback's existence (protocol §8). Per basin, the bake-off's "
+                       "comparison on its nine-season folds and event days (stages_s2_sfpuc4 vs_fallback; development: the "
+                       "recipe pick saw those seasons); the build's own T2 log-MAE of the candidate's heads beside it",
+                       per_basin=per_basin, t2_log_mae=(vol or {}).get("log_mae"), t2_log_mae_ci=(vol or {}).get("ci"))]
+        out_rows.append(_row("S2-volume", changed["s2"], PASS, "the rule is the fallback's existence (protocol §8): met; the "
+                             "head − fallback Δ is reported beside it", None, parts=parts, decided_by=parts[0]["part"],
+                             fallback_used=fb, heads_used={f"{t} {fo}": v for (t, fo), v in cand.heads_used.items()},
+                             bakeoff_volume={k: v.get("picked") for k, v in ((cand.bakeoff.get("volume") or {}).get("per_basin") or {}).items()}))
+    # S3a and S3b: one Holm family
+    holm_parts, cells = {}, {}
+    if not cross:
+        out_rows.append(_row("S3a", changed["s3"], NA, "the candidate is the served set's geography: S3a compares geographies"))
+    elif skipped or "s3" not in rows:
+        holm_parts["S3a"] = {"hi90": None, "hi95": None, "margin": None}        # the family waits for it
+        out_rows.append(_row("S3a", changed["s3"], NYC, no_served or "no S3 rows"))
+    else:
+        d90, d95 = _s3a_cells(rows, art, blocks, n_boot)
+        cells["S3a"] = d90
+        _, mg = _test(d90, "noninferiority")
+        holm_parts["S3a"] = {"hi90": (d90 or {}).get("hi"), "hi95": (d95 or {}).get("hi"), "margin": mg}
+        out_rows.append(_row("S3a", True, NYC, "", d90, margin=mg, ci95=[(d95 or {}).get("lo"), (d95 or {}).get("hi")],
+                             note="on S3's East rows (the zone overflow day), which no S4 enters: S4 is held fixed by construction"))
+    s3b = (paired.get("s3b_vs_constant") or {}).get("pooled", {}).get("T2")
+    if paired.get("s3b_vs_constant") is None or (cand is not None and not size_shares(cand)):
+        out_rows.append(_row("S3b", changed["s3"], NA, "no Westside share model with a size term to test (S3b reads a stage "
+                             "candidate's s(v̂) and its constant benchmark, stages_s3_links)"))
+    else:
+        cells["S3b"] = s3b
+        holm_parts["S3b"] = {"hi90": (s3b or {}).get("hi"), "hi95": ((s3b or {}).get("ci95") or [None, None])[1], "margin": 0.0}
+        out_rows.append(_row("S3b", changed["s3"], NYC, "", s3b, margin=0.0, ci95=(s3b or {}).get("ci95")))
+    if holm_parts:
+        res = holm(holm_parts)
+        for r in out_rows:
+            if r["id"] in res:
+                st = res[r["id"]]
+                r["status"] = st
+                r["holm"] = {"family": [k for k in HOLM_FAMILY if k in holm_parts], "alpha": 0.05,
+                             "unadjusted": _test(cells.get(r["id"]), "superiority" if r["id"] == "S3b" else "noninferiority")[0]}
+                waiting = [k for k, hp in holm_parts.items() if hp.get("hi90") is None or hp.get("hi95") is None]
+                if st == NYC:
+                    r["reason"] = (r["reason"] or "no CI to test") if r["id"] in waiting else f"Holm waits for {waiting}"
+                else:
+                    r["reason"] = (f"Holm over {r['holm']['family']}: " + ("passes" if st == PASS else "does not pass") +
+                                   (" (superiority: the upper bound below 0)" if r["id"] == "S3b" else
+                                    " (non-inferiority: the upper bound below 5% of the GEO_V1 BS)"))
+    s3s2 = cand.s3_s2 if cand is not None else {}
+    for r in out_rows:                                 # which S2 the shares were fit on (Part B 2), stated on S3's rows
+        if r["id"] in HOLM_FAMILY and s3s2 and r["status"] != NA:
+            r["s3_fit_with_s2"] = s3s2.get("name")
+            cv = s3_fit_caveat(s3s2, components(bundle)["s2"], bundle.name)
+            if cv:
+                r["caveat"] = cv
+    # S4 · v3 vs the served table, oracle, T2 (and whether S4 was fit at the sizes S3 gives it: Part B 6). The size
+    # caveat is S4's and OUT's (OUT reads the same table); the fix-not-tested caveat is S4's alone.
+    size_cv = s4_size_caveat(cand.s4_sizes) if cand is not None else None
+    size_kw = {"caveat": size_cv} if size_cv else {}
+    kind4 = ((bundle.t1_specs or {}).get("s4") or {}).get("kind")
+    if changed["s4"] and kind4 != S4_V3_KIND:          # the row tests S4 v3: another changed S4 has no §8 row
+        out_rows.append(_row("S4", True, NA, f"the §8 S4 row tests S4 v3 ({S4_V3_KIND}) against the served table; the "
+                             f"candidate's S4 is {components(bundle)['s4']} ({kind4}), which no §8 row scores"))
+    elif skipped or "s4" not in rows:
+        out_rows.append(_row("S4", changed["s4"], NYC, no_served or "no S4 rows", **size_kw))
+    else:
+        c4 = ((vs.get("s4") or {}).get("pooled") or {}).get("oracle", {}).get("T2")
+        d4 = s4_defect(rows, art, blocks, n_boot) or {}
+        fx, sfx = d4.get("candidate"), d4.get("served")
+        s4 = s4_status(c4, fx, sfx)
+        cv4 = "; ".join(c for c in (size_cv, s4["caveat"]) if c)
+        cs = candlestick_sensitivity(rows, art, ctx, blocks, n_boot)
+        out_rows.append(_row("S4", changed["s4"], s4["status"], s4["why"], c4, margin=s4["margin"], superior=s4["superior"],
+                             noninferior=s4["noninferior"], **({"caveat": cv4} if cv4 else {}),
+                             defect={"chained_minus_oracle": _numbers(fx), "fixed": s4["fixed"],
+                                     "served_chained_minus_oracle": _numbers(sfx), "served_shows_defect": s4["shown"],
+                                     "fix_tested": s4["shown"], "n": d4.get("n"),
+                                     "rows": "T2 unit-days the candidate's S4 oracle and chained (rain known) rows and the "
+                                             "served table's oracle and chained rows all scored",
+                                     "rule": "fixed when the oracle is not worse than chained: Δ = BS(chained) − BS(oracle) ≥ 0 "
+                                             "and its CI not wholly below 0 (a report check, design §8 P8); the fix is tested "
+                                             "only where the served table shows the defect, its own Δ's CI wholly below 0, "
+                                             "both on the same rows"},
+                             candlestick=cs or {"status": NYC, "reason": "no T2 East zone-day sampled at a Candlestick station"}))
+    # S5 · link/zone injection vs basin_swap (live_v2), both feeds, S5's window. The row tests S5.PRIMARY's first arm:
+    # a changed S5 that is another variant has no §8 row, so this one decides nothing for it (§9.1 then reads no primary)
+    prim, where = paired.get("s5_primary"), "this build"
+    if not prim:
+        prim, where = ((art.get("scores") or {}).get("paired") or {}).get("s5_primary"), "the served set's build"
+    mine5 = components(bundle)["s5"]
+    if changed["s5"] and mine5 != S5.PRIMARY[0]:
+        out_rows.append(_row("S5", True, NA, f"the §8 S5 row tests {S5.PRIMARY[0]} against {S5.PRIMARY[1]}; the candidate's "
+                             f"S5 is {mine5}, which no §8 row scores"))
+    elif not prim:
+        out_rows.append(_row("S5", changed["s5"], NYC, no_served or "no S5 primary in this build or the served set's"))
+    else:
+        perfect = ((prim.get("oracle") or {}).get("S5") or {}).get("pooled")
+        seeds = sorted(f for f in prim if f.startswith("degraded:"))
+        sd = [((prim[f].get("S5") or {}).get("pooled") or {}) for f in seeds]
+        sp, _ = _test(perfect, "superiority")
+        if sd and all(c.get("hi") is not None for c in sd):
+            deg = {"delta": float(np.mean([c["delta"] for c in sd])), "lo": min(c["lo"] for c in sd), "hi": max(c["hi"] for c in sd),
+                   "n": int(round(np.mean([c["n"] for c in sd]))), "b": float(np.mean([c["b"] for c in sd])), "level": LEVEL,
+                   "verdict": V.verdict(min(c["lo"] for c in sd), max(c["hi"] for c in sd))}
+            sg = PASS if deg["hi"] < 0 else FAIL
+        else:
+            deg, sg = None, NYC
+        parts = [_part("perfect feed (no sibling rows)", "S5", sp, "superiority on the perfect feed", perfect),
+                 _part(f"degraded feed ({len(seeds)} seed{'' if len(seeds) == 1 else 's'})", "S5", sg, "superiority on every seed: the highest seed's "
+                       "upper bound below 0 (the range runs from the lowest seed's lower bound to the highest's upper)", deg)]
+        s5_kw = {}
+        if where != "this build" and bundle.geo.version != served_geo:
+            s5_kw["caveat"] = (f"computed on the served set's own chain ({served_geo}: its S2 → S4 and links), where basin_swap "
+                               "exists, so it tests the correction rule there, not on the candidate's "
+                               f"{bundle.geo.version} links and zones; the candidate's own rule is scored against no correction "
+                               "in its S5 rows (scores['s5'])")
+        out_rows.append(_row("S5", changed["s5"], _combine([sp, sg]), f"computed by stages_s5 on {where} (basin_swap = live_v2 "
+                             "exists on GEO_V1's basins only)", perfect, parts=parts, **s5_kw))
+    # OUT · candidate vs served, rain known and lead 1, T1 post ∪ T0
+    t0_state, t0 = t0_words(end)
+    oparts = []
+    for e, words in (("rain", "rain known"), ("L1", "lead 1")):
+        c = (((vs.get("out") or {}).get("pooled") or {}).get(e) or {}).get("T1") if not skipped else None
+        st, mg = _test(c, "noninferiority")
+        why = (no_served or f"no {words} T1 OUT row both sets scored" if st == NYC else
+               "the 90% CI's upper bound " + ("is" if st == PASS else "is not") + " below 5% of the served set's BS on the same rows")
+        oparts.append(_part(f"non-inferiority at +5%, {words}", "T1", st, why, c, margin=mg, entry=e))
+        mcb = (c or {}).get("mcb")
+        if not mcb or mcb.get("lo") is None:
+            sm, why = NYC, "no MCB CI"
+        else:
+            sm = FAIL if mcb["lo"] > 0 else PASS
+            why = "pooled MCB worse beyond its CI" if sm == FAIL else "pooled MCB not worse beyond its CI"
+        oparts.append(_part(f"pooled MCB, {words}", "T1", sm, why, mcb, entry=e))
+    if t0_state != "empty":
+        for p in oparts:
+            p["t1_status"], p["status"] = p["status"], NYC
+    out_rows.append(_row("OUT", True, _combine(p["status"] for p in oparts), "zone-pooled; " + t0,
+                         ((((vs.get("out") or {}).get("pooled") or {}).get("rain") or {}).get("T1")) if not skipped else None,
+                         parts=oparts, t0=t0_state, **size_kw))
+    out_rows = settle_unchanged(out_rows, components(bundle))
+    return V.clean({"protocol": S2.protocol_stamp(), "candidate": bundle.name, "served": served_name(),
+                    "geography": {"candidate": bundle.geo.version, "served": served_geo},
+                    "components": {"candidate": components(bundle), "served": comps}, "changed": changed,
+                    "definitions": pr["definitions"], "statuses": [PASS, FAIL, NYC, NA],
+                    "ci": f"{LEVEL:.0%} storm-block bootstrap (B = {n_boot}, seed {SEED}); Δ = candidate − incumbent",
+                    "rows": out_rows})
+
+
+def promotion(prim: dict) -> dict:
+    """Protocol §9's criteria, each met | not met | not yet computable with its reason, from the primaries. It
+    decides nothing: replacing the served set is the owner's action."""
+    crit = protocol_rules()["criteria"]
+    rows = {r["id"]: r for r in prim["rows"]}
+    changed = [c for c, v in prim["changed"].items() if v]
+    out = []
+    # 1 · every changed component passes its own-stage primary
+    per, words = [], []
+    for c in changed:
+        mine = [r for r in prim["rows"] if r["stage"] == c and r["status"] != NA]
+        if not mine:
+            per.append(NOT_MET)
+            words.append(f"{c}: no §8 primary scores this change")
+            continue
+        sts = [r["status"] for r in mine]
+        s = NOT_MET if FAIL in sts else (NYC if NYC in sts else MET)
+        per.append(s)
+        words.append(f"{c}: " + ", ".join(f"{r['id']} {r['status']}" for r in mine))
+    s1 = NOT_MET if NOT_MET in per else (NYC if NYC in per else MET)
+    caveats = [f"{r['id']}: {r['caveat']}" for r in prim["rows"] if r.get("caveat") and r["stage"] in changed]
+    out.append({"n": 1, "criterion": crit[0], "status": s1, "changed": changed,
+                "reason": ("; ".join(words) if words else "no component differs from the served set's")
+                          + (f". Caveats: {'; '.join(caveats)}" if caveats else "")})
+    # 2 · OUT non-inferior on T1 post ∪ T0, rain known and lead 1; 3 · pooled MCB not worse
+    o = rows["OUT"]
+    for n, key in ((2, "non-inferiority"), (3, "pooled MCB")):
+        ps = [p for p in o.get("parts", []) if p["part"].startswith(key)]
+        sts = [p["status"] for p in ps]
+        s = NOT_MET if FAIL in sts else (NYC if NYC in sts or not sts else MET)
+        why = o["reason"].split("; ", 1)[-1].rstrip(".")
+        out.append({"n": n, "criterion": crit[n - 1], "status": s,
+                    "reason": "; ".join(f"{p['part']}: {p['status']}" for p in ps) + f". {why}."
+                              + (f" Caveat: {o['caveat']}." if o.get("caveat") else "")})
+    out.append({"n": 4, "criterion": crit[3], "status": NYC,
+                "reason": "the per-zone shadow-run Δ report (P11) has not been made, so the owner has not seen it"})
+    out.append({"n": 5, "criterion": crit[4], "status": NYC, "reason": "the owner's own decision, made outside this build"})
+    return {"rule": "protocol §9: a candidate replaces the served set only when all five hold",
+            "note": ("Each criterion is stated as met, not met or not yet computable, with its reason. This block decides "
+                     "nothing: replacing the served set is the owner's action (§9), and nothing on this branch changes "
+                     "served.json or what the live forecast computes."),
+            "statuses": [MET, NOT_MET, NYC], "criteria": out,
+            "summary": f"{sum(c['status'] == MET for c in out)} of 5 met; criteria 4 and 5 are the owner's"}
+
+
+def _repo_path(p) -> str:
+    """A manifest's key for a file: repo-relative inside the repository, absolute outside it (a test's temp dir)."""
+    p = Path(p)
+    return str(p.relative_to(REPO)) if p.is_relative_to(REPO) else str(p)
+
+
 def manifest(bundle: SetBundle, entries, tiers, steps, model: str, end, n_boot: int) -> dict:
+    st = bundle.stage
+    extra = {} if st is None else {"stage_candidate": {
+        "s2": {"T1": "its finals", "T1-holdout": "its holdout siblings, fit before 2023-07-01",
+               "T2": f"the bake-off's outer-fold rows ({st.bakeoff.get('rows')})"},
+        "s3": "s3_links.json's per-fold records (stages_s3_links.fold_spec)", "s4": "s4_quality.json's per-fold records",
+        "t2_selection": "nested" if st.nested else "not stated nested", "heads": {f"{t} {fo}": v for (t, fo), v in st.heads_used.items()}}}
     return {"schema": SCHEMA, "set": bundle.name, "root": bundle.root, "geography": bundle.geo.version,
             "pipeline": bundle.descriptor.get("pipeline", "two_stage_v1"), "components": components(bundle),
             "stage2": bundle.variant, "family": bundle.s2.family, "spec_version": SP.SPEC_VERSION,
             "protocol": S2.protocol_stamp(), "built_at": clock.utc_iso(),
             "windows": {"holdout_start": str(S2.HOLDOUT_START.date()), "post_start": str(S2.POST_START.date()),
                         "freeze": str(X.freeze_date().date()), "seasons": list(S2.T2_SEASONS), "data_end": str(end.date()),
-                        "tiers": list(tiers), "t2_label": S2.T2_LABEL},
+                        "tiers": list(tiers), "t2_label": S2.T2_LABEL if st is None else t2_label("s2", bundle.geo, st.nested)},
             "entries": list(entries), "steps": list(steps), "weather_model": model, "bootstrap": {"n": n_boot, "seed": SEED},
-            "inputs": {str(p.relative_to(REPO)): input_sha(p) for p in input_files(bundle, model)},
+            "inputs": {_repo_path(p): input_sha(p) for p in input_files(bundle, model)},
             "inputs_unstamped": {str(Path(p).relative_to(REPO)): list(k) for p, k in UNSTAMPED.items()},
-            "code": {str(p.relative_to(REPO)): _sha(p) for p in code_files()}}
+            "code": {str(p.relative_to(REPO)): _sha(p) for p in code_files()}, **extra}
 
 
 # ── writing ─────────────────────────────────────────────────────────────────
@@ -1686,7 +3291,8 @@ def rows_frame(rows: dict) -> pd.DataFrame:
 
 
 def write(b: Build) -> list:
-    """manifest.json, scores.json and (served set only) rows.csv.gz under data/models/stages/<set>/."""
+    """manifest.json, scores.json and (the served set and stage candidates: design §7) rows.csv.gz under
+    data/models/stages/<set>/."""
     if b.n_boot != B_PROTOCOL:
         raise ValueError(f"scores made with B = {b.n_boot}; the protocol's is {B_PROTOCOL} (protocol §6)")
     if not b.scores:
@@ -1694,7 +3300,7 @@ def write(b: Build) -> list:
     d = out_dir(b.bundle.name)
     d.mkdir(parents=True, exist_ok=True)
     paths = []
-    if b.bundle.is_served:
+    if b.bundle.is_served or b.bundle.stage is not None:
         f = rows_frame(b.rows)
         f["date"] = pd.DatetimeIndex(f["date"]).strftime("%Y-%m-%d")
         buf = io.BytesIO()

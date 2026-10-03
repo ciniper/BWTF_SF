@@ -8,13 +8,18 @@ What is pinned, and why:
   rain source holds the same days;
 - lead L is the composite series (gauges to I − 1 as the issue day knew them, then day d at lead
   d − I): it matches the shared feature code run over the whole composite record, and with a perfect
-  forecast it is the rain entry (bar the issue days the whole-record outage mask reads with hindsight);
+  forecast it is the rain entry for every rain source (bar the issue days the whole-record outage mask
+  reads with hindsight, and one pinned wet_prior_3d cell where a float sum sits on the 0.1" edge);
 - the gauges as the issue day knew them are train_v4.rain_series itself, run on the record cut at I − 1:
   the gauge-days the whole-record mask hides that the cut record does not are listed exactly, as of
   2026-08-17, and the lead entries read them as filed (protocol §3: nothing unknown at issue time);
 - as served is the live page's computation: L0s / L1s equal LiveData._daily_frames run offline on the
   same gauges and forecast hours, and differ from L0 / L1 in the four history features only;
-  history_full_v1 differs from lead L only where a dry spell outlasts its 35-day frame;
+  under history_full_v1 (35 past days, the dry spell carried across the frame's start) they are L0 / L1,
+  every row and column, the summer dry spells that outlast the frame included (counted as of 2026-08-17)
+  and checked against the composite record itself; the carried count reads the record as the issue day
+  masked it (an outage run made uncallable moves it), never the whole record's hindsight; the near
+  features stay the 13-row frame's (one pass over the 35-day frame flips wet_prior_3d on pinned days);
 - a missing forecast hour is never a dry hour: a short model-day, or a peak window with a NaN hour, drops
   the row with X-S1-NWPGAP, a day the archive does not reach with X-S1-NOLEAD;
 - the entries' availability, as of the committed data's end (2026-08-17).
@@ -23,6 +28,7 @@ Run: venv/bin/python tests/test_stages_entries.py
 """
 from __future__ import annotations
 
+import math
 import sys
 import tempfile
 import time
@@ -169,36 +175,55 @@ def test_lead_entries_are_the_composite_series():
             assert f.at[D, "precip_avg"] == fc.iloc[-1] and (L == 0 or f.at[D, "rain_lag1d"] == fc.iloc[-2])
 
 
+def _edge(series, D):
+    """True when the three days before D sum to exactly 0.10", wet_prior_3d's edge (it is 1 above 0.1"). There
+    pandas' rolling sum rounds by the history it ran over, so a short frame and a long record can part."""
+    return abs(math.fsum(series.loc[D - 3 * DAY:D - DAY].to_numpy(dtype=float)) - 0.1) < 1e-9
+
+
+# (source, lead, as served under history_full_v1): days a perfect forecast's lead entry parts from the rain entry,
+# all wet_prior_3d on an exact 0.10" 3-day sum, where the 13-row frame rounds up and training reads 0; 2026-08-17
+PERFECT_EDGE_AS_OF = {("SF Downtown", 5, False): ["2025-02-10"]}
+
+
 def test_a_perfect_forecast_gives_the_rain_entry():
-    """Feed the gauges in place of the forecast: every lead entry, as-served history aside, is then the rain
-    entry — the composite, the 35-day frame and the dry-spell carry across its start included — except on
-    the issue days whose record through I − 1 has not yet called an outage the whole record masks."""
-    rain = _frames("rain", ("avg",))["avg"].set_index("date")
+    """Feed the gauges in place of the forecast: every lead entry, as served today aside, is then the rain
+    entry, for every rain source — the composite, the 35-day frame and the dry-spell carry across its start
+    included, and so is as served under history_full_v1 — except on the issue days whose record through I − 1
+    has not yet called an outage the whole record masks, and on the pinned cells where a float sum sits exactly
+    on wet_prior_3d's 0.1" edge (the rain entry reads the exact answer there)."""
     late = _late()
-    g = E._gauge("avg", ("gauge_outage_v1",))
-    leads = (0, 1, 2, 5)
-    rows = {L: pd.DatetimeIndex(_frames(f"L{L}", ("avg",))["avg"]["date"]) for L in leads}   # built before the swap
+    arms = ((0, False), (1, False), (2, False), (5, False), (0, True), (1, True))   # (lead, as served under history_full_v1)
+    parted = {}
     real_total = E._total
-    E._lead_tables.cache_clear()
     try:
-        E._total = lambda model, lead, dates: g.reindex(pd.DatetimeIndex(dates)).to_numpy(dtype=float)
-        for L in leads:
-            days = rows[L]
-            on_time = ~(days - L * DAY).isin(list(late))
-            assert (~on_time).sum() >= 4, L
-            days = days[on_time]
-            vals = E._lead_values("icon_seamless", "avg", ("gauge_outage_v1",), L, False, "served", days)
-            for i, c in enumerate(RF.DAILY_FEATURES):
-                ref = rain.loc[days, c].to_numpy(dtype=float)
-                if c in E.INT_FEATURES:
-                    assert np.array_equal(vals[:, i], ref), (L, c, np.flatnonzero(vals[:, i] != ref)[:5])
-                else:
-                    assert np.abs(vals[:, i] - ref).max() < 1e-12, (L, c)
-            long_dry = rain.loc[days, "dry_spell_days"] > E.FULL_PAST_DAYS + L + 1
-            assert long_dry.sum() > 50, (L, "summer dry spells outlast the frame, so the carry is exercised")
+        for s in SOURCES:
+            rain = _frames("rain", (s,))[s].set_index("date")
+            g = E._gauge(s, RULES)
+            rows = {L: pd.DatetimeIndex(_frames(f"L{L}", (s,))[s]["date"]) for L, _ in arms}   # built before the swap
+            E._lead_tables.cache_clear()
+            E._total = lambda model, lead, dates, g=g: g.reindex(pd.DatetimeIndex(dates)).to_numpy(dtype=float)
+            for L, served in arms:
+                days = rows[L]
+                on_time = ~(days - L * DAY).isin(list(late))
+                assert (~on_time).sum() >= 4, (s, L)
+                days = days[on_time]
+                vals = E._lead_values("icon_seamless", s, RULES, L, served, "full" if served else "served", days)
+                for i, c in enumerate(RF.DAILY_FEATURES):
+                    ref = rain.loc[days, c].to_numpy(dtype=float)
+                    hit = (vals[:, i] != ref) if c in E.INT_FEATURES else ~(np.abs(vals[:, i] - ref) < 1e-12)   # NaN: a hit
+                    for D in days[hit]:
+                        assert c == "wet_prior_3d" and _edge(g, D) and rain.at[D, c] == 0, (s, L, served, c, D.date())
+                        parted.setdefault((s, L, served), []).append(str(D.date()))
+                long_dry = rain.loc[days, "dry_spell_days"] > E.FULL_PAST_DAYS + L + 1
+                assert long_dry.sum() > 50, (s, L, served, "summer dry spells outlast the frame, so the carry is exercised")
+            E._total = real_total
+            E._lead_tables.cache_clear()
     finally:
         E._total = real_total
         E._lead_tables.cache_clear()
+    as_of = {k: [d for d in v if d <= AS_OF] for k, v in parted.items()}
+    assert {k: v for k, v in as_of.items() if v} == PERFECT_EDGE_AS_OF, parted
 
 
 # ── the gauges as the issue day knew them ───────────────────────────────────
@@ -328,7 +353,18 @@ def test_as_served_is_what_the_live_page_computes():
     assert checked > 5000, checked
 
 
+# rows through 2026-08-17 whose dry spell outlasts history_full_v1's 35-day frame (> 36 + L days), which only
+# the carried count reads right, and (> 45 + L + 1) the design's 45-day ACIS window would still cap
+DESIGN_ACIS_DAYS = 45                                 # STAGES_DESIGN.md §6 item 8: "ACIS 45 days"
+LONG_DRY_AS_OF = {("L0", "avg"): (344, 294), ("L0", "SF Downtown"): (350, 310),
+                  ("L1", "avg"): (232, 192), ("L1", "SF Downtown"): (238, 208)}
+
+
 def test_as_served_differs_from_lead_l_only_in_history():
+    """As served today (7 past days) differs from lead L in the four history features only, the dry spell
+    capped at the frame. Under history_full_v1 it IS lead L, every row and column: the dry spell is the carried
+    count, checked on every row that outlasts the 35-day frame against the composite record itself (the gauges
+    through I − 1 as the issue day knew them, then the forecast), counted without the shared feature code."""
     for L in (0, 1):
         lead, srv = _frames(f"L{L}"), _frames(f"L{L}s")
         full = _frames(f"L{L}s", history="full")
@@ -339,14 +375,111 @@ def test_as_served_differs_from_lead_l_only_in_history():
                 same = np.array_equal(a[col].to_numpy(), b[col].to_numpy())
                 if col in E.HISTORY_FEATURES:
                     assert not same, (L, s, col, "seven past days must truncate it somewhere")
-                    assert np.array_equal(a[col].to_numpy(), c[col].to_numpy()) == (col != "dry_spell_days"), (L, s, col)
                 else:
-                    assert same and np.array_equal(a[col].to_numpy(), c[col].to_numpy()), (L, s, col)
-            # a dry spell reads capped at the frame: 7 past days + L + 1 as served, 35 + L + 1 under history_full_v1
+                    assert same, (L, s, col)
+            pd.testing.assert_frame_equal(c, a, check_exact=True)       # history_full_v1 = lead L, bit for bit
+            # as served today, a dry spell reads capped at the frame: 7 past days + L + 1
             dry = a["dry_spell_days"].to_numpy()
             assert np.array_equal(b["dry_spell_days"].to_numpy(), np.minimum(dry, E.SERVED_PAST_DAYS + L + 1)), (L, s)
-            assert np.array_equal(c["dry_spell_days"].to_numpy(), np.minimum(dry, E.FULL_PAST_DAYS + L + 1)), (L, s)
             assert b.attrs["history"] == "served" and c.attrs["history"] == "full" and a.attrs["history"] is None
+            upto = c[c["date"] <= AS_OF]
+            long = upto.loc[upto["dry_spell_days"] > E.FULL_PAST_DAYS + L + 1, ["date", "dry_spell_days"]]
+            capped = int((upto["dry_spell_days"] > DESIGN_ACIS_DAYS + L + 1).sum())
+            assert (len(long), capped) == LONG_DRY_AS_OF[(f"L{L}", s)], (L, s, len(long), capped)
+            fc = {j: E.model_days("icon_seamless", j).set_index("date")["total"] for j in range(L + 1)}
+            for D, want in zip(long["date"], long["dry_spell_days"]):
+                I = D - L * DAY
+                comp = np.r_[_history(s, I).to_numpy(), [fc[j].at[I + j * DAY] for j in range(L + 1)]]
+                wet = np.flatnonzero(comp >= 0.05)                       # rain_features: a dry day is < 0.05"
+                assert want == len(comp) - 1 - wet[-1], (L, s, D.date(), want, len(comp) - 1 - wet[-1])
+
+
+UNCALLABLE_AS_OF = 52   # L0 SF Oceanside rows (2023-06-12 → 08-02) whose carried spell's last wet day an open run filled; 2026-08-17
+
+
+def test_history_full_v1_carries_the_dry_spell_the_issue_day_knew():
+    """The dry spell carried across the 35-day frame's start reads the record through I − 1 as the issue day
+    masked it, never the whole record's hindsight. No committed issue day needs that (the record through I − 1
+    already calls every outage run a carried spell touches), so one is made: on the L0 issue days whose
+    SF Oceanside spell has its last wet day inside an Oceanside outage run still open on I − 1 (truth.outage_runs),
+    the run is listed as not yet callable. Lead L and history_full_v1 must then both read the dead gauge's
+    0.00s, as the composite record built without the entries' code does; as served today stays capped."""
+    s, L = "SF Oceanside", 0
+    base = _frames("L0", (s,))[s].set_index("date")
+    real = E._hindsight(RULES).copy()
+    cells, picked = [], []
+    for D, c in base["dry_spell_days"].loc[:AS_OF].items():
+        if c <= E.FULL_PAST_DAYS + L + 1:
+            continue
+        I, w = D - L * DAY, D - int(c) * DAY                         # the issue day, the spell's last wet day
+        for r in T.outage_runs():
+            first, last = pd.Timestamp(r["start"]), pd.Timestamp(r["end"])
+            if r["gauge"] == s and first <= w <= last and last >= I - DAY:
+                picked.append((D, first))
+                cells += [(I, d, s) for d in pd.date_range(first, I - DAY)]
+    assert len(picked) == UNCALLABLE_AS_OF, len(picked)
+    assert not {D - L * DAY for D, _ in picked} & set(real["issue"]), "the made-up issue days must be new ones"
+    fake = pd.concat([real, pd.DataFrame(cells, columns=list(real.columns))], ignore_index=True)
+    caches = (E._issue_records, E._lead_tables)
+    for fn in caches:
+        fn.cache_clear()
+    try:
+        with patch.object(E, "_hindsight", lambda rules: fake if rules else real.iloc[:0]):
+            lead = E.frames("L0", [s])[s]
+            full = E.frames("L0s", [s], history="full")[s]
+            served = E.frames("L0s", [s])[s].set_index("date")
+    finally:
+        for fn in caches:
+            fn.cache_clear()
+    pd.testing.assert_frame_equal(full, lead, check_exact=True)       # history_full_v1 = lead L here too
+    lead = lead.set_index("date")
+    g = E._gauge(s, RULES)
+    fc = E.model_days("icon_seamless", 0).set_index("date")["total"]
+    for D, first in picked:
+        known = g.loc[:D - L * DAY - DAY].copy()
+        known.loc[first:] = 0.0                                      # the run as filed: exactly-0.00 days at the dead gauge
+        comp = np.r_[known.to_numpy()[-CHECK_DAYS:], fc.at[D]]
+        want = len(comp) - 1 - np.flatnonzero(comp >= 0.05)[-1]
+        assert lead.at[D, "dry_spell_days"] == want > base.at[D, "dry_spell_days"], (D.date(), lead.at[D, "dry_spell_days"], want)
+        assert served.at[D, "dry_spell_days"] == min(want, E.SERVED_PAST_DAYS + L + 1), D.date()
+        ref = RF.add_daily_features(pd.DataFrame({"precip_inches": comp})).iloc[-1]
+        for c in RF.DAILY_FEATURES:
+            assert abs(float(ref[c]) - float(lead.at[D, c])) < 1e-12, (D.date(), c, ref[c], lead.at[D, c])
+
+
+# (entry, source): the days the one-pass 35-day frame parts from history_full_v1, wet_prior_3d on an exact 0.10"
+# 3-day sum, where the 13-row frame reads the exact answer (0); ICON, as of 2026-08-17
+ONE_PASS_EDGE_AS_OF = {("L0s", "SF Downtown"): ["2025-02-10", "2026-01-31"], ("L1s", "SF Downtown"): ["2025-02-10", "2026-01-31"]}
+
+
+def test_history_full_v1_keeps_the_13_row_frames_near_features():
+    """A page under history_full_v1 that runs add_daily_features once over its whole frame (35 past days, then the
+    forecast) gets the history features right, and the dry spell wherever the frame does not cap it, but its
+    rolling sums round by the longer history: on an exact 0.10" 3-day sum wet_prior_3d flips to 1. The entries
+    take the near features from the 13-row frame, as for every lead entry, which reads 0 there; the page must
+    too. Checked on every row against the composite record (the gauges through I − 1 as the issue day knew
+    them, then the forecast)."""
+    for L in (0, 1):
+        fc = {j: E.model_days("icon_seamless", j).set_index("date")["total"] for j in range(L + 1)}
+        for s, f in _frames(f"L{L}s", history="full").items():
+            f = f.set_index("date")
+            parted = []
+            for D in f.index:
+                I = D - L * DAY
+                comp = pd.concat([_history(s, I).iloc[-E.FULL_PAST_DAYS:],
+                                  pd.Series([fc[j].at[I + j * DAY] for j in range(L + 1)], index=pd.date_range(I, D))])
+                one = RF.add_daily_features(pd.DataFrame({"precip_inches": comp.to_numpy()})).iloc[-1]
+                for c in RF.DAILY_FEATURES:
+                    if c == "dry_spell_days" and one[c] == E.FULL_PAST_DAYS + L + 1:
+                        continue                                          # capped by the frame: the carried count, checked above
+                    if c in E.INT_FEATURES:
+                        same = int(one[c]) == int(f.at[D, c])
+                    else:
+                        same = abs(float(one[c]) - float(f.at[D, c])) < 1e-12
+                    if not same:
+                        assert c == "wet_prior_3d" and _edge(comp, D) and f.at[D, c] == 0, (L, s, D.date(), c, one[c], f.at[D, c])
+                        parted.append(str(D.date()))
+            assert [d for d in parted if d <= AS_OF] == ONE_PASS_EDGE_AS_OF.get((f"L{L}s", s), []), (L, s, parted)
 
 
 # ── never a missing hour as a dry one ───────────────────────────────────────
