@@ -512,7 +512,30 @@ def handle_scorecard(query, body):
     start = (query.get("from") or [""])[0] or None
     end = (query.get("to") or [""])[0] or None
     model = (query.get("model") or [""])[0] or None   # a candidate set's name; default = the served v4 artifact
-    return _json(_engine.LIVE.get_scorecard(date_str, start, end, model))
+    sc = _engine.LIVE.get_scorecard(date_str, start, end, model)
+    if isinstance(sc, dict) and sc.get("models"):
+        sc["models"] = with_lineups(sc["models"])
+    return _json(sc)
+
+
+def with_lineups(models: list) -> list:
+    """Each set named by its stage lineup (STAGES_DESIGN.md A8, shared/lineup.py): S2–S4 only, since the
+    Model check's hindcast runs on measured rain with no live corrections. ``differs`` marks the parts that
+    are not the served set's. A part with no words shows its id (tests/test_lineup.py keeps that from happening)."""
+    from shared import lineup as LU
+    parts = [LU.geo_v1_parts(m.get("stage1") or "", m.get("stage2") or "v1") for m in models]
+    served = next((p for m, p in zip(models, parts) if m.get("served")), None)
+    out = []
+    for m, p in zip(models, parts):
+        row = []
+        for col in ("s2", "s3", "s4"):
+            try:
+                words = LU.words(col, p[col])
+            except KeyError:
+                words = p[col]
+            row.append({"col": col, "words": words, "differs": served is not None and p[col] != served[col]})
+        out.append({**m, "lineup": row})
+    return out
 
 
 def handle_models(query, body):
@@ -521,7 +544,7 @@ def handle_models(query, body):
     err = _require_engine()
     if err:
         return err
-    return _json({"models": _engine.LIVE.list_models()})
+    return _json({"models": with_lineups(_engine.LIVE.list_models())})
 
 
 GET_ROUTES = {

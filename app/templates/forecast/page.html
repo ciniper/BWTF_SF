@@ -769,6 +769,9 @@ function setScoreLabel(v) {
     if (!current || current.mode !== 'check') return;
     renderCheck({ predictions: current.byDate }, current.actual, current.scorecard, current.target);
 }
+// A model set by its stage lineup (A8, shared/lineup.py via the scorecard API): S2 · S3 · S4 in plain words.
+const lineupWords = m => (m.lineup || []).map(x => x.words).join(' · ');
+const setName = m => m.served ? "today's forecast" : (lineupWords(m) || m.label);
 const scoreRangeQuery = () => (scoreRange ? '&from=' + encodeURIComponent(scoreRange.from) + '&to=' + encodeURIComponent(scoreRange.to) : '')
                             + (scoreModel ? '&model=' + encodeURIComponent(scoreModel) : '');
 function setScoreModel(v) {
@@ -905,8 +908,8 @@ function renderScoreWindow(sc) {
     const preset = scorePresetOf(w, sc), thr = String(RISK_THRESHOLD);
     const opt = (v, label) => `<option value="${v}"${v === preset ? ' selected' : ''}>${esc(label)}</option>`;
     const seasonLabel = s => s.label + ' season' + (s.clip ? ' (' + s.clip + ')' : '') + ' · ' + seasonGrade(s);
-    const models = sc.models || [];
-    const modelLabel = (models.find(m => m.key === (sc.model || '')) || {}).label || (models[0] || {}).label || `${SERVED_NAME} (served)`;
+    const models = sc.models || [], cur = models.find(m => m.key === (sc.model || '')) || models[0];
+    const modelLabel = cur ? setName(cur) : `${SERVED_NAME} (served)`;
     const usePosted = scoreLabel === 'posted' && !!w.posted_confusion, useCombined = scoreLabel === 'combined' && !!w.combined_confusion, plab = w.posting_label || {};
     const rulerName = usePosted ? 'beach postings' : useCombined ? 'discharge days + samples' : 'discharge days only';
     const stats = {};
@@ -917,7 +920,7 @@ function renderScoreWindow(sc) {
     let html = `<div id="scoreWindow"><div class="subhead">${ic('chart-line')} Scorecard — ${esc(modelLabel)} — ${fmtRange(w.start, w.end)}, alerts at ${esc(lineName(RISK_THRESHOLD))} · vs ${rulerName}</div>
         <div class="sc-controls">
             ${models.length > 1 ? `<select class="date-picker" onchange="setScoreModel(this.value)" title="Which model set's stored hindcast to grade. Only the served set drives the live forecast; candidates are scored here on the same days and labels.">
-                ${models.map(m => `<option value="${esc(m.key)}"${m.key === (sc.model || '') ? ' selected' : ''}>${esc(m.label)} — stage 1 ${esc(m.stage1 || m.family || '?')} · stage 2 ${esc(m.stage2 || 'v1')}</option>`).join('')}
+                ${models.map(m => `<option value="${esc(m.key)}"${m.key === (sc.model || '') ? ' selected' : ''}>${m.served ? "Today's forecast: " : ''}${esc(lineupWords(m) || m.label)}${m.served ? '' : ` (${esc(m.label)})`}</option>`).join('')}
             </select>` : ''}
             <select class="date-picker" onchange="setRiskLine(this.value)" title="A day counts as alerted when its risk reaches this level; hits, misses and false alarms everywhere on this view follow it">
                 ${RISK_LEVELS.edges.map(e => `<option value="${e}"${e === RISK_THRESHOLD ? ' selected' : ''}>alerts at ${esc(lineName(e))}</option>`).join('')}
@@ -942,6 +945,7 @@ function renderScoreWindow(sc) {
             ${scoreRange ? `<button class="mode-btn" onclick="resetScoreRange()" title="Back to the season of the selected date">${ic('calendar')} follow the date</button>` : ''}
         </div>
         <div class="sc-facts">
+            ${cur && cur.lineup ? `<span class="mute" title="Stored as ${esc(cur.label)}. Bold: not today's forecast's part.">${cur.lineup.map(x => x.differs ? `<b>${esc(x.words)}</b>` : esc(x.words)).join(' · ')}</span>` : ''}
             <span class="mute">${w.n_days} days · ${w.n_discharge_days} discharge day${w.n_discharge_days === 1 ? '' : 's'} · ${w.n_sampled_days} sampled</span>
             ${gradeBadge(w, sc)}
             ${(sc.input_rules_post || []).length && w.n_post ? `<span class="mute" title="Days after the training data ended are scored on rain treated by the serving-side input rules: a NOAA gauge stuck at exactly 0.00 for 2+ days while the other gauge recorded real rain is treated as missing and the other gauge stands in.">${w.n_post} post-training day${w.n_post === 1 ? '' : 's'} on ${esc((sc.input_rules_post || []).join(', '))}</span>` : ''}
