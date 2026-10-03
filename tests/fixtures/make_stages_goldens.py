@@ -272,7 +272,11 @@ def live_payloads() -> dict:
         live.WATCHER_SINCE = LIVE_WATCHER_SINCE
         live._live_corrections_enabled = lambda: (True, "golden")
         live._watcher_health = lambda: dict(LIVE_HEALTH)
-        live._fetch_observed_cso = lambda window_start: {d: set(b) for d, b in LIVE_ONSETS.items()}
+        # station form (link_zone_v1, A7): each onset at the first SFPUC station of its basin, a fixed choice
+        # that adds no pinned input (live_v2 reads the basin form, so the served pins are what they were)
+        first = {b: min(s for s, bb in ld.OBSERVED_STATION_BASIN.items() if bb == b) for b in set(ld.OBSERVED_STATION_BASIN.values())}
+        live._fetch_observed_cso = lambda window_start, stations=False: (
+            {d: {first[x] for x in b} for d, b in LIVE_ONSETS.items()} if stations else {d: set(b) for d, b in LIVE_ONSETS.items()})
         live._cso_flag_days = lambda start, end, today: {d: set(b) for d, b in LIVE_FLAGS.items() if start <= d <= end}
         live._sample_flags = lambda start, end: {k: v for k, v in LIVE_DATASF.items() if start <= k[1] <= end}
         live._feed_sample_flags = lambda start, end: {k: v for k, v in LIVE_FEED.items() if start <= k[1] <= end}

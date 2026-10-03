@@ -245,6 +245,9 @@ const RULE_BADGE = {
     sample_dry_floor:      a => ['warn', 'microscope', `sample elevated, dry weather · ≥ ${pct(a.to)}%`],
     sample_clean_cap:      a => ['ok', 'microscope', `sample clean · ${pct(a.from)}% → ${pct(a.to)}%`],
     flag_hold:             a => ['danger', 'octagon-alert', `CSO flag still up · held ≥ ${pct(a.to)}%`],
+    // link_zone_v1 (A7): a station's CSO flag enters at its beaches; the basin's other beaches rise to how often they overflow together
+    overflow_observed:     a => ['danger', 'octagon-alert', `overflow flagged here · ${pct(a.from)}% → ${pct(a.to)}%`],
+    overflow_nearby:       a => ['warn', 'octagon-alert', `overflow flagged nearby · ${pct(a.from)}% → ${pct(a.to)}%`],
 };
 const ruleBadge = (rule, a) => { const f = RULE_BADGE[rule]; return f ? badge(...f(a || {})) : ''; };
 // every live-rule badge that touches a zone: its basins' stage-1 rules and its groups' stage-2 rules

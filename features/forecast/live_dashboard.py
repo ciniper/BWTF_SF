@@ -95,6 +95,9 @@ from src.models import stage2 as _s2  # noqa: E402  (the served stage 2 spec's s
 from src.models import compose_v2 as _C  # noqa: E402  (the one composition serving and the stage scores share: STAGES_DESIGN.md A6)
 from shared import geography as _geography  # noqa: E402
 _GEO = _geography.get("geo_v1")   # the served geography: four basins, the six legacy groups as the adapter's links
+# The live-correction rule A7 switches to (data/models/s5.json): a CSO flag at a station goes in after the split,
+# at the link posting it, its basin's other links lifted to their co-firing share (stages_s5's link_zone_swap)
+LINK_ZONE = "link_zone_v1"
 
 # ─── Data source URLs ────────────────────────────────────────────────────────
 
@@ -192,6 +195,7 @@ class LiveData:
         self.stage2 = self._load_stage2()                 # the served stage 2 spec (None = v1, the basin composition)
         self.split = _s2.make_split(self.stage2)          # None for v1; the outfall split's callable for v2/v3
         self.impact_table = self._load_impact_table()
+        self.corrections = self._load_corrections()       # None = live_v2 (live_rules), today's rule; else data/models/s5.json
         self.specs = self._load_specs()                   # the same split and table as stage specs (compose_v2's adapter)
 
     def _load_models(self):
@@ -266,8 +270,26 @@ class LiveData:
         adapter), built from the same raw files as ``self.split`` and ``self.impact_table``. The
         composition runs on these, the same code the stage scores run (STAGES_DESIGN.md A6), and
         equals src/models/impact.compose exactly (tests/test_compose_v2.py, the served goldens).
-        A table with no buckets raises here, at startup, instead of composing with silent fallbacks."""
-        return _C.geo_v1_adapter_specs(stage2=self.stage2, impact_table=self._raw_impact_table())
+        A table with no buckets raises here, at startup, instead of composing with silent fallbacks.
+        The served correction rule's co-firing shares ride in the S3 spec (sibling links of a flag)."""
+        cofire = (getattr(self, "corrections", None) or {}).get("cofire")
+        return _C.geo_v1_adapter_specs(stage2=self.stage2, impact_table=self._raw_impact_table(), cofire_shares=cofire)
+
+    def _load_corrections(self) -> dict | None:
+        """data/models/s5.json — the served live-correction rule when it is not live_v2 (STAGES_DESIGN.md
+        A7; written by promote.py --corrections): {"rule": "link_zone_v1", "cofire": {"a|b": share}, ...}.
+        No file = live_v2, today's rule (live_rules). A file naming another rule, or no co-firing shares,
+        raises: the forecast never composes with a correction rule it cannot read."""
+        path = MODEL_DIR / "s5.json"
+        if not path.exists():
+            return None
+        with open(path) as f:
+            spec = json.load(f)
+        if spec.get("rule") != LINK_ZONE:
+            raise ValueError(f"s5.json names the correction rule {spec.get('rule')!r}; serving knows {LINK_ZONE!r} (or no file: live_v2)")
+        if not isinstance(spec.get("cofire"), dict) or not spec["cofire"]:
+            raise ValueError("s5.json carries no co-firing shares; a station flag's sibling links need them")
+        return spec
 
     @property
     def rain_sources(self) -> set:
@@ -359,15 +381,16 @@ class LiveData:
             out[name] = max(0.0, float(np.expm1(md["model"].predict(X)[0])))
         return out
 
-    def _fetch_observed_cso(self, window_start) -> dict:
+    def _fetch_observed_cso(self, window_start, stations: bool = False) -> dict:
         """Observed CSO onsets from the Supabase alert_log the pg_cron watcher
         writes (one row per escalation; edge-triggered, so a row marks the
         ONSET day — exactly what the persistence composition needs).
 
-        Returns {date: {basin_key, ...}}. Empty dict when Supabase is not
-        configured, the query fails, or nothing was observed — absence of a
-        row means "not observed", never "no discharge", so callers fall back
-        to model probabilities.
+        Returns {date: {basin_key, ...}}, or with ``stations`` {date: {SFPUC
+        station id, ...}} (the link_zone_v1 rule puts a flag in at its station).
+        Empty dict when Supabase is not configured, the query fails, or nothing
+        was observed — absence of a row means "not observed", never "no
+        discharge", so callers fall back to model probabilities.
         """
         if _supabase is None or not _supabase.is_configured():
             return {}
@@ -412,7 +435,7 @@ class LiveData:
             for sid in station_ids:
                 basin = OBSERVED_STATION_BASIN.get(sid)
                 if basin:
-                    observed.setdefault(local_date, set()).add(basin)
+                    observed.setdefault(local_date, set()).add(sid if stations else basin)
         return observed
 
     def _compose_impact(self, day_probs: list, day_volumes: list, idx: int,
@@ -432,10 +455,12 @@ class LiveData:
         composed["_groups"] = block["impact_groups"]
         return composed
 
-    def _compose_run(self, day_probs: list, day_volumes: list, day_dates: list, observed: dict = None):
+    def _compose_run(self, day_probs: list, day_volumes: list, day_dates: list, observed: dict = None,
+                     stations: dict = None):
         """compose_v2.compose over the daily table: S2's p and v̂ per basin (a basin with no
         prediction is 0, as impact.compose skipped it), observed onsets as basin injections
-        (live_v2's basin swap; an onset on a day outside the table is not in this run)."""
+        (live_v2's basin swap), or with ``stations`` ({date: {SFPUC station id}}) as station
+        flags after the split (link_zone_v1). An onset on a day outside the table is not in this run."""
         keys = list(_GEO.keys)
         index = pd.DatetimeIndex(pd.to_datetime(list(day_dates)))
         p = pd.DataFrame([[float(row.get(k) or 0.0) for k in keys] for row in day_probs], index=index, columns=keys)
@@ -443,7 +468,8 @@ class LiveData:
                           for j in range(len(index))], index=index, columns=keys)
         days = set(index.date)
         seen = {d: set(bs) & set(keys) for d, bs in (observed or {}).items() if d in days}
-        return _C.compose(_GEO, self.specs, _C.BasinInputs(p, v), _C.Inject(basin=seen))
+        flags = {d: set(s) for d, s in (stations or {}).items() if d in days and s}
+        return _C.compose(_GEO, self.specs, _C.BasinInputs(p, v), _C.Inject(basin=seen, zone=flags))
 
     @staticmethod
     def _features_from_row(row) -> dict:
@@ -923,6 +949,10 @@ class LiveData:
         start, end = min(dates), min(max(dates), today)
         health = self._watcher_health()
         self._live_watcher = health
+        if getattr(self, "corrections", None):   # A7, link_zone_v1: the day a station's CSO flag goes up, its link = 1 after the split
+            stations = {d: s for d, s in self._fetch_observed_cso(start, stations=True).items() if d <= end}
+            return {"enabled": True, "source": source, "rule": LINK_ZONE, "stations": stations,
+                    "onsets": observed or {}, "health": health, "today": today}
         flags = self._cso_flag_days(start, end, today) if health.get("mode") else {}
         datasf = self._sample_flags(start, end) if str(end) >= self.DATASF_FLOOR else {}
         feed = self._feed_sample_flags(start, end)
@@ -945,6 +975,22 @@ class LiveData:
         if live is None or not live.get("enabled"):
             day_predictions, impact_groups = dict(plain_predictions), dict(plain_groups)
             rules_block = None if live is None else {"version": _lr.VERSION, "enabled": False, "source": live.get("source")}
+            probs_live = None
+        elif live.get("rule") == LINK_ZONE:
+            # A7: the flags enter after the split (compose_v2 zone injections, stages_s5's link_zone_swap): the
+            # flagged station's link = 1 on the flag day, its basin's other links at least their co-firing share,
+            # the days after through the lingering table. No live_v2 rule runs; a lab result moves no percent (A1).
+            comp = self._compose_run(probs, vols, dates, stations=live["stations"])
+            block = _C.payload_blocks(_GEO, self.specs["s4"], comp, dates[idx])
+            day_predictions, impact_groups = dict(block["predictions"]), dict(block["impact_groups"])
+            seen = {s for d, ss in live["stations"].items() if 0 <= (dates[idx] - d).days <= 7 for s in ss}
+            carriers = {lk.legacy_group for lk in _GEO.links if seen & set(lk.stations)}
+            gnotes = {g: {"rule": "overflow_observed" if g in carriers else "overflow_nearby",
+                          "from": round(plain_groups.get(g, 0.0), 3), "to": round(v, 3)}
+                      for g, v in impact_groups.items() if abs(v - plain_groups.get(g, 0.0)) >= 0.0005}
+            rules_block = {"version": LINK_ZONE, "enabled": True, "source": live.get("source"), "stage1": {},
+                           "groups": gnotes, "flags_active": sorted(live["stations"].get(dates[idx], ())),
+                           "watcher_ok": bool(live["health"].get("ok")), "sample_sources": None}
             probs_live = None
         else:
             p2, v2 = live["probs"], live["vols"]

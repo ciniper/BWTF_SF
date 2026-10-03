@@ -350,6 +350,82 @@ def test_replay_report_exists_and_its_self_check_held():
     assert (ROOT / "reports" / "2026-09_live_replay_synthetic.html").exists()
 
 
+def test_link_zone_v1_puts_a_station_flag_in_after_the_split():
+    """A7's rule (data/models/s5.json, written by promote.py --corrections link_zone_v1), dormant
+    until promoted: a station's CSO flag sets the link posting it to 1 on the flag day, its basin's
+    other links at least their co-firing share, the days after through the lingering table. The
+    payload is compose_v2 with that zone injection, exactly what stages_s5 scored as link_zone_swap,
+    and no live_v2 rule runs."""
+    import pandas as pd
+    sys.path.insert(0, str(ROOT / "features" / "forecast"))
+    from features.forecast import live_dashboard as ld
+    import compose_v2 as C
+    import promote
+    spec, split, table = _stage2_v2()
+    eng = ld.LiveData.__new__(ld.LiveData)
+    eng.stage2, eng.split, eng.impact_table = spec, split, table
+    eng.corrections = promote.promote_corrections(ld.LINK_ZONE, dry_run=True)   # the shares, nothing written
+    eng.specs = eng._load_specs()
+    assert eng.corrections["rule"] == ld.LINK_ZONE and eng.specs["s3"]["cofire"] == eng.corrections["cofire"]
+    rain = [0.0, 0.0, 0.0, 0.0, 1.4, 0.9, 0.3, 0.0, 0.0, 0.0]
+    frames = {"avg": pd.DataFrame({"date": pd.to_datetime(DATES), "precip_inches": rain, "rain_source": ["observed"] * 8 + ["forecast"] * 2})}
+    feats = [{"avg": {"precip_avg": r, "rain_2d_cum": 0.0, "rain_3d_cum": 0.0}} for r in rain]
+    probs = _probs({(4, "westside"): 0.5, (5, "westside"): 0.4, (6, "westside"): 0.2})
+    vols = [{b: (8.0 if b == "westside" else 1.0) for b in BASINS} for _ in DATES]
+    flag = {DATES[5]: {"4603"}}                                     # an Ocean Beach station (Ocean Beach link) flagged on day 5
+    eng._live_corrections_enabled = lambda: (True, "default")
+    eng._watcher_health = lambda: {"ok": True, "mode": "live", "reason": "ok"}
+    eng._fetch_observed_cso = lambda start, stations=False: flag if stations else {DATES[5]: {"westside"}}
+    eng._cso_flag_days = lambda *a: (_ for _ in ()).throw(AssertionError("live_v2's flag windows must not be read"))
+    live = eng._live_context(frames, probs, vols, DATES, {DATES[5]: {"westside"}}, TODAY)
+    assert live["rule"] == ld.LINK_ZONE and live["stations"] == flag
+    idx = pd.DatetimeIndex(pd.to_datetime(DATES))
+    keys = list(ld._GEO.keys)
+    want = C.compose(ld._GEO, eng.specs, C.BasinInputs(pd.DataFrame([[r[k] for k in keys] for r in probs], idx, keys),
+                                                       pd.DataFrame([[v[k] for k in keys] for v in vols], idx, keys)),
+                     C.Inject(zone=flag)).out.unit
+    group = {lk.id: lk.legacy_group for lk in ld._GEO.links}
+    for i in (5, 6, 7):
+        pay = eng._day_payload(frames, i, feats, probs, vols, DATES, {}, live)
+        assert pay["impact_groups"] == {group[u]: float(want.iat[i, j]) for j, u in enumerate(want.columns)}, i
+        assert pay["live_corrections"]["version"] == ld.LINK_ZONE and pay["live_corrections"]["stage1"] == {}
+        notes = pay["live_corrections"]["groups"]
+        assert notes["Ocean Beach"]["rule"] == "overflow_observed" and notes["Ocean Beach"]["to"] > notes["Ocean Beach"]["from"]
+        if i == 5:
+            assert pay["impact_groups"]["Ocean Beach"] == 1.0          # the flag day: the flagged link is certain
+            assert notes["Baker-China"]["rule"] == "overflow_nearby"   # its sibling rises to the co-firing share
+            assert pay["impact_groups"]["Baker-China"] >= eng.corrections["cofire"]["westside>baker_china|westside>ocean"] - 0.0005
+        assert all(g in ("Ocean Beach", "Baker-China") for g in notes), notes   # a Westside flag moves no other basin
+
+
+def test_corrections_switch_writes_s5_and_switches_back():
+    """promote.py --corrections link_zone_v1 writes s5.json and records the rule in served.json;
+    --corrections live_v2 removes the file. A dry run writes nothing."""
+    import shutil
+    import tempfile
+    import promote
+    sd = ROOT / "features" / "forecast" / "data" / "models"
+    with tempfile.TemporaryDirectory() as tmp:
+        shutil.copy2(sd / "served.json", Path(tmp) / "served.json")
+        before = (Path(tmp) / "served.json").read_text()
+        promote.promote_corrections("link_zone_v1", dry_run=True, serve_dir=tmp)
+        assert not (Path(tmp) / "s5.json").exists() and (Path(tmp) / "served.json").read_text() == before
+        spec = promote.promote_corrections("link_zone_v1", serve_dir=tmp)
+        on_disk = json.loads((Path(tmp) / "s5.json").read_text())
+        assert on_disk["rule"] == "link_zone_v1" and on_disk["cofire"] == spec["cofire"]
+        assert on_disk["fit"]["ledger_through"] == json.loads(before)["trained_through"]
+        assert json.loads((Path(tmp) / "served.json").read_text())["corrections"] == "link_zone_v1"
+        promote.promote_corrections("live_v2", serve_dir=tmp)
+        assert not (Path(tmp) / "s5.json").exists()
+        assert json.loads((Path(tmp) / "served.json").read_text())["corrections"] == "live_v2"
+        try:
+            promote.promote_corrections("basin_swap", serve_dir=tmp)
+            raise AssertionError("an unknown rule must raise")
+        except SystemExit:
+            pass
+    assert not (sd / "s5.json").exists(), "the branch serves live_v2 until the owner promotes the switch"
+
+
 if __name__ == "__main__":
     failed = 0
     for name, fn in sorted(globals().items()):

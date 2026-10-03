@@ -24,6 +24,17 @@ After promoting: re-export the explorers (served + the retired candidate),
 export_stage2_explorer, report_models; run `train_v4.py --rescore --replace-post`
 as the fidelity check (the served models must reproduce the stored zone risks);
 run the tests; deploy. Nothing here touches Supabase.
+
+The live-correction rule is promoted on its own (STAGES_DESIGN.md A7):
+
+    venv/bin/python features/forecast/src/models/promote.py --corrections link_zone_v1 [--dry-run]
+    venv/bin/python features/forecast/src/models/promote.py --corrections live_v2      # back to today's rule
+
+link_zone_v1 writes data/models/s5.json (the rule, and the served geography's
+co-firing shares fit on the CIWQS ledger through the served set's
+trained_through, as stages_s5 scored it); live_v2 removes the file. Either way
+served.json records the rule as "corrections". It changes the public number:
+re-run tests/fixtures/make_stages_goldens.py in the same commit.
 """
 from __future__ import annotations
 
@@ -130,6 +141,7 @@ def promote(candidate: str, line: float, dry_run: bool = False) -> dict:
         "rain_sources": man.get("rain_sources"), "per_basin": man.get("per_basin"), "input_rules_post": man.get("input_rules_post"),
         "stage2_kind": (s2 or {}).get("kind", "basin composition"), "note": man.get("note", ""),
     }
+    served["corrections"] = C.served_info().get("corrections", "live_v2")   # the correction rule is promoted on its own
     print(f"promote {candidate}: stage 1 {served['stage1']} ({served['family']}), stage 2 {served['stage2']}, line {line:.2f}; replaces {retired}")
     if not dry_run:
         for k in KEYS:
@@ -155,8 +167,52 @@ def promote(candidate: str, line: float, dry_run: bool = False) -> dict:
     return served
 
 
+CORRECTIONS = ("live_v2", "link_zone_v1")
+
+
+def promote_corrections(rule: str, dry_run: bool = False, serve_dir: Path | None = None) -> dict | None:
+    """Switch the served live-correction rule (A7). link_zone_v1: write s5.json with the co-firing
+    shares of geo_v1's links, fit on the ledger through the served set's trained_through (the shares
+    stages_s5 scored the rule with), so a station flag lifts its basin's other links the way it was
+    scored; live_v2: remove s5.json (live_dashboard falls back to live_rules). served.json records
+    the rule. Returns the s5.json spec (None for live_v2)."""
+    if rule not in CORRECTIONS:
+        raise SystemExit(f"unknown correction rule {rule!r}; known {CORRECTIONS}")
+    sd = Path(serve_dir) if serve_dir is not None else SERVE_DIR
+    served_path = sd / "served.json"
+    served = json.loads(served_path.read_text())
+    spec = None
+    if rule != "live_v2":
+        sys.path.insert(0, str(HERE.parent / "collectors"))
+        import compose_v2 as CV  # noqa: PLC0415
+        import csd_labels  # noqa: PLC0415  (the CIWQS ledger)
+        from shared import geography as G  # noqa: PLC0415
+        tt = served.get("trained_through")
+        if not tt:
+            raise SystemExit("served.json has no trained_through: the co-firing shares are fit through it")
+        geo = G.get("geo_v1")
+        spec = {"rule": rule, "geography": geo.version, "cofire": CV.cofire(geo, csd_labels.load_events(), end=tt),
+                "fit": {"ledger_through": tt, "how": "compose_v2.cofire on csd_labels.load_events()"},
+                "promoted_at": datetime.now().isoformat(timespec="seconds"),
+                "note": "a station's CSO flag enters after the split at the link posting it; its basin's other "
+                        "links rise to their co-firing share (stages_s5 link_zone_swap; STAGES_DESIGN.md A7)"}
+    print(f"corrections: {served.get('corrections', 'live_v2')} → {rule}" + (" (dry run)" if dry_run else ""))
+    if not dry_run:
+        if spec is not None:
+            (sd / "s5.json").write_text(json.dumps(spec, indent=1) + "\n")
+        elif (sd / "s5.json").exists():
+            (sd / "s5.json").unlink()
+        served["corrections"] = rule
+        served_path.write_text(json.dumps(served, indent=1, default=str) + "\n")
+        print("now re-run tests/fixtures/make_stages_goldens.py and scripts/check.sh, in the same commit")
+    return spec
+
+
 if __name__ == "__main__":
     args = sys.argv[1:]
+    if "--corrections" in args:
+        promote_corrections(args[args.index("--corrections") + 1], dry_run="--dry-run" in args)
+        raise SystemExit(0)
     if not args or args[0].startswith("--"):
         raise SystemExit(__doc__)
     line = float(args[args.index("--line") + 1]) if "--line" in args else 0.5

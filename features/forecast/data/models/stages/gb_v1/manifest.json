@@ -15,7 +15,7 @@
  "family": "gb",
  "spec_version": "2e03a1eae7",
  "protocol": "stages_v3@22a2695e2e950188d37b753928932c6f6f2dc83296482a4fddf5a373ce86df3f",
- "built_at": "2026-10-03T04:27:29+00:00",
+ "built_at": "2026-10-03T16:21:59+00:00",
  "windows": {
   "holdout_start": "2023-07-01",
   "post_start": "2025-11-01",
@@ -64,8 +64,8 @@
  },
  "inputs": {
   "features/forecast/STAGES_PROTOCOL.md": "a75d6e6b1779819f66cab2c2d43e64fc753c44530526a2d308225e856751aa23",
-  "features/forecast/live_dashboard.py": "004df7dfdfd8419e8ad249ef3b307393b7c1db50e7e2400c32c438fbcf478adb",
-  "features/forecast/data/models/stages/_s1/s1_scores.json": "4befd149d9a68792bda0491cad57df1799a00887033b3c978f06e50e0c95fdbd",
+  "features/forecast/live_dashboard.py": "6beda1b181b1b69829a29a052e87a14d05fe6b569498ae61eae520c6b516be36",
+  "features/forecast/data/models/stages/_s1/s1_scores.json": "9d218340854db06d5005938d414da4cf374e417f7b038e3b13113de857a3efcf",
   "features/forecast/data/models/stages/_s1/icon_seamless.csv.gz": "77df2c795f8eb5edca83694198dcc236af4da9ec42098ba307e103ebf40600bb",
   "features/forecast/data/raw/historical_rain.csv": "c4742eb23766ee048bd91a035a769270e207e21d0e39adf140c8b4153afdc7ed",
   "features/forecast/data/raw/hourly_rain_openmeteo.csv": "52b80a86463925937e5fc603b651fd66da4b505c39eb1a045bff70e9a061c256",

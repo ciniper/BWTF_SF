@@ -93,9 +93,23 @@ are replay variants in `src/models/stages_s5.py`: no correction, `basin_swap`
 observation, with a perfect feed and with realistic late or missed flags. Its
 S5 table is in `scores.json`.
 
-To switch the live rule: A7. Once the promotion tooling lands, the live page
-passes its observations to `compose_v2` as injections (`Inject(link=…,
-zone=…)`) instead of through `live_rules`. Until then `live_v2` stays live.
+To switch the live rule (A7) to `link_zone_v1`: a station's CSO flag sets the
+beaches posted by that station's outfalls to certain on the flag day, raises the
+basin's other beaches to how often they overflow together, and lets the
+lingering table carry the days after. No lab result moves the percentage.
+
+```bash
+venv/bin/python features/forecast/src/models/promote.py --corrections link_zone_v1 --dry-run
+venv/bin/python features/forecast/src/models/promote.py --corrections link_zone_v1
+venv/bin/python tests/fixtures/make_stages_goldens.py
+```
+
+The second command writes `data/models/s5.json`, which holds the rule and its
+co-firing shares, fit on the overflow record through the served set's
+training end. It also records the rule in `served.json`. The live page reads
+that file and composes the flags through `compose_v2` instead of `live_rules`.
+The third command re-pins the served forecast, and belongs in the same commit.
+`promote.py --corrections live_v2` switches back.
 
 ## After any swap: rebuild the stage scores
 
