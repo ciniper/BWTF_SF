@@ -149,6 +149,12 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 .zone-tabs .seg-btn { padding: 6px 14px; }
 .zone-analysis { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 10px; align-items: start; }
 @media (max-width: 720px) { .zone-analysis { grid-template-columns: 1fr; } }
+/* phones: the Model check stays inside the screen; wide tables swipe inside themselves, controls and badges wrap */
+@media (max-width: 600px) {
+    .tbl { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .sc-controls .date-picker { max-width: 100%; }
+    .sc-facts .badge { white-space: normal; }
+}
 .score table.lines.big { font-size: 14px; }
 .score table.lines.big th, .score table.lines.big td { padding: 5px 6px; }
 .tbl.summary tr.zone-row { cursor: pointer; }
