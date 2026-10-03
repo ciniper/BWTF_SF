@@ -477,10 +477,10 @@
    "gauge_outage": [],
    "impact_groups": {
     "Aquatic Park": 0.155,
-    "Baker-China": 0.755,
+    "Baker-China": 0.657,
     "Crissy Field": 0.232,
     "Mission Creek": 0.912,
-    "Ocean Beach": 0.81,
+    "Ocean Beach": 0.714,
     "Southeast": 0.998
    },
    "input_rules": [
@@ -495,20 +495,15 @@
      "westside"
     ],
     "groups": {
-     "Baker-China": {
-      "from": 0.657,
-      "rule": "sample_clean_cap",
-      "to": 0.755
-     },
      "Mission Creek": {
       "from": 0.938,
       "rule": "sample_clean_cap",
       "to": 0.912
      },
      "Ocean Beach": {
-      "from": 0.848,
-      "rule": "sample_clean_cap",
-      "to": 0.81
+      "from": 0.66,
+      "rule": "flag_hold",
+      "to": 0.714
      }
     },
     "sample_sources": {
@@ -556,7 +551,7 @@
     "citywide": 0.998,
     "north_shore": 0.232,
     "southeast": 0.998,
-    "westside": 0.81
+    "westside": 0.714
    },
    "rain_2d_cum": 1.818,
    "rain_3d_cum": 2.198,
@@ -567,10 +562,10 @@
    "rain_inches": 0.748,
    "rain_source": "mixed",
    "zones": {
-    "baker_china": 0.755,
+    "baker_china": 0.657,
     "east": 0.998,
     "north": 0.232,
-    "ocean": 0.81
+    "ocean": 0.714
    }
   },
   "2026-02-18": {
@@ -615,10 +610,10 @@
    "gauge_outage": [],
    "impact_groups": {
     "Aquatic Park": 0.06,
-    "Baker-China": 0.308,
+    "Baker-China": 0.306,
     "Crissy Field": 0.117,
     "Mission Creek": 0.885,
-    "Ocean Beach": 0.428,
+    "Ocean Beach": 0.426,
     "Southeast": 0.972
    },
    "input_rules": [
@@ -631,15 +626,10 @@
     "enabled": true,
     "flags_active": [],
     "groups": {
-     "Baker-China": {
-      "from": 0.306,
-      "rule": "sample_clean_cap",
-      "to": 0.308
-     },
      "Ocean Beach": {
       "from": 0.596,
       "rule": "sample_clean_cap",
-      "to": 0.428
+      "to": 0.426
      }
     },
     "sample_sources": {
@@ -687,7 +677,7 @@
     "citywide": 0.972,
     "north_shore": 0.117,
     "southeast": 0.972,
-    "westside": 0.428
+    "westside": 0.426
    },
    "rain_2d_cum": 0.976,
    "rain_3d_cum": 2.046,
@@ -698,10 +688,10 @@
    "rain_inches": 0.228,
    "rain_source": "forecast",
    "zones": {
-    "baker_china": 0.308,
+    "baker_china": 0.306,
     "east": 0.972,
     "north": 0.117,
-    "ocean": 0.428
+    "ocean": 0.426
    }
   },
   "2026-02-19": {
@@ -746,10 +736,10 @@
    "gauge_outage": [],
    "impact_groups": {
     "Aquatic Park": 0.059,
-    "Baker-China": 0.059,
+    "Baker-China": 0.055,
     "Crissy Field": 0.117,
     "Mission Creek": 0.8,
-    "Ocean Beach": 0.432,
+    "Ocean Beach": 0.427,
     "Southeast": 0.917
    },
    "input_rules": [
@@ -762,11 +752,6 @@
     "enabled": true,
     "flags_active": [],
     "groups": {
-     "Baker-China": {
-      "from": 0.055,
-      "rule": "sample_clean_cap",
-      "to": 0.059
-     },
      "Mission Creek": {
       "from": 0.791,
       "rule": "sample_elevated_floor",
@@ -775,7 +760,7 @@
      "Ocean Beach": {
       "from": 0.532,
       "rule": "sample_clean_cap",
-      "to": 0.432
+      "to": 0.427
      }
     },
     "sample_sources": {
@@ -823,7 +808,7 @@
     "citywide": 0.917,
     "north_shore": 0.117,
     "southeast": 0.917,
-    "westside": 0.432
+    "westside": 0.427
    },
    "rain_2d_cum": 0.654,
    "rain_3d_cum": 1.402,
@@ -834,10 +819,10 @@
    "rain_inches": 0.425,
    "rain_source": "forecast",
    "zones": {
-    "baker_china": 0.059,
+    "baker_china": 0.055,
     "east": 0.917,
     "north": 0.117,
-    "ocean": 0.432
+    "ocean": 0.427
    }
   },
   "2026-02-20": {

@@ -1,8 +1,17 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "git": {
+    "deploymentEnabled": {
+      "**": false,
+      "main": true,
+      "design/**": true
+    }
+  },
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- . ':(exclude)TODO.md' ':(exclude)docs' ':(exclude)tests' ':(exclude)**/*.md'",
   "functions": {
     "app/wsgi.py": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "excludeFiles": "{tests/**,docs/**,db/**,.claude/**}"
     }
   }
 }

@@ -20,9 +20,13 @@
   .zones{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .zone{border:1px solid var(--line);border-radius:var(--r);padding:12px 13px 11px;color:inherit;background:#fff;display:block;width:100%;text-align:left;cursor:pointer;font:inherit}
   .zone:hover{border-color:var(--sky)}
-  .zone.focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(0,114,188,.14)}
   .zone.safe{border-color:var(--safe)}.zone.posted{border-color:var(--posted)}.zone.discharge{border-color:var(--discharge)}   /* same grade colours as the card, thin */
-  .zone.posted.focus,.zone.discharge.focus{box-shadow:0 0 0 3px rgba(0,114,188,.14)}
+  /* the chosen zone (Chase, 2026-10-01: "more obvious"): a brand ring outside the grade border, which keeps its colour,
+     and the other zones dimmed, as their stations are off the map; tap it again, or Whole city, for all */
+  .zone{transition:opacity .15s,box-shadow .15s}
+  .zone.focus{box-shadow:0 0 0 2px #fff,0 0 0 5px var(--brand)}
+  .zones.has-focus .zone:not(.focus){opacity:.5}
+  .zones.has-focus .zone:not(.focus):hover{opacity:.85}
   .zone .st{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px}
   .zone.posted .st{color:var(--posted)}.zone.discharge .st{color:var(--discharge)}.zone.unknown .st{color:var(--faint)}
   .zone .nm{font-size:16px;font-weight:900;margin:5px 0 1px;line-height:1.2}
@@ -34,6 +38,8 @@
   .zone .stations .status-dot{width:9px;height:9px}
   .zone .meta{font-size:13px;color:var(--faint)}
   .zones-hint{font-size:13px;color:var(--faint);margin:8px 0 0}
+  .map-col{position:relative;display:flex;flex-direction:column;min-width:0}   /* the map and its legend */
+  .map-col .map-wrap{flex:1}
   .map-wrap{position:relative;isolation:isolate;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;min-height:400px;background:var(--sand2)}   /* isolate: Leaflet's z-indexes stay inside the map */
   #today-map{position:absolute;inset:0}
   .map-reset{position:absolute;bottom:12px;right:12px;z-index:500;background:#fff;border:2px solid var(--line);border-radius:999px;padding:6px 12px;font:700 12.5px Roboto,sans-serif;color:var(--brand);cursor:pointer}
@@ -60,10 +66,17 @@
   .map-legend .divider{width:1px;height:12px;background:var(--line);margin:0 2px}
   .map-legend .ring{display:inline-block;width:10px;height:10px;border-radius:50%;border:2px solid var(--brand);background:rgba(0,114,188,.15)}
   .map-legend .of{display:inline-block;width:9px;height:9px;border-radius:50%;background:#7a5a3a}
-  /* the Layers strip (/today): plain chips, a replay slider, one line of orientation */
-  .layers{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin:0 0 12px;padding:10px 14px;background:#fff;border:1px solid var(--line);border-radius:var(--r)}
+  /* Above the board: Sources (what the map shows) and Layers (what you add on top) as two boxes (Chase, 2026-10-01);
+     on phones the Layers box folds behind a button in the Sources box, and opens itself for a ?layers= / ?risk= / ?replay= link */
+  .layers{display:flex;flex-wrap:wrap;align-items:stretch;gap:10px;margin:0 0 12px}
+  .layers .ctl-group{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:10px 14px;background:#fff;border:1px solid var(--line);border-radius:var(--r)}
+  .layers .layer-group{flex:1}
   .layers .ctl-label{margin-right:2px}
-  .layers .ctl-label.sep{margin-left:10px;padding-left:14px;border-left:1px solid var(--line)}
+  .layers-toggle{display:none;align-items:center;gap:6px;margin-left:auto;padding:7px 13px;border-radius:999px;border:2px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;font-weight:700;font-size:13px;font-family:inherit}
+  .layers-toggle::after{content:"▸";font-size:11px}.layers-toggle[aria-expanded="true"]::after{content:"▾"}
+  .layers-toggle[aria-expanded="true"]{border-color:var(--brand);color:var(--brand)}
+  .layers-toggle .n{background:var(--brand);color:#fff;border-radius:999px;padding:0 7px;font-size:11.5px;line-height:18px}
+  .layers-toggle .n:empty{display:none}
   .layers .switch{display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-weight:700;font-size:13px;color:var(--ink);position:relative}
   .layers .switch input{position:absolute;opacity:0;width:0;height:0}
   .layers .track{width:34px;height:20px;border-radius:999px;background:#cfd8e0;position:relative;transition:background .15s;flex:none}
@@ -77,9 +90,7 @@
   .layers .replay-ctl .tick{font-weight:600}
   .layers .replay-ctl input{width:140px;accent-color:var(--brand)}
   .layers .replay-ctl output{min-width:88px;color:var(--ink);font-weight:700}
-  .layers .layer-note{flex-basis:100%;color:var(--muted);font-size:13px;margin-top:2px}
-  .layers .layer-note b{color:var(--posted)}
-  .layers .layer-status{color:var(--brand);font-weight:600;font-size:13px;margin-left:auto}
+  .layers .layer-status{flex-basis:100%;color:var(--brand);font-weight:600;font-size:13px;margin:-2px 2px 0}   /* one line under both boxes: Surfrider's count and the layers' facts both land here */
   .layers .layer-status:empty{display:none}
   .zone.wet{background:#eef5fb}
   .zone .rainline{color:var(--brand);font-size:12px;font-weight:600;margin-top:4px}
@@ -91,7 +102,12 @@
   .of-pop .mut{color:var(--muted)}
   .board.replaying .eyebrow{color:var(--brand)}
   .board.replaying .zone .risk,.board.replaying .zone .rainline,.board.replaying .zone .meta,.board.replaying .site small{display:none}   /* today's risk, rain and sample dates are not that day's */
-  @media (max-width:760px){.layers .replay-ctl{flex-basis:100%}.layers .replay-ctl input{flex:1}.layers .layer-status{margin-left:0}}
+  @media (max-width:760px){
+    .layers .replay-ctl{flex-basis:100%}.layers .replay-ctl input{flex:1}
+    .layers .ctl-group{flex-basis:100%}
+    .layers-toggle{display:inline-flex}
+    .layers .layer-group{display:none}.layers .layer-group.open{display:flex}
+  }
   .conds{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 0}
   .conds span{background:var(--sand2);border-radius:999px;padding:6px 12px;font-size:13px;color:var(--muted)}
   .conds .ic{color:var(--brand)}
@@ -102,6 +118,7 @@
     .board .lead{font-size:14px;margin-bottom:12px}
     .zone{padding:11px}.zone .nm{font-size:15px}
     .map-wrap{min-height:260px}
+    .map-legend{position:static;background:none;border-radius:0;padding:8px 2px 0;gap:6px 12px}   /* under the map: over it, it covered 4 of 20 stations on the north shore (6 with Surfrider on) */
     .conds{overflow:auto;flex-wrap:nowrap;margin:12px -16px 0;padding:0 16px;scrollbar-width:none}.conds span{flex:none}
   }
   @media (max-width:420px){.zones{gap:8px}}
@@ -130,9 +147,11 @@
         <p class="zones-hint">Tap a zone to see its stations{% if sites %} and Surfrider's sites there{% endif %}; tap one for its latest lab results.</p>
         {% endif %}
       </div>
+      <div class="map-col">
       <div class="map-wrap">
         <div id="today-map" role="region" aria-label="Map of the city's beach monitoring stations, coloured by today's status"></div>
         <button type="button" class="map-reset" id="map-reset" hidden>Whole city</button>
+      </div>
         <div class="map-legend" id="map-legend"><span><i class="status-dot safe"></i>safe</span><span><i class="status-dot posted"></i>posted</span><span><i class="status-dot discharge"></i>discharge</span><span><i class="status-dot unknown"></i>not sampled</span><span id="lg-bwtf" hidden><i class="bwtf-dot safe"></i>Surfrider latest</span></div>
       </div>
     </div>
@@ -159,6 +178,7 @@ function fitAll() { if (allMarkers().length) MAP.fitBounds(L.latLngBounds(allMar
 function focusZone(key) {
   ACTIVE = ACTIVE === key ? null : key;
   document.querySelectorAll(".zone").forEach(b => { const on = b.dataset.zone === ACTIVE; b.classList.toggle("focus", on); b.setAttribute("aria-pressed", on ? "true" : "false"); });
+  document.getElementById("zones").classList.toggle("has-focus", !!ACTIVE);   // the others dim while one is chosen
   // only the chosen zone's stations stay on the map (Chase, 2026-09-29: "if you click a zone, it only shows those sites"); re-added in rank order
   for (const m of ALL_ORDERED) MAP.removeLayer(m);
   if (CITY_ON) for (const m of ALL_ORDERED) if (!ACTIVE || m.__z.key === ACTIVE) m.addTo(MAP);
@@ -419,12 +439,19 @@ function initLayers() {
   }
   const slider = $("replay");
   slider.addEventListener("input", () => setReplay((slider.max | 0) - (slider.value | 0)));
+  // phones: the Layers box folds behind a button; the button counts the layers that are on, so a folded layer is never forgotten
+  const fold = $("layer-group"), tog = $("layers-toggle"), n = $("layers-n");
+  const openLayers = on => { fold.classList.toggle("open", on); tog.setAttribute("aria-expanded", on ? "true" : "false"); };
+  const count = () => { n.textContent = String(fold.querySelectorAll(".layer.active").length || ""); };
+  tog.addEventListener("click", () => openLayers(!fold.classList.contains("open")));
+  new MutationObserver(count).observe(fold, {subtree: true, attributes: true, attributeFilter: ["class"]});
   const q = new URLSearchParams(location.search), want = new Set((q.get("layers") || "").split(",").filter(Boolean));
   if (q.get("surfrider") === "1") want.add("bwtf");        // Surfrider is off by default (Chase, 2026-09-30); ?layers=bwtf or ?surfrider=1 turns it on
   if (q.get("city") === "0" && city) { city.checked = false; setCity(false); }
   for (const key of want) { const btn = key === "bwtf" ? bw : strip.querySelector('.layer[data-layer="' + key + '"]'); if (btn && LAYER[key]) setLayer(key, true, btn); }
   if (q.get("risk") === "1") strip.querySelector('.layer[data-layer="risk"]').click();
   if (q.get("replay")) { const rb = strip.querySelector('.layer[data-layer="replay"]'); enableReplay(rb).then(ok => { if (ok) setReplay(q.get("replay") | 0); }); }
+  if ([...want].some(k => k !== "bwtf") || q.get("risk") === "1" || q.get("replay")) openLayers(true);   // a link that turns a layer on shows it
 }
 window.addEventListener("DOMContentLoaded", initMap);
 </script>

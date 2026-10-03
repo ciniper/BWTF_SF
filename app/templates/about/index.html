@@ -13,7 +13,7 @@
   .wrap{max-width:var(--page-w);margin:0 auto;padding:20px 24px 40px}
   .card .more{margin:10px 0 0;padding-top:10px;border-top:1px solid var(--sand2);color:var(--muted);font-size:14px}
   .card .more a{font-weight:600}
-  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:14px}   /* min(): a 320px phone's column is only 272px wide */
   .card{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:18px 20px}
   .card h2{margin:0 0 8px;font-size:17px;font-weight:900}
   .card p{margin:0 0 8px;color:var(--muted)}.card p:last-child{margin:0}

@@ -35,7 +35,12 @@ Stage 2 (per group-day, after composition — ``adjust_groups``):
   sample_clean_cap        a clean sample in a discharge tail caps the
                           PERSISTENCE term at P(elevated next | clean now) —
                           never zero: in the East a clean bottle is followed
-                          by an elevated one two times in three
+                          by an elevated one two times in three — and
+                          recombines it with the group's own day term (the
+                          basin's p after the stage 2 split). It never raises
+                          a risk (until 2026-10-01 it recombined with the
+                          whole basin p, which lifted Westside groups whose
+                          split share is under 1)
   sample_dry_floor        an elevated sample with no recent discharge would
                           floor the risk at the dry-weather repeat rate — every
                           zone's is under 0.5, so today this rule is off (the
@@ -196,7 +201,9 @@ def adjust_groups(group_risks: dict, persist_risks: dict, today_terms: dict, day
                   large_curve, rules: dict = RULES):
     """(risks', notes) for one day. ``group_risks`` = the composed risk per group;
     ``persist_risks`` = the same with the day's own discharge term removed;
-    ``today_terms`` = {basin_key: p(day)}; ``samples`` = {(group, date): elevated};
+    ``today_terms`` = {group: that day's own discharge term as the composition
+    used it — the basin's p after the stage 2 split, impact.day_terms};
+    ``samples`` = {(group, date): elevated};
     ``large_curve(group, k)`` = x(k) on the large-event curve. Notes:
     {group: {"rule", "from", "to"}} for every group whose number moved."""
     s, cso = rules["samples"], rules["cso"]
@@ -225,9 +232,11 @@ def adjust_groups(group_risks: dict, persist_risks: dict, today_terms: dict, day
                 if s["floor_elevated_dry"].get(zone, 0.0) > 0.0:
                     apply(g, "sample_dry_floor", max(out[g], s["floor_elevated_dry"][zone]))
             elif tail:
+                # recombine with the group's own day term (after the stage 2 split), not the basin's p, and never
+                # above the composed risk: a clean bottle can only lower a number
                 persist = min(float(persist_risks.get(g, out[g])), s["cap_clean_tail"][zone])
-                today_p = float(today_terms.get(basin, 0.0) or 0.0)
-                apply(g, "sample_clean_cap", 1.0 - (1.0 - persist) * (1.0 - today_p))
+                today_p = float(today_terms.get(g, 0.0) or 0.0)
+                apply(g, "sample_clean_cap", min(out[g], 1.0 - (1.0 - persist) * (1.0 - today_p)))
         # the feed's flag still up after the onset: hold at the large-event curve
         if cso["hold_while_flagged"] and basin in flags_active.get(day, ()) and basin not in onsets.get(day, ()):
             k = next((k for k in range(1, cso["hold_max_days"] + 1) if basin in onsets.get(day - timedelta(days=k), ())), None)

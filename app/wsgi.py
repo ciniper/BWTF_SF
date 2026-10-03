@@ -255,6 +255,8 @@ def create_app():
     app.jinja_env.globals["SURFRIDER_LOGO_URL"] = SURFRIDER_LOGO_URL
     app.jinja_env.globals["BASEMAP"] = basemap()  # shared/basemap.py: the one tile layer every map draws
     app.jinja_env.globals["RISK_LEVELS"] = risk_levels.export()   # shared/risk_levels.py: Low / Medium / High / Extreme on every page (Chase, 2026-10-01)
+    # Vercel Web Analytics + Speed Insights: production only (_frame.html vercel_insights; enable both in the dashboard)
+    app.jinja_env.globals["VERCEL_INSIGHTS"] = os.environ.get("VERCEL_ENV") == "production"
     app.jinja_env.globals["NAV"] = nav_model()   # app/landing.py: the three hubs, for the shared top bar (_frame.html)
     app.jinja_env.globals["canonical_path"] = canonical_path   # /today and /index.html light the home page's tabs
     app.jinja_env.globals["asset"] = asset                     # app/assets.py: /static links stamped with their contents

@@ -53,8 +53,20 @@ def test_today_page_is_the_board_plus_the_experimental_row_and_the_api_route_exi
             h = c.get("/today").data.decode()
     finally:
         T.SFBWTFClient = orig
-    assert 'id="today-map"' in h and 'id="zones"' in h and 'id="layers"' in h and "Experimental" in h and 'id="tg-bwtf"' in h and 'data-layer="replay"' in h and 'id="replay-ctl" hidden' in h and "/api/today/" in h
+    assert 'id="today-map"' in h and 'id="zones"' in h and 'id="layers"' in h and 'id="tg-bwtf"' in h and 'data-layer="replay"' in h and 'id="replay-ctl" hidden' in h and "/api/today/" in h
     assert h.index('id="layers"') < h.index('class="board') and 'class="extras"' not in h                                            # the strip sits above the board; the old row is gone
+    # Sources and Layers are two boxes; on phones the Layers box folds behind a button that counts what is on (Chase, 2026-10-01)
+    assert '<span class="ctl-label" id="lbl-sources">Sources</span>' in h and '>Show<' not in h and 'class="layer-note"' not in h and "Experimental" not in h.split('id="layers"')[1].split('class="board')[0]
+    assert h.index('id="tg-bwtf"') < h.index('id="layers-toggle"') < h.index('id="layer-group"') < h.index('data-layer="rain"') < h.index('id="layer-status"')
+    assert 'aria-controls="layer-group"' in h and 'aria-expanded="false"' in h.split('id="layers-toggle"')[0][-80:] + h.split('id="layers-toggle"')[1][:120]
+    board = (ROOT / "app/templates/_today_board.html").read_text()
+    assert ".layers .layer-group{display:none}.layers .layer-group.open{display:flex}" in board and ".layers-toggle{display:inline-flex}" in board and "openLayers(true)" in board and 'querySelectorAll(".layer.active").length' in board
+    # the chosen zone: a brand ring outside its grade border, the others dimmed
+    assert ".zone.focus{box-shadow:0 0 0 2px #fff,0 0 0 5px var(--brand)}" in board and ".zones.has-focus .zone:not(.focus){opacity:.5}" in board and 'classList.toggle("has-focus", !!ACTIVE)' in board
+    # the legend: over the map on wider screens, under it on phones (it covered the north shore)
+    col = h.split('class="map-col"')[1].split('id="zone-sites"')[0]
+    assert col.index('class="map-wrap"') < col.index('id="today-map"') < col.index('id="map-legend"') and col.split('id="map-legend"')[0].count("</div>") >= 2   # legend outside the map frame
+    assert ".map-legend{position:static;" in board
     assert h.count('class="site" data-zone=') == 20 and 'id="zone-sites"' in h and 'data-sample-station=' in h and "{{" not in h        # a chip per station under the zone tiles, each opening the popover
     assert ' hidden>' in h.split('id="zone-sites"')[1][:200] and ".site-chips[hidden]{display:none}" in (ROOT / "app/static/brand.css").read_text()   # chips wait for a zone tap — and the attribute must win over the strip's display:flex
     assert 'id="tg-city" checked' in h and 'id="tg-bwtf">' in h and 'data-layer="bwtf"' not in h and h.index('id="tg-bwtf"') < h.index('data-layer="rain"')   # two source switches: city on, Surfrider off (Chase, 2026-09-30)

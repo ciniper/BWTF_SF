@@ -60,7 +60,10 @@ Order: the no-tradeoff wins first, then caching once Chase has made its calls.
   first paint on a cold visit.
 - [ ] *Minor:* `shared/supabase.py` opens a new TLS connection per call (`requests.request`, no Session); a shared Session
   would reuse it. Small on Vercel when Supabase sits in the same region.
-- [ ] **Measure cold starts before acting.** One production load of the home page took 8.6 s, the next 2.0 s — that looks
+- [x] **Real-visitor measurement** (branch `obs/vercel-insights`): Vercel Web Analytics + Speed Insights in the shared
+  frame, production only, URLs sent without query strings, the token pages left out. Chase enables both in the
+  Vercel dashboard; see DEPLOY.md.
+- [ ] **Measure cold starts before acting** — read it off Speed Insights once a week of visits is in. One production load of the home page took 8.6 s, the next 2.0 s — that looks
   like Vercel starting a fresh instance. It is not import time (the app imports in 0.15 s; pandas / scikit-learn load only
   on the pages that use them), so the suspects are the size of the one function's bundle (pandas, numpy, scipy and
   scikit-learn ship with every page) and scale-to-zero between visits. Log a week of first-byte times to see how often a
@@ -195,7 +198,13 @@ The model lives at `/alerts/costs`, the alerts dashboard's Running costs tab (`f
 - [ ] **Claim the nonprofit pricing.** Brevo: 20% off any paid plan with proof of status. Twilio.org: a $100 credit (about 8,000 texts) and unpublished discounts for 501(c)(3)s.
 - [ ] **Size the Brevo plan by season, if Brevo stays.** The busiest month runs about 2.5 times an average month (November–February); a plan bought for January is idle all summer.
 - [ ] **Move texts off the carrier gateways before anyone subscribes by text** (B4, and "Decide SMS" under B7). Twilio toll-free is the cheapest compliant path: $2.15 a month plus about $0.0126 a segment; verification needs the EIN and privacy and terms pages.
-- [ ] **At 100 subscribers: Vercel Pro, Supabase Pro, a domain.** Vercel's Hobby plan pauses the site instead of billing when a limit is passed, and is for non-commercial personal use; Supabase Pro adds daily backups of the subscriber list.
+- [ ] **At 100 subscribers: Vercel Pro, Supabase Pro, a domain.** Vercel's Hobby plan pauses the site instead of billing when a limit is passed, and is for non-commercial personal use; Supabase Pro adds daily backups of the subscriber list. *Vercel Pro done early (2026-10-01): Hobby's 10 GB Functions Storage hit ~90% from deployment volume (next item).*
+- [ ] **Cut Vercel deployment storage (recorded 2026-10-01; steps 2–4 shipped the same day — 1 is a dashboard setting, 5 a habit).** Each deployment stores its own copy of the Python packages (~76 MB compressed, ~260 MB unzipped — near the 250 MB function limit) and ~140 deployments landed in 30 days (≈90 production, ≈50 branch previews; 35 previews on 2026-09-30 alone). Pro bills Functions Storage at $0.10/GB-month from the $20 monthly credit, and its default retention is 1 year for production and 180 days for previews, so storage now grows instead of capping. In order:
+  1. **Shorten retention** (project Settings → Security → Deployment Retention Policy) to what rollback actually needs; delete old deployments by hand once.
+  2. [x] **Deploy only `main` and `design/**`** — `vercel.json` `git.deploymentEnabled`; other branches get previews on demand from the dashboard or CLI. `design/**` stays on for the B2 preview workflow.
+  3. [x] **Skip builds for docs-only pushes** — `"ignoreCommand": "git diff --quiet HEAD^ HEAD -- . ':(exclude)TODO.md' ':(exclude)docs' ':(exclude)tests' ':(exclude)**/*.md'"` (exit 0 = skip; tested on TODO-only, docs-only and code commits).
+  4. [x] **Smaller bundle** — `excludeFiles: "{tests/**,docs/**,db/**}"` on `app/wsgi.py`, and drop `beautifulsoup4`, `lxml`, `pyyaml` from `requirements.txt` (only `collectors/wunderground.py` uses them): ~15 MB unzipped per deployment.
+  5. **Push to `main` in batches**, especially from coding-agent sessions — each push is a full deployment.
 - [ ] **Check Vercel's Usage page against the model.** The forecast refresh runs 1,440 times a month at about 19 s each and may use half of Hobby's 4 CPU-hours before any visitor; the model's per-view compute numbers are guesses (`MEASURED` in `features/alerts/costs.py`).
 - [ ] **Batch Brevo sends once a dispatch reaches thousands of recipients.** One API call per recipient from pg_net today; Brevo takes up to 1,000 message versions per call. A scale limit rather than a price.
 - [ ] **Keep the model's prices current.** Re-check `PRICES` and bump `PRICES_CHECKED` when a provider changes pricing, at least yearly.

@@ -82,6 +82,7 @@ from src.models.groups import (  # noqa: E402
 _ZONE_OF_GROUP = {g: zk for zk, gs in ZONE_GROUPS.items() for g in gs}
 _BASIN_OF_GROUP = {g: bk for bk, gs in GROUPS_BY_BASIN.items() for g in gs}
 from src.models.impact import compose as _compose_risk  # noqa: E402
+from src.models.impact import day_terms as _day_terms  # noqa: E402
 from src.models.impact import impact_fraction as _impact_fraction  # noqa: E402
 from src.models.impact import smooth_table as _smooth_table  # noqa: E402
 from src.models.rain_features import INPUT_RULES_LIVE, mask_gauge_outages as _mask_gauge_outages  # noqa: E402
@@ -921,8 +922,10 @@ class LiveData:
             p_only[idx] = {b: 0.0 for b in p_only[idx]}
             _, persist_groups = _compose_risk(self.impact_table, self.BASIN_IMPACT_GROUPS, p_only, v2, idx, dates, {}, split=getattr(self, "split", None))
             large_curve = lambda g, k: _impact_fraction(self.impact_table, g, k, _lr.RULES["cso"]["large_volume_mg"])  # noqa: E731
+            # the day's own term per group, after the stage 2 split — what a clean sample's capped persistence recombines with
+            today_terms = _day_terms(self.BASIN_IMPACT_GROUPS, p2[idx], v2[idx], split=getattr(self, "split", None))
             probs_by_date = {d: p2[j] for j, d in enumerate(dates)}
-            adjusted, gnotes = _lr.adjust_groups(impact_groups, persist_groups, p2[idx], dates[idx], live["samples"],
+            adjusted, gnotes = _lr.adjust_groups(impact_groups, persist_groups, today_terms, dates[idx], live["samples"],
                                                  probs_by_date, live["onsets"], live["flags"], _ZONE_OF_GROUP, _BASIN_OF_GROUP, large_curve)
             if gnotes:
                 impact_groups = adjusted

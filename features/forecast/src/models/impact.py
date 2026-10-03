@@ -142,3 +142,20 @@ def compose(table: dict, groups_by_basin: dict, day_probs: list, day_volumes: li
         per_group.update(vals)
     per_basin["citywide"] = max(per_basin.values()) if per_basin else 0.0
     return per_basin, per_group
+
+
+def day_terms(groups_by_basin: dict, probs: dict, volumes: dict, split=None) -> dict:
+    """{group: the k = 0 factor compose() multiplies in for one day} — the basin's
+    P(discharge) after the stage 2 split (x(0, ·) ≡ 1, so the factor is the
+    probability itself). ``probs`` / ``volumes`` are that day's, as compose saw
+    them (observed onsets already at 1), so the composed risk is
+    1 - (1 - the risk with that day zeroed) · (1 - day_terms[group]) up to
+    rounding. The live rules recombine with this, never with the basin's p,
+    which a group whose split share is under 1 never sees."""
+    out = {}
+    for basin_key, groups in groups_by_basin.items():
+        p = probs.get(basin_key)
+        vol = volumes.get(basin_key, 0.0)
+        for group in groups:
+            out[group] = split(group, p, vol) if (p and split is not None) else float(p or 0.0)
+    return out
