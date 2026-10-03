@@ -198,14 +198,3 @@ def zone_sample_days(samples: pd.DataFrame) -> pd.DataFrame:
     z["sources"] = z.set_index(["zone", "date"]).index.map(src)
     order = {k: i for i, k in enumerate(ZONES)}
     return z.sort_values(["zone", "date"], key=lambda c: c.map(order) if c.name == "zone" else c, kind="stable").reset_index(drop=True)
-
-
-if __name__ == "__main__":
-    for srcs in (DEFAULT_SOURCES, D10_SOURCES, PRECEDENCE):
-        df = load_samples(srcs)
-        r = df.attrs["report"]
-        print(f"sources {', '.join(r['sources'])} (windows {r['windows']}): {r['rows']} results ({r['by_source']}), spans {r['span']}")
-        print(f"  dropped: {r['dropped']}")
-        zd = zone_sample_days(df)
-        print(f"  zone sample-days {len(zd)}: " + "; ".join(
-            f"{k} {int((zd.zone == k).sum())} ({int(zd[zd.zone == k].any_exceedance.sum())} over, {int((~zd[zd.zone == k].first_look).sum())} resamples)" for k in ZONES))

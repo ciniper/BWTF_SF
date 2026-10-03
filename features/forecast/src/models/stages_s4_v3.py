@@ -144,21 +144,19 @@ the served table; the spec's note says so.
 **Artifact.** ``write`` → s4_quality.json (design §7: kind zone_v3, unit zone,
 background.kind logistic, buckets, zone_median_mg, monotone true, sources, fit) for
 the finals, checked by compose_v2.check_s4_spec, saved as the 's4_quality' component
-of stage candidate ``SET_NAME`` through stages_candidates.save_component (read back
-through stages_candidates.load_set and ``for_compose``), or, without that module,
-under data/models/stages_candidates/_s4_v3/. Its fit block holds every fold's spec (so
+of a stage candidate through stages_candidates.save_component (read back through
+stages_candidates.load_set and ``for_compose``). Its fit block holds every fold's spec (so
 each fold's monotone tails and the φ it was sized with are on file), the λ choices and
 the scores. Nothing is written into data/models/ outside stages_candidates/, nothing
 under stages_candidates/ carries a bootstrap below the protocol's 2,000, and nothing on
 the served path changes. No module-level IO.
 
-    venv/bin/python features/forecast/src/models/stages_s4_v3.py [--write] [--set NAME] [--s3-set NAME] [--s2-set NAME] [--n-boot 2000]
+    venv/bin/python features/forecast/src/models/stages_s4_v3.py [--write --set NAME] [--s3-set NAME] [--s2-set NAME] [--n-boot 2000]
 """
 from __future__ import annotations
 
 import argparse
 import copy
-import json
 import math
 import sys
 import time
@@ -190,11 +188,9 @@ from shared import geography as G  # noqa: E402
 from shared.stations import STATIONS  # noqa: E402
 from shared.zones import ZONES  # noqa: E402
 
-NAME = "s4_v3"
 GEOGRAPHY = "sfpuc4_v1"
 PIPELINE = "stages_v1"
 KIND = "zone_v3"                                     # the spec kind, and the component's name in a candidate manifest
-SET_NAME = "sfpuc4_s4_v3"                            # the stage candidate write() saves to by default
 KNOTS = (0.1, 0.5)                                   # §3.4: hinge(rain3, 0.1″), hinge(rain3, 0.5″)
 FEATURES = tuple(f"hinge_rain3_{k}" for k in KNOTS) + ("wet_season",)   # compose_v2's vocabulary; never n_sampled
 WET_SEASON_MONTHS = C.WET_SEASON_MONTHS              # October–April
@@ -209,7 +205,6 @@ NI_MARGIN = 0.05                                     # protocol §8: non-inferio
 TIERS = S2.TIERS                                     # T1 (finals), T1-holdout, T2
 FINAL = (S2.TIERS[0], S2.FOLD_FINAL)                 # ("T1", "final"): the spec s4_quality.json holds
 CANDIDATES_ROOT = FORECAST / "data" / "models" / "stages_candidates"
-OUT_DIR = CANDIDATES_ROOT / f"_{NAME}"               # the fallback without stages_candidates (a working directory)
 SPEC_FILE = "s4_quality.json"
 SAVER_STAMPS = ("set", "component")                  # what save_component adds that compose_v2.check_s4_spec does not know
 RAIN_LOGIT_C = 1.0                                   # the rain-only logistic: sklearn's default L2, never tuned
@@ -1098,10 +1093,7 @@ def run(tiers=TIERS, seasons=None, lam=None, n_boot: int = B_PROTOCOL, inputs: I
     if s3_set is not None and phis is not None:
         raise ValueError("sizes follow one rule: s3_set or phis")
     if s3_set is not None:
-        sc_mod = _saver()
-        if sc_mod is None:
-            raise ImportError("sizing zones by a stage candidate's S3 needs stages_candidates")
-        saved = sc_mod.load_set(s3_set, root=s3_root).s3_links
+        saved = _saver().load_set(s3_set, root=s3_root).s3_links
         if saved is None:
             raise FileNotFoundError(f"stage candidate {s3_set!r} holds no s3_links.json to size zones by")
         phis = size_rules(saved, [(f.tier, f.fold) for f in folds])
@@ -1376,7 +1368,7 @@ def scores(study: Study) -> dict:
     """Every score the spec's fit block carries: the primary, each arm per tier and zone, the paired deltas
     against each benchmark, the strata (§3.4: dry / wet with no overflow / day-of / tail, few stations sampled,
     source, analyte era), resamples as their own stratum, the nowcast table, power, Candlestick."""
-    out = {"protocol": S2.protocol_stamp(), "n_boot": study.n_boot, "seed": SEED, "level": LEVEL,
+    out = {"protocol": X.protocol_stamp(), "n_boot": study.n_boot, "seed": SEED, "level": LEVEL,
            "as_of": str(study.inputs.end.date()), "primary": primary(study), "tiers": {}}
     for t in TIERS:
         rows = _scored(study.rows, t)
@@ -1473,12 +1465,9 @@ def for_compose(saved: dict) -> dict:
 
 
 def _saver():
-    """stages_candidates (P8's geography-aware saver), or None while it is missing."""
-    try:
-        import stages_candidates as SC  # noqa: PLC0415
-    except ImportError:
-        return None
-    return SC if hasattr(SC, "save_component") and hasattr(SC, "load_set") else None
+    """stages_candidates (P8's geography-aware saver; imported on use, as it imports this module when it assembles)."""
+    import stages_candidates as SC  # noqa: PLC0415
+    return SC
 
 
 def check_s2_rule(study: Study, name: str, root=None) -> None:
@@ -1519,39 +1508,25 @@ def check_size_rule(study: Study, name: str, root=None) -> None:
                          f"refit with run(s3_set={name!r}) (CLI --s3-set {name})")
 
 
-def write(study: Study, name: str = SET_NAME, root=None, out_dir: Path | None = None, sc: dict | None = None) -> Path:
+def write(study: Study, name: str, root=None, sc: dict | None = None) -> Path:
     """Save s4_quality.json as the 's4_quality' component of stage candidate ``name`` through
-    stages_candidates.save_component (``root`` overrides its directory: tests) and read it back through
-    stages_candidates.load_set and ``for_compose``; without that module, or with ``out_dir``, write it to
-    data/models/stages_candidates/_s4_v3/ (or ``out_dir``) and read it back with compose_v2.load_s4_spec.
-    Returns the file. Refuses: a bootstrap below the protocol's 2,000 anywhere under stages_candidates/ (a
-    smaller one only to a test directory), any directory of data/models/ outside stages_candidates/ (Part B
-    13), and a set whose S3 sizes zones with other φ than the fit (``check_size_rule``)."""
-    models = (FORECAST / "data" / "models").resolve()
-    for d in (root, out_dir):
-        if d is not None and Path(d).resolve().is_relative_to(models) and not Path(d).resolve().is_relative_to(CANDIDATES_ROOT.resolve()):
-            raise ValueError(f"{d}: stage candidates are written under data/models/stages_candidates/ only (Part B 13)")
-    SC = None if out_dir is not None else _saver()
-    dest = Path(SC.set_dir(name, root)) if SC is not None else (OUT_DIR if out_dir is None else Path(out_dir))
+    stages_candidates.save_component (``root`` overrides its directory: tests; any other directory of the
+    repository raises there, Part B 13) and read it back through stages_candidates.load_set and ``for_compose``.
+    Returns the file. Refuses a bootstrap below the protocol's 2,000 anywhere under stages_candidates/ (a smaller
+    one only to a test directory), and a set whose S3 sizes zones with other φ than the fit (``check_size_rule``)
+    or whose own S2 the fit did not read (``check_s2_rule``)."""
+    SC = _saver()
+    dest = Path(SC.set_dir(name, root))
     if study.n_boot < B_PROTOCOL and dest.resolve().is_relative_to(CANDIDATES_ROOT.resolve()):
         raise ValueError(f"s4_quality.json carries scores: B = {study.n_boot} < the protocol's {B_PROTOCOL} "
                          f"(a smaller bootstrap goes to a test directory only, never {dest})")
-    if SC is not None:
-        check_size_rule(study, name, root)
-        check_s2_rule(study, name, root)
+    check_size_rule(study, name, root)
+    check_s2_rule(study, name, root)
     spec = artifact(study, sc)
-    if SC is not None:
-        d = Path(SC.save_component(name, "s4_quality", {**spec, "component": KIND}, root=root))
-        saved = SC.load_set(name, root=root).s4_quality
-        if for_compose(saved)["buckets"] != spec["buckets"]:
-            raise AssertionError("the saved s4_quality.json does not read back as written")
-        return d / SPEC_FILE
-    out = OUT_DIR if out_dir is None else Path(out_dir)
-    out.mkdir(parents=True, exist_ok=True)
-    path = out / SPEC_FILE
-    path.write_text(json.dumps(spec, indent=1, ensure_ascii=False, allow_nan=False) + "\n")
-    C.load_s4_spec(path, G.get(GEOGRAPHY))
-    return path
+    d = Path(SC.save_component(name, "s4_quality", {**spec, "component": KIND}, root=root))
+    if for_compose(SC.load_set(name, root=root).s4_quality)["buckets"] != spec["buckets"]:
+        raise AssertionError("the saved s4_quality.json does not read back as written")
+    return d / SPEC_FILE
 
 
 def summary(sc: dict) -> str:
@@ -1579,15 +1554,15 @@ def summary(sc: dict) -> str:
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--write", action="store_true", help="save s4_quality.json")
-    ap.add_argument("--set", default=SET_NAME, help="the stage candidate it joins (stages_candidates)")
+    ap.add_argument("--set", default=None, help="the stage candidate it joins with --write (stages_candidates)")
     ap.add_argument("--n-boot", type=int, default=B_PROTOCOL)
     ap.add_argument("--lam", type=float, default=None, help="fix λ (development only; the artifact chooses it nested)")
     ap.add_argument("--s3-set", default=None, help="size zones by this stage candidate's per-fold S3 φ (default φ = 1)")
     ap.add_argument("--s2-set", default=None, help="size unmeasured overflows by this stage candidate's own fold v̂ "
                     "(stages_s3_links.candidate_s2; default the served set's)")
     a = ap.parse_args(argv)
-    if a.write and a.lam is not None:
-        raise SystemExit("--write chooses λ nested per fold; drop --lam")
+    if a.write and (a.lam is not None or not a.set):
+        raise SystemExit("--write needs --set NAME, and chooses λ nested per fold (drop --lam)")
     src = None
     if a.s2_set:
         import stages_s3_links as S3L  # noqa: PLC0415  (P8b: a stage candidate's S2 per fold)

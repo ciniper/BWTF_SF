@@ -72,12 +72,9 @@ by nested LOSO and live in stages_candidates/, which is not read here.
 No T3 row: ``check_out_of_fold`` runs on every result and raises on a T3 tier, a row
 outside its tier's window or season, a (basin, day) its fold's weights or head was
 fit on, or a (date, basin, entry, tier) emitted twice. No module-level IO.
-
-    venv/bin/python features/forecast/src/models/stages_s2.py [SET] [--root candidates] [--tiers T1,T2]
 """
 from __future__ import annotations
 
-import hashlib
 import json
 import pickle
 import re
@@ -97,7 +94,6 @@ for _p in (HERE, HERE.parent / "collectors", HERE.parents[3]):
 
 import candidates as CAND  # noqa: E402  (served.json, candidate manifests and pickles)
 import exclusions as X  # noqa: E402  (ENTRIES, X-SEL, the protocol's freeze date)
-import stages_spec as SP  # noqa: E402
 import train_v4 as T  # noqa: E402  (frames, rows, the predict path, the bundle's volume heads)
 import truth as TR  # noqa: E402  (ledger_start: each basin's first scored T2 season)
 from shared import clock  # noqa: E402
@@ -398,24 +394,6 @@ def fit_fold(s2set: S2Set, train: dict, tier: str, fold: str, start, end, season
 
 # ── fit, predict, check ─────────────────────────────────────────────────────
 
-PROTOCOL_SHA_PLACEHOLDER = "protocol sha256: <filled at commit>"
-
-
-def protocol_stamp() -> str:
-    """'stages_v2@<sha>' from the frozen protocol's own sha line (exclusions.freeze_date checks the
-    version), after checking that line against the text: <sha> is the sha256 of the file with that
-    line reading the placeholder (the protocol's 'Changing it'). An edited protocol raises."""
-    X.freeze_date()
-    text = X.PROTOCOL.read_text()
-    found = re.findall(r"^protocol sha256: ([0-9a-f]{64})$", text, re.M)
-    if len(found) != 1:
-        raise ValueError(f"{X.PROTOCOL.name} holds {len(found)} filled protocol sha256 lines, not one")
-    body = text.replace(f"protocol sha256: {found[0]}", PROTOCOL_SHA_PLACEHOLDER, 1)
-    if hashlib.sha256(body.encode()).hexdigest() != found[0]:
-        raise ValueError(f"{X.PROTOCOL.name} was edited after its freeze: its text no longer has the sha it states")
-    return f"{SP.PROTOCOL_VERSION}@{found[0]}"
-
-
 def first_scored_season(s2set: S2Set, key: str) -> int:
     """The first T2 season holding a ledger_known day of the basin (protocol §2: Westside 2017-18)."""
     start = TR.ledger_start(s2set.geo.basin(key).facility)
@@ -459,7 +437,7 @@ def fit(set_name: str, root: str = "served", tiers=TIERS, train_frames: dict | N
     stamp = {"schema": SCHEMA, "stage": "s2", "set": s2set.name, "root": s2set.root, "stage1": s2set.stage1,
              "family": s2set.family, "geography": s2set.geo.version, "basins": list(s2set.keys),
              "citywide": "not a stage row: compose_v2 reads basin p and v_hat only; citywide_p is a scorecard display",
-             "protocol": protocol_stamp(), "built_at": clock.utc_iso(),
+             "protocol": X.protocol_stamp(), "built_at": clock.utc_iso(),
              "trained_through": str(s2set.trained_through.date()), "holdout_start": str(HOLDOUT_START.date()),
              "post_start": str(POST_START.date()), "freeze": str(X.freeze_date().date()),
              "train_input_rules": [], "rain_sources": {k: s2set.models[k]["rain_source"] for k in s2set.keys},
@@ -472,14 +450,6 @@ def fit(set_name: str, root: str = "served", tiers=TIERS, train_frames: dict | N
         stamp["tiers"]["T2"]["seasons"] = [season_label(s) for s in T2_SEASONS]
         stamp["first_scored_season"] = {k: season_label(first_scored_season(s2set, k)) for k in s2set.keys}
     return Fitted(s2set, tiers, folds, stamp)
-
-
-def predict(set_name: str, root: str = "served", frames_by_entry: dict | None = None, tiers=TIERS,
-            train_frames: dict | None = None) -> pd.DataFrame:
-    """DataFrame[date, basin, entry, tier, fold, sel, p, v_hat] for the set's basin keys,
-    every entry of ``frames_by_entry`` ({entry: {source: frame}}) in every asked tier.
-    The stamp rides in ``.attrs['stamp']``."""
-    return fit(set_name, root, tiers, train_frames).predict(frames_by_entry)
 
 
 def _entry_frames(s2set: S2Set, entry: str, frames) -> dict:
@@ -588,27 +558,3 @@ def check_out_of_fold(rows: pd.DataFrame, fitted: Fitted) -> None:
     sel = X.selection(rows["date"], fitted.set.geo)
     if not (rows["sel"].astype(str).to_numpy() == sel).all():
         raise ValueError("a row's sel disagrees with X-SEL (exclusions.selection)")
-
-
-def main(argv: list) -> None:
-    root = argv[argv.index("--root") + 1] if "--root" in argv else "served"
-    tiers = tuple(argv[argv.index("--tiers") + 1].split(",")) if "--tiers" in argv else TIERS
-    flags = {"--root", "--tiers"}
-    names = [a for i, a in enumerate(argv) if not a.startswith("--") and (i == 0 or argv[i - 1] not in flags)]
-    name = names[0] if names else CAND.served_info()["name"]
-    t0 = time.time()
-    fitted = fit(name, root, tiers)
-    s2set = fitted.set
-    rain, _ = T.build_dataset(end=X.AS_OF, sources=list(s2set.sources), input_rules=["gauge_outage_v1"])
-    rows = fitted.predict({"rain": rain})
-    print(f"{name} ({root}, {s2set.family}): {len(fitted.folds)} folds fit in {fitted.stamp['fit_seconds']}s; "
-          f"{len(rows)} rows for entry 'rain' (gauge_outage_v1, data to {X.AS_OF.date()}) in {time.time() - t0:.1f}s")
-    for (tier, key), g in rows.groupby(["tier", "basin"], sort=False):
-        print(f"   {tier:11} {key:12} {g['fold'].nunique():2} folds  {len(g):5} days  {g['date'].min().date()} → "
-              f"{g['date'].max().date()}  mean p {g['p'].mean():.4f}  mean v_hat {g['v_hat'].mean():.2f} MG")
-    if "first_scored_season" in fitted.stamp:
-        print(f"   first scored T2 season: {fitted.stamp['first_scored_season']}; T2 is {T2_LABEL}")
-
-
-if __name__ == "__main__":
-    main(sys.argv[1:])

@@ -60,7 +60,7 @@ scored on the same slice (no lead entry beyond L1) against the served slice writ
   - a spec fit on its own fold's days, a head under the floor that is not the fallback (T2's included), a
     missing fold or head record, rows missing a basin and a negative weight are refused; the candidate's
     manifest pins the served build its comparisons read;
-  - the local loader keeps stages_candidates.load_set's contract: the same set read, the same tampering refused.
+  - a stage candidate is read through stages_candidates.load_set, which refuses a tampered set.
 
 Counts are as of the committed data's end, 2026-08-17 (Part B 23).
 
@@ -1333,7 +1333,7 @@ def test_the_primaries_state_every_protocol_row():
     assert "does not say" in B.s3_fit_caveat(B.s3_fit_s2({"links": {}}), "x_s2", "sfpuc4_x_v1")
     assert "sfpuc4_y_v1" in B.s3_fit_caveat(B.s3_fit_s2({"sources": {"s2": {"name": "sfpuc4_y_v1"}}}), "x_s2", "sfpuc4_x_v1")
     # S4 fit = S4 use (Part B 6): the stub's S4 says it was fit at its S3's link shares in every fold, so no caveat;
-    # S4 fit at φ = 1 beside fitted shares (sfpuc4_s4_v3 next to links_v1), or records that do not say, carry one
+    # S4 fit at φ = 1 beside fitted shares (a φ = 1 study next to links_v1), or records that do not say, carry one
     assert sc["integrity"]["s4_fit_sizes"] == {"match": True, "folds_off": [], "folds_unstated": []}
     cand = _cand()
     assert all(s["match"] for s in cand.s4_sizes.values()) and set(cand.s4_sizes) == set(cand.specs)
@@ -1645,32 +1645,14 @@ def test_a_stage_candidate_is_refused_when_its_parts_could_have_seen_its_days():
     assert not any(k.endswith(f"{B.served_name()}/rows.csv.gz") for k in _b().manifest["inputs"])   # never its own
 
 
-def test_the_local_loader_keeps_stages_candidates_contract():
-    """local_load_set (used when stages_candidates is absent) reads the stub as stages_candidates.load_set does — the
-    same manifest, pickles, heads and specs, so from_saved builds the same candidate — and refuses what that loader
-    refuses: a file changed after it was saved, an unlisted file, a missing stamp, a negative weight."""
+def test_stage_candidates_load_through_stages_candidates():
+    """The build reads a stage candidate through stages_candidates.load_set, which refuses what the stub shows
+    tampered: a file changed after it was saved, an unlisted file, a missing stamp, a negative weight."""
     import pickle
     import shutil
     import stages_candidates as SC
     root = _stub_root()
     assert B.saved_loader() is SC.load_set
-    sys.modules["stages_candidates"], held = None, sys.modules["stages_candidates"]
-    try:
-        assert B.saved_loader() is B.local_load_set          # the module gone: the local loader, never a silent default
-    finally:
-        sys.modules["stages_candidates"] = held
-    a, b = SC.load_set(STUB, root=root), B.local_load_set(STUB, root=root)
-    assert a.name == b.name and a.manifest == b.manifest and Path(a.path) == Path(b.path)
-    assert a.s3_links == b.s3_links and a.s4_quality == b.s4_quality and (a.citywide is None) == (b.citywide is None)
-    for part in ("models", "volume", "holdout_models", "holdout_volume"):
-        x, y = getattr(a, part), getattr(b, part)
-        assert list(x) == list(y) == list(_cand().geo.keys), part
-        for k in x:
-            assert {f: v for f, v in x[k].items() if f != "model"} == {f: v for f, v in y[k].items() if f != "model"}, (part, k)
-            assert type(x[k]["model"]) is type(y[k]["model"]), (part, k)
-    ca, cb = B.from_saved(a), B.from_saved(b)
-    assert [(f.tier, f.fold) for f in ca.folds] == [(f.tier, f.fold) for f in cb.folds] and ca.specs == cb.specs
-    assert ca.heads_used == cb.heads_used and ca.s3_s2 == cb.s3_s2 and ca.files == cb.files
 
     def rehash(d: Path, fname: str) -> None:
         man = json.loads((d / "manifest.json").read_text())
@@ -1699,9 +1681,6 @@ def test_the_local_loader_keeps_stages_candidates_contract():
             shutil.copytree(root / STUB, r / STUB)
             tamper(r / STUB)
             assert _raises(lambda: SC.load_set(STUB, root=r)), what
-            assert _raises(lambda: B.local_load_set(STUB, root=r), ValueError, KeyError), what
-    assert _raises(lambda: B.local_load_set("_bakeoff", root=root), ValueError)
-
 
 if __name__ == "__main__":
     import traceback

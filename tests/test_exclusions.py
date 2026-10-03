@@ -220,11 +220,10 @@ TRUTH_COL = {"S1": ("series", "rain"), "S2": ("basin", "y"), "S3": ("zone", "y")
              "S5": ("zone", "out_y"), "OUT": ("zone", "out_y")}
 
 
-def fixture(geo="sfpuc4_v1", facts=(), outage=(), postings_end=None, nwp=None, feeds=None, watcher=None, peak_truth=False,
-            unmasked=()) -> X.Context:
+def fixture(geo="sfpuc4_v1", facts=(), outage=(), postings_end=None, nwp=None, feeds=None, watcher=None,
+            peak_truth=False) -> X.Context:
     """A context where nothing fires, then ``facts`` [(unit_type, unit, day, column, value)] set on top.
-    ``outage`` [(gauge, day)] are gauge_outage_v1 days; ``unmasked`` [(issue, day, gauge)] the gauge-days an
-    issue day's record had not yet masked (none unless given); nwp holds every (day, lead 0–5) at 24 hours unless given."""
+    ``outage`` [(gauge, day)] are gauge_outage_v1 days; nwp holds every (day, lead 0–5) at 24 hours unless given."""
     geo = G.get(geo)
     days = pd.date_range(FX_START, FX_END, name="date")
 
@@ -255,8 +254,7 @@ def fixture(geo="sfpuc4_v1", facts=(), outage=(), postings_end=None, nwp=None, f
                     blocks=pd.DataFrame({"block": np.arange(len(days)), "block_kind": "quiet"}, index=days), outage=out.cumsum(),
                     rain_series={b.key: b.rain_series for b in geo.basins}, postings_end=postings_end or FX_END, suspect=(),
                     circ_zones=("ocean", "baker_china"), rain3=pd.Series(0.0, index=days), peak_truth=peak_truth)
-    um = pd.DataFrame([(pd.Timestamp(i), pd.Timestamp(d), g) for i, d, g in unmasked], columns=["issue", "date", "gauge"])
-    return ctx.with_inputs(nwp=nwp, feeds=feeds, watcher=watcher, unmasked=um)
+    return ctx.with_inputs(nwp=nwp, feeds=feeds, watcher=watcher)
 
 
 def row(ctx: X.Context, stage: str, unit: str, day=D, entry="oracle", tier="T2", unit_type=None, y=None) -> pd.DataFrame:
@@ -318,12 +316,11 @@ def _cases() -> list:
          dict(outage=[("SF Downtown", D - pd.Timedelta(days=8))]), entry="L0s")
     case("X-S2-OUTAGEIN", "s2", "central", dict(outage=[("SF Downtown", D - pd.Timedelta(days=9))]),
          dict(outage=[("SF Downtown", D - pd.Timedelta(days=9))], row=dict(entry="L1s")), entry="L1")  # lead 1 reads 30 days
-    # stages_v3: the whole record's runs, whatever the row's own record did with the day. Masked there (rain known; the
-    # mean fell back to one gauge) or read as the dead gauge's 0.00 (a lead row whose issue day D − L could not yet call
-    # the run an outage: unmasked), the input was degraded, so both tag; the twins hold the run on a forecast day
+    # stages_v3: the whole record's runs, whatever the row's own record did with the day (masked there, or read as the
+    # dead gauge's 0.00 by a lead row's issue day), the input was degraded, so it tags; the twins hold the run on a
+    # forecast day
     for e in ("L1", "L1s"):
-        case("X-S2-OUTAGEIN", "s2", "central", dict(outage=[("SF Downtown", D - pd.Timedelta(days=3))],
-                                                    unmasked=[(D - pd.Timedelta(days=1), D - pd.Timedelta(days=3), "SF Downtown")]),
+        case("X-S2-OUTAGEIN", "s2", "central", dict(outage=[("SF Downtown", D - pd.Timedelta(days=3))]),
              dict(outage=[("SF Downtown", D - pd.Timedelta(days=1))]), entry=e)
     case("X-S2-OUTAGEIN", "s2", "westside", dict(outage=[("SF Oceanside", D)]),
          dict(outage=[("SF Oceanside", D)], row=dict(unit="central")))                              # Bayside reads Downtown only
@@ -578,14 +575,6 @@ def test_a_t3_row_raises_and_unknowns_raise():
     _raises(ValueError, X.apply, row(ctx, "s1", T.MEAN_SERIES), "s1", ctx)           # the floor is per gauge
     _raises(ValueError, X.apply, row(ctx, "s1", "SF Downtown", entry="rain"), "s1", ctx)
     _raises(ValueError, X.apply, row(ctx, "s1", "SF Downtown", entry="L1"), "s1", dataclasses.replace(ctx, nwp=None))
-    # stages_v3: X-S2-OUTAGEIN reads the whole record on every entry, so a lead row needs no issue-day record and one
-    # given changes nothing; the input is still checked (a gauge-day on or after its issue day, an unknown gauge)
-    for e in ("oracle", "L1", "L1s"):
-        a = X.apply(row(ctx, "s2", "central", entry=e), "s2", dataclasses.replace(ctx, unmasked=None))
-        some = fixture(unmasked=[(D - pd.Timedelta(days=1), D - pd.Timedelta(days=3), "SF Downtown")])
-        assert a.equals(X.apply(row(some, "s2", "central", entry=e), "s2", some)), e
-    _raises(ValueError, fixture, unmasked=[(D, D, "SF Downtown")])                       # a gauge-day on or after its issue day
-    _raises(KeyError, fixture, unmasked=[(D, D - pd.Timedelta(days=1), "SFO")])
     _raises(ValueError, X.apply, row(ctx, "s5", "ocean"), "s5", ctx)                 # no feeds
     ctx5 = fixture(feeds={f: _obs() for f in ("oracle", "archive")})
     _raises(KeyError, X.apply, row(ctx5, "s5", "ocean", entry="degraded:3"), "s5", ctx5)
@@ -682,8 +671,7 @@ def test_counts_partition_a_synthetic_multi_stage_frame():
 def test_counts_partition_the_committed_data():
     """Every stage of the served geography on the committed data, y from truth.py as a build writes it:
     the partition holds and the truth check passes on every scored row."""
-    import stages_entries as E
-    ctx = X.context("geo_v1", end=AS_OF, unmasked=E.issue_time_unmasked())       # given as a build does; no rule reads it
+    ctx = X.context("geo_v1", end=AS_OF)
     frames = []
     for code, units, col, ut in (("s2", ctx.geo.keys, "y", "basin"), ("s3", list(ZONES), "y", "zone"),
                                  ("s4", list(ZONES), "s4_y", "zone"), ("out", list(ZONES), "out_y", "zone")):
@@ -989,7 +977,6 @@ def test_outagein_reads_the_whole_record_in_each_entrys_window():
     gauges_of = {T.MEAN_SERIES: T.GAUGE_SERIES, **{s: (s,) for s in T.GAUGE_SERIES}}
     for version in G.VERSIONS:
         ctx = X.context(version, start=lo - pd.Timedelta(days=40), end=AS_OF)
-        assert ctx.unmasked is None                           # no rule needs the issue day's record any more
         seen = {"own_record": 0, "read_as_zero": {}, "served_window": 0}
         for entry in ("rain", "L0", "L1", "L0s", "L1s"):
             r = X.skeleton("s2", ctx.geo.keys, lo, AS_OF, entry=entry)

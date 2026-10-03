@@ -436,7 +436,7 @@ def save_component(name: str, kind: str, payload: dict, root=None) -> Path:
     else:
         man = _new_manifest(name, geo)
     stage = STAGE_OF_KIND[kind]
-    from stages_s2 import protocol_stamp   # lazy: stages_s2 imports the scoring stack; the stamp checks the frozen text
+    from exclusions import protocol_stamp   # lazy: exclusions imports the truth stack; the stamp checks the frozen text
     stamp = {"component": component, "protocol": protocol_stamp(), "saved_at": clock.utc_iso()}
     files: dict = {}
     if kind == "s2":
@@ -705,7 +705,7 @@ def served_s5_scores(served_scores: Path | None = None) -> dict:
     if served_scores is None:
         theirs = json.loads((served.parent / "manifest.json").read_text())
         stale = SB.stale_files(theirs)
-        if stale or theirs["protocol"] != SB.S2.protocol_stamp():
+        if stale or theirs["protocol"] != SB.X.protocol_stamp():
             raise ValueError(f"the served set's build is stale ({stale or 'protocol'}): rebuild it before choosing S5 on it")
     return json.loads(served.read_text())
 

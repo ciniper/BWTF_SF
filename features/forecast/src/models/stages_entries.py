@@ -130,12 +130,9 @@ API (the build agent and the S2 engine call these):
     issue_time_unmasked(input_rules) -> DataFrame[issue, date, gauge]   (what the issue day could not yet mask)
     served_weather_model() -> str   (METEO_PARAMS['models']; the default ``model``, 'icon_seamless' today)
     data_end() -> Timestamp
-
-    venv/bin/python features/forecast/src/models/stages_entries.py [--model icon_seamless] [--time]
 """
 from __future__ import annotations
 
-import argparse
 import functools
 import re
 import sys
@@ -159,12 +156,10 @@ import truth as T  # noqa: E402  (which gauge days were read at all)
 from src.collectors import openmeteo_previous_runs as OMP  # noqa: E402  (the archives and the complete-day rule)
 
 ENTRIES = X.ENTRIES                                    # oracle, rain, L0 … L5, L0s, L1s (protocol §3)
-RAIN_KNOWN = ("oracle", "rain")                        # one input: the rain that fell
 MODELS = tuple(OMP.MODELS)                             # icon_seamless, ecmwf_ifs025, gfs_seamless
 LEADS = OMP.LEADS                                      # 0 (short lead, optimistic), 1 … 5
 FEATURES = list(RF.DAILY_FEATURES) + list(RF.INTENSITY_FEATURES)   # the 19, build_dataset's order
 HISTORY_FEATURES = ("rain_14d_cum", "rain_30d_cum", "antecedent_moisture", "dry_spell_days")
-NEAR_FEATURES = tuple(f for f in RF.DAILY_FEATURES if f not in HISTORY_FEATURES)   # read D − 7 … D at most
 INT_FEATURES = ("wet_prior_3d", "dry_spell_days")      # int64 in the training frames
 SERVED_PAST_DAYS = X.AS_SERVED_DAYS                    # 7: METEO_PARAMS past_days (a test reads live_dashboard)
 FULL_PAST_DAYS = 35                                    # history_full_v1: Open-Meteo past_days 35 (design §6 item 8)
@@ -172,7 +167,6 @@ HISTORY = {"served": SERVED_PAST_DAYS, "full": FULL_PAST_DAYS}
 FC_DAYS = len(LEADS)                                   # the page's 6 forecast days: I … I + 5
 PEAK_REACH_HOURS = 5                                   # the 6-hour peak window reaches 5 hours before D's midnight
 START = T4.TRAIN_START                                 # 2016-03-01: build_dataset's first day
-AS_OF = X.AS_OF                                        # 2026-08-17: the committed data's end at the freeze
 NWPGAP, NOLEAD = "X-S1-NWPGAP", "X-S1-NOLEAD"
 OK, GAP, ABSENT = 0, 1, 2                              # a model-day's status: complete, inside the archive but short, outside it
 _DAY = pd.Timedelta(days=1)
@@ -680,27 +674,3 @@ def frames(entry: str, sources, model: str = "icon_seamless", start=None, end=No
                    "source": s, "span": [str(kept.min().date()), str(kept.max().date())] if len(kept) else None,
                    "dropped": dropped}
     return out
-
-
-# ── CLI ─────────────────────────────────────────────────────────────────────
-
-def main(argv=None) -> None:
-    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--model", default=None, help="one weather model (default: all three)")
-    ap.add_argument("--time", action="store_true", help="build every entry for avg and SF Downtown and time it")
-    a = ap.parse_args(argv)
-    for m in ([a.model] if a.model else MODELS):
-        print(m)
-        for e, s in spans(m).items():
-            print(f"  {e:6s} {s['first']} → {s['last']}  {s['n_days']} days, {s['n_dropped']} dropped inside")
-        if a.time:
-            t0 = time.time()
-            for e in ENTRIES:
-                fr = frames(e, ["avg", "SF Downtown"], model=m)
-                if as_served(e):
-                    frames(e, ["avg", "SF Downtown"], model=m, history="full")
-            print(f"  every entry × 2 sources (+ history_full_v1) in {time.time() - t0:.1f} s; {len(fr['avg'])} rows in {e}")
-
-
-if __name__ == "__main__":
-    main()

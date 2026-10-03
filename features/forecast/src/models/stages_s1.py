@@ -87,7 +87,6 @@ import argparse
 import functools
 import hashlib
 import json
-import re
 import sys
 from pathlib import Path
 
@@ -103,7 +102,6 @@ for _p in (REPO, FORECAST, HERE):
 
 import exclusions as X  # noqa: E402
 import stages_entries as E  # noqa: E402
-import stages_spec as SP  # noqa: E402
 import truth as T  # noqa: E402
 from shared import clock  # noqa: E402
 from shared import geography as G  # noqa: E402
@@ -132,21 +130,11 @@ GEO = "sfpuc4_v1"                                       # any geography: S1's fa
 MAX_REACH = {"fc_max1h": ("rain_max1h", 0), "fc_max3h": ("rain_max3h", 2)}   # hours each peak window reads before midnight
 
 
-# ── what is served, and the protocol stamp ──────────────────────────────────
+# ── what is served ──────────────────────────────────────────────────────────
 
 def served_model() -> str:
     """The weather model the live forecast reads (stages_entries.served_weather_model: METEO_PARAMS)."""
     return E.served_weather_model()
-
-
-def protocol_stamp() -> str:
-    """'stages_v2@<sha>': the frozen protocol's version (exclusions.freeze_date checks it) and the digest its
-    sha line holds (tests/test_served_golden.py verifies that digest against the text)."""
-    X.freeze_date()
-    m = re.search(r"^protocol sha256: ([0-9a-f]{64})$", X.PROTOCOL.read_text(), re.M)
-    if not m:
-        raise ValueError(f"{X.PROTOCOL.name} holds no protocol sha256 line")
-    return f"{SP.PROTOCOL_VERSION}@{m.group(1)}"
 
 
 def _sha256(path: Path) -> str:
@@ -419,7 +407,7 @@ def build(served: str | None = None) -> tuple[dict, dict]:
     hist = T.gauge_rain(W.CLIM_FROM, ctx.end)            # the benchmarks read the record from 2016-01
     gg = T.gauges(W.CLIM_FROM, ctx.end)
     raw = gg[gg["series"].isin(GAUGES)].pivot(index="date", columns="series", values="raw")[list(GAUGES)]
-    res = {"schema": SCHEMA, "protocol": protocol_stamp(), "built_at": clock.utc_iso(),
+    res = {"schema": SCHEMA, "protocol": X.protocol_stamp(), "built_at": clock.utc_iso(),
            "inputs": {str(p.relative_to(REPO)): _sha256(p) for p in input_files()},
            "data_end": str(end.date()), "rows": [str(ctx.start.date()), str(ctx.end.date())],
            "served_model": served, "models": list(MODELS), "series": list(SERIES),

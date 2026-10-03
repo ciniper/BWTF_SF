@@ -1298,7 +1298,7 @@ def run(grid: Grid = Grid(), data: Data | None = None, n_boot: int = N_BOOT, wri
                       "noninferior_5pct": wt1.get("noninferior_5pct")}}
     primary["passes"] = bool(primary["T2"]["superior"] and primary["T1"]["noninferior_5pct"])
     results = {
-        "schema": SCHEMA, "built_at": clock.utc_iso(), "protocol": S2.protocol_stamp(), "geography": GEOGRAPHY,
+        "schema": SCHEMA, "built_at": clock.utc_iso(), "protocol": X.protocol_stamp(), "geography": GEOGRAPHY,
         "data_end": str(data.end.date()), "as_of": str(AS_OF.date()), "decision": "STAGES_DESIGN.md Part A A5",
         "grid": {"sha256": grid_rec["sha256"], "declared_at": grid_rec["declared_at"], **declared},
         "inputs": {

@@ -61,10 +61,7 @@ exclusions ledger and the figure's chips show before any model row exists.
   the day (the mean fell back to one gauge, or the issue day's record read
   the dead gauge's 0.00): D−29…D for the oracle and rain known, D−29…D−L−1
   for lead L, and as served the live frame's 7 past days D−L−7…D−L−1
-  (stages_entries.SERVED_PAST_DAYS). Under stages_v2 lead rows read the issue
-  day's record (stages_entries.issue_time_unmasked), which dropped the tag
-  where that record had not yet masked the run; ``Context.unmasked`` is still
-  accepted and checked, and no rule reads it.
+  (stages_entries.SERVED_PAST_DAYS).
 - S4's truth and OUT's label read the stages' sample record,
   samples.D10_SOURCES (design §3.4, owner decision D10: DataSF 2020-07 →,
   Poo Bot 2015-12 → 2017-01, STARDB 2016-10 → 2020-07, de-duplicated), so do
@@ -78,13 +75,12 @@ Missing is never zero, and nothing defaults: an unknown stage, unit, entry,
 tier or rule raises, a T3 row raises (X-ALL-INSAMPLE is zero by
 construction), a row outside the context's days raises, and so does a scored
 row whose truth is missing or disagrees with truth.py. No module-level IO.
-
-    venv/bin/python features/forecast/src/models/exclusions.py     # the catalog, both geographies
 """
 from __future__ import annotations
 
 import dataclasses
 import functools
+import hashlib
 import math
 import re
 import sys
@@ -289,22 +285,32 @@ def freeze_date() -> pd.Timestamp:
     return pd.Timestamp(m.group(1))
 
 
+PROTOCOL_SHA_PLACEHOLDER = "protocol sha256: <filled at commit>"
+
+
+def protocol_stamp() -> str:
+    """'<version>@<sha>' from the frozen protocol's own sha line (``freeze_date`` checks the version), after
+    checking that line against the text: <sha> is the sha256 of the file with that line reading the placeholder
+    (the protocol's 'Changing it'). An edited protocol raises."""
+    freeze_date()
+    text = PROTOCOL.read_text()
+    found = re.findall(r"^protocol sha256: ([0-9a-f]{64})$", text, re.M)
+    if len(found) != 1:
+        raise ValueError(f"{PROTOCOL.name} holds {len(found)} filled protocol sha256 lines, not one")
+    body = text.replace(f"protocol sha256: {found[0]}", PROTOCOL_SHA_PLACEHOLDER, 1)
+    if hashlib.sha256(body.encode()).hexdigest() != found[0]:
+        raise ValueError(f"{PROTOCOL.name} was edited after its freeze: its text no longer has the sha it states")
+    return f"{SP.PROTOCOL_VERSION}@{found[0]}"
+
+
 def selection(dates, geo) -> np.ndarray:
     """X-SEL per date: 'holdout_selected' (2023-07-01 → 2025-10-31), 'post_selected' (2025-11-01 → the
     freeze) or '' — only for a GEO_V1 set, whose choices were made on those days (protocol §2)."""
     d = pd.DatetimeIndex(pd.to_datetime(dates))
-    if _geo(geo).version != "geo_v1":
+    if T._geo(geo).version != "geo_v1":
         return np.full(len(d), "", dtype=object)
     return np.select([(d >= HOLDOUT_START) & (d < POST_START), (d >= POST_START) & (d <= freeze_date())],
                      list(SELECTED), default="").astype(object)
-
-
-def _geo(geo) -> G.Geography:
-    if isinstance(geo, G.Geography):
-        return geo
-    if isinstance(geo, str):
-        return G.get(geo)
-    raise TypeError(f"geo must be a shared.geography.Geography or a version string, not {type(geo).__name__}")
 
 
 def _km(lat1, lon1, lat2, lon2) -> float:
@@ -412,7 +418,7 @@ def ledger_suspect(geo, start=T.TRUTH_START, end=None, sources=SMP.D10_SOURCES) 
     (ISO dates), n_days, zones, reasons [{date, zone, why ('cso_posting_onset' | 'sample_10x'), detail}].
     Uses the data through ``end`` only (default: the context's data end), so a count as of a date stays put.
     """
-    geo = _geo(geo)
+    geo = T._geo(geo)
     end = _data_end(tuple(sources)) if end is None else _ts(end)
     return _suspect(geo, tuple(sources), _ts(start), end)[0]
 
@@ -436,10 +442,7 @@ class Context:
     C-RUNOFF); postings_end: BeachWatch's last filing (X-PL-END); suspect: ``ledger_suspect``'s
     episodes; circ_zones: the zones X-S5-CIRC covers.
     The build adds what only it has: nwp (one weather model's archive, (date, lead) → archived hours),
-    feeds ({feed: DataFrame[date, zone, basin]}, S5), watcher (date → healthy, S5 live era) and unmasked
-    (DataFrame[issue, date, gauge]: stages_entries.issue_time_unmasked, the gauge-days the issue day's
-    record had not yet masked; checked, and read by no rule since stages_v3's X-S2-OUTAGEIN reads the
-    whole record).
+    feeds ({feed: DataFrame[date, zone, basin]}, S5) and watcher (date → healthy, S5 live era).
     """
     geo: G.Geography
     start: pd.Timestamp
@@ -457,13 +460,10 @@ class Context:
     feeds: dict | None = None
     watcher: pd.Series | None = None
     peak_truth: bool = False      # X-S1-PEAK fires on every day until KSFO hourly truth is committed
-    unmasked: pd.DataFrame | None = None
 
-    def with_inputs(self, nwp=None, feeds=None, watcher=None, rain_series=None, unmasked=None) -> "Context":
+    def with_inputs(self, nwp=None, feeds=None, watcher=None, rain_series=None) -> "Context":
         """A copy with a build's inputs added (checked); see ``context``."""
         kw = {}
-        if unmasked is not None:
-            kw["unmasked"] = _check_unmasked(unmasked)
         if nwp is not None:
             kw["nwp"] = _check_nwp(nwp)
         if feeds is not None:
@@ -508,23 +508,6 @@ def _check_feed(geo: G.Geography, name, f: pd.DataFrame) -> pd.DataFrame:
     if basins - set(geo.keys):
         raise KeyError(f"feed {name!r} names basins {geo.version} lacks: {sorted(basins - set(geo.keys))}")
     return out.reset_index(drop=True)
-
-
-def _check_unmasked(u: pd.DataFrame) -> pd.DataFrame:
-    """stages_entries.issue_time_unmasked's frame, checked: (issue, date, gauge), each gauge-day before its issue day."""
-    need = {"issue", "date", "gauge"}
-    if not need <= set(u.columns):
-        raise ValueError(f"unmasked needs columns {sorted(need)}, has {sorted(u.columns)}")
-    f = pd.DataFrame({"issue": pd.to_datetime(u["issue"]).dt.normalize(), "date": pd.to_datetime(u["date"]).dt.normalize(),
-                      "gauge": u["gauge"].astype(str)})
-    bad = set(f["gauge"]) - set(T.GAUGE_SERIES)
-    if bad:
-        raise KeyError(f"unmasked names gauges that are not {T.GAUGE_SERIES}: {sorted(bad)}")
-    if (f["date"] >= f["issue"]).any():
-        raise ValueError("an unmasked gauge-day is not before its issue day: the issue day reads the gauges through I − 1")
-    if f.duplicated().any():
-        raise ValueError("unmasked repeats an (issue, date, gauge)")
-    return f.reset_index(drop=True)
 
 
 def _check_rain_series(geo: G.Geography, rs: dict) -> dict:
@@ -666,16 +649,14 @@ def _aligned(*frames, ref) -> None:
 
 
 def context(geo, start=T.TRUTH_START, end=None, sources=SMP.D10_SOURCES, nwp=None, feeds=None, watcher=None,
-            rain_series=None, unmasked=None) -> Context:
+            rain_series=None) -> Context:
     """The rules' context for ``geo`` over [start, end] (default end: the last day the ledger grid, the
     gauges and the samples all cover). ``sources``: the lab record S4 and OUT are graded on (default the
     stages' S4 truth, samples.D10_SOURCES). Optional build inputs: nwp (DataFrame date, lead, n_hours: one
     weather model's archive), feeds ({'oracle' | 'archive' | 'degraded[:seed]' | 'watcher': DataFrame
-    date, zone, basin}), watcher (Series date → healthy), rain_series ({basin: series}, the set's own
-    stamp; default the geography's) and unmasked (stages_entries.issue_time_unmasked(): checked and kept, read
-    by no rule since stages_v3's X-S2-OUTAGEIN reads the whole record on every entry).
-    See ``perfect_feed`` and ``archive_feed`` for the two truth feeds."""
-    geo = _geo(geo)
+    date, zone, basin}), watcher (Series date → healthy) and rain_series ({basin: series}, the set's own
+    stamp; default the geography's)."""
+    geo = T._geo(geo)
     sources = tuple(sources)
     hi = _data_end(sources)
     end = hi if end is None else _ts(end)
@@ -685,22 +666,7 @@ def context(geo, start=T.TRUTH_START, end=None, sources=SMP.D10_SOURCES, nwp=Non
     if start > end:
         raise ValueError(f"start {start.date()} is after end {end.date()}")
     ctx = _truth_context(geo, start, end, sources)
-    return ctx.with_inputs(nwp=nwp, feeds=feeds, watcher=watcher, rain_series=rain_series, unmasked=unmasked)
-
-
-def perfect_feed(geo, start=T.TRUTH_START, end=None) -> pd.DataFrame:
-    """S5's oracle feed (§3.5, Part B 9): every filed overflow on its day — one row per link onset
-    (date, zone, basin, link), the ledger itself, so sibling zone-days are never scored on it."""
-    geo = _geo(geo)
-    lo = T.link_onsets(geo, start, end)
-    lo = lo[lo["y"] == 1]
-    return lo[["date", "zone", "basin", "link"]].reset_index(drop=True)
-
-
-def archive_feed(geo) -> pd.DataFrame:
-    """S5's real archive feed: the Poo Bot onsets 2016-03-19 → 2017-01-10 placed in the geography
-    (truth.archive_onsets; multi-basin strings already split, Part B 22): date, zone, basin."""
-    return T.archive_onsets(_geo(geo))[["date", "zone", "basin"]].reset_index(drop=True)
+    return ctx.with_inputs(nwp=nwp, feeds=feeds, watcher=watcher, rain_series=rain_series)
 
 
 # ── rows ───────────────────────────────────────────────────────────────────
@@ -874,7 +840,7 @@ def _outage_in(v, ctx):
 
     Window: D−29…D for the oracle and rain known; D−29…D−L−1 for lead L (D−L…D are the forecast's); as served, the
     live frame's 7 past days D−L−7…D−L−1. Every entry reads the whole record's runs (``ctx.outage``): hindsight,
-    for a tag that says the input was degraded, never what the issue day knew (``ctx.unmasked`` is not read)."""
+    for a tag that says the input was degraded, never what the issue day knew."""
     gauges_of = {T.MEAN_SERIES: T.GAUGE_SERIES, **{g: (g,) for g in T.GAUGE_SERIES}}
     has_lead = ~np.isnan(v.lead)
     lead = np.where(has_lead, v.lead, -1).astype(int)
@@ -1205,7 +1171,7 @@ def claims(geo, as_of=AS_OF, sources=SMP.D10_SOURCES) -> dict:
       C-UNMON   ``unmonitored()`` outfalls and their event days
       C-POSTING, C-TIME  structural (C-TIME notes the events that cross midnight)
     """
-    geo = _geo(geo)
+    geo = T._geo(geo)
     ctx = context(geo, end=as_of, sources=sources)
     z = ctx.frames["zone"].reset_index()
     neg = z[z["out_why"] == "exceedance_no_overflow"]
@@ -1286,7 +1252,7 @@ def catalog_counts(geo, as_of=AS_OF, sources=SMP.D10_SOURCES) -> dict:
     X-S1-NWPGAP / NOLEAD, X-S5-HEALTH / PERFECT-SIBLING / SELF / QUIET, X-POWER and X-SEL need a build's
     rows and inputs: ``apply`` decides them there. X-ALL-INSAMPLE is 0 by construction.
     """
-    geo = _geo(geo)
+    geo = T._geo(geo)
     ctx = context(geo, end=as_of, sources=sources)
     lo, hi = ctx.start, ctx.end
     zones = list(ZONES)
@@ -1363,17 +1329,3 @@ def figure_counts(catalog: dict, claim: dict | None = None) -> dict:
             out["claims"][cid] = int(sum(claim[cid]["days"].values()))
         out["claims"]["C-UNMON"] = len(claim["C-UNMON"]["outfalls"])
     return out
-
-
-if __name__ == "__main__":
-    import json
-    for version in G.VERSIONS:
-        cat = catalog_counts(version)
-        print(f"── {version}, {cat['start']} → {cat['as_of']}")
-        for stage, rules in cat["exclusions"].items():
-            for x, units in rules.items():
-                print(f"  {stage:4} {x:22} {json.dumps(units)}")
-        print("  X-LEDGER-SUSPECT episodes:")
-        for e in cat["ledger_suspect"]:
-            print(f"    {e['basin']:12} {e['start']} → {e['end']} ({e['n_days']} days; {', '.join(e['zones'])}; {e['reasons']} triggers)")
-        print("  claims:", json.dumps(claims(version), default=str))

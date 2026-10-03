@@ -519,7 +519,8 @@ def test_spec_files_round_trip_and_bad_specs_raise():
     with tempfile.TemporaryDirectory() as tmp:
         for name, spec in _adapter().items():
             (Path(tmp) / f"{name}.json").write_text(json.dumps(spec))
-        loaded = {"s3": C.load_s3_spec(Path(tmp) / "s3.json", GEO1), "s4": C.load_s4_spec(Path(tmp) / "s4.json", GEO1)}
+        loaded = {"s3": C.check_s3_spec(json.loads((Path(tmp) / "s3.json").read_text()), GEO1),
+                  "s4": C.check_s4_spec(json.loads((Path(tmp) / "s4.json").read_text()), GEO1)}
     _frames_equal(C.compose(GEO1, loaded, inputs), C.compose(GEO1, _adapter(), inputs))
 
     def raises(exc, fn, *a, **kw):

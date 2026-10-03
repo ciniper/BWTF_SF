@@ -124,8 +124,7 @@ where the rows never hit a rule), and its tooltip gives every feed's own
 **Stage candidates (``--root stages_candidates``; Part B 13, 14; design §7).** A
 set under data/models/stages_candidates/<name>/ is read through
 stages_candidates.load_set, which asserts its stamps, keys, sha256s and weights
-≥ 0 (``local_load_set``, the same contract, when that module is absent), then
-``from_saved`` turns it into what the build scores (``StageCandidate``):
+≥ 0, then ``from_saved`` turns it into what the build scores (``StageCandidate``):
 geography from the manifest (G.stamped; SFPUC4_V1's basins westside,
 north_shore, central, south; no GEO_V1 adapter), and per fold — S2 from the
 candidate's own fits, never refit here: T1 its finals, T1-holdout its siblings
@@ -251,13 +250,10 @@ from shared.zones import ZONES  # noqa: E402
 SCHEMA = "bwtf.stages/1"
 SCORES_SCHEMA = "bwtf.stages.scores/1"
 STAGES_DIR = FORECAST / "data" / "models" / "stages"            # the only place this module writes
-STAGES_CANDIDATES_DIR = FORECAST / "data" / "models" / "stages_candidates"   # read only (Part B 13)
 S1_SCORES = STAGES_DIR / "_s1" / "s1_scores.json"
 STAGE_ROOT = "stages_candidates"
 ROOTS = S2.ROOTS + (STAGE_ROOT,)
-STAGE_PIPELINE = "stages_v1"                       # design §2.6: a stage candidate's pipeline stamp
 COMPONENTS = ("s1", "s2", "s3", "s4", "s5")        # design §2.7: manifest components
-S5_INCUMBENT = S5.PRIMARY[1]                       # basin_swap = live_v2: GEO_V1's basins and legacy groups only
 S3B_BASIN = "westside"                             # protocol §8 S3b: the Westside split (its key in every geography)
 TIERS = S2.TIERS                                   # T1, T1-holdout, T2 (T0 is graded from forecast_history)
 ENTRIES = X.ENTRIES                                # oracle, rain, L0 … L5, L0s, L1s
@@ -557,7 +553,7 @@ def bakeoff_rows(path: Path, geo) -> pd.DataFrame:
     return r
 
 
-DEV_S2_PREFIX = "dev:"                             # stages_s3_links.dev_s2 names its development stand-in "dev:<set>"
+DEV_S2_PREFIX = "dev:"                             # a development stand-in S2 is named "dev:<set>"
 
 
 def s3_fit_s2(saved_s3: dict) -> dict:
@@ -785,139 +781,14 @@ def _rel(path: Path) -> str:
 
 def load_stage_candidate(name: str, root=None, seasons=None) -> StageCandidate:
     """The stage candidate ``name`` through stages_candidates.load_set (Part B 13's geography-aware loader: every
-    stamp, key and sha256 asserted, every weight ≥ 0), or ``local_load_set`` when that module is absent, then
-    ``from_saved``. ``root`` overrides its directory."""
+    stamp, key and sha256 asserted, every weight ≥ 0), then ``from_saved``. ``root`` overrides its directory."""
     return from_saved(saved_loader()(name, root=root), seasons=seasons)
 
 
 def saved_loader():
-    """stages_candidates.load_set, or ``local_load_set`` (the same contract) when stages_candidates is not there.
-    An import error inside stages_candidates itself is raised, never hidden behind the local loader."""
-    try:
-        import stages_candidates as SC  # noqa: PLC0415  (read only when a stage candidate is scored)
-    except ModuleNotFoundError as e:
-        if e.name != "stages_candidates":
-            raise
-        return local_load_set
-    return SC.load_set if hasattr(SC, "load_set") else local_load_set
-
-
-# stages_candidates' layout, read by the local loader: the manifest schema, the S2 pickles per part (file stem,
-# suffix, fold stamp) and the spec files per stage
-CANDIDATE_SCHEMA = "bwtf.stages_candidates/1"
-SAVED_S2 = {"models": ("model", "", "final"), "volume": ("volume", "", "final"),
-            "holdout_models": ("model", ".pre_holdout", "pre_holdout"), "holdout_volume": ("volume", ".pre_holdout", "pre_holdout")}
-SAVED_SPECS = {"s3_links": ("s3", "s3_links.json"), "s4_quality": ("s4", "s4_quality.json")}
-SAVED_FIELDS = {"model": ("model", "features", "rain_source", "calibration_offset", "family"),
-                "volume": ("model", "features", "rain_source", "target", "n_events", "kind")}
-CITYWIDE = "citywide"
-WEIGHT_TOL = 1e-12                                 # a solver's −0.0 is not a negative weight (stages_candidates' tolerance)
-
-
-@dataclass(frozen=True)
-class SavedSet:
-    """stages_candidates.StageSet's fields, as ``local_load_set`` returns them (what ``from_saved`` reads)."""
-    name: str
-    path: Path
-    manifest: dict
-    models: dict
-    volume: dict
-    holdout_models: dict
-    holdout_volume: dict
-    citywide: dict | None
-    s3_links: dict | None
-    s4_quality: dict | None
-
-
-def _check_weights(est, what: str) -> None:
-    """Every fitted linear weight (a coef_, inside pipelines too) finite and ≥ 0 (A5; Chase: "no odd weights")."""
-    for _, step in (getattr(est, "steps", None) or [(None, est)]):
-        if getattr(step, "steps", None):
-            _check_weights(step, what)
-            continue
-        c = getattr(step, "coef_", None)
-        if c is not None and (not np.isfinite(np.asarray(c, dtype=float)).all() or (np.asarray(c, dtype=float) < -WEIGHT_TOL).any()):
-            raise ValueError(f"{what}: a negative or non-finite weight; a stage candidate keeps every weight ≥ 0")
-
-
-def local_load_set(name: str, root=None) -> SavedSet:
-    """A stage candidate as stages_candidates saved it, with its loader's contract, for when that module is not
-    there: the manifest's schema, name, pipeline, geography and basins; every listed file present with its sha256
-    and no unlisted file; every component the build scores (s1 … s5) named; every pickle and spec stamped with
-    the manifest's geography, pipeline, name and component (a pickle also its fold and basin), never defaulted;
-    finals and heads for every basin, holdout siblings with their heads or neither; every weight ≥ 0. The specs'
-    compose_v2 checks run in ``from_saved`` (s3_fold_specs, s4_fold_spec), with the saver's stamps set aside."""
-    if not isinstance(name, str) or not name or name.startswith("_"):
-        raise ValueError(f"bad stage candidate name {name!r} ('_' directories are working space, never a set)")
-    d = Path(root) / name if root is not None else STAGES_CANDIDATES_DIR / name
-    if not (d / "manifest.json").exists():
-        raise FileNotFoundError(f"no stage candidate {name!r} under {d.parent}")
-    man = json.loads((d / "manifest.json").read_text())
-    missing = [k for k in ("schema", "name", "geography", "pipeline", "basins", "components", "stamps", "files") if k not in man]
-    if missing:
-        raise KeyError(f"{name}: manifest.json lacks {missing} (a missing stamp is never defaulted)")
-    if (man["schema"], man["name"], man["pipeline"]) != (CANDIDATE_SCHEMA, name, STAGE_PIPELINE):
-        raise ValueError(f"{name}: manifest {man['schema']!r} / {man['name']!r} / {man['pipeline']!r}, not "
-                         f"{CANDIDATE_SCHEMA!r} / {name!r} / {STAGE_PIPELINE!r}")
-    geo = G.stamped(man)
-    if list(man["basins"]) != list(geo.keys):
-        raise ValueError(f"{name}: manifest basins {man['basins']} are not {geo.version}'s {list(geo.keys)}")
-    gone = [c for c in COMPONENTS if c not in man["components"]]
-    if gone:
-        raise KeyError(f"{name}: no {gone} component: every stage is saved before it is scored")
-    listed = set(man["files"])
-    on_disk = {p.name for p in d.iterdir() if p.is_file() and p.name != "manifest.json" and not p.name.startswith(".")}
-    if on_disk != listed:
-        raise ValueError(f"{name}: files on disk and in the manifest differ: unlisted {sorted(on_disk - listed)}, "
-                         f"missing {sorted(listed - on_disk)}")
-    bad = [f for f, h in man["files"].items() if _sha(d / f) != h]
-    if bad:
-        raise ValueError(f"{name}: {bad} changed after they were saved (sha256 differs from the manifest)")
-    owned = {f for st in man["stamps"].values() for f in (st.get("files") or ())}
-    if owned != listed:
-        raise ValueError(f"{name}: files no component owns: {sorted(listed - owned)}")
-
-    def stamped(obj: dict, what: str, **extra) -> dict:
-        for k, v in {"geography": geo.version, "pipeline": STAGE_PIPELINE, "set": name, **extra}.items():
-            if k not in obj:
-                raise KeyError(f"{name} {what}: no {k!r} stamp (never defaulted)")
-            if obj[k] != v:
-                raise ValueError(f"{name} {what}: stamped {k}={obj[k]!r}, the manifest says {v!r}")
-        return obj
-
-    def pickle_at(fname: str, stem: str, fold: str, key: str) -> dict:
-        import pickle  # noqa: PLC0415  (the candidate's own pickles, sha256-checked above)
-        with open(d / fname, "rb") as fh:
-            obj = pickle.load(fh)
-        if not isinstance(obj, dict):
-            raise TypeError(f"{name} {fname}: not a stamped dict")
-        stamped(obj, fname, component=man["components"]["s2"], fold=fold, basin=key)
-        lacks = [f for f in SAVED_FIELDS[stem] if f not in obj]
-        if lacks:
-            raise KeyError(f"{name} {fname}: lacks {lacks}")
-        if stem == "model" and obj["calibration_offset"] != 0.0:
-            raise ValueError(f"{name} {fname}: dry-day offset {obj['calibration_offset']}; stage candidates carry none")
-        _check_weights(obj["model"], f"{name} {fname}")
-        return obj
-
-    parts = {}
-    for part, (stem, suffix, fold) in SAVED_S2.items():
-        files = {k: f"{k}_{stem}{suffix}.pkl" for k in geo.keys}
-        held = {k: f for k, f in files.items() if f in listed}
-        if held and len(held) != len(files):
-            raise KeyError(f"{name} s2 {part}: basins {sorted(held)} are not {list(geo.keys)}")
-        parts[part] = {k: pickle_at(f, stem, fold, k) for k, f in held.items()}
-    if not parts["models"] or not parts["volume"] or bool(parts["holdout_models"]) != bool(parts["holdout_volume"]):
-        raise FileNotFoundError(f"{name}: S2 needs its finals and heads, and holdout siblings come with their heads")
-    city = f"{CITYWIDE}_model.pkl"
-    citywide = pickle_at(city, "model", "final", CITYWIDE) if city in listed else None
-    specs = {}
-    for kind, (stage, fname) in SAVED_SPECS.items():
-        if fname not in listed:
-            raise FileNotFoundError(f"{name}: the manifest names an {stage} component but lists no {fname}")
-        specs[kind] = stamped(json.loads((d / fname).read_text()), fname, component=man["components"][stage])
-    return SavedSet(name, d, man, parts["models"], parts["volume"], parts["holdout_models"], parts["holdout_volume"],
-                    citywide, specs["s3_links"], specs["s4_quality"])
+    """stages_candidates.load_set, imported only when a stage candidate is scored."""
+    import stages_candidates as SC  # noqa: PLC0415
+    return SC.load_set
 
 
 def fold_window(tier: str, fold: str) -> tuple:
@@ -966,7 +837,7 @@ def stage_fitted(cand: StageCandidate, tiers) -> S2.Fitted:
     check and X-SEL are stages_s2's; T2 is the bake-off's rows (``t2_pred``), not a model here."""
     folds = tuple(f for f in cand.folds if f.tier in tiers and not cand.is_rows_fold(f))
     stamp = {"schema": S2.SCHEMA, "stage": "s2", "set": cand.name, "root": STAGE_ROOT, "geography": cand.geo.version,
-             "basins": list(cand.geo.keys), "protocol": S2.protocol_stamp(),
+             "basins": list(cand.geo.keys), "protocol": X.protocol_stamp(),
              "trained_through": str(cand.s2.trained_through.date()), "tiers": list(tiers),
              "folds": [{"tier": f.tier, "fold": f.fold} for f in folds]}
     return S2.Fitted(cand.s2, tuple(t for t in tiers if t != "T2"), folds, stamp)
@@ -2217,7 +2088,7 @@ def build(set_name: str = "served", root: str = "served", entries=ENTRIES, tiers
     fd = S5.feeds(geo, end=end)
     if feeds is not None:
         fd = {k: v for k, v in fd.items() if k in set(feeds) | {"watcher"}}
-    ctx = X.context(geo, end=end).with_inputs(nwp=E.nwp_hours(model), feeds=fd, unmasked=E.issue_time_unmasked(),
+    ctx = X.context(geo, end=end).with_inputs(nwp=E.nwp_hours(model), feeds=fd,
                                                rain_series={k: s2set.models[k]["rain_source"] for k in s2set.keys})
     blocks = T.blocks(end=end).set_index("date")
     tr = truths(geo, end)
@@ -2346,8 +2217,7 @@ def build(set_name: str = "served", root: str = "served", entries=ENTRIES, tiers
 def s5_variants(geo) -> tuple:
     """stages_s5's variants a geography can replay: every one, less live_v2's rule sets (stages_s5.LIVE_V2:
     basin_swap and its kin, defined on GEO_V1's basins and legacy groups only) outside GEO_V1."""
-    live = tuple(getattr(S5, "LIVE_V2", (S5_INCUMBENT,)))
-    return S5.VARIANTS if geo.version == "geo_v1" else tuple(v for v in S5.VARIANTS if v not in live)
+    return S5.VARIANTS if geo.version == "geo_v1" else tuple(v for v in S5.VARIANTS if v not in S5.LIVE_V2)
 
 
 def s5_build(bundle: SetBundle, specs: dict, folds: list, s5_runs: dict, fd: dict, ctx: X.Context,
@@ -2463,7 +2333,7 @@ def make_scores(bundle: SetBundle, rows: dict, rung: pd.DataFrame, ctx: X.Contex
     extra = extra or {}
     geo = bundle.geo
     nested = bundle.stage.nested if bundle.stage is not None else None
-    out = {"schema": SCORES_SCHEMA, "set": bundle.name, "geography": geo.version, "protocol": S2.protocol_stamp(),
+    out = {"schema": SCORES_SCHEMA, "set": bundle.name, "geography": geo.version, "protocol": X.protocol_stamp(),
            "as_of": str(end.date()), "windows": {**{t: dict(S2._TIER_TEXT[t]) for t in TIERS},
                                                   "S5": "S5's window, 2023-07-01 → the data end: T1-holdout ∪ T1 (protocol §8)"},
            "bootstrap": {"n": n_boot, "seed": SEED, "level": LEVEL, "protocol": n_boot == B_PROTOCOL},
@@ -2573,7 +2443,7 @@ def served_artifacts() -> dict:
         return {"skipped": "the served set's rows are not written: run --set served --write first"}
     theirs = json.loads((d / "manifest.json").read_text())
     stale = stale_files(theirs) if "code" in theirs else ["(no code stamp)"]
-    if stale or theirs["protocol"] != S2.protocol_stamp():
+    if stale or theirs["protocol"] != X.protocol_stamp():
         return {"skipped": f"the served set's rows were built on other inputs or code ({stale or 'protocol'}): rebuild it first"}
     srv = pd.read_csv(d / "rows.csv.gz", parse_dates=["date"], keep_default_na=False, na_values=[""], low_memory=False)
     sc = json.loads((d / "scores.json").read_text()) if (d / "scores.json").exists() else None
@@ -2720,7 +2590,7 @@ def protocol_rules() -> dict:
     """§8's comparison table and §9's criteria in the frozen protocol's words (STAGES_PROTOCOL.md, its sha checked
     by protocol_stamp): {definitions: {Superiority, Non-inferiority at +5%}, rows: {id: {label, comparison, entry,
     window, rule}}, criteria: [§9's five]}. A row or criterion the build does not score raises."""
-    S2.protocol_stamp()
+    X.protocol_stamp()
     text = X.PROTOCOL.read_text()
 
     def section(n: int) -> str:
@@ -3223,7 +3093,7 @@ def primaries(bundle: SetBundle, sc: dict, rows: dict, art: dict, ctx: X.Context
     out_rows = settle_unchanged(out_rows, components(bundle))
     if cand is not None and cand.post_seen:
         out_rows = [post_seen_caveat(r, cand.post_seen) for r in out_rows]
-    return V.clean({"protocol": S2.protocol_stamp(), "candidate": bundle.name, "served": served_name(),
+    return V.clean({"protocol": X.protocol_stamp(), "candidate": bundle.name, "served": served_name(),
                     "geography": {"candidate": bundle.geo.version, "served": served_geo},
                     "components": {"candidate": components(bundle), "served": comps}, "changed": changed,
                     "definitions": pr["definitions"], "statuses": [PASS, FAIL, NYC, NA],
@@ -3293,7 +3163,7 @@ def manifest(bundle: SetBundle, entries, tiers, steps, model: str, end, n_boot: 
     return {"schema": SCHEMA, "set": bundle.name, "root": bundle.root, "geography": bundle.geo.version,
             "pipeline": bundle.descriptor.get("pipeline", "two_stage_v1"), "components": components(bundle),
             "stage2": bundle.variant, "family": bundle.s2.family, "spec_version": SP.SPEC_VERSION,
-            "protocol": S2.protocol_stamp(), "built_at": clock.utc_iso(),
+            "protocol": X.protocol_stamp(), "built_at": clock.utc_iso(),
             "windows": {"holdout_start": str(S2.HOLDOUT_START.date()), "post_start": str(S2.POST_START.date()),
                         "freeze": str(X.freeze_date().date()), "seasons": list(S2.T2_SEASONS), "data_end": str(end.date()),
                         "tiers": list(tiers), "t2_label": S2.T2_LABEL if st is None else t2_label("s2", bundle.geo, st.nested)},

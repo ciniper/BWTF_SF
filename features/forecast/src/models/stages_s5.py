@@ -33,26 +33,12 @@ is the same set for every variant (protocol §4.1):
                    corrected q_z, y = truth.out_label, y2 = the S4 sample truth,
                    'variant' naming the correction (exclusions.COLUMNS' additive
                    column), excl / tags / stratum from exclusions.apply
-    sample_rows(...)  S5's sample rows (P8d): every variant's q on the zone-days a
-                   lab result reaches (D+1…D+3), graded by S5's feed rules and
-                   S4's first-match rules on first-look samples (X-S4-RESAMPLE),
-                   the table sample_swap's value shows in
-    s5_tables(...) both tables of one feed and fold with the corrections composed
-                   once (what stages_build would call to add the sample rows)
-    window_apply   the exclusions re-run per window over several folds (X-POWER)
     sample_rates   the next-sample transition rates sample_swap reads, fit on
                    training days only
     feed_recall    the per-basin feed recall the downgrade reads, fit on training
                    days only
-    feed_counts    per-feed exclusion counts for the report: each feed (every
-                   degraded seed) and window on its own, never summed across seeds
-    verdicts       the S5 candidate verdict table: every variant against no
-                   correction and against basin_swap, ΔBrier with block CIs
-    served_inputs  development inputs (P7c): the served set's stored per-day p and
-                   v̂, exactly as replay_live replays them; stages_build passes S2
-                   engine outputs instead
-    stage_rows     the verdict table's rows on stages_build's own S2 folds (T2,
-                   T1-holdout, T1), through stages_build's loaders (the CLI)
+    circular_on_perfect  whether a comparison on the perfect feed reads the
+                   ledger's own silence (Part B 9)
 
 Variants (§3.5):
     plain           no observation
@@ -88,8 +74,8 @@ Variants (§3.5):
                     has no rate and leaves q as the model's. OUT never reads a lab
                     result (A1), so sample_swap's p equals its b: its effect on the
                     OUT label is 0 by construction, and its ΔBrier on the conditional
-                    rows says nothing. Its value is scored on S5's sample rows
-                    (``sample_rows``): q against first-look samples on D+1…D+3.
+                    rows says nothing. Its value shows only in q, against first-look
+                    samples on D+1…D+3, which no build scores.
     downgrade       (P8d) link_zone_swap with the no-flag Bayes downgrade, before the
                     split: at the end of D, a basin's S2 p on a watched day d of
                     D−7…D with no observation of the basin on d…D becomes
@@ -115,8 +101,8 @@ Variants (§3.5):
                     zone-days carry the ledger's own day-of answer, as of
                     2026-08-17), the reason Part B 9 leaves sibling zone-days off
                     that feed. Its rows stay (the set is the feed's, the same for
-                    every variant), but the verdict table marks those comparisons
-                    circular and claims nothing from them (``circular_on_perfect``).
+                    every variant), but those comparisons are circular and claim
+                    nothing (``circular_on_perfect``).
                     live_v2's own no-flag downgrade reads the same silence, more
                     weakly (recall 0.60 / 0.87 / 0.95, days at p ≥ 0.15): on the
                     perfect feed it moved 3 of the 44 scored T1 zone-days and 6 of the
@@ -159,47 +145,12 @@ off those days raises. The feed is scored under its own name only (the perfect
 feed's sibling rule reads it). X-S5-INSAMPLE tags the archive years, where the
 served S2 was in-sample.
 
-S5's sample rows (``sample_rows``, P8d): the zone-days D of the same scored days
-on which a lab result sampled on D−3…D−1 is known (live_rules' lag and horizon),
-the same for every variant (the lab record defines them, as the feed defines the
-conditional set). Each row is an S4 row (stage 's4', entry 'rain': S5 replays the
-rain-known S2 output) whose p = q is the variant's corrected q_z(D), b the plain
-q_z(D), y the S4 sample truth and y2 the newest result known by D, put through
-S5's feed rules (X-S5-HEALTH, X-S5-CIRC, X-S5-PERFECT-SIBLING: a sibling zone-day
-is never scored on the perfect feed, Part B 9, protocol §3) and then exclusions'
-S4 order (X-S4-UNSAMPLED → X-S4-HISTUNK → X-LEDGER-SUSPECT → X-S4-RESAMPLE): the
-score is on first-look samples, so a day after an exceedance on D−1 or D−2 is
-left out. 'variant' and 'feed' name the correction and the CSO feed its tail test
-read; they are not rows.csv.gz rows (exclusions forbids a variant on an S4 row,
-so ``window_apply`` re-runs the rules variant-free).
-
-The verdict table (``verdicts``, design §3.5's benchmarks, protocol §6/§8): per
-feed and window (each tier, and 'S5' = T1-holdout ∪ T1, protocol §8's window,
-only when the rows hold both), every variant's paired ΔBrier against no
-correction (plain) and against basin_swap (live_v2): on the conditional set
-against OUT's label with observation-event blocks (stages_build.s5_blocks), and
-on the sample rows against first-look samples with storm blocks (truth.blocks);
-90% CIs, B = 2,000, seed 0; the verdict words of verify. The degraded feeds are
-summarised over the seeds (a verdict only when every seed gives it), never
-pooled. X-POWER is protocol §6's (fewer than 10 positives or 8 rain storm blocks,
-in both tables, whatever the bootstrap resamples); an X-POWER cell is shown with
-its CI and claims nothing, nor does a comparison circular on the perfect feed.
-The table is descriptive: protocol §8's S5 primary (link_zone_swap against
-basin_swap on both feeds) is stages_build's. ``stage_rows`` builds the rows on
-stages_build's folds and feeds (the CLI), as stages_build.s5_build does: the
-perfect feed and the archive have T2, the degraded feeds only S5's window (§8).
-
-No module-level IO; nothing is written. The served set's name is read from
-served.json, never typed.
-
-    venv/bin/python features/forecast/src/models/stages_s5.py              # development summary (served inputs, T1)
-    venv/bin/python features/forecast/src/models/stages_s5.py --verdicts [--n-boot N] [--seasons 2019,2020] [--json]
+No module-level IO; nothing is written.
 """
 from __future__ import annotations
 
 import datetime as dt
 import functools
-import json
 import random
 import sys
 from dataclasses import dataclass
@@ -224,26 +175,19 @@ import replay_live as RL  # noqa: E402
 import samples as SMP  # noqa: E402
 import train_v4  # noqa: E402  (APP_BASINS: the scorecard's basin order, which synthetic_feed draws in)
 import truth as T  # noqa: E402
-import verify as V  # noqa: E402  (the verdict table's paired Brier differences)
 from shared import geography as G  # noqa: E402
 from shared.outfalls import OUTFALLS  # noqa: E402
 from shared.stations import STATIONS  # noqa: E402
 from shared.zones import ZONE_OF_STATION, ZONES  # noqa: E402
 
-SERVE_DIR = FORECAST / "data" / "models"
 VARIANTS = ("plain", "basin_swap", "link_swap", "zone_swap", "link_zone_swap", "sample_swap", "downgrade", "all_floors")
 PRIMARY = ("link_zone_swap", "basin_swap")        # protocol §8: candidate vs incumbent (= live_v2)
 LIVE_V2 = ("basin_swap", "all_floors")            # live_v2's rule sets, replayed through the GEO_V1 adapter (geo_v1 only)
-NO_CORRECTION, INCUMBENT = "plain", "basin_swap"  # the verdict table's two references (design §3.5's benchmarks)
-BUILT_ON = {"downgrade": "link_zone_swap"}        # a variant that adds one rule to another: its increment is scored too
+NO_CORRECTION = "plain"                           # the reference every variant's change is measured from (design §3.5)
 SILENCE = {"basin_swap": "live_v2", "all_floors": "live_v2", "downgrade": "feed_recall"}   # the no-flag downgrade each applies
-CIRCULAR_ON_PERFECT = tuple(SILENCE)              # Part B 9's reason, on OUT's label: the perfect feed is the ledger (circular_on_perfect)
-SEED, LEVEL = 0, 0.9                              # protocol §6: seed 0 (verify's default), 90% percentile CIs
 RECALL_DAYS = X.OBS_DAYS                          # the downgrade's R[k], k = D − d = 0…7 (the days OUT reads)
 POOLED_BASINS = ("south",)                        # design §3.5: South uses the pooled Bay-side recall
 BAY_SIDE = "Bayside"                              # Basin.facility of the Bay-side basins (the Southeast plant's permit)
-SAMPLE_STAGE, SAMPLE_ENTRY = "s4", "rain"         # S5's sample rows: S4's truth and rules, on the rain-known S2 output
-S5_WINDOW = ("T1-holdout", "T1")                  # protocol §8: S5's window, 2023-07-01 → the data end (disjoint tiers)
 SEEDS = RL.SYN_SEEDS                              # the degraded feed's draws (replay_live --synthetic)
 OBS_DAYS = X.OBS_DAYS                             # zone-days D…D+7 after an observation
 HISTORY_DAYS = 8                                  # a row needs D−8…D in the inputs (live_v2's 9-day window)
@@ -654,7 +598,7 @@ def sample_rates(geo, fit_days, sources=SMP.DEFAULT_SOURCES, min_pairs: int = RA
 def _newest_results(zsmp: pd.DataFrame, index) -> dict:
     """{(zone, D): (d, over standard)}: the newest lab result known by D — sampled on d with d + 1 ≤ D ≤ d + 3
     (live_rules' known lag and horizon) — for D and d on ``index`` (a result outside the run moves nothing).
-    The newest decides, whether or not its cell has a rate; sample_swap and S5's sample rows read the same."""
+    The newest decides, whether or not its cell has a rate."""
     on = set(pd.DatetimeIndex(index))
     newest: dict = {}
     for z, d, e in zip(zsmp["zone"], zsmp["date"], zsmp["any_exceedance"]):
@@ -934,15 +878,15 @@ def _fold_events(fold_events, fit: pd.DatetimeIndex, season) -> pd.DataFrame:
     return fold_events
 
 
-def _empty_rows(extra=()) -> pd.DataFrame:
-    cols = list(X.COLUMNS) + list(extra)
+def _empty_rows() -> pd.DataFrame:
+    cols = list(X.COLUMNS)
     return pd.DataFrame({c: pd.Series(dtype=object if c in ("stage", "unit_type", "unit", "entry", "tier", "sel", "stratum",
-                                                             "excl", "tags", "variant", "feed") else float)
+                                                             "excl", "tags", "variant") else float)
                          for c in cols}).assign(date=pd.Series(dtype="datetime64[ns]"))[cols]
 
 
 def _scored(geo, inputs, feed_name: str, feed: pd.DataFrame, variants, tier: str, trained_through, held_out_season) -> tuple:
-    """(variants, run, scored days, fit days, held-out season) after the checks every S5 table shares: the feed
+    """(variants, run, scored days, fit days, held-out season) after the checks every S5 row shares: the feed
     by name and frame (its name the frame's own), the variants, the inputs, the tier's window (``_window``: no
     T3 row); scored = the window's days inside the feed's era (none when nobody watched)."""
     if X._feed_of(str(feed_name)) not in X.S5_FEEDS:
@@ -1019,69 +963,19 @@ def s5_rows(geo, specs: dict, inputs: C.BasinInputs, feed_name: str, feed: pd.Da
     context covering the rows (built if None)."""
     if scope not in SCOPES:
         raise ValueError(f"scope must be one of {SCOPES}, not {scope!r}")
-    return s5_tables(geo, specs, inputs, feed_name, feed, variants, tier, fold_events, trained_through=trained_through,
-                     held_out_season=held_out_season, samples=samples, ctx=ctx, tables=(scope,))[scope]
-
-
-SAMPLE_COLUMNS = tuple(X.COLUMNS) + ("feed",)
-SAMPLE_S5_RULES = ("X-S5-HEALTH", "X-S5-CIRC", "X-S5-PERFECT-SIBLING")   # S5's feed rules, first on its sample rows (_sample_rules)
-TABLES = SCOPES + ("samples",)                      # s5_tables: the conditional set, every scored day, S5's sample rows
-
-
-def sample_rows(geo, specs: dict, inputs: C.BasinInputs, feed_name: str, feed: pd.DataFrame, variants=VARIANTS,
-                tier: str = "T1", fold_events: pd.DataFrame | None = None, *, trained_through=None,
-                held_out_season: int | None = None, samples: pd.DataFrame | None = None,
-                ctx: X.Context | None = None) -> pd.DataFrame:
-    """S5's sample rows (SAMPLE_COLUMNS) for one feed: one row per variant × zone-day a lab result reaches.
-
-    The days: the scored days of ``tier`` inside the feed's era (as ``s5_rows``) on which the zone has a
-    result known by D, sampled on D−3…D−1 (``_newest_results``: live_rules' lag and horizon) in the lab record
-    the corrections read (``samples``; default the served sources). The record defines the set, so it is the
-    same for every variant, and it is sample_swap's: every day its q could move.
-
-    Per row (stage 's4', entry 'rain', unit_type 'zone'): p = q = the variant's corrected S4 q_z(D), b = the
-    plain q_z(D), y = the S4 sample truth (zone_elevated's y on the context's record; NaN unsampled), y2 = the
-    newest result known by D (1 over standard, 0 clean), n_sampled, lead NaN; excl / tags / stratum / sel from
-    ``_sample_rules``: S5's feed rules first (a sibling zone-day on the perfect feed is X-S5-PERFECT-SIBLING, Part
-    B 9), then exclusions.apply in S4's order (X-S4-UNSAMPLED → X-S4-HISTUNK → X-LEDGER-SUSPECT →
-    X-S4-RESAMPLE), run once, variant-free, and shared by every variant: the score is on first-look samples (Part B 4), so a day
-    after an exceedance on D−1 or D−2 is left out (X-S4-RESAMPLE) and a resample is never the truth a result
-    is credited with. 'variant' names the correction and 'feed' the CSO feed its tail test read. Arguments
-    as ``s5_rows``; nothing is fit on the scored days."""
-    return s5_tables(geo, specs, inputs, feed_name, feed, variants, tier, fold_events, trained_through=trained_through,
-                     held_out_season=held_out_season, samples=samples, ctx=ctx, tables=("samples",))["samples"]
-
-
-def s5_tables(geo, specs: dict, inputs: C.BasinInputs, feed_name: str, feed: pd.DataFrame, variants=VARIANTS,
-              tier: str = "T1", fold_events: pd.DataFrame | None = None, *, trained_through=None,
-              held_out_season: int | None = None, samples: pd.DataFrame | None = None, ctx: X.Context | None = None,
-              tables=("conditional", "samples")) -> dict:
-    """{table: rows} for one feed and fold, the corrections composed once: 'conditional' and 'all_days' as
-    ``s5_rows``' scopes, 'samples' as ``sample_rows``. A table with no day is an empty frame."""
     geo = T._geo(geo)
-    tables = tuple(tables)
-    if not tables or set(tables) - set(TABLES):
-        raise ValueError(f"tables must be some of {TABLES}, not {tables}")
-    empty = {t: _empty_rows(("feed",) if t == "samples" else ()) for t in tables}
     variants, run, scored, fit, season = _scored(geo, inputs, feed_name, feed, variants, tier, trained_through, held_out_season)
     if not len(scored):
-        return empty                                        # nobody watched these days: no observation, no row
+        return _empty_rows()                                # nobody watched these days: no observation, no row
     seen = observed(geo, _in_run(feed, run), scored)
+    if scope == "conditional" and not seen.to_numpy().any():
+        return _empty_rows()
     smp = T._samples(tuple(SMP.DEFAULT_SOURCES)) if samples is None else samples
-    on = set(scored)
-    reach = {k: r for k, r in _newest_results(_zone_samples(smp), run).items() if k[1] in on} if "samples" in tables else {}
-    need = [t for t in tables if (t == "conditional" and seen.to_numpy().any()) or t == "all_days" or (t == "samples" and reach)]
-    if not need:
-        return empty
     specs, rates, recall = _parameters(geo, specs, feed, variants, fit, season, fold_events)
     plain, frames = _corrected(geo, specs, inputs, feed, variants, scored, smp, rates, recall)
     ctx = _rows_context(geo, ctx, scored, feed_name, feed)
     el = T.zone_elevated(geo, ctx.sources).set_index(["zone", "date"])["n_stations_sampled"]   # the context's samples
-    out = dict(empty)
-    for t in need:
-        out[t] = (_sample_table(ctx, el, plain, frames, variants, reach, feed_name, tier) if t == "samples" else
-                  _s5_table(ctx, el, plain, frames, variants, scored, seen, feed_name, tier, t))
-    return out
+    return _s5_table(ctx, el, plain, frames, variants, scored, seen, feed_name, tier, scope)
 
 
 def _s5_table(ctx, el, plain, frames, variants, scored, seen, feed_name, tier, scope) -> pd.DataFrame:
@@ -1118,186 +1012,6 @@ def _s5_table(ctx, el, plain, frames, variants, scored, seen, feed_name, tier, s
     return rows
 
 
-def _sample_table(ctx, el, plain, frames, variants, reach, feed_name, tier) -> pd.DataFrame:
-    zf = ctx.frames["zone"]
-    parts = []
-    for z in ZONES:
-        days = pd.DatetimeIndex(sorted(D for (zk, D) in reach if zk == z))
-        if not len(days):
-            continue
-        key = pd.MultiIndex.from_arrays([[z] * len(days), days])
-        parts.append(pd.DataFrame({
-            "date": days, "stage": SAMPLE_STAGE, "unit_type": "zone", "unit": z, "entry": SAMPLE_ENTRY, "lead": np.nan,
-            "tier": tier, "sel": "", "p": np.nan, "q": np.nan, "b": plain.q.loc[days, z].to_numpy(dtype=float),
-            "v_hat": np.nan, "y": zf["s4_y"].reindex(key).to_numpy(dtype=float),
-            "y2": [float(reach[(z, D)][1]) for D in days], "n_sampled": el.reindex(key).fillna(0).to_numpy(dtype=float),
-            "stratum": "", "excl": "", "tags": ""}))
-    base = _sample_rules(pd.concat(parts, ignore_index=True), ctx, feed_name)
-    out = []
-    for v in variants:
-        q = frames[v].q.stack().reindex(pd.MultiIndex.from_arrays([base["date"], base["unit"]])).to_numpy(dtype=float)
-        out.append(base.assign(p=q, q=q, variant=v, feed=feed_name))
-    rows = pd.concat(out, ignore_index=True)[list(SAMPLE_COLUMNS)]
-    for c in ("p", "q", "b"):
-        if rows[c].isna().any():
-            raise ValueError(f"S5 sample rows: {c} is NaN on {int(rows[c].isna().sum())} rows; a correction left a day uncomposed")
-    return rows
-
-
-def _sample_rules(rows: pd.DataFrame, ctx: X.Context, feed_name: str) -> pd.DataFrame:
-    """excl / tags / stratum / sel of one feed's sample rows (S4-shaped, variant-free), first match first: S5's feed
-    rules (SAMPLE_S5_RULES: X-S5-HEALTH, X-S5-CIRC, X-S5-PERFECT-SIBLING, exclusions' own, run on the same zone-days
-    as S5 rows of this feed — Part B 9 and protocol §3: a sibling zone-day is never scored on the perfect feed,
-    whatever its truth), then S4's order on the rest (X-S4-UNSAMPLED → X-S4-HISTUNK → X-LEDGER-SUSPECT →
-    X-S4-RESAMPLE), so S4's X-POWER counts the rows it scores. X-S5-SELF and X-S5-QUIET belong to the conditional
-    set (the value an observation replaced is S3's p, not q); an S5-ruled row has no tag or stratum."""
-    s5 = rows.assign(stage="s5", entry=feed_name, variant="")[list(X.COLUMNS)]
-    s5["y"] = ctx.frames["zone"]["out_y"].reindex(pd.MultiIndex.from_arrays([s5["unit"], s5["date"]])).to_numpy(dtype=float)
-    s5 = X.apply(s5, "s5", ctx, table="all_days")
-    hit = s5["excl"].isin(SAMPLE_S5_RULES).to_numpy()
-    out = rows.copy()
-    if (~hit).any():
-        rest = X.apply(rows[~hit], SAMPLE_STAGE, ctx)
-        for c in ("excl", "tags", "stratum", "sel"):
-            out.loc[~hit, c] = rest[c].to_numpy()
-    if hit.any():
-        out.loc[hit, "excl"] = s5["excl"].to_numpy()[hit]
-        out.loc[hit, "tags"] = ""
-        out.loc[hit, "stratum"] = ""
-        out.loc[hit, "sel"] = s5["sel"].to_numpy()[hit]
-    return out
-
-
-def window_apply(rows: pd.DataFrame, ctx: X.Context) -> pd.DataFrame:
-    """Rows of several folds put through exclusions again, one window at a time, so X-POWER counts the whole
-    window (exclusions.apply's own rule): S5 rows per (feed, tier), as stages_build.s5_build does; S5's sample
-    rows per (feed, tier) on one variant's rows, variant-free (exclusions allows a variant on S5 rows only) and
-    through ``_sample_rules`` (S5's feed rules, then S4's), the result shared by every variant. Either way every
-    variant must come out with the same excl (one set)."""
-    if not len(rows):
-        return rows
-    stages = set(rows["stage"])
-    if stages == {"s5"}:
-        parts = [X.apply(g, "s5", ctx) for _, g in rows.groupby(["entry", "tier"], sort=False)]
-    elif stages == {SAMPLE_STAGE} and "feed" in rows.columns:
-        parts = []
-        for (feed, _), g in rows.groupby(["feed", "tier"], sort=False):
-            v0 = g["variant"].iloc[0]
-            one = _sample_rules(g[g["variant"] == v0].drop(columns=["variant", "feed"]), ctx, feed)
-            got = one.set_index(["unit", "date"])[["excl", "tags", "stratum", "sel"]]
-            key = pd.MultiIndex.from_arrays([g["unit"], g["date"]])
-            parts.append(g.assign(**{c: got[c].reindex(key).to_numpy() for c in got.columns}))
-    else:
-        raise ValueError(f"window_apply takes S5 rows or S5's sample rows, not stages {sorted(stages)}")
-    out = pd.concat(parts, ignore_index=True)
-    key = ["entry", "tier", "unit", "date"] + (["feed"] if "feed" in out.columns else [])
-    piv = out.pivot_table(index=key, columns="variant", values="excl", aggfunc="first")
-    if not (piv.nunique(axis=1) == 1).all():
-        raise AssertionError("S5 rows: the variants disagree on what is scored")
-    return out
-
-
-# ── the report's tables: per-feed counts and the verdicts ──────────────────
-
-TIER_ORDER = ("T2", "T1-holdout", "T1", "T0")
-WINDOW_WORDS = {"T2": "cross-season (T2, development)", "T1-holdout": "holdout (T1-holdout, development)",
-                "T1": "post-training (T1)", "T0": "prospective (T0)",
-                "S5": "S5's window (T1-holdout ∪ T1, 2023-07-01 → the data end)"}
-
-
-def _feed_col(rows: pd.DataFrame) -> str:
-    """The column naming a row's CSO feed: 'feed' on S5's sample rows, the entry on S5 rows."""
-    return "feed" if "feed" in rows.columns else "entry"
-
-
-def _windows(tiers) -> list:
-    """The windows a set of tiers is reported on: each tier in TIER_ORDER, then 'S5' (T1-holdout ∪ T1) when both
-    are there — protocol §8's window is the two together, so rows of one alone are reported under that tier, never
-    as S5's window. T2 is never pooled with another tier (it shares 2023-24 and 2024-25 with the holdout)."""
-    t = set(tiers)
-    unknown = t - set(TIER_ORDER)
-    if unknown:
-        raise ValueError(f"unknown tiers {sorted(unknown)}")
-    return [x for x in TIER_ORDER if x in t] + (["S5"] if set(S5_WINDOW) <= t else [])
-
-
-def _in_window(rows: pd.DataFrame, w: str) -> pd.DataFrame:
-    return rows[rows["tier"].isin(S5_WINDOW)] if w == "S5" else rows[rows["tier"] == w]
-
-
-def feed_counts(rows: pd.DataFrame, variant: str = NO_CORRECTION) -> dict:
-    """Per-feed exclusion counts for the report, from one variant's rows (every variant shares the set):
-    {feed: {window: {"n_total", "n_scored", "excluded": {rule: n}, "zones": {zone: {...}}}}}, S5 rows or S5's
-    sample rows. Every feed is its own — each degraded seed separately, never summed across seeds, which see
-    the same zone-days — and so is every tier; 'S5' adds T1-holdout and T1 (only for a feed with both), whose
-    days never overlap, so each of its counts is still distinct zone-days. T2 is never added to the holdout
-    (2023-24 and 2024-25 are in both). The partition holds in every cell (exclusions.counts asserts it; on S5's
-    sample rows for the rows S4's order ruled, and the rows S5's feed rules took first are added by rule)."""
-    one = rows[rows["variant"] == variant]
-    if not len(one):
-        raise ValueError(f"no rows of variant {variant!r} (variants here: {sorted(set(rows['variant']))})")
-    out = {}
-    for feed, g in one.groupby(_feed_col(one), sort=False):
-        g = g.drop(columns=["feed"], errors="ignore")
-        if set(g["stage"]) == {SAMPLE_STAGE}:                # S5's feed rules on sample rows: S5 ids exclusions' S4 table lacks
-            hit = g["excl"].isin(SAMPLE_S5_RULES).to_numpy()
-        else:
-            hit = np.zeros(len(g), dtype=bool)
-        found = []                                           # (unit, tier, n_total, n_scored, excluded)
-        if (~hit).any():
-            part = X.counts(g[~hit])["partition"]
-            if len(part) != 1:
-                raise ValueError(f"feed {feed}: rows of stages {sorted(part)}; count one table at a time")
-            found += [(unit, tier, c["n_total"], c["n_scored"], c["excluded"])
-                      for unit, by_entry in next(iter(part.values())).items()
-                      for by_tier in by_entry.values() for tier, c in by_tier.items()]
-        found += [(unit, tier, int(n), 0, {x: int(n)}) for (unit, tier, x), n in
-                  g[hit].groupby(["unit", "tier", "excl"], sort=False).size().items()]
-        cells: dict = {}
-        for unit, tier, n_total, n_scored, excluded in found:
-            for w in [tier] + (["S5"] if tier in S5_WINDOW else []):
-                cell = cells.setdefault(w, {"n_total": 0, "n_scored": 0, "excluded": {}, "zones": {}})
-                z = cell["zones"].setdefault(unit, {"n_total": 0, "n_scored": 0, "excluded": {}})
-                for d in (cell, z):
-                    d["n_total"] += n_total
-                    d["n_scored"] += n_scored
-                    for x, n in excluded.items():
-                        d["excluded"][x] = d["excluded"].get(x, 0) + n
-        for cell in cells.values():
-            for d in [cell] + list(cell["zones"].values()):
-                if d["n_total"] != d["n_scored"] + sum(d["excluded"].values()):
-                    raise AssertionError(f"feed {feed}: a count cell does not partition its rows: {d}")
-        if sum(c["n_total"] for w, c in cells.items() if w != "S5") != len(g):
-            raise AssertionError(f"feed {feed}: the counts hold {sum(c['n_total'] for w, c in cells.items() if w != 'S5')} "
-                                 f"rows of {len(g)}")
-        out[feed] = {w: cells[w] for w in _windows(set(g["tier"])) if w in cells}
-    return out
-
-
-def _cell(y, arms: dict, blk, n_boot: int, storm=None) -> dict:
-    """One feed × window: rows, positives, bootstrap blocks, storm blocks, X-POWER, and every variant's paired
-    ΔBrier against no correction and against basin_swap (verify.paired_delta, Δ = BS(variant) − BS(reference),
-    90% CI); a variant built on another (BUILT_ON: the downgrade on link_zone_swap) also against that one, its own
-    rule's increment. ``storm``: each row's rain storm block (truth.blocks; NaN off storms). X-POWER is protocol
-    §6's words: fewer than 10 positives or fewer than 8 *storm* blocks, whatever the bootstrap resamples (S5's
-    conditional rows resample observation events); a low-power cell is shown with its CI and decides nothing."""
-    y = np.asarray(y, dtype=float)
-    k = int(len(np.unique(blk)))
-    st = np.asarray(blk if storm is None else storm, dtype=float)
-    n_storm = int(len(np.unique(st[np.isfinite(st)])))
-    out = {"n": int(len(y)), "n_pos": int((y == 1).sum()), "n_blocks": k, "n_storm_blocks": n_storm,
-           "low_power": bool((y == 1).sum() < X.POWER_MIN_POSITIVES or n_storm < X.POWER_MIN_STORM_BLOCKS),
-           "bs": {v: V.clean(V.brier(y, p)) for v, p in arms.items()}, "variants": {}}
-    for v, p in arms.items():
-        cmp = {}
-        for ref in (NO_CORRECTION, INCUMBENT) + ((BUILT_ON[v],) if v in BUILT_ON else ()):
-            if v != ref and ref in arms:
-                cmp[f"vs_{ref}"] = V.clean(V.paired_delta(y, p, arms[ref], blk, n=n_boot, seed=SEED, level=LEVEL))
-        if cmp:
-            out["variants"][v] = cmp
-    return out
-
-
 def circular_on_perfect(variant: str, ref: str) -> bool:
     """Part B 9's reason, on OUT's label: the perfect feed is the ledger, so a day it is silent on is a day the
     ledger filed nothing, and a variant that downgrades silent days (SILENCE) reads the label. A comparison there is
@@ -1308,327 +1022,3 @@ def circular_on_perfect(variant: str, ref: str) -> bool:
     the reference, so it is conservative for the variant and not marked."""
     s = SILENCE.get(variant)
     return s is not None and s != SILENCE.get(ref)
-
-
-def _table(rows: pd.DataFrame, block_of, n_boot: int, storm_of=None, circular: bool = False) -> dict:
-    """{feed: {window: _cell}} on the scored rows (excl == ''); ``block_of(feed, dates)`` → each row's bootstrap
-    block, ``storm_of(dates)`` → its storm block (X-POWER; default the bootstrap's). ``circular``: mark the perfect
-    feed's circular comparisons (``circular_on_perfect``): each carries circular = True (shown, never claimed) and
-    the cell's 'circular' names the variants that have one."""
-    sc = rows[rows["excl"] == ""]
-    out: dict = {}
-    for feed, g in sc.groupby(_feed_col(sc), sort=False):
-        for w in _windows(set(g["tier"])):
-            gw = _in_window(g, w)
-            by_v = {v: gv.set_index(["tier", "unit", "date"]).sort_index() for v, gv in gw.groupby("variant", sort=False)}
-            if NO_CORRECTION not in by_v:
-                raise ValueError(f"{feed} {w}: no plain rows, so no variant can be compared with no correction")
-            ref = by_v[NO_CORRECTION]
-            for v, gv in by_v.items():
-                if not gv.index.equals(ref.index):
-                    raise AssertionError(f"{feed} {w}: variant {v} is scored on other zone-days than plain")
-            dates = ref.index.get_level_values("date")
-            blk = np.asarray(block_of(feed, dates), dtype=float)
-            if not np.isfinite(blk).all() or (blk < 0).any():
-                raise AssertionError(f"{feed} {w}: a scored row lies in no block")
-            arms = {v: by_v[v]["p"].to_numpy(dtype=float) for v in VARIANTS if v in by_v}
-            cell = _cell(ref["y"].to_numpy(dtype=float), arms, blk, n_boot, None if storm_of is None else storm_of(dates))
-            if circular and X._feed_of(feed) == "oracle":
-                marked = set()
-                for v, cmp in cell["variants"].items():
-                    for name, d in cmp.items():
-                        if circular_on_perfect(v, name[len("vs_"):]):
-                            d["circular"] = True
-                            marked.add(v)
-                cell["circular"] = [v for v in VARIANTS if v in marked]
-            out.setdefault(feed, {})[w] = cell
-    return out
-
-
-def _seed_summary(table: dict) -> dict:
-    """The degraded feeds over their seeds, never pooled: {window: {variant: {cmp: {"seeds", "of", "mean",
-    "min", "max", "verdicts": {feed: words}, "low_power", "verdict"}}}}. The verdict is the seeds' when every
-    degraded seed of the table scored the window and all give the same words; 'seeds disagree' when they differ,
-    'not every seed scored' when a seed has no such cell. low_power: some seed's cell is X-POWER (it decides
-    nothing)."""
-    deg = sorted((f for f in table if X._feed_of(f) == "degraded"), key=lambda f: (len(f), f))
-    out: dict = {}
-    for w in WINDOW_WORDS:
-        cells = [(f, table[f][w]) for f in deg if w in table[f]]
-        if not cells:
-            continue
-        for v in VARIANTS:
-            for cmp in (f"vs_{NO_CORRECTION}", f"vs_{INCUMBENT}") + ((f"vs_{BUILT_ON[v]}",) if v in BUILT_ON else ()):
-                got = [(f, c["variants"][v][cmp]) for f, c in cells if cmp in c["variants"].get(v, {})]
-                if not got:
-                    continue
-                ds = [d["delta"] for _, d in got]
-                words = {f: d["verdict"] for f, d in got}
-                verdict = ("not every seed scored" if len(got) < len(deg) else
-                           next(iter(words.values())) if len(set(words.values())) == 1 else "seeds disagree")
-                out.setdefault(w, {}).setdefault(v, {})[cmp] = {
-                    "seeds": len(got), "of": len(deg), "mean": float(np.mean(ds)), "min": float(min(ds)),
-                    "max": float(max(ds)), "verdicts": words,
-                    "low_power": any(c["low_power"] for f, c in cells if f in words), "verdict": verdict}
-    return out
-
-
-def _words(vs: list) -> str:
-    return ", ".join(vs) if vs else "none"
-
-
-def _statement(res: dict) -> tuple[dict, list]:
-    """({table: {window: {"perfect": [...], "degraded": [...], "archive": [...], "both": [...], "x_power": [...],
-    "circular": [...]}}}, plain lines): the variants better than no correction (the 90% CI wholly below 0) on the
-    perfect feed, on every degraded seed, on the archive, and on both the perfect and every degraded feed; the
-    variants worse than no correction are named too. Nothing is claimed from an X-POWER cell (protocol §6: shown
-    with its CI, decides nothing; for the degraded feeds, a cell X-POWER in any seed): 'x_power' names those
-    feeds. Nor from a comparison circular on the perfect feed (``circular_on_perfect``): 'circular' names the
-    variants whose comparison with no correction is."""
-    beats: dict = {}
-    lines = []
-    what = {"conditional": "against OUT's label, on the zone-days after an observation",
-            "samples": "against first-look samples, on D+1…D+3 after a lab result"}
-    key = f"vs_{NO_CORRECTION}"
-
-    def pick(cell, word):
-        if not cell or cell["low_power"]:
-            return []
-        return [v for v, c in cell["variants"].items() if not c.get(key, {}).get("circular") and c.get(key, {}).get("verdict") == word]
-
-    def power(cell) -> str:
-        return f"X-POWER ({cell['n_pos']} positives, {cell['n_storm_blocks']} storm blocks): shown, decides nothing"
-
-    for t, words in what.items():
-        tab = res.get(t) or {}
-        if not tab:
-            continue
-        for w in WINDOW_WORDS:
-            perfect = (tab.get("oracle") or {}).get(w)
-            deg = res["degraded"].get(t, {}).get(w)
-            arch = (tab.get("archive") or {}).get(w)
-            if not (perfect or deg or arch):
-                continue
-            deg_low = bool(deg) and any(c[key]["low_power"] for c in deg.values() if key in c)
-            dpick = lambda word: [] if deg_low else [v for v, c in (deg or {}).items() if key in c and c[key]["verdict"] == word]  # noqa: E731
-            b = {"perfect": pick(perfect, "better"), "degraded": dpick("better"), "archive": pick(arch, "better")}
-            b["both"] = [v for v in b["perfect"] if v in b["degraded"]]
-            b["x_power"] = [n for n, low in (("perfect", bool(perfect) and perfect["low_power"]), ("degraded", deg_low),
-                                             ("archive", bool(arch) and arch["low_power"])) if low]
-            b["circular"] = [v for v, c in (perfect or {}).get("variants", {}).items() if c.get(key, {}).get("circular")]
-            beats.setdefault(t, {})[w] = b
-            parts = []
-            if perfect:
-                circ = f"; circular on the perfect feed, not claimed: {_words(b['circular'])}" if b["circular"] else ""
-                parts.append(f"perfect feed: {power(perfect)}" if perfect["low_power"] else
-                             f"perfect feed: better {_words(b['perfect'])}; worse {_words(pick(perfect, 'worse'))}{circ}")
-            if deg:
-                n = max(c[key]["seeds"] for c in deg.values() if key in c)
-                parts.append(f"degraded feeds ({n} seeds): X-POWER in some seed: shown, decides nothing" if deg_low else
-                             f"degraded feeds ({n} seeds, each must agree): better {_words(b['degraded'])}; worse {_words(dpick('worse'))}")
-            if arch:
-                parts.append(f"2016-17 archive: {power(arch)}" if arch["low_power"] else
-                             f"2016-17 archive: better {_words(b['archive'])}; worse {_words(pick(arch, 'worse'))}")
-            lines.append(f"{WINDOW_WORDS[w]}, {words}, than no correction — " + " · ".join(parts))
-    head = []
-    for t, words in (("conditional", "against OUT's label"), ("samples", "against first-look samples")):
-        s5 = (beats.get(t) or {}).get("S5")
-        if s5 is not None:
-            head.append(f"Beats doing nothing on both the perfect and every degraded feed in S5's window (protocol §8), "
-                        f"{words}: {_words(s5['both'])}.")
-    return beats, head + lines
-
-
-def verdicts(rows: pd.DataFrame, feeds: dict, samples: pd.DataFrame | None = None, n_boot: int = 2000) -> dict:
-    """The S5 candidate verdict table (design §3.5's benchmarks; protocol §6, §8): for every feed and window
-    (each tier, and 'S5' = T1-holdout ∪ T1), every variant's paired ΔBrier against no correction ('vs_plain')
-    and against basin_swap = live_v2 ('vs_basin_swap'), and the downgrade against link_zone_swap, the variant it
-    adds its rule to ('vs_link_zone_swap', BUILT_ON), each with its 90% block-bootstrap CI (B = ``n_boot``, the
-    protocol's 2,000 by default; seed 0) and verify's verdict words; Δ < 0 means the variant is better.
-    all_floors − basin_swap is §5.8's FLOOR_MIN re-test.
-
-        conditional  S5 rows (``s5_rows``, scored rows only) against OUT's label, blocks = observation events
-                     (stages_build.s5_blocks on the row's feed). sample_swap's Δ here is 0 by A1. On the perfect
-                     feed a comparison whose variant reads the ledger's silence is circular (``circular_on_perfect``:
-                     the downgrade's, and live_v2's against no correction or an injection): shown, never claimed.
-        samples      S5's sample rows (``sample_rows``), q against first-look samples, blocks = storm blocks
-                     (truth.blocks): where sample_swap's value shows.
-        degraded     each table's degraded feeds summarised over the seeds (``_seed_summary``), never pooled.
-        beats_nothing, statement  the variants better than no correction, per table and window, in words.
-
-    Every cell carries X-POWER in protocol §6's words (fewer than 10 positives or 8 storm blocks, the storms of
-    truth.blocks, in both tables); an X-POWER cell decides nothing. Rows are put through ``window_apply`` first by
-    the caller when they come from several folds."""
-    import stages_build as B                    # deferred: stages_build imports this module
-    res = {"bootstrap": {"n": int(n_boot), "seed": SEED, "level": LEVEL, "protocol": n_boot == 2000}}
-    obs_block = lambda feed, dates: B.s5_blocks(feeds[feed], dates)  # noqa: E731
-    tb = T.blocks().set_index("date")
-    storm_blocks = tb["block"].where(tb["block_kind"] == "storm")                 # NaN off storms
-    storm_of = lambda dates: storm_blocks.reindex(pd.DatetimeIndex(dates)).to_numpy(dtype=float)  # noqa: E731
-    res["conditional"] = (_table(rows, obs_block, n_boot, storm_of, circular=True)
-                          if rows is not None and len(rows) else {})
-    if samples is not None and len(samples):
-        res["samples"] = _table(samples, lambda feed, dates: tb["block"].reindex(pd.DatetimeIndex(dates)).to_numpy(), n_boot,
-                                storm_of)
-    else:
-        res["samples"] = {}
-    res["degraded"] = {t: _seed_summary(res[t]) for t in ("conditional", "samples")}
-    res["beats_nothing"], res["statement"] = _statement(res)
-    return res
-
-
-def verdict_lines(res: dict) -> list:
-    """The verdict table as plain text lines: per table and window, each variant's Δ against no correction and
-    against basin_swap (the downgrade also against link_zone_swap) with the 90% CI and the words; the degraded
-    feeds as the seeds' mean, range and words. X-POWER cells and circular comparisons are marked: they decide
-    nothing."""
-    f = lambda d: "—" if d is None or d.get("delta") is None else (  # noqa: E731
-        (f"{d['delta']:+.5f} [{d['lo']:+.5f}, {d['hi']:+.5f}] {d['verdict']}" if d.get("lo") is not None else f"{d['delta']:+.5f} (no CI)")
-        + (" (circular on the perfect feed: not claimed)" if d.get("circular") else ""))
-    g = lambda s: "—" if s is None else f"mean {s['mean']:+.5f} (seeds {s['min']:+.5f} … {s['max']:+.5f}) {s['verdict']}"  # noqa: E731
-    out = list(res["statement"]) + [""]
-    for t in ("conditional", "samples"):
-        for feed, by_w in (res.get(t) or {}).items():
-            if X._feed_of(feed) == "degraded":
-                continue
-            for w, c in by_w.items():
-                out.append(f"[{t}] {feed} · {WINDOW_WORDS[w]}: n {c['n']}, positives {c['n_pos']}, blocks {c['n_blocks']}, "
-                           f"storm blocks {c['n_storm_blocks']}" + (" (X-POWER: decides nothing)" if c["low_power"] else ""))
-                for v, cmp in c["variants"].items():
-                    out.append(f"    {v:15} vs plain {f(cmp.get('vs_plain'))} · vs basin_swap {f(cmp.get('vs_basin_swap'))}"
-                               + (f" · vs {BUILT_ON[v]} {f(cmp.get('vs_' + BUILT_ON[v]))}" if v in BUILT_ON else ""))
-        for w, by_v in (res["degraded"].get(t) or {}).items():
-            low = any(s["low_power"] for cmp in by_v.values() for s in cmp.values())
-            out.append(f"[{t}] degraded feeds · {WINDOW_WORDS[w]}" + (" (X-POWER in some seed: decides nothing)" if low else ""))
-            for v, cmp in by_v.items():
-                out.append(f"    {v:15} vs plain {g(cmp.get('vs_plain'))} · vs basin_swap {g(cmp.get('vs_basin_swap'))}"
-                           + (f" · vs {BUILT_ON[v]} {g(cmp.get('vs_' + BUILT_ON[v]))}" if v in BUILT_ON else ""))
-    return out
-
-
-# ── development inputs ─────────────────────────────────────────────────────
-
-def served_name() -> str:
-    """The served set's name, from served.json (never typed)."""
-    return json.loads((SERVE_DIR / "served.json").read_text())["name"]
-
-
-def served_inputs(holdout_fit: bool = False) -> tuple[C.BasinInputs, pd.Timestamp]:
-    """(inputs, trained_through) from the served set's stored scorecard, for development until stages_build
-    passes S2 engine outputs: p = the stored per-day basin probability (``holdout_fit``: the holdout-fit one
-    where the scorecard has it, as replay_live grades, else the served model's), v̂ = replay_live.
-    predicted_volumes (the served heads on the training frames), rain = the scorecard's day rain (what
-    live_v2's anchor reads in the replay). trained_through is the scorecard's: with the served table, split
-    and heads fit through it, only T1 days (from 2025-11-01) are clean (protocol §2)."""
-    sc, days, _ = RL.load_artifact()
-    keys = list(_geo1().keys)
-    if [list(d["basins"]) for d in days[:1]] != [keys]:
-        raise ValueError(f"the scorecard's basins are not geo_v1's {keys}")
-    vol = RL.predicted_volumes(days, sc)
-    idx = pd.DatetimeIndex([d["date"] for d in days])
-    pick = (lambda b: RL._p_used(b)) if holdout_fit else (lambda b: float(b["p"]))  # noqa: E731
-    p = pd.DataFrame([{k: pick(d["basins"][k]) for k in keys} for d in days], index=idx)
-    v = pd.DataFrame([{k: float(vol[d["date"]][k]) for k in keys} for d in days], index=idx)
-    rain = pd.Series([float(d["rain"]) for d in days], index=idx)
-    return C.BasinInputs(p, v, rain), _ts(sc["trained_through"])
-
-
-def stage_rows(set_name: str = "served", root: str = "served", tiers=("T1", "T1-holdout", "T2"), seasons=None,
-               feed_names=None, variants=None, log=print) -> tuple:
-    """(S5 rows, S5's sample rows, the feeds, the context) on stages_build's own S2 folds, for the verdict
-    table: the set and its stamps (stages_build.load_set), S2 refit per fold (stages_s2.fit), the fold's S3 / S4
-    specs (stages_build.fold_specs, fit on the fold's training days) and its rain-known run with the 8-day
-    warm-up (stages_build.runs_for), the two-gauge rain over the whole record (an S4 rain background reads D−2
-    before a run) — the inputs stages_build.s5_build hands ``s5_rows`` — then both tables per fold and feed
-    (``s5_tables``: the conditional set and the sample rows), and ``window_apply`` per window. As in s5_build, the
-    degraded feeds run on S5's window only (protocol §8; their era also reaches T2's 2023-24 and 2024-25, which
-    would be reported as T2 though they are two of its nine seasons), and ``variants`` defaults to every
-    variant the geography replays (live_v2's rule sets on GEO_V1 only). A stage candidate (stages_candidates) brings
-    its own folds: its S5 rows are stages_build's, so it raises here. ``seasons`` keeps those T2 seasons,
-    ``feed_names`` those feeds (development knobs). Reads the committed data; writes nothing."""
-    import stages_build as B                    # deferred: stages_build imports this module
-    import stages_entries as E
-    import stages_s2 as S2
-    bundle = B.load_set(set_name, root)
-    if getattr(bundle, "stage", None) is not None:
-        raise ValueError(f"{set_name} is a stage candidate with its own folds and specs: its S5 rows are "
-                         "stages_build.build's (s5_build), not these refits")
-    geo, s2set = bundle.geo, bundle.s2
-    if variants is None:                        # live_v2's rule sets are GEO_V1's only (_live_v2 raises elsewhere)
-        variants = VARIANTS if geo.version == "geo_v1" else tuple(v for v in VARIANTS if v not in LIVE_V2)
-    variants = tuple(variants)
-    end = E.data_end()
-    fd = feeds(geo, end=end)
-    fd = {k: v for k, v in fd.items() if k != "watcher" and (feed_names is None or k in set(feed_names))}
-    ctx = X.context(geo, end=end).with_inputs(feeds=fd)
-    need = sorted(set(s2set.sources) | set(bundle.chosen.values()) | {"avg"})
-    train, _ = B.T4.build_dataset(sources=need)
-    fitted = S2.fit(bundle.name, root, tuple(tiers), train_frames=train)
-    plan = {(p[0], p[1]): p for p in S2._plan(tuple(tiers))}
-    frames = E.frames("oracle", need, model=E.served_weather_model(), end=end)
-    rain = frames["avg"].set_index("date")["precip_avg"].astype(float)          # stages_build's rain_known
-    pred = fitted.predict({"oracle": frames})
-    events, samples = B.T4.load_events(), B.T4.load_samples()
-    rows, srows = [], []
-    for f in fitted.folds:
-        if f.tier == "T2" and seasons is not None and f.season not in set(seasons):
-            continue
-        specs, _ = B.fold_specs(bundle, f, plan[(f.tier, f.fold)][5], train, events, samples)
-        mine = pred[(pred["tier"] == f.tier) & (pred["fold"] == f.fold) & (pred["entry"] == "oracle")]
-        rs = B.runs_for(s2set, f, "oracle", frames, pd.DatetimeIndex(sorted(mine["date"].unique())))
-        if len(rs) != 1:
-            raise AssertionError(f"rain known breaks into {len(rs)} runs in {f.tier} {f.fold}: a gauge day is missing")
-        inputs = C.BasinInputs(rs[0].p, rs[0].v, rain)
-        kw = ({"held_out_season": f.season} if f.tier == "T2"
-              else {"trained_through": s2set.trained_through if f.tier == "T1" else S2.HOLDOUT_START - pd.Timedelta(days=1)})
-        for name, feed in fd.items():
-            if X._feed_of(name) == "degraded" and f.tier not in S5_WINDOW:
-                continue                                   # built for S5's window (§8), as stages_build.s5_build
-            got = s5_tables(geo, specs, inputs, name, feed, variants, f.tier, ctx=ctx, **kw)
-            rows += [got["conditional"].assign(fold=f.fold)] if len(got["conditional"]) else []
-            srows += [got["samples"].assign(fold=f.fold)] if len(got["samples"]) else []
-        log(f"  {f.tier} {f.fold}: S5 rows so far {sum(map(len, rows))}, sample rows {sum(map(len, srows))}")
-    cat = lambda parts, extra: pd.concat(parts, ignore_index=True) if parts else _empty_rows(extra)  # noqa: E731
-    return window_apply(cat(rows, ("fold",)), ctx), window_apply(cat(srows, ("feed", "fold")), ctx), fd, ctx
-
-
-def _main_verdicts(argv: list) -> None:
-    """--verdicts [--set NAME] [--root served|candidates] [--n-boot N] [--seasons 2019,2020] [--feeds oracle,degraded:1]
-    [--json]: the verdict table and the per-feed counts on stages_build's folds, printed (JSON with --json)."""
-    def opt(name, default=None):
-        return argv[argv.index(name) + 1] if name in argv else default
-    n_boot = int(opt("--n-boot", 2000))
-    seasons = [int(s) for s in opt("--seasons").split(",")] if opt("--seasons") else None
-    feed_names = opt("--feeds").split(",") if opt("--feeds") else None
-    quiet = "--json" in argv
-    rows, srows, fd, _ = stage_rows(opt("--set", "served"), opt("--root", "served"), seasons=seasons, feed_names=feed_names,
-                                    log=(lambda *a: None) if quiet else print)
-    res = verdicts(rows, fd, srows, n_boot=n_boot)
-    res["counts"] = {"conditional": feed_counts(rows), "samples": feed_counts(srows) if len(srows) else {}}
-    res["recall_note"] = "downgrade: feed_recall per fold on its training days (see the module notes)"
-    if quiet:
-        print(json.dumps(V.clean(res), indent=1, default=str))
-        return
-    print("\n".join(verdict_lines(res)))
-    for t, by_feed in res["counts"].items():
-        for feed, by_w in by_feed.items():
-            for w, c in by_w.items():
-                print(f"[counts {t}] {feed} · {w}: {c['n_total']} zone-days, {c['n_scored']} scored, left out {c['excluded']}")
-
-
-if __name__ == "__main__":
-    if "--verdicts" in sys.argv:
-        _main_verdicts(sys.argv[1:])
-        sys.exit(0)
-    geo = G.get("geo_v1")
-    inputs, tt = served_inputs()
-    fd = feeds(geo, end=inputs.p.index.max())
-    print(f"served set {served_name()} (trained through {tt.date()}); feeds:",
-          {k: (len(v), v.attrs["era"]) for k, v in fd.items()})
-    specs = C.geo_v1_adapter_specs(cofire_shares=C.cofire(geo, csd_labels.load_events(), end=tt))
-    for name in ("oracle", "degraded:1"):
-        rows = s5_rows(geo, specs, inputs, name, fd[name], tier="T1", trained_through=tt)
-        sc = rows[rows["excl"] == ""]
-        print(f"── {name}: {len(rows)} rows, scored per variant {len(sc) // len(VARIANTS)}")
-        for v, g in sc.groupby("variant", sort=False):
-            print(f"   {v:15} ΔBS (corrected − plain) {((g.p - g.y) ** 2 - (g.b - g.y) ** 2).mean():+.5f} on {len(g)} zone-days")

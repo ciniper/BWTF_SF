@@ -4,8 +4,8 @@ Anchors: the Finley tornado table as worked in the WWRP/JWGFVR verification
 pages (POD 0.549, FAR 0.720, CSI 0.228, ETS 0.216, PSS 0.523, HSS 0.355); the
 CORP identity BS = MCB − DSC + UNC to 1e-12; BSS 1 for a perfect forecast and
 0 for the reference itself; Hamill–Juras pooling from stratum sums; a seeded
-bootstrap that repeats exactly; PSS = REV at α = base rate; storm blocks on a
-toy series; the sign of a paired difference.
+bootstrap that repeats exactly; storm blocks on a toy series; the sign of a
+paired difference.
 Run: venv/bin/python tests/test_verify.py
 """
 from __future__ import annotations
@@ -67,11 +67,6 @@ def test_contingency_edge_cases_are_nan_not_zero():
     # the S1 rain case: forecast and gauge both thresholded at the same depth
     s1 = V.contingency_at([0.0, 0.6, 0.4, 1.2], [0.1, 0.5, 0.7, 0.2], 0.5)
     assert (s1["a"], s1["b"], s1["c"], s1["d"]) == (1, 1, 1, 1)
-
-
-def test_grid_with_adds_lines_exactly():
-    g = V.grid_with((0.05, 0.25, 0.505), 1 / 3, 0.25, None)
-    assert g == (0.05, 0.25, 1 / 3, 0.505)
 
 
 # ── continuous ─────────────────────────────────────────────────────────────
@@ -136,13 +131,11 @@ def test_bss_perfect_is_one_and_climatology_is_zero():
     assert V.brier([1, 0], [1, 0]) == 0.0 and V.brier([1, 0, np.nan], [0, 1, 0.5]) == 1.0
     # a NaN reference on a scored row raises (dropping it would score skill on fewer rows than BS);
     # on a row already dropped for a NaN outcome it is fine
-    for fn in (lambda: V.bss([1, 0, 1], [0.9, 0.1, 0.2], [0.5, np.nan, 0.5]),
-               lambda: V.pooled_bss([1, 0, 1], [0.9, 0.1, 0.2], [0.5, np.nan, 0.5], [0, 0, 1])):
-        try:
-            fn()
-            raise AssertionError("a NaN reference on a scored row must raise")
-        except ValueError:
-            pass
+    try:
+        V.bss([1, 0, 1], [0.9, 0.1, 0.2], [0.5, np.nan, 0.5])
+        raise AssertionError("a NaN reference on a scored row must raise")
+    except ValueError:
+        pass
     assert V.bss([1, np.nan, 1], [0.9, 0.1, 0.2], [0.5, np.nan, 0.5]) == V.bss([1, 1], [0.9, 0.2], [0.5, 0.5])
 
 
@@ -183,14 +176,11 @@ def test_hamill_juras_pooling_uses_stratum_sums_not_a_pooled_base_rate():
     y = (rng.random(2000) < base).astype(float)
     ref = base.copy()                                        # each stratum's own climatology
     p = np.clip(base + rng.normal(0, 0.05, 2000), 0, 1)      # knows the stratum, little else
-    out = V.pooled_bss(y, p, ref, s)
-    by = out["by"]
-    by_hand = 1 - sum(v["n"] * v["bs"] for v in by.values()) / sum(v["n"] * v["bs_ref"] for v in by.values())
-    assert math.isclose(out["bss"], by_hand, rel_tol=1e-12)
-    assert math.isclose(out["bss"], V.bss(y, p, ref), rel_tol=1e-12)
-    assert math.isclose(V.pool_bss((v["n"], v["bs"], v["bs_ref"]) for v in by.values()), by_hand, rel_tol=1e-12)
+    by = [(int((s == k).sum()), V.brier(y[s == k], p[s == k]), V.brier(y[s == k], ref[s == k])) for k in (0, 1)]
+    by_hand = 1 - sum(n * b for n, b, _ in by) / sum(n * r for n, _, r in by)
+    assert math.isclose(V.bss(y, p, ref), by_hand, rel_tol=1e-12)        # a per-row stratified ref pools by stratum sums
     pooled_base = V.bss(y, p, V.sample_ref(y))
-    assert pooled_base > 0.25 and abs(out["bss"]) < 0.1, (pooled_base, out["bss"])   # the base-rate trap
+    assert pooled_base > 0.25 and abs(by_hand) < 0.1, (pooled_base, by_hand)   # the base-rate trap
     assert np.allclose(V.sample_ref(y, s), np.where(s == 0, y[s == 0].mean(), y[s == 1].mean()))
 
 
@@ -217,20 +207,6 @@ def test_murphy_integrates_to_the_brier_score():
     # at θ an alert is p ≥ θ: a miss costs 1 − θ, a false alarm θ
     assert np.allclose(V.murphy([1, 0], [0.2, 0.6], [0.5]), [(0.5 + 0.5) / 2])
     assert np.allclose(V.murphy([1, 0], [0.5, 0.4], [0.5]), [0.0])
-
-
-def test_pss_equals_rev_at_the_base_rate_for_a_binary_forecast():
-    rng = np.random.default_rng(6)
-    y = (rng.random(1500) < 0.15).astype(float)
-    fc = np.where(rng.random(1500) < 0.7, y, 1 - y) * (rng.random(1500) < 0.9)
-    s = y.mean()
-    r = V.rev_curve(y, fc, alphas=[s, 0.5], thresholds=[0.5])
-    pss = V.contingency(fc, y)["pss"]
-    assert abs(r["value"][0][0] - pss) < 1e-12, (r["value"][0][0], pss)
-    assert r["envelope"][0] == r["value"][0][0]
-    # perfect forecast: V = 1 at every α; climatology-like: V ≤ 0
-    assert np.allclose(V.rev_curve(y, y, alphas=[0.1, 0.3, 0.9])["value"][0], 1.0)
-    assert all(v <= 1e-12 for v in V.rev_curve(y, np.zeros_like(y), alphas=[0.05, 0.5])["value"][0])
 
 
 # ── blocks and the bootstrap ───────────────────────────────────────────────

@@ -23,15 +23,15 @@ What is here, and why (features/forecast/STAGES_DESIGN.md §5, Parts A and B):
   unit × calendar month, smoothed over ±1 month (``climatology_ref``). The
   scored window's own base rate is never the reference. Pooling across strata
   is Hamill & Juras (2006): 1 − Σ n·BS / Σ n·BS_ref, never a ratio against a
-  pooled base rate (``pooled_bss``, ``pool_bss``).
+  pooled base rate (``bss`` with a per-row stratified reference is exactly that).
 - ``corp`` decomposes the Brier score itself (Dimitriadis, Gneiting & Jordan
   2021): BS = MCB − DSC + UNC, with the PAV (isotonic) recalibration as the
   reliability curve.
 - Threshold scores (``contingency*``) are reported at the fixed public risk
   edges, Medium p ≥ 0.205, High p ≥ 0.505, Extreme p ≥ 0.805. No line is chosen
   by cost and there is no cost basis or Platt alert line (Chase, 2026-10-01).
-- ``murphy`` and ``rev_curve`` (Richardson 2000) show every cost ratio at once.
-  They are reported, never used to choose anything.
+- ``murphy`` shows every cost ratio at once. It is reported, never used to
+  choose anything.
 - Uncertainty is a seeded storm-block bootstrap (``storm_blocks``,
   ``block_bootstrap``): rain storms, padded one day before and a week after,
   are the independent units; quiet stretches fall into ISO-week blocks. 90%
@@ -206,11 +206,6 @@ def contingency_at(fc, obs, threshold: float, obs_threshold: float | None = None
     return contingency(f >= threshold, o >= t_o)
 
 
-def grid_with(grid, *lines) -> tuple:
-    """A line grid with extra lines added exactly (a served or per-unit line never falls between grid points)."""
-    return tuple(sorted({float(x) for x in (*grid, *lines) if x is not None}))
-
-
 # ── probability scores ─────────────────────────────────────────────────────
 
 def brier(y, p) -> float:
@@ -301,36 +296,6 @@ def sample_ref(y, strata=None) -> np.ndarray:
     return s.to_numpy(dtype=float)
 
 
-def pool_bss(parts) -> float:
-    """Hamill–Juras pooled skill from stratum sums: parts = iterable of (n, bs, bs_ref)."""
-    num = den = 0.0
-    for n, bs_, bs_r in parts:
-        if n and np.isfinite(bs_) and np.isfinite(bs_r):
-            num += n * bs_
-            den += n * bs_r
-    return 1.0 - _div(num, den)
-
-
-def pooled_bss(y, p, ref, strata) -> dict:
-    """Per-stratum Brier and BSS, and the pooled skill computed from the stratum sums (Hamill & Juras 2006).
-
-    Pooling against one base rate across strata with different climatologies
-    credits a forecast for knowing which stratum it is in; pooling the sums
-    against each stratum's own reference does not.
-    """
-    s = np.asarray(strata, dtype=object).ravel()
-    if len(s) != len(_f(y)):
-        raise ValueError("strata and y differ in length")
-    s = s[np.isfinite(_f(y)) & np.isfinite(_f(p))]
-    y, p, r = _scored_ref(y, p, ref)
-    by = {}
-    for k in pd.unique(s):
-        m = s == k
-        b_, br = _mean((p[m] - y[m]) ** 2), _mean((r[m] - y[m]) ** 2)
-        by[k.item() if hasattr(k, "item") else k] = {"n": int(m.sum()), "bs": b_, "bs_ref": br, "bss": 1.0 - _div(b_, br)}
-    return {"n": int(len(y)), "bss": pool_bss((v["n"], v["bs"], v["bs_ref"]) for v in by.values()), "by": by}
-
-
 def log_score(y, p, eps: float = 0.001) -> tuple[float, int]:
     """Mean ignorance in bits (−log2 of the probability given to what happened; lower is better), and how many p were clipped.
 
@@ -415,34 +380,6 @@ def murphy(y, p, thetas=None) -> np.ndarray:
     ev = (y > 0.5)[:, None]
     s = np.where(ev & ~alert, 1 - th[None, :], 0.0) + np.where(~ev & alert, th[None, :], 0.0)
     return s.mean(axis=0)
-
-
-def rev_curve(y, p, alphas=None, thresholds=(0.5,), base_rate: float | None = None) -> dict:
-    """Relative economic value V(α) (Richardson 2000) for alerting at each threshold, plus the envelope over thresholds.
-
-    α = cost of acting / loss avoided. V = 1 is a perfect forecast, 0 is
-    climatology (always or never act, whichever is cheaper), negative is worse
-    than climatology. At α = base rate, V = H − F = PSS. Reported, never used
-    to choose a line (Chase, 2026-10-01).
-    """
-    y, p = _rows(y, p)
-    al = np.arange(1, 100) / 100 if alphas is None else _f(alphas)
-    s = _mean(y > 0.5) if base_rate is None else float(base_rate)
-    value = []
-    for t in thresholds:
-        ct = contingency(p >= t, y)
-        h, f = ct["pod"], ct["pofd"]
-        num = np.minimum(al, s) - f * al * (1 - s) + h * s * (1 - al) - s
-        den = np.minimum(al, s) - s * al
-        with np.errstate(divide="ignore", invalid="ignore"):
-            value.append(np.where(den != 0, num / np.where(den != 0, den, 1.0), NAN))
-    v = np.array(value) if value else np.empty((0, len(al)))
-    env = np.full(len(al), NAN)
-    if len(v) and np.isfinite(v).any(axis=0).any():
-        ok = np.isfinite(v).any(axis=0)
-        env[ok] = np.nanmax(v[:, ok], axis=0)
-    return {"alphas": al.tolist(), "thresholds": [float(t) for t in thresholds], "base_rate": s,
-            "value": v.tolist(), "envelope": env.tolist()}
 
 
 # ── blocks and the bootstrap ───────────────────────────────────────────────

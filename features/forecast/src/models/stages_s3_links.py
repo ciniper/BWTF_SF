@@ -73,18 +73,11 @@ final (T1) fold chooses on all nine T2 seasons, so the rule the spec carries is
 the one a T2 score never saw choose itself; each T2 fold's choice never saw its
 own season. Every rule's T2 score is reported, and so is the nested procedure's.
 
-**What S2 is read (``S2Source``).** S3 needs S2's Westside v̂, and Central's
-and South's p, for any set of training seasons. ``S2Source`` refits a design
-on its own rows per season set (memoized) and predicts from the rain-known
-entry frames. The assemble step builds one from the S2 bake-off winner (A5);
-for development ``dev_s2`` takes the Westside head from stages_s2's GEO_V1
-served set (GEO_V1 Westside has SFPUC4's outfalls and labels, asserted; its
-fold refits are stages_s2's fold heads, a test pins it) and refits Central and
-South under SFPUC4 with the served logit_v1 recipe (its 19 features + hinges
-and C) with every weight ≥ 0 (A5's first contender at the served C; Chase:
-"no odd weights"), on ledger-known days with the outage-masked rain. That
-stand-in decides nothing: the assemble step re-runs the union choice with the
-winner, and the spec says which S2 it was fit with.
+**What S2 is read.** S3 needs S2's Westside v̂, and Central's and South's p,
+for any set of training seasons: a fold's S2 (``FoldS2``) offers ``name``,
+``predict(basin, what, seasons, days)``, ``seen`` (the days a fit read: the
+out-of-fold check), ``n_fit`` (the rows a fit would read, so a head under its
+floor is never fit: ``fit_table``) and ``describe``.
 
 **The assemble step (``candidate_s2``; Part B 2).** A stage candidate's own S2
 (stages_s2_sfpuc4's winner, saved by stages_candidates) is read fold by fold
@@ -112,7 +105,7 @@ on storm blocks; superiority when the 90% CI's upper bound is below 0. S3a
 (the geography) is the assemble step's; S3a and S3b form one Holm family, so
 ``holm_inputs`` gives S3b's one-sided bootstrap p-value P*(Δ* ≥ 0) (the same
 resample as the CI) and its CIs at both Holm steps (95% for α/2, 90% for α),
-and ``holm`` combines them with S3a's p.
+which stages_build.holm combines with S3a's.
 
 **Identity links are checked, not scored (protocol §7 X-S3-ID).** On every
 oracle row X-S3-ID leaves out (North and East on the days their basins
@@ -142,14 +135,12 @@ curves or threshold tables; ``run`` returns them in full). ``fold_spec``
 rebuilds any fold's full S3 spec from it (also its benchmarks; a recorded share of
 any compose_v2 kind, size_blend included, is taken as recorded). ``write``
 saves it through stages_candidates.save_component as the 's3_links' component
-(``links_v1``) of a stage candidate (the development spec: set ``DEV_SET``),
-which stamps it with the set and the component; compose_v2.check_s3_spec does
-not know those two stamps, so ``for_compose`` checks and drops them before
-compose_v2 reads a saved spec. Without stages_candidates the spec goes to
-data/models/stages_candidates/_s3_links/. Nothing else in data/models/ is
-touched, and no module-level IO.
+(``links_v1``) of a stage candidate, which stamps it with the set and the
+component; compose_v2.check_s3_spec does not know those two stamps, so
+``for_compose`` checks and drops them before compose_v2 reads a saved spec.
+Nothing else in data/models/ is touched, and no module-level IO.
 
-    venv/bin/python features/forecast/src/models/stages_s3_links.py [--n-boot 2000] [--candidate NAME] [--write]
+    venv/bin/python features/forecast/src/models/stages_s3_links.py --candidate NAME [--n-boot 2000] [--write]
 """
 from __future__ import annotations
 
@@ -163,7 +154,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from sklearn.base import clone
 
 HERE = Path(__file__).resolve().parent
 FORECAST = HERE.parents[1]
@@ -172,11 +162,9 @@ for _p in (REPO, FORECAST, HERE, HERE.parent / "collectors"):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 
-import candidates as CAND  # noqa: E402  (served.json: the dev S2's set name, never typed)
 import compose_v2 as C  # noqa: E402
 import csd_labels  # noqa: E402  (the CIWQS ledger compose_v2.cofire counts)
 import exclusions as X  # noqa: E402
-import leaderboard as LB  # noqa: E402  (NonNegLogit: the dev S2's weights ≥ 0)
 import stages_build as SB  # noqa: E402  (read only: the scorers, references and blocks every stage uses)
 import stages_entries as E  # noqa: E402
 import stages_s2 as S2  # noqa: E402
@@ -200,13 +188,9 @@ T2_SEASONS = S2.T2_SEASONS                     # 2016 … 2024: the July–June 
 WINDOWS = S2.TIERS                             # T1, T1-holdout, T2
 ORACLE, CHAINED = "oracle", "rain"             # S3b's entry (true occurrence, v̂ from rain); the union's (rain known)
 HEAD_MIN_EVENTS = S2.HEAD_MIN_EVENTS           # 20: a head on fewer known-volume events raises (Part B 7)
-WEIGHTS_MIN_POSITIVES = S2.WEIGHTS_MIN_POSITIVES
 NEWTON_TOL, NEWTON_MAX_ITER = 1e-10, 100       # the share's two-parameter maximum likelihood
 SEPARATION_LOGIT = 30.0                        # |a| + |b|·max log1p v̂ beyond this: the fit is separating, raise
 HOLM_ALPHA = 0.05                              # protocol §6: one-sided α = 0.05, Holm over S3a and S3b
-CANDIDATES_ROOT = FORECAST / "data" / "models" / "stages_candidates"
-DEV_SET = "sfpuc4_dev"                         # the development spec's stage candidate (its S2 is dev_s2's stand-in)
-OUT_DIR = CANDIDATES_ROOT / "_s3_links"        # the fallback when stages_candidates is missing (a working directory)
 SPEC_FILE = "s3_links.json"
 SAVER_STAMPS = ("set", "component")            # what save_component adds that compose_v2.check_s3_spec does not know
 COMPACT_DROP = ("curve", "contingency")        # left out of the spec's scores: CORP curves, threshold tables
@@ -289,141 +273,9 @@ def inner_seasons(fold: Fold) -> tuple:
     return tuple(s for s in T2_SEASONS if s in fold.seasons)
 
 
-# ── the S2 that S3 reads ────────────────────────────────────────────────────
+# ── the S2 that S3 reads: the stage candidate's own (the assemble step; Part B 2) ──
 
 P, VHAT = "p", "v_hat"
-
-
-@dataclass
-class S2Source:
-    """Stage 2 as S3 reads it: per (basin, 'p' | 'v_hat') a design (a model dict for train_v4.calibrated, a volume
-    head dict for train_v4.predicted_volume) and the rows it is fit on (date, season, the design's features, and y
-    or volume_mg), refit on any set of training seasons (days through 2025-10-31; memoized), and predicted from
-    ``frames`` (rain source → date-indexed features of the rain-known entry). A fit under the floors raises: fewer
-    than WEIGHTS_MIN_POSITIVES positives, or HEAD_MIN_EVENTS known-volume events (no head means no v̂).
-
-    S3 reads only ``name``, ``predict(basin, what, seasons, days)``, ``seen(basin, what, seasons)`` (the days a fit
-    read: the out-of-fold check), ``n_fit(basin, what, seasons)`` (the rows a fit would read, so a head under its
-    floor is never fit: ``fit_table``) and ``describe()``, so any S2 offering those five plugs in. One whose design
-    differs by fold also offers ``for_fold(fold)``, the S2 of that fold (``CandidateS2``: the assemble step's
-    stage candidate, each fold with the design its own bake-off fold chose)."""
-    name: str
-    designs: dict
-    rows: dict
-    frames: dict
-    note: str = ""
-    _fits: dict = field(default_factory=dict, repr=False)
-
-    def _rows(self, basin: str, what: str, seasons) -> pd.DataFrame:
-        r = self.rows[(basin, what)]
-        return r[r["season"].isin(set(seasons)) & (r["date"] <= TRAIN_END)]
-
-    def n_fit(self, basin: str, what: str, seasons) -> int:
-        """The rows a fit on these seasons would read (known-volume events for v̂, known days for p)."""
-        if (basin, what) not in self.rows:
-            raise KeyError(f"{self.name} has no {what} for {basin!r}")
-        return int(len(self._rows(basin, what, seasons)))
-
-    def fitted(self, basin: str, what: str, seasons) -> dict:
-        key = (basin, what, frozenset(seasons))
-        if key in self._fits:
-            return self._fits[key]
-        if (basin, what) not in self.designs or (basin, what) not in self.rows:
-            raise KeyError(f"{self.name} has no {what} for {basin!r}")
-        d = self.designs[(basin, what)]
-        r = self._rows(basin, what, seasons)
-        X_ = r[list(d["features"])]
-        if not np.isfinite(X_.to_numpy(dtype=float)).all():
-            raise ValueError(f"{self.name} {basin} {what}: a missing feature in the training rows")
-        if what == P:
-            if d.get("calibration_offset", 0.0) != 0.0:
-                raise ValueError(f"{self.name} {basin}: a fitted dry-day offset would carry its training span into every fold")
-            if int(r["y"].sum()) < WEIGHTS_MIN_POSITIVES:
-                raise ValueError(f"{self.name} {basin} on seasons {sorted(seasons)}: {int(r['y'].sum())} overflow days to fit on")
-            m = {**d, "model": clone(d["model"]).fit(X_, r["y"].astype(int))}
-        elif what == VHAT:
-            if len(r) < HEAD_MIN_EVENTS:
-                raise ValueError(f"{self.name} {basin} on seasons {sorted(seasons)}: {len(r)} known-volume events, under the "
-                                 f"head's {HEAD_MIN_EVENTS}-event floor (no declared fallback here; Part B 7)")
-            m = {**d, "model": clone(d["model"]).fit(X_, np.log1p(r["volume_mg"].to_numpy(dtype=float)))}
-        else:
-            raise KeyError(f"what must be {P!r} or {VHAT!r}, not {what!r}")
-        m["seen"] = pd.DatetimeIndex(r["date"])
-        self._fits[key] = m
-        return m
-
-    def seen(self, basin: str, what: str, seasons) -> pd.DatetimeIndex:
-        """The days a fit on these seasons read."""
-        return self.fitted(basin, what, seasons)["seen"]
-
-    def predict(self, basin: str, what: str, seasons, days) -> np.ndarray:
-        m = self.fitted(basin, what, seasons)
-        days = pd.DatetimeIndex(days)
-        src = m["rain_source"]
-        if src not in self.frames:
-            raise KeyError(f"{self.name}: no rain-known frame for {src!r}")
-        f = self.frames[src]
-        missing = days[~days.isin(f.index)]
-        if len(missing):
-            raise KeyError(f"{self.name} {basin} {what}: the {src} frame lacks {missing[0].date()}")
-        cols = list(m["features"]) + (["rain_3d_cum"] if what == P else [])
-        Xp = f.loc[days, list(dict.fromkeys(cols))]
-        if not np.isfinite(Xp.to_numpy(dtype=float)).all():
-            raise ValueError(f"{self.name} {basin} {what}: a missing input between {days[0].date()} and {days[-1].date()}")
-        out = T4.calibrated(m, Xp) if what == P else T4.predicted_volume(m, Xp)
-        if not np.isfinite(out).all():
-            raise ValueError(f"{self.name} {basin} {what}: a non-finite prediction")
-        return np.asarray(out, dtype=float)
-
-    def describe(self) -> dict:
-        return {"name": self.name, "note": self.note,
-                "designs": {f"{b}:{w}": {"rain_source": d["rain_source"], "features": len(d["features"]),
-                                         "model": type(d["model"]).__name__} for (b, w), d in sorted(self.designs.items())}}
-
-
-def rain_frames(sources) -> dict:
-    """{source: the rain-known entry's features indexed by date} (stages_entries.frames('rain'), outage-masked)."""
-    return {s: f.set_index("date") for s, f in E.frames(CHAINED, sorted(set(sources))).items()}
-
-
-def dev_s2(set_name: str | None = None) -> S2Source:
-    """The development S2 (module notes): Westside's volume head from stages_s2's served GEO_V1 set (its design on
-    its own rows, stages_s2.head_rows), Central's and South's p by the served logit_v1 recipe with weights ≥ 0 on
-    SFPUC4 ledger-known days. Raises unless GEO_V1's Westside is SFPUC4's (same outfalls, so the same labels)."""
-    geo, g1 = _geo(), G.get("geo_v1")
-    name = set_name or CAND.served_info()["name"]
-    s2set = S2.load_set(name)
-    wb = split_basin(geo)
-    if {lk.outfalls for lk in g1.links_from(wb)} != {lk.outfalls for lk in geo.links_from(wb)}:
-        raise ValueError(f"GEO_V1's {wb} is not SFPUC4's: its head cannot stand in")
-    train = S2.training_frames(s2set)
-    head = s2set.heads[wb]
-    hr = S2.head_rows(s2set, train, wb)
-    vol = f"{g1.basin(wb).name}_volume_mg"
-    head_rows = pd.DataFrame({"date": pd.to_datetime(hr["date"]).to_numpy(), "season": hr["season"].to_numpy(),
-                              **{c: hr[c].to_numpy() for c in head["features"]}, "volume_mg": hr[vol].to_numpy(dtype=float)})
-    recipe = s2set.models["central"]                       # the served logit_v1 recipe for a Bay-side basin
-    design = {**recipe, "model": clone(recipe["model"]).set_params(lr=LB.NonNegLogit(C=float(recipe["C"]))),
-              "rain_source": G.RAIN_OF_FACILITY[geo.basin("central").facility]}
-    frames = rain_frames({head["rain_source"], design["rain_source"]})
-    bo = T.basin_onsets(geo, end=TRAIN_END)
-    designs, rows = {(wb, VHAT): head}, {(wb, VHAT): head_rows}
-    for b in ("central", "south"):
-        k = bo[(bo["basin"] == b) & bo["known"]]
-        f = frames[design["rain_source"]].loc[pd.DatetimeIndex(k["date"])]
-        rows[(b, P)] = pd.DataFrame({"date": pd.DatetimeIndex(k["date"]), "season": T4.wet_season(k["date"]).to_numpy(),
-                                     **{c: f[c].to_numpy() for c in design["features"]}, "y": k["y"].astype(int).to_numpy()})
-        designs[(b, P)] = design
-    note = (f"development stand-in: {wb} v̂ = the {name} (GEO_V1) volume head design refit per season set on its own rows; "
-            f"central and south p = the served logit_v1 recipe (19 features + hinges, C {recipe['C']}) with every weight ≥ 0, "
-            "refit on SFPUC4 ledger-known days with the outage-masked rain. Its C was chosen on pre-holdout leave-one-season-out "
-            "and its hinges have unrecorded provenance, so every T2 score read through it is development (selection-contaminated; "
-            "protocol §2). The assemble step swaps in the S2 bake-off winner.")
-    return S2Source(f"dev:{name}", designs, rows, frames, note)
-
-
-# ── the stage candidate's own S2 (the assemble step; Part B 2) ──────────────
-
 P_FIDELITY_TOL = 5e-5          # a T2 fold's refit vs the bake-off's rows (its C-path solver, 6 significant digits)
 V_FIDELITY_RTOL = 2e-5         # the same head refit vs the rows' 6 significant digits
 EXACT_TOL = 1e-9               # the finals / siblings refit on the same rows by the same pipeline
@@ -481,7 +333,7 @@ class CandidateS2:
 
 @dataclass(frozen=True)
 class FoldS2:
-    """One fold's S2 of a CandidateS2: S2Source's reading API (name, n_fit, predict, seen, describe)."""
+    """One fold's S2 of a CandidateS2, as S3 reads it (name, n_fit, predict, seen, describe)."""
     src: CandidateS2
     key: tuple
 
@@ -521,9 +373,7 @@ class FoldS2:
         else:
             m = S2C.fit_head(d, basin, self.src.recipes[basin], self.src.served_head, seasons=seasons)
             keys = tuple(m.get("pooled_basins") or (basin,))      # the fallback's shared slopes read every pooled basin
-        sc = _saver()
-        if sc is not None:
-            sc.check_nonnegative(m["model"], f"{self.name} {self.key} {basin} {what}")   # "no odd weights"
+        _saver().check_nonnegative(m["model"], f"{self.name} {self.key} {basin} {what}")   # "no odd weights"
         seen = pd.DatetimeIndex(d.days[np.logical_or.reduce([self._mask(k, what, seasons) for k in keys])])
         out = {**m, "seen": seen}
         self.src._fits[key] = out
@@ -607,8 +457,6 @@ def candidate_s2(name: str, root=None, data=None, check: bool = True) -> Candida
     the manifest records, and, with ``check``, each fold's refit must reproduce what the build scores
     (``candidate_fidelity``: the set's own saved finals and siblings)."""
     sc = _saver()
-    if sc is None:
-        raise ImportError("a stage candidate's S2 is read through stages_candidates")
     S2C = _s2c()
     st = sc.load_set(name, root=root)
     if st.geo.version != GEOGRAPHY:
@@ -709,7 +557,7 @@ def fit_logit(x, y) -> dict:
     return {"a": a, "b": b, "n": int(len(y)), "n_pos": int(y.sum()), "iterations": it}
 
 
-def fit_table(fold: Fold, s2: S2Source, tr: Truth, dropped: dict | None = None) -> pd.DataFrame:
+def fit_table(fold: Fold, s2: FoldS2, tr: Truth, dropped: dict | None = None) -> pd.DataFrame:
     """The rows a fold's shares are fit on: the oracle's scored rows of the split zones on the fold's training days
     (Westside overflowed; X-S3-UNCOV, X-LEDGER-SUSPECT, X-S3-CARRY applied), each with the zone's link, its 0/1 truth
     and v̂ — from the fold's head design refit without the day's own season (inner leave-one-season-out), so every
@@ -893,7 +741,7 @@ def _feeders(geo) -> tuple:
     return tuple(dict.fromkeys(lk.basin for z in union_zones(geo) for lk in geo.links_into(z)))
 
 
-def chained_rows(tr: Truth, s2: S2Source, seasons, cofire: dict, days: pd.DatetimeIndex) -> pd.DataFrame:
+def chained_rows(tr: Truth, s2: FoldS2, seasons, cofire: dict, days: pd.DatetimeIndex) -> pd.DataFrame:
     """The scored rain-known rows of the union zones on ``days``, with every rule's p from S2 refit on ``seasons``:
     date, unit, y, p_<basin> (S2's p of each feeding basin) and one column per rule."""
     geo = tr.geo
@@ -954,7 +802,7 @@ def pick_union(y, arms: dict, dates, blocks: pd.DataFrame, params: dict, n_boot:
             "n": int(len(y)), "n_blocks": int(len(np.unique(blk)))}
 
 
-def choose_union(fold: Fold, s2: S2Source, tr: Truth) -> dict:
+def choose_union(fold: Fold, s2: FoldS2, tr: Truth) -> dict:
     """The fold's union rule by inner leave-one-season-out over its T2 seasons: per inner season s, S2 and the
     co-firing π refit on the fold's seasons without s, every rule's East p on s's rows; ``pick_union`` on the inner
     rows pooled over the seasons (max unless a challenger is better). Returns {rule, brier {rule}, n, inner {season:
@@ -1007,7 +855,7 @@ def fold_s2(s2, fold: Fold):
     return s2.for_fold(fold) if hasattr(s2, "for_fold") else s2
 
 
-def fit_fold(fold: Fold, s2: S2Source, tr: Truth) -> FoldFit:
+def fit_fold(fold: Fold, s2: CandidateS2, tr: Truth) -> FoldFit:
     geo = tr.geo
     s2 = fold_s2(s2, fold)
     dropped: dict = {}
@@ -1040,7 +888,7 @@ def scored_days(fold: Fold, end: pd.Timestamp) -> pd.DatetimeIndex:
     return pd.date_range(fold.start, hi) if fold.start <= hi else pd.DatetimeIndex([])
 
 
-def oracle_rows(ff: FoldFit, s2: S2Source, tr: Truth) -> pd.DataFrame:
+def oracle_rows(ff: FoldFit, s2: CandidateS2, tr: Truth) -> pd.DataFrame:
     """The fold's scored S3 oracle rows of the split zones (true occurrence, v̂ from the fold's head), one p column
     per arm, through compose_v2.s3 on the fold's specs: date, unit, y, tier, fold, v_hat, and the arms."""
     geo, fold = tr.geo, ff.fold
@@ -1071,7 +919,7 @@ def oracle_rows(ff: FoldFit, s2: S2Source, tr: Truth) -> pd.DataFrame:
     return r
 
 
-def union_rows(ff: FoldFit, s2: S2Source, tr: Truth) -> pd.DataFrame:
+def union_rows(ff: FoldFit, s2: CandidateS2, tr: Truth) -> pd.DataFrame:
     """The fold's scored East rows (rain known): every rule's p (S2 and π fit on the fold's seasons) and the
     nested choice's ('nested' = the fold's chosen rule)."""
     fold = ff.fold
@@ -1216,19 +1064,6 @@ def holm_inputs(r: pd.DataFrame, blocks: pd.DataFrame, n_boot: int, a: str = SHA
                            "bound below 0 for a superiority claim), the larger at 0.05 (the 90% CI's); p_one_sided = P*(Δ* ≥ 0)."})
 
 
-def holm(pvalues: dict, alpha: float = HOLM_ALPHA) -> dict:
-    """Holm's step-down over one family: {name: {p, rank, level, reject}}. A NaN p rejects nothing and stops the steps."""
-    order = sorted(pvalues, key=lambda k: (not np.isfinite(pvalues[k]), pvalues[k]))
-    m, go, out = len(order), True, {}
-    for i, k in enumerate(order):
-        level = alpha / (m - i)
-        p = float(pvalues[k])
-        rej = bool(go and np.isfinite(p) and p < level)
-        go = rej
-        out[k] = {"p": p, "rank": i + 1, "level": level, "reject": rej}
-    return out
-
-
 # ── the whole fit ───────────────────────────────────────────────────────────
 
 @dataclass(frozen=True)
@@ -1240,10 +1075,10 @@ class Result:
     scores: dict
 
 
-def run(s2: S2Source | None = None, tr: Truth | None = None, tiers=WINDOWS, n_boot: int = SB.B_PROTOCOL, log=print) -> Result:
-    """Fit every fold, score it, check it never saw what it scores, and build the spec (``Result.spec``)."""
+def run(s2: CandidateS2, tr: Truth | None = None, tiers=WINDOWS, n_boot: int = SB.B_PROTOCOL, log=print) -> Result:
+    """Fit every fold on stage candidate S2 ``s2`` (``candidate_s2``), score it, check it never saw what it scores, and
+    build the spec (``Result.spec``)."""
     t0 = time.time()
-    s2 = dev_s2() if s2 is None else s2
     tr = truth() if tr is None else tr
     geo = tr.geo
     folds = plan(tiers)
@@ -1309,7 +1144,7 @@ def compact(obj):
     return obj
 
 
-def make_spec(fits: dict, s2: S2Source, tr: Truth, scores: dict, n_boot: int) -> dict:
+def make_spec(fits: dict, s2: CandidateS2, tr: Truth, scores: dict, n_boot: int) -> dict:
     """s3_links.json (§7): the final fold's (T1, fit through 2025-10-31) links, union and co-firing shares on top,
     every fold in ``fit``. Checked by compose_v2.check_s3_spec; every fold's spec is too (``fold_spec``)."""
     geo = tr.geo
@@ -1326,7 +1161,7 @@ def make_spec(fits: dict, s2: S2Source, tr: Truth, scores: dict, n_boot: int) ->
                  "from rain, fit on v̂ out of sample (inner leave-one-season-out); the other links are identity; East is "
                  "the union of Central and South by the rule chosen nested on chained East Brier."),
         "fit": {
-            "schema": SCHEMA, "protocol": S2.protocol_stamp(), "as_of": str(tr.end.date()),
+            "schema": SCHEMA, "protocol": X.protocol_stamp(), "as_of": str(tr.end.date()),
             "window": {"top": "T1 final: fit on every day through 2025-10-31",
                        "T1-holdout": "refit on days before 2023-07-01", "T2": "refit per held-out season on the other eight of 2016-17 … 2024-25"},
             "v_hat": ("a fit day's v̂ is the fold's head design refit without that day's season (inner leave-one-season-out); "
@@ -1448,7 +1283,7 @@ def split_spec(base: dict, split: dict, name: str) -> dict:
                     "classes, p·[w·large + (1 − w)·small] with w = v̂/(v̂ + the group's median filed volume) and φ 1, refit "
                     f"per fold the served way; the other links are identity; East is the union of Central and South by "
                     f"the rule {base['set']} chose nested per fold."),
-           "fit": {"schema": SCHEMA, "protocol": S2.protocol_stamp(), "as_of": src["fit"]["as_of"],
+           "fit": {"schema": SCHEMA, "protocol": X.protocol_stamp(), "as_of": src["fit"]["as_of"],
                    "window": {"top": "T1 final: the served stage2.json, fit on every day through 2025-10-31",
                               "T1-holdout": "refit on days before 2023-07-01",
                               "T2": "refit per held-out season on the other eight of 2016-17 … 2024-25"},
@@ -1466,18 +1301,8 @@ def split_spec(base: dict, split: dict, name: str) -> dict:
 # ── writing ─────────────────────────────────────────────────────────────────
 
 def _saver():
-    """stages_candidates (P8's geography-aware saver), or None while the module itself is missing. Any other
-    import error inside it, or a saver without save_component / load_set, raises: a broken saver must never
-    send the spec quietly to the fallback directory."""
-    try:
-        import stages_candidates as SC  # noqa: PLC0415
-    except ModuleNotFoundError as e:
-        if e.name != "stages_candidates":
-            raise
-        return None
-    missing = [f for f in ("save_component", "load_set") if not hasattr(SC, f)]
-    if missing:
-        raise AttributeError(f"stages_candidates lacks {missing}: the saver's API changed")
+    """stages_candidates (P8's geography-aware saver; imported on use, as it imports this module when it assembles)."""
+    import stages_candidates as SC  # noqa: PLC0415
     return SC
 
 
@@ -1499,44 +1324,19 @@ def _protocol_scores(spec: dict) -> None:
         raise ValueError(f"s3_links.json carries scores: B = {b['n']} < the protocol's {SB.B_PROTOCOL}")
 
 
-def write(spec: dict, name: str = DEV_SET, root=None, out_dir: Path | None = None) -> Path:
+def write(spec: dict, name: str, root=None) -> Path:
     """Save the spec as the 's3_links' component of stage candidate ``name`` through stages_candidates.save_component
-    (``root`` overrides the candidates' directory: tests), read it back through stages_candidates.load_set and
-    compose_v2 (``for_compose``); returns the file. Without stages_candidates (or with ``out_dir``) the spec goes to
-    data/models/stages_candidates/_s3_links/ (or ``out_dir``) and is read back by compose_v2.load_s3_spec. Refuses
-    scores under the protocol's bootstrap unless ``root`` or ``out_dir`` is given, and any directory of the
-    repository outside data/models/stages_candidates/ (Part B 13)."""
+    (``root`` overrides the candidates' directory: tests; any other directory of the repository raises there, Part
+    B 13) and read it back through stages_candidates.load_set and compose_v2 (``for_compose``); returns the file.
+    Without ``root``, scores under the protocol's bootstrap are refused."""
     C.check_s3_spec(spec, G.stamped(spec))
-    if root is None and out_dir is None:
+    if root is None:
         _protocol_scores(spec)
-    SC = None if out_dir is not None else _saver()
-    for d in (root, out_dir):        # inside the repository: under stages_candidates/ only (tests use a temporary directory)
-        if d is not None and Path(d).resolve().is_relative_to(REPO.resolve()) and not Path(d).resolve().is_relative_to(CANDIDATES_ROOT.resolve()):
-            raise ValueError(f"{d}: stage candidates are written under data/models/stages_candidates/ only (Part B 13)")
-    if SC is not None:
-        d = Path(SC.save_component(name, "s3_links", {**spec, "component": KIND}, root=root))
-        saved = SC.load_set(name, root=root).s3_links
-        if for_compose(saved)["links"] != spec["links"]:
-            raise AssertionError("the saved s3_links.json does not read back as written")
-        return d / SPEC_FILE
-    out = OUT_DIR if out_dir is None else Path(out_dir)
-    out.mkdir(parents=True, exist_ok=True)
-    path = out / SPEC_FILE
-    path.write_text(json.dumps(spec, indent=1, ensure_ascii=False, allow_nan=False) + "\n")
-    C.load_s3_spec(path, G.stamped(spec))
-    return path
-
-
-def load(name: str = DEV_SET, root=None) -> dict:
-    """The s3_links spec of stage candidate ``name`` (stages_candidates.load_set, every stamp asserted), as compose_v2
-    reads it."""
     SC = _saver()
-    if SC is None:
-        return C.load_s3_spec(OUT_DIR / SPEC_FILE, _geo())
-    saved = SC.load_set(name, root=root).s3_links
-    if saved is None:
-        raise FileNotFoundError(f"stage candidate {name!r} has no s3_links component")
-    return for_compose(saved)
+    d = Path(SC.save_component(name, "s3_links", {**spec, "component": KIND}, root=root))
+    if for_compose(SC.load_set(name, root=root).s3_links)["links"] != spec["links"]:
+        raise AssertionError("the saved s3_links.json does not read back as written")
+    return d / SPEC_FILE
 
 
 def summary(res: Result) -> list:
@@ -1567,14 +1367,12 @@ def summary(res: Result) -> list:
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--n-boot", type=int, default=SB.B_PROTOCOL)
-    ap.add_argument("--candidate", default=None, help="fit on this stage candidate's own S2 (candidate_s2) and save into it; "
-                    f"default: the development stand-in, saved as {DEV_SET}")
+    ap.add_argument("--candidate", required=True, help="fit on this stage candidate's own S2 (candidate_s2) and save into it")
     ap.add_argument("--write", action="store_true", help=f"save {SPEC_FILE} as the set's s3_links component")
     a = ap.parse_args(argv)
     t0 = time.time()
-    s2 = candidate_s2(a.candidate) if a.candidate else None
-    if s2 is not None:
-        print(f"  {s2.name}'s S2 read in {time.time() - t0:.1f}s; fidelity {s2.fidelity}")
+    s2 = candidate_s2(a.candidate)
+    print(f"  {s2.name}'s S2 read in {time.time() - t0:.1f}s; fidelity {s2.fidelity}")
     res = run(s2=s2, n_boot=a.n_boot)
     for line in summary(res):
         print(line)
@@ -1582,7 +1380,7 @@ def main(argv=None) -> None:
         if b.get("fit_days_dropped"):
             print(f"  {b['tier']} {b['fold']}: fit days left out {b['fit_days_dropped']}")
     if a.write:
-        print(f"  wrote {write(res.spec, name=a.candidate or DEV_SET).relative_to(REPO)} ({time.time() - t0:.0f}s)")
+        print(f"  wrote {write(res.spec, name=a.candidate).relative_to(REPO)} ({time.time() - t0:.0f}s)")
 
 
 if __name__ == "__main__":

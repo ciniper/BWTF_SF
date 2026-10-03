@@ -57,10 +57,10 @@ impact_table.json; smoothed by impact.smooth_table. Both specs are stamped
 geo_v1 / two_stage_v1, so a reader keyed by GEO_V1 can tell them from a stages
 bundle (Part B 14).
 
-Spec files (§7) are read by ``load_s3_spec`` / ``load_s4_spec`` and checked
-against the geography (stamp, link ids, outfalls, units, monotone tails); a
+Specs (§7) are checked against the geography by ``check_s3_spec`` /
+``check_s4_spec`` (stamp, link ids, outfalls, units, monotone tails); a
 mismatch raises, nothing defaults. No IO at import; files are read only by the
-two loaders and the adapter, and nothing is ever written into data/models/.
+adapter, and nothing is ever written into data/models/.
 """
 from __future__ import annotations
 
@@ -475,16 +475,6 @@ def check_s4_spec(spec: dict, geo) -> dict:
     if rnd is not None and (not isinstance(rnd, int) or rnd < 0):
         raise ValueError(f"S4 spec legacy round_out must be a whole number of decimals, got {rnd!r}")
     return spec
-
-
-def load_s3_spec(path, geo) -> dict:
-    """Read and check an s3_links.json (§7)."""
-    return check_s3_spec(json.loads(Path(path).read_text()), geo)
-
-
-def load_s4_spec(path, geo) -> dict:
-    """Read and check an s4_quality.json (§7)."""
-    return check_s4_spec(json.loads(Path(path).read_text()), geo)
 
 
 # ── co-firing shares and union rules from the ledger ───────────────────────

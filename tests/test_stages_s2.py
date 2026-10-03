@@ -284,14 +284,14 @@ def test_the_protocol_stamp_is_checked_against_the_protocol_text():
     import tempfile
     text = X.PROTOCOL.read_text()
     sha = re.search(r"^protocol sha256: ([0-9a-f]{64})$", text, re.M).group(1)
-    assert S.protocol_stamp() == f"{SP.PROTOCOL_VERSION}@{sha}"
+    assert X.protocol_stamp() == f"{SP.PROTOCOL_VERSION}@{sha}"
     assert hashlib.sha256(text.replace(sha, "<filled at commit>", 1).encode()).hexdigest() == sha
     real = X.PROTOCOL
     with tempfile.TemporaryDirectory() as d:
         try:
             X.PROTOCOL = Path(d) / real.name
             X.PROTOCOL.write_text(text.replace("never pooled with T1", "never pooled with T1 ", 1))
-            _raises(S.protocol_stamp, "edited after its freeze")
+            _raises(X.protocol_stamp, "edited after its freeze")
         finally:
             X.PROTOCOL = real
 

@@ -264,7 +264,7 @@ def test_models_side_by_side_share_their_days():
 def test_scores_carry_the_manifest_and_are_current():
     sc = _scores()
     assert sc["schema"] == S.SCHEMA == "bwtf.stages.s1/1"
-    assert sc["protocol"] == S.protocol_stamp() and sc["protocol"].startswith(f"{SP.PROTOCOL_VERSION}@")
+    assert sc["protocol"] == X.protocol_stamp() and sc["protocol"].startswith(f"{SP.PROTOCOL_VERSION}@")
     assert re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+00:00", sc["built_at"]), sc["built_at"]
     want = {str(p.relative_to(ROOT)) for p in S.input_files()}
     assert set(sc["inputs"]) == want, sorted(set(sc["inputs"]) ^ want)

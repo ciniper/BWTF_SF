@@ -737,16 +737,14 @@ def test_write_round_trip():
             assert back["zone_median_mg"] == f["spec"]["zone_median_mg"]
             fo = next(x for x in _inputs().fitted.folds if (x.tier, x.fold) == key)
             SB.check_fit_span(back, "s4", fo, "test")
-        p2 = M.write(st, out_dir=Path(tmp) / "plain", sc=sc)
-        C.load_s4_spec(p2, G.get("sfpuc4_v1"))
-    for kw in ({}, {"root": M.CANDIDATES_ROOT}, {"out_dir": M.OUT_DIR}):    # not under stages_candidates/, however named
+    for kw in ({}, {"root": M.CANDIDATES_ROOT}):                          # not under stages_candidates/, however named
         try:
-            M.write(st, sc=sc, **kw)
+            M.write(st, "sfpuc4_s4_v3_test", sc=sc, **kw)
             raise AssertionError(f"a 50-resample artifact was written to the candidates' directory ({kw})")
         except ValueError as e:
             assert "2000" in str(e) or "2,000" in str(e), (kw, e)
     try:
-        M.write(st, out_dir=FORECAST / "data" / "models" / "nope", sc=sc)
+        M.write(st, "sfpuc4_s4_v3_test", root=FORECAST / "data" / "models" / "nope", sc=sc)
         raise AssertionError("a write outside stages_candidates/ was accepted")
     except ValueError as e:
         assert "stages_candidates" in str(e)

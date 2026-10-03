@@ -2,9 +2,9 @@
 co-firing matrix and the East union rule chosen nested (STAGES_DESIGN.md §3.3, §2.4, §7; Part B 1, 2;
 STAGES_PROTOCOL.md §2, §8 S3a / S3b).
 
-On committed data, no network (counts as of the data end 2026-08-17):
-  - the folds are stages_s2's, as whole training seasons; the development heads refit per fold are
-    stages_s2's fold heads, prediction for prediction;
+On committed data, no network (counts as of the data end 2026-08-17), fit on the A5 winner's stage candidate's
+own S2 (sfpuc4_shared8_v1):
+  - the folds are stages_s2's, as whole training seasons;
   - the shares are fit on out-of-sample v̂, never the filed volume: every fit day's v̂ comes from a head
     without the day's season, the spec's coefficients are a fit on that v̂ alone, a fit on the filed
     volume differs, and scrambling the filed volumes moves the size medians but never a share;
@@ -15,8 +15,8 @@ On committed data, no network (counts as of the data end 2026-08-17):
   - identity links are exact (share 1, φ 1, 0 mismatches on every X-S3-ID row under every rule);
   - every union rule stays inside the Fréchet bounds; the rule is chosen by inner leave-one-season-out,
     max (the default) unless a challenger is better on the inner rows' storm-block CI;
-  - S3b is verify.paired_delta on storm blocks with the p-value and CIs Holm needs; Holm's steps;
-  - the spec passes compose_v2 (file and every fold), and saves and loads through stages_candidates;
+  - S3b is verify.paired_delta on storm blocks with the p-value and CIs Holm needs (stages_build.holm's);
+  - the spec saves and loads through stages_candidates and passes compose_v2 (file and every fold);
   - the assemble step: the stage candidate's own S2 (candidate_s2) keeps each fold's design, reproduces what
     the build scores and refits inner folds on that design only; a season whose inner Westside head would be
     under the 20-event floor is left out of the share fit and recorded; the candidate's committed spec is a
@@ -60,13 +60,19 @@ from shared import geography as G  # noqa: E402
 AS_OF = pd.Timestamp("2026-08-17")     # the committed data's end: every count below is as of this day
 N_BOOT = 200                           # the tests' bootstrap (the written spec uses the protocol's 2,000)
 GEO = G.get("sfpuc4_v1")
+CANDIDATE = "sfpuc4_shared8_v1"        # the A5 winner's stage candidate (stages_s2_sfpuc4's committed bake-off)
 WEST_DAYS_T2 = 98                      # T2 oracle rows of the two Westside zones (48 Ocean Beach + 50 Baker & China), as of AS_OF
 EAST_ROWS_T2 = 3088                    # T2 East rain-known rows scored, as of AS_OF (the served set's GEO_V1 East: the same 3088)
 
 
 @functools.lru_cache(maxsize=None)
-def _s2():
-    return S.dev_s2()
+def _cand():
+    return S.candidate_s2(CANDIDATE)
+
+
+def _s2(fold):
+    """The fold's S2 (the candidate's, with the design that fold's S2 was made with)."""
+    return S.fold_s2(_cand(), fold)
 
 
 @functools.lru_cache(maxsize=None)
@@ -76,7 +82,7 @@ def _tr():
 
 @functools.lru_cache(maxsize=None)
 def _res():
-    return S.run(_s2(), _tr(), n_boot=N_BOOT, log=lambda *a: None)
+    return S.run(_cand(), _tr(), n_boot=N_BOOT, log=lambda *a: None)
 
 
 def _final():
@@ -92,7 +98,7 @@ def raises(fn, text: str):
     raise AssertionError(f"did not raise (expected {text!r})")
 
 
-# ── folds and the development S2 ────────────────────────────────────────────
+# ── folds ─────────────────────────────────────────────────────────────────────
 
 def test_the_folds_are_stages_s2s_as_whole_training_seasons():
     folds = S.plan()
@@ -112,34 +118,11 @@ def test_the_folds_are_stages_s2s_as_whole_training_seasons():
     assert S.inner_seasons(final) == S2.T2_SEASONS          # the final union pick reads all nine T2 seasons
 
 
-def test_the_dev_heads_are_stages_s2s_fold_heads():
-    s2 = _s2()
-    g1 = G.get("geo_v1")
-    assert {lk.outfalls for lk in g1.links_from("westside")} == {lk.outfalls for lk in GEO.links_from("westside")}
-    fitted = S2.fit(CAND.served_info()["name"])                # the served set's folds: T1, T1-holdout, T2
-    frame = s2.frames[fitted.set.heads["westside"]["rain_source"]]
-    days = frame.index[(frame.index >= "2016-07-01") & (frame.index <= AS_OF)]
-    by = {f.key: f for f in S.plan()}
-    for f in fitted.folds:
-        theirs = T4.predicted_volume(f.heads["westside"], frame.loc[days])
-        mine = s2.predict("westside", S.VHAT, by[(f.tier, f.fold)].seasons, days)
-        assert np.abs(mine - theirs).max() < 1e-9, (f.tier, f.fold, float(np.abs(mine - theirs).max()))
-        assert s2.seen("westside", S.VHAT, by[(f.tier, f.fold)].seasons).isin(pd.DatetimeIndex(f.seen["westside"])).all()
-
-
-def test_the_dev_s2_keeps_every_weight_nonnegative():
-    s2 = _s2()
-    for b in ("central", "south"):
-        for f in S.plan():
-            m = s2.fitted(b, S.P, f.seasons)["model"]
-            assert (m.named_steps["lr"].coef_ >= -1e-12).all(), (b, f.key)
-    assert s2.designs[("central", S.P)]["rain_source"] == "SF Downtown"
-
-
 # ── shares on v̂ ────────────────────────────────────────────────────────────
 
 def test_shares_are_fit_on_out_of_sample_v_hat_never_the_filed_volume():
-    s2, tr, ff = _s2(), _tr(), _final()
+    tr, ff = _tr(), _final()
+    s2 = _s2(ff.fold)
     t = ff.table
     assert not any("vol" in c for c in t.columns)            # the fit table holds no filed volume at all
     # every fit day's v̂ is the fold's head design refit without that day's season
@@ -149,13 +132,13 @@ def test_shares_are_fit_on_out_of_sample_v_hat_never_the_filed_volume():
         assert str(int(s)) not in g["head_seasons"].iloc[0].split(",")
     insample = s2.predict("westside", S.VHAT, ff.fold.seasons, t["date"])
     assert (np.abs(insample - t["v_hat"].to_numpy()) > 1e-6).mean() > 0.9   # not the fold head's in-sample v̂
-    # why (as of AS_OF): the GBR head's in-sample v̂ is nearly the filed volume, the out-of-fold v̂ is not
+    # why (as of AS_OF): the head's in-sample v̂ is closer to the filed volume than the out-of-fold v̂ a scored day gets
     d = t.drop_duplicates("date")
     fv = tr.basin[tr.basin["basin"] == "westside"].set_index("date")["volume_mg"].reindex(d["date"]).to_numpy(dtype=float)
     ok = np.isfinite(fv)
     r = lambda v: np.corrcoef(np.log1p(fv[ok]), np.log1p(v[ok]))[0, 1]  # noqa: E731
     assert (len(d), int(ok.sum())) == (51, 49)
-    assert r(s2.predict("westside", S.VHAT, ff.fold.seasons, d["date"])) > 0.96 and r(d["v_hat"].to_numpy()) < 0.85
+    assert r(s2.predict("westside", S.VHAT, ff.fold.seasons, d["date"])) > r(d["v_hat"].to_numpy())
     # the spec's coefficients are the fit on that v̂ alone …
     again = S.fit_shares(t)
     top = _res().spec["links"]
@@ -208,9 +191,9 @@ def test_shares_vol_shares_and_medians_read_as_of_the_data_end():
     assert 0 < ff.phi["westside>baker_china"] < 1
     assert all(ff.phi[lk.id] == 1.0 for lk in GEO.links if lk.identity)
     assert set(ff.medians) == set(GEO.keys) and all(v > 0 for v in ff.medians.values())
-    for ff_ in _res().fits.values():
+    for ff_ in _res().fits.values():                                    # a fold that left seasons out fits on fewer
         for lid, s in ff_.shares.items():
-            assert 0 < s["constant"] < 1 and s["n"] >= 35, (ff_.fold.key, lid)
+            assert 0 < s["constant"] < 1 and s["n"] >= (16 if ff_.dropped else 41), (ff_.fold.key, lid)
 
 
 # ── folds never see their season ────────────────────────────────────────────
@@ -262,11 +245,12 @@ def test_every_fitted_part_is_refit_per_fold_on_its_training_days():
     yes = lambda s: s.fillna(False).astype(bool).to_numpy()  # noqa: E731  (a nullable flag: NA, unknown, is no)
     for key, ff in res.fits.items():
         days = S.train_days(ff.fold.seasons)
+        fit_days = S.train_days(ff.fold.seasons - {int(s) for s in ff.dropped})     # the share fit's (fit_table)
         b = tr.basin[tr.basin["date"].isin(days).to_numpy() & yes(tr.basin["y"] == 1) & ~yes(tr.basin["volq"])]
         for k in GEO.keys:                                                  # one size median per basin
             assert ff.medians[k] == float(np.median(b.loc[b["basin"] == k, "volume_mg"].to_numpy(dtype=float))), (key, k)
         bv = b.set_index(["basin", "date"])["volume_mg"]
-        o = tr.oracle[(tr.oracle["excl"] == "") & tr.oracle["date"].isin(days)]
+        o = tr.oracle[(tr.oracle["excl"] == "") & tr.oracle["date"].isin(fit_days)]
         for lk in GEO.links:
             if lk.identity:
                 continue
@@ -338,12 +322,14 @@ def test_every_union_rule_stays_inside_the_frechet_bounds():
             assert ((e >= np.maximum(pc, ps) - 1e-15) & (e <= np.minimum(1, pc + ps) + 1e-15)).all(), (rule, pi_c)
 
 
-PICKS = {("T1-holdout", S2.FOLD_HOLDOUT): "noisy_or"}   # as of AS_OF: noisy_or is better than max on the pre-holdout
-                                                          # inner rows; every other fold keeps the default max
+# as of AS_OF: the folds where a challenger is better than max on the inner rows; 2016-17 and 2024-25 keep the default
+PICKS = {("T1", S2.FOLD_FINAL): "noisy_or", ("T1-holdout", S2.FOLD_HOLDOUT): "noisy_or", ("T2", "2017-18"): "cofire",
+         ("T2", "2018-19"): "noisy_or", ("T2", "2019-20"): "noisy_or", ("T2", "2020-21"): "noisy_or",
+         ("T2", "2021-22"): "cofire", ("T2", "2022-23"): "noisy_or", ("T2", "2023-24"): "noisy_or"}
 
 
 def test_the_union_rule_is_chosen_by_inner_leave_one_season_out():
-    res, s2, tr = _res(), _s2(), _tr()
+    res, tr = _res(), _tr()
     for key, ff in res.fits.items():
         u = ff.union
         assert set(u["inner"]) == {str(s) for s in S.inner_seasons(ff.fold)}, key
@@ -362,14 +348,14 @@ def test_the_union_rule_is_chosen_by_inner_leave_one_season_out():
         g = res.union[(res.union["tier"] == key[0]) & (res.union["fold"] == key[1])]
         assert np.array_equal(g["nested"].to_numpy(), g[u["rule"]].to_numpy()), key
         for b in ("central", "south"):                    # the scored rows' p: S2 fit on the fold's seasons only
-            assert np.abs(g[f"p_{b}"].to_numpy() - s2.predict(b, S.P, ff.fold.seasons, g["date"])).max() < 1e-12, (key, b)
+            assert np.abs(g[f"p_{b}"].to_numpy() - _s2(ff.fold).predict(b, S.P, ff.fold.seasons, g["date"])).max() < 1e-12, (key, b)
     # a lower Brier score alone never moves the rule: some fold's lowest is a challenger that is not better
     assert any(ff.union["pick"]["lowest"] != ff.union["rule"] for ff in res.fits.values())
     # one inner season recomputed by hand: S2 and π refit without it (and without the fold's own season)
     ff = res.fits[("T2", "2020-21")]
     ins = ff.fold.seasons - {2018}
     cof = C.cofire(GEO, S.fold_events(tr, ins))
-    rows = S.chained_rows(tr, s2, ins, cof, S.train_days({2018}))
+    rows = S.chained_rows(tr, _s2(ff.fold), ins, cof, S.train_days({2018}))
     for rule in S.RULES:
         assert abs(float(((rows[rule] - rows["y"]) ** 2).sum()) - ff.union["inner"]["2018"]["sse"][rule]) < 1e-12
     assert ff.union["inner"]["2018"]["train_seasons"] == sorted(ins)
@@ -409,7 +395,7 @@ def test_pick_union_keeps_the_default_unless_a_challenger_is_better():
     raises(lambda: pick({"max": base, "noisy_or": base[:-1]}), "one set of rows")
 
 
-# ── S3b and Holm ────────────────────────────────────────────────────────────
+# ── S3b ─────────────────────────────────────────────────────────────────────
 
 def test_s3b_is_the_paired_brier_difference_on_storm_blocks_with_holms_inputs():
     res, tr = _res(), _tr()
@@ -430,7 +416,7 @@ def test_s3b_is_the_paired_brier_difference_on_storm_blocks_with_holms_inputs():
     filed = tr.basin[tr.basin["basin"] == "westside"].set_index("date")["volume_mg"].astype(float)
     for key, g in res.oracle.groupby(["tier", "fold"]):
         ff = res.fits[key]
-        head = _s2().predict("westside", S.VHAT, ff.fold.seasons, g["date"])
+        head = _s2(ff.fold).predict("westside", S.VHAT, ff.fold.seasons, g["date"])
         assert np.abs(g["v_hat"].to_numpy() - head).max() < 1e-9, key
         fv = filed.reindex(g["date"]).to_numpy()
         assert (np.abs(g["v_hat"].to_numpy() - fv)[np.isfinite(fv)] > 1e-6).all(), key
@@ -442,31 +428,22 @@ def test_s3b_is_the_paired_brier_difference_on_storm_blocks_with_holms_inputs():
             assert (gz["constant"] == ff.shares[lid]["constant"]).all()
 
 
-def test_holm_steps_down():
-    h = S.holm({"S3a": 0.01, "S3b": 0.04})
-    assert h["S3a"] == {"p": 0.01, "rank": 1, "level": 0.025, "reject": True}
-    assert h["S3b"]["level"] == 0.05 and h["S3b"]["reject"]
-    h = S.holm({"S3a": 0.03, "S3b": 0.001})
-    assert h["S3b"]["level"] == 0.025 and h["S3b"]["reject"] and h["S3a"]["level"] == 0.05 and h["S3a"]["reject"]
-    h = S.holm({"S3a": 0.06, "S3b": 0.001})
-    assert h["S3b"]["reject"] and not h["S3a"]["reject"]
-    h = S.holm({"S3a": 0.03, "S3b": 0.04})
-    assert not h["S3a"]["reject"] and not h["S3b"]["reject"]          # 0.03 ≥ 0.025 stops the steps
-    h = S.holm({"S3a": float("nan"), "S3b": 0.001})
-    assert h["S3b"]["reject"] and not h["S3a"]["reject"]
-
-
 # ── the spec ────────────────────────────────────────────────────────────────
 
-def test_the_spec_loads_in_compose_v2_with_every_fold_and_arm():
+def test_the_spec_saves_loads_and_composes_with_every_fold_and_arm():
     res = _res()
     spec = res.spec
     assert (spec["geography"], spec["pipeline"], spec["kind"]) == ("sfpuc4_v1", "stages_v1", S.KIND)
-    assert spec["fit"]["protocol"] == S2.protocol_stamp() and spec["fit"]["as_of"] == str(AS_OF.date())
+    assert spec["fit"]["protocol"] == S.X.protocol_stamp() and spec["fit"]["as_of"] == str(AS_OF.date())
     with tempfile.TemporaryDirectory() as d:
-        path = S.write(spec, out_dir=Path(d))
-        loaded = C.load_s3_spec(path, GEO)
+        path = S.write(spec, "sfpuc4_test", root=d)
+        saved = json.loads(path.read_text())
+        assert (saved["set"], saved["component"], saved["geography"], saved["pipeline"]) == ("sfpuc4_test", S.KIND, "sfpuc4_v1", "stages_v1")
+        st = S._saver().load_set("sfpuc4_test", root=d)
+        assert st.components == {"s3": S.KIND}
+        loaded = S.for_compose(st.s3_links)
         assert loaded == json.loads(json.dumps(spec))
+        raises(lambda: S.for_compose({k: v for k, v in saved.items() if k != "set"}), "lacks ['set']")
     for key in res.fits:
         for arm in S.ARMS:
             sp = S.fold_spec(spec, *key, arm=arm)
@@ -485,86 +462,39 @@ def test_the_spec_loads_in_compose_v2_with_every_fold_and_arm():
     assert "curve" not in json.dumps(spec["fit"]["scores"])
 
 
-def test_the_spec_saves_and_loads_through_stages_candidates():
-    SC = S._saver()
-    if SC is None:
-        assert not (MODELS / "stages_candidates.py").exists(), "stages_candidates.py exists but the saver did not load"
-        print("  (stages_candidates.save_component not present: the spec falls back to _s3_links/)")
-        return
-    res = _res()
-    with tempfile.TemporaryDirectory() as d:
-        path = S.write(res.spec, name="sfpuc4_test", root=d)
-        saved = json.loads(path.read_text())
-        assert (saved["set"], saved["component"], saved["geography"], saved["pipeline"]) == ("sfpuc4_test", S.KIND, "sfpuc4_v1", "stages_v1")
-        st = SC.load_set("sfpuc4_test", root=d)
-        assert st.components == {"s3": S.KIND}
-        spec = S.load("sfpuc4_test", root=d)
-        assert spec == json.loads(json.dumps(res.spec))
-        raises(lambda: S.for_compose({k: v for k, v in saved.items() if k != "set"}), "lacks ['set']")
-
-
 def test_writing_refuses_unprotocol_scores_and_paths_outside_stages_candidates():
     res = _res()
-    raises(lambda: S.write(res.spec), "protocol's 2000")                 # N_BOOT = 200 never reaches the real directory
-    raises(lambda: S.write(res.spec, out_dir=S.FORECAST / "data" / "models" / "candidates"), "stages_candidates/ only")
-    raises(lambda: S.write(res.spec, out_dir=S.REPO / "app"), "stages_candidates/ only")        # nowhere else in the repo either
-    raises(lambda: S.write(res.spec, root=S.FORECAST / "data" / "models"), "stages_candidates/ only")
+    raises(lambda: S.write(res.spec, "sfpuc4_test"), "protocol's 2000")        # N_BOOT = 200 never reaches the real directory
+    for d in (S.FORECAST / "data" / "models" / "candidates", S.REPO / "app", S.FORECAST / "data" / "models"):
+        raises(lambda: S.write(res.spec, "sfpuc4_test", root=d), "stages_candidates/ only")    # nowhere else in the repo
     bad = json.loads(json.dumps(res.spec))
     bad["links"]["westside>ocean"]["outfalls"] = ["CSD-001"]
-    raises(lambda: S.write(bad, out_dir=Path(tempfile.gettempdir())), "westside>ocean")
+    with tempfile.TemporaryDirectory() as d:
+        raises(lambda: S.write(bad, "sfpuc4_test", root=d), "westside>ocean")
 
 
 def test_bad_inputs_raise():
-    s2, tr = _s2(), _tr()
+    tr = _tr()
+    s2 = _s2(_final().fold)
     raises(lambda: s2.predict("westside", S.VHAT, {2016}, pd.date_range("2018-01-01", periods=3)), "floor")
-    raises(lambda: s2.predict("north_shore", S.P, {2016, 2017}, pd.date_range("2018-01-01", periods=3)), "no p for 'north_shore'")
-    raises(lambda: s2.predict("central", S.P, _final().fold.seasons, pd.date_range("2030-01-01", periods=2)), "frame lacks")
+    raises(lambda: s2.predict("southeast", S.P, {2016, 2017}, pd.date_range("2018-01-01", periods=3)), "no basin 'southeast'")
+    raises(lambda: s2.predict("central", S.P, _final().fold.seasons, pd.date_range("2030-01-01", periods=2)), "inputs lack")
     raises(lambda: S.fit_table(dataclasses.replace(_final().fold, seasons=frozenset({2015})), s2, tr), "no Westside overflow day")
     raises(lambda: S.build_spec(GEO, {}, "size_blend", {}, 1.0, {}, "max"), "unknown share arm")
     raises(lambda: S.for_compose(json.loads(json.dumps(_res().spec))), "lacks")
     raises(lambda: S.fold_spec(_res().spec, "T2", "2030-31"), "holds 0 folds")
 
 
-def test_the_committed_spec_is_current():
-    """The committed development spec (stage candidate DEV_SET) holds what a fresh fit gives: links, union, co-firing
-    shares and every fold's coefficients (scores aside: the tests' bootstrap is smaller)."""
-    SC = S._saver()
-    path = (S.CANDIDATES_ROOT / S.DEV_SET / S.SPEC_FILE) if SC is not None else (S.OUT_DIR / S.SPEC_FILE)
-    if not path.exists():
-        print(f"  (no committed {path.relative_to(ROOT)} yet)")
-        return
-    got = S.load() if SC is not None else C.load_s3_spec(path, GEO)
-    want = json.loads(json.dumps(_res().spec))
-    for k in ("geography", "pipeline", "kind", "links", "union", "cofire"):
-        assert got[k] == want[k], k
-    assert got["fit"]["folds"] == want["fit"]["folds"]
-    assert got["fit"]["bootstrap"]["protocol"] is True
-
-
 # ── the assemble step: the stage candidate's own S2 (Part B 2) ──────────────
 
-CANDIDATE = "sfpuc4_shared8_v1"        # the A5 winner's stage candidate (stages_s2_sfpuc4's committed bake-off)
 # as of AS_OF: the folds whose Westside head refit without one season reads under 20 known-volume events (35 in
 # all through 2025-10-31; 2018-19 holds 7, 2022-23 holds 9), so those seasons' fit days are left out
 DROPPED_AS_OF = {("T1-holdout", S2.FOLD_HOLDOUT): {"2018": 19, "2022": 17}, ("T2", "2018-19"): {"2022": 19},
                  ("T2", "2022-23"): {"2018": 19}}
 
 
-@functools.lru_cache(maxsize=None)
-def _cand():
-    SC = S._saver()
-    if SC is None or not (S.CANDIDATES_ROOT / CANDIDATE / "manifest.json").exists():
-        return None
-    return S.candidate_s2(CANDIDATE)
-
-
-@functools.lru_cache(maxsize=None)
-def _cres():
-    return S.run(_cand(), _tr(), n_boot=N_BOOT, log=lambda *a: None)
-
-
 def _results() -> dict:
-    return json.loads((S.CANDIDATES_ROOT / "_bakeoff" / "results.json").read_text())
+    return json.loads((S._saver().ROOT / "_bakeoff" / "results.json").read_text())
 
 
 def test_the_candidates_s2_is_each_folds_own_design():
@@ -573,9 +503,6 @@ def test_the_candidates_s2_is_each_folds_own_design():
     scores (the saved finals and siblings exactly, the bake-off's T2 rows to its solver's 1e-5, re-derived here);
     an inner refit reads the fold's design and never the inner season or the fold's own; every weight ≥ 0."""
     c = _cand()
-    if c is None:
-        print(f"  (no stage candidate {CANDIDATE} yet)")
-        return
     import stages_s2_sfpuc4 as S2C
     r = _results()
     fc = S2C.fold_choices(r)
@@ -587,7 +514,7 @@ def test_the_candidates_s2_is_each_folds_own_design():
         assert fid["p_max_abs"] <= tol and fid["v_hat_max_rel"] <= (S.V_FIDELITY_RTOL if f.tier == "T2" else S.EXACT_TOL), (f.key, fid)
     assert {c.choices[k].contender for k in c.choices if k[0] == "T2"} == set(r["nested"]["picked_by_fold"].values())
     # the bake-off's T2 rows of one fold, re-derived here: p to the C-path solver's 1e-5, v̂ to 6 significant digits
-    rows = SB.bakeoff_rows(S.CANDIDATES_ROOT / "_bakeoff" / "rows.csv.gz", GEO)
+    rows = SB.bakeoff_rows(S._saver().ROOT / "_bakeoff" / "rows.csv.gz", GEO)
     f = next(x for x in S.plan() if x.key == ("T2", "2021-22"))
     g = rows[(rows["arm"] == "procedure") & (rows["fold"] == "2021-22") & (rows["basin"] == "central")].sort_values("date")
     fs = c.for_fold(f)
@@ -611,12 +538,12 @@ def test_seasons_whose_inner_head_is_under_the_floor_are_not_fit_on():
     """fit_table: a season whose inner Westside head would read under 20 known-volume events has no out-of-sample v̂
     (no declared Westside fallback, Part B 7), so its fit days are left out and recorded; the candidate's folds do
     this exactly where n_fit says (as of AS_OF: DROPPED_AS_OF); no other season is touched; a fold left with no fit
-    day raises. The development stand-in drops nothing."""
-    assert not any(ff.dropped for ff in _res().fits.values())
+    day raises."""
     tr = _tr()
-    s2 = _s2()
+    fold = _final().fold
+    s2 = _s2(fold)
 
-    class Floored:                                   # the dev S2 with one season's inner head under the floor
+    class Floored:                                   # the final fold's S2 with one season's inner head under the floor
         name = s2.name
 
         def n_fit(self, basin, what, seasons):
@@ -625,7 +552,6 @@ def test_seasons_whose_inner_head_is_under_the_floor_are_not_fit_on():
         def predict(self, *a):
             return s2.predict(*a)
 
-    fold = _final().fold
     full, dropped = S.fit_table(fold, s2, tr), {}
     cut = S.fit_table(fold, Floored(), tr, dropped)
     assert set(dropped) == {"2018"} and dropped["2018"]["n_rows"] == int((full["season"] == 2018).sum()) > 0
@@ -637,11 +563,9 @@ def test_seasons_whose_inner_head_is_under_the_floor_are_not_fit_on():
             return 0
 
     raises(lambda: S.fit_table(fold, AllFloored(), tr, {}), "under the floor")
-    if _cand() is None:
-        return
-    res = _cres()
+    res = _res()
     for key, ff in res.fits.items():
-        fs = S.fold_s2(_cand(), ff.fold)
+        fs = _s2(ff.fold)
         with_rows = set(ff.table["season"].astype(int)) | {int(s) for s in ff.dropped}
         n = {s: fs.n_fit("westside", S.VHAT, ff.fold.seasons - {s}) for s in with_rows}
         want = {str(s): k for s, k in n.items() if k < S.HEAD_MIN_EVENTS}
@@ -654,12 +578,8 @@ def test_seasons_whose_inner_head_is_under_the_floor_are_not_fit_on():
 def test_the_candidates_committed_spec_is_current():
     """The candidate's s3_links.json (stages_candidates.assemble) holds what a fresh fit on its own S2 gives, and
     says so (sources.s2.name: the candidate itself, never the development stand-in)."""
-    c = _cand()
-    if c is None or S._saver().load_set(CANDIDATE).s3_links is None:
-        print(f"  (no s3_links.json in {CANDIDATE} yet)")
-        return
-    got = S.load(CANDIDATE)
-    want = json.loads(json.dumps(_cres().spec))
+    got = S.for_compose(S._saver().load_set(CANDIDATE).s3_links)
+    want = json.loads(json.dumps(_res().spec))
     for k in ("geography", "pipeline", "kind", "links", "union", "cofire"):
         assert got[k] == want[k], k
     assert got["fit"]["folds"] == want["fit"]["folds"]
@@ -709,9 +629,6 @@ def test_todays_split_reads_the_served_groups_as_the_city_links():
 
 def test_the_split_candidates_committed_spec():
     SC = S._saver()
-    if SC is None or not (S.CANDIDATES_ROOT / SPLIT_SET / "manifest.json").exists():
-        print(f"  (no stage candidate {SPLIT_SET} yet)")
-        return
     got, base = SC.load_set(SPLIT_SET).s3_links, SC.load_set(CANDIDATE).s3_links
     assert got["kind"] == got["component"] == S.SPLIT_KIND
     assert got["sources"]["s2"]["name"] == SPLIT_SET and got["sources"]["s2"]["records_from"] == CANDIDATE

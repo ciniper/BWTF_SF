@@ -373,13 +373,12 @@ def test_s5_is_chosen_only_on_a_current_served_build():
     """served_s5_scores reads the served set's written scores only while its build is current (inputs, code and
     protocol as the manifest pins them); a stale or other-protocol build refuses, so a stale table never picks S5."""
     import stages_build as SB
-    import stages_s2 as S2
     with _Tmp() as tmp:
         d = Path(tmp) / SB.served_name()
         d.mkdir()
         (d / "scores.json").write_text(json.dumps(_s5_scores({})))
         good = {"inputs": {}, "code": {"features/forecast/src/models/stages_build.py": hashlib.sha256(
-            (ROOT / "features/forecast/src/models/stages_build.py").read_bytes()).hexdigest()}, "protocol": S2.protocol_stamp()}
+            (ROOT / "features/forecast/src/models/stages_build.py").read_bytes()).hexdigest()}, "protocol": SB.X.protocol_stamp()}
         old = SB.STAGES_DIR
         try:
             SB.STAGES_DIR = Path(tmp)
