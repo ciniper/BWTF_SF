@@ -323,9 +323,20 @@ def test_live_dashboard_wiring_is_the_identity_without_observations_and_moves_wi
 def test_replay_report_exists_and_its_self_check_held():
     """replay_live.py wrote the archive-era replay: plain recomposition matched the
     stored risks, every variant is graded on the three rulers, and on the bayside
-    zones (labels independent of the feed) the live rules are no worse than the model
-    alone at the 50% line."""
+    zones (labels independent of the feed) the live rules catch at least as many of
+    the same bad days as the model alone at the 50% line. Counts only: no key weighs
+    a miss against a false alarm (STAGES_DESIGN.md A3)."""
     import json
+
+    def keys(o):
+        if isinstance(o, dict):
+            for k, v in o.items():
+                yield k
+                yield from keys(v)
+        elif isinstance(o, list):
+            for x in o:
+                yield from keys(x)
+
     res = json.loads((ROOT / "reports" / "2026-09_live_replay.json").read_text())
     assert res["self_check_worst_delta"] <= 0.001, res["self_check_worst_delta"]
     assert set(res["variants"]) >= {"plain", LR.VERSION, "no_downgrade", "no_samples", "cso_flags_only"}
@@ -334,7 +345,7 @@ def test_replay_report_exists_and_its_self_check_held():
             g = v["grades"][t_]
             assert {"combined", "discharge", "posted"} <= set(g) and all("bayside" in g[r] for r in ("combined", "discharge", "posted")), (name, t_)
     plain, live = res["variants"]["plain"]["grades"]["0.5"]["combined"]["bayside"], res["variants"][LR.VERSION]["grades"]["0.5"]["combined"]["bayside"]
-    assert live["cost"] <= plain["cost"] and live["tp"] >= plain["tp"], (plain, live)
+    assert live["tp"] + live["fn"] == plain["tp"] + plain["fn"] and live["tp"] >= plain["tp"], (plain, live)
     assert res["variants"]["plain"]["days_changed"] == {z: 0 for z in res["variants"]["plain"]["days_changed"]}
     assert (ROOT / "reports" / "2026-09_live_replay.html").exists()
     # the synthetic-feed replay over the out-of-sample years: same shape, degraded variants are means over draws
@@ -345,9 +356,18 @@ def test_replay_report_exists_and_its_self_check_held():
     assert syn["self_check_worst_delta"] <= 0.0025 and syn["cutoff"] == "start" and len(syn["feed"]["seeds"]) >= 3
     assert {"plain", LR.VERSION, LR.VERSION + "_perfect_feed", "no_downgrade", "no_samples", "cso_flags_only", "all_floors"} <= set(syn["variants"])
     pl, lv, pf = (syn["variants"][k]["grades"]["0.5"]["combined"] for k in ("plain", LR.VERSION, LR.VERSION + "_perfect_feed"))
-    assert lv["tp"] > pl["tp"] and pf["cost"] <= lv["cost"], (pl["tp"], lv["tp"], pf["cost"], lv["cost"])   # more confirmed-persistence days caught; the perfect feed is the bound
+    # more confirmed-persistence days caught; the perfect feed bounds the degraded one on both counts
+    assert lv["tp"] > pl["tp"] and pf["tp"] >= lv["tp"] and pf["fp"] <= lv["fp"], (pl, lv, pf)
     assert syn["feed"]["draws"] and all(d["dropped"] > 0 and d["lagged"] > 0 for d in syn["feed"]["draws"])
     assert (ROOT / "reports" / "2026-09_live_replay_synthetic.html").exists()
+    import re
+    for r, page in ((res, "2026-09_live_replay.html"), (syn, "2026-09_live_replay_synthetic.html")):
+        # A3: no cost, no per-zone cost, no cost range anywhere in either artifact
+        assert not [k for k in keys(r) if "cost" in k.lower() or k == "per_zone"], sorted({k for k in keys(r) if "cost" in k.lower()})
+        # every table lists the variants in their defined order, never sorted by a score
+        tables = (ROOT / "reports" / page).read_text().split("<table>")[1:]
+        rows = [re.findall(r"<tr><td><b>([^<]+)</b>", t.split("</table>")[0]) for t in tables]
+        assert len(rows) >= 6 and all(names == list(r["variants"]) for names in rows if len(names) > 1), (page, rows[:2])
 
 
 def test_link_zone_v1_puts_a_station_flag_in_after_the_split():

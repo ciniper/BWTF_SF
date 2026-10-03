@@ -21,7 +21,7 @@ fitters still read), eval_report.json and the other gb_v1 training artifacts
 (they describe the original training run and stay as its record).
 
 After promoting: re-export the explorers (served + the retired candidate),
-export_stage2_explorer, report_models; run `train_v4.py --rescore --replace-post`
+export_stage2_explorer, export_how_it_works; run `train_v4.py --rescore --replace-post`
 as the fidelity check (the served models must reproduce the stored zone risks);
 run the tests; deploy. Nothing here touches Supabase.
 

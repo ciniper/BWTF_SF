@@ -239,9 +239,6 @@ def test_snapshot_carries_the_model_stamp():
     assert m["live_corrections"] == live_rules.VERSION and m["input_rules"] == list(INPUT_RULES_LIVE)
     assert m["feature_set"] and m["build"] == build_info()["sha"]
     assert ld.LIVE.model_stamp() is m   # computed once per process
-    # the analysis report names the served set from the same constant, not a literal
-    src = (ROOT / "features/forecast/src/models/report_models.py").read_text()
-    assert '"name": "gb_v1"' not in src and "candidates.SERVED" in src
 
 
 if __name__ == "__main__":

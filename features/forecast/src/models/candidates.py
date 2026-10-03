@@ -36,10 +36,10 @@ NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{1,40}$")
 # the original gb_v1 bundle (stage 1 trees whose pickles still say "v4" — a
 # file name only; never call the model v4 — composed with stage 2 v1). The live
 # snapshot stamps itself with this (live_dashboard.model_stamp) so every
-# forecast_history row says which model made it; the analysis report, the
-# Model check and the explorers label the served set from it too. ``line`` is
-# the operating line the served set is meant to run at (the page's alarm and
-# the Model check's default).
+# forecast_history row says which model made it; the Model check, the reports
+# and the explorers label the served set from it too. ``line`` is kept as a
+# record of what the set was promoted at; nothing reads it to grade or to alert
+# (the Model check grades at the fixed risk levels, STAGES_DESIGN.md A3).
 SERVED_FILE = SERVE_DIR / "served.json"
 SERVED_DEFAULT = {"name": "gb_v1", "stage1": "gb_v1", "stage2": "v1", "artifact": "v4", "family": "gb", "line": 0.5}
 

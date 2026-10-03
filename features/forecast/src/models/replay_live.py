@@ -25,6 +25,10 @@ Variants: plain (models alone) · <VERSION> (all rules) · no_downgrade (recall 
 · no_samples · cso_flags_only. Self-check: the plain recomposition must match
 the artifact's stored group risks (≤ 0.001) before any grading counts.
 
+Graded as counts only: caught, missed and false alarms per ruler, line and
+subtotal. Nothing weighs a miss against a false alarm and nothing ranks the
+variants (STAGES_DESIGN.md A3); they are listed in the order they are defined.
+
 Synthetic feed (``--synthetic``): the filed CIWQS discharge days stand in for
 the feed's onsets over the OUT-OF-SAMPLE years (holdout-fit probabilities from
 Jul 2023, served ones after training), degraded with the archive's measured
@@ -32,7 +36,8 @@ imperfections — 13% of onsets never flagged, 60% of the rest appearing a day
 late — and BeachWatch's CSO postings as the flag-up windows; several random
 draws, mean and range reported. Silence in a synthetic feed is "truly no
 discharge" except for the dropped onsets, so the degradation is what makes the
-no-flag downgrade's cost visible at all. A perfect-feed run is the upper bound.
+no-flag downgrade's misses visible at all (it lowers real overflows the feed
+dropped or showed late). A perfect-feed run is the upper bound.
 
     venv/bin/python features/forecast/src/models/replay_live.py [--no-write] [--cutoff=end]
     → reports/2026-09_live_replay.html + .json
@@ -89,7 +94,6 @@ ZONE_ORDER = ["ocean", "baker_china", "north", "east"]
 BAYSIDE = ("north", "east")          # labels from CIWQS in every era — the clean comparison
 WESTSIDE = ("ocean", "baker_china")  # in the archive era the discharge labels ARE the feed onsets → circular for the onset rule
 LINES = (0.25, 0.5)
-WFN = 2   # a miss costs two false alarms (Chase)
 esc = html.escape
 _ZONE_OF_GROUP = {g: zk for zk, gs in ZONE_GROUPS.items() for g in gs}
 _BASIN_OF_GROUP = {g: bk for bk, gs in GROUPS_BY_BASIN.items() for g in gs}
@@ -288,22 +292,21 @@ def grade(days_v: list, label) -> dict:
     conf_d = zone_confusion(days_v, ZONE_ORDER, holdout_only=False, thresholds=LINES)
     conf_p = zone_confusion_posted(days_v, ZONE_ORDER, label, holdout_only=False, thresholds=LINES) if label is not None else None
     out = {}
+    counts = ("tp", "fn", "fp")   # caught, missed, false alarms: counted, never weighed against each other (A3)
     for thr in LINES:
         t = str(thr)
-        c = {k: sum(conf_c[z][t][k] for z in ZONE_ORDER) for k in ("tp", "fn", "fp")}
-        d = {k: sum(conf_d[z][t]["vs_discharge_posting"][k] for z in ZONE_ORDER) for k in ("tp", "fn", "fp")}
+        c = {k: sum(conf_c[z][t][k] for z in ZONE_ORDER) for k in counts}
+        d = {k: sum(conf_d[z][t]["vs_discharge_posting"][k] for z in ZONE_ORDER) for k in counts}
         def sub(zones_c: dict, keys) -> dict:
-            s_ = {k: sum(zones_c[z][k] for z in keys) for k in ("tp", "fn", "fp")}
-            return {**s_, "cost": s_["fp"] + WFN * s_["fn"]}
+            return {k: sum(zones_c[z][k] for z in keys) for k in counts}
         zc = {z: conf_c[z][t] for z in ZONE_ORDER}
         zd = {z: conf_d[z][t]["vs_discharge_posting"] for z in ZONE_ORDER}
-        row = {"combined": {**c, "cost": c["fp"] + WFN * c["fn"], "per_zone": {z: zc[z]["fp"] + WFN * zc[z]["fn"] for z in ZONE_ORDER},
-                            "zones": zc, "bayside": sub(zc, BAYSIDE), "westside": sub(zc, WESTSIDE)},
-               "discharge": {**d, "cost": d["fp"] + WFN * d["fn"], "zones": zd, "bayside": sub(zd, BAYSIDE), "westside": sub(zd, WESTSIDE)}}
+        row = {"combined": {**c, "zones": zc, "bayside": sub(zc, BAYSIDE), "westside": sub(zc, WESTSIDE)},
+               "discharge": {**d, "zones": zd, "bayside": sub(zd, BAYSIDE), "westside": sub(zd, WESTSIDE)}}
         if conf_p is not None:
             zp = {z: conf_p[z][t] for z in ZONE_ORDER}
-            p = {k: sum(zp[z][k] for z in ZONE_ORDER) for k in ("tp", "fn", "fp")}
-            row["posted"] = {**p, "cost": p["fp"] + WFN * p["fn"], "zones": zp, "bayside": sub(zp, BAYSIDE), "westside": sub(zp, WESTSIDE)}
+            p = {k: sum(zp[z][k] for z in ZONE_ORDER) for k in counts}
+            row["posted"] = {**p, "zones": zp, "bayside": sub(zp, BAYSIDE), "westside": sub(zp, WESTSIDE)}
         out[t] = row
     return out
 
@@ -329,12 +332,12 @@ def main(write: bool = True, cutoff: str = "start") -> dict:
     print(f"era {results['era'][0]} → {results['era'][1]}: {results['variants']['plain']['n_days']} days, {results['flag_days']} flag basin-days, {results['onset_days']} onset basin-days ({', '.join(results['onset_basins'])}); self-check worst Δ {worst:.4f}")
     for thr in LINES:
         t = str(thr)
-        print(f"-- {int(thr*100)}% line: variant | discharge+samples caught/bad, FP, cost | discharge days caught, FP, cost | postings caught, FP, cost | days changed per zone")
+        print(f"-- {int(thr*100)}% line: variant | discharge+samples caught/bad, FP | discharge days caught, FP | postings caught, FP | days changed per zone")
         for name, v in results["variants"].items():
             g = v["grades"][t]
             c, d, p = g["combined"], g["discharge"], g.get("posted")
             b = c["bayside"]
-            print(f"   {name:15} {c['tp']}/{c['tp']+c['fn']}, FP {c['fp']}, cost {c['cost']} (bayside only: {b['tp']}/{b['tp']+b['fn']}, FP {b['fp']}, cost {b['cost']}) | {d['tp']}/{d['tp']+d['fn']}, FP {d['fp']}, cost {d['cost']} | " + (f"{p['tp']}/{p['tp']+p['fn']}, FP {p['fp']}, cost {p['cost']}" if p else "—") + f" | {v['days_changed']}")
+            print(f"   {name:15} {c['tp']}/{c['tp']+c['fn']}, FP {c['fp']} (bayside only: {b['tp']}/{b['tp']+b['fn']}, FP {b['fp']}) | {d['tp']}/{d['tp']+d['fn']}, FP {d['fp']} | " + (f"{p['tp']}/{p['tp']+p['fn']}, FP {p['fp']}" if p else "—") + f" | {v['days_changed']}")
     if write:
         OUT_JSON.write_text(json.dumps(results, indent=1, default=str))
         OUT_HTML.write_text(render_html(results))
@@ -345,19 +348,17 @@ def main(write: bool = True, cutoff: str = "start") -> dict:
 def render_html(res: dict) -> str:
     css = (REPO / "features/forecast/src/models/stage2_explorer_template.html").read_text().split("<style>")[1].split("</style>")[0]
     v = res["variants"]
-    names = list(v)
+    names = list(v)   # the order the variants are defined in: listed, not ranked (A3)
 
     def table(ruler: str, thr: str) -> str:
-        h = [f'<table><tr><th>Variant</th><th class="num">caught</th><th class="num">missed</th><th class="num">false alarms</th><th class="num">cost (miss = {WFN} FA)</th><th class="num">bayside only: caught · FP · cost</th><th class="num">Westside only (circular): caught · FP · cost</th>' + ("".join(f'<th class="num">{esc(ZONES[z].label.split(" ")[0])} cost</th>' for z in ZONE_ORDER) if ruler == "combined" else "") + '<th class="num">days changed vs plain</th></tr>']
-        rows = sorted(names, key=lambda n: v[n]["grades"][thr][ruler]["cost"] if ruler in v[n]["grades"][thr] else 1e9)
-        for n in rows:
+        h = ['<table><tr><th>Variant</th><th class="num">caught</th><th class="num">missed</th><th class="num">false alarms</th><th class="num">bayside only: caught · false alarms</th><th class="num">Westside only (circular): caught · false alarms</th><th class="num">days changed vs plain</th></tr>']
+        for n in names:
             g = v[n]["grades"][thr].get(ruler)
             if not g:
                 continue
             bs, ws = g["bayside"], g["westside"]
-            h.append(f'<tr class="{"best" if n == rows[0] else ""}"><td><b>{esc(n)}</b></td><td class="num">{g["tp"]} of {g["tp"]+g["fn"]}</td><td class="num">{g["fn"]}</td><td class="num">{g["fp"]}</td><td class="num"><b>{g["cost"]}</b></td><td class="num">{bs["tp"]} of {bs["tp"]+bs["fn"]} · {bs["fp"]} · <b>{bs["cost"]}</b></td><td class="num fine">{ws["tp"]} of {ws["tp"]+ws["fn"]} · {ws["fp"]} · {ws["cost"]}</td>'
-                     + ("".join(f'<td class="num">{g["per_zone"][z]}</td>' for z in ZONE_ORDER) if ruler == "combined" else "")
-                     + f'<td class="num">{sum(v[n]["days_changed"].values())}</td></tr>')
+            h.append(f'<tr><td><b>{esc(n)}</b></td><td class="num">{g["tp"]} of {g["tp"]+g["fn"]}</td><td class="num">{g["fn"]}</td><td class="num">{g["fp"]}</td><td class="num">{bs["tp"]} of {bs["tp"]+bs["fn"]} · {bs["fp"]}</td><td class="num fine">{ws["tp"]} of {ws["tp"]+ws["fn"]} · {ws["fp"]}</td>'
+                     f'<td class="num">{sum(v[n]["days_changed"].values())}</td></tr>')
         h.append('</table>')
         return "".join(h)
 
@@ -367,23 +368,23 @@ def render_html(res: dict) -> str:
     zone_rows = [f'<table><tr><th>Zone (50%, primary ruler)</th><th>plain</th><th>{LIVE}</th></tr>']
     for z in ZONE_ORDER:
         a, b = v["plain"]["grades"]["0.5"]["combined"]["zones"][z], v[LIVE]["grades"]["0.5"]["combined"]["zones"][z]
-        f = lambda c: f'{c["tp"]} of {c["tp"]+c["fn"]} caught · {c["fp"]} false (clean-sample {c["fp_sample"]}, quiet {c["fp_quiet"]}) · cost {c["fp"] + WFN * c["fn"]}'  # noqa: E731
+        f = lambda c: f'{c["tp"]} of {c["tp"]+c["fn"]} caught · {c["fp"]} false (clean-sample {c["fp_sample"]}, quiet {c["fp_quiet"]})'  # noqa: E731
         zone_rows.append(f'<tr><td>{esc(ZONES[z].label)}</td><td>{f(a)}</td><td>{f(b)}</td></tr>')
     zone_rows.append('</table>')
     r = res["rules"]
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live corrections replay — {LIVE} vs the model alone</title><link rel="icon" href="/static/brand/favicon.ico">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-<style>{css} tr.best td{{background:#e0f0ea}}</style></head><body><div class="wrap">
+<style>{css}</style></head><body><div class="wrap">
 <header><h1>Live corrections replay: {LIVE} vs the model alone</h1>
-<p class="sub">Every day of the era recomposed with only what was known by the <b>end of the day before</b> — the start-of-day forecast — the served stage-1 probabilities, the feed's CSO onsets and flag days, samples published a day later — through <code>src/models/live_rules.py</code> exactly as serving does, then graded on the Model check's three rulers. A discharge day is never credited for its own flag; the corrections are judged on the tail they shape. Cost = false alarms + {WFN} × misses.</p>
+<p class="sub">Every day of the era recomposed with only what was known by the <b>end of the day before</b> — the start-of-day forecast — the served stage-1 probabilities, the feed's CSO onsets and flag days, samples published a day later — through <code>src/models/live_rules.py</code> exactly as serving does, then graded on the Model check's three rulers. A discharge day is never credited for its own flag; the corrections are judged on the tail they shape. The tables count days (caught, missed, false alarms) and list the variants in a fixed order: nothing weighs a miss against a false alarm.</p>
 <div class="meta"><span>era {esc(res["era"][0])} → {esc(res["era"][1])} ({v["plain"]["n_days"]} days)</span><span>{res["flag_days"]} flag basin-days · {res["onset_days"]} onset basin-days ({esc(", ".join(res["onset_basins"]))})</span><span>self-check: plain recomposition vs stored risks, worst Δ {res["self_check_worst_delta"]}</span><span>downgrade recall by quiet days {esc(json.dumps(r["downgrade"]["recall_by_quiet_days"]))}</span></div></header>
 <section><h2>Read this first</h2>
 <p class="lead">The only era with feed-flag data today is the 2016-17 Poo Bot archive. Its stage-1 probabilities are <b>in-sample</b> (the served models trained on these seasons), so every variant is flattered by the same amount — read the difference between rows, not the rows. <b>Read the bayside subtotal as the clean comparison:</b> North Shore and East labels come from CIWQS, independent of the feed. The Westside has no CIWQS per-event records before 2018, so its discharge labels in this era <i>are</i> the archive's feed onsets — the onset rule catches them by construction and that column is marked circular (the sample part of the primary ruler is still independent there). Snapshots came twice a day, so a flag that came and went between them is missed. The watcher era (Aug 2026 →) joins this page once the hindcast artifact is rescored past it.</p>
 <p class="lead">Variants: <b>plain</b> = the two-stage model alone · <b>{LIVE}</b> = every rule · <b>no_downgrade</b> = {LIVE} with the no-flag downgrade off · <b>no_samples</b> = {LIVE} without the sample floors and caps · <b>cso_flags_only</b> = onset, anchor, large volume and flag hold only.</p></section>
 <section>{"".join(sections)}</section>
 <section><h2>Per zone, 50% line, primary ruler</h2>{"".join(zone_rows)}</section>
-<footer>Generated by <code>features/forecast/src/models/replay_live.py</code>. Design: <code>features/forecast/LIVE_COMPOSITION_DESIGN.md</code>. <a href="/forecast">Back to the forecast</a> · <a href="/reports/2026-09_model_analysis.html">Model analysis</a></footer>
+<footer>Generated by <code>features/forecast/src/models/replay_live.py</code>. Design: <code>features/forecast/LIVE_COMPOSITION_DESIGN.md</code>. <a href="/forecast">Back to the forecast</a> · <a href="/reports/2026-10_forecast_stages.html">The five stages</a></footer>
 </div></body></html>"""
 
 
@@ -446,10 +447,10 @@ def _mean_grade(grades: list) -> dict:
         for ruler in grades[0][t]:
             keys = [k for k, v in grades[0][t][ruler].items() if isinstance(v, (int, float))]
             agg = {k: statistics.mean(g[t][ruler][k] for g in grades) for k in keys}
-            agg["range"] = {k: [min(g[t][ruler][k] for g in grades), max(g[t][ruler][k] for g in grades)] for k in ("tp", "fp", "cost")}
+            agg["range"] = {k: [min(g[t][ruler][k] for g in grades), max(g[t][ruler][k] for g in grades)] for k in ("tp", "fp")}
             for sub in ("bayside", "westside"):
                 if sub in grades[0][t][ruler]:
-                    agg[sub] = {k: statistics.mean(g[t][ruler][sub][k] for g in grades) for k in ("tp", "fn", "fp", "cost")}
+                    agg[sub] = {k: statistics.mean(g[t][ruler][sub][k] for g in grades) for k in ("tp", "fn", "fp")}
             if "zones" in grades[0][t][ruler]:
                 agg["zones"] = {z: {k: statistics.mean(g[t][ruler]["zones"][z][k] for g in grades) for k in grades[0][t][ruler]["zones"][z]} for z in ZONE_ORDER}
             out[t][ruler] = agg
@@ -493,12 +494,12 @@ def run_synthetic(write: bool = True, seeds=SYN_SEEDS) -> dict:
     print(f"synthetic feed, era {res['era'][0]} → {res['era'][1]} ({len(dv_plain)} days, {st_p['true_onset_days']} true onset basin-days; per draw ≈ {sum(s['dropped'] for s in feed_stats)/len(seeds):.0f} dropped, {sum(s['lagged'] for s in feed_stats)/len(seeds):.0f} lagged); self-check worst Δ {worst:.4f}")
     for thr in LINES:
         t = str(thr)
-        print(f"-- {int(thr*100)}% line: variant | discharge+samples caught/bad, FP, cost (bayside) | discharge days | postings")
+        print(f"-- {int(thr*100)}% line: variant | discharge+samples caught/bad, FP (bayside) | discharge days | postings")
         for name, v in res["variants"].items():
             g = v["grades"][t]
             c, d, p = g["combined"], g["discharge"], g.get("posted")
             b = c["bayside"]
-            print(f"   {name:21} {c['tp']:.1f}/{c['tp']+c['fn']:.0f}, FP {c['fp']:.1f}, cost {c['cost']:.1f} (bayside {b['tp']:.1f}/{b['tp']+b['fn']:.0f}, FP {b['fp']:.1f}, cost {b['cost']:.1f}) | {d['tp']:.1f}/{d['tp']+d['fn']:.0f}, FP {d['fp']:.1f}, cost {d['cost']:.1f} | " + (f"{p['tp']:.1f}/{p['tp']+p['fn']:.0f}, FP {p['fp']:.1f}, cost {p['cost']:.1f}" if p else "—"))
+            print(f"   {name:21} {c['tp']:.1f}/{c['tp']+c['fn']:.0f}, FP {c['fp']:.1f} (bayside {b['tp']:.1f}/{b['tp']+b['fn']:.0f}, FP {b['fp']:.1f}) | {d['tp']:.1f}/{d['tp']+d['fn']:.0f}, FP {d['fp']:.1f} | " + (f"{p['tp']:.1f}/{p['tp']+p['fn']:.0f}, FP {p['fp']:.1f}" if p else "—"))
     if write:
         OUT_SYN_JSON.write_text(json.dumps(res, indent=1, default=str))
         OUT_SYN_HTML.write_text(render_synthetic_html(res))
@@ -509,7 +510,7 @@ def run_synthetic(write: bool = True, seeds=SYN_SEEDS) -> dict:
 def render_synthetic_html(res: dict) -> str:
     css = (REPO / "features/forecast/src/models/stage2_explorer_template.html").read_text().split("<style>")[1].split("</style>")[0]
     v = res["variants"]
-    names = list(v)
+    names = list(v)   # the order the variants are defined in: listed, not ranked (A3)
     f1 = lambda x: f"{x:.0f}" if abs(x - round(x)) < 1e-9 else f"{x:.1f}"  # noqa: E731
 
     def rng(g, k):
@@ -517,14 +518,13 @@ def render_synthetic_html(res: dict) -> str:
         return f' <span class="fine">({f1(r[0])}–{f1(r[1])})</span>' if r and r[0] != r[1] else ""
 
     def table(ruler: str, thr: str) -> str:
-        h = [f'<table><tr><th>Variant</th><th class="num">caught</th><th class="num">missed</th><th class="num">false alarms</th><th class="num">cost (miss = {WFN} FA)</th><th class="num">bayside: caught · FP · cost</th><th class="num">Westside: caught · FP · cost</th><th class="num">days changed vs plain</th></tr>']
-        rows = sorted(names, key=lambda n: v[n]["grades"][thr][ruler]["cost"] if ruler in v[n]["grades"][thr] else 1e9)
-        for n in rows:
+        h = ['<table><tr><th>Variant</th><th class="num">caught</th><th class="num">missed</th><th class="num">false alarms</th><th class="num">bayside: caught · false alarms</th><th class="num">Westside: caught · false alarms</th><th class="num">days changed vs plain</th></tr>']
+        for n in names:
             g = v[n]["grades"][thr].get(ruler)
             if not g:
                 continue
             bs, ws = g["bayside"], g["westside"]
-            h.append(f'<tr class="{"best" if n == rows[0] else ""}"><td><b>{esc(n)}</b>{" <span class=\"fine\">mean of " + str(v[n].get("seeds")) + " draws</span>" if v[n].get("seeds") else ""}</td><td class="num">{f1(g["tp"])} of {f1(g["tp"]+g["fn"])}{rng(g, "tp")}</td><td class="num">{f1(g["fn"])}</td><td class="num">{f1(g["fp"])}{rng(g, "fp")}</td><td class="num"><b>{f1(g["cost"])}</b>{rng(g, "cost")}</td><td class="num">{f1(bs["tp"])} of {f1(bs["tp"]+bs["fn"])} · {f1(bs["fp"])} · <b>{f1(bs["cost"])}</b></td><td class="num">{f1(ws["tp"])} of {f1(ws["tp"]+ws["fn"])} · {f1(ws["fp"])} · {f1(ws["cost"])}</td><td class="num">{f1(sum(v[n]["days_changed"].values()))}</td></tr>')
+            h.append(f'<tr><td><b>{esc(n)}</b>{" <span class=\"fine\">mean of " + str(v[n].get("seeds")) + " draws</span>" if v[n].get("seeds") else ""}</td><td class="num">{f1(g["tp"])} of {f1(g["tp"]+g["fn"])}{rng(g, "tp")}</td><td class="num">{f1(g["fn"])}</td><td class="num">{f1(g["fp"])}{rng(g, "fp")}</td><td class="num">{f1(bs["tp"])} of {f1(bs["tp"]+bs["fn"])} · {f1(bs["fp"])}</td><td class="num">{f1(ws["tp"])} of {f1(ws["tp"]+ws["fn"])} · {f1(ws["fp"])}</td><td class="num">{f1(sum(v[n]["days_changed"].values()))}</td></tr>')
         h.append('</table>')
         return "".join(h)
 
@@ -532,7 +532,7 @@ def render_synthetic_html(res: dict) -> str:
     for thr in ("0.5", "0.25"):
         sections.append(f'<h2>{int(float(thr)*100)}% line</h2><h3>Discharge days + samples (primary ruler)</h3>{table("combined", thr)}<h3>Discharge days only</h3>{table("discharge", thr)}<h3>Beach postings (through Feb 2026)</h3>{table("posted", thr)}')
     zone_rows = [f'<table><tr><th>Zone (50%, primary ruler)</th><th>plain</th><th>{LIVE} (mean of draws)</th><th>no_downgrade (mean)</th></tr>']
-    ff = lambda c: f'{f1(c["tp"])} of {f1(c["tp"]+c["fn"])} caught · {f1(c["fp"])} false (clean-sample {f1(c["fp_sample"])}, quiet {f1(c["fp_quiet"])}) · cost {f1(c["fp"] + WFN * c["fn"])}'  # noqa: E731
+    ff = lambda c: f'{f1(c["tp"])} of {f1(c["tp"]+c["fn"])} caught · {f1(c["fp"])} false (clean-sample {f1(c["fp_sample"])}, quiet {f1(c["fp_quiet"])})'  # noqa: E731
     for z in ZONE_ORDER:
         zone_rows.append(f'<tr><td>{esc(ZONES[z].label)}</td><td>{ff(v["plain"]["grades"]["0.5"]["combined"]["zones"][z])}</td><td>{ff(v[LIVE]["grades"]["0.5"]["combined"]["zones"][z])}</td><td>{ff(v["no_downgrade"]["grades"]["0.5"]["combined"]["zones"][z])}</td></tr>')
     zone_rows.append('</table>')
@@ -541,12 +541,12 @@ def render_synthetic_html(res: dict) -> str:
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live corrections replay — synthetic feed, out of sample</title><link rel="icon" href="/static/brand/favicon.ico">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-<style>{css} tr.best td{{background:#e0f0ea}}</style></head><body><div class="wrap">
+<style>{css}</style></head><body><div class="wrap">
 <header><h1>Live corrections replay: synthetic feed, out of sample</h1>
-<p class="sub">The filed record standing in for the feed over every out-of-sample day: each CIWQS discharge day becomes an onset, <b>{fd["miss_rate"]:.0%} are never flagged and {fd["lag_rate"]:.0%} of the rest appear a day late</b> (the 2016-17 archive's measured imperfections), and the flag stays up on the days BeachWatch shows a CSO posting for the basin's beaches (else {fd["fallback_flag_days"]} days). Every day is recomposed with what was known by the <b>end of the day before</b> — the start-of-day forecast — through <code>src/models/live_rules.py</code>, then graded on the three rulers. Degraded variants are the mean of {len(fd["seeds"])} random draws (range in grey). Cost = false alarms + {WFN} × misses.</p>
+<p class="sub">The filed record standing in for the feed over every out-of-sample day: each CIWQS discharge day becomes an onset, <b>{fd["miss_rate"]:.0%} are never flagged and {fd["lag_rate"]:.0%} of the rest appear a day late</b> (the 2016-17 archive's measured imperfections), and the flag stays up on the days BeachWatch shows a CSO posting for the basin's beaches (else {fd["fallback_flag_days"]} days). Every day is recomposed with what was known by the <b>end of the day before</b> — the start-of-day forecast — through <code>src/models/live_rules.py</code>, then graded on the three rulers. Degraded variants are the mean of {len(fd["seeds"])} random draws (range in grey). The tables count days (caught, missed, false alarms) and list the variants in a fixed order: nothing weighs a miss against a false alarm.</p>
 <div class="meta"><span>era {esc(res["era"][0])} → {esc(res["era"][1])} ({v["plain"]["n_days"]} days; holdout-fit probabilities to Oct 2025, served ones after)</span><span>{fd.get("true_onset_days")} true onset basin-days; per draw ≈ {sum(s["dropped"] for s in draws)/max(len(draws),1):.0f} dropped, {sum(s["lagged"] for s in draws)/max(len(draws),1):.0f} lagged</span><span>self-check: plain recomposition vs stored risks, worst Δ {res["self_check_worst_delta"]}</span><span>downgrade R by quiet days {esc(json.dumps(res["rules"]["downgrade"]["recall_by_quiet_days"]["southeast"]))} (bayside), Westside off</span></div></header>
 <section><h2>Read this first</h2>
-<p class="lead">This is the test the 2016-17 archive is too small for: {v["plain"]["n_days"]} out-of-sample days with an honest stage 1. Its price is that the feed is synthetic. Silence here means "truly no discharge" except for the dropped onsets, so the <b>degradation is the only thing that makes the no-flag downgrade's cost visible</b>; read <i>{LIVE}_perfect_feed</i> as an upper bound and the degraded mean as the estimate. A discharge day is never credited for its own flag (start-of-day grading), so the discharge-day ruler is fair here, but multi-day events do let a flagged first day lift the second — as a real feed would.</p>
+<p class="lead">This is the test the 2016-17 archive is too small for: {v["plain"]["n_days"]} out-of-sample days with an honest stage 1. Its price is that the feed is synthetic. Silence here means "truly no discharge" except for the dropped onsets, so the <b>degradation is the only thing that makes the no-flag downgrade's misses visible</b> (it lowers real overflows the feed dropped or showed late); read <i>{LIVE}_perfect_feed</i> as an upper bound and the degraded mean as the estimate. A discharge day is never credited for its own flag (start-of-day grading), so the discharge-day ruler is fair here, but multi-day events do let a flagged first day lift the second — as a real feed would.</p>
 <p class="lead">Variants: <b>plain</b> = the two-stage model alone · <b>{LIVE}</b> = every rule, degraded feed · <b>{LIVE}_perfect_feed</b> = every rule, nothing dropped or late · <b>no_downgrade</b> · <b>no_samples</b> · <b>cso_flags_only</b> · <b>all_floors</b> = the counterfactual with every empirical sample floor applied, including those under 50% (what {LIVE} did before 2026-09-27; today only the East's 0.80 tail floor is a floor, and the clean-sample caps stay).</p></section>
 <section>{"".join(sections)}</section>
 <section><h2>Per zone, 50% line, primary ruler</h2>{"".join(zone_rows)}</section>

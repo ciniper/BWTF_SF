@@ -2,7 +2,12 @@
 """Two plain reports about the forecast as it runs today, drawn from the artifacts:
 
     reports/2026-09_forecast_how_it_works.html     inputs → stage 1 → stage 2 → live corrections → outputs, and how it was trained
-    reports/2026-09_forecast_how_it_is_graded.html the rulers, the windows, the lines, the results, the replays, the weather input
+    reports/2026-09_forecast_how_it_is_graded.html the rulers, the windows, the results at each risk level, the replays, the weather input
+
+How it is graded reports counts (caught, missed, false alarms) and the standard
+threshold scores (POD, FAR, POFD, CSI, from verify.contingency_table) at the
+public risk-level edges; nothing weighs a miss against a false alarm and
+nothing ranks the sets by cost (STAGES_DESIGN.md A3).
 
 Less text, more pictures (Chase, 2026-09-30). Every number is read from the served
 bundle (served.json, the pickles, stage2.json, scorecard.json.gz), the rules
@@ -33,13 +38,13 @@ for p in (str(REPO), str(FORECAST), str(HERE)):
         sys.path.insert(0, p)
 
 import leaderboard  # noqa: E402,F401  (weights pipelines reference leaderboard.add_hinges)
-from src.models import candidates, live_rules as LR, posting_label as PL, stage2 as S2  # noqa: E402
+from src.models import candidates, live_rules as LR, posting_label as PL, stage2 as S2, verify as V  # noqa: E402
 from src.models.groups import BASIN_KEYS, GROUPS_BY_BASIN, SITE_GROUPS, ZONE_GROUPS  # noqa: E402
 from src.models.impact import compose, impact_fraction, smooth_table  # noqa: E402
 from src.models.rain_features import DAILY_FEATURES, INTENSITY_FEATURES, add_daily_features, hourly_intensity  # noqa: E402
 from src.models.scorecard import basin_metrics, zone_confusion, zone_confusion_combined, zone_confusion_posted, zone_fp_tail  # noqa: E402
 from shared.sources import registry  # noqa: E402
-from shared.risk_levels import LEVELS  # noqa: E402  (the public levels, Chase, 2026-10-01)
+from shared.risk_levels import LEVELS, edges, level_of, whole_percent  # noqa: E402  (the public levels, Chase, 2026-10-01)
 from shared.zones import ZONES  # noqa: E402
 
 _main = sys.modules.get("__main__")
@@ -58,8 +63,7 @@ ZONE_ORDER = ["ocean", "baker_china", "north", "east"]
 ZONE_LABEL = {k: z.label for k, z in (ZONES.items() if isinstance(ZONES, dict) else ((z.key, z) for z in ZONES))}
 ZONE_ICON = {"ocean": "waves", "baker_china": "umbrella", "north": "anchor", "east": "building-2"}
 GROUP_ORDER = ["Ocean Beach", "Baker-China", "Crissy Field", "Aquatic Park", "Mission Creek", "Southeast"]
-LINE_GRID = tuple(round(x, 2) for x in np.arange(0.05, 0.80, 0.05))
-MISS_WEIGHT = 2                                       # Chase: a miss costs two false alarms
+LEVEL_EDGES = edges()                                 # where Medium, High and Extreme begin: 0.205, 0.505, 0.805 (shared/risk_levels.py)
 BRAND, INK, MUTED, LINE, SAND = "#0072BC", "#26272a", "#54576F", "#d9e4e8", "#E3EBF2"
 PALETTE = ["#0072BC", "#d4763a", "#237059", "#b5310a", "#7b5ea7", "#b97e00"]
 
@@ -84,7 +88,18 @@ def ic(name: str, cls: str = "ic") -> str:
 
 
 def pct(v, nd=0) -> str:
-    return "—" if v is None else f"{100 * v:.{nd}f}%"
+    return "—" if v is None or v != v else f"{100 * v:.{nd}f}%"   # v != v: a NaN score (zero denominator)
+
+
+def score2(v) -> str:
+    """A 0–1 score (CSI) to two decimals; '—' when its denominator was zero."""
+    return "—" if v is None or v != v else f"{v:.2f}"
+
+
+def level_name(t: float) -> str:
+    """A risk-level edge the way the Model check names it: 'Medium and up (21%+)', 'Extreme (81%+)'."""
+    lv = level_of(t)
+    return f"{lv.label}{'' if lv is LEVELS[-1] else ' and up'} ({whole_percent(t)}%+)"
 
 
 def fmt_month(day: str) -> str:
@@ -423,7 +438,7 @@ def simpler_section() -> str:
                       f'<table><tr><th>design</th><th class="num">terms</th><th class="num">season CV PR-AUC</th><th class="num">holdout PR-AUC</th><th class="num">holdout Brier</th><th class="num">since-training PR-AUC</th><th class="num">since Brier</th></tr>{"".join(rows)}</table>')
     return f"""<h3>Could it be simpler?</h3>
 <div class="card wide"><p class="fine">Chase, 2026-09-30: "simpler is king". The same design refit with fewer terms, on the same days and labels (<code>src/models/sparse_logit_eval.py</code>, {esc(d["generated"])}). PR-AUC ranks overflow days above quiet ones (1.0 perfect); Brier is the squared error of the probability (lower is better). The holdout exam fits on the seasons before {esc(fmt_month(d["holdout_start"]))} and scores {esc(fmt_month(d["holdout_start"]))} → {esc(fmt_month(d["trained_through"]))}; the since-training exam fits through {esc(fmt_month(d["trained_through"]))} and scores the days after. The "top K" rows rank terms by the served model, which itself saw the holdout, so read them as optimistic; the L1 and hand-picked rows carry no such advantage. Shaded: the served design.</p>{"".join(blocks)}
-<p class="fine"><b>Reading.</b> Eight terms match or beat all {d["n_terms_full"]} in every basin, on the holdout and since training, and the season cross-validation is higher for the smaller designs in three basins of four. Even three to five terms hold within a few points. The 19 inputs are cheap to compute, so the cost of the extra terms is not speed; it is that the model is harder to explain and that correlated terms share credit in ways that shift between fits. A candidate set with about five terms per basin, chosen by cross-validation on the seasons before the holdout, would be the honest test; it would go through the Model check and the analysis report like every candidate before it, and serving already handles the family.</p></div>"""
+<p class="fine"><b>Reading.</b> Eight terms match or beat all {d["n_terms_full"]} in every basin, on the holdout and since training, and the season cross-validation is higher for the smaller designs in three basins of four. Even three to five terms hold within a few points. The 19 inputs are cheap to compute, so the cost of the extra terms is not speed; it is that the model is harder to explain and that correlated terms share credit in ways that shift between fits. A candidate set with about five terms per basin, chosen by cross-validation on the seasons before the holdout, would be the honest test; it would go through the Model check and the five stages report like every candidate, and serving already handles the family.</p></div>"""
 
 
 # ── report A: how it works ──────────────────────────────────────────────────
@@ -618,20 +633,20 @@ def report_works(S: dict, reg: dict, wx_model: str) -> str:
 <div class="panel">{timeline}</div>
 <div class="grid3">
 <div class="card"><b>The labels</b><p class="fine">SFPUC's filed overflow reports, one row per outfall per event: {n_events:,} events on {n_days} days, {esc(str(ev_span[0]))} → {esc(str(ev_span[1]))}, pulled from CIWQS each quarter. Bay-side basins also learn from the 2016-17 feed archive's flags; the Westside does not, because those flags lag the rain.</p></div>
-<div class="card"><b>The choice</b><p class="fine">A leaderboard fit {n_rows} combinations of model family, rain gauge and regularisation per basin, judged by leave-one-season-out cross-validation before the holdout and then by holdout ranking. The weights model won every basin on the holdout; the outfall split was added as stage 2 {esc(sv["stage2"])}; the set was promoted on {esc((sv.get("promoted_at") or "")[:10])} on the analysis report's cost ranking.</p></div>
+<div class="card"><b>The choice</b><p class="fine">A leaderboard fit {n_rows} combinations of model family, rain gauge and regularisation per basin, judged by leave-one-season-out cross-validation before the holdout and then by holdout ranking. The weights model won every basin on the holdout; the outfall split was added as stage 2 {esc(sv["stage2"])}; the set was promoted on {esc((sv.get("promoted_at") or "")[:10])}.</p></div>
 <div class="card"><b>What is kept</b><p class="fine">The retired set ({esc(retired or "—")}, gradient-boosted trees) and two other candidates stay on disk with their own scorecards, so the Model check can grade them on the same days. Nothing is retrained on the fly: the pickles change only at a promotion.</p></div>
 </div></section>
 
 <section id="more"><h2>Deeper</h2><p class="lead">
-<a href="/reports/2026-09_forecast_how_it_is_graded.html">How it is graded</a> · <a href="/reports/2026-09_forecast_{esc(sv["name"])}_model_explorer.html">The served models opened up (weights, what-if editor)</a> · <a href="/reports/2026-09_forecast_stage2_explorer.html">Stage 2 explorer</a> · <a href="/reports/2026-09_model_analysis.html">Model analysis: which set to run</a> · <a href="/reports/2026-09_live_replay.html">Live corrections replay</a> · <a href="/reports/2026-09_live_replay_synthetic.html">Synthetic replay</a> · <a href="/reports/2026-09_weather_models.html">Which weather model</a> · <a href="/forecast">The forecast</a></p></section>
+<a href="/reports/2026-09_forecast_how_it_is_graded.html">How it is graded</a> · <a href="/reports/2026-09_forecast_{esc(sv["name"])}_model_explorer.html">The served models opened up (weights, what-if editor)</a> · <a href="/reports/2026-09_forecast_stage2_explorer.html">Stage 2 explorer</a> · <a href="/reports/2026-10_forecast_stages.html">The five stages, scored one by one</a> · <a href="/reports/2026-09_live_replay.html">Live corrections replay</a> · <a href="/reports/2026-09_live_replay_synthetic.html">Synthetic replay</a> · <a href="/reports/2026-09_weather_models.html">Which weather model</a> · <a href="/forecast">The forecast</a></p></section>
 </div>{FIT_SCRIPT}</body></html>'''
     return html
 
 
 # ── report B: how it is graded ──────────────────────────────────────────────
 
-def grade_set(sc: dict, label, thr_grid=LINE_GRID) -> dict:
-    """Windows × rulers for one scorecard, the way the analysis report does it."""
+def grade_set(sc: dict, label, thr_grid=LEVEL_EDGES) -> dict:
+    """Windows × rulers for one scorecard, graded at the risk-level edges."""
     days = sc["days"]
     hs, tt, last = sc["holdout_start"], sc["trained_through"], sc["span"][1]
     post0 = str(dt.date.fromisoformat(tt) + dt.timedelta(days=1))
@@ -648,15 +663,14 @@ def grade_set(sc: dict, label, thr_grid=LINE_GRID) -> dict:
     return out
 
 
-def cost_of(conf_zone: dict, thr: float) -> tuple:
-    c = conf_zone[str(thr)] if str(thr) in conf_zone else conf_zone[thr]
-    if "fp" not in c and "vs_discharge_posting" in c:      # the discharge-only ruler nests its counts
-        c = c["vs_discharge_posting"]
-    return c["fp"] + MISS_WEIGHT * c["fn"], c
+def scores(c: dict) -> dict:
+    """POD, FAR = fp/(tp+fp), POFD = fp/(fp+tn), CSI … from one confusion's counts (verify's JWGFVR names)."""
+    return V.contingency_table(c["tp"], c["fp"], c["fn"], c["tn"])
 
 
-def zone_costs(conf: dict, thr: float) -> dict:
-    return {z: cost_of(conf[z], thr)[0] for z in ZONE_ORDER if z in conf}
+def pooled(conf: dict, thr: float, zones=ZONE_ORDER) -> dict:
+    """One ruler's counts at one line, summed over zones."""
+    return {k: sum(conf[z][str(thr)][k] for z in zones) for k in ("tp", "fn", "fp", "tn")}
 
 
 def calibration(sc: dict, lo: str, hi: str) -> list:
@@ -682,7 +696,7 @@ def report_graded(S: dict) -> str:
     gen = dt.datetime.now().strftime("%Y-%m-%d %H:%M")
     label = PL.from_beachwatch()
     served_name = sv["name"]
-    line = sv.get("line") or 0.25
+    medium = LEVEL_EDGES[0]                               # the Model check's default grading threshold (A3)
     sets = [{"name": served_name, "label": f"{served_name} (served)", "sc": sc, "served": True}]
     for man in candidates.list_candidates():
         c = candidates.load_scorecard(man["name"])
@@ -702,45 +716,50 @@ def report_graded(S: dict) -> str:
         strip("Beach postings (BeachWatch)", [("posted", "bad", ""), ("posted", "bad", ""), ("posted", "bad", ""), ("sign down", "good", ""), ("quiet", "good", ""), ("quiet", "good", ""), ("quiet", "good", ""), ("quiet", "good", "")]),
     ])
 
-    # served results table (primary ruler) at the served line, oos and post
+    # one row of counts and threshold scores (primary ruler); the column heads are SCORE_HEAD's
+    SCORE_HEAD = ('<th class="num">bad days</th><th class="num" title="POD: caught ÷ bad days">caught</th><th class="num">missed</th><th class="num">false alarms</th>'
+                  '<th class="num" title="POFD: false alarms ÷ every known-clean day">clean days alerted</th>'
+                  '<th class="num" title="FAR: false alarms ÷ every day alerted">alerts that were false</th>'
+                  '<th class="num" title="CSI: caught ÷ (caught + missed + false alarms)">CSI</th>')
+
+    def score_cells(c: dict, split: bool = False) -> str:
+        s = scores(c)
+        why = f' <span class="mute">({c["fp_sample"]} clean-sample · {c["fp_quiet"]} quiet)</span>' if split else ""
+        return (f'<td class="num">{c["tp"] + c["fn"]}</td><td class="num">{c["tp"]} <span class="mute">{pct(s["pod"])}</span></td><td class="num">{c["fn"]}</td>'
+                f'<td class="num">{c["fp"]}{why}</td><td class="num">{pct(s["pofd"], 1)}</td><td class="num">{pct(s["far"])}</td><td class="num">{score2(s["csi"])}</td>')
+
+    # served results (primary ruler) at the Medium edge, oos and post
     def zone_table(w: dict, thr: float, title: str) -> str:
-        rows, T = [], {"bad": 0, "tp": 0, "fn": 0, "fp": 0}
-        for z in ZONE_ORDER:
-            c = w["combined"][z][str(thr)]
-            bad = c["tp"] + c["fn"]
-            T["bad"] += bad; T["tp"] += c["tp"]; T["fn"] += c["fn"]; T["fp"] += c["fp"]
-            best = min(LINE_GRID, key=lambda t: cost_of(w["combined"][z], t)[0])
-            rows.append(f'<tr><td>{ic(ZONE_ICON[z])} <b>{esc(ZONE_LABEL[z])}</b></td><td class="num">{bad}</td><td class="num">{c["tp"]} <span class="mute">{pct(c["tp"] / bad) if bad else "—"}</span></td><td class="num">{c["fn"]}</td><td class="num">{c["fp"]} <span class="mute">({c.get("fp_sample", 0)} clean-sample · {c.get("fp_quiet", 0)} quiet)</span></td><td class="num"><b>{c["fp"] + MISS_WEIGHT * c["fn"]}</b></td><td class="num">{int(best * 100)}% <span class="mute">cost {cost_of(w["combined"][z], best)[0]}</span></td></tr>')
-        rows.append(f'<tr class="total"><td>All zones</td><td class="num">{T["bad"]}</td><td class="num">{T["tp"]} <span class="mute">{pct(T["tp"] / T["bad"]) if T["bad"] else "—"}</span></td><td class="num">{T["fn"]}</td><td class="num">{T["fp"]}</td><td class="num"><b>{T["fp"] + MISS_WEIGHT * T["fn"]}</b></td><td></td></tr>')
-        return f'<h3>{esc(title)}</h3><table><tr><th>zone</th><th class="num">bad days</th><th class="num">caught</th><th class="num">missed</th><th class="num">false alarms</th><th class="num">cost at {int(thr*100)}%</th><th class="num">cheapest line</th></tr>{"".join(rows)}</table>'
+        rows = [f'<tr><td>{ic(ZONE_ICON[z])} <b>{esc(ZONE_LABEL[z])}</b></td>{score_cells(w["combined"][z][str(thr)], split=True)}</tr>' for z in ZONE_ORDER]
+        rows.append(f'<tr class="total"><td>All zones</td>{score_cells(pooled(w["combined"], thr))}</tr>')
+        return f'<h3>{esc(title)}</h3><div class="tw"><table><tr><th>zone</th>{SCORE_HEAD}</tr>{"".join(rows)}</table></div>'
 
-    served_tables = zone_table(g["oos"], line, f"Out of sample, {fmt_month(hs)} → {fmt_month(last)}: holdout-fit models through {fmt_month(tt)}, the served models after") + zone_table(g["post"], line, f"Since training only, {fmt_month(g['post']['start'])} → {fmt_month(last)}: the truest test, one wet season")
+    served_tables = zone_table(g["oos"], medium, f"Out of sample, {fmt_month(hs)} → {fmt_month(last)}: holdout-fit models through {fmt_month(tt)}, the served models after") + zone_table(g["post"], medium, f"Since training only, {fmt_month(g['post']['start'])} → {fmt_month(last)}: the truest test, one wet season")
 
-    # cost vs line per zone (oos, primary), served set
-    xl = [f"{int(t*100)}" if i % 2 == 0 else "" for i, t in enumerate(LINE_GRID)]
-    cost_charts = []
+    # what each risk level catches: the served set, out of sample, every zone at every level edge
+    lvl_rows = []
     for z in ZONE_ORDER:
-        vals = [cost_of(g["oos"]["combined"][z], t)[0] for t in LINE_GRID]
-        vals_d = [cost_of(g["oos"]["discharge"][z], t)[0] for t in LINE_GRID]
-        ymax = max(max(vals), max(vals_d), 1) * 1.1
-        cost_charts.append(f'<div class="card"><div class="bh"><b>{ic(ZONE_ICON[z])} {esc(ZONE_LABEL[z])}</b><span class="mute">cheapest {int(min(LINE_GRID, key=lambda t: cost_of(g["oos"]["combined"][z], t)[0]) * 100)}%</span></div>'
-                           + svg_lines([{"label": "discharge days + samples", "color": BRAND, "values": vals}, {"label": "discharge days only", "color": "#8a949b", "values": vals_d, "dash": True}], xl, ymax=ymax, yfmt=lambda v: f"{v:.0f}", title="cost of each alarm line", xlab="alarm line, %", width=300, height=170) + "</div>")
+        for i, t in enumerate(LEVEL_EDGES):
+            head = f'<td rowspan="{len(LEVEL_EDGES)}">{ic(ZONE_ICON[z])} <b>{esc(ZONE_LABEL[z])}</b></td>' if i == 0 else ""
+            lvl_rows.append(f'<tr>{head}<td>{esc(level_name(t))}</td>{score_cells(g["oos"]["combined"][z][str(t)])}</tr>')
+    for i, t in enumerate(LEVEL_EDGES):
+        head = f'<td rowspan="{len(LEVEL_EDGES)}">All zones</td>' if i == 0 else ""
+        lvl_rows.append(f'<tr class="{"total" if i == 0 else "sum"}">{head}<td>{esc(level_name(t))}</td>{score_cells(pooled(g["oos"]["combined"], t))}</tr>')
+    levels_table = f'<div class="tw"><table class="lv"><tr><th>zone</th><th>alerted at</th>{SCORE_HEAD}</tr>{"".join(lvl_rows)}</table></div>'
 
-    # candidates: total cost at the served line and at 50%, oos primary
-    def total_cost(gs, w, thr):
-        return sum(cost_of(gs[w]["combined"][z], thr)[0] for z in ZONE_ORDER)
-    cand_rows = sorted(sets, key=lambda s: total_cost(G[s["name"]], "oos", line))
-    cand_bars = svg_hbars([{"label": s["label"], "value": total_cost(G[s["name"]], "oos", line), "color": (BRAND if s["served"] else "#8a949b")} for s in cand_rows], title=f"cost at the {int(line*100)}% line, out of sample, all zones (lower is better)", width=460, label_w=200)
-    cand50 = svg_hbars([{"label": s["label"], "value": total_cost(G[s["name"]], "oos", 0.5), "color": (BRAND if s["served"] else "#8a949b")} for s in sorted(sets, key=lambda s: total_cost(G[s["name"]], "oos", 0.5))], title="the same at a 50% line", width=460, label_w=200)
-    best_line = {s["name"]: min(LINE_GRID, key=lambda t: total_cost(G[s["name"]], "oos", t)) for s in sets}
-    cand_best = svg_hbars([{"label": f'{s["label"]} @ {int(best_line[s["name"]]*100)}%', "value": total_cost(G[s["name"]], "oos", best_line[s["name"]]), "color": (BRAND if s["served"] else "#8a949b")} for s in sorted(sets, key=lambda s: total_cost(G[s["name"]], "oos", best_line[s["name"]]))], title="each set at its own cheapest line", width=460, label_w=200)
+    # every set on the same days, all zones, out of sample: listed in a fixed order (served first), never ranked
+    def sets_table(t: float) -> str:
+        rows = "".join(f'<tr><td>{"<b>" + esc(s["label"]) + "</b>" if s["served"] else esc(s["label"])}</td>{score_cells(pooled(G[s["name"]]["oos"]["combined"], t))}</tr>' for s in sets)
+        return f'<div class="tw"><table><tr><th>set</th>{SCORE_HEAD}</tr>{rows}</table></div>'
+    sets_html = (f'<div class="card wide"><b>Alerts at {esc(level_name(medium))}</b>{sets_table(medium)}</div>'
+                 + "".join(f'<details class="more"><summary>Alerts at {esc(level_name(t))}</summary><div class="card wide">{sets_table(t)}</div></details>' for t in LEVEL_EDGES[1:]))
 
     # stage 1 ranking: PR-AUC per basin, holdout and post, served vs others
     s1_rows = []
     for b in BASINS:
         cells = "".join(f'<td class="num">{(G[s["name"]]["holdout"]["basins"][b]["pr_auc"] or 0):.2f} / {(G[s["name"]]["post"]["basins"][b]["pr_auc"] or 0):.2f}</td>' for s in sets)
         s1_rows.append(f'<tr><td>{esc(BASIN_NAME[b])}</td><td class="num">{g["holdout"]["basins"][b]["n_events"]} / {g["post"]["basins"][b]["n_events"]}</td>{cells}</tr>')
-    s1_table = f'<table><tr><th>basin</th><th class="num">overflow days (holdout / since)</th>{"".join(f"<th class=num>{esc(s['label'])}</th>" for s in sets)}</tr>{"".join(s1_rows)}</table><p class="fine">PR-AUC holdout / since training: how well the day\'s probability ranks overflow days above quiet ones (1.0 perfect). Sets sharing a stage 1 share these numbers.</p>'
+    s1_table = f'<div class="tw"><table><tr><th>basin</th><th class="num">overflow days (holdout / since)</th>{"".join(f"<th class=num>{esc(s['label'])}</th>" for s in sets)}</tr>{"".join(s1_rows)}</table></div><p class="fine">PR-AUC holdout / since training: how well the day\'s probability ranks overflow days above quiet ones (1.0 perfect). Sets sharing a stage 1 share these numbers.</p>'
     cal = calibration(sc, hs, last)
     cal_bars = svg_hbars([{"label": c["band"], "value": (c["rate"] or 0), "color": BRAND, } for c in cal], vmax=1.0, fmt=lambda v: f"{100*v:.0f}%", title="of the basin-days the model put in this band, the share that overflowed (out of sample)", width=560)
     cal_note = " · ".join(f'{c["band"]}: {c["hits"]} of {c["n"]}' for c in cal)
@@ -751,11 +770,18 @@ def report_graded(S: dict) -> str:
     live_key = LR.VERSION
     replay_html = ""
     if ra and rs:
-        a_plain, a_live = ra["variants"]["plain"]["grades"]["0.5"]["combined"]["bayside"], ra["variants"][live_key]["grades"]["0.5"]["combined"]["bayside"]
-        s_plain, s_live, s_perf = (rs["variants"][k]["grades"] for k in ("plain", live_key, f"{live_key}_perfect_feed"))
+        num = lambda x: f"{x:.0f}" if abs(x - round(x)) < 1e-9 else f"{x:.1f}"  # noqa: E731  (synthetic counts are means over draws)
+        a_plain, a_live = (ra["variants"][k]["grades"]["0.5"]["combined"]["bayside"] for k in ("plain", live_key))
+        s_plain, s_live, s_perf, s_all = (rs["variants"][k]["grades"] for k in ("plain", live_key, f"{live_key}_perfect_feed", "all_floors"))
+        n_draws = len(rs["feed"]["seeds"])
+        a_bad = a_plain["tp"] + a_plain["fn"]
+        s_bad = s_plain["0.5"]["combined"]["tp"] + s_plain["0.5"]["combined"]["fn"]
+        syn = [("model alone · 50%", s_plain["0.5"], "#8a949b"), (f"{live_key} · 50%", s_live["0.5"], BRAND), ("perfect feed · 50%", s_perf["0.5"], "#237059"),
+               ("model alone · 25%", s_plain["0.25"], "#b8c4cc"), (f"{live_key} · 25%", s_live["0.25"], "#85BFDF")]
+        moved = lambda a, b, k: f'{num(a["combined"][k])} → {num(b["combined"][k])}'  # noqa: E731
         replay_html = f'''<div class="grid2">
-          <div class="card"><b>2016-17 feed archive, bay-side beaches, 50% line</b>{svg_hbars([{"label": "model alone", "value": a_plain["cost"], "color": "#8a949b"}, {"label": f"with {live_key}", "value": a_live["cost"], "color": BRAND}], title="cost (a miss = 2 false alarms)", width=420)}<p class="fine">Bad days caught: {a_plain["tp"]} → {a_live["tp"]} of {a_plain["tp"] + a_plain["fn"]}. Real flags from the 2016-17 archive of SFPUC's feed, replayed one day at a time with only what was known that morning.</p></div>
-          <div class="card"><b>Synthetic feed, every out-of-sample day, all zones</b>{svg_hbars([{"label": "model alone · 50%", "value": s_plain["0.5"]["combined"]["cost"], "color": "#8a949b"}, {"label": f"{live_key} · 50%", "value": s_live["0.5"]["combined"]["cost"], "color": BRAND}, {"label": "perfect feed · 50%", "value": s_perf["0.5"]["combined"]["cost"], "color": "#237059"}, {"label": "model alone · 25%", "value": s_plain["0.25"]["combined"]["cost"], "color": "#b8c4cc"}, {"label": f"{live_key} · 25%", "value": s_live["0.25"]["combined"]["cost"], "color": "#85BFDF"}], title="cost, mean of 5 draws", width=420)}<p class="fine">The filed overflows stand in for the feed, degraded with the archive\'s miss and lag rates. The rules help at 50%; at 25% the sample floors below 0.5 hurt, which is why they are off.</p></div></div>'''
+          <div class="card"><b>2016-17 feed archive, bay-side beaches, 50% line</b>{svg_hbars([{"label": "model alone · caught", "value": a_plain["tp"], "color": "#8a949b"}, {"label": f"{live_key} · caught", "value": a_live["tp"], "color": BRAND}, {"label": "model alone · false alarms", "value": a_plain["fp"], "color": "#b8c4cc"}, {"label": f"{live_key} · false alarms", "value": a_live["fp"], "color": "#85BFDF"}], vmax=max(a_bad, a_plain["fp"], a_live["fp"]), title=f"bad days caught (of {a_bad}) and false alarms", width=420, label_w=190)}<p class="fine">Bad days caught: {a_plain["tp"]} → {a_live["tp"]} of {a_bad}; false alarms: {a_plain["fp"]} → {a_live["fp"]}. Real flags from the 2016-17 archive of SFPUC's feed, replayed one day at a time with only what was known that morning.</p></div>
+          <div class="card"><b>Synthetic feed, every out-of-sample day, all zones</b>{svg_hbars([{"label": lab, "value": gr["combined"]["tp"], "color": col} for lab, gr, col in syn], vmax=s_bad, fmt=num, title=f"bad days caught, of {s_bad}, mean of {n_draws} draws", width=420, label_w=190)}{svg_hbars([{"label": lab, "value": gr["combined"]["fp"], "color": col} for lab, gr, col in syn], fmt=num, title=f"false alarms, mean of {n_draws} draws", width=420, label_w=190)}<p class="fine">The filed overflows stand in for the feed, degraded with the archive\'s miss and lag rates. With the rules, bad days caught go {moved(s_plain["0.5"], s_live["0.5"], "tp")} and false alarms {moved(s_plain["0.5"], s_live["0.5"], "fp")} at 50%; at 25%, {moved(s_plain["0.25"], s_live["0.25"], "tp")} and {moved(s_plain["0.25"], s_live["0.25"], "fp")}. Every sample floor on, those under 0.5 included, would take the 25% line to {num(s_all["0.25"]["combined"]["tp"])} caught and {num(s_all["0.25"]["combined"]["fp"])} false alarms; {live_key} applies only the floors of 0.5 or more.</p></div></div>'''
 
     # weather input check
     wx = json.load(open(MODEL_DIR / "weather_models_eval.json")) if (MODEL_DIR / "weather_models_eval.json").exists() else None
@@ -768,32 +794,33 @@ def report_graded(S: dict) -> str:
         csi = svg_hbars([{"label": names[k], "value": ver[k]["thresholds"]["0.5"]["csi"], "color": (BRAND if k == served_wx else "#8a949b")} for k in sorted(names, key=lambda k: -(ver[k]["thresholds"]["0.5"]["csi"] or 0))], vmax=1.0, fmt=lambda v: f"{v:.2f}", title='skill at calling a half-inch day (higher is better)', width=420)
         wx_html = f'<div class="grid2"><div class="card">{mae}</div><div class="card">{csi}</div></div><p class="fine">{esc(wx["window"][0])} → {esc(wx["window"][1])}, {wx["gauge_days"]["avg"]["wet_days"]} wet days. The weather model is an input, so it is graded as one: against the gauges, not on what the discharge model does with it. Details: <a href="/reports/2026-09_weather_models.html">the weather report</a>.</p>'
 
-    n_bad_oos = sum(g["oos"]["combined"][z][str(line)]["tp"] + g["oos"]["combined"][z][str(line)]["fn"] for z in ZONE_ORDER)
+    n_bad_oos = sum(g["oos"]["combined"][z][str(medium)]["tp"] + g["oos"]["combined"][z][str(medium)]["fn"] for z in ZONE_ORDER)   # bad days: the same at every line
+    level_list = ", ".join(level_name(t) for t in LEVEL_EDGES)
     html = f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>How the forecast is graded — {esc(served_name)}</title><link rel="icon" href="/static/brand/favicon.ico">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/brand.css"><style>{CSS}</style></head><body>{sprite()}
+<link rel="stylesheet" href="/static/brand.css"><style>{CSS}.tw{{overflow-x:auto}}table.lv td[rowspan]{{background:#f7fafc}}table.lv tr.sum td{{font-weight:700}}</style></head><body>{sprite()}
 <div class="wrap">
 <header class="rh"><img src="/static/brand/bwtf_144x144.png" alt="" class="mark"><div><h1>How the forecast is graded</h1>
-<p class="sub">Every stored day is scored against what the city later filed and measured. The served set is <b>{esc(served_name)}</b>; its alarm line is <b>{int(line*100)}%</b>; a missed bad day costs <b>{MISS_WEIGHT}</b> false alarms. Nothing here uses a day the model saw while it was being chosen.</p>
+<p class="sub">Every stored day is scored against what the city later filed and measured. The served set is <b>{esc(served_name)}</b>. A day is graded as alerted at the risk levels the page shows, the same in every zone: <b>{esc(level_list)}</b>. The tables count days and give the standard scores; nothing weighs a miss against a false alarm. Nothing here uses a day the model saw while it was being chosen.</p>
 <div class="meta"><span>generated {esc(gen)}</span><span>holdout {esc(fmt_month(hs))} → {esc(fmt_month(tt))}</span><span>since training {esc(fmt_month(g["post"]["start"]))} → {esc(fmt_month(last))}</span><span><a href="/reports/2026-09_forecast_how_it_works.html">← how it works</a></span></div></div></header>
-<nav><a href="#rulers">Rulers</a><a href="#results">Results</a><a href="#lines">Lines</a><a href="#sets">Sets</a><a href="#stage1">Stage 1</a><a href="#live">Live corrections</a><a href="#weather">Weather input</a><a href="#caveats">Caveats</a></nav>
+<nav><a href="#rulers">Rulers</a><a href="#results">Results</a><a href="#levels">Risk levels</a><a href="#sets">Sets</a><a href="#stage1">Stage 1</a><a href="#live">Live corrections</a><a href="#weather">Weather input</a><a href="#caveats">Caveats</a></nav>
 
 <section id="rulers"><h2>What counts as a bad day</h2>
 <p class="lead">Three rulers, one week after an overflow. The primary one grades the percentage on what it claims: a beach fouled by an overflow. The overflow day is bad; a sample over standard in the week after is bad; a clean sample is good; a day nobody sampled is not graded; a dirty sample with no overflow in the prior week is dry-weather dirtiness the rain model does not claim.</p>
 <div class="panel strips"><div class="weekhead"><span></span>{"".join(f"<span>{w}</span>" for w in week)}</div>{rulers}</div></section>
 
 <section id="results"><h2>The served set, primary ruler</h2>
-<p class="lead">{n_bad_oos} bad days out of sample. Caught means risk at or above the line that morning. False alarms are alarm days known clean: a clean sample, or a quiet day with no recent overflow. Cost = false alarms + {MISS_WEIGHT} × missed.</p>
+<p class="lead">{n_bad_oos} bad days out of sample. Caught means the risk that morning was at {esc(level_name(medium))}, the Model check&#39;s default; the share beside it is POD, the share of bad days caught. False alarms are alerted days known clean: a clean sample, or a quiet day with no recent overflow. Clean days alerted (POFD) = false alarms ÷ every known-clean day; alerts that were false (FAR) = false alarms ÷ every day alerted; CSI = caught ÷ (caught + missed + false alarms), 1 is perfect.</p>
 {served_tables}</section>
 
-<section id="lines"><h2>The line matters as much as the set</h2>
-<p class="lead">Cost of every alarm line from 5% to 75%, out of sample, per zone. The East wants a low line, Ocean Beach a higher one. Dashed: the older ruler that charged the model for every day it stayed up after an overflow.</p>
-<div class="grid4">{"".join(cost_charts)}</div></section>
+<section id="levels"><h2>What each risk level catches</h2>
+<p class="lead">The served set out of sample, each zone graded at the lower edge of each level: a day counts as alerted when its risk reached that level. A higher level calls fewer days, so it catches fewer bad days and raises fewer false alarms. The levels are fixed and the same in every zone ({esc(" · ".join(f"{lv.label} {lv.lo}–{lv.hi}" for lv in LEVELS))}); no line is picked by weighing misses against false alarms.</p>
+<div class="card wide">{levels_table}</div></section>
 
 <section id="sets"><h2>Every set on the same days</h2>
-<p class="lead">The served set against the candidates kept on disk, graded on identical days and labels. At a fixed line the tree sets look cheaper at 50% and the weights sets at 25%: the trees say 60% on days the weights model says 30%, so the fair comparison is each set at its own cheapest line.</p>
-<div class="grid2"><div class="card">{cand_bars}</div><div class="card">{cand50}</div><div class="card wide">{cand_best}</div></div></section>
+<p class="lead">The served set against the candidates kept on disk, graded on identical days and labels, out of sample, all zones. Listed in a fixed order, the served set first, not ranked: <a href="/reports/2026-10_forecast_stages.html">the five stages report</a> compares the sets, with the Brier score, which needs no line.</p>
+{sets_html}</section>
 
 <section id="stage1"><h2>Stage 1 on its own</h2>
 <p class="lead">Graded on overflow days alone, where that label is exact.</p>
@@ -806,12 +833,12 @@ def report_graded(S: dict) -> str:
 <section id="weather"><h2>The weather model, as an input</h2>{wx_html}</section>
 
 <section id="caveats"><h2>Caveats</h2><ul>
-<li><b>Small numbers.</b> {n_bad_oos} bad days out of sample, fourteen overflow days since training. A few storms decide a ranking; read differences of a handful of days as ties.</li>
+<li><b>Small numbers.</b> {n_bad_oos} bad days out of sample, fourteen overflow days since training. A few storms decide any comparison; read differences of a handful of days as ties.</li>
 <li><b>Most tail days are unsampled</b>, so the tail is judged on the days the city happened to sample, which is mostly the East. The 2000–2020 lab export can extend the samples ruler across the whole training span; it is the next grading job.</li>
-<li><b>One line grades the whole page</b> while each zone's cheapest line differs. Per-zone lines are the open decision.</li>
+<li><b>One set of levels for every zone.</b> The same percent means the same word everywhere, so the zones trade catches for false alarms differently at the same level (the risk-level table above).</li>
 <li><b>Holdout numbers flatter the weights model</b>: its settings were chosen there. The since-training table is the fairer one.</li>
-<li><b>Postings are precautionary.</b> Against the signs the outfall split scores a small loss on Ocean Beach, where SFPUC posts after Sea Cliff-only overflows whose samples come back clean. The water could not settle it (one sampled case in ten years).</li>
-</ul><p class="lead"><a href="/reports/2026-09_model_analysis.html">The full model analysis</a> · <a href="/reports/2026-09_forecast_how_it_works.html">How it works</a> · <a href="/forecast">The Model check, live</a></p></section>
+<li><b>Postings are precautionary.</b> Against the signs the outfall split catches fewer posted days on Ocean Beach, with fewer false alarms there: SFPUC posts after Sea Cliff-only overflows whose samples come back clean. The water could not settle it (one sampled case in ten years).</li>
+</ul><p class="lead"><a href="/reports/2026-10_forecast_stages.html">The five stages, scored one by one</a> · <a href="/reports/2026-09_forecast_how_it_works.html">How it works</a> · <a href="/forecast">The Model check, live</a></p></section>
 </div>{FIT_SCRIPT}</body></html>'''
     return html
 
