@@ -35,7 +35,7 @@ GEOS = ("sfpuc4_v1", "geo_v1")
 # title names, and what a score's manifest records (manifest.protocol =
 # "<version>@<sha>"). Not the pipeline name ("stages_v1") that served.json
 # stamps carry.
-PROTOCOL_VERSION = "stages_v2"
+PROTOCOL_VERSION = "stages_v3"
 
 
 def by_geo(sfpuc4, geo_v1) -> dict:
@@ -75,7 +75,7 @@ EXCLUSIONS = {
     "X-ALL-INSAMPLE": _x("ALL", "exclude", "days the fit saw", "Days the scored weights were fitted on are never scored, so the count is 0 by construction.", False),
     "X-POWER": _x("ALL", "tag", "too few to decide", "Fewer than 10 positive days or 8 storms: the score is shown with its range and never decides anything.", False),
     "X-SEL": _x("ALL", "tag", "days used to pick the set", "Days in a window that was used to pick the served set; scores there favour it.", False),
-    "X-LEDGER-SUSPECT": _x("ALL", "exclude", "ledger likely incomplete", "A zone was posted for an overflow, or a sample there read 10× the standard, in wet weather (rain on a day from 3 days before to the day after), yet no basin draining to it filed an overflow in those days: listed, not scored."),
+    "X-LEDGER-SUSPECT": _x("ALL", "exclude", "ledger likely incomplete", "A zone was posted for an overflow, or a sample there read 10× the standard, in wet weather (rain on a day from 3 days before to the day after), yet no basin draining to it filed an overflow in those days: listed, not scored. Water quality and the public number leave out the week after such a day too, since they read the overflow history (the public number keeps an overflow day)."),
     "X-PL-END": _x("ALL", "exclude", "after the last posting record", "Days after 28 Feb 2026, the last BeachWatch filing: the posting ruler cannot grade them."),
     # S1
     "X-S1-MISSING": _x("S1", "exclude", "missing", "The gauge reported nothing that day; the two-gauge mean uses the other gauge."),
@@ -88,7 +88,7 @@ EXCLUSIONS = {
     "X-S2-UNCOV": _x("S2", "exclude", "no filing", "The month is outside the plant's unbroken run of filed reports, and unknown is not “no overflow”."),
     "X-S2-CARRY": _x("S2", "exclude", "carry-over", "An overflow from the day before was still running and none started that day."),
     "X-S2-VOLQ": _x("S2", "exclude", "size not measured", "The filed volume is blank or “less than”: left out of the size score."),
-    "X-S2-OUTAGEIN": _x("S2", "tag", "dead gauge in the inputs", "A masked gauge day sits in the 30 days of rain the day's inputs read."),
+    "X-S2-OUTAGEIN": _x("S2", "tag", "dead gauge in the inputs", "A day of a known dead-gauge run sits in the rain the day's inputs read (30 days; the live frame's 7), whether that record masked it or read its 0.00."),
     # S3
     "X-S3-UNCOV": _x("S3", "exclude", "no filing", "A basin feeding the zone filed no report for that month."),
     "X-S3-CARRY": _x("S3", "exclude", "carry-over", "An overflow into the zone carried over from the day before and none started that day."),
@@ -107,7 +107,8 @@ EXCLUSIONS = {
     # S5
     "X-S5-HEALTH": _x("S5", "exclude", "watcher down", "The beach-map watcher was unhealthy, so no correction was made.",
                       zero="the watcher has not yet watched a wet season, so no live day is scored"),
-    "X-S5-CIRC": _x("S5", "exclude", "archive Westside days", "Westside in the 2016-17 archive: the truth there is the feed itself."),
+    "X-S5-CIRC": _x("S5", "exclude", "archive Westside days", "Westside in the 2016-17 archive: the truth there is the feed itself.",
+                    zero="only the 2016-17 archive has these days, and its count is listed with its feed"),
     "X-S5-PERFECT-SIBLING": _x("S5", "exclude", "neighbours on the perfect feed", "A neighbouring zone's day on the perfect feed: that feed is the ledger, so it would grade itself."),
     "X-S5-SELF": _x("S5", "exclude", "the replaced day", "The day whose number the observation replaced: right by construction."),
     "X-S5-QUIET": _x("S5", "exclude", "nothing seen nearby", "No observation in the basin or zone in the week before, so the correction changes nothing.",
@@ -175,7 +176,7 @@ STAGES = (
          chained="S3's output",
          metric="skill vs climatology (BSS)", unit_fmt="bss", pills=("oracle", "chained"),
          benchmarks=("climatology by zone and month", "the zone's last sample within 7 days", "rain alone, no overflow history", "the served table"),
-         exclusions=("X-S4-UNSAMPLED", "X-S4-HISTUNK", "X-S4-RESAMPLE", "X-ALL-INSAMPLE",
+         exclusions=("X-S4-UNSAMPLED", "X-S4-HISTUNK", "X-LEDGER-SUSPECT", "X-S4-RESAMPLE", "X-ALL-INSAMPLE",
                      "X-S4-DAYOF", "X-S4-FEW", "X-S4-FOLLOWUP", "X-S4-ANALYTE", "X-POWER", "X-SEL"),
          node="m.s4", truth_node="t.s4", chip="x.s4", anchor="s4"),
     dict(id="s5", code="S5", name="Live corrections", question="does what was seen improve what comes after?", unit="per zone · the days after an observation",
@@ -198,7 +199,7 @@ STAGES = (
          metric="skill vs climatology (BSS): oracle and one day ahead, and the chain by lead", unit_fmt="bss",
          pills=("oracle", "chained"),
          benchmarks=("climatology", "yesterday's state", "the served set", "the retired gradient-boosted set"),
-         exclusions=("X-E2E-UNCOV", "X-E2E-UNK", "X-ALL-INSAMPLE", "X-PL-END", "X-POWER", "X-SEL"),
+         exclusions=("X-E2E-UNCOV", "X-LEDGER-SUSPECT", "X-E2E-UNK", "X-ALL-INSAMPLE", "X-PL-END", "X-POWER", "X-SEL"),
          node="m.out", truth_node="t.out", chip="x.out", anchor="out"),
 )
 STAGE = {s["id"]: s for s in STAGES}
@@ -300,15 +301,17 @@ NODES = (
          items=((("no filing", "X-S3-UNCOV"), ("carry-over", "X-S3-CARRY")), (("ledger likely incomplete", "X-LEDGER-SUSPECT"),),
                 (("no basin overflow (oracle)", "X-S3-QUIET"),), (("identity links: checked only", "X-S3-ID"),))),
     dict(id="x.s4", kind="exclusion", stage="S4", col=3, row=5, title="not scored",
-         items=((("days nobody sampled", "X-S4-UNSAMPLED"), ("resamples", "X-S4-RESAMPLE")), (("overflow history unknown", "X-S4-HISTUNK"),))),
+         items=((("days nobody sampled", "X-S4-UNSAMPLED"), ("resamples", "X-S4-RESAMPLE")), (("overflow history unknown", "X-S4-HISTUNK"),),
+                (("ledger likely incomplete", "X-LEDGER-SUSPECT"),))),
     dict(id="x.out", kind="exclusion", stage="OUT", col=4, row=5, title="not scored",
-         items=((("unsampled days after one", "X-E2E-UNK"),), (("overflow history unknown", "X-E2E-UNCOV"),))),
-    # S5's chip sits under its band; its counts are the build's (zone-days over every feed and window it scored)
+         items=((("unsampled days after one", "X-E2E-UNK"),), (("overflow history unknown", "X-E2E-UNCOV"),),
+                (("ledger likely incomplete", "X-LEDGER-SUSPECT"),))),
+    # S5's chip sits under its band; a build's counts are the perfect feed's zone-days in S5's window (each zone-day
+    # once), each feed's own in the tooltip (stages_build.figure_counts: counts["feeds"]["s5"])
     dict(id="x.s5", kind="exclusion", stage="S5", col=2, row=4, span=2, title="not scored",
          items=((("the replaced day", "X-S5-SELF"), ("neighbours on the perfect feed", "X-S5-PERFECT-SIBLING"), ("nothing seen nearby", "X-S5-QUIET")),
                 (("archive Westside days", "X-S5-CIRC"), ("watcher down", "X-S5-HEALTH"))),
-         tip="counts: zone-days summed over every feed (the perfect feed, the 2016-17 archive, each degraded feed) and window "
-             "S5 is scored on; S5 is graded on OUT's label, so OUT's rules apply to its rows too"),
+         tip="S5 is graded on OUT's label, so OUT's rules apply to its rows too"),
     dict(id="x.claim", kind="claim", stage="CLAIM", col=0, row=6, span=5, title="the forecast does not claim", claims=tuple(CLAIMS)),
 )
 for _n in NODES:                                    # stage boxes carry their stage's question and pills

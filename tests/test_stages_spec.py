@@ -81,7 +81,13 @@ def test_every_rule_id_is_in_the_catalog():
     assert "X-E2E-SCOPE" not in SP.EXCLUSIONS
     assert "X-S4-RESAMPLE" in SP.STAGE["s4"]["exclusions"]
     assert "X-S5-PERFECT-SIBLING" in SP.STAGE["s5"]["exclusions"]                # Part B 9
-    assert "X-LEDGER-SUSPECT" in SP.STAGE["s2"]["exclusions"] and "X-LEDGER-SUSPECT" in SP.STAGE["s3"]["exclusions"]
+    # Part B 8; stages_v3: S4 and OUT too, after X-S4-HISTUNK and X-E2E-UNCOV
+    assert all("X-LEDGER-SUSPECT" in SP.STAGE[s]["exclusions"] for s in ("s2", "s3", "s4", "out"))
+    assert SP.STAGE["s4"]["exclusions"][:3] == ("X-S4-UNSAMPLED", "X-S4-HISTUNK", "X-LEDGER-SUSPECT")
+    assert SP.STAGE["out"]["exclusions"][:3] == ("X-E2E-UNCOV", "X-LEDGER-SUSPECT", "X-E2E-UNK")
+    plain = SP.EXCLUSIONS["X-LEDGER-SUSPECT"]["plain"].lower()               # the words say where it applies
+    assert "water quality" in plain and "public number" in plain, plain
+    assert "whether that record masked it or read its 0.00" in SP.EXCLUSIONS["X-S2-OUTAGEIN"]["plain"]   # stages_v3's words
     assert {"C-DRY", "C-RUNOFF", "C-OTHER", "C-UNMON", "C-POSTING", "C-TIME"} == set(SP.CLAIMS)
     assert SP.CLAIMS["C-DRY"]["counted"] and SP.CLAIMS["C-RUNOFF"]["counted"]
     assert SP.NODE["x.claim"]["claims"] == tuple(SP.CLAIMS)
@@ -295,12 +301,20 @@ def test_risk_levels_box_shows_the_shared_bands():
 
 
 def test_s4_chip_lists_the_first_look_rule():
-    """X-S4-RESAMPLE is the rule behind S4's first-look primary (Part B 4): the chip names it, with a count."""
+    """X-S4-RESAMPLE is the rule behind S4's first-look primary (Part B 4): the chip names it, with a count. Since
+    stages_v3 the chip names the ledger rule too, which leaves S4 rows out before the resamples (its words say water
+    quality leaves those days out), and prints S4's own count of it; the chip still fits (check() clean)."""
     items = [x for line in SP.NODE["x.s4"]["items"] for _, x in line]
-    assert items == ["X-S4-UNSAMPLED", "X-S4-RESAMPLE", "X-S4-HISTUNK"], items
+    assert items == ["X-S4-UNSAMPLED", "X-S4-RESAMPLE", "X-S4-HISTUNK", "X-LEDGER-SUSPECT"], items
+    assert {x for x in SP.STAGE["s4"]["exclusions"] if SP.EXCLUSIONS[x]["kind"] == "exclude"} - {"X-ALL-INSAMPLE"} == set(items)
     assert SP.EXCLUSIONS["X-S4-RESAMPLE"]["counted"]
     svg = F.render("sfpuc4_v1", None, {"X-S4-RESAMPLE": 628})[0]
     assert "resamples 628" in svg and "resamples 628" in F.render("sfpuc4_v1", None, {"X-S4-RESAMPLE": 628})[1]
+    assert all(F.check(g) == [] for g in SP.GEOS)
+    counts = {"stages": {"s2": {"X-LEDGER-SUSPECT": 303}, "s4": {"X-LEDGER-SUSPECT": 219}}}
+    svg, ph = F.render("sfpuc4_v1", None, counts)
+    card = svg.split('<a href="#s4"><title>x.s4 ', 1)[1].split("</a>", 1)[0]
+    assert "ledger likely incomplete 219" in card and "ledger likely incomplete 219" in ph and "ledger likely incomplete 303" not in card
 
 
 def test_s2_and_s3_chips_list_the_ledger_rules_and_stay_clean():
@@ -316,7 +330,7 @@ def test_s2_and_s3_chips_list_the_ledger_rules_and_stay_clean():
         assert "ledger likely incomplete 303" in out and "ledger likely incomplete 227" in out
         assert "no filing 1,742" in out and "carry-over 24" in out
     flat = F.render("geo_v1", None, counts["exclusions"])[0]                    # flat counts: every chip reads the one total
-    assert flat.count("ledger likely incomplete 303") == 2
+    assert flat.count("ledger likely incomplete 303") == 4                       # S2, S3, S4 and OUT (stages_v3)
     saved = SP.NODES
     try:   # a fifth line overflows S3's chip; a line too long for the column at the smallest type is caught too
         x3 = SP.NODE["x.s3"]
@@ -375,8 +389,18 @@ def test_s5_has_a_not_scored_chip_with_zero_reasons():
 
 
 def test_out_chip_lists_only_what_out_leaves_out():
-    assert [w for line in SP.NODE["x.out"]["items"] for w, _ in line] == ["unsampled days after one", "overflow history unknown"]
-    assert {x for line in SP.NODE["x.out"]["items"] for _, x in line} == {"X-E2E-UNK", "X-E2E-UNCOV"}
+    """OUT's chip names its three exclusions, the ledger rule since stages_v3 (one line each, check() clean), and
+    prints OUT's own count of the rule S2, S3 and S4 share."""
+    assert [w for line in SP.NODE["x.out"]["items"] for w, _ in line] == ["unsampled days after one", "overflow history unknown",
+                                                                          "ledger likely incomplete"]
+    assert {x for line in SP.NODE["x.out"]["items"] for _, x in line} == {"X-E2E-UNK", "X-E2E-UNCOV", "X-LEDGER-SUSPECT"}
+    assert {x for line in SP.NODE["x.out"]["items"] for _, x in line} == {x for x in SP.STAGE["out"]["exclusions"]
+                                                                          if SP.EXCLUSIONS[x]["kind"] == "exclude"} - {"X-ALL-INSAMPLE", "X-PL-END"}
+    assert all(F.check(g) == [] for g in SP.GEOS)
+    counts = {"stages": {"s2": {"X-LEDGER-SUSPECT": 303}, "s3": {"X-LEDGER-SUSPECT": 227}, "out": {"X-LEDGER-SUSPECT": 514}}}
+    svg, ph = F.render("sfpuc4_v1", None, counts)
+    card = svg.split('<a href="#out"><title>x.out ', 1)[1].split("</a>", 1)[0]
+    assert "ledger likely incomplete 514" in card and "ledger likely incomplete 514" in ph
 
 
 def test_the_phone_list_follows_the_spec():

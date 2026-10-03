@@ -1,15 +1,11 @@
-# BWTF five-stage forecast — scoring protocol `stages_v3`
+# BWTF five-stage forecast — scoring protocol `stages_v2`
 
-Freeze date: 2026-10-02 (the date of the commit that adds this version). The prospective window T0 starts the next day, 2026-10-03.
-protocol sha256: 22a2695e2e950188d37b753928932c6f6f2dc83296482a4fddf5a373ce86df3f
+Freeze date: 2026-10-01 (the date of the commit that adds this version). The prospective window T0 starts the next day, 2026-10-02.
+protocol sha256: 7e44361ae88d373913208cd97dd0b87965bb830a219f35ae1f2121c519fa175b
 
 This file is the frozen scoring protocol for branch `forecast-stages`. Every score that `stages_build`, the stages report, the Model check's Stages tab or a promotion uses is computed under it. The contract it implements is `STAGES_DESIGN.md`: §3.0 and §5.1–5.6 of Part C, adapted by the owner decisions (Part A) and the red-team resolutions (Part B), which override Part C. Decisions are Chase's, 2026-10-01, unless marked otherwise.
 
-**Changing it.** After the freeze nothing here is edited in place. A change is a new protocol version (`stages_v4`) with its own freeze date and its own T0; the version it replaces moves, unedited, to `protocols/` (`protocols/stages_v1.md` and `stages_v2.md` hold the earlier ones). Every score records the protocol it was made under (`manifest.protocol = "stages_v3@<sha>"`), and scores made under different versions are never compared. `<sha>` is the sha256 of this file with its `protocol sha256:` line (at the top) reading `protocol sha256: <filled at commit>`; once that line holds the digest, `tests/test_served_golden.py` fails on any edit.
-
-**Changes from `stages_v2`** (2026-10-02). Unlike the v1 → v2 changes, the first was made **after** the served set's stage scores had been seen (`stages_build`, 2026-10-02), and before any candidate was compared with the served set. It is the owner's decision (Chase: "let's do 1 but with a note to check this out again later"; TODO.md holds the re-check).
-1. **X-LEDGER-SUSPECT now also leaves days out of S4 and OUT (§7).** Under v2 it applied to S2 and S3 only, so OUT scored the Bayside February 2026 days, when SFPUC posted East Beaches for overflows and samples read 24,196 MPN while the ledger filed none, as false alarms against a record that is probably wrong. Those 6 East zone-days held about half of East's post-training squared error. The rule's trigger reads only postings, samples and rain, never a forecast, so it treats every set alike. Estimated from the v2 rows before the change (served set, one day ahead, post-training pooled BSS): about 0.22 → 0.39; the first build under v3 reports the measured value. The rule still cannot see a gap after BeachWatch's last filing (2026-02-28) unless a sample reaches 10× the standard: the April 2026 East false alarms (rain 0.93″, samples up to 4.8×, nothing filed) stay scored.
-2. **X-S2-OUTAGEIN, worded exactly (§7).** It tags a row whose input window holds a gauge-day inside a `gauge_outage_v1` run, read on the whole record: the input is degraded whether the row's own record masked that day (the mean falls back to one gauge) or read the dead gauge's 0.00 (the record at the issue day). The window is the one the row's input reads: 30 days, or the live frame's 7 for the as-served entries. A tag only; nothing is left out.
+**Changing it.** After the freeze nothing here is edited in place. A change is a new protocol version (`stages_v3`) with its own freeze date and its own T0; the version it replaces moves, unedited, to `protocols/` (`protocols/stages_v1.md` holds the first). Every score records the protocol it was made under (`manifest.protocol = "stages_v2@<sha>"`), and scores made under different versions are never compared. `<sha>` is the sha256 of this file with its `protocol sha256:` line (at the top) reading `protocol sha256: <filled at commit>`; once that line holds the digest, `tests/test_served_golden.py` fails on any edit.
 
 **Changes from `stages_v1`** (same day, 2026-10-01, before any score was computed: only the exclusion counts of `exclusions.catalog_counts` had been seen). Two rules read literally did something the design never meant:
 1. **Coverage (§1).** v1's status rule made Bayside's February, April–July and September 2016 "no discharge" statements count as known, while the same rule's next sentence called those Poo Bot archive days unknown. The old statements are not trustworthy: the grid marks Bayside 2015-02 "no discharge", and the legacy record lists a discharge on 2015-02-08. v2 counts a facility-month as known only inside the continuous CIWQS ledger (§1; Bayside from 2016-10, Oceanside from 2017-12), which is the design's reading and the served training frames'.
@@ -45,7 +41,7 @@ This file is the frozen scoring protocol for branch `forecast-stages`. Every sco
 
 | tier | name | days | refit rule | clean for | bias | use |
 |---|---|---|---|---|---|---|
-| **T0** | prospective | Every day after the freeze date, from 2026-10-03 | Served set: graded from `forecast_history` rows whose `model_stamp` names it, read from a committed snapshot or a GET-only path, never with the service key (Part B 20). Candidates: shadow-run on archived inputs with the design frozen at the freeze. | weights and decisions | none | confirmation |
+| **T0** | prospective | Every day after the freeze date, from 2026-10-02 | Served set: graded from `forecast_history` rows whose `model_stamp` names it, read from a committed snapshot or a GET-only path, never with the service key (Part B 20). Candidates: shadow-run on archived inputs with the design frozen at the freeze. | weights and decisions | none | confirmation |
 | **T1** | post-training | 2025-11-01 → the data end (2026-08-17 at the freeze: 290 days) | Every fitted component of every scored set is fit on days before 2025-11-01. The served set's are: it was fit through 2025-10-31. | every fitted component (Part B 1) | The served set, its stage 2 split and its 25% line were chosen with these days in view (2026-09-25 → 28), so T1 favours the incumbent. Tag `post_selected`. | confirmation (non-inferiority) |
 | **T1-holdout** | holdout | 2023-07-01 → 2025-10-31 (854 days) | **Every** fitted component is refit on days before 2023-07-01: S2 weights, volume heads, S3 link shares and the S4 table. The served artifacts' own holdout numbers do not qualify, because their heads, shares and table were fit through 2025-10-31. | weights, once refit | Holdout picked the rain source, the family and the served set. Tag `holdout_selected`. | development only. Confirmation is post-training plus prospective (Part B 1), and the holdout seasons sit inside T2, where design choices are made. |
 | **T2** | cross-season | Leave-one-season-out over July–June seasons 2016-17 … 2024-25 (9 seasons; Westside 8, since CIWQS Oceanside starts 2017-12) | **Every** fitted component is refit per held-out season, with the design fixed | weights | Existing sets' S2 choices (C grids, design searches) maximized pre-holdout LOSO scores, so their S2 T2 scores are labelled **"development (selection-contaminated)"**. New design choices are made by **nested** LOSO, with every choice made inside the inner folds. | development, calibration reference, power |
@@ -213,9 +209,9 @@ Other blocks:
 | S1 | X-S1-MISSING → X-S1-OUTAGE → X-S1-NWPGAP → X-S1-NOLEAD | peak-hour metrics: X-S1-PEAK |
 | S2 | X-S2-ARCHIVE → X-S2-UNCOV → X-LEDGER-SUSPECT → X-S2-CARRY → X-ALL-INSAMPLE | volume table: X-S2-VOLQ · tags: X-S2-OUTAGEIN, X-POWER, X-SEL |
 | S3 | X-S3-UNCOV → X-LEDGER-SUSPECT → X-S3-CARRY → X-S3-QUIET (oracle only) → X-S3-ID (oracle skill only) → X-ALL-INSAMPLE | tag: X-S3-GEO · posting check only: X-S3-NOTCLEAN, X-PL-END |
-| S4 | X-S4-UNSAMPLED → X-S4-HISTUNK → X-LEDGER-SUSPECT → X-S4-RESAMPLE → X-ALL-INSAMPLE | strata: X-S4-DAYOF, X-S4-FEW, stations sampled, resamples · fit only: X-S4-FOLLOWUP · tag: X-S4-ANALYTE |
+| S4 | X-S4-UNSAMPLED → X-S4-HISTUNK → X-S4-RESAMPLE → X-ALL-INSAMPLE | strata: X-S4-DAYOF, X-S4-FEW, stations sampled, resamples · fit only: X-S4-FOLLOWUP · tag: X-S4-ANALYTE |
 | S5 | X-S5-HEALTH → X-S5-CIRC → X-S5-PERFECT-SIBLING → X-S5-SELF → X-S5-QUIET (conditional score only) | tag: X-S5-INSAMPLE |
-| OUT | X-E2E-UNCOV → X-LEDGER-SUSPECT → X-E2E-UNK → X-ALL-INSAMPLE | posting ruler: X-PL-END |
+| OUT | X-E2E-UNCOV → X-E2E-UNK → X-ALL-INSAMPLE | posting ruler: X-PL-END |
 
 **Rules:**
 
@@ -231,10 +227,10 @@ Other blocks:
 | X-S1-PEAK | peak-hour truth: every day, until KSFO hourly history is committed |
 | X-S2-ARCHIVE | `label_source = poobot` |
 | X-S2-UNCOV | not `ledger_known` |
-| X-LEDGER-SUSPECT (Part B 8) | a trigger in zone z on day D: a CSO-cause BeachWatch posting onset, or a sample ≥ 10× the standard. The trigger counts when D−3…D+1 holds a wet day (§6) and **no basin feeding z** has a ledger event in D−3…D+1. Then every feeding basin's `ledger_known` days in D−3…D+1 are suspect (example: Bayside, February 2026). A row is left out when: S2, its basin-day is suspect; S3, a basin feeding the zone is suspect on D; S4, a basin feeding the zone is suspect on any day of D−7…D (the overflow history the stage reads); OUT, a basin feeding the zone is suspect on D, or on any day of D−7…D for a non-overflow day (the X-E2E-UNCOV window). Counted and listed. |
+| X-LEDGER-SUSPECT (Part B 8) | a trigger in zone z on day D: a CSO-cause BeachWatch posting onset, or a sample ≥ 10× the standard. The trigger counts when D−3…D+1 holds a wet day (§6) and **no basin feeding z** has a ledger event in D−3…D+1. Then every feeding basin's `ledger_known` days in D−3…D+1 are suspect (example: Bayside, February 2026). Excluded from S2 and S3, and counted and listed. |
 | X-S2-CARRY | an event that started before D is still active on D, and none starts on D |
 | X-S2-VOLQ | volume_MG is null or carries a '<' qualifier |
-| X-S2-OUTAGEIN (tag) | the row's input window holds a gauge-day inside a `gauge_outage_v1` run on the whole record, whether the row's own record masked that day or read the dead gauge's 0.00. The window is the one the input reads: 30 days, or the live frame's 7 (D−L−7…D−L−1) for the as-served entries. |
+| X-S2-OUTAGEIN (tag) | a masked gauge-day in the row's 30-day input window |
 | X-S3-UNCOV | any feeding basin is not `ledger_known` on D |
 | X-S3-CARRY | a zone outfall is still active from before D, and none starts on D |
 | X-S3-QUIET | oracle only: no feeding basin overflowed on D (an output of exactly 0) |

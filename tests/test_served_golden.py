@@ -192,9 +192,12 @@ PROTOCOL_SHA_PLACEHOLDER = "protocol sha256: <filled at commit>"
 PROTOCOL = ROOT / "features" / "forecast" / "STAGES_PROTOCOL.md"
 PROTOCOLS = ROOT / "features" / "forecast" / "protocols"
 # Every protocol version that has been replaced, moved to protocols/ unedited, with the digest its sha line holds.
-ARCHIVED_PROTOCOLS = {"stages_v1": "3dea312e3e939645cb906a7e01f632375ec28aadd9cdd76db3a2ae0eff117a6d"}
-PROTOCOL_MUST = ("Freeze date: 2026-10-01", "0.205", "0.505", "0.805", "T0", "T1-holdout", "T2", "T3",
-                 "90%", "MDE", "first-match", "oracle", "rain known", "optimistic", "as served")
+ARCHIVED_PROTOCOLS = {"stages_v1": "3dea312e3e939645cb906a7e01f632375ec28aadd9cdd76db3a2ae0eff117a6d",
+                      "stages_v2": "7e44361ae88d373913208cd97dd0b87965bb830a219f35ae1f2121c519fa175b"}
+# stages_v3: frozen 2026-10-02, T0 from the next day
+PROTOCOL_MUST = ("Freeze date: 2026-10-02", "starts the next day, 2026-10-03", "from 2026-10-03", "0.205", "0.505", "0.805",
+                 "T0", "T1-holdout", "T2", "T3", "90%", "MDE", "first-match", "oracle", "rain known", "optimistic", "as served",
+                 "Changes from `stages_v2`", "`protocols/stages_v1.md` and `stages_v2.md`")
 RETIRED_WORDS = r"\b(?:[Cc]ost\w*|King|cheapest|Platt|alarm line|[Gg]roups?|Southeast)\b"
 
 
@@ -225,7 +228,7 @@ def test_the_scoring_protocol_is_frozen_beside_the_design():
     sys.path.insert(0, str(ROOT / "features" / "forecast" / "src" / "models"))
     import stages_spec as SP
     text = PROTOCOL.read_text()
-    assert _protocol_version(text) == SP.PROTOCOL_VERSION == "stages_v2", (_protocol_version(text), SP.PROTOCOL_VERSION)
+    assert _protocol_version(text) == SP.PROTOCOL_VERSION == "stages_v3", (_protocol_version(text), SP.PROTOCOL_VERSION)
     assert SP.PROTOCOL_VERSION not in ARCHIVED_PROTOCOLS, "the current version is not an archived one"
     for must in PROTOCOL_MUST:
         assert must in text, must

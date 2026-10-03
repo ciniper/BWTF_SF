@@ -44,6 +44,7 @@ import exclusions as X  # noqa: E402
 import leaderboard as L  # noqa: E402
 import shared_logit as SL  # noqa: E402
 import stages_s2 as S  # noqa: E402
+import stages_spec as SP  # noqa: E402
 import train_v4 as T  # noqa: E402
 import truth as TR  # noqa: E402
 from shared import geography as G  # noqa: E402
@@ -283,7 +284,7 @@ def test_the_protocol_stamp_is_checked_against_the_protocol_text():
     import tempfile
     text = X.PROTOCOL.read_text()
     sha = re.search(r"^protocol sha256: ([0-9a-f]{64})$", text, re.M).group(1)
-    assert S.protocol_stamp() == f"stages_v2@{sha}"
+    assert S.protocol_stamp() == f"{SP.PROTOCOL_VERSION}@{sha}"
     assert hashlib.sha256(text.replace(sha, "<filled at commit>", 1).encode()).hexdigest() == sha
     real = X.PROTOCOL
     with tempfile.TemporaryDirectory() as d:
@@ -384,7 +385,7 @@ def test_westside_first_scored_season_sel_and_the_development_stamp():
     stamp = rows.attrs["stamp"]
     assert stamp["first_scored_season"] == {"westside": "2017-18", "north_shore": "2016-17", "central": "2016-17", "southeast": "2016-17"}
     assert stamp["tiers"]["T2"]["label"] == S.T2_LABEL == "development (selection-contaminated)"
-    assert stamp["set"] == _served() and stamp["geography"] == "geo_v1" and stamp["protocol"].startswith("stages_v2@")
+    assert stamp["set"] == _served() and stamp["geography"] == "geo_v1" and stamp["protocol"].startswith(f"{SP.PROTOCOL_VERSION}@")
     assert stamp["basins"] == list(KEYS) and "citywide" not in set(rows["basin"])
     # Westside's 2016-17 fold is emitted for composition; none of its days is ledger_known (X-S2-ARCHIVE / UNCOV)
     ws = rows[(rows["basin"] == "westside") & (rows["fold"] == "2016-17")]

@@ -14,7 +14,9 @@ a pill may also carry "window" (the words for where its number comes from),
 tooltip prints beside its own CI. `counts` maps a rule id (X-… / C-…) or a
 count slot (n_city_days) to a number, flat or as {"exclusions": {…},
 "claims": {…}, "stages": {stage: {…}}} (a chip reads its own stage's count
-first). Missing values print "—", never a placeholder; a pill fades only when
+first); "feeds": {stage: {"chip", "by_feed"}} adds what a chip counts and each
+feed's own counts to its tooltip (S5: the chip counts the perfect feed in S5's
+window). Missing values print "—", never a placeholder; a pill fades only when
 its own cell is X-POWER. ``caption(scores)`` is the one line the page prints
 under the figure title. The page that embeds the figure includes
 svgkit.FIT_SCRIPT once and the icon sprite (svgkit.sprite()); logos are
@@ -81,7 +83,7 @@ CSS = K.PIPE_CSS + K.scoped(FIG_CSS)       # the house rules as they are; this f
 
 def flat_counts(counts) -> dict:
     out = {}
-    for k, v in (counts or {}).items():
+    for k, v in (counts or {}).items():          # 'stages' and 'feeds' stay nested: each chip reads its own
         if isinstance(v, dict) and k in ("exclusions", "claims", "slots"):
             out.update(v)
         else:
@@ -198,7 +200,8 @@ WORD_SLOTS = ("weather_model",)       # slots filled with words; every other {sl
 
 def _count_of(counts: dict, stage: str, rule: str):
     """A rule's count as a stage's chip reads it: the stage's own total when the counts carry one (``stages``,
-    exclusions.figure_counts: X-LEDGER-SUSPECT is basin-days in S2's chip, zone-days in S3's), else the flat one."""
+    exclusions.figure_counts: X-LEDGER-SUSPECT is basin-days in S2's chip, zone-days in S3's, S4's and OUT's, each
+    stage's own first-match count), else the flat one."""
     own = (counts.get("stages") or {}).get(str(stage).lower())
     if isinstance(own, dict) and rule in own:
         return own[rule]
@@ -268,6 +271,24 @@ def _tile(x, y, n: dict, static: str) -> str:
     return K.logo_tile(x, y, n["logo"], static=static) if n.get("logo") else K.icon_tile(x, y, n["icon"])
 
 
+def _feed_tip(counts: dict, stage: str) -> str:
+    """A chip's per-feed counts, when the build gives them (counts['feeds'][stage] = {'chip': what the chip counts,
+    'by_feed': [{'what', 'counts': {rule: n}}]}, stages_build.figure_counts): 'counts: …' then each feed's rules
+    with a count above 0 ('nothing left out' when none)."""
+    f = (counts.get("feeds") or {}).get(str(stage).lower())
+    if not isinstance(f, dict):
+        return ""
+    parts = [f"counts: {f['chip']}"] if f.get("chip") else []
+    feeds = []
+    for feed in f.get("by_feed") or ():
+        c = feed.get("counts") or {}
+        words = " · ".join(f"{SP.EXCLUSIONS[x]['chip']} {_whole(v)}" for x, v in c.items() if _whole(v) != "0")
+        feeds.append(f"{feed['what']}: {words or 'nothing left out'}")
+    if feeds:
+        parts.append("per feed: " + "; ".join(feeds))
+    return " | ".join(parts)
+
+
 def _node_tip(n: dict, counts: dict | None = None) -> str:
     s = SP.STAGE_OF_CODE.get(n["stage"])
     if n["kind"] in ("stage", "output") and s:
@@ -281,7 +302,8 @@ def _node_tip(n: dict, counts: dict | None = None) -> str:
             if e.get("zero") and v is not None and _whole(v) == "0":
                 words += f" (0: {e['zero']})"
             rules.append(words)
-        return f"{n['id']} · " + " | ".join(rules) + (f" | {n['tip']}" if n.get("tip") else "")
+        feeds = _feed_tip(counts or {}, s["id"])
+        return f"{n['id']} · " + " | ".join(rules) + (f" | {n['tip']}" if n.get("tip") else "") + (f" | {feeds}" if feeds else "")
     if n["kind"] == "claim":
         return f"{n['id']} · " + " | ".join(f"{c}: {SP.CLAIMS[c]['plain']}" for c in n["claims"])
     return f"{n['id']}" + (f" · {n['tip']}" if n.get("tip") else "")

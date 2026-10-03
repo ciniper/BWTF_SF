@@ -11,13 +11,16 @@ Pins that:
   - C-DRY + C-RUNOFF per zone are the sampled exceedance zone-days with no overflow on D−7…D and the
     history known (Part B 3: negatives of the claim, never excluded), counted independently here;
   - X-LEDGER-SUSPECT lists Bayside's February 2026 (Part B 8), and is exactly protocol §7's sentence
-    (stages_v2: a trigger in zone z counts when its window holds a wet day and no basin feeding z filed an
-    event in it), recomputed here; a dry window and an event at the zone's other basin flag nothing, and no
-    zone overflow day is ever suspect;
+    (a trigger in zone z counts when its window holds a wet day and no basin feeding z filed an event in
+    it), recomputed here; a dry window and an event at the zone's other basin flag nothing, and no zone
+    overflow day is ever suspect; under stages_v3 it leaves out S4 rows (a feeding basin suspect on D−7…D)
+    and OUT rows (on D, or on D−7…D for a non-overflow day), S5 taking OUT's: Bayside's February 2026
+    East days are out of OUT, East's April 20–22, 2026 (no trigger) are scored;
   - a context's facts on a day do not depend on where it starts (a build over part of the record);
-  - oracle and chained rows stay paired (X-S4-HISTUNK on every entry);
-  - X-S2-OUTAGEIN reads each entry's own window and gauge record: as served the live frame's 7 past days
-    D−L−7…D−L−1, and every lead entry the gauges as its issue day knew them (issue_time_unmasked);
+  - oracle and chained rows stay paired (X-S4-HISTUNK and X-LEDGER-SUSPECT on every entry);
+  - X-S2-OUTAGEIN (stages_v3) reads each entry's own window on the whole record's gauge_outage_v1 runs:
+    as served the live frame's 7 past days D−L−7…D−L−1; a lead row is tagged whether its own record had
+    masked the gauge-day or read its 0.00 (issue_time_unmasked), which stages_v2's reading dropped;
   - the catalog counts for both geographies, as of 2026-08-17 (Part B 23), on the stages' S4 truth
     (samples.D10_SOURCES: DataSF, STARDB and Poo Bot on design D10's windows). Where a pinned count
     differs from the design's §4 figure, the figure and the reason sit beside the pin, and so does the
@@ -85,16 +88,21 @@ CATALOG_COMMON = {
     # sampled − SAMPLED_HIST_KNOWN in test_truth. Westside's STARDB days before Oceanside's ledger (2017-12) are
     # unknown history. DataSF + Poo Bot: 61 / 65 / 34 / 49 (the design's, same)
     ("s4", "X-S4-HISTUNK"): [126, 134, 34, 49],
-    # Part B 4's rule; no design figure. East resamples half its covered sample-days. DataSF + Poo Bot: 61 / 84 / 90 / 387
-    ("s4", "X-S4-RESAMPLE"): [85, 125, 154, 596],
+    # stages_v3: sampled zone-days with history known whose D−7…D holds a basin's suspect day (no design figure).
+    # East's 142 include Bayside's February 2026 sample-days
+    ("s4", "X-LEDGER-SUSPECT"): [16, 21, 40, 142],
+    # Part B 4's rule; no design figure. East resamples half its covered sample-days. stages_v2 (before the suspect
+    # days came first): 85 / 125 / 154 / 596. DataSF + Poo Bot (v2): 61 / 84 / 90 / 387
+    ("s4", "X-S4-RESAMPLE"): [82, 119, 139, 485],
     # strata on the first-look rows left scored. Design 28 / 24 / 26 / 58 day-of and 36/14/9/8 % few were counted
     # on every sampled day with the history known, before X-S4-RESAMPLE existed (and with feed onsets, East +4).
-    # DataSF + Poo Bot: day-of 23 / 18 / 20 / 20, few 5 / 6 / 4 / 18
-    ("s4", "X-S4-DAYOF"): [27, 28, 28, 30],
-    ("s4", "X-S4-FEW"): [11, 10, 6, 60],
+    # stages_v2: day-of 27 / 28 / 28 / 30, few 11 / 10 / 6 / 60. DataSF + Poo Bot (v2): day-of 23 / 18 / 20 / 20,
+    # few 5 / 6 / 4 / 18
+    ("s4", "X-S4-DAYOF"): [27, 27, 28, 28],
+    ("s4", "X-S4-FEW"): [9, 10, 6, 51],
     # tag on the scored zone-days of 2020-07 → 2021 (STARDB's July 2020 days count); the design's ≈ 848 counts
-    # results, not zone-days. DataSF + Poo Bot: 78 / 81 / 80 / 75
-    ("s4", "X-S4-ANALYTE"): [81, 84, 83, 78],
+    # results, not zone-days. stages_v2: 81 / 84 / 83 / 78. DataSF + Poo Bot (v2): 78 / 81 / 80 / 75
+    ("s4", "X-S4-ANALYTE"): [81, 84, 78, 73],
     # station-days 2016-03-01 → AS_OF. The design's 46–54 are DataSF alone (46 / 54 / 53); DataSF + Poo Bot add 8 Poo
     # Bot station-days each from 2016-03-01 (54 / 62 / 61; 12 / 12 / 11 from its 2016-01 start); STARDB adds its
     # 2016-10 → 2020-07 follow-ups
@@ -106,21 +114,26 @@ CATALOG_COMMON = {
     # design 664 / 664 / 220 / 220. North / East: the 214 days before 2016-10 and the ledger's first 7 days, whose
     # week reaches back before it (2016-10-01 → 07, none an overflow day), as Ocean's 664 is 657 + Westside's first 7
     ("out", "X-E2E-UNCOV"): [664, 664, 221, 221],
+    # stages_v3: covered zone-days a basin's suspect day reaches, on D or, for a non-overflow day, in D−7…D (no design
+    # figure). East's 226 include Bayside's 2026-02-13 → 02-28 (its suspect days and the week after)
+    ("out", "X-LEDGER-SUSPECT"): [72, 71, 145, 226],
     # design 172 / 224 / 203 / 248: the design counted feed-onset tails (Part C fix 22); the truth is ledger-only.
-    # STARDB samples 2016-10 → 2020-07 tails. DataSF + Poo Bot: 172 / 224 / 197 / 242
-    ("out", "X-E2E-UNK"): [145, 194, 148, 124],
+    # STARDB samples 2016-10 → 2020-07 tails. stages_v2 (before the suspect days came first): 145 / 194 / 148 / 124.
+    # DataSF + Poo Bot (v2): 172 / 224 / 197 / 242
+    ("out", "X-E2E-UNK"): [141, 185, 143, 110],
     # the posting ruler after OUT's own rules: 170 days after 2026-02-28 (design), less the uncovered and
     # unsampled-tail days among them
     ("out", "X-PL-END"): [153, 142, 170, 166],
 }
-# X-LEDGER-SUSPECT (Part B 8; no design figure) as protocol §7 words it under stages_v2: a trigger in zone z counts
+# X-LEDGER-SUSPECT (Part B 8; no design figure) as protocol §7 words it since stages_v2: a trigger in zone z counts
 # when D−3…D+1 holds a wet day and no basin feeding z filed an event in it; then every feeding basin's known days
 # in the window are suspect. So East's two basins are flagged together, on the same 106 days, and the geographies
 # agree (30 / 61 / 106 / 106 basin-days, 56 episodes each; STARDB's 10× samples 2016-10 → 2020-07 add triggers.
 # DataSF + Poo Bot: 20 / 55 / 81 / 81, 45 episodes). No zone overflow day is suspect: S3 East checks all 100
 # of its overflow days as identity days. (stages_v1 tested each basin alone and counted dry windows: South 438 /
 # Southeast 210 basin-days, and S3 East lost 64 / 14 of its 100 overflow days.) The suspect days come first in
-# S2's and S3's order, so the carry-over, quiet and outage-tag counts after them moved with them.
+# S2's and S3's order, and since stages_v3 in S4's (after X-S4-HISTUNK) and OUT's (after X-E2E-UNCOV), so the
+# counts after them moved with them.
 CATALOG_BY_GEO = {
     "geo_v1": {   # basins westside, north_shore, central (Mission Creek), southeast (Islais + Candlestick)
         ("s2", "X-S2-CARRY"): [3, 4, 15, 13],                     # DataSF + Poo Bot: 3 / 4 / 16 / 14
@@ -167,7 +180,9 @@ TRIGGER_OUTCOMES = {"cso_posting_onset": {"counted": 39, "dry": 1, "explained": 
 # in first-match order: a BeachWatch pull after POSTINGS_PULL may move them, so they are pinned for that pull only.
 POSTING_BOUND = {("s2", "X-S2-CARRY"), ("s2", "X-LEDGER-SUSPECT"), ("s2", "X-S2-OUTAGEIN"), ("s3", "X-S3-QUIET"),
                  ("s3", "X-S3-CARRY"), ("s3", "X-LEDGER-SUSPECT"), ("s3", "X-S3-ID"), ("s3", "X-S3-GEO"),
-                 ("s3", "X-S3-NOTCLEAN"), ("s3", "X-PL-END"), ("out", "X-PL-END")}
+                 ("s3", "X-S3-NOTCLEAN"), ("s3", "X-PL-END"), ("s4", "X-LEDGER-SUSPECT"), ("s4", "X-S4-RESAMPLE"),
+                 ("s4", "X-S4-DAYOF"), ("s4", "X-S4-FEW"), ("s4", "X-S4-ANALYTE"), ("out", "X-LEDGER-SUSPECT"),
+                 ("out", "X-E2E-UNK"), ("out", "X-PL-END")}
 
 # claims (TRUTH_START → AS_OF), per zone. Design §4.2: C-DRY 10 / 45 / 38 / 121, C-RUNOFF 4 / 10 / 17 / 49
 # (294 = 14 / 55 / 55 / 170). East +4 (1 dry, 3 runoff) are exceedances in the tails of the feed onsets the design
@@ -178,6 +193,7 @@ POSTING_BOUND = {("s2", "X-S2-CARRY"), ("s2", "X-LEDGER-SUSPECT"), ("s2", "X-S2-
 # C-DRY days 10 / 44 / 38 / 122 (episodes 9 / 38 / 32 / 87), C-RUNOFF days 4 / 11 / 17 / 52 (episodes 4 / 9 / 15 / 33).
 C_DRY = {"days": {"ocean": 13, "baker_china": 61, "north": 64, "east": 192}, "episodes": {"ocean": 12, "baker_china": 53, "north": 54, "east": 136}}
 C_RUNOFF = {"days": {"ocean": 7, "baker_china": 17, "north": 23, "east": 80}, "episodes": {"ocean": 7, "baker_china": 12, "north": 21, "east": 50}}
+C_NEG_SUSPECT = 69          # C-DRY + C-RUNOFF zone-days X-LEDGER-SUSPECT leaves out of OUT (stages_v3; SFPUC4, the same zones in both)
 C_OTHER = {"ocean": 17, "baker_china": 129, "north": 135, "east": 417}            # design 698 (same), 2016-10-16 → 2026-02-28
 C_UNMON = {"CSD-004": 1.7, "CSD-017": 2.6, "CSD-018": 2.5, "CSD-037": 1.8}        # design's km; 70 event-days (same)
 
@@ -220,7 +236,7 @@ def fixture(geo="sfpuc4_v1", facts=(), outage=(), postings_end=None, nwp=None, f
         "basin": frame(geo.keys, {"known": True, "archive": False, "y": 0.0, "volq": False, "carry": False, "suspect": False}),
         "link": frame([lk.id for lk in geo.links], {"known": True, "y": 0.0, "carry": False, "suspect": False, "quiet": False,
                                                     "identity": False, "geo_only": False, "notclean": False}),
-        "zone": frame(ZONES, {"known": True, "hist_known": True, "y": 0.0, "carry": False, "suspect": False, "quiet": False,
+        "zone": frame(ZONES, {"known": True, "hist_known": True, "y": 0.0, "carry": False, "suspect": False, "suspect_hist": False, "quiet": False,
                               "identity": False, "geo_only": False, "notclean": False, "sampled": True, "s4_y": 0.0,
                               "first_look": 1.0, "few": 0.0, "dayof": False, "out_y": 0.0, "out_why": "clean_sample",
                               "overflow": 0.0}),
@@ -302,20 +318,13 @@ def _cases() -> list:
          dict(outage=[("SF Downtown", D - pd.Timedelta(days=8))]), entry="L0s")
     case("X-S2-OUTAGEIN", "s2", "central", dict(outage=[("SF Downtown", D - pd.Timedelta(days=9))]),
          dict(outage=[("SF Downtown", D - pd.Timedelta(days=9))], row=dict(entry="L1s")), entry="L1")  # lead 1 reads 30 days
-    # a lead row reads its issue day's record: a gauge-day the whole record masks but the issue day (D − L) could not
-    # yet call an outage was read as filed, so it is no masked day of that row's window; another issue day's is
-    case("X-S2-OUTAGEIN", "s2", "central", dict(outage=[("SF Downtown", D - pd.Timedelta(days=3))],
-                                                unmasked=[(D - pd.Timedelta(days=2), D - pd.Timedelta(days=3), "SF Downtown")]),
-         dict(outage=[("SF Downtown", D - pd.Timedelta(days=3))],
-              unmasked=[(D - pd.Timedelta(days=1), D - pd.Timedelta(days=3), "SF Downtown")]), entry="L1s")
-    case("X-S2-OUTAGEIN", "s2", "central", dict(outage=[("SF Downtown", D - pd.Timedelta(days=3))],
-                                                unmasked=[(D - pd.Timedelta(days=1), D - pd.Timedelta(days=3), "SF Oceanside")]),
-         dict(outage=[("SF Downtown", D - pd.Timedelta(days=3))],
-              unmasked=[(D - pd.Timedelta(days=1), D - pd.Timedelta(days=3), "SF Downtown")]), entry="L1")   # its own gauge only
-    case("X-S2-OUTAGEIN", "s2", "central", dict(outage=[("SF Downtown", D - pd.Timedelta(days=3))],
-                                                unmasked=[(D - pd.Timedelta(days=1), D - pd.Timedelta(days=3), "SF Downtown")]),
-         dict(outage=[("SF Downtown", D - pd.Timedelta(days=3))],
-              unmasked=[(D - pd.Timedelta(days=1), D - pd.Timedelta(days=3), "SF Downtown")], row=dict(entry="L1")))  # rain known: the whole record
+    # stages_v3: the whole record's runs, whatever the row's own record did with the day. Masked there (rain known; the
+    # mean fell back to one gauge) or read as the dead gauge's 0.00 (a lead row whose issue day D − L could not yet call
+    # the run an outage: unmasked), the input was degraded, so both tag; the twins hold the run on a forecast day
+    for e in ("L1", "L1s"):
+        case("X-S2-OUTAGEIN", "s2", "central", dict(outage=[("SF Downtown", D - pd.Timedelta(days=3))],
+                                                    unmasked=[(D - pd.Timedelta(days=1), D - pd.Timedelta(days=3), "SF Downtown")]),
+             dict(outage=[("SF Downtown", D - pd.Timedelta(days=1))]), entry=e)
     case("X-S2-OUTAGEIN", "s2", "westside", dict(outage=[("SF Oceanside", D)]),
          dict(outage=[("SF Oceanside", D)], row=dict(unit="central")))                              # Bayside reads Downtown only
     # S3
@@ -336,6 +345,11 @@ def _cases() -> list:
     case("X-S4-HISTUNK", "s4", "north", dict(facts=[(z, "north", D, "hist_known", False)]), {})
     for e in ("rain", "L1", "L0s"):                                                                # every entry (§7)
         case("X-S4-HISTUNK", "s4", "north", dict(facts=[(z, "north", D, "hist_known", False)]), {}, entry=e)
+    # stages_v3: S4 reads the overflow history D−7…D, so a suspect day in it leaves the row out (suspect_hist), on
+    # every entry; the zone's own D being suspect without the history fact is not S4's reading
+    for e in ("oracle", "rain", "L1", "L0s"):
+        case("X-LEDGER-SUSPECT", "s4", "east", dict(facts=[(z, "east", D, "suspect_hist", True)]),
+             dict(facts=[(z, "east", D + one, "suspect_hist", True), (z, "east", D, "suspect", True)]), entry=e)
     case("X-S4-RESAMPLE", "s4", "ocean", dict(facts=[(z, "ocean", D, "first_look", 0.0)]), {})
     case("X-S4-DAYOF", "s4", "east", dict(facts=[(z, "east", D, "dayof", True)]), dict(facts=[(z, "east", D - one, "dayof", True)]))
     case("X-S4-FEW", "s4", "east", dict(facts=[(z, "east", D, "few", 1.0)]), {})
@@ -359,6 +373,20 @@ def _cases() -> list:
     case("X-E2E-UNCOV", "out", "east", dict(facts=[(z, "east", D, "hist_known", False)]),                 # a quiet day's week unknown …
          dict(facts=[(z, "east", D, "hist_known", False), (z, "east", D, "overflow", 1.0), (z, "east", D, "out_why", "overflow"),
                      (z, "east", D, "out_y", 1.0)]))                                                   # … an overflow day needs only D
+    # stages_v3: OUT leaves out a suspect D, and a non-overflow day whose D−7…D holds a suspect day …
+    case("X-LEDGER-SUSPECT", "out", "east", dict(facts=[(z, "east", D, "suspect", True), (z, "east", D, "suspect_hist", True)]), {})
+    case("X-LEDGER-SUSPECT", "out", "east", dict(facts=[(z, "east", D, "suspect_hist", True)]),
+         dict(facts=[(z, "east", D, "suspect_hist", True), (z, "east", D, "overflow", 1.0), (z, "east", D, "out_why", "overflow"),
+                     (z, "east", D, "out_y", 1.0)]))                                                   # … an overflow day is bad all the same
+    over = [(z, "east", D, "suspect_hist", True), (z, "east", D, "overflow", 1.0), (z, "east", D, "out_why", "overflow"), (z, "east", D, "out_y", 1.0)]
+    case("X-LEDGER-SUSPECT", "out", "east", dict(facts=over + [(z, "east", D, "suspect", True)]), dict(facts=over))   # … unless D itself is suspect
+    case("X-LEDGER-SUSPECT", "out", "north", dict(facts=[(z, "north", D, "suspect_hist", True)]), {}, entry="L1")
+    # S5 is graded on OUT's label, so its rows take OUT's rule after its own (a row seen the day before, on any feed)
+    case("X-LEDGER-SUSPECT", "s5", "ocean", dict(feeds=feeds(near), facts=[(z, "ocean", D, "suspect_hist", True)]),
+         dict(feeds=feeds(near), facts=[(z, "ocean", D, "suspect_hist", True), (z, "ocean", D, "overflow", 1.0),
+                                        (z, "ocean", D, "out_why", "overflow"), (z, "ocean", D, "out_y", 1.0)]))
+    case("X-LEDGER-SUSPECT", "s5", "ocean", dict(feeds=feeds(near), facts=[(z, "ocean", D, "suspect", True)]),
+         dict(feeds=feeds(near)), entry="degraded:0")
     case("X-E2E-UNK", "out", "ocean", dict(facts=[(z, "ocean", D, "out_why", "tail_unsampled"), (z, "ocean", D, "out_y", np.nan)]),
          dict(facts=[(z, "ocean", D, "out_why", "quiet")]))
     case("X-PL-END", "out", "east", dict(postings_end=D - one), dict(postings_end=D), table="posting")
@@ -450,10 +478,11 @@ def test_the_first_match_wins_in_protocol_order():
             "X-S3-QUIET": [("quiet", True)], "X-S3-ID": [("identity", True)], "X-S4-UNSAMPLED": [("sampled", False)],
             "X-S4-HISTUNK": [("hist_known", False)], "X-S4-RESAMPLE": [("first_look", 0.0)],
             "X-E2E-UNCOV": [("known", False)], "X-E2E-UNK": [("out_why", "tail_unsampled")]}
+    own = {("S4", "X-LEDGER-SUSPECT"): [("suspect_hist", True)]}     # S4 reads the suspect days of D−7…D (stages_v3)
     for code, (ut, u) in unit.items():
         seq = [x for x in X.STAGE_ORDER[code] if x != "X-ALL-INSAMPLE"]
         for k, first in enumerate(seq):
-            facts = [(ut, u, D, col, val) for x in seq[k:] for col, val in fact[x]]
+            facts = [(ut, u, D, col, val) for x in seq[k:] for col, val in own.get((code, x), fact[x])]
             ctx = fixture(facts=facts)
             got = X.apply(row(ctx, code, u, y=np.nan), code, ctx).iloc[0]["excl"]
             assert got == first, (code, seq[k:], got)
@@ -464,7 +493,7 @@ def test_the_first_match_wins_in_protocol_order():
     assert X.apply(row(ctx, "s1", "SF Downtown", entry="L1", y=np.nan), "s1", ctx).iloc[0]["excl"] == "X-S1-OUTAGE"
     ctx = fixture(nwp=gap)
     assert X.apply(row(ctx, "s1", "SF Downtown", entry="L1", y=np.nan), "s1", ctx).iloc[0]["excl"] == "X-S1-NWPGAP"
-    # S5: the feed's own rules come before OUT's coverage rules; HEALTH and CIRC before SELF
+    # S5: the feed's own rules come before OUT's rules; HEALTH and CIRC before SELF; OUT's in OUT's order
     unknown = [("zone", "ocean", D, "known", False), ("zone", "ocean", A, "known", False)]
     seen = {f: _obs((D, "ocean", "westside"), (A, "ocean", "westside")) for f in ALL_FEEDS}
     ctx = fixture(facts=unknown, feeds=seen, watcher=pd.Series(False, index=[D]))
@@ -472,6 +501,9 @@ def test_the_first_match_wins_in_protocol_order():
         assert X.apply(row(ctx, "s5", "ocean", day=day, entry=entry, y=np.nan), "s5", ctx).iloc[0]["excl"] == want, entry
     ctx = fixture(facts=unknown, feeds={f: _obs((D - pd.Timedelta(days=2), "ocean", "westside")) for f in ALL_FEEDS})
     assert X.apply(row(ctx, "s5", "ocean", entry="degraded", y=np.nan), "s5", ctx).iloc[0]["excl"] == "X-E2E-UNCOV"
+    ctx = fixture(facts=[("zone", "ocean", D, "suspect", True), ("zone", "ocean", D, "out_why", "tail_unsampled")],
+                  feeds={f: _obs((D - pd.Timedelta(days=2), "ocean", "westside")) for f in ALL_FEEDS})
+    assert X.apply(row(ctx, "s5", "ocean", entry="degraded", y=np.nan), "s5", ctx).iloc[0]["excl"] == "X-LEDGER-SUSPECT"
 
 
 def test_power_and_selection_tags():
@@ -505,7 +537,7 @@ def test_power_and_selection_tags():
         out = X.apply(r, "out", ctx)
         assert out["sel"].tolist() == want, (geo, out["sel"].tolist())
         assert out["tags"].str.contains("X-SEL").tolist() == [bool(w) for w in want]
-    assert X.freeze_date() == pd.Timestamp("2026-10-01")
+    assert X.freeze_date() == pd.Timestamp("2026-10-02")                 # stages_v3's
     for geo, sel in (("sfpuc4_v1", "post_selected"), ("geo_v1", "holdout_selected")):
         ctx = fixture(geo)
         r = row(ctx, "s2", "central", day="2025-12-01")
@@ -546,13 +578,14 @@ def test_a_t3_row_raises_and_unknowns_raise():
     _raises(ValueError, X.apply, row(ctx, "s1", T.MEAN_SERIES), "s1", ctx)           # the floor is per gauge
     _raises(ValueError, X.apply, row(ctx, "s1", "SF Downtown", entry="rain"), "s1", ctx)
     _raises(ValueError, X.apply, row(ctx, "s1", "SF Downtown", entry="L1"), "s1", dataclasses.replace(ctx, nwp=None))
-    # an S2 lead row reads its issue day's gauge record (X-S2-OUTAGEIN): without it, it raises rather than read the whole one
-    _raises(ValueError, X.apply, row(ctx, "s2", "central", entry="L1"), "s2", dataclasses.replace(ctx, unmasked=None))
-    X.apply(row(ctx, "s2", "central"), "s2", dataclasses.replace(ctx, unmasked=None))     # rain known reads the whole record
+    # stages_v3: X-S2-OUTAGEIN reads the whole record on every entry, so a lead row needs no issue-day record and one
+    # given changes nothing; the input is still checked (a gauge-day on or after its issue day, an unknown gauge)
+    for e in ("oracle", "L1", "L1s"):
+        a = X.apply(row(ctx, "s2", "central", entry=e), "s2", dataclasses.replace(ctx, unmasked=None))
+        some = fixture(unmasked=[(D - pd.Timedelta(days=1), D - pd.Timedelta(days=3), "SF Downtown")])
+        assert a.equals(X.apply(row(some, "s2", "central", entry=e), "s2", some)), e
     _raises(ValueError, fixture, unmasked=[(D, D, "SF Downtown")])                       # a gauge-day on or after its issue day
     _raises(KeyError, fixture, unmasked=[(D, D - pd.Timedelta(days=1), "SFO")])
-    nope = fixture(unmasked=[(D - pd.Timedelta(days=1), D - pd.Timedelta(days=3), "SF Downtown")])   # not an outage day
-    _raises(AssertionError, X.apply, row(nope, "s2", "central", entry="L1"), "s2", nope)
     _raises(ValueError, X.apply, row(ctx, "s5", "ocean"), "s5", ctx)                 # no feeds
     ctx5 = fixture(feeds={f: _obs() for f in ("oracle", "archive")})
     _raises(KeyError, X.apply, row(ctx5, "s5", "ocean", entry="degraded:3"), "s5", ctx5)
@@ -600,7 +633,8 @@ def test_counts_partition_a_synthetic_multi_stage_frame():
     facts = []
     flip = {"known": False, "hist_known": False, "sampled": False}          # the clean value is True; every other fact's is False
     for ut, units, cols in (("basin", G.SFPUC4_V1.keys, ("known", "archive", "carry", "suspect")),
-                            ("zone", list(ZONES), ("known", "hist_known", "carry", "suspect", "quiet", "identity", "sampled", "geo_only"))):
+                            ("zone", list(ZONES), ("known", "hist_known", "carry", "suspect", "suspect_hist", "quiet", "identity",
+                                                   "sampled", "geo_only"))):
         for u in units:
             for col in cols:
                 for d in days[rng.random(len(days)) < 0.15]:
@@ -649,7 +683,7 @@ def test_counts_partition_the_committed_data():
     """Every stage of the served geography on the committed data, y from truth.py as a build writes it:
     the partition holds and the truth check passes on every scored row."""
     import stages_entries as E
-    ctx = X.context("geo_v1", end=AS_OF, unmasked=E.issue_time_unmasked())       # S2's L1 rows read the issue day's gauges
+    ctx = X.context("geo_v1", end=AS_OF, unmasked=E.issue_time_unmasked())       # given as a build does; no rule reads it
     frames = []
     for code, units, col, ut in (("s2", ctx.geo.keys, "y", "basin"), ("s3", list(ZONES), "y", "zone"),
                                  ("s4", list(ZONES), "s4_y", "zone"), ("out", list(ZONES), "out_y", "zone")):
@@ -664,8 +698,8 @@ def test_counts_partition_the_committed_data():
     assert n == len(rows)
     sel = rows.drop_duplicates(["date"]).set_index("date")["sel"]
     assert (sel[sel.index < X.HOLDOUT_START] == "").all() and (sel[sel.index >= X.POST_START] == "post_selected").all()
-    # oracle and chained stay paired: S2, S4 (X-S4-HISTUNK on every entry) and OUT leave out the same rows on
-    # every entry; S3 differs only by its oracle-only rules
+    # oracle and chained stay paired: S2, S4 (X-S4-HISTUNK and X-LEDGER-SUSPECT on every entry) and OUT leave out the
+    # same rows on every entry; S3 differs only by its oracle-only rules
     for stage in ("s2", "s4", "out", "s3"):
         p = rows[rows["stage"] == stage].pivot_table(index=["unit", "date"], columns="entry", values="excl", aggfunc="first")
         differ = p[p["oracle"] != p["L1"]]
@@ -687,7 +721,9 @@ def test_counts_partition_the_committed_data():
 def test_dry_and_runoff_are_the_exceedances_with_no_overflow_in_the_week():
     """C-DRY + C-RUNOFF per zone = sampled exceedance zone-days with every feeding basin known on D−7…D and
     no zone overflow on D−7…D, counted here from zone_elevated and zone_overflow; the split is the two-gauge
-    rain on D−2…D. They stay in OUT's score as good days (negatives of the claim): no rule excludes them."""
+    rain on D−2…D. They stay in OUT's score as good days (negatives of the claim): no rule excludes them as a class.
+    stages_v3's X-LEDGER-SUSPECT leaves out the ones whose D−7…D holds a day the ledger probably missed, where "no
+    overflow" itself is in doubt (Bayside's 16–20 February 2026 among them); the claims still count them."""
     geo = G.SFPUC4_V1
     cl = X.claims(geo)
     el = T.zone_elevated(geo, end=AS_OF)
@@ -709,7 +745,11 @@ def test_dry_and_runoff_are_the_exceedances_with_no_overflow_in_the_week():
     r = X.skeleton("out", list(ZONES), ctx.start, ctx.end, entry="rain")
     r["y"] = ctx.frames["zone"]["out_y"].reindex(pd.MultiIndex.from_arrays([r["unit"], r["date"]])).to_numpy()
     out = X.apply(r, "out", ctx).set_index(["unit", "date"])
-    assert (out.loc[list(zip(neg["unit"], neg["date"])), "excl"] == "").all()
+    excl = out.loc[list(zip(neg["unit"], neg["date"])), "excl"].to_numpy()
+    hist = ctx.frames["zone"]["suspect_hist"].reindex(pd.MultiIndex.from_arrays([neg["unit"], neg["date"]])).to_numpy(dtype=bool)
+    assert set(excl) <= {"", "X-LEDGER-SUSPECT"} and ((excl == "X-LEDGER-SUSPECT") == hist).all()
+    if _pull_is_committed():                            # as of AS_OF: 69 of the 457 (none under stages_v2)
+        assert int(hist.sum()) == C_NEG_SUSPECT, int(hist.sum())
     for c in ("C-DRY", "C-RUNOFF"):                     # an episode is an exceedance and its resamples (≤ 2 days apart)
         assert all(cl[c]["episodes"][z] <= cl[c]["days"][z] for z in ZONES)
 
@@ -763,7 +803,7 @@ def test_bayside_february_2026_is_suspect():
 
 
 def test_no_zone_overflow_day_is_ever_suspect():
-    """Under stages_v2 an event at any basin feeding the zone explains a trigger for all of them, and zones that share
+    """Since stages_v2 an event at any basin feeding the zone explains a trigger for all of them, and zones that share
     a basin share all their feeding basins, so neither a basin event day nor a zone overflow day is suspect, in either
     geography: S3 keeps every East overflow day (stages_v1 left out 64 under SFPUC4, 14 under GEO_V1)."""
     for version in G.VERSIONS:
@@ -781,6 +821,40 @@ def test_no_zone_overflow_day_is_ever_suspect():
         out = X.apply(r, "s3", ctx)
         over = (r["y"] == 1).to_numpy()
         assert over.sum() == 100 and (out.loc[over, "excl"] == "").all(), (version, out.loc[over, "excl"].value_counts().to_dict())
+
+
+def test_s4_and_out_leave_out_bayside_february_2026_but_not_april():
+    """stages_v3 (protocol §7): X-LEDGER-SUSPECT leaves S4 rows out when a basin feeding the zone is suspect on some day
+    of D−7…D, and OUT rows when one is on D, or on D−7…D for a non-overflow day, at §7's first-match places (S4 after
+    X-S4-HISTUNK, OUT after X-E2E-UNCOV), on every entry. On the committed data: Bayside's February 2026 East days are
+    out of OUT, its suspect days 13 → 21 February and the week after them (to the 28th), and East's samples of those
+    days are out of S4; East's April 20–22, 2026 (0.93″, samples to 4.8×, nothing filed, no CSO posting on file after
+    BeachWatch's last filing and no 10× sample) have no trigger, so they stay scored: OUT's as negatives of the claim,
+    S4's first look (the 21st and 22nd are resamples)."""
+    feb = pd.date_range("2026-02-13", "2026-02-28")
+    apr = pd.date_range("2026-04-20", "2026-04-22")
+    for version in G.VERSIONS:
+        ctx = X.context(version, end=AS_OF)
+        zf = ctx.frames["zone"]
+        out, s4 = {}, {}
+        for st, col, keep in (("out", "out_y", out), ("s4", "s4_y", s4)):
+            for entry in ("oracle", "rain", "L1"):
+                r = X.skeleton(st, ["east"], "2026-02-01", "2026-04-30", entry=entry)
+                r["y"] = zf[col].reindex(pd.MultiIndex.from_arrays([r["unit"], r["date"]])).to_numpy()
+                keep[entry] = X.apply(r, st, ctx).set_index("date")["excl"]
+            assert keep["oracle"].equals(keep["rain"]) and keep["oracle"].equals(keep["L1"]), (version, st)   # paired
+        o, q = out["oracle"], s4["oracle"]
+        assert (o.loc[feb] == "X-LEDGER-SUSPECT").all(), (version, o.loc[feb].to_dict())
+        assert set(o.index[o == "X-LEDGER-SUSPECT"]) == set(feb), version              # nothing else that spring
+        e = zf.loc["east"]
+        assert set(e.index[e["suspect"].to_numpy(dtype=bool)]) & set(feb) == set(pd.date_range("2026-02-13", "2026-02-21"))
+        sampled_feb = [d for d in feb if e.loc[d, "sampled"]]
+        assert sampled_feb and (q.loc[sampled_feb] == "X-LEDGER-SUSPECT").all(), (version, q.loc[sampled_feb].to_dict())
+        assert e.loc["2026-02-16":"2026-02-20", "s4_y"].eq(1).all()                    # the 10× samples, now unscored
+        # April 20–22: no trigger, so nothing is suspect; scored as OUT negatives, and S4's first look on the 20th
+        assert not e.loc[apr, ["suspect", "suspect_hist"]].to_numpy(dtype=bool).any(), version
+        assert (o.loc[apr] == "").all() and (zf.loc["east", "out_why"].loc[apr] == "exceedance_no_overflow").all(), version
+        assert q.loc[pd.Timestamp("2026-04-20")] == "" and (q.loc[apr[1:]] == "X-S4-RESAMPLE").all(), (version, q.loc[apr].to_dict())
 
 
 def _suspect_on(trigger_rows, events=(), wet=(), unrecorded=(), geo="sfpuc4_v1"):
@@ -845,11 +919,13 @@ def test_a_dry_window_and_an_explained_trigger_flag_nothing():
 
 
 def test_ledger_suspect_is_the_protocols_sentence():
-    """X-LEDGER-SUSPECT recomputed here from protocol §7's words (stages_v2), on the committed data: a trigger (a
-    CSO-cause posting onset, or a sample ≥ 10× the standard) in zone z on day D counts when D−3…D+1 holds a wet day
+    """X-LEDGER-SUSPECT recomputed here from protocol §7's words (the trigger as stages_v2 worded it, unchanged in
+    stages_v3), on the committed data: a trigger (a CSO-cause posting onset, or a sample ≥ 10× the standard) in
+    zone z on day D counts when D−3…D+1 holds a wet day
     (the masked two-gauge mean ≥ 0.10") and no basin feeding z has a ledger event in D−3…D+1 (all read as of AS_OF);
     then every feeding basin's ledger_known days in D−3…D+1 are suspect. The context's basin facts are exactly that
-    set, and a zone row is suspect when any of its feeding basins' days is."""
+    set, a zone row is suspect when any of its feeding basins' days is, and its history (S4, OUT: stages_v3) when one
+    of D−7…D is."""
     lo = T.TRUTH_START - pd.Timedelta(days=1)                     # the first trigger whose window reaches TRUTH_START
     rain = T.gauge_rain(lo - pd.Timedelta(days=3), AS_OF)[T.MEAN_SERIES]
     assert rain.notna().all()
@@ -886,49 +962,63 @@ def test_ledger_suspect_is_the_protocols_sentence():
             feeding = T.feeding_basins(geo, z)
             got = set(zf.loc[z].index[zf.loc[z, "suspect"].to_numpy(dtype=bool)])
             assert got == {d for bk, d in want if bk in feeding}, (version, z)
+            hist = set(zf.loc[z].index[zf.loc[z, "suspect_hist"].to_numpy(dtype=bool)])
+            assert hist == {d + pd.Timedelta(days=k) for d in got for k in range(8) if d + pd.Timedelta(days=k) <= AS_OF}, (version, z)
         if _pull_is_committed():
             assert tally == TRIGGER_OUTCOMES, (version, tally)
 
 
-def test_outagein_reads_the_window_and_record_each_entry_read():
-    """X-S2-OUTAGEIN on the committed data, recomputed per row from protocol §7's words, "a masked gauge-day in the
-    row's input window", on the record the row's entry read: rain known D−29…D on the whole record's
-    gauge_outage_v1 mask; lead L D−29…D−L−1 and as served the live frame's 7 past days D−L−7…D−L−1, both on the gauges
-    through the issue day I − 1 as I knew them (stages_entries.issue_time_unmasked: a gauge-day the whole record masks
-    but I could not yet call an outage was read as filed, so it is no masked day of that window)."""
+# X-S2-OUTAGEIN on lead rows whose window holds a gauge-day the issue day's record read as the dead gauge's 0.00
+# (issue_time_unmasked), 2024-01-20 → AS_OF, per lead entry, both geographies: stages_v2's issue-day reading left them
+# untagged, stages_v3 tags them (as of 2026-08-17)
+OUTAGEIN_READ_AS_ZERO = 34
+
+
+def test_outagein_reads_the_whole_record_in_each_entrys_window():
+    """X-S2-OUTAGEIN on the committed data, recomputed per row from protocol §7's words (stages_v3): the row's input
+    window holds a gauge-day inside a gauge_outage_v1 run on the whole record (hindsight) — rain known D−29…D, lead L
+    D−29…D−L−1 (D−L…D are the forecast's), as served the live frame's 7 past days D−L−7…D−L−1 — whether the row's own
+    record masked that day or, at its issue day, read the dead gauge's 0.00 (stages_entries.issue_time_unmasked).
+    Both cases occur on lead rows and both tag; the second are the rows stages_v2's issue-day reading left untagged."""
     import stages_entries as E
     um = E.issue_time_unmasked()
-    lo = pd.Timestamp("2025-12-01")                            # the Feb 2026 outages, whose starts the issue days could not see
-    ctx = X.context("sfpuc4_v1", start=lo, end=AS_OF, unmasked=um)
+    lo = pd.Timestamp("2024-01-20")                            # the lead archive's start (protocol §3)
     g = T.gauges()
     masked = set(zip(g.loc[g["status"] == "outage", "date"], g.loc[g["status"] == "outage", "series"]))
     unread = set(zip(um["issue"], um["date"], um["gauge"]))
     gauges_of = {T.MEAN_SERIES: T.GAUGE_SERIES, **{s: (s,) for s in T.GAUGE_SERIES}}
-    flips = {"lead": 0, "served_window": 0}
-    for entry in ("rain", "L0", "L1", "L0s", "L1s"):
-        r = X.skeleton("s2", ctx.geo.keys, lo + pd.Timedelta(days=40), AS_OF, entry=entry)
-        r["y"] = ctx.frames["basin"]["y"].reindex(pd.MultiIndex.from_arrays([r["unit"], r["date"]])).to_numpy()
-        got = X.apply(r, "s2", ctx)["tags"].str.contains("X-S2-OUTAGEIN").to_numpy()
-        L = X._lead_of(entry)
-        want, whole, old = [], [], []
-        for b, d in zip(r["unit"], pd.DatetimeIndex(r["date"])):
-            gs = gauges_of[ctx.rain_series[b]]
-            last = d - pd.Timedelta(days=(L if L is not None else -1) + 1)
-            first = d - pd.Timedelta(days=L + E.SERVED_PAST_DAYS if entry.endswith("s") else 29)
-            days = pd.date_range(first, last)
-            hit = {(x, gg) for x in days for gg in gs if (x, gg) in masked}
-            whole.append(bool(hit))
+    for version in G.VERSIONS:
+        ctx = X.context(version, start=lo - pd.Timedelta(days=40), end=AS_OF)
+        assert ctx.unmasked is None                           # no rule needs the issue day's record any more
+        seen = {"own_record": 0, "read_as_zero": {}, "served_window": 0}
+        for entry in ("rain", "L0", "L1", "L0s", "L1s"):
+            r = X.skeleton("s2", ctx.geo.keys, lo, AS_OF, entry=entry)
+            r["y"] = ctx.frames["basin"]["y"].reindex(pd.MultiIndex.from_arrays([r["unit"], r["date"]])).to_numpy()
+            got = X.apply(r, "s2", ctx)["tags"].str.contains("X-S2-OUTAGEIN").to_numpy()
+            L = X._lead_of(entry)
+            want, zero_only, old = [], [], []
+            for b, d in zip(r["unit"], pd.DatetimeIndex(r["date"])):
+                gs = gauges_of[ctx.rain_series[b]]
+                last = d - pd.Timedelta(days=(L if L is not None else -1) + 1)
+                first = d - pd.Timedelta(days=L + E.SERVED_PAST_DAYS if entry.endswith("s") else 29)
+                hit = {(x, gg) for x in pd.date_range(first, last) for gg in gs if (x, gg) in masked}
+                want.append(bool(hit))
+                issue = d - pd.Timedelta(days=L) if L is not None else None
+                as_zero = {(x, gg) for x, gg in hit if issue is not None and (issue, x, gg) in unread}
+                zero_only.append(bool(hit) and as_zero == hit)        # every degraded day read as 0.00 at the issue day
+                seen["own_record"] += int(L is not None and bool(hit - as_zero))
+                if entry.endswith("s"):                              # the 6- / 5-day window this rule read before 2026-10-02
+                    old.append(any((x, gg) in masked for x in pd.date_range(d - pd.Timedelta(days=6), last) for gg in gs))
+            assert got.tolist() == want, (version, entry, int((got != np.array(want)).sum()))
             if L is not None:
-                hit = {(x, gg) for x, gg in hit if (d - pd.Timedelta(days=L), x, gg) not in unread}
-            want.append(bool(hit))
-            if entry.endswith("s"):                              # the 6- / 5-day window this rule read before 2026-10-02
-                old.append(any((x, gg) in masked for x in pd.date_range(d - pd.Timedelta(days=6), last) for gg in gs))
-        assert got.tolist() == want, (entry, int((got != np.array(want)).sum()))
-        if L is not None:
-            flips["lead"] += int((np.array(want) != np.array(whole)).sum())
-        if old:
-            flips["served_window"] += int((np.array(want) != np.array(old)).sum())
-    assert flips["lead"] > 0 and flips["served_window"] > 0, flips      # both readings matter on the committed data
+                seen["read_as_zero"][entry] = int(np.array(zero_only).sum())
+                assert got[np.array(zero_only)].all(), (version, entry)  # stages_v2 dropped these; stages_v3 tags them
+            else:
+                assert not any(zero_only)                            # rain known reads the whole record: nothing unread
+            if old:
+                seen["served_window"] += int((np.array(want) != np.array(old)).sum())
+        assert seen["own_record"] > 0 and seen["served_window"] > 0, (version, seen)
+        assert seen["read_as_zero"] == {e: OUTAGEIN_READ_AS_ZERO for e in ("L0", "L1", "L0s", "L1s")}, (version, seen)
 
 
 def test_notclean_reads_two_days_either_side():
@@ -989,17 +1079,23 @@ def test_catalog_counts_as_of():
         import stages_flowchart as F
         fc = X.figure_counts(cat, X.claims(version))
         svg = F.render(version, None, fc)[0]
-        for words in ("no filing 467", "feed archive 832", "days nobody sampled 11,950", "resamples 960", "overflow history unknown 343",
-                      "unsampled days after one 611", "dry-weather exceedances 330", "rain runoff, no overflow 127",
+        for words in ("no filing 467", "feed archive 832", "days nobody sampled 11,950", "overflow history unknown 343",
+                      "overflow history unknown 1,770", "dry-weather exceedances 330", "rain runoff, no overflow 127",
                       "shore far from a station 4"):
             assert words in svg, (version, words)
-        # each chip reads its own stage's count: X-LEDGER-SUSPECT is basin-days in S2's chip, zone-days in S3's
+        # each chip reads its own stage's count: X-LEDGER-SUSPECT is basin-days in S2's chip, zone-days in S3's, S4's and
+        # OUT's; the rules after it move with the BeachWatch pull (stages_v2: resamples 960, unsampled days after one 611)
         if committed:
-            for st in ("s2", "s3"):
+            for words in ("resamples 825", "unsampled days after one 579"):
+                assert words in svg, (version, words)
+            for st in ("s2", "s3", "s4", "out"):
                 n = sum(cat["exclusions"][st]["X-LEDGER-SUSPECT"].values())
                 assert fc["stages"][st]["X-LEDGER-SUSPECT"] == n
-            assert f"ledger likely incomplete {sum(cat['exclusions']['s2']['X-LEDGER-SUSPECT'].values()):,}" in svg
-            assert f"ledger likely incomplete {sum(cat['exclusions']['s3']['X-LEDGER-SUSPECT'].values()):,}" in svg
+            assert (fc["stages"]["s2"]["X-LEDGER-SUSPECT"], fc["stages"]["s3"]["X-LEDGER-SUSPECT"], fc["stages"]["s4"]["X-LEDGER-SUSPECT"],
+                    fc["stages"]["out"]["X-LEDGER-SUSPECT"]) == (303, 227, 219, 514), version
+            for st, node in (("s2", "x.s2"), ("s3", "x.s3"), ("s4", "x.s4"), ("out", "x.out")):
+                card = svg.split(f'<title>{node} ', 1)[1].split("</a>", 1)[0]
+                assert f"ledger likely incomplete {sum(cat['exclusions'][st]['X-LEDGER-SUSPECT'].values()):,}" in card, (version, st)
 
 
 if __name__ == "__main__":
