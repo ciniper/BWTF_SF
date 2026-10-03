@@ -60,8 +60,8 @@ served set is in `features/forecast/data/models/stages/<name>/scores.json`:
 
 To put a set live on today's basins:
 `src/models/promote.py <name> --line 0.25`, then the follow-ups its docstring
-lists. A city-basin set needs the promotion tooling (Wave 5), which is not built
-yet.
+lists. A city-basin set needs the promotion tooling (P11), which is built when such
+a set earns promotion (STAGES_DESIGN.md Part B 29).
 
 ## A rain gauge
 
@@ -93,7 +93,7 @@ are replay variants in `src/models/stages_s5.py`: no correction, `basin_swap`
 observation, with a perfect feed and with realistic late or missed flags. Its
 S5 table is in `scores.json`.
 
-To switch the live rule (A7) to `link_zone_v1`: a station's CSO flag sets the
+To switch the live rule (A7) to `link_zone_v1` (the rule the replay scores as `link_zone_swap`; both read "link/zone"): a station's CSO flag sets the
 beaches posted by that station's outfalls to certain on the flag day, raises the
 basin's other beaches to how often they overflow together, and lets the
 lingering table carry the days after. No lab result moves the percentage.
