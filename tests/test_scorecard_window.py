@@ -27,6 +27,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "features" / "forecast" / "src" / "models"))
 
 import scorecard as S  # noqa: E402
+from shared import risk_levels as RL  # noqa: E402
 
 MODEL_DIR = ROOT / "features" / "forecast" / "data" / "models"
 SPAN = ("2016-03-01", "2025-10-31")
@@ -263,7 +264,7 @@ def test_served_windows():
     assert set(w["zone_confusion"]) == set(sc["zone_confusion_holdout"])
     assert set(w["basins"]) == {"westside", "north_shore", "central", "southeast"}
     assert r["trained_through"] == trained_through
-    assert all(t in S.LINE_GRID for t in S.THRESHOLDS)   # every stored line is on the served grid
+    assert set(RL.edges()) <= set(S.LINE_GRID)   # every risk-level edge is on the served grid (Part B 21)
     assert [s["season"] for s in r["seasons"]][:2] == [S.season_of(sc["span"][1]), S.season_of(sc["span"][1]) - 1]
 
     # outside the artifact → the post-training stretch if there is one, else the whole holdout
@@ -276,12 +277,14 @@ def test_served_windows():
         assert w["preset"] == "holdout" and (w["start"], w["end"]) == (sc["holdout_start"], trained_through)
 
     # the explicit holdout window = the stored season block = the eval report
-    # (the served window is scored on the finer LINE_GRID; the artifact stores three of those lines)
+    # (the served window is scored on LINE_GRID; a stored line off the grid, 50%, through the same function)
     w = eng.get_scorecard("2024-01-13", sc["holdout_start"], trained_through)["window"]
     assert w["grade"] == "holdout"
+    off = tuple(t for t in S.THRESHOLDS if t not in S.LINE_GRID)
+    again = S.zone_confusion(sc["days"], list(sc["zone_confusion_holdout"]), w["start"], w["end"], holdout_only=False, thresholds=off)
     for zk, stored in sc["zone_confusion_holdout"].items():
         assert set(w["zone_confusion"][zk]) == {str(t) for t in S.LINE_GRID}
-        assert {t: w["zone_confusion"][zk][t] for t in stored} == stored, zk
+        assert {t: w["zone_confusion"][zk].get(t, again[zk].get(t)) for t in stored} == stored, zk
     assert set(w["zone_confusion"]) == set(sc["zone_confusion_holdout"])
     # the holdout block equals the served set's own training record: eval_report for the original gb_v1
     # bundle, the promoted set's manifest (served.json per_basin, keys n/pos) since the 2026-09-28 promotion
@@ -493,20 +496,20 @@ def test_posted_confusion_in_the_api_matches_the_shared_function_and_the_record(
     w = eng.get_scorecard("2024-01-13", sc["holdout_start"], sc["span"][1])["window"]
     assert set(w["posted_confusion"]) == set(w["zone_confusion"])
     assert w["combined_confusion"] == S.zone_confusion_combined(sc["days"], list(w["zone_confusion"]), w["start"], w["end"], holdout_only=False, thresholds=S.LINE_GRID)
-    ce = w["combined_confusion"]["east"]["0.5"]
-    assert ce["tp_discharge"] + ce["fn_discharge"] == w["zone_confusion"]["east"]["0.5"]["vs_discharge_posting"]["tp"] + w["zone_confusion"]["east"]["0.5"]["vs_discharge_posting"]["fn"]
+    ce = w["combined_confusion"]["east"]["0.505"]
+    assert ce["tp_discharge"] + ce["fn_discharge"] == w["zone_confusion"]["east"]["0.505"]["vs_discharge_posting"]["tp"] + w["zone_confusion"]["east"]["0.505"]["vs_discharge_posting"]["fn"]
     assert ce["tp_sample"] + ce["fn_sample"] >= 50 and ce["dry_elevated"] >= 50 and ce["unknown_tail"] >= 10, ce   # the East: confirmed persistence, dry-weather dirtiness, unsampled tail days all present
     assert w["posted_confusion"] == S.zone_confusion_posted(sc["days"], list(w["zone_confusion"]), label, w["start"], w["end"],
                                                             holdout_only=False, thresholds=S.LINE_GRID)
-    e = w["posted_confusion"]["east"]["0.5"]
+    e = w["posted_confusion"]["east"]["0.505"]
     assert e["tp"] + e["fn"] >= 100 and e["tp"] / (e["tp"] + e["fn"]) >= 0.6 and e["fp"] <= 20, e   # the East: most posted days flagged, few alarms on unposted days
     assert e["other_posted"] > 50 and e["unknown"] > 0                                                # dry-weather postings counted apart; days after the record not graded
     pl = w["posting_label"]
     assert pl["known_through"] == label.known_through() and pl["unknown_days"] == e["unknown"] and pl["in_scope"] == ["cso", "rain"]
     # a window entirely after the record: nothing graded, everything unknown
     w2 = eng.get_scorecard("2024-01-13", "2026-06-01", sc["span"][1])["window"]
-    assert all(v["0.5"]["tp"] + v["0.5"]["fn"] + v["0.5"]["fp"] + v["0.5"]["tn"] == 0 and v["0.5"]["unknown"] == w2["n_days"] for v in w2["posted_confusion"].values())
-    print(f"   East vs postings at 50%: {e['tp']}/{e['tp']+e['fn']} posted days caught, {e['fp']} alarms on unposted days, {e['other_posted']} other-cause posted days, {e['unknown']} days after the record")
+    assert all(v["0.505"]["tp"] + v["0.505"]["fn"] + v["0.505"]["fp"] + v["0.505"]["tn"] == 0 and v["0.505"]["unknown"] == w2["n_days"] for v in w2["posted_confusion"].values())
+    print(f"   East vs postings at the High edge (51%): {e['tp']}/{e['tp']+e['fn']} posted days caught, {e['fp']} alarms on unposted days, {e['other_posted']} other-cause posted days, {e['unknown']} days after the record")
 
 
 if __name__ == "__main__":

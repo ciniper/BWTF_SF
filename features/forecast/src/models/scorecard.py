@@ -20,9 +20,9 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 
 THRESHOLDS = (0.10, 0.25, 0.50)   # the lines the trainer stores in the artifact's season block
-# the finer grid the served window is scored on, so "cheapest line" for a
-# cost ratio (false alarms + N × misses) has somewhere to land; includes THRESHOLDS
-LINE_GRID = (0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50, 0.60, 0.75)
+# The one grid the Model check window and every report grade on (STAGES_DESIGN.md Part B 21): the three
+# risk-level edges (shared/risk_levels.edges(): Medium 0.205, High 0.505, Extreme 0.805) and lines between.
+LINE_GRID = (0.05, 0.10, 0.15, 0.205, 0.25, 0.30, 0.40, 0.505, 0.60, 0.75, 0.805)
 BASIN_KEYS = ("westside", "north_shore", "central", "southeast")
 
 
