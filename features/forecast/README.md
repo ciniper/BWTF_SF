@@ -172,6 +172,10 @@ python -m src.collectors.nws_rain
 python -m src.api.predict
 ```
 
+## Swapping a part (weather model, weights, gauge, basins, live corrections)
+
+See [SWAPS.md](SWAPS.md): build the new piece next to the served one, score it with the stages build, then promote.
+
 ## Model explorers (how the forecast works, opened up)
 
 Static pages under `reports/`, served by the app at `/reports/<name>.html` and
