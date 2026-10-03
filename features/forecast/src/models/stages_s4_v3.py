@@ -118,6 +118,29 @@ stations only (the East stations SFPUC4's station_basin puts in South: Jackrabbi
 Windsurfer, Sunnydale), first looks read on those stations. And honest power (Part B
 4): per zone, the first-look rows in an overflow's tail and the overflow days behind them.
 
+**Today's lingering curve at zone level (``zone_table``, ``zone_curves``,
+``served_recipe``; sfpuc4_shared8_v2).** The second challenger drops the v3 fit
+for the served table's recipe (train_v4.fit_impact_table), ported to the four
+zones and refit per fold on the fold's training days: a zone's overflow days are
+those a link into it fired with every feeding basin ledger-known; each one's size
+is compose_v2's zone size at φ 1 read on the ledger (stages_build.true_history:
+the fired basins' measured volume, the fold's own v̂ where none is measured), so
+the size class it is fit in is the one the build composes it in; large = at or
+above the median of the zone's measured sizes, kept unrounded because zone_v3
+reads it as a threshold. Truth: train_v4.load_samples() (DataSF + Poo Bot, the
+served table's records), every sampled day of the zone's stations (the max over
+them) whose feeding basins are ledger-known, resamples included. Buckets: days
+since the zone's last overflow within 7 days, {0, 1, 2, 3, 4–5, 6–7} × {small,
+large}, n ≥ 3, the baseline the days with none; then impact.smooth_table and x(k,
+s) = compose_v2._attributable, as the GEO_V1 adapter derives it. A size with no
+bucket at or before k takes the other size's x (impact.impact_fraction's
+fallback; ``filled`` lists them) and a bucket neither size reaches raises; large
+≥ small is not imposed (the served recipe does not). The background is a
+constant per zone: a logistic with no feature, intercept logit(baseline). The
+recipe buckets by the last overflow while compose_v2 composes every overflow of
+the week, so Part B 6 (S4 fit = S4 use) does not hold for it, as it does not for
+the served table; the spec's note says so.
+
 **Artifact.** ``write`` → s4_quality.json (design §7: kind zone_v3, unit zone,
 background.kind logistic, buckets, zone_median_mg, monotone true, sources, fit) for
 the finals, checked by compose_v2.check_s4_spec, saved as the 's4_quality' component
@@ -161,7 +184,7 @@ import stages_s2 as S2  # noqa: E402  (the served set's S2 folds)
 import train_v4 as T4  # noqa: E402  (read only: training frames, events, the served table's samples)
 import truth as T  # noqa: E402
 import verify as V  # noqa: E402
-from impact import BUCKET_ORDER, bucket_index  # noqa: E402  (the served buckets: 0, 1, 2, 3, 4-5, 6-7)
+from impact import BUCKET_ORDER, bucket_index, smooth_table  # noqa: E402  (the served buckets: 0, 1, 2, 3, 4-5, 6-7; its PAVA tail)
 from shared import clock  # noqa: E402
 from shared import geography as G  # noqa: E402
 from shared.stations import STATIONS  # noqa: E402
@@ -196,6 +219,9 @@ ARMS = ("v3", "served", "background", "rain_logit", "persistence", "climatology"
 # (a basin suspect on D−7…D comes from a trigger on D−8…D+3, whose wet days and ledger are read over its D−3…D+1).
 EXCL_REACH = (len(LAGS) - 1 + X.SUSPECT_BEFORE + X.SUSPECT_AFTER, X.SUSPECT_BEFORE + X.SUSPECT_AFTER)   # (11, 4)
 PHI_TOL = 1e-12                                      # write(): the fit's φ vs the set's S3 φ
+RECIPE_KIND = "impact_v2_zone"                       # today's lingering curve at zone level (served_recipe): the component
+RECIPE_MIN_N = 3                                     # train_v4.fit_impact_table: a bucket holds 3 sampled days or more
+RECIPE_LOOKBACK = len(LAGS) - 1                      # its "days since the last overflow within 7 days"
 
 
 # ── the oracle input: true zone history and size ───────────────────────────
@@ -886,6 +912,142 @@ def persistence(samples_zone: pd.DataFrame, zones, dates, fallback) -> tuple:
         if len(w):
             out[i], seen[i] = float(w.iloc[-1]), True
     return out, seen
+
+
+# ── today's lingering curve at zone level (sfpuc4_shared8_v2) ──────────────
+
+def recipe_buckets(sampled: pd.DataFrame, events: pd.Series, med: float) -> dict:
+    """train_v4.fit_impact_table's buckets, line for line: each sampled day (``sampled``: sample_date, elevated) read
+    against the newest overflow day of ``events`` (date → size) in D−7…D: none → the baseline, else days since it ×
+    large (its size ≥ ``med``) or small; p_elevated rounded to 3 decimals, a bucket kept from RECIPE_MIN_N days."""
+    rows = []
+    for d, el in zip(sampled["sample_date"], sampled["elevated"]):
+        past = events[(events.index <= d) & (events.index >= d - pd.Timedelta(days=RECIPE_LOOKBACK))]
+        if past.empty:
+            rows.append({"elevated": bool(el), "bucket": "none_7d", "large": False})
+        else:
+            last = past.index.max()
+            rows.append({"elevated": bool(el), "bucket": BUCKET_ORDER[bucket_index((d - last).days)],
+                         "large": float(past.loc[last]) >= med})
+    if not rows:
+        raise ValueError("no sampled day to fit the lingering curve on")
+    dd = pd.DataFrame(rows)
+    base = dd[dd["bucket"] == "none_7d"]
+    out = {"baseline_no_recent_discharge": {"p_elevated": round(float(base["elevated"].mean()), 3) if len(base) else 0.0,
+                                            "n": len(base)}}
+    for b in BUCKET_ORDER:
+        for size, mask in (("large", dd["large"]), ("small", ~dd["large"])):
+            g = dd[(dd["bucket"] == b) & mask]
+            if len(g) >= RECIPE_MIN_N:
+                out[f"d{b}_{size}"] = {"p_elevated": round(float(g["elevated"].mean()), 3), "n": len(g)}
+    return out
+
+
+def zone_table(geo, tr: SB.Truths, days: pd.DatetimeIndex, v_hat: pd.DataFrame, samples: pd.DataFrame,
+               train_days: pd.DatetimeIndex) -> dict:
+    """{zone: {median_event_volume_mg, n_sample_days, n_events, n_events_measured, buckets}}: train_v4.
+    fit_impact_table's recipe per zone of ``geo`` on ``train_days`` (module notes). Overflow days and sizes are
+    stages_build.true_history's at φ 1 on ``days`` (``v_hat``, date × basin, sizes an overflow with no measured
+    volume), the median is over the measured ones (unrounded), ``samples`` (train_v4.load_samples' columns) are read
+    at the zone's stations on its ledger-known days, then ``recipe_buckets``. A zone with an unsized overflow, or no
+    measured one to take the median of, raises."""
+    hist, unknown = SB.true_history(geo, zone_size_spec(geo), tr, days, v_hat)
+    ly, bv = tr.link_y.reindex(days), tr.basin_vol.reindex(days)
+    out = {}
+    for z in ZONES:
+        known = days[~unknown[z].to_numpy(dtype=bool) & days.isin(train_days)]
+        events = hist.v[z].reindex(known)[hist.p[z].reindex(known).to_numpy() == 1].astype(float)
+        if not np.isfinite(events.to_numpy()).all():
+            raise ValueError(f"zone {z}: an overflow with no size (no measured volume and no v̂)")
+        # measured: every link into the zone that fired has its basin's filed volume (no v̂ stands in)
+        measured = np.logical_and.reduce([ly[lk.id].reindex(events.index).ne(1).to_numpy()
+                                          | bv[lk.basin].reindex(events.index).notna().to_numpy() for lk in geo.links_into(z)])
+        if not measured.any():
+            raise ValueError(f"zone {z}: no overflow with a measured volume on the training days: no size median")
+        med = float(events[measured].median())
+        smp = samples[samples["station"].isin(ZONES[z].source_ids)]
+        daily = smp.groupby("sample_date").agg(elevated=("exceeds_standard", "max")).reset_index()
+        daily = daily[daily["sample_date"].isin(known)]
+        out[z] = {"median_event_volume_mg": med, "n_sample_days": int(len(daily)), "n_events": int(len(events)),
+                  "n_events_measured": int(measured.sum()), "buckets": recipe_buckets(daily, events, med)}
+    return out
+
+
+def zone_curves(table: dict) -> tuple:
+    """(buckets, background coefficients, filled) of a ``zone_table``, read the way compose_v2.geo_v1_adapter_specs
+    reads a served table: impact.smooth_table's weighted PAVA tail per size, then x(k, s) = compose_v2._attributable
+    (the nearest bucket at or before k, the baseline removed). A size with no bucket at or before k takes the other
+    size's x there, impact.impact_fraction's fallback (``filled``: '<zone> <bucket>_<size>'); a bucket neither size
+    reaches, or a baseline of 0 or 1 (no finite logit), raises. Background: intercept logit(baseline), no feature."""
+    sm = smooth_table(table)
+    buckets, coef, filled = {}, {}, []
+    for z in ZONES:
+        bks = sm[z]["buckets"]
+        b0 = float(bks["baseline_no_recent_discharge"]["p_elevated"])
+        if not 0.0 < b0 < 1.0:
+            raise ValueError(f"zone {z}: baseline {b0} has no finite logit")
+        own = {s: [C._attributable(bks, s, i, b0) for i in range(NB)] for s in C.SIZES}
+        bk = {}
+        for s in C.SIZES:
+            other = own["large" if s == "small" else "small"]
+            for i, b in enumerate(BUCKET_ORDER):
+                if own[s][i] is None and other[i] is None:
+                    raise ValueError(f"zone {z}: no bucket at or before {b} in either size")
+                if own[s][i] is None:
+                    filled.append(f"{z} {b}_{s}")
+                bk[f"{b}_{s}"] = float(own[s][i] if own[s][i] is not None else other[i])
+        buckets[z] = bk
+        coef[z] = {"intercept": math.log(b0 / (1.0 - b0))}
+    return buckets, coef, filled
+
+
+def served_recipe(inp: Inputs, s2_source, name: str, log=print) -> dict:
+    """s4_quality.json of today's lingering curve at zone level for stage candidate ``name`` (module notes): per fold
+    of the served set's plan, ``zone_table`` under sfpuc4_v1 on the fold's training days with the fold's own v̂
+    (``s2_source``: stages_s3_links.candidate_s2 of ``name``), then ``zone_curves``; every fold's record in fit.folds
+    (stages_build.s4_fold_spec's format, at φ 1, with whose v̂), the finals' on top. Every fold passes compose_v2."""
+    geo = G.get(GEOGRAPHY)
+    tr = candidate_truths(inp)
+    recs = []
+    for f in inp.fitted.folds:
+        key = (f.tier, f.fold)
+        td, win = train_days(inp, f), scored_window(inp, f)
+        tab = zone_table(geo, tr, inp.days, s2_source.values(key, "v_hat", inp.days), inp.samples_v1, td)
+        bk, coef, filled = zone_curves(tab)
+        recs.append({"tier": f.tier, "fold": f.fold, "scores": [str(win[0].date()), str(win[-1].date())],
+                     "fit_span": [str(td.min().date()), str(td.max().date())],
+                     "fit_seasons": sorted(int(s) for s in set(_season(td))), "background": coef, "buckets": bk,
+                     "zone_median_mg": {z: tab[z]["median_event_volume_mg"] for z in ZONES}, "monotone": True,
+                     "vol_share": unit_phi(), "v_hat_from": name, "history_geography": GEOGRAPHY, "filled": filled,
+                     "table": tab})
+        log(f"  {f.tier} {f.fold}: {sum(t['n_sample_days'] for t in tab.values())} sampled zone-days, "
+            f"{sum(t['n_events'] for t in tab.values())} zone overflow days" + (f", filled {filled}" if filled else ""))
+    fin = next(r for r in recs if (r["tier"], r["fold"]) == FINAL)
+    spec = {"geography": GEOGRAPHY, "pipeline": PIPELINE, "kind": KIND, "unit": "zone",
+            "background": {"kind": "logistic", "features": [], "coef": fin["background"],
+                           "rain": "none: a constant per zone, the logit of the table's baseline (no zone overflow in 7 days)"},
+            "buckets": fin["buckets"], "zone_median_mg": fin["zone_median_mg"], "monotone": True,
+            "sources": {"truth": "train_v4.load_samples(): DataSF + Poo Bot, the served table's records, resamples included",
+                        "served_table_fit_on": list(SMP.DEFAULT_SOURCES),
+                        "history": "the CIWQS ledger: zone overflow days, sizes Σ the fired basins' measured volume (φ 1)"},
+            "fit": {"recipe": ("train_v4.fit_impact_table's, per zone (stages_s4_v3.zone_table), then impact.smooth_table "
+                               "and compose_v2._attributable (zone_curves)"),
+                    "window": f"each fold's training days; the finals through {S2.TRAINED_THROUGH.date()}",
+                    "built_at": clock.utc_iso(), "served_set": inp.bundle.name, "s2_set": name, "s3_set": name,
+                    "size_rule": ("compose_v2's zone size at φ 1 on the ledger (stages_build.true_history): Σ over the fired "
+                                  "feeding basins of the measured volume, the fold's v̂ where none is measured; large = v ≥ "
+                                  "zone_median_mg, the median of the measured sizes, unrounded (the threshold zone_v3 reads)"),
+                    "fill": "a size with no bucket at or before k takes the other size's x (impact.impact_fraction); folds[].filled",
+                    "folds": recs},
+            "note": ("Today's lingering curve at zone level (S4 impact_v2_zone): the served impact table's recipe, ported "
+                     "to the four zones and refit per fold. It buckets a sampled day by the zone's last overflow in the "
+                     "week while compose_v2 composes every overflow of the week, so S4 fit = S4 use (Part B 6) does not "
+                     "hold for it, as it does not for the served table; large ≥ small is not imposed.")}
+    spec = V.clean(spec)
+    C.check_s4_spec(spec, geo)
+    for r in recs:
+        SB.s4_fold_spec({**spec, "set": name, "component": RECIPE_KIND}, (r["tier"], r["fold"]), geo)
+    return spec
 
 
 # ── the study: every fold fit, every arm on every row ──────────────────────

@@ -20,7 +20,13 @@ On committed data, no network (counts as of the data end 2026-08-17):
   - the assemble step: the stage candidate's own S2 (candidate_s2) keeps each fold's design, reproduces what
     the build scores and refits inner folds on that design only; a season whose inner Westside head would be
     under the 20-event floor is left out of the share fit and recorded; the candidate's committed spec is a
-    fresh fit on its own S2.
+    fresh fit on its own S2;
+  - today's split on the city map (sfpuc4_shared8_v2): fold_spec takes a recorded size_blend share as recorded
+    (composed as stage2.group_share), its benchmark the record's constant; the served groups Ocean Beach and
+    Baker-China are read as the SFPUC4 links with the same outfalls, and a crossed map raises; the committed
+    spec keeps sfpuc4_shared8_v1's union rule, co-firing shares and constant benchmark in every fold, its
+    Westside links the served split at φ 1 (T1 the served stage2.json, T1-holdout refit here by the served
+    recipe through stages_build.fold_specs).
 Run: venv/bin/python tests/test_stages_s3_links.py
 """
 from __future__ import annotations
@@ -43,6 +49,7 @@ for p in (str(ROOT), str(ROOT / "features" / "forecast"), str(MODELS)):
 
 import candidates as CAND  # noqa: E402
 import compose_v2 as C  # noqa: E402
+import stage2 as STG2  # noqa: E402
 import stages_build as SB  # noqa: E402
 import stages_s2 as S2  # noqa: E402
 import stages_s3_links as S  # noqa: E402
@@ -658,6 +665,77 @@ def test_the_candidates_committed_spec_is_current():
     assert got["fit"]["folds"] == want["fit"]["folds"]
     assert got["sources"]["s2"]["name"] == CANDIDATE and not got["sources"]["s2"]["name"].startswith("dev:")
     assert got["fit"]["bootstrap"]["protocol"] is True
+
+
+# ── today's split on the city map (sfpuc4_shared8_v2) ──────────────────────
+
+SPLIT_SET = "sfpuc4_shared8_v2"        # the stage candidate that takes it (stages_candidates.assemble_served_parts)
+
+
+def test_a_recorded_size_blend_share_is_taken_as_recorded():
+    blend = {"kind": "size_blend", "large": 1.0, "small": 0.46, "median_mg": 3.7, "n_basin_days": 51}
+    links = {lk.id: ({"share": {"kind": "identity"}, "vol_share": 1.0} if lk.identity else
+                     {"share": dict(blend), "constant": 0.7, "vol_share": 1.0}) for lk in GEO.links}
+    rec = {"tier": "T1", "fold": "final", "links": links, "basin_median_mg": {"westside": 4.0}, "cofire": {},
+           "union": {"east": {"rule": "max"}}}
+    spec = {"geography": GEO.version, "kind": S.SPLIT_KIND, "fit": {"folds": [rec]}}
+    a, c = S.fold_spec(spec, "T1", "final"), S.fold_spec(spec, "T1", "final", arm="constant")
+    assert a["kind"] == S.SPLIT_KIND and c["kind"] == f"{S.SPLIT_KIND}_benchmark_constant"
+    assert all(a["links"][lid]["share"] == blend and c["links"][lid]["share"] == {"kind": "constant", "p": 0.7}
+               for lid in S.SPLIT_GROUPS)
+    # compose_v2 applies it as the served split does: p_basin · stage2.group_share(v̂)
+    days = pd.date_range("2024-01-01", periods=3)
+    v = pd.DataFrame(np.repeat([[1.0], [3.7], [20.0]], len(GEO.keys), axis=1), index=days, columns=list(GEO.keys))
+    zp = C.s3(GEO, a, pd.DataFrame(0.5, index=days, columns=list(GEO.keys)), v).zone_p["ocean"]
+    served = {"shares": {"Ocean Beach": {"large": {"p": 1.0}, "small": {"p": 0.46}}}, "median_event_volume_mg": {"Ocean Beach": 3.7}}
+    assert np.allclose(zp.to_numpy(), [0.5 * STG2.group_share(served, "Ocean Beach", x) for x in (1.0, 3.7, 20.0)], atol=1e-15)
+
+
+def test_todays_split_reads_the_served_groups_as_the_city_links():
+    pairs = S.split_pairs(GEO)
+    g1 = G.get("geo_v1")
+    assert set(pairs) == {lk.id for lk in S.split_links(GEO)} == set(S.SPLIT_GROUPS)
+    for lid, l1 in pairs.items():
+        a, b = next(x for x in GEO.links if x.id == lid), next(x for x in g1.links if x.id == l1)
+        assert b.legacy_group == S.SPLIT_GROUPS[lid] and set(a.outfalls) == set(b.outfalls) and (a.basin, a.zone) == (b.basin, b.zone)
+    old = dict(S.SPLIT_GROUPS)
+    try:
+        S.SPLIT_GROUPS.update({"westside>ocean": "Baker-China", "westside>baker_china": "Ocean Beach"})
+        raises(lambda: S.split_pairs(GEO), "cannot be the link's")
+    finally:
+        S.SPLIT_GROUPS.clear()
+        S.SPLIT_GROUPS.update(old)
+
+
+def test_the_split_candidates_committed_spec():
+    SC = S._saver()
+    if SC is None or not (S.CANDIDATES_ROOT / SPLIT_SET / "manifest.json").exists():
+        print(f"  (no stage candidate {SPLIT_SET} yet)")
+        return
+    got, base = SC.load_set(SPLIT_SET).s3_links, SC.load_set(CANDIDATE).s3_links
+    assert got["kind"] == got["component"] == S.SPLIT_KIND
+    assert got["sources"]["s2"]["name"] == SPLIT_SET and got["sources"]["s2"]["records_from"] == CANDIDATE
+    keep = ("tier", "fold", "scores", "train_seasons", "basin_median_mg", "cofire", "union")
+    assert [(r["tier"], r["fold"]) for r in got["fit"]["folds"]] == [(r["tier"], r["fold"]) for r in base["fit"]["folds"]]
+    for a, b in zip(got["fit"]["folds"], base["fit"]["folds"]):
+        assert {k: a[k] for k in keep} == {k: b[k] for k in keep}, a["fold"]
+        for lid, v in a["links"].items():
+            if lid in S.SPLIT_GROUPS:
+                assert v["share"]["kind"] == "size_blend" and v["vol_share"] == 1.0 and v["constant"] == b["links"][lid]["constant"]
+            else:
+                assert v == b["links"][lid], (a["fold"], lid)
+    pairs = S.split_pairs(GEO)
+    served = C.geo_v1_adapter_specs()["s3"]["links"]                     # T1: the served stage2.json itself
+    assert all(got["links"][lid]["share"] == served[g]["share"] for lid, g in pairs.items())
+    bundle = SB.load_set("served")                                       # T1-holdout: the served recipe refit before 2023-07-01
+    need = sorted(set(bundle.s2.sources) | set(bundle.chosen.values()) | {"avg"})
+    train = T4.build_dataset(sources=need)[0]
+    fitted = S2.fit(bundle.name, "served", ("T1-holdout",), train_frames=train)
+    plan = {(p[0], p[1]): p for p in S2._plan(("T1-holdout",))}
+    refit = S.served_split(bundle, fitted.folds, plan, train, T4.load_events(), T4.load_samples())[("T1-holdout", S2.FOLD_HOLDOUT)]
+    rec = next(r for r in got["fit"]["folds"] if r["tier"] == "T1-holdout")
+    assert all(rec["links"][lid]["share"] == refit["shares"][lid] for lid in pairs) and rec["share_fit_span"] == refit["fit"]["fit_span"]
+    assert pd.Timestamp(rec["share_fit_span"][1]) < S2.HOLDOUT_START
 
 
 if __name__ == "__main__":

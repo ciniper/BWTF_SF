@@ -26,7 +26,8 @@ On committed data (as of the data end 2026-08-17) and a small slice of the grid:
   - the committed _bakeoff results agree with the code (grid sha, every contender scored, the
     candidate's pickles reproduce the T1 rows, the procedure's rows are the picked contenders',
     the final pick re-derived from the development rows, the primary's arms re-derived from the
-    rows, the volume rule, the caveats stated, no set left from an older bake-off).
+    rows, the volume rule, the caveats stated, no set left from an older bake-off; a copy of the winner's
+    S2 names it).
 Run: venv/bin/python tests/test_stages_s2_sfpuc4.py
 """
 from __future__ import annotations
@@ -605,10 +606,12 @@ def test_the_committed_bakeoff_results_agree_with_the_code():
     assert r["nested"]["caveat"] == M.T2_CAVEAT == s.manifest["s2"]["t2_caveat"]
     assert r["T1"]["caveat"] == M.T1_CAVEAT == s.manifest["s2"]["t1_caveat"]
     assert s.manifest["s2"]["term_set_provenance"] == M.TERM_SET_PROVENANCE[win] and s.manifest["s2"]["t2"] == M.T2_NESTED
-    # no set's S2 is left from an older bake-off: the one these results name is its winner's
+    # no set's S2 is left from an older bake-off: the one these results name is its winner's, or a copy of the
+    # winner's S2 (stages_candidates.copy_s2: s2_from names the winner)
     here = M._rel(M.OUT_DIR / "results.json")
-    from_here = [m["name"] for m in SC.list_sets() if "s2" in m["components"] and (m.get("s2") or {}).get("bakeoff") == here]
-    assert from_here == [r["winner"]["candidate"]], from_here
+    from_here = [m for m in SC.list_sets() if "s2" in m["components"] and (m.get("s2") or {}).get("bakeoff") == here]
+    assert [m["name"] for m in from_here if "s2_from" not in m] == [r["winner"]["candidate"]], [m["name"] for m in from_here]
+    assert all(m["s2_from"] == r["winner"]["candidate"] for m in from_here if "s2_from" in m), from_here
     # the volume rule as declared, and the candidate's heads are the picked recipes
     for k, v in r["volume"]["per_basin"].items():
         assert v["picked"] == M.pick_recipe(v["loglinear_vs_gbr"])[0], k

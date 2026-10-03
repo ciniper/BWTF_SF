@@ -55,7 +55,8 @@ scored on the same slice (no lead entry beyond L1) against the served slice writ
     defect shown only by its CI (constructed cells); the fix-not-tested caveat stays on S4's row, never OUT's,
     which carries S4's size caveat only; Holm is handed the rows' own bounds and the protocol's margins;
   - §8's S4 and S5 rows decide only for the component they test (S4 v3, link_zone_swap): another changed
-    component has no row, so §9.1 says so; a nested candidate's S2 T2 is labelled 'development (nested)';
+    component has no row, so §9.1 says so; a nested candidate's S2 T2 is labelled 'development (nested)'; a
+    post_seen candidate's post-training scores carry the tag (pill words, caption, primaries decided on them);
   - a spec fit on its own fold's days, a head under the floor that is not the fallback (T2's included), a
     missing fold or head record, rows missing a basin and a negative weight are refused; the candidate's
     manifest pins the served build its comparisons read;
@@ -1543,6 +1544,35 @@ def test_a_nested_candidates_s2_t2_says_so():
     assert fig["m.s2"]["oracle"]["window"].endswith(f": {B.T2_NESTED_LABEL}"), fig["m.s2"]["oracle"]["window"]
     assert all(fig[n]["oracle"]["window"].endswith(": development") for n in ("m.s4", "m.out")), fig
     assert "S2's nested" in fig["caption"], fig["caption"]
+
+
+def test_a_post_seen_candidates_post_training_scores_are_tagged():
+    """Protocol §2: a set designed after its post-training scores were seen (stages_candidates.tag 'post_seen') has
+    the tag on those scores: the post-training words of every pill and the caption, and a caveat on each primary
+    with a part decided on post-training days (joined to any other), never on one decided elsewhere; an untagged set
+    says nothing. The committed sfpuc4_shared8_v2 build carries it on windows['T1'], OUT and S2."""
+    cand = _cand()
+    assert cand.post_seen is None
+    tagged = dataclasses.replace(cand, manifest={**cand.manifest, "tags": {"post_seen": "why"}})
+    assert tagged.post_seen == "why"
+    cell = {"span": ["2025-11-01", AS_OF], "n_seasons": 1}
+    assert B.window_words("T1", cell, "out", cand.geo, post_seen=True).endswith(f"; {B.POST_SEEN_WORDS}")
+    assert B.POST_SEEN_WORDS not in B.window_words("T1", cell, "out", cand.geo) + B.window_words("T2", cell, "out", cand.geo, post_seen=True)
+    sc = _sb().scores
+    fig = B.figure(sc, B.FIGURE_WINDOWS, None, cand.geo, fallback=True, nested=True, post_seen=True)
+    assert fig["m.out"]["oracle"]["post"]["window"].endswith(B.POST_SEEN_WORDS) and B.POST_SEEN_WORDS in fig["caption"]
+    assert B.POST_SEEN_WORDS not in json.dumps(sc["figure"]) and "tag" not in sc["windows"]["T1"]
+    rows = [{"id": "OUT", "parts": [{"window": "T1"}]}, {"id": "S3a"}, {"id": "S2", "caveat": "x", "parts": [{"window": "T2"}, {"window": "T1"}]},
+            {"id": "S5", "parts": [{"window": "S5"}]}]
+    got = [B.post_seen_caveat(r, "why") for r in rows]
+    assert got[0]["caveat"] == "post_seen (protocol §2): why" and got[2]["caveat"] == "x; post_seen (protocol §2): why"
+    assert got[1] == rows[1] and got[3] == rows[3]
+    d = B.STAGES_DIR / "sfpuc4_shared8_v2"
+    if (d / "scores.json").exists():
+        v2 = json.loads((d / "scores.json").read_text())
+        assert v2["windows"]["T1"]["tag"] == "post_seen" and B.POST_SEEN_WORDS in v2["figure"]["caption"]
+        pr = {r["id"]: r for r in v2["primaries"]["rows"]}
+        assert all("post_seen (protocol §2)" in pr[k]["caveat"] for k in ("OUT", "S2")), {k: pr[k].get("caveat") for k in ("OUT", "S2")}
 
 
 def test_a_stage_candidate_is_refused_when_its_parts_could_have_seen_its_days():

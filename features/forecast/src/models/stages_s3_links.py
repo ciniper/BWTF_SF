@@ -119,12 +119,28 @@ oracle row X-S3-ID leaves out (North and East on the days their basins
 overflowed), each fold's spec under every union rule must give exactly the zone
 truth: ``integrity`` counts the mismatches, which must be 0.
 
+**Today's split on the city map (``served_split``, ``split_spec``; sfpuc4_shared8_v2).**
+The second challenger keeps everything above but the shares: its Westside links
+take the served stage 2 v2 split (compose_v2 share kind size_blend: stage2.
+group_share's size classes around the group's median, φ 1), refit per fold by
+the served set's own recipe exactly as the build refits the served adapter
+(stages_build.fold_specs: T1 the served stage2.json, every other fold
+stage2.fit_outfall_split on the fold's training days with the served set's
+fold heads), served group "Ocean Beach" read as westside>ocean and
+"Baker-China" as westside>baker_china (their outfalls asserted identical under
+geo_v1 and sfpuc4_v1). The East union rule, the co-firing shares and the
+constant-share benchmark S3b reads are a base spec's per-fold records, kept
+exactly. Today's split is fit on the filed volumes (the served heads' v̂ only
+where none is filed), not on the v̂ it is used with: Part B 2 does not hold
+for it, as it does not for the served set; ``split_spec``'s note says so.
+
 **s3_links.json (§7)** through compose_v2.check_s3_spec: geography, pipeline,
 links (the final fold's shares, φ), union, cofire, and a fit block holding every
 fold's coefficients, constants, φ, medians, co-firing shares and union choice
 (with its inner Briers), the S2 it read, and the scores (compact: no CORP
 curves or threshold tables; ``run`` returns them in full). ``fold_spec``
-rebuilds any fold's full S3 spec from it (also its benchmarks). ``write``
+rebuilds any fold's full S3 spec from it (also its benchmarks; a recorded share of
+any compose_v2 kind, size_blend included, is taken as recorded). ``write``
 saves it through stages_candidates.save_component as the 's3_links' component
 (``links_v1``) of a stage candidate (the development spec: set ``DEV_SET``),
 which stamps it with the set and the component; compose_v2.check_s3_spec does
@@ -194,6 +210,9 @@ OUT_DIR = CANDIDATES_ROOT / "_s3_links"        # the fallback when stages_candid
 SPEC_FILE = "s3_links.json"
 SAVER_STAMPS = ("set", "component")            # what save_component adds that compose_v2.check_s3_spec does not know
 COMPACT_DROP = ("curve", "contingency")        # left out of the spec's scores: CORP curves, threshold tables
+SPLIT_KIND = "split_v2_sfpuc4"                 # today's split on SFPUC4's links (split_spec): the spec kind and component
+# the served split's legacy groups, read as the SFPUC4 links with the same outfalls (served_split asserts it)
+SPLIT_GROUPS = {"westside>ocean": "Ocean Beach", "westside>baker_china": "Baker-China"}
 
 
 def _geo() -> G.Geography:
@@ -582,10 +601,11 @@ def candidate_fidelity(src: CandidateS2, saved, rows: pd.DataFrame) -> dict:
 
 
 def candidate_s2(name: str, root=None, data=None, check: bool = True) -> CandidateS2:
-    """The S2 of stage candidate ``name`` (its S2 component saved by stages_s2_sfpuc4) as S3 reads it, fold by fold
-    (``CandidateS2``): the bake-off its manifest names must have picked this set (results.winner.candidate) on the
-    grid the manifest records, and, with ``check``, each fold's refit must reproduce what the build scores
-    (``candidate_fidelity``)."""
+    """The S2 of stage candidate ``name`` (its S2 component saved by stages_s2_sfpuc4, or copied from the set that
+    did: stages_candidates.copy_s2's ``s2_from``) as S3 reads it, fold by fold (``CandidateS2``): the bake-off its
+    manifest names must have picked this set or the one its S2 is a copy of (results.winner.candidate) on the grid
+    the manifest records, and, with ``check``, each fold's refit must reproduce what the build scores
+    (``candidate_fidelity``: the set's own saved finals and siblings)."""
     sc = _saver()
     if sc is None:
         raise ImportError("a stage candidate's S2 is read through stages_candidates")
@@ -597,7 +617,7 @@ def candidate_s2(name: str, root=None, data=None, check: bool = True) -> Candida
         raise FileNotFoundError(f"{name} holds no S2 component")
     path = _bakeoff_path(st.manifest, name)
     results = json.loads(path.read_text())
-    if results["winner"]["candidate"] != name:
+    if results["winner"]["candidate"] not in (name, st.manifest.get("s2_from")):
         raise ValueError(f"{name}: the bake-off {path.name} picked {results['winner']['candidate']!r}")
     if st.manifest["s2"].get("grid_sha256") != results["grid"]["sha256"]:
         raise ValueError(f"{name}: its S2 records grid {st.manifest['s2'].get('grid_sha256')}, the bake-off ran {results['grid']['sha256']}")
@@ -809,7 +829,8 @@ def _link_row(lk, share: dict, phi: float) -> dict:
 
 def build_spec(geo, shares: dict, arm: str, phi: dict, median_mg: float, cofire: dict, rule: str, kind: str = KIND) -> dict:
     """A checked S3 spec: the split links at ``arm`` (logit_logvol | constant | identity) from ``shares``
-    (fit_shares), identity links at 1, ``rule`` for every union zone (compose_v2.union_block, π from ``cofire``)."""
+    (fit_shares; a share given whole, with its compose_v2 kind, is taken as it is: today's size_blend), identity
+    links at 1, ``rule`` for every union zone (compose_v2.union_block, π from ``cofire``)."""
     if arm not in ARMS:
         raise KeyError(f"unknown share arm {arm!r}; known {ARMS}")
     links = {}
@@ -820,7 +841,7 @@ def build_spec(geo, shares: dict, arm: str, phi: dict, median_mg: float, cofire:
             sh = {"kind": "constant", "p": shares[lk.id]["constant"]}
         else:
             c = shares[lk.id][SHARE]
-            sh = {"kind": SHARE, "coef": {"a": c["a"], "b": c["b"]}, "basin_median_mg": float(median_mg)}
+            sh = dict(c) if "kind" in c else {"kind": SHARE, "coef": {"a": c["a"], "b": c["b"]}, "basin_median_mg": float(median_mg)}
         links[lk.id] = _link_row(lk, sh, phi[lk.id])
     spec = {"geography": geo.version, "pipeline": PIPELINE, "kind": kind if arm == SHARE else f"{kind}_benchmark_{arm}",
             "links": links, "union": C.union_block(geo, rule, cofire), "cofire": dict(cofire)}
@@ -1336,12 +1357,110 @@ def fold_spec(spec: dict, tier: str, fold: str, arm: str = SHARE) -> dict:
     if len(blocks) != 1:
         raise KeyError(f"s3_links.json holds {len(blocks)} folds {tier} {fold}")
     b = blocks[0]
-    shares = {lid: {SHARE: dict(v["share"]["coef"]), "constant": v["constant"]} for lid, v in b["links"].items() if "constant" in v}
+    # a logit_logvol record holds its coefficients; any other kind (today's size_blend) is the share as recorded
+    shares = {lid: {SHARE: dict(v["share"]["coef"]) if v["share"]["kind"] == SHARE else dict(v["share"]), "constant": v["constant"]}
+              for lid, v in b["links"].items() if "constant" in v}
     phi = {lid: v["vol_share"] for lid, v in b["links"].items()}
     rules = {b["union"][z]["rule"] for z in union_zones(geo)}
     if len(rules) != 1:
         raise ValueError(f"s3_links.json {tier} {fold}: the union zones carry rules {sorted(rules)}; a fold chooses one")
-    return build_spec(geo, shares, arm, phi, b["basin_median_mg"][split_basin(geo)], b["cofire"], rules.pop())
+    return build_spec(geo, shares, arm, phi, b["basin_median_mg"][split_basin(geo)], b["cofire"], rules.pop(),
+                      kind=spec.get("kind", KIND))
+
+
+# ── today's split on the city map (sfpuc4_shared8_v2) ──────────────────────
+
+def split_pairs(geo) -> dict:
+    """{split link id of ``geo``: the geo_v1 link of the served group SPLIT_GROUPS names}. Raises unless each pair
+    holds the same basin, zone and outfalls (shared.geography), so the group's share is the link's."""
+    g1 = G.get("geo_v1")
+    out = {}
+    for lk in split_links(geo):
+        group = SPLIT_GROUPS[lk.id]                                 # a split link with no served group raises here
+        hit = [x for x in g1.links if x.legacy_group == group]
+        if len(hit) != 1:
+            raise KeyError(f"geo_v1 holds {len(hit)} links of group {group!r}")
+        if (hit[0].basin, hit[0].zone, set(hit[0].outfalls)) != (lk.basin, lk.zone, set(lk.outfalls)):
+            raise ValueError(f"served group {group!r} ({hit[0].basin}>{hit[0].zone}, {sorted(hit[0].outfalls)}) is not "
+                             f"{geo.version}'s {lk.id} ({sorted(lk.outfalls)}): its share cannot be the link's")
+        out[lk.id] = hit[0].id
+    if set(out) != set(SPLIT_GROUPS):
+        raise KeyError(f"SPLIT_GROUPS maps {sorted(SPLIT_GROUPS)}; {geo.version} splits {sorted(out)}")
+    return out
+
+
+def served_split(bundle, folds, plan: dict, train: dict, events: pd.DataFrame, samples: pd.DataFrame, geo=None) -> dict:
+    """{(tier, fold): {shares, vol_share, fit}}: the served stage 2 v2 split's shares of ``geo``'s split links per
+    fold, as the build refits the served set's GEO_V1 adapter (stages_build.fold_specs on the served ``bundle`` and
+    its S2 ``folds``, ``plan`` stages_s2._plan's by key: T1 the served stage2.json, every other fold
+    stage2.fit_outfall_split on the fold's training days with the fold's own heads), read off the adapter's links
+    through ``split_pairs``. A share that is not size_blend (a split with no size classes) raises."""
+    pairs = split_pairs(geo or _geo())
+    out = {}
+    for f in folds:
+        key = (f.tier, f.fold)
+        specs, info = SB.fold_specs(bundle, f, plan[key][5], train, events, samples)
+        links = specs["s3"]["links"]
+        shares = {lid: dict(links[g]["share"]) for lid, g in pairs.items()}
+        bad = {lid: s["kind"] for lid, s in shares.items() if s["kind"] != "size_blend"}
+        if bad:
+            raise ValueError(f"{key}: the served split's shares {bad} are not size_blend: no stage 2 v2 split to take")
+        out[key] = {"shares": shares, "vol_share": {lid: float(links[g]["vol_share"]) for lid, g in pairs.items()},
+                    "fit": {k: v for k, v in info.items() if k in ("fit", "fit_span", "n_fit_days", "n_events", "seasons")}}
+    return out
+
+
+def split_spec(base: dict, split: dict, name: str) -> dict:
+    """s3_links.json of today's split on SFPUC4 (``SPLIT_KIND``): ``base``, a saved s3_links.json whose per-fold
+    East union rule (with its choice), co-firing shares, constant-share benchmark and medians are kept exactly, with
+    each fold's split links taking the served split's share and φ (``served_split``) and the fold's fit span the
+    split's, inside the training seasons ``base`` records. Top level: the final fold's. ``name``: the stage candidate
+    it is for (sources.s2; its S2 is the one ``base``'s union rule was chosen on). Every fold's spec and benchmark
+    pass compose_v2; a fold either side lacks raises."""
+    src = {k: v for k, v in base.items() if k not in SAVER_STAMPS}
+    geo = G.stamped(src)
+    recs = {(r["tier"], r["fold"]): r for r in src["fit"]["folds"]}
+    if set(recs) != set(split):
+        raise KeyError(f"{base['set']} records folds {sorted(recs)}; the split was fit on {sorted(split)}")
+    folds = []
+    for key, r in recs.items():
+        s = split[key]
+        if not set(s["fit"].get("seasons") or ()) <= set(r["train_seasons"]):    # T1's artifacts state a span only
+            raise ValueError(f"{key}: the split was fit on seasons {s['fit']['seasons']}, outside the fold's {r['train_seasons']}")
+        links = {lid: ({"share": s["shares"][lid], "constant": v["constant"], "vol_share": s["vol_share"][lid]}
+                       if lid in s["shares"] else dict(v)) for lid, v in r["links"].items()}
+        folds.append({**{k: r[k] for k in ("tier", "fold", "scores", "train_seasons", "basin_median_mg", "cofire", "union")},
+                      "share_fit_span": s["fit"]["fit_span"], "links": links, "split_fit": s["fit"]})
+    out = {"geography": geo.version, "pipeline": PIPELINE, "kind": SPLIT_KIND,
+           "sources": {"s2": {**src["sources"]["s2"], "name": name, "records_from": base["set"],
+                              "note": (f"{name}'s S2 is {base['set']}'s (its pickles and s2 section, no refit), so the union "
+                                       f"rule {base['set']} chose on it per fold is this S2's. The Westside shares are not "
+                                       "fit on any S2's v̂ (Part B 2 does not hold for them, as it does not for the served "
+                                       "set): today's split reads the filed volume, the served set's fold heads only where "
+                                       "none is filed")},
+                       "split": ("the served stage 2 v2 split per fold (stages_build.fold_specs: stage2.fit_outfall_split by "
+                                 "the served recipe), groups Ocean Beach and Baker-China as westside>ocean and "
+                                 "westside>baker_china (split_pairs)"),
+                       "union": f"{base['set']}'s per-fold records, kept exactly (union rule and choice, co-firing shares, "
+                                "the constant-share benchmark)",
+                       "ledger": src["sources"]["ledger"], "rain": src["sources"]["rain"]},
+           "note": ("Today's beach split on the city map: Westside's two links share its overflow by stage 2 v2's size "
+                    "classes, p·[w·large + (1 − w)·small] with w = v̂/(v̂ + the group's median filed volume) and φ 1, refit "
+                    f"per fold the served way; the other links are identity; East is the union of Central and South by "
+                    f"the rule {base['set']} chose nested per fold."),
+           "fit": {"schema": SCHEMA, "protocol": S2.protocol_stamp(), "as_of": src["fit"]["as_of"],
+                   "window": {"top": "T1 final: the served stage2.json, fit on every day through 2025-10-31",
+                              "T1-holdout": "refit on days before 2023-07-01",
+                              "T2": "refit per held-out season on the other eight of 2016-17 … 2024-25"},
+                   "split": "per fold: the served split's shares and φ (split_fit: what stages_build.fold_specs fit them on)",
+                   "union_choice": src["fit"]["union_choice"], "folds": folds}}
+    top = fold_spec(out, "T1", S2.FOLD_FINAL)
+    out.update(links=top["links"], union=top["union"], cofire=top["cofire"])
+    C.check_s3_spec(out, geo)
+    for key in recs:
+        for arm in (SHARE, "constant"):
+            C.check_s3_spec(fold_spec(out, *key, arm=arm), geo)
+    return V.clean(out)
 
 
 # ── writing ─────────────────────────────────────────────────────────────────

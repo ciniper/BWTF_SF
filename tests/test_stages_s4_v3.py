@@ -36,7 +36,12 @@ On a slice of the folds, so the file runs in about a minute: T1 (the finals), T1
   - s4_quality.json round-trips through stages_candidates and compose_v2 (kind zone_v3, unit zone, logistic
     background, monotone, sources, fit with every fold, each fold's φ) and through stages_build.s4_fold_spec
     (the reader that scores a stage candidate); a write outside stages_candidates/ is refused, and so is a
-    bootstrap below 2,000 anywhere under it.
+    bootstrap below 2,000 anywhere under it;
+  - today's lingering curve at zone level (sfpuc4_shared8_v2): on geo_v1, zone_table's ocean is
+    train_v4.fit_impact_table's Ocean Beach on the same inputs and window, and the served frames as they are
+    differ from those inputs only on X-S2-VOLQ days; zone_curves reads a table as compose_v2's GEO_V1 adapter
+    does, takes the other size's x where impact.impact_fraction would and raises where neither size reaches; the
+    candidate's committed s4_quality.json is served_recipe's own fit on its own S2's v̂.
 
 Counts are as of the committed data's end, 2026-08-17 (Part B 23).
 
@@ -65,9 +70,12 @@ for p in (ROOT, MODELS, FORECAST / "src" / "collectors"):
 import compose_v2 as C  # noqa: E402
 import exclusions as X  # noqa: E402
 import samples as SMP  # noqa: E402
+import stage2 as STG2  # noqa: E402
 import stages_build as SB  # noqa: E402
 import stages_entries as E  # noqa: E402
+import stages_s2 as S2  # noqa: E402
 import stages_s4_v3 as M  # noqa: E402
+import train_v4 as T4  # noqa: E402
 import truth as T  # noqa: E402
 from shared import geography as G  # noqa: E402
 from shared.zones import ZONES  # noqa: E402
@@ -742,6 +750,122 @@ def test_write_round_trip():
         raise AssertionError("a write outside stages_candidates/ was accepted")
     except ValueError as e:
         assert "stages_candidates" in str(e)
+
+
+# ── today's lingering curve at zone level (sfpuc4_shared8_v2) ──────────────
+
+SERVED_PARTS = "sfpuc4_shared8_v2"      # the stage candidate that takes it (stages_candidates.assemble_served_parts)
+
+
+def test_the_zone_recipe_is_the_served_tables_on_the_same_inputs():
+    """Parity: on geo_v1, zone_table's ocean (fed by group Ocean Beach alone) is train_v4.fit_impact_table's Ocean
+    Beach with stage 2 v2's event days (the group's own outfalls), on the same inputs and window: the served training
+    frames on Westside's ledger (2017-12-01 → 2025-10-31), holding the ledger's measured volume (truth's Σ of measured
+    volume_MG; a day with none measured takes the served head's v̂, as both recipes then do), the same samples and
+    heads. Why that and not the served frames as they are: before the window the frames count the Poo Bot archive
+    days as covered, which the ledger rule never does (protocol §1), and inside it they read a CIWQS day's volume as
+    Σ volume_MG with a blank as 0 and a '<' bound at its bound, every CIWQS day measured; the zone recipe reads the
+    ledger's measured volume, which the build sizes its oracle with (fit = use). The two differ exactly on the
+    X-S2-VOLQ days (2018-11-21's '<0.01' only reads 0.01 MG measured there), which moves the median (as of the data
+    end, 13.93 MG on the frames vs 14.08) and some days' size class."""
+    inp = _inputs()
+    g1 = G.get("geo_v1")
+    b = inp.bundle
+    hi = S2.TRAINED_THROUGH
+    win = pd.date_range(T.ledger_start("Oceanside"), hi)
+    tr = SB.truths(g1, hi)
+    days = pd.date_range(T.TRUTH_START, hi)
+    vol = tr.basin_vol["westside"]
+    frames = {s: f[f["date"].isin(win)].reset_index(drop=True) for s, f in inp.train.items()}
+    assert (inp.train[b.chosen["Westside"]].query("Westside_label_source == 'poobot'")["date"] < win[0]).all()
+    same = {}
+    for s, f in frames.items():
+        v = vol.reindex(pd.DatetimeIndex(f["date"])).to_numpy()
+        same[s] = f.assign(Westside_volume_known=np.where(np.isfinite(v), f["Westside_volume_known"], 0),
+                           Westside_volume_mg=np.where(np.isfinite(v), v, 0.0))
+    heads = {g1.basin(k).name: h for k, h in b.s2.heads.items()}
+    v_hat = pd.DataFrame({k: T4.predicted_volume(h, inp.train[h["rain_source"]].set_index("date").reindex(days))
+                          for k, h in b.s2.heads.items()}, index=days)
+    served = T4.fit_impact_table(same, b.chosen, heads, inp.samples_v1,
+                                 event_days=STG2.group_event_days(same, b.chosen, inp.events))[0]["Ocean Beach"]
+    mine = M.zone_table(g1, tr, days, v_hat, inp.samples_v1, win)["ocean"]
+    assert served["buckets"] == mine["buckets"], (served["buckets"], mine["buckets"])
+    assert served["n_sample_days"] == mine["n_sample_days"] and served["median_event_volume_mg"] == round(mine["median_event_volume_mg"], 2)
+    # the served frames as they are: the same Ocean Beach event days, another size exactly on the X-S2-VOLQ days
+    f = frames[b.chosen["Westside"]].set_index("date")
+    ob = sorted(STG2.group_event_days(frames, b.chosen, inp.events)["Ocean Beach"])
+    zo = T.zone_overflow(g1, win[0], hi)
+    assert ob == sorted(zo.loc[(zo["zone"] == "ocean") & (zo["y"] == 1), "date"])
+    bo = T.basin_onsets(g1, win[0], hi).set_index(["basin", "date"]).loc["westside"]
+    off = [d for d in ob if not np.isclose(f.at[d, "Westside_volume_mg"], vol.get(d, np.nan))]
+    assert off and set(off) <= set(bo.index[bo["volq"]]), off
+    assert pd.Timestamp("2018-11-21") in off and np.isnan(vol[pd.Timestamp("2018-11-21")])
+
+
+def test_zone_curves_read_a_table_as_the_geo_v1_adapter_does():
+    """zone_curves is compose_v2.geo_v1_adapter_specs' reading of a served table (impact.smooth_table, then
+    compose_v2._attributable): on the served impact_table.json, each zone given a group's table, every x the adapter
+    holds is equal and the background is its baseline; a size with no bucket at or before k takes the other size's x
+    there (impact.impact_fraction's fallback), a bucket neither size reaches raises, and so does a baseline of 0."""
+    raw = json.loads((T4.SERVE_DIR / "impact_table.json").read_text())
+    group = {"ocean": "Ocean Beach", "baker_china": "Baker-China", "north": "Aquatic Park", "east": "Mission Creek"}
+    bk, coef, filled = M.zone_curves({z: raw[g] for z, g in group.items()})
+    ad = C.geo_v1_adapter_specs(impact_table=raw)["s4"]
+    link = {lk.legacy_group: lk.id for lk in G.get("geo_v1").links}
+    for z, g in group.items():
+        for k, x in ad["buckets"][link[g]].items():
+            assert (f"{z} {k}" in filled) if x is None else bk[z][k] == x, (z, k)
+        assert abs(1.0 / (1.0 + np.exp(-coef[z]["intercept"])) - ad["background"]["p"][link[g]]) < 1e-12, z
+    C.check_s4_spec({"geography": "sfpuc4_v1", "kind": "zone_v3", "unit": "zone", "monotone": True, "buckets": bk,
+                     "background": {"kind": "logistic", "features": [], "coef": coef},
+                     "zone_median_mg": {z: 1.0 for z in ZONES}}, G.get("sfpuc4_v1"))           # a zone_v3 spec as is
+    # fills and refusals on a toy table: no small bucket on the day of → the large x; neither → raise
+    toy = {z: {"buckets": {"baseline_no_recent_discharge": {"p_elevated": 0.1, "n": 50},
+                           "d0_large": {"p_elevated": 0.9, "n": 5}, "d1_small": {"p_elevated": 0.4, "n": 4},
+                           "d1_large": {"p_elevated": 0.5, "n": 4}}} for z in ZONES}
+    bk, _, filled = M.zone_curves(toy)
+    assert filled == [f"{z} 0_small" for z in ZONES] and bk["ocean"]["0_small"] == bk["ocean"]["0_large"] == (0.9 - 0.1) / 0.9
+    assert bk["ocean"]["6-7_small"] == (0.4 - 0.1) / 0.9                                   # the nearest bucket before
+    toy["east"]["buckets"].pop("d0_large")
+    for t, text in ((toy, "either size"), ({**toy, "east": {"buckets": {"baseline_no_recent_discharge": {"p_elevated": 0.0, "n": 9},
+                                                                       "d0_large": {"p_elevated": 0.5, "n": 3}}}}, "finite logit")):
+        try:
+            M.zone_curves(t)
+            raise AssertionError(f"accepted ({text})")
+        except ValueError as e:
+            assert text in str(e), e
+
+
+def test_the_served_parts_candidates_committed_s4_is_its_own_fit():
+    """sfpuc4_shared8_v2's s4_quality.json (stages_candidates.assemble_served_parts) is served_recipe's own fit: the
+    finals' fold and the T2 season 2019-20 refit here (zone_table on the fold's training days with the set's own fold
+    v̂, zone_curves) give the recorded buckets, background and zone medians exactly; every fold is at φ 1 with the
+    set's v̂ and reads back through stages_build.s4_fold_spec; the note names the recipe and Part B 6."""
+    import stages_candidates as SC
+    import stages_s3_links as S3L
+    if not (SC.ROOT / SERVED_PARTS / "manifest.json").exists() or SC.load_set(SERVED_PARTS).s4_quality is None:
+        print(f"  (no s4_quality.json in {SERVED_PARTS} yet)")
+        return
+    saved = SC.load_set(SERVED_PARTS).s4_quality
+    assert saved["component"] == M.RECIPE_KIND and saved["fit"]["s2_set"] == saved["fit"]["s3_set"] == SERVED_PARTS
+    assert "fit_impact_table" in saved["fit"]["recipe"] and "Part B 6" in saved["note"]
+    assert saved["background"]["features"] == [] and saved["monotone"] is True
+    inp, g4 = _inputs(), G.get(M.GEOGRAPHY)
+    recs = {(r["tier"], r["fold"]): r for r in saved["fit"]["folds"]}
+    assert set(recs) == {(f.tier, f.fold) for f in inp.fitted.folds}
+    for key, r in recs.items():
+        assert r["vol_share"] == M.unit_phi() and r["v_hat_from"] == SERVED_PARTS and r["history_geography"] == M.GEOGRAPHY
+        back = SB.s4_fold_spec(saved, key, g4)
+        assert back["buckets"] == r["buckets"] and back["zone_median_mg"] == r["zone_median_mg"]
+    src = S3L.candidate_s2(SERVED_PARTS, check=False)
+    for fold in (_fold("T1"), _fold("T2", 2019)):
+        key = (fold.tier, fold.fold)
+        tab = M.zone_table(g4, M.candidate_truths(inp), inp.days, src.values(key, "v_hat", inp.days), inp.samples_v1,
+                           M.train_days(inp, fold))
+        bk, coef, filled = M.zone_curves(tab)
+        r = recs[key]
+        assert bk == r["buckets"] and coef == r["background"] and filled == r["filled"], key
+        assert {z: t["median_event_volume_mg"] for z, t in tab.items()} == r["zone_median_mg"], key
 
 
 if __name__ == "__main__":

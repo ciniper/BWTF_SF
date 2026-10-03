@@ -19,7 +19,11 @@ geography-aware saver and loader of stage candidates.
     a comparison that reads the feed's own silence) and every degraded seed, else link_zone_swap, read on
     S5's window before post-training only (T1 and the whole S5 window never), from a current served build;
     assembling needs the set's own S2; an assembled candidate's S1, S3, S4 and S5 record that they
-    were fit on its own parts.
+    were fit on its own parts;
+  - copy_s2 saves another set's S2 unchanged (the same predictions, its s2 section verbatim), restamped for the
+    copy, with s2_from; a fresh S2 drops it; tags are protocol §2's (post_seen) with a reason, and a manifest
+    holding any other, or an s2_from naming the set itself, is refused; a set assembled from another's parts
+    holds its base's S2 section and S5 record.
 Writes only to temporary directories. Run: venv/bin/python tests/test_stages_candidates.py
 """
 from __future__ import annotations
@@ -415,6 +419,46 @@ def test_the_assembled_candidates_components():
         winners = [v for v, t in s5["table"].items() if t["beats_no_correction"]]
         assert st.components["s5"] == s5["component"] and (s5["component"] in winners if winners else s5["component"] == SC.S5_DEFAULT)
         assert not any(t["beats_no_correction"] and t["perfect_circular"] for t in s5["table"].values())
+        if "s2_from" in m:                                     # assembled from another set's parts: its S2 and S5 as saved
+            base = SC.load_set(m["s2_from"]).manifest
+            assert m["s2"] == base["s2"] and m["s5"] == base["s5"] and m["components"]["s5"] == base["components"]["s5"], m["name"]
+
+
+def test_copy_s2_keeps_the_fits_and_says_where_from():
+    with _Tmp() as root:
+        SC.save_component("sfpuc4_base_v1", "s2", _s2(), root=root)
+        SC.copy_s2("sfpuc4_base_v1", "sfpuc4_copy_v1", root=root)
+        a, b = SC.load_set("sfpuc4_base_v1", root=root), SC.load_set("sfpuc4_copy_v1", root=root)
+        assert b.manifest["s2"] == a.manifest["s2"] and b.components == a.components and b.manifest["s2_from"] == "sfpuc4_base_v1"
+        X, _ = _toy()
+        for k in GEO.keys:
+            for part in ("models", "holdout_models"):
+                assert np.array_equal(getattr(a, part)[k]["model"].predict_proba(X)[:, 1], getattr(b, part)[k]["model"].predict_proba(X)[:, 1])
+            for part in ("volume", "holdout_volume"):
+                h = getattr(a, part)[k]
+                assert np.array_equal(h["model"].predict(X[h["features"]]), getattr(b, part)[k]["model"].predict(X[h["features"]]))
+                assert getattr(b, part)[k]["set"] == "sfpuc4_copy_v1" and getattr(b, part)[k]["span"] == h["span"]
+        SC.save_component("sfpuc4_copy_v1", "s2", _s2(holdouts=False), root=root)       # a fresh S2 is the set's own
+        assert "s2_from" not in SC.load_set("sfpuc4_copy_v1", root=root).manifest
+        SC.save_component("sfpuc4_nos2_v1", "s3_links", _s3(), root=root)
+        assert "no S2" in _raises(lambda: SC.copy_s2("sfpuc4_nos2_v1", "sfpuc4_copy2_v1", root=root))
+        p = root / "sfpuc4_base_v1" / "manifest.json"
+        p.write_text(json.dumps({**json.loads(p.read_text()), "s2_from": "sfpuc4_base_v1"}))
+        assert "s2_from" in _raises(lambda: SC.load_set("sfpuc4_base_v1", root=root))
+
+
+def test_tags_are_the_protocols_with_a_reason():
+    with _Tmp() as root:
+        SC.save_component("sfpuc4_tag_v1", "s3_links", _s3(), root=root)
+        SC.tag("sfpuc4_tag_v1", "post_seen", " seen first ", root=root)
+        assert SC.load_set("sfpuc4_tag_v1", root=root).manifest["tags"] == {"post_seen": "seen first"}
+        SC.save_component("sfpuc4_tag_v1", "s4_quality", _s4(), root=root)              # a later save keeps the tag
+        assert SC.load_set("sfpuc4_tag_v1", root=root).manifest["tags"] == {"post_seen": "seen first"}
+        assert "unknown tag" in _raises(lambda: SC.tag("sfpuc4_tag_v1", "cherry_picked", "x", root=root))
+        assert "says why" in _raises(lambda: SC.tag("sfpuc4_tag_v1", "post_seen", " ", root=root))
+        p = root / "sfpuc4_tag_v1" / "manifest.json"
+        p.write_text(json.dumps({**json.loads(p.read_text()), "tags": {"seen_once": "x"}}))
+        assert "tags" in _raises(lambda: SC.load_set("sfpuc4_tag_v1", root=root))
 
 
 if __name__ == "__main__":

@@ -61,7 +61,20 @@ T1-holdout days, 2023-07-01 → 2025-10-31: protocol §2, a design choice never 
 the T1 post-training days that confirm it); else link_zone_swap, protocol §8's S5
 primary winner. stages_build then scores it (``--root stages_candidates``).
 
+**Today's parts on a candidate's S2 (``assemble_served_parts``; sfpuc4_shared8_v2).**
+A set that keeps another set's S2 and swaps in the served S3 and S4 recipes:
+``copy_s2`` saves the base's S2 unchanged (its fitted models and heads, its
+manifest s2 section verbatim, the bake-off it names included; nothing refit)
+and records ``s2_from``; S3 is today's split on the city map with the base's
+East union rule (stages_s3_links.split_spec), S4 today's lingering curve at
+zone level (stages_s4_v3.served_recipe) sized by the set's own fold v̂, S1 the
+served weather model, S5 the base's component and record. A set designed after
+the base's post-training scores were seen carries protocol §2's ``post_seen``
+tag (``tag``; manifest ``tags``), which stages_build puts on its post-training
+scores.
+
     venv/bin/python features/forecast/src/models/stages_candidates.py --assemble NAME [--served-scores PATH] [--s5-only]
+    venv/bin/python features/forecast/src/models/stages_candidates.py --assemble NAME --served-parts BASE --post-seen WHY
 
 Unpickling imports what the pickles reference (leaderboard for the bands and
 NonNegLogit, stages_s2_sfpuc4 for its hinge transform), so this module puts its
@@ -118,6 +131,8 @@ S4_KEYS = ("geography", "component", "kind", "background", "buckets", "monotone"
 SAVER_KEYS = ("set", "component")            # the saver's stamps, which compose_v2's readers do not know
 WEIGHT_TOL = 1e-12                           # a solver's −0.0 / round-off is not a negative weight
 FALLBACK_KIND = "pooled_bayside_loglinear"   # Part B 7's declared volume fallback (stages_s2_sfpuc4 fits it)
+PICKLE_STAMPS = ("geography", "pipeline", "set", "component", "fold", "basin")   # what save_component stamps a pickle with
+TAGS = ("post_seen",)                        # protocol §2: designed after its post-training scores were seen
 
 
 # ── plumbing ───────────────────────────────────────────────────────────────
@@ -215,7 +230,10 @@ def _read_manifest(d: Path, name: str) -> dict:
     p = d / "manifest.json"
     if not p.exists():
         raise FileNotFoundError(f"no stage candidate {name!r} under {d.parent}")
-    m = json.loads(p.read_text())
+    return _check_manifest(json.loads(p.read_text()), name)
+
+
+def _check_manifest(m: dict, name: str) -> dict:
     for field in ("schema", "name", "geography", "pipeline", "components", "stamps", "files", "basins"):
         if field not in m:
             raise ValueError(f"{name}: manifest.json has no {field!r} (a missing stamp is never defaulted)")
@@ -228,6 +246,11 @@ def _read_manifest(d: Path, name: str) -> dict:
     geo = _geo(m["geography"])
     if list(m["basins"]) != list(geo.keys):
         raise ValueError(f"{name}: manifest basins {m['basins']} are not {geo.version}'s {list(geo.keys)}")
+    tags = m.get("tags", {})                       # optional: most sets carry none
+    if not isinstance(tags, dict) or set(tags) - set(TAGS) or not all(isinstance(v, str) and v for v in tags.values()):
+        raise ValueError(f"{name}: manifest tags {tags!r}: {list(TAGS)} only, each with its reason")
+    if "s2_from" in m and not (valid_name(m["s2_from"]) and m["s2_from"] != name and "s2" in m["components"]):
+        raise ValueError(f"{name}: s2_from {m['s2_from']!r} names no other set whose S2 this one holds")
     return m
 
 
@@ -440,8 +463,49 @@ def save_component(name: str, kind: str, payload: dict, root=None) -> Path:
     man["components"][stage] = component
     man["stamps"][stage] = {**stamp, "files": sorted(files)}
     man[stage] = section
+    if kind == "s2":
+        man.pop("s2_from", None)                               # a saved S2 is the set's own until copy_s2 says otherwise
     man["updated_at"] = clock.utc_iso()
     _write_atomic(d / "manifest.json", _json_bytes(man))
+    return d
+
+
+def _annotate(name: str, root=None, **fields) -> None:
+    """Set top-level manifest fields of stage candidate ``name`` (s2_from, tags), checked as the loader reads them."""
+    d = set_dir(name, root)
+    man = _check_manifest({**_read_manifest(d, name), **fields, "updated_at": clock.utc_iso()}, name)
+    _write_atomic(d / "manifest.json", _json_bytes(man))
+
+
+def tag(name: str, key: str, why: str, root=None) -> None:
+    """Tag stage candidate ``name`` (manifest ``tags``): ``post_seen`` (protocol §2) for a set designed after its
+    post-training scores were seen, ``why`` saying which scores; stages_build carries it to those scores."""
+    if key not in TAGS:
+        raise KeyError(f"unknown tag {key!r}; known {TAGS}")
+    if not isinstance(why, str) or not why.strip():
+        raise ValueError(f"the {key} tag says why")
+    tags = dict(_read_manifest(set_dir(name, root), name).get("tags", {}))
+    _annotate(name, root, tags={**tags, key: why.strip()})
+
+
+def copy_s2(src: str, name: str, root=None) -> Path:
+    """Stage candidate ``src``'s S2 saved as ``name``'s, unchanged: the same fitted models and heads (finals, holdout
+    siblings, citywide) and ``src``'s manifest s2 section verbatim, the bake-off it names included; the pickles are
+    only restamped for ``name`` and nothing is refit. The manifest records ``s2_from`` (stages_s3_links.candidate_s2
+    reads the bake-off's winner through it). Returns the set's directory."""
+    st = load_set(src, root)
+    if "s2" not in st.components:
+        raise FileNotFoundError(f"{src} holds no S2 to copy")
+    bare = lambda d: {k: v for k, v in d.items() if k not in PICKLE_STAMPS}  # noqa: E731
+    payload = {"geography": st.geo.version, "component": st.components["s2"], "spec": st.manifest["s2"],
+               "models": {k: bare(v) for k, v in st.models.items()}, "volume": {k: bare(v) for k, v in st.volume.items()}}
+    if st.holdout_models:
+        payload["holdout_models"] = {k: bare(v) for k, v in st.holdout_models.items()}
+        payload["holdout_volume"] = {k: bare(v) for k, v in st.holdout_volume.items()}
+    if st.citywide is not None:
+        payload[CITYWIDE] = bare(st.citywide)
+    d = save_component(name, "s2", payload, root=root)
+    _annotate(name, root, s2_from=src)
     return d
 
 
@@ -698,13 +762,56 @@ def assemble(name: str, root=None, n_boot: int | None = None, served_scores: Pat
                                                                                           "total": round(time.time() - t0, 1)}}
 
 
+def assemble_served_parts(name: str, base: str, post_seen: str | None = None, root=None, log=print) -> dict:
+    """Stage candidate ``name`` from ``base``'s S2 with today's S3 and S4 (module notes): S2 ``copy_s2`` (nothing
+    refit); S3 stages_s3_links.split_spec of ``base``'s s3_links.json and the served split refit per fold
+    (served_split, on the served set's own S2 folds and training frames); S4 stages_s4_v3.served_recipe on the
+    set's own fold v̂ (stages_s3_links.candidate_s2, its fidelity checked); S1 the served weather model, which must
+    be ``base``'s; S5 ``base``'s component and record, as saved. ``post_seen``: the reason for protocol §2's tag.
+    Returns {set, s3, s4, seconds}."""
+    import stages_entries as E  # noqa: PLC0415
+    import stages_s3_links as S3L  # noqa: PLC0415
+    import stages_s4_v3 as S4V3  # noqa: PLC0415
+    t0 = time.time()
+    src = load_set(base, root)
+    missing = [c for c in ("s1", "s2", "s3", "s5") if c not in src.components]
+    if missing or src.s3_links is None:
+        raise FileNotFoundError(f"{base} lacks {missing or 's3_links.json'}: it cannot lend its parts")
+    model = E.served_weather_model()
+    if model != src.components["s1"]:
+        raise ValueError(f"{base}'s S1 is {src.components['s1']!r}, the served weather model {model!r}: rebuild {base} first")
+    copy_s2(base, name, root)
+    inp = S4V3.load_inputs(log=log)
+    split = S3L.served_split(inp.bundle, inp.fitted.folds, inp.plan, inp.train, inp.events, inp.samples_v1)
+    s3 = S3L.split_spec(src.s3_links, split, name)
+    save_component(name, "s3_links", {**s3, "component": S3L.SPLIT_KIND}, root=root)
+    log(f"{name}: S3 today's split on {len(split)} folds, {base}'s union rule")
+    s4 = S4V3.served_recipe(inp, S3L.candidate_s2(name, root=root), name, log=log)
+    save_component(name, "s4_quality", {**s4, "component": S4V3.RECIPE_KIND}, root=root)
+    save_component(name, "s1", {"geography": src.geo.version, "component": model, "spec": src.manifest["s1"]}, root=root)
+    save_component(name, "s5", {"geography": src.geo.version, "component": src.components["s5"], "spec": src.manifest["s5"]},
+                   root=root)
+    if post_seen:
+        tag(name, "post_seen", post_seen, root)
+    st = load_set(name, root)
+    log(f"{name}: components {st.components} ({time.time() - t0:.0f}s)")
+    return {"set": name, "s3": s3, "s4": s4, "seconds": round(time.time() - t0, 1)}
+
+
 def main(argv=None) -> None:
     import argparse
     ap = argparse.ArgumentParser(description="assemble a stage candidate: S3, S4, S1 and S5 on its own saved S2")
     ap.add_argument("--assemble", required=True, metavar="NAME", help="the stage candidate (its S2 saved by stages_s2_sfpuc4)")
     ap.add_argument("--served-scores", default=None, help="the served set's scores.json S5 is chosen on (default: its build)")
     ap.add_argument("--s5-only", action="store_true", help="redo only S5's choice (S1–S4 as saved)")
+    ap.add_argument("--served-parts", metavar="BASE", default=None,
+                    help="BASE's S2 (copied) with today's S3 split and S4 lingering curve, BASE's S5 (assemble_served_parts)")
+    ap.add_argument("--post-seen", metavar="WHY", default=None, help="protocol §2's post_seen tag and its reason")
     a = ap.parse_args(argv)
+    if a.served_parts:
+        out = assemble_served_parts(a.assemble, a.served_parts, post_seen=a.post_seen)
+        print(f"assembled {out['set']} in {out['seconds']}s")
+        return
     if a.s5_only:
         save_s5(a.assemble, served_scores=a.served_scores)
         return

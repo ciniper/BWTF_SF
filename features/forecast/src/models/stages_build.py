@@ -182,7 +182,10 @@ component it tests (link_zone_swap), as S4's row does for S4 v3; OUT is T1 post-
 alone and says why (T0 holds no day before the data end). A stage candidate's S2 T2 is
 labelled 'development (nested)' (``t2_label``): the A5 procedure's outer-fold rows. scores["promotion"]
 states each §9 criterion as met | not met | not yet computable, with the reason.
-It decides nothing: replacing the served set is the owner's action.
+It decides nothing: replacing the served set is the owner's action. A stage candidate tagged ``post_seen``
+(protocol §2: designed after its post-training scores were seen; stages_candidates.tag) has the tag on its
+post-training scores: windows["T1"], every pill's post-training words, the caption, and a caveat on each
+primary decided on post-training days.
 
 **Artifacts (``write``):** data/models/stages/<set>/manifest.json, scores.json,
 and rows.csv.gz for the served set and stage candidates. Nothing else in
@@ -464,6 +467,11 @@ class StageCandidate:
         bake-off's own words (stages_s2_sfpuc4.T2_NESTED)."""
         import stages_s2_sfpuc4 as S2C  # noqa: PLC0415
         return (self.manifest.get("s2") or {}).get("t2") == S2C.T2_NESTED
+
+    @property
+    def post_seen(self) -> str | None:
+        """Protocol §2's tag: why its post-training scores were seen before it was designed, or None (untagged)."""
+        return (self.manifest.get("tags") or {}).get("post_seen")
 
     def is_rows_fold(self, fold: S2.Fold) -> bool:
         return not fold.weights
@@ -1779,14 +1787,16 @@ def t2_label(stage: str, geo, nested: bool | None = None) -> str:
 
 
 POST_SELECTED_WORDS = "days also used to pick the served set, so scores on them favour the served set"
+POST_SEEN_WORDS = "scores seen before this set was designed, so they do not confirm it (post_seen)"
 
 
-def window_words(window: str, cell: dict, stage: str, geo, nested: bool | None = None) -> str:
+def window_words(window: str, cell: dict, stage: str, geo, nested: bool | None = None, post_seen: bool = False) -> str:
     """Where a pill's number comes from, as its tooltip says it (no ids): the window and the days its rows span;
     cross-season with the protocol's label (§2: development; an existing set's S2 'development
     (selection-contaminated)', its C grids and design searches having been chosen on those seasons); post-training
     for a GEO_V1 set says those days also picked the served set, so the score favours it (X-SEL post_selected,
-    protocol §2: the served set, its split and its line were chosen with them in view), on the stages X-SEL tags."""
+    protocol §2: the served set, its split and its line were chosen with them in view), on the stages X-SEL tags,
+    and for a set tagged post_seen that its post-training scores were seen before it was designed (protocol §2)."""
     sp = span_words(cell.get("span"))
     if window == "T2":
         n = int(cell.get("n_seasons") or 0)
@@ -1795,7 +1805,8 @@ def window_words(window: str, cell: dict, stage: str, geo, nested: bool | None =
         return f"holdout, {sp}: development only"
     if window == "T1":
         selected = geo.version == "geo_v1" and "X-SEL" in SP.STAGE[stage]["exclusions"]
-        return f"post-training, {sp}" + (f" ({POST_SELECTED_WORDS})" if selected else "")
+        return (f"post-training, {sp}" + (f" ({POST_SELECTED_WORDS})" if selected else "")
+                + (f"; {POST_SEEN_WORDS}" if post_seen else ""))
     if window == "S5":
         return sp
     raise KeyError(f"no words for window {window!r}")
@@ -1889,7 +1900,7 @@ def figure_windows(scores: dict, windows=None, fallback: bool = True) -> dict:
 
 
 def figure(scores: dict, windows, s1: dict | None, geo, s1_post: dict | None = None, fallback: bool = False,
-           nested: bool | None = None) -> dict:
+           nested: bool | None = None, post_seen: bool = False) -> dict:
     """figure{node id: {oracle, chained, lead}, caption} for stages_flowchart.render.
 
     ``windows``: one window for every node (scores['figures'][w]) or {node: window} (FIGURE_WINDOWS, the
@@ -1899,7 +1910,7 @@ def figure(scores: dict, windows, s1: dict | None, geo, s1_post: dict | None = N
     oracle, lead 1 and the lead strip L0 … L5; S5's change in Brier, corrected − no correction, for the
     set's own correction rule (GEO_V1: basin_swap = live_v2) on the perfect feed and the degraded feeds'
     mean, link/zone injection in the tooltip. Every pill carries the words for its window and, unless it is
-    post-training already, its post-training (T1) pill."""
+    post-training already, its post-training (T1) pill; ``post_seen`` tags those (protocol §2)."""
     shown = figure_windows(scores, windows, fallback)
     fig = {}
     if s1:
@@ -1908,8 +1919,8 @@ def figure(scores: dict, windows, s1: dict | None, geo, s1_post: dict | None = N
     def pill(key, e, w, stage, what=""):
         c = _cell(scores, key, e, w)
         p1 = _cell(scores, key, e, POST_WINDOW) if w != POST_WINDOW else None
-        return _pill(c, c and what + window_words(w, c, stage, geo, nested),
-                     _pill(p1, p1 and window_words(POST_WINDOW, p1, stage, geo, nested)))
+        return _pill(c, c and what + window_words(w, c, stage, geo, nested, post_seen),
+                     _pill(p1, p1 and window_words(POST_WINDOW, p1, stage, geo, nested, post_seen)))
     for st, node in (("s2", "m.s2"), ("s4", "m.s4"), ("out", "m.out")):
         if st in scores:
             w = shown[node]
@@ -1932,7 +1943,7 @@ def figure(scores: dict, windows, s1: dict | None, geo, s1_post: dict | None = N
 
         def s5_pill(ww, v, chained):
             p = _seed_mean([cell(f, ww, v) for f in seeds]) if chained else _delta_pill(cell("oracle", ww, v))
-            return _dress(p, p and window_words(ww, p, "s5", geo))
+            return _dress(p, p and window_words(ww, p, "s5", geo, post_seen=post_seen))
         fig["m.s5"] = {}
         for k, chained in (("oracle", False), ("chained", True)):
             main = s5_pill(w, rule, chained)
@@ -1945,14 +1956,15 @@ def figure(scores: dict, windows, s1: dict | None, geo, s1_post: dict | None = N
                               [dict(a, what=S5_RULE_WORDS[alt])] if a else None)
             fig["m.s5"][k] = main
     fig = V.clean(fig)
-    fig["caption"] = figure_caption(fig, shown, t2_label("s2", geo, nested))
+    fig["caption"] = figure_caption(fig, shown, t2_label("s2", geo, nested), post_seen)
     return fig
 
 
-def figure_caption(fig: dict, shown: dict, s2_label: str = "development") -> str:
+def figure_caption(fig: dict, shown: dict, s2_label: str = "development", post_seen: bool = False) -> str:
     """The one line under the figure title: in plain words, which window each stage's pills show, and that the
-    post-training scores are in the tooltips. Cross-season says it is development (protocol §2), with S2's own
-    label (``t2_label``) when it differs: a phone has no tooltip, so the label must be on the face."""
+    post-training scores are in the tooltips (``post_seen``: and were seen before the set was designed). Cross-season
+    says it is development (protocol §2), with S2's own label (``t2_label``) when it differs: a phone has no tooltip,
+    so the label must be on the face."""
     parts = []
     c1 = (fig.get("m.s1") or {}).get("chained") or {}
     if c1.get("span"):
@@ -1987,7 +1999,8 @@ def figure_caption(fig: dict, shown: dict, s2_label: str = "development") -> str
     post = _union([p["post"].get("span") for _, p in pills if p.get("post")])
     if post:
         every = all(p.get("post") for n, p in pills if shown.get(n) != POST_WINDOW)
-        line += f" Post-training ({span_words(post)}) is in {'each pill’s tooltip' if every else 'the other pills’ tooltips'}."
+        line += (f" Post-training ({span_words(post)}) is in {'each pill’s tooltip' if every else 'the other pills’ tooltips'}"
+                 + (f": {POST_SEEN_WORDS}." if post_seen else "."))
     return line
 
 
@@ -2469,6 +2482,9 @@ def make_scores(bundle: SetBundle, rows: dict, rung: pd.DataFrame, ctx: X.Contex
         out["windows"]["T1-holdout"]["volume_heads"] = "its holdout siblings' heads, fit on days before 2023-07-01"
         out["windows"]["T1"]["weights"] = "the candidate's finals, fit through 2025-10-31"
         out["windows"]["T1"]["volume_heads"] = "its finals' heads, fit through 2025-10-31"
+        if bundle.stage.post_seen:                     # protocol §2: designed after these days' scores were seen
+            out["windows"]["T1"]["tag"] = "post_seen"
+            out["windows"]["T1"]["post_seen"] = bundle.stage.post_seen
     pools = {st: _pool(st, ctx, geo, "rain") for st in ("s2", "s3", "s4", "out")}
     no_id = dataclasses.replace(ctx, frames={**ctx.frames, "zone": ctx.frames["zone"].assign(identity=False)})
     pools["s3_oracle"] = _pool("s3", no_id, geo, "oracle")
@@ -2537,10 +2553,11 @@ def make_scores(bundle: SetBundle, rows: dict, rung: pd.DataFrame, ctx: X.Contex
             "folds_off": [f"{t} {fo}" for (t, fo), s in sorted(sz.items()) if s["match"] is False],
             "folds_unstated": [f"{t} {fo}" for (t, fo), s in sorted(sz.items()) if s["match"] is None]}
     out["dropped"] = dropped
-    out["figures"] = {w: figure(out, w, s1, geo, s1_post, nested=nested) for w in TIERS}
+    seen = bool(bundle.stage is not None and bundle.stage.post_seen)
+    out["figures"] = {w: figure(out, w, s1, geo, s1_post, nested=nested, post_seen=seen) for w in TIERS}
     out["figure_window"] = figure_windows(out)
     out["figure_post_window"] = POST_WINDOW
-    out["figure"] = figure(out, FIGURE_WINDOWS, s1, geo, s1_post, fallback=True, nested=nested)
+    out["figure"] = figure(out, FIGURE_WINDOWS, s1, geo, s1_post, fallback=True, nested=nested, post_seen=seen)
     if art is not None:
         out = V.clean(out)
         out["primaries"] = primaries(bundle, out, rows, art, ctx, blocks, n_boot, end)
@@ -2862,6 +2879,15 @@ def settle_unchanged(rows: list, mine: dict) -> list:
                            + (f" — {r['reason']}" if r.get("reason") else "")}
         out.append(r)
     return out
+
+
+def post_seen_caveat(row: dict, why: str) -> dict:
+    """A primary with a part decided on post-training days, for a set tagged post_seen: protocol §2's tag as a caveat
+    (those days' scores were seen before the set was designed, so they do not confirm it). Other rows as they are."""
+    if not any(p.get("window") == POST_WINDOW for p in row.get("parts") or ()):
+        return row
+    cv = f"post_seen (protocol §2): {why}"
+    return {**row, "caveat": f"{row['caveat']}; {cv}" if row.get("caveat") else cv}
 
 
 S4_V3_KIND = "zone_v3"                            # compose_v2's S4 v3 spec kind: the only S4 §8's S4 row tests
@@ -3195,6 +3221,8 @@ def primaries(bundle: SetBundle, sc: dict, rows: dict, art: dict, ctx: X.Context
                          ((((vs.get("out") or {}).get("pooled") or {}).get("rain") or {}).get("T1")) if not skipped else None,
                          parts=oparts, t0=t0_state, **size_kw))
     out_rows = settle_unchanged(out_rows, components(bundle))
+    if cand is not None and cand.post_seen:
+        out_rows = [post_seen_caveat(r, cand.post_seen) for r in out_rows]
     return V.clean({"protocol": S2.protocol_stamp(), "candidate": bundle.name, "served": served_name(),
                     "geography": {"candidate": bundle.geo.version, "served": served_geo},
                     "components": {"candidate": components(bundle), "served": comps}, "changed": changed,
@@ -3260,7 +3288,8 @@ def manifest(bundle: SetBundle, entries, tiers, steps, model: str, end, n_boot: 
         "s2": {"T1": "its finals", "T1-holdout": "its holdout siblings, fit before 2023-07-01",
                "T2": f"the bake-off's outer-fold rows ({st.bakeoff.get('rows')})"},
         "s3": "s3_links.json's per-fold records (stages_s3_links.fold_spec)", "s4": "s4_quality.json's per-fold records",
-        "t2_selection": "nested" if st.nested else "not stated nested", "heads": {f"{t} {fo}": v for (t, fo), v in st.heads_used.items()}}}
+        "t2_selection": "nested" if st.nested else "not stated nested", "heads": {f"{t} {fo}": v for (t, fo), v in st.heads_used.items()},
+        "tags": dict(st.manifest.get("tags") or {})}}
     return {"schema": SCHEMA, "set": bundle.name, "root": bundle.root, "geography": bundle.geo.version,
             "pipeline": bundle.descriptor.get("pipeline", "two_stage_v1"), "components": components(bundle),
             "stage2": bundle.variant, "family": bundle.s2.family, "spec_version": SP.SPEC_VERSION,
