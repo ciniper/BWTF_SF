@@ -166,6 +166,78 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 .sources { font-size: 0.82em; color: #8a93a3; line-height: 1.5; margin-top: 12px; }
 .pill-line { display: inline-flex; align-items: center; gap: 4px; }
 .mute { color: #8a93a3; }
+
+/* ── Model check: the stage builder (Chase, 2026-10-04: less text, more interactive; drop a part into each stage) ── */
+.sb[hidden], .day-fold[hidden], #dayView[hidden], .day-controls:empty { display: none; }
+.sb { background: #fff; border: 1px solid var(--line); border-radius: var(--r-lg); padding: 16px 18px; margin: 0 0 14px; }
+.sb-top { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; }
+.sb-ctl { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.sb-note { font-size: 12.5px; color: var(--muted); margin: 8px 0 0; }
+.sb-chain { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: auto auto; column-gap: 16px; margin: 14px 0; }
+.sb-slot { position: relative; border: 2px solid var(--line); border-radius: var(--r); padding: 10px 11px 11px; min-width: 0;
+           display: grid; grid-row: span 2; grid-template-rows: subgrid; align-content: start; }   /* the five headings share one row, so the pickers line up */
+.sb-slot.live { border-color: #b9d6ea; }
+.sb-slot + .sb-slot::before { content: "→"; position: absolute; left: -15px; top: 36px; color: var(--muted); font-weight: 700; font-size: 15px; line-height: 1; }
+.sb-head { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; color: var(--muted); margin: 0 0 7px; cursor: help; }
+.sb-head b { color: var(--brand); }
+.sb-live { display: inline-block; font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #fff; background: var(--brand); border-radius: 999px; padding: 1px 7px; line-height: 1.5; }
+.sb-head .sb-live { margin-left: auto; }
+.sb-body { display: flex; flex-direction: column; gap: 8px; }
+.sb-body select { width: 100%; min-width: 0; padding: 6px 8px; }
+.sb-cell { display: flex; flex-direction: column; gap: 5px; }
+.sb-val { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 7px; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.sb-val b { font-size: 19px; color: var(--ink); }
+.sb-val .ci { font-size: 12px; }
+.sb-pr { font-weight: 700; color: var(--muted); cursor: help; }
+.sb-bar { position: relative; height: 8px; border-radius: 4px; background: #e6edf2; }
+.sb-bar i { position: absolute; top: 0; bottom: 0; border-radius: 4px; background: var(--brand); }
+.sb-bar s { position: absolute; top: 3px; height: 2px; background: rgba(38, 39, 42, .5); text-decoration: none; }
+.sb-bar u { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--ink); text-decoration: none; }
+.sb-bar u.draw { width: 4px; margin-left: -2px; top: 1px; bottom: 1px; border-radius: 2px; background: var(--muted); }
+.sb-bar.div u.zero { background: #9aa6ae; }
+.sb-bar i.good { background: var(--safe); } .sb-bar i.bad { background: var(--discharge); } .sb-bar i.even { background: #9aa6ae; }
+.sb-sub { font-size: 11.5px; color: var(--faint); line-height: 1.35; }
+.sb-feed { font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--faint); }
+.sb-cell.lp .sb-val, .sb-cell.lp .sb-bar { opacity: .5; }
+.sb-none { font-size: 13px; color: var(--faint); font-style: italic; }
+.sb-worse { font-size: 11.5px; font-weight: 700; color: var(--discharge); }
+.sb-verdict { font-size: 11.5px; font-weight: 700; color: var(--muted); }
+.sb-verdict.better { color: var(--safe); } .sb-verdict.worse { color: var(--discharge); }
+.sb-out { border: 2px solid var(--line); border-radius: var(--r); padding: 12px 14px; background: var(--sand2); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px 22px; align-items: start; }
+.sb-out.live { border-color: #b9d6ea; }
+.sb-out-head { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 13px; color: var(--muted); }
+.sb-out-head b { font-size: 15px; color: var(--ink); cursor: help; }
+.sb-out .sb-val b { font-size: 24px; }
+.sb-scored { font-size: 12px; font-weight: 700; color: var(--safe); }
+.sb-scored.no { color: var(--faint); }
+.sb-out-foot { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-size: 12.5px; color: var(--muted); }
+.sb-chip { font: inherit; font-size: 12.5px; font-weight: 700; color: var(--ink); background: #fff; border: 2px solid var(--line); border-radius: 999px; padding: 4px 11px; cursor: pointer; text-align: left; }
+.sb-chip:hover { border-color: var(--sky); }
+.sb-link { font: inherit; font-size: 12.5px; font-weight: 700; color: var(--brand); background: none; border: 0; padding: 2px 0; cursor: pointer; }
+.sb-how { margin: 12px 0 0; font-size: 13px; color: var(--muted); }
+.sb-how summary { display: inline-block; color: var(--brand); font-weight: 700; cursor: pointer; list-style: none; }
+.sb-how summary::-webkit-details-marker { display: none; }
+.sb-how summary::after { content: " ▸"; } .sb-how[open] summary::after { content: " ▾"; }
+.sb-how ul { margin: 8px 0 0; padding-left: 18px; line-height: 1.55; max-width: 100ch; }
+.sb-how li { margin: 0 0 5px; }
+.day-fold { margin: 0 0 14px; }
+.day-fold-btn { display: inline-flex; align-items: baseline; gap: 8px; flex-wrap: wrap; font: inherit; font-size: 14px; font-weight: 700; color: var(--brand); background: #fff; border: 2px solid var(--line); border-radius: 999px; padding: 8px 16px; cursor: pointer; text-align: left; }
+.day-fold-btn::before { content: "▸"; } .day-fold-btn[aria-expanded="true"]::before { content: "▾"; }
+.day-fold-btn:hover { border-color: var(--sky); }
+.day-fold-btn small { font-size: 12.5px; font-weight: 500; color: var(--muted); }
+/* tablets and phones: the five slots stack, each one a row (part on the left, its score on the right) */
+@media (max-width: 1100px) {
+    .sb-chain { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; gap: 18px; }
+    .sb-slot { display: block; grid-row: auto; }
+    .sb-slot + .sb-slot::before { content: "↓"; left: 50%; top: -18px; margin-left: -5px; }
+    .sb-body { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 8px 14px; align-items: start; }
+}
+@media (max-width: 560px) {
+    .sb { padding: 14px 12px; }
+    .sb-body, .sb-out { grid-template-columns: minmax(0, 1fr); }
+    .sb .seg-toggle { display: grid; grid-template-columns: 1fr 1fr; border-radius: 14px; }
+    .sb .seg-btn { padding: 7px 8px; }
+}
 </style>
 </head>
 <body>
@@ -175,12 +247,12 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 {% call page_head("CSO Forecast", "Sewage-overflow risk for San Francisco's beaches, by zone, updated every 30 minutes.", "today", "How this forecast works") %}
 <p><b>What it is.</b> For each beach zone, the chance that a sewage overflow has fouled the water: today and the next five days, as a percentage, refreshed every 30 minutes. It is a rain model. It does not see dry-weather dirtiness, and posted signs always win.</p>
 <p><b>Stage 1: how much rain?</b> What fell comes from two NOAA gauges, Downtown and Oceanside; the last few hours from the SFO airport gauge; the hours ahead from a weather model (ICON, via Open-Meteo). On past days the gauges replace everything else.</p>
-<p><b>Stage 2: will the sewers overflow?</b> San Francisco has four combined-sewer basins. For each one, a model trained on ten years of the city's filed overflow reports turns the rain pattern (today's total, the last days' totals, the peak hour) into the chance of an overflow that day.</p>
+<p><b>Stage 2: will the sewers overflow?</b> San Francisco has four combined-sewer basins. For each one, a model trained on ten years of the city's filed overflow reports turns the rain pattern (the day's total, the last days' totals, the peak hour) into the chance of an overflow that day.</p>
 <p><b>Stage 3: which beaches?</b> An overflow reaches the beaches its outfalls post, and not every outfall spills when its basin does: each beach gets the basin's chance times the share of the basin's overflows of that size on which its own outfalls spilled, from the city's records.</p>
 <p><b>Stage 4: for how long?</b> An overflow fouls a beach for days. How long, by basin and by the size of the overflow, comes from the city's own bacteria samples after past overflows. The percentage shown is the combined risk from the last eight days of overflow chances.</p>
 <p><b>Stage 5: live corrections.</b> When SFPUC's beach map shows an overflow flag, that day becomes certain and the following days follow; when it shows a posting or a clean sample, the following days are held up or capped. Nothing observed, nothing changed. The toggle on the live view shows the model alone.</p>
 <p><b>Reading the number.</b> The word with each percentage is a fixed risk level, the same on every page: {% for l in RISK_LEVELS.levels %}{{ l.label }} {{ l.lo }}–{{ l.hi }}%{{ ', ' if not loop.last else '.' }}{% endfor %} No alert reads this number: alerts follow what the city's beach map shows.</p>
-<p><b>Is it any good?</b> The Model check tab grades every past day against the city's filed overflows and its samples, zone by zone, at each risk level. Two plain reports go deeper: <a href="/reports/2026-10_forecast_stages.html">the forecast, stage by stage</a> (how good each part is) and <a href="/reports/2026-09_forecast_how_it_works.html">how the forecast works</a> (what each part does). <a href="/reports/">Every report</a>, current and archived, is listed in one place.</p>
+<p><b>Is it any good?</b> The Model check tab builds a forecast from its five stages: pick a part for each and see how good it is on its own, and what the parts make together. Day by day, it grades every past day against the city's filed overflows and its samples, zone by zone, at each risk level. Two plain reports go deeper: <a href="/reports/2026-10_forecast_stages.html">the forecast, stage by stage</a> (how good each part is) and <a href="/reports/2026-09_forecast_how_it_works.html">how the forecast works</a> (what each part does). <a href="/reports/">Every report</a>, current and archived, is listed in one place.</p>
 {% endcall %}
 
 <div class="mode-bar">
@@ -200,6 +272,14 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
     <span class="historical-label" id="histLabel"></span>
 </div>
 
+{# Model check: the stage builder on top; everything below it (date, timeline, zones, scorecard) folds under "Day by day" #}
+<section class="sb" id="builder" hidden aria-label="Stage builder"></section>
+<div class="day-fold" id="dayFold" hidden>
+    <button type="button" class="day-fold-btn" id="dayFoldBtn" aria-expanded="false" aria-controls="dayView" onclick="toggleDayFold()">Day by day <small>pick a date, a window, a zone</small></button>
+</div>
+
+<div id="dayView">
+<div class="mode-bar day-controls" id="dayControls"></div>
 <div class="risk-banner risk-{{ RISK_LEVELS.levels[0].key }}" id="riskBanner"><svg class="ic"><use href="#i-hourglass"/></svg> Loading…</div>
 <div class="refresh-info" id="refreshInfo"></div>
 
@@ -212,6 +292,7 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 <div class="beach-section" id="beachSection">
     <h2><svg class="ic"><use href="#i-waves"/></svg> Current SFPUC Beach Status</h2>
     <div class="beach-grid" id="beachGrid"></div>
+</div>
 </div>
 
 <div class="foot">   {# the page's own source note; the site footer is the frame's #}
@@ -234,7 +315,7 @@ const BASIN_META = {
     citywide:    { icon: 'map-pin',    name: 'City-wide',              desc: 'any basin discharging' },
 };
 const BASIN_ORDER = ['westside', 'north_shore', 'central', 'southeast', 'citywide'];
-let SERVED_NAME = 'the served';
+let SERVED_NAME = {{ served_name | tojson }};   // the served set's stored name (served.json); the live payload's model stamp updates it
 
 const ic = name => `<svg class="ic"><use href="#i-${name}"/></svg>`;
 const esc = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -332,6 +413,11 @@ function setMode(mode) {
     document.getElementById('datePickerWrap').style.display = mode === 'live' ? 'none' : 'inline-flex';
     document.getElementById('viewToggle').style.display = mode === 'actual' ? 'none' : 'inline-flex';
     document.getElementById('histLabel').innerHTML = '';
+    // Model check: the stage builder on top, the day-by-day view folded beneath it (with its date picker)
+    placeDayControls(mode);
+    document.getElementById('builder').hidden = document.getElementById('dayFold').hidden = mode !== 'check';
+    document.getElementById('dayView').hidden = mode === 'check' && !dayOpen;
+    history.replaceState(null, '', mode === 'check' ? '#check' : location.pathname + location.search);
     loadData();
 }
 function setView(view) {
@@ -355,6 +441,7 @@ async function loadData() {
             if (data.error) throw new Error(data.error);
             renderLive(data);
         } else {
+            if (currentMode === 'check') { showBuilder(); if (!dayOpen) return; }   // the day-by-day data loads when its fold opens
             const date = document.getElementById('datePicker').value;
             if (!date) return;
             document.getElementById('histLabel').innerHTML = ic('hourglass') + ' Loading ' + esc(date) + '…';
@@ -430,6 +517,7 @@ function renderLive(data) {
     if (data.model) SERVED_NAME = data.model.name || SERVED_NAME;   // the served set's descriptor (model stamp): its name for the copy
     renderLiveToggle(data.live_corrections);
     const refreshEl = document.getElementById('refreshInfo');
+    refreshEl.title = '';
     // a stamp without an offset is UTC (snapshots written before the engine stamped aware times): say so, or the browser reads it as local
     const stamp = data.last_refresh && !/([+-]\d\d:?\d\d|Z)$/.test(data.last_refresh) ? data.last_refresh + 'Z' : data.last_refresh;
     refreshEl.textContent = stamp ? 'Last updated: ' + new Date(stamp).toLocaleTimeString() + ' · auto-refreshes every 30 min'
@@ -592,7 +680,7 @@ function renderActual(a) {
     const target = a.target_date;
     current = { mode: 'actual', days, actual: a };
     const tday = days.find(d => d.date === target);
-    document.getElementById('refreshInfo').textContent = '';
+    document.getElementById('refreshInfo').textContent = ''; document.getElementById('refreshInfo').title = '';
     showPanels({ actual: true });
 
     const timeline = document.getElementById('timeline');
@@ -673,6 +761,246 @@ function renderActualDetail(day) {
     panel.innerHTML = html;
 }
 
+// ─── MODEL CHECK · the stage builder ────────────────────────────────────────
+// /forecast/api/stage-builder (src/models/export_stage_builder.py, from the committed stage scores): every part of
+// every stage with its own score per window, and every scored chain's public number. One slot per stage; any change
+// redraws at once from the data already loaded. Names are shared/lineup.py's; the set that serves wears LIVE.
+let SB = null, sbFetch = null, sbErr = '', sbHowOpen = false, dayOpen = false;
+const sbPick = { basins: '', win: 'T2', s1: '', s2: '', s3: '', s4: '', s5: '' };
+const SB_STAGES = ['s1', 's2', 's3', 's4', 's5'];
+const SB_UNITS = { s2: ['basin-days', 'overflow days'], s3: ['zone-days', 'zone overflow days'], s4: ['sampled zone-days', 'over the standard'],
+                   out: ['zone-days', 'bad beach days'] };
+const sbNum = (v, d) => (v < 0 ? '−' : '') + Math.abs(v).toFixed(d).replace(/^0(?=\.)/, '');
+const sbSgn = (v, d) => (v < 0 ? '−' : '+') + Math.abs(v).toFixed(d).replace(/^0(?=\.)/, '');
+const sbRange = (lo, hi, f, sep) => '[' + f(lo) + (sep || (lo < 0 ? ' to ' : '–')) + f(hi) + ']';   // signed changes always read 'to'
+const sbIn = v => Number(v).toFixed(2) + '″';
+const sbSpan = s => s && s.length ? fmtMonth(s[0]) + ' – ' + fmtMonth(s[1]) : '';
+const sbDay = s => new Date(s + 'T12:00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+const sbClamp = v => Math.max(0, Math.min(1, v));
+const sbAt = v => (sbClamp(v) * 100).toFixed(1) + '%';
+const sbNone = words => `<span class="sb-none">${esc(words)}</span>`;
+const sbStage = id => SB.stages.find(s => s.id === id);
+const sbPart = (st, id) => sbStage(st).parts.find(p => p.id === id);
+const sbParts = st => sbStage(st).parts.filter(p => p.basins.includes(sbPick.basins));
+const sbChainOf = set => SB.chains.find(c => c.set === set);
+const sbBasinsName = id => (SB.basins.find(b => b.id === id) || {}).name || id;
+const sbS5Id = id => (SB.aliases.s5 || {})[id] || id;
+
+function loadBuilder() {
+    if (!sbFetch) sbFetch = getJSON('/forecast/api/stage-builder').then(d => {
+        if (d.error) throw new Error(d.error);
+        SB = d; sbErr = '';
+        sbUse((SB.chains.find(c => c.live) || SB.chains[0]).set, true);   // the live set is preselected
+    }).catch(e => { sbErr = e.message || String(e); sbFetch = null; });
+    return sbFetch;
+}
+async function showBuilder() { await loadBuilder(); renderBuilder(); }
+
+// Pick a scored chain: its basins and S1–S4; S5 stays when those basins have it (it is scored on its own).
+function sbUse(set, all) {
+    const c = sbChainOf(set); if (!c) return;
+    const s5 = sbPart('s5', sbPick.s5);
+    sbPick.basins = c.basins;
+    for (const st of ['s1', 's2', 's3', 's4']) sbPick[st] = c.parts[st];
+    if (all || !s5 || !s5.basins.includes(c.basins)) sbPick.s5 = sbS5Id(c.parts.s5);
+    if (!all) renderBuilder();
+}
+function sbSetBasins(g) {   // other basins: start from their first scored chain, S5 included (on the live basins, the live set)
+    if (g === sbPick.basins) return;
+    const c = SB.chains.find(x => x.basins === g);
+    if (c) { sbUse(c.set, true); return renderBuilder(); }
+    sbPick.basins = g;
+    for (const st of SB_STAGES) { const ps = sbParts(st); if (!ps.some(p => p.id === sbPick[st])) sbPick[st] = ps.length ? ps[0].id : ''; }
+    renderBuilder();
+}
+function sbSetWin(w) { sbPick.win = w; renderBuilder(); }
+function sbSet(st, id) {
+    sbPick[st] = id; renderBuilder();
+    const sel = document.querySelector(`#builder [data-stage="${st}"] select`); if (sel) sel.focus();
+}
+
+// A 0 → 1 bar: the value filled, its 90% range as a thin line, ticks (S1's floor) on top.
+function sbBar(v, lo, hi, ticks = []) {
+    return `<div class="sb-bar"><i style="left:0;width:${sbAt(v)}"></i><s style="left:${sbAt(lo)};width:${((sbClamp(hi) - sbClamp(lo)) * 100).toFixed(1)}%"></s>${ticks.map(t => `<u style="left:${sbAt(t)}"></u>`).join('')}</div>`;
+}
+// A change (S5) on a bar centred on 0: left of the centre removes error, right of it adds error. Draws are ticks.
+function sbDiv(c, top, cls, draws = []) {
+    const at = d => sbClamp((1 + d / top) / 2);
+    const fill = c ? `<i class="${cls}" style="left:${sbAt(at(Math.min(0, c.delta)))};width:${((at(Math.max(0, c.delta)) - at(Math.min(0, c.delta))) * 100).toFixed(1)}%"></i>`
+                   + `<s style="left:${sbAt(at(c.lo))};width:${((at(c.hi) - at(c.lo)) * 100).toFixed(1)}%"></s>` : '';
+    return `<div class="sb-bar div">${fill}<u class="zero" style="left:50%"></u>${draws.map(d => `<u class="draw" style="left:${sbAt(at(d.delta))}"></u>`).join('')}</div>`;
+}
+
+function sbStageTip(st) {
+    const how = { s1: 'Its score: the average miss on wet days, one day ahead, against the mean of the two city gauges. Lower is better. The floor is one gauge as a forecast of the other.',
+                  s5: 'Its score: the change in error on the days after an observation, against no correction. Lower is better. Perfect feed: every filed overflow, on time. Realistic feeds: five draws that miss some flags and show others a day late.' }[st.id]
+        || `Its score: skill when fed the true input (${st.oracle}), so the stages before it cannot drag it down.`;
+    return `${st.title}: ${st.question} ${how}`;
+}
+
+// skill [range] PR, a bar, and what to watch for: below 0, or too few storms (faded)
+function sbSkillCell(c, units, extra) {
+    const tip = [`Brier skill score ${sbNum(c.bss, 3)}, 90% range ${sbNum(c.lo, 3)} to ${sbNum(c.hi, 3)}`,
+                 `PR-AUC ${sbNum(c.pr, 3)} (ranking only) · ROC-AUC ${sbNum(c.roc, 3)}`,
+                 `${c.n.toLocaleString()} ${units[0]} · ${c.n_pos.toLocaleString()} ${units[1]}${c.storms != null ? ' · ' + c.storms + ' storms' : ''}`,
+                 sbSpan(c.span)].concat(c.low_power ? ['Too few storms to decide'] : [], extra ? [extra] : []).join('\n');
+    return `<div class="sb-cell${c.low_power ? ' lp' : ''}" title="${esc(tip)}">
+        <div class="sb-val">skill <b>${sbNum(c.bss, 2)}</b> <span class="ci">${sbRange(c.lo, c.hi, v => sbNum(v, 2))}</span> <span class="sb-pr">PR ${sbNum(c.pr, 2)}</span></div>
+        ${sbBar(c.bss, c.lo, c.hi)}${c.bss < 0 ? '<div class="sb-worse">worse than the usual rate</div>' : ''}${c.low_power ? '<div class="sb-sub">few storms</div>' : ''}</div>`;
+}
+function sbSkillSlot(st, p, win) {
+    if (!p.scores) return sbNone('not scored yet');
+    const c = p.scores[win.key];
+    if (!c) return sbNone(win.key === 'T0' && !win.graded ? 'not graded yet' : 'not scored on this window');
+    const from = sbChainOf(p.from);
+    return sbSkillCell(c, SB_UNITS[st], from ? `Scored in ${from.name}${from.live ? ' (live)' : ''}` : '');
+}
+function sbS1Slot(st, p, win) {
+    if (!win.shows.s1) return sbNone('not graded yet');
+    const c = p.score, f = st.floor, top = Math.max(f.hi, ...st.parts.map(q => q.score.hi)), live = st.parts.find(q => q.live);
+    const tip = [`Average miss on wet days, one day ahead: ${sbIn(c.mae)}, 90% range ${sbIn(c.lo)} to ${sbIn(c.hi)}. Lower is better.`,
+                 `${c.n} wet days · ${sbSpan(c.span)}`,
+                 `Floor ${sbIn(f.mae)}: ${f.name.replace(' as ', ' as a forecast of ')}, about the best a forecast for one point can do.`]
+                 .concat(p.vs_live ? [`Against ${live.name}: ${p.vs_live}`] : []).join('\n');
+    return `<div class="sb-cell" title="${esc(tip)}">
+        <div class="sb-val">miss <b>${sbIn(c.mae)}</b> <span class="ci">${sbRange(c.lo, c.hi, sbIn)}</span></div>
+        ${sbBar(c.mae / top, c.lo / top, c.hi / top, [f.mae / top])}
+        <div class="sb-sub">floor ${sbIn(f.mae)} · lower is better · ${esc(sbSpan(st.window))}</div>${p.vs_live ? `<div class="sb-sub">vs ${esc(live.name)}: ${esc(p.vs_live)}</div>` : ''}</div>`;
+}
+// The realistic feeds: worse / better on k of the draws (the build's own verdict per draw, counted).
+function sbDrawWords(ds) {
+    const k = v => ds.filter(d => d.verdict === v).length, out = [];
+    if (k('worse')) out.push('worse on ' + k('worse'));
+    if (k('better')) out.push('better on ' + k('better'));
+    return out.length ? out.join(', ') + ' of ' + ds.length + ' draws' : 'no clear difference on any of ' + ds.length + ' draws';
+}
+function sbS5Top(sw) {
+    let top = 0;
+    for (const p of sbStage('s5').parts) {
+        const x = ((p.scores || {})[sbPick.basins] || {})[sw]; if (!x) continue;
+        const r = x.realistic || {}, m = r.mean || {};
+        for (const v of [x.perfect && x.perfect.lo, x.perfect && x.perfect.hi, m.lo, m.hi, ...(r.draws || []).map(d => d.delta)])
+            if (v != null) top = Math.max(top, Math.abs(v));
+    }
+    return top || 1;
+}
+function sbS5Slot(st, p, win) {
+    const sw = win.shows.s5;
+    if (!sw) return sbNone('not graded yet');
+    const x = ((p.scores || {})[sbPick.basins] || {})[sw];
+    if (!x || !x.perfect) return sbNone('not scored on this window');
+    const pf = x.perfect, r = x.realistic, home = sbChainOf(st.home[sbPick.basins]);
+    if (p.note) return `<div class="sb-cell" title="${esc(p.note.long)}"><div class="sb-val">change <b>${sbSgn(pf.delta, 3)}</b></div><div class="sb-sub">${esc(p.note.short)}</div></div>`;
+    const vcls = v => v === 'better' ? 'good' : v === 'worse' ? 'bad' : 'even', top = sbS5Top(sw);
+    const scored = home ? `\nScored on ${home.name} · ${sbBasinsName(sbPick.basins)}` : '';
+    let html = `<div class="sb-cell${pf.low_power ? ' lp' : ''}" title="${esc(`Perfect feed: every filed overflow, on time. Change in error with this rule against no correction, on ${pf.n.toLocaleString()} zone-days after an observation, ${sbSpan(pf.span)}; 90% range ${sbSgn(pf.lo, 3)} to ${sbSgn(pf.hi, 3)}.${scored}`)}">
+        <div class="sb-feed">perfect feed</div>
+        <div class="sb-val"><b>${sbSgn(pf.delta, 3)}</b> <span class="ci">${sbRange(pf.lo, pf.hi, v => sbSgn(v, 3), ' to ')}</span> <span class="sb-verdict ${esc(pf.verdict)}">${esc(pf.verdict)}</span></div>
+        ${sbDiv(pf, top, vcls(pf.verdict))}${pf.low_power ? '<div class="sb-sub">few storms</div>' : ''}</div>`;
+    if (r && r.draws.length) {
+        const ds = r.draws, m = r.mean, lowest = Math.min(...ds.map(d => d.delta)), highest = Math.max(...ds.map(d => d.delta));
+        const all = v => ds.every(d => d.verdict === v), cls = all('worse') ? 'bad' : all('better') ? 'good' : 'even';
+        const tip = m ? `The mean of ${m.seeds} realistic feeds (they miss some flags and show others a day late); the range runs from the lowest draw's 90% bound to the highest's. ${m.n.toLocaleString()} zone-days, ${sbSpan(m.span)}.`
+                      : `${ds.length} realistic feeds (they miss some flags and show others a day late), one change each; no mean is stored for this rule.`;
+        html += `<div class="sb-cell${m && m.low_power ? ' lp' : ''}" title="${esc(tip + scored)}">
+            <div class="sb-feed">realistic feeds</div>
+            <div class="sb-val">${m ? `<b>${sbSgn(m.delta, 3)}</b> <span class="ci">${sbRange(m.lo, m.hi, v => sbSgn(v, 3), ' to ')}</span>` : `${ds.length} draws <b>${sbSgn(lowest, 3)}</b> to <b>${sbSgn(highest, 3)}</b>`}</div>
+            ${sbDiv(m, top, cls, ds)}<div class="sb-verdict ${cls === 'bad' ? 'worse' : cls === 'good' ? 'better' : ''}">${esc(sbDrawWords(ds))}</div></div>`;
+    }
+    return html + `<div class="sb-sub">lower is better · ${esc(sbSpan(pf.span))}</div>`;
+}
+
+function sbSlot(st, win) {
+    const stage = sbStage(st), p = sbPart(st, sbPick[st]), [code, ...rest] = stage.title.split(' · ');
+    const body = !p ? sbNone('no part for these basins') : st === 's1' ? sbS1Slot(stage, p, win) : st === 's5' ? sbS5Slot(stage, p, win) : sbSkillSlot(st, p, win);
+    return `<div class="sb-slot${p && p.live ? ' live' : ''}" data-stage="${st}">
+        <div class="sb-head" title="${esc(sbStageTip(stage))}"><b>${esc(code)}</b>${esc(rest.join(' · '))}${p && p.live ? '<span class="sb-live" title="The part the live forecast runs">LIVE</span>' : ''}</div>
+        <div class="sb-body"><select aria-label="${esc(stage.title)}" onchange="sbSet('${st}', this.value)">${sbParts(st).map(q => `<option value="${esc(q.id)}"${q.id === sbPick[st] ? ' selected' : ''}>${esc(q.name)}</option>`).join('')}</select>
+        <div class="sb-score">${body}</div></div></div>`;
+}
+
+function sbControls(win) {
+    const seg = (items, cur, fn) => `<span class="seg-toggle">${items.map(([k, label]) => `<button type="button" class="seg-btn${k === cur ? ' active' : ''}" onclick="${fn}('${esc(k)}')">${esc(label)}</button>`).join('')}</span>`;
+    let note;
+    if (win.key === 'T0') note = win.graded ? `Every day after the rules froze on ${sbDay(win.after)}.`
+        : `Nothing graded yet: the data end ${sbDay(win.data_end)}, before the live season (every day after the rules froze on ${sbDay(win.after)}). It is graded after the next data refresh.`;
+    else note = sbSpan(win.span) + ' · ' + ({ T2: `${win.seasons} seasons, each scored by a fit that never saw it`, T1: 'days after every fit’s training data ended',
+                                              'T1-holdout': 'development only: this window was used to pick the model' }[win.key] || '');
+    return `<div class="sb-top"><div class="sb-ctl"><span class="ctl-label">Basins</span>${seg(SB.basins.map(b => [b.id, b.name]), sbPick.basins, 'sbSetBasins')}</div>
+        <div class="sb-ctl"><span class="ctl-label">Window</span>${seg(SB.windows.map(w => [w.key, w.name]), win.key, 'sbSetWin')}</div></div>
+        <p class="sb-note">${esc(note)}</p>`;
+}
+
+// The scored chains nearest the pick: most parts in common (basins, S2, S3, S4), then the report's order.
+function sbClosest() {
+    const same = c => (c.basins === sbPick.basins) + (c.parts.s2 === sbPick.s2) + (c.parts.s3 === sbPick.s3) + (c.parts.s4 === sbPick.s4);
+    return SB.chains.map((c, i) => ({ c, k: same(c), i })).sort((a, b) => b.k - a.k || a.i - b.i).slice(0, 3).map(x => x.c);
+}
+const sbDayLink = key => `<button type="button" class="sb-link" onclick="sbDayByDay('${esc(key)}')" title="Grade this lineup day by day: the scorecard below, on its own stored hindcast">Day by day ▸</button>`;
+function sbDayByDay(key) {
+    if (current && current.mode === 'check') setScoreModel(key); else scoreModel = key;
+    toggleDayFold(true);
+    document.getElementById('dayFold').scrollIntoView({ block: 'start', behavior: 'smooth' });
+}
+function sbChainCard(win) {
+    const same = c => c.basins === sbPick.basins && c.parts.s2 === sbPick.s2 && c.parts.s3 === sbPick.s3 && c.parts.s4 === sbPick.s4;
+    const match = SB.chains.find(same), lineup = match ? null : SB.lineups.find(same);
+    const words = match ? match.name : ['s2', 's3', 's4'].map(st => (sbPart(st, sbPick[st]) || {}).name || '—').join(' · ');
+    const rainOf = (sbPart('s1', (match || SB.chains[0]).parts.s1) || {}).name;
+    const tip = `The percentage people see: the chance a zone's beaches are affected by a sewer overflow, graded on bad beach days (an overflow day, or a sample over the standard in the week after one). It is scored for whole lineups: basins, S2, S3 and S4, with ${rainOf}'s rain one day ahead. S5 is scored on its own and does not enter this number.`;
+    const pending = win.key === 'T0' && !win.graded, s = match ? (match.scores[win.key] || {}) : {};
+    const has = !!(s.L1 || s.rain);
+    const status = pending ? '<span class="sb-scored no">○ not graded yet</span>' : match ? `<span class="sb-scored${has ? '' : ' no'}">${has ? '● scored' : '○ not scored on this window'}</span>` : '<span class="sb-scored no">○ not scored yet</span>';
+    const head = `<div class="sb-out-head"><b title="${esc(tip)}">Public number</b>${match && match.live ? '<span class="sb-live">LIVE</span>' : ''}${status}<span>${esc(words)} · ${esc(sbBasinsName(sbPick.basins))}</span></div>`;
+    if (!match) {
+        return `<div class="sb-out">${head}<div class="sb-out-foot">This lineup has no stage scores yet.${lineup ? ` It has a day-by-day scorecard: ${sbDayLink(lineup.set)}` : ''}</div>
+            <div class="sb-out-foot"><span>Closest scored:</span>${sbClosest().map(c => `<button type="button" class="sb-chip" onclick="sbUse('${esc(c.set)}')">${esc(c.name)}${c.basins !== sbPick.basins ? ' · ' + esc(sbBasinsName(c.basins)) : ''}${c.live ? ' <span class="sb-live">LIVE</span>' : ''}</button>`).join('')}</div></div>`;
+    }
+    const s1 = sbPart('s1', sbPick.s1), ran = sbPart('s1', match.parts.s1);
+    const ahead = pending ? sbNone('not graded yet') : sbPick.s1 !== match.parts.s1
+        ? `${sbNone(`not scored with ${s1 ? s1.name : sbPick.s1} yet`)} <button type="button" class="sb-link" onclick="sbSet('s1', '${esc(match.parts.s1)}')">use ${esc(ran ? ran.name : match.parts.s1)}</button>`
+        : s.L1 ? sbSkillCell(s.L1, SB_UNITS.out, '') : sbNone('not scored on this window');
+    const rain = pending ? sbNone('not graded yet') : s.rain ? sbSkillCell(s.rain, SB_UNITS.out, '') : sbNone('not scored on this window');
+    return `<div class="sb-out${match.live ? ' live' : ''}">${head}
+        <div><div class="sb-feed">one day ahead</div>${ahead}</div><div><div class="sb-feed">with rain known</div>${rain}</div>
+        ${match.scorecard ? `<div class="sb-out-foot">${sbDayLink(match.live ? '' : match.set)}</div>` : ''}</div>`;
+}
+
+function sbHow() {
+    const w = k => SB.windows.find(x => x.key === k) || {}, t2 = w('T2'), t1 = w('T1'), th = w('T1-holdout'), t0 = w('T0');
+    return `<details class="sb-how"${sbHowOpen ? ' open' : ''} ontoggle="sbHowOpen = this.open"><summary>How to read this</summary><ul>
+        <li><b>Skill:</b> 1 is perfect; 0 is no better than the usual rate for that place and month; below 0 is worse than that usual rate.</li>
+        <li><b>Why skill leads and PR-AUC sits beside it:</b> skill grades the percentages themselves, so a day called at 30% has to come true about 30% of the time. PR-AUC grades the ranking only: whether overflow days sit above quiet ones, not whether 30% comes true 30% of the time.</li>
+        <li><b>Ranges</b> hold the middle ${Math.round(SB.bootstrap.level * 100)}% of ${SB.bootstrap.n.toLocaleString()} resamples of whole storms. A faded score rests on too few storms to decide anything.</li>
+        <li><b>Windows:</b> nine seasons (${esc(sbSpan(t2.span))}), each season scored by a fit that never saw it; post-training (${esc(sbSpan(t1.span))}), days after the training data ended; the holdout (${esc(sbSpan(th.span))}) is development only, because it was used to pick the model; the live season, every day after the rules froze on ${esc(sbDay(t0.after))}, is graded after the next data refresh.</li>
+        <li><b>S1 and S5 are lower-is-better.</b> S1 is the weather model's average miss on wet days one day ahead; the floor is one city gauge as a forecast of the other. S5 is the change in error on the days after an observation, against no correction. Neither is refit season by season, so each keeps its own window.</li>
+        <li><b>The public number</b> is scored for whole lineups only; pick one with stage scores to see it.</li></ul></details>`;
+}
+
+function renderBuilder() {
+    const el = document.getElementById('builder');
+    if (!SB) { el.innerHTML = `<p class="sb-none">${sbErr ? 'Stage scores unavailable: ' + esc(sbErr) : 'Loading the stage scores…'}</p>`; return; }
+    const win = SB.windows.find(w => w.key === sbPick.win) || SB.windows[0];
+    el.innerHTML = sbControls(win) + `<div class="sb-chain">${SB_STAGES.map(st => sbSlot(st, win)).join('')}</div>` + sbChainCard(win) + sbHow();
+}
+
+// "Day by day": the date picker, the timeline, the zones and the scorecard, folded under the builder.
+const DAY_CONTROLS = ['datePickerWrap', 'viewToggle', 'histLabel'];
+function placeDayControls(mode) {
+    const bar = document.querySelector('.mode-bar'), live = document.getElementById('liveToggle'), host = document.getElementById('dayControls');
+    for (const id of DAY_CONTROLS) {
+        const el = document.getElementById(id);
+        if (mode === 'check') host.appendChild(el); else if (id === 'histLabel') bar.appendChild(el); else bar.insertBefore(el, live);
+    }
+}
+function toggleDayFold(open) {
+    dayOpen = open == null ? !dayOpen : open;
+    const btn = document.getElementById('dayFoldBtn');
+    btn.setAttribute('aria-expanded', String(dayOpen));
+    document.getElementById('dayView').hidden = currentMode === 'check' && !dayOpen;
+    if (dayOpen && currentMode === 'check' && !(current && current.mode === 'check')) loadData();
+}
+
 // ─── MODEL CHECK ────────────────────────────────────────────────────────────
 function verdict(p, za) {
     const pred = p >= RISK_THRESHOLD;
@@ -693,7 +1021,9 @@ function renderCheck(h, a, sc, target) {
     current = { mode: 'check', days, byDate: preds, actual: a, scorecard: sc, target };
     const tday = preds[target] || days[0];
     if (!tday) { setBanner(null, { eyebrow: 'Model check · ' + esc(target), sub: 'No hindcast for this day.' }); return; }
-    document.getElementById('refreshInfo').textContent = 'Hindcast = today\'s models scored on the rain that actually fell. A day counts as alerted at ' + lineName(RISK_THRESHOLD) + '.';
+    const info = document.getElementById('refreshInfo');
+    info.textContent = 'Hindcast: the live models on the rain that fell · alerted at ' + lineName(RISK_THRESHOLD);
+    info.title = 'The live set’s models run now on the rain that actually fell: NOAA gauges for the day totals, the Open-Meteo archive for the hourly peaks.';
     showPanels({ check: true });
 
     const timeline = document.getElementById('timeline');
@@ -726,7 +1056,9 @@ function renderCheckDetail(day) {
     const scDay = (sc.days || {})[day.date];
     const panel = document.getElementById('checkPanel');
     let html = `<h2>${ic('scales')} Model vs what happened — ${esc(fmtDate(day.date))}</h2>`;
-    html += '<table class="tbl"><tr><th>Zone</th><th class="num">Today\'s models</th><th class="num">Stored hindcast</th><th>Discharge</th><th>Bacteria</th><th>Verdict</th></tr>';
+    html += '<table class="tbl"><tr><th>Zone</th><th class="num" title="The live set’s models run now on the rain that fell">Live models</th>'
+        + '<th class="num" title="The probability kept in the scorecard: holdout = a model that never saw that season; in-sample = days the models trained on (optimistic); post-training = days after their training data ended">Stored hindcast</th>'
+        + '<th>Discharge</th><th>Bacteria</th><th title="A discharge that posts a zone’s beach, an SFPUC posting or a sample over the standard makes a bad day">Verdict</th></tr>';
     const zr = zonesOf(day);
     const storedTag = scDay && scDay.post_training ? 'post-training' : 'in-sample';
     for (const zk of ZONE_ORDER) {
@@ -746,7 +1078,7 @@ function renderCheckDetail(day) {
         html += `<div class="mute" style="font-size:.8em;margin:-4px 0 8px">No discharge report covers this day for at least one zone: SFPUC's CIWQS filings run through ${through}; the BWTF watcher covers ${esc(new Date((current.actual.watcher_since || '2026-08-20') + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }))} onward.</div>`;
     }
     if (scDay && scDay.basins) {
-        html += `<div class="subhead">${ic('chart')} Stage 2 — overflow chance by basin (training-time hindcast vs reported)</div><table class="tbl"><tr><th>Basin</th><th class="num">P(discharge)</th><th>Reported</th><th class="num">Volume (MG)</th><th>Label source</th></tr>`;
+        html += `<div class="subhead" title="The training-time hindcast against what was reported">${ic('chart')} S2 · overflow chance by basin</div><table class="tbl"><tr><th>Basin</th><th class="num">P(discharge)</th><th>Reported</th><th class="num">Volume (MG)</th><th>Label source</th></tr>`;
         for (const key of ['westside', 'north_shore', 'central', 'southeast']) {
             const b = scDay.basins[key]; if (!b) continue;
             const p = b.ph != null ? b.ph : b.p;
@@ -755,10 +1087,9 @@ function renderCheckDetail(day) {
         html += '</table>';
     }
     if (sc.in_span === false) {
-        html += `<div class="mute" style="font-size:.85em;margin-top:10px">This date is outside the training scorecard (${esc((sc.span || []).join(' → '))}); the hindcast above is today's models on archived rain.</div>`;
+        html += `<div class="mute" style="font-size:.85em;margin-top:10px">Outside the scorecard (${esc((sc.span || []).join(' → '))}): the hindcast above is the live models on archived rain.</div>`;
     }
     html += renderScoreWindow(sc);
-    html += `<div class="sources">"Today's models" = the served ${esc(SERVED_NAME)} models scored now on the rain that fell (NOAA gauges for totals, Open-Meteo archive for hourly intensity). "Stored hindcast" = the probability kept in the scorecard artifact: <b>holdout</b> from a model that never saw that season, <b>in-sample</b> from the served models on days they trained on (optimistic), <b>post-training</b> from the served models on days after their training data ended${sc.trained_through ? ' (' + esc(fmtMonth(sc.trained_through)) + ')' : ''} — the truest test. The scorecard below aggregates those stored probabilities over the chosen window. A discharge that posts a zone's beach, an SFPUC posting, or a sample over standard makes a "bad" day.</div>`;
     panel.innerHTML = html;
 }
 
@@ -777,7 +1108,7 @@ function setScoreLabel(v) {
 }
 // A model set by its stage lineup (A8, shared/lineup.py via the scorecard API): S2 · S3 · S4 in plain words.
 const lineupWords = m => (m.lineup || []).map(x => x.words).join(' · ');
-const setName = m => m.served ? "today's forecast" : (lineupWords(m) || m.label);
+const setName = m => (lineupWords(m) || m.label) + (m.served ? ' (live)' : '');
 const scoreRangeQuery = () => (scoreRange ? '&from=' + encodeURIComponent(scoreRange.from) + '&to=' + encodeURIComponent(scoreRange.to) : '')
                             + (scoreModel ? '&model=' + encodeURIComponent(scoreModel) : '');
 function setScoreModel(v) {
@@ -809,12 +1140,13 @@ function seasonGrade(s) {
     return s.holdout === 'full' ? 'holdout' : 'part holdout, part in-sample';
 }
 function gradeBadge(w, sc) {
+    const tipped = (b, tip) => b.replace('<span class="badge', `<span title="${esc(tip)}" class="badge`);
     switch (w.grade) {
-        case 'holdout': return badge('ok', 'circle-check', 'holdout — a model fit on data before ' + fmtMonth(sc.holdout_start) + ' that never saw these days');
-        case 'post_training': return badge('ok', 'circle-check', 'post-training — the live models on days after their training data ended (' + fmtMonth(trainedThrough(sc)) + ')');
-        case 'out_of_sample': return badge('ok', 'circle-check', 'out-of-sample — holdout model through ' + fmtMonth(trainedThrough(sc)) + ', then the live models on days after training');
-        case 'in_sample': return badge('warn', 'triangle-alert', 'in-sample — the models trained on all ' + w.n_days + ' of these days, so this is optimistic');
-        case 'mixed': return badge('warn', 'triangle-alert', w.n_insample + ' of ' + w.n_days + ' days in-sample (optimistic); the rest holdout or post-training');
+        case 'holdout': return tipped(badge('ok', 'circle-check', 'holdout'), 'A model fit on data before ' + fmtMonth(sc.holdout_start) + ' that never saw these days');
+        case 'post_training': return tipped(badge('ok', 'circle-check', 'post-training'), 'The live models on days after their training data ended (' + fmtMonth(trainedThrough(sc)) + ')');
+        case 'out_of_sample': return tipped(badge('ok', 'circle-check', 'out-of-sample'), 'The holdout model through ' + fmtMonth(trainedThrough(sc)) + ', then the live models on days after training');
+        case 'in_sample': return tipped(badge('warn', 'triangle-alert', 'in-sample'), 'The models trained on all ' + w.n_days + ' of these days, so this is optimistic');
+        case 'mixed': return tipped(badge('warn', 'triangle-alert', w.n_insample + ' of ' + w.n_days + ' days in-sample'), 'Optimistic on those days; the rest are holdout or post-training');
         default: return badge('muted', 'circle-dashed', 'no hindcast days in this window');
     }
 }
@@ -915,7 +1247,7 @@ function renderScoreWindow(sc) {
     const opt = (v, label) => `<option value="${v}"${v === preset ? ' selected' : ''}>${esc(label)}</option>`;
     const seasonLabel = s => s.label + ' season' + (s.clip ? ' (' + s.clip + ')' : '') + ' · ' + seasonGrade(s);
     const models = sc.models || [], cur = models.find(m => m.key === (sc.model || '')) || models[0];
-    const modelLabel = cur ? setName(cur) : `${SERVED_NAME} (served)`;
+    const modelLabel = cur ? setName(cur) : 'the live lineup';
     const usePosted = scoreLabel === 'posted' && !!w.posted_confusion, useCombined = scoreLabel === 'combined' && !!w.combined_confusion, plab = w.posting_label || {};
     const rulerName = usePosted ? 'beach postings' : useCombined ? 'discharge days + samples' : 'discharge days only';
     const stats = {};
@@ -923,10 +1255,10 @@ function renderScoreWindow(sc) {
     const zones = ZONE_ORDER.filter(zk => stats[zk]);
     if (scoreZone !== 'all' && !stats[scoreZone]) scoreZone = 'all';
 
-    let html = `<div id="scoreWindow"><div class="subhead">${ic('chart-line')} Scorecard — ${esc(modelLabel)} — ${fmtRange(w.start, w.end)}, alerts at ${esc(lineName(RISK_THRESHOLD))} · vs ${rulerName}</div>
+    let html = `<div id="scoreWindow"><div class="subhead" title="Alerts at ${esc(lineName(RISK_THRESHOLD))} · graded against ${esc(rulerName)}">${ic('chart-line')} Scorecard — ${esc(modelLabel)} — ${fmtRange(w.start, w.end)}</div>
         <div class="sc-controls">
-            ${models.length > 1 ? `<select class="date-picker" onchange="setScoreModel(this.value)" title="Which model set's stored hindcast to grade. Only the served set drives the live forecast; candidates are scored here on the same days and labels.">
-                ${models.map(m => `<option value="${esc(m.key)}"${m.key === (sc.model || '') ? ' selected' : ''}>${m.served ? "Today's forecast: " : ''}${esc(lineupWords(m) || m.label)}${m.served ? '' : ` (${esc(m.label)})`}</option>`).join('')}
+            ${models.length > 1 ? `<select class="date-picker" onchange="setScoreModel(this.value)" title="Which lineup's stored hindcast to grade (S2 · S3 · S4). Only the LIVE one drives the forecast; the others are scored here on the same days and labels.">
+                ${models.map(m => `<option value="${esc(m.key)}"${m.key === (sc.model || '') ? ' selected' : ''}>${esc(lineupWords(m) || m.label)}${m.served ? ' · LIVE' : ''}</option>`).join('')}
             </select>` : ''}
             <select class="date-picker" onchange="setRiskLine(this.value)" title="A day counts as alerted when its risk reaches this level; hits, misses and false alarms everywhere on this view follow it">
                 ${RISK_LEVELS.edges.map(e => `<option value="${e}"${e === RISK_THRESHOLD ? ' selected' : ''}>alerts at ${esc(lineName(e))}</option>`).join('')}
@@ -951,10 +1283,10 @@ function renderScoreWindow(sc) {
             ${scoreRange ? `<button class="mode-btn" onclick="resetScoreRange()" title="Back to the season of the selected date">${ic('calendar')} follow the date</button>` : ''}
         </div>
         <div class="sc-facts">
-            ${cur && cur.lineup ? `<span class="mute" title="Stored as ${esc(cur.label)}. Bold: not today's forecast's part.">${cur.lineup.map(x => x.differs ? `<b>${esc(x.words)}</b>` : esc(x.words)).join(' · ')}</span>` : ''}
+            ${cur && cur.lineup && !cur.served ? `<span class="mute" title="Bold: the parts that differ from the live lineup">${cur.lineup.map(x => x.differs ? `<b>${esc(x.words)}</b>` : esc(x.words)).join(' · ')}</span>` : ''}
             <span class="mute">${w.n_days} days · ${w.n_discharge_days} discharge day${w.n_discharge_days === 1 ? '' : 's'} · ${w.n_sampled_days} sampled</span>
             ${gradeBadge(w, sc)}
-            ${(sc.input_rules_post || []).length && w.n_post ? `<span class="mute" title="Days after the training data ended are scored on rain treated by the serving-side input rules: a NOAA gauge stuck at exactly 0.00 for 2+ days while the other gauge recorded real rain is treated as missing and the other gauge stands in.">${w.n_post} post-training day${w.n_post === 1 ? '' : 's'} on ${esc((sc.input_rules_post || []).join(', '))}</span>` : ''}
+            ${(sc.input_rules_post || []).length && w.n_post ? `<span class="mute" title="Days after the training data ended are scored on rain treated by the serving-side input rules (${esc((sc.input_rules_post || []).join(', '))}): a NOAA gauge stuck at exactly 0.00 for 2+ days while the other gauge recorded real rain is treated as missing and the other gauge stands in.">${w.n_post} post-training day${w.n_post === 1 ? '' : 's'} with the dead-gauge rule</span>` : ''}
         </div>
         <div class="zone-tabs seg-toggle" role="tablist">
             <button class="seg-btn${scoreZone === 'all' ? ' active' : ''}" role="tab" aria-selected="${scoreZone === 'all'}" onclick="setScoreZone('all')">All zones</button>
@@ -975,20 +1307,19 @@ function renderScoreWindow(sc) {
             html += `<tr class="zone-row" onclick="setScoreZone('${zk}')" title="Open ${esc(zoneLabel(zk))}"><td class="zone">${esc(zoneLabel(zk))}</td><td class="num">${s.posted}</td><td class="num">${s.d.tp} <span class="mute">${fmtShare(s.rec)}</span></td><td class="num">${s.d.fn}</td><td class="num">${s.d.fp}${split}</td><td class="num">${fmtShare(s.far)}</td><td class="num">${s.b.tp} of ${s.b.tp + s.b.fn}</td></tr>`;
         }
         html += `<tr class="total"><td class="zone">All zones</td><td class="num">${tBad}</td><td class="num">${tTp} <span class="mute">${fmtShare(tBad ? tTp / tBad : null)}</span></td><td class="num">${tFn}</td><td class="num">${tFp}</td><td class="num">${fmtShare(tTp + tFp ? tFp / (tTp + tFp) : null)}</td><td class="num">${tBtp} of ${tBn}</td></tr></table>`;
-        html += `<div class="fine" style="margin-top:8px">Click a zone for its full analysis, with every line from 5% to 81%. ${rulerNote}</div>`;
-        html += `<div class="fine" style="margin-top:6px">This scorecard counts days, for any window you pick. How good each stage is, scored by the frozen rules, is in <a href="/reports/2026-10_forecast_stages.html">the forecast, stage by stage</a>.</div>`;
-        html += `<div class="subhead">${ic('gauge')} Stage 2 — overflow model by basin, ${fmtRange(w.start, w.end)}</div>` + basinTable(w, sc, ['westside', 'north_shore', 'central', 'southeast']);
+        html += `<details class="sb-how"><summary>How these days are graded</summary><ul><li>${rulerNote}</li><li>Open a zone for its full analysis, with every line from 5% to 81%.</li></ul></details>`;
+        html += `<div class="subhead">${ic('gauge')} S2 · overflow model by basin, ${fmtRange(w.start, w.end)}</div>` + basinTable(w, sc, ['westside', 'north_shore', 'central', 'southeast']);
     } else {
         const s = stats[scoreZone];
         html += `<div class="zone-analysis">${zoneCard(s, w, thr)}
             <div class="score"><b>Every line, same window</b><div class="grp">${esc(zoneLabel(scoreZone))} · a day alerted from this risk on · ◂ current</div>${linesTable(s, thr, true)}</div></div>`;
-        html += `<div class="fine" style="margin-top:8px">${rulerNote}</div>`;
+        html += `<details class="sb-how"><summary>How these days are graded</summary><ul><li>${rulerNote}</li></ul></details>`;
         const basinsHtml = basinTable(w, sc, ZONE_BASINS[scoreZone] || []);
-        if (basinsHtml) html += `<div class="subhead">${ic('gauge')} Stage 2 — the basin${(ZONE_BASINS[scoreZone] || []).length === 1 ? '' : 's'} behind ${esc(zoneLabel(scoreZone))}, ${fmtRange(w.start, w.end)}</div>` + basinsHtml;
+        if (basinsHtml) html += `<div class="subhead">${ic('gauge')} S2 · the basin${(ZONE_BASINS[scoreZone] || []).length === 1 ? '' : 's'} behind ${esc(zoneLabel(scoreZone))}, ${fmtRange(w.start, w.end)}</div>` + basinsHtml;
     }
 
     html += `<div class="sc-reports"><span class="mute">Reports:</span>
-        <a href="/reports/2026-10_forecast_stages.html" title="How good each stage is, scored by the frozen rules; the challengers against today's forecast; what is left out">stage by stage</a>
+        <a href="/reports/2026-10_forecast_stages.html" title="How good each stage is, scored by the frozen rules; the challengers against the live lineup; what is left out">stage by stage</a>
         <a href="/reports/2026-09_forecast_how_it_works.html" title="What each stage does: rain, overflow, which beaches, for how long, live corrections, the number">how it works</a>
         <a href="${scoreModel ? '/reports/2026-09_forecast_' + esc(scoreModel) + '_model_explorer.html' : '/reports/2026-09_forecast_' + esc(SERVED_NAME) + '_model_explorer.html'}" title="The selected set's overflow model opened up: inputs, weights or trees, a what-if editor">inside this model (S2)</a>
         <a href="/reports/2026-09_forecast_stage2_explorer.html" title="How a basin's overflow chance becomes beach risk: which beaches (S3) and for how long (S4), shared by every model set">S3–S4</a>
@@ -1037,7 +1368,7 @@ function setRiskLine(v) {
 }
 
 // ─── boot ───────────────────────────────────────────────────────────────────
-loadData();
+if (location.hash === '#check') setMode('check'); else loadData();   // /forecast#check opens the Model check (Under the hood links there)
 setInterval(() => { if (currentMode === 'live') loadData(); }, 300000);
 </script>
 <script src="{{ asset('sample_popover.js') }}" defer></script>

@@ -43,7 +43,7 @@ To switch: change the one line in `METEO_PARAMS`. Then rebuild the stage scores
 A set of weights is a model set: one model per basin, with its terms, weights
 and rain source. Build a candidate set next to the served one, then score it.
 
-- **On today's basins:** `src/models/shared_logit.py shared8` (a same-terms
+- **On BWTF basins:** `src/models/shared_logit.py shared8` (a same-terms
   design from `leaderboard.SHARED_DESIGNS`, every weight ≥ 0), or the
   leaderboard's own families. These write `data/models/candidates/<name>/`.
 - **On the city's basins:** `src/models/stages_s2_sfpuc4.py --write` runs the
@@ -58,7 +58,7 @@ Use `--root stages_candidates` for a city-basin set. The comparison with the
 served set is in `features/forecast/data/models/stages/<name>/scores.json`:
 `primaries` holds the pre-registered tests and `promotion` the checklist.
 
-To put a set live on today's basins:
+To put a set live on BWTF basins:
 `src/models/promote.py <name> --line 0.25`, then the follow-ups its docstring
 lists. A city-basin set needs the promotion tooling (P11), which is built when such
 a set earns promotion (STAGES_DESIGN.md Part B 29).
@@ -86,7 +86,7 @@ satisfy.
 ## The live correction rule (stage 5)
 
 The rules that move the forecast when the watcher sees an overflow flag or a
-lab result: `live_v2` serves today (`src/models/live_rules.py`). The candidates
+lab result: `live_v2` ("Basin flags") is the live rule (`src/models/live_rules.py`). The candidates
 are replay variants in `src/models/stages_s5.py`: no correction, `basin_swap`
 (= `live_v2`), `link_swap`, `zone_swap`, `link_zone_swap`, `sample_swap` and
 `downgrade`. The stages build scores them all on the days after each
@@ -127,16 +127,18 @@ Then rebuild each stage candidate you are keeping with
 `--set <name> --root stages_candidates --write`. That takes about 4 minutes per
 set; the S1 step takes about 2.
 
+After rebuilding the stage scores, run `venv/bin/python features/forecast/src/models/export_stage_builder.py` and commit its `data/models/stage_builder.json`: the Model check's stage builder reads that file, since the app bundle leaves the stage artifacts out (`tests/test_stage_builder.py` fails while it is stale).
+
 ## Grading the live season (T0)
 
 The live season is every day after the rules froze (`STAGES_PROTOCOL.md` §2,
 T0: from 2026-10-03). Once the data reach it, the stages build scores it two
 ways:
-- **Shadow-run.** Every lineup, today's included, runs on the same archived
+- **Shadow-run.** Every lineup, the live one included, runs on the same archived
   inputs as on post-training days, its fitted parts not refit. Each
   challenger's test of the public number then reads post-training and the
   live season as one window.
-- **As served.** For today's forecast only: what the page actually showed,
+- **As served.** For the live forecast only: what the page actually showed,
   from each day's first forecast stored in Supabase's `forecast_history`,
   graded on the same truth (`scores.json` → `t0_as_served`, and "The public
   number" in the stages report). It is never one side of a comparison.

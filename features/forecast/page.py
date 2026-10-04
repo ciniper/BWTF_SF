@@ -547,6 +547,23 @@ def handle_models(query, body):
     return _json({"models": with_lineups(_engine.LIVE.list_models())})
 
 
+# The Model check's stage builder: every stage's parts with their own scores and every scored chain, distilled
+# offline from the stage artifacts (which the app bundle leaves out) by src/models/export_stage_builder.py.
+STAGE_BUILDER_FILE = _FORECAST_ROOT / "data" / "models" / "stage_builder.json"
+_stage_builder_body: bytes | None = None
+
+
+def handle_stage_builder(query, body):
+    """The builder's data as committed: read once per process, served byte for byte. No engine needed."""
+    global _stage_builder_body
+    if _stage_builder_body is None:
+        try:
+            _stage_builder_body = STAGE_BUILDER_FILE.read_bytes()
+        except OSError as e:
+            return _json({"error": f"stage scores unavailable: {type(e).__name__}"}, status=503)
+    return 200, "application/json", _stage_builder_body
+
+
 GET_ROUTES = {
     "/forecast": handle_page,
     "/forecast/api/data": handle_data,
@@ -556,5 +573,6 @@ GET_ROUTES = {
     "/forecast/api/actuals": handle_actuals,
     "/forecast/api/scorecard": handle_scorecard,
     "/forecast/api/models": handle_models,
+    "/forecast/api/stage-builder": handle_stage_builder,
 }
 POST_ROUTES = {}
