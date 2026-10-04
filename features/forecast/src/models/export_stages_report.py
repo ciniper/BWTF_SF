@@ -59,6 +59,7 @@ PROTOCOLS_DIR = FORECAST / "protocols"
 ICONS = REPO / "app" / "templates" / "_icons.html"
 OUT = REPO / "reports" / "2026-10_forecast_stages.html"
 HOW_IT_WORKS = "/reports/2026-09_forecast_how_it_works.html"
+INDEX = "/reports/"                                         # every report, current and archived (export_reports_index.py)
 ROOTS = ("served", "candidates", "stages_candidates")       # lineup order after today's: today's basins first
 
 LABELS, LINEUP_COLS = LU.WORDS, LU.COLUMNS
@@ -1177,7 +1178,7 @@ def render(D: dict | None = None) -> str:
     body = [
         f'''<header class="rh"><img src="/static/brand/bwtf_144x144.png" alt="" class="mark"><div><h1>The forecast, stage by stage</h1>
 <p class="sub">Five stages turn rain into the beach percentage. Each is scored on its own and as part of the chain, on days its fit never saw. Today's forecast: <b>{esc(lineup_words(M))}</b>.</p>
-<div class="meta"><span>rules {esc(P["version"])}, frozen {esc(FMT["day"](P["freeze"]))}</span><span>data through {A.n("as_of", f="day")}</span><span>scored {M.n("built_at", f="day")}</span><span><a href="{HOW_IT_WORKS}">how it works →</a></span></div></div></header>''',
+<div class="meta"><span>rules {esc(P["version"])}, frozen {esc(FMT["day"](P["freeze"]))}</span><span>data through {A.n("as_of", f="day")}</span><span>scored {M.n("built_at", f="day")}</span><span><a href="{HOW_IT_WORKS}">how it works →</a></span><span><a href="{INDEX}">every report →</a></span></div></div></header>''',
         '<nav><a href="#what">What this is</a><a href="#figure">The chain, scored</a><a href="#lineups">Lineups</a><a href="#s1">Each stage</a>'
         '<a href="#out">The public number</a><a href="#challengers">Challengers</a><a href="#left-out">Left out</a></nav>',
         section_what(D), section_figure(D), section_lineups(D),

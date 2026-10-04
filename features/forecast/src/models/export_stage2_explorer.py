@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
-"""Stage 2 explorer — one self-contained HTML page that opens up the
-discharge-probability → beach-risk transformation (src/models/impact.py):
-the empirical impact table (raw and smoothed, with sample counts), the decay
-curves and the small/large volume blend, the volume heads and how well they
-predict reported volumes, and a day-by-day composition walk-through for ANY
-day in the hindcast, for the served gb_v1 set and every candidate set side by
-side — so what is shared (the whole of stage 2) and what differs per model
-(the stage-1 probabilities and rain sources feeding it) is visible, and a
-self-check proves the page's composition reproduces the stored artifacts.
+"""From an overflow to beach risk (S3–S4): one self-contained HTML page that
+opens up the discharge-probability → beach-risk transformation (src/models/impact.py,
+src/models/stage2.py), in the five stages (STAGES_DESIGN.md A8): S3, the beach
+split (today's split, stored as stage 2 v2: the share of a basin's overflow days
+on which a group's own outfalls spilled), and S4, the lingering table (the
+empirical table, raw and smoothed, with sample counts, its decay curves and the
+small/large volume blend), the volume heads (S2's size) and how well they predict
+reported volumes, and a day-by-day composition walk-through for ANY day in the
+hindcast, for today's forecast and every candidate set side by side — so what is
+shared and what differs per set (S2's probabilities and rain sources, and S3–S4
+where a set has no split) is visible, and a self-check proves the page's
+composition reproduces the stored artifacts. Sets read as their lineup's plain
+words (export_reports_index.model_sets); stored names stay identifiers.
 
     venv/bin/python features/forecast/src/models/export_stage2_explorer.py
-    → reports/2026-09_forecast_stage2_explorer.html  (served at /reports/…)
+    → reports/2026-09_forecast_stage2_explorer.html  (served at /reports/…; the file keeps its old name)
 
 Re-run after retraining, `train_v4.py --rescore` or saving a candidate.
 """
@@ -32,10 +36,12 @@ for p in (HERE, HERE.parent / "collectors", HERE.parents[3]):
         sys.path.insert(0, str(p))
 
 import candidates  # noqa: E402
+import export_reports_index as RI  # noqa: E402  (each set's lineup words; the served set's S2 page)
 import train_v4 as T  # noqa: E402
 from export_model_explorer import export_gb  # noqa: E402
 from groups import BASIN_KEYS, GROUPS_BY_BASIN, SITE_GROUPS, ZONE_GROUPS  # noqa: E402
 from impact import smooth_table  # noqa: E402
+from shared import lineup as LU  # noqa: E402
 from shared import risk_levels  # noqa: E402
 from shared.stations import STATIONS  # noqa: E402
 from shared.zones import ZONES  # noqa: E402
@@ -52,7 +58,8 @@ def _r(v, nd):
 
 
 def load_sets() -> list[dict]:
-    """The served gb_v1 set plus every candidate: {name, label, served, models{key: pickle}, scorecard, manifest}."""
+    """Today's forecast (the served set) plus every candidate: {name, label, served, models{key: pickle}, scorecard,
+    manifest}; ``label`` is how the page names the set ("today's forecast", or its lineup words)."""
     import leaderboard  # noqa: F401  (weights pipelines reference leaderboard.add_hinges)
     served = {}
     for basin in T.APP_BASINS + ["citywide"]:
@@ -64,7 +71,7 @@ def load_sets() -> list[dict]:
     sv = candidates.served_info()
     s2_path = SERVE_DIR / "stage2.json"
     served_s2 = json.loads(s2_path.read_text()) if s2_path.exists() else None
-    sets = [{"name": sv["name"], "label": f'{sv["name"]} (served)', "served": True, "models": served, "scorecard": sc,
+    sets = [{"name": sv["name"], "label": RI.SERVED_WORDS, "served": True, "models": served, "scorecard": sc,
              "note": f"the live forecast since {str(sv.get('promoted_at') or '2026-09-12')[:10]}", "family": sv.get("family", "gb"),
              "stage2": served_s2, "stage1_name": sv["stage1"], "stage1_from": "served"}]
     for man in candidates.list_candidates():
@@ -75,7 +82,7 @@ def load_sets() -> list[dict]:
             print(f"candidate {name}: cannot unpickle ({exc}); skipped")
             continue
         s2 = candidates.load_stage2(name)
-        sets.append({"name": name, "label": f"{name} (candidate)", "served": False, "models": models,
+        sets.append({"name": name, "label": RI.set_title(RI.model_set(name)), "served": False, "models": models,
                      "scorecard": candidates.load_scorecard(name), "note": man.get("note"), "family": man.get("family"),
                      "stage2": s2, "stage1_from": (man.get("stage1") or {}).get("from", "fit"),
                      "stage1_name": (man.get("stage1") or {}).get("name", name)})
@@ -114,7 +121,7 @@ def main() -> None:
     assert [str(d.date()) for d in base["date"]] == dates, "frame dates do not line up with the served artifact"
     n = len(dates)
 
-    # shared stage 2: predicted volume per basin per day, from the head's OWN rain source
+    # shared by every set: S2's predicted volume per basin per day (the size S3–S4 read), from the head's OWN rain source
     vol_pred = {}
     for basin in T.APP_BASINS:
         key = BASIN_KEYS[basin]
@@ -123,9 +130,11 @@ def main() -> None:
         else:
             vol_pred[key] = [0.0] * n
 
-    # per model set: stage-1 probabilities per basin per day (exactly as build_scorecard computes them)
+    # per model set: S2 probabilities per basin per day (exactly as build_scorecard computes them)
     model_sets, stage2_variants = [], {}
+    lineups = {r["name"]: r for r in RI.model_sets()}
     for s in sets:
+        row = lineups[s["name"]]
         probs, spec = {}, {}
         for basin in T.APP_BASINS:
             key = BASIN_KEYS[basin]
@@ -152,11 +161,12 @@ def main() -> None:
                                                   "median_event_volume_mg": s2["median_event_volume_mg"], "definition": s2.get("definition"),
                                                   "impact_table_note": s2.get("impact_table_note"), "train_window": s2.get("train_window")}
         model_sets.append({"name": s["name"], "label": s["label"], "served": s["served"], "note": s["note"], "family": s["family"],
+                           "words": {c: LU.words(c, row["parts"][c]) for c in RI.SET_COLS}, "differs": row["differs"],
                            "stage1_from": s.get("stage1_from", "served" if s["served"] else "fit"), "stage1_name": s.get("stage1_name", s["name"]),
                            "trained_through": sc.get("trained_through") or (sc.get("span") or [None, None])[1],
                            "span": sc.get("span"), "probs": probs, "spec": spec, "stored_groups": stored_groups,
                            "stage2": stage2_out,
-                           # the table this set composes with (smoothed, as serving/build_scorecard do); None = the served one
+                           # the lingering table this set composes with (smoothed, as serving/build_scorecard do); None = the first one
                            "impact_table": smooth_table(s2["impact_table"]) if refit else None})
 
     # labels straight from the served artifact (identical across sets)
@@ -198,17 +208,20 @@ def main() -> None:
         "input_rules_post": rules_post,
         "impact_raw": impact_raw, "impact_smoothed": impact_smoothed,
         "impact_fitted_from": {"sample_days": {g: t.get("n_sample_days") for g, t in impact_raw.items()},
-                               "note": "fit by train_v4.fit_impact_table at gb_v1 training (2026-09-12) from DataSF + Poo Bot samples and CIWQS discharges; "
-                                       "the served file is data/models/impact_table.json; the page smooths it exactly as serving does (impact.smooth_table)"},
+                               "note": "the first lingering table (S4): fit by train_v4.fit_impact_table at the boosted-trees model's training "
+                                       "(gb_v1, 2026-09-12) from DataSF + Poo Bot samples and CIWQS discharges, in data/models/impact_table.json; "
+                                       "today's lingering table is its refit on group-attributed days (stage2.json); the page smooths each "
+                                       "exactly as serving does (impact.smooth_table)"},
         "basins": {BASIN_KEYS[b]: {"name": b, "groups": GROUPS_BY_BASIN[BASIN_KEYS[b]]} for b in T.APP_BASINS},
         "groups": {g: {"basin": BASIN_KEYS[b], "stations": [{"id": s, "name": STATIONS[s].name} for s in sids]} for g, (b, sids) in SITE_GROUPS.items()},
         "zones": {zk: {"label": ZONES[zk].label, "groups": gs} for zk, gs in ZONE_GROUPS.items()},
         "volume_heads": vol_heads,
         "dates": dates, "rain": rain, "post_training": post_training, "vol_pred": vol_pred, "labels": labels,
         "model_sets": model_sets, "stage2_variants": stage2_variants,
-        "live_override": "Live serving adds one input the hindcast does not have: a day the watcher saw a CSO onset in a basin gets p = 1 for that basin (live_dashboard._fetch_observed_cso → impact.compose observed=…). A day with no flag keeps the model's probability — absence of a flag is never treated as 'no discharge' (see TODO: discount by the feed's miss rate).",
+        "live_override": "Live serving adds S5, the live corrections (today's rule, live_v2), which this hindcast leaves out: a day the watcher saw a CSO onset in a basin gets p = 1 for that basin, a bay-basin day the feed never flagged is lowered with each quiet day, and a sample result holds up or caps the days after (how the forecast works, S5).",
     }
-    html = TEMPLATE.read_text().replace("__DATA__", json.dumps(data, separators=(",", ":"), default=str))\
+    html = TEMPLATE.read_text().replace("__SERVED_EXPLORER__", RI.explorer_file(sets[0]["name"]))\
+        .replace("__DATA__", json.dumps(data, separators=(",", ":"), default=str))\
         .replace("__RISK_LEVELS__", json.dumps(risk_levels.export(), separators=(",", ":")))   # Low / Medium / High / Extreme, the page colours (A3)
     OUT.write_text(html)
     print(f"wrote {OUT.relative_to(REPO)}: {OUT.stat().st_size / 1e6:.2f} MB — {len(model_sets)} model sets "

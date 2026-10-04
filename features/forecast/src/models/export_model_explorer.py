@@ -1,24 +1,29 @@
 #!/usr/bin/env python3
-"""Model explorer — one self-contained HTML page that shows the served gb_v1
-forecast exactly as it is: the rain gauges and live feeds, the 19 input
-features and their formulas, every basin model's trees (exported so the page
-runs them in the browser, with a what-if rain editor), the volume heads, the
-stage-2 impact table and composition, the basins → groups → zones map, and a
+"""Inside the overflow model (S2): one self-contained HTML page per model set
+that shows its S2 exactly as it is, in the five stages (STAGES_DESIGN.md A8):
+the rain gauges and live feeds (S1), the 19 input features and their formulas,
+every basin model's weights or trees (exported so the page runs them in the
+browser, with a what-if rain editor), the volume heads, the S3 split and S4
+lingering table it composes with, the basins → groups → zones map, and a
 self-check that the in-page arithmetic matches scikit-learn on real storms.
 
     venv/bin/python features/forecast/src/models/export_model_explorer.py
-    → reports/2026-09_forecast_gb_v1_model_explorer.html  (served at /reports/…)
+    → reports/2026-09_forecast_<served>_model_explorer.html  (today's forecast; served at /reports/…)
     venv/bin/python features/forecast/src/models/export_model_explorer.py --model logit_v1
     → reports/2026-09_forecast_logit_v1_model_explorer.html  (a candidate set: its
-      own stage-1 weights, the served stage 2; the page says so)
+      own S2 weights with its own S3–S4; the page says so)
+    … --offline   skip the gauge metadata lookup (ACIS) and use the cached values below
 
-Re-run after retraining or `train_v4.py --rescore` so the page matches the
-served pickles. Everything numeric on the page comes from the pickles, the
-impact table, data/raw and the scorecard artifact — nothing is retyped.
+A page titles its set by its lineup's plain words (export_reports_index.model_sets,
+shared/lineup.py: "today's forecast" for the served set); stored names stay
+identifiers, in small print. Re-run after retraining or `train_v4.py --rescore`
+so the page matches the pickles. Everything numeric on the page comes from the
+pickles, the lingering table, data/raw and the scorecard artifact — nothing is retyped.
 """
 from __future__ import annotations
 
 import gzip
+import html as _html
 import json
 import pickle
 import sys
@@ -35,9 +40,11 @@ for p in (HERE, HERE.parent / "collectors", HERE.parents[3]):
         sys.path.insert(0, str(p))
 
 import train_v4 as T  # noqa: E402  (frame builder, calibration, volume — the training code itself)
+import export_reports_index as RI  # noqa: E402  (each set's lineup words and the page's title)
 from groups import BASIN_KEYS, GROUPS_BY_BASIN, SITE_GROUPS, ZONE_GROUPS  # noqa: E402
 from impact import smooth_table  # noqa: E402
 from rain_features import DAILY_FEATURES, INTENSITY_FEATURES  # noqa: E402
+from shared import lineup as LU  # noqa: E402
 from shared import risk_levels  # noqa: E402
 from shared.outfalls import OUTFALLS  # noqa: E402
 from shared.stations import STATIONS  # noqa: E402
@@ -51,9 +58,9 @@ OUT = REPO / "reports" / f"2026-09_forecast_{_cand.SERVED['name']}_model_explore
 TEMPLATE = HERE / "model_explorer_template.html"
 
 ACIS_GAUGES = {"SF Downtown": "047772", "SF Oceanside": "047767"}
-# what the page shows if ACIS metadata is unreachable (values fetched 2026-09-24)
+# what the page shows if ACIS metadata is unreachable or skipped (--offline); values fetched 2026-10-01
 GAUGE_META_FALLBACK = {
-    "047772": {"name": "SAN FRANCISCO DOWNTOWN", "lat": 37.7705, "lon": -122.4269, "elev_ft": 150.0, "valid_through": "2026-09-23"},
+    "047772": {"name": "SAN FRANCISCO DOWNTOWN", "lat": 37.7705, "lon": -122.4269, "elev_ft": 150.0, "valid_through": "2026-09-29"},
     "047767": {"name": "SAN FRANCISCO OCEANSIDE", "lat": 37.728, "lon": -122.5052, "elev_ft": 8.0, "valid_through": "2026-08-17"},
 }
 SAMPLE_DAYS = ["2025-11-13", "2025-12-22", "2025-12-25", "2026-01-05", "2026-02-16", "2026-02-19",
@@ -129,7 +136,7 @@ def export_stage1(m: dict, features) -> dict:
 
 def load_model_set(name: str | None) -> tuple[dict, dict, dict]:
     """({key: pickle dict}, manifest-or-eval-report holdout block, meta) for the
-    served gb_v1 set (name None) or a candidate under data/models/candidates/."""
+    served set (name None) or a candidate under data/models/candidates/."""
     features = T.get_feature_columns_v21()
     if name is None:
         ev = json.loads((SERVE_DIR / "eval_report.json").read_text())
@@ -174,15 +181,17 @@ def load_model_set(name: str | None) -> tuple[dict, dict, dict]:
                 "note": manifest.get("note"), "family": manifest.get("family"), "C_grid": manifest.get("C_grid"),
                 "stage1_from": (manifest.get("stage1") or {}).get("from", "fit"),
                 "stage1_name": (manifest.get("stage1") or {}).get("name", name),
-                "stage2": candidates.load_stage2(name),   # None = the served stage 2 (v1)
+                "stage2": candidates.load_stage2(name),   # None = no split and the first lingering table (stored as stage 2 v1)
                 "scorecard": candidates.candidate_dir(name) / "scorecard.json.gz"}
     for m in models.values():
         assert m["features"] == features, "feature contract drifted"
     return models, holdout, meta
 
 
-def gauge_meta() -> dict:
+def gauge_meta(offline: bool = False) -> dict:
     out = {sid: dict(m) for sid, m in GAUGE_META_FALLBACK.items()}
+    if offline:
+        return out
     try:
         r = requests.post("https://data.rcc-acis.org/StnMeta", json={"sids": ",".join(ACIS_GAUGES.values()),
                           "meta": "name,ll,elev,valid_daterange", "elems": "pcpn"}, timeout=30)
@@ -212,11 +221,15 @@ def gauge_series(days: int = 420) -> dict:
     return series
 
 
-def main(model_name: str | None = None) -> None:
+def main(model_name: str | None = None, offline: bool = False) -> None:
     features = T.get_feature_columns_v21()
     if model_name in ("served", _cand.SERVED["name"]):
         model_name = None  # the served set's page is the default one
     raw_models, holdout, meta = load_model_set(model_name)
+    # the set by its lineup (A8): S2 · S3 · S4 in plain words; the page's title says which set it opens
+    row = RI.model_set(meta["name"])
+    words = {c: LU.words(c, row["parts"][c]) for c in RI.SET_COLS}
+    title = f"{RI.EXPLORER_TITLE}: {RI.set_title(row)}"
     models, heads, rain_source = {}, {}, {}
     for basin in T.APP_BASINS + ["citywide"]:
         key = BASIN_KEYS.get(basin, "citywide")
@@ -225,7 +238,7 @@ def main(model_name: str | None = None) -> None:
                        "rain_source": m.get("rain_source", "avg"), "trained_at": m.get("trained_at"), "version": m.get("version"),
                        "basin": basin}
         rain_source[key] = m.get("rain_source", "avg")
-        # stage 2 is the served one for every model set (volume heads + impact table)
+        # the volume heads (S2's size) are the served ones for every model set
         vp = SERVE_DIR / f"{key}_volume.pkl"
         if vp.exists():
             with open(vp, "rb") as f:
@@ -234,7 +247,7 @@ def main(model_name: str | None = None) -> None:
                           "target": h.get("target"), "rain_source": h.get("rain_source")}
     ev = json.loads((SERVE_DIR / "eval_report.json").read_text())
     impact_raw = json.loads((SERVE_DIR / "impact_table.json").read_text())
-    # a set's stage 2: v1 = the served table and no split; v2 = the outfall split's refit table + shares
+    # a set's S3–S4 (stored as its "stage 2"): v1 = no split and the first lingering table; v2 = today's split's shares + its refit table
     s2 = meta.get("stage2")
     if s2 and s2.get("impact_table"):
         impact_raw = s2["impact_table"]
@@ -287,7 +300,7 @@ def main(model_name: str | None = None) -> None:
             expected[key] = {"p": round(float(T.calibrated(finals[key], X)[0]), 6)}
             if basin in head_objs:
                 # a volume head reads the rain source it was trained on, not the
-                # stage-1 model's (build_scorecard, live_dashboard and the page do too)
+                # S2 model's (build_scorecard, live_dashboard and the page do too)
                 Xv = fr[head_objs[basin].get("rain_source", rain_source[key])].iloc[[i]]
                 expected[key]["volume_mg"] = round(float(T.predicted_volume(head_objs[basin], Xv)[0]), 4)
         stored = sc_by_date.get(ds, {})
@@ -304,11 +317,11 @@ def main(model_name: str | None = None) -> None:
     by_sfpuc = {s.sfpuc_id: sid for sid, s in STATIONS.items()}
     data = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
-        "model_set": {"name": meta["name"], "label": meta["label"], "served": meta["served"], "note": meta.get("note"),
+        "model_set": {"name": meta["name"], "label": RI.set_title(row), "title": title, "words": words, "served": meta["served"], "note": meta.get("note"),
                       "families": families, "C_grid": meta.get("C_grid"), "stage1_from": meta.get("stage1_from", "served" if meta["served"] else "fit"),
                       "stage1_name": meta.get("stage1_name", "gb_v1" if meta["served"] else meta["name"]),
                       "stage2": stage2_out,
-                      "stage2_from": "volume heads: the served gb_v1 bundle's, shared by every set; impact table and split: this set's stage 2 variant"},
+                      "stage2_from": "volume heads: the served bundle's, shared by every set; S3's split and S4's lingering table: this set's own"},
         "stage2": stage2_out,
         "trained_at": meta.get("trained_at"), "version": meta.get("version"), "feature_set": meta.get("feature_set"),
         "train_window": meta.get("train_window"), "holdout_start": sc.get("holdout_start"),
@@ -326,25 +339,26 @@ def main(model_name: str | None = None) -> None:
                    for g, (b, sids) in SITE_GROUPS.items()},
         "zones": {zk: {"label": ZONES[zk].label, "groups": gs, "gauge": getattr(ZONES[zk], "gauge", None),
                        "stations": [STATIONS[s].name for s in ZONES[zk].source_ids]} for zk, gs in ZONE_GROUPS.items()},
-        "gauges": {sid: {**meta, "label": name} for name, sid in ACIS_GAUGES.items() for m_sid, meta in gauge_meta().items() if m_sid == sid},
+        "gauges": {sid: {**gm, "label": name} for gm_all in [gauge_meta(offline)] for name, sid in ACIS_GAUGES.items() for m_sid, gm in gm_all.items() if m_sid == sid},
         "gauge_series": gauge_series(),
         "live_feeds": [
-            {"role": "Past complete days — daily totals", "source": "NOAA daily gauges via ACIS (data.rcc-acis.org/StnData)",
+            {"role": "S1 · past complete days — daily totals", "source": "NOAA daily gauges via ACIS (data.rcc-acis.org/StnData)",
              "detail": "Station 047772 SF Downtown and 047767 SF Oceanside. 'avg' = their mean; a gauge source = that gauge, falling back to the other gauge, then to the hourly total. Missing (M/S) is left missing; trace (T) is 0. These are the exact series the models were trained on (data/raw/historical_rain.csv)."},
-            {"role": "Recent hours — observed", "source": "NWS hourly observations at KSFO (api.weather.gov/stations/KSFO/observations)",
+            {"role": "S1 · recent hours — observed", "source": "NWS hourly observations at KSFO (api.weather.gov/stations/KSFO/observations)",
              "detail": "precipitationLastHour bucketed to the hour, max per hour when specials and the METAR overlap. A day with fewer than 12 observations is treated as unknown and keeps the model's hours — a gauge outage must never zero out a storm."},
-            {"role": "Today and the next 5 days — forecast", "source": "Open-Meteo forecast API, model icon_seamless (ICON, DWD; ECMWF IFS 2026-09-04 → 09-30); was ecmwf_ifs025 (ECMWF IFS 0.25°)",
-             "detail": "Hourly precipitation for 37.7749, −122.4194, past_days=7, forecast_days=6, America/Los_Angeles. ICON since 2026-09-30: the closest single model to the two NOAA gauges over Feb 2024 → Aug 2026 (reports/2026-09_weather_models.html), with native hourly rain, so the forecast-day peak-intensity features match the ERA5 hourly the models were trained on. ECMWF IFS (2026-09-04 → 09-30) ran wet and its 3-hourly rain, spread to hourly, halved the peaks; Open-Meteo's best_match missed real rain on 2026-09-03."},
-            {"role": "Hourly intensity for hindcasts", "source": "Open-Meteo archive API (archive-api.open-meteo.com), ERA5 hourly",
+            {"role": "S1 · today and the next 5 days — forecast", "source": "Open-Meteo forecast API, model icon_seamless (ICON, DWD; ECMWF IFS 2026-09-04 → 09-30); was ecmwf_ifs025 (ECMWF IFS 0.25°)",
+             "detail": "Hourly precipitation for 37.7749, −122.4194, past_days=7, forecast_days=6, America/Los_Angeles. ICON since 2026-09-30: the closest single model to the two NOAA gauges over Feb 2024 → Aug 2026 (reports/2026-09_weather_models.html, archived; S1 in reports/2026-10_forecast_stages.html scores it now), with native hourly rain, so the forecast-day peak-intensity features match the ERA5 hourly the models were trained on. ECMWF IFS (2026-09-04 → 09-30) ran wet and its 3-hourly rain, spread to hourly, halved the peaks; Open-Meteo's best_match missed real rain on 2026-09-03."},
+            {"role": "S1 · hourly intensity for hindcasts", "source": "Open-Meteo archive API (archive-api.open-meteo.com), ERA5 hourly",
              "detail": "rain_max1h / 3h / 6h for past days in training and in the Model check hindcast (data/raw/hourly_rain_openmeteo.csv)."},
-            {"role": "Observed discharges (override)", "source": "BWTF watcher alert_log (Supabase) — SFPUC's real-time CSO flag",
+            {"role": "S5 · observed discharges (override, live only)", "source": "BWTF watcher alert_log (Supabase) — SFPUC's real-time CSO flag",
              "detail": "A day the watcher saw a CSO onset in a basin gets p = 1 for that basin in the composition, replacing the model's probability."},
         ],
         "notes": notes.get("archive_recall"),
         "samples": samples,
         "calibration": "p = clip(raw_p − offset × clip(1 − rain_3d_cum × 2, 0, 1), 0, 1): the dry-day offset (mean predicted probability on training days with < 0.01\" rain) is subtracted in full on dry days and fades out as the trailing 3-day rain approaches 0.5\".",
     }
-    html = TEMPLATE.read_text().replace("__DATA__", json.dumps(data, separators=(",", ":"), default=str))\
+    html = TEMPLATE.read_text().replace("__TITLE__", _html.escape(title, quote=False))\
+        .replace("__DATA__", json.dumps(data, separators=(",", ":"), default=str))\
         .replace("__RISK_LEVELS__", json.dumps(risk_levels.export(), separators=(",", ":")))   # Low / Medium / High / Extreme, the page colours (A3)
     out_path.write_text(html)
     n_nodes = sum(len(t["f"]) for m in models.values() for t in m.get("trees", [])) + sum(len(t["f"]) for h in heads.values() for t in h["trees"])
@@ -355,6 +369,6 @@ def main(model_name: str | None = None) -> None:
 
 
 if __name__ == "__main__":
-    # venv/bin/python features/forecast/src/models/export_model_explorer.py [--model <candidate name>]
+    # venv/bin/python features/forecast/src/models/export_model_explorer.py [--model <candidate name>] [--offline]
     name = sys.argv[sys.argv.index("--model") + 1] if "--model" in sys.argv else None
-    main(name)
+    main(name, offline="--offline" in sys.argv)

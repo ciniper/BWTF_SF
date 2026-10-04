@@ -176,18 +176,33 @@ python -m src.api.predict
 
 See [SWAPS.md](SWAPS.md): build the new piece next to the served one, score it with the stages build, then promote.
 
-## Model explorers (how the forecast works, opened up)
+## Reports (what to read)
 
-Static pages under `reports/`, served by the app at `/reports/<name>.html` and
-linked from the forecast page footer and the Model check. Every number on
-them is computed from the model files; each page ends with a self-check
-against scikit-learn / the stored scorecard artifact.
+Static pages under `reports/`, served by the app at `/reports/<name>.html`; `/reports/`
+is the index (`export_reports_index.py` → `reports/index.html`), linked from the
+forecast page and the Model check. Current, in reading order: the forecast, stage
+by stage (`export_stages_report.py`); how the forecast works
+(`export_how_it_works.py`); inside the overflow model (S2), one explorer per model
+set (`export_model_explorer.py`); from an overflow to beach risk (S3–S4,
+`export_stage2_explorer.py`). Archived pages are listed in the index's `ARCHIVED`
+table, stamped with a banner and never regenerated. Every number on a page is
+computed from the model files or the stage artifacts; the explorers end with a
+self-check against scikit-learn / the stored scorecard.
 
 ```bash
-venv/bin/python features/forecast/src/models/export_model_explorer.py                  # served gb_v1: trees
-venv/bin/python features/forecast/src/models/export_model_explorer.py --model logit_v1 # a candidate: weights
-venv/bin/python features/forecast/src/models/export_stage2_explorer.py                 # stage 2, all model sets
-venv/bin/python features/forecast/src/models/stage2_variants.py fit                 # fit a stage 2 variant (outfall split)
+venv/bin/python features/forecast/src/models/export_stages_report.py                   # the forecast, stage by stage
+venv/bin/python features/forecast/src/models/export_how_it_works.py                    # how the forecast works
+venv/bin/python features/forecast/src/models/export_model_explorer.py --offline        # today's set's S2 explorer
+venv/bin/python features/forecast/src/models/export_model_explorer.py --offline --model logit_v1   # a candidate's
+venv/bin/python features/forecast/src/models/export_stage2_explorer.py                 # S3–S4, every model set
+venv/bin/python features/forecast/src/models/export_reports_index.py                   # the index, and the archive banners
+```
+
+An S3–S4 variant (stored as a "stage 2 variant": the beach split and its lingering table) is fit and paired
+with any overflow model as a candidate set:
+
+```bash
+venv/bin/python features/forecast/src/models/stage2_variants.py fit                 # fit a variant (the outfall split)
 venv/bin/python features/forecast/src/models/stage2_variants.py save --stage1 served --variant v2 --name gb_v1_s2v2
 ```
 
