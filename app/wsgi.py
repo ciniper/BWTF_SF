@@ -328,6 +328,8 @@ def create_app():
 
     # Reports: static HTML analyses committed under reports/ (model explorers, training report …)
     app.add_url_rule("/reports/<name>", "reports", _report_view, methods=["GET"])
+    # The index of them all, current and archived (export_reports_index.py writes reports/index.html)
+    app.add_url_rule("/reports/", "reports-index", lambda: _report_view("index.html"), methods=["GET"])
     # Which build is this? Every template gets `build` (footers show it); /api/build returns it as JSON.
     app.context_processor(lambda: {"build": build_info()})
     app.add_url_rule("/api/build", "build", lambda: Response(json.dumps(build_info()), mimetype="application/json"), methods=["GET"])

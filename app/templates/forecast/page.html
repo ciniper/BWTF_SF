@@ -180,7 +180,7 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 <p><b>Stage 4: for how long?</b> An overflow fouls a beach for days. How long, by basin and by the size of the overflow, comes from the city's own bacteria samples after past overflows. The percentage shown is the combined risk from the last eight days of overflow chances.</p>
 <p><b>Stage 5: live corrections.</b> When SFPUC's beach map shows an overflow flag, that day becomes certain and the following days follow; when it shows a posting or a clean sample, the following days are held up or capped. Nothing observed, nothing changed. The toggle on the live view shows the model alone.</p>
 <p><b>Reading the number.</b> The word with each percentage is a fixed risk level, the same on every page: {% for l in RISK_LEVELS.levels %}{{ l.label }} {{ l.lo }}–{{ l.hi }}%{{ ', ' if not loop.last else '.' }}{% endfor %} No alert reads this number: alerts follow what the city's beach map shows.</p>
-<p><b>Is it any good?</b> The Model check tab grades every past day against the city's filed overflows and its samples, zone by zone, at each risk level. Plain reports go deeper: <a href="/reports/2026-09_forecast_how_it_works.html">how the forecast works</a>, <a href="/reports/2026-09_forecast_how_it_is_graded.html">how it is graded</a> and <a href="/reports/2026-10_forecast_stages.html">each of the five stages scored on its own</a>; the technical pages are linked from the Model check.</p>
+<p><b>Is it any good?</b> The Model check tab grades every past day against the city's filed overflows and its samples, zone by zone, at each risk level. Two plain reports go deeper: <a href="/reports/2026-10_forecast_stages.html">the forecast, stage by stage</a> (how good each part is) and <a href="/reports/2026-09_forecast_how_it_works.html">how the forecast works</a> (what each part does). <a href="/reports/">Every report</a>, current and archived, is listed in one place.</p>
 {% endcall %}
 
 <div class="mode-bar">
@@ -976,6 +976,7 @@ function renderScoreWindow(sc) {
         }
         html += `<tr class="total"><td class="zone">All zones</td><td class="num">${tBad}</td><td class="num">${tTp} <span class="mute">${fmtShare(tBad ? tTp / tBad : null)}</span></td><td class="num">${tFn}</td><td class="num">${tFp}</td><td class="num">${fmtShare(tTp + tFp ? tFp / (tTp + tFp) : null)}</td><td class="num">${tBtp} of ${tBn}</td></tr></table>`;
         html += `<div class="fine" style="margin-top:8px">Click a zone for its full analysis, with every line from 5% to 81%. ${rulerNote}</div>`;
+        html += `<div class="fine" style="margin-top:6px">This scorecard counts days, for any window you pick. How good each stage is, scored by the frozen rules, is in <a href="/reports/2026-10_forecast_stages.html">the forecast, stage by stage</a>.</div>`;
         html += `<div class="subhead">${ic('gauge')} Stage 2 — overflow model by basin, ${fmtRange(w.start, w.end)}</div>` + basinTable(w, sc, ['westside', 'north_shore', 'central', 'southeast']);
     } else {
         const s = stats[scoreZone];
@@ -987,14 +988,11 @@ function renderScoreWindow(sc) {
     }
 
     html += `<div class="sc-reports"><span class="mute">Reports:</span>
-        <a href="/reports/2026-09_forecast_how_it_works.html" title="Rain → overflow → which beaches and for how long → live corrections → the number, and how it was trained, in pictures">how it works</a>
-        <a href="/reports/2026-09_forecast_how_it_is_graded.html" title="The rulers, the windows, the lines, every set on the same days, the replays, the weather input">how it is graded</a>
-        <a href="${scoreModel ? '/reports/2026-09_forecast_' + esc(scoreModel) + '_model_explorer.html' : '/reports/2026-09_forecast_' + esc(SERVED_NAME) + '_model_explorer.html'}" title="The selected model set opened up: inputs, weights or trees, self-check">inside this model</a>
-        <a href="/reports/2026-09_forecast_stage2_explorer.html" title="How a basin's overflow chance becomes beach risk: which beaches (stage 3) and for how long (stage 4), shared by every model set">stages 3–4</a>
-        <a href="/reports/2026-10_forecast_stages.html" title="The five stages scored one by one and chained, the challengers against today's forecast, and what is left out">the five stages</a>
-        <a href="/reports/2026-09_live_replay.html" title="The live rules replayed day by day over the 2016-17 feed archive and graded against the model alone">live replay</a>
-        <a href="/reports/2026-09_live_replay_synthetic.html" title="The same replay over every out-of-sample day with a synthetic feed built from the filed discharges, degraded with the archive's miss and lag rates">synthetic replay</a>
-        <a href="/reports/2026-09_weather_models.html" title="Which weather model should stand in for the gauges on the forecast days: ECMWF, GFS, ICON and their mean against the two NOAA gauges, Feb 2024 → Aug 2026">weather models</a>
+        <a href="/reports/2026-10_forecast_stages.html" title="How good each stage is, scored by the frozen rules; the challengers against today's forecast; what is left out">stage by stage</a>
+        <a href="/reports/2026-09_forecast_how_it_works.html" title="What each stage does: rain, overflow, which beaches, for how long, live corrections, the number">how it works</a>
+        <a href="${scoreModel ? '/reports/2026-09_forecast_' + esc(scoreModel) + '_model_explorer.html' : '/reports/2026-09_forecast_' + esc(SERVED_NAME) + '_model_explorer.html'}" title="The selected set's overflow model opened up: inputs, weights or trees, a what-if editor">inside this model (S2)</a>
+        <a href="/reports/2026-09_forecast_stage2_explorer.html" title="How a basin's overflow chance becomes beach risk: which beaches (S3) and for how long (S4), shared by every model set">S3–S4</a>
+        <a href="/reports/" title="Every report in one list, current and archived">all reports</a>
     </div></div>`;
     return html;
 }
