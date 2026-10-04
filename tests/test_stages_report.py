@@ -4,9 +4,10 @@ features/forecast/src/models/export_stages_report.py (STAGES_DESIGN.md A8, Part 
 Pins what the page promises: it is current with the committed artifacts (a rebuild gives
 the same bytes); every number on it is the artifact field its data-v names, and a sample
 read straight from the files independently; every set with stages scores is in the lineup,
-which marks exactly the cells that differ from today's forecast; no retired words, no rule
-ids on its face; nothing wider than a phone outside a sideways scroller; the figure's links
-land on the page; and it never recommends a promotion.
+named by its S2 · S3 · S4, which marks exactly the cells that differ from the live forecast,
+and only the live forecast wears the LIVE badge; no retired words, no rule ids on its face;
+nothing wider than a phone outside a sideways scroller; the figure's links land on the page;
+and it never recommends a promotion.
 
     venv/bin/python tests/test_stages_report.py
 """
@@ -210,7 +211,7 @@ def lineup_rows() -> dict:
 def test_every_scored_set_is_in_the_lineup():
     rows = lineup_rows()
     assert sorted(rows) == scored_sets(), (sorted(rows), scored_sets())
-    assert next(iter(rows)) == served(), "today's forecast heads the lineup"
+    assert next(iter(rows)) == served(), "the live forecast heads the lineup"
 
 
 def test_the_lineup_marks_exactly_the_cells_that_differ():
@@ -234,15 +235,29 @@ def test_the_lineup_speaks_plain_words():
     for col, cid, cell in re.findall(r'<td data-col="(\w+)" class="\w+" title="([^"]*)">(.*?)</td>', tab, re.S):
         words = " ".join(visible(re.sub(r'<span class="vh">.*?</span>', "", cell)).split())
         assert words == R.LABELS[col][html.unescape(cid)], (col, cid, words)
-        assert "_" not in words.replace("(live_v2)", ""), words                 # ids only in the tooltip ("live_v2": the owner's words)
+        assert "_" not in words, words                                          # ids only in the tooltip
     # the numbers in the words are the artifacts' own
     bk = read(DATA / "stages_candidates" / "_bakeoff" / "results.json")
     assert R.LABELS["s2"]["logit_v1"].startswith(f'{bk["grid"]["contenders"]["logit_v1"]["n_terms"]}-weight')
     for name in scored_sets():
         d = DATA / "stages_candidates" / name / "manifest.json"
         if d.exists() and read(d)["components"].get("s2") == "shared8_nonneg_sfpuc4":
-            assert R.LABELS["s2"]["shared8_nonneg_sfpuc4"].startswith(f'{read(d)["s2"]["n_terms"]}-term model ({read(d)["s2"]["contender"]})')
+            assert R.LABELS["s2"]["shared8_nonneg_sfpuc4"] == f'{read(d)["s2"]["n_terms"]}-term SFPUC', read(d)["s2"]
     assert served() in visible(tab) and "“s2” is the old two-stage pipeline's stage 2" in visible(section("lineups"))   # shown, and explained
+
+
+def test_only_the_live_forecast_wears_the_live_badge():
+    """The set served.json names wears a LIVE badge in the lineup (a status beside its name, not part of it); every
+    row is named by its S2 · S3 · S4 in their fixed words."""
+    tab = re.search(r'<table class="lineup">(.*?)</table>', section("lineups"), re.S).group(1)
+    badge = re.compile(r'<span class="live-badge"[^>]*>LIVE</span>')
+    for name, body in re.findall(r'<tr data-set="([^"]+)"[^>]*>(.*?)</tr>', tab, re.S):
+        head = re.search(r'<th class="rl">(.*?)</th>', body, re.S).group(1)
+        assert len(badge.findall(head)) == (1 if name == served() else 0), name
+        m = read(STAGES / name / "manifest.json")["components"]
+        want = " · ".join(R.LABELS[c][m[c]] for c in ("s2", "s3", "s4"))
+        assert re.search(r"<b>(.*?)</b>", head).group(1) == html.escape(want, quote=False), (name, head)
+    assert badge.search(re.search(r'<p class="sub">(.*?)</p>', page(), re.S).group(1)), "the header names the live forecast with its badge"
 
 
 # ── words ────────────────────────────────────────────────────────────────────
@@ -264,13 +279,16 @@ def test_no_rule_ids_or_section_signs_on_the_face():
         re.findall(r".{30}(?:\.(?:py|json|pkl|md)\b|\['|\bT[0-3]\b|\bL[0-5]s?\b).{30}", above_footer)
 
 
-def test_todays_rule_is_called_worse_when_the_artifact_says_so():
+def test_the_live_rule_is_called_worse_when_the_artifact_says_so():
     sc = read(STAGES / served() / "scores.json")
     seeds = [f for f in sc["s5"]["pooled"] if f.startswith("degraded:")]
     worse = [f for f in seeds if sc["s5"]["pooled"][f]["S5"]["basin_swap"]["delta_vs_plain"]["verdict"] == "worse"]
     face = " ".join(visible(section("stages")).split())
+    rule = R.LABELS["s5"]["basin_swap"]                                 # live_v2, replayed: the live forecast's rule
+    assert rule == R.LABELS["s5"][read(STAGES / served() / "manifest.json")["components"]["s5"]]
     if seeds and len(worse) == len(seeds):
-        assert f"On every one of the {len(seeds)} realistic feeds, today's rule makes the days after an observation worse than no correction at all" in face
+        assert (f"On every one of the {len(seeds)} realistic feeds, the live forecast's rule, {rule}, makes the days after an "
+                "observation worse than no correction at all") in face
     else:
         assert "worse than no correction at all" not in face
 

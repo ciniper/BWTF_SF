@@ -51,10 +51,17 @@ input[type=range]{width:160px}
 .ok-check{color:#237059;font-weight:700}.bad-check{color:#b5310a;font-weight:700}
 footer{color:#54576F;font-size:12.5px;text-align:center;padding:16px}
 a{color:#0072BC}
+__LIVE_CSS__
+header h1 .live-badge{font-size:13px;padding:1px 10px;vertical-align:8px;box-shadow:0 0 0 1.5px #fff}
+</style>
+<style>/* phones: no column wider than the screen; wide tables swipe inside themselves (a second block: the first is read by the archived replays) */
+.g2{grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr))}.g3{grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr))}.grid>*{min-width:0}
+code{overflow-wrap:anywhere}
+@media (max-width:600px){table{display:block;max-width:100%;overflow-x:auto}label{display:inline-flex;flex-wrap:wrap;max-width:100%}select{max-width:100%;min-width:0!important}}
 </style></head>
 <body><div class="wrap">
 <header>
-  <h1 id="title">__TITLE__</h1>
+  <h1 id="title">__H1__</h1>
   <p class="sub" id="sub"></p>
   <div class="meta" id="meta"></div>
 </header>
@@ -153,7 +160,7 @@ x(k, size) = attributable P(elevated) = (p<sub>table</sub> − baseline) / (1 �
 <p class="fine" id="checkSummary"></p>
 </section>
 
-<footer>Generated <span id="genAt"></span> for <b id="setName"></b> <span class="mute">(stored as <code id="setStored"></code>)</span> by <code>features/forecast/src/models/export_model_explorer.py</code> from the model pickles, the set's lingering table, data/raw and the set's scorecard artifact.<span id="setNote"></span><br><a href="/reports/">Every report</a> · <a href="/reports/2026-10_forecast_stages.html">The forecast, stage by stage</a> · <a href="/reports/2026-09_forecast_stage2_explorer.html">From an overflow to beach risk (S3–S4)</a> · <a href="/forecast">The forecast</a></footer>
+<footer>Generated <span id="genAt"></span> for <b id="setName"></b><span id="setLive"></span> <span class="mute">(stored as <code id="setStored"></code>)</span> by <code>features/forecast/src/models/export_model_explorer.py</code> from the model pickles, the set's lingering table, data/raw and the set's scorecard artifact.<span id="setNote"></span><br><a href="/reports/">Every report</a> · <a href="/reports/2026-10_forecast_stages.html">The forecast, stage by stage</a> · <a href="/reports/2026-09_forecast_stage2_explorer.html">From an overflow to beach risk (S3–S4)</a> · <a href="/forecast">The forecast</a></footer>
 </div>
 
 <script>
@@ -164,8 +171,8 @@ const MODEL_ORDER = BASINS.concat(['citywide']);
 const ZONE_ORDER = ['ocean','baker_china','north','east'];
 const SOURCES = ['avg','SF Downtown','SF Oceanside'];
 const COLORS = {westside:'#0072BC', north_shore:'#237059', central:'#7b4bb5', southeast:'#d4763a', citywide:'#54576F'};
-const MS = D.model_set;   // the set: its stored name, its title words ("today's forecast" or its lineup) and its S2–S4 words
-const W = MS.words;
+const MS = D.model_set;   // the set: its stored name, its name (its S2 · S3 · S4 words), whether it is the live forecast
+const W = MS.words, LIVE_W = MS.live_words;   // this set's S2–S4 words, and the live forecast's
 const famOf = m => m.family || 'gb';
 const ANY_LOGIT = MODEL_ORDER.some(k => famOf(D.models[k]) === 'logit');
 const ALL_LOGIT = MODEL_ORDER.every(k => famOf(D.models[k]) === 'logit');
@@ -184,8 +191,8 @@ const fmtMon = s => new Date(s + 'T12:00:00').toLocaleDateString(undefined, {mon
 // ─── header (the title is the exporter's: "Inside the overflow model (S2): " + the set's words) ──────────────
 const FAMILY_NOUN = BANDS ? 'weights on rain bands shared by every basin' : ALL_LOGIT ? 'weights' : ANY_LOGIT ? 'trees and weights' : 'trees';
 document.getElementById('sub').textContent = MS.served
-  ? `Today's overflow model (S2), opened up: where its rain comes from (S1), the 19 numbers it is given, the ${FAMILY_NOUN} it is made of, and how an overflow chance becomes a beach-risk percentage (S3–S4). Everything on this page is computed from the deployed model files: the page runs the real models in your browser. Today's forecast: ${W.s2} · ${W.s3} · ${W.s4}.`
-  : `This set's overflow model (S2), opened up: the ${W.s2}, a ${FAMILY_LABEL}. Its S3 is ${W.s3} and its S4 ${W.s4}. It is not what the live forecast runs: it is kept so the Model check can grade it against today's forecast on identical days and labels. Same rain gauges, same 19 features, same volume heads; the page runs this set's own arithmetic.`;
+  ? `The live forecast's overflow model (S2), opened up: where its rain comes from (S1), the 19 numbers it is given, the ${FAMILY_NOUN} it is made of, and how an overflow chance becomes a beach-risk percentage (S3–S4). S2 is ${W.s2}, S3 ${W.s3} and S4 ${W.s4}. Everything on this page is computed from the deployed model files: the page runs the real models in your browser.`
+  : `This set's overflow model (S2), opened up. S2 is ${W.s2} (${FAMILY_LABEL}), S3 ${W.s3} and S4 ${W.s4}. It is not what the live forecast runs: it is kept so the Model check can grade it against the live forecast (${LIVE_W.s2} · ${LIVE_W.s3} · ${LIVE_W.s4}) on identical days and labels. Same rain gauges, same 19 features, same volume heads; the page runs this set's own arithmetic.`;
 const nHinge = ANY_LOGIT && !BANDS ? (Object.values(D.models).find(m => famOf(m) === 'logit').coef.length - D.features.all.length) : 0;
 document.getElementById('meta').innerHTML = [
   'S2 ' + W.s2 + ' (stored as ' + (MS.stage1_name || MS.name) + ')',
@@ -199,6 +206,7 @@ document.getElementById('meta').innerHTML = [
 ].filter(Boolean).map(t => '<span>' + esc(t) + '</span>').join('');
 document.getElementById('genAt').textContent = D.generated_at;
 document.getElementById('setName').textContent = MS.label;
+if (MS.served) document.getElementById('setLive').innerHTML = ' ' + document.querySelector('#title .live-badge').outerHTML;
 document.getElementById('setStored').textContent = MS.name;
 if (MS.note) document.getElementById('setNote').textContent = ' Stored note: ' + MS.note;
 
@@ -591,11 +599,11 @@ document.getElementById('impactMode').addEventListener('change', renderImpact);
 renderImpact();
 (function splitInfo() {
   const el = document.getElementById('splitInfo');
-  if (!SPLIT) { el.innerHTML = `<p class="fine" style="margin-top:10px"><b>S3 · ${esc(W.s3)}</b> <span class="mute">(stored as stage 2 v1)</span>: every beach group in a basin takes the basin's whole probability. Today's split is opened up in <a href="/reports/2026-09_forecast_stage2_explorer.html">From an overflow to beach risk (S3–S4)</a>.</p>`; return; }
+  if (!SPLIT) { el.innerHTML = `<p class="fine" style="margin-top:10px"><b>S3 · ${esc(W.s3)}</b> <span class="mute">(stored as stage 2 v1)</span>: every beach group in a basin takes the basin's whole probability. ${esc(LIVE_W.s3)}, the live forecast's S3, is opened up in <a href="/reports/2026-09_forecast_stage2_explorer.html">From an overflow to beach risk (S3–S4)</a>.</p>`; return; }
   const rows = Object.keys(D.groups).map(g => { const sh = (SPLIT.shares || {})[g] || {}, outs = (SPLIT.group_outfalls || {})[g] || [], med = (SPLIT.median_event_volume_mg || {})[g];
     const c = s => s && s.p != null ? `${(s.p*100).toFixed(0)}% <span class="fine">(${s.n})</span>` : '—';
     return `<tr><td><b>${esc(g)}</b></td><td class="fine"><code>${outs.map(esc).join('</code> <code>')}</code></td><td class="num">${c(sh.large)}</td><td class="num">${c(sh.small)}</td><td class="num">${c(sh.all)}</td></tr>`; }).join('');
-  el.innerHTML = `<div class="card" style="margin-top:12px"><b class="t">S3 · ${esc(W.s3)} <span class="fine">(stored as stage 2 ${esc(SPLIT.variant)}, the outfall split)</span>${D.stage2.impact_table_refit ? ' <span class="badge info">S4 lingering table refit on group-attributed days</span>' : ''}</b>
+  el.innerHTML = `<div class="card" style="margin-top:12px"><b class="t">S3 · ${esc(W.s3)} <span class="fine">(stored as stage 2 ${esc(SPLIT.variant)})</span>${D.stage2.impact_table_refit ? ` <span class="badge info">S4 · ${esc(W.s4)}: refit on group-attributed days</span>` : ''}</b>
     <p class="fine" style="margin:0 0 8px">${esc(SPLIT.definition || '')}. The share is the fraction of the basin's CIWQS discharge days (by size class; n in brackets) on which at least one outfall posting the group's beaches discharged. Where the group's outfalls are the whole basin the share is 1.</p>
     <table><tr><th>Group</th><th>posted by</th><th class="num">large</th><th class="num">small</th><th class="num">all</th></tr>${rows}</table></div>`;
 })();

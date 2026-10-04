@@ -19,7 +19,9 @@ alone, so the index never drops a file).
 
 The index is a pure function of reports/ and the model sets on disk (served.json, the candidates'
 manifests), with no clock: rebuilding it unchanged gives the same bytes (tests/test_reports_index.py).
-A set reads by its lineup's plain words (shared/lineup.py), its stored name in small print.
+A set goes by its name, its S2 · S3 · S4 in their fixed words (shared/lineup.py), its stored name in small
+print; the set served.json names wears a LIVE badge, a status beside the name. Nothing is "today's"
+(Chase, 2026-10-04): the served set is "the live forecast" wherever its status matters.
 """
 from __future__ import annotations
 
@@ -49,8 +51,17 @@ STAGE2 = "2026-09_forecast_stage2_explorer.html"
 TITLES = {STAGES: "The forecast, stage by stage", WORKS: "How the forecast works",
           STAGE2: "From an overflow to beach risk (S3–S4)"}
 EXPLORER_TITLE = "Inside the overflow model (S2)"
-SERVED_WORDS = "today's forecast"
-SET_COLS = ("s2", "s3", "s4")       # what an explorer's set is: its overflow model, beach split and lingering table
+SET_COLS = ("s2", "s3", "s4")       # a set's name: its overflow model, beach split and lingering table
+# The LIVE badge: the set served.json names wears it beside its name, wherever a page shows that set (a status, not
+# part of the name). One look on every page: a small green pill, white capitals. LIVE_CSS for a page's stylesheet;
+# LIVE_STYLE inline where a page's stylesheet is not ours to change (the S3–S4 explorer's, which replay_live reads).
+LIVE_TIP = "the set the forecast page runs now"
+LIVE_STYLE = ("display:inline-block;font-family:Roboto,'Segoe UI',Arial,sans-serif;font-size:10.5px;font-weight:700;"
+              "letter-spacing:.08em;line-height:1.5;color:#fff;background:#237059;border-radius:999px;padding:0 7px;"
+              "vertical-align:2px;text-transform:none")
+LIVE_CSS = ".live-badge{" + LIVE_STYLE + "}"
+LIVE_BADGE = f'<span class="live-badge" title="{LIVE_TIP}">LIVE</span>'
+LIVE_BADGE_INLINE = f'<span class="live-badge" title="{LIVE_TIP}" style="{LIVE_STYLE}">LIVE</span>'
 
 # Archived pages: {file: (date archived, replacement file[#section], why it is the replacement)}. The stamper
 # and the index both read this table; nothing regenerates these pages.
@@ -109,15 +120,15 @@ def explorer_file(name: str) -> str:
 
 
 def model_sets() -> list[dict]:
-    """Today's forecast, then every candidate set on disk by stored name: {name, served, parts, words, differs,
-    file}. ``parts`` are its S2–S4 components (the overflow model, the beach split, the lingering table, read
-    from its two stored halves as the Model check reads them); ``differs`` marks the parts today's forecast
-    does not share."""
+    """The live forecast (the set served.json names), then every candidate set on disk by stored name: {name,
+    served, parts, words, differs, file}. ``parts`` are its S2–S4 components (the overflow model, the beach
+    split, the lingering table, read from its two stored halves as the Model check reads them); ``words`` its
+    name, those parts' fixed words joined by " · "; ``differs`` marks the parts the live forecast does not share."""
     sv = C.served_info()
     base = LU.geo_v1_parts(sv["stage1"], sv["stage2"])
     rows = [{"name": sv["name"], "served": True, "parts": base}]
     for man in sorted(C.list_candidates(), key=lambda m: m["name"]):
-        if man["name"] == sv["name"]:          # a promoted set's old candidate directory: it is today's forecast
+        if man["name"] == sv["name"]:          # a promoted set's old candidate directory: it is the live forecast
             continue
         stage1 = (man.get("stage1") or {}).get("name", man["name"])
         variant = (man.get("stage2") or {}).get("variant", "v1")
@@ -134,13 +145,19 @@ def model_set(name: str) -> dict:
 
 
 def set_title(row: dict) -> str:
-    """How a page names a set: "today's forecast" for the served one, else its lineup words."""
-    return SERVED_WORDS if row["served"] else row["words"]
+    """How a page names a set: its S2 · S3 · S4 words, the same for the served set as for any other (its status is
+    the LIVE badge, beside the name)."""
+    return row["words"]
+
+
+def explorer_title(row: dict) -> str:
+    """A set's S2 page's title: "Inside the overflow model (S2): 38-weight · Outfall split · Linger table 2"."""
+    return f"{EXPLORER_TITLE}: {set_title(row)}"
 
 
 def current_pages() -> list[str]:
     """The pages this index recommends, in reading order: the stages report, how it works, the S2 explorer of
-    every model set (today's first) and the S3–S4 explorer. None of them carries the archived banner."""
+    every model set (the live forecast's first) and the S3–S4 explorer. None of them carries the archived banner."""
     return [STAGES, WORKS] + [r["file"] for r in model_sets()] + [STAGE2]
 
 
@@ -215,18 +232,19 @@ footer{margin-top:28px;border-top:1px solid #d9e4e8;padding-top:10px}
 """
 
 
-def item(file: str, title: str, line: str, cls: str = "item") -> str:
-    """One page as a card: the whole card is the link."""
-    return (f'<a class="{cls}" data-file="{esc(file)}" href="{esc(href(file))}"><b>{esc(title)}</b>'
+def item(file: str, title: str, line: str, cls: str = "item", live: bool = False) -> str:
+    """One page as a card: the whole card is the link. ``live``: the page opens the live forecast, whose name
+    wears the LIVE badge."""
+    return (f'<a class="{cls}" data-file="{esc(file)}" href="{esc(href(file))}"><b>{esc(title)}{" " + LIVE_BADGE if live else ""}</b>'
             f'<span>{esc(line)}</span></a>')
 
 
 def set_row(r: dict, retired: dict) -> str:
-    """A model set in the fold: its lineup words (the parts that differ from today's forecast tinted), its
-    stored name in small print, and the dates if it was today's forecast once."""
+    """A model set in the fold: its name (the parts that differ from the live forecast tinted), its stored name in
+    small print, and until when it served if it once did."""
     words = " · ".join(f'<span class="d">{esc(LU.words(c, r["parts"][c]))}</span>' if r["differs"][c]
                        else esc(LU.words(c, r["parts"][c])) for c in SET_COLS)
-    note = f' · today\'s forecast until {esc(day_words(retired["until"]))}' if r["name"] == retired.get("name") else ""
+    note = f' · served until {esc(day_words(retired["until"]))}' if r["name"] == retired.get("name") else ""
     return (f'<a class="row" data-file="{esc(r["file"])}" href="{esc(href(r["file"]))}"><span class="w">{words}</span>'
             f'<small>stored as <code>{esc(r["name"])}</code>{note}</small></a>')
 
@@ -246,20 +264,20 @@ def render() -> str:
     start = item(STAGES, TITLES[STAGES],
                  "How good each stage is, from S1 rain to S5 live corrections and the percentage people see: each one "
                  "scored on its own and in the chain, on days its fit never saw, under the frozen scoring rules. "
-                 "Today's forecast beside every challenger.", "item first")
+                 "The live forecast beside every challenger.", "item first")
     works = item(WORKS, TITLES[WORKS],
                  "What each stage does, in pictures: the rain that comes in (S1), will the sewers overflow (S2), which "
                  "beaches (S3), for how long (S4), the live corrections (S5) and the percentage that goes out.")
-    deeper = (item(served["file"], f"{EXPLORER_TITLE}: {SERVED_WORDS}",
-                   f"Today's overflow model ({served['words']}) opened up: the rain it reads, its weights, a what-if "
-                   "editor that runs the real model in your browser, and a self-check against the stored scores.")
+    deeper = (item(served["file"], explorer_title(served),
+                   "The live forecast's overflow model opened up: the rain it reads, its weights, a what-if editor that "
+                   "runs the real model in your browser, and a self-check against the stored scores.", live=True)
               + item(STAGE2, TITLES[STAGE2],
                      "Which beaches an overflow reaches (S3) and how long it lingers there (S4): the split and the "
                      "lingering table, any day of the record walked through, every model set side by side."))
     fold = (f'<details class="sets"><summary>{EXPLORER_TITLE}, for each of the other {len(others_sets)} model sets</summary>'
-            '<p class="fine">Each set reads as its lineup: the overflow model (S2) · the beach split (S3) · the lingering '
-            'table (S4). Tinted: the parts that differ from today\'s forecast. None of these runs live; the Model check '
-            'grades them all on the same days. Today\'s forecast is under Go deeper.</p>'
+            '<p class="fine">Each set goes by its parts: the overflow model (S2) · the beach split (S3) · the lingering '
+            'table (S4). Tinted: the parts that differ from the live forecast. None of these runs live; the Model check '
+            'grades them all on the same days. The live forecast is under Go deeper.</p>'
             f'<div class="rows">{"".join(set_row(r, retired) for r in others_sets)}</div></details>')
 
     arch = []
@@ -288,7 +306,7 @@ def render() -> str:
     return f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Forecast reports: what to read</title><link rel="icon" href="/static/brand/favicon.ico">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/brand.css"><style>{CSS}</style></head><body>
+<link rel="stylesheet" href="/static/brand.css"><style>{CSS}{LIVE_CSS}</style></head><body>
 <div class="wrap">
 {body}
 </div></body></html>

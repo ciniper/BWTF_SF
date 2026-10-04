@@ -15,7 +15,7 @@
  "family": "logit",
  "spec_version": "2e03a1eae7",
  "protocol": "stages_v3@22a2695e2e950188d37b753928932c6f6f2dc83296482a4fddf5a373ce86df3f",
- "built_at": "2026-10-03T19:57:37+00:00",
+ "built_at": "2026-10-04T21:09:44+00:00",
  "windows": {
   "holdout_start": "2023-07-01",
   "post_start": "2025-11-01",
@@ -88,7 +88,7 @@
   "features/forecast/data/models/stages_candidates/sfpuc4_shared8_v2/central_model.pre_holdout.pkl": "17e39d2d3bec9da0348874475b6bd400ae1da738702608dcad654247b7bed19c",
   "features/forecast/data/models/stages_candidates/sfpuc4_shared8_v2/central_volume.pkl": "8657cf368c265aa86c9d8a45739a8f87a387d51341cb88fdad1e622ea8554e3e",
   "features/forecast/data/models/stages_candidates/sfpuc4_shared8_v2/central_volume.pre_holdout.pkl": "c32123de99b0a3fe6a34c244bb16a387cbdfd1660ed3d7efa1f5862d29013e59",
-  "features/forecast/data/models/stages_candidates/sfpuc4_shared8_v2/manifest.json": "89c0a583b2d749138cea0cd9edec767325ad41470b60b8235366675d2d97abf9",
+  "features/forecast/data/models/stages_candidates/sfpuc4_shared8_v2/manifest.json": "ba776ef7914ca6569c5206f4f0ec9a413ce4e148ee2dc1afeed558f521f5c9d2",
   "features/forecast/data/models/stages_candidates/sfpuc4_shared8_v2/north_shore_model.pkl": "f87e8f030d1673f75ca0b947ac91acf26b7aa858f0efef7e2f5de6dcece071b1",
   "features/forecast/data/models/stages_candidates/sfpuc4_shared8_v2/north_shore_model.pre_holdout.pkl": "214829928a19a5a4d5a7f30032c06c256ba731a550f4b9fa95e6d62b6055ac14",
   "features/forecast/data/models/stages_candidates/sfpuc4_shared8_v2/north_shore_volume.pkl": "a193b289b521594e00928c0fae0f2c7e98ad8844cd2ffd55d0ce29c5f08c6049",
@@ -241,7 +241,7 @@
    }
   },
   "tags": {
-   "post_seen": "designed after sfpuc4_shared8_v1's post-training scores were seen (its stages build under protocol stages_v3, 2026-10-02): its S4 v3 lingering curve, fit on first looks, under-predicted East's bad days after an overflow, so this set keeps v1's S2 and East union rule and takes today's split and lingering curve"
+   "post_seen": "designed after sfpuc4_shared8_v1's post-training scores were seen (its stages build under protocol stages_v3, 2026-10-02): its S4 v3 lingering curve, fit on first looks, under-predicted East's bad days after an overflow, so this set keeps v1's S2 and East union rule and takes the Outfall split and Linger table 2, per zone"
   }
  }
 }

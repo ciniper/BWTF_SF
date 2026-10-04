@@ -8,14 +8,15 @@ lingering table it composes with, the basins → groups → zones map, and a
 self-check that the in-page arithmetic matches scikit-learn on real storms.
 
     venv/bin/python features/forecast/src/models/export_model_explorer.py
-    → reports/2026-09_forecast_<served>_model_explorer.html  (today's forecast; served at /reports/…)
+    → reports/2026-09_forecast_<served>_model_explorer.html  (the live forecast; served at /reports/…)
     venv/bin/python features/forecast/src/models/export_model_explorer.py --model logit_v1
     → reports/2026-09_forecast_logit_v1_model_explorer.html  (a candidate set: its
       own S2 weights with its own S3–S4; the page says so)
     … --offline   skip the gauge metadata lookup (ACIS) and use the cached values below
 
-A page titles its set by its lineup's plain words (export_reports_index.model_sets,
-shared/lineup.py: "today's forecast" for the served set); stored names stay
+A page titles its set by its name, its S2 · S3 · S4 in their fixed words
+(export_reports_index.explorer_title, shared/lineup.py), the served set's too: its
+page's heading wears the LIVE badge beside the name. Stored names stay
 identifiers, in small print. Re-run after retraining or `train_v4.py --rescore`
 so the page matches the pickles. Everything numeric on the page comes from the
 pickles, the lingering table, data/raw and the scorecard artifact — nothing is retyped.
@@ -226,10 +227,12 @@ def main(model_name: str | None = None, offline: bool = False) -> None:
     if model_name in ("served", _cand.SERVED["name"]):
         model_name = None  # the served set's page is the default one
     raw_models, holdout, meta = load_model_set(model_name)
-    # the set by its lineup (A8): S2 · S3 · S4 in plain words; the page's title says which set it opens
-    row = RI.model_set(meta["name"])
+    # the set by its name (A8): S2 · S3 · S4 in their fixed words; the page's title says which set it opens, and the
+    # live forecast's heading wears the LIVE badge beside it
+    row, live = RI.model_set(meta["name"]), RI.model_sets()[0]
     words = {c: LU.words(c, row["parts"][c]) for c in RI.SET_COLS}
-    title = f"{RI.EXPLORER_TITLE}: {RI.set_title(row)}"
+    live_words = {c: LU.words(c, live["parts"][c]) for c in RI.SET_COLS}
+    title = RI.explorer_title(row)
     models, heads, rain_source = {}, {}, {}
     for basin in T.APP_BASINS + ["citywide"]:
         key = BASIN_KEYS.get(basin, "citywide")
@@ -247,7 +250,7 @@ def main(model_name: str | None = None, offline: bool = False) -> None:
                           "target": h.get("target"), "rain_source": h.get("rain_source")}
     ev = json.loads((SERVE_DIR / "eval_report.json").read_text())
     impact_raw = json.loads((SERVE_DIR / "impact_table.json").read_text())
-    # a set's S3–S4 (stored as its "stage 2"): v1 = no split and the first lingering table; v2 = today's split's shares + its refit table
+    # a set's S3–S4 (stored as its "stage 2"): v1 = No split and Linger table 1; v2 = Outfall split's shares and Linger table 2 (the refit)
     s2 = meta.get("stage2")
     if s2 and s2.get("impact_table"):
         impact_raw = s2["impact_table"]
@@ -317,7 +320,8 @@ def main(model_name: str | None = None, offline: bool = False) -> None:
     by_sfpuc = {s.sfpuc_id: sid for sid, s in STATIONS.items()}
     data = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
-        "model_set": {"name": meta["name"], "label": RI.set_title(row), "title": title, "words": words, "served": meta["served"], "note": meta.get("note"),
+        "model_set": {"name": meta["name"], "label": RI.set_title(row), "title": title, "words": words, "live_words": live_words,
+                      "served": meta["served"], "note": meta.get("note"),
                       "families": families, "C_grid": meta.get("C_grid"), "stage1_from": meta.get("stage1_from", "served" if meta["served"] else "fit"),
                       "stage1_name": meta.get("stage1_name", "gb_v1" if meta["served"] else meta["name"]),
                       "stage2": stage2_out,
@@ -357,7 +361,9 @@ def main(model_name: str | None = None, offline: bool = False) -> None:
         "samples": samples,
         "calibration": "p = clip(raw_p − offset × clip(1 − rain_3d_cum × 2, 0, 1), 0, 1): the dry-day offset (mean predicted probability on training days with < 0.01\" rain) is subtracted in full on dry days and fades out as the trailing 3-day rain approaches 0.5\".",
     }
-    html = TEMPLATE.read_text().replace("__TITLE__", _html.escape(title, quote=False))\
+    h1 = _html.escape(title, quote=False) + (" " + RI.LIVE_BADGE if meta["served"] else "")
+    html = TEMPLATE.read_text().replace("__TITLE__", _html.escape(title, quote=False)).replace("__H1__", h1)\
+        .replace("__LIVE_CSS__", RI.LIVE_CSS)\
         .replace("__DATA__", json.dumps(data, separators=(",", ":"), default=str))\
         .replace("__RISK_LEVELS__", json.dumps(risk_levels.export(), separators=(",", ":")))   # Low / Medium / High / Extreme, the page colours (A3)
     out_path.write_text(html)

@@ -74,7 +74,21 @@ def test_shared_terms_counts_are_the_designs_bands():
     import leaderboard as L
     for key, design in L.SHARED_DESIGNS.items():
         words = LU.WORDS["s2"][f"logit_v2_{key}"]
-        assert words.startswith(f"{len(L.band_columns(design))}-term model"), (key, words)
+        if key == "four":   # named by its inputs, not its terms
+            assert words == "Four-input" and len(design) == 4, (key, words)
+        else:
+            assert words == f"{len(L.band_columns(design))}-term", (key, words)
+
+
+def test_names_are_distinct_and_never_relative():
+    """Every part has one name of its own within its stage (two ids may share one only when they are the same
+    rule under two names: the replay's and the served one), and no name says "today's" (Chase, 2026-10-04)."""
+    same = {frozenset({"live_v2", "basin_swap"}), frozenset({"link_zone_swap", "link_zone_v1"})}
+    for col, words in LU.WORDS.items():
+        for name in set(words.values()):
+            ids = frozenset(k for k, v in words.items() if v == name)
+            assert len(ids) == 1 or ids in same, (col, name, sorted(ids))
+            assert "today" not in name.lower(), (col, name)
 
 
 def test_the_report_reads_the_same_map():

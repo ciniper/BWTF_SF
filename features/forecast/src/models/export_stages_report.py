@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """The stages report, public at /reports/2026-10_forecast_stages.html: the forecast scored
-stage by stage, today's forecast beside every challenger the stages build has scored,
-each named by its lineup (STAGES_DESIGN.md A8; Part C §8 P9).
+stage by stage, the live forecast (the set served.json names, wearing a LIVE badge) beside every
+challenger the stages build has scored, each named by its lineup (STAGES_DESIGN.md A8; Part C §8 P9).
+Every part goes by its one fixed name (shared/lineup.py WORDS); nothing is "today's" (Chase, 2026-10-04).
 
     venv/bin/python features/forecast/src/models/export_stages_report.py   # writes the page, prints its path
 
@@ -21,7 +22,8 @@ repo path), PATH is the field ("/"-joined keys, list indices as numbers) and FMT
 prints (``FMT``), so tests/test_stages_report.py checks each one against its file. Counting
 fields (how many seeds say "worse", how many seasons picked a term set) is the only arithmetic. The words come from
 stages_spec (stages, exclusions, claims), the figure from stages_flowchart, the lineup's
-plain words from shared/lineup.py, the one hand-typed map (component ids to words). The output is
+plain words from shared/lineup.py, the one hand-typed map (component ids to words), and the LIVE badge
+the live forecast wears from export_reports_index (one look on every report). The output is
 a pure function of those inputs, with no clock: rebuilding unchanged artifacts gives the
 same bytes.
 """
@@ -43,6 +45,7 @@ for _p in (str(REPO), str(HERE)):
 
 import stages_flowchart as F  # noqa: E402
 import stages_spec as SP  # noqa: E402
+from export_reports_index import LIVE_BADGE, LIVE_CSS  # noqa: E402  (the LIVE badge, one look on every report)
 from shared import geography as G  # noqa: E402
 from shared import lineup as LU  # noqa: E402  (the lineup's plain words, A8: one map for this page and the Model check)
 from shared.risk_levels import LEVELS  # noqa: E402  (the public levels and their colours, A3)
@@ -60,7 +63,7 @@ ICONS = REPO / "app" / "templates" / "_icons.html"
 OUT = REPO / "reports" / "2026-10_forecast_stages.html"
 HOW_IT_WORKS = "/reports/2026-09_forecast_how_it_works.html"
 INDEX = "/reports/"                                         # every report, current and archived (export_reports_index.py)
-ROOTS = ("served", "candidates", "stages_candidates")       # lineup order after today's: today's basins first
+ROOTS = ("served", "candidates", "stages_candidates")       # lineup order after the live forecast: BWTF basins first
 
 LABELS, LINEUP_COLS = LU.WORDS, LU.COLUMNS
 
@@ -72,7 +75,7 @@ VERSION_NOTES = {
                   "tests the zone, and only in wet weather.", "", ("X-LEDGER-SUSPECT",)),
     "stages_v3": ("“Ledger likely incomplete” days also leave the water-quality score and the public number; "
                   "“dead gauge in the inputs” is worded exactly.",
-                  "Chase's decision, made after today's stage scores had been seen; a re-check is on the list.",
+                  "Chase's decision, made after the live forecast's stage scores had been seen; a re-check is on the list.",
                   ("X-LEDGER-SUSPECT", "X-S2-OUTAGEIN")),
 }
 
@@ -91,17 +94,19 @@ STATUS_CLASS = {"pass": "good", "fail": "bad", "not yet computable": "na", "not 
 KIND_WORDS = {"exclude": "left out", "tag": "marked, kept", "stratum": "scored apart", "fit": "fit only"}
 
 # What each pre-registered test asks, in plain words (protocol §8's rows by id; the artifact's own wording is the
-# tooltip). A row id with no words prints the artifact's comparison.
+# tooltip). A row id with no words prints the artifact's comparison. Parts go by their fixed names (shared/lineup.py):
+# S3a compares the two geographies, S3b the size split, S5 the primary pair (stages_s5.PRIMARY: link_zone_swap
+# against basin_swap, the live forecast's rule).
 PRIMARY_WORDS = {
     "S1": "S1 · another weather model's rain closer to the gauges, one day ahead",
-    "S2": "S2 · overflow model: fewer errors than today's, basins pooled",
+    "S2": "S2 · overflow model: fewer errors than the live forecast's, basins pooled",
     "S2-south-floor": "S2 · the South basin: better than its usual rate",
     "S2-volume": "S2 · overflow size: a stand-in where a basin has too few measured sizes",
-    "S3a": "S3 · the city's basins: East Beaches no worse than on today's basins",
-    "S3b": "S3 · the Westside split by overflow size beats a fixed share",
-    "S4": "S4 · lingering table: water quality no worse than today's table",
-    "S5": "S5 · link/zone corrections beat today's rule",
-    "OUT": "OUT · the public number: no worse than today's",
+    "S3a": f"S3 · {LU.words('geography', 'sfpuc4_v1')}: East Beaches no worse than on {LU.words('geography', 'geo_v1')}",
+    "S3b": f"S3 · the Westside's {LU.words('s3', 'links_v1')} beats a fixed share",
+    "S4": "S4 · lingering table: water quality no worse than the live forecast's table",
+    "S5": f"S5 · {LU.words('s5', 'link_zone_swap')} beat {LU.words('s5', 'basin_swap')}",
+    "OUT": "OUT · the public number: no worse than the live forecast's",
 }
 PART_WORDS = {
     "superiority": "better, nine seasons",
@@ -117,24 +122,26 @@ PART_WORDS = {
 }
 # A "not applicable" row's plain reason, used only when the artifact's reason says the same thing (the pattern).
 NA_WORDS = {
-    "S1": (r"served weather model", "same weather model as today's"),
-    "S2": (r"its S2 is the served set's", "same overflow model as today's"),
-    "S2-south-floor": (r"has no South basin", "today's basins have no South basin"),
-    "S2-volume": (r"shares the served bundle's volume heads", "uses today's size estimates"),
-    "S3a": (r"is the served set's geography", "same basins as today's: this test compares basins"),
+    "S1": (r"served weather model", "same weather model as the live forecast"),
+    "S2": (r"its S2 is the served set's", "same overflow model as the live forecast"),
+    "S2-south-floor": (r"has no South basin", f"{LU.words('geography', 'geo_v1')} have no South basin"),
+    "S2-volume": (r"shares the served bundle's volume heads", "uses the live forecast's size estimates"),
+    "S3a": (r"is the served set's geography", "same basins as the live forecast: this test compares basins"),
     "S3b": (r"no Westside share model with a size term", "no size-based split to test"),
     "S4": (r"which no §8 row scores", "no test is set for this lingering table"),
-    "S5": (r"its S5 is the served set's", "same correction rule as today's"),
+    "S5": (r"its S5 is the served set's", "same correction rule as the live forecast"),
 }
 CRITERIA_WORDS = {1: "Every changed stage passes its own pre-registered test",
-                  2: "The public number is no worse than today's beyond the margin, post-training and the live season, "
-                     "measured rain and one day ahead",
-                  3: "Its percentages are no worse calibrated than today's",
+                  2: "The public number is no worse than the live forecast's beyond the margin, post-training and the "
+                     "live season, measured rain and one day ahead",
+                  3: "Its percentages are no worse calibrated than the live forecast's",
                   4: "Chase has seen the zone-by-zone shadow-run report",
                   5: "Chase approves"}
-S5_RULES = (("basin_swap", "today's rule (live_v2)"), ("link_zone_swap", "link/zone"),
-            ("downgrade", "link/zone, plus the no-flag downgrade"), ("all_floors", "today's rule with every sample floor"),
-            ("sample_swap", "lab result swap"))
+# S5's replayed rules, each by its fixed name (shared/lineup.py), with a line on what it is: basin_swap is live_v2,
+# the live forecast's rule; downgrade is link_zone_swap plus the no-flag downgrade (stages_s5.VARIANTS)
+S5_RULES = (("basin_swap", "the live forecast's rule"), ("link_zone_swap", ""),
+            ("downgrade", f"{LU.words('s5', 'link_zone_swap')}, plus a downgrade when no flag comes"),
+            ("all_floors", f"{LU.words('s5', 'basin_swap')} with every sample floor"), ("sample_swap", ""))
 LADDER_WORDS = {"truth_at_s4": ("True overflows", "the true overflow history: every stage before OUT perfect"),
                 "truth_at_s3": ("True basin overflows", "S3 splits the true basin overflows into zones"),
                 "rain": ("Measured rain", "S2 predicts the overflows from the gauges' rain"),
@@ -299,8 +306,14 @@ def lineup_words(man: Art) -> str:
     return " · ".join(label(c, v) for c, v in lineup_of(man).items())
 
 
+def set_name(man: Art) -> str:
+    """A set's name: its S2 · S3 · S4 in their fixed words ("38-weight · Outfall split · Linger table 2")."""
+    parts = lineup_of(man)
+    return " · ".join(label(c, parts[c]) for c in ("s2", "s3", "s4"))
+
+
 def lineup_diff(D: dict) -> dict:
-    """{set: {column: True when it differs from today's forecast}}."""
+    """{set: {column: True when it differs from the live forecast}}."""
     base = lineup_of(D["sets"][0]["manifest"])
     return {s["name"]: {c: v != base[c] for c, v in lineup_of(s["manifest"]).items()} for s in D["sets"]}
 
@@ -454,8 +467,8 @@ def section_what(D: dict) -> str:
 </div>
 <h3>Three windows</h3>
 <div class="grid3">
-<div class="card"><b>{A.n("s2", "pooled", "oracle", "T2", "n_seasons", f="i")} seasons</b><div class="mute">{span_words(A, "s2", "pooled", "oracle", "T2", "span")}</div><p class="fine">Each July–June season is scored by a fit that never saw it: every fitted part is refit without that season. These are development scores: today's design was chosen with these seasons in view.</p></div>
-<div class="card"><b>Post-training</b><div class="mute">{M.n("windows", "post_start", f="mon")} – {post_end} · {A.n("out", "pooled", "oracle", "T1", "n_storm_blocks", f="i")} storms</div><p class="fine">Every fitted part was fit on days before {M.n("windows", "post_start", f="mon")}. With so few storms most cells here say too few storms to decide. Today's set was also picked with these days in view, which favours it.</p></div>
+<div class="card"><b>{A.n("s2", "pooled", "oracle", "T2", "n_seasons", f="i")} seasons</b><div class="mute">{span_words(A, "s2", "pooled", "oracle", "T2", "span")}</div><p class="fine">Each July–June season is scored by a fit that never saw it: every fitted part is refit without that season. These are development scores: the live forecast's design was chosen with these seasons in view.</p></div>
+<div class="card"><b>Post-training</b><div class="mute">{M.n("windows", "post_start", f="mon")} – {post_end} · {A.n("out", "pooled", "oracle", "T1", "n_storm_blocks", f="i")} storms</div><p class="fine">Every fitted part was fit on days before {M.n("windows", "post_start", f="mon")}. With so few storms most cells here say too few storms to decide. The live forecast was also picked with these days in view, which favours it.</p></div>
 <div class="card"><b>The live season</b><div class="mute">from {esc(FMT["day"](P["t0"]))}</div><p class="fine">{live_words}</p></div>
 </div>
 <p class="fine">The artifacts also hold a holdout window ({span_words(A, "s2", "pooled", "oracle", "T1-holdout", "span")}), kept for development only; this page shows the other two.</p>
@@ -466,7 +479,7 @@ def section_figure(D: dict) -> str:
     A = D["sets"][0]["scores"]
     svg, phone = F.render(A.get("geography"), A.get("figure"), A.get("figure_counts"))
     return f'''<section id="figure"><h2>The chain, scored</h2>
-<p class="lead">Today's forecast drawn as its stages, each graded on its own truth. Every box links to its stage below; hover or tap a pill for its {A.n("bootstrap", "level", f="pct")} range, its days and its post-training score.</p>
+<p class="lead">The live forecast drawn as its stages, each graded on its own truth. Every box links to its stage below; hover or tap a pill for its {A.n("bootstrap", "level", f="pct")} range, its days and its post-training score.</p>
 <p class="figcap">{A.n("figure", "caption", f="t")}</p>
 <div class="panel">{svg}{phone}</div></section>'''
 
@@ -477,24 +490,20 @@ def section_lineups(D: dict) -> str:
     rows = []
     for i, s in enumerate(D["sets"]):
         man, name = s["manifest"], s["name"]
-        if i == 0:
-            who = "<b>Today's forecast</b>"
-        elif name == sv.get("replaced"):
-            who = f'<b>Challenger</b><div class="sm">served until {sv.n("promoted_at", f="day")}</div>'
-        else:
-            who = "<b>Challenger</b>"
+        until = f'<div class="sm">served until {sv.n("promoted_at", f="day")}</div>' if name == sv.get("replaced") else ""
+        who = f'<b>{esc(set_name(man))}</b>{" " + LIVE_BADGE if i == 0 else ""}{until}'
         cells = []
         for col, _ in LINEUP_COLS:
             cid = lineup_of(man)[col]
             d = diff[name][col]
-            mark = '<span class="vh"> (differs from today\'s)</span>' if d else ""
+            mark = '<span class="vh"> (differs from the live forecast)</span>' if d else ""
             cells.append(f'<td data-col="{col}" class="{"diff" if d else "same"}" title="{esc(cid)}">{esc(label(col, cid))}{mark}</td>')
-        rows.append(f'<tr data-set="{esc(name)}"{" class=today" if i == 0 else ""}><th class="rl">{who}<code>{esc(name)}</code></th>{"".join(cells)}</tr>')
+        rows.append(f'<tr data-set="{esc(name)}"{" class=live" if i == 0 else ""}><th class="rl">{who}<code>{esc(name)}</code></th>{"".join(cells)}</tr>')
     head = "<tr><th>Forecast</th>" + "".join(f"<th>{esc(h)}</th>" for _, h in LINEUP_COLS) + "</tr>"
     return f'''<section id="lineups"><h2>Lineups</h2>
-<p class="lead">A forecast is a lineup: one way of dividing the city into sewer basins, then one part per stage. Here is today's forecast and every challenger the stages have scored; a shaded cell differs from today's.</p>
+<p class="lead">A forecast is a lineup: one way of dividing the city into sewer basins, then one part per stage. It goes by its S2 · S3 · S4. Here is the live forecast and every challenger the stages have scored; a shaded cell differs from the live forecast.</p>
 {tw(f'<table class="lineup">{head}{"".join(rows)}</table>')}
-<p class="fine"><span class="key diff"></span> differs from today's forecast. The grey names are the stored identifiers, kept so the record never breaks. They are labels, not descriptions: in <code>{esc(D["served"])}</code>, “s2” is the old two-stage pipeline's stage 2, which is S3 and S4 on this page, not this page's S2.</p>
+<p class="fine"><span class="key diff"></span> differs from the live forecast. {LIVE_BADGE} marks the set the forecast page runs now. The grey names are the stored identifiers, kept so the record never breaks. They are labels, not descriptions: in <code>{esc(D["served"])}</code>, “s2” is the old two-stage pipeline's stage 2, which is S3 and S4 on this page, not this page's S2.</p>
 </section>'''
 
 
@@ -517,7 +526,8 @@ def card_s1(D: dict) -> str:
     served = S.get("served_model")
     models = [served] + [m for m in S.get("models") if m != served]
     leads = [k for k in S.get("by_lead")]
-    head = "<tr><th>Lead</th>" + "".join(f'<th>{esc(label("s1", m))}{" (today's)" if m == served else ""}</th>' for m in models) + "</tr>"
+    live = "<div class=sm>the live forecast's</div>"
+    head = "<tr><th>Lead</th>" + "".join(f'<th>{esc(label("s1", m))}{live if m == served else ""}</th>' for m in models) + "</tr>"
     rows = []
     for L in leads:
         day = SP.LEAD_DAYS[int(L)] + (" (optimistic)" if S.get("leads", L, "kind") == "short_lead_optimistic" else "")
@@ -623,7 +633,7 @@ def card_s5(D: dict) -> str:
 
     head_row = "<tr><th>Rule</th>" + "".join(head(f) for f in feeds + real) + "</tr>"
     body = []
-    for v, words in S5_RULES:
+    for v, what in S5_RULES:
         cells = []
         for f in feeds + real:
             w = window_of(f)
@@ -640,31 +650,34 @@ def card_s5(D: dict) -> str:
                          f'<span class="ci">[{A.n(*d, "lo", f="3s")}, {A.n(*d, "hi", f="3s")}]</span>'
                          f'<div>{verdict(A.get(*d, "verdict"))}</div>{"<div class=lpw>too few storms to decide</div>" if lp else ""}</td>')
         tip = ' title="its change on the public number is 0 by construction: the public number never reads a lab result"' if v == "sample_swap" else ""
-        body.append(f'<tr><th class="rl"{tip}>{esc(words)}</th>{"".join(cells)}</tr>')
-    # today's rule against no correction, on the realistic feeds (the artifact's verdicts, counted)
+        what = f'<div class="sm">{esc(what)}</div>' if what else ""
+        body.append(f'<tr><th class="rl"{tip}>{esc(label("s5", v))}{what}</th>{"".join(cells)}</tr>')
+    # the live forecast's rule against no correction, on the realistic feeds (the artifact's verdicts, counted)
+    live, lzn = esc(label("s5", "basin_swap")), esc(label("s5", "link_zone_swap"))
     worse = [f for f in seeds if A.get("s5", "pooled", f, "S5", "basin_swap", "delta_vs_plain", "verdict") == "worse"]
     pf = A.get("s5", "pooled", "oracle", "S5", "basin_swap", "delta_vs_plain", "verdict")
     if seeds and len(worse) == len(seeds):
-        today = (f"On every one of the {len(seeds)} realistic feeds, <b>today's rule makes the days after an observation "
-                 f"worse than no correction at all</b>. On the perfect feed: {esc(pf)}.")
+        verdict_live = (f"On every one of the {len(seeds)} realistic feeds, <b>the live forecast's rule, {live}, makes the days after "
+                        f"an observation worse than no correction at all</b>. On the perfect feed: {esc(pf)}.")
     elif worse:
-        today = (f"On {len(worse)} of the {len(seeds)} realistic feeds, today's rule makes the days after an observation worse "
-                 f"than no correction. On the perfect feed: {esc(pf)}.")
+        verdict_live = (f"On {len(worse)} of the {len(seeds)} realistic feeds, the live forecast's rule, {live}, makes the days after an "
+                        f"observation worse than no correction. On the perfect feed: {esc(pf)}.")
     else:
-        today = f"On none of the {len(seeds)} realistic feeds is today's rule clearly worse than no correction. On the perfect feed: {esc(pf)}."
+        verdict_live = (f"On none of the {len(seeds)} realistic feeds is the live forecast's rule, {live}, clearly worse than no "
+                        f"correction. On the perfect feed: {esc(pf)}.")
     lz = [A.get("s5", "pooled", f, "S5", "link_zone_swap", "delta_vs_plain", "verdict") for f in ["oracle"] + seeds]
-    lz_words = ("link/zone is not clearly different from no correction on any of them" if all(x == "no clear difference" for x in lz)
-                else "link/zone: " + ", ".join(lz))
+    lz_words = (f"the {lzn} rule is not clearly different from no correction on any of them" if all(x == "no clear difference" for x in lz)
+                else f"the {lzn} rule: " + ", ".join(lz))
     prim = A.get("paired", "s5_primary")
     pv = [prim[f]["S5"]["pooled"]["verdict"] for f in ["oracle"] + seeds if f in prim]
-    beats = (f"Against today's rule, link/zone is better on the perfect feed ({A.n('paired', 's5_primary', 'oracle', 'S5', 'pooled', 'delta', f='3s')} "
+    beats = (f"Against the {live} rule, the {lzn} rule is better on the perfect feed ({A.n('paired', 's5_primary', 'oracle', 'S5', 'pooled', 'delta', f='3s')} "
              f"<span class=ci>[{A.n('paired', 's5_primary', 'oracle', 'S5', 'pooled', 'lo', f='3s')}, {A.n('paired', 's5_primary', 'oracle', 'S5', 'pooled', 'hi', f='3s')}]</span>) "
              f"and on every realistic feed" if all(x == "better" for x in pv) else
-             "Against today's rule, link/zone: " + ", ".join(pv))
+             f"Against the {live} rule, the {lzn} rule: " + ", ".join(pv))
     return f'''<div class="card stage" id="s5">{_stage_head("s5")}
 <p class="fine">When SFPUC's beach map flags an overflow, a correction rule moves the forecast for that day and the week after. Each rule is scored by the change in error on the days after an observation, against no correction at all: below 0 helps, above 0 hurts (lower is better). The perfect feed is every filed overflow, on time; the realistic feeds miss some and show others a day late, as the beach map has (five random draws); the 2016-17 feed is the real thing, on one season.</p>
 {tw(f'<table class="st wide">{head_row}{"".join(body)}</table>')}
-<p class="fine">{today} By contrast {lz_words}. {beats}: that is the pre-registered test of this stage. Lab result swap only moves the water-quality stage, which the public number never reads, so its change here is 0 by construction.</p>
+<p class="fine">{verdict_live} By contrast {lz_words}. {beats}: that is the pre-registered test of this stage. The {esc(label("s5", "sample_swap"))} only moves the water-quality stage, which the public number never reads, so its change here is 0 by construction.</p>
 </div>'''
 
 
@@ -746,7 +759,7 @@ def section_out(D: dict) -> str:
 {stage_table(A, rows)}
 <details class="more"><summary>By zone</summary>{unit_table(A, geo, cols, zones)}</details>
 <h3>By lead: today to five days ahead</h3>
-<div class="grid2 lead2"><div class="card">{lead_chart(A)}<p class="fine">Today's score reads a stitched short-lead archive, not forecasts stored as they were issued, so it flatters. “As served” runs the live page's shorter rain history, and {esc(served_words)}.</p></div>
+<div class="grid2 lead2"><div class="card">{lead_chart(A)}<p class="fine">The score for today reads a stitched short-lead archive, not forecasts stored as they were issued, so it flatters. “As served” runs the live page's shorter rain history, and {esc(served_words)}.</p></div>
 <div>{stage_table(A, lead_rows)}</div></div>
 {section_live(D)}
 <div class="card" id="levels"><b>Risk levels</b><div class="levels">{lv}</div>
@@ -757,7 +770,7 @@ def section_out(D: dict) -> str:
 
 
 def section_live(D: dict) -> str:
-    """The live season (the rules' T0) as the page showed it: today's forecast's own stored forecasts, graded by lead
+    """The live season (the rules' T0) as the page showed it: the live forecast's own stored forecasts, graded by lead
     (scores['t0_as_served']), pooled and by zone; one plain line until a data refresh covers the season."""
     A, P = D["sets"][0]["scores"], D["protocol"]
     head = '<h3 id="live">The live season, as the page showed it</h3>'
@@ -861,7 +874,7 @@ def _nyc_words(row: dict) -> str:
     """A "not yet computable" row's plain reason (the artifact's own is the tooltip)."""
     reason = str(row.get("reason", ""))
     if re.search(r"rebuild", reason, re.I):
-        return "waiting for today's forecast to be scored again"
+        return "waiting for the live forecast to be scored again"
     if re.search(r"T0|prospective|live season", reason):
         return "waiting for the live season's days"
     return "not computed yet"
@@ -871,6 +884,8 @@ def challenger_card(D: dict, s: dict) -> str:
     A, name = s["scores"], s["name"]
     P = A.get("primaries")
     diff = lineup_diff(D)[name]
+    live = lineup_of(D["sets"][0]["manifest"])                      # the live forecast's parts, by their fixed names
+    live_s4, live_s5 = esc(label("s4", live["s4"])), esc(label("s5", live["s5"]))
     changed = [f'{esc(h.split(" · ")[0])}: {esc(label(c, lineup_of(s["manifest"])[c]))}' for c, h in LINEUP_COLS if diff[c]]
     rows = []
     for i, r in enumerate(P["rows"]):
@@ -886,13 +901,14 @@ def challenger_card(D: dict, s: dict) -> str:
         if not parts:
             note = ""
             if r.get("caveat") and r["id"] == "S4":
-                note = '<div class="sm">its other half, fixing today\'s table, could not be tested here: today\'s table shows no such problem on these samples; Chase\'s reading</div>'
+                note = (f'<div class="sm">its other half, fixing {live_s4}, could not be tested here: {live_s4} shows no such problem '
+                        f'on these samples; Chase\'s reading</div>')
             rows.append(f'<tr><th class="rl" title="{esc(tip)}">{test}{note}</th><td class="mute">{esc(window_words(r.get("window")))}</td>'
                         f'<td class="sc">{_test_value(A, base, r)} {verdict(r["verdict"]) if r.get("verdict") else ""}</td>{_status_cell(r["status"], r.get("reason", ""))}</tr>')
             continue
         note = ""
         if r["id"] == "S5" and r.get("caveat"):
-            note = '<div class="sm">tested on today\'s chain, where today\'s rule exists</div>'
+            note = f'<div class="sm">tested on the live forecast\'s chain, where the {live_s5} rule runs</div>'
         if r["id"] == "OUT" and r.get("t0") == "empty":
             note = '<div class="sm">the live season holds no scored day yet</div>'
         elif r["id"] == "OUT" and r.get("t0") == "scored":
@@ -903,7 +919,7 @@ def challenger_card(D: dict, s: dict) -> str:
             what = esc(PART_WORDS.get(p["part"], clean(p["part"])))
             rows.append(f'<tr>{first}<td class="mute">{what}</td><td class="sc">{_test_value(A, pb, p)} {verdict(p["verdict"]) if p.get("verdict") else ""}</td>'
                         f'{_status_cell(p["status"], p.get("reason", ""))}</tr>')
-    head = "<tr><th>What was tested</th><th>Judged on</th><th>Challenger − today's</th><th>Result</th></tr>"
+    head = "<tr><th>What was tested</th><th>Judged on</th><th>Challenger − live forecast</th><th>Result</th></tr>"
     crit = A.get("promotion", "criteria")
     met = sum(1 for c in crit if c["status"] == "met")
     m = re.match(r"(\d+) of (\d+) met", str(A.get("promotion", "summary")))
@@ -914,8 +930,8 @@ def challenger_card(D: dict, s: dict) -> str:
     seen = A.opt("windows", "T1", "tag") == "post_seen"
     seen_note = ('<p class="fine warn">This lineup was designed after an earlier challenger\'s post-training scores had been seen, '
                  'so its post-training scores cannot confirm it; only the live season can.</p>') if seen else ""
-    return f'''<div class="card chal" id="c-{esc(name)}"><div class="bh"><b>{esc(lineup_words(s["manifest"]))}</b><code>{esc(name)}</code></div>
-<p class="fine">Differs from today's forecast in {"; ".join(changed) if changed else "nothing"}. Differences are in Brier error, challenger minus today's: below 0 means the challenger erred less.</p>{seen_note}
+    return f'''<div class="card chal" id="c-{esc(name)}"><div class="bh"><b>{esc(set_name(s["manifest"]))}</b><code>{esc(name)}</code></div>
+<p class="fine">Differs from the live forecast in {"; ".join(changed) if changed else "nothing"}. Differences are in Brier error, challenger minus the live forecast: below 0 means the challenger erred less.</p>{seen_note}
 {tw(f'<table class="tests">{head}{"".join(rows)}</table>')}
 <div class="check"><b>{m.group(1)} of {m.group(2)} conditions met</b><ol>{checklist}</ol></div>
 </div>'''
@@ -956,13 +972,13 @@ def section_bakeoff(D: dict) -> str:
 <p class="fine">Chase's rule, fixed before it ran: the same terms in every basin, each basin its own weights, none below 0. For each of the {len(picks)} seasons the term set was picked on the other seasons and then scored on the held-out one (nested), so these scores never saw their own season. The rule: the lowest error wins, unless the {B.n("grid", "bootstrap", "level", f="pct")} range of its lead over the runner-up includes 0; then the one with fewer terms wins.</p>
 {tw(f'<table class="st">{head}{"".join(rows)}</table>')}
 <p class="fine"><b>The pick, on all {len(picks)} seasons together:</b> <code>{esc(low)}</code> has the lowest error ({B.n(*fp, "ranking", 0, "brier", f="5")}), <code>{esc(nxt)}</code> is next ({B.n(*fp, "ranking", 1, "brier", f="5")}); the range of the gap, {B.n(*fp, "delta", "delta", f="5s")} <span class="ci">[{B.n(*fp, "delta", "lo", f="5s")}, {B.n(*fp, "delta", "hi", f="5s")}]</span>, {"includes" if B.get(*fp, "ci_includes_0") else "excludes"} 0, so <b><code>{esc(B.get(*fp, "winner"))}</code> wins</b> ({B.n(*fp, "ranking", 0, "n_terms", f="i")} terms against {B.n(*fp, "ranking", 1, "n_terms", f="i")}). It is the overflow model of both city-basin challengers.</p>
-<p class="fine">The nested pick against today's recipe refit on the same basins: {B.n(*vs, "delta", f="5s")} <span class="ci">[{B.n(*vs, "lo", f="5s")}, {B.n(*vs, "hi", f="5s")}]</span> {verdict(B.get(*vs, "verdict"))}. The South basin, with few overflows, still beats its usual rate: skill {B.n(*sf, "bss")} {B.rng(*sf, "ci")} on {B.n(*sf, "n_pos", f="i")} overflow days. The term sets themselves were drawn up before the bake-off, partly on these seasons, and post-training days had been looked at too, so only the live season is clean of every choice.</p>'''
+<p class="fine">The nested pick against the live forecast's recipe refit on the same basins: {B.n(*vs, "delta", f="5s")} <span class="ci">[{B.n(*vs, "lo", f="5s")}, {B.n(*vs, "hi", f="5s")}]</span> {verdict(B.get(*vs, "verdict"))}. The South basin, with few overflows, still beats its usual rate: skill {B.n(*sf, "bss")} {B.rng(*sf, "ci")} on {B.n(*sf, "n_pos", f="i")} overflow days. The term sets themselves were drawn up before the bake-off, partly on these seasons, and post-training days had been looked at too, so only the live season is clean of every choice.</p>'''
 
 
 def section_challengers(D: dict) -> str:
     cards = "".join(challenger_card(D, s) for s in D["sets"][1:] if s["scores"].opt("primaries") is not None)
-    return f'''<section id="challengers"><h2>Challengers</h2>
-<p class="lead">Each challenger is tested against today's forecast with comparisons written down before any was run, stage by stage on the stage it changes, then on the public number. A challenger replaces today's forecast only when all five conditions hold, and the last two are Chase's: whether to switch is his call. This page lists the tests; it recommends nothing.</p>
+    return f'''<section id="challengers"><h2>Challengers against the live forecast</h2>
+<p class="lead">Each challenger is tested against the live forecast with comparisons written down before any was run, stage by stage on the stage it changes, then on the public number. A challenger replaces the live forecast only when all five conditions hold, and the last two are Chase's: whether to switch is his call. This page lists the tests; it recommends nothing.</p>
 {cards}
 {section_bakeoff(D)}
 </section>'''
@@ -1070,7 +1086,7 @@ def section_left_out(D: dict) -> str:
         versions.append(f'<li{tip}><b>{esc(v["version"])}</b>, frozen {esc(FMT["day"](v["freeze"]))}{" (in force)" if v["version"] == P["version"] else ""}: '
                         f'{esc(line)}{(" " + esc(extra)) if extra else ""}</li>')
     return f'''<section id="left-out"><h2>What is left out, and what is not claimed</h2>
-<p class="lead">A score is only as honest as the list of what it leaves out. Each stage's rules run in a fixed order, and each left-out day is counted once, under the first rule it meets. Counts are for today's forecast, {A.n("catalog", "start", f="mon")} – {A.n("catalog", "as_of", f="mon")}.</p>
+<p class="lead">A score is only as honest as the list of what it leaves out. Each stage's rules run in a fixed order, and each left-out day is counted once, under the first rule it meets. Counts are for the live forecast, {A.n("catalog", "start", f="mon")} – {A.n("catalog", "as_of", f="mon")}.</p>
 {ledgers}
 <h3 id="claims">What the forecast does not claim</h3>
 <p class="fine">Counted, never hidden: a sample over the standard with no overflow behind it stays in the public number's score as a day the forecast was right to call quiet.</p>
@@ -1129,7 +1145,7 @@ td.lp>b,td.lp>.ci{opacity:.55}.lpw{font-size:11px;color:#8a949b;font-style:itali
 tr.floor th.rl,tr.floor td{background:#f7fafc}
 tr.drop th.rl{font-weight:400;color:#54576F;padding-left:18px}tr.drop td{background:#fbfcfd}
 tr.winner th.rl code{color:#0072BC;font-weight:700}
-table.lineup td{font-size:13px}table.lineup tr.today th.rl,table.lineup tr.today td{background:#f3f8fc}
+table.lineup td{font-size:13px}table.lineup tr.live th.rl,table.lineup tr.live td{background:#f3f8fc}
 table.lineup td.diff,.key.diff{background:#fbe9d9;box-shadow:inset 3px 0 #d4763a}
 .key{display:inline-block;width:14px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:4px}
 .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
@@ -1177,12 +1193,12 @@ def render(D: dict | None = None) -> str:
     srcs = sources(D)
     body = [
         f'''<header class="rh"><img src="/static/brand/bwtf_144x144.png" alt="" class="mark"><div><h1>The forecast, stage by stage</h1>
-<p class="sub">Five stages turn rain into the beach percentage. Each is scored on its own and as part of the chain, on days its fit never saw. Today's forecast: <b>{esc(lineup_words(M))}</b>.</p>
+<p class="sub">Five stages turn rain into the beach percentage. Each is scored on its own and as part of the chain, on days its fit never saw. The live forecast: <b>{esc(lineup_words(M))}</b> {LIVE_BADGE}</p>
 <div class="meta"><span>rules {esc(P["version"])}, frozen {esc(FMT["day"](P["freeze"]))}</span><span>data through {A.n("as_of", f="day")}</span><span>scored {M.n("built_at", f="day")}</span><span><a href="{HOW_IT_WORKS}">how it works →</a></span><span><a href="{INDEX}">every report →</a></span></div></div></header>''',
         '<nav><a href="#what">What this is</a><a href="#figure">The chain, scored</a><a href="#lineups">Lineups</a><a href="#s1">Each stage</a>'
         '<a href="#out">The public number</a><a href="#challengers">Challengers</a><a href="#left-out">Left out</a></nav>',
         section_what(D), section_figure(D), section_lineups(D),
-        f'<section id="stages"><h2>Each stage, today\'s forecast</h2><p class="lead">Skill on the {A.n("s2", "pooled", "oracle", "T2", "n_seasons", f="i")} seasons and on post-training days, oracle and chained. Each value is skill with its {A.n("bootstrap", "level", f="pct")} range; below it, the days scored, the days that count as positive, and the storms they fall in.</p>'
+        f'<section id="stages"><h2>Each stage of the live forecast</h2><p class="lead">Skill on the {A.n("s2", "pooled", "oracle", "T2", "n_seasons", f="i")} seasons and on post-training days, oracle and chained. Each value is skill with its {A.n("bootstrap", "level", f="pct")} range; below it, the days scored, the days that count as positive, and the storms they fall in.</p>'
         + card_s1(D) + card_s2(D) + card_s3(D) + card_s4(D) + card_s5(D) + "</section>",
         section_out(D), section_challengers(D), section_left_out(D),
         '<footer class="srcs"><p class="fine">Every number on this page is a field of one of these files, built by the stages build '
@@ -1193,7 +1209,7 @@ def render(D: dict | None = None) -> str:
     return f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>The forecast, stage by stage</title><link rel="icon" href="/static/brand/favicon.ico">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/brand.css"><style>{CSS}{F.CSS}</style></head><body>{sprite()}
+<link rel="stylesheet" href="/static/brand.css"><style>{CSS}{LIVE_CSS}{F.CSS}</style></head><body>{sprite()}
 <div class="wrap">
 {"".join(body)}
 </div><script type="application/json" id="sources">{src_json}</script>{FIT_SCRIPT}</body></html>

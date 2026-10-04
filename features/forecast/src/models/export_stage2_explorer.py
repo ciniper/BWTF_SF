@@ -2,16 +2,18 @@
 """From an overflow to beach risk (S3–S4): one self-contained HTML page that
 opens up the discharge-probability → beach-risk transformation (src/models/impact.py,
 src/models/stage2.py), in the five stages (STAGES_DESIGN.md A8): S3, the beach
-split (today's split, stored as stage 2 v2: the share of a basin's overflow days
-on which a group's own outfalls spilled), and S4, the lingering table (the
-empirical table, raw and smoothed, with sample counts, its decay curves and the
-small/large volume blend), the volume heads (S2's size) and how well they predict
-reported volumes, and a day-by-day composition walk-through for ANY day in the
-hindcast, for today's forecast and every candidate set side by side — so what is
-shared and what differs per set (S2's probabilities and rain sources, and S3–S4
-where a set has no split) is visible, and a self-check proves the page's
-composition reproduces the stored artifacts. Sets read as their lineup's plain
-words (export_reports_index.model_sets); stored names stay identifiers.
+split (Outfall split, stored as stage 2 v2: the share of a basin's overflow days
+on which a group's own outfalls spilled), and S4, the lingering tables (Linger
+table 1 and its refit, Linger table 2: raw and smoothed, with sample counts, their
+decay curves and the small/large volume blend), the volume heads (S2's size) and
+how well they predict reported volumes, and a day-by-day composition walk-through
+for ANY day in the hindcast, for the live forecast and every candidate set side by
+side — so what is shared and what differs per set (S2's probabilities and rain
+sources, and S3–S4 where a set has No split) is visible, and a self-check proves
+the page's composition reproduces the stored artifacts. Every part goes by its
+fixed name (shared/lineup.py) and every set by its S2 · S3 · S4
+(export_reports_index.model_sets); the live forecast wears the LIVE badge; stored
+names stay identifiers.
 
     venv/bin/python features/forecast/src/models/export_stage2_explorer.py
     → reports/2026-09_forecast_stage2_explorer.html  (served at /reports/…; the file keeps its old name)
@@ -21,6 +23,7 @@ Re-run after retraining, `train_v4.py --rescore` or saving a candidate.
 from __future__ import annotations
 
 import gzip
+import html
 import json
 import pickle
 import sys
@@ -36,7 +39,8 @@ for p in (HERE, HERE.parent / "collectors", HERE.parents[3]):
         sys.path.insert(0, str(p))
 
 import candidates  # noqa: E402
-import export_reports_index as RI  # noqa: E402  (each set's lineup words; the served set's S2 page)
+import export_reports_index as RI  # noqa: E402  (each set's name; the served set's S2 page; the LIVE badge)
+import live_rules as LR  # noqa: E402  (the live correction rule's id: S5's fixed name)
 import train_v4 as T  # noqa: E402
 from export_model_explorer import export_gb  # noqa: E402
 from groups import BASIN_KEYS, GROUPS_BY_BASIN, SITE_GROUPS, ZONE_GROUPS  # noqa: E402
@@ -57,9 +61,17 @@ def _r(v, nd):
     return None if v is None or (isinstance(v, float) and np.isnan(v)) else round(float(v), nd)
 
 
+def s34_words(variant: str) -> dict:
+    """S3's and S4's fixed names (shared/lineup.py) for a stored stage 2 variant: v1 = No split and Linger table 1,
+    v2 = Outfall split and Linger table 2."""
+    parts = LU.geo_v1_parts("", variant)
+    return {c: LU.words(c, parts[c]) for c in ("s3", "s4")}
+
+
 def load_sets() -> list[dict]:
-    """Today's forecast (the served set) plus every candidate: {name, label, served, models{key: pickle}, scorecard,
-    manifest}; ``label`` is how the page names the set ("today's forecast", or its lineup words)."""
+    """The live forecast (the served set) plus every candidate: {name, label, served, models{key: pickle}, scorecard,
+    manifest}; ``label`` is how the page names the set: its S2 · S3 · S4 words (the live forecast's wears the LIVE
+    badge beside it)."""
     import leaderboard  # noqa: F401  (weights pipelines reference leaderboard.add_hinges)
     served = {}
     for basin in T.APP_BASINS + ["citywide"]:
@@ -71,7 +83,7 @@ def load_sets() -> list[dict]:
     sv = candidates.served_info()
     s2_path = SERVE_DIR / "stage2.json"
     served_s2 = json.loads(s2_path.read_text()) if s2_path.exists() else None
-    sets = [{"name": sv["name"], "label": RI.SERVED_WORDS, "served": True, "models": served, "scorecard": sc,
+    sets = [{"name": sv["name"], "label": RI.set_title(RI.model_set(sv["name"])), "served": True, "models": served, "scorecard": sc,
              "note": f"the live forecast since {str(sv.get('promoted_at') or '2026-09-12')[:10]}", "family": sv.get("family", "gb"),
              "stage2": served_s2, "stage1_name": sv["stage1"], "stage1_from": "served"}]
     for man in candidates.list_candidates():
@@ -156,7 +168,8 @@ def main() -> None:
                                "median_event_volume_mg": s2["median_event_volume_mg"], "definition": s2.get("definition"),
                                "fitted_at": s2.get("fitted_at"), "impact_table_note": s2.get("impact_table_note")})
             if s2["variant"] not in stage2_variants:
-                stage2_variants[s2["variant"]] = {"impact_raw": s2.get("impact_table"), "impact_smoothed": smooth_table(s2["impact_table"]) if refit else None,
+                stage2_variants[s2["variant"]] = {"words": s34_words(s2["variant"]),
+                                                  "impact_raw": s2.get("impact_table"), "impact_smoothed": smooth_table(s2["impact_table"]) if refit else None,
                                                   "shares": s2["shares"], "group_outfalls": s2["group_outfalls"],
                                                   "median_event_volume_mg": s2["median_event_volume_mg"], "definition": s2.get("definition"),
                                                   "impact_table_note": s2.get("impact_table_note"), "train_window": s2.get("train_window")}
@@ -201,16 +214,20 @@ def main() -> None:
                           "n_events": h.get("n_events"), "resid_std": h.get("resid_std"), "target": h.get("target"),
                           "rain_source": h.get("rain_source", "avg"), "points": pts}
 
+    # the parts' fixed names the page's own words use (shared/lineup.py), and the badge the live forecast wears
+    first, split = s34_words("v1"), s34_words("v2")
+    names = {"no_split": first["s3"], "table1": first["s4"], "split": split["s3"], "table2": split["s4"], "trees": LU.words("s2", "gb_v1")}
     data = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
+        "names": names, "live_badge": RI.LIVE_BADGE_INLINE,
         "span": master["span"], "holdout_start": master.get("holdout_start"),
         "trained_through": master.get("trained_through") or master["span"][1], "rescored_at": master.get("rescored_at"),
         "input_rules_post": rules_post,
         "impact_raw": impact_raw, "impact_smoothed": impact_smoothed,
         "impact_fitted_from": {"sample_days": {g: t.get("n_sample_days") for g, t in impact_raw.items()},
-                               "note": "the first lingering table (S4): fit by train_v4.fit_impact_table at the boosted-trees model's training "
+                               "note": f"{first['s4']} (S4): fit by train_v4.fit_impact_table when {LU.words('s2', 'gb_v1')} was trained "
                                        "(gb_v1, 2026-09-12) from DataSF + Poo Bot samples and CIWQS discharges, in data/models/impact_table.json; "
-                                       "today's lingering table is its refit on group-attributed days (stage2.json); the page smooths each "
+                                       f"{split['s4']} is its refit on group-attributed days (stage2.json); the page smooths each "
                                        "exactly as serving does (impact.smooth_table)"},
         "basins": {BASIN_KEYS[b]: {"name": b, "groups": GROUPS_BY_BASIN[BASIN_KEYS[b]]} for b in T.APP_BASINS},
         "groups": {g: {"basin": BASIN_KEYS[b], "stations": [{"id": s, "name": STATIONS[s].name} for s in sids]} for g, (b, sids) in SITE_GROUPS.items()},
@@ -218,12 +235,21 @@ def main() -> None:
         "volume_heads": vol_heads,
         "dates": dates, "rain": rain, "post_training": post_training, "vol_pred": vol_pred, "labels": labels,
         "model_sets": model_sets, "stage2_variants": stage2_variants,
-        "live_override": "Live serving adds S5, the live corrections (today's rule, live_v2), which this hindcast leaves out: a day the watcher saw a CSO onset in a basin gets p = 1 for that basin, a bay-basin day the feed never flagged is lowered with each quiet day, and a sample result holds up or caps the days after (how the forecast works, S5).",
+        "live_override": f"Live serving adds S5, the live corrections ({LU.words('s5', LR.VERSION)}, stored as {LR.VERSION}), which this "
+                         "hindcast leaves out: a day the watcher saw a CSO onset in a basin gets p = 1 for that basin, a bay-basin day "
+                         "the feed never flagged is lowered with each quiet day, and a sample result holds up or caps the days after "
+                         "(how the forecast works, S5).",
     }
-    html = TEMPLATE.read_text().replace("__SERVED_EXPLORER__", RI.explorer_file(sets[0]["name"]))\
+    # the template's own words name the parts and the live forecast's S2 page through placeholders, filled before the data
+    page = TEMPLATE.read_text().replace("__SERVED_EXPLORER__", RI.explorer_file(sets[0]["name"]))
+    for key, words in (("__SPLIT__", names["split"]), ("__NO_SPLIT__", names["no_split"]), ("__TABLE1__", names["table1"]),
+                       ("__TABLE2__", names["table2"]), ("__TREES__", names["trees"]),
+                       ("__LIVE_EXPLORER_TITLE__", RI.explorer_title(lineups[sets[0]["name"]]))):
+        page = page.replace(key, html.escape(words, quote=False))
+    page = page.replace("__LIVE_BADGE__", RI.LIVE_BADGE_INLINE)\
         .replace("__DATA__", json.dumps(data, separators=(",", ":"), default=str))\
         .replace("__RISK_LEVELS__", json.dumps(risk_levels.export(), separators=(",", ":")))   # Low / Medium / High / Extreme, the page colours (A3)
-    OUT.write_text(html)
+    OUT.write_text(page)
     print(f"wrote {OUT.relative_to(REPO)}: {OUT.stat().st_size / 1e6:.2f} MB — {len(model_sets)} model sets "
           f"({', '.join(m['name'] for m in model_sets)}), {n} days {dates[0]} → {dates[-1]}, "
           f"{sum(len(v['points']) for v in vol_heads.values() if v)} volume points")

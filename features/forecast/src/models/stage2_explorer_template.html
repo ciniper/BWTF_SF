@@ -48,15 +48,20 @@ input[type=range]{width:200px}
 footer{color:#54576F;font-size:12.5px;text-align:center;padding:16px}
 a{color:#0072BC}
 tr.dim td{color:#9aa0a6}
+</style>
+<style>/* phones: no column wider than the screen; wide tables swipe inside themselves (a second block: the first is read by the archived replays) */
+.g2{grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr))}.g3{grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr))}.grid>*{min-width:0}
+code{overflow-wrap:anywhere}
+@media (max-width:600px){table{display:block;max-width:100%;overflow-x:auto}label{display:inline-flex;flex-wrap:wrap;max-width:100%}select{max-width:100%;min-width:0!important}}
 </style></head>
 <body><div class="wrap">
 <header>
   <h1>From an overflow to beach risk (S3–S4)</h1>
-  <p class="sub">S2 says how likely each basin is to overflow today. S3 decides which of the basin's beaches an overflow reaches (the beach split), and S4 how long it keeps them over standard (the lingering table), from how long beaches actually stayed dirty after real overflows. Together they turn today's and the past week's overflow chances into the chance a beach group is fouled today. This page opens S3 and S4 up for today's forecast and every other model set: what every set shares, what differs, and a walk-through of any day in the hindcast.</p>
+  <p class="sub">S2 says how likely each basin is to overflow today. S3 decides which of the basin's beaches an overflow reaches (the beach split), and S4 how long it keeps them over standard (the lingering table), from how long beaches actually stayed dirty after real overflows. Together they turn today's and the past week's overflow chances into the chance a beach group is fouled today. This page opens S3 and S4 up for the live forecast and every other model set: what every set shares, what differs, and a walk-through of any day in the hindcast.</p>
   <div class="meta" id="meta"></div>
 </header>
 <nav>
-  <a href="#what">The transformation</a><a href="#shared">Shared vs per set</a><a href="#split">S3 Today's split</a><a href="#impact">S4 The lingering table</a><a href="#volume">S2 Volume heads</a><a href="#compose">Walk through any day</a><a href="#compare">Sets side by side</a><a href="#check">Self-check</a>
+  <a href="#what">The transformation</a><a href="#shared">Shared vs per set</a><a href="#split">S3 __SPLIT__</a><a href="#impact">S4 The lingering tables</a><a href="#volume">S2 Volume heads</a><a href="#compose">Walk through any day</a><a href="#compare">Sets side by side</a><a href="#check">Self-check</a>
 </nav>
 
 <section id="what"><h2>The transformation</h2>
@@ -71,21 +76,21 @@ risk<sub>zone</sub>(D) = max over the zone's groups</div>
 </section>
 
 <section id="shared"><h2>What every set shares, and what differs</h2>
-<p class="lead">Every model set, today's forecast and each candidate, runs through the same composition code with the same volume heads. What differs is what S2 feeds in (the daily probabilities, and the rain source each basin model reads) and, for a set without today's split, S3 and S4: no split, and the first lingering table. The volume heads read the rain source they were trained on, whichever S2 is in play.</p>
+<p class="lead">Every model set, the live forecast and each candidate, runs through the same composition code with the same volume heads. What differs is what S2 feeds in (the daily probabilities, and the rain source each basin model reads) and, for a set without __SPLIT__, S3 and S4: __NO_SPLIT__ and __TABLE1__. The volume heads read the rain source they were trained on, whichever S2 is in play.</p>
 <div style="overflow-x:auto"><table id="sharedTable"></table></div>
 <p class="fine" id="sharedNote"></p>
 </section>
 
-<section id="split"><h2>S3 · Today's split</h2>
-<p class="fine" style="margin:0 0 6px">stored as stage 2 v2, the outfall split</p>
-<p class="lead">S2 predicts one probability per basin, but a basin's outfalls post different beaches: on the Westside, three outfalls post Ocean Beach and four post Baker and China Beach; in North Shore, four post Crissy Field and three post Aquatic Park. With no split (stored as stage 2 v1), both groups get the basin's whole probability, so a Sea Cliff discharge turns Ocean Beach red. <b>Today's split</b> multiplies the basin probability by the share of that basin's CIWQS discharge days, by size class, on which at least one of the group's own outfalls discharged, and S4's lingering table is refit on those group-attributed days. Where a group's outfalls are the whole basin (Mission Creek, Southeast) the share is 1 and nothing changes.</p>
+<section id="split"><h2>S3 · __SPLIT__</h2>
+<p class="fine" style="margin:0 0 6px">stored as stage 2 v2</p>
+<p class="lead">S2 predicts one probability per basin, but a basin's outfalls post different beaches: on the Westside, three outfalls post Ocean Beach and four post Baker and China Beach; in North Shore, four post Crissy Field and three post Aquatic Park. With __NO_SPLIT__ (stored as stage 2 v1), both groups get the basin's whole probability, so a Sea Cliff discharge turns Ocean Beach red. <b>__SPLIT__</b> multiplies the basin probability by the share of that basin's CIWQS discharge days, by size class, on which at least one of the group's own outfalls discharged, and S4's lingering table is refit on those group-attributed days (__TABLE2__). Where a group's outfalls are the whole basin (Mission Creek, Southeast) the share is 1 and nothing changes.</p>
 <div id="splitCards" class="grid g2"></div>
 <p class="fine" id="splitNote"></p>
 </section>
 
-<section id="impact"><h2>S4 · The lingering table</h2>
-<p class="lead">The first lingering table was fitted once, with the boosted-trees model (2026-09-12), from every sample day within a week of a CIWQS discharge: for each beach group, size class and days-since bucket, the share of sample days over standard, with the count behind it. Today's lingering table is the same fit on group-attributed days, with S3's split. Serving smooths each small/large curve to be non-increasing over days (weighted pool-adjacent-violators), because contamination decays and cells with 3–6 samples are noisy enough to read day 3 above day 1.</p>
-<div class="controls"><label>Table <select id="impactMode"><option value="impact_smoothed">the first lingering table, smoothed</option><option value="impact_raw">the first lingering table, raw fit</option></select></label>
+<section id="impact"><h2>S4 · The lingering tables</h2>
+<p class="lead">__TABLE1__ was fitted once, with __TREES__ (2026-09-12), from every sample day within a week of a CIWQS discharge: for each beach group, size class and days-since bucket, the share of sample days over standard, with the count behind it. __TABLE2__ is the same fit on group-attributed days, with S3's __SPLIT__. Serving smooths each small/large curve to be non-increasing over days (weighted pool-adjacent-violators), because contamination decays and cells with 3–6 samples are noisy enough to read day 3 above day 1.</p>
+<div class="controls"><label>Table <select id="impactMode"><option value="impact_smoothed">__TABLE1__, smoothed</option><option value="impact_raw">__TABLE1__, raw fit</option></select></label>
   <label>Show the blend for a discharge of <input type="range" id="blendVol" min="0" max="150" step="1" value="30"> <span id="blendVolV" class="mono"></span></label>
   <span class="kbd">Cells: P(elevated) with n underneath; hover for the attributable value. Curves: attributable x(k) — solid large, dashed small, orange dots the blend at the chosen volume.</span></div>
 <div id="impactTables" class="grid g2"></div>
@@ -99,7 +104,7 @@ risk<sub>zone</sub>(D) = max over the zone's groups</div>
 </section>
 
 <section id="compose"><h2>Walk through any day</h2>
-<p class="lead">Pick a beach group and a day. The bars are that basin's S2 probability from the selected model set; the lines are the composed group risk from every set (today's forecast solid). Below the axis: reported discharges (with volume), bacteria samples at the group's beaches, and whether one of the zone's beaches was posted. The table shows every term of the product for the selected set on the selected day.</p>
+<p class="lead">Pick a beach group and a day. The bars are that basin's S2 probability from the selected model set; the lines are the composed group risk from every set (the live forecast solid). Below the axis: reported discharges (with volume), bacteria samples at the group's beaches, and whether one of the zone's beaches was posted. The table shows every term of the product for the selected set on the selected day.</p>
 <div class="controls">
   <label>Group <select id="wGroup"></select></label>
   <label>Model set <select id="wSet"></select></label>
@@ -116,10 +121,10 @@ risk<sub>zone</sub>(D) = max over the zone's groups</div>
 </section>
 
 <section id="compare"><h2>Every set side by side</h2>
-<p class="lead">Sets differ in S2 and, those without today's split, in S3 and S4. For a window, each zone's caught discharges and false alarms per set when a day counts as alerted at the chosen risk level (Medium and up by default, as in the Model check) — false alarms split into the seven days after a real posting (the beach really was dirty) and the rest — then the days where the sets disagree most on composed risk.</p>
+<p class="lead">Sets differ in S2 and, those with __NO_SPLIT__, in S3 and S4. For a window, each zone's caught discharges and false alarms per set when a day counts as alerted at the chosen risk level (Medium and up by default, as in the Model check) — false alarms split into the seven days after a real posting (the beach really was dirty) and the rest — then the days where the sets disagree most on composed risk.</p>
 <div class="controls"><label>Window <select id="cWindow"></select></label><label>Alerted at <select id="cLine"></select></label></div>
 <table id="compareTable"></table>
-<h3>Largest disagreements with today's forecast in this window</h3>
+<h3>Largest disagreements with the live forecast in this window</h3>
 <div id="disagree"></div>
 </section>
 
@@ -129,7 +134,7 @@ risk<sub>zone</sub>(D) = max over the zone's groups</div>
 <p class="fine" id="checkSummary"></p>
 </section>
 
-<footer>Generated <span id="genAt"></span> by <code>features/forecast/src/models/export_stage2_explorer.py</code> from the lingering tables and volume heads, each set's model pickles and scorecard artifact.<br><a href="/reports/">Every report</a> · <a href="/reports/2026-10_forecast_stages.html">The forecast, stage by stage</a> · <a href="/reports/__SERVED_EXPLORER__">Inside the overflow model (S2): today's forecast</a> · <a href="/forecast">The forecast</a></footer>
+<footer>Generated <span id="genAt"></span> by <code>features/forecast/src/models/export_stage2_explorer.py</code> from the lingering tables and volume heads, each set's model pickles and scorecard artifact.<br><a href="/reports/">Every report</a> · <a href="/reports/2026-10_forecast_stages.html">The forecast, stage by stage</a> · <a href="/reports/__SERVED_EXPLORER__">__LIVE_EXPLORER_TITLE__</a> __LIVE_BADGE__ · <a href="/forecast">The forecast</a></footer>
 </div>
 
 <script>
@@ -138,6 +143,8 @@ const BASINS = ['westside','north_shore','central','southeast'];
 const GROUPS = Object.keys(D.groups);
 const ZONE_ORDER = ['ocean','baker_china','north','east'];
 const SETS = D.model_sets;
+const NM = D.names;   // the parts' fixed names (shared/lineup.py): no_split, table1 (S3–S4 v1); split, table2 (v2)
+const setName = s => esc(s.label) + (s.served ? ' ' + D.live_badge : '');   // a set's name; the live forecast wears LIVE
 const N = D.dates.length;
 const COLORS = {westside:'#0072BC', north_shore:'#237059', central:'#7b4bb5', southeast:'#d4763a'};
 const SET_COLORS = ['#0072BC', '#b5310a', '#7b4bb5', '#237059', '#b97e00'];
@@ -156,8 +163,8 @@ const levelName = lv => lv.label + (lv === RISK_LEVELS.levels[RISK_LEVELS.levels
 document.getElementById('meta').innerHTML = [
   'hindcast ' + esc(D.span[0]) + ' → ' + esc(D.span[1]) + ' (' + N + ' days)',
   'S2 trained through ' + esc(D.trained_through) + ' · holdout from ' + esc(D.holdout_start),
-  SETS.length + ' model set' + (SETS.length > 1 ? 's: today\'s forecast and ' + (SETS.length - 1) + ' more' : ''),
-  'S3–S4 on disk: no split with the first lingering table' + (Object.keys(D.stage2_variants || {}).length ? '; today\'s split with today\'s lingering table' : ''),
+  SETS.length + ' model set' + (SETS.length > 1 ? 's: the live forecast and ' + (SETS.length - 1) + ' more' : ''),
+  'S3–S4 on disk: ' + NM.no_split + ' with ' + NM.table1 + Object.values(D.stage2_variants || {}).map(v => '; ' + v.words.s3 + ' with ' + v.words.s4).join(''),
   'volume heads (S2\'s size): the served ones, shared by every set',
 ].map(t => '<span>' + esc(t) + '</span>').join('');
 document.getElementById('genAt').textContent = D.generated_at;
@@ -179,7 +186,7 @@ function impactFraction(table, g, k, vol) {
   const med = gt.median_event_volume_mg || 1, w = vol / (vol + med);
   return w * xl + (1 - w) * xs;
 }
-// S3, today's split (stage 2 v2, the outfall split; port of src/models/stage2.group_share):
+// S3 with a split (stage 2 v2; port of src/models/stage2.group_share):
 // p_group = p_basin × [w·g_large + (1−w)·g_small], w = V / (V + median event)
 function shareOf(spec, g, vol) {
   const s = (spec.shares || {})[g]; if (!s) return 1;
@@ -204,27 +211,27 @@ const zoneRisk = (si, zk, i) => Math.max(0, ...D.zones[zk].groups.map(g => group
 
 // ─── shared vs per model ──────────────────────────────────────────────────────
 (function shared() {
-  const s34label = s => s.differs.s3 || s.differs.s4 ? '<span class="badge diff">S3–S4 differ from today\'s</span>' : '<span class="badge shared">S3–S4 same as today\'s</span>';
-  const head = ['<tr><th>Basin</th>'].concat(SETS.map(s => `<th style="min-width:150px"><span style="text-transform:none;letter-spacing:0;font-size:12.5px;color:#26272a">${esc(s.label)}</span><br><span class="fine" style="text-transform:none;letter-spacing:0">stored as ${esc(s.name)}<br>S2: rain source · family · dry-day offset</span><br>${s34label(s)}</th>`), ['<th>Volume head <span class="badge shared">shared</span><br><span class="fine" style="text-transform:none;letter-spacing:0">reads its own rain source</span></th><th>The first lingering table (S4)<br><span class="fine" style="text-transform:none;letter-spacing:0">its sample days; today\'s refits it</span></th></tr>']);
+  const s34label = s => s.served ? '' : s.differs.s3 || s.differs.s4 ? '<span class="badge diff">S3–S4 differ from the live forecast</span>' : '<span class="badge shared">S3–S4 same as the live forecast</span>';
+  const head = ['<tr><th>Basin</th>'].concat(SETS.map(s => `<th style="min-width:150px"><span style="text-transform:none;letter-spacing:0;font-size:12.5px;color:#26272a">${setName(s)}</span><br><span class="fine" style="text-transform:none;letter-spacing:0">stored as ${esc(s.name)}<br>S2: rain source · family · dry-day offset</span><br>${s34label(s)}</th>`), [`<th>Volume head <span class="badge shared">shared</span><br><span class="fine" style="text-transform:none;letter-spacing:0">reads its own rain source</span></th><th>${esc(NM.table1)} (S4)<br><span class="fine" style="text-transform:none;letter-spacing:0">its sample days; ${esc(NM.table2)} refits it</span></th></tr>`]);
   const rows = [head.join('')];
   for (const bk of BASINS) {
     const base = SETS[0].spec[bk];
     const cells = SETS.map((s, i) => { const sp = s.spec[bk]; const diff = i > 0 && (s.differs.s2 || sp.rain_source !== base.rain_source || sp.family !== base.family || sp.calibration_offset !== base.calibration_offset);
       const split = setSplit(i); const groupsTxt = split ? '<br><span class="fine">S3 shares: ' + D.basins[bk].groups.map(g => { const sh = (split.shares || {})[g] || {}; return `${esc(g)} large ${sh.large && sh.large.p != null ? sh.large.p.toFixed(2) : '—'} / small ${sh.small && sh.small.p != null ? sh.small.p.toFixed(2) : '—'}`; }).join(' · ') + '</span>' : '';
-      return `<td>${esc(sp.rain_source === 'avg' ? 'two-gauge mean' : sp.rain_source)} · ${sp.family === 'logit' ? 'weights' + (sp.C != null ? ` (C=${sp.C})` : '') : 'trees'} · offset ${(sp.calibration_offset*100).toFixed(2)} pts ${i > 0 ? (diff ? '<span class="badge diff">S2 differs from today\'s</span>' : '<span class="badge shared">S2 same as today\'s</span>') : ''}${groupsTxt}</td>`; });
+      return `<td>${esc(sp.rain_source === 'avg' ? 'two-gauge mean' : sp.rain_source)} · ${sp.family === 'logit' ? 'weights' + (sp.C != null ? ` (C=${sp.C})` : '') : 'trees'} · offset ${(sp.calibration_offset*100).toFixed(2)} pts ${i > 0 ? (diff ? '<span class="badge diff">S2 differs from the live forecast</span>' : '<span class="badge shared">S2 same as the live forecast</span>') : ''}${groupsTxt}</td>`; });
     const h = D.volume_heads[bk];
     rows.push(`<tr><td><span class="pill" style="background:${COLORS[bk]}">${esc(nameOf(bk))}</span></td>${cells.join('')}<td>${h ? esc(h.rain_source === 'avg' ? 'two-gauge mean' : h.rain_source) + ' · ' + h.n_events + ' events' : 'none'}</td><td>${D.basins[bk].groups.map(g => esc(g) + ' (' + (D.impact_raw[g] || {}).n_sample_days + ' sample days)').join('<br>')}</td></tr>`);
   }
   document.getElementById('sharedTable').innerHTML = rows.join('');
   const variants = Object.keys(D.stage2_variants || {});
-  document.getElementById('sharedNote').innerHTML = `Names: a set reads as its lineup, S2 · S3 · S4: its overflow model (${[...new Set(SETS.map(s => s.words.s2))].map(esc).join(', ')}), its beach split and its lingering table. Stored names stay identifiers: a set is stored under its S2's name (the old pipeline's "stage 1"), with <code>_s2v2</code> appended when it uses today's split and lingering table (the old pipeline's "stage 2 v2", <code>src/models/stage2.py</code>${variants.length ? '' : '; not on disk'}); today's forecast is stored as <code>${esc(SETS[0].name)}</code>. Volume heads always read the rain source they were trained on (before 2026-09-25 a candidate's scorecard fed them the candidate's source — fixed, artifacts regenerated).` + '<details style="margin-top:6px"><summary>Stored notes, set by set</summary>' + SETS.map(s => `<code>${esc(s.name)}</code>: ${esc(s.note || '')}`).join('<br>') + '</details>';
+  document.getElementById('sharedNote').innerHTML = `Names: a set goes by its parts, S2 · S3 · S4: its overflow model (${[...new Set(SETS.map(s => s.words.s2))].map(esc).join(', ')}), its beach split and its lingering table. Stored names stay identifiers: a set is stored under its S2's name (the old pipeline's "stage 1"), with <code>_s2v2</code> appended when it uses ${esc(NM.split)} and ${esc(NM.table2)} (the old pipeline's "stage 2 v2", <code>src/models/stage2.py</code>${variants.length ? '' : '; not on disk'}); the live forecast is stored as <code>${esc(SETS[0].name)}</code>. Volume heads always read the rain source they were trained on (before 2026-09-25 a candidate's scorecard fed them the candidate's source — fixed, artifacts regenerated).` + '<details style="margin-top:6px"><summary>Stored notes, set by set</summary>' + SETS.map(s => `<code>${esc(s.name)}</code>: ${esc(s.note || '')}`).join('<br>') + '</details>';
 })();
 
 // ─── impact tables + decay curves ──────────────────────────────────────────────
 (function impactModes() {
   const sel = document.getElementById('impactMode');
-  for (const [v, spec] of Object.entries(D.stage2_variants || {})) if (spec.impact_smoothed) sel.insertAdjacentHTML('beforeend', `<option value="variant:${esc(v)}:impact_smoothed">today's lingering table (${esc(v)} refit), smoothed</option><option value="variant:${esc(v)}:impact_raw">today's lingering table (${esc(v)} refit), raw</option>`);
-  const own = SETS[0].stage2 && SETS[0].stage2.impact_table_refit && SETS[0].stage2.variant;   // open on the table today's forecast composes with
+  for (const [v, spec] of Object.entries(D.stage2_variants || {})) if (spec.impact_smoothed) sel.insertAdjacentHTML('beforeend', `<option value="variant:${esc(v)}:impact_smoothed">${esc(spec.words.s4)} (${esc(v)} refit), smoothed</option><option value="variant:${esc(v)}:impact_raw">${esc(spec.words.s4)} (${esc(v)} refit), raw</option>`);
+  const own = SETS[0].stage2 && SETS[0].stage2.impact_table_refit && SETS[0].stage2.variant;   // open on the table the live forecast composes with
   if (own && (D.stage2_variants[own] || {}).impact_smoothed) sel.value = `variant:${own}:impact_smoothed`;
 })();
 function impactTableFor(mode) {
@@ -262,20 +269,20 @@ renderImpact();
 // ─── outfall split variant ────────────────────────────────────────────────────
 (function renderSplit() {
   const variants = Object.entries(D.stage2_variants || {});
-  if (!variants.length) { document.getElementById('splitCards').innerHTML = '<div class="card"><span class="fine">Today\'s split (stage 2 v2) is not fitted on disk. Fit one with <code>stage2_variants.py fit</code> and pair it with an S2 via <code>stage2_variants.py save</code>.</span></div>'; return; }
+  if (!variants.length) { document.getElementById('splitCards').innerHTML = '<div class="card"><span class="fine">' + esc(NM.split) + ' (stage 2 v2) is not fitted on disk. Fit one with <code>stage2_variants.py fit</code> and pair it with an S2 via <code>stage2_variants.py save</code>.</span></div>'; return; }
   let html = '';
   for (const [v, spec] of variants) {
     for (const g of GROUPS) { const sh = (spec.shares || {})[g] || {}, outs = (spec.group_outfalls || {})[g] || [], med = (spec.median_event_volume_mg || {})[g];
       const cell = s => s && s.p != null ? `<b>${(s.p*100).toFixed(0)}%</b> <span class="fine">of ${s.n} days</span>` : '<span class="mute">—</span>';
       const identity = sh.all && sh.all.p === 1;
-      html += `<div class="card"><b class="t">${esc(g)} <span class="fine">· ${esc(nameOf(D.groups[g].basin))} basin · today's split (${esc(v)})</span></b>
+      html += `<div class="card"><b class="t">${esc(g)} <span class="fine">· ${esc(nameOf(D.groups[g].basin))} basin · ${esc(spec.words.s3)} (${esc(v)})</span></b>
         <div class="fine" style="margin-bottom:6px">posted by ${outs.length} outfall${outs.length === 1 ? '' : 's'}: <code>${outs.map(esc).join('</code> <code>')}</code></div>
         <table><tr><th>discharge days of the basin…</th><th class="num">large (≥ ${med} MG)</th><th class="num">small</th><th class="num">all</th></tr>
         <tr><td>…on which one of these outfalls discharged</td><td class="num">${cell(sh.large)}</td><td class="num">${cell(sh.small)}</td><td class="num">${cell(sh.all)}</td></tr></table>
         <div class="fine" style="margin-top:6px">${identity ? 'Every discharge in this basin involves this group\'s outfalls: the split is the identity here.' : `A basin probability p becomes p × ${sh.large && sh.large.p != null ? sh.large.p.toFixed(2) : '?'} for a large predicted volume and p × ${sh.small && sh.small.p != null ? sh.small.p.toFixed(2) : '?'} for a small one (blended by V/(V+${med})).`}</div></div>`; }
   }
   document.getElementById('splitCards').innerHTML = html;
-  document.getElementById('splitNote').innerHTML = variants.map(([v, spec]) => `<b>Today's split</b> <span class="mute">(stage 2 ${esc(v)})</span> fitted ${esc((spec.train_window || []).join(' → '))} from CIWQS per-outfall rows (only CIWQS-labelled days carry outfall detail; the 2016-17 feed-archive days are excluded from the shares and kept, unattributed, for the lingering table's refit). ${esc(spec.impact_table_note || '')} Sets using it: ${SETS.filter(s => s.stage2 && s.stage2.variant === v).map(s => '<b>' + esc(s.label) + '</b>').join(', ') || 'none'}.`).join('<br>');
+  document.getElementById('splitNote').innerHTML = variants.map(([v, spec]) => `<b>${esc(spec.words.s3)}</b> <span class="mute">(stage 2 ${esc(v)})</span> fitted ${esc((spec.train_window || []).join(' → '))} from CIWQS per-outfall rows (only CIWQS-labelled days carry outfall detail; the 2016-17 feed-archive days are excluded from the shares and kept, unattributed, for the lingering table's refit). ${esc(spec.impact_table_note || '')} Sets using it: ${SETS.filter(s => s.stage2 && s.stage2.variant === v).map(s => '<b>' + setName(s) + '</b>').join(', ') || 'none'}.`).join('<br>');
 })();
 
 // ─── volume heads ─────────────────────────────────────────────────────────────
@@ -312,7 +319,7 @@ renderImpact();
 const W_ = {g: GROUPS[0], si: 0, i: N - 1};
 (function walkInit() {
   document.getElementById('wGroup').innerHTML = GROUPS.map(g => `<option value="${esc(g)}">${esc(g)} (${esc(nameOf(D.groups[g].basin))})</option>`).join('');
-  document.getElementById('wSet').innerHTML = SETS.map((s, i) => `<option value="${i}">${esc(s.label)}</option>`).join('');
+  document.getElementById('wSet').innerHTML = SETS.map((s, i) => `<option value="${i}">${esc(s.label)}${s.served ? ' (LIVE)' : ''}</option>`).join('');
   const di = document.getElementById('wDate'); di.min = D.dates[0]; di.max = D.dates[N-1];
   // default: the most recent discharge day in the first group's basin
   const bk = D.groups[W_.g].basin; for (let i = N - 1; i >= 0; i--) if (D.labels.basin_y[bk][i]) { W_.i = i; break; }
@@ -328,7 +335,7 @@ const W_ = {g: GROUPS[0], si: 0, i: N - 1};
 function renderWalk() {
   const g = W_.g, si = W_.si, i = W_.i, bk = D.groups[g].basin, zk = ZONE_ORDER.find(z => D.zones[z].groups.includes(g));
   document.getElementById('wDate').value = D.dates[i];
-  document.getElementById('wTitle').textContent = `${g}, ${fmtDate(D.dates[i])}, ${SETS[si].label}`;
+  document.getElementById('wTitle').innerHTML = `${esc(g)}, ${fmtDate(D.dates[i])}, ${setName(SETS[si])}`;
   // week chart
   const lo = Math.max(0, i - 10), hi = Math.min(N - 1, i + 3), days = []; for (let j = lo; j <= hi; j++) days.push(j);
   const W = 1100, H = 300, pl = 44, pb = 86, cw = (W - pl - 10) / days.length; const X = j => pl + (j - lo) * cw + cw / 2, Y = p => 10 + (1 - p) * (H - pb - 10);
@@ -346,7 +353,7 @@ function renderWalk() {
     const z = D.labels.zone_discharge[zk][j]; if (z) s += `<text x="${X(j)}" y="${y0+74}" text-anchor="middle" font-size="10.5" fill="#8f2508">beach posted</text>`; }
   s += '</svg>';
   document.getElementById('weekChart').innerHTML = s;
-  document.getElementById('weekLegend').innerHTML = `<span style="display:inline-block;width:12px;height:12px;background:#eb6834;vertical-align:-2px"></span> S2 P(discharge) for ${esc(nameOf(bk))} (${esc(SETS[si].label)}) · ` + SETS.map((st, k) => `<span style="display:inline-block;width:18px;border-top:${k ? '2px dashed' : '3px solid'} ${SET_COLORS[k % SET_COLORS.length]};vertical-align:middle"></span> ${esc(st.label)}: composed ${esc(g)} risk`).join(' · ') + ` · <span style="color:${MEDIUM.color}">— where ${esc(levelName(MEDIUM))} begins</span> · rows under the axis: rain, reported discharge (with volume), bacteria sample at these beaches, beach posting in the zone.`;
+  document.getElementById('weekLegend').innerHTML = `<span style="display:inline-block;width:12px;height:12px;background:#eb6834;vertical-align:-2px"></span> S2 P(discharge) for ${esc(nameOf(bk))} (${setName(SETS[si])}) · ` + SETS.map((st, k) => `<span style="display:inline-block;width:18px;border-top:${k ? '2px dashed' : '3px solid'} ${SET_COLORS[k % SET_COLORS.length]};vertical-align:middle"></span> ${setName(st)}: composed ${esc(g)} risk`).join(' · ') + ` · <span style="color:${MEDIUM.color}">— where ${esc(levelName(MEDIUM))} begins</span> · rows under the axis: rain, reported discharge (with volume), bacteria sample at these beaches, beach posting in the zone.`;
   // term table
   const {risk, terms} = groupRisk(si, g, i); let prod = 1; const hasSplit = !!setSplit(si);
   const rows = ['<tr><th>k</th><th>day D−k</th><th class="num">p<sub>basin</sub>(D−k)</th>' + (hasSplit ? '<th class="num">× outfall share</th><th class="num">= p<sub>group</sub></th>' : '') + '<th class="num">predicted V (MG)</th><th class="num">w = V/(V+median)</th><th class="num">x(k, V)</th><th class="num">1 − p·x</th><th class="num">running ∏</th></tr>'];
@@ -357,10 +364,10 @@ function renderWalk() {
   document.getElementById('walkTable').innerHTML = rows.join('');
   // every set on this day
   const srows = ['<tr><th>Model set</th><th class="num">p today</th><th class="num">' + esc(g) + ' risk</th><th class="num">zone ' + esc(D.zones[zk].label) + '</th><th class="num">stored</th></tr>'];
-  SETS.forEach((st, k) => { const r = groupRisk(k, g, i).risk, z = zoneRisk(k, zk, i), sv = st.stored_groups[g][i]; srows.push(`<tr><td><span style="display:inline-block;width:10px;height:10px;background:${SET_COLORS[k % SET_COLORS.length]};border-radius:2px;margin-right:6px"></span>${esc(st.label)}</td><td class="num">${((st.probs[bk][i]||0)*100).toFixed(1)}%</td><td class="num"><b style="color:${riskColor(r)}">${pct(r)}</b></td><td class="num">${pct(z)}</td><td class="num">${pct(sv)} ${sv == null ? '' : Math.abs(sv - r) <= 0.0015 ? '<span class="ok-check">✓</span>' : '<span class="bad-check">≠</span>'}</td></tr>`); });
+  SETS.forEach((st, k) => { const r = groupRisk(k, g, i).risk, z = zoneRisk(k, zk, i), sv = st.stored_groups[g][i]; srows.push(`<tr><td><span style="display:inline-block;width:10px;height:10px;background:${SET_COLORS[k % SET_COLORS.length]};border-radius:2px;margin-right:6px"></span>${setName(st)}</td><td class="num">${((st.probs[bk][i]||0)*100).toFixed(1)}%</td><td class="num"><b style="color:${riskColor(r)}">${pct(r)}</b></td><td class="num">${pct(z)}</td><td class="num">${pct(sv)} ${sv == null ? '' : Math.abs(sv - r) <= 0.0015 ? '<span class="ok-check">✓</span>' : '<span class="bad-check">≠</span>'}</td></tr>`); });
   document.getElementById('setTable').innerHTML = srows.join('');
   const y = D.labels.basin_y[bk][i], e = D.labels.group_elevated[g][i];
-  document.getElementById('setNote').innerHTML = `What happened: ${y == null ? 'no discharge report covers this day' : y ? '<b>' + esc(nameOf(bk)) + ' discharged</b>' + (D.labels.basin_vol[bk][i] != null ? ' (' + D.labels.basin_vol[bk][i] + ' MG reported)' : '') : 'no discharge reported at ' + esc(nameOf(bk))}; ${e == null ? 'no sample at these beaches' : e ? '<b>a sample here was over standard</b>' : 'samples here were clean'}${D.post_training[i] ? ' · <span class="badge info">post-training day</span>' : i >= dateIdx[D.holdout_start] ? ' · <span class="badge info">holdout period</span>' : ' · <span class="badge warn">in-sample day</span>'}. Same volumes and the same code for every set: what differs is p (S2) and, between sets with and without today's split, the shares and the lingering table (S3–S4).`;
+  document.getElementById('setNote').innerHTML = `What happened: ${y == null ? 'no discharge report covers this day' : y ? '<b>' + esc(nameOf(bk)) + ' discharged</b>' + (D.labels.basin_vol[bk][i] != null ? ' (' + D.labels.basin_vol[bk][i] + ' MG reported)' : '') : 'no discharge reported at ' + esc(nameOf(bk))}; ${e == null ? 'no sample at these beaches' : e ? '<b>a sample here was over standard</b>' : 'samples here were clean'}${D.post_training[i] ? ' · <span class="badge info">post-training day</span>' : i >= dateIdx[D.holdout_start] ? ' · <span class="badge info">holdout period</span>' : ' · <span class="badge warn">in-sample day</span>'}. Same volumes and the same code for every set: what differs is p (S2) and, between sets with ${esc(NM.split)} and with ${esc(NM.no_split)}, the shares and the lingering table (S3–S4).`;
 }
 renderWalk();
 
@@ -387,14 +394,14 @@ function renderCompare() {
     const zr = SETS.map((s, k) => { const out = new Array(N); for (let i = o.lo; i <= o.hi; i++) out[i] = zoneRisk(k, zk, i); return out; });
     SETS.forEach((s, k) => { let tp = 0, fn = 0, fp = 0, fpt = 0, tn = 0;
       for (let i = o.lo; i <= o.hi; i++) { if (lab[i] == null) continue; const pred = zr[k][i] >= thr; if (lab[i]) { tp += pred; fn += !pred; } else if (pred) { fp++; if (tail(i)) fpt++; } else tn++; }
-      rows.push(`<tr>${k === 0 ? `<td rowspan="${SETS.length}"><b>${esc(D.zones[zk].label)}</b></td>` : ''}<td><span style="display:inline-block;width:10px;height:10px;background:${SET_COLORS[k % SET_COLORS.length]};border-radius:2px;margin-right:6px"></span>${esc(s.label)}</td><td class="num">${tp} / ${tp + fn}</td><td class="num"><b>${fp}</b></td><td class="num">${fpt}</td><td class="num">${fp - fpt}</td><td class="num">${tn + fp}</td></tr>`);
+      rows.push(`<tr>${k === 0 ? `<td rowspan="${SETS.length}"><b>${esc(D.zones[zk].label)}</b></td>` : ''}<td><span style="display:inline-block;width:10px;height:10px;background:${SET_COLORS[k % SET_COLORS.length]};border-radius:2px;margin-right:6px"></span>${setName(s)}</td><td class="num">${tp} / ${tp + fn}</td><td class="num"><b>${fp}</b></td><td class="num">${fpt}</td><td class="num">${fp - fpt}</td><td class="num">${tn + fp}</td></tr>`);
       if (k > 0) for (let i = o.lo; i <= o.hi; i++) { const d = zr[k][i] - zr[0][i]; if (Math.abs(d) >= 0.2) dis.push({zk, i, k, base: zr[0][i], cand: zr[k][i], d}); } });
   }
   document.getElementById('compareTable').innerHTML = rows.join('');
   dis.sort((a, b) => Math.abs(b.d) - Math.abs(a.d));
   const top = dis.slice(0, 15);
-  document.getElementById('disagree').innerHTML = SETS.length < 2 ? '<p class="fine">Only one model set on disk — nothing to disagree with.</p>' : !top.length ? '<p class="fine">No day in this window where another set and today\'s forecast differ by 20 points or more on zone risk.</p>' :
-    '<table><tr><th>Day</th><th>Zone</th><th>Set</th><th class="num">' + esc(SETS[0].label) + '</th><th class="num">that set</th><th class="num">Δ</th><th>what happened</th></tr>' + top.map(x => { const lab = D.labels.zone_discharge[x.zk][x.i]; const els = D.zones[x.zk].groups.map(g => D.labels.group_elevated[g][x.i]).filter(v => v != null);
+  document.getElementById('disagree').innerHTML = SETS.length < 2 ? '<p class="fine">Only one model set on disk — nothing to disagree with.</p>' : !top.length ? '<p class="fine">No day in this window where another set and the live forecast differ by 20 points or more on zone risk.</p>' :
+    '<table><tr><th>Day</th><th>Zone</th><th>Set</th><th class="num">' + setName(SETS[0]) + '</th><th class="num">that set</th><th class="num">Δ</th><th>what happened</th></tr>' + top.map(x => { const lab = D.labels.zone_discharge[x.zk][x.i]; const els = D.zones[x.zk].groups.map(g => D.labels.group_elevated[g][x.i]).filter(v => v != null);
       return `<tr><td><a href="#compose" onclick="W_.i=${x.i};W_.g='${esc(D.zones[x.zk].groups[0])}';renderWalk()">${fmtDate(D.dates[x.i])}</a> <span class="fine">rain ${f2(D.rain[x.i])}"</span></td><td>${esc(D.zones[x.zk].label)}</td><td>${esc(SETS[x.k].label)} <span class="fine">${esc(SETS[x.k].name)}</span></td><td class="num">${pct(x.base)}</td><td class="num">${pct(x.cand)}</td><td class="num" style="color:${x.d > 0 ? '#b5310a' : '#237059'}">${x.d > 0 ? '+' : ''}${Math.round(x.d*100)} pts</td><td class="fine">${lab == null ? 'no discharge report' : lab ? '<b>beach posted (discharge)</b>' : 'no discharge posted'}${els.length ? ' · sample ' + (els.some(Boolean) ? '<b>elevated</b>' : 'clean') : ''}</td></tr>`; }).join('') + '</table><p class="fine">Click a day to load it in the walk-through above (first group of the zone).</p>';
 }
 renderCompare();
@@ -406,7 +413,7 @@ renderCompare();
   SETS.forEach((s, k) => { for (const g of GROUPS) { let n = 0, worst = 0, bad = 0; const stored = s.stored_groups[g];
     for (let i = 0; i < N; i++) { if (stored[i] == null) continue; const d = Math.abs(groupRisk(k, g, i).risk - stored[i]); n++; if (d > worst) worst = d; if (d > 0.0015) bad++; }
     worstAll = Math.max(worstAll, worst); if (bad) ok = false;
-    rows.push(`<tr><td>${esc(s.label)}</td><td>${esc(g)}</td><td class="num">${n}</td><td class="num ${worst <= 0.0015 ? 'ok-check' : 'bad-check'}">${worst.toFixed(4)}</td><td class="num">${bad}</td><td>${bad ? '<span class="badge bad">mismatch</span>' : '<span class="badge ok">matches</span>'}</td></tr>`); } });
+    rows.push(`<tr><td>${setName(s)}</td><td>${esc(g)}</td><td class="num">${n}</td><td class="num ${worst <= 0.0015 ? 'ok-check' : 'bad-check'}">${worst.toFixed(4)}</td><td class="num">${bad}</td><td>${bad ? '<span class="badge bad">mismatch</span>' : '<span class="badge ok">matches</span>'}</td></tr>`); } });
   document.getElementById('checkTable').innerHTML = rows.join('');
   document.getElementById('checkSummary').innerHTML = `${ok ? '<span class="ok-check">✓ PASS</span>' : '<span class="bad-check">✗ MISMATCH</span>'} — the page's composition reproduces every stored group risk to within ${worstAll.toFixed(4)} (artifacts store 3 decimals; probabilities here carry 6).`;
 })();

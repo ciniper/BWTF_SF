@@ -6,8 +6,9 @@
 
 It shows what each stage does; how good each one is lives in the stages report
 (export_stages_report.py, reports/2026-10_forecast_stages.html), which this page points to first.
-Today's forecast reads as its lineup's plain words (shared/lineup.py); stored set names stay
-identifiers, in small print.
+The live forecast reads as its lineup, each part by its fixed name (shared/lineup.py); a set goes
+by its S2 · S3 · S4, the live forecast's wearing the LIVE badge; stored set names stay identifiers,
+in small print.
 
     reports/2026-09_forecast_how_it_is_graded.html the rulers, the windows, the results at each risk level, the replays, the weather input
 
@@ -475,7 +476,7 @@ def simpler_section() -> str:
 
 def report_works(S: dict, reg: dict, wx_model: str) -> str:
     sv, models, table, stage2, sc = S["info"], S["models"], S["table"], S["stage2"], S["sc"]
-    # today's forecast by its lineup (A8): each stage's part in plain words; the stored name stays an identifier
+    # the live forecast by its lineup (A8): each stage's part by its fixed name; the stored name stays an identifier
     parts = {"geography": "geo_v1", "s1": wx_model, **LU.geo_v1_parts(sv["stage1"], sv["stage2"]), "s5": LR.VERSION}
     W = {c: plain(c, v) for c, v in parts.items()}
     wx_label = W["s1"]
@@ -544,7 +545,7 @@ def report_works(S: dict, reg: dict, wx_model: str) -> str:
     weights_table = (f'<table class="wt"><tr><th>input</th><th>plain meaning</th><th>bends at (inches)</th>{"".join(f"<th class=num>{esc(BASIN_NAME[b])}</th>" for b in BASINS)}</tr>{feat_rows}</table>'
                      f'<p class="fine">Each cell: the share of that basin&#39;s total weight carried by the input and its bends together. {n_terms} weighted terms per basin (the 19 inputs plus {n_terms - 19} bends) and one intercept. '
                      f'▲ raises the overflow odds on balance, ▼ lowers them. Peak-hour inputs for the curves above sit at their typical share of a wet day&#39;s total ({ratio_txt}).</p>')
-    # S3: the share of each basin's overflows that reach a beach group, by size (today's split; none = no split)
+    # S3: the share of each basin's overflows that reach a beach group, by size (Outfall split; none = No split)
     shares, outs = (stage2 or {}).get("shares") or {}, (stage2 or {}).get("group_outfalls") or {}
     split_rows = [{"label": f"{g} · {size}", "value": shares[g][size]["p"], "color": color}
                   for g in GROUP_ORDER if g in shares for size, color in (("large", "#b5310a"), ("small", "#d4763a"))
@@ -649,7 +650,7 @@ def report_works(S: dict, reg: dict, wx_model: str) -> str:
 <link rel="stylesheet" href="/static/brand.css"><style>{CSS}</style></head><body>{sprite()}
 <div class="wrap">
 <header class="rh"><img src="/static/brand/bwtf_144x144.png" alt="" class="mark"><div><h1>How the forecast works</h1>
-<p class="sub">What each of the five stages does, from the rain to the percentage on the forecast page. Today&#39;s forecast, on {esc(W["geography"])}: {lineup_html}.</p>
+<p class="sub">What each of the five stages does, from the rain to the percentage on the forecast page. The live forecast, on {esc(W["geography"])}: {lineup_html}.</p>
 <p class="pointer">How well each stage works is its own report: <a href="{STAGES_URL}"><b>The forecast, stage by stage</b></a>, every stage scored on days its fit never saw. Start there; this page shows what each stage does.</p>
 <div class="meta"><span>generated {esc(gen)}</span><span>stored as {esc(sv["name"])}, promoted {esc(promoted)}</span><span>trained through {esc(tt)}</span><span>holdout from {esc(hs)}</span><span><a href="{STAGES_URL}">how good each stage is →</a></span><span><a href="{INDEX_URL}">every report →</a></span></div></div></header>
 <nav><a href="#picture">One picture</a><a href="#s1">S1 Rain</a><a href="#s2">S2 Overflow</a><a href="#s3">S3 Which beaches</a><a href="#s4">S4 How long</a><a href="#s5">S5 Live corrections</a><a href="#out">OUT</a><a href="#training">Training</a><a href="#more">Deeper</a></nav>
@@ -695,19 +696,19 @@ def report_works(S: dict, reg: dict, wx_model: str) -> str:
 <div class="grid3">
 <div class="card"><b>Four zones, six days</b><table class="plain"><tr><th>zone</th><th>beach groups</th><th class="num">stations</th></tr>{zone_rows}</table><p class="fine">A zone shows the worst of its groups; a basin the worst of its groups; the city the worst basin.</p></div>
 <div class="card"><b>One number, four words</b><div class="levels">{level_rows}</div><p class="fine">Fixed levels on the whole percent shown, the same on every page.</p></div>
-<div class="card"><b>Every 30 minutes</b><p class="fine">A scheduler recomputes the forecast at :05 and :35, stores it, and the page always serves the stored copy. Each day's first and last forecast go to the history tables with the model's name, so a model swap never breaks the record. The Model check grades every stored day.</p><p class="fine">Since {esc(promoted)} the stamp reads {esc(sv["name"])}, today&#39;s forecast; before that {was}.</p></div>
+<div class="card"><b>Every 30 minutes</b><p class="fine">A scheduler recomputes the forecast at :05 and :35, stores it, and the page always serves the stored copy. Each day's first and last forecast go to the history tables with the model's name, so a model swap never breaks the record. The Model check grades every stored day.</p><p class="fine">Since {esc(promoted)} the stamp reads {esc(sv["name"])}, the live forecast; before that {was}.</p></div>
 </div></section>
 
 <section id="training"><h2>How it was trained</h2>
 <div class="panel">{timeline}</div>
 <div class="grid3">
 <div class="card"><b>The labels</b><p class="fine">SFPUC's filed overflow reports, one row per outfall per event: {n_events:,} events on {n_days} days, {esc(str(ev_span[0]))} → {esc(str(ev_span[1]))}, pulled from CIWQS each quarter. Bay-side basins also learn from the 2016-17 feed archive's flags; the Westside does not, because those flags lag the rain.</p></div>
-<div class="card"><b>The choice</b><p class="fine">A leaderboard fit {n_rows} combinations of model family, rain gauge and regularisation per basin, judged by leave-one-season-out cross-validation before the holdout and then by holdout ranking. The weights model won every basin on the holdout and became S2, the {esc(W["s2"])}; {esc(W["s3"])} (S3) and {esc(W["s4"])} (S4) were added; the set was promoted on {esc(promoted)}.</p></div>
+<div class="card"><b>The choice</b><p class="fine">A leaderboard fit {n_rows} combinations of model family, rain gauge and regularisation per basin, judged by leave-one-season-out cross-validation before the holdout and then by holdout ranking. The weights model won every basin on the holdout and became S2 ({esc(W["s2"])}); {esc(W["s3"])} (S3) and {esc(W["s4"])} (S4) were added; the set, {esc(set_words(sv["name"]))}, was promoted on {esc(promoted)}.</p></div>
 <div class="card"><b>What is kept</b><p class="fine">The retired set, {esc(retired_words or "—")} <span class="mute">(stored as {esc(retired or "—")})</span>, and {others} other candidate sets stay on disk with their own scorecards, so the Model check can grade them on the same days; each has its own S2 page, listed with <a href="{INDEX_URL}">every report</a>. Nothing is retrained on the fly: the pickles change only at a promotion.</p></div>
 </div></section>
 
 <section id="more"><h2>Deeper</h2><p class="lead">
-<a href="{STAGES_URL}">The forecast, stage by stage</a> (how good each stage is) · <a href="/reports/{RI.explorer_file(sv["name"])}">{esc(RI.EXPLORER_TITLE)}: {esc(RI.SERVED_WORDS)}</a> (its weights, a what-if editor) · <a href="/reports/{RI.STAGE2}">{esc(RI.TITLES[RI.STAGE2])}</a> · <a href="{INDEX_URL}">Every report</a>, current and archived · <a href="/forecast">The forecast</a></p></section>
+<a href="{STAGES_URL}">The forecast, stage by stage</a> (how good each stage is) · <a href="/reports/{RI.explorer_file(sv["name"])}">{esc(RI.explorer_title(RI.model_set(sv["name"])))}</a> {RI.LIVE_BADGE} (the live forecast's weights, a what-if editor) · <a href="/reports/{RI.STAGE2}">{esc(RI.TITLES[RI.STAGE2])}</a> · <a href="{INDEX_URL}">Every report</a>, current and archived · <a href="/forecast">The forecast</a></p></section>
 </div>{FIT_SCRIPT}</body></html>'''
     return html
 
@@ -956,7 +957,7 @@ svg.tl,svg.lag{display:block;width:100%;height:auto;font-family:Roboto,Arial,san
 .ic{width:1em;height:1em;vertical-align:-.15em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .pointer{font-size:15px;color:#26272a;background:#e8f2fa;border:1px solid #c9dcea;border-radius:12px;padding:10px 14px;margin:8px 0 10px;max-width:900px}.pointer a{color:#0072BC}
 .tw{overflow-x:auto}
-"""
+""" + RI.LIVE_CSS
 
 
 def main(argv=None):
