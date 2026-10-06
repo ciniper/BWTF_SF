@@ -146,8 +146,9 @@
     <ul class="plain">
       <li><b>Early grades rest on total coliform alone.</b> Before {{ mon(d.first_enterococcus.bay) }} at the bay beaches and {{ mon(d.first_enterococcus.ocean) }} on the ocean beaches,
         the only test was total coliform, which rarely fails. Low failure rates in those years don't mean cleaner water.</li>
-      <li><b>E. coli is judged more strictly here than in SFPUC's reports.</b> The report card uses {{ d.ecoli.report_card_limit }} per 100 mL.
-        SFPUC's own monthly reports used {{ d.ecoli.sfpuc_limit }}. {{ "{:,}".format(d.ecoli.between) }} of {{ "{:,}".format(d.ecoli.results) }} E. coli results fall in between: they count as
+      <li><b>E. coli is judged more strictly here than in SFPUC's reports.</b> The report card uses {{ d.ecoli.report_card_limit }} per 100 mL, which is EPA's
+        1986 limit for freshwater beaches; California's beach rules set no E. coli limit. SFPUC's monthly reports apply {{ d.ecoli.sfpuc_limit }}, the state's
+        fecal coliform limit, to E. coli. {{ "{:,}".format(d.ecoli.between) }} of {{ "{:,}".format(d.ecoli.results) }} E. coli results fall in between: they count as
         failures here, but not in SFPUC's reports. This affects 2002 – Mar 2021 and the “any indicator” grade.</li>
       <li><b>The stricter total coliform limit only applies from {{ mon(d.datasf_indicators["Fecal coliform"].first) }}.</b> Total coliform fails at 1,000 instead of 10,000 when fecal coliform is over
         a tenth of it. That needs a fecal result from the same sample, which exists only since fecal coliform testing began.</li>
