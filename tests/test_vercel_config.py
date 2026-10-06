@@ -21,10 +21,12 @@ def test_exclude_files_fits_vercels_schema():
 
 def test_the_skip_rule_compares_with_the_last_deployment():
     """A push of many commits must deploy when any of them changes the app, not only the last one: the skip rule diffs
-    against the last deployed commit (VERCEL_GIT_PREVIOUS_SHA), falling back to the parent; a diff that cannot run
-    (the previous commit outside Vercel's shallow clone) exits non-zero, which builds."""
+    against the last deployed commit (VERCEL_GIT_PREVIOUS_SHA), falling back to the parent. Vercel reads the exit code
+    as 0 = skip, 1 = build and anything else = a FAILED deployment, so every error must become 1: a diff that cannot run
+    (the previous commit is outside Vercel's shallow clone: git exits 128, which failed the 2026-10-05 deploy) builds."""
     cmd = CONFIG["ignoreCommand"]
     assert cmd.startswith('git diff --quiet "${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}" HEAD -- . '), cmd
+    assert cmd.endswith(" || exit 1"), "an error exit other than 1 fails the deployment"
     assert len(cmd) <= 256, len(cmd)
 
 
