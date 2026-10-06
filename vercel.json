@@ -7,7 +7,7 @@
       "design/**": true
     }
   },
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- . ':(exclude)TODO.md' ':(exclude)docs' ':(exclude)tests' ':(exclude)**/*.md'",
+  "ignoreCommand": "git diff --quiet \"${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}\" HEAD -- . ':(exclude)TODO.md' ':(exclude)docs' ':(exclude)tests' ':(exclude)**/*.md'",
   "functions": {
     "app/wsgi.py": {
       "maxDuration": 60,

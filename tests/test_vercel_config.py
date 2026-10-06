@@ -19,6 +19,15 @@ def test_exclude_files_fits_vercels_schema():
             assert len(fn.get(key, "")) <= 256, f"{name}.{key} is {len(fn[key])} characters; Vercel's limit is 256"
 
 
+def test_the_skip_rule_compares_with_the_last_deployment():
+    """A push of many commits must deploy when any of them changes the app, not only the last one: the skip rule diffs
+    against the last deployed commit (VERCEL_GIT_PREVIOUS_SHA), falling back to the parent; a diff that cannot run
+    (the previous commit outside Vercel's shallow clone) exits non-zero, which builds."""
+    cmd = CONFIG["ignoreCommand"]
+    assert cmd.startswith('git diff --quiet "${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}" HEAD -- . '), cmd
+    assert len(cmd) <= 256, len(cmd)
+
+
 def test_offline_stage_data_is_not_bundled():
     glob = CONFIG["functions"]["app/wsgi.py"]["excludeFiles"]
     assert glob.startswith("{") and glob.endswith("}") and "{" not in glob[1:-1], "one flat brace list"
