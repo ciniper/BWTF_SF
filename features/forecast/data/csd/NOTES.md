@@ -15,7 +15,7 @@ identical). See "Refresh log" at the end.
 |---|---|---|
 | `sf_csd_events.csv` | 1,104 events | Per-event records, modern format (date, outfall, start time, duration, volume) |
 | `sf_csd_monthly_coverage.csv` | 327 facility-months | Month-by-month coverage/status grid — use this to distinguish "no event" from "no data" |
-| `sf_csd_events_bayside_legacy_2013_2016.csv` | 115 rows | Bayside legacy format (2013 – Sep 2016): per-day discharge hours + count; **no volumes** |
+| `pre2018/` | 158 + 212 rows | The older daily-total reports, Mar 2011 → the modern format (added 2026-10-06; `pre2018/NOTES.md`): Westside per outfall per day with hours + volume (Mar 2011 – Dec 2017), Bayside per outfall group per day with hours + count, **no volumes** (Mar 2011 – Sep 2016; the old `sf_csd_events_bayside_legacy_2013_2016.csv` moved there and gained Feb 2014). Shown on the Discharge Ledger; **not read by the forecast** |
 
 ## Coverage (per-event with volumes: `sf_csd_events.csv`)
 
@@ -30,10 +30,12 @@ external validation.
 
 ## Known gaps
 
-1. **Oceanside per-event data Jan 2013 – Dec 2017 does not exist on CIWQS.**
-   Under the 2009 permit, SFPUC's monthly filings reported only a *count* of CSODs
-   per month (cover-letter narrative; scanned PDFs). Per-event Westside tables begin
-   with the Jan 2018 SMR. The underlying telemetry exists at SFPUC (their tables cite
+1. **Oceanside per-EVENT data (start times) before Jan 2018 does not exist on CIWQS.**
+   Correction 2026-10-06: the filings are not counts only. Every monthly report from
+   Mar 2011 carries a per-outfall, per-DAY "Westside Drainage Area – Wet Weather
+   Discharge Summary" (hours + MG); 2013–2017 are scans. They are transcribed in
+   `pre2018/` (see its NOTES.md). What is still missing is start times, and anything
+   before Mar 2011. The paragraph below is the pre-correction note, kept for history. The underlying telemetry exists at SFPUC (their tables cite
    TELOG/SCADA data tags) → see `records_request_draft.md`. **Two partial substitutes
    (2026-09-29):** the scanned 2013–2017 Oceanside cover letters state a monthly CSD
    count ("There were four combined sewer discharges during this reporting period",

@@ -155,7 +155,7 @@ def registry(include_supabase: bool = True) -> dict:
             "repo file", first=prov["floor"], last=prov["end"], cadence="one-off (Sep 2026)",
             stored="features/forecast/data/sfpuc_stardb_2000_2020/ (60,574 results); the PDF in the chapter's data archive",
             used_by=["Samples", "Graphs", "Site Report Card"],
-            note=f"Enterococcus and E. coli from {prov['entero_from']} at the bay stations and {prov['entero_from_ocean']} on the ocean beaches; E. coli in place of fecal coliform until Aug 2020"))
+            note=f"Enterococcus and E. coli from {prov['entero_from']} at the bay stations and {prov['entero_from_ocean']} on the ocean beaches; E. coli in place of fecal coliform until Mar 2021"))
     fs_lo, fs_hi = _csv_span(DATA / "poobot" / "feed_status.csv", "snapshot")
     ps_lo, ps_hi = _csv_span(DATA / "poobot" / "samples.csv", "sample_date")
     if fs_lo:
@@ -201,14 +201,14 @@ def registry(include_supabase: bool = True) -> dict:
     try:
         import features.discharges.page as dp
         ref, cov = dp._refresh(), dp._coverage()
-        ev_lo, ev_hi = _csv_span(dp._CSV, "event_date")
+        ev_lo, ev_hi = _csv_span(dp.WEST_DAILY, "event_date")[0], _csv_span(dp._CSV, "event_date")[1]
         tiles["state"].append(_entry(
             "CIWQS — SFPUC's monthly self-monitoring reports", "every reported combined sewer discharge: outfall, date, duration, volume",
             "repo file", first=ev_lo, last=f"{cov['through']} (last month filed)", cadence="quarterly, by script (see /records)",
             refreshed=ref.get("refreshed_at"), next_due=ref.get("next_due"),
-            stored="features/forecast/data/csd/ (events + monthly coverage grid); the source PDFs in the chapter's data archive",
-            used_by=["Discharge Ledger", "CSO Forecast (training labels, Model check)", "analysis reports"],
-            note="Bayside per-event tables from Oct 2016, Oceanside from Jan 2018"))
+            stored="features/forecast/data/csd/ (events + monthly coverage grid; daily totals 2011-2017 in pre2018/); the source PDFs in the chapter's data archive",
+            used_by=["Discharge Ledger", "CSO Forecast (training labels, Model check: events only)", "analysis reports"],
+            note="per-event tables from Oct 2016 (Bayside) and Jan 2018 (Oceanside); daily totals before that, back to Mar 2011"))
     except Exception:  # noqa: BLE001
         pass
     try:

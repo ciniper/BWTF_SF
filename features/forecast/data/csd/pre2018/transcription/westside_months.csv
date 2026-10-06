@@ -1,0 +1,83 @@
+year,month,status,month_total_MG,method,source_file,page,note
+2011,3,events,2.887,text_layer,OSP_2011-03_726630_733799_1_OSP_Monthly_WW_Report_March_2011.pdf,,row sums and Total line check
+2011,4,zero,0,hand_read,OSP_2011-04_726631_736765_OSP_Drainage_Summary_201104-4.pdf,2,read by eye (text layer is OCR-garbled)
+2011,5,zero,0.0,text_layer,OSP_2011-05_726632_743317_OSP_Monthly_WW_Report_May_2011.pdf,,row sums and Total line check
+2011,6,events,0.001,text_layer,OSP_2011-06_726633_761836_OSP_Monthly_WW_Report_June_2011.pdf,,row sums and Total line check
+2011,7,zero,0.0,text_layer,OSP_2011-07_726634_775365_OSP_Monthly_WW_Report_July_2011.pdf,,row sums and Total line check
+2011,8,zero,0.0,text_layer,OSP_2011-08_781895_782316_OSP_Monthly_WW_ReportAugust_2011.pdf,,row sums and Total line check
+2011,9,stated_zero,0,,OSP Annual 2011 Report.pdf,,no wet weather report attached to the Sep 2011 filing; the 2011 annual report lists 0 Westside discharges in Sep
+2011,10,events,0.01,text_layer,OSP_2011-10_781897_826810_OSP_Monthly_WW_Report_October_2011.pdf,,row sums and Total line check
+2011,11,zero,0.0,text_layer,OSP_2011-11_781898_836283_OSP_Monthly_WW_Report_November2011.pdf,,row sums and Total line check
+2011,12,zero,0.0,text_layer,OSP_2011-12_781899_854490_OSP_Monthly_WW_Report_December_2011.pdf,,row sums and Total line check
+2012,1,events,56.01,text_layer,OSP_2012-01_781900_877704_OSP_Monthly_WW_Report_January_2012.pdf,,row sums and Total line check
+2012,2,stated_zero,0,,2012 OSP Annual SMR Report.pdf,,the Feb 2012 filing re-attached January's report; the 2012 annual report lists 0 Westside discharges in Feb
+2012,3,events,53.437,text_layer,OSP_2012-03_781902_937404_OSP_Monthly_WW_Report_March_2012.pdf,,row sums and Total line check
+2012,4,events,4.227,text_layer,OSP_2012-04_781903_953445_SF_OSP_April_SMR_2012.pdf,,row sums and Total line check
+2012,5,zero,0.0,text_layer,OSP_2012-05_781904_977948_SF_OSP_May_SMR_2012.pdf,,row sums and Total line check
+2012,6,zero,0.0,text_layer,OSP_2012-06_781905_996226_SF_OSP_June_SMR_2012.pdf,,row sums and Total line check
+2012,7,zero,0.0,text_layer,OSP_2012-07_781906_1017840_SF_OSP_July_SMR_2012.pdf,,row sums and Total line check
+2012,8,zero,0.0,text_layer,OSP_2012-08_781907_1027906_SF_OSP_SMR_August_2012.pdf,,row sums and Total line check
+2012,9,zero,0.0,text_layer,OSP_2012-09_781908_1068220_SF_OSP_September_SMR_2012.pdf,,row sums and Total line check
+2012,10,zero,0.0,text_layer,OSP_2012-10_781909_1095010_SF_OSP_October_SMR_2012.pdf,,row sums and Total line check
+2012,11,events,42.745,hand_read,OSP_2012-11_781910_1128647_SF_OSP_November__2012_SMR-DMR.pdf,16,rows and Total line check
+2012,12,basin_days_esmr,,esmr_analytical,OSP 12-2012 Cvr.pdf,,per-outfall Discharge Summary not attached to the Dec 2012 filing; cover letter: 5 CSODs this month
+2013,1,zero,0,hand_read,OSP_2013-01_781912_1203349_SFPUC_OSP_SMR-DMR_January_2013.pdf,6,read from contact sheet
+2013,2,zero,0,hand_read,OSP_2013-02_781913_1228300_SF_Oceanside_Plant_Feb_2013_SMR-DMR.pdf,13,read from contact sheet
+2013,3,zero,0,hand_read,OSP_2013-03_781914_1255121_OSP_SMR_03-13.pdf,13,read from contact sheet
+2013,4,zero,0,hand_read,OSP_2013-04_781915_1273191_OSP_04-13_SMR.pdf,13,read from contact sheet
+2013,5,zero,0,hand_read,OSP_2013-05_781916_1301014_OSP_05-13_SMR.pdf,13,read from contact sheet
+2013,6,zero,0,hand_read,OSP_2013-06_781917_1319647_Oceanside_Monitoring_Report_June_2013.pdf,13,read from contact sheet
+2013,7,zero,0,hand_read,OSP_2013-07_781918_1345332_OSP_7-13_SMR.pdf,13,read from contact sheet
+2013,8,zero,0,hand_read,OSP_2013-08_781919_1345337_OSP_8-13_SMR.pdf,13,read from contact sheet
+2013,9,zero,0,hand_read,OSP_2013-09_781920_1352177_OSP_9-13_SMR.pdf,13,read from contact sheet
+2013,10,zero,0,hand_read,OSP_2013-10_781921_1363836_OSP_10-13_SMR.pdf,22,read from contact sheet
+2013,11,events,1.710,hand_read,OSP_2013-11_781922_1370434_OSP_11-13_SMR.pdf,13,rows and Total line check
+2013,12,zero,0,hand_read,OSP_2013-12_781923_1407301_OSP_12-13_SMR.pdf,13,read from contact sheet
+2014,1,zero,0,hand_read,OSP_2014-01_781924_1405342_OSP_1-2014_SMR.pdf,13,read from contact sheet
+2014,2,events,33.330,hand_read,OSP_2014-02_781925_1418127_OSP_2-14_SMR.pdf,13,rows and Total line check
+2014,3,zero,0,hand_read,OSP_2014-03_781926_1431206_OSP_3-14_SMR.pdf,13,read from contact sheet
+2014,4,events,0.001,hand_read,OSP_2014-04_781927_1452096_OSP_4-14_SMR.pdf,13,rows and Total line check
+2014,5,zero,0,hand_read,OSP_2014-05_781928_1466413_OSP_5-14_SMR.pdf,13,read from contact sheet
+2014,6,zero,0,hand_read,OSP_2014-06_781929_1480929_OSP_6-14_SMR.pdf,13,read from contact sheet
+2014,7,zero,0,hand_read,OSP_2014-07_781930_1494708_OSP_7-14_SMR.pdf,16,read from contact sheet
+2014,8,zero,0,hand_read,OSP_2014-08_781931_1507842_OSP_8-14_SMR.pdf,13,read from contact sheet
+2014,9,zero,0,hand_read,OSP_2014-09_1495963_1520746_OSP_9-14_SMR.pdf,5,read from contact sheet
+2014,10,zero,0,hand_read,OSP_2014-10_1509918_1530354_OSP_10-14_SMR.pdf,5,read from contact sheet
+2014,11,zero,0,hand_read,OSP_2014-11_1523001_1543280_OSP_11-14_SMR.pdf,5,read from contact sheet
+2014,12,events,96.58,hand_read,OSP_2014-12_1531358_1564422_OSP_12-14_SMR.pdf,11,Dec 11 Lake Merced/Vicente/Lincoln printed NA (unmeasured discharge); other rows and totals check
+2015,1,zero,0,hand_read,OSP_2015-01_1547109_1581137_OSP_1-15_SMR.pdf,5,read from contact sheet
+2015,2,events,1.02,hand_read,OSP_2015-02_1568767_1595710_OSP_2-15_SMR.pdf,5,rows and Total line check
+2015,3,zero,0,hand_read,OSP_2015-03_1583387_1613048_OSP_3-15_SMR.pdf,7,read from contact sheet
+2015,4,events,0.002,hand_read,OSP_2015-04_1598402_1630780_OSP_4-15_SMR.pdf,5,rows and Total line check
+2015,5,zero,0,hand_read,OSP_2015-05_1616321_1645332_OSP_5-15_SMR.pdf,5,read from contact sheet
+2015,6,events,0.001,hand_read,OSP_2015-06_1636866_1667360_OSP_6-15_SMR_rev_08-17.pdf,7,rows and Total line check
+2015,7,zero,0,hand_read,OSP_2015-07_1648059_1669163_OSP_7-15_SMR.pdf,5,read from contact sheet
+2015,8,zero,0,hand_read,OSP_2015-08_1662469_1682389_OSP_8-15_SMR.pdf,5,read from contact sheet
+2015,9,zero,0,hand_read,OSP_2015-09_1673268_1693281_OSP_9-15_SMR.pdf,7,read from contact sheet
+2015,10,zero,0,hand_read,OSP_2015-10_1684425_1705405_OSP_10-15_SMR.pdf,5,read from contact sheet
+2015,11,zero,0,hand_read,OSP_2015-11_1696794_1714193_OSP_11-15_SMR.pdf,5,read from contact sheet
+2015,12,events,2.690,hand_read,OSP_2015-12_1709980_1731817_OSP_12-15_SMR.pdf,11,rows and Total line check
+2016,1,events,24.673,hand_read,OSP_2016-01_1721777_1751497_OSP_1-16_SMR.pdf,9,rows and Total line check
+2016,2,events,0.012,hand_read,OSP_2016-02_1734601_1759540_OSP_2-16_SMR.pdf,5,rows and Total line check
+2016,3,events,24.038,hand_read,OSP_2016-03_1752174_1770989_OSP_3-16_SMR.pdf,11,rows and Total line check
+2016,4,zero,0,hand_read,OSP_2016-04_1762316_1784998_OSP_4-16_SMR.pdf,5,read from contact sheet
+2016,5,zero,0,hand_read,OSP_2016-05_1775124_1792614_OSP_5-16_SMR.pdf,5,read from contact sheet
+2016,6,zero,0,hand_read,OSP_2016-06_1786157_1810016_OSP_6-16_SMR.pdf,7,read from contact sheet
+2016,7,zero,0,hand_read,OSP_2016-07_1797830_1822560_OSP_7-16_SMR.pdf,5,read from contact sheet
+2016,8,zero,0,hand_read,OSP_2016-08_1811129_1832364_OSP_8-16_SMR.pdf,5,read from contact sheet
+2016,9,zero,0,hand_read,OSP_2016-09_1826320_1845392_OSP_9-16_SMR.pdf,7,read from contact sheet
+2016,10,events,0.081,hand_read,OSP_2016-10_1835660_1859002_OSP_10-16_SMR.pdf,9,form has only 30 rows (no Oct 31 row); rows and Total line check
+2016,11,events,0.01471,hand_read,OSP_2016-11_1847716_1868737_OSP_11-16_SMR.pdf,9,rows and Total line check
+2016,12,events,11.750,hand_read,OSP_2016-12_1860022_1883215_OSP_12-16_SMR.pdf,11,rows and Total line check
+2017,1,events,30.500,hand_read,OSP_2017-01_1871743_1896969_OSP_1-17_SMR.pdf,9,rows and Total line check
+2017,2,events,11.844,hand_read,OSP_2017-02_1884832_1907122_OSP_2-17_SMR.pdf,9,rows and Total line check
+2017,3,events,5.444,hand_read,OSP_2017-03_1897493_1919575_OSP_3-17_SMR.pdf,11,rows and Total line check
+2017,4,events,1.053,hand_read,OSP_2017-04_1909267_1932373_OSP_4-17_SMR.pdf,9,rows and Total line check
+2017,5,zero,0,hand_read,OSP_2017-05_1921433_1943433_OSP_5-17_SMR.pdf,5,read from contact sheet
+2017,6,zero,0,hand_read,OSP_2017-06_1934509_1957934_OSP_6-17_SMR.pdf,7,read from contact sheet
+2017,7,zero,0,hand_read,OSP_2017-07_1949531_1969059_OSP_7-17_SMR.pdf,5,read from contact sheet
+2017,8,zero,0,hand_read,OSP_2017-08_1960344_1979054_OSP_8-17_SMR.pdf,5,read from contact sheet
+2017,9,zero,0,hand_read,OSP_2017-09_1971144_1989771_OSP_9-17_SMR.pdf,7,read from contact sheet
+2017,10,zero,0,hand_read,OSP_2017-10_1980576_2004830_OSP_10-17_SMR.pdf,5,read from contact sheet
+2017,11,events,14.794,hand_read,OSP_2017-11_1992087_2047607_OSP_11-17_SMR-1.pdf,9,rows and Total line check
+2017,12,zero,0,hand_read,OSP_2017-12_2019032_2029178_OSP_12-17_SMR.pdf,7,new Oceanside Basin CSD Summary layout (start time + duration); TOTAL 0

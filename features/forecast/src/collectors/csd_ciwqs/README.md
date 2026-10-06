@@ -22,6 +22,13 @@ python aggregate.py        # dedupe/normalize -> sf_csd_events.csv + coverage gr
 python parse_old_sep.py    # optional: legacy Bayside format (2013 - Sep 2016), hours/counts only
 ```
 
+Pre-modern record (2026-10-06): the daily-total reports Mar 2011 → Sep 2016 (Bayside) /
+Dec 2017 (Westside) are transcribed into `data/csd/pre2018/` — text PDFs parsed, scans read by
+eye, every row with its source file and page. They are fixed history, so there is no refresh:
+`build_pre2018.py` rebuilds the published CSVs from `pre2018/transcription/`, and
+`qc_pre2018.py` reruns the checks into `qc_summary.json` (shown on `/discharges/reporting`).
+See `data/csd/pre2018/NOTES.md`.
+
 Archive step (2026-09-29, `archive_pdfs.py`): after `harvest_index.py`, run
 `python archive_pdfs.py --from-year 2013` in `features/forecast/data/csd/pdf_archive/`
 to keep the summary-type attachments themselves (the evidence behind every row)

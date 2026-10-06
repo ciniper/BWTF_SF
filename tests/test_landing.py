@@ -78,7 +78,7 @@ def test_live_facts_replace_statics_and_slow_or_failing_sources_keep_them():
     rows = {r["href"]: r for h in hubs for r in h["rows"]}
     assert rows["/forecast"]["fact"] == "today 4% risk" and rows["/forecast"]["live"] is True
     assert rows["/graphs"]["fact"] == "any site · all indicators" and rows["/graphs"]["live"] is False
-    assert rows["/discharges"]["fact"] == "filed with regulators · since 2016"
+    assert rows["/discharges"]["fact"] == "filed with regulators · since 2011"
     assert L._live_facts(sources={}) == {}
 
 

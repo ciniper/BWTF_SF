@@ -102,6 +102,7 @@ if __name__ == '__main__':
             print('ERR', f, e)
     # keep only pre-Oct-2016 (modern covers 2016-10+)
     all_recs = [r for r in all_recs if r['date'] < '2016-10']
+    # its output now lives at data/csd/pre2018/transcription/bayside_parsed_rows_2013_2016.csv (build_pre2018.py reads it)
     with open('sf_csd_events_bayside_legacy_2013_2016.csv', 'w', newline='') as fo:
         w = csv.DictWriter(fo, fieldnames=['date','outfall_group','discharge_hours','discharge_count','source'])
         w.writeheader(); w.writerows(all_recs)

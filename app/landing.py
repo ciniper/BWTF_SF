@@ -67,8 +67,8 @@ HUBS = [
         "primary": None,
         "rows": [
             ("/discharges", "Discharge Ledger",
-             "Every combined-sewer discharge SFPUC reported to regulators since 2016 — outfall, duration, and gallons — by location and year.",
-             "filed with regulators · since 2016"),
+             "Every combined-sewer discharge SFPUC reported to regulators since 2011 — outfall, duration, and gallons — by location and year.",
+             "filed with regulators · since 2011"),
             ("/postings", "Beach Postings",
              "Every beach advisory San Francisco filed with the State since 1999 — when each beach was posted, for how long, and why — from the State Water Board's BeachWatch record.",
              "filed with the State · since 1999"),

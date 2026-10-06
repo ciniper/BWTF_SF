@@ -68,7 +68,7 @@
       <div class="fact"><span>Published by</span><b>SFPUC, filed with the SF Bay Regional Water Board</b></div>
       <div class="fact"><span>Where</span><b>CIWQS (state water-quality database)</b></div>
       <div class="fact"><span>Format</span><b>Monthly PDF reports</b></div>
-      <div class="fact"><span>Covers</span><b>Oct 2016 → {{ d.through or "today" }}<br><span class="fine">Westside from Jan 2018</span></b></div>
+      <div class="fact"><span>Covers</span><b>Mar 2011 → {{ d.through or "today" }}<br><span class="fine">single events from Oct 2016 (Bayside) and Jan 2018 (Westside), daily totals before</span></b></div>
       {% if d.refreshed_at %}<div class="fact"><span>Last refreshed</span><b>{{ d.refreshed_at }}</b></div>{% endif %}
       {% if d.next_due %}<div class="fact{% if d.overdue %} due{% endif %}"><span>{% if d.overdue %}Refresh overdue since{% else %}Next refresh due{% endif %}</span><b>{{ d.next_due }}</b></div>{% endif %}
     </div>
@@ -87,7 +87,9 @@
       <li><b>Open the report and download its PDF attachments.</b> The report's detail page lists them; downloads need no
         account. If a month was amended, use the newest attachment.</li>
       <li><b>Find the discharge table.</b> Bayside: the <i>FINAL WW Summary</i> / <i>CSD Summary</i> pages. Westside:
-        <i>Oceanside Basin CSD Summary</i> (called <i>Westside CSD Summary</i> from May 2026 on).</li>
+        <i>Oceanside Basin CSD Summary</i> (called <i>Westside CSD Summary</i> from May 2026 on). Before 2018 the Westside
+        table is the <i>Wet Weather Discharge Summary</i> inside the monthly report, scanned for 2013–2017; before Oct 2016
+        Bayside's is the <i>Discharge Summary</i> in the monthly <i>Wet Weather Report</i>, sometimes named <i>WW Report</i>.</li>
       <li><b>Copy one row per event:</b> date, outfall, start time, duration and volume in million gallons. A second
         discharge on the same day is its own row. Keep a volume printed as <code>&lt;0.01</code> as “less than”.</li>
       <li><b>Trust the daily rows, not the TOTAL row.</b> SFPUC's spreadsheet template sometimes carries a stale monthly
@@ -115,10 +117,12 @@ python aggregate.py                   # 5. clean, check totals, build the CSVs</
     <p style="margin:0;font-size:14px;color:#3f474d">Quarterly, around Mar, Jun, Sep and Dec 15. SFPUC files each month's
       report 4–6 weeks after the month ends, so the most recent month or two are never there yet.</p>
 
-    <div class="callout"><svg class="ic"><use href="#i-circle-alert"/></svg><div><b>Known gaps.</b> Westside per-event
-      records before Jan 2018 were never filed (the old permit asked only for monthly counts), and Bayside before Oct 2016
-      has discharge hours but no volumes. Both exist at SFPUC; see <a href="#requests">records that aren't public</a>.
-      Don't use the state's data.ca.gov eSMR export to find reports: it skipped SFPUC's Nov–Dec 2025 filings entirely.</div></div>
+    <div class="callout"><svg class="ic"><use href="#i-circle-alert"/></svg><div><b>Known gaps.</b> Nothing is online
+      before Mar 2011. Before Jan 2018 the Westside filed daily totals per outfall, with no start times, and before Oct 2016
+      Bayside filed hours per group of outfalls, with no volumes. Every difference is on
+      <a href="/discharges/reporting">How discharge reporting changed</a>; the missing details may exist at SFPUC (see
+      <a href="#requests">records that aren't public</a>). Don't use the state's data.ca.gov eSMR export to find reports:
+      it skipped SFPUC's Nov–Dec 2025 filings entirely.</div></div>
   </section>
 
   {% set p = fresh.postings or {} %}
@@ -201,11 +205,13 @@ python tests/test_beachwatch.py</code></pre>
     <div class="rec-head"><span class="ictile"><svg class="ic"><use href="#i-inbox"/></svg></span><h2>Records that aren't public</h2></div>
     <p class="rec-sub">When a record exists at an agency but isn't published, ask for it under the California Public Records Act.</p>
     <ol class="steps">
-      <li><b>Ask the agency that holds it.</b> For per-event discharges before 2018 (Westside) and discharge volumes
-        before Oct 2016 (Bayside), that is SFPUC, not the Regional Board, which never received them.</li>
+      <li><b>Ask the agency that holds it.</b> For discharge start times before 2018 (Westside), discharge volumes
+        before Oct 2016 (Bayside) and anything before Mar 2011, that is SFPUC.</li>
       <li><b>Be specific:</b> permit numbers, outfall ids, date range and the format you want (the modern monthly
         summary tables are the easiest to ask for, because SFPUC has already produced them for older months once).</li>
-      <li><b>Send it through SFPUC's public records request process</b>, asking for electronic copies. Agencies generally
+      <li><b>Send it through San Francisco's <a href="https://sanfrancisco.nextrequest.com" target="_blank" rel="noopener">records portal</a></b>
+        (department “PUC - Public Utilities Commission”), asking for electronic copies. For reports filed before March 2011, also ask
+        the Regional Board at <code>RB2-PRA-Request@Waterboards.ca.gov</code>. Agencies generally
         have 10 days to respond. If part is refused, ask them to cite the exemption and release the rest.</li>
     </ol>
     <p style="margin:12px 0 0;font-size:14px;color:#3f474d">A ready-to-review draft is in

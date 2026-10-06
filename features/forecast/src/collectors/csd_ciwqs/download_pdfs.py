@@ -11,6 +11,7 @@ def want(a):
     n = a['name'].lower()
     if a['attType'] == '2': return True
     if 'wet weather' in n: return True
+    if re.search(r'\bww\b', n): return True        # "February 2014 Bayside WW Report.pdf": missed until 2026-10-06
     if re.search(r'smr[- ]?dmr', n): return True
     return False
 

@@ -108,7 +108,7 @@ during rollout; the bacteria samples remain the *impact* ground truth.
    `src/collectors/historical.py`). Unlocks 4 more wet seasons: sample-day
    labels 2016-10 → 2020-06 exist in the CSD data already.
 2. **Hourly rain features** from Open-Meteo historical (aligned to gauge days).
-3. Optional back-extension: `data/csd/sf_csd_events_bayside_legacy_2013_2016.csv`
+3. Optional back-extension: `data/csd/pre2018/` (Bayside group-days 2011–2016 and Westside outfall-days 2011–2017, added 2026-10-06; was `sf_csd_events_bayside_legacy_2013_2016.csv`)
    gives Bayside occurrence (hours, no volumes) back to 2013 for Stage 1
    occurrence training only.
 

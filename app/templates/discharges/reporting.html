@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link rel="icon" href="{{ asset('brand/favicon.ico') }}"><link rel="apple-touch-icon" sizes="144x144" href="{{ asset('brand/bwtf_144x144.png') }}">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How Discharge Reporting Changed — Surfrider SF Blue Water Task Force</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ asset('brand.css') }}">
+<style>
+  .wrap{max-width:var(--page-w);margin:0 auto;padding:24px}
+  .jump{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 18px}
+  .jump a{display:inline-flex;align-items:center;padding:9px 16px;border-radius:999px;border:2px solid #d9e4e8;background:#fff;color:#26272a;font-weight:700;font-size:13.5px;text-decoration:none}
+  .jump a:hover{border-color:#0072BC;color:#0072BC}
+  section.rec{background:#fff;border:1px solid #d9e4e8;border-radius:20px;padding:22px 24px;margin:0 0 18px;scroll-margin-top:16px}
+  section.rec p,section.rec ol,section.rec ul{max-width:92ch}
+  .rec h2{margin:0 0 4px;font-size:21px;font-weight:900}
+  .rec-sub{margin:0 0 14px;color:#54576F;font-size:14px}
+  h3{font-size:15px;margin:20px 0 8px;color:#26272a}
+  p,li{font-size:14px;color:#3f474d}
+  ol.steps{margin:0;padding:0;list-style:none;counter-reset:s}
+  ol.steps > li{position:relative;padding:0 0 12px 40px;counter-increment:s}
+  ol.steps > li::before{content:counter(s);position:absolute;left:0;top:-1px;width:27px;height:27px;border-radius:50%;background:#0072BC;color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center}
+  ol.steps > li b,ul.plain li b{color:#26272a}
+  ul.plain{margin:0;padding-left:20px}
+  ul.plain li{margin:0 0 6px}
+  .tblwrap{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;margin:4px 0 6px}
+  th{text-align:left;color:#54576F;font-weight:700;padding:8px 10px;border-bottom:2px solid #d9e4e8;vertical-align:bottom}
+  td{padding:8px 10px;border-bottom:1px solid #eef2f4;vertical-align:top;color:#3f474d}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  td.when{font-weight:700;color:#26272a;white-space:nowrap}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;background:#eef2f4;border-radius:5px;padding:1px 5px;word-break:break-word;overflow-wrap:anywhere}
+  .foot{color:#8a949b;font-size:13px;margin-top:6px}
+  @media (max-width:560px){.wrap{padding:16px}section.rec{padding:18px 16px}}
+</style>
+</head>
+<body>
+{% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
+{{ topbar() }}
+<div class="wrap">
+  {% call page_head("How discharge reporting changed", "What SFPUC filed from 2011 to now, where the record is uneven, and how we check it.", "record", link=("/discharges", "Back to the Discharge Ledger")) %}
+    <p>The Discharge Ledger joins three kinds of report. They don't all measure the same thing, so a 2013 figure and a
+    2023 figure aren't always comparable. This page lists every difference we know of, then how the older records are checked.</p>
+  {% endcall %}
+
+  <nav class="jump" aria-label="Sections">
+    <a href="#periods">What each period contains</a>
+    <a href="#uneven">Where the record is uneven</a>
+    <a href="#qc">How the data is checked</a>
+  </nav>
+
+  {% set q = qc %}
+  <section class="rec" id="periods">
+    <h2>What each period contains</h2>
+    <p class="rec-sub">San Francisco has two sewer systems with their own permits and their own monthly reports to the
+    Regional Water Board. The Pacific side has 7 outfalls, from Lake Merced to Sea Cliff. The Bay side has 27.</p>
+    <div class="tblwrap"><table>
+      <thead><tr><th>Period</th><th>Pacific outfalls</th><th>Bay outfalls</th></tr></thead>
+      <tbody>
+        <tr><td class="when">Before Mar 2011</td><td>Nothing filed online</td><td>Nothing filed online</td></tr>
+        <tr><td class="when">Mar 2011 – Sep 2016</td><td>Each outfall, each day: hours and volume</td><td>Groups of outfalls, each day: hours and number of discharges. No volumes.</td></tr>
+        <tr><td class="when">Oct 2016 – Dec 2017</td><td>Each outfall, each day: hours and volume</td><td>Each outfall, each discharge: start time, duration and volume</td></tr>
+        <tr><td class="when">Jan 2018 on</td><td>Each outfall, each discharge: start time, duration and volume</td><td>Each outfall, each discharge: start time, duration and volume</td></tr>
+      </tbody>
+    </table></div>
+    <h3>How the ledger counts</h3>
+    <ul class="plain">
+      <li><b>One row is one discharge.</b> In the newer reports that is one outfall's discharge. In the older ones it is one
+        outfall's day on the Pacific side, or one group's day on the Bay side.</li>
+      <li><b>A discharge that runs past midnight</b> is one row in the newer reports and two in the older ones.</li>
+      <li><b>Bay volumes start in Oct 2016.</b> Before that, Bay outfalls show hours only, and yearly volume totals that include the Bay are marked incomplete.</li>
+      <li><b>The forecast doesn't use the older records yet.</b> Its training and the Model check read the newer per-event record only.</li>
+    </ul>
+  </section>
+
+  <section class="rec" id="uneven">
+    <h2>Where the record is uneven</h2>
+    <p class="rec-sub">Read from SFPUC's own filings, its annual reports, and other public records.</p>
+
+    <h3>Missing or partial months, Pacific side</h3>
+    <ul class="plain">
+      {% for g in west_gaps %}<li><b>{{ g.month }}:</b> {{ g.note }}{% if g.status == "basin_days_esmr" %}. The ledger uses the state's tabular data for that month's five discharge days, which gives a daily total for the whole basin.{% endif %}</li>{% endfor %}
+      <li><b>Dec 2014:</b> Lake Merced, Vicente and Lincoln are printed “NA” on 11 Dec. A discharge happened but wasn't measured, and SFPUC's month total leaves that day out.</li>
+      <li><b>Jun 2015:</b> one dry-weather spill at Sea Cliff 1, about 1,000 gallons from a failed level control, is logged with the wet-weather discharges.</li>
+      <li><b>Oct 2016:</b> the form has only 30 rows, so 31 Oct has no row.</li>
+    </ul>
+
+    <h3>Missing or partial months, Bay side</h3>
+    <ul class="plain">
+      {% for g in bay_gaps %}<li><b>{{ g.month }}:</b> {{ g.note }}.</li>{% endfor %}
+      <li><b>Oct 2011:</b> one brief Southeast discharge on 6 Oct is known only from the narrative. SFPUC couldn't measure it.</li>
+      <li><b>Mar 2011:</b> North Shore shows one discharge where the annual report counts two.</li>
+      <li><b>Feb 2014:</b> added 6 Oct 2026. The attachment is named “WW Report”, and our scraper only looked for “wet weather”.</li>
+    </ul>
+
+    <h3>Different units and definitions</h3>
+    <ul class="plain">
+      <li><b>Hours</b> are decimal through Nov 2012 and hours and minutes after. The ledger converts both to minutes.</li>
+      <li><b>Bay outfall groups changed.</b> In 2011 the Islais Creek group included Evans and Hudson. In 2012 they were split, and in 2013 outfall 031A joined the Islais group.
+        A group of one outfall appears under that outfall. A larger group appears under a combined name such as “CSD-018–028 Mission Creek System”.</li>
+      <li><b>Names changed.</b> Older forms say “CSOD” for an outfall and call CSD-006 “Sea Cliff O.F.”. The ledger uses today's names.</li>
+      <li><b>Page headers can be stale.</b> The Apr 2012 Bay table is headed “March 2012”, and one May 2011 form says “Mary”. The ledger trusts the month the report was filed for.</li>
+    </ul>
+
+    <h3>How SFPUC counted</h3>
+    <ul class="plain">
+      <li><b>Cover letters count discharges, the tables list days.</b> A discharge over two days is one in the letter and two rows in the table. That is why {{ q.counts.westside.within_one }} Pacific months differ by one.</li>
+      <li><b>Counts were sometimes corrected later.</b> The 2016–17 season count fell from 19 to 18 between the March and April 2017 letters.</li>
+      <li><b>Revised tables replace originals.</b> In Sep 2023 SFPUC refiled the Bay tables for Oct 2016 – Oct 2017. The ledger uses the revisions.</li>
+      <li><b>Monthly total rows can be stale.</b> SFPUC's spreadsheet sometimes carries an earlier month's total, so the ledger trusts the daily rows.</li>
+    </ul>
+
+    <h3>Other public records disagree</h3>
+    <p><b>State beach postings.</b> We checked whether the State's BeachWatch record shows a sewage posting at the nearby beaches
+    within two days of each Pacific discharge. Before 2015 most Pacific discharges have no posting of any kind there.</p>
+    <div class="tblwrap"><table style="max-width:420px">
+      <thead><tr><th>Year</th><th class="num">Pacific discharge days</th><th class="num">posted within 2 days</th></tr></thead>
+      <tbody>{% for y, v in q.postings.by_year.items() %}<tr><td class="when">{{ y }}</td><td class="num">{{ v.discharge_days }}</td><td class="num">{{ v.posted }}</td></tr>{% endfor %}</tbody>
+    </table></div>
+    <p><b>The state's tabular data.</b> The state also publishes the numbers SFPUC typed in, including a daily flow at one
+    Pacific monitoring point. Its days line up with discharge days. Its values match the filed volumes in 2011–2013 and
+    from 2017, but mostly not in 2014–2016, so use it to find discharge days, not volumes.</p>
+    <div class="tblwrap"><table style="max-width:420px">
+      <thead><tr><th>Year</th><th class="num">days in both</th><th class="num">volume within 10%</th></tr></thead>
+      <tbody>{% for y, v in q.esmr.by_year.items() %}<tr><td class="when">{{ y }}</td><td class="num">{{ v.days_in_both }}</td><td class="num">{{ v.volumes_within_10pct }}</td></tr>{% endfor %}</tbody>
+    </table></div>
+  </section>
+
+  <section class="rec" id="qc">
+    <h2>How the data is checked</h2>
+    <p class="rec-sub">The older records were typed or read from scanned PDFs, so every month is checked against
+    something produced independently.</p>
+
+    <h3>How to check a month</h3>
+    <ol class="steps">
+      <li><b>Keep the source.</b> Every row names its report file and page, so anyone can open the original.</li>
+      <li><b>Add it up.</b> Each day's outfalls must equal the printed day total, each outfall's days its printed column
+        total, and the whole month the printed month total.</li>
+      <li><b>Compare with SFPUC's own counts.</b> The monthly cover letter and the annual report each state how many
+        discharges happened. A difference of one usually means a discharge that crossed midnight.</li>
+      <li><b>Compare with rain.</b> A discharge needs rain the day before, of or after at the Downtown or Oceanside gauge.
+        A dry day means the row is misdated, or something unusual happened; reread the page and the cover letter.</li>
+      <li><b>Compare with independent signals.</b> From 2004 the city sampled Pacheco, Vicente and Fort Funston only after a
+        Pacific discharge, so a sampling trip with no discharge before it is suspect. The State's postings and the 2016–17
+        archive of SFPUC's live feed are two more checks.</li>
+      <li><b>Have a second person read it.</b> Someone who hasn't seen the first transcription reads every hand-read
+        page, and the two are compared row by row.</li>
+      <li><b>Don't fix the source.</b> Keep what SFPUC printed, including “NA” and typos, and explain it in the row's note.</li>
+    </ol>
+
+    <h3>What we've checked</h3>
+    <div class="tblwrap"><table>
+      <thead><tr><th>Check</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td class="when">Totals</td><td>{{ q.totals.months_checked }} Pacific months have a printed total. The rows match it in
+          {{ q.totals.months_checked - q.totals.mismatches|length }}.{% for m in q.totals.mismatches %} {{ m.month }}: {{ q.totals.explained.get(m.month, "unexplained") }}.{% endfor %}</td></tr>
+        <tr><td class="when">SFPUC's counts, Pacific</td><td>{{ q.counts.westside.agree }} of {{ q.counts.westside.months }} months match exactly,
+          {{ q.counts.westside.within_one }} differ by one{% if q.counts.westside.differences %} ({% for d in q.counts.westside.differences %}{{ d.month }}{% if not loop.last %}, {% endif %}{% endfor %}){% endif %},
+          {{ q.counts.westside.off_by_more }} by more. Every month SFPUC called zero is zero.</td></tr>
+        <tr><td class="when">SFPUC's counts, Bay</td><td>{{ q.counts.bayside.agree }} of {{ q.counts.bayside.months }} months match the annual report's count for every basin.
+          {% for d in q.counts.bayside.differences %}{{ d.month }}: {{ d.parsed }} against {{ d.stated }}. {% endfor %}</td></tr>
+        <tr><td class="when">Rain</td><td>Pacific: {{ q.rain.westside.with_rain }} of {{ q.rain.westside.discharge_days }} discharge days had at least
+          {{ q.rain.threshold_in }} in of rain the day before, of or after.{% for x in q.rain.westside.dry %} The exception is {{ x.date }}, {{ x.rows|join(", ") }} MG, with {{ x.rain_window_in }} in.{% endfor %}
+          Bay: {{ q.rain.bayside.with_rain }} of {{ q.rain.bayside.discharge_days }}.</td></tr>
+        <tr><td class="when">Follow-up sampling</td><td>{{ q.sampling.started_within_3_days_after_an_ocean_beach_discharge }} of {{ q.sampling.episodes }} sampling trips at
+          Pacheco, Vicente and Fort Funston started within 3 days after an Ocean Beach discharge.{% for e in q.sampling.unexplained %} The exception, {{ e.first }}, was sampled during the storm, three days before its discharge.{% endfor %}</td></tr>
+        <tr><td class="when">Live feed archive</td><td>{{ q.poobot.within_2_days_of_a_table_day }} of {{ q.poobot.onsets }} Pacific discharge starts in the volunteer
+          archive of SFPUC's feed ({{ q.poobot.span[0] }} to {{ q.poobot.span[1] }}) fall within 2 days of a discharge day.</td></tr>
+        <tr><td class="when">State postings</td><td>{{ q.postings.posted_within_2_days }} of {{ q.postings.discharge_days_checked }} Pacific discharge days were followed by a sewage
+          posting. The gaps are almost all before 2015 (see above), which points to the posting record, not the discharge record.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Not done yet</h3>
+    <ul class="plain">{% for x in q.not_yet_done %}<li>{{ x }}</li>{% endfor %}</ul>
+
+    <h3>Get the data</h3>
+    <ul class="plain">
+      <li><a href="/discharges/api/csv?set=events" download="sf_csd_events.csv">Events, Oct 2016 on</a></li>
+      <li><a href="/discharges/api/csv?set=westside" download="westside_daily_2011-03_2017-12.csv">Pacific daily totals, Mar 2011 – Dec 2017</a></li>
+      <li><a href="/discharges/api/csv?set=bayside" download="bayside_legacy_2011-03_2016-09.csv">Bay daily totals, Mar 2011 – Sep 2016</a></li>
+      <li>Every transcription, page reference and check is in <code>features/forecast/data/csd/pre2018/</code>; the scripts are
+        <code>build_pre2018.py</code> and <code>qc_pre2018.py</code> beside the CIWQS scraper.</li>
+    </ul>
+  </section>
+
+  <p class="foot">How we get these records: <a href="/records#discharges">the standard operating procedure</a>.</p>
+</div>
+<script src="{{ asset('tables.js') }}" defer></script>
+{{ footer() }}
+{{ tabbar() }}
+</body></html>

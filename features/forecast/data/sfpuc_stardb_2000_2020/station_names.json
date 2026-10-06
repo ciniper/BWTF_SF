@@ -1,0 +1,12 @@
+{
+ "_note": "Readable names for STARDB stations outside shared/stations.py (retired or one-off points), from the export's station_name column.",
+ "BAY#201_SL": "Fort Point",
+ "BAY#202.1_SL": "Coast Guard Station",
+ "BAY#202.2_SL": "Mid Crissy Field Beach",
+ "BAY#202.3_SL": "Crissy Field, west of the tidal channel",
+ "BAY#202_LAGOON": "Crissy Field Lagoon",
+ "BAY#203_SL": "St. Francis Yacht Club",
+ "BAY#300_SL": "Sunnydale",
+ "BAY#301_SL": "Candlestick Fishing Pier",
+ "BAY#301.1_W": "Sunnydale Cove, west of the site"
+}

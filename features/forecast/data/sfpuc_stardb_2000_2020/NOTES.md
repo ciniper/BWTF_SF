@@ -33,9 +33,9 @@ results, 3,312 sample days, 27,088 station-days, 4,602 exceedances.**
   2002-07-01 at the bay stations and 2003-10-02 on the ocean beaches** (Pacheco, Vicente,
   Fort Funston: Dec 2003; 16,731 and 16,730 results) — before that only total coliform was
   run, which is why 2000–2002 show almost no exceedances (0.4–4.8% of results vs 8–12% later).
-  Stations added later start complete: Crissy Field East Apr 2008, Islais Creek and Mission
+  Stations added later start complete: Crissy Field West Apr 2008, Islais Creek and Mission
   Creek Nov 2013. One fecal
-  coliform result. DataSF from Aug 2020 reports fecal coliform (`COLI_FECAL`) where this
+  coliform result. DataSF from Apr 2021 reports fecal coliform (`COLI_FECAL`) where this
   export has E. coli; the standards module carries both limits.
 - **Methods.** Membrane filtration (CFU/100 mL, 10,383 results, to ~2003), then Quantitray /
   Colilert-18 and Enterolert (MPN/100 mL, 50,191). Qualifiers: 19,408 `<` (below detection),
@@ -76,7 +76,7 @@ that starts before 2020-07-27; `features/comparison/comparison.fetch_city_record
 (Samples page, Graphs, sample popover) and `features/site_analysis/page._fetch_rows`
 (Site Report Card) splice them ahead of the API rows. E. coli became a fourth indicator
 on those pages because it is what the city measured in place of fecal coliform until
-August 2020; the Report Card's "routine" flag became a per-year rate so the three
+March 2021; the Report Card's "routine" flag became a per-year rate so the three
 after-discharge stations do not read as routine over 26 years. The forecast does not
 read it yet.
 

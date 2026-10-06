@@ -348,8 +348,16 @@ def handle_page(query, body):
     return 200, "text/html; charset=utf-8", html.encode()
 
 
+def handle_testing(query, body):
+    """How the city's testing changed, 2000 → today (testing_history.json, built by testing_history.py)."""
+    from features.site_analysis import testing_history
+    return 200, "text/html; charset=utf-8", render_template(
+        "site_analysis/testing.html", data=testing_history.load(), routine_per_year=ROUTINE_PER_YEAR).encode()
+
+
 GET_ROUTES = {
     "/analysis": handle_page,
+    "/analysis/testing": handle_testing,
     "/analysis/api/summary": handle_summary,
 }
 POST_ROUTES = {}

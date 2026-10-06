@@ -30,12 +30,12 @@
   .yc b{display:block;font-size:14px;font-variant-numeric:tabular-nums}
   .yc span{font-size:11px;color:#54576F}
 
-  .yrrow{display:flex;align-items:center;gap:10px;height:32px;font-size:13px}
+  .yrrow{display:flex;align-items:center;gap:10px;min-height:32px;font-size:13px}
   .yrrow .yl{width:44px;font-weight:700}
   .yrrow .track{flex:1;position:relative;height:16px}
   .yrrow .vol{position:absolute;top:1px;height:14px;border-radius:4px;background:#0072BC}
   .yrrow .vol.partial{background:repeating-linear-gradient(135deg,#7fa8c9 0 6px,#9dbdd8 6px 12px)}
-  .yrrow .val{width:170px;text-align:right;font-variant-numeric:tabular-nums;color:#3f474d;white-space:nowrap}
+  .yrrow .val{min-width:170px;max-width:52%;text-align:right;font-variant-numeric:tabular-nums;color:#3f474d;line-height:1.25}
   .bar{display:inline-block;height:13px;border-radius:4px;background:#0072BC;vertical-align:middle;margin-right:8px}
   .note{background:#fdf6ec;border:1px solid #ecd9b8;border-radius:12px;padding:12px 16px;font-size:13px;margin:0 0 16px;color:#5a4f3d}
   .foot{color:#8a949b;font-size:13px;margin-top:8px}
@@ -70,13 +70,15 @@
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
 {{ topbar() }}
 <div class="wrap">
-  {% call page_head("Discharge Ledger", "Every combined-sewer discharge SFPUC reported to state regulators since 2016: outfall, start, duration and volume.", "record", link=("/records#discharges", "How we get these records")) %}
+  {% call page_head("Discharge Ledger", "Every combined-sewer discharge SFPUC reported to state regulators since 2011: outfall, duration and volume.", "record", link=("/records#discharges", "How we get these records")) %}
     
     <p>Every combined-sewer discharge into San Francisco waters that SFPUC reported to state
     regulators — outfall, start, duration, and volume — extracted from monthly self-monitoring
     reports filed under the city's two sewer permits. This is the official record of what was
     actually discharged, alongside our real-time detections (<a href="/cso-history">SFPUC Alerts Timeline</a>)
     the bacteria outcomes (<a href="/analysis">Site Report Card</a>) and the signs the public saw (<a href="/postings">Beach Postings</a>).</p>
+    <p>The record goes back to March 2011. Until 2016–2018 the city filed daily totals instead of single events, and the
+    Bay side reported no volumes, so older years count differently. <a href="/discharges/reporting">How reporting changed, and how we check it</a></p>
   {% endcall %}
 
   <div class="tiles" id="tiles"></div>
@@ -88,9 +90,9 @@
 
   <div class="controls">
     <span class="ctl-label">Range:</span>
-    <input type="date" id="startDate" min="2016-10-01">
+    <input type="date" id="startDate" min="2011-03-01">
     <span style="color:#54576F">→</span>
-    <input type="date" id="endDate" min="2016-10-01">
+    <input type="date" id="endDate" min="2011-03-01">
     <button class="group-btn preset" data-years="1">1 year</button>
     <button class="group-btn preset" data-years="3">3 years</button>
     <button class="group-btn preset" data-years="5">5 years</button>
@@ -105,23 +107,24 @@
     <div id="map"></div>
     <p style="font-size:12px;color:#8a949b;margin:8px 0 0">Locations from the NPDES permits' discharge-point tables
     (Oceanside R2-2019, Bayside R2-2013-0029). CSD-043 (Sunnydale) is approximate — the permit table misprints its
-    coordinates — and CSD-119 is plotted with CSD-009 (Baker Street), whose id it duplicates in some monthly reports.</p>
+    coordinates — and CSD-119 is plotted with CSD-009 (Baker Street), whose id it duplicates in some monthly reports.
+    Bay records before Oct 2016 have no volume, and those filed for a group of outfalls aren't placed on the map.</p>
   </div>
 
   <div class="board">
-    <h2>Volume discharged per year <span style="font-weight:600;color:#54576F;font-size:12.5px">(million gallons — hatched years have incomplete coverage)</span></h2>
+    <h2>Volume discharged per year <span style="font-weight:600;color:#54576F;font-size:12.5px">(million gallons — hatched years are missing months or Bay volumes)</span></h2>
     <div id="years" class="loading">Loading the discharge record…</div>
   </div>
 
   <div class="board">
     <h2>By receiving water</h2>
-    <table><thead><tr><th>Receiving water</th><th class="num">events</th><th class="num">total volume</th><th class="num">share</th><th class="num">largest single event</th><th class="num">median duration</th></tr></thead>
+    <table><thead><tr><th>Receiving water</th><th class="num">discharges</th><th class="num">total volume</th><th class="num">share</th><th class="num">largest single event</th><th class="num">median duration</th></tr></thead>
     <tbody id="waters"></tbody></table>
   </div>
 
   <div class="board">
     <h2>All outfalls <span style="font-weight:600;color:#54576F;font-size:12.5px">— click one for its year-by-year trend</span></h2>
-    <table><thead><tr><th>Outfall</th><th>Receiving water</th><th class="num">events</th><th class="num">total volume</th><th class="num">largest event</th></tr></thead>
+    <table><thead><tr><th>Outfall</th><th>Receiving water</th><th class="num">discharges</th><th class="num">total volume</th><th class="num">largest event</th></tr></thead>
     <tbody id="outfalls"></tbody></table>
   </div>
 
@@ -139,22 +142,28 @@
       <button class="group-btn" id="clearSeries">Clear</button>
     </div>
     <div class="chart-wrap"><canvas id="chart"></canvas></div>
-    <p style="font-size:12px;color:#8a949b;margin:8px 0 0">Years where a system filed no per-event reports are omitted (not zero):
-    Oceanside/Pacific outfalls have no data before 2018; hatched years are missing months for at least one facility (see the coverage note above).</p>
+    <p style="font-size:12px;color:#8a949b;margin:8px 0 0">Years without volumes are left out, not drawn as zero: Bay outfalls
+    have no volumes before Oct 2016, and 2016 itself is partial. Records start March 2011.</p>
   </div>
 
   <div class="board">
     <h2>Largest single discharges</h2>
     <table><thead><tr><th>Date</th><th>Outfall</th><th>Receiving water</th><th class="num">volume</th><th class="num">duration</th></tr></thead>
     <tbody id="biggest"></tbody></table>
+    <p style="font-size:12px;color:#8a949b;margin:8px 0 0">Before 2018 a Pacific outfall's volume is its total for the day, marked “day total”.</p>
   </div>
 
   <div class="board">
     <h2>Raw records <span style="font-weight:600;color:#54576F;font-size:12.5px">— the dataset itself, every column · click headers to sort</span></h2>
     <div class="controls" style="margin-bottom:10px">
+      <div class="seg-toggle" id="rawSet">
+        <button class="seg-btn active" data-set="events" data-file="sf_csd_events.csv">Events, 2016 on</button>
+        <button class="seg-btn" data-set="westside" data-file="westside_daily_2011-03_2017-12.csv">Pacific daily, 2011–2017</button>
+        <button class="seg-btn" data-set="bayside" data-file="bayside_legacy_2011-03_2016-09.csv">Bay daily, 2011–2016</button>
+      </div>
       <input type="search" id="rawSearch" placeholder="Filter (outfall, water, date, document…)">
       <span class="legend" id="rawMeta"></span>
-      <a class="dl" href="/discharges/api/csv" download="sf_csd_events.csv"><svg class="ic"><use href="#i-download"/></svg> Download CSV</a>
+      <a class="dl" id="rawDl" href="/discharges/api/csv" download="sf_csd_events.csv"><svg class="ic"><use href="#i-download"/></svg> Download CSV</a>
     </div>
     <table id="rawTbl"><thead><tr></tr></thead><tbody></tbody></table>
   </div>
@@ -179,26 +188,31 @@ function inRange(e) {
 function dateRows() { return EV.filter(inRange); }                     // date filter only
 function rows() { return dateRows().filter(e => !STATE.water || e.water === STATE.water); }
 
+const hasMG = list => list.some(e => e.mg != null);         // Bay group rows before Oct 2016 carry hours, no volume
+const VOL = (list, mg) => hasMG(list) ? MGshort(mg) : "not reported";
+
 function yearCards(list) {
   const ys = {};
-  for (const e of list) { const y = e.date.slice(0,4); (ys[y] ??= {n:0, mg:0}).n++; ys[y].mg += e.mg||0; }
+  for (const e of list) { const y = e.date.slice(0,4); (ys[y] ??= {n:0, mg:0, evs:[]}).n++; ys[y].mg += e.mg||0; ys[y].evs.push(e); }
   return Object.keys(ys).sort().map(y =>
-    `<div class="yc"><b>${MGshort(ys[y].mg)}</b><span>${y} · ${ys[y].n} ev</span></div>`).join("");
+    `<div class="yc"><b>${VOL(ys[y].evs, ys[y].mg)}</b><span>${y} · ${ys[y].n}</span></div>`).join("");
 }
 
 function render() {
   const R = rows();
   const totMG = R.reduce((a,e) => a + (e.mg||0), 0);
   const years = {};
-  for (const e of R) { const y = e.date.slice(0,4); (years[y] ??= {n:0, mg:0}).n++; years[y].mg += e.mg||0; }
+  for (const e of R) { const y = e.date.slice(0,4); (years[y] ??= {n:0, mg:0, g:0, be:0}).n++; years[y].mg += e.mg||0;
+    if (e.kind === "G") years[y].g++; else if (e.fac === "Bayside") years[y].be++; }
+  const groupRows = R.filter(e => e.kind === "G").length;
 
   // tiles
   const biggest = R.reduce((a,e) => (e.mg||0) > (a.mg||0) ? e : a, {});
   const wettest = Object.entries(years).sort((a,b)=>b[1].mg-a[1].mg)[0];
   document.getElementById("tiles").innerHTML = `
-    <div class="tile"><b>${MG(totMG)}</b><span>total reported discharge${STATE.water?" — "+STATE.water:""}</span></div>
-    <div class="tile"><b>${R.length.toLocaleString()}</b><span>discharge events</span></div>
-    <div class="tile"><b>${MGshort(biggest.mg)}</b><span>largest single event (${biggest.date||"—"})</span></div>
+    <div class="tile"><b>${MG(totMG)}</b><span>total reported volume${STATE.water?" — "+STATE.water:""}${groupRows?" (Bay volumes before Oct 2016 not reported)":""}</span></div>
+    <div class="tile"><b>${R.length.toLocaleString()}</b><span>discharges logged${R.some(e => e.kind !== "E")?" (daily totals before 2016–2018)":""}</span></div>
+    <div class="tile"><b>${MGshort(biggest.mg)}</b><span>largest single discharge (${biggest.date||"—"}${biggest.kind === "D" ? ", a day's total" : ""})</span></div>
     <div class="tile"><b>${wettest?wettest[0]:"—"}</b><span>biggest year in range (${wettest?MGshort(wettest[1].mg):"—"})</span></div>`;
 
   // yearly bars
@@ -209,21 +223,21 @@ function render() {
     const partial = partialYear(y, STATE.water);
     return `<div class="yrrow"><span class="yl">${y}</span>
       <span class="track"><span class="vol${partial?" partial":""}" style="width:${Math.max(1,100*years[y].mg/maxMG)}%"></span></span>
-      <span class="val">${MGshort(years[y].mg)} · ${years[y].n} events</span></div>`;
-  }).join("") || '<div class="loading">No events in the selected range.</div>';
+      <span class="val">${years[y].g === years[y].n ? "no volumes" : MGshort(years[y].mg)} · ${years[y].n}${years[y].g && years[y].g < years[y].n ? (years[y].be ? " · Bay volumes partial" : " · Bay volumes not reported") : ""}</span></div>`;
+  }).join("") || '<div class="loading">No discharges in the selected range.</div>';
 
   // by receiving water — date-filtered, all waters shown, active filter highlighted
   const D = dateRows();
   const byW = {};
-  for (const e of D) { const w = (byW[e.water] ??= {n:0, mg:0, durs:[], big:{}}); w.n++; w.mg += e.mg||0;
+  for (const e of D) { const w = (byW[e.water] ??= {n:0, mg:0, durs:[], big:{}, evs:[]}); w.n++; w.mg += e.mg||0; w.evs.push(e);
     if (e.dur != null) w.durs.push(e.dur);
     if ((e.mg||0) > (w.big.mg||0)) w.big = e; }
   const allMG = D.reduce((a,e)=>a+(e.mg||0),0) || 1;
   document.getElementById("waters").innerHTML = Object.entries(byW).sort((a,b)=>b[1].mg-a[1].mg).map(([w,d]) => `
     <tr${STATE.water===w?' style="background:#f0f7fc"':''}><td class="name">${w}</td><td class="num">${d.n}</td>
-    <td class="num"><span class="bar" style="width:${Math.round(90*d.mg/Math.max(allMG*0.4,1))}px"></span>${MGshort(d.mg)}</td>
-    <td class="num">${(100*d.mg/allMG).toFixed(0)}%</td>
-    <td class="num">${MGshort(d.big.mg)} (${d.big.date||"—"})</td><td class="num">${DUR(median(d.durs))}</td></tr>`).join("");
+    <td class="num"><span class="bar" style="width:${Math.round(90*d.mg/Math.max(allMG*0.4,1))}px"></span>${VOL(d.evs, d.mg)}</td>
+    <td class="num">${hasMG(d.evs) ? (100*d.mg/allMG).toFixed(0) + "%" : "—"}</td>
+    <td class="num">${hasMG(d.evs) ? MGshort(d.big.mg) + " (" + (d.big.date||"—") + ")" : "—"}</td><td class="num">${DUR(median(d.durs))}</td></tr>`).join("");
 
   // ALL outfalls (respects both filters), expandable per-year trend
   const byO = {};
@@ -236,8 +250,8 @@ function render() {
     const tr = document.createElement("tr");
     tr.className = "outfall";
     tr.innerHTML = `<td class="name">${id} — ${o.name}</td><td>${o.water}</td>
-      <td class="num">${o.n}</td><td class="num">${MGshort(o.mg)}</td>
-      <td class="num">${MGshort(o.big.mg)} (${o.big.date||"—"})</td>`;
+      <td class="num">${o.n}</td><td class="num">${VOL(o.evs, o.mg)}</td>
+      <td class="num">${hasMG(o.evs) ? MGshort(o.big.mg) + " (" + (o.big.date||"—") + ")" : "—"}</td>`;
     const detail = document.createElement("tr");
     detail.className = "detail"; detail.style.display = "none";
     detail.innerHTML = `<td colspan="5"><div class="years-cards">${yearCards(o.evs)}</div></td>`;
@@ -247,12 +261,12 @@ function render() {
 
   // biggest events (respects both filters)
   document.getElementById("biggest").innerHTML = [...R].sort((a,b)=>(b.mg||0)-(a.mg||0)).slice(0,10).map(e => `
-    <tr><td class="num">${e.date}</td><td class="name">${e.oid} — ${e.oname}</td><td>${e.water}</td>
+    <tr><td class="num">${e.date}${e.kind === "D" ? ' <span style="color:#8a949b;font-size:12px">day total</span>' : ""}</td><td class="name">${e.oid} — ${e.oname}</td><td>${e.water}</td>
     <td class="num">${MGshort(e.mg)}</td><td class="num">${DUR(e.dur)}</td></tr>`).join("");
 
   const rangeTxt = (STATE.start || COV.bayside_from) + " → " + (STATE.end || COV.through);
   document.getElementById("metaLine").textContent =
-    `${R.length.toLocaleString()} of ${EV.length.toLocaleString()} events shown · ${rangeTxt}`;
+    `${R.length.toLocaleString()} of ${EV.length.toLocaleString()} discharges shown · ${rangeTxt}`;
   updateChart();
   updateMap();
 }
@@ -290,7 +304,7 @@ function updateMap() {
       `Discharges to: ${loc.water}<br>` +
       (loc.stations && loc.stations.length ? `Beaches SFPUC posts: ${loc.stations.join(", ")}<br>` : "") +
       (loc.feed_name ? `Feed name when active: <code>${loc.feed_name}</code><br>` : "") +
-      `In selected range: <b>${t.n} events · ${MGshort(t.mg)}</b>` +
+      `In selected range: <b>${t.n} discharges · ${MGshort(t.mg)}</b>` +
       (loc.note ? `<br><i>${loc.note}</i>` : ""));
     markerLayer.addLayer(m);
   }
@@ -302,10 +316,10 @@ const SELECTED = new Set();          // "W:<water>" or "O:<outfall id>"
 const PALETTE = ["#0072BC","#b5310a","#d4763a","#237059","#7b5cb8","#0e8a8a","#c23d80","#54576F","#8a6d3b","#356a9e"];
 const OFAC = {};                     // outfall id -> facility
 
-function coveredYears(fac) {         // years a system filed per-event reports
-  const from = fac === "Oceanside" ? 2018 : 2016;
+function coveredYears(fac) {         // years with reported volumes for a system (from the server's coverage block)
+  const from = +COV.volume_from[fac].slice(0, 4), to = +COV.through.slice(0, 4);
   const out = [];
-  for (let y = from; y <= 2025; y++) out.push(y);
+  for (let y = from; y <= to; y++) out.push(y);
   return out;
 }
 
@@ -368,8 +382,8 @@ function updateChart() {
     return { label, fac, perYear };
   });
   // x axis: union of covered years across selections, clipped to the date range
-  const y0 = STATE.start ? +STATE.start.slice(0,4) : 2016;
-  const y1 = STATE.end ? +STATE.end.slice(0,4) : 2025;
+  const y0 = STATE.start ? +STATE.start.slice(0,4) : +COV.first.slice(0,4);
+  const y1 = STATE.end ? +STATE.end.slice(0,4) : +COV.through.slice(0,4);
   const yearSet = new Set();
   for (const s of series) for (const y of coveredYears(s.fac)) if (y >= y0 && y <= y1) yearSet.add(y);
   const years = [...yearSet].sort();
@@ -394,7 +408,7 @@ function updateChart() {
 
 // ─── Raw record browser ──────────────────────────────────────────────────────
 let RAW = {header: [], rows: []}, rawSort = {col: 0, dir: -1};
-const NUMERIC_COLS = new Set(["duration_min", "volume_MG"]);
+const NUMERIC_COLS = new Set(["duration_min", "volume_MG", "duration_hours", "discharge_hours", "discharge_count"]);
 
 function parseCSV(text) {            // quote-aware, minimal
   const rows = [];
@@ -425,12 +439,23 @@ function renderRaw() {
   document.getElementById("rawMeta").textContent = `${rows.length.toLocaleString()} of ${RAW.rows.length.toLocaleString()} records`;
 }
 
-async function initRaw() {
-  const text = await (await fetch("/discharges/api/csv")).text();
+async function loadRaw(set) {
+  const text = await (await fetch("/discharges/api/csv?set=" + set)).text();
   const all = parseCSV(text);
   RAW.header = all[0];
   RAW.rows = all.slice(1);
   rawSort = {col: 0, dir: -1};   // newest first
+  renderRaw();
+}
+
+async function initRaw() {
+  document.getElementById("rawSet").addEventListener("click", e => {   // three datasets, each with its own columns
+    const b = e.target.closest(".seg-btn"); if (!b) return;
+    document.querySelectorAll("#rawSet .seg-btn").forEach(x => x.classList.toggle("active", x===b));
+    const dl = document.getElementById("rawDl");
+    dl.href = "/discharges/api/csv?set=" + b.dataset.set; dl.setAttribute("download", b.dataset.file);
+    loadRaw(b.dataset.set);
+  });
   document.getElementById("rawSearch").addEventListener("input", renderRaw);
   document.querySelector("#rawTbl thead").addEventListener("click", e => {
     const th = e.target.closest("th"); if (!th) return;
@@ -438,18 +463,18 @@ async function initRaw() {
     rawSort = {col, dir: col === rawSort.col ? -rawSort.dir : 1};
     renderRaw();
   });
-  renderRaw();
+  loadRaw("events");
 }
 
-// A year is hatched when any of its months lacks a public report for a facility
-// the current filter includes: before that facility's first per-event month,
-// after the last harvested month, or one of the holes in between (all from the
-// server's coverage block, so a CIWQS refresh moves the hatching by itself).
+// A year is hatched when its volume total is incomplete for a facility the
+// current filter includes: before that facility's first month with volumes
+// (Bay: Oct 2016), after the last harvested month, or one of the holes in
+// between (all from the server's coverage block, so a refresh moves it).
 function partialYear(y, water) {
   y = String(y);
   const facs = !water ? ["Bayside", "Oceanside"] : water === "Pacific Ocean" ? ["Oceanside"] : ["Bayside"];
   return facs.some(f => {
-    const from = f === "Oceanside" ? COV.oceanside_from : COV.bayside_from;
+    const from = COV.volume_from[f];
     if (y < from.slice(0, 4) || y > COV.through.slice(0, 4)) return true;
     if (y === from.slice(0, 4) && from.slice(5) !== "01") return true;
     if (y === COV.through.slice(0, 4) && COV.through.slice(5) !== "12") return true;
@@ -460,13 +485,16 @@ function partialYear(y, water) {
 async function load() {
   const d = await (await fetch("/discharges/api/events")).json();
   if (d.error) { document.getElementById("years").textContent = d.error; return; }
-  const [DATE,FAC,OID,ONAME,WATER,DUR_,MG_] = [0,1,2,3,4,5,6];
-  EV = d.events.map(r => ({date:r[DATE], fac:r[FAC], oid:r[OID], oname:r[ONAME], water:r[WATER], dur:r[DUR_], mg:r[MG_]}));
+  const [DATE,FAC,OID,ONAME,WATER,DUR_,MG_,KIND] = [0,1,2,3,4,5,6,7];
+  // E = one outfall's event (Oct 2016 Bay / Jan 2018 Pacific on); D = a Pacific outfall's day total;
+  // G = a Bay outfall group's day, hours only (NOTES.md in data/csd/pre2018)
+  EV = d.events.map(r => ({date:r[DATE], fac:r[FAC], oid:r[OID], oname:r[ONAME], water:r[WATER], dur:r[DUR_], mg:r[MG_], kind:"E"}))
+    .concat((d.older || []).map(r => ({date:r[DATE], fac:r[FAC], oid:r[OID], oname:r[ONAME], water:r[WATER], dur:r[DUR_], mg:r[MG_], kind:r[KIND]})));
   COV = d.coverage;
   LOCS = d.locations || {};
   for (const e of EV) { ONAMES[e.oid] = e.oname; OWATER[e.oid] = e.water; }
   initMap();
-  document.getElementById("covNote").innerHTML = '<svg class="ic warn"><use href="#i-triangle-alert"/></svg> Coverage: ' + COV.note;
+  document.getElementById("covNote").innerHTML = '<svg class="ic warn"><use href="#i-triangle-alert"/></svg> Coverage: ' + COV.note + ' <a href="/discharges/reporting">How reporting changed</a>';
   // when the record was last re-harvested from CIWQS — amber once a refresh is overdue
   const R = d.refresh || {};
   if (R.refreshed_at) {

@@ -1,0 +1,340 @@
+{
+ "generated_from": "data/csd/pre2018 + raw/beachwatch/poobot/stardb files in the repo",
+ "totals": {
+  "months_checked": 81,
+  "mismatches": [
+   {
+    "month": "2014-12",
+    "printed": 96.58,
+    "rows": 96.97
+   }
+  ],
+  "explained": {
+   "2014-12": "the printed month total leaves out 11 Dec, when three outfalls were printed NA; without that day the rows sum to the printed 96.58"
+  }
+ },
+ "counts": {
+  "westside": {
+   "months": 82,
+   "agree": 79,
+   "within_one": 3,
+   "off_by_more": 0,
+   "differences": [
+    {
+     "month": "2016-01",
+     "stated": 4,
+     "table_days": 5,
+     "source": "monthly SMR cover letter 'This Month'"
+    },
+    {
+     "month": "2017-02",
+     "stated": 4,
+     "table_days": 3,
+     "source": "monthly SMR cover letter 'This Month' (read from season-to-date difference)"
+    },
+    {
+     "month": "2017-03",
+     "stated": 3,
+     "table_days": 4,
+     "source": "monthly SMR cover letter 'This Month'"
+    }
+   ]
+  },
+  "bayside": {
+   "months": 67,
+   "agree": 66,
+   "differences": [
+    {
+     "month": "2011-03",
+     "parsed": "North Shore 1 / Central 6 / Southeast 0",
+     "stated": "North Shore 2 / Central 6 / Southeast 0"
+    }
+   ]
+  }
+ },
+ "rain": {
+  "threshold_in": 0.05,
+  "gauges": "ACIS 047772 SF Downtown + 047767 SF Oceanside, wetter of the two",
+  "westside": {
+   "discharge_days": 66,
+   "with_rain": 65,
+   "dry": [
+    {
+     "date": "2016-10-24",
+     "rain_window_in": 0.04,
+     "rows": [
+      "CSD-007 0.01"
+     ]
+    }
+   ]
+  },
+  "bayside": {
+   "discharge_days": 62,
+   "with_rain": 62,
+   "dry": []
+  }
+ },
+ "postings": {
+  "discharge_days_checked": 58,
+  "posted_within_2_days": 38,
+  "not_posted": [
+   {
+    "date": "2011-06-04",
+    "zones": [
+     "baker_china"
+    ],
+    "MG": 0.001,
+    "posted_for_another_cause": false
+   },
+   {
+    "date": "2012-01-20",
+    "zones": [
+     "baker_china",
+     "ocean"
+    ],
+    "MG": 40.84,
+    "posted_for_another_cause": false
+   },
+   {
+    "date": "2012-01-21",
+    "zones": [
+     "ocean"
+    ],
+    "MG": 15.18,
+    "posted_for_another_cause": false
+   },
+   {
+    "date": "2012-03-16",
+    "zones": [
+     "ocean"
+    ],
+    "MG": 52.52,
+    "posted_for_another_cause": false
+   },
+   {
+    "date": "2012-03-17",
+    "zones": [
+     "ocean"
+    ],
+    "MG": 0.91,
+    "posted_for_another_cause": false
+   },
+   {
+    "date": "2012-11-21",
+    "zones": [
+     "ocean"
+    ],
+    "MG": 7.1,
+    "posted_for_another_cause": false
+   },
+   {
+    "date": "2012-11-28",
+    "zones": [
+     "baker_china"
+    ],
+    "MG": 0.24,
+    "posted_for_another_cause": false
+   },
+   {
+    "date": "2012-11-30",
+    "zones": [
+     "ocean"
+    ],
+    "MG": 35.41,
+    "posted_for_another_cause": false
+   },
+   {
+    "date": "2013-11-20",
+    "zones": [
+     "ocean"
+    ],
+    "MG": 1.71,
+    "posted_for_another_cause": false
+   },
+   {
+    "date": "2014-02-08",
+    "zones": [
+     "baker_china"
+    ],
+    "MG": 0.01,
+    "posted_for_another_cause": false
+   },
+   {
+    "date": "2014-02-09",
+    "zones": [
+     "baker_china",
+     "ocean"
+    ],
+    "MG": 33.27,
+    "posted_for_another_cause": true
+   },
+   {
+    "date": "2014-02-26",
+    "zones": [
+     "ocean"
+    ],
+    "MG": 0.05,
+    "posted_for_another_cause": false
+   },
+   {
+    "date": "2014-12-02",
+    "zones": [
+     "ocean"
+    ],
+    "MG": 27.82,
+    "posted_for_another_cause": false
+   },
+   {
+    "date": "2014-12-03",
+    "zones": [
+     "ocean"
+    ],
+    "MG": 53.54,
+    "posted_for_another_cause": false
+   },
+   {
+    "date": "2014-12-12",
+    "zones": [
+     "ocean"
+    ],
+    "MG": 0.11,
+    "posted_for_another_cause": false
+   },
+   {
+    "date": "2014-12-15",
+    "zones": [
+     "baker_china",
+     "ocean"
+    ],
+    "MG": 11.81,
+    "posted_for_another_cause": false
+   },
+   {
+    "date": "2014-12-19",
+    "zones": [
+     "ocean"
+    ],
+    "MG": 3.29,
+    "posted_for_another_cause": false
+   },
+   {
+    "date": "2015-06-10",
+    "zones": [
+     "baker_china"
+    ],
+    "MG": 0.001,
+    "posted_for_another_cause": false
+   },
+   {
+    "date": "2016-10-24",
+    "zones": [
+     "baker_china"
+    ],
+    "MG": 0.01,
+    "posted_for_another_cause": false
+   },
+   {
+    "date": "2016-10-27",
+    "zones": [
+     "baker_china"
+    ],
+    "MG": 0.07,
+    "posted_for_another_cause": false
+   }
+  ],
+  "by_year": {
+   "2011": {
+    "discharge_days": 4,
+    "posted": 3
+   },
+   "2012": {
+    "discharge_days": 9,
+    "posted": 2
+   },
+   "2013": {
+    "discharge_days": 1,
+    "posted": 0
+   },
+   "2014": {
+    "discharge_days": 9,
+    "posted": 1
+   },
+   "2015": {
+    "discharge_days": 3,
+    "posted": 2
+   },
+   "2016": {
+    "discharge_days": 17,
+    "posted": 15
+   },
+   "2017": {
+    "discharge_days": 15,
+    "posted": 15
+   }
+  },
+  "posting_runs_started": 39,
+  "runs_without_a_discharge_in_the_2_days_before": [
+   "2016-02-17"
+  ]
+ },
+ "sampling": {
+  "episodes": 32,
+  "started_within_3_days_after_an_ocean_beach_discharge": 31,
+  "unexplained": [
+   {
+    "first": "2012-03-13",
+    "last": "2012-03-13",
+    "stations": "OCEAN#20_SL,OCEAN#21_SL"
+   }
+  ],
+  "ocean_beach_discharge_days": 48,
+  "followed_by_sampling_within_3_days": 37
+ },
+ "poobot": {
+  "onsets": 9,
+  "within_2_days_of_a_table_day": 9,
+  "span": [
+   "2016-10-16",
+   "2017-01-09"
+  ]
+ },
+ "esmr": {
+  "days_in_esmr": 57,
+  "days_on_a_table_discharge_day": 53,
+  "by_year": {
+   "2011": {
+    "days_in_both": 1,
+    "volumes_within_10pct": 1
+   },
+   "2012": {
+    "days_in_both": 8,
+    "volumes_within_10pct": 8
+   },
+   "2013": {
+    "days_in_both": 1,
+    "volumes_within_10pct": 1
+   },
+   "2014": {
+    "days_in_both": 9,
+    "volumes_within_10pct": 3
+   },
+   "2015": {
+    "days_in_both": 1,
+    "volumes_within_10pct": 0
+   },
+   "2016": {
+    "days_in_both": 14,
+    "volumes_within_10pct": 4
+   },
+   "2017": {
+    "days_in_both": 14,
+    "volumes_within_10pct": 13
+   }
+  },
+  "fill_values_dropped": 28
+ },
+ "not_yet_done": [
+  "A second, independent reading of every hand-read page (26 Westside months, 3 Bayside months), compared row by row.",
+  "Spot checks of the parsed Bayside 2013-2016 rows against their pages: monthly counts match, but a shifted row would not show in a count."
+ ]
+}

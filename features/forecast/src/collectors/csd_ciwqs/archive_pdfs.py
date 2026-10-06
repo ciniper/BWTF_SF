@@ -43,7 +43,8 @@ MIN_BYTES = 1000   # below this the servlet returned an error page, not a PDF
 
 def want(a: dict) -> bool:
     n = a["name"].lower()
-    return a["attType"] == "2" or "wet weather" in n or bool(re.search(r"smr[- ]?dmr", n))
+    # "\bww\b": two Bayside months were filed as "... WW Report.pdf" and missed until 2026-10-06
+    return a["attType"] == "2" or "wet weather" in n or bool(re.search(r"\bww\b|smr[- ]?dmr", n))
 
 
 def parsed_sources() -> set[str]:

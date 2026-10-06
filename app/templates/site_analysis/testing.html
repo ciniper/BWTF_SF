@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link rel="icon" href="{{ asset('brand/favicon.ico') }}"><link rel="apple-touch-icon" sizes="144x144" href="{{ asset('brand/bwtf_144x144.png') }}">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How Testing Changed — Surfrider SF Blue Water Task Force</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ asset('brand.css') }}">
+<style>
+  .wrap{max-width:var(--page-w);margin:0 auto;padding:24px}
+  .jump{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 18px}
+  .jump a{display:inline-flex;align-items:center;padding:9px 16px;border-radius:999px;border:2px solid #d9e4e8;background:#fff;color:#26272a;font-weight:700;font-size:13.5px;text-decoration:none}
+  .jump a:hover{border-color:#0072BC;color:#0072BC}
+  section.rec{background:#fff;border:1px solid #d9e4e8;border-radius:20px;padding:22px 24px;margin:0 0 18px;scroll-margin-top:16px}
+  section.rec p,section.rec ul{max-width:92ch}
+  .rec h2{margin:0 0 4px;font-size:21px;font-weight:900}
+  .rec-sub{margin:0 0 14px;color:#54576F;font-size:14px}
+  h3{font-size:15px;margin:20px 0 8px;color:#26272a}
+  p,li{font-size:14px;color:#3f474d}
+  ul.plain{margin:0;padding-left:20px}
+  ul.plain li{margin:0 0 6px}
+  ul.plain li b{color:#26272a}
+  .tblwrap{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;margin:4px 0 6px}
+  th{text-align:left;color:#54576F;font-weight:700;padding:8px 10px;border-bottom:2px solid #d9e4e8;vertical-align:bottom}
+  td{padding:8px 10px;border-bottom:1px solid #eef2f4;vertical-align:top;color:#3f474d}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  td.when{font-weight:700;color:#26272a;white-space:nowrap}
+  /* sample-days grid: one row per station, one cell per year */
+  table.grid{font-size:11.5px;width:auto}
+  table.grid th,table.grid td{padding:3px 4px;text-align:center;border-bottom:1px solid #fff}
+  table.grid th.st,table.grid td.st{text-align:left;white-space:nowrap;font-weight:600;color:#26272a;padding-right:10px}
+  table.grid tr.zone td{background:#fff;text-align:left;font-weight:700;color:#0072BC;font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding-top:10px}
+  table.grid td.c0{background:#f3f5f7;color:#c4ccd2}
+  table.grid td.c1{background:#fde8d4;color:#8a4a12}
+  table.grid td.c2{background:#cfe3f1;color:#1d4f73}
+  table.grid td.c3{background:#7fb0d6;color:#0d2f49}
+  table.grid td.c4{background:#2f7bb6;color:#fff}
+  .key{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:#54576F;margin:8px 0 0}
+  .key span{display:inline-flex;align-items:center;gap:6px}
+  .key i{display:inline-block;width:14px;height:14px;border-radius:3px}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;background:#eef2f4;border-radius:5px;padding:1px 5px;overflow-wrap:anywhere}
+  .foot{color:#8a949b;font-size:13px;margin-top:6px}
+  @media (max-width:560px){.wrap{padding:16px}section.rec{padding:18px 16px}}
+</style>
+</head>
+<body>
+{% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
+{{ topbar() }}
+{% set d = data %}
+{% macro mon(iso) %}{{ ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][iso[5:7]|int - 1] }} {{ iso[:4] }}{% endmacro %}
+<div class="wrap">
+  {% call page_head("How testing changed", "What the city's lab measured at each beach from 2000 to now, how often, and what that means for the Site Report Card.", "water", link=("/analysis", "Back to the Site Report Card")) %}
+    <p>The Site Report Card grades every site against the same state limits from 2000 to today. The testing behind those
+    grades did not stay the same. The bacteria measured, the lab method, how often each beach was visited and which beaches
+    were sampled all changed. Keep these changes in mind when comparing one period with another.</p>
+  {% endcall %}
+
+  <nav class="jump" aria-label="Sections">
+    <a href="#short">The short version</a>
+    <a href="#measured">What the lab measured</a>
+    <a href="#often">How often each beach was sampled</a>
+    <a href="#which">Which beaches, when</a>
+    <a href="#grades">What it means for the grades</a>
+  </nav>
+
+  <section class="rec" id="short">
+    <h2>The short version</h2>
+    <div class="tblwrap"><table>
+      <thead><tr><th>When</th><th>What changed</th></tr></thead>
+      <tbody>
+        <tr><td class="when">Jan 2000</td><td>The record starts. Only total coliform is measured, by membrane filtration, about three visits a week at every beach.</td></tr>
+        <tr><td class="when">{{ mon(d.first_enterococcus.bay) }}</td><td>Enterococcus and E. coli begin at the bay beaches, by a new method (Quanti-Tray, counted as MPN instead of CFU).</td></tr>
+        <tr><td class="when">{{ mon(d.first_enterococcus.ocean) }}</td><td>Enterococcus and E. coli begin on the ocean beaches. Membrane filtration ends.</td></tr>
+        <tr><td class="when">2004</td><td>Routine visits drop to about one a week, with extra visits after a sewage discharge. Pacheco, Vicente and Fort Funston are sampled only after a Pacific discharge.</td></tr>
+        <tr><td class="when">Jul 2020</td><td>Our source changes from SFPUC's own lab export to DataSF on 27 Jul 2020. It is the same lab database, without the time of day.</td></tr>
+        <tr><td class="when">{{ mon(d.datasf_indicators["Fecal coliform"].first) }}</td><td>Fecal coliform replaces E. coli.</td></tr>
+        <tr><td class="when">2021–2024</td><td>Reporting limits change: total coliform tops out at 16,000 from Oct 2021, down from 24,196, and fecal coliform at 6,000 from May 2024, up from 600.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="rec" id="measured">
+    <h2>What the lab measured</h2>
+    <p class="rec-sub">From the method and units printed on every result in SFPUC's export, and the indicators in DataSF.</p>
+    <h3>SFPUC's lab export, 2000 – Jul 2020</h3>
+    <div class="tblwrap"><table>
+      <thead><tr><th>Method, as printed</th><th>Bacteria</th><th>Units</th><th>Used</th><th class="num">results</th></tr></thead>
+      <tbody>{% for m in d.lab_methods %}<tr><td>{{ m.method }}</td><td>{{ m.analytes|join(", ") }}</td><td>{{ m.units }}</td>
+        <td class="when">{{ mon(m.first) }} – {{ mon(m.last) }}</td><td class="num">{{ "{:,}".format(m.n) }}</td></tr>{% endfor %}</tbody>
+    </table></div>
+    <p>CFU counts colonies grown on a filter. MPN is a statistical estimate from a tray of wells. Both are per 100 mL and are
+    judged against the same limits, but they aren't identical measurements.</p>
+
+    <h3>DataSF, Jul 2020 on</h3>
+    <div class="tblwrap"><table>
+      <thead><tr><th>Bacteria</th><th>Reported</th><th>Lowest and highest printed values</th></tr></thead>
+      <tbody>{% for name, s in d.datasf_indicators.items() %}<tr><td class="when">{{ name }}</td><td>{{ mon(s.first) }} – {{ mon(s.last) }}</td>
+        <td>{% for l in d.limits_datasf.get(name, []) %}{{ l.printed }} ({{ mon(l.first) }} – {{ mon(l.last) }}){% if not loop.last %} · {% endif %}{% endfor %}</td></tr>{% endfor %}</tbody>
+    </table></div>
+    <p>A value printed as “&lt;10” means below what the test can detect, and “&gt;24196” means above what it can count. The
+    report card counts “&lt;10” as 5 and a capped value at its cap. Every cap is far above the limits, so caps don't change pass or fail.</p>
+  </section>
+
+  <section class="rec" id="often">
+    <h2>How often each beach was sampled</h2>
+    <p class="rec-sub">Days with a lab result, per station and year. The typical routine station had {{ d.median_sample_days["2000-2002"] }} days a year in 2000–2002 and
+    about {{ d.median_sample_days["2004-2019"] }} from 2004 on.{% if d.through[:4] %} The last year runs to {{ d.through }}.{% endif %}</p>
+    <div class="tblwrap"><table class="grid">
+      <thead><tr><th class="st">Station</th>{% for y in d.years %}<th>{{ "%02d"|format(y % 100) }}</th>{% endfor %}</tr></thead>
+      <tbody>
+      {% macro cells(s) %}{% for n in s.days %}<td class="{{ 'c0' if n == 0 else 'c1' if n < 20 else 'c2' if n < 60 else 'c3' if n < 120 else 'c4' }}">{{ n if n else "" }}</td>{% endfor %}{% endmacro %}
+      {% for z in d.zones %}<tr class="zone"><td colspan="{{ d.years|length + 1 }}">{{ z.label }}</td></tr>
+        {% for s in z.stations %}<tr><td class="st">{{ s.name }}{% if s.discharge_only %} *{% endif %}</td>{{ cells(s) }}</tr>{% endfor %}{% endfor %}
+      <tr class="zone"><td colspan="{{ d.years|length + 1 }}">Retired or one-off points</td></tr>
+      {% for s in d.retired %}<tr><td class="st">{{ s.name }}</td>{{ cells(s) }}</tr>{% endfor %}
+      </tbody>
+    </table></div>
+    <div class="key"><span><i style="background:#f3f5f7"></i>none</span><span><i style="background:#fde8d4"></i>under 20</span>
+      <span><i style="background:#cfe3f1"></i>20–59</span><span><i style="background:#7fb0d6"></i>60–119</span><span><i style="background:#2f7bb6"></i>120 or more</span>
+      <span>* sampled only after a Pacific discharge from 2004</span></div>
+
+    <h3>Extra visits after a discharge</h3>
+    <p>From 2004 the routine schedule is about one visit a week, plus extra visits in the days after a sewage discharge.
+    The table compares how often each station was sampled in the 3 days after a discharge with every other day,
+    {{ mon(d.after_discharge_window[0]) }} to {{ mon(d.after_discharge_window[1]) }}, using the Discharge Ledger.</p>
+    <div class="tblwrap"><table style="max-width:560px">
+      <thead><tr><th>Station</th><th class="num">3 days after a discharge</th><th class="num">other days</th></tr></thead>
+      <tbody>{% for r in d.after_discharge %}<tr><td>{{ r.name }}{% if r.discharge_only %} *{% endif %}</td><td class="num">{{ r.after_pct }}%</td><td class="num">{{ r.other_pct }}%</td></tr>{% endfor %}</tbody>
+    </table></div>
+  </section>
+
+  <section class="rec" id="which">
+    <h2>Which beaches, when</h2>
+    <ul class="plain">
+      {% for z in d.zones %}{% for s in z.stations if s.first > "2000-03-01" %}<li><b>{{ s.name }}</b> starts {{ mon(s.first) }}{% if s.name == "Islais Creek" %}, with routine sampling from Oct 2015{% elif s.name == "Mission Creek" %}, with routine sampling from Oct 2017{% endif %}.</li>{% endfor %}{% endfor %}
+      <li><b>Fort Funston</b> was sampled only a few days a year until 2002, regularly in 2002–2003, and only after discharges from 2004.</li>
+      <li><b>Retired points:</b> {% for s in d.retired %}{{ s.name }} ({{ mon(s.first) }} – {{ mon(s.last) }}){% if not loop.last %}, {% endif %}{% endfor %}.</li>
+      <li><b>Aquatic Park</b> wasn't sampled in Oct 2013, Dec 2018 – Jan 2019 (federal shutdowns) or 23 Mar – 27 Jul 2020 (Covid), per SFPUC's notes in the export.</li>
+    </ul>
+  </section>
+
+  <section class="rec" id="grades">
+    <h2>What it means for the grades</h2>
+    <ul class="plain">
+      <li><b>Early grades rest on total coliform alone.</b> Before {{ mon(d.first_enterococcus.bay) }} at the bay beaches and {{ mon(d.first_enterococcus.ocean) }} on the ocean beaches,
+        the only test was total coliform, which rarely fails. Low failure rates in those years don't mean cleaner water.</li>
+      <li><b>E. coli is judged more strictly here than in SFPUC's reports.</b> The report card uses {{ d.ecoli.report_card_limit }} per 100 mL.
+        SFPUC's own monthly reports used {{ d.ecoli.sfpuc_limit }}. {{ "{:,}".format(d.ecoli.between) }} of {{ "{:,}".format(d.ecoli.results) }} E. coli results fall in between: they count as
+        failures here, but not in SFPUC's reports. This affects 2002 – Mar 2021 and the “any indicator” grade.</li>
+      <li><b>The stricter total coliform limit only applies from {{ mon(d.datasf_indicators["Fecal coliform"].first) }}.</b> Total coliform fails at 1,000 instead of 10,000 when fecal coliform is over
+        a tenth of it. That needs a fecal result from the same sample, which exists only since fecal coliform testing began.</li>
+      <li><b>Extra visits after storms tilt the rates.</b> Routine stations are sampled about twice as often in the days after a discharge,
+        so their failure rates lean toward bad days. The fixed three-a-week schedule of 2000–2002 doesn't have that tilt.</li>
+      <li><b>Discharge-only stations aren't ranked.</b> Pacheco, Vicente and Fort Funston are sampled only when the water is likely bad.
+        The report card marks a station sporadic when its typical year has fewer than {{ routine_per_year }} samples, and doesn't rank it.</li>
+      <li><b>New stations have shorter records.</b> Mission Creek, Islais Creek and Crane Cove Park grades cover fewer years, so a
+        long range compares them on less data.</li>
+    </ul>
+  </section>
+
+  <p class="foot">Computed from SFPUC's lab export (Jan 2000 – Jul 2020) and DataSF (through {{ d.through }}) by
+    <code>features/site_analysis/testing_history.py</code>.</p>
+</div>
+<script src="{{ asset('tables.js') }}" defer></script>
+{{ footer() }}
+{{ tabbar() }}
+</body></html>

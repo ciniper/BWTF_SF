@@ -3,15 +3,20 @@
 Public read-only page over the ground-truth CSD event dataset
 (``features/forecast/data/csd/sf_csd_events.csv`` — per-event records from Oct
 2016 on, extracted from SFPUC's monthly Self-Monitoring Reports on CIWQS and
-re-harvested quarterly; see NOTES.md there for schema, provenance, and gaps).
+re-harvested quarterly; see NOTES.md there for schema, provenance, and gaps),
+plus the older daily-total reports back to Mar 2011 (``data/csd/pre2018/``,
+transcribed 2026-10-06; never read by the forecast).
 Unlike the Site Report Card
 (bacteria *samples*) or the Online Postings Timeline (our real-time *flags*), this is
 the official record of what was actually discharged: outfall, start, duration,
 and volume in million gallons.
 
 Coverage caveats the page must surface (from NOTES.md):
-  * Bayside per-event data begins Oct 2016; **Oceanside/Westside begins
-    Jan 2018** — citywide totals for 2016–2017 exclude the Pacific side.
+  * Per-event data begins Oct 2016 (Bayside) and Jan 2018 (Oceanside/Westside).
+    Before that, back to Mar 2011, the city filed daily totals: Westside per
+    outfall with volume, Bayside per outfall GROUP with hours but no volume.
+    Those rows carry kind "D" (Westside day) or "G" (Bayside group-day); the
+    page counts them as discharges but says what they are.
   * The record ends at the last month in the coverage grid, and months SFPUC
     hasn't published are holes — both come from ``_coverage()``, not literals.
 
@@ -46,6 +51,15 @@ COLUMNS = ["event_date", "facility", "outfall_id", "outfall_name",
 _payload_cache: dict | None = None
 
 _COVERAGE_CSV = _CSV.parent / "sf_csd_monthly_coverage.csv"
+_PRE = _CSV.parent / "pre2018"                      # older daily-total reports (build_pre2018.py, qc_pre2018.py)
+WEST_DAILY = _PRE / "westside_daily_2011-03_2017-12.csv"
+WEST_COV = _PRE / "westside_monthly_coverage_2011-03_2017-12.csv"
+BAY_LEGACY = _PRE / "bayside_legacy_2011-03_2016-09.csv"
+BAY_COV = _PRE / "bayside_legacy_monthly_coverage_2011-03_2016-09.csv"
+QC_JSON = _PRE / "qc_summary.json"
+FIRST_MONTH = "2011-03"                              # SFPUC's first electronic filing on CIWQS
+# The raw-record browser's three datasets, each served verbatim with its own columns.
+CSV_SETS = {"events": _CSV, "westside": WEST_DAILY, "bayside": BAY_LEGACY}
 _MANIFEST = _CSV.parent / "manifest.json"          # refreshed_at etc., written by csd_ciwqs/aggregate.py
 REFRESH_DUE_DAYS = DUE_DAYS                          # shared/freshness.py — the quarterly rule every page uses
 _COVERED = {"events_parsed", "table_present_zero_events", "no_table_stated_no_discharge"}
@@ -76,13 +90,17 @@ def _coverage() -> dict:
     def label(ym: tuple[int, int]) -> str:
         return datetime(ym[0], ym[1], 1).strftime("%b %Y")
 
-    note = ("Oceanside (Pacific side) per-event records begin Jan 2018 — citywide totals "
-            "for 2016–2017 exclude it.")
+    note = ("Records start Mar 2011, when SFPUC's reports went online. Until Oct 2016 (Bay) and Jan 2018 "
+            "(Pacific) the city filed daily totals, not single events: Pacific outfalls give hours and volume "
+            "per day, Bay outfalls give hours per day for groups of outfalls and no volume. Dec 2012 on the "
+            "Pacific side has basin totals only.")
     for fac, ms in sorted(holes.items()):
         if ms:
             note += f" No public {fac} report yet for " + ", ".join(label((int(m[:4]), int(m[5:]))) for m in ms) + "."
     note += f" Records after {label(through)} aren't public on CIWQS yet."
-    return {"bayside_from": "2016-10", "oceanside_from": "2018-01",
+    return {"first": FIRST_MONTH, "bayside_from": FIRST_MONTH, "oceanside_from": FIRST_MONTH,
+            "events_from": {"Bayside": "2016-10", "Oceanside": "2018-01"},
+            "volume_from": {"Bayside": "2016-10", "Oceanside": FIRST_MONTH},
             "through": f"{through[0]}-{through[1]:02d}", "holes": holes, "note": note}
 
 
@@ -113,6 +131,16 @@ def _load() -> dict:
                 float(r["duration_min"]) if r["duration_min"] else None,
                 float(r["volume_MG"]) if r["volume_MG"] else None,
             ])
+    older = []   # [date, facility, outfall id, name, water, minutes, MG, kind]
+    with open(WEST_DAILY, newline="") as fh:
+        for r in csv.DictReader(fh):
+            older.append([r["event_date"], "Oceanside", r["outfall_id"] or "Westside (not stated)", r["outfall_name"],
+                          r["receiving_water"], round(float(r["duration_hours"]) * 60, 1) if r["duration_hours"] else None,
+                          float(r["volume_MG"]) if r["volume_MG"] else None, "D"])
+    with open(BAY_LEGACY, newline="") as fh:
+        for r in csv.DictReader(fh):
+            older.append([r["date"], "Bayside", r["outfall_id"], r["outfall_name"], r["receiving_water"],
+                          round(float(r["discharge_hours"]) * 60, 1) if r["discharge_hours"] else None, None, "G"])
     locations = {
         o.id: {
             "lat": o.lat, "lon": o.lon, "water": o.receiving_water, "note": o.note,
@@ -124,6 +152,8 @@ def _load() -> dict:
     _payload_cache = {
         "columns": COLUMNS,
         "events": events,
+        "older": older,
+        "older_columns": COLUMNS + ["kind"],
         "locations": locations,
         "coverage": _coverage(),
         "refresh": _refresh(),
@@ -144,10 +174,14 @@ def handle_events(query, body):
 
 
 def handle_csv(query, body):
-    """The raw dataset file, verbatim — feeds the in-page record browser and
-    doubles as the download link."""
+    """A raw dataset file, verbatim — feeds the in-page record browser and
+    doubles as the download link. ``?set=westside|bayside`` serves the older
+    daily-total files; the default is the per-event record."""
+    path = CSV_SETS.get(((query or {}).get("set") or ["events"])[0])   # parse_qs: every value is a list
+    if path is None:
+        return _json({"error": "unknown set; use events, westside or bayside"}, status=400)
     try:
-        return 200, "text/csv; charset=utf-8", _CSV.read_bytes()
+        return 200, "text/csv; charset=utf-8", path.read_bytes()
     except Exception as exc:
         return _json({"error": f"CSD dataset unavailable: {exc}"}, status=500)
 
@@ -156,9 +190,31 @@ def handle_page(query, body):
     return 200, "text/html; charset=utf-8", render_template("discharges/page.html").encode()
 
 
+def _rows(path: Path) -> list[dict]:
+    with open(path, newline="") as fh:
+        return list(csv.DictReader(fh))
+
+
+def reporting_context() -> dict:
+    """Everything the "How reporting changed" page shows that comes from data:
+    the QC results (qc_pre2018.py) and the months that are missing or partial."""
+    qc = json.load(open(QC_JSON))
+    west = [m for m in _rows(WEST_COV) if m["status"] not in ("events", "zero")]
+    bay = [m for m in _rows(BAY_COV) if m["status"] not in ("events", "zero")]
+    label = lambda m: datetime(int(m["year"]), int(m["month"]), 1).strftime("%b %Y")
+    return {"qc": qc, "coverage": _coverage(),
+            "west_gaps": [dict(month=label(m), status=m["status"], note=m["note"]) for m in west],
+            "bay_gaps": [dict(month=label(m), status=m["status"], note=m["note"]) for m in bay]}
+
+
+def handle_reporting(query, body):
+    return 200, "text/html; charset=utf-8", render_template("discharges/reporting.html", **reporting_context()).encode()
+
+
 GET_ROUTES = {
     "/discharges": handle_page,
     "/discharges/api/events": handle_events,
     "/discharges/api/csv": handle_csv,
+    "/discharges/reporting": handle_reporting,
 }
 POST_ROUTES = {}

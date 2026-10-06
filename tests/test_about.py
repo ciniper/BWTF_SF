@@ -58,7 +58,7 @@ def test_sources_registry_dates_every_tile_and_the_boxes_open_it():
     poo = next(e for e in ds if "Poo Bot" in e["name"]); assert poo["first"] == "2016-03-19" and poo["last"] == "2017-01-10"
     ciwqs = next(e for e in tiles["state"] if "CIWQS" in e["name"])
     man = json.load(open(ROOT / "features/forecast/data/csd/manifest.json"))
-    assert ciwqs["refreshed"] == man["refreshed_at"] and ciwqs["next_due"] and ciwqs["first"] == "2016-10-16" and ciwqs["last"].startswith("2026-")
+    assert ciwqs["refreshed"] == man["refreshed_at"] and ciwqs["next_due"] and ciwqs["first"] == "2011-03-18" and ciwqs["last"].startswith("2026-")
     bw = next(e for e in tiles["state"] if "BeachWatch" in e["name"]); assert bw["first"] == "1999-01-31" and bw["last"] >= "2026-02-28" and bw["refreshed"]
     rain = next(e for e in tiles["weather"] if "ACIS" in e["name"]); assert rain["first"] == "2016-01-01" and rain["last"] == "live"
     assert [e["name"] for e in tiles["supabase"]][:3] == ["subscribers", "alert_log", "alert_deliveries"] and reg["supabase_reachable"] is False
