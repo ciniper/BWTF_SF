@@ -83,6 +83,10 @@
       <button id="choose" class="btn primary">Choose for me</button>
       <label>up to <select id="maxTerms"><option>4</option><option>6</option><option selected>8</option><option>12</option><option>16</option></select> terms</label>
       <label><input type="checkbox" id="path"> grade every size, 1 to that many</label>
+      <label title="A hinge only after its base term; a lag only after the lag before it; rain on a west wind only after the day's rain">
+        <input type="checkbox" id="rules" checked> sensible rules</label>
+      <label title="Keeps the 3 best sets at every size instead of 1; grades every size; about 3 times slower">
+        <input type="checkbox" id="wide"> search wider</label>
       <span class="mute">from the terms that are on (all of them if none are). Takes one to three minutes.</span>
     </div>
     <div id="chosen"></div>
@@ -173,9 +177,10 @@ async function choose() {
   $("#chosen").innerHTML = `<p class="busy">Choosing inside each season's fold…</p>`;
   const pool = [...state.terms];
   const r = await fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" },
-    body: body({ pool: pool.length ? pool : null, max_terms: +$("#maxTerms").value, path: $("#path").checked }) });
+    body: body({ pool: pool.length ? pool : null, max_terms: +$("#maxTerms").value, path: $("#path").checked,
+                 rules: $("#rules").checked, wide: $("#wide").checked }) });
   const j = await r.json(); btn.disabled = false;
-  const counts = Object.entries(j.chosen_in).map(([t, n]) => `<span class="chip">${t} · ${n}/${j.n_folds}</span>`).join(" ");
+  const counts = Object.entries(j.chosen_in || {}).map(([t, n]) => `<span class="chip">${t} · ${n}/${j.n_folds}</span>`).join(" ");
   $("#chosen").innerHTML = `<h3 style="margin:14px 0 6px">Picked on all nine seasons: ${j.terms.join(", ")}</h3>
     <div class="row"><button class="btn" id="useChosen">Use these terms</button>
       <span class="mute">How often each term was picked in the ${j.n_folds} folds:</span></div>
@@ -196,7 +201,7 @@ async function choose() {
         the first k terms its own fold picked without it.</p>
       <div class="scroll"><table id="pathTable"><tr><th>Terms</th><th>Added</th>${wins.map((w) => `<th>${META.windows[w]}</th>`).join("")}<th></th></tr>
       ${j.path.map(row).join("")}</table></div>`);
-    $("#pathTable").querySelectorAll("button[data-k]").forEach((b) => { b.onclick = () => setTerms(j.terms.slice(0, +b.dataset.k)); });
+    $("#pathTable").querySelectorAll("button[data-k]").forEach((b) => { b.onclick = () => setTerms(j.path[+b.dataset.k - 1].terms); });
   }
 }
 

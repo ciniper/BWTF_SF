@@ -316,16 +316,22 @@ class Lab:
         return out
 
     def choose(self, pool=None, C="live", nonneg: bool = False, record: str = "served", max_terms: int = 8,
-               min_gain: float = 0.0025, jobs: int = -1, n_boot: int = N_BOOT, path: bool = False) -> dict:
+               min_gain: float = 0.0025, jobs: int = -1, n_boot: int = N_BOOT, path: bool = False,
+               rules: bool = False, beam: int = 1) -> dict:
         """Forward selection inside every graded fold (nested), then on all nine seasons (the terms to adopt).
         ``path``: never stop early; grade the best 1, 2, … max_terms terms, each nested (the first k of every
-        fold's own order), so the number of terms is judged the same fair way as the terms."""
+        fold's own order), so the number of terms is judged the same fair way as the terms. ``rules``: the
+        sensible rules (``requirements``). ``beam`` > 1: a wider search that keeps that many best sets at each size
+        (beam_select), always graded as a path; each size's set is then the best found, not a prefix."""
         from joblib import Parallel, delayed
         pool = list(pool or ALL_TERMS)
+        req = requirements(pool) if rules else None
         runs = [(fold, keep) for _tier, fold, *_rest, keep in self.plan(record)] + [("all nine seasons", self.nine(record))]
         jobs_in = [(fold, self._selection_data(record, keep, pool, C)) for fold, keep in runs]
+        if beam > 1:
+            return self._beam(pool, jobs_in, runs, C, nonneg, record, max_terms, beam, req, jobs, n_boot)
         picked = Parallel(n_jobs=jobs, backend="loky")(
-            delayed(forward_select)(data, len(pool), max_terms, None if path else min_gain, nonneg) for _fold, data in jobs_in)
+            delayed(forward_select)(data, len(pool), max_terms, None if path else min_gain, nonneg, req) for _fold, data in jobs_in)
         by_fold = {fold: [pool[i] for i in idx] for (fold, _), (idx, _trace) in zip(jobs_in, picked)}
         traces = {fold: tr for (fold, _), (_idx, tr) in zip(jobs_in, picked)}
         final = by_fold.pop("all nine seasons")
@@ -334,14 +340,37 @@ class Lab:
         counts = {t: sum(t in by_fold[f] for f in folds) for t in pool if any(t in by_fold[f] for f in folds)}
         out = {"terms": final, "nested_grade": self.grade(nested, n_boot), "by_fold": by_fold,
                "chosen_in": dict(sorted(counts.items(), key=lambda kv: -kv[1])), "n_folds": len(folds),
-               "trace": traces["all nine seasons"], "min_gain": None if path else min_gain, "max_terms": max_terms}
+               "trace": traces["all nine seasons"], "min_gain": None if path else min_gain, "max_terms": max_terms,
+               "rules": rules, "beam": 1}
         if path:
             out["path"] = []
             for k in range(1, max_terms + 1):
                 pk = self.oof(None, C, nonneg, record, terms_by_fold={f: by_fold[f][:k] for f in folds})
-                out["path"].append({"k": k, "added": final[k - 1], "inner": traces["all nine seasons"][k - 1],
+                out["path"].append({"k": k, "added": final[k - 1], "terms": final[:k], "inner": traces["all nine seasons"][k - 1],
                                     "grade": self.grade(pk, n_boot)})
         return out
+
+    def _beam(self, pool, jobs_in, runs, C, nonneg, record, max_terms, width, req, jobs, n_boot) -> dict:
+        from joblib import Parallel, delayed
+        found = Parallel(n_jobs=jobs, backend="loky")(
+            delayed(beam_select)(data, len(pool), max_terms, width, nonneg, req) for _fold, data in jobs_in)
+        best = {fold: f for (fold, _), f in zip(jobs_in, found)}
+        allnine = best.pop("all nine seasons")
+        folds = [f for f, _ in runs[:-1]]
+        sizes = sorted(allnine)
+        rows = []
+        for k in sizes:
+            by_fold = {f: [pool[i] for i in best[f][min(k, max(best[f]))][0]] for f in folds}
+            pk = self.oof(None, C, nonneg, record, terms_by_fold=by_fold)
+            terms = [pool[i] for i in allnine[k][0]]
+            prev = set(rows[-1]["terms"]) if rows else set()
+            rows.append({"k": k, "added": ", ".join(t for t in terms if t not in prev) or "—", "terms": terms,
+                         "inner": allnine[k][1], "grade": self.grade(pk, n_boot)})
+        k_best = min(rows, key=lambda r: r["inner"])["k"]
+        return {"terms": rows[k_best - 1]["terms"], "nested_grade": rows[k_best - 1]["grade"], "path": rows,
+                "by_fold": {f: [pool[i] for i in best[f][min(k_best, max(best[f]))][0]] for f in folds},
+                "chosen_in": {}, "n_folds": len(folds), "trace": [r["inner"] for r in rows], "min_gain": None,
+                "max_terms": max_terms, "rules": req is not None, "beam": width}
 
 
 def inner_brier(data: list, cols: list, nonneg: bool) -> float:
@@ -361,12 +390,36 @@ def inner_brier(data: list, cols: list, nonneg: bool) -> float:
     return sse / n
 
 
-def forward_select(data: list, n_pool: int, max_terms: int, min_gain: float | None, nonneg: bool) -> tuple:
+def requirements(pool: list) -> list:
+    """The sensible rules, per pool position: the positions that must be chosen first (-1: never, the needed term
+    is not in the pool). A hinge x>k needs x; a lag needs the lag before it (no "5 days ago" without "3 days ago");
+    rain on a west wind needs the day's rain; the 3-hour peak after wet days needs the 3-hour peak."""
+    idx = {t: i for i, t in enumerate(pool)}
+    lags = ["rain_lag1d", "rain_lag2d", "rain_lag3d", "rain_lag5d", "rain_lag7d"]
+    derived = {"rain_west": ["precip_avg"], "max3h_after_wet": ["rain_max3h"]}
+    out = []
+    for t in pool:
+        base, _, knot = t.partition(">")
+        need = [base] if knot else []
+        if not knot and base in lags[1:]:
+            need.append(lags[lags.index(base) - 1])
+        need += derived.get(base, [])
+        out.append(tuple(idx.get(n, -1) for n in need))
+    return out
+
+
+def _allowed(j: int, chosen, req) -> bool:
+    return req is None or all(r != -1 and r in chosen for r in req[j])
+
+
+def forward_select(data: list, n_pool: int, max_terms: int, min_gain: float | None, nonneg: bool, req=None) -> tuple:
     """Add the pool column that lowers inner_brier most, while it lowers it by more than ``min_gain`` (relative);
-    ``min_gain`` None: to ``max_terms`` whatever the gain (the path)."""
+    ``min_gain`` None: to ``max_terms`` whatever the gain (the path). ``req``: requirements (the sensible rules)."""
     chosen, best, trace = [], np.inf, []
     while len(chosen) < min(max_terms, n_pool):
-        scores = {j: inner_brier(data, chosen + [j], nonneg) for j in range(n_pool) if j not in chosen}
+        scores = {j: inner_brier(data, chosen + [j], nonneg) for j in range(n_pool) if j not in chosen and _allowed(j, chosen, req)}
+        if not scores:
+            break
         j, s = min(scores.items(), key=lambda kv: kv[1])
         if min_gain is not None and np.isfinite(best) and s > best * (1.0 - min_gain):
             break
@@ -374,6 +427,27 @@ def forward_select(data: list, n_pool: int, max_terms: int, min_gain: float | No
         best = s
         trace.append(float(s))
     return chosen, trace
+
+
+def beam_select(data: list, n_pool: int, max_terms: int, width: int, nonneg: bool, req=None) -> dict:
+    """{size: (positions, inner_brier)}: the best set found at each size, keeping the ``width`` best sets of each size
+    and growing each by every allowed term (sets, not orders: a set reached two ways is scored once)."""
+    beams, best = [()], {}
+    for k in range(1, min(max_terms, n_pool) + 1):
+        cand = {}
+        for chosen in beams:
+            for j in range(n_pool):
+                if j in chosen or not _allowed(j, chosen, req):
+                    continue
+                key = tuple(sorted(chosen + (j,)))
+                if key not in cand:
+                    cand[key] = inner_brier(data, list(key), nonneg)
+        if not cand:
+            break
+        top = sorted(cand.items(), key=lambda kv: kv[1])[:width]
+        beams = [key for key, _ in top]
+        best[k] = (list(top[0][0]), float(top[0][1]))
+    return best
 
 
 # ── fidelity ────────────────────────────────────────────────────────────────
@@ -445,7 +519,8 @@ def make_app(lab: Lab):
     @app.post("/api/choose")
     def api_choose():
         a = request.get_json(force=True) or {}
-        return jsonify(lab.choose(a.get("pool") or None, max_terms=int(a.get("max_terms", 8)), path=bool(a.get("path")), **args()))
+        return jsonify(lab.choose(a.get("pool") or None, max_terms=int(a.get("max_terms", 8)), path=bool(a.get("path")),
+                                  rules=bool(a.get("rules")), beam=3 if a.get("wide") else 1, **args()))
 
     return app
 

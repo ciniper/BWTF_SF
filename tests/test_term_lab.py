@@ -75,6 +75,17 @@ def test_every_size_is_graded_nested():
     assert abs(r["path"][0]["grade"]["T2"]["pooled"]["skill"] - want) < 1e-12
 
 
+def test_sensible_rules_and_the_wider_search():
+    req = TL.requirements(["rain_lag2d", "precip_avg", "rain_lag1d", "precip_avg>0.25", "rain_west", "rain_max3h>0.5"])
+    assert req == [(2,), (), (), (1,), (1,), (-1,)]          # lag2 after lag1; a hinge after its base; never without one
+    chosen = []
+    assert not TL._allowed(0, chosen, req) and TL._allowed(2, chosen, req) and not TL._allowed(5, [0, 1, 2, 3, 4], req)
+    pool = ["precip_avg", "precip_avg>0.25", "wind_v_rain"]
+    r = lab().choose(pool, max_terms=2, jobs=1, n_boot=200, rules=True, beam=2)
+    assert r["beam"] == 2 and [s["k"] for s in r["path"]] == [1, 2] and all(len(s["terms"]) == s["k"] for s in r["path"])
+    assert all(("precip_avg>0.25" not in ts) or ("precip_avg" in ts) for ts in r["by_fold"].values())
+
+
 def test_new_inputs_mean_what_they_say():
     u, v = TL.wind_uv([5.0, 5.0, 5.0], [270.0, 180.0, 90.0])          # west, south, east winds
     assert np.allclose(u, [5.0, 0.0, -5.0]) and np.allclose(v, [0.0, 5.0, 0.0], atol=1e-9)
