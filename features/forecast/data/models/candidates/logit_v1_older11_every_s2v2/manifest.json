@@ -1,0 +1,373 @@
+{
+ "name": "logit_v1_older11_every_s2v2",
+ "family": "logit",
+ "note": "The served overflow model's design (38 weights: 19 inputs + hinges, L2 logistic, the served C and rain sources) refit on a longer label record: the older SFPUC discharge reports from 2011-03-01 where CIWQS is silent, every discharge day as a discharge day. Stage 2 v2, the served split and linger table. Not served.",
+ "created_at": "2026-10-06T21:30:01",
+ "trained_through": "2025-10-31",
+ "span": [
+  "2016-03-01",
+  "2026-08-17"
+ ],
+ "holdout_start": "2023-07-01",
+ "rain_sources": {
+  "westside": "avg",
+  "north_shore": "SF Downtown",
+  "central": "SF Downtown",
+  "southeast": "SF Downtown",
+  "citywide": "avg"
+ },
+ "per_basin": {
+  "westside": {
+   "source": "avg",
+   "C": 0.1,
+   "holdout": {
+    "n": 854,
+    "pos": 12,
+    "roc_auc": 0.9963380839271575,
+    "pr_auc": 0.8185418647192695,
+    "brier": 0.006609817405273822
+   },
+   "season_cv_pre_holdout": {
+    "n": 4504,
+    "pos": 104,
+    "roc_auc": 0.9852972027972028,
+    "pr_auc": 0.6317137548390644,
+    "brier": 0.012718472692962127
+   },
+   "n_events": 116,
+   "first_day": "2011-03-01"
+  },
+  "north_shore": {
+   "source": "SF Downtown",
+   "C": 0.03,
+   "holdout": {
+    "n": 854,
+    "pos": 9,
+    "roc_auc": 0.9996055226824458,
+    "pr_auc": 0.9626543209876544,
+    "brier": 0.001985956236263015
+   },
+   "season_cv_pre_holdout": {
+    "n": 4505,
+    "pos": 53,
+    "roc_auc": 0.9941599281221922,
+    "pr_auc": 0.695876832745972,
+    "brier": 0.006177874202787159
+   },
+   "n_events": 62,
+   "first_day": "2011-03-01"
+  },
+  "central": {
+   "source": "SF Downtown",
+   "C": 0.03,
+   "holdout": {
+    "n": 854,
+    "pos": 20,
+    "roc_auc": 0.9997002398081535,
+    "pr_auc": 0.9867685144233131,
+    "brier": 0.003657526524272357
+   },
+   "season_cv_pre_holdout": {
+    "n": 4505,
+    "pos": 105,
+    "roc_auc": 0.9820692640692641,
+    "pr_auc": 0.7144422126029815,
+    "brier": 0.010444385426809701
+   },
+   "n_events": 125,
+   "first_day": "2011-03-01"
+  },
+  "southeast": {
+   "source": "SF Downtown",
+   "C": 0.03,
+   "holdout": {
+    "n": 854,
+    "pos": 17,
+    "roc_auc": 0.9985241408391313,
+    "pr_auc": 0.9017447757932187,
+    "brier": 0.004375765130133555
+   },
+   "season_cv_pre_holdout": {
+    "n": 4505,
+    "pos": 113,
+    "roc_auc": 0.9928409658752035,
+    "pr_auc": 0.787140772704763,
+    "brier": 0.010184813802017129
+   },
+   "n_events": 130,
+   "first_day": "2011-03-01"
+  },
+  "citywide": {
+   "source": "avg",
+   "C": 0.03,
+   "holdout": {
+    "n": 854,
+    "pos": 20,
+    "roc_auc": 0.9979016786570745,
+    "pr_auc": 0.9134139778779873,
+    "brier": 0.0060203616239774315
+   },
+   "season_cv_pre_holdout": {
+    "n": 4504,
+    "pos": 157,
+    "roc_auc": 0.9903674691822021,
+    "pr_auc": 0.8240439287660676,
+    "brier": 0.013164777765091009
+   },
+   "n_events": 177,
+   "first_day": "2011-03-01"
+  }
+ },
+ "stage1": {
+  "name": "logit_v1_older11_every",
+  "from": "fit",
+  "family": "logit"
+ },
+ "stage2": {
+  "variant": "v2",
+  "kind": "outfall_split",
+  "impact_table_refit": true,
+  "fitted_at": "2026-09-25T13:26:04"
+ },
+ "zone_confusion_holdout": {
+  "ocean": {
+   "0.1": {
+    "vs_discharge_posting": {
+     "tp": 10,
+     "fp": 52,
+     "fn": 0,
+     "tn": 792
+    },
+    "vs_bacteria_elevated": {
+     "tp": 17,
+     "fp": 13,
+     "fn": 10,
+     "tn": 117
+    }
+   },
+   "0.25": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 27,
+     "fn": 1,
+     "tn": 817
+    },
+    "vs_bacteria_elevated": {
+     "tp": 16,
+     "fp": 8,
+     "fn": 11,
+     "tn": 122
+    }
+   },
+   "0.5": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 7,
+     "fn": 1,
+     "tn": 837
+    },
+    "vs_bacteria_elevated": {
+     "tp": 9,
+     "fp": 1,
+     "fn": 18,
+     "tn": 129
+    }
+   }
+  },
+  "baker_china": {
+   "0.1": {
+    "vs_discharge_posting": {
+     "tp": 10,
+     "fp": 42,
+     "fn": 0,
+     "tn": 802
+    },
+    "vs_bacteria_elevated": {
+     "tp": 7,
+     "fp": 10,
+     "fn": 32,
+     "tn": 120
+    }
+   },
+   "0.25": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 15,
+     "fn": 1,
+     "tn": 829
+    },
+    "vs_bacteria_elevated": {
+     "tp": 4,
+     "fp": 4,
+     "fn": 35,
+     "tn": 126
+    }
+   },
+   "0.5": {
+    "vs_discharge_posting": {
+     "tp": 8,
+     "fp": 6,
+     "fn": 2,
+     "tn": 838
+    },
+    "vs_bacteria_elevated": {
+     "tp": 3,
+     "fp": 1,
+     "fn": 36,
+     "tn": 129
+    }
+   }
+  },
+  "north": {
+   "0.1": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 45,
+     "fn": 0,
+     "tn": 800
+    },
+    "vs_bacteria_elevated": {
+     "tp": 17,
+     "fp": 13,
+     "fn": 11,
+     "tn": 116
+    }
+   },
+   "0.25": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 20,
+     "fn": 0,
+     "tn": 825
+    },
+    "vs_bacteria_elevated": {
+     "tp": 16,
+     "fp": 6,
+     "fn": 12,
+     "tn": 123
+    }
+   },
+   "0.5": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 1,
+     "fn": 0,
+     "tn": 844
+    },
+    "vs_bacteria_elevated": {
+     "tp": 8,
+     "fp": 1,
+     "fn": 20,
+     "tn": 128
+    }
+   }
+  },
+  "east": {
+   "0.1": {
+    "vs_discharge_posting": {
+     "tp": 20,
+     "fp": 130,
+     "fn": 0,
+     "tn": 704
+    },
+    "vs_bacteria_elevated": {
+     "tp": 78,
+     "fp": 22,
+     "fn": 59,
+     "tn": 100
+    }
+   },
+   "0.25": {
+    "vs_discharge_posting": {
+     "tp": 20,
+     "fp": 87,
+     "fn": 0,
+     "tn": 747
+    },
+    "vs_bacteria_elevated": {
+     "tp": 72,
+     "fp": 14,
+     "fn": 65,
+     "tn": 108
+    }
+   },
+   "0.5": {
+    "vs_discharge_posting": {
+     "tp": 19,
+     "fp": 52,
+     "fn": 1,
+     "tn": 782
+    },
+    "vs_bacteria_elevated": {
+     "tp": 56,
+     "fp": 9,
+     "fn": 81,
+     "tn": 113
+    }
+   }
+  }
+ },
+ "record": {
+  "labels": "csd_pre2018",
+  "day_rule": "every",
+  "start": "2011-03-01"
+ },
+ "record_notes": {
+  "labels": "csd_pre2018",
+  "day_rule": "every",
+  "start": "2011-03-01",
+  "basins": {
+   "Westside": {
+    "days": 2466,
+    "discharge_days": 65,
+    "replaced_archive_days": 283,
+    "from_2016_03": 26
+   },
+   "North Shore": {
+    "days": 2041,
+    "discharge_days": 22,
+    "replaced_archive_days": 183,
+    "from_2016_03": 3
+   },
+   "Central": {
+    "days": 2041,
+    "discharge_days": 47,
+    "replaced_archive_days": 183,
+    "from_2016_03": 3
+   },
+   "Southeast": {
+    "days": 2041,
+    "discharge_days": 52,
+    "replaced_archive_days": 183,
+    "from_2016_03": 5
+   }
+  }
+ },
+ "record_counts": {
+  "westside": {
+   "days": 2466,
+   "discharge_days": 65,
+   "drought_days": 1826,
+   "drought_discharge_days": 39
+  },
+  "north_shore": {
+   "days": 2041,
+   "discharge_days": 22,
+   "drought_days": 1827,
+   "drought_discharge_days": 20
+  },
+  "central": {
+   "days": 2041,
+   "discharge_days": 47,
+   "drought_days": 1827,
+   "drought_discharge_days": 39
+  },
+  "southeast": {
+   "days": 2041,
+   "discharge_days": 52,
+   "drought_days": 1827,
+   "drought_discharge_days": 45
+  }
+ },
+ "stage1_source": "fit"
+}

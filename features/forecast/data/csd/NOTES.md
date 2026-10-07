@@ -15,7 +15,7 @@ identical). See "Refresh log" at the end.
 |---|---|---|
 | `sf_csd_events.csv` | 1,104 events | Per-event records, modern format (date, outfall, start time, duration, volume) |
 | `sf_csd_monthly_coverage.csv` | 327 facility-months | Month-by-month coverage/status grid — use this to distinguish "no event" from "no data" |
-| `pre2018/` | 158 + 212 rows | The older daily-total reports, Mar 2011 → the modern format (added 2026-10-06; `pre2018/NOTES.md`): Westside per outfall per day with hours + volume (Mar 2011 – Dec 2017), Bayside per outfall group per day with hours + count, **no volumes** (Mar 2011 – Sep 2016; the old `sf_csd_events_bayside_legacy_2013_2016.csv` moved there and gained Feb 2014). Shown on the Discharge Ledger; **not read by the forecast** |
+| `pre2018/` | 158 + 212 rows | The older daily-total reports, Mar 2011 → the modern format (added 2026-10-06; `pre2018/NOTES.md`): Westside per outfall per day with hours + volume (Mar 2011 – Dec 2017), Bayside per outfall group per day with hours + count, **no volumes** (Mar 2011 – Sep 2016; the old `sf_csd_events_bayside_legacy_2013_2016.csv` moved there and gained Feb 2014). Shown on the Discharge Ledger; **not read by the served forecast** (candidates can train on them, opt-in: `pre2018/NOTES.md`) |
 
 ## Coverage (per-event with volumes: `sf_csd_events.csv`)
 

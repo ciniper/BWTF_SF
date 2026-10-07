@@ -120,7 +120,8 @@ PART_WORDS = {
     "a declared fallback exists and stands in under the floor": "the stand-in exists and is used where needed",
     "declared head − fallback, Δ log-MAE on event days": "size error against the stand-in (described, not tested)",
 }
-# A "not applicable" row's plain reason, used only when the artifact's reason says the same thing (the pattern).
+# A "not applicable" row's plain reason, used only when the artifact's reason says the same thing (the pattern; a list
+# holds one (pattern, words) per reason a row can give).
 NA_WORDS = {
     "S1": (r"served weather model", "same weather model as the live forecast"),
     "S2": (r"its S2 is the served set's", "same overflow model as the live forecast"),
@@ -128,7 +129,8 @@ NA_WORDS = {
     "S2-volume": (r"shares the served bundle's volume heads", "uses the live forecast's size estimates"),
     "S3a": (r"is the served set's geography", "same basins as the live forecast: this test compares basins"),
     "S3b": (r"no Westside share model with a size term", "no size-based split to test"),
-    "S4": (r"which no §8 row scores", "no test is set for this lingering table"),
+    "S4": [(r"which no §8 row scores", "no test is set for this lingering table"),
+           (r"its S4 is the served set's", "same lingering table as the live forecast")],
     "S5": (r"its S5 is the served set's", "same correction rule as the live forecast"),
 }
 CRITERIA_WORDS = {1: "Every changed stage passes its own pre-registered test",
@@ -865,9 +867,12 @@ def _status_cell(status: str, tip: str) -> str:
 
 
 def _na_words(row: dict) -> str:
-    pat, words = NA_WORDS.get(row["id"], (None, None))
     reason = str(row.get("reason", ""))
-    return words if pat and re.search(pat, reason) else clean(reason)
+    pairs = NA_WORDS.get(row["id"], [])
+    for pat, words in ([pairs] if isinstance(pairs, tuple) else pairs):
+        if re.search(pat, reason):
+            return words
+    return clean(reason)
 
 
 def _nyc_words(row: dict) -> str:

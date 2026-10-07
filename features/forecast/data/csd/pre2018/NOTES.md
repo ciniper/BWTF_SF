@@ -3,8 +3,12 @@
 Added 2026-10-06. SFPUC's monthly reports went online on CIWQS in March 2011. Until the
 modern per-event tables (Bayside Oct 2016, Westside Jan 2018) they report **daily totals**.
 These files hold those years. The Discharge Ledger shows them, with the differences spelled
-out on `/discharges/reporting`. **The forecast does not read them**: training labels and the
-Model check use `../sf_csd_events.csv` + `../sf_csd_monthly_coverage.csv` only.
+out on `/discharges/reporting`. **The served forecast does not read them**: its training
+labels, the Model check and the scoring protocol's truth use `../sf_csd_events.csv` +
+`../sf_csd_monthly_coverage.csv` only. Candidate model sets can opt in to them as extra
+**training** labels (2026-10-06): `src/collectors/csd_pre2018.py` reads them, through
+`train_v4.build_dataset(record=...)`; `src/models/train_older_reports.py` fits the
+candidates, and `SWAPS.md` ("Training on the older discharge reports") says how they are scored.
 
 ## Files
 

@@ -63,6 +63,49 @@ To put a set live on BWTF basins:
 lists. A city-basin set needs the promotion tooling (P11), which is built when such
 a set earns promotion (STAGES_DESIGN.md Part B 29).
 
+## Training on the older discharge reports
+
+SFPUC's older monthly reports (Mar 2011 until the CIWQS ledger opens: Bayside
+Oct 2016, Westside Dec 2017; `data/csd/pre2018/`) can be extra **training**
+labels for a candidate set. They are never truth: every score still reads the
+CIWQS ledger only, on the same days, under the same protocol, so a candidate
+trained on them is compared with the served set exactly like any other.
+
+```bash
+venv/bin/python features/forecast/src/collectors/historical.py --older
+venv/bin/python features/forecast/src/models/train_older_reports.py
+venv/bin/python features/forecast/src/models/train_older_reports.py --save all
+venv/bin/python features/forecast/src/models/stages_build.py --set logit_v1_older11_every_s2v2 --root candidates --write
+venv/bin/python features/forecast/src/models/train_older_reports.py --report
+```
+
+1. The first command fetches the 2011–2015 rain (both gauges, and ERA5's
+   hourly rain) into two files of their own,
+   `data/raw/historical_rain_2011-2015.csv` and
+   `hourly_rain_openmeteo_2011-2015.csv`. The record's own rain files stay as
+   they are, because every stage score pins them. The gauge-outage rule is
+   applied to the older span: ACIS reads 0.00 while a gauge is dead.
+2. The second compares the candidates with the served design on the
+   trainer's own holdout numbers. It writes nothing.
+3. The third saves the four candidates (`train_older_reports.RECORDS`):
+   - records from 2016-03 (no new rain) and from 2011-03;
+   - each with the first day of each run of discharge days as the label, or
+     every discharge day.
+
+   Each is the served overflow model's design refit on the longer record, with
+   the served beach split and linger table. The candidate's manifest names
+   its `record`.
+4. Score each set with the stages build, then write `OLDER_REPORTS.md` from the
+   scores. The build fits S2 on the set's record. Its T2 folds also fit on the
+   record's seasons before 2016-17, which no fold scores. S3 and S4 are fit
+   per fold on the served record, so the candidate differs from the served
+   set in its S2 weights only.
+
+The reader is `src/collectors/csd_pre2018.py`. Nothing served or live reads
+it (`tests/test_discharges_pre2018.py`). Promoting such a set copies its
+`record` into `served.json`, so the stage build keeps refitting the served set
+on it.
+
 ## A rain gauge
 
 Each basin's model reads one rain series: the two-gauge mean `avg`, `SF
@@ -124,7 +167,9 @@ venv/bin/python features/forecast/src/models/stages_build.py --set gb_v1 --root 
 ```
 
 Then rebuild each stage candidate you are keeping with
-`--set <name> --root stages_candidates --write`. That takes about 4 minutes per
+`--set <name> --root stages_candidates --write`, and each candidate trained on
+the older reports with `--set logit_v1_older<…>_s2v2 --root candidates --write`
+(then `train_older_reports.py --report`). That takes about 4 minutes per
 set; the S1 step takes about 2.
 
 After rebuilding the stage scores, run `venv/bin/python features/forecast/src/models/export_stage_builder.py` and commit its `data/models/stage_builder.json`: the Model check's stage builder reads that file, since the app bundle leaves the stage artifacts out (`tests/test_stage_builder.py` fails while it is stale).

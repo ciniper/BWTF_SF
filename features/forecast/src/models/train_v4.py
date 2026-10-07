@@ -30,6 +30,10 @@ What changed from v3 (train_v2.py, promoted 2026-09-02):
 Run:  venv/bin/python features/forecast/src/models/train_v4.py
 Artifacts → data/models/v4/ (promote by copying into data/models/).
 
+A longer label record (build_dataset(record=...), opt-in; train_older_reports.py):
+the older SFPUC discharge reports (data/csd/pre2018/, Mar 2011 on) label the days
+CIWQS is silent on, for candidates only. Every served path reads the record above.
+
 Rescore (no retraining):  train_v4.py --rescore [--promote]
 Appends POST-TRAINING days to the served scorecard — the live models scored on
 every day after the artifact's end that the refreshed rain + CIWQS + bacteria
@@ -90,9 +94,13 @@ from shared.standards import STANDARDS, flag_exceedances, parse_result  # noqa: 
 # ── Rain features, per source ───────────────────────────────────────────────
 
 COCORAHS_CSV = RAW_DIR / "historical_rain_cocorahs.csv"   # src/collectors/cocorahs.py
+# A longer record's rain before historical_rain.csv / hourly_rain_openmeteo.csv start (2016-01-01), read only
+# when build_dataset is given a record starting before TRAIN_START (collectors/historical.py --older).
+OLDER_RAIN_CSV = RAW_DIR / "historical_rain_2011-2015.csv"
+OLDER_HOURLY_CSV = RAW_DIR / "hourly_rain_openmeteo_2011-2015.csv"
 
 
-def rain_series(source: str, input_rules: list | None = None) -> tuple:
+def rain_series(source: str, input_rules: list | None = None, older_rain: bool = False) -> tuple:
     """Daily rain (inches) for `source` + fill note. ``input_rules`` may name
     "gauge_outage_v1" (rain_features.GAUGE_OUTAGE_RULE): a dead gauge's
     0.00 run becomes missing before any averaging or filling, so the other
@@ -104,7 +112,13 @@ def rain_series(source: str, input_rules: list | None = None) -> tuple:
     'US1CASF0017'; a missing day takes the two-gauge mean), or that id with
     '@-1' appended, which moves each value one day earlier — CoCoRaHS
     observers read the gauge at ~07:00, so the value filed for D is mostly
-    D−1's rain. Then everything is filled to 0."""
+    D−1's rain. Then everything is filled to 0.
+
+    ``older_rain`` (a longer record's opt-in, build_dataset(record=...)): the two
+    gauges before historical_rain.csv's first day, from OLDER_RAIN_CSV, go in front,
+    with the gauge-outage rule always applied to them (the Oceanside gauge reads
+    0.00 through dead spells in 2011–2015 too). The file's own days are untouched:
+    False (every served path) reads exactly the record the served sets saw."""
     rain_df = pd.read_csv(RAW_DIR / "historical_rain.csv", parse_dates=["date"])
     rp = rain_df.pivot_table(index="date", columns="rain_station_name",
                              values="precip_inches", aggfunc="first").sort_index()
@@ -114,6 +128,8 @@ def rain_series(source: str, input_rules: list | None = None) -> tuple:
         tmp, masked = mask_gauge_outages(rp.reset_index(), gauges=tuple(cols))
         rp = tmp.set_index("date")[cols]
     extra = {"outage_runs_masked": len(masked), "outage_days_masked": int(sum(r["days"] for r in masked))}
+    if older_rain:
+        rp, extra["older_rain"] = _with_older_rain(rp, cols)
     avg = rp[cols].mean(axis=1)
     if source == "avg":
         return avg.fillna(0.0), {"filled_from_other_gauge": 0, **extra}
@@ -138,13 +154,42 @@ def rain_series(source: str, input_rules: list | None = None) -> tuple:
     return s.fillna(avg).fillna(0.0), {"filled_from_two_gauge_mean": filled, "shift_days": int(shift or 0)}
 
 
-def rain_features(source: str, input_rules: list | None = None) -> pd.DataFrame:
+def _with_older_rain(rp: pd.DataFrame, cols: list) -> tuple:
+    """(rp with OLDER_RAIN_CSV's gauge-days before rp's first day in front, outage-masked; a note)."""
+    old = pd.read_csv(OLDER_RAIN_CSV, parse_dates=["date"])
+    op = old.pivot_table(index="date", columns="rain_station_name", values="precip_inches", aggfunc="first").sort_index()
+    if sorted(op.columns) != sorted(cols):
+        raise ValueError(f"{OLDER_RAIN_CSV.name} names gauges {sorted(op.columns)}, historical_rain.csv {sorted(cols)}")
+    op = op[op.index < rp.index.min()].reindex(columns=cols)
+    if not len(op) or (op.index[-1] + pd.Timedelta(days=1)) != rp.index.min():
+        raise ValueError(f"{OLDER_RAIN_CSV.name} does not end the day before historical_rain.csv starts ({rp.index.min().date()})")
+    tmp, runs = mask_gauge_outages(op.reset_index(), gauges=tuple(cols))
+    op = tmp.set_index("date")[cols]
+    note = {"first": str(op.index.min().date()), "days": int(len(op)), "missing_gauge_days": {c: int(op[c].isna().sum()) for c in cols},
+            "outage_runs_masked": len(runs), "outage_days_masked": int(sum(r["days"] for r in runs))}
+    return pd.concat([op, rp]), note
+
+
+def rain_features(source: str, input_rules: list | None = None, older_rain: bool = False) -> pd.DataFrame:
     """Daily features over an arbitrary daily series — the shared formula
     (src/models/rain_features.py), the same one serving applies."""
     from rain_features import add_daily_features
-    s, _ = rain_series(source, input_rules)
+    s, _ = rain_series(source, input_rules, older_rain=older_rain)
     rp = add_daily_features(pd.DataFrame({"date": s.index, "precip_inches": s.values}))
     return rp[["date"] + get_feature_columns()]
+
+
+def hourly_features(older_rain: bool = False) -> pd.DataFrame:
+    """train_v2.build_hourly_features, with OLDER_HOURLY_CSV's hours in front for a longer record."""
+    if not older_rain:
+        return build_hourly_features()
+    from rain_features import hourly_intensity
+    h = pd.read_csv(RAW_DIR / "hourly_rain_openmeteo.csv", parse_dates=["timestamp"])
+    old = pd.read_csv(OLDER_HOURLY_CSV, parse_dates=["timestamp"])
+    old = old[old["timestamp"] < h["timestamp"].min()]
+    if not len(old) or old["timestamp"].max() + pd.Timedelta(hours=1) != h["timestamp"].min():
+        raise ValueError(f"{OLDER_HOURLY_CSV.name} does not end the hour before hourly_rain_openmeteo.csv starts")
+    return hourly_intensity(pd.concat([old, h], ignore_index=True))
 
 
 # ── Poo Bot archive → labels ────────────────────────────────────────────────
@@ -245,8 +290,47 @@ def apply_archive_labels(df: pd.DataFrame, arch: dict, rain_avg: pd.Series, geo=
 
 # ── Dataset ─────────────────────────────────────────────────────────────────
 
+def check_record(record: dict) -> dict:
+    """A longer label record (build_dataset's ``record``): {"labels": "csd_pre2018", "day_rule": "first" | "every",
+    "start": "YYYY-MM-DD"}, the older discharge reports read through collectors/csd_pre2018.py. Raises on anything else."""
+    import csd_pre2018 as P
+    if not isinstance(record, dict) or set(record) != {"labels", "day_rule", "start"}:
+        raise ValueError(f"a record is {{labels, day_rule, start}}, not {record!r}")
+    if record["labels"] != P.SOURCE or record["day_rule"] not in P.DAY_RULES:
+        raise ValueError(f"record labels {record['labels']!r} / day rule {record['day_rule']!r}; known: {P.SOURCE}, {P.DAY_RULES}")
+    start = pd.Timestamp(record["start"])
+    if not (P.FIRST_DAY <= start <= TRAIN_START) or start.day != 1:
+        raise ValueError(f"record start {record['start']} must be a month's first day in {P.FIRST_DAY.date()} … {TRAIN_START.date()}")
+    return {**record, "start": str(start.date())}
+
+
+def apply_older_labels(df: pd.DataFrame, record: dict) -> dict:
+    """Stamp the older reports' labels (csd_pre2018.daily_labels) on every day the CIWQS ledger does not cover:
+    a covered older day replaces an uncovered day and a Poo Bot archive day alike (an SFPUC filing outranks its
+    feed), never a CIWQS day. Their volumes are unknown (volume_known 0: no volume head reads them)."""
+    import csd_pre2018 as P
+    lab = P.daily_labels(record["day_rule"]).set_index("date")
+    notes = {"labels": P.SOURCE, "day_rule": record["day_rule"], "start": record["start"], "basins": {}}
+    for basin in APP_BASINS:
+        src = df[f"{basin}_label_source"]
+        known = df["date"].map(lab[f"{basin}_covered"]).fillna(0).astype(int) == 1
+        take = known & src.isin(["", "poobot"])
+        y = df["date"].map(lab[f"{basin}_csd"]).fillna(0).astype(int)
+        n_out = df["date"].map(lab[f"{basin}_outfalls"]).fillna(0).astype(int)
+        notes["basins"][basin] = {"days": int(take.sum()), "discharge_days": int((take & (y == 1)).sum()),
+                                  "replaced_archive_days": int((take & (src == "poobot")).sum()),
+                                  "from_2016_03": int((take & (y == 1) & (df["date"] >= TRAIN_START)).sum())}
+        df.loc[take, f"{basin}_csd"] = y[take]
+        df.loc[take, f"{basin}_outfalls"] = n_out[take]
+        df.loc[take, f"{basin}_volume_mg"] = 0.0
+        df.loc[take, f"{basin}_volume_known"] = 0
+        df.loc[take, f"{basin}_covered"] = 1
+        df.loc[take, f"{basin}_label_source"] = P.SOURCE
+    return notes
+
+
 def build_dataset(end: pd.Timestamp = TRAIN_END, sources: list = None, input_rules: list | None = None,
-                  geo=None) -> tuple:
+                  geo=None, record: dict | None = None) -> tuple:
     """Returns ({rain_source: feature+label frame}, notes). Label columns are
     identical across sources; only the rain features differ. `end` is the
     training window's last day (TRAIN_END) or, for --rescore, the last day the
@@ -255,10 +339,20 @@ def build_dataset(end: pd.Timestamp = TRAIN_END, sources: list = None, input_rul
     None reproduces the record the served models were trained on. ``geo`` (a
     shared.geography.Geography): per-basin label columns, coverage and archive
     onsets follow it, named by its basins' display names (csd_labels.
-    build_daily_labels); None = the served geo_v1 frames, as v4 was trained."""
+    build_daily_labels); None = the served geo_v1 frames, as v4 was trained.
+    ``record`` (check_record; opt-in, GEO_V1 only): the older discharge reports as
+    labels where CIWQS is silent (apply_older_labels), from the record's start,
+    with the older rain in front when it starts before TRAIN_START. None = the
+    served record: nothing reads collectors/csd_pre2018.py."""
     basins = APP_BASINS if geo is None else [b.name for b in geo.basins]
+    if record is not None:
+        if geo is not None:
+            raise ValueError("the older reports' Bayside rows are outfall groups: they map to BWTF basins only (geo=None)")
+        record = check_record(record)
+    start = pd.Timestamp(record["start"]) if record else TRAIN_START
+    older_rain = start < TRAIN_START
     labels = build_daily_labels(geo=geo)
-    days = pd.DataFrame({"date": pd.date_range(TRAIN_START, end)})
+    days = pd.DataFrame({"date": pd.date_range(start, end)})
     df = days.merge(labels, on="date", how="left")
     for basin in basins:
         for col, fill in ((f"{basin}_csd", 0), (f"{basin}_volume_mg", 0.0), (f"{basin}_outfalls", 0), (f"{basin}_covered", 0)):
@@ -275,6 +369,8 @@ def build_dataset(end: pd.Timestamp = TRAIN_END, sources: list = None, input_rul
     if recall["recall"] is not None and recall["recall"] >= ARCHIVE_MIN_RECALL:
         notes["archive_used"] = True
         notes["archive_labels"] = apply_archive_labels(df, arch, rain_avg, geo=geo)
+    if record is not None:
+        notes["record"] = apply_older_labels(df, record)
 
     cov_cols = [f"{b}_covered" for b in basins]
     df["csd_any"] = (df[[f"{b}_csd" for b in basins]].sum(axis=1) > 0).astype(int)
@@ -283,14 +379,14 @@ def build_dataset(end: pd.Timestamp = TRAIN_END, sources: list = None, input_rul
     df["fully_covered"] = (df[cov_cols].sum(axis=1) == len(cov_cols)).astype(int)
     df["season"] = wet_season(df["date"])
 
-    hourly = build_hourly_features()
+    hourly = hourly_features(older_rain)
     out = {}
     for src in (sources or RAIN_SOURCES):
-        f = df.merge(rain_features(src, input_rules), on="date", how="left").merge(hourly, on="date", how="left")
+        f = df.merge(rain_features(src, input_rules, older_rain), on="date", how="left").merge(hourly, on="date", how="left")
         f[INTENSITY_FEATURES] = f[INTENSITY_FEATURES].fillna(0)
         f[get_feature_columns()] = f[get_feature_columns()].fillna(0)
         out[src] = f.reset_index(drop=True)
-        notes[f"rain_{src}"] = rain_series(src, input_rules)[1]
+        notes[f"rain_{src}"] = rain_series(src, input_rules, older_rain)[1]
     notes["input_rules"] = list(input_rules or [])
     return out, notes
 

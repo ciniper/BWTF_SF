@@ -20,7 +20,13 @@ WORDS = {
     "s2": {"logit_v1": "38-weight", "gb_v1": "Trees", "shared8_nonneg_sfpuc4": "8-term SFPUC",
            # the shared-terms sets on BWTF basins (leaderboard.SHARED_DESIGNS; the count is their bands)
            "logit_v2_shared5": "5-term", "logit_v2_shared6": "6-term", "logit_v2_shared8": "8-term",
-           "logit_v2_half": "19-term", "logit_v2_four": "Four-input"},
+           "logit_v2_half": "19-term", "logit_v2_four": "Four-input",
+           # the 38-weight design refit on the older SFPUC discharge reports too (train_older_reports.py): the years
+           # added, and which days of a multi-day discharge count (the first of each run, or all of them)
+           "logit_v1_older16_first": "38-weight + 2016–17 reports (first days)",
+           "logit_v1_older16_every": "38-weight + 2016–17 reports (all days)",
+           "logit_v1_older11_first": "38-weight + 2011–17 reports (first days)",
+           "logit_v1_older11_every": "38-weight + 2011–17 reports (all days)"},
     "s3": {"basin_v1": "No split", "split_v2": "Outfall split", "split_v2_sfpuc4": "Outfall split SFPUC", "links_v1": "Size split"},
     "s4": {"impact_v1": "Linger table 1", "impact_v2": "Linger table 2", "impact_v2_zone": "Linger table 2 per zone",
            "zone_v3": "Rain curve"},

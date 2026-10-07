@@ -32,6 +32,9 @@ to the fold), compose_v2.cofire inside stages_s5. On the full training window
 (tests/test_stages_build.py), so the fold restriction is the only difference. T1
 reads the set's own artifacts (fit through 2025-10-31). A stage 2 v1 set (no
 split; candidates.load_stage2 → None) has identity links and the raw table.
+A set trained on a longer label record (its manifest's ``record``: the older
+SFPUC reports, stages_s2) fits S2 on that record; its S3 / S4 folds are fit on
+the served record, like every other set's, so it differs in its S2 weights only.
 
 **T0, the prospective window (protocol §2).** T1 stops at the freeze; T0 is T1's
 fold, not refit (the finals, their heads and specs), on every day after it to the
@@ -2148,6 +2151,11 @@ def input_files(bundle: SetBundle, model: str) -> list:
     else:
         files += sorted(sd.glob("*_model.pkl")) + sorted(T4.SERVE_DIR.glob("*_volume.pkl"))
         files += [sd / n for n in ("stage2.json", "manifest.json") if (sd / n).exists()]
+    if bundle.stage is None and bundle.s2.train_record is not None:   # a longer label record: its reports and rain
+        import csd_pre2018 as P
+        files += [P.WESTSIDE_CSV, P.WESTSIDE_COVERAGE_CSV, P.BAYSIDE_CSV, P.BAYSIDE_COVERAGE_CSV]
+        if pd.Timestamp(bundle.s2.train_record["start"]) < T4.TRAIN_START:
+            files += [T4.OLDER_RAIN_CSV, T4.OLDER_HOURLY_CSV]
     if not bundle.is_served:                       # vs_served and the primaries read the served set's written build
         built = STAGES_DIR / served_name()
         files += [built / n for n in SERVED_BUILD_FILES if (built / n).exists()]
@@ -2201,8 +2209,9 @@ def build(set_name: str = "served", root: str = "served", entries=ENTRIES, tiers
     t0 = time.time()
     need = sorted(set(s2set.sources) | set(bundle.chosen.values()) | {"avg"})
     if st is None:
-        train, _ = T4.build_dataset(sources=need)
-        fitted = S2.fit(bundle.name, root, tiers, train_frames=train)
+        train, _ = T4.build_dataset(sources=need)        # the served record: S3 / S4 fold fits read it for every set
+        s2_train = train if s2set.train_record is None else S2.training_frames(s2set, need)   # a longer record: S2 only
+        fitted = S2.fit(bundle.name, root, tiers, train_frames=s2_train)
         plan = {(p[0], p[1]): p for p in S2._plan(tiers)}
         all_folds = list(fitted.folds)
     else:
@@ -3281,7 +3290,8 @@ def manifest(bundle: SetBundle, entries, tiers, steps, model: str, end, n_boot: 
             "entries": list(entries), "steps": list(steps), "weather_model": model, "bootstrap": {"n": n_boot, "seed": SEED},
             "inputs": {_repo_path(p): input_sha(p) for p in input_files(bundle, model)},
             "inputs_unstamped": {str(Path(p).relative_to(REPO)): list(k) for p, k in UNSTAMPED.items()},
-            "code": {str(p.relative_to(REPO)): _sha(p) for p in code_files()}, **extra}
+            "code": {str(p.relative_to(REPO)): _sha(p) for p in code_files()}, **extra,
+            **({"train_record": bundle.s2.train_record} if st is None and bundle.s2.train_record is not None else {})}
 
 
 # ── writing ─────────────────────────────────────────────────────────────────

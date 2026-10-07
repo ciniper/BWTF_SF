@@ -44,15 +44,45 @@ def test_every_row_names_its_source_and_outfalls_come_from_the_registry():
 
 
 def test_the_forecast_record_is_untouched():
-    """Training labels and the Model check read only the per-event record and its grid."""
+    """The served labels, the ledger, the protocol's truth and the live forecast read only the per-event record and
+    its grid. The older reports are an opt-in training record (collectors/csd_pre2018.py, read through
+    train_v4.build_dataset(record=...)): off by default, and named only by the candidates trained on it."""
     with open(ROOT / "features/forecast/data/csd/sf_csd_events.csv", newline="") as fh:
         ev = list(csv.DictReader(fh))
     assert min(e["event_date"] for e in ev if e["facility"].startswith("Oceanside")) >= "2018-01-01"
     assert min(e["event_date"] for e in ev) >= "2016-10-01"
-    readers = [ROOT / "features/forecast/src/collectors/csd_labels.py", ROOT / "features/forecast/live_dashboard.py",
-               *sorted((ROOT / "features/forecast/src/models").glob("*.py"))]
-    for path in readers:                                                    # nothing the forecast runs reads the older files
+    never = [ROOT / "features/forecast/src/collectors/csd_labels.py", ROOT / "features/forecast/live_dashboard.py"]
+    models = sorted((ROOT / "features/forecast/src/models").glob("*.py"))
+    for path in never:                                                      # the labels and the live page never name them
         assert "pre2018" not in path.read_text(), path.name
+    # the only forecast modules that name the reader: the opt-in record (train_v4), the S2 refits that honour a
+    # candidate's record (stages_s2), the build pinning its files (stages_build) and the candidates' trainer
+    readers = {p.name for p in models if "pre2018" in p.read_text()}
+    assert readers == {"train_v4.py", "stages_s2.py", "stages_build.py", "train_older_reports.py"}, readers
+    # off on the served and live paths: a fresh interpreter builds the served record and imports the live page
+    # without loading the reader, and no day of the served frames is an older-report day
+    probe = (
+        "import sys; sys.path[:0] = [{r!r}, {r!r} + '/features/forecast/src/models', {r!r} + '/features/forecast/src/collectors']\n"
+        "import train_v4 as T\n"
+        "fr, notes = T.build_dataset(sources=['avg'])\n"
+        "assert 'record' not in notes and fr['avg']['date'].min() == T.TRAIN_START\n"
+        "assert not any((fr['avg'][b + '_label_source'] == 'csd_pre2018').any() for b in T.APP_BASINS)\n"
+        "from features.forecast import live_dashboard, page\n"
+        "import compose_v2, live_rules, truth, exclusions\n"
+        "assert 'csd_pre2018' not in sys.modules, 'the reader loaded on a served path'\n"
+        "print('ok')\n").format(r=str(ROOT))
+    import subprocess
+    out = subprocess.run([sys.executable, "-c", probe], capture_output=True, text=True, cwd=ROOT)
+    assert out.returncode == 0 and out.stdout.strip().endswith("ok"), out.stderr[-2000:]
+    # the served set names no record (promote.py copies a promoted candidate's record into served.json: that commit
+    # moves this line); a candidate that names one says so in its name
+    models_dir = ROOT / "features/forecast/data/models"
+    assert "record" not in json.loads((models_dir / "served.json").read_text())
+    for man in sorted((models_dir / "candidates").glob("*/manifest.json")):
+        rec = json.loads(man.read_text()).get("record")
+        assert (rec is not None) == ("_older" in man.parent.name), man.parent.name
+        if rec:
+            assert rec["labels"] == "csd_pre2018" and rec["day_rule"] in ("first", "every"), man.parent.name
 
 
 def test_ledger_payload_carries_the_older_rows_with_their_kind():

@@ -141,6 +141,8 @@ def promote(candidate: str, line: float, dry_run: bool = False) -> dict:
         "rain_sources": man.get("rain_sources"), "per_basin": man.get("per_basin"), "input_rules_post": man.get("input_rules_post"),
         "stage2_kind": (s2 or {}).get("kind", "basin composition"), "note": man.get("note", ""),
     }
+    if man.get("record") is not None:      # a longer label record (train_older_reports.py): the stage build refits on it
+        served["record"] = man["record"]
     served["corrections"] = C.served_info().get("corrections", "live_v2")   # the correction rule is promoted on its own
     print(f"promote {candidate}: stage 1 {served['stage1']} ({served['family']}), stage 2 {served['stage2']}, line {line:.2f}; replaces {retired}")
     if not dry_run:

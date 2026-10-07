@@ -11,7 +11,7 @@
   "functions": {
     "app/wsgi.py": {
       "maxDuration": 60,
-      "excludeFiles": "{tests/**,docs/**,db/**,.claude/**,features/forecast/data/models/stages/**,features/forecast/data/models/stages_candidates/**,features/forecast/data/forecast_history/**,features/forecast/data/raw/openmeteo_*.csv}"
+      "excludeFiles": "{tests/**,docs/**,db/**,.claude/**,features/forecast/data/models/stages/**,features/forecast/data/models/stages_candidates/**,features/forecast/data/forecast_history/**,features/forecast/data/raw/openmeteo_*.csv,features/forecast/data/raw/*2011-2015*}"
     }
   }
 }

@@ -16,7 +16,9 @@ heads were fit through 2025-10-31), so every window refits everything S2 fits:
     T2          2016-17 …     leave one July–June season out of        refit per fold, same seasons
                 2024-25       2016-17 … 2024-25, fit on the other
                               eight (never 2025-26, never the
-                              Mar–Jun 2016 rows before the span)
+                              Mar–Jun 2016 rows before the span;
+                              a longer record's seasons before
+                              2016-17 are fit in every fold, below)
     T0          final         T1's finals, not refit, on every day     T1's heads
                               after the freeze (protocol §2's
                               prospective window, shadow-run)
@@ -45,6 +47,16 @@ head: GEO_V1's `southeast` key reads Downtown, its head the two-gauge mean).
 
 GBM sets (family gb, e.g. gb_v1) score their finals only, T1 and T0: no LOSO, no
 holdout refit (§8 P7). Asking for more raises.
+
+A longer label record. A candidate whose manifest names a ``record`` (train_v4.
+check_record: the older SFPUC discharge reports, collectors/csd_pre2018.py) was fit on
+train_v4.build_dataset(record=...): more training days, the same design. Its training
+record (training_frames) is that one, so check_training_record holds it to its own
+counts. Its T2 folds also fit on the record's seasons before 2016-17 (``extra_seasons``),
+which no fold scores; the scored seasons, days and truth are the protocol's, unchanged:
+an older-report day is never ledger_known. The volume heads read known volumes only, and
+the older reports carry none, so the heads are the served record's. A set with no record
+(every served set) reads exactly what it did.
 
 Entries (protocol §3) are frames, built elsewhere (stages_entries): ``frames_by_entry``
 = {entry id (exclusions.ENTRIES): {rain source: frame}}, a frame holding a date
@@ -150,6 +162,7 @@ class S2Set:
     heads: dict           # basin key → volume head dict: model, features, rain_source, n_events, …
     use_archive: dict     # basin name → the trainer's archive-label decision
     record: dict          # basin key → the descriptor's per_basin entry (n_events, season_cv_pre_holdout, …)
+    train_record: dict | None = None   # the descriptor's longer label record (train_v4.check_record); None = the served record
 
     @property
     def keys(self) -> tuple:
@@ -248,12 +261,22 @@ def load_set(set_name: str, root: str = "served") -> S2Set:
         raise KeyError(f"eval_report.json states no archive-label decision for {unknown}")
     use_archive = {b.name: bool(decisions[b.name]) for b in geo.basins}
     record = {k: desc["per_basin"][k] for k in geo.keys}
-    return S2Set(set_name, root, family, stage1, geo, tt, models, heads, use_archive, record)
+    train_record = T.check_record(desc["record"]) if desc.get("record") is not None else None
+    return S2Set(set_name, root, family, stage1, geo, tt, models, heads, use_archive, record, train_record)
 
 
-def training_frames(s2set: S2Set) -> dict:
-    """{source: frame}: the raw record the set was trained on (no input rules), through 2025-10-31."""
-    return T.build_dataset(sources=list(s2set.sources))[0]
+def training_frames(s2set: S2Set, sources=None) -> dict:
+    """{source: frame}: the raw record the set was trained on (no input rules), through 2025-10-31: the served
+    record, or the set's longer label record. ``sources`` default: the set's own."""
+    return T.build_dataset(sources=list(sources or s2set.sources), record=s2set.train_record)[0]
+
+
+def extra_seasons(s2set: S2Set) -> tuple:
+    """The July–June seasons a longer record holds before T2's first (2016-17), fit in every T2 fold; () without one."""
+    if s2set.train_record is None:
+        return ()
+    first = int(T.wet_season(pd.Series([pd.Timestamp(s2set.train_record["start"])])).iloc[0])
+    return tuple(range(first, T2_SEASONS[0]))
 
 
 def check_training_record(s2set: S2Set, train: dict) -> None:
@@ -324,9 +347,12 @@ class Fold:
     info: dict            # basin key → counts and spans for the stamp
 
 
-def _plan(tiers: tuple) -> list:
+def _plan(tiers: tuple, extra: tuple = ()) -> list:
     """(tier, fold, first scored day, last scored day, held-out season, training-row filter). T1 stops at the freeze;
-    T0 is T1's fold, not refit, from the day after it to whatever the inputs reach (no last day of its own)."""
+    T0 is T1's fold, not refit, from the day after it to whatever the inputs reach (no last day of its own).
+    ``extra``: seasons before T2's first that every T2 fold also fits on (extra_seasons; never a scored one)."""
+    if set(extra) & set(T2_SEASONS) or any(s >= T2_SEASONS[0] for s in extra):
+        raise ValueError(f"extra T2 training seasons {extra} must precede {season_label(T2_SEASONS[0])}")
     out = []
     for tier in ALL_TIERS:
         if tier not in tiers:
@@ -340,7 +366,7 @@ def _plan(tiers: tuple) -> list:
                         lambda f: f["date"] < HOLDOUT_START))
         else:
             for s in T2_SEASONS:
-                others = [x for x in T2_SEASONS if x != s]
+                others = list(extra) + [x for x in T2_SEASONS if x != s]
                 out.append((tier, season_label(s), pd.Timestamp(s, 7, 1), pd.Timestamp(s + 1, 6, 30), s,
                             lambda f, o=tuple(others): f["season"].isin(o)))
     return out
@@ -444,14 +470,16 @@ def fit(set_name: str, root: str = "served", tiers=TIERS, train_frames: dict | N
     train = training_frames(s2set) if train_frames is None else train_frames
     check_training_record(s2set, train)
     t0 = time.time()
-    folds = tuple(fit_fold(s2set, train, *p) for p in _plan(tiers))
+    folds = tuple(fit_fold(s2set, train, *p) for p in _plan(tiers, extra_seasons(s2set)))
     stamp = {"schema": SCHEMA, "stage": "s2", "set": s2set.name, "root": s2set.root, "stage1": s2set.stage1,
              "family": s2set.family, "geography": s2set.geo.version, "basins": list(s2set.keys),
              "citywide": "not a stage row: compose_v2 reads basin p and v_hat only; citywide_p is a scorecard display",
              "protocol": X.protocol_stamp(), "built_at": clock.utc_iso(),
              "trained_through": str(s2set.trained_through.date()), "holdout_start": str(HOLDOUT_START.date()),
              "post_start": str(POST_START.date()), "freeze": str(X.freeze_date().date()),
-             "train_input_rules": [], "rain_sources": {k: s2set.models[k]["rain_source"] for k in s2set.keys},
+             "train_input_rules": [], "train_record": s2set.train_record,
+             "t2_extra_train_seasons": [season_label(x) for x in extra_seasons(s2set)],
+             "rain_sources": {k: s2set.models[k]["rain_source"] for k in s2set.keys},
              "head_sources": {k: s2set.heads[k]["rain_source"] for k in s2set.keys},
              "tiers": {t: dict(_TIER_TEXT[t]) for t in tiers},
              "folds": [{"tier": f.tier, "fold": f.fold, "scores": [str(f.start.date()), str(f.end.date())], "train": f.info}

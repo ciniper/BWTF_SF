@@ -130,14 +130,17 @@ def fetch_historical_rain(start_date: str = "2016-01-01",
     return df
 
 
-def fetch_hourly_rain(start_date: str = "2016-01-01") -> pd.DataFrame:
+def fetch_hourly_rain(start_date: str = "2016-01-01", end_date: str = None, out: Path = None) -> pd.DataFrame:
     """Hourly precipitation from the Open-Meteo archive (ERA5), for the
     peak-intensity features (train_v2.build_hourly_features). Same source
     family the dashboard uses at inference — keep it that way (the v1
-    precip_max lesson). Saves to data/raw/hourly_rain_openmeteo.csv."""
+    precip_max lesson). Saves to data/raw/hourly_rain_openmeteo.csv, or ``out``
+    (fetch_older_rain's span before that file starts)."""
     frames = []
     start = pd.Timestamp(start_date)
     end_all = pd.Timestamp.now() - pd.Timedelta(days=6)  # archive lags ~5 days
+    if end_date is not None:
+        end_all = min(end_all, pd.Timestamp(end_date))
     for y0 in range(start.year, end_all.year + 1, 3):
         chunk_start = max(start, pd.Timestamp(f"{y0}-01-01"))
         chunk_end = min(pd.Timestamp(f"{y0 + 2}-12-31"), end_all)
@@ -159,8 +162,29 @@ def fetch_hourly_rain(start_date: str = "2016-01-01") -> pd.DataFrame:
     df = pd.concat(frames).drop_duplicates("timestamp").sort_values("timestamp")
     df["precip_inches"] = df["precip_mm"] / 25.4
     RAW_DIR.mkdir(parents=True, exist_ok=True)
-    df.to_csv(RAW_DIR / "hourly_rain_openmeteo.csv", index=False)
+    df.to_csv(out or RAW_DIR / "hourly_rain_openmeteo.csv", index=False)
     return df
+
+
+# The rain before historical_rain.csv / hourly_rain_openmeteo.csv start (2016-01-01), for training on the
+# older discharge reports (data/csd/pre2018/, Mar 2011 on; train_v4.build_dataset(record=...)). Separate
+# files, so the record every served set and stage score pins stays byte for byte what it was.
+OLDER_START, OLDER_END = "2011-01-01", "2015-12-31"
+OLDER_RAIN_CSV = RAW_DIR / "historical_rain_2011-2015.csv"
+OLDER_HOURLY_CSV = RAW_DIR / "hourly_rain_openmeteo_2011-2015.csv"
+
+
+def fetch_older_rain() -> tuple:
+    """Both gauges daily (ACIS) and ERA5 hourly, OLDER_START → OLDER_END, written to the two older files.
+    ACIS reports 0.00, not missing, while a gauge is dead: the reader masks those runs (gauge_outage_v1)."""
+    rain = fetch_historical_rain(OLDER_START, OLDER_END)
+    if set(rain["rain_station_name"]) != {v["name"] for v in RAIN_STATIONS.values()}:
+        raise RuntimeError(f"ACIS answered for {sorted(set(rain['rain_station_name']))} only")
+    RAW_DIR.mkdir(parents=True, exist_ok=True)
+    rain.to_csv(OLDER_RAIN_CSV, index=False)
+    hourly = fetch_hourly_rain(OLDER_START, OLDER_END, out=OLDER_HOURLY_CSV)
+    print(f"  {OLDER_RAIN_CSV.name}: {len(rain)} gauge-days · {OLDER_HOURLY_CSV.name}: {len(hourly)} hours")
+    return rain, hourly
 
 
 def fetch_historical_bacteria(start_date: str = "2020-07-01",
@@ -416,4 +440,7 @@ def collect_and_build(save: bool = True) -> pd.DataFrame:
 
 
 if __name__ == "__main__":
-    training_df = collect_and_build()
+    if "--older" in sys.argv[1:]:      # the 2011–2015 rain only (fetch_older_rain); the record's own files untouched
+        fetch_older_rain()
+    else:
+        training_df = collect_and_build()
