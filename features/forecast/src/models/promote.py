@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Promote a candidate set to the served bundle — and retire the served set to a candidate.
 
-    venv/bin/python features/forecast/src/models/promote.py logit_v1_s2v2 --line 0.25 [--dry-run]
+    venv/bin/python features/forecast/src/models/promote.py icon-w38-osplit-lt2-bflags --line 0.25 [--dry-run]
 
 What moves (data/models/):
   * the served stage-1 pickles, scorecard and stage2.json (if any) are copied
@@ -9,8 +9,12 @@ What moves (data/models/):
     so the retired set stays gradable next to everything else;
   * the candidate's pickles, scorecard.json.gz and stage2.json (or none for a
     v1 set) replace the served ones;
-  * data/models/served.json describes the new served set (name, stage 1,
-    stage 2, family, operating line, provenance) — candidates.SERVED reads it;
+  * data/models/served.json describes the new served set (name, lineup, stage 1,
+    stage 2, family, operating line, provenance) — candidates.SERVED reads it.
+    Its name is the id of the lineup that serves (shared/lineup.py set_id):
+    the candidate's overflow model, split and table with today's weather model
+    and correction rule, so it is the candidate's name unless one of those
+    changed since the candidate was saved;
   * the candidate's directory is removed (a set is served or a candidate,
     never both);
   * other candidates whose manifest says stage 1 came "from served" are
@@ -33,8 +37,14 @@ The live-correction rule is promoted on its own (STAGES_DESIGN.md A7):
 link_zone_v1 writes data/models/s5.json (the rule, and the served geography's
 co-firing shares fit on the CIWQS ledger through the served set's
 trained_through, as stages_s5 scored it); live_v2 removes the file. Either way
-served.json records the rule as "corrections". It changes the public number:
+served.json records the rule as "corrections". It changes the public number,
+and the served set's S5, so its name (its lineup's id) changes with it:
 re-run tests/fixtures/make_stages_goldens.py in the same commit.
+
+A new weather model on the live page (live_dashboard METEO_PARAMS) changes the
+served set's S1 the same way; rename it in the same commit:
+
+    venv/bin/python features/forecast/src/models/promote.py --rename-served [--dry-run]
 """
 from __future__ import annotations
 
@@ -89,6 +99,8 @@ def retire_served(now: str, dry_run: bool) -> str:
     s2_path = SERVE_DIR / "stage2.json"
     s2 = json.loads(s2_path.read_text()) if s2_path.exists() else None
     family = served.get("family") or models["westside"].get("family") or "gb"
+    if not served.get("lineup") or C.set_name(served["lineup"]) != name:
+        raise SystemExit(f"served.json records no lineup whose id is {name!r}: rename_served first")
     per_basin = served.get("per_basin")
     if per_basin is None:   # the original gb_v1 bundle: its training report carries the per-basin picks
         ev_path = SERVE_DIR / "eval_report.json"
@@ -107,7 +119,7 @@ def retire_served(now: str, dry_run: bool) -> str:
         "stage2": {"variant": served["stage2"], "kind": (s2 or {}).get("kind", "basin composition"),
                    "impact_table_refit": bool(s2 and s2.get("impact_table")), "fitted_at": (s2 or {}).get("fitted_at")},
         "zone_confusion_holdout": sc.get("zone_confusion_holdout"), "input_rules_post": sc.get("input_rules_post") or [],
-        "stage1_source": "retired-served",
+        "stage1_source": "retired-served", "lineup": dict(served["lineup"]),
         **{k: served[k] for k in DESIGN_FIELDS if served.get(k) is not None},
     }
     print(f"retire {name}: {len(models)} pickles, scorecard ({len(sc['days'])} days), stage2 {served['stage2']} → candidates/{name}/")
@@ -138,10 +150,17 @@ def promote(candidate: str, line: float, dry_run: bool = False) -> dict:
     if (sc.get("stage2") or {}).get("variant", "v1") != (s2 or {}).get("variant", "v1"):
         raise SystemExit("candidate scorecard and stage2.json disagree on the variant")
 
+    stage1 = (man.get("stage1") or {}).get("name")
+    if not stage1 or not man.get("lineup") or man["lineup"]["s2"] != stage1:
+        raise SystemExit(f"{candidate}'s manifest records no overflow model and lineup to serve")
+    name, lineup = C.geo_v1_set(stage1, s2)          # today's weather model and correction rule: what will serve
+    if name != candidate:
+        print(f"   {candidate} serves as {name}: today's {', '.join(c for c in ('s1', 's5') if lineup[c] != man['lineup'][c])} "
+              f"differs from the one it was saved with")
     retired = retire_served(now, dry_run)
 
     served = {
-        "name": candidate, "stage1": (man.get("stage1") or {}).get("name", candidate), "stage2": C.stage2_variant_id(s2),
+        "name": name, "lineup": lineup, "stage1": stage1, "stage2": C.stage2_variant_id(s2),
         "artifact": models["westside"].get("version", candidate), "family": man.get("family") or models["westside"].get("family", "gb"),
         "line": float(line), "promoted_at": now, "from_candidate": candidate, "replaced": retired,
         "created_at": man.get("created_at"), "trained_through": man.get("trained_through"), "holdout_start": man.get("holdout_start"),
@@ -152,6 +171,8 @@ def promote(candidate: str, line: float, dry_run: bool = False) -> dict:
         if man.get(k) is not None:
             served[k] = man[k]
     served["corrections"] = C.served_info().get("corrections", "live_v2")   # the correction rule is promoted on its own
+    if served["corrections"] != lineup["s5"]:
+        raise SystemExit(f"the served correction rule {served['corrections']!r} is not the lineup's S5 {lineup['s5']!r}")
     print(f"promote {candidate}: stage 1 {served['stage1']} ({served['family']}), stage 2 {served['stage2']}, line {line:.2f}; replaces {retired}")
     if not dry_run:
         for k in KEYS:
@@ -178,6 +199,39 @@ def promote(candidate: str, line: float, dry_run: bool = False) -> dict:
 
 
 CORRECTIONS = ("live_v2", "link_zone_v1")
+
+
+def served_lineup_now(served: dict) -> dict:
+    """The lineup that serves with served.json ``served``: its overflow model, split and table, the live page's
+    weather model and its correction rule (candidates.geo_v1_lineup reads both)."""
+    return C._lineup_module().geo_v1_lineup(served["stage1"], served["stage2"], _weather_model(),
+                                            served.get("corrections") or "live_v2")
+
+
+def _weather_model() -> str:
+    import stages_entries as E  # noqa: PLC0415  (read off live_dashboard's source)
+    return E.served_weather_model()
+
+
+def rename_served(dry_run: bool = False, serve_dir: Path | None = None, served: dict | None = None) -> str:
+    """served.json renamed to the id of the lineup that serves (``served_lineup_now``): after a correction rule or a
+    weather model is switched, the served set is another lineup. Records the lineup and ``renamed_from``. Returns the
+    name. ``served``: the served.json about to be written (promote_corrections), else the file's."""
+    sd = Path(serve_dir) if serve_dir is not None else SERVE_DIR
+    path = sd / "served.json"
+    sv = dict(served) if served is not None else json.loads(path.read_text())
+    lineup = served_lineup_now(sv)
+    name = C.set_name(lineup)
+    if name == sv["name"] and sv.get("lineup") == lineup:
+        print(f"served set {name}: its name is its lineup's id")
+        return name
+    print(f"served set {sv['name']} → {name}" + (" (dry run)" if dry_run else ""))
+    if name != sv["name"]:
+        sv["renamed_from"] = sv["name"]
+    sv.update(name=name, lineup=lineup)
+    if not dry_run:
+        path.write_text(json.dumps(sv, indent=1, default=str) + "\n")
+    return name
 
 
 def promote_corrections(rule: str, dry_run: bool = False, serve_dir: Path | None = None) -> dict | None:
@@ -214,6 +268,7 @@ def promote_corrections(rule: str, dry_run: bool = False, serve_dir: Path | None
             (sd / "s5.json").unlink()
         served["corrections"] = rule
         served_path.write_text(json.dumps(served, indent=1, default=str) + "\n")
+        rename_served(serve_dir=sd)                     # a new S5: the served set's id changes with it
         print("now re-run tests/fixtures/make_stages_goldens.py and scripts/check.sh, in the same commit")
     return spec
 
@@ -222,6 +277,9 @@ if __name__ == "__main__":
     args = sys.argv[1:]
     if "--corrections" in args:
         promote_corrections(args[args.index("--corrections") + 1], dry_run="--dry-run" in args)
+        raise SystemExit(0)
+    if "--rename-served" in args:
+        rename_served(dry_run="--dry-run" in args)
         raise SystemExit(0)
     if not args or args[0].startswith("--"):
         raise SystemExit(__doc__)

@@ -296,7 +296,7 @@ def test_stage_candidates_are_not_model_check_candidates():
         assert SC.list_sets(root=root) == []
     # Part B 13: inside the repository the saver writes under stages_candidates/ only
     pay = _s2(holdouts=False)
-    bads = (C.CANDIDATES_DIR, C.SERVE_DIR, ROOT, SC.ROOT / ".." / "stages", SC.ROOT / "_scratch", SC.ROOT / "sfpuc4_shared8_v1")
+    bads = (C.CANDIDATES_DIR, C.SERVE_DIR, ROOT, SC.ROOT / ".." / "stages", SC.ROOT / "_scratch", SC.ROOT / "sfpuc-icon-t8s-ssplit-rain-lzflags")
     for bad in bads:                         # the guard alone first (pure): if it is broken, nothing below writes
         assert "stages_candidates" in _raises(lambda: SC._root(bad)), bad
     for bad in bads:
@@ -444,6 +444,36 @@ def test_copy_s2_keeps_the_fits_and_says_where_from():
         p = root / "sfpuc4_base_v1" / "manifest.json"
         p.write_text(json.dumps({**json.loads(p.read_text()), "s2_from": "sfpuc4_base_v1"}))
         assert "s2_from" in _raises(lambda: SC.load_set("sfpuc4_base_v1", root=root))
+
+
+def test_a_complete_set_is_stored_under_its_lineups_id():
+    """Part B 36: a set built under a working name loads while a stage is missing; once complete it must be moved
+    to its lineup's id (finalize): stamps and sha256s redone, its own name inside its specs mapped, a copy's s2_from
+    and the bake-off's winner pointed at it, and the loader refuses the working name."""
+    with _Tmp() as root:
+        bake = root / "_bakeoff" / "results.json"
+        bake.parent.mkdir()
+        bake.write_text(json.dumps({"winner": {"candidate": "sfpuc4_work_v1"}}))
+        s2 = _s2()
+        s2 = {**s2, "component": "shared8_nonneg_sfpuc4", "spec": {**s2["spec"], "bakeoff": str(bake)}}
+        SC.save_component("sfpuc4_work_v1", "s2", s2, root=root)
+        SC.copy_s2("sfpuc4_work_v1", "sfpuc4_copy_v1", root=root)
+        SC.save_component("sfpuc4_work_v1", "s3_links", {**_s3(), "component": "links_v1",
+                                                          "fit": {"s2_set": "sfpuc4_work_v1"}}, root=root)
+        SC.save_component("sfpuc4_work_v1", "s4_quality", {**_s4(), "component": "zone_v3"}, root=root)
+        SC.save_component("sfpuc4_work_v1", "s1", {"geography": GEO.version, "component": "icon_seamless"}, root=root)
+        assert "lacks ['s5']" in _raises(lambda: SC.finalize("sfpuc4_work_v1", root=root))
+        SC.load_set("sfpuc4_work_v1", root=root)                                  # four stages: any name
+        SC.save_component("sfpuc4_work_v1", "s5", {"geography": GEO.version, "component": "link_zone_swap"}, root=root)
+        assert "lineup's id 'sfpuc-icon-t8s-ssplit-rain-lzflags'" in _raises(lambda: SC.load_set("sfpuc4_work_v1", root=root))
+        new = SC.finalize("sfpuc4_work_v1", root=root, log=lambda *a: None)
+        assert new == "sfpuc-icon-t8s-ssplit-rain-lzflags" and not (root / "sfpuc4_work_v1").exists()
+        st = SC.load_set(new, root=root)
+        assert st.manifest["renamed_from"] == "sfpuc4_work_v1" and st.manifest["lineup"]["s4"] == "zone_v3"
+        assert st.s3_links["fit"]["s2_set"] == new and all(m["set"] == new for m in st.models.values())
+        assert SC.load_set("sfpuc4_copy_v1", root=root).manifest["s2_from"] == new
+        assert json.loads(bake.read_text())["winner"]["candidate"] == new
+        assert SC.finalize(new, root=root) == new                                  # already its id: nothing moves
 
 
 def test_tags_are_the_protocols_with_a_reason():

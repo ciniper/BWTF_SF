@@ -16,8 +16,8 @@ Fidelity first, on committed data, no network:
   - the volume heads refit with the bundle's own design (a full-span refit is the
     bundle's head; a fold's is train_v4.fit_volume_heads on the fold's rows);
   - a T2 fold equals a refit by hand; no fold trains on its scored season, no row is
-    T3, and check_out_of_fold catches a leak; candidates logit_v1 and gb_v1 load
-    (gb_v1: T1 only, its dry-day offset included).
+    T3, and check_out_of_fold catches a leak; the 38-weight and Trees candidates (icon-w38-nosplit-lt1-bflags, icon-trees-nosplit-lt1-bflags)
+    load (Trees: T1 only, its dry-day offset included).
 Run: venv/bin/python tests/test_stages_s2.py
 """
 from __future__ import annotations
@@ -140,7 +140,7 @@ def test_leaderboard_season_cv_default_is_the_recorded_one_and_its_oof_reproduce
 def test_shared_logit_season_cv_default_is_the_recorded_one_and_its_oof_reproduces_it():
     frames = _train()
     use_archive = json.loads((T.SERVE_DIR / "eval_report.json").read_text())["stage1_archive_labels"]
-    for name, dk in (("logit_v2_four", "four"), ("logit_v2_shared5", "shared5")):
+    for name, dk in (("icon-four-nosplit-lt1-bflags", "four"), ("icon-t5-nosplit-lt1-bflags", "shared5")):
         man = json.loads((C.candidate_dir(name) / "manifest.json").read_text())
         for key, want in man["per_basin"].items():
             basin = "citywide" if key == "citywide" else G.get("geo_v1").basin(key).name
@@ -257,8 +257,8 @@ def test_refits_refuse_the_gbm_and_a_fitted_offset():
     family than its descriptor's raises at load."""
     import dataclasses
     train = _train()
-    gb = S.load_set("gb_v1", "candidates")
-    assert all(m["calibration_offset"] > 0 for m in gb.models.values())     # gb_v1's offsets were fit
+    gb = S.load_set("icon-trees-nosplit-lt1-bflags", "candidates")
+    assert all(m["calibration_offset"] > 0 for m in gb.models.values())     # the trees' offsets were fit
     plan = {p[1]: p for p in S._plan(S.TIERS)}
     _raises(lambda: S.fit_fold(gb, train, *plan["2019-20"]), "no refit")
     _raises(lambda: S.fit_fold(gb, train, *plan[S.FOLD_HOLDOUT]), "no refit")
@@ -272,8 +272,8 @@ def test_refits_refuse_the_gbm_and_a_fitted_offset():
     S.fit_fold(shifted, train, *plan[S.FOLD_FINAL])
     real = C.load_models
     try:                                                                    # GBM pickles under a logit manifest
-        C.load_models = lambda name: real("gb_v1") if name == "logit_v1" else real(name)
-        _raises(lambda: S.load_set("logit_v1", "candidates"), "in a logit set")
+        C.load_models = lambda name: real("icon-trees-nosplit-lt1-bflags") if name == "icon-w38-nosplit-lt1-bflags" else real(name)
+        _raises(lambda: S.load_set("icon-w38-nosplit-lt1-bflags", "candidates"), "in a logit set")
     finally:
         C.load_models = real
 
@@ -444,20 +444,20 @@ def test_bad_inputs_raise():
     raises(lambda: S.fit(_served(), tiers=("T3",)), "X-ALL-INSAMPLE")
     raises(lambda: S.fit(_served(), tiers=("T4",)), "unknown tiers")
     raises(lambda: S.load_set(_served(), root="stages_candidates"), "unknown root")
-    raises(lambda: S.load_set("logit_v1", root="served"), "the served set is")
+    raises(lambda: S.load_set("icon-w38-nosplit-lt1-bflags", root="served"), "the served set is")
     raises(lambda: S.load_set("no_such_set", root="candidates"), "no candidate")
-    raises(lambda: S.fit("gb_v1", "candidates", tiers=("T1", "T2")), "its finals only")
+    raises(lambda: S.fit("icon-trees-nosplit-lt1-bflags", "candidates", tiers=("T1", "T2")), "its finals only")
     # T0 is T1's fold after the freeze, never refit: the finals themselves (a gb set has it too)
     t0 = S.fit(_served(), tiers=("T0",))
     assert [(f.tier, f.fold, f.start) for f in t0.folds] == [("T0", S.FOLD_FINAL, X.freeze_date() + pd.Timedelta(days=1))]
     assert all(t0.folds[0].weights[k] is t0.set.models[k] and t0.folds[0].heads[k] is t0.set.heads[k] for k in KEYS)
-    assert [f.tier for f in S.fit("gb_v1", "candidates", tiers=S.FINAL_TIERS).folds] == ["T1", "T0"]
+    assert [f.tier for f in S.fit("icon-trees-nosplit-lt1-bflags", "candidates", tiers=S.FINAL_TIERS).folds] == ["T1", "T0"]
 
 
 def test_candidates_logit_v1_and_gb_v1_load_and_reproduce_their_post_training_p():
-    for name, tiers in (("logit_v1", S.TIERS), ("gb_v1", ("T1",))):
+    for name, tiers in (("icon-w38-nosplit-lt1-bflags", S.TIERS), ("icon-trees-nosplit-lt1-bflags", ("T1",))):
         rows = _rows(name, "candidates", tiers)
-        assert set(rows["tier"]) == set(tiers) and rows.attrs["stamp"]["family"] == ("gb" if name == "gb_v1" else "logit")
+        assert set(rows["tier"]) == set(tiers) and rows.attrs["stamp"]["family"] == ("gb" if name == "icon-trees-nosplit-lt1-bflags" else "logit")
         sc = C.load_scorecard(name)
         assert sc["input_rules_post"] == ["gauge_outage_v1"]
         stored = _stored(sc, "p")
@@ -465,7 +465,7 @@ def test_candidates_logit_v1_and_gb_v1_load_and_reproduce_their_post_training_p(
         assert len(t1) == POST_DAYS * len(KEYS)
         worst = max(abs(round(p, 3) - stored[(d, k)]) for d, k, p in zip(t1["date"], t1["basin"], t1["p"]))
         assert worst < 1e-9, (name, worst)
-    gb = _fit("gb_v1", "candidates", ("T1",)).set
+    gb = _fit("icon-trees-nosplit-lt1-bflags", "candidates", ("T1",)).set
     assert any(m["calibration_offset"] > 0 for m in gb.models.values())   # the dry-day offset is on the path
 
 

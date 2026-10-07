@@ -1700,7 +1700,7 @@ def t0_as_served(served: str, ctx: X.Context, pool: pd.DataFrame, blocks: pd.Dat
         return {"state": "no snapshot", "words": f"No forecast_history snapshot is committed yet ({_rel(path)}; "
                 "grade_prospective.py --export writes it): nothing the page showed in the live season is graded."}
     end = pd.Timestamp(end)
-    mine = snap[snap["model"] == served]
+    mine = snap[snap["model"].map(LU.current_name) == served]      # a name from before the 2026-10-07 rename finds its set
     due = mine[mine["target_date"] <= end]
     out = {"state": "graded" if len(due) else "waiting", "snapshot": _rel(path),
            "counts": {"issue_days": int(snap["issue_date"].nunique()), "graded": int(len(due)),

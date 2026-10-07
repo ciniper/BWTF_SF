@@ -76,12 +76,13 @@ def test_the_forecast_record_is_untouched():
     out = subprocess.run([sys.executable, "-c", probe], capture_output=True, text=True, cwd=ROOT)
     assert out.returncode == 0 and out.stdout.strip().endswith("ok"), out.stderr[-2000:]
     # the served set names no record (promote.py copies a promoted candidate's record into served.json: that commit
-    # moves this line); a candidate that names one says so in its name
+    # moves this line); a candidate that names one says so in its overflow model's name (its lineup's S2)
     models_dir = ROOT / "features/forecast/data/models"
     assert "record" not in json.loads((models_dir / "served.json").read_text())
     for man in sorted((models_dir / "candidates").glob("*/manifest.json")):
-        rec = json.loads(man.read_text()).get("record")
-        assert (rec is not None) == ("_older" in man.parent.name), man.parent.name
+        m = json.loads(man.read_text())
+        rec = m.get("record")
+        assert (rec is not None) == ("_older" in m["lineup"]["s2"]), man.parent.name
         if rec:
             assert rec["labels"] == "csd_pre2018" and rec["day_rule"] in ("first", "every"), man.parent.name
 

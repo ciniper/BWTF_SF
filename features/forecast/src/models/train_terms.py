@@ -18,9 +18,10 @@ stages build scores:
     the rest of the design   per basin the served set's rain source and C, standardised L2 logistic (leaderboard.
                make_terms_model), the older SFPUC reports from 2011 as labels where CIWQS is silent, every discharge
                day (train_older_reports' best record).
-    stage 2    v2, the served split and linger table (``<name>_s2v2``), and v2_d10, the same split with the linger
-               table fit on the stages' S4 truth samples (``<name>_s2v2d10``; stage2_variants.py fit --variant
-               v2_d10): the two lingering tables under the same overflow model.
+    stage 2    v2, the served split and linger table (``icon-t8wind-osplit-lt2-bflags`` at 8 terms), and v2_d10,
+               the same split with the linger table fit on the stages' S4 truth samples (``…-lt2more-…``;
+               stage2_variants.py fit --variant v2_d10): the two lingering tables under the same overflow model.
+               Each set is named by its lineup (shared/lineup.py set_id).
 
 A fold's refit in the stages build uses that fold's own terms (the manifest's ``fold_terms``, stages_s2.
 check_fold_terms), so the T2 and holdout scores grade the procedure, not one term list picked with every season in
@@ -29,7 +30,7 @@ lab's nine-season grades in view. Post-training and the live season were never s
 
     venv/bin/python features/forecast/src/models/train_terms.py            # select and print the nested grades
     venv/bin/python features/forecast/src/models/train_terms.py --save
-    venv/bin/python features/forecast/src/models/stages_build.py --set logit_wind8_older11_s2v2 --root candidates --write
+    venv/bin/python features/forecast/src/models/stages_build.py --set icon-t8wind-osplit-lt2-bflags --root candidates --write
 """
 from __future__ import annotations
 
@@ -61,7 +62,7 @@ RECORD_KEY = "older11"                                # term_lab.RECORDS: the ol
 SELECTION = {"rules": True, "path": True, "C": "live", "nonneg": False, "max_terms": max(SIZES)}
 KEYS = TOR.KEYS                                       # the four basins and citywide
 SELECTION_FILE = "selection.json"
-STAGE2 = {"s2v2": "v2", "s2v2d10": "v2_d10"}         # set-name suffix → stage 2 id (stage2_variants.load_spec)
+STAGE2 = {"s2v2": "v2", "s2v2d10": "v2_d10"}         # which linger table → stage 2 id (stage2_variants.load_spec)
 
 
 def stage1_name(k: int) -> str:
@@ -69,7 +70,8 @@ def stage1_name(k: int) -> str:
 
 
 def set_name(k: int, suffix: str = "s2v2") -> str:
-    return f"{stage1_name(k)}_{suffix}"
+    """The set saved for k terms and stage 2 STAGE2[suffix]: its lineup's id (candidates.geo_v1_set)."""
+    return CAND.geo_v1_set(stage1_name(k), SV.load_spec(STAGE2[suffix]))[0]
 
 
 def servable(terms) -> list:
@@ -147,8 +149,9 @@ def _grade_words(g: dict) -> str:
 
 
 def save(sel: dict, k: int, got: dict, suffix: str = "s2v2") -> Path:
-    name, variant = set_name(k, suffix), STAGE2[suffix]
+    variant = STAGE2[suffix]
     spec = SV.load_spec(variant)
+    name, lineup = CAND.geo_v1_set(stage1_name(k), spec)
     if variant == "v2" and spec != json.loads((T.SERVE_DIR / "stage2.json").read_text()):
         raise SystemExit("data/models/stage2/v2.json is not the served stage 2: refusing to pair with it")
     table = {"v2": "stage 2 v2", "v2_d10": "stage 2 v2 with its linger table fit on the stages' S4 truth samples (v2_d10)"}[variant]
@@ -162,7 +165,8 @@ def save(sel: dict, k: int, got: dict, suffix: str = "s2v2") -> Path:
              "term_selection": {"by": "train_terms.py → term_lab.Lab.choose", "must": sel["must"], "rules": sel["rules"],
                                 "pool": sel["pool"], "size": k, "lab_grade": {t: g["pooled"] for t, g in path["grade"].items()}}}
     d = CAND.save_candidate(name, "logit", got["finals"], got["holdouts"], got["chosen"], got["features"], got["per_basin"],
-                            note=note, extra=extra, stage2=spec, stage1_from="fit", stage1_name=stage1_name(k))
+                            note=note, extra=extra, stage2=spec, stage1_from="fit", stage1_name=stage1_name(k),
+                            lineup=lineup)
     print(f"candidate → {d}")
     return d
 

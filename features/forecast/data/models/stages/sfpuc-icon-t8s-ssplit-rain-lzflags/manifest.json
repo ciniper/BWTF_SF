@@ -1,0 +1,248 @@
+{
+ "schema": "bwtf.stages/1",
+ "set": "sfpuc-icon-t8s-ssplit-rain-lzflags",
+ "root": "stages_candidates",
+ "geography": "sfpuc4_v1",
+ "pipeline": "stages_v1",
+ "components": {
+  "s1": "icon_seamless",
+  "s2": "shared8_nonneg_sfpuc4",
+  "s3": "links_v1",
+  "s4": "zone_v3",
+  "s5": "link_zone_swap"
+ },
+ "stage2": null,
+ "family": "logit",
+ "spec_version": "2e03a1eae7",
+ "protocol": "stages_v3@22a2695e2e950188d37b753928932c6f6f2dc83296482a4fddf5a373ce86df3f",
+ "built_at": "2026-10-07T22:35:16+00:00",
+ "windows": {
+  "holdout_start": "2023-07-01",
+  "post_start": "2025-11-01",
+  "freeze": "2026-10-02",
+  "seasons": [
+   2016,
+   2017,
+   2018,
+   2019,
+   2020,
+   2021,
+   2022,
+   2023,
+   2024
+  ],
+  "data_end": "2026-08-17",
+  "tiers": [
+   "T1",
+   "T1-holdout",
+   "T2",
+   "T0"
+  ],
+  "t2_label": "development (nested)"
+ },
+ "entries": [
+  "oracle",
+  "rain",
+  "L0",
+  "L1",
+  "L2",
+  "L3",
+  "L4",
+  "L5",
+  "L0s",
+  "L1s"
+ ],
+ "steps": [
+  "s2",
+  "s3",
+  "s4",
+  "out",
+  "s5",
+  "scores"
+ ],
+ "weather_model": "icon_seamless",
+ "bootstrap": {
+  "n": 2000,
+  "seed": 0
+ },
+ "inputs": {
+  "features/forecast/STAGES_PROTOCOL.md": "a75d6e6b1779819f66cab2c2d43e64fc753c44530526a2d308225e856751aa23",
+  "features/forecast/live_dashboard.py": "0ba83a5c964ed3e8beca71fe198a29c76fad4aaffce3eef92b90ad654c6a06cc",
+  "features/forecast/data/models/stages/_s1/s1_scores.json": "52f053df51502ec50dde2cb03addf4450cff877f62c0a3bb2371bc24b7fadfdf",
+  "features/forecast/data/models/stages/_s1/icon_seamless.csv.gz": "77df2c795f8eb5edca83694198dcc236af4da9ec42098ba307e103ebf40600bb",
+  "features/forecast/data/raw/historical_rain.csv": "c4742eb23766ee048bd91a035a769270e207e21d0e39adf140c8b4153afdc7ed",
+  "features/forecast/data/raw/hourly_rain_openmeteo.csv": "52b80a86463925937e5fc603b651fd66da4b505c39eb1a045bff70e9a061c256",
+  "features/forecast/data/raw/historical_bacteria.csv": "914e3f00d6a37570d60b6450a6222c23fdebffa347ce28d2c224ffa86094e48f",
+  "features/forecast/data/raw/openmeteo_prev_runs_icon_seamless.csv": "3fe8e19f87255f7762c03c723006f2288058e7a23b9cf29803b7d4b5a45a07c6",
+  "features/forecast/data/raw/openmeteo_hist_forecast_icon_seamless.csv": "34e8719e6704b0edd5558c61cd2916f44af541b4bebd24b3a45bd37319ec3a73",
+  "features/forecast/data/csd/sf_csd_events.csv": "1aee52f889da05a010fbbddcdc049f7d7284cd3889a59bc52fdf4d11b620dc36",
+  "features/forecast/data/csd/sf_csd_monthly_coverage.csv": "6834d7f57323e003cf9265c89f4eaa0f43904af192fe2d7f8173217e68e0a1ef",
+  "features/forecast/data/poobot/samples.csv": "0002cbd30f7bc61b69490066d2a7eac885b28bdbb7913dd152e4656bc3d2c70f",
+  "features/forecast/data/poobot/discharge_onsets.csv": "eff4334352add481eeddb605652d531673c43f6b320a5a3c1d2dbc18c8c43b43",
+  "features/forecast/data/poobot/feed_status.csv": "f8c506c79fe3cbef063492ea7921e6e84c7482e0d496b7fc1d2e3515b4385308",
+  "features/forecast/data/models/served.json": "e25b6b060d7f354f2d64a887847279cd13ce98c1336a8b175803e73a8bc05810",
+  "features/forecast/data/models/eval_report.json": "d87ab053c043a017c708c07ef4c419554affd2fc856e5e423e9ee97d5bc6a931",
+  "features/forecast/data/models/impact_table.json": "6b7015791983aaf121ca510f908bb0b52f17a775d08e0b4d23233953ad1cf6c1",
+  "features/forecast/data/sfpuc_stardb_2000_2020/sfpuc_beach_bacteria_2000-01_2020-07_normalized.csv": "e5465ea1e670f4f77ac3d98f0de2a436b8f7e020730caf1c87a9cc79227de749",
+  "features/forecast/data/raw/openmeteo_wind_hourly.csv": "1c828e86cae55aaefb9633fc26a8c2e9db05936fd819cf06de8dcd2a38238f9b",
+  "features/forecast/data/raw/openmeteo_wind_icon_seamless.csv": "d284aaffe740b8ab94caebd010f814eec5e9a38b71b7bbd5cb1f0bd60933a2d8",
+  "features/forecast/data/models/stages_candidates/sfpuc-icon-t8s-ssplit-rain-lzflags/central_model.pkl": "fb2ef722c7b6a8423bebee1700ccb4e12086dbde4e8b0eeb6c7926925ed86a69",
+  "features/forecast/data/models/stages_candidates/sfpuc-icon-t8s-ssplit-rain-lzflags/central_model.pre_holdout.pkl": "68ed71426eeec988c53fab62d4f529254930688b69f1e2e5078d580ebad75333",
+  "features/forecast/data/models/stages_candidates/sfpuc-icon-t8s-ssplit-rain-lzflags/central_volume.pkl": "bbe895a991b175a473bf3ec9b7fd6c7343e387056e31d2c117f336eb9e182333",
+  "features/forecast/data/models/stages_candidates/sfpuc-icon-t8s-ssplit-rain-lzflags/central_volume.pre_holdout.pkl": "f26c514705588fe814513e51934e61b6eb8e3a1cc5e24e482226547026a6be99",
+  "features/forecast/data/models/stages_candidates/sfpuc-icon-t8s-ssplit-rain-lzflags/manifest.json": "8a2cae28abb6c7ed6aaacce7cac090f22dd91c8e492ca06ab4b0d79ebd186689",
+  "features/forecast/data/models/stages_candidates/sfpuc-icon-t8s-ssplit-rain-lzflags/north_shore_model.pkl": "d1544ad838f3813ecbd9b8396714cac3d08898421623320222576f3943a03848",
+  "features/forecast/data/models/stages_candidates/sfpuc-icon-t8s-ssplit-rain-lzflags/north_shore_model.pre_holdout.pkl": "6904bf0885be7eab11dd891dd03d12cab7f4a7d478456145013273d5bc1a86ad",
+  "features/forecast/data/models/stages_candidates/sfpuc-icon-t8s-ssplit-rain-lzflags/north_shore_volume.pkl": "bd09338280e1dffcd04cc3dbb75f4d5ed35d01b73960327a7a793c8bb298ce72",
+  "features/forecast/data/models/stages_candidates/sfpuc-icon-t8s-ssplit-rain-lzflags/north_shore_volume.pre_holdout.pkl": "41c4c0d6efa1808ad509efb373bc665a535165e41e23d9b9a8e2cd37301a9661",
+  "features/forecast/data/models/stages_candidates/sfpuc-icon-t8s-ssplit-rain-lzflags/s3_links.json": "16c83ac473cc9c24d9ffe547f20de85802f817b749cdab01991dd6b3d447e7bd",
+  "features/forecast/data/models/stages_candidates/sfpuc-icon-t8s-ssplit-rain-lzflags/s4_quality.json": "5e41580f3769c06fdad43cf9d2f4e574346bd46457f3a7958c8f9a37fa581c05",
+  "features/forecast/data/models/stages_candidates/sfpuc-icon-t8s-ssplit-rain-lzflags/south_model.pkl": "ca89c97d009fe9e5425e48edf68f2d37f1537176735fc36de24edf43c1a8f5c0",
+  "features/forecast/data/models/stages_candidates/sfpuc-icon-t8s-ssplit-rain-lzflags/south_model.pre_holdout.pkl": "c9649bbf75f55512c8988580dadff17078b583f7dc90ecf81417f482b01b86d0",
+  "features/forecast/data/models/stages_candidates/sfpuc-icon-t8s-ssplit-rain-lzflags/south_volume.pkl": "ae76c7f2a7d1b1bb6f210dfbd24d2cef4aff26a5d172406e18c440d1b28fafa3",
+  "features/forecast/data/models/stages_candidates/sfpuc-icon-t8s-ssplit-rain-lzflags/south_volume.pre_holdout.pkl": "d80a264717463b237238ba42623d1f38b010e885a966d038e1bc31b4e2055920",
+  "features/forecast/data/models/stages_candidates/sfpuc-icon-t8s-ssplit-rain-lzflags/westside_model.pkl": "32c035826f36d096171a745402df1da073115165eb5fbc020b1e69f6a1ee2a71",
+  "features/forecast/data/models/stages_candidates/sfpuc-icon-t8s-ssplit-rain-lzflags/westside_model.pre_holdout.pkl": "98d5e43d552bdad26b28a1cd51ea6900c5c0b5a3d87fd09eae7b5ed8ec2d7649",
+  "features/forecast/data/models/stages_candidates/sfpuc-icon-t8s-ssplit-rain-lzflags/westside_volume.pkl": "ef4586555fdb067ac61d774dfc71ac5a539ed615b5aae7e8657a8edadd03836b",
+  "features/forecast/data/models/stages_candidates/sfpuc-icon-t8s-ssplit-rain-lzflags/westside_volume.pre_holdout.pkl": "733bd6066eb4750a561ec8cc7c623ff2195acbe4c0d9f47a78b563386f06b413",
+  "features/forecast/data/models/stages_candidates/_bakeoff/results.json": "66b900cc6dad0b6c7151132b19300e4d6f2f4be8c08cdc872e91eb95b862380f",
+  "features/forecast/data/models/stages_candidates/_bakeoff/rows.csv.gz": "64c7081d8d8692f7693335f711bd3ea086d45e8ce21875f1c490f39fc053adbc",
+  "features/forecast/data/models/stages/icon-w38-osplit-lt2-bflags/rows.csv.gz": "6484ed5fb89f46a969e2839252c7ed7ed5f1eedf353e824ce8ab1ffeccd63bd3",
+  "features/forecast/data/models/stages/icon-w38-osplit-lt2-bflags/scores.json": "8666a3ca55184b193585ed954cc2fc94823d4540d8544a9dd061afdbcf78d175",
+  "features/forecast/data/beachwatch/sf_posted_zone_days.csv": "4a1a75ddc5041998b4cd0bb5bb94f0c7bbe5e81c5c86ddb805f37126c38c3bdb",
+  "features/forecast/data/beachwatch/manifest.json": "a111149248682e23b4abb44e0b0efbec0d72927d142c9f5734e256eed969babb"
+ },
+ "inputs_unstamped": {
+  "features/forecast/data/models/stages/_s1/s1_scores.json": [
+   "built_at"
+  ]
+ },
+ "code": {
+  "features/forecast/src/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "features/forecast/src/collectors/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "features/forecast/src/collectors/beachwatch.py": "4c3cfe5edf9cc9d081ce842c98d8bab6b9e24707c5d5431f2e7226480bca77eb",
+  "features/forecast/src/collectors/csd_labels.py": "5a377c478c49c34a9a9544f21f3702ca01f03aa6063f2941f1a7af0d004a2a5f",
+  "features/forecast/src/collectors/openmeteo_previous_runs.py": "a3534a4ebeb88edbcc72616eb70204bf03b6b31cfdda5ee8eb6a010d4bc5a1d2",
+  "features/forecast/src/models/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "features/forecast/src/models/candidates.py": "fbe79e4326a3cda25786cfee9c616593ceaf589841dcc5e195746fd5fdb37fa5",
+  "features/forecast/src/models/compose_v2.py": "5ec043521e955132277f433af32f1e92da80e6121432e367397ef45c22d0bade",
+  "features/forecast/src/models/exclusions.py": "35a69815d1dbd915499a04205f17bf2c38e4d46a56833091ead25a9491f7ddcd",
+  "features/forecast/src/models/grade_prospective.py": "06786b9ab70750d1ee62421afb2888dfceda447124abd7ca5c0a88341c4b0569",
+  "features/forecast/src/models/groups.py": "3a4ecc960d6c7cad8e24e10da2379b32ee4b688637617c233a96d96e942535ce",
+  "features/forecast/src/models/impact.py": "c8ab8081dd443b25558f4ebe3cdde8725922d480baab7dc4a6bb6109be7bf536",
+  "features/forecast/src/models/leaderboard.py": "90856c73509ea22e02a636f992309b192617f83771afc59755b58799acdaff9e",
+  "features/forecast/src/models/live_rules.py": "92bd5a95fb49231118c953b57c0f9a7775f611880204bbd650c2917c01857f10",
+  "features/forecast/src/models/posting_label.py": "1e26a8d8a70d07308e3e5d2621b95773fa63e541638fde474d5661448b1e5642",
+  "features/forecast/src/models/rain_features.py": "8bb7b142c98da99268b1af5d89fe3c0659254beb579edfcc91daf46d6a41934b",
+  "features/forecast/src/models/replay_live.py": "682f9280c9baa3cc1e5ba39f94d0339663a4c8df1aa5c46b3b98ea56d10af0c0",
+  "features/forecast/src/models/samples.py": "fb8974d17f79ca5965fecefe1c0e5120940f92a806a6c5400505c0e18c70cb3f",
+  "features/forecast/src/models/scorecard.py": "48b85b4a6bfe95753cd9fceb5f149d808f59a7f368e96edf9fa6ee471d52efdf",
+  "features/forecast/src/models/stage2.py": "e2b66927afdef42398212e25c8f7a1b53793a6fe2d4e7117a118eb2ed1a43569",
+  "features/forecast/src/models/stage2_variants.py": "d3d5562fa94625b1d79c0cecb306db26e723fe942ad46b965feec6dd29737238",
+  "features/forecast/src/models/stages_build.py": "3478ef2d0ce22645033728d1731cf086414ee62b3d39ea114b89a11321500117",
+  "features/forecast/src/models/stages_candidates.py": "0c669743d7ad104a7f27ada505c120d7bbfa045a14d9a5fe3da9df0302c64632",
+  "features/forecast/src/models/stages_entries.py": "0e60efdc9a6976c3ae4d23565be180b1baced902caa7238c2761b6f50508e9f8",
+  "features/forecast/src/models/stages_flowchart.py": "18e98a89ab64af066e17a256b10d0253853e89e9cb75b19b8653a49a4b2a8585",
+  "features/forecast/src/models/stages_s1.py": "7f4cdc28c25c6fde6df7ca8185ac5e06b7cfeb1c1e453af8018f93cc49b905c9",
+  "features/forecast/src/models/stages_s2.py": "3262c0c97f36464c09412b474e40b99419589e443cfbbccdb6dd6a0432831814",
+  "features/forecast/src/models/stages_s2_sfpuc4.py": "e0751c5b973283c58c3ed39d06d081c613975e42caa741e825696c97c6ae13b7",
+  "features/forecast/src/models/stages_s3_links.py": "ba0290658d3aca0cc4c64d76210bd7c6bd21533d3ad729ab343f216903172384",
+  "features/forecast/src/models/stages_s4_v3.py": "6afefab5dc03bc003eb3e2c754cadb63f5a2b2d33f9a5b2aeef1b62674385301",
+  "features/forecast/src/models/stages_s5.py": "ea6fb4a4edf0261c55440086e4829bab996dac8a4caa0112071a912aef7448a1",
+  "features/forecast/src/models/stages_spec.py": "12cbaa78483a6664dfa81ce32cdaaa03a376e54e4b491f602b0e3d1c2589daa2",
+  "features/forecast/src/models/svgkit.py": "aee2cdbdb552d50d37ae3cb2b2d0469942b101c1854369126ede518fdd0a793f",
+  "features/forecast/src/models/train_v2.py": "e3eaff8695280d33b750172efed3afb2fed3e773b2dd1f53ae4aee730c6b3920",
+  "features/forecast/src/models/train_v4.py": "5054f36ecc1c5ad5b6b9dbbab7257bf57524d7a301551e1b32226d50d33d4849",
+  "features/forecast/src/models/truth.py": "69cae7ad56be14743120bb3ba7a49504a66694d8a9408a468a9f8932fd256a41",
+  "features/forecast/src/models/verify.py": "c8b23225739709c10bf1c21827d5f35436c93fb58abaa283fa473639cf4bb359",
+  "features/forecast/src/models/weather_models_eval.py": "fa2f58a331a8c9e42a57dbc9452022d067030c8c464fa8f6c2c0124e699aea94",
+  "shared/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "shared/clock.py": "fe3cf416126533924a15ab74666d2c99058173c56678229b432106512ac981f1",
+  "shared/geography.py": "c900c1247df24577581497d1a1f4aa85cd9874bd67c04681a19ea4243871df2b",
+  "shared/lineup.py": "41dbd9bddfab2a01b48fee350312c1fa155ae076c9e2d647462592a32d3d61f7",
+  "shared/outfalls.py": "1f9fe66d0d45785bdf47f468903766f6a242ab6022960ce33924a5550031bc65",
+  "shared/risk_levels.py": "dbf0d046b2734eefaea3140b649e46544e57c29639319a9730fa84e4800aa1f7",
+  "shared/standards.py": "1f035d62715b4549fa0cb8d5da7d732518b318b158ac3048c97ff6b19d2fc151",
+  "shared/stations.py": "a9c496c10dda1c40fa9f314e19246bd6bedf3550b6114352641b14b3a7ce5f90",
+  "shared/zones.py": "96a7acf1b892cb309403728091e4dad059ec105bc8fab7ee5d62a82f04fc51d5"
+ },
+ "stage_candidate": {
+  "s2": {
+   "T1": "its finals",
+   "T1-holdout": "its holdout siblings, fit before 2023-07-01",
+   "T2": "the bake-off's outer-fold rows (features/forecast/data/models/stages_candidates/_bakeoff/rows.csv.gz)"
+  },
+  "s3": "s3_links.json's per-fold records (stages_s3_links.fold_spec)",
+  "s4": "s4_quality.json's per-fold records",
+  "t2_selection": "nested",
+  "heads": {
+   "T1 final": {
+    "westside": "loglinear",
+    "north_shore": "loglinear",
+    "central": "loglinear",
+    "south": "loglinear"
+   },
+   "T1-holdout pre_holdout": {
+    "westside": "loglinear",
+    "north_shore": "loglinear",
+    "central": "loglinear",
+    "south": "pooled_bayside_loglinear"
+   },
+   "T2 2016-17": {
+    "westside": "loglinear",
+    "north_shore": "loglinear",
+    "central": "loglinear",
+    "south": "pooled_bayside_loglinear"
+   },
+   "T2 2017-18": {
+    "westside": "loglinear",
+    "north_shore": "loglinear",
+    "central": "loglinear",
+    "south": "pooled_bayside_loglinear"
+   },
+   "T2 2018-19": {
+    "westside": "loglinear",
+    "north_shore": "loglinear",
+    "central": "loglinear",
+    "south": "pooled_bayside_loglinear"
+   },
+   "T2 2019-20": {
+    "westside": "loglinear",
+    "north_shore": "loglinear",
+    "central": "loglinear",
+    "south": "loglinear"
+   },
+   "T2 2020-21": {
+    "westside": "loglinear",
+    "north_shore": "loglinear",
+    "central": "loglinear",
+    "south": "loglinear"
+   },
+   "T2 2021-22": {
+    "westside": "loglinear",
+    "north_shore": "loglinear",
+    "central": "loglinear",
+    "south": "pooled_bayside_loglinear"
+   },
+   "T2 2022-23": {
+    "westside": "loglinear",
+    "north_shore": "loglinear",
+    "central": "loglinear",
+    "south": "pooled_bayside_loglinear"
+   },
+   "T2 2023-24": {
+    "westside": "loglinear",
+    "north_shore": "loglinear",
+    "central": "loglinear",
+    "south": "pooled_bayside_loglinear"
+   },
+   "T2 2024-25": {
+    "westside": "loglinear",
+    "north_shore": "loglinear",
+    "central": "loglinear",
+    "south": "pooled_bayside_loglinear"
+   }
+  },
+  "tags": {}
+ }
+}

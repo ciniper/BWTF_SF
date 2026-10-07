@@ -2,7 +2,7 @@
 """stages_s4_zones — S4 per zone: the rain curve where it scores better, the lingering table elsewhere.
 
 Chase, 2026-10-07: "let's do it including rain aware. if it's worse for a zone, then just don't include it for the
-zone!" The first rain curve (S4 v3, "Rain curve", sfpuc4_shared8_v1) scored a little better on its own stage but
+zone!" The first rain curve (S4 v3, "Rain curve", sfpuc-icon-t8s-ssplit-rain-lzflags) scored a little better on its own stage but
 made the public number worse for East (0.49 vs 0.64 over the nine seasons). It was fit on first-look samples only,
 leaving out the resample days after an exceedance that the public number grades, so it under-predicted how long
 East's bad water lingers. This module fits two S4s in every fold of the served plan, and each zone takes one,
@@ -27,13 +27,13 @@ a rain zone with the rain curve's background and curves. Sizes are φ 1 on the c
 stages_s4_v3.served_recipe sizes them, so the set's S3 must size every link at φ 1 (checked).
 
 **The candidate** (``assemble``): ``base``'s S2 copied, its S3 split refit exactly as assemble_served_parts does,
-this S4, S1 the served weather model and ``base``'s S5. With base sfpuc4_shared8_v2 the two sets differ in S4 only,
+this S4, S1 the served weather model and ``base``'s S5. With base sfpuc-icon-t8s-osplits-lt2zone-lzflags the two sets differ in S4 only,
 so their paired scores are this S4's own effect. Tagged post_seen: designed after the earlier sets' post-training
 scores were seen.
 
-    venv/bin/python features/forecast/src/models/stages_s4_zones.py --assemble sfpuc4_shared8_v3 --base sfpuc4_shared8_v2
-    venv/bin/python features/forecast/src/models/stages_build.py --set sfpuc4_shared8_v3 --root stages_candidates --write
-    venv/bin/python features/forecast/src/models/stages_s4_zones.py --compare sfpuc4_shared8_v3 --base sfpuc4_shared8_v2
+    venv/bin/python features/forecast/src/models/stages_s4_zones.py --assemble sfpuc-icon-t8s-osplits-pick4-lzflags --base sfpuc-icon-t8s-osplits-lt2zone-lzflags
+    venv/bin/python features/forecast/src/models/stages_build.py --set sfpuc-icon-t8s-osplits-pick4-lzflags --root stages_candidates --write
+    venv/bin/python features/forecast/src/models/stages_s4_zones.py --compare sfpuc-icon-t8s-osplits-pick4-lzflags --base sfpuc-icon-t8s-osplits-lt2zone-lzflags
 """
 from __future__ import annotations
 
@@ -67,7 +67,7 @@ CRITERIA = {"s4": "S4's own score: every sampled zone-day, resamples included, o
                     "public number different values")}
 ARMS = ("rain", "table")
 FIT_EXCL = ("", "X-S4-RESAMPLE")             # the rain curve's fit rows: first looks and resamples
-POST_SEEN = ("designed 2026-10-07 after sfpuc4_shared8_v1 / v2's post-training scores were seen: the first rain curve "
+POST_SEEN = ("designed 2026-10-07 after sfpuc-icon-t8s-ssplit-rain-lzflags / v2's post-training scores were seen: the first rain curve "
              "under-predicted East's resample days, which the public number grades")
 
 
@@ -264,8 +264,9 @@ def assemble(name: str, base: str, root=None, log=print, criterion: str = "s4") 
     SC.save_component(name, "s1", {"geography": src.geo.version, "component": model, "spec": src.manifest["s1"]}, root=root)
     SC.save_component(name, "s5", {"geography": src.geo.version, "component": src.components["s5"], "spec": src.manifest["s5"]},
                       root=root)
-    SC.tag(name, "post_seen", POST_SEEN + ("" if criterion == "s4" else "; and after sfpuc4_shared8_v3's (picked on S4's "
+    SC.tag(name, "post_seen", POST_SEEN + ("" if criterion == "s4" else "; and after sfpuc-icon-t8s-osplits-pick4-lzflags's (picked on S4's "
                                            "own score), whose public number was worse for East"), root)
+    name = SC.finalize(name, root, log=log)                    # stored under its lineup's id
     log(f"{name}: components {SC.load_set(name, root).components} ({time.time() - t0:.0f}s)")
     return {"set": name, "s4": s4}
 
@@ -307,7 +308,7 @@ def main(argv=None) -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--assemble", metavar="NAME")
     ap.add_argument("--compare", metavar="NAME")
-    ap.add_argument("--base", default="sfpuc4_shared8_v2")
+    ap.add_argument("--base", default="sfpuc-icon-t8s-osplits-lt2zone-lzflags")
     ap.add_argument("--criterion", default="s4", choices=sorted(CRITERIA), help="the score a zone picks on")
     a = ap.parse_args(argv)
     if a.assemble:

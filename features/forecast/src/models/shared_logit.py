@@ -64,6 +64,7 @@ C_GRID = L.C_GRID
 
 
 def name_of(design_key: str) -> str:
+    """The overflow model's own id (its S2 component, shared/lineup.py); the sets are named by their lineups."""
     return f"logit_v2_{design_key}"
 
 
@@ -266,13 +267,14 @@ def main(design_keys: list, dry_run: bool = False):
         note = (f"The same {len(terms)} terms in every basin, each basin its own weights (Chase 2026-09-30): today's rain and "
                 f"yesterday's, cut into bands at shared bends ({', '.join(terms)}); every weight ≥ 0, so more rain never lowers "
                 f"the risk. C per basin by pre-holdout season CV. Served rain sources and training rows. Stage 2 v1.")
-        d = candidates.save_candidate(name, "logit", finals, holdouts, dict(chosen_src), list(L.FEATS), per_basin, note=note,
+        set1, lineup = candidates.geo_v1_set(name, None)
+        d = candidates.save_candidate(set1, "logit", finals, holdouts, dict(chosen_src), list(L.FEATS), per_basin, note=note,
                                       extra={"design": {f: list(k) for f, k in design.items()}, "terms": terms, "selection_path": selection,
                                              "constraint": "every weight >= 0", "C_grid": C_GRID},
-                                      stage1_name=name)
+                                      stage1_name=name, lineup=lineup)
         print(f"candidate → {d.relative_to(REPO)}", flush=True)
-        stage2_variants.save(name, "v2", f"{name}_s2v2", "")
-        for n in (name, f"{name}_s2v2"):
+        set2 = stage2_variants.save(set1, "v2", None, "").name
+        for n in (set1, set2):
             candidates.rescore_post(n)
             print(f"   {n}: post-training days rescored with {candidates.load_scorecard(n).get('input_rules_post')}", flush=True)
 

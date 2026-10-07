@@ -67,10 +67,10 @@ def test_the_build_refits_it_on_the_d10_samples():
 
 
 def test_its_post_training_scores_are_tagged():
-    """Built after sfpuc4_shared8_v3b's post-training scores were seen (protocol §2): the build carries the tag."""
-    man = json.loads((CAND.candidate_dir("logit_v1_s2v2d10") / "manifest.json").read_text())
-    assert "sfpuc4_shared8_v3b" in man["tags"]["post_seen"]
-    p = B.STAGES_DIR / "logit_v1_s2v2d10" / "scores.json"
+    """Built after sfpuc-icon-t8s-osplits-pickout-lzflags's post-training scores were seen (protocol §2): the build carries the tag."""
+    man = json.loads((CAND.candidate_dir("icon-w38-osplit-lt2more-bflags") / "manifest.json").read_text())
+    assert "sfpuc-icon-t8s-osplits-pickout-lzflags" in man["tags"]["post_seen"]
+    p = B.STAGES_DIR / "icon-w38-osplit-lt2more-bflags" / "scores.json"
     if p.exists():
         sc = json.loads(p.read_text())
         assert sc["windows"]["T1"]["post_seen"] == man["tags"]["post_seen"]

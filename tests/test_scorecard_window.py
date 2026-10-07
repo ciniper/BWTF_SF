@@ -182,7 +182,7 @@ def test_gauge_outage_rule_in_the_record_and_the_rescored_post_training_days():
     # Feb 16 2026 Westside p > 0.5 once the dead Oceanside gauge is masked, and the corrected Feb 16–17
     # tail carrying Ocean Beach over the 25% line on Feb 19 (they were 0.24 / 0.01 on the raw record)
     import candidates as C
-    gb = C.load_scorecard("gb_v1") if C.candidate_dir("gb_v1").exists() else sc
+    gb = C.load_scorecard("icon-trees-nosplit-lt1-bflags") if C.candidate_dir("icon-trees-nosplit-lt1-bflags").exists() else sc
     assert gb.get("input_rules_post") == ["gauge_outage_v1"]
     gday = {d["date"]: d for d in gb["days"]}
     assert gday["2026-02-16"]["basins"]["westside"]["p"] > 0.5, gday["2026-02-16"]["basins"]["westside"]
@@ -325,7 +325,7 @@ def test_model_sets_are_selectable_but_never_served():
     assert all(m["served"] is False for m in models[1:])
     assert "error" in eng.get_scorecard("2024-01-13", model="../x")
     assert "error" in eng.get_scorecard("2024-01-13", model="doesnotexist")
-    assert C.valid_name("logit_v1") and not C.valid_name("../x") and not C.valid_name("Bad Name") and not C.valid_name("")
+    assert C.valid_name("logit_v1") and C.valid_name("sfpuc-ecmwf-t10wind-osplits-pickout-noflagdown") and not C.valid_name("../x") and not C.valid_name("Bad Name") and not C.valid_name("")
     served = {d["date"]: d for d in _artifact()["days"]}
     for m in models[1:]:
         r = eng.get_scorecard("2024-01-13", model=m["key"])

@@ -29,7 +29,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 SERVE_DIR = HERE.parents[1] / "data" / "models"
 CANDIDATES_DIR = SERVE_DIR / "candidates"
-NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{1,40}$")
+NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{1,63}$")
 
 # The served set, described once, in data/models/served.json — written by
 # promote.py when a candidate is promoted. Without the file the served set is
@@ -41,7 +41,8 @@ NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{1,40}$")
 # record of what the set was promoted at; nothing reads it to grade or to alert
 # (the Model check grades at the fixed risk levels, STAGES_DESIGN.md A3).
 SERVED_FILE = SERVE_DIR / "served.json"
-SERVED_DEFAULT = {"name": "gb_v1", "stage1": "gb_v1", "stage2": "v1", "artifact": "v4", "family": "gb", "line": 0.5}
+SERVED_DEFAULT = {"name": "icon-trees-nosplit-lt1-bflags", "stage1": "gb_v1", "stage2": "v1", "artifact": "v4", "family": "gb",
+                  "line": 0.5}   # the original bundle (gb_v1), if served.json were ever missing
 
 
 def served_info() -> dict:
@@ -247,17 +248,53 @@ def stage2_variant_id(spec: dict | None) -> str:
     return v + IMPACT_SAMPLES[s]
 
 
+def _lineup_module():
+    if str(HERE.parents[2]) not in sys.path:
+        sys.path.insert(0, str(HERE.parents[2]))
+    from shared import lineup as LU
+    return LU
+
+
+def geo_v1_lineup(stage1: str, stage2: dict | None) -> dict:
+    """A new BWTF-basin set's lineup as it is saved (shared/lineup.py): the weather model the live page reads, its
+    overflow model, the split and table its stage 2 spec names, and the live correction rule."""
+    if str(HERE) not in sys.path:
+        sys.path.insert(0, str(HERE))
+    import stages_entries as E                     # lazy: the weather model is read off live_dashboard's source
+    return _lineup_module().geo_v1_lineup(stage1, stage2_variant_id(stage2), E.served_weather_model(),
+                                          served_info().get("corrections") or "live_v2")
+
+
+def set_name(lineup: dict) -> str:
+    """The name a set with ``lineup`` is stored under: its id (shared/lineup.py set_id)."""
+    return _lineup_module().set_id(lineup)
+
+
+def geo_v1_set(stage1: str, stage2: dict | None) -> tuple:
+    """(name, lineup) of a new BWTF-basin set with overflow model ``stage1`` and stage 2 spec ``stage2``, as it would
+    be saved today (geo_v1_lineup: today's weather model and correction rule)."""
+    lineup = geo_v1_lineup(stage1, stage2)
+    return set_name(lineup), lineup
+
+
 def save_candidate(name: str, family: str, finals: dict, holdout_models: dict, chosen: dict, features: list,
                    per_basin: dict, note: str = "", extra: dict | None = None,
-                   stage2: dict | None = None, stage1_from: str = "fit", stage1_name: str | None = None) -> Path:
+                   stage2: dict | None = None, stage1_from: str = "fit", stage1_name: str | None = None,
+                   lineup: dict | None = None) -> Path:
     """Write pickles + scorecard + manifest. `finals[key]` = {"model", "features",
     "calibration_offset"}; `chosen[basin name]` = rain source; `per_basin[key]`
     = anything worth keeping about how the model was picked (source, C, scores).
     `stage2` = a fitted variant spec to compose with (saved as stage2.json);
     None = stage 2 v1 (served). `stage1_from` names where the stage-1 models
     came from ("fit", "served", or another candidate's name); `stage1_name` is the
-    stage 1's own name (a freshly fit set is named after itself, e.g. logit_v1;
-    the served bundle's stage 1 is gb_v1)."""
+    stage 1's own name, its S2 component id (default: the lineup's s2, e.g. logit_v1).
+    ``lineup`` (required): the set's parts as it is saved (geo_v1_lineup); ``name`` must be its id (set_name), and
+    the manifest records it."""
+    if lineup is None or name != set_name(lineup):
+        raise ValueError(f"a set is stored under its lineup's id: {name!r} is not "
+                         f"{set_name(lineup) if lineup else 'derivable without a lineup'}")
+    if stage1_name and stage1_name != lineup["s2"]:
+        raise ValueError(f"{name}: its overflow model is {stage1_name!r}, its lineup's S2 is {lineup['s2']!r}")
     d = candidate_dir(name)
     d.mkdir(parents=True, exist_ok=True)
     if str(HERE) not in sys.path:
@@ -281,9 +318,9 @@ def save_candidate(name: str, family: str, finals: dict, holdout_models: dict, c
     manifest = {"name": name, "family": family, "note": note, "created_at": now,
                 "trained_through": sc["trained_through"], "span": sc["span"], "holdout_start": sc["holdout_start"],
                 "rain_sources": {BASIN_KEYS.get(b, b): s for b, s in chosen.items()}, "per_basin": per_basin,
-                "stage1": {"name": stage1_name or name, "from": stage1_from, "family": family},
+                "stage1": {"name": stage1_name or lineup["s2"], "from": stage1_from, "family": family},
                 "stage2": {"variant": stage2_variant_id(stage2), "kind": (stage2 or {}).get("kind", "basin composition"), "impact_table_refit": bool(stage2 and stage2.get("impact_table")),
                            "fitted_at": (stage2 or {}).get("fitted_at")},
-                "zone_confusion_holdout": sc["zone_confusion_holdout"], **(extra or {})}
+                "zone_confusion_holdout": sc["zone_confusion_holdout"], "lineup": dict(lineup), **(extra or {})}
     (d / "manifest.json").write_text(json.dumps(manifest, indent=1, default=str))
     return d

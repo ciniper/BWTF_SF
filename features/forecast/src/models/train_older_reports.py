@@ -20,7 +20,7 @@ them); the protocol's scores come from the stages build:
 
     venv/bin/python features/forecast/src/models/train_older_reports.py            # compare, write nothing
     venv/bin/python features/forecast/src/models/train_older_reports.py --save all
-    venv/bin/python features/forecast/src/models/stages_build.py --set logit_v1_older16_first_s2v2 --root candidates --write
+    venv/bin/python features/forecast/src/models/stages_build.py --set icon-w38r16f-osplit-lt2-bflags --root candidates --write
 """
 from __future__ import annotations
 
@@ -59,7 +59,8 @@ KEYS = [BASIN_KEYS[b] for b in T.APP_BASINS] + ["citywide"]
 
 
 def set_name(stage1: str) -> str:
-    return f"{stage1}_s2v2"
+    """The set ``stage1`` refit with stage 2 v2 is saved as: its lineup's id (candidates.geo_v1_set)."""
+    return CAND.geo_v1_set(stage1, ST2.load_variant("v2"))[0]
 
 
 def served_models() -> dict:
@@ -137,8 +138,8 @@ def _row(key: str, a: dict, b: dict) -> str:
 
 
 def save(stage1: str, record: dict, got: dict) -> Path:
-    name = set_name(stage1)
     spec = ST2.load_variant("v2")
+    name, lineup = CAND.geo_v1_set(stage1, spec)
     if spec != json.loads((T.SERVE_DIR / "stage2.json").read_text()):
         raise SystemExit("data/models/stage2/v2.json is not the served stage 2: refusing to pair with it")
     rule = {"first": "the first day of each run of discharge days", "every": "every discharge day"}[record["day_rule"]]
@@ -148,7 +149,7 @@ def save(stage1: str, record: dict, got: dict) -> Path:
     extra = {"record": record, "record_notes": got["notes"]["record"], "record_counts": record_counts(got["rows"]),
              "stage1_source": "fit"}
     d = CAND.save_candidate(name, "logit", got["finals"], got["holdouts"], got["chosen"], L.FEATS, got["per_basin"],
-                            note=note, extra=extra, stage2=spec, stage1_from="fit", stage1_name=stage1)
+                            note=note, extra=extra, stage2=spec, stage1_from="fit", stage1_name=stage1, lineup=lineup)
     print(f"candidate → {d}")
     return d
 

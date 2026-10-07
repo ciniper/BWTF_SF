@@ -119,7 +119,7 @@ Windsurfer, Sunnydale), first looks read on those stations. And honest power (Pa
 4): per zone, the first-look rows in an overflow's tail and the overflow days behind them.
 
 **Today's lingering curve at zone level (``zone_table``, ``zone_curves``,
-``served_recipe``; sfpuc4_shared8_v2).** The second challenger drops the v3 fit
+``served_recipe``; sfpuc-icon-t8s-osplits-lt2zone-lzflags).** The second challenger drops the v3 fit
 for the served table's recipe (train_v4.fit_impact_table), ported to the four
 zones and refit per fold on the fold's training days: a zone's overflow days are
 those a link into it fired with every feeding basin ledger-known; each one's size
@@ -909,7 +909,7 @@ def persistence(samples_zone: pd.DataFrame, zones, dates, fallback) -> tuple:
     return out, seen
 
 
-# ── today's lingering curve at zone level (sfpuc4_shared8_v2) ──────────────
+# ── today's lingering curve at zone level (sfpuc-icon-t8s-osplits-lt2zone-lzflags) ──────────────
 
 def recipe_buckets(sampled: pd.DataFrame, events: pd.Series, med: float) -> dict:
     """train_v4.fit_impact_table's buckets, line for line: each sampled day (``sampled``: sample_date, elevated) read

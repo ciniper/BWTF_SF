@@ -112,7 +112,7 @@ oracle row X-S3-ID leaves out (North and East on the days their basins
 overflowed), each fold's spec under every union rule must give exactly the zone
 truth: ``integrity`` counts the mismatches, which must be 0.
 
-**Today's split on the city map (``served_split``, ``split_spec``; sfpuc4_shared8_v2).**
+**Today's split on the city map (``served_split``, ``split_spec``; sfpuc-icon-t8s-osplits-lt2zone-lzflags).**
 The second challenger keeps everything above but the shares: its Westside links
 take the served stage 2 v2 split (compose_v2 share kind size_blend: stage2.
 group_share's size classes around the group's median, φ 1), refit per fold by
@@ -1203,7 +1203,7 @@ def fold_spec(spec: dict, tier: str, fold: str, arm: str = SHARE) -> dict:
                       kind=spec.get("kind", KIND))
 
 
-# ── today's split on the city map (sfpuc4_shared8_v2) ──────────────────────
+# ── today's split on the city map (sfpuc-icon-t8s-osplits-lt2zone-lzflags) ──────────────────────
 
 def split_pairs(geo) -> dict:
     """{split link id of ``geo``: the geo_v1 link of the served group SPLIT_GROUPS names}. Raises unless each pair

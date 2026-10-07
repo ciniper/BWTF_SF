@@ -280,8 +280,8 @@ def stage_s5(D: dict, geos: list) -> dict:
 # ── chains, windows, the whole file ──────────────────────────────────────────
 
 def lineup_name(parts: dict) -> str:
-    """A whole forecast is named by its parts: S2 · S3 · S4."""
-    return " · ".join(LU.words(c, parts[c]) for c in ("s2", "s3", "s4"))
+    """A whole forecast is named by its parts: S1 · S2 · S3 · S4 · S5 (Part B 36)."""
+    return " · ".join(LU.words(c, parts[c]) for c in LU.STAGE_COLS)
 
 
 def chains(D: dict) -> tuple[list, list]:
@@ -295,14 +295,14 @@ def chains(D: dict) -> tuple[list, list]:
         out.append({"set": s["name"], "live": s["name"] == D["served"], "name": lineup_name(parts), "basins": man["geography"],
                     "parts": parts, "scorecard": s["name"] == D["served"] or s["name"] in cand_names,
                     "scores": {w: {"L1": cell(sc, "out", "L1", w), "rain": cell(sc, "out", "rain", w)} for w, _ in WINDOWS}})
-        seen.add((man["geography"], parts["s2"], parts["s3"], parts["s4"]))
+        seen.add(LU.set_id({"geography": man["geography"], **parts}))
     unscored = []
     for c in D["candidates"]:
-        parts = LU.geo_v1_parts(c["stage1"]["name"], c["stage2"]["variant"])
-        key = (geography_of(c), parts["s2"], parts["s3"], parts["s4"])
-        if key not in seen:
-            seen.add(key)
-            unscored.append({"set": c["name"], "name": lineup_name(parts), "basins": key[0], "parts": parts})
+        lineup = dict(c["lineup"])                             # as it was made; its name is this lineup's id
+        if LU.set_id(lineup) not in seen:
+            seen.add(LU.set_id(lineup))
+            parts = {k: lineup[k] for k in LU.STAGE_COLS}
+            unscored.append({"set": c["name"], "name": lineup_name(parts), "basins": lineup["geography"], "parts": parts})
     return out, unscored
 
 

@@ -1,6 +1,6 @@
 """The served set is whatever data/models/served.json says (promote.py), and the
 serving path applies its stage 2 split. Written for the 2026-09-28 promotion of
-logit_v1_s2v2 over gb_v1; holds for any later promotion."""
+icon-w38-osplit-lt2-bflags over gb_v1; holds for any later promotion."""
 import gzip
 import json
 import pathlib
@@ -20,8 +20,9 @@ SERVE = ROOT / "features/forecast/data/models"
 def test_served_descriptor_matches_the_bundle_on_disk():
     sv = C.served_info()
     assert C.SERVED_FILE.exists(), "served.json missing — promote.py writes it"
-    assert sv["name"] == "logit_v1_s2v2" and sv["stage1"] == "logit_v1" and sv["stage2"] == "v2" and sv["family"] == "logit" and sv["line"] == 0.25
-    assert sv["replaced"] == "gb_v1" and sv["from_candidate"] == sv["name"]
+    assert sv["name"] == "icon-w38-osplit-lt2-bflags" and sv["stage1"] == "logit_v1" and sv["stage2"] == "v2" and sv["family"] == "logit" and sv["line"] == 0.25
+    assert sv["replaced"] == "icon-trees-nosplit-lt1-bflags" and sv["from_candidate"] == sv["name"]
+    assert sv["renamed_from"] == "logit_v1_s2v2" and sv["artifact"] == "logit_v1_s2v2"     # the pickles keep their stamps
     import leaderboard  # noqa: F401
     for key in ("citywide", "westside", "north_shore", "central", "southeast"):
         pk = pickle.load(open(SERVE / f"{key}_model.pkl", "rb"))
@@ -36,17 +37,19 @@ def test_served_descriptor_matches_the_bundle_on_disk():
 
 
 def test_retired_set_is_a_candidate_and_the_served_one_is_not():
+    retired = "icon-trees-nosplit-lt1-bflags"            # gb_v1 until the 2026-10-07 rename
     names = {m["name"] for m in C.list_candidates()}
-    assert "gb_v1" in names and "logit_v1_s2v2" not in names, names
-    man = json.loads((C.candidate_dir("gb_v1") / "manifest.json").read_text())
+    assert retired in names and "icon-w38-osplit-lt2-bflags" not in names, names
+    man = json.loads((C.candidate_dir(retired) / "manifest.json").read_text())
     assert man["family"] == "gb" and man["stage1"] == {"name": "gb_v1", "from": "retired-served", "family": "gb"} and man["stage2"]["variant"] == "v1"
     assert man.get("retired_at") and man["per_basin"] and man["trained_through"] == "2025-10-31"
+    assert man["renamed_from"] == "gb_v1" and man["lineup"]["s2"] == "gb_v1"
     for key in ("citywide", "westside", "north_shore", "central", "southeast"):
-        assert (C.candidate_dir("gb_v1") / f"{key}_model.pkl").exists(), key
-    assert (C.candidate_dir("gb_v1") / "scorecard.json.gz").exists()
+        assert (C.candidate_dir(retired) / f"{key}_model.pkl").exists(), key
+    assert (C.candidate_dir(retired) / "scorecard.json.gz").exists()
     # candidates built on the retired stage 1 now name it
-    m2 = json.loads((C.candidate_dir("gb_v1_s2v2") / "manifest.json").read_text())
-    assert m2["stage1"]["from"] == "gb_v1" and m2["stage1_source"] == "gb_v1"
+    m2 = json.loads((C.candidate_dir("icon-trees-osplit-lt2-bflags") / "manifest.json").read_text())
+    assert m2["stage1"]["from"] == retired and m2["stage1_source"] == retired
 
 
 def test_engine_serves_the_split_and_labels_the_served_set():

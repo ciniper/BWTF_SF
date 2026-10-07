@@ -1,0 +1,563 @@
+{
+ "name": "icon-t19-osplit-lt2-bflags",
+ "family": "logit",
+ "note": "Stage 1 logit_v2_half (from logit_v2_half) composed with stage 2 v2 (outfall_split): p_group(D\u2212k) = p_basin(D\u2212k) \u00b7 [w\u00b7g_large + (1\u2212w)\u00b7g_small], w = V/(V+median), g_size = share of the basin's CIWQS discharge days of that size on which \u22651 of the group's outfalls discharged",
+ "created_at": "2026-09-30T21:16:40",
+ "trained_through": "2025-10-31",
+ "span": [
+  "2016-03-01",
+  "2026-08-17"
+ ],
+ "holdout_start": "2023-07-01",
+ "rain_sources": {
+  "westside": "avg",
+  "north_shore": "SF Downtown",
+  "central": "SF Downtown",
+  "southeast": "SF Downtown",
+  "citywide": "avg"
+ },
+ "per_basin": {
+  "westside": {
+   "source": "avg",
+   "C": 0.3,
+   "terms": [
+    "precip_avg:0-0.25",
+    "precip_avg:0.25-0.5",
+    "precip_avg:0.5-1",
+    "precip_avg:1+",
+    "rain_2d_cum:0-0.5",
+    "rain_2d_cum:0.5-1",
+    "rain_2d_cum:1-2",
+    "rain_2d_cum:2+",
+    "rain_3d_cum:0-1",
+    "rain_3d_cum:1-2",
+    "rain_3d_cum:2+",
+    "rain_5d_cum:0+",
+    "rain_lag1d:0+",
+    "rain_lag5d:0+",
+    "wet_prior_3d:0+",
+    "peak_3d:0-0.5",
+    "peak_3d:0.5-1",
+    "peak_3d:1+",
+    "dry_spell_days:0+"
+   ],
+   "slope_per_inch": {
+    "precip_avg:0-0.25": 11.3265,
+    "precip_avg:0.25-0.5": 8.7038,
+    "precip_avg:0.5-1": 1.0205,
+    "precip_avg:1+": 3.0971,
+    "rain_2d_cum:0-0.5": 2.1621,
+    "rain_2d_cum:0.5-1": 3.7478,
+    "rain_2d_cum:1-2": 0.1192,
+    "rain_2d_cum:2+": 0.0,
+    "rain_3d_cum:0-1": 0.0,
+    "rain_3d_cum:1-2": 0.0,
+    "rain_3d_cum:2+": 0.3864,
+    "rain_5d_cum:0+": 0.0,
+    "rain_lag1d:0+": 0.0,
+    "rain_lag5d:0+": 0.0,
+    "wet_prior_3d:0+": 0.0,
+    "peak_3d:0-0.5": 0.4778,
+    "peak_3d:0.5-1": 0.0,
+    "peak_3d:1+": 0.0,
+    "dry_spell_days:0+": 0.0
+   },
+   "season_cv_pre_holdout": {
+    "n": 2038,
+    "pos": 39,
+    "roc_auc": 0.9890458049537589,
+    "pr_auc": 0.6591553988411657,
+    "brier": 0.01112758441848518
+   },
+   "season_cv_by_C": {
+    "0.03": 0.6509193739863037,
+    "0.1": 0.6527640398119677,
+    "0.3": 0.6591553988411657,
+    "1.0": 0.6540718916816121,
+    "3.0": 0.6502303285894858
+   },
+   "holdout": {
+    "n": 854,
+    "pos": 12,
+    "roc_auc": 0.9958432304038005,
+    "pr_auc": 0.8448663636163637,
+    "brier": 0.0059803792063071
+   },
+   "n_events": 51
+  },
+  "north_shore": {
+   "source": "SF Downtown",
+   "C": 1.0,
+   "terms": [
+    "precip_avg:0-0.25",
+    "precip_avg:0.25-0.5",
+    "precip_avg:0.5-1",
+    "precip_avg:1+",
+    "rain_2d_cum:0-0.5",
+    "rain_2d_cum:0.5-1",
+    "rain_2d_cum:1-2",
+    "rain_2d_cum:2+",
+    "rain_3d_cum:0-1",
+    "rain_3d_cum:1-2",
+    "rain_3d_cum:2+",
+    "rain_5d_cum:0+",
+    "rain_lag1d:0+",
+    "rain_lag5d:0+",
+    "wet_prior_3d:0+",
+    "peak_3d:0-0.5",
+    "peak_3d:0.5-1",
+    "peak_3d:1+",
+    "dry_spell_days:0+"
+   ],
+   "slope_per_inch": {
+    "precip_avg:0-0.25": 2.3934,
+    "precip_avg:0.25-0.5": 19.3402,
+    "precip_avg:0.5-1": 3.4162,
+    "precip_avg:1+": 4.6203,
+    "rain_2d_cum:0-0.5": 0.6751,
+    "rain_2d_cum:0.5-1": 6.8878,
+    "rain_2d_cum:1-2": 0.0,
+    "rain_2d_cum:2+": 0.0,
+    "rain_3d_cum:0-1": 0.0,
+    "rain_3d_cum:1-2": 0.0,
+    "rain_3d_cum:2+": 0.2269,
+    "rain_5d_cum:0+": 0.0,
+    "rain_lag1d:0+": 0.0,
+    "rain_lag5d:0+": 0.6657,
+    "wet_prior_3d:0+": 0.0,
+    "peak_3d:0-0.5": 0.6532,
+    "peak_3d:0.5-1": 0.0,
+    "peak_3d:1+": 0.0,
+    "dry_spell_days:0+": 0.0
+   },
+   "season_cv_pre_holdout": {
+    "n": 2647,
+    "pos": 31,
+    "roc_auc": 0.9962945151425471,
+    "pr_auc": 0.7679743469073351,
+    "brier": 0.005293269601145179
+   },
+   "season_cv_by_C": {
+    "0.03": 0.7375838999007909,
+    "0.1": 0.7593458121948756,
+    "0.3": 0.767841373488447,
+    "1.0": 0.7679743469073351,
+    "3.0": 0.7665132151257945
+   },
+   "holdout": {
+    "n": 854,
+    "pos": 9,
+    "roc_auc": 0.9996055226824458,
+    "pr_auc": 0.9674523007856342,
+    "brier": 0.0021467082709262578
+   },
+   "n_events": 40
+  },
+  "central": {
+   "source": "SF Downtown",
+   "C": 0.03,
+   "terms": [
+    "precip_avg:0-0.25",
+    "precip_avg:0.25-0.5",
+    "precip_avg:0.5-1",
+    "precip_avg:1+",
+    "rain_2d_cum:0-0.5",
+    "rain_2d_cum:0.5-1",
+    "rain_2d_cum:1-2",
+    "rain_2d_cum:2+",
+    "rain_3d_cum:0-1",
+    "rain_3d_cum:1-2",
+    "rain_3d_cum:2+",
+    "rain_5d_cum:0+",
+    "rain_lag1d:0+",
+    "rain_lag5d:0+",
+    "wet_prior_3d:0+",
+    "peak_3d:0-0.5",
+    "peak_3d:0.5-1",
+    "peak_3d:1+",
+    "dry_spell_days:0+"
+   ],
+   "slope_per_inch": {
+    "precip_avg:0-0.25": 4.1011,
+    "precip_avg:0.25-0.5": 8.9085,
+    "precip_avg:0.5-1": 4.9463,
+    "precip_avg:1+": 0.0,
+    "rain_2d_cum:0-0.5": 1.2955,
+    "rain_2d_cum:0.5-1": 2.8719,
+    "rain_2d_cum:1-2": 0.0,
+    "rain_2d_cum:2+": 0.0,
+    "rain_3d_cum:0-1": 0.4274,
+    "rain_3d_cum:1-2": 0.7134,
+    "rain_3d_cum:2+": 0.0,
+    "rain_5d_cum:0+": 0.0,
+    "rain_lag1d:0+": 0.0,
+    "rain_lag5d:0+": 0.0,
+    "wet_prior_3d:0+": 0.0,
+    "peak_3d:0-0.5": 1.0965,
+    "peak_3d:0.5-1": 0.3591,
+    "peak_3d:1+": 0.0,
+    "dry_spell_days:0+": 0.0
+   },
+   "season_cv_pre_holdout": {
+    "n": 2647,
+    "pos": 58,
+    "roc_auc": 0.9936601803385676,
+    "pr_auc": 0.711485384132225,
+    "brier": 0.009208632102537936
+   },
+   "season_cv_by_C": {
+    "0.03": 0.711485384132225,
+    "0.1": 0.7114585387550002,
+    "0.3": 0.7084530974169302,
+    "1.0": 0.7084803576487009,
+    "3.0": 0.7082400171172735
+   },
+   "holdout": {
+    "n": 854,
+    "pos": 20,
+    "roc_auc": 0.9998201438848922,
+    "pr_auc": 0.9934782608695653,
+    "brier": 0.003781359513046933
+   },
+   "n_events": 78
+  },
+  "southeast": {
+   "source": "SF Downtown",
+   "C": 0.03,
+   "terms": [
+    "precip_avg:0-0.25",
+    "precip_avg:0.25-0.5",
+    "precip_avg:0.5-1",
+    "precip_avg:1+",
+    "rain_2d_cum:0-0.5",
+    "rain_2d_cum:0.5-1",
+    "rain_2d_cum:1-2",
+    "rain_2d_cum:2+",
+    "rain_3d_cum:0-1",
+    "rain_3d_cum:1-2",
+    "rain_3d_cum:2+",
+    "rain_5d_cum:0+",
+    "rain_lag1d:0+",
+    "rain_lag5d:0+",
+    "wet_prior_3d:0+",
+    "peak_3d:0-0.5",
+    "peak_3d:0.5-1",
+    "peak_3d:1+",
+    "dry_spell_days:0+"
+   ],
+   "slope_per_inch": {
+    "precip_avg:0-0.25": 5.1208,
+    "precip_avg:0.25-0.5": 5.4537,
+    "precip_avg:0.5-1": 4.9717,
+    "precip_avg:1+": 1.1502,
+    "rain_2d_cum:0-0.5": 1.5648,
+    "rain_2d_cum:0.5-1": 3.2225,
+    "rain_2d_cum:1-2": 0.0071,
+    "rain_2d_cum:2+": 0.0,
+    "rain_3d_cum:0-1": 0.5507,
+    "rain_3d_cum:1-2": 0.0,
+    "rain_3d_cum:2+": 0.0,
+    "rain_5d_cum:0+": 0.0334,
+    "rain_lag1d:0+": 0.0,
+    "rain_lag5d:0+": 0.0,
+    "wet_prior_3d:0+": 0.0,
+    "peak_3d:0-0.5": 1.2371,
+    "peak_3d:0.5-1": 0.0,
+    "peak_3d:1+": 0.0,
+    "dry_spell_days:0+": 0.0
+   },
+   "season_cv_pre_holdout": {
+    "n": 2647,
+    "pos": 61,
+    "roc_auc": 0.9923611375248818,
+    "pr_auc": 0.7769342931403933,
+    "brier": 0.009450255471207206
+   },
+   "season_cv_by_C": {
+    "0.03": 0.7769342931403933,
+    "0.1": 0.775814557629987,
+    "0.3": 0.774423592482393,
+    "1.0": 0.7731020898580836,
+    "3.0": 0.7725120090793605
+   },
+   "holdout": {
+    "n": 854,
+    "pos": 17,
+    "roc_auc": 0.9985944198467918,
+    "pr_auc": 0.927969540021079,
+    "brier": 0.004621489361516433
+   },
+   "n_events": 78
+  },
+  "citywide": {
+   "source": "avg",
+   "C": 0.1,
+   "terms": [
+    "precip_avg:0-0.25",
+    "precip_avg:0.25-0.5",
+    "precip_avg:0.5-1",
+    "precip_avg:1+",
+    "rain_2d_cum:0-0.5",
+    "rain_2d_cum:0.5-1",
+    "rain_2d_cum:1-2",
+    "rain_2d_cum:2+",
+    "rain_3d_cum:0-1",
+    "rain_3d_cum:1-2",
+    "rain_3d_cum:2+",
+    "rain_5d_cum:0+",
+    "rain_lag1d:0+",
+    "rain_lag5d:0+",
+    "wet_prior_3d:0+",
+    "peak_3d:0-0.5",
+    "peak_3d:0.5-1",
+    "peak_3d:1+",
+    "dry_spell_days:0+"
+   ],
+   "slope_per_inch": {
+    "precip_avg:0-0.25": 10.842,
+    "precip_avg:0.25-0.5": 5.7065,
+    "precip_avg:0.5-1": 4.0864,
+    "precip_avg:1+": 0.8597,
+    "rain_2d_cum:0-0.5": 1.9119,
+    "rain_2d_cum:0.5-1": 4.1107,
+    "rain_2d_cum:1-2": 0.0,
+    "rain_2d_cum:2+": 0.0,
+    "rain_3d_cum:0-1": 0.0,
+    "rain_3d_cum:1-2": 0.0,
+    "rain_3d_cum:2+": 0.0,
+    "rain_5d_cum:0+": 0.0,
+    "rain_lag1d:0+": 0.0,
+    "rain_lag5d:0+": 0.0,
+    "wet_prior_3d:0+": 0.0,
+    "peak_3d:0-0.5": 1.2257,
+    "peak_3d:0.5-1": 0.0,
+    "peak_3d:1+": 0.0,
+    "dry_spell_days:0+": 0.0
+   },
+   "season_cv_pre_holdout": {
+    "n": 2038,
+    "pos": 58,
+    "roc_auc": 0.9915708812260536,
+    "pr_auc": 0.7945258007014834,
+    "brier": 0.011585846299667022
+   },
+   "season_cv_by_C": {
+    "0.03": 0.7921237340405456,
+    "0.1": 0.7945258007014834,
+    "0.3": 0.7924032276131752,
+    "1.0": 0.7892812197794405,
+    "3.0": 0.7908961851621851
+   },
+   "holdout": {
+    "n": 854,
+    "pos": 20,
+    "roc_auc": 0.997841726618705,
+    "pr_auc": 0.9111383368523462,
+    "brier": 0.005129050041725184
+   },
+   "n_events": 78
+  }
+ },
+ "stage1": {
+  "name": "logit_v2_half",
+  "from": "icon-t19-nosplit-lt1-bflags",
+  "family": "logit"
+ },
+ "stage2": {
+  "variant": "v2",
+  "kind": "outfall_split",
+  "impact_table_refit": true,
+  "fitted_at": "2026-09-25T13:26:04"
+ },
+ "zone_confusion_holdout": {
+  "ocean": {
+   "0.1": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 44,
+     "fn": 1,
+     "tn": 800
+    },
+    "vs_bacteria_elevated": {
+     "tp": 16,
+     "fp": 12,
+     "fn": 11,
+     "tn": 118
+    }
+   },
+   "0.25": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 24,
+     "fn": 1,
+     "tn": 820
+    },
+    "vs_bacteria_elevated": {
+     "tp": 16,
+     "fp": 7,
+     "fn": 11,
+     "tn": 123
+    }
+   },
+   "0.5": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 7,
+     "fn": 1,
+     "tn": 837
+    },
+    "vs_bacteria_elevated": {
+     "tp": 9,
+     "fp": 1,
+     "fn": 18,
+     "tn": 129
+    }
+   }
+  },
+  "baker_china": {
+   "0.1": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 37,
+     "fn": 1,
+     "tn": 807
+    },
+    "vs_bacteria_elevated": {
+     "tp": 6,
+     "fp": 10,
+     "fn": 33,
+     "tn": 120
+    }
+   },
+   "0.25": {
+    "vs_discharge_posting": {
+     "tp": 8,
+     "fp": 14,
+     "fn": 2,
+     "tn": 830
+    },
+    "vs_bacteria_elevated": {
+     "tp": 4,
+     "fp": 5,
+     "fn": 35,
+     "tn": 125
+    }
+   },
+   "0.5": {
+    "vs_discharge_posting": {
+     "tp": 8,
+     "fp": 6,
+     "fn": 2,
+     "tn": 838
+    },
+    "vs_bacteria_elevated": {
+     "tp": 3,
+     "fp": 2,
+     "fn": 36,
+     "tn": 128
+    }
+   }
+  },
+  "north": {
+   "0.1": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 40,
+     "fn": 0,
+     "tn": 805
+    },
+    "vs_bacteria_elevated": {
+     "tp": 17,
+     "fp": 11,
+     "fn": 11,
+     "tn": 118
+    }
+   },
+   "0.25": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 19,
+     "fn": 0,
+     "tn": 826
+    },
+    "vs_bacteria_elevated": {
+     "tp": 16,
+     "fp": 6,
+     "fn": 12,
+     "tn": 123
+    }
+   },
+   "0.5": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 2,
+     "fn": 0,
+     "tn": 843
+    },
+    "vs_bacteria_elevated": {
+     "tp": 8,
+     "fp": 1,
+     "fn": 20,
+     "tn": 128
+    }
+   }
+  },
+  "east": {
+   "0.1": {
+    "vs_discharge_posting": {
+     "tp": 20,
+     "fp": 114,
+     "fn": 0,
+     "tn": 720
+    },
+    "vs_bacteria_elevated": {
+     "tp": 75,
+     "fp": 19,
+     "fn": 62,
+     "tn": 103
+    }
+   },
+   "0.25": {
+    "vs_discharge_posting": {
+     "tp": 20,
+     "fp": 83,
+     "fn": 0,
+     "tn": 751
+    },
+    "vs_bacteria_elevated": {
+     "tp": 68,
+     "fp": 14,
+     "fn": 69,
+     "tn": 108
+    }
+   },
+   "0.5": {
+    "vs_discharge_posting": {
+     "tp": 19,
+     "fp": 45,
+     "fn": 1,
+     "tn": 789
+    },
+    "vs_bacteria_elevated": {
+     "tp": 54,
+     "fp": 5,
+     "fn": 83,
+     "tn": 117
+    }
+   }
+  }
+ },
+ "stage1_source": "icon-t19-nosplit-lt1-bflags",
+ "input_rules_post": [
+  "gauge_outage_v1"
+ ],
+ "lineup": {
+  "geography": "geo_v1",
+  "s1": "icon_seamless",
+  "s2": "logit_v2_half",
+  "s3": "split_v2",
+  "s4": "impact_v2",
+  "s5": "live_v2"
+ },
+ "renamed_from": "logit_v2_half_s2v2"
+}

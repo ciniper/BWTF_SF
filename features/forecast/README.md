@@ -193,7 +193,7 @@ self-check against scikit-learn / the stored scorecard.
 venv/bin/python features/forecast/src/models/export_stages_report.py                   # the forecast, stage by stage
 venv/bin/python features/forecast/src/models/export_how_it_works.py                    # how the forecast works
 venv/bin/python features/forecast/src/models/export_model_explorer.py --offline        # today's set's S2 explorer
-venv/bin/python features/forecast/src/models/export_model_explorer.py --offline --model logit_v1   # a candidate's
+venv/bin/python features/forecast/src/models/export_model_explorer.py --offline --model icon-w38-nosplit-lt1-bflags   # a candidate's
 venv/bin/python features/forecast/src/models/export_stage2_explorer.py                 # S3–S4, every model set
 venv/bin/python features/forecast/src/models/export_reports_index.py                   # the index, and the archive banners
 ```
@@ -203,14 +203,18 @@ with any overflow model as a candidate set:
 
 ```bash
 venv/bin/python features/forecast/src/models/stage2_variants.py fit                 # fit a variant (the outfall split)
-venv/bin/python features/forecast/src/models/stage2_variants.py save --stage1 served --variant v2 --name gb_v1_s2v2
+venv/bin/python features/forecast/src/models/stage2_variants.py save --stage1 icon-trees-nosplit-lt1-bflags --variant v2   # saved as icon-trees-osplit-lt2-bflags
 ```
 
 Re-run after `train_v4.py` / `--rescore` / `leaderboard.py --save`.
 
-Names: stage 1 sets `gb_v1` (the served trees) and `logit_v1` (weights);
-stage 2 versions `v1` (basin composition, served) and `v2` (outfall split);
-a candidate set is `<stage1>` or `<stage1>_s2v2`. The served bundle is gb_v1 + stage 2 v1 (the old release label "v4" is retired, 2026-09-26).
+Names: overflow models `gb_v1` (trees) and `logit_v1` (weights); stage 2
+versions `v1` (basin composition) and `v2` (outfall split). A set is named by
+its five stages' codes at the time it was made (`shared/lineup.py`,
+STAGES_DESIGN.md Part B 36): the live forecast is `icon-w38-osplit-lt2-bflags`
+(ICON · 38-weight · Outfall split · Linger table 2 · Basin flags). Names before
+2026-10-07 (`logit_v1_s2v2`, `gb_v1`) are in `lineup.RENAMED`. The old release
+label "v4" is retired (2026-09-26).
 
 ## References
 

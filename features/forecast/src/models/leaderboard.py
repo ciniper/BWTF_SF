@@ -393,6 +393,7 @@ def save_best_logit(name: str, note: str = "") -> Path:
     """Fit the leaderboard's best logistic configuration per basin (rain source
     + C, by holdout PR-AUC) on the full training window, plus its holdout-fit
     sibling, and write them as a candidate set the Model check can select.
+    ``name`` is the overflow model's own id (e.g. logit_v1); the set is saved under its lineup's id.
     Reads data/models/leaderboard.json — run the leaderboard first. The served
     served gb_v1 set is untouched."""
     import candidates
@@ -420,8 +421,10 @@ def save_best_logit(name: str, note: str = "") -> Path:
         finals[key] = {"model": make_model("logit", C).fit(sub[FEATS], sub["y"]), "features": FEATS, "calibration_offset": 0.0, "C": C}
         holdouts[key] = make_model("logit", C).fit(pre[FEATS], pre["y"]) if pre["y"].sum() >= 5 else None
         print(f"   {basin:12} source {chosen[basin]:16} C={C}  fit on {len(sub)} days / {int(sub['y'].sum())} events")
-    d = candidates.save_candidate(name, "logit", finals, holdouts, chosen, FEATS, per_basin, note=note,
-                                  extra={"hinges": HINGES, "C_grid": C_GRID, "leaderboard_generated_at": board["generated_at"]})
+    set_name, lineup = candidates.geo_v1_set(name, None)
+    d = candidates.save_candidate(set_name, "logit", finals, holdouts, chosen, FEATS, per_basin, note=note,
+                                  extra={"hinges": HINGES, "C_grid": C_GRID, "leaderboard_generated_at": board["generated_at"]},
+                                  stage1_name=name, lineup=lineup)
     print(f"candidate → {d.relative_to(REPO)} (pickles, manifest, scorecard)")
     return d
 

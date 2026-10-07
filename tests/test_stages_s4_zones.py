@@ -24,8 +24,8 @@ import stages_s4_zones as Z  # noqa: E402
 from shared import geography as G  # noqa: E402
 from shared.zones import ZONES  # noqa: E402
 
-SETS = {"sfpuc4_shared8_v3": "s4", "sfpuc4_shared8_v3b": "out"}
-BASE = "sfpuc4_shared8_v2"
+SETS = {"sfpuc-icon-t8s-osplits-pick4-lzflags": "s4", "sfpuc-icon-t8s-osplits-pickout-lzflags": "out"}
+BASE = "sfpuc-icon-t8s-osplits-lt2zone-lzflags"
 
 
 def test_combine_takes_each_zone_from_its_pick():

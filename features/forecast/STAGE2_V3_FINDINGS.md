@@ -20,7 +20,7 @@ part, read off the CIWQS record and the outfall→beach map (`shared/outfalls.py
 | Crissy Field, Mission Creek, Southeast | 1 | 1 | every basin day is attributed (identity) |
 
 The analysis report scores the split a clear win under the primary ruler (discharge
-days + samples: logit_v1_s2v2 136 → 116 at 25%) and a small loss under the postings
+days + samples: icon-w38-osplit-lt2-bflags 136 → 116 at 25%) and a small loss under the postings
 ruler (Ocean Beach posted days caught 40 → 33 of 50 at 25%). The disagreement is about
 one thing: what happens on Ocean Beach after a **Sea Cliff-only** Westside discharge.
 SFPUC posts Ocean Beach; the split says the beach is mostly not fouled. The map cannot
@@ -101,7 +101,7 @@ It writes `features/forecast/data/models/stage2/v3.json` with the per-group evid
 from `map`, `stage2_variants.py save --variant v3` makes a candidate set to grade in
 the Model check and the analysis report, exactly as v2 was. Re-run after each samples
 refresh; the branch may need rebasing onto `main` first (it predates the promotion of
-logit_v1_s2v2 and the `served.json` descriptor).
+icon-w38-osplit-lt2-bflags and the `served.json` descriptor).
 
 Related: `TODO.md` ("Decide the stage 2 for production"), the analysis report
 `reports/2026-09_model_analysis.html` (recommendation 3), `src/models/stage2.py` (v1/v2).

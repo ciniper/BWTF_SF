@@ -1,0 +1,3370 @@
+{
+ "geography": "sfpuc4_v1",
+ "pipeline": "stages_v1",
+ "kind": "split_v2_sfpuc4",
+ "sources": {
+  "s2": {
+   "name": "sfpuc-icon-t8s-osplits-lt2zone-lzflags",
+   "component": "shared8_nonneg_sfpuc4",
+   "note": "sfpuc-icon-t8s-osplits-lt2zone-lzflags's S2 is sfpuc-icon-t8s-ssplit-rain-lzflags's (its pickles and s2 section, no refit), so the union rule sfpuc-icon-t8s-ssplit-rain-lzflags chose on it per fold is this S2's. The Westside shares are not fit on any S2's v\u0302 (Part B 2 does not hold for them, as it does not for the served set): today's split reads the filed volume, the served set's fold heads only where none is filed",
+   "designs": {
+    "T1 final": {
+     "contender": "shared8",
+     "bends": "low",
+     "C": {
+      "westside": 0.1,
+      "north_shore": 0.03,
+      "central": 1.0,
+      "south": 0.03
+     },
+     "south": "standalone"
+    },
+    "T1-holdout pre_holdout": {
+     "contender": "shared8",
+     "bends": "low",
+     "C": {
+      "westside": 0.1,
+      "north_shore": 0.03,
+      "central": 1.0,
+      "south": 0.03
+     },
+     "south": "standalone"
+    },
+    "T2 2016-17": {
+     "contender": "shared8",
+     "bends": "low",
+     "C": {
+      "westside": 0.1,
+      "north_shore": 0.1,
+      "central": 1.0,
+      "south": 0.3
+     },
+     "south": "standalone"
+    },
+    "T2 2017-18": {
+     "contender": "shared8",
+     "bends": "low",
+     "C": {
+      "westside": 0.1,
+      "north_shore": 0.03,
+      "central": 1.0,
+      "south": 0.03
+     },
+     "south": "standalone"
+    },
+    "T2 2018-19": {
+     "contender": "shared8",
+     "bends": "low",
+     "C": {
+      "westside": 0.1,
+      "north_shore": 0.03,
+      "central": 1.0,
+      "south": 0.03
+     },
+     "south": "standalone"
+    },
+    "T2 2019-20": {
+     "contender": "shared8",
+     "bends": "low",
+     "C": {
+      "westside": 0.3,
+      "north_shore": 1.0,
+      "central": 1.0,
+      "south": 0.03
+     },
+     "south": "standalone"
+    },
+    "T2 2020-21": {
+     "contender": "shared8",
+     "bends": "low",
+     "C": {
+      "westside": 0.1,
+      "north_shore": 0.1,
+      "central": 1.0,
+      "south": 0.03
+     },
+     "south": "standalone"
+    },
+    "T2 2021-22": {
+     "contender": "four",
+     "bends": "recorded",
+     "C": {
+      "westside": 0.01,
+      "north_shore": 0.03,
+      "central": 0.1,
+      "south": 0.03
+     },
+     "south": "standalone"
+    },
+    "T2 2022-23": {
+     "contender": "shared8",
+     "bends": "recorded",
+     "C": {
+      "westside": 0.3,
+      "north_shore": 0.1,
+      "central": 1.0,
+      "south": 0.01
+     },
+     "south": "standalone"
+    },
+    "T2 2023-24": {
+     "contender": "shared8",
+     "bends": "low",
+     "C": {
+      "westside": 0.1,
+      "north_shore": 0.03,
+      "central": 1.0,
+      "south": 0.03
+     },
+     "south": "standalone"
+    },
+    "T2 2024-25": {
+     "contender": "shared8",
+     "bends": "low",
+     "C": {
+      "westside": 0.1,
+      "north_shore": 0.03,
+      "central": 1.0,
+      "south": 0.03
+     },
+     "south": "standalone"
+    }
+   },
+   "volume_recipes": {
+    "westside": "loglinear",
+    "north_shore": "loglinear",
+    "central": "loglinear",
+    "south": "loglinear"
+   },
+   "fidelity": {
+    "T1 final": {
+     "n": 1160,
+     "p_max_abs": 0.0,
+     "v_hat_max_rel": 0.0,
+     "against": "the saved finals"
+    },
+    "T1-holdout pre_holdout": {
+     "n": 3416,
+     "p_max_abs": 0.0,
+     "v_hat_max_rel": 0.0,
+     "against": "the saved holdout siblings"
+    },
+    "T2 2016-17": {
+     "n": 1460,
+     "p_max_abs": 6.074050983850832e-07,
+     "v_hat_max_rel": 4.668016504338814e-06,
+     "against": "the bake-off's procedure rows"
+    },
+    "T2 2017-18": {
+     "n": 1460,
+     "p_max_abs": 6.77941262572368e-07,
+     "v_hat_max_rel": 4.634587114252305e-06,
+     "against": "the bake-off's procedure rows"
+    },
+    "T2 2018-19": {
+     "n": 1460,
+     "p_max_abs": 9.43223741778354e-07,
+     "v_hat_max_rel": 3.6988354154370596e-06,
+     "against": "the bake-off's procedure rows"
+    },
+    "T2 2019-20": {
+     "n": 1464,
+     "p_max_abs": 6.754412509302199e-07,
+     "v_hat_max_rel": 4.51664788284238e-06,
+     "against": "the bake-off's procedure rows"
+    },
+    "T2 2020-21": {
+     "n": 1460,
+     "p_max_abs": 5.284938870420142e-07,
+     "v_hat_max_rel": 4.257566665330647e-06,
+     "against": "the bake-off's procedure rows"
+    },
+    "T2 2021-22": {
+     "n": 1460,
+     "p_max_abs": 6.95640250014673e-07,
+     "v_hat_max_rel": 3.940185218931219e-06,
+     "against": "the bake-off's procedure rows"
+    },
+    "T2 2022-23": {
+     "n": 1460,
+     "p_max_abs": 8.566513914898266e-07,
+     "v_hat_max_rel": 3.855038387098399e-06,
+     "against": "the bake-off's procedure rows"
+    },
+    "T2 2023-24": {
+     "n": 1464,
+     "p_max_abs": 1.4918671156771701e-06,
+     "v_hat_max_rel": 3.975087589308385e-06,
+     "against": "the bake-off's procedure rows"
+    },
+    "T2 2024-25": {
+     "n": 1460,
+     "p_max_abs": 1.2348269051720706e-06,
+     "v_hat_max_rel": 4.096281265481285e-06,
+     "against": "the bake-off's procedure rows"
+    }
+   },
+   "records_from": "sfpuc-icon-t8s-ssplit-rain-lzflags"
+  },
+  "split": "the served stage 2 v2 split per fold (stages_build.fold_specs: stage2.fit_outfall_split by the served recipe), groups Ocean Beach and Baker-China as westside>ocean and westside>baker_china (split_pairs)",
+  "union": "sfpuc-icon-t8s-ssplit-rain-lzflags's per-fold records, kept exactly (union rule and choice, co-firing shares, the constant-share benchmark)",
+  "ledger": "truth.basin_onsets / link_onsets (CIWQS, ledger-known days)",
+  "rain": "stages_entries.frames('rain'): rain known, outage-masked"
+ },
+ "note": "Today's beach split on the city map: Westside's two links share its overflow by stage 2 v2's size classes, p\u00b7[w\u00b7large + (1 \u2212 w)\u00b7small] with w = v\u0302/(v\u0302 + the group's median filed volume) and \u03c6 1, refit per fold the served way; the other links are identity; East is the union of Central and South by the rule sfpuc-icon-t8s-ssplit-rain-lzflags chose nested per fold.",
+ "fit": {
+  "schema": "bwtf.stages.s3_links/1",
+  "protocol": "stages_v3@22a2695e2e950188d37b753928932c6f6f2dc83296482a4fddf5a373ce86df3f",
+  "as_of": "2026-08-17",
+  "window": {
+   "top": "T1 final: the served stage2.json, fit on every day through 2025-10-31",
+   "T1-holdout": "refit on days before 2023-07-01",
+   "T2": "refit per held-out season on the other eight of 2016-17 \u2026 2024-25"
+  },
+  "split": "per fold: the served split's shares and \u03c6 (split_fit: what stages_build.fold_specs fit them on)",
+  "union_choice": "per fold, on East Brier (rain known) pooled over inner leave-one-season-out on its T2 seasons: the default max stays unless a challenger is better (the 90% storm-block CI of \u0394 = BS(challenger) \u2212 BS(max) wholly below 0, B = 2000, seed 0); between two better challengers whose difference's CI includes 0, the one with fewer parameters",
+  "folds": [
+   {
+    "tier": "T1",
+    "fold": "final",
+    "scores": [
+     "2025-11-01",
+     "2026-10-02"
+    ],
+    "train_seasons": [
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ],
+    "basin_median_mg": {
+     "westside": 4.13,
+     "north_shore": 8.73,
+     "central": 58.45,
+     "south": 1.145
+    },
+    "cofire": {
+     "westside>ocean|westside>baker_china": 0.6585365853658537,
+     "westside>baker_china|westside>ocean": 0.7297297297297297,
+     "central>east|south>east": 0.8636363636363636,
+     "south>east|central>east": 0.21348314606741572
+    },
+    "union": {
+     "east": {
+      "rule": "noisy_or"
+     },
+     "choice": {
+      "brier": {
+       "max": 0.008632112900348833,
+       "noisy_or": 0.008542735106144285,
+       "cofire": 0.008588159189225933
+      },
+      "n": 3088,
+      "inner": {
+       "2016": {
+        "n": 251,
+        "sse": {
+         "max": 4.2476148759494965,
+         "noisy_or": 4.098452638705796,
+         "cofire": 4.15727410197657
+        },
+        "train_seasons": [
+         2015,
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2022,
+         2023,
+         2024,
+         2025
+        ]
+       },
+       "2017": {
+        "n": 347,
+        "sse": {
+         "max": 0.5676651704201416,
+         "noisy_or": 0.5943693238795019,
+         "cofire": 0.5624916093842034
+        },
+        "train_seasons": [
+         2015,
+         2016,
+         2018,
+         2019,
+         2020,
+         2021,
+         2022,
+         2023,
+         2024,
+         2025
+        ]
+       },
+       "2018": {
+        "n": 358,
+        "sse": {
+         "max": 6.064143747857516,
+         "noisy_or": 6.025764723748368,
+         "cofire": 6.052918594013719
+        },
+        "train_seasons": [
+         2015,
+         2016,
+         2017,
+         2019,
+         2020,
+         2021,
+         2022,
+         2023,
+         2024,
+         2025
+        ]
+       },
+       "2019": {
+        "n": 360,
+        "sse": {
+         "max": 2.393172238792405,
+         "noisy_or": 2.468620138542657,
+         "cofire": 2.5063538886902608
+        },
+        "train_seasons": [
+         2015,
+         2016,
+         2017,
+         2018,
+         2020,
+         2021,
+         2022,
+         2023,
+         2024,
+         2025
+        ]
+       },
+       "2020": {
+        "n": 355,
+        "sse": {
+         "max": 2.1612153134053904,
+         "noisy_or": 2.143935910524137,
+         "cofire": 2.156837286320318
+        },
+        "train_seasons": [
+         2015,
+         2016,
+         2017,
+         2018,
+         2019,
+         2021,
+         2022,
+         2023,
+         2024,
+         2025
+        ]
+       },
+       "2021": {
+        "n": 352,
+        "sse": {
+         "max": 3.3514614686007964,
+         "noisy_or": 3.333995504928694,
+         "cofire": 3.3376922411889116
+        },
+        "train_seasons": [
+         2015,
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2022,
+         2023,
+         2024,
+         2025
+        ]
+       },
+       "2022": {
+        "n": 352,
+        "sse": {
+         "max": 4.9152843946144085,
+         "noisy_or": 4.916161168982396,
+         "cofire": 4.910243968934701
+        },
+        "train_seasons": [
+         2015,
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2023,
+         2024,
+         2025
+        ]
+       },
+       "2023": {
+        "n": 363,
+        "sse": {
+         "max": 1.8787993989698453,
+         "noisy_or": 1.7459807893666643,
+         "cofire": 1.7822509412147367
+        },
+        "train_seasons": [
+         2015,
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2022,
+         2024,
+         2025
+        ]
+       },
+       "2024": {
+        "n": 350,
+        "sse": {
+         "max": 1.0766080276671954,
+         "noisy_or": 1.0526858090953413,
+         "cofire": 1.0541729446062624
+        },
+        "train_seasons": [
+         2015,
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2022,
+         2023,
+         2025
+        ]
+       }
+      },
+      "lowest": "noisy_or",
+      "why": "noisy_or is better than max (the CI of its \u0394 lies wholly below 0)",
+      "n_blocks": 394,
+      "vs_default": {
+       "noisy_or": {
+        "delta": -8.937779420454747e-05,
+        "lo": -0.00017438318885601174,
+        "hi": -5.016823987425769e-06,
+        "se": 5.3736198223017165e-05,
+        "verdict": "better",
+        "n": 3088,
+        "n_blocks": 394
+       },
+       "cofire": {
+        "delta": -4.39537111228995e-05,
+        "lo": -0.00011551443384181324,
+        "hi": 3.811696813135444e-05,
+        "se": 4.776432312261593e-05,
+        "verdict": "no clear difference",
+        "n": 3088,
+        "n_blocks": 394
+       }
+      }
+     }
+    },
+    "share_fit_span": [
+     "2016-03-01",
+     "2025-10-31"
+    ],
+    "links": {
+     "westside>ocean": {
+      "share": {
+       "kind": "size_blend",
+       "large": 1.0,
+       "small": 0.4615,
+       "median_mg": 3.7,
+       "n_basin_days": 51
+      },
+      "constant": 0.7551020408163265,
+      "vol_share": 1.0
+     },
+     "westside>baker_china": {
+      "share": {
+       "kind": "size_blend",
+       "large": 0.8,
+       "small": 0.8077,
+       "median_mg": 3.7,
+       "n_basin_days": 51
+      },
+      "constant": 0.803921568627451,
+      "vol_share": 1.0
+     },
+     "north_shore>north": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "central>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "south>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     }
+    },
+    "split_fit": {
+     "fit": "the set's artifacts, fit through 2025-10-31",
+     "fit_span": [
+      "2016-03-01",
+      "2025-10-31"
+     ]
+    }
+   },
+   {
+    "tier": "T1-holdout",
+    "fold": "pre_holdout",
+    "scores": [
+     "2023-07-01",
+     "2025-10-31"
+    ],
+    "train_seasons": [
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022
+    ],
+    "basin_median_mg": {
+     "westside": 3.775,
+     "north_shore": 8.120000000000001,
+     "central": 49.17,
+     "south": 1.8
+    },
+    "cofire": {
+     "westside>ocean|westside>baker_china": 0.6129032258064516,
+     "westside>baker_china|westside>ocean": 0.7037037037037037,
+     "central>east|south>east": 0.8235294117647058,
+     "south>east|central>east": 0.2028985507246377
+    },
+    "union": {
+     "east": {
+      "rule": "noisy_or"
+     },
+     "choice": {
+      "brier": {
+       "max": 0.010354148313629935,
+       "noisy_or": 0.010194857785707634,
+       "cofire": 0.010268885008159121
+      },
+      "n": 2375,
+      "inner": {
+       "2016": {
+        "n": 251,
+        "sse": {
+         "max": 4.9224355649511695,
+         "noisy_or": 4.605267951185222,
+         "cofire": 4.718497193534544
+        },
+        "train_seasons": [
+         2015,
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2022
+        ]
+       },
+       "2017": {
+        "n": 347,
+        "sse": {
+         "max": 0.6529519292401968,
+         "noisy_or": 0.6741436858679892,
+         "cofire": 0.6362098027320973
+        },
+        "train_seasons": [
+         2015,
+         2016,
+         2018,
+         2019,
+         2020,
+         2021,
+         2022
+        ]
+       },
+       "2018": {
+        "n": 358,
+        "sse": {
+         "max": 6.154438473613392,
+         "noisy_or": 6.079276704183734,
+         "cofire": 6.127296330945871
+        },
+        "train_seasons": [
+         2015,
+         2016,
+         2017,
+         2019,
+         2020,
+         2021,
+         2022
+        ]
+       },
+       "2019": {
+        "n": 360,
+        "sse": {
+         "max": 2.255797650414622,
+         "noisy_or": 2.3474092533101008,
+         "cofire": 2.383783600979143
+        },
+        "train_seasons": [
+         2015,
+         2016,
+         2017,
+         2018,
+         2020,
+         2021,
+         2022
+        ]
+       },
+       "2020": {
+        "n": 355,
+        "sse": {
+         "max": 1.9908225280106855,
+         "noisy_or": 1.972478578999998,
+         "cofire": 1.9835476049368714
+        },
+        "train_seasons": [
+         2015,
+         2016,
+         2017,
+         2018,
+         2019,
+         2021,
+         2022
+        ]
+       },
+       "2021": {
+        "n": 352,
+        "sse": {
+         "max": 3.294460952053419,
+         "noisy_or": 3.260164930467447,
+         "cofire": 3.263829458425509
+        },
+        "train_seasons": [
+         2015,
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2022
+        ]
+       },
+       "2022": {
+        "n": 352,
+        "sse": {
+         "max": 5.320195146587608,
+         "noisy_or": 5.274046137041144,
+         "cofire": 5.275437902823879
+        },
+        "train_seasons": [
+         2015,
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2021
+        ]
+       }
+      },
+      "lowest": "noisy_or",
+      "why": "noisy_or is better than max (the CI of its \u0394 lies wholly below 0)",
+      "n_blocks": 304,
+      "vs_default": {
+       "noisy_or": {
+        "delta": -0.0001592905279223008,
+        "lo": -0.00030970122999370963,
+        "hi": -1.3918877783245924e-05,
+        "se": 9.12685878431613e-05,
+        "verdict": "better",
+        "n": 2375,
+        "n_blocks": 304
+       },
+       "cofire": {
+        "delta": -8.526330547081393e-05,
+        "lo": -0.00020019433123585466,
+        "hi": 5.7052402501302045e-05,
+        "se": 7.895498909144314e-05,
+        "verdict": "no clear difference",
+        "n": 2375,
+        "n_blocks": 304
+       }
+      }
+     }
+    },
+    "share_fit_span": [
+     "2016-03-01",
+     "2023-06-30"
+    ],
+    "links": {
+     "westside>ocean": {
+      "share": {
+       "kind": "size_blend",
+       "large": 1.0,
+       "small": 0.3684,
+       "median_mg": 3.01,
+       "n_basin_days": 39
+      },
+      "constant": 0.75,
+      "vol_share": 1.0
+     },
+     "westside>baker_china": {
+      "share": {
+       "kind": "size_blend",
+       "large": 0.85,
+       "small": 0.7368,
+       "median_mg": 3.01,
+       "n_basin_days": 39
+      },
+      "constant": 0.7647058823529411,
+      "vol_share": 1.0
+     },
+     "north_shore>north": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "central>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "south>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     }
+    },
+    "split_fit": {
+     "fit": "refit on the fold's training days",
+     "fit_span": [
+      "2016-03-01",
+      "2023-06-30"
+     ],
+     "n_fit_days": 2678,
+     "n_events": 758,
+     "seasons": [
+      2015,
+      2016,
+      2017,
+      2018,
+      2019,
+      2020,
+      2021,
+      2022
+     ]
+    }
+   },
+   {
+    "tier": "T2",
+    "fold": "2016-17",
+    "scores": [
+     "2016-07-01",
+     "2017-06-30"
+    ],
+    "train_seasons": [
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024
+    ],
+    "basin_median_mg": {
+     "westside": 4.13,
+     "north_shore": 9.645,
+     "central": 68.39,
+     "south": 1.145
+    },
+    "cofire": {
+     "westside>ocean|westside>baker_china": 0.675,
+     "westside>baker_china|westside>ocean": 0.7297297297297297,
+     "central>east|south>east": 0.85,
+     "south>east|central>east": 0.2463768115942029
+    },
+    "union": {
+     "east": {
+      "rule": "max"
+     },
+     "choice": {
+      "brier": {
+       "max": 0.008105649178379595,
+       "noisy_or": 0.008020445170470946,
+       "cofire": 0.008076806965048743
+      },
+      "n": 2837,
+      "inner": {
+       "2017": {
+        "n": 347,
+        "sse": {
+         "max": 0.4991194457733513,
+         "noisy_or": 0.5491684871223875,
+         "cofire": 0.5047955361966382
+        },
+        "train_seasons": [
+         2018,
+         2019,
+         2020,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2018": {
+        "n": 358,
+        "sse": {
+         "max": 6.249973256322465,
+         "noisy_or": 6.202518991426784,
+         "cofire": 6.235821239700838
+        },
+        "train_seasons": [
+         2017,
+         2019,
+         2020,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2019": {
+        "n": 360,
+        "sse": {
+         "max": 2.3123672674772022,
+         "noisy_or": 2.458171517504075,
+         "cofire": 2.4633332421062804
+        },
+        "train_seasons": [
+         2017,
+         2018,
+         2020,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2020": {
+        "n": 355,
+        "sse": {
+         "max": 2.167528995529045,
+         "noisy_or": 2.1490317262309127,
+         "cofire": 2.1611066218054007
+        },
+        "train_seasons": [
+         2017,
+         2018,
+         2019,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2021": {
+        "n": 352,
+        "sse": {
+         "max": 3.3664435139082416,
+         "noisy_or": 3.317975750176225,
+         "cofire": 3.3336153641295434
+        },
+        "train_seasons": [
+         2017,
+         2018,
+         2019,
+         2020,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2022": {
+        "n": 352,
+        "sse": {
+         "max": 5.038643783841232,
+         "noisy_or": 5.005026952738166,
+         "cofire": 5.028338749936912
+        },
+        "train_seasons": [
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2023,
+         2024
+        ]
+       },
+       "2023": {
+        "n": 363,
+        "sse": {
+         "max": 2.1762799208142187,
+         "noisy_or": 1.929611153364788,
+         "cofire": 2.0221045756129614
+        },
+        "train_seasons": [
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2022,
+         2024
+        ]
+       },
+       "2024": {
+        "n": 350,
+        "sse": {
+         "max": 1.185370535397157,
+         "noisy_or": 1.1424983700627391,
+         "cofire": 1.1647860303547062
+        },
+        "train_seasons": [
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2022,
+         2023
+        ]
+       }
+      },
+      "lowest": "noisy_or",
+      "why": "no challenger is better than max (each CI of \u0394 includes 0 or lies above it), so the default stays",
+      "n_blocks": 363,
+      "vs_default": {
+       "noisy_or": {
+        "delta": -8.520400790864961e-05,
+        "lo": -0.0002555422277010405,
+        "hi": 7.066433720388027e-05,
+        "se": 9.973302654449799e-05,
+        "verdict": "no clear difference",
+        "n": 2837,
+        "n_blocks": 363
+       },
+       "cofire": {
+        "delta": -2.8842213330852393e-05,
+        "lo": -0.00014151401671745926,
+        "hi": 9.24635078883658e-05,
+        "se": 7.112066231114291e-05,
+        "verdict": "no clear difference",
+        "n": 2837,
+        "n_blocks": 363
+       }
+      }
+     }
+    },
+    "share_fit_span": [
+     "2017-07-01",
+     "2025-06-30"
+    ],
+    "links": {
+     "westside>ocean": {
+      "share": {
+       "kind": "size_blend",
+       "large": 1.0,
+       "small": 0.48,
+       "median_mg": 3.77,
+       "n_basin_days": 50
+      },
+      "constant": 0.7708333333333334,
+      "vol_share": 1.0
+     },
+     "westside>baker_china": {
+      "share": {
+       "kind": "size_blend",
+       "large": 0.8,
+       "small": 0.8,
+       "median_mg": 3.77,
+       "n_basin_days": 50
+      },
+      "constant": 0.8,
+      "vol_share": 1.0
+     },
+     "north_shore>north": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "central>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "south>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     }
+    },
+    "split_fit": {
+     "fit": "refit on the fold's training days",
+     "fit_span": [
+      "2017-07-01",
+      "2025-06-30"
+     ],
+     "n_fit_days": 2922,
+     "n_events": 831,
+     "seasons": [
+      2017,
+      2018,
+      2019,
+      2020,
+      2021,
+      2022,
+      2023,
+      2024
+     ]
+    }
+   },
+   {
+    "tier": "T2",
+    "fold": "2017-18",
+    "scores": [
+     "2017-07-01",
+     "2018-06-30"
+    ],
+    "train_seasons": [
+     2016,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024
+    ],
+    "basin_median_mg": {
+     "westside": 6.0649999999999995,
+     "north_shore": 8.120000000000001,
+     "central": 54.144999999999996,
+     "south": 0.52
+    },
+    "cofire": {
+     "westside>ocean|westside>baker_china": 0.7222222222222222,
+     "westside>baker_china|westside>ocean": 0.7428571428571429,
+     "central>east|south>east": 0.8947368421052632,
+     "south>east|central>east": 0.19767441860465115
+    },
+    "union": {
+     "east": {
+      "rule": "cofire",
+      "base": "central>east",
+      "pi": {
+       "south>east": 0.10526315789473684
+      }
+     },
+     "choice": {
+      "brier": {
+       "max": 0.00942753515461095,
+       "noisy_or": 0.009362599478949657,
+       "cofire": 0.009396566678185943
+      },
+      "n": 2741,
+      "inner": {
+       "2016": {
+        "n": 251,
+        "sse": {
+         "max": 4.093319467396578,
+         "noisy_or": 3.9962906305641304,
+         "cofire": 4.048280100373171
+        },
+        "train_seasons": [
+         2018,
+         2019,
+         2020,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2018": {
+        "n": 358,
+        "sse": {
+         "max": 6.00003780361849,
+         "noisy_or": 5.972361580658406,
+         "cofire": 6.00003780361849
+        },
+        "train_seasons": [
+         2016,
+         2019,
+         2020,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2019": {
+        "n": 360,
+        "sse": {
+         "max": 2.585009715833278,
+         "noisy_or": 2.616816463755133,
+         "cofire": 2.595603205879731
+        },
+        "train_seasons": [
+         2016,
+         2018,
+         2020,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2020": {
+        "n": 355,
+        "sse": {
+         "max": 1.9854472481002492,
+         "noisy_or": 1.9724144271681125,
+         "cofire": 1.9822484595898813
+        },
+        "train_seasons": [
+         2016,
+         2018,
+         2019,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2021": {
+        "n": 352,
+        "sse": {
+         "max": 3.1967774351723963,
+         "noisy_or": 3.194302918717496,
+         "cofire": 3.190360193429898
+        },
+        "train_seasons": [
+         2016,
+         2018,
+         2019,
+         2020,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2022": {
+        "n": 352,
+        "sse": {
+         "max": 5.248046039824452,
+         "noisy_or": 5.2526495549911285,
+         "cofire": 5.2626952195896965
+        },
+        "train_seasons": [
+         2016,
+         2018,
+         2019,
+         2020,
+         2021,
+         2023,
+         2024
+        ]
+       },
+       "2023": {
+        "n": 363,
+        "sse": {
+         "max": 1.5242554738869567,
+         "noisy_or": 1.4644462600780532,
+         "cofire": 1.4779241093438646
+        },
+        "train_seasons": [
+         2016,
+         2018,
+         2019,
+         2020,
+         2021,
+         2022,
+         2024
+        ]
+       },
+       "2024": {
+        "n": 350,
+        "sse": {
+         "max": 1.2079806749562154,
+         "noisy_or": 1.1936033358685478,
+         "cofire": 1.198840173082935
+        },
+        "train_seasons": [
+         2016,
+         2018,
+         2019,
+         2020,
+         2021,
+         2022,
+         2023
+        ]
+       }
+      },
+      "lowest": "noisy_or",
+      "why": "cofire is better than max (the CI of its \u0394 lies wholly below 0)",
+      "n_blocks": 345,
+      "vs_default": {
+       "noisy_or": {
+        "delta": -6.493567566129288e-05,
+        "lo": -0.0001341777624869837,
+        "hi": 1.3961721710107154e-06,
+        "se": 4.090869709835234e-05,
+        "verdict": "no clear difference",
+        "n": 2741,
+        "n_blocks": 345
+       },
+       "cofire": {
+        "delta": -3.096847642500636e-05,
+        "lo": -6.12883508084936e-05,
+        "hi": -3.1295079179205542e-06,
+        "se": 1.8037693476711558e-05,
+        "verdict": "better",
+        "n": 2741,
+        "n_blocks": 345
+       }
+      }
+     }
+    },
+    "share_fit_span": [
+     "2016-07-01",
+     "2025-06-30"
+    ],
+    "links": {
+     "westside>ocean": {
+      "share": {
+       "kind": "size_blend",
+       "large": 1.0,
+       "small": 0.5455,
+       "median_mg": 3.85,
+       "n_basin_days": 45
+      },
+      "constant": 0.7954545454545454,
+      "vol_share": 1.0
+     },
+     "westside>baker_china": {
+      "share": {
+       "kind": "size_blend",
+       "large": 0.8261,
+       "small": 0.7727,
+       "median_mg": 3.85,
+       "n_basin_days": 45
+      },
+      "constant": 0.8,
+      "vol_share": 1.0
+     },
+     "north_shore>north": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "central>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "south>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     }
+    },
+    "split_fit": {
+     "fit": "refit on the fold's training days",
+     "fit_span": [
+      "2016-07-01",
+      "2025-06-30"
+     ],
+     "n_fit_days": 2922,
+     "n_events": 953,
+     "seasons": [
+      2016,
+      2018,
+      2019,
+      2020,
+      2021,
+      2022,
+      2023,
+      2024
+     ]
+    }
+   },
+   {
+    "tier": "T2",
+    "fold": "2018-19",
+    "scores": [
+     "2018-07-01",
+     "2019-06-30"
+    ],
+    "train_seasons": [
+     2016,
+     2017,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024
+    ],
+    "basin_median_mg": {
+     "westside": 9.885,
+     "north_shore": 8.73,
+     "central": 54.144999999999996,
+     "south": 0.79
+    },
+    "cofire": {
+     "westside>ocean|westside>baker_china": 0.7666666666666667,
+     "westside>baker_china|westside>ocean": 0.7666666666666667,
+     "central>east|south>east": 0.9375,
+     "south>east|central>east": 0.20270270270270271
+    },
+    "union": {
+     "east": {
+      "rule": "noisy_or"
+     },
+     "choice": {
+      "brier": {
+       "max": 0.0076720163276154515,
+       "noisy_or": 0.007589191083925584,
+       "cofire": 0.0076499832133031555
+      },
+      "n": 2730,
+      "inner": {
+       "2016": {
+        "n": 251,
+        "sse": {
+         "max": 4.382836348181922,
+         "noisy_or": 4.288784485703274,
+         "cofire": 4.348192857646946
+        },
+        "train_seasons": [
+         2017,
+         2019,
+         2020,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2017": {
+        "n": 347,
+        "sse": {
+         "max": 0.5240703238280551,
+         "noisy_or": 0.5209028671891976,
+         "cofire": 0.5240703238280551
+        },
+        "train_seasons": [
+         2016,
+         2019,
+         2020,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2019": {
+        "n": 360,
+        "sse": {
+         "max": 2.3742446065774923,
+         "noisy_or": 2.431941424309774,
+         "cofire": 2.427802409222263
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2020,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2020": {
+        "n": 355,
+        "sse": {
+         "max": 2.279153388706837,
+         "noisy_or": 2.2717087127007654,
+         "cofire": 2.2784167906697124
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2019,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2021": {
+        "n": 352,
+        "sse": {
+         "max": 3.4187030565620744,
+         "noisy_or": 3.4097014468617153,
+         "cofire": 3.4150982216042935
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2019,
+         2020,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2022": {
+        "n": 352,
+        "sse": {
+         "max": 4.934139220129722,
+         "noisy_or": 4.920590210669605,
+         "cofire": 4.923190817638703
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2019,
+         2020,
+         2021,
+         2023,
+         2024
+        ]
+       },
+       "2023": {
+        "n": 363,
+        "sse": {
+         "max": 1.957065549666797,
+         "noisy_or": 1.8239593844497528,
+         "cofire": 1.9111653500298866
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2019,
+         2020,
+         2021,
+         2022,
+         2024
+        ]
+       },
+       "2024": {
+        "n": 350,
+        "sse": {
+         "max": 1.0743920807372827,
+         "noisy_or": 1.050903127232757,
+         "cofire": 1.0565174016777532
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2019,
+         2020,
+         2021,
+         2022,
+         2023
+        ]
+       }
+      },
+      "lowest": "noisy_or",
+      "why": "noisy_or is better than max (the CI of its \u0394 lies wholly below 0)",
+      "n_blocks": 350,
+      "vs_default": {
+       "noisy_or": {
+        "delta": -8.282524368986768e-05,
+        "lo": -0.00015486288476651658,
+        "hi": -4.692618652634225e-06,
+        "se": 4.591693258320222e-05,
+        "verdict": "better",
+        "n": 2730,
+        "n_blocks": 350
+       },
+       "cofire": {
+        "delta": -2.2033114312296036e-05,
+        "lo": -6.014544241160132e-05,
+        "hi": 2.6991635589394822e-05,
+        "se": 2.6802339917308394e-05,
+        "verdict": "no clear difference",
+        "n": 2730,
+        "n_blocks": 350
+       }
+      }
+     }
+    },
+    "share_fit_span": [
+     "2016-07-01",
+     "2025-06-30"
+    ],
+    "links": {
+     "westside>ocean": {
+      "share": {
+       "kind": "size_blend",
+       "large": 1.0,
+       "small": 0.6111,
+       "median_mg": 4.13,
+       "n_basin_days": 37
+      },
+      "constant": 0.8461538461538461,
+      "vol_share": 1.0
+     },
+     "westside>baker_china": {
+      "share": {
+       "kind": "size_blend",
+       "large": 0.8421,
+       "small": 0.7778,
+       "median_mg": 4.13,
+       "n_basin_days": 37
+      },
+      "constant": 0.7857142857142857,
+      "vol_share": 1.0
+     },
+     "north_shore>north": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "central>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "south>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     }
+    },
+    "split_fit": {
+     "fit": "refit on the fold's training days",
+     "fit_span": [
+      "2016-07-01",
+      "2025-06-30"
+     ],
+     "n_fit_days": 2922,
+     "n_events": 837,
+     "seasons": [
+      2016,
+      2017,
+      2019,
+      2020,
+      2021,
+      2022,
+      2023,
+      2024
+     ]
+    }
+   },
+   {
+    "tier": "T2",
+    "fold": "2019-20",
+    "scores": [
+     "2019-07-01",
+     "2020-06-30"
+    ],
+    "train_seasons": [
+     2016,
+     2017,
+     2018,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024
+    ],
+    "basin_median_mg": {
+     "westside": 3.995,
+     "north_shore": 9.34,
+     "central": 58.45,
+     "south": 1.145
+    },
+    "cofire": {
+     "westside>ocean|westside>baker_china": 0.6666666666666666,
+     "westside>baker_china|westside>ocean": 0.7058823529411765,
+     "central>east|south>east": 0.8636363636363636,
+     "south>east|central>east": 0.2261904761904762
+    },
+    "union": {
+     "east": {
+      "rule": "noisy_or"
+     },
+     "choice": {
+      "brier": {
+       "max": 0.008835926113189821,
+       "noisy_or": 0.008718141586974872,
+       "cofire": 0.008759685443883936
+      },
+      "n": 2728,
+      "inner": {
+       "2016": {
+        "n": 251,
+        "sse": {
+         "max": 4.181269380162629,
+         "noisy_or": 4.032598386535611,
+         "cofire": 4.0967967825239
+        },
+        "train_seasons": [
+         2017,
+         2018,
+         2020,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2017": {
+        "n": 347,
+        "sse": {
+         "max": 0.5481929384977302,
+         "noisy_or": 0.5886679019458823,
+         "cofire": 0.5547047967378925
+        },
+        "train_seasons": [
+         2016,
+         2018,
+         2020,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2018": {
+        "n": 358,
+        "sse": {
+         "max": 6.1059754385998435,
+         "noisy_or": 6.063106551625889,
+         "cofire": 6.095310485780871
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2020,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2020": {
+        "n": 355,
+        "sse": {
+         "max": 2.163156534350046,
+         "noisy_or": 2.1449911335163883,
+         "cofire": 2.158589033645299
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2021": {
+        "n": 352,
+        "sse": {
+         "max": 3.333723259179791,
+         "noisy_or": 3.320947275453224,
+         "cofire": 3.322308771323605
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2020,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2022": {
+        "n": 352,
+        "sse": {
+         "max": 4.899912294463486,
+         "noisy_or": 4.89814685517385,
+         "cofire": 4.8963380461865045
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2020,
+         2021,
+         2023,
+         2024
+        ]
+       },
+       "2023": {
+        "n": 363,
+        "sse": {
+         "max": 1.7980569323684288,
+         "noisy_or": 1.6767531531387245,
+         "cofire": 1.7089894551246734
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2020,
+         2021,
+         2022,
+         2024
+        ]
+       },
+       "2024": {
+        "n": 350,
+        "sse": {
+         "max": 1.0741196591598772,
+         "noisy_or": 1.0578789918778766,
+         "cofire": 1.0633845195926312
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2020,
+         2021,
+         2022,
+         2023
+        ]
+       }
+      },
+      "lowest": "noisy_or",
+      "why": "noisy_or is better than max (the CI of its \u0394 lies wholly below 0); the CI of its \u0394 to cofire includes 0 and it has no more parameters",
+      "n_blocks": 351,
+      "vs_default": {
+       "noisy_or": {
+        "delta": -0.00011778452621494934,
+        "lo": -0.0002081591427405747,
+        "hi": -2.754063297817633e-05,
+        "se": 5.5197287673040825e-05,
+        "verdict": "better",
+        "n": 2728,
+        "n_blocks": 351
+       },
+       "cofire": {
+        "delta": -7.624066930588501e-05,
+        "lo": -0.00012711234248543633,
+        "hi": -3.06243641976167e-05,
+        "se": 2.9237535651488264e-05,
+        "verdict": "better",
+        "n": 2728,
+        "n_blocks": 351
+       }
+      }
+     }
+    },
+    "share_fit_span": [
+     "2016-07-01",
+     "2025-06-30"
+    ],
+    "links": {
+     "westside>ocean": {
+      "share": {
+       "kind": "size_blend",
+       "large": 1.0,
+       "small": 0.4783,
+       "median_mg": 3.77,
+       "n_basin_days": 46
+      },
+      "constant": 0.7727272727272727,
+      "vol_share": 1.0
+     },
+     "westside>baker_china": {
+      "share": {
+       "kind": "size_blend",
+       "large": 0.7826,
+       "small": 0.7826,
+       "median_mg": 3.77,
+       "n_basin_days": 46
+      },
+      "constant": 0.782608695652174,
+      "vol_share": 1.0
+     },
+     "north_shore>north": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "central>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "south>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     }
+    },
+    "split_fit": {
+     "fit": "refit on the fold's training days",
+     "fit_span": [
+      "2016-07-01",
+      "2025-06-30"
+     ],
+     "n_fit_days": 2921,
+     "n_events": 946,
+     "seasons": [
+      2016,
+      2017,
+      2018,
+      2020,
+      2021,
+      2022,
+      2023,
+      2024
+     ]
+    }
+   },
+   {
+    "tier": "T2",
+    "fold": "2020-21",
+    "scores": [
+     "2020-07-01",
+     "2021-06-30"
+    ],
+    "train_seasons": [
+     2016,
+     2017,
+     2018,
+     2019,
+     2021,
+     2022,
+     2023,
+     2024
+    ],
+    "basin_median_mg": {
+     "westside": 6.0649999999999995,
+     "north_shore": 8.73,
+     "central": 69.65,
+     "south": 1.145
+    },
+    "cofire": {
+     "westside>ocean|westside>baker_china": 0.6666666666666666,
+     "westside>baker_china|westside>ocean": 0.7222222222222222,
+     "central>east|south>east": 0.8636363636363636,
+     "south>east|central>east": 0.2261904761904762
+    },
+    "union": {
+     "east": {
+      "rule": "noisy_or"
+     },
+     "choice": {
+      "brier": {
+       "max": 0.009056964077263707,
+       "noisy_or": 0.008940926572571515,
+       "cofire": 0.009003654960534698
+      },
+      "n": 2733,
+      "inner": {
+       "2016": {
+        "n": 251,
+        "sse": {
+         "max": 4.365928945353918,
+         "noisy_or": 4.196447749307749,
+         "cofire": 4.270304667699415
+        },
+        "train_seasons": [
+         2017,
+         2018,
+         2019,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2017": {
+        "n": 347,
+        "sse": {
+         "max": 0.49926456614022496,
+         "noisy_or": 0.5266422218284561,
+         "cofire": 0.49268060614352416
+        },
+        "train_seasons": [
+         2016,
+         2018,
+         2019,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2018": {
+        "n": 358,
+        "sse": {
+         "max": 6.232292176839344,
+         "noisy_or": 6.18643083167676,
+         "cofire": 6.220264681181096
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2019,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2019": {
+        "n": 360,
+        "sse": {
+         "max": 2.370603587084249,
+         "noisy_or": 2.4451335755255754,
+         "cofire": 2.483475899891077
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2021,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2021": {
+        "n": 352,
+        "sse": {
+         "max": 3.5006658979696303,
+         "noisy_or": 3.469381706314376,
+         "cofire": 3.483581209657104
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2022": {
+        "n": 352,
+        "sse": {
+         "max": 4.936510773446127,
+         "noisy_or": 4.9229243202165645,
+         "cofire": 4.928277484766063
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2021,
+         2023,
+         2024
+        ]
+       },
+       "2023": {
+        "n": 363,
+        "sse": {
+         "max": 1.835634560086618,
+         "noisy_or": 1.7005445509020514,
+         "cofire": 1.7384922483403762
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2021,
+         2022,
+         2024
+        ]
+       },
+       "2024": {
+        "n": 350,
+        "sse": {
+         "max": 1.0117823162415998,
+         "noisy_or": 0.9880473670664149,
+         "cofire": 0.9899122094626756
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2021,
+         2022,
+         2023
+        ]
+       }
+      },
+      "lowest": "noisy_or",
+      "why": "noisy_or is better than max (the CI of its \u0394 lies wholly below 0)",
+      "n_blocks": 349,
+      "vs_default": {
+       "noisy_or": {
+        "delta": -0.00011603750469219194,
+        "lo": -0.00022298323993658262,
+        "hi": -1.4227092722894383e-05,
+        "se": 6.433833106412896e-05,
+        "verdict": "better",
+        "n": 2733,
+        "n_blocks": 349
+       },
+       "cofire": {
+        "delta": -5.330911672900805e-05,
+        "lo": -0.00013316756845854476,
+        "hi": 4.797617599857929e-05,
+        "se": 5.6259706345516316e-05,
+        "verdict": "no clear difference",
+        "n": 2733,
+        "n_blocks": 349
+       }
+      }
+     }
+    },
+    "share_fit_span": [
+     "2016-07-01",
+     "2025-06-30"
+    ],
+    "links": {
+     "westside>ocean": {
+      "share": {
+       "kind": "size_blend",
+       "large": 1.0,
+       "small": 0.4583,
+       "median_mg": 3.85,
+       "n_basin_days": 49
+      },
+      "constant": 0.7659574468085106,
+      "vol_share": 1.0
+     },
+     "westside>baker_china": {
+      "share": {
+       "kind": "size_blend",
+       "large": 0.8,
+       "small": 0.7917,
+       "median_mg": 3.85,
+       "n_basin_days": 49
+      },
+      "constant": 0.7959183673469388,
+      "vol_share": 1.0
+     },
+     "north_shore>north": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "central>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "south>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     }
+    },
+    "split_fit": {
+     "fit": "refit on the fold's training days",
+     "fit_span": [
+      "2016-07-01",
+      "2025-06-30"
+     ],
+     "n_fit_days": 2922,
+     "n_events": 989,
+     "seasons": [
+      2016,
+      2017,
+      2018,
+      2019,
+      2021,
+      2022,
+      2023,
+      2024
+     ]
+    }
+   },
+   {
+    "tier": "T2",
+    "fold": "2021-22",
+    "scores": [
+     "2021-07-01",
+     "2022-06-30"
+    ],
+    "train_seasons": [
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2022,
+     2023,
+     2024
+    ],
+    "basin_median_mg": {
+     "westside": 6.0649999999999995,
+     "north_shore": 9.34,
+     "central": 68.39,
+     "south": 1.5
+    },
+    "cofire": {
+     "westside>ocean|westside>baker_china": 0.6666666666666666,
+     "westside>baker_china|westside>ocean": 0.7741935483870968,
+     "central>east|south>east": 0.85,
+     "south>east|central>east": 0.21518987341772153
+    },
+    "union": {
+     "east": {
+      "rule": "cofire",
+      "base": "central>east",
+      "pi": {
+       "south>east": 0.15000000000000002
+      }
+     },
+     "choice": {
+      "brier": {
+       "max": 0.008391829560062946,
+       "noisy_or": 0.008312823178756422,
+       "cofire": 0.008319419856556149
+      },
+      "n": 2736,
+      "inner": {
+       "2016": {
+        "n": 251,
+        "sse": {
+         "max": 4.967162552999777,
+         "noisy_or": 4.795840390719729,
+         "cofire": 4.876157104600706
+        },
+        "train_seasons": [
+         2017,
+         2018,
+         2019,
+         2020,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2017": {
+        "n": 347,
+        "sse": {
+         "max": 0.3570628460656198,
+         "noisy_or": 0.37346160080155577,
+         "cofire": 0.34608117796975263
+        },
+        "train_seasons": [
+         2016,
+         2018,
+         2019,
+         2020,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2018": {
+        "n": 358,
+        "sse": {
+         "max": 5.81943097166492,
+         "noisy_or": 5.754233368162074,
+         "cofire": 5.806786186800826
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2019,
+         2020,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2019": {
+        "n": 360,
+        "sse": {
+         "max": 1.8704167663557647,
+         "noisy_or": 1.9202143955765,
+         "cofire": 1.904569970377226
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2020,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2020": {
+        "n": 355,
+        "sse": {
+         "max": 2.3613173748397194,
+         "noisy_or": 2.3349022230202445,
+         "cofire": 2.354245405192521
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2022,
+         2023,
+         2024
+        ]
+       },
+       "2022": {
+        "n": 352,
+        "sse": {
+         "max": 4.446235568907994,
+         "noisy_or": 4.533847299225208,
+         "cofire": 4.433529217750442
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2023,
+         2024
+        ]
+       },
+       "2023": {
+        "n": 363,
+        "sse": {
+         "max": 1.8637071314398064,
+         "noisy_or": 1.7368001351987554,
+         "cofire": 1.7755988340775386
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2022,
+         2024
+        ]
+       },
+       "2024": {
+        "n": 350,
+        "sse": {
+         "max": 1.2747124640586178,
+         "noisy_or": 1.2945848043734998,
+         "cofire": 1.2649648307686103
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2022,
+         2023
+        ]
+       }
+      },
+      "lowest": "noisy_or",
+      "why": "cofire is better than max (the CI of its \u0394 lies wholly below 0)",
+      "n_blocks": 350,
+      "vs_default": {
+       "noisy_or": {
+        "delta": -7.900638130652407e-05,
+        "lo": -0.0001922709163096923,
+        "hi": 3.872257125368287e-05,
+        "se": 6.881528973403063e-05,
+        "verdict": "no clear difference",
+        "n": 2736,
+        "n_blocks": 350
+       },
+       "cofire": {
+        "delta": -7.240970350679693e-05,
+        "lo": -0.00013138755792117249,
+        "hi": -9.166945822595572e-06,
+        "se": 3.742502580608553e-05,
+        "verdict": "better",
+        "n": 2736,
+        "n_blocks": 350
+       }
+      }
+     }
+    },
+    "share_fit_span": [
+     "2016-07-01",
+     "2025-06-30"
+    ],
+    "links": {
+     "westside>ocean": {
+      "share": {
+       "kind": "size_blend",
+       "large": 1.0,
+       "small": 0.4286,
+       "median_mg": 3.86,
+       "n_basin_days": 43
+      },
+      "constant": 0.7560975609756098,
+      "vol_share": 1.0
+     },
+     "westside>baker_china": {
+      "share": {
+       "kind": "size_blend",
+       "large": 0.8182,
+       "small": 0.8571,
+       "median_mg": 3.86,
+       "n_basin_days": 43
+      },
+      "constant": 0.8372093023255814,
+      "vol_share": 1.0
+     },
+     "north_shore>north": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "central>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "south>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     }
+    },
+    "split_fit": {
+     "fit": "refit on the fold's training days",
+     "fit_span": [
+      "2016-07-01",
+      "2025-06-30"
+     ],
+     "n_fit_days": 2922,
+     "n_events": 906,
+     "seasons": [
+      2016,
+      2017,
+      2018,
+      2019,
+      2020,
+      2022,
+      2023,
+      2024
+     ]
+    }
+   },
+   {
+    "tier": "T2",
+    "fold": "2022-23",
+    "scores": [
+     "2022-07-01",
+     "2023-06-30"
+    ],
+    "train_seasons": [
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2023,
+     2024
+    ],
+    "basin_median_mg": {
+     "westside": 3.99,
+     "north_shore": 7.245000000000001,
+     "central": 48.5,
+     "south": 1.005
+    },
+    "cofire": {
+     "westside>ocean|westside>baker_china": 0.625,
+     "westside>baker_china|westside>ocean": 0.6896551724137931,
+     "central>east|south>east": 0.8333333333333334,
+     "south>east|central>east": 0.2112676056338028
+    },
+    "union": {
+     "east": {
+      "rule": "noisy_or"
+     },
+     "choice": {
+      "brier": {
+       "max": 0.007510488422330621,
+       "noisy_or": 0.007422554820795764,
+       "cofire": 0.0074427156924681635
+      },
+      "n": 2736,
+      "inner": {
+       "2016": {
+        "n": 251,
+        "sse": {
+         "max": 4.992412886960292,
+         "noisy_or": 4.895817354596121,
+         "cofire": 4.9220260842796195
+        },
+        "train_seasons": [
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2023,
+         2024
+        ]
+       },
+       "2017": {
+        "n": 347,
+        "sse": {
+         "max": 0.3766243165597191,
+         "noisy_or": 0.38854860072084524,
+         "cofire": 0.372518181961275
+        },
+        "train_seasons": [
+         2016,
+         2018,
+         2019,
+         2020,
+         2021,
+         2023,
+         2024
+        ]
+       },
+       "2018": {
+        "n": 358,
+        "sse": {
+         "max": 5.407787046115365,
+         "noisy_or": 5.3772694992307555,
+         "cofire": 5.3980280299898
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2019,
+         2020,
+         2021,
+         2023,
+         2024
+        ]
+       },
+       "2019": {
+        "n": 360,
+        "sse": {
+         "max": 2.361350507631297,
+         "noisy_or": 2.3879359912052927,
+         "cofire": 2.3991589355321015
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2020,
+         2021,
+         2023,
+         2024
+        ]
+       },
+       "2020": {
+        "n": 355,
+        "sse": {
+         "max": 1.727111137023594,
+         "noisy_or": 1.7189282225949847,
+         "cofire": 1.7239234876547547
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2021,
+         2023,
+         2024
+        ]
+       },
+       "2021": {
+        "n": 352,
+        "sse": {
+         "max": 2.9659125990955806,
+         "noisy_or": 2.9651252977387332,
+         "cofire": 2.9625520624424917
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2023,
+         2024
+        ]
+       },
+       "2023": {
+        "n": 363,
+        "sse": {
+         "max": 1.6597539504143914,
+         "noisy_or": 1.5382960391318234,
+         "cofire": 1.5564634656633292
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2024
+        ]
+       },
+       "2024": {
+        "n": 350,
+        "sse": {
+         "max": 1.057743879696343,
+         "noisy_or": 1.0361889844786538,
+         "cofire": 1.0285998870695254
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2023
+        ]
+       }
+      },
+      "lowest": "noisy_or",
+      "why": "noisy_or is better than max (the CI of its \u0394 lies wholly below 0); the CI of its \u0394 to cofire includes 0 and it has no more parameters",
+      "n_blocks": 352,
+      "vs_default": {
+       "noisy_or": {
+        "delta": -8.793360153485676e-05,
+        "lo": -0.00015932367488933008,
+        "hi": -2.4744632233809213e-05,
+        "se": 4.1372283822241625e-05,
+        "verdict": "better",
+        "n": 2736,
+        "n_blocks": 352
+       },
+       "cofire": {
+        "delta": -6.77727298624576e-05,
+        "lo": -0.00012832826483681937,
+        "hi": -8.354917334908432e-06,
+        "se": 3.6738222611748635e-05,
+        "verdict": "better",
+        "n": 2736,
+        "n_blocks": 352
+       }
+      }
+     }
+    },
+    "share_fit_span": [
+     "2016-07-01",
+     "2025-06-30"
+    ],
+    "links": {
+     "westside>ocean": {
+      "share": {
+       "kind": "size_blend",
+       "large": 1.0,
+       "small": 0.4,
+       "median_mg": 3.59,
+       "n_basin_days": 41
+      },
+      "constant": 0.8461538461538461,
+      "vol_share": 1.0
+     },
+     "westside>baker_china": {
+      "share": {
+       "kind": "size_blend",
+       "large": 0.7619,
+       "small": 0.8,
+       "median_mg": 3.59,
+       "n_basin_days": 41
+      },
+      "constant": 0.7857142857142857,
+      "vol_share": 1.0
+     },
+     "north_shore>north": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "central>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "south>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     }
+    },
+    "split_fit": {
+     "fit": "refit on the fold's training days",
+     "fit_span": [
+      "2016-07-01",
+      "2025-06-30"
+     ],
+     "n_fit_days": 2922,
+     "n_events": 801,
+     "seasons": [
+      2016,
+      2017,
+      2018,
+      2019,
+      2020,
+      2021,
+      2023,
+      2024
+     ]
+    }
+   },
+   {
+    "tier": "T2",
+    "fold": "2023-24",
+    "scores": [
+     "2023-07-01",
+     "2024-06-30"
+    ],
+    "train_seasons": [
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2024
+    ],
+    "basin_median_mg": {
+     "westside": 3.8600000000000003,
+     "north_shore": 9.34,
+     "central": 49.839999999999996,
+     "south": 1.5
+    },
+    "cofire": {
+     "westside>ocean|westside>baker_china": 0.6571428571428571,
+     "westside>baker_china|westside>ocean": 0.7419354838709677,
+     "central>east|south>east": 0.8571428571428571,
+     "south>east|central>east": 0.24
+    },
+    "union": {
+     "east": {
+      "rule": "noisy_or"
+     },
+     "choice": {
+      "brier": {
+       "max": 0.00934493149169857,
+       "noisy_or": 0.009208066278911159,
+       "cofire": 0.009282044491671419
+      },
+      "n": 2725,
+      "inner": {
+       "2016": {
+        "n": 251,
+        "sse": {
+         "max": 4.658166363851265,
+         "noisy_or": 4.3671296267501925,
+         "cofire": 4.495744099424798
+        },
+        "train_seasons": [
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2022,
+         2024
+        ]
+       },
+       "2017": {
+        "n": 347,
+        "sse": {
+         "max": 0.5897805942430473,
+         "noisy_or": 0.614167853098935,
+         "cofire": 0.5773855914120238
+        },
+        "train_seasons": [
+         2016,
+         2018,
+         2019,
+         2020,
+         2021,
+         2022,
+         2024
+        ]
+       },
+       "2018": {
+        "n": 358,
+        "sse": {
+         "max": 6.154629494726382,
+         "noisy_or": 6.0869506391357575,
+         "cofire": 6.1345898977429405
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2019,
+         2020,
+         2021,
+         2022,
+         2024
+        ]
+       },
+       "2019": {
+        "n": 360,
+        "sse": {
+         "max": 2.302051209846507,
+         "noisy_or": 2.3897304346404207,
+         "cofire": 2.4256828076538266
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2020,
+         2021,
+         2022,
+         2024
+        ]
+       },
+       "2020": {
+        "n": 355,
+        "sse": {
+         "max": 2.1169453727521876,
+         "noisy_or": 2.096128791998411,
+         "cofire": 2.1110228683945502
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2021,
+         2022,
+         2024
+        ]
+       },
+       "2021": {
+        "n": 352,
+        "sse": {
+         "max": 3.365201849932616,
+         "noisy_or": 3.3287300173672585,
+         "cofire": 3.3413224630932894
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2022,
+         2024
+        ]
+       },
+       "2022": {
+        "n": 352,
+        "sse": {
+         "max": 5.067595805299755,
+         "noisy_or": 5.035672969078654,
+         "cofire": 5.032020683597418
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2024
+        ]
+       },
+       "2024": {
+        "n": 350,
+        "sse": {
+         "max": 1.21056762422684,
+         "noisy_or": 1.1734702779632775,
+         "cofire": 1.1758028284857684
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2022
+        ]
+       }
+      },
+      "lowest": "noisy_or",
+      "why": "noisy_or is better than max (the CI of its \u0394 lies wholly below 0)",
+      "n_blocks": 352,
+      "vs_default": {
+       "noisy_or": {
+        "delta": -0.00013686521278741086,
+        "lo": -0.0002584795972668041,
+        "hi": -9.673605501751837e-06,
+        "se": 7.547262450796616e-05,
+        "verdict": "better",
+        "n": 2725,
+        "n_blocks": 352
+       },
+       "cofire": {
+        "delta": -6.288700002715121e-05,
+        "lo": -0.00015070304695184679,
+        "hi": 5.81870150180066e-05,
+        "se": 6.320373842279261e-05,
+        "verdict": "no clear difference",
+        "n": 2725,
+        "n_blocks": 352
+       }
+      }
+     }
+    },
+    "share_fit_span": [
+     "2016-07-01",
+     "2025-06-30"
+    ],
+    "links": {
+     "westside>ocean": {
+      "share": {
+       "kind": "size_blend",
+       "large": 1.0,
+       "small": 0.4545,
+       "median_mg": 3.7,
+       "n_basin_days": 43
+      },
+      "constant": 0.7380952380952381,
+      "vol_share": 1.0
+     },
+     "westside>baker_china": {
+      "share": {
+       "kind": "size_blend",
+       "large": 0.8571,
+       "small": 0.7727,
+       "median_mg": 3.7,
+       "n_basin_days": 43
+      },
+      "constant": 0.813953488372093,
+      "vol_share": 1.0
+     },
+     "north_shore>north": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "central>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "south>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     }
+    },
+    "split_fit": {
+     "fit": "refit on the fold's training days",
+     "fit_span": [
+      "2016-07-01",
+      "2025-06-30"
+     ],
+     "n_fit_days": 2921,
+     "n_events": 858,
+     "seasons": [
+      2016,
+      2017,
+      2018,
+      2019,
+      2020,
+      2021,
+      2022,
+      2024
+     ]
+    }
+   },
+   {
+    "tier": "T2",
+    "fold": "2024-25",
+    "scores": [
+     "2024-07-01",
+     "2025-06-30"
+    ],
+    "train_seasons": [
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023
+    ],
+    "basin_median_mg": {
+     "westside": 3.8550000000000004,
+     "north_shore": 7.245000000000001,
+     "central": 58.45,
+     "south": 1.65
+    },
+    "cofire": {
+     "westside>ocean|westside>baker_china": 0.6388888888888888,
+     "westside>baker_china|westside>ocean": 0.696969696969697,
+     "central>east|south>east": 0.8333333333333334,
+     "south>east|central>east": 0.18292682926829268
+    },
+    "union": {
+     "east": {
+      "rule": "max"
+     },
+     "choice": {
+      "brier": {
+       "max": 0.009446998652941236,
+       "noisy_or": 0.009337861340658813,
+       "cofire": 0.009396691850202386
+      },
+      "n": 2738,
+      "inner": {
+       "2016": {
+        "n": 251,
+        "sse": {
+         "max": 4.367742186175898,
+         "noisy_or": 4.203080584452049,
+         "cofire": 4.257970031191628
+        },
+        "train_seasons": [
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2022,
+         2023
+        ]
+       },
+       "2017": {
+        "n": 347,
+        "sse": {
+         "max": 0.5925696191969292,
+         "noisy_or": 0.6196320544803118,
+         "cofire": 0.5874540588833598
+        },
+        "train_seasons": [
+         2016,
+         2018,
+         2019,
+         2020,
+         2021,
+         2022,
+         2023
+        ]
+       },
+       "2018": {
+        "n": 358,
+        "sse": {
+         "max": 6.113710099470902,
+         "noisy_or": 6.06678900941594,
+         "cofire": 6.098973658884788
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2019,
+         2020,
+         2021,
+         2022,
+         2023
+        ]
+       },
+       "2019": {
+        "n": 360,
+        "sse": {
+         "max": 2.3381020589065367,
+         "noisy_or": 2.4191209997471534,
+         "cofire": 2.477143730396005
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2020,
+         2021,
+         2022,
+         2023
+        ]
+       },
+       "2020": {
+        "n": 355,
+        "sse": {
+         "max": 2.0196963883564925,
+         "noisy_or": 2.0036890304849937,
+         "cofire": 2.0139694466657767
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2021,
+         2022,
+         2023
+        ]
+       },
+       "2021": {
+        "n": 352,
+        "sse": {
+         "max": 3.239225438393724,
+         "noisy_or": 3.222546381257437,
+         "cofire": 3.2210846966422717
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2022,
+         2023
+        ]
+       },
+       "2022": {
+        "n": 352,
+        "sse": {
+         "max": 5.179258414218837,
+         "noisy_or": 5.163250849144215,
+         "cofire": 5.172042259418285
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2023
+        ]
+       },
+       "2023": {
+        "n": 363,
+        "sse": {
+         "max": 2.0155781070337895,
+         "noisy_or": 1.8689554417417336,
+         "cofire": 1.8995044037720197
+        },
+        "train_seasons": [
+         2016,
+         2017,
+         2018,
+         2019,
+         2020,
+         2021,
+         2022
+        ]
+       }
+      },
+      "lowest": "noisy_or",
+      "why": "no challenger is better than max (each CI of \u0394 includes 0 or lies above it), so the default stays",
+      "n_blocks": 346,
+      "vs_default": {
+       "noisy_or": {
+        "delta": -0.00010913731228242261,
+        "lo": -0.00021820542287647121,
+        "hi": 1.6563113123071465e-06,
+        "se": 6.646511801741861e-05,
+        "verdict": "no clear difference",
+        "n": 2738,
+        "n_blocks": 346
+       },
+       "cofire": {
+        "delta": -5.030680273884931e-05,
+        "lo": -0.00014673392195829052,
+        "hi": 6.541139487046602e-05,
+        "se": 6.598524893760138e-05,
+        "verdict": "no clear difference",
+        "n": 2738,
+        "n_blocks": 346
+       }
+      }
+     }
+    },
+    "share_fit_span": [
+     "2016-07-01",
+     "2024-06-30"
+    ],
+    "links": {
+     "westside>ocean": {
+      "share": {
+       "kind": "size_blend",
+       "large": 1.0,
+       "small": 0.4348,
+       "median_mg": 3.42,
+       "n_basin_days": 46
+      },
+      "constant": 0.75,
+      "vol_share": 1.0
+     },
+     "westside>baker_china": {
+      "share": {
+       "kind": "size_blend",
+       "large": 0.7826,
+       "small": 0.7826,
+       "median_mg": 3.42,
+       "n_basin_days": 46
+      },
+      "constant": 0.782608695652174,
+      "vol_share": 1.0
+     },
+     "north_shore>north": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "central>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     },
+     "south>east": {
+      "share": {
+       "kind": "identity"
+      },
+      "vol_share": 1.0
+     }
+    },
+    "split_fit": {
+     "fit": "refit on the fold's training days",
+     "fit_span": [
+      "2016-07-01",
+      "2024-06-30"
+     ],
+     "n_fit_days": 2922,
+     "n_events": 903,
+     "seasons": [
+      2016,
+      2017,
+      2018,
+      2019,
+      2020,
+      2021,
+      2022,
+      2023
+     ]
+    }
+   }
+  ]
+ },
+ "links": {
+  "westside>ocean": {
+   "basin": "westside",
+   "zone": "ocean",
+   "outfalls": [
+    "CSD-001",
+    "CSD-002",
+    "CSD-003"
+   ],
+   "evidence": {
+    "CSD-001": "O",
+    "CSD-002": "O",
+    "CSD-003": "O"
+   },
+   "identity": false,
+   "share": {
+    "kind": "size_blend",
+    "large": 1.0,
+    "small": 0.4615,
+    "median_mg": 3.7,
+    "n_basin_days": 51
+   },
+   "vol_share": 1.0
+  },
+  "westside>baker_china": {
+   "basin": "westside",
+   "zone": "baker_china",
+   "outfalls": [
+    "CSD-004",
+    "CSD-005",
+    "CSD-006",
+    "CSD-007"
+   ],
+   "evidence": {
+    "CSD-004": "G",
+    "CSD-005": "G",
+    "CSD-006": "G",
+    "CSD-007": "O"
+   },
+   "identity": false,
+   "share": {
+    "kind": "size_blend",
+    "large": 0.8,
+    "small": 0.8077,
+    "median_mg": 3.7,
+    "n_basin_days": 51
+   },
+   "vol_share": 1.0
+  },
+  "north_shore>north": {
+   "basin": "north_shore",
+   "zone": "north",
+   "outfalls": [
+    "CSD-009",
+    "CSD-010",
+    "CSD-011",
+    "CSD-013",
+    "CSD-015",
+    "CSD-017",
+    "CSD-119"
+   ],
+   "evidence": {
+    "CSD-009": "O",
+    "CSD-010": "O",
+    "CSD-011": "O",
+    "CSD-013": "O",
+    "CSD-015": "O",
+    "CSD-017": "G",
+    "CSD-119": "G"
+   },
+   "identity": true,
+   "share": {
+    "kind": "identity"
+   },
+   "vol_share": 1.0
+  },
+  "central>east": {
+   "basin": "central",
+   "zone": "east",
+   "outfalls": [
+    "CSD-018",
+    "CSD-022",
+    "CSD-023",
+    "CSD-024",
+    "CSD-025",
+    "CSD-026",
+    "CSD-027",
+    "CSD-029",
+    "CSD-030",
+    "CSD-030A",
+    "CSD-031",
+    "CSD-031A",
+    "CSD-032",
+    "CSD-033",
+    "CSD-035"
+   ],
+   "evidence": {
+    "CSD-018": "G",
+    "CSD-022": "O",
+    "CSD-023": "O",
+    "CSD-024": "O",
+    "CSD-025": "O",
+    "CSD-026": "O",
+    "CSD-027": "O",
+    "CSD-029": "G",
+    "CSD-030": "G",
+    "CSD-030A": "G",
+    "CSD-031": "O",
+    "CSD-031A": "O",
+    "CSD-032": "O",
+    "CSD-033": "O",
+    "CSD-035": "O"
+   },
+   "identity": true,
+   "share": {
+    "kind": "identity"
+   },
+   "vol_share": 1.0
+  },
+  "south>east": {
+   "basin": "south",
+   "zone": "east",
+   "outfalls": [
+    "CSD-037",
+    "CSD-040",
+    "CSD-041",
+    "CSD-042",
+    "CSD-043"
+   ],
+   "evidence": {
+    "CSD-037": "G",
+    "CSD-040": "O",
+    "CSD-041": "O",
+    "CSD-042": "G",
+    "CSD-043": "O"
+   },
+   "identity": true,
+   "share": {
+    "kind": "identity"
+   },
+   "vol_share": 1.0
+  }
+ },
+ "union": {
+  "east": {
+   "rule": "noisy_or"
+  }
+ },
+ "cofire": {
+  "westside>ocean|westside>baker_china": 0.6585365853658537,
+  "westside>baker_china|westside>ocean": 0.7297297297297297,
+  "central>east|south>east": 0.8636363636363636,
+  "south>east|central>east": 0.21348314606741572
+ },
+ "component": "split_v2_sfpuc4",
+ "set": "sfpuc-icon-t8s-osplits-lt2zone-lzflags"
+}

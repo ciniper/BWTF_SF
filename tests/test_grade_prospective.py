@@ -58,9 +58,25 @@ def test_a_first_snapshot_becomes_lead_by_zone_rows():
     assert {r["lead"] for r in rows} == set(range(6)) and {r["zone"] for r in rows} == set(ZONES)
     for r in rows:
         assert r["target_date"] == (issue + timedelta(days=r["lead"])).isoformat()
-        assert r["model"] == "logit_v1_s2v2" and r["corrections"] == "live_v2" and r["issue_date"] == issue.isoformat()
+        assert r["model"] == "icon-w38-osplit-lt2-bflags" and r["corrections"] == "live_v2" and r["issue_date"] == issue.isoformat()
     east_l2 = next(r for r in rows if r["zone"] == "east" and r["lead"] == 2)
     assert abs(east_l2["p"] - 0.22) < 1e-12
+
+
+def test_a_row_names_the_lineup_its_stamp_records():
+    """Part B 36: a stamp holding its parts names the lineup that made it (the ECMWF days before 2026-09-30 are not
+    ICON's set); one holding only a name from before the rename names that set's id."""
+    stamp = {"name": "logit_v1_s2v2", "stage1": "logit_v1", "stage2": "v2", "live_corrections": "live_v2"}
+    assert GP.stamp_set(stamp) == "icon-w38-osplit-lt2-bflags"                      # no weather model: by its name
+    assert GP.stamp_set({**stamp, "weather_model": "ecmwf_ifs025"}) == "ecmwf-w38-osplit-lt2-bflags"
+    assert GP.stamp_set({**stamp, "weather_model": "icon_seamless", "live_corrections": "link_zone_v1"}) \
+        == "icon-w38-osplit-lt2-lzflags"
+    assert GP.stamp_set({"name": "gb_v1"}) == "icon-trees-nosplit-lt1-bflags" and GP.stamp_set({}) is None
+    try:
+        GP.stamp_set({**stamp, "weather_model": "nam_conus"})
+        raise AssertionError("an unknown weather model has no code")
+    except KeyError:
+        pass
 
 
 def test_a_day_dated_off_its_lead_raises():

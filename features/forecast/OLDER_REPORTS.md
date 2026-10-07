@@ -83,7 +83,7 @@ Discharge days added per basin to the training record. In brackets: how many fal
 
 ### 38-weight + 2016–17 reports (first days)
 
-Set `logit_v1_older16_first_s2v2`.
+Set `icon-w38r16f-osplit-lt2-bflags`.
 
 | basin | nine seasons: skill (live) | holdout: skill (live) | post-training: skill (live) | nine seasons: Δ Brier ×1000 | holdout: Δ Brier ×1000 | post-training: Δ Brier ×1000 |
 |---|---|---|---|---|---|---|
@@ -107,7 +107,7 @@ Pre-registered tests (protocol §8): S2 fail, OUT pass. Their parts: superiority
 
 ### 38-weight + 2016–17 reports (all days)
 
-Set `logit_v1_older16_every_s2v2`.
+Set `icon-w38r16a-osplit-lt2-bflags`.
 
 | basin | nine seasons: skill (live) | holdout: skill (live) | post-training: skill (live) | nine seasons: Δ Brier ×1000 | holdout: Δ Brier ×1000 | post-training: Δ Brier ×1000 |
 |---|---|---|---|---|---|---|
@@ -131,7 +131,7 @@ Pre-registered tests (protocol §8): S2 fail, OUT pass. Their parts: superiority
 
 ### 38-weight + 2011–17 reports (first days)
 
-Set `logit_v1_older11_first_s2v2`.
+Set `icon-w38r11f-osplit-lt2-bflags`.
 
 | basin | nine seasons: skill (live) | holdout: skill (live) | post-training: skill (live) | nine seasons: Δ Brier ×1000 | holdout: Δ Brier ×1000 | post-training: Δ Brier ×1000 |
 |---|---|---|---|---|---|---|
@@ -155,7 +155,7 @@ Pre-registered tests (protocol §8): S2 fail, OUT fail. Their parts: superiority
 
 ### 38-weight + 2011–17 reports (all days)
 
-Set `logit_v1_older11_every_s2v2`.
+Set `icon-w38r11a-osplit-lt2-bflags`.
 
 | basin | nine seasons: skill (live) | holdout: skill (live) | post-training: skill (live) | nine seasons: Δ Brier ×1000 | holdout: Δ Brier ×1000 | post-training: Δ Brier ×1000 |
 |---|---|---|---|---|---|---|

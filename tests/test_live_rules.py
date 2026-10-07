@@ -419,8 +419,9 @@ def test_link_zone_v1_puts_a_station_flag_in_after_the_split():
 
 
 def test_corrections_switch_writes_s5_and_switches_back():
-    """promote.py --corrections link_zone_v1 writes s5.json and records the rule in served.json;
-    --corrections live_v2 removes the file. A dry run writes nothing."""
+    """promote.py --corrections link_zone_v1 writes s5.json and records the rule in served.json, renaming the served
+    set to its new lineup's id; --corrections live_v2 removes the file and the name comes back. A dry run writes
+    nothing."""
     import shutil
     import tempfile
     import promote
@@ -434,10 +435,14 @@ def test_corrections_switch_writes_s5_and_switches_back():
         on_disk = json.loads((Path(tmp) / "s5.json").read_text())
         assert on_disk["rule"] == "link_zone_v1" and on_disk["cofire"] == spec["cofire"]
         assert on_disk["fit"]["ledger_through"] == json.loads(before)["trained_through"]
-        assert json.loads((Path(tmp) / "served.json").read_text())["corrections"] == "link_zone_v1"
+        sv = json.loads((Path(tmp) / "served.json").read_text())
+        assert sv["corrections"] == "link_zone_v1"
+        old = json.loads(before)["name"]                     # a new S5: the served set is another lineup (Part B 36)
+        assert sv["lineup"]["s5"] == "link_zone_v1" and sv["name"] == old.replace("-bflags", "-lzflags") and sv["renamed_from"] == old
         promote.promote_corrections("live_v2", serve_dir=tmp)
         assert not (Path(tmp) / "s5.json").exists()
-        assert json.loads((Path(tmp) / "served.json").read_text())["corrections"] == "live_v2"
+        sv = json.loads((Path(tmp) / "served.json").read_text())
+        assert sv["corrections"] == "live_v2" and sv["name"] == old and sv["lineup"] == json.loads(before)["lineup"]
         try:
             promote.promote_corrections("basin_swap", serve_dir=tmp)
             raise AssertionError("an unknown rule must raise")

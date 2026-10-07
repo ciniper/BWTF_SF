@@ -1381,15 +1381,17 @@ class LiveData:
         return cache["_by_model"][key]
 
     def list_models(self) -> list:
-        """The served set first, then every candidate set on disk."""
+        """The served set first, then every candidate set on disk, each with its recorded ``lineup`` (S1 … S5 at the
+        time it was made; its name is that lineup's id, shared/lineup.py)."""
         sv = _cand.served_info()
         out = [{"key": "", "label": f'{sv["name"]} (served)', "family": sv.get("family", "gb"), "served": True,
-                "stage1": sv["stage1"], "stage2": sv["stage2"], "line": sv.get("line", 0.5), "promoted_at": sv.get("promoted_at")}]
+                "stage1": sv["stage1"], "stage2": sv["stage2"], "lineup": sv.get("lineup"), "line": sv.get("line", 0.5),
+                "promoted_at": sv.get("promoted_at")}]
         for m in _cand.list_candidates():
             out.append({"key": m["name"], "label": m["name"], "family": m.get("family"), "note": m.get("note", ""),
                         "created_at": m.get("created_at"), "rain_sources": m.get("rain_sources"), "served": False,
                         "stage1": (m.get("stage1") or {}).get("name", m["name"]), "stage1_from": (m.get("stage1") or {}).get("from"),
-                        "stage2": (m.get("stage2") or {}).get("variant", "v1")})
+                        "stage2": (m.get("stage2") or {}).get("variant", "v1"), "lineup": m.get("lineup")})
         return out
 
     def _posting_label(self):
@@ -1430,6 +1432,11 @@ class LiveData:
                     return {"error": f"Invalid date: {v}"}
         if model and not _cand.valid_name(model):
             return {"error": f"Unknown model set: {model}"}
+        if model:                                 # a link from before the 2026-10-07 rename still finds its set
+            from shared import lineup as _lu
+            model = _lu.current_name(model)
+            if model == _cand.served_info()["name"]:
+                model = None
         sc = self._scorecard(model)
         if not sc:
             return {"error": f"scorecard artifact missing for {model!r} (leaderboard.py --save)" if model

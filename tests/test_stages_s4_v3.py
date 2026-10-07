@@ -37,7 +37,7 @@ On a slice of the folds, so the file runs in about a minute: T1 (the finals), T1
     background, monotone, sources, fit with every fold, each fold's φ) and through stages_build.s4_fold_spec
     (the reader that scores a stage candidate); a write outside stages_candidates/ is refused, and so is a
     bootstrap below 2,000 anywhere under it;
-  - today's lingering curve at zone level (sfpuc4_shared8_v2): on geo_v1, zone_table's ocean is
+  - today's lingering curve at zone level (sfpuc-icon-t8s-osplits-lt2zone-lzflags): on geo_v1, zone_table's ocean is
     train_v4.fit_impact_table's Ocean Beach on the same inputs and window, and the served frames as they are
     differ from those inputs only on X-S2-VOLQ days; zone_curves reads a table as compose_v2's GEO_V1 adapter
     does, takes the other size's x where impact.impact_fraction would and raises where neither size reaches; the
@@ -661,7 +661,7 @@ def test_candidate_v_hat_sizes_the_oracle_as_the_build_composes():
     assert _phi_study().folds[("T1", "final")]["spec"]["fit"]["v_hat_from"] == inp.bundle.name
     # write: a set holding its own S2 takes only a study that read it
     import stages_candidates as SC
-    name = "sfpuc4_shared8_v1"
+    name = "sfpuc-icon-t8s-ssplit-rain-lzflags"
     if not (SC.ROOT / name / "manifest.json").exists():
         return
     saved = SC.load_set(name)
@@ -689,7 +689,7 @@ def test_the_candidates_committed_s4_is_its_own_fit():
     recorded buckets, background and zone medians, and the record says which S3 and S2 it read (Part B 6)."""
     import stages_candidates as SC
     import stages_s3_links as S3L
-    name = "sfpuc4_shared8_v1"
+    name = "sfpuc-icon-t8s-ssplit-rain-lzflags"
     if not (SC.ROOT / name / "manifest.json").exists() or SC.load_set(name).s4_quality is None:
         print(f"  (no s4_quality.json in {name} yet)")
         return
@@ -750,9 +750,9 @@ def test_write_round_trip():
         assert "stages_candidates" in str(e)
 
 
-# ── today's lingering curve at zone level (sfpuc4_shared8_v2) ──────────────
+# ── today's lingering curve at zone level (sfpuc-icon-t8s-osplits-lt2zone-lzflags) ──────────────
 
-SERVED_PARTS = "sfpuc4_shared8_v2"      # the stage candidate that takes it (stages_candidates.assemble_served_parts)
+SERVED_PARTS = "sfpuc-icon-t8s-osplits-lt2zone-lzflags"      # the stage candidate that takes it (stages_candidates.assemble_served_parts)
 
 
 def test_the_zone_recipe_is_the_served_tables_on_the_same_inputs():
@@ -835,7 +835,7 @@ def test_zone_curves_read_a_table_as_the_geo_v1_adapter_does():
 
 
 def test_the_served_parts_candidates_committed_s4_is_its_own_fit():
-    """sfpuc4_shared8_v2's s4_quality.json (stages_candidates.assemble_served_parts) is served_recipe's own fit: the
+    """sfpuc-icon-t8s-osplits-lt2zone-lzflags's s4_quality.json (stages_candidates.assemble_served_parts) is served_recipe's own fit: the
     finals' fold and the T2 season 2019-20 refit here (zone_table on the fold's training days with the set's own fold
     v̂, zone_curves) give the recorded buckets, background and zone medians exactly; every fold is at φ 1 with the
     set's v̂ and reads back through stages_build.s4_fold_spec; the note names the recipe and Part B 6."""

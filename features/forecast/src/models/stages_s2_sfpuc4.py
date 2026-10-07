@@ -1185,6 +1185,8 @@ def _rel(path: Path) -> str:
 
 
 def candidate_name(winner: str) -> str:
+    """The working name the bake-off saves its winner's S2 under; stages_candidates.assemble completes the set and
+    moves it to its lineup's id (finalize), pointing the bake-off's winner at it."""
     return f"sfpuc4_{winner}_v1"
 
 

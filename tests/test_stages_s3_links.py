@@ -3,7 +3,7 @@ co-firing matrix and the East union rule chosen nested (STAGES_DESIGN.md §3.3, 
 STAGES_PROTOCOL.md §2, §8 S3a / S3b).
 
 On committed data, no network (counts as of the data end 2026-08-17), fit on the A5 winner's stage candidate's
-own S2 (sfpuc4_shared8_v1):
+own S2 (sfpuc-icon-t8s-ssplit-rain-lzflags):
   - the folds are stages_s2's, as whole training seasons;
   - the shares are fit on out-of-sample v̂, never the filed volume: every fit day's v̂ comes from a head
     without the day's season, the spec's coefficients are a fit on that v̂ alone, a fit on the filed
@@ -21,10 +21,10 @@ own S2 (sfpuc4_shared8_v1):
     the build scores and refits inner folds on that design only; a season whose inner Westside head would be
     under the 20-event floor is left out of the share fit and recorded; the candidate's committed spec is a
     fresh fit on its own S2;
-  - today's split on the city map (sfpuc4_shared8_v2): fold_spec takes a recorded size_blend share as recorded
+  - today's split on the city map (sfpuc-icon-t8s-osplits-lt2zone-lzflags): fold_spec takes a recorded size_blend share as recorded
     (composed as stage2.group_share), its benchmark the record's constant; the served groups Ocean Beach and
     Baker-China are read as the SFPUC4 links with the same outfalls, and a crossed map raises; the committed
-    spec keeps sfpuc4_shared8_v1's union rule, co-firing shares and constant benchmark in every fold, its
+    spec keeps sfpuc-icon-t8s-ssplit-rain-lzflags's union rule, co-firing shares and constant benchmark in every fold, its
     Westside links the served split at φ 1 (T1 the served stage2.json, T1-holdout refit here by the served
     recipe through stages_build.fold_specs).
 Run: venv/bin/python tests/test_stages_s3_links.py
@@ -60,7 +60,7 @@ from shared import geography as G  # noqa: E402
 AS_OF = pd.Timestamp("2026-08-17")     # the committed data's end: every count below is as of this day
 N_BOOT = 200                           # the tests' bootstrap (the written spec uses the protocol's 2,000)
 GEO = G.get("sfpuc4_v1")
-CANDIDATE = "sfpuc4_shared8_v1"        # the A5 winner's stage candidate (stages_s2_sfpuc4's committed bake-off)
+CANDIDATE = "sfpuc-icon-t8s-ssplit-rain-lzflags"        # the A5 winner's stage candidate (stages_s2_sfpuc4's committed bake-off)
 WEST_DAYS_T2 = 98                      # T2 oracle rows of the two Westside zones (48 Ocean Beach + 50 Baker & China), as of AS_OF
 EAST_ROWS_T2 = 3088                    # T2 East rain-known rows scored, as of AS_OF (the served set's GEO_V1 East: the same 3088)
 
@@ -587,9 +587,9 @@ def test_the_candidates_committed_spec_is_current():
     assert got["fit"]["bootstrap"]["protocol"] is True
 
 
-# ── today's split on the city map (sfpuc4_shared8_v2) ──────────────────────
+# ── today's split on the city map (sfpuc-icon-t8s-osplits-lt2zone-lzflags) ──────────────────────
 
-SPLIT_SET = "sfpuc4_shared8_v2"        # the stage candidate that takes it (stages_candidates.assemble_served_parts)
+SPLIT_SET = "sfpuc-icon-t8s-osplits-lt2zone-lzflags"        # the stage candidate that takes it (stages_candidates.assemble_served_parts)
 
 
 def test_a_recorded_size_blend_share_is_taken_as_recorded():

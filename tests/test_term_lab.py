@@ -34,9 +34,9 @@ def test_the_live_design_grades_as_its_stage_scores():
 
 
 def test_the_longer_record_grades_as_its_candidate_does():
-    """The live design on the older-reports record is the scored candidate logit_v1_older11_every_s2v2: the lab's
+    """The live design on the older-reports record is the scored candidate icon-w38r11a-osplit-lt2-bflags: the lab's
     skill and its change against the live model match that candidate's stage scores."""
-    sc = json.loads((TL.B.STAGES_DIR / "logit_v1_older11_every_s2v2" / "scores.json").read_text())
+    sc = json.loads((TL.B.STAGES_DIR / "icon-w38r11a-osplit-lt2-bflags" / "scores.json").read_text())
     g = lab().run(TL.LIVE_TERMS, record="older11")["grade"]
     for tier in TL.TIERS:
         for unit in ["pooled"] + lab().keys:

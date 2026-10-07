@@ -34,7 +34,7 @@ def test_offline_stage_data_is_not_bundled():
     glob = CONFIG["functions"]["app/wsgi.py"]["excludeFiles"]
     assert glob.startswith("{") and glob.endswith("}") and "{" not in glob[1:-1], "one flat brace list"
     parts = glob[1:-1].split(",")
-    offline = ["features/forecast/data/models/stages/logit_v1_s2v2/scores.json",
+    offline = ["features/forecast/data/models/stages/icon-w38-osplit-lt2-bflags/scores.json",
                "features/forecast/data/models/stages_candidates/_bakeoff/results.json",
                "features/forecast/data/raw/openmeteo_prev_runs_icon_seamless.csv",
                "features/forecast/data/raw/openmeteo_hist_forecast_icon_seamless.csv",

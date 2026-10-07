@@ -18,6 +18,23 @@ The rule for every swap:
 The live page and the stage scores compose with the same code
 (`src/models/compose_v2.py`), so what is scored is what serves.
 
+## A set's name
+
+A set is named by its five stages as they were when it was made: one short
+code per part, joined by hyphens (`shared/lineup.py`, STAGES_DESIGN.md Part
+B 36). Basins come first, and only when they are not BWTF's. Then the weather
+model, the overflow model, the beach split, the lingering table and the live
+correction rule. `icon-w38-osplit-lt2-bflags` is the live forecast;
+`icon-w38-osplit-lt2more-bflags` differs from it in the lingering table alone.
+
+- The savers name a set themselves; a name that is not its lineup's id is refused.
+- A new part needs its words and its code in `shared/lineup.py` before
+  anything can save it.
+- A stage candidate built under a working name moves to its id once its five
+  parts exist (`stages_candidates.py --finalize NAME`; `assemble` does it).
+- The names before 2026-10-07 (`logit_v1_s2v2`, `gb_v1`, …) are in
+  `lineup.RENAMED`.
+
 ## The weather model (the forecast days' rain)
 
 The live forecast reads one weather model through Open-Meteo:
@@ -35,8 +52,10 @@ the network; add a new model to `MODELS` in the collector first). The second
 scores every model against the gauges. The paired test against the served model
 at lead 1 is in `features/forecast/data/models/stages/_s1/s1_scores.json`.
 
-To switch: change the one line in `METEO_PARAMS`. Then rebuild the stage scores
-(the last section), because every forecast-day entry reads it.
+To switch: change the one line in `METEO_PARAMS`, and rename the served set in
+the same commit, since its S1 is part of its name
+(`src/models/promote.py --rename-served`). Then rebuild the stage scores (the
+last section), because every forecast-day entry reads it.
 
 ## The overflow model's weights or terms (stage 2)
 
@@ -71,9 +90,9 @@ or the lingering table, whichever scores better inside the fold on the score you
 choose: S4's own (`--criterion s4`) or the public number's (`--criterion out`).
 
 ```bash
-venv/bin/python features/forecast/src/models/stages_s4_zones.py --assemble NAME --base sfpuc4_shared8_v2 --criterion out
+venv/bin/python features/forecast/src/models/stages_s4_zones.py --assemble NAME --base sfpuc-icon-t8s-osplits-lt2zone-lzflags --criterion out
 venv/bin/python features/forecast/src/models/stages_build.py --set NAME --root stages_candidates --write
-venv/bin/python features/forecast/src/models/stages_s4_zones.py --compare NAME --base sfpuc4_shared8_v2
+venv/bin/python features/forecast/src/models/stages_s4_zones.py --compare NAME --base sfpuc-icon-t8s-osplits-lt2zone-lzflags
 ```
 
 The last command prints the paired change against the base, per stage, zone
@@ -121,7 +140,7 @@ Candidates on a named term list, picked nested, with the wind (Chase,
 venv/bin/python features/forecast/src/collectors/openmeteo_previous_runs.py --wind
 venv/bin/python features/forecast/src/models/train_terms.py
 venv/bin/python features/forecast/src/models/train_terms.py --save
-venv/bin/python features/forecast/src/models/stages_build.py --set logit_wind8_older11_s2v2 --root candidates --write
+venv/bin/python features/forecast/src/models/stages_build.py --set icon-t8wind-osplit-lt2-bflags --root candidates --write
 ```
 
 1. The first command fetches the archived wind *forecasts* at leads 0–5 for
@@ -133,9 +152,9 @@ venv/bin/python features/forecast/src/models/stages_build.py --set logit_wind8_o
    It writes nothing. Four terms are forced: the day's rain, the 2- and 3-day
    sums and the south wind. The rest are added one at a time inside each
    season's fold, on terms the page can compute, with the sensible rules.
-3. The third saves six candidates: 8, 9 and 10 terms, each with stage 2 v2
-   (`_s2v2`) and with the linger table on more samples (`_s2v2d10`, next
-   section). All use the served rain sources and C, and the older reports from
+3. The third saves six candidates: 8, 9 and 10 terms, each with Linger
+   table 2 (`icon-t8wind-osplit-lt2-bflags` at 8 terms) and with the linger
+   table on more samples (`…-lt2more-…`, next section). All use the served rain sources and C, and the older reports from
    2011 (every discharge day). The manifest keeps each fold's own terms
    (`fold_terms`), so the stages build refits every fold on its own pick.
 
@@ -162,8 +181,8 @@ Poo Bot. The split's shares are v2's.
 
 ```bash
 venv/bin/python features/forecast/src/models/stage2_variants.py fit --variant v2_d10
-venv/bin/python features/forecast/src/models/stage2_variants.py save --stage1 served --variant v2_d10 --name logit_v1_s2v2d10
-venv/bin/python -c "import sys; sys.path.insert(0, 'features/forecast/src/models'); import candidates; candidates.rescore_post('logit_v1_s2v2d10')"
+venv/bin/python features/forecast/src/models/stage2_variants.py save --stage1 served --variant v2_d10   # saved as icon-w38-osplit-lt2more-bflags
+venv/bin/python -c "import sys; sys.path.insert(0, 'features/forecast/src/models'); import candidates; candidates.rescore_post('icon-w38-osplit-lt2more-bflags')"
 ```
 
 The last line rescores the candidate's post-training days on the served input rules (the gauge-outage
@@ -175,7 +194,7 @@ composes and serves exactly as v2 does: no served code reads the samples
 field. Its sets record the id `v2_d10` (`candidates.stage2_variant_id`). The
 lineup calls it "Linger table 2, more samples". The stages build refits it per
 fold on the D10 samples of the fold's training days. Its sets are tagged
-`post_seen`: the table was built after `sfpuc4_shared8_v3b`'s post-training
+`post_seen`: the table was built after `sfpuc-icon-t8s-osplits-pickout-lzflags`'s post-training
 scores showed the extra samples helping.
 
 ## Training on the older discharge reports
@@ -190,7 +209,7 @@ trained on them is compared with the served set exactly like any other.
 venv/bin/python features/forecast/src/collectors/historical.py --older
 venv/bin/python features/forecast/src/models/train_older_reports.py
 venv/bin/python features/forecast/src/models/train_older_reports.py --save all
-venv/bin/python features/forecast/src/models/stages_build.py --set logit_v1_older11_every_s2v2 --root candidates --write
+venv/bin/python features/forecast/src/models/stages_build.py --set icon-w38r11a-osplit-lt2-bflags --root candidates --write
 venv/bin/python features/forecast/src/models/train_older_reports.py --report
 ```
 
@@ -264,7 +283,8 @@ venv/bin/python tests/fixtures/make_stages_goldens.py
 
 The second command writes `data/models/s5.json`, which holds the rule and its
 co-firing shares, fit on the overflow record through the served set's
-training end. It also records the rule in `served.json`. The live page reads
+training end. It also records the rule in `served.json` and renames the served
+set, whose S5 is now `lzflags` instead of `bflags`. The live page reads
 that file and composes the flags through `compose_v2` instead of `live_rules`.
 The third command re-pins the served forecast, and belongs in the same commit.
 `promote.py --corrections live_v2` switches back.
@@ -277,13 +297,13 @@ The stage scores pin the code and data they were built from, and
 ```bash
 venv/bin/python features/forecast/src/models/stages_s1.py --write
 venv/bin/python features/forecast/src/models/stages_build.py --set served --write
-venv/bin/python features/forecast/src/models/stages_build.py --set logit_v1 --root candidates --write
-venv/bin/python features/forecast/src/models/stages_build.py --set gb_v1 --root candidates --write
+venv/bin/python features/forecast/src/models/stages_build.py --set icon-w38-nosplit-lt1-bflags --root candidates --write
+venv/bin/python features/forecast/src/models/stages_build.py --set icon-trees-nosplit-lt1-bflags --root candidates --write
 ```
 
 Then rebuild each stage candidate you are keeping with
 `--set <name> --root stages_candidates --write`, and each candidate trained on
-the older reports with `--set logit_v1_older<…>_s2v2 --root candidates --write`
+the older reports with `--set icon-w38r<…>-osplit-lt2-bflags --root candidates --write`
 (then `train_older_reports.py --report`). That takes about 4 minutes per
 set; the S1 step takes about 2.
 

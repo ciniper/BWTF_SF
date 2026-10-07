@@ -11767,7 +11767,7 @@
  },
  "winner": {
   "contender": "shared8",
-  "candidate": "sfpuc4_shared8_v1",
+  "candidate": "sfpuc-icon-t8s-ssplit-rain-lzflags",
   "choice": {
    "contender": "shared8",
    "bends": "low",
@@ -20945,8 +20945,8 @@
   "total_seconds": 117.0
  },
  "candidate": {
-  "name": "sfpuc4_shared8_v1",
-  "dir": "features/forecast/data/models/stages_candidates/sfpuc4_shared8_v1",
+  "name": "sfpuc-icon-t8s-ssplit-rain-lzflags",
+  "dir": "features/forecast/data/models/stages_candidates/sfpuc-icon-t8s-ssplit-rain-lzflags",
   "files": [
    "central_model.pkl",
    "central_model.pre_holdout.pkl",

@@ -19,8 +19,8 @@ alone, so the index never drops a file).
 
 The index is a pure function of reports/ and the model sets on disk (served.json, the candidates'
 manifests), with no clock: rebuilding it unchanged gives the same bytes (tests/test_reports_index.py).
-A set goes by its name, its S2 · S3 · S4 in their fixed words (shared/lineup.py), its stored name in small
-print; the set served.json names wears a LIVE badge, a status beside the name. Nothing is "today's"
+A set goes by its name, its S1 … S5 in their fixed words as it was made (its recorded lineup, shared/lineup.py),
+its stored name (those parts' codes) in small print; the set served.json names wears a LIVE badge, a status beside the name. Nothing is "today's"
 (Chase, 2026-10-04): the served set is "the live forecast" wherever its status matters.
 """
 from __future__ import annotations
@@ -51,7 +51,7 @@ STAGE2 = "2026-09_forecast_stage2_explorer.html"
 TITLES = {STAGES: "The forecast, stage by stage", WORKS: "How the forecast works",
           STAGE2: "From an overflow to beach risk (S3–S4)"}
 EXPLORER_TITLE = "Inside the overflow model (S2)"
-SET_COLS = ("s2", "s3", "s4")       # a set's name: its overflow model, beach split and lingering table
+SET_COLS = LU.STAGE_COLS            # a set's name: S1 … S5 (STAGES_DESIGN.md Part B 36)
 # The LIVE badge: the set served.json names wears it beside its name, wherever a page shows that set (a status, not
 # part of the name). One look on every page: a small green pill, white capitals. LIVE_CSS for a page's stylesheet;
 # LIVE_STYLE inline where a page's stylesheet is not ours to change (the S3–S4 explorer's, which replay_live reads).
@@ -121,18 +121,17 @@ def explorer_file(name: str) -> str:
 
 def model_sets() -> list[dict]:
     """The live forecast (the set served.json names), then every candidate set on disk by stored name: {name,
-    served, parts, words, differs, file}. ``parts`` are its S2–S4 components (the overflow model, the beach
-    split, the lingering table, read from its two stored halves as the Model check reads them); ``words`` its
-    name, those parts' fixed words joined by " · "; ``differs`` marks the parts the live forecast does not share."""
+    served, parts, words, differs, file}. ``parts`` are its recorded lineup (S1 … S5 as it was made: the weather
+    model, the overflow model, the beach split, the lingering table, the live corrections; its stored name is their
+    id); ``words`` its name, those parts' fixed words joined by " · "; ``differs`` marks the parts the live
+    forecast does not share."""
     sv = C.served_info()
-    base = LU.geo_v1_parts(sv["stage1"], sv["stage2"])
+    base = dict(sv["lineup"])
     rows = [{"name": sv["name"], "served": True, "parts": base}]
     for man in sorted(C.list_candidates(), key=lambda m: m["name"]):
         if man["name"] == sv["name"]:          # a promoted set's old candidate directory: it is the live forecast
             continue
-        stage1 = (man.get("stage1") or {}).get("name", man["name"])
-        variant = (man.get("stage2") or {}).get("variant", "v1")
-        rows.append({"name": man["name"], "served": False, "parts": LU.geo_v1_parts(stage1, variant)})
+        rows.append({"name": man["name"], "served": False, "parts": dict(man["lineup"])})
     for r in rows:
         r["words"] = " · ".join(LU.words(c, r["parts"][c]) for c in SET_COLS)
         r["differs"] = {c: r["parts"][c] != base[c] for c in SET_COLS}
@@ -151,7 +150,8 @@ def set_title(row: dict) -> str:
 
 
 def explorer_title(row: dict) -> str:
-    """A set's S2 page's title: "Inside the overflow model (S2): 38-weight · Outfall split · Linger table 2"."""
+    """A set's S2 page's title: "Inside the overflow model (S2): ICON · 38-weight · Outfall split · Linger table 2 ·
+    Basin flags" (its five parts' words)."""
     return f"{EXPLORER_TITLE}: {set_title(row)}"
 
 

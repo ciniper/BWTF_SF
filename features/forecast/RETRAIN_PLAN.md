@@ -223,7 +223,7 @@ not yet public as of Aug 2026). Re-run `src/collectors/csd_ciwqs/` quarterly
 needs a records request (drafted in `data/csd/records_request_draft.md`):
 per-event Westside data 2013–2017.
 
-> **Served set changed 2026-09-28:** `logit_v1_s2v2` (stage 1 logit_v1 + stage 2 v2, line 25%) is the served set; gb_v1 below is a candidate now (`candidates/gb_v1/`). The served set is described in `data/models/served.json` (promote.py). The section below stays as gb_v1's training record.
+> **Served set changed 2026-09-28:** `icon-w38-osplit-lt2-bflags` (stage 1 logit_v1 + stage 2 v2, line 25%) is the served set; gb_v1 below is a candidate now (`candidates/gb_v1/`). The served set is described in `data/models/served.json` (promote.py). The section below stays as gb_v1's training record.
 
 ## gb_v1, the served bundle (2026-09-05; called "v4" until 2026-09-26): four basins · regional rain · Poo Bot archive · scorecard
 
@@ -349,13 +349,14 @@ labels; promotion into `data/models/` is a separate, human decision.
   `stage2_variants.py save --stage1 served|<candidate> --variant <v> --name <n>`
   → a candidate set with `stage2.json`, holdout siblings refit exactly as the
   source fit them (checked against the source artifact before writing).
-  Sets on disk: `gb_v1_s2v2`, `logit_v1_s2v2`. Serving still composes with stage 2 v1;
+  Sets on disk: `icon-trees-osplit-lt2-bflags`, `icon-w38-osplit-lt2-bflags`. Serving still composes with stage 2 v1;
   promotion = ship the spec next to the served pickles and pass
   `split=stage2.make_split(spec)` in `live_dashboard._compose_impact`.
 - Naming (2026-09-25, amended 2026-09-26): stage 1 sets `gb_v1` (the trees the served bundle ships) and
   `logit_v1` (weights); stage 2 versions `v1` (basin composition, served)
   and `v2` (outfall split). A set = its stage 1 name, plus `_s2v2` when it
-  uses stage 2 v2. The served bundle is gb_v1 + stage 2 v1; Chase retired the
+  uses stage 2 v2 (until 2026-10-07; since then a set is named by its five
+  stages, STAGES_DESIGN.md Part B 36). The served bundle is gb_v1 + stage 2 v1; Chase retired the
   "v4" label on 2026-09-26 — say "gb_v1 (served)". Only file and directory
   names (`train_v4.py`, `data/models/v4/`, `reports/2026-09_forecast_v4.html`) keep it.
 - Input rules (2026-09-25): `rain_features.GAUGE_OUTAGE_RULE` masks a dead

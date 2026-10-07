@@ -563,7 +563,9 @@ def test_the_committed_bakeoff_results_agree_with_the_code():
     for f in r["nested"]["folds"]:
         assert f["season"] not in f["inner_seasons"] and len(f["inner_seasons"]) == 8
     win = r["winner"]["contender"]
-    assert win == r["development"]["final_pick"]["winner"] and r["winner"]["candidate"] == M.candidate_name(win)
+    assert win == r["development"]["final_pick"]["winner"]
+    # saved under its working name, then moved to its lineup's id once complete (stages_candidates.finalize)
+    assert SC.load_set(r["winner"]["candidate"]).manifest.get("renamed_from") == M.candidate_name(win)
     assert isinstance(r["T1"]["check"]["noninferior_5pct"], bool) and isinstance(r["south_floor"]["pass"], bool)
     assert set(r["volume"]["picked"]) == keys - {"pooled"}
     s = SC.load_set(r["winner"]["candidate"])

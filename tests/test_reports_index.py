@@ -274,6 +274,17 @@ def test_every_link_in_the_index_lands():
             assert path in rules, url
 
 
+def test_an_explorer_link_from_before_the_rename_still_lands():
+    """A set's S2 page under its name before 2026-10-07 redirects to its page under its id (Part B 36); a name
+    nothing maps stays a 404."""
+    from app.wsgi import app
+    c = app.test_client()
+    r = c.get("/reports/2026-09_forecast_logit_v1_s2v2_model_explorer.html")
+    assert r.status_code == 301 and r.headers["Location"].endswith(f"/reports/{RI.explorer_file('icon-w38-osplit-lt2-bflags')}")
+    assert c.get(r.headers["Location"]).status_code == 200
+    assert c.get("/reports/2026-09_forecast_no_such_set_model_explorer.html").status_code == 404
+
+
 def test_the_index_reads_plainly():
     words = visible(index())
     for w in (r"\bcost", r"\bcheapest\b", r"\bKing\b", r"\balarm[\s_-]*line"):

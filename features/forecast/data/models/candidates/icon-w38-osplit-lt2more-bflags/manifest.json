@@ -1,0 +1,281 @@
+{
+ "name": "icon-w38-osplit-lt2more-bflags",
+ "family": "logit",
+ "note": "The served overflow model (logit_v1) with stage 2 v2's outfall split and its linger table refit on the stages' S4 truth samples (samples.D10_SOURCES: DataSF from 2020-07, STARDB 2016-10 \u2192 2020-07, Poo Bot 2015-12 \u2192 2017-01), 45\u201365% more sample days per group than the served table. Not served.",
+ "created_at": "2026-10-07T10:45:36",
+ "trained_through": "2025-10-31",
+ "span": [
+  "2016-03-01",
+  "2026-08-17"
+ ],
+ "holdout_start": "2023-07-01",
+ "rain_sources": {
+  "westside": "avg",
+  "north_shore": "SF Downtown",
+  "central": "SF Downtown",
+  "southeast": "SF Downtown",
+  "citywide": "avg"
+ },
+ "per_basin": {
+  "westside": {
+   "source": "avg",
+   "holdout": {
+    "n_test": 854,
+    "pos_test": 12,
+    "roc_auc": 0.9956452889944577,
+    "pr_auc": 0.8283195970695972,
+    "brier": 0.007082503786548205
+   },
+   "n_events": 51
+  },
+  "north_shore": {
+   "source": "SF Downtown",
+   "holdout": {
+    "n_test": 854,
+    "pos_test": 9,
+    "roc_auc": 0.9993425378040763,
+    "pr_auc": 0.9534662867996202,
+    "brier": 0.003219967258129928
+   },
+   "n_events": 40
+  },
+  "central": {
+   "source": "SF Downtown",
+   "holdout": {
+    "n_test": 854,
+    "pos_test": 20,
+    "roc_auc": 0.9991007194244604,
+    "pr_auc": 0.9671773182957395,
+    "brier": 0.004531826447787953
+   },
+   "n_events": 78
+  },
+  "southeast": {
+   "source": "avg",
+   "holdout": {
+    "n_test": 854,
+    "pos_test": 17,
+    "roc_auc": 0.9962049335863377,
+    "pr_auc": 0.835391118169756,
+    "brier": 0.005981375564908106
+   },
+   "n_events": 78
+  },
+  "citywide": {
+   "source": "avg",
+   "holdout": {
+    "n_test": 854,
+    "pos_test": 20,
+    "roc_auc": 0.9977817745803357,
+    "pr_auc": 0.9110309238405214,
+    "brier": 0.005718003166767336
+   },
+   "n_events": 78
+  }
+ },
+ "stage1": {
+  "name": "logit_v1",
+  "from": "served",
+  "family": "logit"
+ },
+ "stage2": {
+  "variant": "v2_d10",
+  "kind": "outfall_split",
+  "impact_table_refit": true,
+  "fitted_at": "2026-10-07T10:45:23"
+ },
+ "zone_confusion_holdout": {
+  "ocean": {
+   "0.1": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 47,
+     "fn": 1,
+     "tn": 797
+    },
+    "vs_bacteria_elevated": {
+     "tp": 16,
+     "fp": 13,
+     "fn": 11,
+     "tn": 117
+    }
+   },
+   "0.25": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 28,
+     "fn": 1,
+     "tn": 816
+    },
+    "vs_bacteria_elevated": {
+     "tp": 16,
+     "fp": 8,
+     "fn": 11,
+     "tn": 122
+    }
+   },
+   "0.5": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 8,
+     "fn": 1,
+     "tn": 836
+    },
+    "vs_bacteria_elevated": {
+     "tp": 11,
+     "fp": 2,
+     "fn": 16,
+     "tn": 128
+    }
+   }
+  },
+  "baker_china": {
+   "0.1": {
+    "vs_discharge_posting": {
+     "tp": 10,
+     "fp": 40,
+     "fn": 0,
+     "tn": 804
+    },
+    "vs_bacteria_elevated": {
+     "tp": 8,
+     "fp": 7,
+     "fn": 31,
+     "tn": 123
+    }
+   },
+   "0.25": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 15,
+     "fn": 1,
+     "tn": 829
+    },
+    "vs_bacteria_elevated": {
+     "tp": 4,
+     "fp": 4,
+     "fn": 35,
+     "tn": 126
+    }
+   },
+   "0.5": {
+    "vs_discharge_posting": {
+     "tp": 8,
+     "fp": 5,
+     "fn": 2,
+     "tn": 839
+    },
+    "vs_bacteria_elevated": {
+     "tp": 3,
+     "fp": 1,
+     "fn": 36,
+     "tn": 129
+    }
+   }
+  },
+  "north": {
+   "0.1": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 38,
+     "fn": 0,
+     "tn": 807
+    },
+    "vs_bacteria_elevated": {
+     "tp": 17,
+     "fp": 10,
+     "fn": 11,
+     "tn": 119
+    }
+   },
+   "0.25": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 15,
+     "fn": 0,
+     "tn": 830
+    },
+    "vs_bacteria_elevated": {
+     "tp": 14,
+     "fp": 6,
+     "fn": 14,
+     "tn": 123
+    }
+   },
+   "0.5": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 2,
+     "fn": 0,
+     "tn": 843
+    },
+    "vs_bacteria_elevated": {
+     "tp": 9,
+     "fp": 1,
+     "fn": 19,
+     "tn": 128
+    }
+   }
+  },
+  "east": {
+   "0.1": {
+    "vs_discharge_posting": {
+     "tp": 20,
+     "fp": 131,
+     "fn": 0,
+     "tn": 703
+    },
+    "vs_bacteria_elevated": {
+     "tp": 78,
+     "fp": 21,
+     "fn": 59,
+     "tn": 101
+    }
+   },
+   "0.25": {
+    "vs_discharge_posting": {
+     "tp": 20,
+     "fp": 86,
+     "fn": 0,
+     "tn": 748
+    },
+    "vs_bacteria_elevated": {
+     "tp": 70,
+     "fp": 14,
+     "fn": 67,
+     "tn": 108
+    }
+   },
+   "0.5": {
+    "vs_discharge_posting": {
+     "tp": 18,
+     "fp": 36,
+     "fn": 2,
+     "tn": 798
+    },
+    "vs_bacteria_elevated": {
+     "tp": 47,
+     "fp": 4,
+     "fn": 90,
+     "tn": 118
+    }
+   }
+  }
+ },
+ "stage1_source": "served",
+ "tags": {
+  "post_seen": "its linger table on more samples was built after sfpuc-icon-t8s-osplits-pickout-lzflags's post-training scores showed the extra samples helping the public number"
+ },
+ "input_rules_post": [
+  "gauge_outage_v1"
+ ],
+ "lineup": {
+  "geography": "geo_v1",
+  "s1": "icon_seamless",
+  "s2": "logit_v1",
+  "s3": "split_v2",
+  "s4": "impact_v2_d10",
+  "s5": "live_v2"
+ },
+ "renamed_from": "logit_v1_s2v2d10"
+}

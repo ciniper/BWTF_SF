@@ -91,6 +91,7 @@ import compose_v2 as C  # noqa: E402
 import exclusions as X  # noqa: E402
 import stages_build as B  # noqa: E402
 import stages_entries as E  # noqa: E402
+from shared import lineup as LU  # noqa: E402
 import stages_flowchart as F  # noqa: E402
 import stages_s2 as S2  # noqa: E402
 import stages_spec as SP  # noqa: E402
@@ -872,7 +873,7 @@ def test_a_candidate_is_compared_with_the_served_set_on_identical_rows():
     old = B.STAGES_DIR
     try:
         B.STAGES_DIR = d
-        c = B.build("logit_v1", "candidates", entries=("oracle", "rain"), tiers=("T1",), feeds=("oracle",), n_boot=50,
+        c = B.build("icon-w38-nosplit-lt1-bflags", "candidates", entries=("oracle", "rain"), tiers=("T1",), feeds=("oracle",), n_boot=50,
                     log=lambda *a: None)
     finally:
         B.STAGES_DIR = old
@@ -887,8 +888,8 @@ def test_a_candidate_is_compared_with_the_served_set_on_identical_rows():
     assert vs["s3"]["pooled"]["oracle"]["T1"]["delta"] > 0
     assert set(vs["s3"]) >= {"ocean", "baker_china"} and vs["out"]["pooled"]["rain"]["T1"]["mcb"]["metric"] == "_mcb"
     assert vs["geography"] == {"candidate": "geo_v1", "served": "geo_v1", "invariant_only": False}
-    if B.out_dir("logit_v1").exists():                                  # a candidate's directory holds no rows
-        assert not (B.out_dir("logit_v1") / "rows.csv.gz").exists()
+    if B.out_dir("icon-w38-nosplit-lt1-bflags").exists():                 # a candidate's directory holds no rows
+        assert not (B.out_dir("icon-w38-nosplit-lt1-bflags") / "rows.csv.gz").exists()
     # the primaries of a GEO_V1 candidate: S2 against the served component itself (no T2 in this slice), no
     # geography or South row, S5 from its own build (basin_swap exists on GEO_V1); a changed S3 that no §8 row
     # scores (no split, no size share) leaves criterion 1 not met
@@ -940,7 +941,11 @@ def test_the_committed_artifacts_are_current():
 # rain background, one record per fold. The served slice above is written to a temporary stages directory, so
 # the comparisons read rows built on this very code.
 
-STUB = "sfpuc4_stub_v1"
+# A complete set is stored under its lineup's id (Part B 36): the stub's own parts get codes, in this process only.
+for _col, _cid, _code in (("s2", "stub_s2", "stubs2"), ("s3", "stub_links", "stublinks"), ("s4", "stub_zone_v3", "stubzone")):
+    LU.CODES[_col].setdefault(_cid, _code)
+STUB = LU.set_id({"geography": "sfpuc4_v1", "s1": E.served_weather_model(), "s2": "stub_s2", "s3": "stub_links",
+                  "s4": "stub_zone_v3", "s5": "link_zone_swap"})
 STUB_FEATURES = ["precip_avg", "rain_3d_cum", "rain_max3h"]
 RECIPE_FEATURES = ["precip_avg", "rain_2d_cum"]
 STUB_HEAD = ["precip_avg", "rain_max3h"]
@@ -1367,7 +1372,7 @@ def test_the_primaries_state_every_protocol_row():
     # S5 is read from the served set's chain (basin_swap exists on GEO_V1 only): said on the row, carried to §9.1
     assert "served set's own chain" in pr["S5"]["caveat"] and "geo_v1" in pr["S5"]["caveat"], pr["S5"]
     assert not any("caveat" in r for r in prim["rows"] if r["id"] not in ("S3a", "S3b", "S4", "S5"))
-    assert B.s3_fit_s2({"sources": {"s2": {"name": "sfpuc4_shared8_v1"}}}) == {"name": "sfpuc4_shared8_v1", "stand_in": False}
+    assert B.s3_fit_s2({"sources": {"s2": {"name": "sfpuc-icon-t8s-ssplit-rain-lzflags"}}}) == {"name": "sfpuc-icon-t8s-ssplit-rain-lzflags", "stand_in": False}
     assert B.s3_fit_s2({"links": {}})["name"] is None
     # an S3 spec fit on the candidate's own S2 carries no caveat; a stand-in, an unstated S2 or another S2 does
     own = B.s3_fit_s2({"sources": {"s2": {"name": "sfpuc4_x_v1"}}})
@@ -1596,7 +1601,7 @@ def test_a_post_seen_candidates_post_training_scores_are_tagged():
     """Protocol §2: a set designed after its post-training scores were seen (stages_candidates.tag 'post_seen') has
     the tag on those scores: the post-training words of every pill and the caption, and a caveat on each primary
     with a part decided on post-training days (joined to any other), never on one decided elsewhere; an untagged set
-    says nothing. The committed sfpuc4_shared8_v2 build carries it on windows['T1'], OUT and S2."""
+    says nothing. The committed sfpuc-icon-t8s-osplits-lt2zone-lzflags build carries it on windows['T1'], OUT and S2."""
     cand = _cand()
     assert cand.post_seen is None
     tagged = dataclasses.replace(cand, manifest={**cand.manifest, "tags": {"post_seen": "why"}})
@@ -1613,7 +1618,7 @@ def test_a_post_seen_candidates_post_training_scores_are_tagged():
     got = [B.post_seen_caveat(r, "why") for r in rows]
     assert got[0]["caveat"] == "post_seen (protocol §2): why" and got[2]["caveat"] == "x; post_seen (protocol §2): why"
     assert got[1] == rows[1] and got[3] == rows[3]
-    d = B.STAGES_DIR / "sfpuc4_shared8_v2"
+    d = B.STAGES_DIR / "sfpuc-icon-t8s-osplits-lt2zone-lzflags"
     if (d / "scores.json").exists():
         v2 = json.loads((d / "scores.json").read_text())
         assert v2["windows"]["T1"]["tag"] == "post_seen" and B.POST_SEEN_WORDS in v2["figure"]["caption"]

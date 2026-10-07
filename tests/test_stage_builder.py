@@ -190,7 +190,7 @@ def test_every_name_comes_from_the_lineup_words_and_none_says_today():
     for b in built()["basins"]:
         assert b["name"] == LU.words("geography", b["id"]) and "today" not in b["name"].lower()
     for c in built()["chains"] + built()["lineups"]:
-        assert c["name"] == " · ".join(LU.words(k, c["parts"][k]) for k in ("s2", "s3", "s4")) and "today" not in c["name"].lower()
+        assert c["name"] == " · ".join(LU.words(k, c["parts"][k]) for k in LU.STAGE_COLS) and "today" not in c["name"].lower()
     assert "today" not in json.dumps(built()).lower()
 
 
@@ -262,7 +262,7 @@ def test_the_json_is_bundled_and_the_stage_artifacts_are_not():
     parts = glob[1:-1].split(",")
     rel = JSON_PATH.relative_to(ROOT).as_posix()
     assert not any(fnmatch.fnmatch(rel, g) for g in parts), f"{rel} would be left out of the app"
-    assert any(fnmatch.fnmatch("features/forecast/data/models/stages/logit_v1_s2v2/scores.json", g) for g in parts)
+    assert any(fnmatch.fnmatch("features/forecast/data/models/stages/icon-w38-osplit-lt2-bflags/scores.json", g) for g in parts)
 
 
 def test_the_page_reads_the_builder_and_names_no_set_todays():

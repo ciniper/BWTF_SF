@@ -61,7 +61,7 @@ T1-holdout days, 2023-07-01 → 2025-10-31: protocol §2, a design choice never 
 the T1 post-training days that confirm it); else link_zone_swap, protocol §8's S5
 primary winner. stages_build then scores it (``--root stages_candidates``).
 
-**Today's parts on a candidate's S2 (``assemble_served_parts``; sfpuc4_shared8_v2).**
+**Today's parts on a candidate's S2 (``assemble_served_parts``; sfpuc-icon-t8s-osplits-lt2zone-lzflags).**
 A set that keeps another set's S2 and swaps in the served S3 and S4 recipes:
 ``copy_s2`` saves the base's S2 unchanged (its fitted models and heads, its
 manifest s2 section verbatim, the bake-off it names included; nothing refit)
@@ -91,6 +91,7 @@ import json
 import os
 import pickle
 import re
+import shutil
 import sys
 import tempfile
 import time
@@ -110,11 +111,12 @@ for _p in (REPO, HERE):
 import candidates as CAND  # noqa: E402  (SERVE_DIR; its CANDIDATES_DIR is the directory this one is not)
 from shared import clock  # noqa: E402
 from shared import geography as G  # noqa: E402
+from shared import lineup as LU  # noqa: E402
 
 ROOT = CAND.SERVE_DIR / "stages_candidates"
 SCHEMA = "bwtf.stages_candidates/1"
 PIPELINE = "stages_v1"                       # design §2.6: two_stage_v1 (served) | stages_v1
-NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{1,40}$")   # '_…' directories are working space, never a set
+NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{1,63}$")   # '_…' directories are working space, never a set
 KINDS = ("s1", "s2", "s3_links", "s4_quality", "s5")
 STAGE_OF_KIND = {"s1": "s1", "s2": "s2", "s3_links": "s3", "s4_quality": "s4", "s5": "s5"}
 SPEC_FILES = {"s3_links": "s3_links.json", "s4_quality": "s4_quality.json"}
@@ -463,6 +465,11 @@ def save_component(name: str, kind: str, payload: dict, root=None) -> Path:
     man["components"][stage] = component
     man["stamps"][stage] = {**stamp, "files": sorted(files)}
     man[stage] = section
+    lineup = lineup_of(man)
+    if lineup:
+        man["lineup"] = lineup                                 # complete: its id is its name once finalize moves it
+    else:
+        man.pop("lineup", None)
     if kind == "s2":
         man.pop("s2_from", None)                               # a saved S2 is the set's own until copy_s2 says otherwise
     man["updated_at"] = clock.utc_iso()
@@ -513,6 +520,78 @@ def _owned(man: dict, stage: str) -> set:
     return set((man["stamps"].get(stage) or {}).get("files") or ())
 
 
+# ── names: a complete set is stored under its lineup's id ──────────────────
+
+def lineup_of(man: dict) -> dict | None:
+    """A complete set's lineup (its geography and S1 … S5 component ids; shared/lineup.py), None while a stage is
+    missing."""
+    comps = man["components"]
+    if not all(c in comps for c in LU.STAGE_COLS):
+        return None
+    return {"geography": man["geography"], **{c: comps[c] for c in LU.STAGE_COLS}}
+
+
+def _renamed(o, old: str, new: str):
+    """``o`` with every string (and key) that is exactly ``old`` replaced by ``new``."""
+    if isinstance(o, dict):
+        return {(new if k == old else k): _renamed(v, old, new) for k, v in o.items()}
+    if isinstance(o, list):
+        return [_renamed(v, old, new) for v in o]
+    return new if o == old else o
+
+
+def finalize(name: str, root=None, log=print) -> str:
+    """Complete stage candidate ``name`` moved to its lineup's id (shared/lineup.py set_id; STAGES_DESIGN.md Part B
+    36). A set is built a stage at a time under a working name, and its S5 may be chosen last (``s5_choice``), so its
+    id is known only once it is complete. Every pickle's ``set`` stamp is restamped, every spec value and manifest
+    value that is exactly the working name (the stamps, the S3 and S4 fits' own set) becomes the id, and the sha256s
+    are recomputed; the manifest records the id, the lineup and ``renamed_from``; a set whose S2 is a copy of this
+    one (``s2_from``) and the bake-off that picked it (its s2 section's ``bakeoff``) are pointed at the id. Returns
+    the id."""
+    d = set_dir(name, root)
+    man = _read_manifest(d, name)
+    lineup = lineup_of(man)
+    if lineup is None:
+        raise ValueError(f"{name} lacks {[c for c in LU.STAGE_COLS if c not in man['components']]}: only a complete set has an id")
+    new = LU.set_id(lineup)
+    if new == name:
+        return name
+    dst = set_dir(new, root)
+    if dst.exists():
+        raise FileExistsError(f"{new} exists: {name} would replace it")
+    _load_set(name, root, named=False)                         # it loads as saved before anything moves
+    dst.mkdir(parents=True)
+    try:
+        for fname in man["files"]:
+            if fname.endswith(".pkl"):
+                with open(d / fname, "rb") as f:
+                    obj = pickle.load(f)
+                _write_atomic(dst / fname, pickle.dumps({**obj, "set": new}))
+            else:
+                _write_atomic(dst / fname, _json_bytes(_renamed(json.loads((d / fname).read_text()), name, new)))
+            man["files"][fname] = _sha(dst / fname)
+        man = _renamed(man, name, new)
+        man.update(name=new, lineup=lineup, renamed_from=name, updated_at=clock.utc_iso())
+        _write_atomic(dst / "manifest.json", _json_bytes(man))
+        load_set(new, root)
+    except Exception:
+        shutil.rmtree(dst)
+        raise
+    shutil.rmtree(d)
+    for other in list_sets(root):
+        if other.get("s2_from") == name:
+            _annotate(other["name"], root, s2_from=new)
+    bake = (man.get("s2") or {}).get("bakeoff")
+    if bake:
+        bp = Path(bake) if Path(bake).is_absolute() else REPO / bake
+        res = json.loads(bp.read_text())
+        if res.get("winner", {}).get("candidate") == name:     # the bake-off names the set its winner is saved as
+            res["winner"]["candidate"] = new
+            bp.write_text(json.dumps(res, indent=1, allow_nan=False) + "\n")
+    log(f"{name} → {new} (its lineup's id)")
+    return new
+
+
 # ── read ───────────────────────────────────────────────────────────────────
 
 @dataclass(frozen=True)
@@ -557,9 +636,18 @@ def _load_pickle(path: Path, name: str, geo: G.Geography, component: str, fold: 
 
 
 def load_set(name: str, root=None) -> StageSet:
-    """The set ``name`` as saved, every stamp and key asserted (see the module notes)."""
+    """The set ``name`` as saved, every stamp and key asserted (see the module notes); a complete set must be stored
+    under its lineup's id (``finalize``)."""
+    return _load_set(name, root, named=True)
+
+
+def _load_set(name: str, root, named: bool) -> StageSet:
     d = set_dir(name, root)
     man = _read_manifest(d, name)
+    lineup = lineup_of(man)
+    if named and lineup is not None and (name != LU.set_id(lineup) or man.get("lineup") != lineup):
+        raise ValueError(f"{name}: a complete set is stored under its lineup's id {LU.set_id(lineup)!r} with its lineup "
+                         f"recorded (stages_candidates.py --finalize {name})")
     geo = G.get(man["geography"])
     listed = set(man["files"])
     on_disk = {p.name for p in d.iterdir() if p.is_file() and p.name != "manifest.json" and not p.name.startswith(".")}
@@ -758,6 +846,7 @@ def assemble(name: str, root=None, n_boot: int | None = None, served_scores: Pat
                                         "so its S1 is the served set's (protocol §8 S1: a weather model is chosen on S1 only)")}},
                    root=root)
     s5 = save_s5(name, root=root, scores=served, log=log)
+    name = finalize(name, root, log=log)
     return {"set": name, "s3": res, "s4": study, "s4_scores": sc4, "s5": s5, "seconds": {"s3": round(t3, 1), "s4": round(t4, 1),
                                                                                           "total": round(time.time() - t0, 1)}}
 
@@ -793,6 +882,7 @@ def assemble_served_parts(name: str, base: str, post_seen: str | None = None, ro
                    root=root)
     if post_seen:
         tag(name, "post_seen", post_seen, root)
+    name = finalize(name, root, log=log)
     st = load_set(name, root)
     log(f"{name}: components {st.components} ({time.time() - t0:.0f}s)")
     return {"set": name, "s3": s3, "s4": s4, "seconds": round(time.time() - t0, 1)}
@@ -801,19 +891,26 @@ def assemble_served_parts(name: str, base: str, post_seen: str | None = None, ro
 def main(argv=None) -> None:
     import argparse
     ap = argparse.ArgumentParser(description="assemble a stage candidate: S3, S4, S1 and S5 on its own saved S2")
-    ap.add_argument("--assemble", required=True, metavar="NAME", help="the stage candidate (its S2 saved by stages_s2_sfpuc4)")
+    ap.add_argument("--assemble", metavar="NAME", help="the stage candidate (its S2 saved by stages_s2_sfpuc4)")
+    ap.add_argument("--finalize", metavar="NAME", help="move a complete set to its lineup's id (finalize)")
     ap.add_argument("--served-scores", default=None, help="the served set's scores.json S5 is chosen on (default: its build)")
     ap.add_argument("--s5-only", action="store_true", help="redo only S5's choice (S1–S4 as saved)")
     ap.add_argument("--served-parts", metavar="BASE", default=None,
                     help="BASE's S2 (copied) with today's S3 split and S4 lingering curve, BASE's S5 (assemble_served_parts)")
     ap.add_argument("--post-seen", metavar="WHY", default=None, help="protocol §2's post_seen tag and its reason")
     a = ap.parse_args(argv)
+    if a.finalize:
+        finalize(a.finalize)
+        return
+    if not a.assemble:
+        ap.error("--assemble NAME or --finalize NAME")
     if a.served_parts:
         out = assemble_served_parts(a.assemble, a.served_parts, post_seen=a.post_seen)
         print(f"assembled {out['set']} in {out['seconds']}s")
         return
     if a.s5_only:
         save_s5(a.assemble, served_scores=a.served_scores)
+        finalize(a.assemble)
         return
     out = assemble(a.assemble, served_scores=a.served_scores)
     print(f"assembled {out['set']} in {out['seconds']}")

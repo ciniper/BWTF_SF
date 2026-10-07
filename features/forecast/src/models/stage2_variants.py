@@ -9,11 +9,11 @@
           samples.D10_SOURCES: STARDB's 2016-10 → 2020-07 results too; the spec's variant stays v2, so it
           composes and serves as v2 does, and its sets record the id v2_d10)
 
+    venv/bin/python features/forecast/src/models/stage2_variants.py save --stage1 served --variant v2 [--note "…"]
     venv/bin/python features/forecast/src/models/stage2_variants.py save \
-        --stage1 served --variant v2 --name gb_v1_s2v2 [--note "…"]
-    venv/bin/python features/forecast/src/models/stage2_variants.py save \
-        --stage1 logit_v1 --variant v2 --name logit_v1_s2v2
-        → data/models/candidates/<name>/ : the stage-1 pickles copied from the
+        --stage1 icon-w38-nosplit-lt1-bflags --variant v2
+        → data/models/candidates/<id>/ (the lineup's id, e.g. icon-w38-osplit-lt2-bflags; --name, if given, must
+          be it): the stage-1 pickles copied from the
           source set (the served gb_v1 or a candidate), stage2.json, and a scorecard
           composed with the variant. Holdout-fit siblings are refit on the
           pre-holdout rows exactly as the source set fit them (deterministic),
@@ -162,11 +162,15 @@ def _refit_holdouts(models: dict, chosen: dict, frames: dict, features: list) ->
     return out
 
 
-def save(stage1: str, variant: str, name: str, note: str = "") -> Path:
-    if not candidates.valid_name(name):
-        raise SystemExit(f"bad candidate name {name!r}")
+def save(stage1: str, variant: str, name: str | None = None, note: str = "") -> Path:
+    """Pair ``stage1`` with stage 2 ``variant`` as a candidate, saved under its lineup's id (candidates.geo_v1_set);
+    ``name``, if given, must be that id."""
     spec = load_spec(variant)
     models, src_sc, family, stage1_name = _load_stage1(stage1)
+    want, lineup = candidates.geo_v1_set(stage1_name, spec)
+    if name not in (None, want):
+        raise SystemExit(f"{stage1_name} with stage 2 {variant} is saved as {want!r}, not {name!r}")
+    name = want
     features = T.get_feature_columns_v21()
     chosen = {b: models[BASIN_KEYS[b]].get("rain_source", "avg") for b in T.APP_BASINS}
     chosen["citywide"] = models["citywide"].get("rain_source", "avg")
@@ -205,7 +209,8 @@ def save(stage1: str, variant: str, name: str, note: str = "") -> Path:
     stage1_from = "served" if stage1 in SERVED_ALIASES else stage1
     note = note or f"Stage 1 {stage1_name} (from {stage1_from}) composed with stage 2 {variant} ({spec.get('kind', '')}): {spec.get('definition', '')}"
     d = candidates.save_candidate(name, family, finals, holdouts, chosen, features, per_basin, note=note,
-                                  extra={"stage1_source": stage1_from}, stage2=spec, stage1_from=stage1_from, stage1_name=stage1_name)
+                                  extra={"stage1_source": stage1_from}, stage2=spec, stage1_from=stage1_from, stage1_name=stage1_name,
+                                  lineup=lineup)
     print(f"candidate → {d.relative_to(REPO)} (pickles copied from {stage1}, stage2.json, manifest, scorecard)")
     return d
 

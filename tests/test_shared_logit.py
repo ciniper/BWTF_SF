@@ -29,6 +29,12 @@ BASINS = ("westside", "north_shore", "central", "southeast", "citywide")
 SETS = {"logit_v2_shared5": "shared5", "logit_v2_shared6": "shared6", "logit_v2_shared8": "shared8", "logit_v2_half": "half", "logit_v2_four": "four"}
 
 
+def _sets(stage1: str) -> tuple:
+    """The two sets of an overflow model: with stage 2 v1 and with the outfall split (their lineups' ids)."""
+    import stage2_variants as SV
+    return C.geo_v1_set(stage1, None)[0], C.geo_v1_set(stage1, SV.load_spec("v2"))[0]
+
+
 def _toy(n=600, seed=0):
     rng = np.random.default_rng(seed)
     X = pd.DataFrame(rng.gamma(0.4, 0.6, size=(n, len(L.FEATS))), columns=L.FEATS)
@@ -94,12 +100,12 @@ def _frame(today, yday):
 
 def test_the_saved_sets_share_their_terms_and_never_lower_the_risk_with_more_rain():
     names = {m["name"] for m in C.list_candidates()}
-    assert set(SETS) | {f"{n}_s2v2" for n in SETS} <= names, names
+    assert {n for s1 in SETS for n in _sets(s1)} <= names, names
     assert not any(n.startswith("logit_v2_small") for n in names), "logit_v2_small was retired 2026-09-30"
     grid = np.round(np.arange(0, 6.01, 0.05), 2)
     for name, dk in SETS.items():
         terms = [L.band_name(*c) for c in L.band_columns(L.SHARED_DESIGNS[dk])]
-        for set_name in (name, f"{name}_s2v2"):
+        for set_name in _sets(name):
             models = C.load_models(set_name)
             assert set(BASINS) <= set(models), (set_name, sorted(models))
             for key in BASINS:
@@ -115,12 +121,12 @@ def test_the_saved_sets_share_their_terms_and_never_lower_the_risk_with_more_rai
                     p = np.array([md["model"].predict_proba(_frame(today, y))[0, 1] for y in grid])
                     assert (np.diff(p) >= -1e-12).all(), (set_name, key, today)
         # both sets of a design share one stage 1, and the second carries the outfall split
-        a, b = C.load_models(name), C.load_models(f"{name}_s2v2")
+        a, b = (C.load_models(n) for n in _sets(name))
         X, _ = _toy(seed=4)
         for key in BASINS:
             assert np.allclose(a[key]["model"].predict_proba(X)[:, 1], b[key]["model"].predict_proba(X)[:, 1])
-        assert C.load_stage2(name) is None and (C.load_stage2(f"{name}_s2v2") or {}).get("variant") == "v2"
-        for set_name in (name, f"{name}_s2v2"):
+        assert C.load_stage2(_sets(name)[0]) is None and (C.load_stage2(_sets(name)[1]) or {}).get("variant") == "v2"
+        for set_name in _sets(name):
             sc = C.load_scorecard(set_name)
             assert sc.get("input_rules_post") == ["gauge_outage_v1"] and any(d.get("post_training") for d in sc["days"])
 

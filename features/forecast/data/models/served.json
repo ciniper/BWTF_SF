@@ -1,13 +1,13 @@
 {
- "name": "logit_v1_s2v2",
+ "name": "icon-w38-osplit-lt2-bflags",
  "stage1": "logit_v1",
  "stage2": "v2",
  "artifact": "logit_v1_s2v2",
  "family": "logit",
  "line": 0.25,
  "promoted_at": "2026-09-28T01:10:14",
- "from_candidate": "logit_v1_s2v2",
- "replaced": "gb_v1",
+ "from_candidate": "icon-w38-osplit-lt2-bflags",
+ "replaced": "icon-trees-nosplit-lt1-bflags",
  "created_at": "2026-09-25T13:26:15",
  "trained_through": "2025-10-31",
  "holdout_start": "2023-07-01",
@@ -100,5 +100,14 @@
   "gauge_outage_v1"
  ],
  "stage2_kind": "outfall_split",
- "note": "logit_v1 (weights: 19 features + hinges, L2 logistic) composed with stage 2 v2, the outfall split. Not served."
+ "note": "logit_v1 (weights: 19 features + hinges, L2 logistic) composed with stage 2 v2, the outfall split. Not served.",
+ "lineup": {
+  "geography": "geo_v1",
+  "s1": "icon_seamless",
+  "s2": "logit_v1",
+  "s3": "split_v2",
+  "s4": "impact_v2",
+  "s5": "live_v2"
+ },
+ "renamed_from": "logit_v1_s2v2"
 }

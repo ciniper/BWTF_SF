@@ -1106,7 +1106,7 @@ function setScoreLabel(v) {
     if (!current || current.mode !== 'check') return;
     renderCheck({ predictions: current.byDate }, current.actual, current.scorecard, current.target);
 }
-// A model set by its stage lineup (A8, shared/lineup.py via the scorecard API): S2 · S3 · S4 in plain words.
+// A model set by its stage lineup (A8, Part B 36; shared/lineup.py via the scorecard API): S1 … S5 in plain words.
 const lineupWords = m => (m.lineup || []).map(x => x.words).join(' · ');
 const setName = m => (lineupWords(m) || m.label) + (m.served ? ' (live)' : '');
 const scoreRangeQuery = () => (scoreRange ? '&from=' + encodeURIComponent(scoreRange.from) + '&to=' + encodeURIComponent(scoreRange.to) : '')
@@ -1257,7 +1257,7 @@ function renderScoreWindow(sc) {
 
     let html = `<div id="scoreWindow"><div class="subhead" title="Alerts at ${esc(lineName(RISK_THRESHOLD))} · graded against ${esc(rulerName)}">${ic('chart-line')} Scorecard — ${esc(modelLabel)} — ${fmtRange(w.start, w.end)}</div>
         <div class="sc-controls">
-            ${models.length > 1 ? `<select class="date-picker" onchange="setScoreModel(this.value)" title="Which lineup's stored hindcast to grade (S2 · S3 · S4). Only the LIVE one drives the forecast; the others are scored here on the same days and labels.">
+            ${models.length > 1 ? `<select class="date-picker" onchange="setScoreModel(this.value)" title="Which lineup's stored hindcast to grade (on measured rain with no live corrections, so S2 · S3 · S4 are what it grades). Only the LIVE one drives the forecast; the others are scored here on the same days and labels.">
                 ${models.map(m => `<option value="${esc(m.key)}"${m.key === (sc.model || '') ? ' selected' : ''}>${esc(lineupWords(m) || m.label)}${m.served ? ' · LIVE' : ''}</option>`).join('')}
             </select>` : ''}
             <select class="date-picker" onchange="setRiskLine(this.value)" title="A day counts as alerted when its risk reaches this level; hits, misses and false alarms everywhere on this view follow it">

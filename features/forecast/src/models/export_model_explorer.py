@@ -9,12 +9,12 @@ self-check that the in-page arithmetic matches scikit-learn on real storms.
 
     venv/bin/python features/forecast/src/models/export_model_explorer.py
     → reports/2026-09_forecast_<served>_model_explorer.html  (the live forecast; served at /reports/…)
-    venv/bin/python features/forecast/src/models/export_model_explorer.py --model logit_v1
-    → reports/2026-09_forecast_logit_v1_model_explorer.html  (a candidate set: its
-      own S2 weights with its own S3–S4; the page says so)
+    venv/bin/python features/forecast/src/models/export_model_explorer.py --model icon-w38-nosplit-lt1-bflags
+    → reports/2026-09_forecast_icon-w38-nosplit-lt1-bflags_model_explorer.html  (a candidate set:
+      its own S2 weights with its own S3–S4; the page says so)
     … --offline   skip the gauge metadata lookup (ACIS) and use the cached values below
 
-A page titles its set by its name, its S2 · S3 · S4 in their fixed words
+A page titles its set by its name, its S1 … S5 in their fixed words
 (export_reports_index.explorer_title, shared/lineup.py), the served set's too: its
 page's heading wears the LIVE badge beside the name. Stored names stay
 identifiers, in small print. Re-run after retraining or `train_v4.py --rescore`
@@ -340,7 +340,7 @@ def main(model_name: str | None = None, offline: bool = False) -> None:
         "model_set": {"name": meta["name"], "label": RI.set_title(row), "title": title, "words": words, "live_words": live_words,
                       "served": meta["served"], "note": meta.get("note"),
                       "families": families, "C_grid": meta.get("C_grid"), "stage1_from": meta.get("stage1_from", "served" if meta["served"] else "fit"),
-                      "stage1_name": meta.get("stage1_name", "gb_v1" if meta["served"] else meta["name"]),
+                      "stage1_name": meta["stage1_name"],
                       "stage2": stage2_out,
                       "stage2_from": "volume heads: the served bundle's, shared by every set; S3's split and S4's lingering table: this set's own"},
         "stage2": stage2_out,

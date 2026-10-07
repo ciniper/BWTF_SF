@@ -1,0 +1,3387 @@
+{
+ "geography": "sfpuc4_v1",
+ "pipeline": "stages_v1",
+ "kind": "zone_v3",
+ "unit": "zone",
+ "background": {
+  "kind": "logistic",
+  "features": [],
+  "coef": {
+   "ocean": {
+    "intercept": -2.9031107836735943
+   },
+   "baker_china": {
+    "intercept": -1.6582280766035322
+   },
+   "north": {
+    "intercept": -1.742465822627915
+   },
+   "east": {
+    "intercept": -0.5580446957033816
+   }
+  },
+  "rain": "none: a constant per zone, the logit of the table's baseline (no zone overflow in 7 days)"
+ },
+ "buckets": {
+  "ocean": {
+   "0_small": 0.560126582278481,
+   "1_small": 0.2964135021097047,
+   "2_small": 0.03270042194092828,
+   "3_small": 0.03270042194092828,
+   "4-5_small": 0.03270042194092828,
+   "6-7_small": 0.03270042194092828,
+   "0_large": 1.0,
+   "1_large": 0.6835443037974683,
+   "2_large": 0.5780590717299577,
+   "3_large": 0.4725738396624473,
+   "4-5_large": 0.0,
+   "6-7_large": 0.0
+  },
+  "baker_china": {
+   "0_small": 0.6035714285714286,
+   "1_small": 0.20595238095238097,
+   "2_small": 0.20595238095238097,
+   "3_small": 0.20595238095238097,
+   "4-5_small": 0.04761904761904763,
+   "6-7_small": 0.04761904761904763,
+   "0_large": 0.6595238095238095,
+   "1_large": 0.24285714285714285,
+   "2_large": 0.24285714285714285,
+   "3_large": 0.0,
+   "4-5_large": 0.0,
+   "6-7_large": 0.0
+  },
+  "north": {
+   "0_small": 0.8037602820211516,
+   "1_small": 0.29494712103407755,
+   "2_small": 0.29494712103407755,
+   "3_small": 0.29494712103407755,
+   "4-5_small": 0.11868390129259695,
+   "6-7_small": 0.11868390129259695,
+   "0_large": 1.0,
+   "1_large": 0.21621621621621626,
+   "2_large": 0.21621621621621626,
+   "3_large": 0.0,
+   "4-5_large": 0.0,
+   "6-7_large": 0.0
+  },
+  "east": {
+   "0_small": 1.0,
+   "1_small": 1.0,
+   "2_small": 0.6179245283018868,
+   "3_small": 0.6179245283018868,
+   "4-5_small": 0.2845911949685535,
+   "6-7_small": 0.2138364779874214,
+   "0_large": 1.0,
+   "1_large": 1.0,
+   "2_large": 0.8915094339622642,
+   "3_large": 0.8915094339622642,
+   "4-5_large": 0.5000000000000001,
+   "6-7_large": 0.4764150943396227
+  }
+ },
+ "zone_median_mg": {
+  "ocean": 14.08,
+  "baker_china": 3.7800000000000002,
+  "north": 7.245000000000001,
+  "east": 68.39
+ },
+ "monotone": true,
+ "sources": {
+  "truth": "train_v4.load_samples(): DataSF + Poo Bot, the served table's records, resamples included",
+  "served_table_fit_on": [
+   "datasf",
+   "poobot"
+  ],
+  "history": "the CIWQS ledger: zone overflow days, sizes \u03a3 the fired basins' measured volume (\u03c6 1)"
+ },
+ "fit": {
+  "recipe": "train_v4.fit_impact_table's, per zone (stages_s4_v3.zone_table), then impact.smooth_table and compose_v2._attributable (zone_curves)",
+  "window": "each fold's training days; the finals through 2025-10-31",
+  "built_at": "2026-10-03T04:00:38+00:00",
+  "served_set": "icon-w38-osplit-lt2-bflags",
+  "s2_set": "sfpuc-icon-t8s-osplits-lt2zone-lzflags",
+  "s3_set": "sfpuc-icon-t8s-osplits-lt2zone-lzflags",
+  "size_rule": "compose_v2's zone size at \u03c6 1 on the ledger (stages_build.true_history): \u03a3 over the fired feeding basins of the measured volume, the fold's v\u0302 where none is measured; large = v \u2265 zone_median_mg, the median of the measured sizes, unrounded (the threshold zone_v3 reads)",
+  "fill": "a size with no bucket at or before k takes the other size's x (impact.impact_fraction); folds[].filled",
+  "folds": [
+   {
+    "tier": "T1",
+    "fold": "final",
+    "scores": [
+     "2025-11-01",
+     "2026-08-17"
+    ],
+    "fit_span": [
+     "2016-03-01",
+     "2025-10-31"
+    ],
+    "fit_seasons": [
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ],
+    "background": {
+     "ocean": {
+      "intercept": -2.9031107836735943
+     },
+     "baker_china": {
+      "intercept": -1.6582280766035322
+     },
+     "north": {
+      "intercept": -1.742465822627915
+     },
+     "east": {
+      "intercept": -0.5580446957033816
+     }
+    },
+    "buckets": {
+     "ocean": {
+      "0_small": 0.560126582278481,
+      "1_small": 0.2964135021097047,
+      "2_small": 0.03270042194092828,
+      "3_small": 0.03270042194092828,
+      "4-5_small": 0.03270042194092828,
+      "6-7_small": 0.03270042194092828,
+      "0_large": 1.0,
+      "1_large": 0.6835443037974683,
+      "2_large": 0.5780590717299577,
+      "3_large": 0.4725738396624473,
+      "4-5_large": 0.0,
+      "6-7_large": 0.0
+     },
+     "baker_china": {
+      "0_small": 0.6035714285714286,
+      "1_small": 0.20595238095238097,
+      "2_small": 0.20595238095238097,
+      "3_small": 0.20595238095238097,
+      "4-5_small": 0.04761904761904763,
+      "6-7_small": 0.04761904761904763,
+      "0_large": 0.6595238095238095,
+      "1_large": 0.24285714285714285,
+      "2_large": 0.24285714285714285,
+      "3_large": 0.0,
+      "4-5_large": 0.0,
+      "6-7_large": 0.0
+     },
+     "north": {
+      "0_small": 0.8037602820211516,
+      "1_small": 0.29494712103407755,
+      "2_small": 0.29494712103407755,
+      "3_small": 0.29494712103407755,
+      "4-5_small": 0.11868390129259695,
+      "6-7_small": 0.11868390129259695,
+      "0_large": 1.0,
+      "1_large": 0.21621621621621626,
+      "2_large": 0.21621621621621626,
+      "3_large": 0.0,
+      "4-5_large": 0.0,
+      "6-7_large": 0.0
+     },
+     "east": {
+      "0_small": 1.0,
+      "1_small": 1.0,
+      "2_small": 0.6179245283018868,
+      "3_small": 0.6179245283018868,
+      "4-5_small": 0.2845911949685535,
+      "6-7_small": 0.2138364779874214,
+      "0_large": 1.0,
+      "1_large": 1.0,
+      "2_large": 0.8915094339622642,
+      "3_large": 0.8915094339622642,
+      "4-5_large": 0.5000000000000001,
+      "6-7_large": 0.4764150943396227
+     }
+    },
+    "zone_median_mg": {
+     "ocean": 14.08,
+     "baker_china": 3.7800000000000002,
+     "north": 7.245000000000001,
+     "east": 68.39
+    },
+    "monotone": true,
+    "vol_share": {
+     "westside>ocean": 1.0,
+     "westside>baker_china": 1.0,
+     "north_shore>north": 1.0,
+     "central>east": 1.0,
+     "south>east": 1.0
+    },
+    "v_hat_from": "sfpuc-icon-t8s-osplits-lt2zone-lzflags",
+    "history_geography": "sfpuc4_v1",
+    "filled": [],
+    "table": {
+     "ocean": {
+      "median_event_volume_mg": 14.08,
+      "n_sample_days": 340,
+      "n_events": 37,
+      "n_events_measured": 36,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.052,
+        "n": 268
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 10
+       },
+       "d0_small": {
+        "p_elevated": 0.583,
+        "n": 12
+       },
+       "d1_large": {
+        "p_elevated": 0.7,
+        "n": 10
+       },
+       "d1_small": {
+        "p_elevated": 0.333,
+        "n": 12
+       },
+       "d2_large": {
+        "p_elevated": 0.6,
+        "n": 5
+       },
+       "d2_small": {
+        "p_elevated": 0.0,
+        "n": 5
+       },
+       "d3_large": {
+        "p_elevated": 0.5,
+        "n": 4
+       },
+       "d4-5_large": {
+        "p_elevated": 0.0,
+        "n": 3
+       },
+       "d4-5_small": {
+        "p_elevated": 0.0,
+        "n": 3
+       },
+       "d6-7_small": {
+        "p_elevated": 0.25,
+        "n": 4
+       }
+      }
+     },
+     "baker_china": {
+      "median_event_volume_mg": 3.7800000000000002,
+      "n_sample_days": 359,
+      "n_events": 41,
+      "n_events_measured": 40,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.16,
+        "n": 313
+       },
+       "d0_large": {
+        "p_elevated": 0.714,
+        "n": 7
+       },
+       "d0_small": {
+        "p_elevated": 0.667,
+        "n": 6
+       },
+       "d1_large": {
+        "p_elevated": 0.25,
+        "n": 8
+       },
+       "d1_small": {
+        "p_elevated": 0.333,
+        "n": 6
+       },
+       "d2_large": {
+        "p_elevated": 0.667,
+        "n": 3
+       },
+       "d3_large": {
+        "p_elevated": 0.0,
+        "n": 4
+       },
+       "d4-5_small": {
+        "p_elevated": 0.2,
+        "n": 5
+       }
+      }
+     },
+     "north": {
+      "median_event_volume_mg": 7.245000000000001,
+      "n_sample_days": 386,
+      "n_events": 40,
+      "n_events_measured": 40,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.149,
+        "n": 322
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 10
+       },
+       "d0_small": {
+        "p_elevated": 0.833,
+        "n": 12
+       },
+       "d1_large": {
+        "p_elevated": 0.333,
+        "n": 9
+       },
+       "d1_small": {
+        "p_elevated": 0.4,
+        "n": 10
+       },
+       "d3_large": {
+        "p_elevated": 0.0,
+        "n": 3
+       },
+       "d4-5_small": {
+        "p_elevated": 0.25,
+        "n": 8
+       },
+       "d6-7_large": {
+        "p_elevated": 0.0,
+        "n": 4
+       }
+      }
+     },
+     "east": {
+      "median_event_volume_mg": 68.39,
+      "n_sample_days": 620,
+      "n_events": 92,
+      "n_events_measured": 91,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.364,
+        "n": 398
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 24
+       },
+       "d0_small": {
+        "p_elevated": 1.0,
+        "n": 23
+       },
+       "d1_large": {
+        "p_elevated": 1.0,
+        "n": 19
+       },
+       "d1_small": {
+        "p_elevated": 1.0,
+        "n": 22
+       },
+       "d2_large": {
+        "p_elevated": 0.875,
+        "n": 16
+       },
+       "d2_small": {
+        "p_elevated": 0.75,
+        "n": 20
+       },
+       "d3_large": {
+        "p_elevated": 1.0,
+        "n": 13
+       },
+       "d3_small": {
+        "p_elevated": 0.765,
+        "n": 17
+       },
+       "d4-5_large": {
+        "p_elevated": 0.682,
+        "n": 22
+       },
+       "d4-5_small": {
+        "p_elevated": 0.545,
+        "n": 22
+       },
+       "d6-7_large": {
+        "p_elevated": 0.667,
+        "n": 12
+       },
+       "d6-7_small": {
+        "p_elevated": 0.5,
+        "n": 12
+       }
+      }
+     }
+    }
+   },
+   {
+    "tier": "T1-holdout",
+    "fold": "pre_holdout",
+    "scores": [
+     "2023-07-01",
+     "2025-10-31"
+    ],
+    "fit_span": [
+     "2016-03-01",
+     "2023-06-30"
+    ],
+    "fit_seasons": [
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022
+    ],
+    "background": {
+     "ocean": {
+      "intercept": -3.5471512942852352
+     },
+     "baker_china": {
+      "intercept": -1.927748469381011
+     },
+     "north": {
+      "intercept": -1.5368064681032407
+     },
+     "east": {
+      "intercept": -0.5710264960446539
+     }
+    },
+    "buckets": {
+     "ocean": {
+      "0_small": 0.54320987654321,
+      "1_small": 0.26543209876543206,
+      "2_small": 0.26543209876543206,
+      "3_small": 0.26543209876543206,
+      "4-5_small": 0.0,
+      "6-7_small": 0.0,
+      "0_large": 1.0,
+      "1_large": 0.588477366255144,
+      "2_large": 0.588477366255144,
+      "3_large": 0.588477366255144,
+      "4-5_large": 0.588477366255144,
+      "6-7_large": 0.588477366255144
+     },
+     "baker_china": {
+      "0_small": 0.6185567010309279,
+      "1_small": 0.0,
+      "2_small": 0.0,
+      "3_small": 0.0,
+      "4-5_small": 0.0,
+      "6-7_small": 0.0,
+      "0_large": 0.5418098510882016,
+      "1_large": 0.08361970217640322,
+      "2_large": 0.08361970217640322,
+      "3_large": 0.08361970217640322,
+      "4-5_large": 0.08361970217640322,
+      "6-7_large": 0.08361970217640322
+     },
+     "north": {
+      "0_small": 0.6962332928311057,
+      "1_small": 0.18955042527339008,
+      "2_small": 0.18955042527339008,
+      "3_small": 0.18955042527339008,
+      "4-5_small": 0.027946537059538302,
+      "6-7_small": 0.027946537059538302,
+      "0_large": 1.0,
+      "1_large": 0.027946537059538302,
+      "2_large": 0.027946537059538302,
+      "3_large": 0.027946537059538302,
+      "4-5_large": 0.027946537059538302,
+      "6-7_large": 0.027946537059538302
+     },
+     "east": {
+      "0_small": 1.0,
+      "1_small": 1.0,
+      "2_small": 0.6087636932707355,
+      "3_small": 0.5727699530516431,
+      "4-5_small": 0.3740219092331768,
+      "6-7_small": 0.0,
+      "0_large": 1.0,
+      "1_large": 1.0,
+      "2_large": 0.8122065727699531,
+      "3_large": 0.8122065727699531,
+      "4-5_large": 0.8122065727699531,
+      "6-7_large": 0.3740219092331768
+     }
+    },
+    "zone_median_mg": {
+     "ocean": 13.0,
+     "baker_china": 3.4699999999999998,
+     "north": 6.37,
+     "east": 68.39
+    },
+    "monotone": true,
+    "vol_share": {
+     "westside>ocean": 1.0,
+     "westside>baker_china": 1.0,
+     "north_shore>north": 1.0,
+     "central>east": 1.0,
+     "south>east": 1.0
+    },
+    "v_hat_from": "sfpuc-icon-t8s-osplits-lt2zone-lzflags",
+    "history_geography": "sfpuc4_v1",
+    "filled": [],
+    "table": {
+     "ocean": {
+      "median_event_volume_mg": 13.0,
+      "n_sample_days": 183,
+      "n_events": 27,
+      "n_events_measured": 26,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.028,
+        "n": 144
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 6
+       },
+       "d0_small": {
+        "p_elevated": 0.556,
+        "n": 9
+       },
+       "d1_large": {
+        "p_elevated": 0.6,
+        "n": 5
+       },
+       "d1_small": {
+        "p_elevated": 0.286,
+        "n": 7
+       },
+       "d4-5_small": {
+        "p_elevated": 0.0,
+        "n": 3
+       }
+      }
+     },
+     "baker_china": {
+      "median_event_volume_mg": 3.4699999999999998,
+      "n_sample_days": 190,
+      "n_events": 31,
+      "n_events_measured": 30,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.127,
+        "n": 166
+       },
+       "d0_large": {
+        "p_elevated": 0.6,
+        "n": 5
+       },
+       "d0_small": {
+        "p_elevated": 0.667,
+        "n": 3
+       },
+       "d1_large": {
+        "p_elevated": 0.2,
+        "n": 5
+       },
+       "d1_small": {
+        "p_elevated": 0.0,
+        "n": 3
+       },
+       "d4-5_small": {
+        "p_elevated": 0.0,
+        "n": 3
+       }
+      }
+     },
+     "north": {
+      "median_event_volume_mg": 6.37,
+      "n_sample_days": 229,
+      "n_events": 31,
+      "n_events_measured": 31,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.177,
+        "n": 192
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 6
+       },
+       "d0_small": {
+        "p_elevated": 0.75,
+        "n": 8
+       },
+       "d1_large": {
+        "p_elevated": 0.2,
+        "n": 5
+       },
+       "d1_small": {
+        "p_elevated": 0.333,
+        "n": 6
+       },
+       "d4-5_small": {
+        "p_elevated": 0.2,
+        "n": 5
+       }
+      }
+     },
+     "east": {
+      "median_event_volume_mg": 68.39,
+      "n_sample_days": 361,
+      "n_events": 72,
+      "n_events_measured": 71,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.361,
+        "n": 230
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 16
+       },
+       "d0_small": {
+        "p_elevated": 1.0,
+        "n": 16
+       },
+       "d1_large": {
+        "p_elevated": 1.0,
+        "n": 11
+       },
+       "d1_small": {
+        "p_elevated": 1.0,
+        "n": 13
+       },
+       "d2_large": {
+        "p_elevated": 0.778,
+        "n": 9
+       },
+       "d2_small": {
+        "p_elevated": 0.75,
+        "n": 12
+       },
+       "d3_large": {
+        "p_elevated": 1.0,
+        "n": 6
+       },
+       "d3_small": {
+        "p_elevated": 0.727,
+        "n": 11
+       },
+       "d4-5_large": {
+        "p_elevated": 0.9,
+        "n": 10
+       },
+       "d4-5_small": {
+        "p_elevated": 0.6,
+        "n": 15
+       },
+       "d6-7_large": {
+        "p_elevated": 0.6,
+        "n": 5
+       },
+       "d6-7_small": {
+        "p_elevated": 0.286,
+        "n": 7
+       }
+      }
+     }
+    }
+   },
+   {
+    "tier": "T2",
+    "fold": "2016-17",
+    "scores": [
+     "2016-07-01",
+     "2017-06-30"
+    ],
+    "fit_span": [
+     "2017-07-01",
+     "2025-06-30"
+    ],
+    "fit_seasons": [
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024
+    ],
+    "background": {
+     "ocean": {
+      "intercept": -2.987364023883474
+     },
+     "baker_china": {
+      "intercept": -1.6142456140022035
+     },
+     "north": {
+      "intercept": -1.7583269607129428
+     },
+     "east": {
+      "intercept": -0.7354495602506346
+     }
+    },
+    "buckets": {
+     "ocean": {
+      "0_small": 0.5619747899159663,
+      "1_small": 0.2993697478991597,
+      "2_small": 0.03676470588235295,
+      "3_small": 0.03676470588235295,
+      "4-5_small": 0.03676470588235295,
+      "6-7_small": 0.03676470588235295,
+      "0_large": 1.0,
+      "1_large": 0.6848739495798318,
+      "2_large": 0.5798319327731092,
+      "3_large": 0.4747899159663866,
+      "4-5_large": 0.0,
+      "6-7_large": 0.0
+     },
+     "baker_china": {
+      "0_small": 0.6007194244604317,
+      "1_small": 0.0407673860911271,
+      "2_small": 0.0407673860911271,
+      "3_small": 0.0407673860911271,
+      "4-5_small": 0.0407673860911271,
+      "6-7_small": 0.0407673860911271,
+      "0_large": 0.6570743405275778,
+      "1_large": 0.23741007194244604,
+      "2_large": 0.23741007194244604,
+      "3_large": 0.0,
+      "4-5_large": 0.0,
+      "6-7_large": 0.0
+     },
+     "north": {
+      "0_small": 0.8042203985932004,
+      "1_small": 0.2966002344665885,
+      "2_small": 0.2966002344665885,
+      "3_small": 0.2966002344665885,
+      "4-5_small": 0.12075029308323565,
+      "6-7_small": 0.12075029308323565,
+      "0_large": 1.0,
+      "1_large": 0.2672919109026964,
+      "2_large": 0.2672919109026964,
+      "3_large": 0.0,
+      "4-5_large": 0.0,
+      "6-7_large": 0.0
+     },
+     "east": {
+      "0_small": 1.0,
+      "1_small": 1.0,
+      "2_small": 0.591715976331361,
+      "3_small": 0.591715976331361,
+      "4-5_small": 0.455621301775148,
+      "6-7_small": 0.2603550295857988,
+      "0_large": 1.0,
+      "1_large": 1.0,
+      "2_large": 0.9408284023668638,
+      "3_large": 0.9408284023668638,
+      "4-5_large": 0.48964497041420124,
+      "6-7_large": 0.48964497041420124
+     }
+    },
+    "zone_median_mg": {
+     "ocean": 14.08,
+     "baker_china": 3.8600000000000003,
+     "north": 6.17,
+     "east": 72.695
+    },
+    "monotone": true,
+    "vol_share": {
+     "westside>ocean": 1.0,
+     "westside>baker_china": 1.0,
+     "north_shore>north": 1.0,
+     "central>east": 1.0,
+     "south>east": 1.0
+    },
+    "v_hat_from": "sfpuc-icon-t8s-osplits-lt2zone-lzflags",
+    "history_geography": "sfpuc4_v1",
+    "filled": [],
+    "table": {
+     "ocean": {
+      "median_event_volume_mg": 14.08,
+      "n_sample_days": 321,
+      "n_events": 37,
+      "n_events_measured": 36,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.048,
+        "n": 249
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 10
+       },
+       "d0_small": {
+        "p_elevated": 0.583,
+        "n": 12
+       },
+       "d1_large": {
+        "p_elevated": 0.7,
+        "n": 10
+       },
+       "d1_small": {
+        "p_elevated": 0.333,
+        "n": 12
+       },
+       "d2_large": {
+        "p_elevated": 0.6,
+        "n": 5
+       },
+       "d2_small": {
+        "p_elevated": 0.0,
+        "n": 5
+       },
+       "d3_large": {
+        "p_elevated": 0.5,
+        "n": 4
+       },
+       "d4-5_large": {
+        "p_elevated": 0.0,
+        "n": 3
+       },
+       "d4-5_small": {
+        "p_elevated": 0.0,
+        "n": 3
+       },
+       "d6-7_small": {
+        "p_elevated": 0.25,
+        "n": 4
+       }
+      }
+     },
+     "baker_china": {
+      "median_event_volume_mg": 3.8600000000000003,
+      "n_sample_days": 339,
+      "n_events": 40,
+      "n_events_measured": 39,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.166,
+        "n": 296
+       },
+       "d0_large": {
+        "p_elevated": 0.714,
+        "n": 7
+       },
+       "d0_small": {
+        "p_elevated": 0.667,
+        "n": 6
+       },
+       "d1_large": {
+        "p_elevated": 0.25,
+        "n": 8
+       },
+       "d1_small": {
+        "p_elevated": 0.2,
+        "n": 5
+       },
+       "d2_large": {
+        "p_elevated": 0.667,
+        "n": 3
+       },
+       "d3_large": {
+        "p_elevated": 0.0,
+        "n": 4
+       },
+       "d4-5_small": {
+        "p_elevated": 0.2,
+        "n": 5
+       }
+      }
+     },
+     "north": {
+      "median_event_volume_mg": 6.17,
+      "n_sample_days": 348,
+      "n_events": 33,
+      "n_events_measured": 33,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.147,
+        "n": 286
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 10
+       },
+       "d0_small": {
+        "p_elevated": 0.833,
+        "n": 12
+       },
+       "d1_large": {
+        "p_elevated": 0.375,
+        "n": 8
+       },
+       "d1_small": {
+        "p_elevated": 0.4,
+        "n": 10
+       },
+       "d3_large": {
+        "p_elevated": 0.0,
+        "n": 3
+       },
+       "d4-5_small": {
+        "p_elevated": 0.25,
+        "n": 8
+       },
+       "d6-7_large": {
+        "p_elevated": 0.0,
+        "n": 4
+       }
+      }
+     },
+     "east": {
+      "median_event_volume_mg": 72.695,
+      "n_sample_days": 528,
+      "n_events": 72,
+      "n_events_measured": 72,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.324,
+        "n": 340
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 20
+       },
+       "d0_small": {
+        "p_elevated": 1.0,
+        "n": 21
+       },
+       "d1_large": {
+        "p_elevated": 1.0,
+        "n": 15
+       },
+       "d1_small": {
+        "p_elevated": 1.0,
+        "n": 18
+       },
+       "d2_large": {
+        "p_elevated": 0.923,
+        "n": 13
+       },
+       "d2_small": {
+        "p_elevated": 0.706,
+        "n": 17
+       },
+       "d3_large": {
+        "p_elevated": 1.0,
+        "n": 12
+       },
+       "d3_small": {
+        "p_elevated": 0.75,
+        "n": 12
+       },
+       "d4-5_large": {
+        "p_elevated": 0.632,
+        "n": 19
+       },
+       "d4-5_small": {
+        "p_elevated": 0.632,
+        "n": 19
+       },
+       "d6-7_large": {
+        "p_elevated": 0.7,
+        "n": 10
+       },
+       "d6-7_small": {
+        "p_elevated": 0.5,
+        "n": 12
+       }
+      }
+     }
+    }
+   },
+   {
+    "tier": "T2",
+    "fold": "2017-18",
+    "scores": [
+     "2017-07-01",
+     "2018-06-30"
+    ],
+    "fit_span": [
+     "2016-07-01",
+     "2025-06-30"
+    ],
+    "fit_seasons": [
+     2016,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024
+    ],
+    "background": {
+     "ocean": {
+      "intercept": -2.987364023883474
+     },
+     "baker_china": {
+      "intercept": -1.6142456140022035
+     },
+     "north": {
+      "intercept": -1.7190001149456267
+     },
+     "east": {
+      "intercept": -0.6856565088307877
+     }
+    },
+    "buckets": {
+     "ocean": {
+      "0_small": 0.5619747899159663,
+      "1_small": 0.2363445378151261,
+      "2_small": 0.045168067226890755,
+      "3_small": 0.045168067226890755,
+      "4-5_small": 0.045168067226890755,
+      "6-7_small": 0.045168067226890755,
+      "0_large": 1.0,
+      "1_large": 0.7132352941176471,
+      "2_large": 0.4747899159663866,
+      "3_large": 0.4747899159663866,
+      "4-5_large": 0.0,
+      "6-7_large": 0.0
+     },
+     "baker_china": {
+      "0_small": 0.6007194244604317,
+      "1_small": 0.019184652278177443,
+      "2_small": 0.019184652278177443,
+      "3_small": 0.019184652278177443,
+      "4-5_small": 0.019184652278177443,
+      "6-7_small": 0.019184652278177443,
+      "0_large": 0.6570743405275778,
+      "1_large": 0.28057553956834536,
+      "2_large": 0.28057553956834536,
+      "3_large": 0.0,
+      "4-5_large": 0.0,
+      "6-7_large": 0.0
+     },
+     "north": {
+      "0_small": 0.8030660377358491,
+      "1_small": 0.2924528301886793,
+      "2_small": 0.2924528301886793,
+      "3_small": 0.2924528301886793,
+      "4-5_small": 0.11556603773584906,
+      "6-7_small": 0.11556603773584906,
+      "0_large": 1.0,
+      "1_large": 0.21344339622641512,
+      "2_large": 0.21344339622641512,
+      "3_large": 0.0,
+      "4-5_large": 0.0,
+      "6-7_large": 0.0
+     },
+     "east": {
+      "0_small": 1.0,
+      "1_small": 1.0,
+      "2_small": 0.613533834586466,
+      "3_small": 0.613533834586466,
+      "4-5_small": 0.35488721804511264,
+      "6-7_small": 0.18045112781954886,
+      "0_large": 1.0,
+      "1_large": 1.0,
+      "2_large": 0.8962406015037595,
+      "3_large": 0.8962406015037595,
+      "4-5_large": 0.5218045112781955,
+      "6-7_large": 0.4992481203007519
+     }
+    },
+    "zone_median_mg": {
+     "ocean": 12.85,
+     "baker_china": 5.93,
+     "north": 6.37,
+     "east": 68.39
+    },
+    "monotone": true,
+    "vol_share": {
+     "westside>ocean": 1.0,
+     "westside>baker_china": 1.0,
+     "north_shore>north": 1.0,
+     "central>east": 1.0,
+     "south>east": 1.0
+    },
+    "v_hat_from": "sfpuc-icon-t8s-osplits-lt2zone-lzflags",
+    "history_geography": "sfpuc4_v1",
+    "filled": [],
+    "table": {
+     "ocean": {
+      "median_event_volume_mg": 12.85,
+      "n_sample_days": 321,
+      "n_events": 35,
+      "n_events_measured": 34,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.048,
+        "n": 249
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 10
+       },
+       "d0_small": {
+        "p_elevated": 0.583,
+        "n": 12
+       },
+       "d1_large": {
+        "p_elevated": 0.727,
+        "n": 11
+       },
+       "d1_small": {
+        "p_elevated": 0.273,
+        "n": 11
+       },
+       "d2_large": {
+        "p_elevated": 0.5,
+        "n": 6
+       },
+       "d2_small": {
+        "p_elevated": 0.0,
+        "n": 4
+       },
+       "d3_large": {
+        "p_elevated": 0.5,
+        "n": 4
+       },
+       "d4-5_large": {
+        "p_elevated": 0.0,
+        "n": 3
+       },
+       "d4-5_small": {
+        "p_elevated": 0.0,
+        "n": 3
+       },
+       "d6-7_small": {
+        "p_elevated": 0.25,
+        "n": 4
+       }
+      }
+     },
+     "baker_china": {
+      "median_event_volume_mg": 5.93,
+      "n_sample_days": 339,
+      "n_events": 36,
+      "n_events_measured": 36,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.166,
+        "n": 296
+       },
+       "d0_large": {
+        "p_elevated": 0.714,
+        "n": 7
+       },
+       "d0_small": {
+        "p_elevated": 0.667,
+        "n": 6
+       },
+       "d1_large": {
+        "p_elevated": 0.286,
+        "n": 7
+       },
+       "d1_small": {
+        "p_elevated": 0.167,
+        "n": 6
+       },
+       "d2_large": {
+        "p_elevated": 0.667,
+        "n": 3
+       },
+       "d3_large": {
+        "p_elevated": 0.0,
+        "n": 4
+       },
+       "d4-5_small": {
+        "p_elevated": 0.2,
+        "n": 5
+       }
+      }
+     },
+     "north": {
+      "median_event_volume_mg": 6.37,
+      "n_sample_days": 367,
+      "n_events": 37,
+      "n_events_measured": 37,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.152,
+        "n": 303
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 10
+       },
+       "d0_small": {
+        "p_elevated": 0.833,
+        "n": 12
+       },
+       "d1_large": {
+        "p_elevated": 0.333,
+        "n": 9
+       },
+       "d1_small": {
+        "p_elevated": 0.4,
+        "n": 10
+       },
+       "d3_large": {
+        "p_elevated": 0.0,
+        "n": 3
+       },
+       "d4-5_small": {
+        "p_elevated": 0.25,
+        "n": 8
+       },
+       "d6-7_large": {
+        "p_elevated": 0.0,
+        "n": 4
+       }
+      }
+     },
+     "east": {
+      "median_event_volume_mg": 68.39,
+      "n_sample_days": 575,
+      "n_events": 88,
+      "n_events_measured": 87,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.335,
+        "n": 358
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 24
+       },
+       "d0_small": {
+        "p_elevated": 1.0,
+        "n": 23
+       },
+       "d1_large": {
+        "p_elevated": 1.0,
+        "n": 19
+       },
+       "d1_small": {
+        "p_elevated": 1.0,
+        "n": 21
+       },
+       "d2_large": {
+        "p_elevated": 0.875,
+        "n": 16
+       },
+       "d2_small": {
+        "p_elevated": 0.737,
+        "n": 19
+       },
+       "d3_large": {
+        "p_elevated": 1.0,
+        "n": 13
+       },
+       "d3_small": {
+        "p_elevated": 0.75,
+        "n": 16
+       },
+       "d4-5_large": {
+        "p_elevated": 0.682,
+        "n": 22
+       },
+       "d4-5_small": {
+        "p_elevated": 0.571,
+        "n": 21
+       },
+       "d6-7_large": {
+        "p_elevated": 0.667,
+        "n": 12
+       },
+       "d6-7_small": {
+        "p_elevated": 0.455,
+        "n": 11
+       }
+      }
+     }
+    }
+   },
+   {
+    "tier": "T2",
+    "fold": "2018-19",
+    "scores": [
+     "2018-07-01",
+     "2019-06-30"
+    ],
+    "fit_span": [
+     "2016-07-01",
+     "2025-06-30"
+    ],
+    "fit_seasons": [
+     2016,
+     2017,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024
+    ],
+    "background": {
+     "ocean": {
+      "intercept": -2.987364023883474
+     },
+     "baker_china": {
+      "intercept": -1.6142456140022035
+     },
+     "north": {
+      "intercept": -1.7190001149456267
+     },
+     "east": {
+      "intercept": -0.6856565088307877
+     }
+    },
+    "buckets": {
+     "ocean": {
+      "0_small": 0.5619747899159663,
+      "1_small": 0.2363445378151261,
+      "2_small": 0.045168067226890755,
+      "3_small": 0.045168067226890755,
+      "4-5_small": 0.045168067226890755,
+      "6-7_small": 0.045168067226890755,
+      "0_large": 1.0,
+      "1_large": 0.7132352941176471,
+      "2_large": 0.4747899159663866,
+      "3_large": 0.4747899159663866,
+      "4-5_large": 0.0,
+      "6-7_large": 0.0
+     },
+     "baker_china": {
+      "0_small": 0.6007194244604317,
+      "1_small": 0.019184652278177443,
+      "2_small": 0.019184652278177443,
+      "3_small": 0.019184652278177443,
+      "4-5_small": 0.019184652278177443,
+      "6-7_small": 0.019184652278177443,
+      "0_large": 0.6570743405275778,
+      "1_large": 0.28057553956834536,
+      "2_large": 0.28057553956834536,
+      "3_large": 0.0,
+      "4-5_large": 0.0,
+      "6-7_large": 0.0
+     },
+     "north": {
+      "0_small": 0.8030660377358491,
+      "1_small": 0.2924528301886793,
+      "2_small": 0.2924528301886793,
+      "3_small": 0.2924528301886793,
+      "4-5_small": 0.11556603773584906,
+      "6-7_small": 0.11556603773584906,
+      "0_large": 1.0,
+      "1_large": 0.21344339622641512,
+      "2_large": 0.21344339622641512,
+      "3_large": 0.0,
+      "4-5_large": 0.0,
+      "6-7_large": 0.0
+     },
+     "east": {
+      "0_small": 1.0,
+      "1_small": 1.0,
+      "2_small": 0.613533834586466,
+      "3_small": 0.613533834586466,
+      "4-5_small": 0.35488721804511264,
+      "6-7_small": 0.18045112781954886,
+      "0_large": 1.0,
+      "1_large": 1.0,
+      "2_large": 0.8962406015037595,
+      "3_large": 0.8962406015037595,
+      "4-5_large": 0.5218045112781955,
+      "6-7_large": 0.4992481203007519
+     }
+    },
+    "zone_median_mg": {
+     "ocean": 12.85,
+     "baker_china": 11.46,
+     "north": 7.245000000000001,
+     "east": 67.315
+    },
+    "monotone": true,
+    "vol_share": {
+     "westside>ocean": 1.0,
+     "westside>baker_china": 1.0,
+     "north_shore>north": 1.0,
+     "central>east": 1.0,
+     "south>east": 1.0
+    },
+    "v_hat_from": "sfpuc-icon-t8s-osplits-lt2zone-lzflags",
+    "history_geography": "sfpuc4_v1",
+    "filled": [],
+    "table": {
+     "ocean": {
+      "median_event_volume_mg": 12.85,
+      "n_sample_days": 321,
+      "n_events": 30,
+      "n_events_measured": 30,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.048,
+        "n": 249
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 10
+       },
+       "d0_small": {
+        "p_elevated": 0.583,
+        "n": 12
+       },
+       "d1_large": {
+        "p_elevated": 0.727,
+        "n": 11
+       },
+       "d1_small": {
+        "p_elevated": 0.273,
+        "n": 11
+       },
+       "d2_large": {
+        "p_elevated": 0.5,
+        "n": 6
+       },
+       "d2_small": {
+        "p_elevated": 0.0,
+        "n": 4
+       },
+       "d3_large": {
+        "p_elevated": 0.5,
+        "n": 4
+       },
+       "d4-5_large": {
+        "p_elevated": 0.0,
+        "n": 3
+       },
+       "d4-5_small": {
+        "p_elevated": 0.0,
+        "n": 3
+       },
+       "d6-7_small": {
+        "p_elevated": 0.25,
+        "n": 4
+       }
+      }
+     },
+     "baker_china": {
+      "median_event_volume_mg": 11.46,
+      "n_sample_days": 339,
+      "n_events": 30,
+      "n_events_measured": 29,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.166,
+        "n": 296
+       },
+       "d0_large": {
+        "p_elevated": 0.714,
+        "n": 7
+       },
+       "d0_small": {
+        "p_elevated": 0.667,
+        "n": 6
+       },
+       "d1_large": {
+        "p_elevated": 0.286,
+        "n": 7
+       },
+       "d1_small": {
+        "p_elevated": 0.167,
+        "n": 6
+       },
+       "d2_large": {
+        "p_elevated": 0.667,
+        "n": 3
+       },
+       "d3_large": {
+        "p_elevated": 0.0,
+        "n": 3
+       },
+       "d4-5_small": {
+        "p_elevated": 0.2,
+        "n": 5
+       }
+      }
+     },
+     "north": {
+      "median_event_volume_mg": 7.245000000000001,
+      "n_sample_days": 367,
+      "n_events": 36,
+      "n_events_measured": 36,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.152,
+        "n": 303
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 10
+       },
+       "d0_small": {
+        "p_elevated": 0.833,
+        "n": 12
+       },
+       "d1_large": {
+        "p_elevated": 0.333,
+        "n": 9
+       },
+       "d1_small": {
+        "p_elevated": 0.4,
+        "n": 10
+       },
+       "d3_large": {
+        "p_elevated": 0.0,
+        "n": 3
+       },
+       "d4-5_small": {
+        "p_elevated": 0.25,
+        "n": 8
+       },
+       "d6-7_large": {
+        "p_elevated": 0.0,
+        "n": 4
+       }
+      }
+     },
+     "east": {
+      "median_event_volume_mg": 67.315,
+      "n_sample_days": 575,
+      "n_events": 75,
+      "n_events_measured": 74,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.335,
+        "n": 358
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 24
+       },
+       "d0_small": {
+        "p_elevated": 1.0,
+        "n": 23
+       },
+       "d1_large": {
+        "p_elevated": 1.0,
+        "n": 19
+       },
+       "d1_small": {
+        "p_elevated": 1.0,
+        "n": 21
+       },
+       "d2_large": {
+        "p_elevated": 0.875,
+        "n": 16
+       },
+       "d2_small": {
+        "p_elevated": 0.737,
+        "n": 19
+       },
+       "d3_large": {
+        "p_elevated": 1.0,
+        "n": 13
+       },
+       "d3_small": {
+        "p_elevated": 0.75,
+        "n": 16
+       },
+       "d4-5_large": {
+        "p_elevated": 0.682,
+        "n": 22
+       },
+       "d4-5_small": {
+        "p_elevated": 0.571,
+        "n": 21
+       },
+       "d6-7_large": {
+        "p_elevated": 0.667,
+        "n": 12
+       },
+       "d6-7_small": {
+        "p_elevated": 0.455,
+        "n": 11
+       }
+      }
+     }
+    }
+   },
+   {
+    "tier": "T2",
+    "fold": "2019-20",
+    "scores": [
+     "2019-07-01",
+     "2020-06-30"
+    ],
+    "fit_span": [
+     "2016-07-01",
+     "2025-06-30"
+    ],
+    "fit_seasons": [
+     2016,
+     2017,
+     2018,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024
+    ],
+    "background": {
+     "ocean": {
+      "intercept": -2.987364023883474
+     },
+     "baker_china": {
+      "intercept": -1.6142456140022035
+     },
+     "north": {
+      "intercept": -1.7190001149456267
+     },
+     "east": {
+      "intercept": -0.6856565088307877
+     }
+    },
+    "buckets": {
+     "ocean": {
+      "0_small": 0.5619747899159663,
+      "1_small": 0.2993697478991597,
+      "2_small": 0.03676470588235295,
+      "3_small": 0.03676470588235295,
+      "4-5_small": 0.03676470588235295,
+      "6-7_small": 0.03676470588235295,
+      "0_large": 1.0,
+      "1_large": 0.6848739495798318,
+      "2_large": 0.5798319327731092,
+      "3_large": 0.4747899159663866,
+      "4-5_large": 0.0,
+      "6-7_large": 0.0
+     },
+     "baker_china": {
+      "0_small": 0.6007194244604317,
+      "1_small": 0.0407673860911271,
+      "2_small": 0.0407673860911271,
+      "3_small": 0.0407673860911271,
+      "4-5_small": 0.0407673860911271,
+      "6-7_small": 0.0407673860911271,
+      "0_large": 0.6570743405275778,
+      "1_large": 0.23741007194244604,
+      "2_large": 0.23741007194244604,
+      "3_large": 0.0,
+      "4-5_large": 0.0,
+      "6-7_large": 0.0
+     },
+     "north": {
+      "0_small": 0.8030660377358491,
+      "1_small": 0.2924528301886793,
+      "2_small": 0.2924528301886793,
+      "3_small": 0.2924528301886793,
+      "4-5_small": 0.11556603773584906,
+      "6-7_small": 0.11556603773584906,
+      "0_large": 1.0,
+      "1_large": 0.21344339622641512,
+      "2_large": 0.21344339622641512,
+      "3_large": 0.0,
+      "4-5_large": 0.0,
+      "6-7_large": 0.0
+     },
+     "east": {
+      "0_small": 1.0,
+      "1_small": 1.0,
+      "2_small": 0.613533834586466,
+      "3_small": 0.613533834586466,
+      "4-5_small": 0.35488721804511264,
+      "6-7_small": 0.18045112781954886,
+      "0_large": 1.0,
+      "1_large": 1.0,
+      "2_large": 0.8962406015037595,
+      "3_large": 0.8962406015037595,
+      "4-5_large": 0.5218045112781955,
+      "6-7_large": 0.4992481203007519
+     }
+    },
+    "zone_median_mg": {
+     "ocean": 16.15,
+     "baker_china": 3.8600000000000003,
+     "north": 8.73,
+     "east": 68.57499999999999
+    },
+    "monotone": true,
+    "vol_share": {
+     "westside>ocean": 1.0,
+     "westside>baker_china": 1.0,
+     "north_shore>north": 1.0,
+     "central>east": 1.0,
+     "south>east": 1.0
+    },
+    "v_hat_from": "sfpuc-icon-t8s-osplits-lt2zone-lzflags",
+    "history_geography": "sfpuc4_v1",
+    "filled": [],
+    "table": {
+     "ocean": {
+      "median_event_volume_mg": 16.15,
+      "n_sample_days": 321,
+      "n_events": 34,
+      "n_events_measured": 33,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.048,
+        "n": 249
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 10
+       },
+       "d0_small": {
+        "p_elevated": 0.583,
+        "n": 12
+       },
+       "d1_large": {
+        "p_elevated": 0.7,
+        "n": 10
+       },
+       "d1_small": {
+        "p_elevated": 0.333,
+        "n": 12
+       },
+       "d2_large": {
+        "p_elevated": 0.6,
+        "n": 5
+       },
+       "d2_small": {
+        "p_elevated": 0.0,
+        "n": 5
+       },
+       "d3_large": {
+        "p_elevated": 0.5,
+        "n": 4
+       },
+       "d4-5_large": {
+        "p_elevated": 0.0,
+        "n": 3
+       },
+       "d4-5_small": {
+        "p_elevated": 0.0,
+        "n": 3
+       },
+       "d6-7_small": {
+        "p_elevated": 0.25,
+        "n": 4
+       }
+      }
+     },
+     "baker_china": {
+      "median_event_volume_mg": 3.8600000000000003,
+      "n_sample_days": 339,
+      "n_events": 36,
+      "n_events_measured": 35,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.166,
+        "n": 296
+       },
+       "d0_large": {
+        "p_elevated": 0.714,
+        "n": 7
+       },
+       "d0_small": {
+        "p_elevated": 0.667,
+        "n": 6
+       },
+       "d1_large": {
+        "p_elevated": 0.25,
+        "n": 8
+       },
+       "d1_small": {
+        "p_elevated": 0.2,
+        "n": 5
+       },
+       "d2_large": {
+        "p_elevated": 0.667,
+        "n": 3
+       },
+       "d3_large": {
+        "p_elevated": 0.0,
+        "n": 4
+       },
+       "d4-5_small": {
+        "p_elevated": 0.2,
+        "n": 5
+       }
+      }
+     },
+     "north": {
+      "median_event_volume_mg": 8.73,
+      "n_sample_days": 367,
+      "n_events": 38,
+      "n_events_measured": 38,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.152,
+        "n": 303
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 10
+       },
+       "d0_small": {
+        "p_elevated": 0.833,
+        "n": 12
+       },
+       "d1_large": {
+        "p_elevated": 0.333,
+        "n": 9
+       },
+       "d1_small": {
+        "p_elevated": 0.4,
+        "n": 10
+       },
+       "d3_large": {
+        "p_elevated": 0.0,
+        "n": 3
+       },
+       "d4-5_small": {
+        "p_elevated": 0.25,
+        "n": 8
+       },
+       "d6-7_large": {
+        "p_elevated": 0.0,
+        "n": 4
+       }
+      }
+     },
+     "east": {
+      "median_event_volume_mg": 68.57499999999999,
+      "n_sample_days": 575,
+      "n_events": 87,
+      "n_events_measured": 86,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.335,
+        "n": 358
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 24
+       },
+       "d0_small": {
+        "p_elevated": 1.0,
+        "n": 23
+       },
+       "d1_large": {
+        "p_elevated": 1.0,
+        "n": 19
+       },
+       "d1_small": {
+        "p_elevated": 1.0,
+        "n": 21
+       },
+       "d2_large": {
+        "p_elevated": 0.875,
+        "n": 16
+       },
+       "d2_small": {
+        "p_elevated": 0.737,
+        "n": 19
+       },
+       "d3_large": {
+        "p_elevated": 1.0,
+        "n": 13
+       },
+       "d3_small": {
+        "p_elevated": 0.75,
+        "n": 16
+       },
+       "d4-5_large": {
+        "p_elevated": 0.682,
+        "n": 22
+       },
+       "d4-5_small": {
+        "p_elevated": 0.571,
+        "n": 21
+       },
+       "d6-7_large": {
+        "p_elevated": 0.667,
+        "n": 12
+       },
+       "d6-7_small": {
+        "p_elevated": 0.455,
+        "n": 11
+       }
+      }
+     }
+    }
+   },
+   {
+    "tier": "T2",
+    "fold": "2020-21",
+    "scores": [
+     "2020-07-01",
+     "2021-06-30"
+    ],
+    "fit_span": [
+     "2016-07-01",
+     "2025-06-30"
+    ],
+    "fit_seasons": [
+     2016,
+     2017,
+     2018,
+     2019,
+     2021,
+     2022,
+     2023,
+     2024
+    ],
+    "background": {
+     "ocean": {
+      "intercept": -2.843851742261272
+     },
+     "baker_china": {
+      "intercept": -1.5998684614179495
+     },
+     "north": {
+      "intercept": -1.703566757192594
+     },
+     "east": {
+      "intercept": -0.8760354701545604
+     }
+    },
+    "buckets": {
+     "ocean": {
+      "0_small": 0.6148148148148148,
+      "1_small": 0.2941798941798942,
+      "2_small": 0.05925925925925926,
+      "3_small": 0.05925925925925926,
+      "4-5_small": 0.05925925925925926,
+      "6-7_small": 0.05925925925925926,
+      "0_large": 1.0,
+      "1_large": 0.6825396825396824,
+      "2_large": 0.5767195767195766,
+      "3_large": 0.47089947089947093,
+      "4-5_large": 0.0,
+      "6-7_large": 0.0
+     },
+     "baker_china": {
+      "0_small": 0.5997596153846154,
+      "1_small": 0.038461538461538464,
+      "2_small": 0.038461538461538464,
+      "3_small": 0.038461538461538464,
+      "4-5_small": 0.038461538461538464,
+      "6-7_small": 0.038461538461538464,
+      "0_large": 0.65625,
+      "1_large": 0.27884615384615385,
+      "2_large": 0.27884615384615385,
+      "3_large": 0.0,
+      "4-5_large": 0.0,
+      "6-7_large": 0.0
+     },
+     "north": {
+      "0_small": 0.784869976359338,
+      "1_small": 0.3427895981087471,
+      "2_small": 0.3427895981087471,
+      "3_small": 0.3427895981087471,
+      "4-5_small": 0.15602836879432622,
+      "6-7_small": 0.15602836879432622,
+      "0_large": 1.0,
+      "1_large": 0.21158392434988182,
+      "2_large": 0.21158392434988182,
+      "3_large": 0.0,
+      "4-5_large": 0.0,
+      "6-7_large": 0.0
+     },
+     "east": {
+      "0_small": 1.0,
+      "1_small": 1.0,
+      "2_small": 0.6458923512747876,
+      "3_small": 0.6218130311614731,
+      "4-5_small": 0.3711048158640228,
+      "6-7_small": 0.35552407932011343,
+      "0_large": 1.0,
+      "1_large": 1.0,
+      "2_large": 0.9475920679886687,
+      "3_large": 0.9475920679886687,
+      "4-5_large": 0.528328611898017,
+      "6-7_large": 0.4844192634560907
+     }
+    },
+    "zone_median_mg": {
+     "ocean": 14.23,
+     "baker_china": 5.93,
+     "north": 8.120000000000001,
+     "east": 71.37
+    },
+    "monotone": true,
+    "vol_share": {
+     "westside>ocean": 1.0,
+     "westside>baker_china": 1.0,
+     "north_shore>north": 1.0,
+     "central>east": 1.0,
+     "south>east": 1.0
+    },
+    "v_hat_from": "sfpuc-icon-t8s-osplits-lt2zone-lzflags",
+    "history_geography": "sfpuc4_v1",
+    "filled": [],
+    "table": {
+     "ocean": {
+      "median_event_volume_mg": 14.23,
+      "n_sample_days": 270,
+      "n_events": 36,
+      "n_events_measured": 35,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.055,
+        "n": 200
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 10
+       },
+       "d0_small": {
+        "p_elevated": 0.636,
+        "n": 11
+       },
+       "d1_large": {
+        "p_elevated": 0.7,
+        "n": 10
+       },
+       "d1_small": {
+        "p_elevated": 0.333,
+        "n": 12
+       },
+       "d2_large": {
+        "p_elevated": 0.6,
+        "n": 5
+       },
+       "d2_small": {
+        "p_elevated": 0.0,
+        "n": 5
+       },
+       "d3_large": {
+        "p_elevated": 0.5,
+        "n": 4
+       },
+       "d4-5_large": {
+        "p_elevated": 0.0,
+        "n": 3
+       },
+       "d6-7_small": {
+        "p_elevated": 0.25,
+        "n": 4
+       }
+      }
+     },
+     "baker_china": {
+      "median_event_volume_mg": 5.93,
+      "n_sample_days": 280,
+      "n_events": 39,
+      "n_events_measured": 38,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.168,
+        "n": 238
+       },
+       "d0_large": {
+        "p_elevated": 0.714,
+        "n": 7
+       },
+       "d0_small": {
+        "p_elevated": 0.667,
+        "n": 6
+       },
+       "d1_large": {
+        "p_elevated": 0.286,
+        "n": 7
+       },
+       "d1_small": {
+        "p_elevated": 0.167,
+        "n": 6
+       },
+       "d2_large": {
+        "p_elevated": 0.667,
+        "n": 3
+       },
+       "d3_large": {
+        "p_elevated": 0.0,
+        "n": 4
+       },
+       "d4-5_small": {
+        "p_elevated": 0.25,
+        "n": 4
+       }
+      }
+     },
+     "north": {
+      "median_event_volume_mg": 8.120000000000001,
+      "n_sample_days": 307,
+      "n_events": 39,
+      "n_events_measured": 39,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.154,
+        "n": 246
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 10
+       },
+       "d0_small": {
+        "p_elevated": 0.818,
+        "n": 11
+       },
+       "d1_large": {
+        "p_elevated": 0.333,
+        "n": 9
+       },
+       "d1_small": {
+        "p_elevated": 0.444,
+        "n": 9
+       },
+       "d3_large": {
+        "p_elevated": 0.0,
+        "n": 3
+       },
+       "d4-5_small": {
+        "p_elevated": 0.286,
+        "n": 7
+       },
+       "d6-7_large": {
+        "p_elevated": 0.0,
+        "n": 4
+       }
+      }
+     },
+     "east": {
+      "median_event_volume_mg": 71.37,
+      "n_sample_days": 475,
+      "n_events": 87,
+      "n_events_measured": 86,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.294,
+        "n": 269
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 22
+       },
+       "d0_small": {
+        "p_elevated": 1.0,
+        "n": 22
+       },
+       "d1_large": {
+        "p_elevated": 1.0,
+        "n": 17
+       },
+       "d1_small": {
+        "p_elevated": 1.0,
+        "n": 22
+       },
+       "d2_large": {
+        "p_elevated": 0.929,
+        "n": 14
+       },
+       "d2_small": {
+        "p_elevated": 0.75,
+        "n": 20
+       },
+       "d3_large": {
+        "p_elevated": 1.0,
+        "n": 13
+       },
+       "d3_small": {
+        "p_elevated": 0.733,
+        "n": 15
+       },
+       "d4-5_large": {
+        "p_elevated": 0.667,
+        "n": 21
+       },
+       "d4-5_small": {
+        "p_elevated": 0.556,
+        "n": 18
+       },
+       "d6-7_large": {
+        "p_elevated": 0.636,
+        "n": 11
+       },
+       "d6-7_small": {
+        "p_elevated": 0.545,
+        "n": 11
+       }
+      }
+     }
+    }
+   },
+   {
+    "tier": "T2",
+    "fold": "2021-22",
+    "scores": [
+     "2021-07-01",
+     "2022-06-30"
+    ],
+    "fit_span": [
+     "2016-07-01",
+     "2025-06-30"
+    ],
+    "fit_seasons": [
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2022,
+     2023,
+     2024
+    ],
+    "background": {
+     "ocean": {
+      "intercept": -3.0550488507104103
+     },
+     "baker_china": {
+      "intercept": -1.469622492693224
+     },
+     "north": {
+      "intercept": -1.8660451086115237
+     },
+     "east": {
+      "intercept": -0.6499535713186706
+     }
+    },
+    "buckets": {
+     "ocean": {
+      "0_small": 0.6073298429319371,
+      "1_small": 0.21465968586387438,
+      "2_small": 0.12774869109947645,
+      "3_small": 0.12774869109947645,
+      "4-5_small": 0.12774869109947645,
+      "6-7_small": 0.12774869109947645,
+      "0_large": 1.0,
+      "1_large": 0.6513089005235603,
+      "2_large": 0.6513089005235603,
+      "3_large": 0.4764397905759163,
+      "4-5_large": 0.0,
+      "6-7_large": 0.0
+     },
+     "baker_china": {
+      "0_small": 0.5079950799507995,
+      "1_small": 0.17958179581795822,
+      "2_small": 0.17958179581795822,
+      "3_small": 0.17958179581795822,
+      "4-5_small": 0.07749077490774908,
+      "6-7_small": 0.07749077490774908,
+      "0_large": 0.5904059040590407,
+      "1_large": 0.0,
+      "2_large": 0.0,
+      "3_large": 0.0,
+      "4-5_large": 0.0,
+      "6-7_large": 0.0
+     },
+     "north": {
+      "0_small": 0.884526558891455,
+      "1_small": 0.22979214780600463,
+      "2_small": 0.22979214780600463,
+      "3_small": 0.22979214780600463,
+      "4-5_small": 0.038106235565819865,
+      "6-7_small": 0.038106235565819865,
+      "0_large": 1.0,
+      "1_large": 0.27829099307159355,
+      "2_large": 0.27829099307159355,
+      "3_large": 0.0,
+      "4-5_large": 0.0,
+      "6-7_large": 0.0
+     },
+     "east": {
+      "0_small": 1.0,
+      "1_small": 1.0,
+      "2_small": 0.6423135464231354,
+      "3_small": 0.5936073059360729,
+      "4-5_small": 0.3592085235920851,
+      "6-7_small": 0.0867579908675799,
+      "0_large": 1.0,
+      "1_large": 1.0,
+      "2_large": 0.9421613394216134,
+      "3_large": 0.9421613394216134,
+      "4-5_large": 0.4931506849315068,
+      "6-7_large": 0.39117199391171986
+     }
+    },
+    "zone_median_mg": {
+     "ocean": 15.19,
+     "baker_china": 3.8600000000000003,
+     "north": 7.245000000000001,
+     "east": 70.91
+    },
+    "monotone": true,
+    "vol_share": {
+     "westside>ocean": 1.0,
+     "westside>baker_china": 1.0,
+     "north_shore>north": 1.0,
+     "central>east": 1.0,
+     "south>east": 1.0
+    },
+    "v_hat_from": "sfpuc-icon-t8s-osplits-lt2zone-lzflags",
+    "history_geography": "sfpuc4_v1",
+    "filled": [],
+    "table": {
+     "ocean": {
+      "median_event_volume_mg": 15.19,
+      "n_sample_days": 254,
+      "n_events": 31,
+      "n_events_measured": 30,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.045,
+        "n": 200
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 8
+       },
+       "d0_small": {
+        "p_elevated": 0.625,
+        "n": 8
+       },
+       "d1_large": {
+        "p_elevated": 0.625,
+        "n": 8
+       },
+       "d1_small": {
+        "p_elevated": 0.25,
+        "n": 8
+       },
+       "d2_large": {
+        "p_elevated": 0.75,
+        "n": 4
+       },
+       "d2_small": {
+        "p_elevated": 0.0,
+        "n": 3
+       },
+       "d3_large": {
+        "p_elevated": 0.5,
+        "n": 4
+       },
+       "d4-5_large": {
+        "p_elevated": 0.0,
+        "n": 3
+       },
+       "d6-7_small": {
+        "p_elevated": 0.333,
+        "n": 3
+       }
+      }
+     },
+     "baker_china": {
+      "median_event_volume_mg": 3.8600000000000003,
+      "n_sample_days": 275,
+      "n_events": 36,
+      "n_events_measured": 35,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.187,
+        "n": 241
+       },
+       "d0_large": {
+        "p_elevated": 0.667,
+        "n": 6
+       },
+       "d0_small": {
+        "p_elevated": 0.6,
+        "n": 5
+       },
+       "d1_large": {
+        "p_elevated": 0.167,
+        "n": 6
+       },
+       "d1_small": {
+        "p_elevated": 0.333,
+        "n": 3
+       },
+       "d3_large": {
+        "p_elevated": 0.0,
+        "n": 3
+       },
+       "d4-5_small": {
+        "p_elevated": 0.25,
+        "n": 4
+       }
+      }
+     },
+     "north": {
+      "median_event_volume_mg": 7.245000000000001,
+      "n_sample_days": 293,
+      "n_events": 36,
+      "n_events_measured": 36,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.134,
+        "n": 238
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 9
+       },
+       "d0_small": {
+        "p_elevated": 0.9,
+        "n": 10
+       },
+       "d1_large": {
+        "p_elevated": 0.375,
+        "n": 8
+       },
+       "d1_small": {
+        "p_elevated": 0.333,
+        "n": 9
+       },
+       "d3_large": {
+        "p_elevated": 0.0,
+        "n": 3
+       },
+       "d4-5_small": {
+        "p_elevated": 0.167,
+        "n": 6
+       },
+       "d6-7_large": {
+        "p_elevated": 0.0,
+        "n": 3
+       }
+      }
+     },
+     "east": {
+      "median_event_volume_mg": 70.91,
+      "n_sample_days": 474,
+      "n_events": 82,
+      "n_events_measured": 81,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.343,
+        "n": 286
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 20
+       },
+       "d0_small": {
+        "p_elevated": 1.0,
+        "n": 18
+       },
+       "d1_large": {
+        "p_elevated": 1.0,
+        "n": 16
+       },
+       "d1_small": {
+        "p_elevated": 1.0,
+        "n": 19
+       },
+       "d2_large": {
+        "p_elevated": 0.929,
+        "n": 14
+       },
+       "d2_small": {
+        "p_elevated": 0.765,
+        "n": 17
+       },
+       "d3_large": {
+        "p_elevated": 1.0,
+        "n": 12
+       },
+       "d3_small": {
+        "p_elevated": 0.733,
+        "n": 15
+       },
+       "d4-5_large": {
+        "p_elevated": 0.667,
+        "n": 18
+       },
+       "d4-5_small": {
+        "p_elevated": 0.579,
+        "n": 19
+       },
+       "d6-7_large": {
+        "p_elevated": 0.6,
+        "n": 10
+       },
+       "d6-7_small": {
+        "p_elevated": 0.4,
+        "n": 10
+       }
+      }
+     }
+    }
+   },
+   {
+    "tier": "T2",
+    "fold": "2022-23",
+    "scores": [
+     "2022-07-01",
+     "2023-06-30"
+    ],
+    "fit_span": [
+     "2016-07-01",
+     "2025-06-30"
+    ],
+    "fit_seasons": [
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2023,
+     2024
+    ],
+    "background": {
+     "ocean": {
+      "intercept": -2.7694056956796604
+     },
+     "baker_china": {
+      "intercept": -1.5927310799323746
+     },
+     "north": {
+      "intercept": -1.7190001149456267
+     },
+     "east": {
+      "intercept": -0.584055317289261
+     }
+    },
+    "buckets": {
+     "ocean": {
+      "0_small": 0.46865037194473963,
+      "1_small": 0.40913921360255046,
+      "2_small": 0.03400637619553666,
+      "3_small": 0.03400637619553666,
+      "4-5_small": 0.03400637619553666,
+      "6-7_small": 0.03400637619553666,
+      "0_large": 1.0,
+      "1_large": 0.8480340063761955,
+      "2_large": 0.5749202975557915,
+      "3_large": 0.2911795961742827,
+      "4-5_large": 0.2911795961742827,
+      "6-7_large": 0.2911795961742827
+     },
+     "baker_china": {
+      "0_small": 0.5992779783393503,
+      "1_small": 0.0,
+      "2_small": 0.0,
+      "3_small": 0.0,
+      "4-5_small": 0.0,
+      "6-7_small": 0.0,
+      "0_large": 1.0,
+      "1_large": 0.39831528279181705,
+      "2_large": 0.39831528279181705,
+      "3_large": 0.0,
+      "4-5_large": 0.0,
+      "6-7_large": 0.0
+     },
+     "north": {
+      "0_small": 0.8313679245283019,
+      "1_small": 0.410377358490566,
+      "2_small": 0.410377358490566,
+      "3_small": 0.410377358490566,
+      "4-5_small": 0.21344339622641512,
+      "6-7_small": 0.21344339622641512,
+      "0_large": 1.0,
+      "1_large": 0.21344339622641512,
+      "2_large": 0.21344339622641512,
+      "3_large": 0.21344339622641512,
+      "4-5_large": 0.21344339622641512,
+      "6-7_large": 0.0
+     },
+     "east": {
+      "0_small": 1.0,
+      "1_small": 1.0,
+      "2_small": 0.5934579439252337,
+      "3_small": 0.5934579439252337,
+      "4-5_small": 0.3442367601246105,
+      "6-7_small": 0.3442367601246105,
+      "0_large": 1.0,
+      "1_large": 1.0,
+      "2_large": 0.8582554517133957,
+      "3_large": 0.8442367601246107,
+      "4-5_large": 0.4283489096573209,
+      "6-7_large": 0.4283489096573209
+     }
+    },
+    "zone_median_mg": {
+     "ocean": 14.08,
+     "baker_china": 3.58,
+     "north": 7.245000000000001,
+     "east": 61.67
+    },
+    "monotone": true,
+    "vol_share": {
+     "westside>ocean": 1.0,
+     "westside>baker_china": 1.0,
+     "north_shore>north": 1.0,
+     "central>east": 1.0,
+     "south>east": 1.0
+    },
+    "v_hat_from": "sfpuc-icon-t8s-osplits-lt2zone-lzflags",
+    "history_geography": "sfpuc4_v1",
+    "filled": [],
+    "table": {
+     "ocean": {
+      "median_event_volume_mg": 14.08,
+      "n_sample_days": 256,
+      "n_events": 29,
+      "n_events_measured": 28,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.059,
+        "n": 203
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 6
+       },
+       "d0_small": {
+        "p_elevated": 0.5,
+        "n": 8
+       },
+       "d1_large": {
+        "p_elevated": 0.857,
+        "n": 7
+       },
+       "d1_small": {
+        "p_elevated": 0.444,
+        "n": 9
+       },
+       "d2_large": {
+        "p_elevated": 0.6,
+        "n": 5
+       },
+       "d2_small": {
+        "p_elevated": 0.0,
+        "n": 5
+       },
+       "d3_large": {
+        "p_elevated": 0.333,
+        "n": 3
+       },
+       "d4-5_small": {
+        "p_elevated": 0.0,
+        "n": 3
+       },
+       "d6-7_small": {
+        "p_elevated": 0.333,
+        "n": 3
+       }
+      }
+     },
+     "baker_china": {
+      "median_event_volume_mg": 3.58,
+      "n_sample_days": 272,
+      "n_events": 32,
+      "n_events_measured": 31,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.169,
+        "n": 243
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 4
+       },
+       "d0_small": {
+        "p_elevated": 0.667,
+        "n": 3
+       },
+       "d1_large": {
+        "p_elevated": 0.5,
+        "n": 6
+       },
+       "d1_small": {
+        "p_elevated": 0.0,
+        "n": 3
+       },
+       "d2_large": {
+        "p_elevated": 0.5,
+        "n": 4
+       },
+       "d3_large": {
+        "p_elevated": 0.0,
+        "n": 3
+       },
+       "d4-5_small": {
+        "p_elevated": 0.25,
+        "n": 4
+       }
+      }
+     },
+     "north": {
+      "median_event_volume_mg": 7.245000000000001,
+      "n_sample_days": 291,
+      "n_events": 30,
+      "n_events_measured": 30,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.152,
+        "n": 250
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 5
+       },
+       "d0_small": {
+        "p_elevated": 0.857,
+        "n": 7
+       },
+       "d1_large": {
+        "p_elevated": 0.333,
+        "n": 6
+       },
+       "d1_small": {
+        "p_elevated": 0.5,
+        "n": 6
+       },
+       "d4-5_small": {
+        "p_elevated": 0.333,
+        "n": 6
+       },
+       "d6-7_large": {
+        "p_elevated": 0.0,
+        "n": 3
+       }
+      }
+     },
+     "east": {
+      "median_event_volume_mg": 61.67,
+      "n_sample_days": 462,
+      "n_events": 74,
+      "n_events_measured": 73,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.358,
+        "n": 307
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 15
+       },
+       "d0_small": {
+        "p_elevated": 1.0,
+        "n": 18
+       },
+       "d1_large": {
+        "p_elevated": 1.0,
+        "n": 14
+       },
+       "d1_small": {
+        "p_elevated": 1.0,
+        "n": 15
+       },
+       "d2_large": {
+        "p_elevated": 0.909,
+        "n": 11
+       },
+       "d2_small": {
+        "p_elevated": 0.615,
+        "n": 13
+       },
+       "d3_large": {
+        "p_elevated": 0.9,
+        "n": 10
+       },
+       "d3_small": {
+        "p_elevated": 0.9,
+        "n": 10
+       },
+       "d4-5_large": {
+        "p_elevated": 0.611,
+        "n": 18
+       },
+       "d4-5_small": {
+        "p_elevated": 0.533,
+        "n": 15
+       },
+       "d6-7_large": {
+        "p_elevated": 0.667,
+        "n": 12
+       },
+       "d6-7_small": {
+        "p_elevated": 0.75,
+        "n": 4
+       }
+      }
+     }
+    }
+   },
+   {
+    "tier": "T2",
+    "fold": "2023-24",
+    "scores": [
+     "2023-07-01",
+     "2024-06-30"
+    ],
+    "fit_span": [
+     "2016-07-01",
+     "2025-06-30"
+    ],
+    "fit_seasons": [
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2024
+    ],
+    "background": {
+     "ocean": {
+      "intercept": -3.0550488507104103
+     },
+     "baker_china": {
+      "intercept": -1.7503742530652007
+     },
+     "north": {
+      "intercept": -1.5927310799323746
+     },
+     "east": {
+      "intercept": -0.6366685763994746
+     }
+    },
+    "buckets": {
+     "ocean": {
+      "0_small": 0.581151832460733,
+      "1_small": 0.3455497382198953,
+      "2_small": 0.3015706806282723,
+      "3_small": 0.3015706806282723,
+      "4-5_small": 0.0,
+      "6-7_small": 0.0,
+      "0_large": 1.0,
+      "1_large": 0.6073298429319371,
+      "2_large": 0.3015706806282723,
+      "3_large": 0.3015706806282723,
+      "4-5_large": 0.3015706806282723,
+      "6-7_large": 0.3015706806282723
+     },
+     "baker_china": {
+      "0_small": 0.6091549295774649,
+      "1_small": 0.0,
+      "2_small": 0.0,
+      "3_small": 0.0,
+      "4-5_small": 0.0,
+      "6-7_small": 0.0,
+      "0_large": 0.664319248826291,
+      "1_large": 0.29577464788732394,
+      "2_large": 0.29577464788732394,
+      "3_large": 0.0,
+      "4-5_large": 0.0,
+      "6-7_large": 0.0
+     },
+     "north": {
+      "0_small": 0.7328519855595668,
+      "1_small": 0.14079422382671478,
+      "2_small": 0.14079422382671478,
+      "3_small": 0.14079422382671478,
+      "4-5_small": 0.0,
+      "6-7_small": 0.0,
+      "0_large": 1.0,
+      "1_large": 0.24789410348977137,
+      "2_large": 0.24789410348977137,
+      "3_large": 0.0,
+      "4-5_large": 0.0,
+      "6-7_large": 0.0
+     },
+     "east": {
+      "0_small": 1.0,
+      "1_small": 1.0,
+      "2_small": 0.6467889908256881,
+      "3_small": 0.617737003058104,
+      "4-5_small": 0.46024464831804285,
+      "6-7_small": 0.1498470948012233,
+      "0_large": 1.0,
+      "1_large": 1.0,
+      "2_large": 0.8547400611620796,
+      "3_large": 0.8547400611620796,
+      "4-5_large": 0.591743119266055,
+      "6-7_large": 0.42660550458715596
+     }
+    },
+    "zone_median_mg": {
+     "ocean": 17.225,
+     "baker_china": 7.66,
+     "north": 8.120000000000001,
+     "east": 70.91
+    },
+    "monotone": true,
+    "vol_share": {
+     "westside>ocean": 1.0,
+     "westside>baker_china": 1.0,
+     "north_shore>north": 1.0,
+     "central>east": 1.0,
+     "south>east": 1.0
+    },
+    "v_hat_from": "sfpuc-icon-t8s-osplits-lt2zone-lzflags",
+    "history_geography": "sfpuc4_v1",
+    "filled": [],
+    "table": {
+     "ocean": {
+      "median_event_volume_mg": 17.225,
+      "n_sample_days": 254,
+      "n_events": 31,
+      "n_events_measured": 30,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.045,
+        "n": 199
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 9
+       },
+       "d0_small": {
+        "p_elevated": 0.6,
+        "n": 10
+       },
+       "d1_large": {
+        "p_elevated": 0.625,
+        "n": 8
+       },
+       "d1_small": {
+        "p_elevated": 0.375,
+        "n": 8
+       },
+       "d2_large": {
+        "p_elevated": 0.333,
+        "n": 3
+       },
+       "d2_small": {
+        "p_elevated": 0.333,
+        "n": 3
+       },
+       "d4-5_small": {
+        "p_elevated": 0.0,
+        "n": 5
+       }
+      }
+     },
+     "baker_china": {
+      "median_event_volume_mg": 7.66,
+      "n_sample_days": 264,
+      "n_events": 35,
+      "n_events_measured": 34,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.148,
+        "n": 230
+       },
+       "d0_large": {
+        "p_elevated": 0.714,
+        "n": 7
+       },
+       "d0_small": {
+        "p_elevated": 0.667,
+        "n": 3
+       },
+       "d1_large": {
+        "p_elevated": 0.286,
+        "n": 7
+       },
+       "d1_small": {
+        "p_elevated": 0.0,
+        "n": 4
+       },
+       "d2_large": {
+        "p_elevated": 0.667,
+        "n": 3
+       },
+       "d3_large": {
+        "p_elevated": 0.0,
+        "n": 3
+       },
+       "d4-5_small": {
+        "p_elevated": 0.0,
+        "n": 3
+       }
+      }
+     },
+     "north": {
+      "median_event_volume_mg": 8.120000000000001,
+      "n_sample_days": 300,
+      "n_events": 35,
+      "n_events_measured": 35,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.169,
+        "n": 249
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 9
+       },
+       "d0_small": {
+        "p_elevated": 0.778,
+        "n": 9
+       },
+       "d1_large": {
+        "p_elevated": 0.375,
+        "n": 8
+       },
+       "d1_small": {
+        "p_elevated": 0.286,
+        "n": 7
+       },
+       "d3_large": {
+        "p_elevated": 0.0,
+        "n": 3
+       },
+       "d4-5_small": {
+        "p_elevated": 0.167,
+        "n": 6
+       },
+       "d6-7_large": {
+        "p_elevated": 0.0,
+        "n": 3
+       }
+      }
+     },
+     "east": {
+      "median_event_volume_mg": 70.91,
+      "n_sample_days": 464,
+      "n_events": 78,
+      "n_events_measured": 77,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.346,
+        "n": 301
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 20
+       },
+       "d0_small": {
+        "p_elevated": 1.0,
+        "n": 18
+       },
+       "d1_large": {
+        "p_elevated": 1.0,
+        "n": 15
+       },
+       "d1_small": {
+        "p_elevated": 1.0,
+        "n": 15
+       },
+       "d2_large": {
+        "p_elevated": 0.833,
+        "n": 12
+       },
+       "d2_small": {
+        "p_elevated": 0.769,
+        "n": 13
+       },
+       "d3_large": {
+        "p_elevated": 1.0,
+        "n": 9
+       },
+       "d3_small": {
+        "p_elevated": 0.75,
+        "n": 12
+       },
+       "d4-5_large": {
+        "p_elevated": 0.733,
+        "n": 15
+       },
+       "d4-5_small": {
+        "p_elevated": 0.647,
+        "n": 17
+       },
+       "d6-7_large": {
+        "p_elevated": 0.625,
+        "n": 8
+       },
+       "d6-7_small": {
+        "p_elevated": 0.444,
+        "n": 9
+       }
+      }
+     }
+    }
+   },
+   {
+    "tier": "T2",
+    "fold": "2024-25",
+    "scores": [
+     "2024-07-01",
+     "2025-06-30"
+    ],
+    "fit_span": [
+     "2016-07-01",
+     "2024-06-30"
+    ],
+    "fit_seasons": [
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023
+    ],
+    "background": {
+     "ocean": {
+      "intercept": -3.2875723561544357
+     },
+     "baker_china": {
+      "intercept": -1.6959115104379272
+     },
+     "north": {
+      "intercept": -1.703566757192594
+     },
+     "east": {
+      "intercept": -0.6410908186038922
+     }
+    },
+    "buckets": {
+     "ocean": {
+      "0_small": 0.5280082987551867,
+      "1_small": 0.24585062240663902,
+      "2_small": 0.0570539419087137,
+      "3_small": 0.0570539419087137,
+      "4-5_small": 0.0570539419087137,
+      "6-7_small": 0.0570539419087137,
+      "0_large": 1.0,
+      "1_large": 0.7033195020746887,
+      "2_large": 0.308091286307054,
+      "3_large": 0.308091286307054,
+      "4-5_large": 0.308091286307054,
+      "6-7_large": 0.308091286307054
+     },
+     "baker_china": {
+      "0_small": 0.5266272189349112,
+      "1_small": 0.0,
+      "2_small": 0.0,
+      "3_small": 0.0,
+      "4-5_small": 0.0,
+      "6-7_small": 0.0,
+      "0_large": 0.6059171597633136,
+      "1_large": 0.21065088757396452,
+      "2_large": 0.21065088757396452,
+      "3_large": 0.0,
+      "4-5_large": 0.0,
+      "6-7_large": 0.0
+     },
+     "north": {
+      "0_small": 0.784869976359338,
+      "1_small": 0.3427895981087471,
+      "2_small": 0.3427895981087471,
+      "3_small": 0.3427895981087471,
+      "4-5_small": 0.15602836879432622,
+      "6-7_small": 0.15602836879432622,
+      "0_large": 1.0,
+      "1_large": 0.015366430260047295,
+      "2_large": 0.015366430260047295,
+      "3_large": 0.015366430260047295,
+      "4-5_large": 0.015366430260047295,
+      "6-7_large": 0.0
+     },
+     "east": {
+      "0_small": 1.0,
+      "1_small": 1.0,
+      "2_small": 0.583206106870229,
+      "3_small": 0.583206106870229,
+      "4-5_small": 0.2763358778625955,
+      "6-7_small": 0.0,
+      "0_large": 1.0,
+      "1_large": 1.0,
+      "2_large": 0.8671755725190841,
+      "3_large": 0.8671755725190841,
+      "4-5_large": 0.6412213740458016,
+      "6-7_large": 0.49160305343511457
+     }
+    },
+    "zone_median_mg": {
+     "ocean": 11.615,
+     "baker_china": 3.58,
+     "north": 6.27,
+     "east": 67.315
+    },
+    "monotone": true,
+    "vol_share": {
+     "westside>ocean": 1.0,
+     "westside>baker_china": 1.0,
+     "north_shore>north": 1.0,
+     "central>east": 1.0,
+     "south>east": 1.0
+    },
+    "v_hat_from": "sfpuc-icon-t8s-osplits-lt2zone-lzflags",
+    "history_geography": "sfpuc4_v1",
+    "filled": [],
+    "table": {
+     "ocean": {
+      "median_event_volume_mg": 11.615,
+      "n_sample_days": 250,
+      "n_events": 33,
+      "n_events_measured": 32,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.036,
+        "n": 194
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 7
+       },
+       "d0_small": {
+        "p_elevated": 0.545,
+        "n": 11
+       },
+       "d1_large": {
+        "p_elevated": 0.714,
+        "n": 7
+       },
+       "d1_small": {
+        "p_elevated": 0.273,
+        "n": 11
+       },
+       "d2_large": {
+        "p_elevated": 0.333,
+        "n": 3
+       },
+       "d2_small": {
+        "p_elevated": 0.0,
+        "n": 4
+       },
+       "d4-5_small": {
+        "p_elevated": 0.0,
+        "n": 3
+       },
+       "d6-7_small": {
+        "p_elevated": 0.25,
+        "n": 4
+       }
+      }
+     },
+     "baker_china": {
+      "median_event_volume_mg": 3.58,
+      "n_sample_days": 265,
+      "n_events": 36,
+      "n_events_measured": 35,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.155,
+        "n": 232
+       },
+       "d0_large": {
+        "p_elevated": 0.667,
+        "n": 6
+       },
+       "d0_small": {
+        "p_elevated": 0.6,
+        "n": 5
+       },
+       "d1_large": {
+        "p_elevated": 0.333,
+        "n": 6
+       },
+       "d1_small": {
+        "p_elevated": 0.0,
+        "n": 4
+       },
+       "d3_large": {
+        "p_elevated": 0.0,
+        "n": 3
+       },
+       "d4-5_small": {
+        "p_elevated": 0.2,
+        "n": 5
+       }
+      }
+     },
+     "north": {
+      "median_event_volume_mg": 6.27,
+      "n_sample_days": 296,
+      "n_events": 36,
+      "n_events_measured": 36,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.154,
+        "n": 246
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 7
+       },
+       "d0_small": {
+        "p_elevated": 0.818,
+        "n": 11
+       },
+       "d1_large": {
+        "p_elevated": 0.167,
+        "n": 6
+       },
+       "d1_small": {
+        "p_elevated": 0.444,
+        "n": 9
+       },
+       "d4-5_small": {
+        "p_elevated": 0.286,
+        "n": 7
+       },
+       "d6-7_large": {
+        "p_elevated": 0.0,
+        "n": 3
+       }
+      }
+     },
+     "east": {
+      "median_event_volume_mg": 67.315,
+      "n_sample_days": 472,
+      "n_events": 85,
+      "n_events_measured": 84,
+      "buckets": {
+       "baseline_no_recent_discharge": {
+        "p_elevated": 0.345,
+        "n": 287
+       },
+       "d0_large": {
+        "p_elevated": 1.0,
+        "n": 20
+       },
+       "d0_small": {
+        "p_elevated": 1.0,
+        "n": 21
+       },
+       "d1_large": {
+        "p_elevated": 1.0,
+        "n": 15
+       },
+       "d1_small": {
+        "p_elevated": 1.0,
+        "n": 19
+       },
+       "d2_large": {
+        "p_elevated": 0.846,
+        "n": 13
+       },
+       "d2_small": {
+        "p_elevated": 0.722,
+        "n": 18
+       },
+       "d3_large": {
+        "p_elevated": 1.0,
+        "n": 10
+       },
+       "d3_small": {
+        "p_elevated": 0.733,
+        "n": 15
+       },
+       "d4-5_large": {
+        "p_elevated": 0.765,
+        "n": 17
+       },
+       "d4-5_small": {
+        "p_elevated": 0.526,
+        "n": 19
+       },
+       "d6-7_large": {
+        "p_elevated": 0.667,
+        "n": 9
+       },
+       "d6-7_small": {
+        "p_elevated": 0.333,
+        "n": 9
+       }
+      }
+     }
+    }
+   }
+  ]
+ },
+ "note": "Today's lingering curve at zone level (S4 impact_v2_zone): the served impact table's recipe, ported to the four zones and refit per fold. It buckets a sampled day by the zone's last overflow in the week while compose_v2 composes every overflow of the week, so S4 fit = S4 use (Part B 6) does not hold for it, as it does not for the served table; large \u2265 small is not imposed.",
+ "component": "impact_v2_zone",
+ "set": "sfpuc-icon-t8s-osplits-lt2zone-lzflags"
+}

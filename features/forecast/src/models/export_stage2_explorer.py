@@ -119,10 +119,13 @@ def main() -> None:
     for s in sets:
         sources |= {m.get("rain_source", "avg") for m in s["models"].values()}
     sources |= {h.get("rain_source", "avg") for h in heads.values()}
-    frames, notes = T.build_dataset(end=pd.Timestamp(dates[-1]), sources=sorted(sources))
+    import candidates as CAND
+    wind = any(CAND._reads_wind(s["models"]) for s in sets)       # the wind sets read it; opt-in, as in training
+    frames, notes = T.build_dataset(end=pd.Timestamp(dates[-1]), sources=sorted(sources), wind=wind)
     # post-training days were re-scored on rule-treated inputs (input_rules_post); rebuild them from the same
     rules_post = master.get("input_rules_post") or []
-    frames_post = T.build_dataset(end=pd.Timestamp(dates[-1]), sources=sorted(sources), input_rules=rules_post)[0] if rules_post else frames
+    frames_post = (T.build_dataset(end=pd.Timestamp(dates[-1]), sources=sorted(sources), input_rules=rules_post, wind=wind)[0]
+                   if rules_post else frames)
     trained_through = master.get("trained_through") or master["span"][1]
     post_from = next((i for i, d in enumerate(dates) if d > trained_through), len(dates))
     def spliced(src: str, fn):

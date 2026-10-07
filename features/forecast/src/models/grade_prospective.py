@@ -13,8 +13,10 @@ which writes data/forecast_history/t0_first_snapshots.csv, one row per issue day
 
     issue_date, generated_at, model, corrections, target_date, lead, zone, p
 
-for every issue day after the protocol's freeze date (T0 starts the next day). ``model`` is the served
-set's name and ``corrections`` its live-correction rule, both from the snapshot's model stamp. Commit the
+for every issue day after the protocol's freeze date (T0 starts the next day). ``model`` is the set that
+served, named by the lineup its stamp records (``stamp_set``: shared/lineup.py's id of its overflow model,
+stage 2, weather model and correction rule) and ``corrections`` its live-correction rule, both from the
+snapshot's model stamp. Commit the
 file with the data refresh that covers its target days (the CIWQS ledger arrives quarterly), then rebuild
 the stage scores. ``rows()`` reads and checks the committed file; stages_build.t0_as_served grades the
 served set's rows with OUT's own scorer (scores["t0_as_served"]; features/forecast/SWAPS.md, "Grading the
@@ -35,6 +37,7 @@ for p in (HERE, HERE.parents[3]):
         sys.path.insert(0, str(p))
 
 import exclusions as X  # noqa: E402
+from shared import lineup as LU  # noqa: E402
 
 SNAPSHOT = HERE.parents[1] / "data" / "forecast_history" / "t0_first_snapshots.csv"
 COLUMNS = ("issue_date", "generated_at", "model", "corrections", "target_date", "lead", "zone", "p")
@@ -44,6 +47,16 @@ PAGE = 31                  # snapshots per GET: each holds a whole payload
 
 def t0_start() -> date:
     return (X.freeze_date() + pd.Timedelta(days=1)).date()
+
+
+def stamp_set(stamp: dict) -> str | None:
+    """The set a snapshot's model stamp names: the id of the lineup it records (its overflow model and stage 2 id,
+    and the weather model and correction rule it ran with), so a row made before a rename or a switch names the
+    lineup that made it; a stamp missing one of those, its set's name today (lineup.current_name). An unknown
+    component raises (add it to shared/lineup.py)."""
+    if all(stamp.get(k) for k in ("stage1", "stage2", "weather_model", "live_corrections")):
+        return LU.set_id(LU.geo_v1_lineup(stamp["stage1"], stamp["stage2"], stamp["weather_model"], stamp["live_corrections"]))
+    return LU.current_name(stamp["name"]) if stamp.get("name") else None
 
 
 def snapshot_rows(issue_date: str, snapshot: dict, generated_at: str) -> list[dict]:
@@ -62,7 +75,7 @@ def snapshot_rows(issue_date: str, snapshot: dict, generated_at: str) -> list[di
         if target != (issue + timedelta(days=lead)).isoformat():
             raise ValueError(f"forecast_history {issue}: the lead-{lead} day is dated {target}")
         for zone, p in sorted((day.get("zones") or {}).items()):
-            out.append({"issue_date": issue.isoformat(), "generated_at": generated_at, "model": stamp.get("name"),
+            out.append({"issue_date": issue.isoformat(), "generated_at": generated_at, "model": stamp_set(stamp),
                         "corrections": stamp.get("live_corrections"), "target_date": target, "lead": lead,
                         "zone": zone, "p": float(p)})
     return out

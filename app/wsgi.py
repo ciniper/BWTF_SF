@@ -59,7 +59,7 @@ from features.alerts.page import AlertsRoutes
 from features.comparison.page import ComparisonRoutes
 from shared.datasf import DATASET_PAGE_URL
 from shared.basemap import basemap
-from shared import risk_levels
+from shared import lineup, risk_levels
 from features.alerts.cso_alerts import SURFRIDER_LOGO_URL
 from features.alerts.monitoring import CombinedWaterQualityMonitor
 from features.alerts.subscriptions import SubscriptionStore
@@ -243,8 +243,16 @@ _REPORTS_DIR = Path(__file__).resolve().parents[1] / "reports"
 
 def _report_view(name: str):
     """Static analyses under reports/ (e.g. the model explorer). HTML only,
-    plain file names only — nothing else in the repo is reachable here."""
-    if not re.fullmatch(r"[A-Za-z0-9._-]+\.html", name) or not (_REPORTS_DIR / name).is_file():
+    plain file names only — nothing else in the repo is reachable here. A
+    model explorer under a set's name from before the 2026-10-07 rename
+    redirects to its page under the set's id (shared/lineup.py RENAMED)."""
+    if not re.fullmatch(r"[A-Za-z0-9._-]+\.html", name):
+        abort(404)
+    if not (_REPORTS_DIR / name).is_file():
+        m = re.fullmatch(r"(2026-09_forecast_)(.+)(_model_explorer\.html)", name)
+        new = m and m.group(1) + lineup.current_name(m.group(2)) + m.group(3)
+        if new and new != name and (_REPORTS_DIR / new).is_file():
+            return redirect(f"/reports/{new}", code=301)
         abort(404)
     return send_from_directory(_REPORTS_DIR, name, mimetype="text/html")
 

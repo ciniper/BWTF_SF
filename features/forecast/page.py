@@ -352,12 +352,13 @@ def _render_page() -> str:
 
 def _served_name() -> str:
     """The served model set's name from data/models/served.json (promote.py), for
-    the footer's 'How the model works' link; gb_v1 if the descriptor is missing."""
+    the footer's 'How the model works' link; the original bundle's if the descriptor is missing."""
+    fallback = "icon-trees-nosplit-lt1-bflags"
     try:
         with open(Path(__file__).resolve().parent / "data" / "models" / "served.json") as f:
-            return str(json.load(f).get("name") or "gb_v1")
+            return str(json.load(f).get("name") or fallback)
     except Exception:  # noqa: BLE001
-        return "gb_v1"
+        return fallback
 
 
 def _zones_for_template() -> list:
@@ -519,16 +520,19 @@ def handle_scorecard(query, body):
 
 
 def with_lineups(models: list) -> list:
-    """Each set named by its stage lineup (STAGES_DESIGN.md A8, shared/lineup.py): S2–S4 only, since the
-    Model check's hindcast runs on measured rain with no live corrections. ``differs`` marks the parts that
-    are not the served set's. A part with no words shows its id (tests/test_lineup.py keeps that from happening)."""
+    """Each set named by its stage lineup (STAGES_DESIGN.md A8 and Part B 36, shared/lineup.py): S1 … S5, the
+    parts it was made with, as its stored name is their id. The Model check's hindcast runs on measured rain with
+    no live corrections, so it grades S2–S4; S1 and S5 are in the name all the same. ``differs`` marks the parts
+    that are not the served set's. A part with no words shows its id (tests/test_lineup.py keeps that from
+    happening)."""
     from shared import lineup as LU
-    parts = [LU.geo_v1_parts(m.get("stage1") or "", m.get("stage2") or "v1") for m in models]
+    parts = [m.get("lineup") or {"s1": "", **LU.geo_v1_parts(m.get("stage1") or "", m.get("stage2") or "v1"), "s5": ""}
+             for m in models]
     served = next((p for m, p in zip(models, parts) if m.get("served")), None)
     out = []
     for m, p in zip(models, parts):
         row = []
-        for col in ("s2", "s3", "s4"):
+        for col in LU.STAGE_COLS:
             try:
                 words = LU.words(col, p[col])
             except KeyError:
