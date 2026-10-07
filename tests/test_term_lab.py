@@ -64,6 +64,17 @@ def test_choose_for_me_is_nested():
     assert np.isfinite(p).all()
 
 
+def test_every_size_is_graded_nested():
+    """The path never stops early: sizes 1 … max_terms, each fold's first k picks scoring its own season."""
+    pool = ["precip_avg", "rain_2d_cum", "wind_v_rain"]
+    r = lab().choose(pool, max_terms=3, jobs=1, n_boot=200, path=True)
+    assert [s["k"] for s in r["path"]] == [1, 2, 3] and r["terms"] == [s["added"] for s in r["path"]]
+    assert all(len(ts) == 3 for ts in r["by_fold"].values()) and sorted(r["terms"]) == sorted(pool)
+    first = lab().oof(None, terms_by_fold={f: ts[:1] for f, ts in r["by_fold"].items() if f != "all nine seasons"})
+    want = lab().grade(first, 200)["T2"]["pooled"]["skill"]
+    assert abs(r["path"][0]["grade"]["T2"]["pooled"]["skill"] - want) < 1e-12
+
+
 def test_new_inputs_mean_what_they_say():
     u, v = TL.wind_uv([5.0, 5.0, 5.0], [270.0, 180.0, 90.0])          # west, south, east winds
     assert np.allclose(u, [5.0, 0.0, -5.0]) and np.allclose(v, [0.0, 5.0, 0.0], atol=1e-9)

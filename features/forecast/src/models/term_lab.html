@@ -81,8 +81,9 @@
   <div class="card">
     <div class="row">
       <button id="choose" class="btn primary">Choose for me</button>
-      <label>up to <select id="maxTerms"><option>4</option><option>6</option><option selected>8</option><option>12</option></select> terms</label>
-      <span class="mute">from the terms that are on (all of them if none are). Takes a minute.</span>
+      <label>up to <select id="maxTerms"><option>4</option><option>6</option><option selected>8</option><option>12</option><option>16</option></select> terms</label>
+      <label><input type="checkbox" id="path"> grade every size, 1 to that many</label>
+      <span class="mute">from the terms that are on (all of them if none are). Takes one to three minutes.</span>
     </div>
     <div id="chosen"></div>
   </div>
@@ -172,7 +173,7 @@ async function choose() {
   $("#chosen").innerHTML = `<p class="busy">Choosing inside each season's fold…</p>`;
   const pool = [...state.terms];
   const r = await fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" },
-    body: body({ pool: pool.length ? pool : null, max_terms: +$("#maxTerms").value }) });
+    body: body({ pool: pool.length ? pool : null, max_terms: +$("#maxTerms").value, path: $("#path").checked }) });
   const j = await r.json(); btn.disabled = false;
   const counts = Object.entries(j.chosen_in).map(([t, n]) => `<span class="chip">${t} · ${n}/${j.n_folds}</span>`).join(" ");
   $("#chosen").innerHTML = `<h3 style="margin:14px 0 6px">Picked on all nine seasons: ${j.terms.join(", ")}</h3>
@@ -183,6 +184,20 @@ async function choose() {
     <div class="scroll"><table id="nested"></table></div>`;
   gradeTable($("#nested"), j.nested_grade);
   $("#useChosen").onclick = () => setTerms(j.terms);
+  if (j.path) {
+    const wins = Object.keys(META.windows);
+    const row = (s) => `<tr><td class="num"><b>${s.k}</b></td><td>+ ${s.added}</td>${wins.map((w) => {
+      const c = s.grade[w].pooled;
+      return `<td class="num">${fmt(c.skill)} <span class="mute">[${fmt(c.skill_lo)}–${fmt(c.skill_hi)}] · live ${fmt(c.live_skill)}</span>
+        <span class="verdict ${vClass(c.verdict)}">${vWord(c.verdict)}</span></td>`; }).join("")}
+      <td><button class="btn" data-k="${s.k}">Use</button></td></tr>`;
+    $("#chosen").insertAdjacentHTML("beforeend", `<h3 style="margin:14px 0 6px">Every size, graded the same fair way</h3>
+      <p class="mute">All four basins. Each row adds the next term in the order it was picked on all nine seasons; each season is scored by
+        the first k terms its own fold picked without it.</p>
+      <div class="scroll"><table id="pathTable"><tr><th>Terms</th><th>Added</th>${wins.map((w) => `<th>${META.windows[w]}</th>`).join("")}<th></th></tr>
+      ${j.path.map(row).join("")}</table></div>`);
+    $("#pathTable").querySelectorAll("button[data-k]").forEach((b) => { b.onclick = () => setTerms(j.terms.slice(0, +b.dataset.k)); });
+  }
 }
 
 (async function init() {

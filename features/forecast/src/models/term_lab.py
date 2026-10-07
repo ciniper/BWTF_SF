@@ -316,23 +316,32 @@ class Lab:
         return out
 
     def choose(self, pool=None, C="live", nonneg: bool = False, record: str = "served", max_terms: int = 8,
-               min_gain: float = 0.0025, jobs: int = -1, n_boot: int = N_BOOT) -> dict:
-        """Forward selection inside every graded fold (nested), then on all nine seasons (the terms to adopt)."""
+               min_gain: float = 0.0025, jobs: int = -1, n_boot: int = N_BOOT, path: bool = False) -> dict:
+        """Forward selection inside every graded fold (nested), then on all nine seasons (the terms to adopt).
+        ``path``: never stop early; grade the best 1, 2, … max_terms terms, each nested (the first k of every
+        fold's own order), so the number of terms is judged the same fair way as the terms."""
         from joblib import Parallel, delayed
         pool = list(pool or ALL_TERMS)
         runs = [(fold, keep) for _tier, fold, *_rest, keep in self.plan(record)] + [("all nine seasons", self.nine(record))]
         jobs_in = [(fold, self._selection_data(record, keep, pool, C)) for fold, keep in runs]
         picked = Parallel(n_jobs=jobs, backend="loky")(
-            delayed(forward_select)(data, len(pool), max_terms, min_gain, nonneg) for _fold, data in jobs_in)
+            delayed(forward_select)(data, len(pool), max_terms, None if path else min_gain, nonneg) for _fold, data in jobs_in)
         by_fold = {fold: [pool[i] for i in idx] for (fold, _), (idx, _trace) in zip(jobs_in, picked)}
         traces = {fold: tr for (fold, _), (_idx, tr) in zip(jobs_in, picked)}
         final = by_fold.pop("all nine seasons")
         folds = [f for f, _ in runs[:-1]]
         nested = self.oof(None, C, nonneg, record, terms_by_fold={f: by_fold[f] for f in folds})
         counts = {t: sum(t in by_fold[f] for f in folds) for t in pool if any(t in by_fold[f] for f in folds)}
-        return {"terms": final, "nested_grade": self.grade(nested, n_boot), "by_fold": by_fold,
-                "chosen_in": dict(sorted(counts.items(), key=lambda kv: -kv[1])), "n_folds": len(folds),
-                "trace": traces["all nine seasons"], "min_gain": min_gain, "max_terms": max_terms}
+        out = {"terms": final, "nested_grade": self.grade(nested, n_boot), "by_fold": by_fold,
+               "chosen_in": dict(sorted(counts.items(), key=lambda kv: -kv[1])), "n_folds": len(folds),
+               "trace": traces["all nine seasons"], "min_gain": None if path else min_gain, "max_terms": max_terms}
+        if path:
+            out["path"] = []
+            for k in range(1, max_terms + 1):
+                pk = self.oof(None, C, nonneg, record, terms_by_fold={f: by_fold[f][:k] for f in folds})
+                out["path"].append({"k": k, "added": final[k - 1], "inner": traces["all nine seasons"][k - 1],
+                                    "grade": self.grade(pk, n_boot)})
+        return out
 
 
 def inner_brier(data: list, cols: list, nonneg: bool) -> float:
@@ -352,13 +361,14 @@ def inner_brier(data: list, cols: list, nonneg: bool) -> float:
     return sse / n
 
 
-def forward_select(data: list, n_pool: int, max_terms: int, min_gain: float, nonneg: bool) -> tuple:
-    """Add the pool column that lowers inner_brier most, while it lowers it by more than ``min_gain`` (relative)."""
+def forward_select(data: list, n_pool: int, max_terms: int, min_gain: float | None, nonneg: bool) -> tuple:
+    """Add the pool column that lowers inner_brier most, while it lowers it by more than ``min_gain`` (relative);
+    ``min_gain`` None: to ``max_terms`` whatever the gain (the path)."""
     chosen, best, trace = [], np.inf, []
-    while len(chosen) < max_terms:
+    while len(chosen) < min(max_terms, n_pool):
         scores = {j: inner_brier(data, chosen + [j], nonneg) for j in range(n_pool) if j not in chosen}
         j, s = min(scores.items(), key=lambda kv: kv[1])
-        if np.isfinite(best) and s > best * (1.0 - min_gain):
+        if min_gain is not None and np.isfinite(best) and s > best * (1.0 - min_gain):
             break
         chosen.append(j)
         best = s
@@ -435,7 +445,7 @@ def make_app(lab: Lab):
     @app.post("/api/choose")
     def api_choose():
         a = request.get_json(force=True) or {}
-        return jsonify(lab.choose(a.get("pool") or None, max_terms=int(a.get("max_terms", 8)), **args()))
+        return jsonify(lab.choose(a.get("pool") or None, max_terms=int(a.get("max_terms", 8)), path=bool(a.get("path")), **args()))
 
     return app
 
