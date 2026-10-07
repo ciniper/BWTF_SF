@@ -131,8 +131,10 @@ def test_page_carries_the_samples_row_and_the_events_payload_has_the_keys():
     html = (ROOT / "app/templates/cso_history/page.html").read_text()
     for needle in ("className = 'row srow'", "showSampleTip", "smark", "swatch lag", "DATA.samples", "sample_lag", "Numbers online", "d.lane", "window.__timeline", "minute not recorded",
                    "swatch pending", "swatch mapmark", "className = 'mapmark'", "d.pending ? 'pending'", "lagbar.pending", "d.map_censored", "sample_lag || {}).map",
-                   "d.map_note ? fmt(d.map_seen) + ' (' + esc(d.map_note)", "function esc(s)", "(not confirmed)"):
+                   "d.map_note ? fmt(d.map_seen) + ' (' + esc(d.map_note)", "function esc(s)", "(not confirmed)",
+                   "sample date shown on the map", "Map shows this sample date", "Beach posted after this sample", "WINDOW_DAYS = 7", "RANGE = 14", "board.scrollLeft", "position:sticky"):
         assert needle in html, needle
+    assert "<button class=\"range-btn active\" data-days=\"14\">" in html and 'data-days="7"' not in html and "map: not observed" not in html   # the old hover wording is gone (the legend's group label "On SFPUC's map:" stays)
     # the unconfigured path keeps the old shape; the configured path adds samples + sample_lag (exercised against Supabase when available)
     from shared import supabase as sb
     import json

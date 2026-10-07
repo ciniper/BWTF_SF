@@ -18,7 +18,7 @@
   .swatch.lag{background:#8fb8d8;height:4px}
   .row.srow{height:20px}
   .row + .row.srow{border-top:0}
-  .row.srow .name{font-size:11px;font-weight:600;color:#8a949b;text-align:right;padding-right:10px}
+  .row.srow .name{font-size:11px;font-weight:600;color:#8a949b;justify-content:flex-end;align-items:flex-start;padding-top:3px;padding-right:10px}   /* label on the dots' line, right-aligned */
   .smark{position:absolute;top:5px;width:10px;height:10px;margin-left:-5px;border-radius:50%;box-shadow:0 0 0 2px #fff;cursor:pointer;z-index:2}
   .smark.clean{background:#2f7d4c}
   .smark.elevated{background:#b5310a}
@@ -32,14 +32,14 @@
   .swatch.mapmark{position:static;margin-left:0;width:2px;height:12px;border-radius:0;background:#0072BC}   /* the lane mark is absolute; the legend's copy must stay in the row */
 
   #tablebox{overflow-x:auto}   /* the table's last columns were clipped on phones */
-  .board{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:18px 18px 10px;overflow-x:auto}
+  .board{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:18px 18px 10px;overflow-x:auto;scroll-behavior:auto}   /* the window: 7 days wide, scrolls back through the range */
   .chart{position:relative;min-width:640px}
   .grid{position:absolute;inset:0;pointer-events:none}
   .gridline{position:absolute;top:0;bottom:26px;width:1px;background:#eef2f4}
   .gridline.now{background:#8a949b;width:1px}
   .row{display:flex;align-items:center;height:34px;position:relative}
   .row + .row{border-top:1px solid #f4f7f8}
-  .row .name{width:200px;min-width:200px;font-size:13px;font-weight:700;color:#26272a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:10px}
+  .row .name{width:200px;min-width:200px;font-size:13px;font-weight:700;color:#26272a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:10px;position:sticky;left:0;background:#fff;box-shadow:-20px 0 0 #fff;z-index:3;align-self:stretch;display:flex;align-items:center}   /* stays put while the chart scrolls; the sticky edge is the board's content edge, the shadow covers its 18px padding strip; full row height so bars pass behind it */
   .row .track{position:relative;flex:1;height:100%}
   .row .nowdot{width:9px;height:9px;border-radius:50%;margin-left:10px;flex:none;background:#d9e4e8}
   .nowdot.ok{background:#237059}
@@ -54,7 +54,7 @@
   .seg.ongoing{border-radius:4px 0 0 4px}
   .seg .pulse{position:absolute;right:-4px;top:3px;width:8px;height:8px;border-radius:50%;background:inherit;animation:blink 1.5s infinite}
 
-  .axis{position:relative;height:26px;margin-left:200px;margin-right:19px;font-size:11px;color:#8a949b}
+  .axis{position:relative;height:26px;margin-left:200px;margin-right:19px;font-size:11px;color:#8a949b;overflow:hidden}   /* the last day label is centred on its tick and would spill past 'now', widening the scroll */
   .tick{position:absolute;top:6px;transform:translateX(-50%);white-space:nowrap}
   .tick.now-label{color:#54576F;font-weight:700;transform:translateX(-100%)}
 
@@ -90,9 +90,9 @@
   <div id="content" style="display:none">
     <div id="banner" class="banner" style="display:none"></div>
     <div class="controls">
-      <button class="range-btn" data-days="7">7 days</button>
+      <button class="range-btn active" data-days="14">14 days</button>
       <button class="range-btn" data-days="30">30 days</button>
-      <button class="range-btn active" data-days="all">All</button>
+      <button class="range-btn" data-days="all">All</button>
       <div class="legend">
         <span class="key" style="color:#8a949b">On SFPUC's map:</span>
         <span class="key"><span class="swatch posted"></span>posted — elevated bacteria</span>
@@ -101,7 +101,7 @@
         <span class="key"><span class="swatch clean"></span>collected — clean</span>
         <span class="key"><span class="swatch elevated"></span>over standard</span>
         <span class="key"><span class="swatch pending"></span>graded on the map, numbers not yet public</span>
-        <span class="key"><span class="swatch mapmark"></span>shown on SFPUC's map</span>
+        <span class="key"><span class="swatch mapmark"></span>sample date shown on the map</span>
         <span class="key"><span class="swatch lag"></span>days until the numbers appeared online</span>
       </div>
     </div>
@@ -120,7 +120,10 @@
 </div>
 <script>
 (function(){
-  var DATA = null, RANGE = 'all';
+  var DATA = null, RANGE = 14;
+  var WINDOW_DAYS = 7;          // the board shows a week; the 14- and 30-day ranges scroll through it (Chase, 2026-10-06)
+  var scrollFrac = 1;            // where the user left the window, 1 = at now; kept across re-renders
+  var userScrolling = false;     // set by wheel/touch/pointer on the board; a scroll event then records scrollFrac — clamps and our own sets don't
   var SEV_LABEL = {posted:'Posted — elevated bacteria', cso:'CSO discharge flag'};
   var STUB_MS = 45*60*1000; // visual stub for windows whose end was never logged
   var fmtOpts = {timeZone:'America/Los_Angeles', month:'short', day:'numeric', hour:'numeric', minute:'2-digit'};
@@ -150,12 +153,23 @@
       t0 = now - RANGE*864e5;
     }
     var span = now - t0;
+    var scale = Math.max(1, span / (WINDOW_DAYS * 864e5));   // before the pad: a 7-day range is exactly one window wide
     t0 -= span * 0.02; span = now - t0;  // small left pad so day-one bars aren't flush
     function pos(ms){ return Math.max(0, Math.min(100, (ms - t0)/span*100)); }
 
-    // grid: day ticks (thin to weekly when the span gets long)
+    // the window: the board shows WINDOW_DAYS; a longer range makes the chart that many times wider and scrolls
+    var board = chart.parentNode;
+    function size(){                                                            // chart and axis widths from the board's inner width (padding 18px a side), never under the chart's minimum
+      var visible = Math.max(board.clientWidth - 36, 640);
+      var trackW = Math.round((visible - 219) * scale);                         // 200px names + 19px status dot
+      chart.style.width = (200 + trackW + 19) + 'px'; axis.style.width = trackW + 'px';
+      return visible;
+    }
+    var visible = size();
+
+    // grid: one tick a day — the window is always about a week wide
     var grid = document.createElement('div'); grid.className = 'grid';
-    var stepDays = span > 45*864e5 ? 7 : (span > 16*864e5 ? 2 : 1);
+    var stepDays = 1;
     var d = new Date(t0); d.setHours(0,0,0,0); d = d.getTime() + 864e5;
     for (; d < now; d += stepDays*864e5) {
       var gl = document.createElement('div'); gl.className = 'gridline'; gl.style.left = 'calc(200px + (100% - 219px) * ' + (pos(d)/100) + ')';
@@ -248,6 +262,9 @@
       srow.appendChild(sname); srow.appendChild(strack); srow.appendChild(spacer);
       chart.appendChild(srow);
     });
+    if (size() !== visible) size();   // the rows just drawn can bring the page's scrollbar back and narrow the board; everything inside is in % so only the widths move
+    userScrolling = false;                                                                   // the set below is ours, not the user's
+    board.scrollLeft = Math.round((board.scrollWidth - board.clientWidth) * scrollFrac);   // back where the window was; at now on first draw
   }
 
   function showSampleTip(ev, s, d){
@@ -256,15 +273,25 @@
     var days = function(n){ return '<b>' + n + (n === 1 ? ' day' : ' days') + '</b>'; };
     var result = d.pending ? '<b>numbers not yet published</b>'
       : (d.elevated ? '<b style="color:#f3b7a5">over standard</b>' : 'clean') + (d.n > 1 ? ' (' + d.n + ' results)' : '');
-    var map = !d.map_seen ? 'On SFPUC\'s map: not observed'
-      : d.map_censored ? 'On SFPUC\'s map: by ' + fmtDay(d.map_seen) + ' (already there when we began reading the feed)'
-      : 'On SFPUC\'s map: ' + (d.map_note ? fmt(d.map_seen) + ' (' + esc(d.map_note) + ')' : d.map_approx ? fmtDay(d.map_seen) + ' (day known, minute not recorded)' : fmt(d.map_seen)) + ' — ' + days(d.map_lag_days) + ' after collection';
+    var map = !d.map_seen ? 'Map shows this sample date: not observed'
+      : d.map_censored ? 'Map showed this sample date by ' + fmtDay(d.map_seen) + ' (already there when we began reading the feed)'
+      : 'Map shows this sample date: ' + (d.map_note ? fmt(d.map_seen) + ' (' + esc(d.map_note) + ')' : d.map_approx ? fmtDay(d.map_seen) + ' (day known, minute not recorded)' : fmt(d.map_seen)) + ' — ' + days(d.map_lag_days) + ' after collection';
+    // 2. the posting that followed this reading, if the station went up within three days of collection — the city acts on the
+    //    reading hours before the displayed sample date changes (Islais Creek, 2026-10-06: posted 8:26 AM, date shown 2:12 PM)
+    var dayStart = new Date(d.date + 'T08:00:00Z').getTime(), posting = null;   // ~midnight Pacific on the collection day
+    (s.windows || []).forEach(function(w){ var st = new Date(w.start).getTime(); if (st >= dayStart && st < dayStart + 3*864e5 && (posting === null || st < posting)) posting = st; });
+    var postLine = '';
+    if (posting !== null) {
+      var mapMs = d.map_seen && !d.map_censored ? new Date(d.map_seen).getTime() : null;
+      postLine = '<br>Beach posted after this sample: ' + fmt(posting) +
+        (mapMs !== null ? ' — ' + dur(Math.min(posting, mapMs), Math.max(posting, mapMs)) + (posting < mapMs ? ' before' : ' after') + ' the map showed the sample date' : '');
+    }
     var pub = d.first_seen
       ? 'Numbers online: ' + fmt(d.first_seen) + ' — ' + days(d.lag_days) + ' after collection' +
         (d.map_lag_days != null ? ' (' + (d.lag_days - d.map_lag_days) + ' after the map)' : '')
       : d.pending ? 'Numbers online: not yet — ' + days(d.pending_days) + ' since collection'
       : 'Numbers online: not observed (loaded from the city\'s history — collection day only)';
-    tip.innerHTML = '<b>' + s.station_name + '</b><br>Lab sample collected ' + when + ' · ' + result + '<br>' + map + '<br>' + pub;
+    tip.innerHTML = '<b>' + s.station_name + '</b><br>Lab sample collected ' + when + ' · ' + result + '<br>' + map + postLine + '<br>' + pub;
     tip.style.display = 'block';
     var x = Math.min(ev.clientX + 14, window.innerWidth - 300);
     tip.style.left = x + 'px'; tip.style.top = (ev.clientY + 14) + 'px';
@@ -307,7 +334,7 @@
     Object.keys(DATA.samples || {}).forEach(function(sid){ (DATA.samples[sid] || []).forEach(function(d){ srows.push([byId[sid] || sid, d]); }); });
     srows.sort(function(a, b){ return a[1].date < b[1].date ? 1 : a[1].date > b[1].date ? -1 : 0; });
     html += '<h3 style="font-size:14px;margin:18px 0 6px">Lab samples — collected, shown on SFPUC\'s map, and the numbers in the city\'s dataset</h3>' +
-      '<table><thead><tr><th>Station</th><th>Collected</th><th>Result</th><th>On SFPUC\'s map</th><th>Numbers online</th><th>Days until online</th></tr></thead><tbody>';
+      '<table><thead><tr><th>Station</th><th>Collected</th><th>Result</th><th>Sample date on the map</th><th>Numbers online</th><th>Days until online</th></tr></thead><tbody>';
     if (srows.length) srows.forEach(function(r){ var d = r[1];
       var dayStr = function(n){ return n + (n === 1 ? ' day' : ' days'); };
       html += '<tr><td>' + r[0] + '</td><td>' + d.date + '</td><td>' +
@@ -336,9 +363,9 @@
       (data.monitoring_since ? 'We have read SFPUC\'s beach map since ' + fmt(data.monitoring_since) + ' (Pacific time). ' : '') +
       'Times are the minute our watcher first saw a change: once a minute via the in-database watcher since Aug 16, 2026 (every 2 minutes before that). ' +
       'Signs that went up before we logged sign-downs show “not recorded”. Simulated test events are excluded. ' +
-      'Lab-sample dots are the collection day from the city\'s dataset; the bar to the right runs until the numbers appeared online' +
+      'The board shows a week; drag or scroll it sideways to go back through the range you picked. Lab-sample dots are the collection day from the city\'s dataset; the bar to the right runs until the numbers appeared online' +
       (data.sample_lag && data.sample_lag.n ? ' (median so far <b>' + data.sample_lag.median_days + (data.sample_lag.median_days === 1 ? ' day' : ' days') + '</b> over ' + data.sample_lag.n + ' sample-days, measured since ' + data.sample_lag.measured_since + ')' : ' (measured from ' + ((data.sample_lag || {}).measured_since || '2026-09-27') + ' on; nothing published yet since then)') +
-      '. The blue tick on a bar is the day SFPUC\'s map first showed that sample date — the city has graded the sample, and posted the beach if need be, before the public can read the number' +
+      '. The blue tick on a bar is when SFPUC\'s map first showed that sample date — the city has graded the sample by then, and if it posted the beach that sign went up hours earlier (the orange bar above); the public can read the number only when the bar ends' +
       (function(m){ if (!m) return ''; var dd = function(n){ return '<b>' + n + (n === 1 ? ' day' : ' days') + '</b>'; };
         return (m.n ? ' (median ' + dd(m.median_days) + ' after collection over ' + m.n + ' sample-days' + (m.after_map_n ? '; the numbers followed a median ' + dd(m.after_map_median_days) + ' later' : '') + ', read since ' + m.measured_since + ')' : ' (read since ' + m.measured_since + ')') +
         (m.pending ? '. <b>' + m.pending + '</b> sample-day' + (m.pending === 1 ? ' is' : 's are') + ' on the map right now with the numbers still unpublished — the hollow dots, dashed to today' : ''); })((data.sample_lag || {}).map) +
@@ -358,6 +385,10 @@
     });
   });
   window.addEventListener('resize', function(){ if (DATA) render(); });
+  (function(){ var board = document.querySelector('.board'); if (!board) return;
+    ['wheel', 'touchstart', 'pointerdown', 'keydown'].forEach(function(t){ board.addEventListener(t, function(){ userScrolling = true; }, {passive: true}); });
+    board.addEventListener('scroll', function(){ if (userScrolling && board.scrollWidth > board.clientWidth) scrollFrac = board.scrollLeft / (board.scrollWidth - board.clientWidth); }, {passive: true});
+  })();
   // debugging hook (preview_eval / devtools): read or replace the payload and redraw — never used by the page itself
   window.__timeline = { getData: function(){ return DATA; }, setData: function(d){ DATA = d; render(); renderTable(); } };
 })();
