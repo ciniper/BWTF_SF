@@ -44,7 +44,7 @@ import train_v4 as T  # noqa: E402  (frame builder, calibration, volume — the 
 import export_reports_index as RI  # noqa: E402  (each set's lineup words and the page's title)
 from groups import BASIN_KEYS, GROUPS_BY_BASIN, SITE_GROUPS, ZONE_GROUPS  # noqa: E402
 from impact import smooth_table  # noqa: E402
-from rain_features import DAILY_FEATURES, INTENSITY_FEATURES  # noqa: E402
+from rain_features import DAILY_FEATURES, INTENSITY_FEATURES, WIND_FEATURES  # noqa: E402
 from shared import lineup as LU  # noqa: E402
 from shared import risk_levels  # noqa: E402
 from shared.outfalls import OUTFALLS  # noqa: E402
@@ -102,6 +102,18 @@ def export_logit(pipe, features, C=None) -> dict:
     import leaderboard as LB
     lr, sc = pipe.named_steps["lr"], pipe.named_steps["scale"]
     coef, means, scales = [float(c) for c in lr.coef_[0]], [float(v) for v in sc.mean_], [float(v) for v in sc.scale_]
+    if "terms" in pipe.named_steps:              # a named-terms model (train_terms.py): its terms, read by name
+        names = list(pipe.named_steps["terms"].kw_args["terms"])
+        assert len(names) == len(coef) == len(means), "column layout drifted from leaderboard.add_terms"
+        cols = [{"t": t, "f": t.partition(">")[0], "knot": float(t.partition(">")[2]) if ">" in t else None} for t in names]
+        agg = {}
+        for c, w in zip(cols, coef):
+            agg[c["f"]] = agg.get(c["f"], 0.0) + abs(w)
+        tot = sum(agg.values()) or 1.0
+        return {"family": "logit", "C": C if C is not None else float(lr.C), "intercept": float(lr.intercept_[0]),
+                "names": names, "coef": coef, "means": means, "scales": scales, "hinges": {}, "terms": cols,
+                "importances": {f: round(v / tot, 5) for f, v in agg.items()},
+                "params": {"penalty": "l2", "max_iter": int(lr.max_iter), "n_terms": len(names)}}
     if "bands" in pipe.named_steps:
         cols = LB.band_columns(pipe.named_steps["bands"].kw_args["design"])
         names = [LB.band_name(*c) for c in cols]
@@ -184,8 +196,10 @@ def load_model_set(name: str | None) -> tuple[dict, dict, dict]:
                 "stage1_name": (manifest.get("stage1") or {}).get("name", name),
                 "stage2": candidates.load_stage2(name),   # None = no split and the first lingering table (stored as stage 2 v1)
                 "scorecard": candidates.candidate_dir(name) / "scorecard.json.gz"}
-    for m in models.values():
-        assert m["features"] == features, "feature contract drifted"
+    for m in models.values():                    # the 19, or a named-terms model's inputs (the wind among them)
+        terms = "terms" in getattr(m["model"], "named_steps", {})
+        assert m["features"] == features or (terms and set(m["features"]) <= set(features) | set(WIND_FEATURES)), \
+            "feature contract drifted"
     return models, holdout, meta
 
 
@@ -270,10 +284,12 @@ def main(model_name: str | None = None, offline: bool = False) -> None:
     # sample day is rebuilt from the frame set its stored risks came from.
     end = pd.Timestamp(sc["span"][1])
     srcs = sorted(set(rain_source.values()) | set(T.RAIN_SOURCES))
-    frames, notes = T.build_dataset(end=end, sources=srcs)
+    wind = [f for f in WIND_FEATURES if any(f in m["features"] for m in raw_models.values())]   # what this set reads
+    frames, notes = T.build_dataset(end=end, sources=srcs, wind=bool(wind))
     rules_post = sc.get("input_rules_post") or []
-    frames_post = T.build_dataset(end=end, sources=srcs, input_rules=rules_post)[0] if rules_post else frames
-    finals = {k: {"model": raw_models[k]["model"], "features": features, "calibration_offset": models[k]["calibration_offset"]} for k in models}
+    frames_post = T.build_dataset(end=end, sources=srcs, input_rules=rules_post, wind=bool(wind))[0] if rules_post else frames
+    finals = {k: {"model": raw_models[k]["model"], "features": raw_models[k]["features"], "calibration_offset": models[k]["calibration_offset"]}
+              for k in models}
     head_objs = {b: pickle.load(open(SERVE_DIR / f"{BASIN_KEYS[b]}_volume.pkl", "rb")) for b in T.APP_BASINS
                  if (SERVE_DIR / f"{BASIN_KEYS[b]}_volume.pkl").exists()}
     base = frames["avg"]
@@ -294,8 +310,9 @@ def main(model_name: str | None = None, offline: bool = False) -> None:
         for src in T.RAIN_SOURCES:
             hist[src] = [float(v) for v in fr[src]["precip_avg"].iloc[lo:i + 1]]   # the source's daily total (rule-treated for post-training days)
         hist["intensity"] = {f: [float(v) for v in base[f].iloc[lo:i + 1]] for f in INTENSITY_FEATURES}
+        hist["wind"] = {f: [float(v) for v in base[f].iloc[lo:i + 1]] for f in wind}             # ERA5's, like the peaks
         hist["input_rules"] = rules_post if stored0.get("post_training") else []
-        feats = {src: {f: float(fr[src].iloc[i][f]) for f in features} for src in T.RAIN_SOURCES}
+        feats = {src: {f: float(fr[src].iloc[i][f]) for f in features + wind} for src in T.RAIN_SOURCES}
         expected = {}
         for basin in T.APP_BASINS + ["citywide"]:
             key = BASIN_KEYS.get(basin, "citywide")
@@ -331,7 +348,7 @@ def main(model_name: str | None = None, offline: bool = False) -> None:
         "train_window": meta.get("train_window"), "holdout_start": sc.get("holdout_start"),
         "trained_through": sc.get("trained_through") or sc["span"][1], "rescored_at": sc.get("rescored_at"), "span": sc["span"],
         "input_rules_post": rules_post,
-        "features": {"daily": DAILY_FEATURES, "intensity": INTENSITY_FEATURES, "all": features},
+        "features": {"daily": DAILY_FEATURES, "intensity": INTENSITY_FEATURES, "all": features, "wind": wind},
         "model_params": {k: v for k, v in T.MODEL_PARAMS.items()},
         "models": models, "volume_heads": heads,
         "holdout": holdout,

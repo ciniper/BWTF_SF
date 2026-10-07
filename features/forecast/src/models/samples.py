@@ -178,6 +178,17 @@ def load_samples(sources=DEFAULT_SOURCES) -> pd.DataFrame:
     return out
 
 
+def as_training_samples(sources=D10_SOURCES) -> pd.DataFrame:
+    """``load_samples(sources)`` in train_v4.load_samples' columns (station, sample_date, analyte, exceeds_standard,
+    source, value): what train_v4.fit_impact_table reads. The default is D10, the stages' S4 truth: a linger table fit
+    on it (stage 2 ``impact_samples`` 'd10') sees STARDB's 2016-10 → 2020-07 results too, which the served table's
+    samples (DataSF from 2020-07, Poo Bot) lack."""
+    s = load_samples(tuple(sources))
+    return pd.DataFrame({"station": s["station"].to_numpy(), "sample_date": pd.DatetimeIndex(s["date"]),
+                         "analyte": s["analyte"].to_numpy(), "exceeds_standard": s["exceeds"].astype(bool).to_numpy(),
+                         "source": s["source"].to_numpy(), "value": s["value"].to_numpy()})
+
+
 def zone_sample_days(samples: pd.DataFrame) -> pd.DataFrame:
     """Per zone × sampled day: n_stations, n_stations_sampled, n_stations_exceeding, any_exceedance, first_look, sources.
 

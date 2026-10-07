@@ -26,9 +26,13 @@ WORDS = {
            "logit_v1_older16_first": "38-weight + 2016–17 reports (first days)",
            "logit_v1_older16_every": "38-weight + 2016–17 reports (all days)",
            "logit_v1_older11_first": "38-weight + 2011–17 reports (first days)",
-           "logit_v1_older11_every": "38-weight + 2011–17 reports (all days)"},
+           "logit_v1_older11_every": "38-weight + 2011–17 reports (all days)",
+           # a short named term list with the south wind, picked nested (train_terms.py), on the 2011 record
+           "logit_wind8_older11": "8 terms + south wind", "logit_wind9_older11": "9 terms + south wind",
+           "logit_wind10_older11": "10 terms + south wind"},
     "s3": {"basin_v1": "No split", "split_v2": "Outfall split", "split_v2_sfpuc4": "Outfall split SFPUC", "links_v1": "Size split"},
     "s4": {"impact_v1": "Linger table 1", "impact_v2": "Linger table 2", "impact_v2_zone": "Linger table 2 per zone",
+           "impact_v2_d10": "Linger table 2, more samples",
            "zone_v3": "Rain curve", "zone_choice_v1": "Rain curve or table, picked on S4",
            "zone_choice_v2": "Rain curve or table, picked on the public number"},
     # live_v2 is the replay's basin_swap (and, with its sample floors and caps, all_floors); link_zone_v1 serves the
@@ -46,8 +50,16 @@ def words(col: str, cid: str) -> str:
         raise KeyError(f"no plain words for {col} component {cid!r}: add them to shared/lineup.py WORDS") from None
 
 
+GEO_V1_STAGE2 = {"v1": ("basin_v1", "impact_v1"), "v2": ("split_v2", "impact_v2"),
+                 # v2 with its linger table fit on the stages' S4 truth samples (STARDB 2016-10 → 2020-07 too)
+                 "v2_d10": ("split_v2", "impact_v2_d10")}
+
+
 def geo_v1_parts(stage1: str, variant: str) -> dict:
     """S2–S4 of a set on BWTF basins, from its two stored halves: the overflow model (stored as its
-    "stage 1") and its stage 2 variant (v2 = Outfall split and Linger table 2; v1 = No split and Linger table 1)."""
-    v2 = variant == "v2"
-    return {"s2": stage1, "s3": "split_v2" if v2 else "basin_v1", "s4": "impact_v2" if v2 else "impact_v1"}
+    "stage 1") and its stage 2 id (v2 = Outfall split and Linger table 2; v1 = No split and Linger table 1;
+    v2_d10 = Outfall split and Linger table 2 fit on more samples). An unknown id raises."""
+    if variant not in GEO_V1_STAGE2:
+        raise KeyError(f"no S3 / S4 for stage 2 {variant!r}: add it to shared/lineup.py GEO_V1_STAGE2")
+    s3, s4 = GEO_V1_STAGE2[variant]
+    return {"s2": stage1, "s3": s3, "s4": s4}

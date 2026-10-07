@@ -163,6 +163,7 @@ class S2Set:
     use_archive: dict     # basin name → the trainer's archive-label decision
     record: dict          # basin key → the descriptor's per_basin entry (n_events, season_cv_pre_holdout, …)
     train_record: dict | None = None   # the descriptor's longer label record (train_v4.check_record); None = the served record
+    fold_terms: dict | None = None     # fold → terms, a nested term choice (train_terms.py); None = the finals' design everywhere
 
     @property
     def keys(self) -> tuple:
@@ -262,13 +263,35 @@ def load_set(set_name: str, root: str = "served") -> S2Set:
     use_archive = {b.name: bool(decisions[b.name]) for b in geo.basins}
     record = {k: desc["per_basin"][k] for k in geo.keys}
     train_record = T.check_record(desc["record"]) if desc.get("record") is not None else None
-    return S2Set(set_name, root, family, stage1, geo, tt, models, heads, use_archive, record, train_record)
+    fold_terms = check_fold_terms(set_name, desc, models) if desc.get("fold_terms") is not None else None
+    return S2Set(set_name, root, family, stage1, geo, tt, models, heads, use_archive, record, train_record, fold_terms)
+
+
+def check_fold_terms(set_name: str, desc: dict, models: dict) -> dict:
+    """A nested term choice (train_terms.py): every refit fold names its own terms, picked on that fold's training
+    seasons only, and the finals hold the choice made on all of them. Raises unless every model is a term pipeline
+    (leaderboard.make_terms_model) reading every fold's inputs and every fold is named, never a default."""
+    import leaderboard as L
+    ft = {f: list(ts) for f, ts in desc["fold_terms"].items()}
+    want = {fold for tier, fold, *_ in _plan(("T1-holdout", "T2"))}
+    if set(ft) != want:
+        raise ValueError(f"{set_name}: fold_terms names {sorted(ft)}, the refit folds are {sorted(want)}")
+    for key, m in models.items():
+        steps = getattr(m["model"], "named_steps", {})
+        if "terms" not in steps:
+            raise ValueError(f"{set_name} {key}: fold_terms on a model with no terms step")
+        if steps["terms"].kw_args["terms"] != list(desc["terms"]):
+            raise ValueError(f"{set_name} {key}: the final's terms are not the descriptor's")
+        short = [f for f, ts in ft.items() if not set(L.term_inputs(ts)) <= set(m["features"])]
+        if short:
+            raise ValueError(f"{set_name} {key}: folds {short} read inputs its features lack")
+    return ft
 
 
 def training_frames(s2set: S2Set, sources=None) -> dict:
     """{source: frame}: the raw record the set was trained on (no input rules), through 2025-10-31: the served
-    record, or the set's longer label record. ``sources`` default: the set's own."""
-    return T.build_dataset(sources=list(sources or s2set.sources), record=s2set.train_record)[0]
+    record, or the set's longer label record, with the south wind (a set may read it). ``sources`` default: the set's own."""
+    return T.build_dataset(sources=list(sources or s2set.sources), record=s2set.train_record, wind=True)[0]
 
 
 def extra_seasons(s2set: S2Set) -> tuple:
@@ -416,7 +439,10 @@ def fit_fold(s2set: S2Set, train: dict, tier: str, fold: str, start, end, season
             if len(ev) < HEAD_MIN_EVENTS:
                 raise ValueError(f"{s2set.name} {tier} {fold} {key}: {len(ev)} known-volume events, under the head's "
                                  f"{HEAD_MIN_EVENTS}-event floor (no declared fallback here; Part B 7)")
-            weights[key] = {**m, "model": clone(m["model"]).fit(rows[m["features"]], rows["y"])}
+            est = clone(m["model"])
+            if s2set.fold_terms is not None:                        # a nested choice: the fold's own terms
+                est.set_params(terms__kw_args={"terms": list(s2set.fold_terms[fold])})
+            weights[key] = {**m, "model": est.fit(rows[m["features"]], rows["y"])}
             yv = np.log1p(ev[f"{name}_volume_mg"])
             hm = clone(h["model"]).fit(ev[h["features"]], yv)
             heads[key] = {**h, "model": hm, "n_events": len(ev),
@@ -424,6 +450,8 @@ def fit_fold(s2set: S2Set, train: dict, tier: str, fold: str, start, end, season
         seen[key] = pd.DatetimeIndex(rows["date"]).union(pd.DatetimeIndex(ev["date"]))
         info[key] = {"rows": int(len(rows)), "positives": int(rows["y"].sum()), "head_events": int(len(ev)),
                      "span": _span(seen[key]), "seasons": sorted(int(s) for s in set(rows["season"]) | set(ev["season"]))}
+        if s2set.fold_terms is not None:
+            info[key]["terms"] = list(s2set.fold_terms[fold]) if keep is not None else list(m["model"].named_steps["terms"].kw_args["terms"])
     return Fold(tier, fold, pd.Timestamp(start), pd.Timestamp(end), season, weights, heads, seen, info)
 
 

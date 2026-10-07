@@ -210,9 +210,9 @@ as one window (vs_served's OUT_WINDOW, on the unit-days both sets scored in eith
 once T0 holds days, T1 alone while it is empty, and says which (``t0_words``). A stage
 candidate's S2 T2 is labelled 'development (nested)' (``t2_label``): the A5 procedure's outer-fold rows. scores["promotion"]
 states each §9 criterion as met | not met | not yet computable, with the reason.
-It decides nothing: replacing the served set is the owner's action. A stage candidate tagged ``post_seen``
-(protocol §2: designed after its post-training scores were seen; stages_candidates.tag) has the tag on its
-post-training scores: windows["T1"], every pill's post-training words, the caption, and a caveat on each
+It decides nothing: replacing the served set is the owner's action. A set tagged ``post_seen`` (protocol §2:
+designed after post-training scores were seen; a stage candidate by stages_candidates.tag, a GEO_V1 candidate by
+candidates.tag_candidate) has the tag on its post-training scores: windows["T1"], every pill's post-training words, the caption, and a caveat on each
 primary decided on post-training days.
 
 **Artifacts (``write``):** data/models/stages/<set>/manifest.json, scores.json,
@@ -273,6 +273,7 @@ import truth as T  # noqa: E402
 import verify as V  # noqa: E402
 from shared import clock  # noqa: E402
 from shared import geography as G  # noqa: E402
+from shared import lineup as LU  # noqa: E402  (a GEO_V1 set's S3 / S4 components from its stage 2 id)
 from shared import risk_levels as RL  # noqa: E402
 from shared.stations import STATIONS  # noqa: E402
 from shared.zones import ZONES  # noqa: E402
@@ -339,6 +340,13 @@ class SetBundle:
     def is_served(self) -> bool:
         return self.root == "served"
 
+    @property
+    def post_seen(self) -> str | None:
+        """Protocol §2's tag, or None: a stage candidate's, or a GEO_V1 candidate manifest's (candidates.tag_candidate)."""
+        if self.stage is not None:
+            return self.stage.post_seen
+        return None if self.is_served else (self.descriptor.get("tags") or {}).get("post_seen")
+
 
 def served_name() -> str:
     """The served set's name, from served.json (never typed)."""
@@ -387,13 +395,13 @@ def load_set(set_name: str, root: str = "served", stage_set=None) -> SetBundle:
         stage2 = CAND.load_stage2(name)
         want = (desc.get("stage2") or {}).get("variant", "v1")
         specs = C.geo_v1_adapter_specs(stage2=stage2, impact_table=None if (stage2 or {}).get("impact_table") else raw_table)
-    variant = (stage2 or {}).get("variant", "v1")
+    variant = CAND.stage2_variant_id(stage2)                   # v2_d10: v2, its linger table fit on the D10 samples
     if variant != want:
         raise ValueError(f"{name}: the descriptor says stage 2 {want!r}, the set's stage2.json is {variant!r}")
-    if variant not in ("v1", "v2"):
+    if variant not in GEO_V1_VARIANTS:
         raise ValueError(f"{name}: stage 2 {variant!r} has no GEO_V1 adapter")
-    if variant == "v2" and not stage2.get("impact_table"):
-        raise ValueError(f"{name}: a stage 2 v2 spec without its refit impact table")
+    if variant != "v1" and not stage2.get("impact_table"):
+        raise ValueError(f"{name}: a stage 2 {variant} spec without its refit impact table")
     chosen = SV._served_chosen()
     missing = [b.name for b in geo.basins if b.name not in chosen]
     if missing:
@@ -401,13 +409,15 @@ def load_set(set_name: str, root: str = "served", stage_set=None) -> SetBundle:
     return SetBundle(name, root, s2set, stage2, variant, specs, chosen, desc)
 
 
+GEO_V1_VARIANTS = ("v1", "v2", "v2_d10")          # the stage 2 ids a GEO_V1 set may record (candidates.stage2_variant_id)
+
+
 def components(bundle: SetBundle) -> dict:
     """Design §2.7: the components behind each stage, by name (a stage candidate's from its manifest)."""
     if bundle.stage is not None:
         return {c: bundle.stage.manifest["components"][c] for c in COMPONENTS}
-    return {"s1": E.served_weather_model(), "s2": bundle.s2.stage1,
-            "s3": "split_v2" if bundle.variant == "v2" else "basin_v1",
-            "s4": "impact_v2" if bundle.variant == "v2" else "impact_v1", "s5": S5.LR.VERSION}
+    return {"s1": E.served_weather_model(), "s2": bundle.s2.stage1, **LU.geo_v1_parts(bundle.s2.stage1, bundle.variant),
+            "s5": S5.LR.VERSION}
 
 
 # ── stage candidates (P8; Part B 13; design §7) ─────────────────────────────
@@ -948,9 +958,11 @@ def fit_s3_s4(frames: dict, chosen: dict, heads: dict, samples: pd.DataFrame, ev
     {'raw': the impact table on every discharge day (impact_table.json's recipe), 'stage2': stage 2 v2's
     shares with the impact table refit on the days each GEO_V1 link's own outfalls discharged (stage2.json's
     recipe; None for v1), 'table': the table S4 composes}. Exactly stage2_variants.fit's calls, without its file writes and with no clock
-    stamp (fit_outfall_split's fitted_at is dropped). ``heads`` are keyed by basin name."""
-    if variant not in ("v1", "v2"):
-        raise ValueError(f"stage 2 {variant!r}: v1 | v2")
+    stamp (fit_outfall_split's fitted_at is dropped). ``heads`` are keyed by basin name. v2_d10 is v2 with
+    ``samples`` the D10 set (the caller passes stage2_variants.impact_samples'), its spec stamped as stage2_variants
+    stamps it."""
+    if variant not in GEO_V1_VARIANTS:
+        raise ValueError(f"stage 2 {variant!r}: {' | '.join(GEO_V1_VARIANTS)}")
     raw, _ = T4.fit_impact_table(frames, chosen, heads, samples)
     if variant == "v1":
         return {"raw": raw, "stage2": None, "table": raw}
@@ -958,6 +970,8 @@ def fit_s3_s4(frames: dict, chosen: dict, heads: dict, samples: pd.DataFrame, ev
     table, _ = T4.fit_impact_table(frames, chosen, heads, samples, event_days=STG2.group_event_days(frames, chosen, events))
     spec.pop("fitted_at", None)
     spec["impact_table"] = table
+    if variant in SV.SAMPLE_VARIANTS:
+        spec["impact_samples"] = SV.SAMPLE_VARIANTS[variant]
     return {"raw": raw, "stage2": spec, "table": table}
 
 
@@ -2146,6 +2160,7 @@ def input_files(bundle: SetBundle, model: str) -> list:
              FORECAST / "data" / "poobot" / "feed_status.csv", T4.SERVE_DIR / "served.json", T4.SERVE_DIR / "eval_report.json",
              T4.SERVE_DIR / "impact_table.json"]
     files += [SMP.SOURCE_FILES[n] for n in SMP.PRECEDENCE]          # S4's truth reads all three (design D10)
+    files += [T4.HOURLY_WIND_CSV, E.OMP.wind_path(model)]           # every entry's south wind (rain_features.WIND_FEATURES)
     if bundle.stage is not None:
         files += list(bundle.stage.files)
     else:
@@ -2209,7 +2224,7 @@ def build(set_name: str = "served", root: str = "served", entries=ENTRIES, tiers
     t0 = time.time()
     need = sorted(set(s2set.sources) | set(bundle.chosen.values()) | {"avg"})
     if st is None:
-        train, _ = T4.build_dataset(sources=need)        # the served record: S3 / S4 fold fits read it for every set
+        train, _ = T4.build_dataset(sources=need, wind=True)   # the served record: S3 / S4 fold fits read it for every set
         s2_train = train if s2set.train_record is None else S2.training_frames(s2set, need)   # a longer record: S2 only
         fitted = S2.fit(bundle.name, root, tiers, train_frames=s2_train)
         plan = {(p[0], p[1]): p for p in S2._plan(tiers)}
@@ -2237,7 +2252,8 @@ def build(set_name: str = "served", root: str = "served", entries=ENTRIES, tiers
              "fidelity": bakeoff_fidelity(st, pred) if st is not None else None}
     # 3 · S3 / S4 specs per fold
     t0 = time.time()
-    events, samples = (T4.load_events(), T4.load_samples()) if st is None else (None, None)
+    events, samples = ((T4.load_events(), SV.impact_samples(SV.SAMPLE_VARIANTS.get(bundle.variant))) if st is None
+                       else (None, None))           # v2_d10's linger table refits on the D10 samples in every fold
     specs, spec_info = {}, {}
     for f in folds:
         key = (f.tier, f.fold)
@@ -2463,9 +2479,9 @@ def make_scores(bundle: SetBundle, rows: dict, rung: pd.DataFrame, ctx: X.Contex
         out["windows"]["T1-holdout"]["volume_heads"] = "its holdout siblings' heads, fit on days before 2023-07-01"
         out["windows"]["T1"]["weights"] = "the candidate's finals, fit through 2025-10-31"
         out["windows"]["T1"]["volume_heads"] = "its finals' heads, fit through 2025-10-31"
-        if bundle.stage.post_seen:                     # protocol §2: designed after these days' scores were seen
-            out["windows"]["T1"]["tag"] = "post_seen"
-            out["windows"]["T1"]["post_seen"] = bundle.stage.post_seen
+    if bundle.post_seen:                               # protocol §2: designed after these days' scores were seen
+        out["windows"]["T1"]["tag"] = "post_seen"
+        out["windows"]["T1"]["post_seen"] = bundle.post_seen
     pools = {st: _pool(st, ctx, geo, "rain") for st in ("s2", "s3", "s4", "out")}
     no_id = dataclasses.replace(ctx, frames={**ctx.frames, "zone": ctx.frames["zone"].assign(identity=False)})
     pools["s3_oracle"] = _pool("s3", no_id, geo, "oracle")
@@ -2536,7 +2552,7 @@ def make_scores(bundle: SetBundle, rows: dict, rung: pd.DataFrame, ctx: X.Contex
             "folds_off": [f"{t} {fo}" for (t, fo), s in sorted(sz.items()) if s["match"] is False],
             "folds_unstated": [f"{t} {fo}" for (t, fo), s in sorted(sz.items()) if s["match"] is None]}
     out["dropped"] = dropped
-    seen = bool(bundle.stage is not None and bundle.stage.post_seen)
+    seen = bool(bundle.post_seen)
     out["figures"] = {w: figure(out, w, s1, geo, s1_post, nested=nested, post_seen=seen, blocks=blocks) for w in S2.TIERS}
     out["figure_window"] = figure_windows(out)
     out["figure_post_window"] = POST_WINDOW
@@ -3211,8 +3227,8 @@ def primaries(bundle: SetBundle, sc: dict, rows: dict, art: dict, ctx: X.Context
                          ((((vs.get("out") or {}).get("pooled") or {}).get("rain") or {}).get(win)) if not skipped else None,
                          parts=oparts, t0=t0_state, **size_kw))
     out_rows = settle_unchanged(out_rows, components(bundle))
-    if cand is not None and cand.post_seen:
-        out_rows = [post_seen_caveat(r, cand.post_seen) for r in out_rows]
+    if bundle.post_seen:
+        out_rows = [post_seen_caveat(r, bundle.post_seen) for r in out_rows]
     return V.clean({"protocol": X.protocol_stamp(), "candidate": bundle.name, "served": served_name(),
                     "geography": {"candidate": bundle.geo.version, "served": served_geo},
                     "components": {"candidate": components(bundle), "served": comps}, "changed": changed,

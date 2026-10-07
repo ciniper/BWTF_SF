@@ -19,6 +19,13 @@ Daily features (`add_daily_features`), from one daily-total series:
 Hourly intensity (`hourly_intensity`), from an hourly series:
     rain_max1h / rain_max3h / rain_max6h — each calendar day's peak 1/3/6-hour
     total; the rolling windows run across midnight before the daily max.
+
+Wind (`wind_rain_features`), from an hourly series of rain and 10 m wind:
+    wind_v_rain               the day's rain-weighted south → north wind, m/s
+                              (positive: from the south; 0 on a day under
+                              WIND_WET_DAY_IN of rain, which has no rain to
+                              weigh the wind by). Read only by a model whose
+                              `features` name it; the 19 above are unchanged.
 """
 from __future__ import annotations
 
@@ -33,6 +40,8 @@ DAILY_FEATURES = [
 ]
 INTENSITY_FEATURES = ["rain_max1h", "rain_max3h", "rain_max6h"]
 ALL_FEATURES = DAILY_FEATURES + INTENSITY_FEATURES
+WIND_FEATURES = ["wind_v_rain"]     # extra inputs: a model reads them only when its `features` list does
+WIND_WET_DAY_IN = 0.005
 
 _HALF_LIFE_DAYS = 3
 _AM_WINDOW = 14
@@ -135,3 +144,28 @@ def hourly_intensity(hourly: pd.DataFrame, ts_col: str = "timestamp", col: str =
     return h.groupby("date").agg(
         rain_max1h=(col, "max"), rain_max3h=("roll3h", "max"), rain_max6h=("roll6h", "max"),
     ).reset_index()
+
+
+def wind_uv(speed, direction) -> tuple:
+    """(u, v): the west → east and south → north parts of a wind of ``speed`` blowing FROM ``direction``
+    degrees (meteorological: 270 is a west wind, so u > 0; 180 is a south wind, so v > 0)."""
+    th = np.radians(np.asarray(direction, dtype=float))
+    spd = np.asarray(speed, dtype=float)
+    return -spd * np.sin(th), -spd * np.cos(th)
+
+
+def wind_rain_features(hourly: pd.DataFrame, ts_col: str = "timestamp", col: str = "precip_inches",
+                       speed_col: str = "wind_speed_ms", dir_col: str = "wind_dir_deg") -> pd.DataFrame:
+    """Per calendar day: wind_v_rain = Σ rain·v / Σ rain over the day's hours (v from ``wind_uv``, m/s), 0 on a
+    day with under WIND_WET_DAY_IN of rain. Returns [date, wind_v_rain] with `date` at midnight. A missing rain
+    hour weighs nothing (hourly_intensity reads it as 0); on a wet day, a missing wind hour that rained makes the
+    day NaN, never a calm hour."""
+    h = hourly[[ts_col, col, speed_col, dir_col]].copy().sort_values(ts_col).reset_index(drop=True)
+    r = h[col].astype(float).fillna(0.0).to_numpy()
+    _u, v = wind_uv(h[speed_col], h[dir_col])
+    rv = np.where(r > 0, r * v, 0.0)                        # NaN only where it rained and the wind is missing
+    d = pd.DataFrame({"date": pd.to_datetime(h[ts_col]).dt.normalize(), "r": r, "rv": np.nan_to_num(rv), "gap": np.isnan(rv)})
+    g = d.groupby("date").agg(tot=("r", "sum"), rv=("rv", "sum"), gap=("gap", "any"))
+    wet = g["tot"] >= WIND_WET_DAY_IN
+    out = np.where(wet, np.where(g["gap"], np.nan, g["rv"] / g["tot"].where(wet, 1.0)), 0.0)
+    return pd.DataFrame({"date": g.index, "wind_v_rain": out}).reset_index(drop=True)

@@ -115,6 +115,12 @@ def load_stage2(name: str) -> dict | None:
     return json.loads(p.read_text()) if p.exists() else None
 
 
+def _reads_wind(finals: dict) -> bool:
+    """Whether a set's models read the south wind (rain_features.WIND_FEATURES): its frames must carry it."""
+    from rain_features import WIND_FEATURES
+    return any(set(f["features"]) & set(WIND_FEATURES) for f in finals.values())
+
+
 def build_candidate_scorecard(finals: dict, holdout_models: dict, chosen: dict, features: list,
                               stage2: dict | None = None) -> dict:
     """The trainer's scorecard for a candidate: its stage-1 models and either
@@ -131,7 +137,7 @@ def build_candidate_scorecard(finals: dict, holdout_models: dict, chosen: dict, 
     end = min(T._inputs_reach().values())
     heads, impact_raw = T.stage2_from_served()
     sources = sorted(set(chosen.values()) | set(T.RAIN_SOURCES) | {h.get("rain_source", "avg") for h in heads.values()})
-    frames, notes = T.build_dataset(end=end, sources=sources)
+    frames, notes = T.build_dataset(end=end, sources=sources, wind=_reads_wind(finals))
     sc = T.build_scorecard(frames, chosen, finals, holdout_models, heads, impact_raw, T.load_samples(),
                            T.archive_tables(), notes["archive_used"], features, stage2=stage2)
     trained_through = str(T.TRAIN_END.date())
@@ -174,7 +180,7 @@ def rescore_post(name: str, input_rules: list | None = None) -> dict:
     heads, impact_raw = T.stage2_from_served()
     end = min(T._inputs_reach().values())
     sources = sorted(set(chosen.values()) | set(T.RAIN_SOURCES) | {h.get("rain_source", "avg") for h in heads.values()})
-    frames, notes = T.build_dataset(end=end, sources=sources, input_rules=rules)
+    frames, notes = T.build_dataset(end=end, sources=sources, input_rules=rules, wind=_reads_wind(finals))
     fresh = T.build_scorecard(frames, chosen, finals, {}, heads, impact_raw, T.load_samples(),
                               T.archive_tables(), notes["archive_used"], finals["citywide"]["features"], stage2=stage2)
     old = {d["date"]: d for d in sc["days"]}
@@ -207,6 +213,38 @@ def rescore_post(name: str, input_rules: list | None = None) -> dict:
     mp.write_text(json.dumps(man, indent=1, default=str))
     print(f"{name}: {len(new_days)} post-training days re-scored with input rules {rules}; {moved} zone-days moved by ≥ 0.05")
     return sc
+
+
+TAGS = ("post_seen",)               # protocol §2, as stages_candidates.TAGS
+
+
+def tag_candidate(name: str, key: str, why: str) -> None:
+    """Tag candidate ``name`` (manifest ``tags``): ``post_seen`` for a set designed after post-training scores were
+    seen, ``why`` saying which; the stages build carries it to its post-training scores and primaries."""
+    if key not in TAGS:
+        raise KeyError(f"unknown tag {key!r}; known {TAGS}")
+    if not isinstance(why, str) or not why.strip():
+        raise ValueError(f"the {key} tag says why")
+    p = candidate_dir(name) / "manifest.json"
+    man = json.loads(p.read_text())
+    man["tags"] = {**(man.get("tags") or {}), key: why.strip()}
+    p.write_text(json.dumps(man, indent=1, default=str))
+
+
+IMPACT_SAMPLES = {"d10": "_d10"}     # a stage 2 spec's impact_samples → the suffix of the id its set records
+
+
+def stage2_variant_id(spec: dict | None) -> str:
+    """The stage 2 id a set records (manifest stage2.variant): the spec's variant ('v1' without a spec), with
+    '_d10' when its linger table was fit on the stages' S4 truth samples (spec impact_samples 'd10',
+    stage2_variants.fit). The spec's own variant stays 'v2': it composes and serves exactly as v2 does."""
+    v = (spec or {}).get("variant", "v1")
+    s = (spec or {}).get("impact_samples")
+    if s is None:
+        return v
+    if s not in IMPACT_SAMPLES or v != "v2":
+        raise ValueError(f"stage 2 {v!r} with impact samples {s!r}: only v2's linger table has another sample set ({sorted(IMPACT_SAMPLES)})")
+    return v + IMPACT_SAMPLES[s]
 
 
 def save_candidate(name: str, family: str, finals: dict, holdout_models: dict, chosen: dict, features: list,
@@ -244,7 +282,7 @@ def save_candidate(name: str, family: str, finals: dict, holdout_models: dict, c
                 "trained_through": sc["trained_through"], "span": sc["span"], "holdout_start": sc["holdout_start"],
                 "rain_sources": {BASIN_KEYS.get(b, b): s for b, s in chosen.items()}, "per_basin": per_basin,
                 "stage1": {"name": stage1_name or name, "from": stage1_from, "family": family},
-                "stage2": {"variant": (stage2 or {}).get("variant", "v1"), "kind": (stage2 or {}).get("kind", "basin composition"), "impact_table_refit": bool(stage2 and stage2.get("impact_table")),
+                "stage2": {"variant": stage2_variant_id(stage2), "kind": (stage2 or {}).get("kind", "basin composition"), "impact_table_refit": bool(stage2 and stage2.get("impact_table")),
                            "fitted_at": (stage2 or {}).get("fitted_at")},
                 "zone_confusion_holdout": sc["zone_confusion_holdout"], **(extra or {})}
     (d / "manifest.json").write_text(json.dumps(manifest, indent=1, default=str))

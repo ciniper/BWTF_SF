@@ -71,6 +71,12 @@ def _scorecard(path: Path) -> dict:
         return json.load(f)
 
 
+# What the stage build refits a set from, beyond its pickles: a longer label record (train_older_reports.py), a
+# nested term choice and its final terms (train_terms.py). They travel with the set both ways, so the build keeps
+# refitting it as it was fit, served or retired.
+DESIGN_FIELDS = ("record", "fold_terms", "terms")
+
+
 def retire_served(now: str, dry_run: bool) -> str:
     """Copy the served set into candidates/<its name>/ with a manifest. Returns its name."""
     served = C.served_info()
@@ -102,6 +108,7 @@ def retire_served(now: str, dry_run: bool) -> str:
                    "impact_table_refit": bool(s2 and s2.get("impact_table")), "fitted_at": (s2 or {}).get("fitted_at")},
         "zone_confusion_holdout": sc.get("zone_confusion_holdout"), "input_rules_post": sc.get("input_rules_post") or [],
         "stage1_source": "retired-served",
+        **{k: served[k] for k in DESIGN_FIELDS if served.get(k) is not None},
     }
     print(f"retire {name}: {len(models)} pickles, scorecard ({len(sc['days'])} days), stage2 {served['stage2']} → candidates/{name}/")
     if not dry_run:
@@ -134,15 +141,16 @@ def promote(candidate: str, line: float, dry_run: bool = False) -> dict:
     retired = retire_served(now, dry_run)
 
     served = {
-        "name": candidate, "stage1": (man.get("stage1") or {}).get("name", candidate), "stage2": (s2 or {}).get("variant", "v1"),
+        "name": candidate, "stage1": (man.get("stage1") or {}).get("name", candidate), "stage2": C.stage2_variant_id(s2),
         "artifact": models["westside"].get("version", candidate), "family": man.get("family") or models["westside"].get("family", "gb"),
         "line": float(line), "promoted_at": now, "from_candidate": candidate, "replaced": retired,
         "created_at": man.get("created_at"), "trained_through": man.get("trained_through"), "holdout_start": man.get("holdout_start"),
         "rain_sources": man.get("rain_sources"), "per_basin": man.get("per_basin"), "input_rules_post": man.get("input_rules_post"),
         "stage2_kind": (s2 or {}).get("kind", "basin composition"), "note": man.get("note", ""),
     }
-    if man.get("record") is not None:      # a longer label record (train_older_reports.py): the stage build refits on it
-        served["record"] = man["record"]
+    for k in DESIGN_FIELDS:                # the stage build refits the served set from these (DESIGN_FIELDS)
+        if man.get(k) is not None:
+            served[k] = man[k]
     served["corrections"] = C.served_info().get("corrections", "live_v2")   # the correction rule is promoted on its own
     print(f"promote {candidate}: stage 1 {served['stage1']} ({served['family']}), stage 2 {served['stage2']}, line {line:.2f}; replaces {retired}")
     if not dry_run:

@@ -10,8 +10,11 @@ before X-S1-NOLEAD in first-match order).
 A stage is scored on its true input (oracle) and on what the stage before it
 really produced (chained). S2 reads 19 numbers a day: 16 daily rain features
 (rain_features.DAILY_FEATURES) and the day's peak 1/3/6-hour rain
-(INTENSITY_FEATURES). Each entry is one way of filling them for day D, with
-I = D − L the issue day of lead L:
+(INTENSITY_FEATURES), and a set may read the south wind on the rainy hours
+too (rain_features.WIND_FEATURES, after the 19: ERA5's wind on ERA5's rain for
+rain known; lead L's archived wind on lead L's own hours of D, as served
+included, for a lead entry). Each entry is one way of filling them for day D,
+with I = D − L the issue day of lead L:
 
   entry       days before I                    days I … D                      D's peak hours
   oracle,     the gauges, every day (no        —                               ERA5, as training
@@ -159,6 +162,8 @@ ENTRIES = X.ENTRIES                                    # oracle, rain, L0 … L5
 MODELS = tuple(OMP.MODELS)                             # icon_seamless, ecmwf_ifs025, gfs_seamless
 LEADS = OMP.LEADS                                      # 0 (short lead, optimistic), 1 … 5
 FEATURES = list(RF.DAILY_FEATURES) + list(RF.INTENSITY_FEATURES)   # the 19, build_dataset's order
+WIND = list(RF.WIND_FEATURES)                          # after the 19: read only by a set whose features name them
+COLUMNS = FEATURES + WIND                              # every entry frame's inputs
 HISTORY_FEATURES = ("rain_14d_cum", "rain_30d_cum", "antecedent_moisture", "dry_spell_days")
 INT_FEATURES = ("wet_prior_3d", "dry_spell_days")      # int64 in the training frames
 SERVED_PAST_DAYS = X.AS_SERVED_DAYS                    # 7: METEO_PARAMS past_days (a test reads live_dashboard)
@@ -239,9 +244,12 @@ def _sources(sources) -> list:
 @functools.lru_cache(maxsize=1)
 def data_end() -> pd.Timestamp:
     """The last day the rain frames cover: ERA5's last complete day and the last day both gauges filed
-    (train_v4._inputs_reach, the reach --rescore scores through). 2026-08-17 at the freeze."""
+    (train_v4._inputs_reach, the reach --rescore scores through), and no later than ERA5's wind. 2026-08-17 at
+    the freeze."""
     reach = T4._inputs_reach()
-    return min(reach["hourly_rain"], reach["daily_rain"])
+    wind = pd.read_csv(T4.HOURLY_WIND_CSV, usecols=["timestamp"], parse_dates=["timestamp"])["timestamp"].max()
+    wind_end = wind.normalize() if wind.hour == 23 else wind.normalize() - _DAY
+    return min(reach["hourly_rain"], reach["daily_rain"], wind_end)
 
 
 def _span(start, end) -> pd.DatetimeIndex:
@@ -448,6 +456,21 @@ def _era5_peaks() -> pd.DataFrame:
     return T4.build_hourly_features()
 
 
+@functools.lru_cache(maxsize=1)
+def _era5_wind() -> pd.DataFrame:
+    return T4.wind_features()
+
+
+@functools.lru_cache(maxsize=None)
+def _wind(model: str, lead: int) -> pd.Series:
+    """date → wind_v_rain at (model, lead): the lead's own archived hours of rain weighing its archived wind
+    (rain_features.wind_rain_features), on the archive's fixed UTC−7 day. The forecast issued on I says how the
+    wind will blow while it rains on D; NaN where a rainy hour has no archived wind (a row needing it raises)."""
+    rain = OMP.load_hourly(model, int(lead))[["timestamp", "precip_inches"]]
+    h = rain.merge(OMP.load_wind(model, int(lead)), on="timestamp", how="left")
+    return RF.wind_rain_features(h).set_index("date")["wind_v_rain"]
+
+
 # ── the gauges as each issue day knew them ──────────────────────────────────
 
 @functools.lru_cache(maxsize=None)
@@ -600,7 +623,7 @@ def _lead_values(model: str, source: str, rules: tuple, lead: int, served: bool,
 # ── frames ──────────────────────────────────────────────────────────────────
 
 def _check(f: pd.DataFrame, what: str) -> pd.DataFrame:
-    bad = [c for c in FEATURES if f[c].isna().any()]
+    bad = [c for c in COLUMNS if f[c].isna().any()]
     if bad:
         raise ValueError(f"{what}: NaN in {bad} (a missing value is never a zero)")
     if f["date"].duplicated().any():
@@ -612,9 +635,9 @@ def _rain_frame(source: str, rules: tuple, days: pd.DatetimeIndex) -> pd.DataFra
     """build_dataset's feature columns for ``source`` on ``days``: the same merges, names and order."""
     _gauge(source, rules)                                   # every day was read by a gauge
     f = pd.DataFrame({"date": days}).merge(_training_features(source, rules).reset_index(), on="date", how="left")
-    f = f.merge(_era5_peaks(), on="date", how="left")
+    f = f.merge(_era5_peaks(), on="date", how="left").merge(_era5_wind(), on="date", how="left")
     _check(f, f"rain {source}")                             # inside the span nothing is filled: build_dataset's fillna(0) is a no-op
-    return f[["date"] + FEATURES].reset_index(drop=True)
+    return f[["date"] + COLUMNS].reset_index(drop=True)
 
 
 def _ints(vals: np.ndarray, name: str) -> np.ndarray:
@@ -625,9 +648,10 @@ def _ints(vals: np.ndarray, name: str) -> np.ndarray:
 
 def frames(entry: str, sources, model: str = "icon_seamless", start=None, end=None,
            input_rules=(RF.GAUGE_OUTAGE_RULE["name"],), history: str = "served") -> dict:
-    """{source: DataFrame[date + the 19 features]} for one entry: one row per day of [start, end] the entry
-    holds, the columns, order and dtypes of train_v4.build_dataset's frames (date datetime64[us]; floats;
+    """{source: DataFrame[date + the 19 features + WIND]} for one entry: one row per day of [start, end] the
+    entry holds, the columns, order and dtypes of train_v4.build_dataset's frames (date datetime64[us]; floats;
     wet_prior_3d and dry_spell_days int64), sorted by date on a RangeIndex. Every source holds the same days.
+    wind_v_rain: ERA5's for rain known, the lead's own archived wind on its own rain for a lead entry.
 
     ``model``: the weather model of the lead entries (ignored by oracle / rain). ``input_rules``: the gauge
     rules (default gauge_outage_v1, every day; () = the raw record). ``history``: as-served entries only —
@@ -667,6 +691,7 @@ def frames(entry: str, sources, model: str = "icon_seamless", start=None, end=No
                 f[c] = _ints(vals[:, i], c) if c in INT_FEATURES else vals[:, i]
             for c in RF.INTENSITY_FEATURES:
                 f[c] = pk[c].to_numpy(dtype=float)
+            f["wind_v_rain"] = _wind(model_used, L).reindex(kept).to_numpy(dtype=float)   # as served too: D's hours at lead L
             out[s] = _check(f, f"{entry} {model_used} {s}")
     for s, f in out.items():
         f.attrs = {"entry": entry, "model": model_used, "history": history if served else None, "input_rules": list(rules),

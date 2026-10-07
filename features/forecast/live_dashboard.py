@@ -87,6 +87,8 @@ from src.models.impact import smooth_table as _smooth_table  # noqa: E402
 from src.models.rain_features import INPUT_RULES_LIVE, mask_gauge_outages as _mask_gauge_outages  # noqa: E402
 from src.models.rain_features import add_daily_features as _add_daily_features  # noqa: E402
 from src.models.rain_features import hourly_intensity as _hourly_intensity  # noqa: E402
+from src.models.rain_features import WIND_FEATURES as _WIND_FEATURES  # noqa: E402
+from src.models.rain_features import wind_rain_features as _wind_rain_features  # noqa: E402
 from src.models import scorecard as _sc  # noqa: E402  (one rule for the model-check scorecard, shared with train_v4)
 from src.models import live_rules as _lr  # noqa: E402  (live corrections live_v1: observed CSO flags, samples — LIVE_COMPOSITION_DESIGN.md)
 from src.models import posting_label as _pl  # noqa: E402  (the beach-posting label, BeachWatch-backed)
@@ -297,6 +299,12 @@ class LiveData:
         return {md.get("rain_source", "avg") for md in self.models.values()} | \
                {md.get("rain_source", "avg") for md in self.volume_models.values()} | {"avg"} | set(ACIS_GAUGES)
 
+    @property
+    def reads_wind(self) -> bool:
+        """Whether a loaded model reads the south wind (rain_features.WIND_FEATURES). Only then do the frames and
+        the day features carry it, so a page whose models do not read it computes exactly what it did before."""
+        return any(set(md.get("features") or ()) & set(_WIND_FEATURES) for md in self.models.values())
+
     def _predict_calibrated(self, features_by_source: dict) -> dict:
         """
         Run model prediction with rain-weighted calibration offset.
@@ -497,6 +505,12 @@ class LiveData:
             "peak_3d": row.get("peak_3d", 0) or 0,
             "dry_spell_days": row.get("dry_spell_days", 0) or 0,
         }
+
+    @staticmethod
+    def _wind_from_row(row) -> dict:
+        """The south wind of one daily row (m/s from the south on the rainy hours); a day with no wind reading
+        reads calm. Added to a day's features only when a loaded model reads it (``reads_wind``)."""
+        return {f: float(row[f]) if pd.notna(row.get(f, np.nan)) else 0.0 for f in _WIND_FEATURES}
 
     def refresh(self):
         """Fetch all live data and run predictions"""
@@ -715,6 +729,10 @@ class LiveData:
         base["date"] = pd.to_datetime(base["date"])
         # peak 1h/3h/6h per day — the shared implementation (windows span midnight)
         base = base.merge(_hourly_intensity(rain_df), on="date", how="left")
+        # the south wind on the rainy hours (rain_features.WIND_FEATURES), when a loaded model reads it
+        if self.reads_wind and {"wind_speed_kmh", "wind_dir_deg"} <= set(rain_df.columns):
+            w = rain_df.assign(wind_speed_ms=rain_df["wind_speed_kmh"].astype(float) / 3.6)
+            base = base.merge(_wind_rain_features(w), on="date", how="left")
         base["precip_max_hourly"] = base["rain_max1h"]
         base = base.sort_values("date").reset_index(drop=True)
 
@@ -765,7 +783,9 @@ class LiveData:
     def _score_frames(self, frames: dict) -> tuple:
         """Per-day (features_by_source, probs, volumes, dates) over the daily table."""
         n = len(frames["avg"])
-        feats = [{src: self._features_from_row(frames[src].iloc[i]) for src in frames} for i in range(n)]
+        wind = self.reads_wind
+        feats = [{src: {**self._features_from_row(frames[src].iloc[i]), **(self._wind_from_row(frames[src].iloc[i]) if wind else {})}
+                  for src in frames} for i in range(n)]
         probs = [self._predict_calibrated(f) for f in feats]
         vols = [self._predict_expected_volumes(f) for f in feats]
         dates = [d.date() for d in frames["avg"]["date"]]

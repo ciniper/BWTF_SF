@@ -75,10 +75,7 @@ POST_SEEN = ("designed 2026-10-07 after sfpuc4_shared8_v1 / v2's post-training s
 
 def table_samples(sources=SMP.D10_SOURCES) -> pd.DataFrame:
     """The S4 truth's samples (DataSF, STARDB 2016-10 → 2020-07, Poo Bot), in train_v4.load_samples' columns."""
-    s = SMP.load_samples(tuple(sources))
-    return pd.DataFrame({"station": s["station"].to_numpy(), "sample_date": pd.DatetimeIndex(s["date"]),
-                         "analyte": s["analyte"].to_numpy(), "exceeds_standard": s["exceeds"].astype(bool).to_numpy(),
-                         "source": s["source"].to_numpy(), "value": s["value"].to_numpy()})
+    return SMP.as_training_samples(sources)
 
 
 def fit_rows(inp: S4.Inputs, fold, hist: C.History) -> pd.DataFrame:

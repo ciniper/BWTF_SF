@@ -83,6 +83,55 @@ def test_serving_feature_row_covers_every_model_column():
     assert row["precip_avg"] == 0.4 and row["rain_2d_cum"] == 0.4
 
 
+def test_the_south_wind_means_what_it_says():
+    ts = pd.date_range("2026-01-01", periods=48, freq="h")
+    h = pd.DataFrame({"timestamp": ts, "precip_inches": 0.0, "wind_speed_ms": 4.0, "wind_dir_deg": 180.0})
+    h.loc[2:5, "precip_inches"] = 0.1                          # day 1 wet under a south wind
+    h.loc[30, "precip_inches"] = 0.001                         # day 2 under the wet-day floor: calm by definition
+    h.loc[29, "wind_speed_ms"] = np.nan                        # a missing wind hour on a dry hour weighs nothing
+    out = rf.wind_rain_features(h).set_index("date")["wind_v_rain"]
+    assert abs(out.iloc[0] - 4.0) < 1e-12 and out.iloc[1] == 0.0
+    h.loc[3, "wind_dir_deg"] = 0.0                             # one rainy hour from the north: the weighted mean drops
+    assert abs(rf.wind_rain_features(h)["wind_v_rain"].iloc[0] - 2.0) < 1e-12
+    h.loc[4, "wind_speed_ms"] = np.nan                         # a rainy hour without wind: the day is unknown, not calm
+    assert np.isnan(rf.wind_rain_features(h)["wind_v_rain"].iloc[0])
+
+
+def test_the_page_computes_the_wind_as_training_does():
+    """The page's south wind is rain_features.wind_rain_features on its own hours (km/h → m/s), every day, once a
+    loaded model reads it; until then the frames are exactly what they were."""
+    from datetime import date
+    from features.forecast import live_dashboard as ld
+    rng = np.random.default_rng(0)
+    n = 24 * 5
+    ts = pd.date_range("2026-01-01", periods=n, freq="h")
+    rain = np.where(rng.random(n) < 0.3, rng.random(n) * 0.2, 0.0)
+    spd, dr = rng.random(n) * 12, rng.random(n) * 360
+    hourly = pd.DataFrame({"timestamp": ts, "precip_inches": rain, "wind_speed_kmh": spd * 3.6, "wind_dir_deg": dr})
+    live = ld.LiveData.__new__(ld.LiveData)
+    live.models, live.volume_models = {}, {}
+    plain = live._daily_frames(hourly, today=date(2025, 12, 31))       # every day ahead: no gauge fetch
+    assert not live.reads_wind and all("wind_v_rain" not in f for f in plain.values())   # no model reads it: as before
+    live.models = {"w": {"features": rf.ALL_FEATURES + rf.WIND_FEATURES, "rain_source": "avg"}}
+    frames = live._daily_frames(hourly, today=date(2025, 12, 31))
+    want = rf.wind_rain_features(hourly.assign(wind_speed_ms=spd)).set_index("date")["wind_v_rain"]
+    for src, f in frames.items():
+        got = f.set_index("date")["wind_v_rain"]
+        assert np.allclose(got.to_numpy(), want.reindex(got.index).to_numpy(), rtol=0, atol=1e-12), src
+        assert f.drop(columns="wind_v_rain").equals(plain[src]), src                    # nothing else moves
+    row = {**ld.LiveData._features_from_row(frames["avg"].iloc[0]), **ld.LiveData._wind_from_row(frames["avg"].iloc[0])}
+    assert set(rf.WIND_FEATURES) <= set(row) and abs(row["wind_v_rain"] - want.iloc[0]) < 1e-12
+
+
+def test_every_candidate_reads_columns_the_page_computes():
+    """A candidate's pickles read the 19 inputs and, at most, the wind: the columns the page and the frames hold."""
+    ok = set(rf.ALL_FEATURES) | set(rf.WIND_FEATURES)
+    for pkl in (FORECAST / "data" / "models" / "candidates").glob("*/*_model.pkl"):
+        with open(pkl, "rb") as f:
+            md = pickle.load(f)
+        assert set(md["features"]) <= ok, (pkl.parent.name, pkl.name, sorted(set(md["features"]) - ok))
+
+
 if __name__ == "__main__":
     failures = 0
     for name, fn in sorted(globals().items()):

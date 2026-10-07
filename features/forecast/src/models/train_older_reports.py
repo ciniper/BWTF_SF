@@ -350,6 +350,7 @@ def main(argv=None) -> None:
         print("  older days used:", json.dumps(record_counts(got["rows"])))
         if a.save:
             save(stage1, rec, got)
+            CAND.rescore_post(set_name(stage1))         # post-training days on the served input rules, as every set's
 
 
 if __name__ == "__main__":

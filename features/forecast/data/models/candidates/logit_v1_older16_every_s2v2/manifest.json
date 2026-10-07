@@ -369,5 +369,8 @@
    "drought_discharge_days": 5
   }
  },
- "stage1_source": "fit"
+ "stage1_source": "fit",
+ "input_rules_post": [
+  "gauge_outage_v1"
+ ]
 }

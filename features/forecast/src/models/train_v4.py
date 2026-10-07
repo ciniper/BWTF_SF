@@ -98,6 +98,9 @@ COCORAHS_CSV = RAW_DIR / "historical_rain_cocorahs.csv"   # src/collectors/cocor
 # when build_dataset is given a record starting before TRAIN_START (collectors/historical.py --older).
 OLDER_RAIN_CSV = RAW_DIR / "historical_rain_2011-2015.csv"
 OLDER_HOURLY_CSV = RAW_DIR / "hourly_rain_openmeteo_2011-2015.csv"
+# ERA5's hourly 10 m wind at the hourly rain's point and clock, 2011 on (collectors/historical.py --wind): the south
+# wind on the rainy hours (rain_features.WIND_FEATURES), an extra frame column only a model naming it reads.
+HOURLY_WIND_CSV = RAW_DIR / "openmeteo_wind_hourly.csv"
 
 
 def rain_series(source: str, input_rules: list | None = None, older_rain: bool = False) -> tuple:
@@ -190,6 +193,19 @@ def hourly_features(older_rain: bool = False) -> pd.DataFrame:
     if not len(old) or old["timestamp"].max() + pd.Timedelta(hours=1) != h["timestamp"].min():
         raise ValueError(f"{OLDER_HOURLY_CSV.name} does not end the hour before hourly_rain_openmeteo.csv starts")
     return hourly_intensity(pd.concat([old, h], ignore_index=True))
+
+
+def wind_features(older_rain: bool = False) -> pd.DataFrame:
+    """[date, wind_v_rain]: ERA5's hourly rain weighing ERA5's hourly wind (rain_features.wind_rain_features), the
+    older hours in front for a longer record. A wet day whose rainy hours the wind file does not reach is NaN, never
+    calm: a model that reads the wind raises on it (refetch with historical.py --wind)."""
+    from rain_features import wind_rain_features
+    h = pd.read_csv(RAW_DIR / "hourly_rain_openmeteo.csv", parse_dates=["timestamp"])[["timestamp", "precip_inches"]]
+    if older_rain:
+        old = pd.read_csv(OLDER_HOURLY_CSV, parse_dates=["timestamp"])[["timestamp", "precip_inches"]]
+        h = pd.concat([old[old["timestamp"] < h["timestamp"].min()], h], ignore_index=True)
+    w = pd.read_csv(HOURLY_WIND_CSV, parse_dates=["timestamp"])
+    return wind_rain_features(h.merge(w, on="timestamp", how="left"))
 
 
 # ── Poo Bot archive → labels ────────────────────────────────────────────────
@@ -330,7 +346,7 @@ def apply_older_labels(df: pd.DataFrame, record: dict) -> dict:
 
 
 def build_dataset(end: pd.Timestamp = TRAIN_END, sources: list = None, input_rules: list | None = None,
-                  geo=None, record: dict | None = None) -> tuple:
+                  geo=None, record: dict | None = None, wind: bool = False) -> tuple:
     """Returns ({rain_source: feature+label frame}, notes). Label columns are
     identical across sources; only the rain features differ. `end` is the
     training window's last day (TRAIN_END) or, for --rescore, the last day the
@@ -343,7 +359,9 @@ def build_dataset(end: pd.Timestamp = TRAIN_END, sources: list = None, input_rul
     ``record`` (check_record; opt-in, GEO_V1 only): the older discharge reports as
     labels where CIWQS is silent (apply_older_labels), from the record's start,
     with the older rain in front when it starts before TRAIN_START. None = the
-    served record: nothing reads collectors/csd_pre2018.py."""
+    served record: nothing reads collectors/csd_pre2018.py. ``wind``: add the south wind on the rainy hours
+    (wind_features, rain_features.WIND_FEATURES) after the 19, for a model that reads it; False keeps every frame
+    exactly as the served sets were fit on (tests/test_served_golden.py pins it)."""
     basins = APP_BASINS if geo is None else [b.name for b in geo.basins]
     if record is not None:
         if geo is not None:
@@ -380,11 +398,17 @@ def build_dataset(end: pd.Timestamp = TRAIN_END, sources: list = None, input_rul
     df["season"] = wet_season(df["date"])
 
     hourly = hourly_features(older_rain)
+    wind_df = wind_features(older_rain) if wind else None
     out = {}
     for src in (sources or RAIN_SOURCES):
         f = df.merge(rain_features(src, input_rules, older_rain), on="date", how="left").merge(hourly, on="date", how="left")
         f[INTENSITY_FEATURES] = f[INTENSITY_FEATURES].fillna(0)
         f[get_feature_columns()] = f[get_feature_columns()].fillna(0)
+        if wind_df is not None:
+            # after the 19: a day the hourly rain does not reach has no rainy hour, 0, as its peaks are; a wet day the
+            # wind file does not reach stays NaN
+            f = f.merge(wind_df, on="date", how="left")
+            f["wind_v_rain"] = f["wind_v_rain"].where(f["date"].isin(wind_df["date"]), 0.0)
         out[src] = f.reset_index(drop=True)
         notes[f"rain_{src}"] = rain_series(src, input_rules, older_rain)[1]
     notes["input_rules"] = list(input_rules or [])

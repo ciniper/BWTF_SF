@@ -166,8 +166,9 @@ def fetch_hourly_rain(start_date: str = "2016-01-01", end_date: str = None, out:
     return df
 
 
-# ERA5's hourly 10 m wind at the same point as the hourly rain, for the term lab's wind-direction inputs
-# (src/models/term_lab.py). Not read by any served path.
+# ERA5's hourly 10 m wind at the same point as the hourly rain: the south wind on the rainy hours in the training
+# frames (train_v4.wind_features, rain_features.WIND_FEATURES) and the term lab's wind inputs. Refresh it with the
+# hourly rain: a wet day past its end has no wind, and a model that reads the wind raises there.
 HOURLY_WIND_CSV = RAW_DIR / "openmeteo_wind_hourly.csv"   # openmeteo_*.csv: left out of the app bundle (vercel.json)
 
 
@@ -479,7 +480,7 @@ def collect_and_build(save: bool = True) -> pd.DataFrame:
 if __name__ == "__main__":
     if "--older" in sys.argv[1:]:      # the 2011–2015 rain only (fetch_older_rain); the record's own files untouched
         fetch_older_rain()
-    elif "--wind" in sys.argv[1:]:     # ERA5 hourly wind 2011 → (fetch_hourly_wind), for the term lab
+    elif "--wind" in sys.argv[1:]:     # ERA5 hourly wind 2011 → (fetch_hourly_wind): the training frames' south wind
         fetch_hourly_wind()
     else:
         training_df = collect_and_build()

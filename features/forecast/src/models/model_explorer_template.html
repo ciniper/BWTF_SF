@@ -89,8 +89,8 @@ code{overflow-wrap:anywhere}
 <div id="outageList" class="fine"></div>
 </section>
 
-<section id="inputs"><h2>Inputs: the 19 features, and a what-if editor</h2>
-<p class="lead">Every model sees the same 19 numbers for a day, all derived from daily rain totals and hourly peak intensity. Nothing else — no tide, no season, no location. Edit the last two weeks of gauge rain below and watch the features, the basin probabilities and the zone risks respond; the arithmetic is the deployed models' own.</p>
+<section id="inputs"><h2 id="inputsTitle">Inputs: the 19 features, and a what-if editor</h2>
+<p class="lead" id="inputsLead">Every model sees the same 19 numbers for a day, all derived from daily rain totals and hourly peak intensity. Nothing else — no tide, no season, no location. Edit the last two weeks of gauge rain below and watch the features, the basin probabilities and the zone risks respond; the arithmetic is the deployed models' own.</p>
 <div class="controls">
   <label>Start from a real day <select id="sampleSel"></select></label>
   <button id="resetBtn">Reset to the real rain</button>
@@ -177,7 +177,10 @@ const famOf = m => m.family || 'gb';
 const ANY_LOGIT = MODEL_ORDER.some(k => famOf(D.models[k]) === 'logit');
 const ALL_LOGIT = MODEL_ORDER.every(k => famOf(D.models[k]) === 'logit');
 const BANDS = ALL_LOGIT && MODEL_ORDER.every(k => D.models[k].bands);   // a shared-terms set: the same rain bands in every basin, weights ≥ 0
-const FAMILY_LABEL = BANDS ? 'weights model on the same rain bands in every basin, every weight ≥ 0' : ALL_LOGIT ? 'weights model (logistic regression with hinge terms)' : ANY_LOGIT ? 'mixed: gradient boosting and weights models' : 'gradient boosting';
+const TERMS = ALL_LOGIT && MODEL_ORDER.every(k => D.models[k].terms);   // a named-terms set (train_terms.py): the same terms in every basin
+const N_TERMS = TERMS ? D.models[MODEL_ORDER[0]].terms.length : 0;
+const WIND = D.features.wind || [];                                       // the south wind on the rainy hours, when a model reads it
+const FAMILY_LABEL = TERMS ? `weights model on ${N_TERMS} named terms, the same in every basin` : BANDS ? 'weights model on the same rain bands in every basin, every weight ≥ 0' : ALL_LOGIT ? 'weights model (logistic regression with hinge terms)' : ANY_LOGIT ? 'mixed: gradient boosting and weights models' : 'gradient boosting';
 const nameOf = k => k === 'citywide' ? 'City-wide' : D.basins[k].name;
 const esc = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const pct = p => Math.round(p * 100) + '%';
@@ -188,12 +191,16 @@ const riskColor = p => { const w = Math.round((p || 0) * 100); return (RISK_LEVE
 const fmtDate = s => new Date(s + 'T12:00:00').toLocaleDateString(undefined, {month:'short', day:'numeric', year:'numeric'});
 const fmtMon = s => new Date(s + 'T12:00:00').toLocaleDateString(undefined, {month:'short', year:'numeric'});
 
+if (WIND.length) {
+  document.getElementById('inputsTitle').textContent = 'Inputs: the 19 features and the south wind, and a what-if editor';
+  document.getElementById('inputsLead').textContent = "Every model sees the same 19 rain numbers for a day, from daily rain totals and hourly peak intensity, and this set's models also read the south wind on the rainy hours (wind_v_rain, from the day's hourly wind). Nothing else: no tide, no season, no location. Edit the last two weeks of gauge rain below and watch the features, the basin probabilities and the zone risks respond; the wind stays the day's own. The arithmetic is the models' own.";
+}
 // ─── header (the title is the exporter's: "Inside the overflow model (S2): " + the set's words) ──────────────
-const FAMILY_NOUN = BANDS ? 'weights on rain bands shared by every basin' : ALL_LOGIT ? 'weights' : ANY_LOGIT ? 'trees and weights' : 'trees';
+const FAMILY_NOUN = TERMS ? 'weights on named terms shared by every basin' : BANDS ? 'weights on rain bands shared by every basin' : ALL_LOGIT ? 'weights' : ANY_LOGIT ? 'trees and weights' : 'trees';
 document.getElementById('sub').textContent = MS.served
   ? `The live forecast's overflow model (S2), opened up: where its rain comes from (S1), the 19 numbers it is given, the ${FAMILY_NOUN} it is made of, and how an overflow chance becomes a beach-risk percentage (S3–S4). S2 is ${W.s2}, S3 ${W.s3} and S4 ${W.s4}. Everything on this page is computed from the deployed model files: the page runs the real models in your browser.`
-  : `This set's overflow model (S2), opened up. S2 is ${W.s2} (${FAMILY_LABEL}), S3 ${W.s3} and S4 ${W.s4}. It is not what the live forecast runs: it is kept so the Model check can grade it against the live forecast (${LIVE_W.s2} · ${LIVE_W.s3} · ${LIVE_W.s4}) on identical days and labels. Same rain gauges, same 19 features, same volume heads; the page runs this set's own arithmetic.`;
-const nHinge = ANY_LOGIT && !BANDS ? (Object.values(D.models).find(m => famOf(m) === 'logit').coef.length - D.features.all.length) : 0;
+  : `This set's overflow model (S2), opened up. S2 is ${W.s2} (${FAMILY_LABEL}), S3 ${W.s3} and S4 ${W.s4}. It is not what the live forecast runs: it is kept so the Model check can grade it against the live forecast (${LIVE_W.s2} · ${LIVE_W.s3} · ${LIVE_W.s4}) on identical days and labels. Same rain gauges, ${WIND.length ? 'the same 19 features plus the south wind on the rainy hours' : 'same 19 features'}, same volume heads; the page runs this set's own arithmetic.`;
+const nHinge = ANY_LOGIT && !BANDS && !TERMS ? (Object.values(D.models).find(m => famOf(m) === 'logit').coef.length - D.features.all.length) : 0;
 document.getElementById('meta').innerHTML = [
   'S2 ' + W.s2 + ' (stored as ' + (MS.stage1_name || MS.name) + ')',
   'S3 ' + W.s3 + ' · S4 ' + W.s4 + ' (stored as stage 2 ' + ((MS.stage2 || {}).variant || 'v1') + ')',
@@ -201,7 +208,7 @@ document.getElementById('meta').innerHTML = [
   'training window ' + (D.train_window||[]).join(' → '),
   'holdout from ' + D.holdout_start,
   D.rescored_at ? 'scorecard rescored through ' + D.span[1] : '',
-  BANDS ? D.models[MODEL_ORDER[0]].coef.length + ' rain bands, the same in every basin · L2 logistic, every weight ≥ 0, C per basin' : ANY_LOGIT ? D.features.all.length + ' features + ' + nHinge + ' hinge terms · L2 logistic, C per basin' : D.features.all.length + ' features · ' + D.model_params.n_estimators + ' trees × depth ' + D.model_params.max_depth + ' per model',
+  TERMS ? N_TERMS + ' named terms, the same in every basin' + (WIND.length ? ', the south wind among them' : '') + ' · L2 logistic, C per basin' : BANDS ? D.models[MODEL_ORDER[0]].coef.length + ' rain bands, the same in every basin · L2 logistic, every weight ≥ 0, C per basin' : ANY_LOGIT ? D.features.all.length + ' features + ' + nHinge + ' hinge terms · L2 logistic, C per basin' : D.features.all.length + ' features · ' + D.model_params.n_estimators + ' trees × depth ' + D.model_params.max_depth + ' per model',
   'stored as ' + MS.name,
 ].filter(Boolean).map(t => '<span>' + esc(t) + '</span>').join('');
 document.getElementById('genAt').textContent = D.generated_at;
@@ -220,8 +227,8 @@ if (MS.note) document.getElementById('setNote').textContent = ' Stored note: ' +
     {id:'e', x:10,  y:164, w:150, h:56, t:['ICON (Open-Meteo)','forecast, today + 5 days'], href:'#rain'},
     {id:'h', x:10,  y:236, w:150, h:56, t:['Open-Meteo hourly','peak intensity'], href:'#rain'},
     {id:'s', x:210, y:92,  w:170, h:90, t:['Daily rain per source','avg · Downtown · Oceanside'], href:'#rain'},
-    {id:'f', x:430, y:92,  w:150, h:90, t:['19 features','totals, lags, moisture,','peaks, dry spell'], href:'#inputs'},
-    {id:'m', x:630, y:40,  w:190, h:80, t:['4 basin models','P(discharge today)', BANDS ? 'weights on shared bands' : ALL_LOGIT ? 'weights + hinge terms' : ANY_LOGIT ? 'trees / weights' : 'gradient boosting'], href:'#s2'},
+    {id:'f', x:430, y:92,  w:150, h:90, t:WIND.length ? ['19 features + wind','totals, lags, peaks,','south wind on the rain'] : ['19 features','totals, lags, moisture,','peaks, dry spell'], href:'#inputs'},
+    {id:'m', x:630, y:40,  w:190, h:80, t:['4 basin models','P(discharge today)', TERMS ? 'weights on named terms' : BANDS ? 'weights on shared bands' : ALL_LOGIT ? 'weights + hinge terms' : ANY_LOGIT ? 'trees / weights' : 'gradient boosting'], href:'#s2'},
     {id:'v', x:630, y:150, w:190, h:64, t:['Volume heads','expected MG'], href:'#volume'},
     {id:'i', x:870, y:40,  w:190, h:80, t:['S4 · lingering table','decay by days since,','small / large'], href:'#s3s4'},
     {id:'c', x:870, y:150, w:190, h:64, t:[split ? 'S3 split × last 8 days' : 'Compose last 8 days', split ? 'group risk' : 'group risk (S3: no split)'], href:'#s3s4'},
@@ -328,10 +335,14 @@ const vec = f => FEATS.map(k => f[k]);
 // each band, clip(x_f − lo, 0, hi − lo) (port of leaderboard.add_bands).
 function hingeVec(m, x) { if (m.bands) return m.bands.map(b => { const v = Math.max(0, x[FEATS.indexOf(b.f)] - b.lo); return b.hi == null ? v : Math.min(v, b.hi - b.lo); });
   const out = x.slice(); for (const [f, ks] of Object.entries(m.hinges)) { const v = x[FEATS.indexOf(f)]; for (const k of ks) out.push(Math.max(0, v - k)); } return out; }
-function logitTerms(m, x) { const h = hingeVec(m, x); return h.map((v, i) => { const z = (v - m.means[i]) / (m.scales[i] || 1); return {name: m.names[i], value: v, mean: m.means[i], sd: m.scales[i], z, w: m.coef[i], contrib: m.coef[i] * z}; }); }
-function logitRaw(m, x) { let s = m.intercept; for (const t of logitTerms(m, x)) s += t.contrib; return s; }
-const rawScore = (m, x) => famOf(m) === 'logit' ? logitRaw(m, x) : gbRaw(m, x);
-function predictP(m, f) { const raw = sigmoid(rawScore(m, vec(f))); const rf = Math.min(1, Math.max(0, 1 - f.rain_3d_cum * 2)); return Math.min(1, Math.max(0, raw - m.calibration_offset * rf)); }
+// A named-terms model (m.terms) reads its columns by name from the day's features: an input as it is, x>k its
+// excess over k (port of leaderboard.add_terms; rain_4d_cum = the 3-day sum + 4 days ago).
+function termCols(m, f) { return m.terms.map(t => { const v = t.f === 'rain_4d_cum' ? f.rain_3d_cum + f.rain_lag3d : f[t.f]; return t.knot == null ? v : Math.max(0, v - t.knot); }); }
+const colsOf = (m, f) => m.terms ? termCols(m, f) : hingeVec(m, vec(f));
+function logitTerms(m, f) { const h = colsOf(m, f); return h.map((v, i) => { const z = (v - m.means[i]) / (m.scales[i] || 1); return {name: m.names[i], value: v, mean: m.means[i], sd: m.scales[i], z, w: m.coef[i], contrib: m.coef[i] * z}; }); }
+function logitRaw(m, f) { let s = m.intercept; for (const t of logitTerms(m, f)) s += t.contrib; return s; }
+const rawScore = (m, f) => famOf(m) === 'logit' ? logitRaw(m, f) : gbRaw(m, vec(f));
+function predictP(m, f) { const raw = sigmoid(rawScore(m, f)); const rf = Math.min(1, Math.max(0, 1 - f.rain_3d_cum * 2)); return Math.min(1, Math.max(0, raw - m.calibration_offset * rf)); }
 function predictVol(h, f) { return Math.max(0, Math.expm1(gbRaw(h, vec(f)))); }
 // ─── S3–S4 (port of src/models/impact.py) ───────────────────────────────────
 const BUCKETS = ['0','1','2','3','4-5','6-7'];
@@ -376,6 +387,7 @@ function loadSample(i) {
   S.dates = s.history.dates.slice();
   S.g = {'SF Downtown': s.history['SF Downtown'].slice(), 'SF Oceanside': s.history['SF Oceanside'].slice()};
   S.intensity = {rain_max1h: s.history.intensity.rain_max1h.slice(), rain_max3h: s.history.intensity.rain_max3h.slice(), rain_max6h: s.history.intensity.rain_max6h.slice()};
+  S.wind = Object.fromEntries(WIND.map(k => [k, s.history.wind[k].slice()]));
   const n = S.dates.length - 1;
   for (const [id, f] of [['i1','rain_max1h'],['i3','rain_max3h'],['i6','rain_max6h']]) document.getElementById(id).value = S.intensity[f][n];
   recompute();
@@ -383,7 +395,7 @@ function loadSample(i) {
 function seriesFor(src) { if (src === 'avg') return S.g['SF Downtown'].map((v, i) => (v + S.g['SF Oceanside'][i]) / 2); return S.g[src]; }
 function featuresBySource(intensityOverride) {
   const out = {};
-  for (const src of SOURCES) { const fs = dailyFeatures(seriesFor(src)); fs.forEach((f, i) => { for (const k of D.features.intensity) f[k] = S.intensity[k][i]; }); if (intensityOverride) Object.assign(fs[fs.length-1], intensityOverride); out[src] = fs; }
+  for (const src of SOURCES) { const fs = dailyFeatures(seriesFor(src)); fs.forEach((f, i) => { for (const k of D.features.intensity) f[k] = S.intensity[k][i]; for (const k of WIND) f[k] = S.wind[k][i]; }); if (intensityOverride) Object.assign(fs[fs.length-1], intensityOverride); out[src] = fs; }
   return out;
 }
 function scoreAll(fbs) {
@@ -463,9 +475,10 @@ function renderOutputs() {
   const lgText = anyLogit ? `A weights model is one straight line in log-odds: every input column is standardised (subtract the training mean, divide by the training sd), multiplied by its weight, and the ${anyLogit.coef.length} products plus an intercept are summed; a sigmoid turns the sum into a probability. The columns are the 19 features plus ${anyLogit.coef.length - FEATS.length} hinge terms max(0, x − knot) at fixed rain knots, which let the line bend at the depths where the sewers start to overflow. The weights were fit by L2-penalised logistic regression (C chosen per basin by pre-holdout season cross-validation; smaller C = more shrinkage). "Weight share" below is each base feature's share of Σ|weight| over its column and its hinges.` : '';
   const bandsText = BANDS ? `Every basin asks the same questions and answers with its own weights. The columns are today's rain (precip_avg) and yesterday's (rain_lag1d), each cut into bands at the same bends for every basin: a band holds the rain that fell between one bend and the next (clip(x − lo, 0, hi − lo)), so an input's bands add back up to the input, and a band's weight is the slope of the risk inside that band. Every weight is held at zero or above, so more rain never lowers the risk; a weight of exactly 0 means that band adds nothing in that basin. Columns are standardised (subtract the training mean, divide by the training sd), multiplied by their weights and summed with an intercept; a sigmoid turns the sum into a probability. Fit by L2-penalised logistic regression with the weights bounded at 0 (C chosen per basin by pre-holdout season cross-validation; smaller C = more shrinkage).` : '';
   document.getElementById('s2Title').textContent = ALL_LOGIT ? 'S2 · P(discharge today), one weights model per basin' : ANY_LOGIT ? 'S2 · P(discharge today), one model per basin (mixed families)' : 'S2 · P(discharge today), one gradient-boosted model per basin';
-  document.getElementById('s2Lead').innerHTML = BANDS ? esc(bandsText) : ALL_LOGIT ? esc(lgText) : ANY_LOGIT ? esc(lgText) + ' ' + esc(gbText) : `Each basin has its own model: ${esc(gbDesc)}. ${esc(gbText)}`;
+  const termsText = TERMS ? `Every basin reads the same ${N_TERMS} named terms and answers with its own weights: ${D.models[MODEL_ORDER[0]].names.join(', ')}. A term is an input as it is, or x>k, its excess over k, which switches on once the input passes k.` + (WIND.length ? ` The south wind (wind_v_rain) is the day's rain-weighted south-to-north wind in m/s: positive when the rain comes on a south wind, 0 on a dry day.` : '') + ` Columns are standardised (subtract the training mean, divide by the training sd), multiplied by their weights and summed with an intercept; a sigmoid turns the sum into a probability. The day's rain, the 2- and 3-day sums and the south wind were forced in; the rest were picked by nested forward selection, each season's terms chosen without it. The weights are fit by L2-penalised logistic regression with each basin's live C.` : '';
+  document.getElementById('s2Lead').innerHTML = TERMS ? esc(termsText) : BANDS ? esc(bandsText) : ALL_LOGIT ? esc(lgText) : ANY_LOGIT ? esc(lgText) + ' ' + esc(gbText) : `Each basin has its own model: ${esc(gbDesc)}. ${esc(gbText)}`;
   const gbFormula = `score(x) = init + ${mp.learning_rate} × Σ<sub>k=1..${mp.n_estimators}</sub> leaf<sub>k</sub>(x)        init = log-odds of the training discharge rate`;
-  const lgFormula = BANDS ? `score(x) = b + Σ<sub>i=1..${anyLogit.coef.length}</sub> w<sub>i</sub> · ( h<sub>i</sub>(x) − μ<sub>i</sub> ) / σ<sub>i</sub>        h<sub>i</sub> = clip(x<sub>f</sub> − lo<sub>i</sub>, 0, hi<sub>i</sub> − lo<sub>i</sub>), the rain inside band i; w<sub>i</sub> ≥ 0; μ, σ = training mean and sd of that column` : anyLogit ? `score(x) = b + Σ<sub>i=1..${anyLogit.coef.length}</sub> w<sub>i</sub> · ( h<sub>i</sub>(x) − μ<sub>i</sub> ) / σ<sub>i</sub>        h = the 19 features, then max(0, x<sub>f</sub> − knot) for each hinge; μ, σ = training mean and sd of that column` : '';
+  const lgFormula = TERMS ? `score(x) = b + Σ<sub>i=1..${N_TERMS}</sub> w<sub>i</sub> · ( h<sub>i</sub>(x) − μ<sub>i</sub> ) / σ<sub>i</sub>        h<sub>i</sub> = term i: x<sub>f</sub>, or max(0, x<sub>f</sub> − k) for a term f>k; μ, σ = training mean and sd of that column` : BANDS ? `score(x) = b + Σ<sub>i=1..${anyLogit.coef.length}</sub> w<sub>i</sub> · ( h<sub>i</sub>(x) − μ<sub>i</sub> ) / σ<sub>i</sub>        h<sub>i</sub> = clip(x<sub>f</sub> − lo<sub>i</sub>, 0, hi<sub>i</sub> − lo<sub>i</sub>), the rain inside band i; w<sub>i</sub> ≥ 0; μ, σ = training mean and sd of that column` : anyLogit ? `score(x) = b + Σ<sub>i=1..${anyLogit.coef.length}</sub> w<sub>i</sub> · ( h<sub>i</sub>(x) − μ<sub>i</sub> ) / σ<sub>i</sub>        h = the 19 features, then max(0, x<sub>f</sub> − knot) for each hinge; μ, σ = training mean and sd of that column` : '';
   document.getElementById('gbFormula').innerHTML = (ALL_LOGIT ? lgFormula : ANY_LOGIT ? lgFormula + '\n' + gbFormula : gbFormula) + `\nP<sub>raw</sub> = 1 / (1 + e<sup>−score</sup>)\nP = clip( P<sub>raw</sub> − offset × clip(1 − rain_3d_cum × 2, 0, 1), 0, 1 )      offset = mean P<sub>raw</sub> on dry training days (fades out as 3-day rain → 0.5")` + (ALL_LOGIT && MODEL_ORDER.every(k => !D.models[k].calibration_offset) ? ' — 0 for this set: the weights models carry no dry-day offset' : '');
   let html = '';
   for (const k of MODEL_ORDER) {
@@ -526,8 +539,8 @@ function renderWeights(k, m) {
   document.getElementById('insideTitle').textContent = 'Look inside the weights';
   document.getElementById('treeControls').style.display = 'none'; document.getElementById('weightsHint').style.display = '';
   if (!CURRENT) return;
-  const x = vec(CURRENT.fbs[m.rain_source][CURRENT.n]);
-  const terms = logitTerms(m, x), score = logitRaw(m, x);
+  const fx = CURRENT.fbs[m.rain_source][CURRENT.n];
+  const terms = logitTerms(m, fx), score = logitRaw(m, fx);
   const order = terms.map((t, i) => i).sort((a, b) => Math.abs(terms[b].contrib) - Math.abs(terms[a].contrib));
   const mx = Math.max(...terms.map(t => Math.abs(t.contrib)), 1e-9);
   const rows = ['<tr><th>column</th><th class="num">today h(x)</th><th class="num">train μ</th><th class="num">train σ</th><th class="num">z = (h−μ)/σ</th><th class="num">weight w</th><th class="num">w · z</th><th style="width:26%"></th></tr>'];
@@ -629,11 +642,11 @@ function renderWalk() {
 function selfCheck() {
   const rows = ['<tr><th>Storm day</th><th class="num">max |Δ feature| (3 sources)</th><th class="num">max |Δ P| (5 models)</th><th class="num">max |Δ volume| MG</th><th>zone risk vs stored scorecard</th><th>what happened</th></tr>'];
   let worstF = 0, worstP = 0, worstV = 0, worstZ = 0, n = 0;
-  const saved = {g: S.g, intensity: S.intensity, dates: S.dates, sample: S.sample};
+  const saved = {g: S.g, intensity: S.intensity, wind: S.wind, dates: S.dates, sample: S.sample};
   for (const s of D.samples) {
-    S.dates = s.history.dates; S.g = {'SF Downtown': s.history['SF Downtown'], 'SF Oceanside': s.history['SF Oceanside']}; S.intensity = s.history.intensity;
+    S.dates = s.history.dates; S.g = {'SF Downtown': s.history['SF Downtown'], 'SF Oceanside': s.history['SF Oceanside']}; S.intensity = s.history.intensity; S.wind = s.history.wind || {};
     const last = S.dates.length - 1, fbs = featuresBySource();
-    let dF = 0; for (const src of SOURCES) for (const f of FEATS) dF = Math.max(dF, Math.abs(fbs[src][last][f] - s.features[src][f]));
+    let dF = 0; for (const src of SOURCES) for (const f of FEATS.concat(WIND)) dF = Math.max(dF, Math.abs(fbs[src][last][f] - s.features[src][f]));
     const {probs, vols} = scoreAll(fbs);
     let dP = 0, dV = 0; for (const k of MODEL_ORDER) { dP = Math.max(dP, Math.abs(probs[last][k] - s.expected[k].p)); if (s.expected[k].volume_mg != null && vols[last][k] != null) dV = Math.max(dV, Math.abs(vols[last][k] - s.expected[k].volume_mg)); }
     const comp = compose(D.impact_smoothed, probs, vols, last), z = zoneRisks(comp.perGroup);

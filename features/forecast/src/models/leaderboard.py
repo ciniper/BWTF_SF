@@ -188,6 +188,52 @@ def make_shared_model(C: float, design: dict):
                      ("lr", NonNegLogit(C=C))])
 
 
+# ── a term list (train_terms.py, 2026-10-07): the term lab's design, servable ──
+# A model asks for its terms by name: an input as it is, ``x>k`` its excess over k (add_hinges' hinge), or a
+# derived input (TERM_DERIVED). The pipeline reads the frame's columns by name, so a model's ``features`` are
+# just the inputs its terms read (term_inputs): the 19 and the south wind (rain_features.WIND_FEATURES).
+TERM_DERIVED = {"rain_4d_cum": ("rain_3d_cum", "rain_lag3d")}     # D−3 … D: the 3-day sum and the day before it
+
+
+def _term_base(term: str) -> str:
+    return term.partition(">")[0]
+
+
+def term_inputs(terms) -> list:
+    """The frame columns ``terms`` read, in the 19 inputs' order, then the wind."""
+    from rain_features import WIND_FEATURES
+    need = set()
+    for t in terms:
+        b = _term_base(t)
+        need |= set(TERM_DERIVED.get(b, (b,)))
+    order = list(FEATS) + list(WIND_FEATURES)
+    unknown = need - set(order)
+    if unknown:
+        raise KeyError(f"terms read {sorted(unknown)}, which no frame holds")
+    return [c for c in order if c in need]
+
+
+def add_terms(X, terms):
+    """A frame with named columns → the terms as columns, in ``terms`` order (the term lab's design())."""
+    cols = []
+    for t in terms:
+        name, _, knot = t.partition(">")
+        if name in TERM_DERIVED:
+            x = sum(X[c].to_numpy(dtype=float) for c in TERM_DERIVED[name])
+        else:
+            x = X[name].to_numpy(dtype=float)
+        cols.append(np.maximum(0.0, x - float(knot)) if knot else x)
+    return np.column_stack(cols)
+
+
+def make_terms_model(terms, C: float):
+    """add_terms → standardise → L2 logistic (make_model's 'logit' with named terms in place of the hinges). The
+    terms ride in the transformer's kw_args, so a fold can swap them: set_params(terms__kw_args={"terms": …})."""
+    return Pipeline([("terms", FunctionTransformer(add_terms, validate=False, kw_args={"terms": list(terms)})),
+                     ("scale", StandardScaler()),
+                     ("lr", LogisticRegression(C=C, max_iter=5000))])
+
+
 def make_model(family: str, C: float = 0.3):
     if family == "gb":
         return GradientBoostingClassifier(**T.MODEL_PARAMS)

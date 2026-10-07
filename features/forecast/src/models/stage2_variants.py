@@ -4,6 +4,10 @@
     venv/bin/python features/forecast/src/models/stage2_variants.py fit
         → data/models/stage2/v2.json  (stage 2 v2 = the outfall split: shares by group and size,
           plus the impact table refit on group-attributed discharge days)
+    venv/bin/python features/forecast/src/models/stage2_variants.py fit --variant v2_d10
+        → data/models/stage2/v2_d10.json  (v2 with the linger table fit on the stages' S4 truth samples,
+          samples.D10_SOURCES: STARDB's 2016-10 → 2020-07 results too; the spec's variant stays v2, so it
+          composes and serves as v2 does, and its sets record the id v2_d10)
 
     venv/bin/python features/forecast/src/models/stage2_variants.py save \
         --stage1 served --variant v2 --name gb_v1_s2v2 [--note "…"]
@@ -49,8 +53,30 @@ def _served_chosen() -> dict:
     return chosen
 
 
+SAMPLE_VARIANTS = {"v2_d10": "d10"}     # variant id → the spec's impact_samples (candidates.stage2_variant_id)
+
+
+def spec_path(variant: str) -> Path:
+    return S2.VARIANTS_DIR / f"{variant}.json" if variant in SAMPLE_VARIANTS else S2.variant_path(variant)
+
+
+def load_spec(variant: str) -> dict:
+    """A fitted stage 2 spec by the id a set records: v2, or v2 on another sample set (SAMPLE_VARIANTS)."""
+    return json.loads(spec_path(variant).read_text())
+
+
+def impact_samples(name: str | None) -> pd.DataFrame:
+    """The samples a linger table is fit on: the served table's (train_v4.load_samples) for None, else the named set."""
+    if name is None:
+        return T.load_samples()
+    if name != "d10":
+        raise ValueError(f"unknown impact samples {name!r}")
+    import samples as SMP
+    return SMP.as_training_samples(SMP.D10_SOURCES)
+
+
 def fit(variant: str = "v2") -> Path:
-    if variant != "v2":
+    if variant != "v2" and variant not in SAMPLE_VARIANTS:
         raise SystemExit(f"no fitter for {variant!r}")
     heads, impact_raw = T.stage2_from_served()
     chosen = _served_chosen()
@@ -59,10 +85,15 @@ def fit(variant: str = "v2") -> Path:
     events = T.load_events()
     spec = S2.fit_outfall_split(frames, chosen, heads, impact_raw, events)
     event_days = S2.group_event_days(frames, chosen, events)
-    table, _diag = T.fit_impact_table(frames, chosen, heads, T.load_samples(), event_days=event_days)
+    which = SAMPLE_VARIANTS.get(variant)
+    table, _diag = T.fit_impact_table(frames, chosen, heads, impact_samples(which), event_days=event_days)
     spec["impact_table"] = table
     spec["impact_table_note"] = ("refit on group-attributed discharge days (CIWQS days where one of the group's outfalls "
                                  "discharged, plus the basin's 2016-17 feed-archive days, which carry no outfall detail)")
+    if which:
+        spec["impact_samples"] = which
+        spec["impact_table_note"] += ("; sample days from the stages' S4 truth (samples.D10_SOURCES: DataSF from 2020-07, "
+                                      "STARDB 2016-10 → 2020-07, Poo Bot 2015-12 → 2017-01)")
     spec["train_window"] = [str(frames["avg"]["date"].min().date()), str(frames["avg"]["date"].max().date())]
     print(f"stage 2 {variant} (outfall split): shares by group (share of the basin's CIWQS discharge days on which the group's outfalls took part)")
     for g, s in spec["shares"].items():
@@ -70,7 +101,11 @@ def fit(variant: str = "v2") -> Path:
     print("impact table refit — sample days per group (served → split):")
     for g in table:
         print(f"   {g:14} {impact_raw[g]['n_sample_days']} → {table[g]['n_sample_days']}   baseline {impact_raw[g]['buckets']['baseline_no_recent_discharge']['p_elevated']} → {table[g]['buckets']['baseline_no_recent_discharge']['p_elevated']}")
-    out = S2.save_variant(spec)
+    if which:
+        out = spec_path(variant)
+        out.write_text(json.dumps(spec, indent=1, default=str))
+    else:
+        out = S2.save_variant(spec)
     print(f"variant → {out.relative_to(REPO)}")
     return out
 
@@ -130,7 +165,7 @@ def _refit_holdouts(models: dict, chosen: dict, frames: dict, features: list) ->
 def save(stage1: str, variant: str, name: str, note: str = "") -> Path:
     if not candidates.valid_name(name):
         raise SystemExit(f"bad candidate name {name!r}")
-    spec = S2.load_variant(variant)
+    spec = load_spec(variant)
     models, src_sc, family, stage1_name = _load_stage1(stage1)
     features = T.get_feature_columns_v21()
     chosen = {b: models[BASIN_KEYS[b]].get("rain_source", "avg") for b in T.APP_BASINS}

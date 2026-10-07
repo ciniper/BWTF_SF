@@ -1,6 +1,6 @@
 {
  "schema": "bwtf.openmeteo_forecast_archive/1",
- "written_at": "2026-10-02T01:02:22+00:00",
+ "written_at": "2026-10-07T17:35:54+00:00",
  "point": {
   "latitude": 37.7749,
   "longitude": -122.4194
@@ -368,6 +368,57 @@
    "first": "2022-11-16 00:00:00",
    "overlap_hours_identical": 48,
    "fetched_at": "2026-10-02T01:01:28+00:00"
+  },
+  "wind_icon_seamless": {
+   "model": "icon_seamless",
+   "fetched_at": "2026-10-07T17:32:01+00:00",
+   "rows": 151199,
+   "nan_hours": {
+    "0": 1,
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0
+   },
+   "grid": [
+    37.75,
+    -122.5
+   ]
+  },
+  "wind_ecmwf_ifs025": {
+   "model": "ecmwf_ifs025",
+   "fetched_at": "2026-10-07T17:33:38+00:00",
+   "rows": 138765,
+   "nan_hours": {
+    "0": 65,
+    "1": 2,
+    "2": 2,
+    "3": 2,
+    "4": 2,
+    "5": 2
+   },
+   "grid": [
+    37.75,
+    -122.25
+   ]
+  },
+  "wind_gfs_seamless": {
+   "model": "gfs_seamless",
+   "fetched_at": "2026-10-07T17:34:49+00:00",
+   "rows": 140615,
+   "nan_hours": {
+    "0": 0,
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0
+   },
+   "grid": [
+    37.763283,
+    -122.41286
+   ]
   }
  }
 }

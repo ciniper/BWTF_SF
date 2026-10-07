@@ -60,6 +60,36 @@ Terminology (public and code): **basin** (4, SFPUC's), **zone** (4, public), **o
     - `sfpuc4_shared8_v3b`, picked on the public number's days (the week after an overflow, the lingering part alone): table everywhere in the finals; public number better than v2 on the holdout and post-training, no clear difference from the live set.
 
     Since OUT has no background (A1), a rain term can only shrink the lingering part, so it cannot help the public number; the gain is the extra samples. Neither is promotable on its own: SFPUC-basin promotion needs P11 (Part B 29).
+33. **The south wind and a short nested term list (2026-10-07; Chase: "an 8/9/10 term model and including the wind").** One new input is servable: `wind_v_rain`, the day's rain-weighted south → north 10 m wind in m/s (`rain_features.wind_rain_features`; 0 on a day under 0.005"; a rainy hour without a wind reading makes the day unknown, never calm).
+    - **Where it comes from.**
+      - The training frames and "rain known" read ERA5's wind on ERA5's rain (`train_v4.wind_features`, 2011 on).
+      - A lead entry reads that lead's archived wind *forecast* on that lead's own hours of D (`openmeteo_previous_runs.py --wind`: the Historical Forecast short lead and Previous Runs leads 1–5, the same cell and UTC−7 day as the rain caches; no complete rain day lacks its wind), as served included.
+      - The page computes it from ICON's hourly wind, which it already fetched.
+    - **What reads it.** It is an extra column after the 19: a model reads it only when its `features` list names it, and no served model does. Every existing set's rebuilt scores and rows are byte-identical (only the manifests' code and input pins moved).
+    - **The candidates** are `train_terms.py`: the same named terms in every basin (`leaderboard.make_terms_model`).
+      - Forced: the day's rain, the 2- and 3-day sums, the south wind. The 4-day sum tied the 3-day one. The largest 24-hour rain lowered the nine-season skill at every size and made the holdout worse at 6 terms, so it is out.
+      - The rest are added by the term lab's nested forward selection on servable terms, with the sensible rules, on the 2011 record (every discharge day), at sizes 8, 9 and 10.
+      - Each refit fold uses its own pick (manifest `fold_terms`; `stages_s2.check_fold_terms`). The lab's nested grade equals the build's S2 score to 1e-5 (`tests/test_train_terms.py`).
+      - T2 stays labelled selection-contaminated: the forced terms and the sizes were chosen with the lab's nine-season grades in view.
+    - **Result** (Δ Brier ×1000 against the live set; 8, 9 and 10 terms agree to 0.1).
+      - S2 pooled: nine seasons better (−0.90), holdout +0.49 and post-training −0.87 with no clear difference.
+      - The public number, rain known: nine seasons better (−0.94, East −2.35); holdout +0.81 and post-training −1.75, no clear difference.
+      - On the linger table with more samples (`_s2v2d10`, item 34), one day ahead: better on the nine seasons (−1.70) and the holdout (−1.79), the first candidate better there in both development windows. Post-training −2.17 [−6.39, +1.48] fails non-inferiority on range width alone (margin +1.09). S2's post-training test fails the same way (upper +1.28 against +0.50).
+      - Not promoted; the live season (T0) decides. All six are tagged `post_seen` (their record was chosen in `OLDER_REPORTS.md` with post-training scores in view). GEO_V1 candidates now carry the tag too (`candidates.tag_candidate`; `SetBundle.post_seen`), with the same effect as on a stage candidate's scores. `promote.py` carries `record`, `terms` and `fold_terms` both ways (`DESIGN_FIELDS`).
+34. **The linger table on more samples, on BWTF basins (2026-10-07).** Stage 2 `v2_d10` is v2's outfall split with its impact table refit on the stages' S4 truth samples (`samples.D10_SOURCES`: STARDB 2016-10 → 2020-07 added, 45–65% more sample days per group; `stage2_variants.py fit --variant v2_d10`).
+    - **How it is wired.** The spec keeps `"variant": "v2"` plus `"impact_samples": "d10"`, so it composes and serves exactly as v2 does: no served code reads the field (a test). Its sets record the id `v2_d10` (`candidates.stage2_variant_id`). The lineup calls it "Linger table 2, more samples". The stages build refits it per fold on the D10 samples of the fold's training days (`stage2_variants.impact_samples`), and its full-window refit reproduces the saved spec.
+    - **Result for `logit_v1_s2v2d10`** (the live overflow model on it):
+      - The public number is better on the holdout, rain known (−1.12) and one day ahead (−1.13), and one day ahead on the nine seasons (−0.75). Post-training shows no clear difference.
+      - In S4, Baker & China are better on the holdout (−6.30) and post-training (−5.94). East's point estimate is worse with no clear difference.
+      - OUT's primary passes; 2 of 5 promotion criteria are met. Tagged `post_seen`: the table was built after `sfpuc4_shared8_v3b`'s post-training scores were seen.
+    - **A protocol gap.** Criterion 1 cannot be met: §8's S4 row tests the rain curve (zone_v3) against the served table, and no row scores a refit of the served table. Adding one needs protocol `stages_v4`, the owner's call. On today's numbers it would not pass superiority anyway (nine seasons −0.14 [−0.94, +0.73]).
+35. **The weather forecast's uncertainty in S2, research (2026-10-07; TODO "Put the rain forecast's uncertainty into the percentage").** `forecast_uncertainty.py` replaces each lead entry's forecast days with K = 20 members of the rain that falls given the forecast, from ICON's own archived errors at that lead (from seasons other than the scored day's, never after training's end). It reruns the lead entries' own feature code on each member, scales D's peaks with D's total, keeps the forecast's wind, and averages S2's p.
+    - **The grade:** the served set's S2 rows at L0 … L5 on T1-holdout. The recomputed point p reproduces the build's rows to their 6 significant figures; the ensemble is paired on identical rows.
+    - **Results.** Plain analogs are pulled toward lighter forecasts (leads 1–5 hold two seasons) and lose skill.
+      - Shifted analogs (each neighbour's own error moved onto this forecast) are better at L1–L3 and L5.
+      - A small error model per lead (P(wet | forecast) plus a log-normal spread) is better at L1, L2 and L5. At L1 it moves S2 from 0.37 to 0.50 against 0.77 with the rain known.
+      - The method was chosen on these rows, so they cannot confirm it.
+    - **Not yet in the stages build or the page.** Next: an entry treatment composing each member through S3/S4 to the public number (a rebuild); then serving the error model's five numbers per lead.
 
 ## Part C — Merged design (verbatim)
 

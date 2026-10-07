@@ -51,6 +51,8 @@ import stages_entries as E  # noqa: E402
 import train_v4 as T4  # noqa: E402
 import truth as T  # noqa: E402
 
+OMP = E.OMP                                   # the weather archives (openmeteo_previous_runs)
+
 AS_OF = "2026-08-17"
 SOURCES = list(T4.RAIN_SOURCES)                       # avg, SF Oceanside, SF Downtown
 DAY = pd.Timedelta(days=1)
@@ -93,7 +95,7 @@ def _history(source, I):
 def _dataset(rules=("gauge_outage_v1",)):
     key = ("bd", rules)
     if key not in _cache:
-        _cache[key] = T4.build_dataset(end=E.data_end(), sources=SOURCES, input_rules=list(rules) or None)[0]
+        _cache[key] = T4.build_dataset(end=E.data_end(), sources=SOURCES, input_rules=list(rules) or None, wind=True)[0]
     return _cache[key]
 
 
@@ -112,30 +114,44 @@ def test_rain_entry_is_the_training_frame():
     fr = E.frames("rain", SOURCES)
     oracle = E.frames("oracle", SOURCES)
     for s in SOURCES:
-        want = bd[s][["date"] + E.FEATURES].reset_index(drop=True)
-        pd.testing.assert_frame_equal(fr[s], want, check_exact=True)   # values, names, order, dtypes
+        want = bd[s][["date"] + E.COLUMNS].reset_index(drop=True)
+        pd.testing.assert_frame_equal(fr[s], want, check_exact=True)   # values, names, order, dtypes (the wind too)
         pd.testing.assert_frame_equal(oracle[s], fr[s], check_exact=True)
         assert fr[s].attrs["input_rules"] == ["gauge_outage_v1"] and fr[s].attrs["dropped"] == {}
     raw = E.frames("rain", SOURCES, input_rules=())                   # the record the served weights were fit on
     bd_raw = _dataset(())
     for s in SOURCES:
-        pd.testing.assert_frame_equal(raw[s], bd_raw[s][["date"] + E.FEATURES].reset_index(drop=True), check_exact=True)
+        pd.testing.assert_frame_equal(raw[s], bd_raw[s][["date"] + E.COLUMNS].reset_index(drop=True), check_exact=True)
     assert not raw["avg"].equals(fr["avg"]), "the outage rule must change the rain entry somewhere"
     part = E.frames("rain", ["avg"], start="2024-01-01", end="2024-03-31")["avg"]
     full = fr["avg"].set_index("date").loc["2024-01-01":"2024-03-31"].reset_index()
     pd.testing.assert_frame_equal(part, full, check_exact=True)
 
 
+def test_a_lead_entrys_wind_is_its_own_forecast():
+    """Lead L's south wind on D is lead L's archived wind weighed by lead L's own hours of rain on D (the forecast
+    issued on D − L), never ERA5's; as served (L1s) reads the same hours as L1."""
+    for e, L in (("L1", 1), ("L3", 3), ("L1s", 1)):
+        f = _frames(e)["avg"].set_index("date")
+        rain = OMP.load_hourly("icon_seamless", L)[["timestamp", "precip_inches"]]
+        h = rain.merge(OMP.load_wind("icon_seamless", L), on="timestamp", how="left")
+        want = RF.wind_rain_features(h).set_index("date")["wind_v_rain"].reindex(f.index)
+        assert np.array_equal(f["wind_v_rain"].to_numpy(), want.to_numpy()), e
+        era5 = _dataset()["avg"].set_index("date")["wind_v_rain"].reindex(f.index)
+        assert (f["wind_v_rain"] != era5).mean() > 0.05, e                  # a forecast, not the reanalysis
+
+
 def test_every_entry_carries_the_training_columns():
-    want = _dataset()["avg"][["date"] + E.FEATURES].dtypes
+    want = _dataset()["avg"][["date"] + E.COLUMNS].dtypes
     assert E.FEATURES == list(leaderboard.FEATS), "the 19 inputs the served weights read"
+    assert E.COLUMNS == E.FEATURES + ["wind_v_rain"], "the extra inputs come after the 19"
     for e in E.ENTRIES:
         fr = _frames(e)
         days = None
         for s, f in fr.items():
-            assert list(f.columns) == ["date"] + E.FEATURES, (e, s)
+            assert list(f.columns) == ["date"] + E.COLUMNS, (e, s)
             assert (f.dtypes == want).all(), (e, s, f.dtypes[f.dtypes != want])
-            assert not f[E.FEATURES].isna().any().any(), (e, s)
+            assert not f[E.COLUMNS].isna().any().any(), (e, s)
             assert f["date"].is_monotonic_increasing and not f["date"].duplicated().any(), (e, s)
             assert isinstance(f.index, pd.RangeIndex) and f.index[0] == 0, (e, s)
             assert f.attrs["entry"] == e and f.attrs["source"] == s

@@ -28,8 +28,9 @@ New inputs, from ERA5's hourly rain and wind at the city point (data/raw/hourly_
     wind_v_rain        the rain-weighted south → north wind, m/s (positive: from the south)
     max3h_after_wet    the day's 3-hour peak when the three days before were wet
 
-The live page and the stages build do not compute them yet, so a model that uses one can be graded here but not
-saved, served or stage-scored until they do (TODO.md).
+wind_v_rain is servable: the training frames, the stage entries (each lead reading that lead's archived wind) and
+the live page compute it (rain_features.wind_rain_features), and train_terms.py saves candidates on it. The
+others are not yet, so a model that uses one can be graded here but not saved, served or stage-scored.
 """
 from __future__ import annotations
 
@@ -76,7 +77,7 @@ def _with_hinges(names: list) -> list:
 
 GROUPS = [
     ("The day's rain", _with_hinges(["precip_avg"])),
-    ("The days before", _with_hinges(["rain_2d_cum", "rain_3d_cum", "rain_5d_cum", "rain_7d_cum", "rain_14d_cum",
+    ("The days before", _with_hinges(["rain_2d_cum", "rain_3d_cum", "rain_4d_cum", "rain_5d_cum", "rain_7d_cum", "rain_14d_cum",
                                       "rain_30d_cum", "rain_lag1d", "rain_lag2d", "rain_lag3d", "rain_lag5d",
                                       "rain_lag7d", "antecedent_moisture", "wet_prior_3d", "peak_3d", "dry_spell_days"])),
     ("Peak hours", _with_hinges(["rain_max1h", "rain_max3h", "rain_max6h"])),
@@ -131,12 +132,20 @@ def new_inputs(older: bool = False) -> pd.DataFrame:
 
 def add_new(frame: pd.DataFrame, extra: pd.DataFrame) -> pd.DataFrame:
     """``frame`` with the new inputs: ``extra`` (new_inputs) by date, then the two built on the frame's own rain."""
+    have = [c for c in extra.columns if c != "date" and c in frame.columns]   # wind_v_rain: the frames carry it now
+    if have:
+        j = frame[["date"] + have].merge(extra[["date"] + have], on="date", suffixes=("", "_lab"))
+        for c in have:
+            if not np.array_equal(j[c].to_numpy(), j[f"{c}_lab"].to_numpy()):
+                raise AssertionError(f"{c}: the lab's value is not the frame's (rain_features.wind_rain_features)")
+        extra = extra.drop(columns=have)
     f = frame.merge(extra, on="date", how="left")
     for c in ("rain_max24h", "west_share", "wind_u_rain", "wind_v_rain"):
         if f[c].isna().any():
             raise ValueError(f"{c} is missing on {f.loc[f[c].isna(), 'date'].iloc[0].date()}: refetch the hourly files")
     f["rain_west"] = f["precip_avg"] * f["west_share"]
     f["max3h_after_wet"] = f["rain_max3h"] * f["wet_prior_3d"]
+    f["rain_4d_cum"] = f["rain_3d_cum"] + f["rain_lag3d"]      # D−3…D, from the 19 inputs (servable as they are)
     return f
 
 
@@ -317,21 +326,28 @@ class Lab:
 
     def choose(self, pool=None, C="live", nonneg: bool = False, record: str = "served", max_terms: int = 8,
                min_gain: float = 0.0025, jobs: int = -1, n_boot: int = N_BOOT, path: bool = False,
-               rules: bool = False, beam: int = 1) -> dict:
+               rules: bool = False, beam: int = 1, must=None) -> dict:
         """Forward selection inside every graded fold (nested), then on all nine seasons (the terms to adopt).
         ``path``: never stop early; grade the best 1, 2, … max_terms terms, each nested (the first k of every
         fold's own order), so the number of terms is judged the same fair way as the terms. ``rules``: the
         sensible rules (``requirements``). ``beam`` > 1: a wider search that keeps that many best sets at each size
-        (beam_select), always graded as a path; each size's set is then the best found, not a prefix."""
+        (beam_select), always graded as a path; each size's set is then the best found, not a prefix. ``must``: terms
+        every model holds (Chase's picks); the search adds to them, and the path starts at their count."""
         from joblib import Parallel, delayed
         pool = list(pool or ALL_TERMS)
+        must = list(must or [])
+        bad = [t for t in must if t not in pool]
+        if bad:
+            raise ValueError(f"forced terms {bad} are not in the pool")
+        start_idx = [pool.index(t) for t in must]
         req = requirements(pool) if rules else None
         runs = [(fold, keep) for _tier, fold, *_rest, keep in self.plan(record)] + [("all nine seasons", self.nine(record))]
         jobs_in = [(fold, self._selection_data(record, keep, pool, C)) for fold, keep in runs]
         if beam > 1:
-            return self._beam(pool, jobs_in, runs, C, nonneg, record, max_terms, beam, req, jobs, n_boot)
+            return self._beam(pool, jobs_in, runs, C, nonneg, record, max_terms, beam, req, jobs, n_boot, start_idx)
         picked = Parallel(n_jobs=jobs, backend="loky")(
-            delayed(forward_select)(data, len(pool), max_terms, None if path else min_gain, nonneg, req) for _fold, data in jobs_in)
+            delayed(forward_select)(data, len(pool), max_terms, None if path else min_gain, nonneg, req, start_idx)
+            for _fold, data in jobs_in)
         by_fold = {fold: [pool[i] for i in idx] for (fold, _), (idx, _trace) in zip(jobs_in, picked)}
         traces = {fold: tr for (fold, _), (_idx, tr) in zip(jobs_in, picked)}
         final = by_fold.pop("all nine seasons")
@@ -344,16 +360,16 @@ class Lab:
                "rules": rules, "beam": 1}
         if path:
             out["path"] = []
-            for k in range(1, max_terms + 1):
+            for k in range(max(1, len(must)), len(final) + 1):
                 pk = self.oof(None, C, nonneg, record, terms_by_fold={f: by_fold[f][:k] for f in folds})
                 out["path"].append({"k": k, "added": final[k - 1], "terms": final[:k], "inner": traces["all nine seasons"][k - 1],
                                     "grade": self.grade(pk, n_boot)})
         return out
 
-    def _beam(self, pool, jobs_in, runs, C, nonneg, record, max_terms, width, req, jobs, n_boot) -> dict:
+    def _beam(self, pool, jobs_in, runs, C, nonneg, record, max_terms, width, req, jobs, n_boot, start_idx=()) -> dict:
         from joblib import Parallel, delayed
         found = Parallel(n_jobs=jobs, backend="loky")(
-            delayed(beam_select)(data, len(pool), max_terms, width, nonneg, req) for _fold, data in jobs_in)
+            delayed(beam_select)(data, len(pool), max_terms, width, nonneg, req, start_idx) for _fold, data in jobs_in)
         best = {fold: f for (fold, _), f in zip(jobs_in, found)}
         allnine = best.pop("all nine seasons")
         folds = [f for f, _ in runs[:-1]]
@@ -366,8 +382,9 @@ class Lab:
             prev = set(rows[-1]["terms"]) if rows else set()
             rows.append({"k": k, "added": ", ".join(t for t in terms if t not in prev) or "—", "terms": terms,
                          "inner": allnine[k][1], "grade": self.grade(pk, n_boot)})
-        k_best = min(rows, key=lambda r: r["inner"])["k"]
-        return {"terms": rows[k_best - 1]["terms"], "nested_grade": rows[k_best - 1]["grade"], "path": rows,
+        best_row = min(rows, key=lambda r: r["inner"])
+        k_best = best_row["k"]
+        return {"terms": best_row["terms"], "nested_grade": best_row["grade"], "path": rows,
                 "by_fold": {f: [pool[i] for i in best[f][min(k_best, max(best[f]))][0]] for f in folds},
                 "chosen_in": {}, "n_folds": len(folds), "trace": [r["inner"] for r in rows], "min_gain": None,
                 "max_terms": max_terms, "rules": req is not None, "beam": width}
@@ -412,10 +429,15 @@ def _allowed(j: int, chosen, req) -> bool:
     return req is None or all(r != -1 and r in chosen for r in req[j])
 
 
-def forward_select(data: list, n_pool: int, max_terms: int, min_gain: float | None, nonneg: bool, req=None) -> tuple:
+def forward_select(data: list, n_pool: int, max_terms: int, min_gain: float | None, nonneg: bool, req=None,
+                   start=()) -> tuple:
     """Add the pool column that lowers inner_brier most, while it lowers it by more than ``min_gain`` (relative);
-    ``min_gain`` None: to ``max_terms`` whatever the gain (the path). ``req``: requirements (the sensible rules)."""
-    chosen, best, trace = [], np.inf, []
+    ``min_gain`` None: to ``max_terms`` whatever the gain (the path). ``req``: requirements (the sensible rules).
+    ``start``: positions every model holds; the trace starts with their score."""
+    chosen, best, trace = list(start), np.inf, []
+    if chosen:
+        best = inner_brier(data, chosen, nonneg)
+        trace = [float(best)] * len(chosen)
     while len(chosen) < min(max_terms, n_pool):
         scores = {j: inner_brier(data, chosen + [j], nonneg) for j in range(n_pool) if j not in chosen and _allowed(j, chosen, req)}
         if not scores:
@@ -429,11 +451,15 @@ def forward_select(data: list, n_pool: int, max_terms: int, min_gain: float | No
     return chosen, trace
 
 
-def beam_select(data: list, n_pool: int, max_terms: int, width: int, nonneg: bool, req=None) -> dict:
+def beam_select(data: list, n_pool: int, max_terms: int, width: int, nonneg: bool, req=None, start=()) -> dict:
     """{size: (positions, inner_brier)}: the best set found at each size, keeping the ``width`` best sets of each size
-    and growing each by every allowed term (sets, not orders: a set reached two ways is scored once)."""
-    beams, best = [()], {}
-    for k in range(1, min(max_terms, n_pool) + 1):
+    and growing each by every allowed term (sets, not orders: a set reached two ways is scored once). ``start``: the
+    positions every set holds."""
+    first = tuple(sorted(start))
+    beams, best = [first], {}
+    if first:
+        best[len(first)] = (list(first), float(inner_brier(data, list(first), nonneg)))
+    for k in range(len(first) + 1, min(max_terms, n_pool) + 1):
         cand = {}
         for chosen in beams:
             for j in range(n_pool):

@@ -320,7 +320,7 @@ def test_model_sets_are_selectable_but_never_served():
     sv = C.served_info()
     assert models[0]["key"] == "" and models[0]["served"] is True and models[0]["label"] == f'{sv["name"]} (served)'
     assert models[0]["stage1"] == sv["stage1"] and models[0]["stage2"] == sv["stage2"] and models[0]["family"] == sv.get("family") and models[0]["line"] == sv.get("line", 0.5)
-    assert all(m.get("stage2") in ("v1", "v2", "v3") for m in models), [m.get("stage2") for m in models]
+    assert all(m.get("stage2") in ("v1", "v2", "v3", "v2_d10") for m in models), [m.get("stage2") for m in models]
     assert sv["name"] not in {m["key"] for m in models[1:]}, "a set is served or a candidate, never both"
     assert all(m["served"] is False for m in models[1:])
     assert "error" in eng.get_scorecard("2024-01-13", model="../x")
@@ -417,7 +417,10 @@ def test_stage2_variants_pair_with_any_stage1_and_served_gb_v1_is_untouched():
     for m in C.list_candidates():
         s2 = m.get("stage2") or {}
         sc = C.load_scorecard(m["name"])
-        assert (sc.get("stage2") or {}).get("variant", "v1") == s2.get("variant", "v1"), m["name"]
+        spec = C.load_stage2(m["name"])
+        # the scorecard composes with the spec's variant; the manifest records its id (v2_d10: v2 on more samples)
+        assert (sc.get("stage2") or {}).get("variant", "v1") == (spec or {}).get("variant", "v1"), m["name"]
+        assert C.stage2_variant_id(spec) == s2.get("variant", "v1"), m["name"]
         if s2.get("variant", "v1") == "v1":
             continue
         n_variant += 1
@@ -435,9 +438,13 @@ def test_stage2_variants_pair_with_any_stage1_and_served_gb_v1_is_untouched():
                            if d["date"] in source and d["basins"][k].get("ph") is not None and source[d["date"]]["basins"][k].get("ph") is not None)
             assert worst_p == 0.0, f"{m['name']}: stage 1 is {src_name}'s, probabilities must be identical (worst {worst_p})"
             assert worst_ph <= 0.001, f"{m['name']}: holdout refit drifted from {src_name}'s stored ph (worst {worst_ph})"
-            east_same = all(d["groups"]["Southeast"]["risk"] == source[d["date"]]["groups"]["Southeast"]["risk"] for d in sc["days"] if d["date"] in source)
-            assert east_same, f"{m['name']}: Southeast group must be unchanged by the split"
-            print(f"   {m['name']}: stage 1 identical to {src_name}, holdout refit within {worst_ph:.4f}, Southeast untouched")
+            if (spec or {}).get("impact_samples") is None:     # the source's table: only the split could move a group
+                east_same = all(d["groups"]["Southeast"]["risk"] == source[d["date"]]["groups"]["Southeast"]["risk"] for d in sc["days"] if d["date"] in source)
+                assert east_same, f"{m['name']}: Southeast group must be unchanged by the split"
+                print(f"   {m['name']}: stage 1 identical to {src_name}, holdout refit within {worst_ph:.4f}, Southeast untouched")
+            else:                                                 # v2_d10: a refit table moves every group, the split none
+                print(f"   {m['name']}: stage 1 identical to {src_name}, holdout refit within {worst_ph:.4f}; its linger table is "
+                      f"refit on other samples ({spec['impact_samples']}), so groups move with the table")
     assert n_variant >= 1, "expected at least one candidate on a stage 2 variant"
 
 

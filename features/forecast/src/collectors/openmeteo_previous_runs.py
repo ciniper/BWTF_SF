@@ -54,6 +54,9 @@ Files (features/forecast/data/raw):
                                        (first archived hour 2022-11-16 08:00 UTC, so the first
                                        complete day is 11-17), earlier rows prepended and the
                                        existing rows left byte-identical
+  openmeteo_wind_<model>.csv           timestamp, lead_day (0–5), wind_speed_ms, wind_dir_deg — the 10 m wind
+                                       at the same leads, cell and day, each lead over its rain cache's span
+                                       (--wind; the south-wind input, rain_features.wind_rain_features)
   openmeteo_forecast_archive.json      manifest: what each file and lead is, first and last
                                        complete day per (model, lead), NaN hours, the probe
 
@@ -65,6 +68,7 @@ Usage (from the repo root):
   venv/bin/python features/forecast/src/collectors/openmeteo_previous_runs.py --fetch [--end YYYY-MM-DD]
   venv/bin/python features/forecast/src/collectors/openmeteo_previous_runs.py --extend-icon
   venv/bin/python features/forecast/src/collectors/openmeteo_previous_runs.py --manifest
+  venv/bin/python features/forecast/src/collectors/openmeteo_previous_runs.py --wind      (after --fetch / --extend-icon)
 """
 from __future__ import annotations
 
@@ -132,10 +136,12 @@ def _get(url: str, params: dict) -> dict:
     raise RuntimeError(f"gave up after {TRIES} tries: {url} {params}")
 
 
-def _fetch_span(url: str, model: str, variables: list[str], start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
+def _fetch_span(url: str, model: str, variables: list[str], start: pd.Timestamp, end: pd.Timestamp,
+                extra: dict | None = None) -> pd.DataFrame:
     """Hourly ``variables`` (mm) for days start…end in the fixed UTC−7 day, fetched in GMT chunks.
 
-    GMT dates start…end+1 cover the shifted span; rows outside it are cut.
+    GMT dates start…end+1 cover the shifted span; rows outside it are cut. ``extra``: more query
+    parameters (the wind fetch's wind_speed_unit).
     """
     frames, grid = [], None
     g0, g1 = start.normalize(), end.normalize() + pd.Timedelta(days=1)
@@ -143,7 +149,8 @@ def _fetch_span(url: str, model: str, variables: list[str], start: pd.Timestamp,
     while c0 <= g1:
         c1 = min(c0 + pd.Timedelta(days=CHUNK_DAYS - 1), g1)
         js = _get(url, {"latitude": LAT, "longitude": LON, "hourly": ",".join(variables), "models": model,
-                        "timezone": "GMT", "start_date": c0.strftime("%Y-%m-%d"), "end_date": c1.strftime("%Y-%m-%d")})
+                        "timezone": "GMT", "start_date": c0.strftime("%Y-%m-%d"), "end_date": c1.strftime("%Y-%m-%d"),
+                        **(extra or {})})
         h = js["hourly"]
         df = pd.DataFrame({"timestamp": pd.to_datetime(h["time"]) + pd.Timedelta(hours=UTC_OFFSET_HOURS)})
         for v in variables:
@@ -227,6 +234,51 @@ def extend_short_lead(model: str = "icon_seamless", start: pd.Timestamp = ICON_S
     path.write_text(header + "\n" + block + body)
     return {"model": model, "prepended_hours": int(len(new)), "first": str(new["timestamp"].min()),
             "overlap_hours_identical": int(same.sum())}
+
+
+# ── the wind forecasts (the south-wind input, rain_features.wind_rain_features) ──
+# The same archives as the rain, read the same way: lead 0 from the Historical Forecast API (the stitched short
+# lead), leads 1–5 from Previous Runs (``wind_speed_10m_previous_dayL``), the fixed UTC−7 day, the same cell. Each
+# lead covers the span its rain cache covers, so every kept lead row has its day's wind too.
+
+def wind_path(model: str) -> Path:
+    return RAW_DIR / f"openmeteo_wind_{model}.csv"     # openmeteo_*.csv: left out of the app bundle (vercel.json)
+
+
+def fetch_wind(model: str) -> dict:
+    """Hourly 10 m wind (m/s, and the degrees it blows FROM) at leads 0–5 → wind_path(model):
+    timestamp, lead_day, wind_speed_ms, wind_dir_deg. Each lead keeps its hours from its rain cache's
+    first hour to its last; a NaN hour is an empty cell, never a calm one."""
+    unit = {"wind_speed_unit": "ms"}
+    short = pd.read_csv(short_lead_path(model), parse_dates=["timestamp"])
+    fixed = pd.read_csv(prev_runs_path(model), parse_dates=["timestamp"])
+    out, note = [], {"model": model, "fetched_at": utc_iso()}
+    w0 = _fetch_span(HIST_FORECAST_URL, model, ["wind_speed_10m", "wind_direction_10m"],
+                     short["timestamp"].min(), short["timestamp"].max(), extra=unit)
+    w0 = w0.rename(columns={"wind_speed_10m": "wind_speed_ms", "wind_direction_10m": "wind_dir_deg"})
+    w0.insert(1, "lead_day", 0)
+    out.append(w0[(w0["timestamp"] >= short["timestamp"].min()) & (w0["timestamp"] <= short["timestamp"].max())])
+    time.sleep(PAUSE_S)
+    variables = [f"wind_{v}_10m_previous_day{L}" for L in FIXED_LEADS for v in ("speed", "direction")]
+    wide = _fetch_span(PREV_RUNS_URL, model, variables, fixed["timestamp"].min(), fixed["timestamp"].max(), extra=unit)
+    for L in FIXED_LEADS:
+        span = fixed.loc[fixed["lead_day"] == L, "timestamp"]
+        s = wide[["timestamp", f"wind_speed_10m_previous_day{L}", f"wind_direction_10m_previous_day{L}"]].set_axis(
+            ["timestamp", "wind_speed_ms", "wind_dir_deg"], axis=1)
+        s = s[(s["timestamp"] >= span.min()) & (s["timestamp"] <= span.max())].copy()
+        s.insert(1, "lead_day", L)
+        out.append(s)
+    long = pd.concat(out, ignore_index=True)
+    long.to_csv(wind_path(model), index=False)
+    note.update(rows=int(len(long)), nan_hours={str(L): int(g["wind_speed_ms"].isna().sum()) for L, g in long.groupby("lead_day")},
+                grid=wide.attrs.get("grid"))
+    return note
+
+
+def load_wind(model: str, lead: int) -> pd.DataFrame:
+    """Hourly (timestamp, wind_speed_ms, wind_dir_deg) for one model and lead."""
+    df = pd.read_csv(wind_path(model), parse_dates=["timestamp"])
+    return df[df["lead_day"] == int(lead)].drop(columns="lead_day").reset_index(drop=True)
 
 
 # ── reading (the one place the complete-day rule lives) ─────────────────────
@@ -343,6 +395,7 @@ def main(argv=None) -> None:
     ap.add_argument("--fetch", action="store_true", help="fetch leads 1–5 for every model")
     ap.add_argument("--extend-icon", action="store_true", help="prepend ICON's short lead back to 2022-11-16")
     ap.add_argument("--manifest", action="store_true", help="rewrite the manifest from the caches")
+    ap.add_argument("--wind", action="store_true", help="fetch the wind forecasts at leads 0–5 over each rain cache's span")
     ap.add_argument("--models", default=",".join(MODELS))
     ap.add_argument("--end", default=None, help="last day to fetch (default: yesterday, Pacific)")
     a = ap.parse_args(argv)
@@ -360,7 +413,13 @@ def main(argv=None) -> None:
             long, check = fetch_previous_runs(m, end=a.end)
             notes[f"prev_runs_{m}"] = {"fetched_at": utc_iso(), "rows": int(len(long)), "lead0_vs_short_lead_cache": check}
             print(f"{m}: {len(long)} rows → {prev_runs_path(m).name}; lead 0 vs the short-lead cache {check}")
-    if a.probe or a.fetch or a.extend_icon or a.manifest:
+    if a.wind:
+        for i, m in enumerate(a.models.split(",")):
+            if i:
+                time.sleep(PAUSE_S)
+            notes[f"wind_{m}"] = fetch_wind(m)
+            print(notes[f"wind_{m}"])
+    if a.probe or a.fetch or a.extend_icon or a.manifest or a.wind:
         man = write_manifest(pr, notes)
         for m, leads in man["models"].items():
             print(m, {L: (s or {}).get("first_complete_day") for L, s in leads.items()})

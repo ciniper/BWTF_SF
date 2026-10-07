@@ -107,9 +107,76 @@ The second serves the lab at http://localhost:8095.
   so its grade is fair to the procedure. It also gives the terms it would
   pick on all nine seasons.
 
-The new inputs are not computed by the live page or the stage scores yet. A
-term set that uses one can be graded in the lab, but not saved or served
-(TODO.md).
+One new input is servable: the south wind on the rainy hours (`wind_v_rain`).
+The training frames, the stage scores and the live page compute it, and
+`train_terms.py` saves candidates on it (below). The other four new inputs are
+lab-only: a term set that uses one can be graded but not saved or served.
+
+## A short term list with the south wind
+
+Candidates on a named term list, picked nested, with the wind (Chase,
+2026-10-07: "an 8/9/10 term model and including the wind").
+
+```bash
+venv/bin/python features/forecast/src/collectors/openmeteo_previous_runs.py --wind
+venv/bin/python features/forecast/src/models/train_terms.py
+venv/bin/python features/forecast/src/models/train_terms.py --save
+venv/bin/python features/forecast/src/models/stages_build.py --set logit_wind8_older11_s2v2 --root candidates --write
+```
+
+1. The first command fetches the archived wind *forecasts* at leads 0–5 for
+   all three weather models (`data/raw/openmeteo_wind_<model>.csv`), over each
+   rain archive's span. A lead entry's wind is then the forecast's own, as the
+   page will see it, never the measured wind. ERA5's measured wind
+   (`historical.py --wind`) feeds training and "rain known".
+2. The second runs the term lab's nested choice and prints each size's grade.
+   It writes nothing. Four terms are forced: the day's rain, the 2- and 3-day
+   sums and the south wind. The rest are added one at a time inside each
+   season's fold, on terms the page can compute, with the sensible rules.
+3. The third saves six candidates: 8, 9 and 10 terms, each with stage 2 v2
+   (`_s2v2`) and with the linger table on more samples (`_s2v2d10`, next
+   section). All use the served rain sources and C, and the older reports from
+   2011 (every discharge day). The manifest keeps each fold's own terms
+   (`fold_terms`), so the stages build refits every fold on its own pick.
+
+The wind is one shared formula (`rain_features.wind_rain_features`): the
+rain-weighted south → north wind over the day's hours, in m/s, 0 on a day
+under 0.005" of rain. A rainy hour without a wind reading makes the day
+unknown, never calm. Served models don't read it; their `features` lists
+stay the 19 inputs.
+
+T2 is still labelled selection-contaminated: the forced terms and the sizes
+were chosen with the lab's nine-season grades in view. Each set is also tagged
+`post_seen` (`candidates.tag_candidate`): its record was chosen in
+`OLDER_REPORTS.md` with post-training scores in view, so its post-training
+scores carry the tag and only the live season can confirm it. Promoting such a
+set copies `record`, `terms` and `fold_terms` into `served.json`
+(`promote.DESIGN_FIELDS`).
+
+## The linger table on more samples
+
+`v2_d10` is stage 2 v2 with its linger table refit on the stages' S4 truth
+samples (`samples.D10_SOURCES`). Those add STARDB's 2016-10 → 2020-07 results,
+45–65% more sample days per beach group than the served table's DataSF and
+Poo Bot. The split's shares are v2's.
+
+```bash
+venv/bin/python features/forecast/src/models/stage2_variants.py fit --variant v2_d10
+venv/bin/python features/forecast/src/models/stage2_variants.py save --stage1 served --variant v2_d10 --name logit_v1_s2v2d10
+venv/bin/python -c "import sys; sys.path.insert(0, 'features/forecast/src/models'); import candidates; candidates.rescore_post('logit_v1_s2v2d10')"
+```
+
+The last line rescores the candidate's post-training days on the served input rules (the gauge-outage
+rule), as every set's are, so the Model check compares like with like. `train_terms.py` and
+`train_older_reports.py` do it themselves.
+
+The spec keeps `"variant": "v2"`, plus `"impact_samples": "d10"`, so it
+composes and serves exactly as v2 does: no served code reads the samples
+field. Its sets record the id `v2_d10` (`candidates.stage2_variant_id`). The
+lineup calls it "Linger table 2, more samples". The stages build refits it per
+fold on the D10 samples of the fold's training days. Its sets are tagged
+`post_seen`: the table was built after `sfpuc4_shared8_v3b`'s post-training
+scores showed the extra samples helping.
 
 ## Training on the older discharge reports
 
