@@ -39,7 +39,8 @@ def test_offline_stage_data_is_not_bundled():
                "features/forecast/data/raw/openmeteo_prev_runs_icon_seamless.csv",
                "features/forecast/data/raw/openmeteo_hist_forecast_icon_seamless.csv",
                "features/forecast/data/raw/historical_rain_2011-2015.csv",       # a longer training record's rain
-               "features/forecast/data/raw/hourly_rain_openmeteo_2011-2015.csv"]
+               "features/forecast/data/raw/hourly_rain_openmeteo_2011-2015.csv",
+               "features/forecast/data/raw/openmeteo_wind_hourly.csv"]                # the term lab's wind
     served = ["features/forecast/data/models/served.json", "features/forecast/data/raw/openmeteo_forecast_archive.json",
               "features/forecast/data/raw/historical_rain.csv", "features/forecast/data/raw/hourly_rain_openmeteo.csv",
               "reports/2026-10_forecast_stages.html", "features/forecast/src/models/stages_build.py"]

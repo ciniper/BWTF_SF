@@ -359,6 +359,25 @@ The model lives at `/alerts/costs`, the alerts dashboard's Running costs tab (`f
     - basins: BWTF basins only. The older Bayside rows are outfall groups, and the 2011 group 31–38 spans the city's Central and South.
 
     Save it as a candidate naming its `record`, score it with the stages build, and rerun `train_older_reports.py --report`. Then the live season (T0, after the Dec–Jan refresh) decides condition 2, the one-day-ahead public number, which `logit_v1_older11_every_s2v2` misses on range width only. Promotion is Chase's call.
+    - **First nested pick (2026-10-07, the term lab's "Choose for me", `src/models/term_lab.py`).** On the 2011 record it stops at 4 terms, the same in every basin:
+      - the terms: the day's rain, its hinges at 0.25″ and 1″, and the rain-weighted south wind `wind_v_rain`;
+      - nine seasons: the choosing itself scores 0.62 against the live 0.59, better;
+      - holdout: 0.74 against 0.76, no clear difference.
+
+      On the CIWQS record alone it picks the same core and scores no clear difference in either window. To build it:
+      1. make `wind_v_rain` servable: ERA5's hourly wind in the training frames and the stage entries, ICON's hourly wind on the live page;
+      2. add a save path for a lab design. A candidate's transform must live in `leaderboard.py`, which the served pickles import, so it needs care;
+      3. score it with the stages build.
+  - [ ] **Radar rainfall per basin (research 2026-10-07; nothing downloaded yet)** — NOAA MRMS gives 1-km hourly rain over each basin from Nov 2014. The easiest access is dynamical.org's MRMS Zarr store (needs `icechunk` + `xarray`); the raw GRIB files are about 0.6 MB/hour (AWS from 2020-10, Iowa State mtarchive before, about 50 GB for 2016–2026). Plan:
+    - **Pilot:** extract a few big storms per basin. Compare with the two NOAA gauges and the CoCoRaHS three; check the 2020-10 product seam.
+    - **Lab test:** if it holds up, add per-basin radar rain as a term-lab input and see whether S2 improves.
+    - **2011 → Oct 2014:** only AORC (about 800 m, gauge-driven, smooth: no hill effect).
+    - **Caveats:**
+      - KMUX's beam crosses SF about 1.5–3 km up, so it misses the shallow coastal rain behind the hill effect. One published study on the Sonoma coast found −31% for storms and −70% to −80% for shallow rain.
+      - Gauge-corrected grids lean on the same few gauges we already use.
+
+    Stage IV is no good here: its California hours are 6-hour totals split evenly. AQPI's Bay Area X-band radars (one hosted by SFPUC, from fall 2025) are too new to train on; ask CW3E/CIRA for archive access to check against.
+  - [ ] **Ask SFPUC for its rain gauges** — add to `features/forecast/data/csd/records_request_draft.md`: hourly (or finer) data and coordinates for every wastewater rain gauge, 2011 to now (a USACE study cites an "SFPUC Mission Street gage RG31, 2011–2018"). It is the real test of the hill effect the former SFPUC engineer describes, and the ground truth the radar would be checked against.
   - [ ] **Westside sampling proxy 2004–2011 (optional, weaker)** — the item above covers Mar 2011 on from filed reports; `data/sfpuc_stardb_2000_2020/westside_csd_followup_sampling_episodes.csv` dates Westside discharges before that only by their follow-up sampling (first sample ≈ 0–3 days after). Would need rain back to 2004 (`historical.py`'s `OLDER_START`) and its own record type in `csd_pre2018.py`; grade as another candidate. Worth it only if the 2011 record's gain holds up in the live season.
   - [ ] **E. coli limit: 235 or 400? (Chase)** — the report card grades E. coli at 235 (`shared/standards.py`; EPA's 1986 freshwater beach limit, mislabeled as AB 411 in README.md since the first commit — AB 411 has no E. coli limit). SFPUC's own monthly shoreline reports apply 400, the AB 411 fecal coliform limit, to E. coli; 521 of 17,578 E. coli results (2002 – Mar 2021) fall in between and count as failures here. Documented on `/analysis/testing`; changing it moves the report card's E. coli and "any indicator" numbers for those years.
   - [ ] **Dry-weather baselines per station and season** — 26 years give the per-station over-standard rate with no discharge in the prior week (the "dry-weather dirtiness" the analysis report sets aside: 156 samples oos). Use for the live rules' dry floor evidence, the Report Card's storm-season effect, and the alerts page's caution wording.

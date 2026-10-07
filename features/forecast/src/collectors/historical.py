@@ -166,6 +166,43 @@ def fetch_hourly_rain(start_date: str = "2016-01-01", end_date: str = None, out:
     return df
 
 
+# ERA5's hourly 10 m wind at the same point as the hourly rain, for the term lab's wind-direction inputs
+# (src/models/term_lab.py). Not read by any served path.
+HOURLY_WIND_CSV = RAW_DIR / "openmeteo_wind_hourly.csv"   # openmeteo_*.csv: left out of the app bundle (vercel.json)
+
+
+def fetch_hourly_wind(start_date: str = "2011-01-01", end_date: str = None) -> pd.DataFrame:
+    """Hourly wind speed (m/s) and direction (degrees the wind blows FROM) from the Open-Meteo archive
+    (ERA5), at fetch_hourly_rain's point and clock (America/Los_Angeles). Saves to HOURLY_WIND_CSV."""
+    frames = []
+    start = pd.Timestamp(start_date)
+    end_all = pd.Timestamp.now() - pd.Timedelta(days=6)  # archive lags ~5 days
+    if end_date is not None:
+        end_all = min(end_all, pd.Timestamp(end_date))
+    for y0 in range(start.year, end_all.year + 1, 3):
+        chunk_start = max(start, pd.Timestamp(f"{y0}-01-01"))
+        chunk_end = min(pd.Timestamp(f"{y0 + 2}-12-31"), end_all)
+        if chunk_start > chunk_end:
+            continue
+        r = requests.get("https://archive-api.open-meteo.com/v1/archive", params={
+            "latitude": 37.7749, "longitude": -122.4194,
+            "hourly": "wind_speed_10m,wind_direction_10m", "wind_speed_unit": "ms",
+            "start_date": chunk_start.strftime("%Y-%m-%d"),
+            "end_date": chunk_end.strftime("%Y-%m-%d"),
+            "timezone": "America/Los_Angeles",
+        }, timeout=120)
+        r.raise_for_status()
+        h = r.json()["hourly"]
+        frames.append(pd.DataFrame({"timestamp": pd.to_datetime(h["time"]), "wind_speed_ms": h["wind_speed_10m"],
+                                    "wind_dir_deg": h["wind_direction_10m"]}))
+        print(f"  wind chunk {chunk_start.date()} → {chunk_end.date()}: {len(frames[-1])} hours")
+        time.sleep(1)
+    df = pd.concat(frames).drop_duplicates("timestamp").sort_values("timestamp")
+    RAW_DIR.mkdir(parents=True, exist_ok=True)
+    df.to_csv(HOURLY_WIND_CSV, index=False)
+    return df
+
+
 # The rain before historical_rain.csv / hourly_rain_openmeteo.csv start (2016-01-01), for training on the
 # older discharge reports (data/csd/pre2018/, Mar 2011 on; train_v4.build_dataset(record=...)). Separate
 # files, so the record every served set and stage score pins stays byte for byte what it was.
@@ -442,5 +479,7 @@ def collect_and_build(save: bool = True) -> pd.DataFrame:
 if __name__ == "__main__":
     if "--older" in sys.argv[1:]:      # the 2011–2015 rain only (fetch_older_rain); the record's own files untouched
         fetch_older_rain()
+    elif "--wind" in sys.argv[1:]:     # ERA5 hourly wind 2011 → (fetch_hourly_wind), for the term lab
+        fetch_hourly_wind()
     else:
         training_df = collect_and_build()

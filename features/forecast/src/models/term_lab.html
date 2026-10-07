@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Term lab · overflow model</title>
+<style>
+  :root { --ink:#1d2733; --mute:#5b6875; --line:#d9e0e6; --bg:#f4f7f9; --blue:#1f5f99; --live:#237059; --bad:#b3261e; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color:var(--ink); background:var(--bg); }
+  main { max-width:1100px; margin:0 auto; padding:20px 16px 40px; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  .sub { color:var(--mute); margin:0 0 16px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin:0 0 14px; }
+  .row { display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; }
+  .lbl { font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--mute); }
+  button, select { font:inherit; }
+  .btn { border:1px solid var(--line); background:#fff; border-radius:999px; padding:4px 12px; cursor:pointer; }
+  .btn:hover { border-color:var(--blue); }
+  .btn.primary { background:var(--blue); border-color:var(--blue); color:#fff; }
+  .btn:disabled { opacity:.5; cursor:wait; }
+  .group { margin:10px 0 0; }
+  .group h3 { font-size:13px; margin:0 0 6px; color:var(--mute); font-weight:600; }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; }
+  .chip { border:1px solid var(--line); background:#fff; border-radius:6px; padding:3px 8px; font-size:13px; cursor:pointer; user-select:none; }
+  .chip.on { background:var(--blue); border-color:var(--blue); color:#fff; }
+  .chip.new { border-style:dashed; }
+  .chip.on.new { border-style:solid; }
+  table { border-collapse:collapse; width:100%; }
+  th, td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--mute); font-weight:600; }
+  .num { font-variant-numeric:tabular-nums; }
+  .big { font-size:18px; font-weight:700; }
+  .mute { color:var(--mute); font-size:13px; }
+  .bar { position:relative; height:8px; background:#e8edf1; border-radius:4px; margin:4px 0 2px; max-width:260px; }
+  .bar .fill { position:absolute; left:0; top:0; bottom:0; background:var(--blue); border-radius:4px; }
+  .bar .rng { position:absolute; top:3px; height:2px; background:#6f8da8; }
+  .bar .live { position:absolute; top:-3px; bottom:-3px; width:2px; background:var(--live); }
+  .verdict { display:inline-block; border-radius:999px; padding:1px 8px; font-size:12px; font-weight:600; }
+  .v-better { background:#dff1e7; color:var(--live); }
+  .v-worse { background:#f8e0de; color:var(--bad); }
+  .v-none { background:#eceff2; color:var(--mute); }
+  .neg { color:var(--bad); font-weight:600; }
+  details summary { cursor:pointer; font-weight:600; }
+  .scroll { overflow-x:auto; }
+  .warn { color:#8a5a00; font-size:13px; margin-top:6px; }
+  .busy { color:var(--mute); font-size:13px; }
+  @media (max-width:600px) { .bar { max-width:none; } th, td { padding:6px 4px; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Term lab · overflow model</h1>
+  <p class="sub">Pick the terms. Each pick is fit season by season and graded like the stage scores, against the
+    live model (<span id="liveName">—</span>) on the same days. The green tick is the live model.</p>
+
+  <div class="card">
+    <div class="row"><span class="lbl">Start from</span><span id="presets" class="row"></span></div>
+    <div class="row" style="margin-top:10px">
+      <label>C <select id="C"></select></label>
+      <label><input type="checkbox" id="nonneg"> Every weight ≥ 0</label>
+      <label>Training record <select id="record"></select></label>
+    </div>
+    <div id="terms"></div>
+  </div>
+
+  <div class="card">
+    <div class="row"><span id="count" class="big">—</span><span id="status" class="busy"></span></div>
+    <div id="newWarn" class="warn" hidden>Uses a new input. The live page and the stage scores don't compute it yet,
+      so this can be graded here but not saved or served.</div>
+    <div class="scroll"><table id="grade"></table></div>
+  </div>
+
+  <div class="card">
+    <details><summary>Weights</summary>
+      <p class="mute">Each term's weight per standard deviation, fit on all nine seasons. Red is a weight below 0.</p>
+      <div class="scroll"><table id="weights"></table></div>
+    </details>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <button id="choose" class="btn primary">Choose for me</button>
+      <label>up to <select id="maxTerms"><option>4</option><option>6</option><option selected>8</option><option>12</option></select> terms</label>
+      <span class="mute">from the terms that are on (all of them if none are). Takes a minute.</span>
+    </div>
+    <div id="chosen"></div>
+  </div>
+
+  <p class="mute">Post-training days and the live season are kept out of the lab, so they can still confirm whatever is picked here.
+    "Choose for me" picks inside each season's fold, so its grade is fair. Graded by hand, a term set that wins here can still be
+    luck: the more sets tried, the more one wins by chance.</p>
+</main>
+<script>
+const $ = (s) => document.querySelector(s);
+const state = { terms: new Set(), C: "live", nonneg: false, record: "served" };
+let META = null, timer = null, seq = 0;
+
+const fmt = (x, d = 2) => (x == null || !isFinite(x)) ? "—" : x.toFixed(d);
+const vClass = (v) => v === "better" ? "v-better" : v === "worse" ? "v-worse" : "v-none";
+const vWord = (v) => v === "no clear difference" ? "no clear difference" : v;
+
+function chip(term) {
+  const el = document.createElement("span");
+  const isNew = META.new.includes(term.split(">")[0]);
+  el.className = "chip" + (isNew ? " new" : "") + (state.terms.has(term) ? " on" : "");
+  el.textContent = term;
+  el.onclick = () => { state.terms.has(term) ? state.terms.delete(term) : state.terms.add(term); el.classList.toggle("on"); schedule(); };
+  return el;
+}
+
+function drawTerms() {
+  const box = $("#terms"); box.innerHTML = "";
+  for (const g of META.groups) {
+    const d = document.createElement("div"); d.className = "group";
+    d.innerHTML = `<h3>${g.title}</h3>`;
+    const c = document.createElement("div"); c.className = "chips";
+    g.terms.forEach((t) => c.appendChild(chip(t)));
+    d.appendChild(c); box.appendChild(d);
+  }
+}
+
+function setTerms(list) { state.terms = new Set(list); drawTerms(); schedule(0); }
+
+function skillCell(c) {
+  const pct = (x) => Math.max(0, Math.min(100, (x || 0) * 100));
+  return `<div class="num"><b>${fmt(c.skill)}</b> <span class="mute">[${fmt(c.skill_lo)}–${fmt(c.skill_hi)}] · live ${fmt(c.live_skill)}</span></div>
+    <div class="bar"><div class="fill" style="width:${pct(c.skill)}%"></div>
+      <div class="rng" style="left:${pct(c.skill_lo)}%;width:${Math.max(0, pct(c.skill_hi) - pct(c.skill_lo))}%"></div>
+      <div class="live" style="left:${pct(c.live_skill)}%"></div></div>
+    <span class="verdict ${vClass(c.verdict)}" title="Brier change vs live ×1000: ${fmt(c.delta * 1000)} [${fmt(c.lo * 1000)}, ${fmt(c.hi * 1000)}] on ${c.n.toLocaleString()} basin-days, ${c.pos} with an overflow">${vWord(c.verdict)}</span>
+    <span class="mute">PR ${fmt(c.pr)}</span>`;
+}
+
+function gradeTable(el, grade) {
+  const wins = Object.keys(META.windows);
+  const units = [["pooled", "All four basins"], ...META.basins.map((b) => [b.key, b.name])];
+  el.innerHTML = `<tr><th>Basin</th>${wins.map((w) => `<th>${META.windows[w]}</th>`).join("")}</tr>` +
+    units.map(([k, name]) => `<tr><td><b>${name}</b></td>${wins.map((w) => `<td>${skillCell(grade[w][k])}</td>`).join("")}</tr>`).join("");
+}
+
+function weightsTable(w, terms) {
+  const keys = META.basins.map((b) => b.key);
+  $("#weights").innerHTML = `<tr><th>Term</th>${META.basins.map((b) => `<th>${b.name}</th>`).join("")}</tr>` +
+    terms.map((t) => `<tr><td>${t}</td>${keys.map((k) => `<td class="num ${w[k][t] < 0 ? "neg" : ""}">${fmt(w[k][t])}</td>`).join("")}</tr>`).join("");
+}
+
+function body(extra = {}) {
+  return JSON.stringify({ terms: [...state.terms], C: state.C, nonneg: state.nonneg, record: state.record, ...extra });
+}
+
+function schedule(ms = 300) { clearTimeout(timer); timer = setTimeout(grade, ms); }
+
+async function grade() {
+  const terms = [...state.terms];
+  $("#count").textContent = terms.length ? `${terms.length} terms · ${terms.length * META.basins.length} weights` : "Pick a term";
+  if (!terms.length) { $("#grade").innerHTML = ""; $("#weights").innerHTML = ""; return; }
+  const my = ++seq;
+  $("#status").textContent = "grading…";
+  const r = await fetch("/api/grade", { method: "POST", headers: { "Content-Type": "application/json" }, body: body() });
+  const j = await r.json();
+  if (my !== seq) return;
+  $("#status").textContent = j.error ? j.error : "";
+  if (j.error) return;
+  $("#newWarn").hidden = !j.new_inputs.length;
+  gradeTable($("#grade"), j.grade);
+  weightsTable(j.weights, j.terms);
+}
+
+async function choose() {
+  const btn = $("#choose"); btn.disabled = true;
+  $("#chosen").innerHTML = `<p class="busy">Choosing inside each season's fold…</p>`;
+  const pool = [...state.terms];
+  const r = await fetch("/api/choose", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: body({ pool: pool.length ? pool : null, max_terms: +$("#maxTerms").value }) });
+  const j = await r.json(); btn.disabled = false;
+  const counts = Object.entries(j.chosen_in).map(([t, n]) => `<span class="chip">${t} · ${n}/${j.n_folds}</span>`).join(" ");
+  $("#chosen").innerHTML = `<h3 style="margin:14px 0 6px">Picked on all nine seasons: ${j.terms.join(", ")}</h3>
+    <div class="row"><button class="btn" id="useChosen">Use these terms</button>
+      <span class="mute">How often each term was picked in the ${j.n_folds} folds:</span></div>
+    <div class="chips" style="margin:6px 0 10px">${counts}</div>
+    <p class="mute">The grade of the choosing itself: each season scored by terms picked without it.</p>
+    <div class="scroll"><table id="nested"></table></div>`;
+  gradeTable($("#nested"), j.nested_grade);
+  $("#useChosen").onclick = () => setTerms(j.terms);
+}
+
+(async function init() {
+  META = await (await fetch("/api/meta")).json();
+  $("#liveName").textContent = META.live;
+  for (const [name, terms] of Object.entries(META.presets)) {
+    const b = document.createElement("button"); b.className = "btn"; b.textContent = name;
+    b.onclick = () => setTerms(terms); $("#presets").appendChild(b);
+  }
+  $("#C").innerHTML = META.C_choices.map((c) => `<option value="${c}">${c === "live" ? "the live model's" : c}</option>`).join("");
+  $("#record").innerHTML = Object.entries(META.records).map(([k, w]) => `<option value="${k}">${w}</option>`).join("");
+  $("#C").onchange = (e) => { state.C = e.target.value; schedule(0); };
+  $("#nonneg").onchange = (e) => { state.nonneg = e.target.checked; schedule(0); };
+  $("#record").onchange = (e) => { state.record = e.target.value; schedule(0); };
+  $("#choose").onclick = choose;
+  setTerms(META.presets["Live (38 weights)"]);
+})();
+</script>
+</body>
+</html>

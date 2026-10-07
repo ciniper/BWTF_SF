@@ -63,6 +63,38 @@ To put a set live on BWTF basins:
 lists. A city-basin set needs the promotion tooling (P11), which is built when such
 a set earns promotion (STAGES_DESIGN.md Part B 29).
 
+## Trying term sets: the term lab
+
+A local page for trying overflow-model term sets in seconds, before building
+a candidate.
+
+```bash
+venv/bin/python features/forecast/src/collectors/historical.py --wind
+venv/bin/python features/forecast/src/models/term_lab.py
+```
+
+The first command fetches ERA5's hourly wind once (`data/raw/openmeteo_wind_hourly.csv`).
+The second serves the lab at http://localhost:8095.
+
+- **What you set.** Pick terms (the 19 inputs, their hinges, and five new
+  ones: the largest running 24 hours, the rain that fell on a west wind, the
+  rain-weighted west and south winds, and the 3-hour peak after wet days),
+  a C, whether every weight must be ≥ 0, and a training record.
+- **How it grades.** The lab fits the same terms in every basin, season by
+  season, as the stages build refits a set. It grades on the live set's own
+  scored S2 rows, with the same truth, exclusions, reference, storm blocks and
+  bootstrap. A lab number is the number the stages build would give
+  (`term_lab.py --check`; `tests/test_term_lab.py`).
+- **What it never shows.** Post-training days and the live season stay out,
+  so they can still confirm a pick.
+- **Choose for me.** It adds terms one at a time inside each season's fold,
+  so its grade is fair to the procedure. It also gives the terms it would
+  pick on all nine seasons.
+
+The new inputs are not computed by the live page or the stage scores yet. A
+term set that uses one can be graded in the lab, but not saved or served
+(TODO.md).
+
 ## Training on the older discharge reports
 
 SFPUC's older monthly reports (Mar 2011 until the CIWQS ledger opens: Bayside

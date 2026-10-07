@@ -56,9 +56,10 @@ def test_the_forecast_record_is_untouched():
     for path in never:                                                      # the labels and the live page never name them
         assert "pre2018" not in path.read_text(), path.name
     # the only forecast modules that name the reader: the opt-in record (train_v4), the S2 refits that honour a
-    # candidate's record (stages_s2), the build pinning its files (stages_build) and the candidates' trainer
+    # candidate's record (stages_s2), the build pinning its files (stages_build), the candidates' trainer and the
+    # local term lab (term_lab: its "+ older reports" training record)
     readers = {p.name for p in models if "pre2018" in p.read_text()}
-    assert readers == {"train_v4.py", "stages_s2.py", "stages_build.py", "train_older_reports.py"}, readers
+    assert readers == {"train_v4.py", "stages_s2.py", "stages_build.py", "train_older_reports.py", "term_lab.py"}, readers
     # off on the served and live paths: a fresh interpreter builds the served record and imports the live page
     # without loading the reader, and no day of the served frames is an older-report day
     probe = (
