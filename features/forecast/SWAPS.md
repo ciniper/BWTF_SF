@@ -63,6 +63,22 @@ To put a set live on BWTF basins:
 lists. A city-basin set needs the promotion tooling (P11), which is built when such
 a set earns promotion (STAGES_DESIGN.md Part B 29).
 
+## The lingering stage (S4), per zone
+
+`src/models/stages_s4_zones.py` builds an SFPUC-basin stage candidate that
+differs from its base in S4 only. In every fold, each zone takes the rain curve
+or the lingering table, whichever scores better inside the fold on the score you
+choose: S4's own (`--criterion s4`) or the public number's (`--criterion out`).
+
+```bash
+venv/bin/python features/forecast/src/models/stages_s4_zones.py --assemble NAME --base sfpuc4_shared8_v2 --criterion out
+venv/bin/python features/forecast/src/models/stages_build.py --set NAME --root stages_candidates --write
+venv/bin/python features/forecast/src/models/stages_s4_zones.py --compare NAME --base sfpuc4_shared8_v2
+```
+
+The last command prints the paired change against the base, per stage, zone
+and window. The results so far are in TODO.md and STAGES_DESIGN.md Part B 32.
+
 ## Trying term sets: the term lab
 
 A local page for trying overflow-model term sets in seconds, before building

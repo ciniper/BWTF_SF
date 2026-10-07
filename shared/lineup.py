@@ -29,7 +29,8 @@ WORDS = {
            "logit_v1_older11_every": "38-weight + 2011–17 reports (all days)"},
     "s3": {"basin_v1": "No split", "split_v2": "Outfall split", "split_v2_sfpuc4": "Outfall split SFPUC", "links_v1": "Size split"},
     "s4": {"impact_v1": "Linger table 1", "impact_v2": "Linger table 2", "impact_v2_zone": "Linger table 2 per zone",
-           "zone_v3": "Rain curve"},
+           "zone_v3": "Rain curve", "zone_choice_v1": "Rain curve or table, picked on S4",
+           "zone_choice_v2": "Rain curve or table, picked on the public number"},
     # live_v2 is the replay's basin_swap (and, with its sample floors and caps, all_floors); link_zone_v1 serves the
     # replay's link_zone_swap (A7)
     "s5": {"live_v2": "Basin flags", "basin_swap": "Basin flags", "all_floors": "Basin flags + floors", "plain": "No correction",
