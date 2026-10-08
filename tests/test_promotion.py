@@ -1,8 +1,9 @@
 """The served set is whatever data/models/served.json says (promote.py), and the
 serving path applies its stage 2 split. Written for the 2026-09-28 promotion of
-icon-w38-osplit-lt2-bflags over gb_v1; updated for the 2026-10-07 promotion of
-icon-w38-osplit-lt2more-bflags (the same overflow model and split, its linger
-table fit on more samples) over it."""
+icon-w38-osplit-lt2-bflags over gb_v1; updated for the 2026-10-07 promotions:
+icon-w38-osplit-lt2more-bflags (its linger table fit on more samples), then
+icon-t9wind3h-osplit-lt2more-bflags (9 terms with the south wind and the 3-hour
+peak, on the older reports' record, with that table)."""
 import gzip
 import json
 import pathlib
@@ -22,14 +23,18 @@ SERVE = ROOT / "features/forecast/data/models"
 def test_served_descriptor_matches_the_bundle_on_disk():
     sv = C.served_info()
     assert C.SERVED_FILE.exists(), "served.json missing — promote.py writes it"
-    assert sv["name"] == "icon-w38-osplit-lt2more-bflags" and sv["stage1"] == "logit_v1" and sv["stage2"] == "v2_d10" and sv["family"] == "logit" and sv["line"] == 0.25
-    assert sv["replaced"] == "icon-w38-osplit-lt2-bflags" and sv["from_candidate"] == sv["name"] and sv["corrections"] == "live_v2"
-    assert sv["artifact"] == "logit_v1_s2v2d10" and sv["lineup"]["s4"] == "impact_v2_d10"     # the pickles keep their stamps
+    assert sv["name"] == "icon-t9wind3h-osplit-lt2more-bflags" and sv["stage1"] == "logit_wind8_max3h_older11" and sv["stage2"] == "v2_d10" and sv["family"] == "logit" and sv["line"] == 0.25
+    assert sv["replaced"] == "icon-w38-osplit-lt2more-bflags" and sv["from_candidate"] == sv["name"] and sv["corrections"] == "live_v2"
+    assert sv["artifact"] == sv["name"] and sv["lineup"]["s4"] == "impact_v2_d10"   # restamped with the accurate name
     assert "post_seen" in sv["tags"]                     # a post_seen set stays post_seen when it serves (promote.CARRIED)
+    # a named-terms set serves with its design: its terms, each fold's own pick and its record (promote.DESIGN_FIELDS)
+    assert len(sv["terms"]) == 9 and {"wind_v_rain", "rain_max3h"} <= set(sv["terms"]) and sv["record"]["start"] == "2011-03-01"
+    assert all(len(ts) == 9 for ts in sv["fold_terms"].values()) and all(pb["C"] for pb in sv["per_basin"].values())
     import leaderboard  # noqa: F401
     for key in ("citywide", "westside", "north_shore", "central", "southeast"):
         pk = pickle.load(open(SERVE / f"{key}_model.pkl", "rb"))
         assert pk["version"] == sv["artifact"] and pk.get("family") == sv["family"], key
+        assert pk["terms"] == sv["terms"] and "wind_v_rain" in pk["features"], key
         assert pk["rain_source"] == sv["rain_sources"][key], key
     spec = json.loads((SERVE / "stage2.json").read_text())
     assert C.stage2_variant_id(spec) == sv["stage2"] and spec.get("impact_table"), "served stage2.json must be the variant with its refit table"
@@ -44,9 +49,10 @@ def test_retired_set_is_a_candidate_and_the_served_one_is_not():
     retired = "icon-trees-nosplit-lt1-bflags"            # gb_v1 until the 2026-10-07 rename
     names = {m["name"] for m in C.list_candidates()}
     assert retired in names and C.served_info()["name"] not in names, names
-    last = json.loads((C.candidate_dir("icon-w38-osplit-lt2-bflags") / "manifest.json").read_text())   # served until 2026-10-07
-    assert last["stage1"] == {"name": "logit_v1", "from": "retired-served", "family": "logit"} and last["stage2"]["variant"] == "v2"
-    assert last.get("retired_at") and last["lineup"]["s4"] == "impact_v2" and last["name"] == C.set_name(last["lineup"])
+    for name, table, variant in (("icon-w38-osplit-lt2-bflags", "impact_v2", "v2"), ("icon-w38-osplit-lt2more-bflags", "impact_v2_d10", "v2_d10")):
+        last = json.loads((C.candidate_dir(name) / "manifest.json").read_text())   # each served for part of 2026-10-07
+        assert last["stage1"] == {"name": "logit_v1", "from": "retired-served", "family": "logit"} and last["stage2"]["variant"] == variant
+        assert last.get("retired_at") and last["lineup"]["s4"] == table and last["name"] == C.set_name(last["lineup"])
     man = json.loads((C.candidate_dir(retired) / "manifest.json").read_text())
     assert man["family"] == "gb" and man["stage1"] == {"name": "gb_v1", "from": "retired-served", "family": "gb"} and man["stage2"]["variant"] == "v1"
     assert man.get("retired_at") and man["per_basin"] and man["trained_through"] == "2025-10-31"

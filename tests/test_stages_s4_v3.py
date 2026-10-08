@@ -518,9 +518,9 @@ def test_served_table_keeps_its_recipe():
     finally:
         SB.fold_specs = real
     assert seen == [{"datasf", "poobot"}], seen
-    # ... and T1 reads the served artifacts' own table
+    # ... and T1 reads its set's own table: the reference 38-weight set's artifacts (stages_candidates.REFERENCE)
     t1 = M.served_chain(inp, _fold("T1"))
-    assert t1["specs"]["s4"]["buckets"] == C.geo_v1_adapter_specs()["s4"]["buckets"]
+    assert t1["specs"]["s4"]["buckets"] == C.geo_v1_adapter_specs(stage2=inp.bundle.stage2)["s4"]["buckets"]
     # v3's truth is D10's: STARDB joins it only inside 2016-10 → 2020-07, Poo Bot only to 2017-01
     smp = T._samples(tuple(inp.ctx.sources))
     win = {s: (pd.Timestamp(lo), pd.Timestamp(hi) if hi else None) for s, lo, hi in SMP.D10_SOURCES}

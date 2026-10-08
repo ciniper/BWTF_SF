@@ -29,7 +29,14 @@ PEAKS = [TT.set_name(k, s, added) for k, added, s in TT.PEAK_SETS]
 
 
 def _manifest(name: str) -> dict:
+    """A set's manifest, or served.json for the set that serves (promote.py carries its design there)."""
+    if name == CAND.served_info()["name"]:
+        return CAND.served_info()
     return json.loads((CAND.candidate_dir(name) / "manifest.json").read_text())
+
+
+def _root(name: str) -> str:
+    return "served" if name == CAND.served_info()["name"] else "candidates"
 
 
 def test_the_term_pipeline_is_the_labs_design():
@@ -64,22 +71,25 @@ def test_the_peak_set_is_the_8_terms_plus_the_3_hour_peak():
     next pick), 9 terms each; the term lab's nested grade is the stages build's S2 score, as for every size."""
     for name, (k, added, suffix) in zip(PEAKS, TT.PEAK_SETS):
         man, base = _manifest(name), _manifest(TT.set_name(k, suffix))
-        assert man["terms"] == base["terms"] + TT.ADDED[added] and man["term_selection"]["added"] == TT.ADDED[added]
-        sel = json.loads((CAND.candidate_dir(name) / TT.SELECTION_FILE).read_text())
+        assert man["terms"] == base["terms"] + TT.ADDED[added]
+        sel = json.loads((CAND.candidate_dir(TT.set_name(k, suffix)) / TT.SELECTION_FILE).read_text())   # the 8-term set's
         for f, ts in man["fold_terms"].items():
             assert len(ts) == k + len(TT.ADDED[added]) and set(TT.ADDED[added]) <= set(ts), (name, f)
             if not set(TT.ADDED[added]) & set(sel["by_fold"][f][:k]):
                 assert ts == sel["by_fold"][f][:k] + TT.ADDED[added], (name, f)
         assert man["fold_terms"]["2016-17"][:8] == [t for t in sel["by_fold"]["2016-17"] if t != "rain_max3h"][:8]
-        assert man["lineup"]["s2"] == TT.stage1_name(k, added) and man["stage2"]["variant"] == TT.STAGE2[suffix]
+        spec = CAND.load_stage2(name) if _root(name) == "candidates" else json.loads((CAND.SERVE_DIR / "stage2.json").read_text())
+        assert man["lineup"]["s2"] == TT.stage1_name(k, added) and CAND.stage2_variant_id(spec) == TT.STAGE2[suffix]
         assert man["tags"]["post_seen"] == base["tags"]["post_seen"]
-        s = S2.load_set(name, "candidates")
+        s = S2.load_set(name, _root(name))
         assert s.fold_terms == man["fold_terms"] and all(m["terms"] == man["terms"] for m in s.models.values())
         p = B.STAGES_DIR / name / "scores.json"
         if p.exists():
+            # served.json keeps the design, not the lab's record of it: the lab grades the served set again
+            grade = man["term_selection"]["lab_grade"] if "term_selection" in man else TT.lab_grade(sel, k, added)
             sc = json.loads(p.read_text())
             for tier in TL.TIERS:
-                got, lab = sc["s2"]["pooled"]["oracle"][tier]["bss"], man["term_selection"]["lab_grade"][tier]["skill"]
+                got, lab = sc["s2"]["pooled"]["oracle"][tier]["bss"], grade[tier]["skill"]
                 assert abs(got - lab) < 1e-5, (name, tier, got, lab)
 
 

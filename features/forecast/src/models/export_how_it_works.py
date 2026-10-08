@@ -87,7 +87,37 @@ FEATURE_MEANING = {
     "antecedent_moisture": "how wet the ground already is (14 days, 3-day half-life)", "wet_prior_3d": "was it wet in the 3 days before today (yes/no)",
     "peak_3d": "wettest single day of the last 3", "dry_spell_days": "days since it last rained",
     "rain_max1h": "wettest hour today", "rain_max3h": "wettest 3 hours", "rain_max6h": "wettest 6 hours",
+    "wind_v_rain": "the south wind while it rains (m/s; from the north is negative)",
 }
+SHORT = {"precip_avg": "today", "rain_2d_cum": "2 days", "rain_3d_cum": "3 days", "rain_max3h": "3-hour peak",
+         "wind_v_rain": "south wind", "rain_lag1d": "yesterday", "dry_spell_days": "dry spell", "rain_max6h": "6-hour peak"}
+
+
+def s2_design(models: dict) -> dict:
+    """The live overflow model's design, read off its pickles: {kind, names (its weighted columns, in order),
+    inputs (the daily numbers they are built from), wind, picked}. ``kind``: 'hinges' (the 38-weight design: the 19
+    inputs and hand-set bends), 'terms' (a named term list picked by nested selection, train_terms.py) or 'bands'."""
+    pipe = models["westside"]["model"]
+    steps = pipe.named_steps
+    if "terms" in steps:
+        kind, names = "terms", list(steps["terms"].kw_args["terms"])
+    elif "bands" in steps:
+        kind = "bands"
+        names = [leaderboard.band_name(*c) for c in leaderboard.band_columns(steps["bands"].kw_args["design"])]
+    else:
+        kind, names = "hinges", list(leaderboard.FEATS) + [f"{f}>{k:g}" for f, ks in leaderboard.HINGES.items() for k in ks]
+    inputs = list(dict.fromkeys(n.partition(">")[0].partition(":")[0] for n in names))
+    return {"kind": kind, "names": names, "inputs": inputs, "wind": "wind_v_rain" in inputs,
+            "n_bends": len(names) - len(inputs)}
+
+
+def term_columns(md: dict, feats: pd.DataFrame) -> np.ndarray:
+    """A basin model's weighted columns for ``feats``: the pipeline's own steps before the scaler."""
+    from sklearn.pipeline import Pipeline
+    pipe = md["model"]
+    pre = Pipeline(pipe.steps[:-2]) if len(pipe.steps) > 2 else None
+    X = feats[md["features"]]
+    return np.asarray(pre.transform(X) if pre is not None else X, dtype=float)
 
 
 # ── helpers ─────────────────────────────────────────────────────────────────
@@ -189,6 +219,7 @@ def sweep_features(rain_today: np.ndarray, ratios: dict, prior: dict | None = No
         row = {k: float(f[k]) for k in DAILY_FEATURES}
         for k in INTENSITY_FEATURES:
             row[k] = r * ratios[k]
+        row["wind_v_rain"] = 0.0                 # no south wind: the curves read rain alone
         rows.append(row)
     return pd.DataFrame(rows)
 
@@ -287,7 +318,7 @@ def node(x, y, w, h, icon, title, sub, hub=False):
             f'<text class="s" data-maxw="{avail:.0f}" data-fs="13" style="font-size:{ss:.1f}px" x="{x + 60}" y="{y + h / 2 + 14}">{esc(sub)}</text>')
 
 
-def pipeline_svg(sv: dict, wx_label: str, n_events: int = 0, n_sample_days: int = 0) -> str:
+def pipeline_svg(sv: dict, wx_label: str, n_events: int = 0, n_sample_days: int = 0, design: dict | None = None) -> str:
     """One source column on the left in three groups (the record, fitted on
     once; S1's rain, live; observations, live, for S5), the model row in the
     middle (S2, then S3–S4 in one box), the outputs (OUT) on the right. Dashed =
@@ -311,7 +342,16 @@ def pipeline_svg(sv: dict, wx_label: str, n_events: int = 0, n_sample_days: int 
     a.append(node(20, 452, 250, 56, "logo:logos/sfpuc.png", "SFPUC beach map", "flags · postings, every minute"))
     a.append(node(20, 516, 250, 56, "logo:logos/sf-city-seal.png", "City lab results, new", "this week's samples (DataSF)"))
     # the model row
-    a.append(node(320, 298, 205, 56, "gauge", "19 rain inputs a day", "totals · lags · peaks", hub=True))
+    d = design or {"kind": "hinges", "inputs": list(leaderboard.FEATS)}
+    hinges = d["kind"] == "hinges"
+    in_title = f"{len(d['inputs'])} {'rain ' if hinges else ''}inputs a day"
+    kinds = {"totals": lambda f: f == "precip_avg" or f.endswith("_cum"), "lags": lambda f: "_lag" in f,
+             "peak": lambda f: f.startswith("rain_max"), "dryness": lambda f: f in ("dry_spell_days", "antecedent_moisture"),
+             "wind": lambda f: f.startswith("wind_")}
+    in_sub = "totals · lags · peaks" if hinges else " · ".join(k for k, is_k in kinds.items() if any(is_k(f) for f in d["inputs"]))
+    listed = ", ".join(FEATURE_MEANING.get(f, f) for f in d["inputs"])
+    in_text = "Totals, lags, peaks, dryness." if hinges else listed[:1].upper() + listed[1:] + "."
+    a.append(node(320, 298, 205, 56, "gauge", in_title, in_sub, hub=True))
     a.append(node(555, 298, 205, 56, "chart", "S2 · 4 basins", "chance of an overflow", hub=True))
     a.append(node(790, 298, 255, 56, "waves", "S3–S4 · 6 beach groups", "which beaches, and how long", hub=True))
     a.append(node(790, 452, 255, 56, "satellite-dish", "S5 · live corrections", "observations override", hub=True))
@@ -351,7 +391,7 @@ def pipeline_svg(sv: dict, wx_label: str, n_events: int = 0, n_sample_days: int 
     steps = [
         ("logo:logos/water-boards.png", "Fitted once", f"{n_events:,} filed overflows taught S2 which rain overflows; {n_sample_days:,} sampled days taught S4 how long a beach stays dirty."),
         ("logo:logos/noaa.svg", "S1 · rain in, live", f"Two NOAA gauges for every past day, the SFO gauge for today's hours, the {wx_label} model for the hours ahead: one hourly series."),
-        ("gauge", "19 rain inputs a day", "Totals, lags, peaks, dryness."),
+        ("gauge", in_title, in_text),
         ("chart", "S2 · 4 basins", "The chance the sewers overflow today."),
         ("waves", "S3–S4 · 6 beach groups", "Which beaches, and how long: a percentage from the last eight days."),
         ("satellite-dish", "S5 · live corrections", "The beach map's flags and postings and this week's samples override the model where they have something to say."),
@@ -373,7 +413,7 @@ def weights_chart(md: dict, top: int = 8, width=320) -> str:
     lr = pipe.named_steps.get("lr") if hasattr(pipe, "named_steps") else None
     if lr is None or not hasattr(lr, "coef_"):
         return ""
-    names = list(leaderboard.FEATS) + [f"{f}>{k:g}" for f, ks in leaderboard.HINGES.items() for k in ks]
+    names = s2_design({"westside": md})["names"]
     coef = lr.coef_[0]
     if len(coef) != len(names):
         return ""
@@ -396,7 +436,8 @@ def weights_chart(md: dict, top: int = 8, width=320) -> str:
 
 def math_section(models: dict, ratios: dict) -> str:
     """The weights model written out, the fitted numbers per basin, and one day worked through."""
-    names = list(leaderboard.FEATS) + [f"{f}>{k:g}" for f, ks in leaderboard.HINGES.items() for k in ks]
+    D = s2_design(models)
+    names = D["names"]
 
     def term_label(n):
         if ">" in n:
@@ -423,7 +464,7 @@ def math_section(models: dict, ratios: dict) -> str:
     pipe = models[b]["model"]
     lr, sc = pipe.named_steps["lr"], pipe.named_steps["scale"]
     feats = sweep_features(np.array([1.0]), ratios)
-    t = leaderboard.add_hinges(feats[leaderboard.FEATS])[0]
+    t = term_columns(models[b], feats)[0]
     z = (t - sc.mean_) / sc.scale_
     contrib = lr.coef_[0] * z
     logit = float(lr.intercept_[0] + contrib.sum())
@@ -436,24 +477,39 @@ def math_section(models: dict, ratios: dict) -> str:
                f'<tr class="total"><td colspan="4">intercept β₀ {lr.intercept_[0]:+.3f} + all terms = log-odds</td><td class="num">{logit:+.3f}</td></tr>'
                f'<tr class="total"><td colspan="4">P(overflow) = 1 / (1 + e<sup>−{logit:.3f}</sup>)</td><td class="num">{100 * prob:.0f}%</td></tr></table>')
 
+    n_in = len(D["inputs"])
+    bends = ('for an input f and a knot k, h<sub>f,k</sub> = max(0, x<sub>f</sub> − k), which is zero until the input '
+             'passes the knot and then rises with it')
+    if D["kind"] == "hinges":
+        model_words = (f'For a basin and a day, take the {n_in} inputs x<sub>1</sub> … x<sub>{n_in}</sub> (inches, days, or a '
+                       f'yes/no). Add {D["n_bends"]} <em>bends</em>: {bends}. The knots k are chosen by hand, the same for all '
+                       f'four basins; the fit learns only the weights.')
+    else:
+        model_words = (f'For a basin and a day, take {n_in} inputs ({esc(", ".join(FEATURE_MEANING.get(f, f) for f in D["inputs"]))}) '
+                       f'and {D["n_bends"]} <em>bends</em> on them: {bends}. Which inputs and bends it uses was picked by nested '
+                       f'selection from a menu of them (<code>src/models/train_terms.py</code>), the same in every basin; the '
+                       f'fit learns only the weights.')
+    model_words += (f' That is how "the first quarter inch barely matters, the next inch matters a lot" becomes a straight-line '
+                    f'model. Together these are the {len(names)} terms t<sub>1</sub> … t<sub>{len(names)}</sub>.')
     return f"""<details class="more math"><summary>The math behind the weights</summary>
 <div class="card wide">
-<p><b>The model.</b> For a basin and a day, take the 19 inputs x<sub>1</sub> … x<sub>19</sub> (inches, days, or a yes/no). Add {len(names) - 19} <em>bends</em>: for an input f and a knot k, h<sub>f,k</sub> = max(0, x<sub>f</sub> − k), which is zero until the input passes the knot and then rises with it. The knots k are chosen by hand, the same for all four basins; the fit learns only the weights. That is how "the first quarter inch barely matters, the next inch matters a lot" becomes a straight-line model. Together these are the {len(names)} terms t<sub>1</sub> … t<sub>{len(names)}</sub>.</p>
+<p><b>The model.</b> {model_words}</p>
 <p><b>Standardise.</b> Each term is centred and scaled by its training mean and standard deviation: z<sub>j</sub> = (t<sub>j</sub> − μ<sub>j</sub>) / σ<sub>j</sub>. So every weight below is "per one standard deviation of that term", and weights are comparable across terms.</p>
 <p><b>Combine.</b> The log-odds of an overflow is a weighted sum: &nbsp;<span class="eq">log(p / (1 − p)) = β<sub>0</sub> + Σ<sub>j</sub> β<sub>j</sub> z<sub>j</sub></span>, &nbsp;and the probability is &nbsp;<span class="eq">p = 1 / (1 + e<sup>−(β<sub>0</sub> + Σ β<sub>j</sub> z<sub>j</sub>)</sup>)</span>. A weight of +0.5 multiplies the odds by e<sup>0.5</sup> ≈ 1.65 for each standard deviation of its term. The "share" in the table above is |β<sub>j</sub>| / Σ|β|.</p>
 <p><b>Fit.</b> The weights minimise the log-loss over the training days plus a penalty (1 / 2C) Σ β<sub>j</sub>², the L2 ridge: a smaller C shrinks all weights toward zero and spreads credit across correlated terms (today's total and the last two days move together, so they share weight). C is chosen per basin by leave-one-season-out cross-validation on the seasons before the holdout. Serving adds a calibration offset that fades to zero by half an inch of three-day rain; for this family the offset is 0, so p is used as fitted.</p>
-<p><b>One day, worked through.</b> {esc(BASIN_NAME[b])}, one inch today after a dry month, peak hours at their typical shares of the day:</p>{example}
+<p><b>One day, worked through.</b> {esc(BASIN_NAME[b])}, one inch today after a dry month, peak hours at their typical shares of the day{", no south wind" if D["wind"] else ""}:</p>{example}
 {"".join(tables)}
 </div></details>"""
 
 
-def simpler_section() -> str:
-    """Could it be simpler? The refits from sparse_logit_eval.py, if they exist."""
+def simpler_section(live_is_38: bool = True) -> str:
+    """Could it be simpler? The refits from sparse_logit_eval.py, if they exist. ``live_is_38``: the 38-weight design
+    is the live one (else the page says it was, and what serves now)."""
     path = MODEL_DIR / "sparse_logit_eval.json"
     if not path.exists():
         return ""
     d = json.load(open(path))
-    label = {"full38": f"all {d['n_terms_full']} terms (served design)", "raw19": "the 19 inputs, no bends", "top12": "12 terms the served model weighs most", "top8": "8 terms", "top5": "5 terms", "top3": "3 terms",
+    label = {"full38": f"all {d['n_terms_full']} terms (the 38-weight design{', served' if live_is_38 else ''})", "raw19": "the 19 inputs, no bends", "top12": "12 terms the served model weighs most", "top8": "8 terms", "top5": "5 terms", "top3": "3 terms",
              "tiny4": "4 hand-picked: today, today above ½\", last 2 days, wettest hour", "l1": "an L1 fit that picks its own terms"}
     f3 = lambda s, k, nd=3: (f"{s[k]:.{nd}f}" if s and k in s else "—")  # noqa: E731
     blocks = []
@@ -468,8 +524,8 @@ def simpler_section() -> str:
         blocks.append(f'<h4>{esc(b["name"])} · {b["n_holdout_events"]} overflow days in the holdout, {b["n_post_events"]} since training</h4>'
                       f'<table><tr><th>design</th><th class="num">terms</th><th class="num">season CV PR-AUC</th><th class="num">holdout PR-AUC</th><th class="num">holdout Brier</th><th class="num">since-training PR-AUC</th><th class="num">since Brier</th></tr>{"".join(rows)}</table>')
     return f"""<h3>Could it be simpler?</h3>
-<div class="card wide"><p class="fine">Chase, 2026-09-30: "simpler is king". The same design refit with fewer terms, on the same days and labels (<code>src/models/sparse_logit_eval.py</code>, {esc(d["generated"])}). PR-AUC ranks overflow days above quiet ones (1.0 perfect); Brier is the squared error of the probability (lower is better). The holdout exam fits on the seasons before {esc(fmt_month(d["holdout_start"]))} and scores {esc(fmt_month(d["holdout_start"]))} → {esc(fmt_month(d["trained_through"]))}; the since-training exam fits through {esc(fmt_month(d["trained_through"]))} and scores the days after. The "top K" rows rank terms by the served model, which itself saw the holdout, so read them as optimistic; the L1 and hand-picked rows carry no such advantage. Shaded: the served design.</p>{"".join(blocks)}
-<p class="fine"><b>Reading.</b> Eight terms match or beat all {d["n_terms_full"]} in every basin, on the holdout and since training, and the season cross-validation is higher for the smaller designs in three basins of four. Even three to five terms hold within a few points. The 19 inputs are cheap to compute, so the cost of the extra terms is not speed; it is that the model is harder to explain and that correlated terms share credit in ways that shift between fits. A candidate set with about five terms per basin, chosen by cross-validation on the seasons before the holdout, would be the honest test; it would go through the Model check and the five stages report like every candidate, and serving already handles the family.</p></div>"""
+<div class="card wide"><p class="fine">Chase, 2026-09-30: "simpler is king". The same design refit with fewer terms, on the same days and labels (<code>src/models/sparse_logit_eval.py</code>, {esc(d["generated"])}). PR-AUC ranks overflow days above quiet ones (1.0 perfect); Brier is the squared error of the probability (lower is better). The holdout exam fits on the seasons before {esc(fmt_month(d["holdout_start"]))} and scores {esc(fmt_month(d["holdout_start"]))} → {esc(fmt_month(d["trained_through"]))}; the since-training exam fits through {esc(fmt_month(d["trained_through"]))} and scores the days after. The "top K" rows rank terms by the served model, which itself saw the holdout, so read them as optimistic; the L1 and hand-picked rows carry no such advantage. Shaded: the 38-weight design{"" if live_is_38 else ", live until 2026-10-07"}.</p>{"".join(blocks)}
+<p class="fine"><b>Reading.</b> Eight terms match or beat all {d["n_terms_full"]} in every basin, on the holdout and since training, and the season cross-validation is higher for the smaller designs in three basins of four. Even three to five terms hold within a few points. The 19 inputs are cheap to compute, so the cost of the extra terms is not speed; it is that the model is harder to explain and that correlated terms share credit in ways that shift between fits. {"A candidate set with about five terms per basin, chosen by cross-validation on the seasons before the holdout, would be the honest test; it would go through the Model check and the five stages report like every candidate, and serving already handles the family." if live_is_38 else "That test has been run: the live model since 2026-10-07 is a short list, its terms picked by nested selection inside each season&#39;s fold (<code>src/models/train_terms.py</code>)."}</p></div>"""
 
 
 # ── report A: how it works ──────────────────────────────────────────────────
@@ -480,6 +536,9 @@ def report_works(S: dict, reg: dict, wx_model: str) -> str:
     parts = {"geography": "geo_v1", "s1": wx_model, **LU.geo_v1_parts(sv["stage1"], sv["stage2"]), "s5": LR.VERSION}
     W = {c: plain(c, v) for c, v in parts.items()}
     wx_label = W["s1"]
+    D = s2_design(models)                       # the live overflow model's own terms and inputs
+    hinges, n_in, n_w = D["kind"] == "hinges", len(D["inputs"]), len(D["names"])
+    older = bool(sv.get("record"))              # trained on SFPUC's older monthly reports too (from 2011)
     retired = sv.get("replaced")
     retired_words = set_words(retired) if retired else None
     n_candidates = len(candidates.list_candidates())
@@ -504,7 +563,7 @@ def report_works(S: dict, reg: dict, wx_model: str) -> str:
     also_in = "".join([
         src_card("logo:logos/sfpuc.png", "SFPUC beach map", "overflow flags and beach postings, read every minute by the watcher: what S5 corrects with", tiles.get("sfpuc", [])),
         src_card("logo:logos/sf-city-seal.png", "City lab results", "bacteria samples: past ones built S4's lingering table and grade it; new ones feed S5", tiles.get("datasf", [])),
-        src_card("logo:logos/water-boards.png", "State records", "SFPUC's filed overflow reports (CIWQS) train S2, give S3 its shares and grade everything; BeachWatch postings are a second ruler", tiles.get("state", [])),
+        src_card("logo:logos/water-boards.png", "State records", "SFPUC's filed overflow reports (CIWQS)" + (" and, from 2011, its own monthly reports" if older else "") + " train S2; CIWQS gives S3 its shares and grades everything; BeachWatch postings are a second ruler", tiles.get("state", [])),
     ])
 
     # S2: the four basins on one chart, dry and wet antecedents; facts; the weights as percentages in the feature table
@@ -523,14 +582,14 @@ def report_works(S: dict, reg: dict, wx_model: str) -> str:
         src = md.get("rain_source", "avg")
         fact_rows.append(f'<tr><td><b>{esc(BASIN_NAME[key])}</b></td><td>{esc("Downtown + Oceanside mean" if src == "avg" else src)}</td><td class="num">{pb.get("n_events", "—")}</td><td class="num">{md.get("C", "—")}</td><td class="num">{ho.get("pr_auc", 0):.2f}</td><td class="num">{ho.get("roc_auc", 0):.3f}</td></tr>')
     facts = f'<table><tr><th>basin</th><th>rain gauge it reads</th><th class="num">overflow days in training</th><th class="num">C</th><th class="num">holdout PR-AUC</th><th class="num">holdout ROC-AUC</th></tr>{"".join(fact_rows)}</table>'
-    knots = (S["leaderboard"].get("hinges") or {})
-    names = list(leaderboard.FEATS) + [f"{f}>{k:g}" for f, ks in leaderboard.HINGES.items() for k in ks]
+    names, inputs = D["names"], D["inputs"]
+    knots = {f: [float(n.partition(">")[2]) for n in names if n.startswith(f + ">")] for f in inputs}
     shares, signs = {}, {}
     for b in BASINS:
         coef = models[b]["model"].named_steps["lr"].coef_[0]
         total = float(np.abs(coef).sum()) or 1.0
-        shares[b] = {f: sum(abs(coef[i]) for i, n in enumerate(names) if n == f or n.startswith(f + ">")) / total for f in leaderboard.FEATS}
-        signs[b] = {f: sum(coef[i] for i, n in enumerate(names) if n == f or n.startswith(f + ">")) for f in leaderboard.FEATS}
+        shares[b] = {f: sum(abs(coef[i]) for i, n in enumerate(names) if n == f or n.startswith(f + ">")) / total for f in inputs}
+        signs[b] = {f: sum(coef[i] for i, n in enumerate(names) if n == f or n.startswith(f + ">")) for f in inputs}
     n_terms = len(names)
 
     def cell(b, f):
@@ -540,10 +599,10 @@ def report_works(S: dict, reg: dict, wx_model: str) -> str:
         return f'<td class="num heat" style="background:rgba(0,114,188,{alpha:.2f});color:{"#fff" if alpha > 0.45 else "#26272a"}">{100 * v:.0f}% <span class="dir">{direction}</span></td>'
 
     feat_rows = "".join(f'<tr><td class="mono">{esc(f)}</td><td>{esc(FEATURE_MEANING.get(f, ""))}</td><td class="mute">{esc(", ".join(f"{k:g}" for k in knots.get(f, [])) or "—")}</td>' + "".join(cell(b, f) for b in BASINS) + "</tr>"
-                        for f in sorted(leaderboard.FEATS, key=lambda f: -sum(shares[b][f] for b in BASINS)))
+                        for f in sorted(inputs, key=lambda f: -sum(shares[b][f] for b in BASINS)))
     ratio_txt = ", ".join(f"{k.replace('rain_max', '')}: {v:.0%}" for k, v in ratios.items())
     weights_table = (f'<table class="wt"><tr><th>input</th><th>plain meaning</th><th>bends at (inches)</th>{"".join(f"<th class=num>{esc(BASIN_NAME[b])}</th>" for b in BASINS)}</tr>{feat_rows}</table>'
-                     f'<p class="fine">Each cell: the share of that basin&#39;s total weight carried by the input and its bends together. {n_terms} weighted terms per basin (the 19 inputs plus {n_terms - 19} bends) and one intercept. '
+                     f'<p class="fine">Each cell: the share of that basin&#39;s total weight carried by the input and its bends together. {n_terms} weighted terms per basin (the {len(inputs)} inputs plus {n_terms - len(inputs)} bends) and one intercept. '
                      f'▲ raises the overflow odds on balance, ▼ lowers them. Peak-hour inputs for the curves above sit at their typical share of a wet day&#39;s total ({ratio_txt}).</p>')
     # S3: the share of each basin's overflows that reach a beach group, by size (Outfall split; none = No split)
     shares, outs = (stage2 or {}).get("shares") or {}, (stage2 or {}).get("group_outfalls") or {}
@@ -663,27 +722,27 @@ def report_works(S: dict, reg: dict, wx_model: str) -> str:
 <nav><a href="#picture">One picture</a><a href="#s1">S1 Rain</a><a href="#s2">S2 Overflow</a><a href="#s3">S3 Which beaches</a><a href="#s4">S4 How long</a><a href="#s5">S5 Live corrections</a><a href="#out">OUT</a><a href="#training">Training</a><a href="#more">Deeper</a></nav>
 
 <section id="picture"><h2>Rain in, beach risk out</h2>
-<div class="panel">{pipeline_svg(sv, wx_label, n_events, sum((table.get(g) or {}).get("n_sample_days", 0) for g in GROUP_ORDER))}</div>
+<div class="panel">{pipeline_svg(sv, wx_label, n_events, sum((table.get(g) or {}).get("n_sample_days", 0) for g in GROUP_ORDER), D)}</div>
 <ul class="caps"><li><b>Do the gauges shape the live numbers?</b> Yes, first of all. Every complete past day is re-based onto the two NOAA gauges before anything runs; the SFO airport gauge fills today's hours so far and the peak-hour numbers of recent days; the weather model only fills the hours that have not happened yet.</li>
-<li><b>Does a new weather model mean retraining?</b> No. S2 reads inches. Swapping ICON for another model changes S1, never the fitted weights.</li>
+<li><b>Does a new weather model mean retraining?</b> No. S2 reads inches{" and the wind" if D["wind"] else ""}. Swapping ICON for another model changes S1, never the fitted weights.</li>
 <li><b>What if nothing is observed?</b> Then S5 changes nothing and the page shows the model alone, to the digit.</li>
 <li><b>Where do the city&#39;s bacteria samples come in?</b> Twice. Past samples taught S4 how long a beach stays dirty after an overflow (the dashed arrow). New samples, as the beach map and DataSF publish them, correct the live numbers through S5 (the solid one).</li></ul>
-<p class="lead">Rain that fell and rain to come (S1) become 19 numbers a day. Four basin models turn them into the chance the sewers overflow that day (S2). Each of six beach groups takes the share of its basin's overflows that reach it (S3) and how long they linger there (S4), so overflow chances become days of beach risk. The city's live beach map and lab results then move the numbers where they have something to say (S5). The page shows four zones, today and five days ahead (OUT).</p></section>
+<p class="lead">Rain that fell and rain to come{", and the wind while it rains," if D["wind"] else ""} (S1) become {n_in} numbers a day. Four basin models turn them into the chance the sewers overflow that day (S2). Each of six beach groups takes the share of its basin's overflows that reach it (S3) and how long they linger there (S4), so overflow chances become days of beach risk. The city's live beach map and lab results then move the numbers where they have something to say (S5). The page shows four zones, today and five days ahead (OUT).</p></section>
 
 <section id="s1"><h2>S1 · How much rain?</h2>
-<p class="lead">Rain that fell comes from two NOAA gauges, Downtown and Oceanside; today&#39;s hours so far from the SFO airport gauge; the hours ahead from the {esc(wx_label)} weather model. On every complete past day the gauges replace everything else. S1 hands S2 inches, so another weather model changes the rain, never S2&#39;s weights.</p>
+<p class="lead">Rain that fell comes from two NOAA gauges, Downtown and Oceanside; today&#39;s hours so far from the SFO airport gauge; the hours ahead from the {esc(wx_label)} weather model. On every complete past day the gauges replace everything else. {"S1 hands S2 inches and, from the same weather model, the wind on the rainy hours, so another weather model changes those, never S2&#39;s weights." if D["wind"] else "S1 hands S2 inches, so another weather model changes the rain, never S2&#39;s weights."}</p>
 <div class="grid2">{rain_in}</div>
 <h3>What else comes in, and which stage reads it</h3>
 <div class="grid3">{also_in}</div></section>
 
 <section id="s2"><h2>S2 · Will the sewers overflow?</h2>
-<p class="lead"><b>Inputs, weights, output.</b> The 19 numbers are the <b>inputs</b>: what goes in each day, computed from the rain. The <b>weights</b> are what the fit learned, 38 per basin, fixed since training: one for each input and one for each bend. Where the bends sit (the knots) is set by hand and is the same in every basin; the fit learns how much each bend matters. Every station in a basin shares that basin&#39;s S2; the beaches differ in S3 and S4. The <b>output</b> is one number per basin per day: the chance the sewers overflow. One model per combined-sewer basin, trained on the days SFPUC filed an overflow. Each is a weights model: the 19 inputs, plus bends at a few rain amounts so the response can steepen, standardised, then an L2 logistic fit. Every basin reads the gauge that predicted it best on the holdout. The two charts are the served models answering "how likely is an overflow today if this much falls?", once after a dry month and once after a wet start to the week.</p>
+<p class="lead"><b>Inputs, weights, output.</b> The {n_in} numbers are the <b>inputs</b>: what goes in each day, computed from the rain{" and the wind" if D["wind"] else ""}. The <b>weights</b> are what the fit learned, {n_w} per basin, fixed since training: one for each input and one for each bend. {"Where the bends sit (the knots) is set by hand and is the same in every basin; the fit learns how much each bend matters." if hinges else "Which inputs and bends it uses was picked by nested selection from a menu of them, the same in every basin; the fit learns how much each matters."} Every station in a basin shares that basin&#39;s S2; the beaches differ in S3 and S4. The <b>output</b> is one number per basin per day: the chance the sewers overflow. One model per combined-sewer basin, trained on the days SFPUC filed an overflow{" (CIWQS from 2016, and SFPUC&#39;s own monthly reports from 2011 where CIWQS is silent)" if older else ""}. Each is a weights model: {"the 19 inputs, plus bends at a few rain amounts so the response can steepen" if hinges else f"its {n_w} terms ({n_in} inputs and {n_w - n_in} bends at a few rain amounts, so the response can steepen)"}, standardised, then an L2 logistic fit. Every basin reads the gauge that predicted it best on the holdout. The two charts are the served models answering "how likely is an overflow today if this much falls?", once after a dry month and once after a wet start to the week.</p>
 <div class="grid2"><div class="card">{curves_dry}</div><div class="card">{curves_wet}</div></div>
 <div class="card wide">{facts}</div>
 <h3>What each basin weighs</h3>
 <div class="card wide">{weights_table}</div>
 {math_section(models, ratios)}
-{simpler_section()}</section>
+{simpler_section(hinges)}</section>
 
 <section id="s3"><h2>S3 · Which beaches?</h2>
 <p class="lead">An overflow reaches the beaches its outfalls post, and not every outfall spills when its basin does. {s3_lead}</p>

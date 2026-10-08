@@ -371,12 +371,13 @@ class Data:
 
 
 def rain_sources(geo: G.Geography) -> tuple:
-    """({city basin: rain source}, {city basin: how it was read}) from served.json's rain_sources: the same key
-    when the served set has it, else the one GEO_V1 basin every outfall of the city basin was in. Every GEO_V1
-    basin the city basin's outfalls came from must read that source too."""
-    served = CAND.served_info()
+    """({city basin: rain source}, {city basin: how it was read}) from the reference 38-weight set's rain_sources
+    (stages_candidates.REFERENCE, the served set when the bake-off ran): the same key when it has it, else the one
+    GEO_V1 basin every outfall of the city basin was in. Every GEO_V1 basin the city basin's outfalls came from must
+    read that source too."""
+    served = reference_info()
     if "rain_sources" not in served:
-        raise KeyError("served.json states no rain_sources")
+        raise KeyError(f"{SC.REFERENCE} states no rain_sources")
     rs = served["rain_sources"]
     v1 = G.get("geo_v1")
     out, rule = {}, {}
@@ -944,15 +945,34 @@ def fit_final(data: Data, choice: Choice, before=None, seasons=None, keys=None) 
     return out
 
 
+def reference_info() -> dict:
+    """The reference 38-weight set's manifest (stages_candidates.REFERENCE): the served set's descriptor while it
+    serves, a retired candidate's manifest since."""
+    sv = CAND.served_info()
+    if sv["name"] == SC.REFERENCE:
+        return sv
+    return json.loads((CAND.candidate_dir(SC.REFERENCE) / "manifest.json").read_text())
+
+
+def reference_stage1() -> str:
+    """The reference set's overflow model (its lineup's S2), e.g. logit_v1."""
+    return reference_info()["lineup"]["s2"]
+
+
+def reference_dir():
+    return T.SERVE_DIR if CAND.served_info()["name"] == SC.REFERENCE else CAND.candidate_dir(SC.REFERENCE)
+
+
 def served_recipe(data: Data) -> dict:
-    """{city basin: the served pickle dict} by the rain-source mapping (rain_sources): the recipe a refit clones."""
+    """{city basin: the reference set's pickle dict} by the rain-source mapping (rain_sources): the recipe a refit
+    clones (stages_candidates.REFERENCE: the served set when the bake-off ran, its 38-weight design)."""
     import pickle
     out = {}
     for k in data.keys:
         sk = data.source_rule[k]["served_key"]
-        p = T.SERVE_DIR / f"{sk}_model.pkl"
+        p = reference_dir() / f"{sk}_model.pkl"
         if not p.exists():
-            raise FileNotFoundError(f"the served bundle has no {p.name}")
+            raise FileNotFoundError(f"the reference set has no {p.name}")
         with open(p, "rb") as f:
             m = pickle.load(f)
         if m["rain_source"] != data.sources[k]:
@@ -1282,7 +1302,7 @@ def run(grid: Grid = Grid(), data: Data | None = None, n_boot: int = N_BOOT, wri
                        "rule": "the lower bound of the 90% CI of South's BSS is above 0 (protocol §8, Part B 7)",
                        "pass": bool(lo is not None and lo > 0)}
     wt1 = t1_vs[winner]["pooled"]
-    t1_check = {"winner": winner, "vs": f"the served S2 recipe ({CAND.served_info()['stage1']} as served: its pickled "
+    t1_check = {"winner": winner, "vs": f"the served S2 recipe ({reference_stage1()} as served: its pickled "
                 "pipelines cloned, unconstrained, refit on sfpuc4_v1 labels through 2025-10-31)",
                 "window": f"T1 post-training {POST_START.date()} → {data.end.date()}", "delta": wt1,
                 "rule": f"non-inferior at +{NONINFERIOR_MARGIN:.0%}: the 90% CI's upper bound of Δ = BS(winner) − "
@@ -1327,7 +1347,7 @@ def run(grid: Grid = Grid(), data: Data | None = None, n_boot: int = N_BOOT, wri
                         "grid_edges": grid_edges(grid, [{c: v.as_dict() for c, v in dev["choices"].items()}]),
                         "scores": sc_dev, "final_pick": dev["pick"]},
         "winner": {"contender": winner, "candidate": name, "choice": wchoice.as_dict(), "n_terms": terms[winner]},
-        "served_recipe": {"stage1": CAND.served_info()["stage1"], "C": {k: float(recipe[k]["model"].named_steps["lr"].C)
+        "served_recipe": {"stage1": reference_stage1(), "C": {k: float(recipe[k]["model"].named_steps["lr"].C)
                           if hasattr(recipe[k]["model"], "named_steps") else None for k in data.keys},
                           "served_keys": {k: recipe[k]["served_key"] for k in data.keys}, "T2": sc_srv_t2,
                           "T2_note": "its C as served (chosen on pre-holdout LOSO: development)"},

@@ -953,11 +953,16 @@ def rescore(promote: bool = False, tolerance: float = 0.02, replace_post: bool =
         print("nothing to add")
         return sc
 
-    frames, notes = build_dataset(end=end)
     try:
         import leaderboard  # noqa: F401  (weights pipelines reference leaderboard.add_hinges)
     except Exception:  # noqa: BLE001
         pass
+    from rain_features import WIND_FEATURES
+    wind = False                                            # the frames carry the south wind when a served model reads it
+    for key in [BASIN_KEYS[b] for b in APP_BASINS] + ["citywide"]:
+        with open(SERVE_DIR / f"{key}_model.pkl", "rb") as f:
+            wind = wind or bool(set(pickle.load(f)["features"]) & set(WIND_FEATURES))
+    frames, notes = build_dataset(end=end, wind=wind)
     s2_path = SERVE_DIR / "stage2.json"                     # the served stage 2 spec (promote.py); None = v1
     served_stage2 = json.loads(s2_path.read_text()) if s2_path.exists() else None
     finals, chosen, heads = {}, {}, {}
@@ -987,7 +992,7 @@ def rescore(promote: bool = False, tolerance: float = 0.02, replace_post: bool =
     tail_dates = [d["date"] for d in sc["days"] if pd.Timestamp(d["date"]) > last - pd.Timedelta(days=120)]
     gate_rules = list(sc.get("input_rules_post") or []) if tail_dates and all(d > trained_through for d in tail_dates) else []
     if gate_rules:
-        frames_g, notes_g = build_dataset(end=end, input_rules=gate_rules)
+        frames_g, notes_g = build_dataset(end=end, input_rules=gate_rules, wind=wind)
         fresh_g = build_scorecard(frames_g, chosen, finals, {}, heads, impact_raw, load_samples(),
                                   archive_tables(), notes_g["archive_used"], finals["citywide"]["features"], stage2=served_stage2)
         gate_by_date = {d["date"]: d for d in fresh_g["days"]}
@@ -1003,7 +1008,7 @@ def rescore(promote: bool = False, tolerance: float = 0.02, replace_post: bool =
 
     if replace_post:
         rules = list(input_rules or INPUT_RULES_LIVE)
-        frames_r, notes_r = build_dataset(end=end, input_rules=rules)
+        frames_r, notes_r = build_dataset(end=end, input_rules=rules, wind=wind)
         fresh_r = build_scorecard(frames_r, chosen, finals, {}, heads, impact_raw, load_samples(),
                                   archive_tables(), notes_r["archive_used"], finals["citywide"]["features"], stage2=served_stage2)
         old_by_date = {d["date"]: d for d in sc["days"]}

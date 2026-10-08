@@ -218,7 +218,7 @@ async function choose() {
   $("#nonneg").onchange = (e) => { state.nonneg = e.target.checked; schedule(0); };
   $("#record").onchange = (e) => { state.record = e.target.value; schedule(0); };
   $("#choose").onclick = choose;
-  setTerms(META.presets["Live (38 weights)"]);
+  setTerms(Object.values(META.presets)[0]);   // the live set's own terms (term_lab.meta puts them first)
 })();
 </script>
 </body>

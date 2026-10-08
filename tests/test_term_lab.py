@@ -34,10 +34,10 @@ def test_the_live_design_grades_as_its_stage_scores():
 
 
 def test_the_longer_record_grades_as_its_candidate_does():
-    """The live design on the older-reports record is the scored candidate icon-w38r11a-osplit-lt2-bflags: the lab's
-    skill and its change against the live model match that candidate's stage scores."""
+    """The 38-weight design on the older-reports record is the scored candidate icon-w38r11a-osplit-lt2-bflags: the
+    lab's skill and its change against the live model match that candidate's stage scores."""
     sc = json.loads((TL.B.STAGES_DIR / "icon-w38r11a-osplit-lt2-bflags" / "scores.json").read_text())
-    g = lab().run(TL.LIVE_TERMS, record="older11")["grade"]
+    g = lab().run(TL.W38_TERMS, record="older11")["grade"]
     for tier in TL.TIERS:
         for unit in ["pooled"] + lab().keys:
             assert abs(g[tier][unit]["skill"] - sc["s2"][unit]["oracle"][tier]["bss"]) < 1e-5, (tier, unit)
@@ -97,10 +97,12 @@ def test_new_inputs_mean_what_they_say():
     assert (x.set_index("date")["rain_max24h"] >= day.reindex(x["date"]).to_numpy() - 1e-9).all()   # ≥ the day's own total
     f = lab().entry["avg"]
     assert np.allclose(f["rain_west"], f["precip_avg"] * f["west_share"]) and (f["max3h_after_wet"] <= f["rain_max3h"]).all()
-    # every term on the page is a real column, and the live preset is the live 38-weight design
+    # every term on the page is a real column; the first preset is the live set's own terms, then the 38-weight design
     for t in TL.ALL_TERMS:
         TL.design(f.reset_index(), [t])
-    assert TL.PRESETS["Live (38 weights)"] == TL.LIVE_TERMS and len(TL.LIVE_TERMS) == 38
+    presets = TL.meta(lab())["presets"]
+    assert list(presets.values())[0] == lab().live_design()[0] == TL.CAND.served_info()["terms"]
+    assert TL.PRESETS["38 weights (live until 2026-10-07)"] == TL.W38_TERMS and len(TL.W38_TERMS) == 38
 
 
 def test_nothing_served_reads_the_lab():

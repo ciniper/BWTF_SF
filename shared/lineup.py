@@ -35,12 +35,13 @@ WORDS = {
            "logit_v1_older16_every": "38-weight + 2016–17 reports (all days)",
            "logit_v1_older11_first": "38-weight + 2011–17 reports (first days)",
            "logit_v1_older11_every": "38-weight + 2011–17 reports (all days)",
-           # a short named term list with the south wind, picked nested (train_terms.py), on the 2011 record
-           "logit_wind8_older11": "8 terms + south wind", "logit_wind9_older11": "9 terms + south wind",
-           "logit_wind10_older11": "10 terms + south wind",
+           # a short named term list with the south wind among its terms, picked nested (train_terms.py), on the 2011
+           # record; the count is every term, the wind included
+           "logit_wind8_older11": "8 terms with the south wind", "logit_wind9_older11": "9 terms with the south wind",
+           "logit_wind10_older11": "10 terms with the south wind",
            # the 8-term set's terms plus the day's 3-hour peak, forced (Chase, 2026-10-07: "the current 8 term set ...
-           # PLUS the 3 hour peak"): 9 terms
-           "logit_wind8_max3h_older11": "8 terms + south wind + 3-hour peak"},
+           # PLUS the 3 hour peak"; then "give it a better name that actually accurately describes the terms")
+           "logit_wind8_max3h_older11": "9 terms with the south wind and the 3-hour peak"},
     "s3": {"basin_v1": "No split", "split_v2": "Outfall split", "split_v2_sfpuc4": "Outfall split SFPUC", "links_v1": "Size split"},
     "s4": {"impact_v1": "Linger table 1", "impact_v2": "Linger table 2", "impact_v2_zone": "Linger table 2 per zone",
            "impact_v2_d10": "Linger table 2, more samples",
@@ -65,7 +66,7 @@ CODES = {
            "logit_v1_older16_first": "w38r16f", "logit_v1_older16_every": "w38r16a",
            "logit_v1_older11_first": "w38r11f", "logit_v1_older11_every": "w38r11a",
            "logit_wind8_older11": "t8wind", "logit_wind9_older11": "t9wind", "logit_wind10_older11": "t10wind",
-           "logit_wind8_max3h_older11": "t8wind3h"},
+           "logit_wind8_max3h_older11": "t9wind3h"},
     "s3": {"basin_v1": "nosplit", "split_v2": "osplit", "split_v2_sfpuc4": "osplits", "links_v1": "ssplit"},
     "s4": {"impact_v1": "lt1", "impact_v2": "lt2", "impact_v2_zone": "lt2zone", "impact_v2_d10": "lt2more",
            "zone_v3": "rain", "zone_choice_v1": "pick4", "zone_choice_v2": "pickout"},
@@ -76,8 +77,9 @@ CODES = {
 NAME_COLS = ("geography", "s1", "s2", "s3", "s4", "s5")        # a set's id, in order
 STAGE_COLS = ("s1", "s2", "s3", "s4", "s5")                    # a set's full name in words
 
-# Every set's name before 2026-10-07 (the overflow model's name plus a stage 2 suffix) → its id. History: never
-# edited, only added to. current_name reads it, so a stamp in forecast_history or an old link still finds its set.
+# Every name a set has carried before its current id → that id: the names before 2026-10-07 (the overflow model's
+# name plus a stage 2 suffix), and a code changed since. History: never edited, only added to. current_name reads it,
+# so a stamp in forecast_history or an old link still finds its set.
 RENAMED = {
     "logit_v1_s2v2": "icon-w38-osplit-lt2-bflags",
     "gb_v1": "icon-trees-nosplit-lt1-bflags",
@@ -108,6 +110,8 @@ RENAMED = {
     "sfpuc4_shared8_v2": "sfpuc-icon-t8s-osplits-lt2zone-lzflags",
     "sfpuc4_shared8_v3": "sfpuc-icon-t8s-osplits-pick4-lzflags",
     "sfpuc4_shared8_v3b": "sfpuc-icon-t8s-osplits-pickout-lzflags",
+    # 2026-10-07, Chase: "give it a better name that actually accurately describes the terms": 9 terms, not 8
+    "icon-t8wind3h-osplit-lt2more-bflags": "icon-t9wind3h-osplit-lt2more-bflags",
 }
 
 

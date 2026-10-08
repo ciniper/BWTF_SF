@@ -68,7 +68,7 @@ WIND_CSV = T.RAW_DIR / "openmeteo_wind_hourly.csv"      # collectors/historical.
 BASE = list(L.FEATS)
 NEW = ["rain_max24h", "rain_west", "wind_u_rain", "wind_v_rain", "max3h_after_wet"]
 HINGES = {**L.HINGES, "rain_max24h": [0.75, 1.0], "rain_west": [0.5, 1.0]}
-LIVE_TERMS = BASE + list(L.HINGE_NAMES)      # the live 38-weight design, in add_hinges' column order
+W38_TERMS = BASE + list(L.HINGE_NAMES)       # the 38-weight design (live until 2026-10-07), in add_hinges' column order
 
 
 def _with_hinges(names: list) -> list:
@@ -85,13 +85,13 @@ GROUPS = [
 ]
 ALL_TERMS = [t for _, ts in GROUPS for t in ts]
 PRESETS = {
-    "Live (38 weights)": LIVE_TERMS,
+    "38 weights (live until 2026-10-07)": W38_TERMS,
     "The 19 inputs": BASE,
     "Rain and peaks": ["precip_avg", "rain_2d_cum", "rain_max3h", "rain_max6h", "antecedent_moisture"],
     "The engineer's rules": ["precip_avg", "rain_max3h>0.5", "max3h_after_wet", "rain_max24h>0.75", "rain_max24h>1.0",
                              "rain_west", "antecedent_moisture"],
 }
-assert set(LIVE_TERMS) <= set(ALL_TERMS) and all(set(v) <= set(ALL_TERMS) for v in PRESETS.values())
+assert set(W38_TERMS) <= set(ALL_TERMS) and all(set(v) <= set(ALL_TERMS) for v in PRESETS.values())
 
 
 # ── the new inputs ──────────────────────────────────────────────────────────
@@ -230,6 +230,18 @@ class Lab:
         sources = sorted(set(self.source.values()))
         self.entry = {src: add_new(f, extra).set_index("date") for src, f in E.frames("oracle", sources, end=self.end).items()}
         self._train, self._masks = {}, {}
+
+    def live_design(self) -> tuple:
+        """(terms, terms_by_fold or None, record key) of the live set's own S2 design, read from served.json: a
+        named-terms set's terms and each fold's own pick on its record (promote.py carries them), else the 38-weight
+        design on the served record."""
+        sv = CAND.served_info()
+        rec = next((k for k, v in RECORDS.items() if v == sv.get("record")), None)
+        if rec is None:
+            raise ValueError(f"the live set's training record {sv.get('record')} is none of term_lab.RECORDS")
+        if sv.get("fold_terms"):
+            return list(sv["terms"]), dict(sv["fold_terms"]), rec
+        return W38_TERMS, None, rec
 
     # the training record and folds
     def train(self, record: str) -> dict:
@@ -479,10 +491,12 @@ def beam_select(data: list, n_pool: int, max_terms: int, width: int, nonneg: boo
 # ── fidelity ────────────────────────────────────────────────────────────────
 
 def check(lab: Lab | None = None) -> dict:
-    """The live design refit in the lab reproduces the stored predictions, the stage scores' skill and ranges, and
-    a zero change against itself; the vectorized Δ range is verify.paired_delta's."""
+    """The live design refit in the lab (Lab.live_design: its terms, each fold's own pick, its record) reproduces the
+    stored predictions, the stage scores' skill and ranges, and a zero change against itself; the vectorized Δ range
+    is verify.paired_delta's."""
     lab = lab or Lab()
-    p = lab.oof(LIVE_TERMS, "live", False, "served")
+    terms, by_fold, record = lab.live_design()
+    p = lab.oof(terms, "live", False, record, terms_by_fold=by_fold)
     rel = float(np.max(np.abs(p - lab.rows["live"]) / np.maximum(lab.rows["live"], 1e-9)))
     if rel > 1e-4:
         raise AssertionError(f"the live design refit misses the stored predictions by {rel:.1e} (relative)")
@@ -511,7 +525,9 @@ def check(lab: Lab | None = None) -> dict:
 
 def meta(lab: Lab) -> dict:
     from shared import lineup as LU
-    return {"groups": [{"title": t, "terms": ts} for t, ts in GROUPS], "presets": PRESETS, "new": NEW,
+    live = f"Live: {LU.words('s2', lab.s2set.stage1)}"
+    return {"groups": [{"title": t, "terms": ts} for t, ts in GROUPS], "presets": {live: lab.live_design()[0], **PRESETS},
+            "new": NEW,
             "basins": [{"key": k, "name": lab.names[k]} for k in lab.keys], "live_C": lab.live_C,
             "records": RECORD_WORDS, "windows": WINDOW_WORDS, "live": LU.words("s2", lab.s2set.stage1),
             "served": lab.served, "C_choices": ["live", 0.01, 0.03, 0.1, 0.3, 1.0]}

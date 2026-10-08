@@ -1,12 +1,12 @@
 {
  "as_of": "2026-08-17",
  "served_files": {
-  "served.json": "5bddc7976a1b7a7d6836663638f014a50cf25552665868881f3b72edd5f7522c",
-  "citywide_model.pkl": "7f9470a38d799729e90578f500d08c40481e33c786fc481194f74bff1cf04503",
-  "westside_model.pkl": "fb3c9aba1ddf2f506b784136f1fb778d80b97580c8de5790364737ce45b43f91",
-  "north_shore_model.pkl": "ebf1b5edf938c44c3e683361c1032f36fd60be9e7eda5683d9219be93600be0a",
-  "central_model.pkl": "d3e611f6e579a5ec67e694a5a0197abc6102f8dc697cded68345aaf8a1d12c1d",
-  "southeast_model.pkl": "44abaa95b15ba4ca4cb5d493301378dc7452b89d6f771110509c0c0bc34b3eeb",
+  "served.json": "02aa29891479c19d5df5673264dc3e278b516a3e46b31f8ddf7d2e9d9f9b7b2f",
+  "citywide_model.pkl": "611b5125720a1b8cbc344aa07c01a1f56fc5b5ee50dfa38d7236830b10fb20d3",
+  "westside_model.pkl": "9cc9212c9172ccdf2b209978b3c35b17dd39c7d3ca462209b94bbadcc6d066ac",
+  "north_shore_model.pkl": "d01cef8e425c139f66091ff036c6c1dc76a31e4a06748bc40125704a63848e69",
+  "central_model.pkl": "9f9f4550431883dbfa26f864036a3b31f1d4c95a10bb2b8865956c378e5f3932",
+  "southeast_model.pkl": "2a9a6816bdc3479e3a49035a6f633f6bd3230c02d9283802dbe43e887ade21de",
   "westside_volume.pkl": "0cc354a4c934e59beaaf7d37fb90b4322ef348d291aa47fe4877390e39620b0e",
   "north_shore_volume.pkl": "6d57407c2191faeed66a19bf606d5f0eedf3ef6489bd19f8b5742878d4f1325d",
   "central_volume.pkl": "4bdb2243e3fe553cc52aa5a2eb31b07a56806ef29ec3eefae044b87f588d3582",
@@ -78,7 +78,7 @@
     "2016-03-01",
     "2026-08-17"
    ],
-   "sha256": "f940140d34035b7b3b8b184c20666d838c65f579c468ce180aa8b9621da50d94",
+   "sha256": "28ed700a9d9e8919ce33759efab585d8acdc5db30a0feb7eea58157f04168177",
    "columns": {
     "date": "e24b0f825f2a",
     "Westside_csd": "d1b2a2630afc",
@@ -128,20 +128,21 @@
     "dry_spell_days": "a38a30fcf408",
     "rain_max1h": "a420d6638d7d",
     "rain_max3h": "31bf22847eaa",
-    "rain_max6h": "bbc66c416a49"
+    "rain_max6h": "bbc66c416a49",
+    "wind_v_rain": "67898e6dab06"
    },
    "years": {
-    "2016": "2d2d6e915177",
-    "2017": "24b82b868ac3",
-    "2018": "d5a9103fc8d9",
-    "2019": "32e8b6167d65",
-    "2020": "bea4abb580f5",
-    "2021": "36c419b16556",
-    "2022": "42aabe669a05",
-    "2023": "777e0a8420ba",
-    "2024": "3f221ea6d4ea",
-    "2025": "0db065ebe37f",
-    "2026": "69bae454e4ab"
+    "2016": "2eccb93d28bf",
+    "2017": "06846f8c3220",
+    "2018": "905f1639668c",
+    "2019": "b494b8475724",
+    "2020": "54242b3720b7",
+    "2021": "6eaad9d8085e",
+    "2022": "8e0b2ec34e24",
+    "2023": "635a057a7347",
+    "2024": "1ce629536058",
+    "2025": "8ca7aba52e0f",
+    "2026": "4d99eade296d"
    }
   },
   "SF Oceanside": {
@@ -150,7 +151,7 @@
     "2016-03-01",
     "2026-08-17"
    ],
-   "sha256": "186ac63acc422b6d0a97a6739384c3cb2fc1c8257788b2fed4ce597bc3fbce7c",
+   "sha256": "0f13fbbeaa88d345df9232d06ceb3c618dec03d051f8b77eef51ac77ecc8d401",
    "columns": {
     "date": "e24b0f825f2a",
     "Westside_csd": "d1b2a2630afc",
@@ -200,20 +201,21 @@
     "dry_spell_days": "d798fe759af2",
     "rain_max1h": "a420d6638d7d",
     "rain_max3h": "31bf22847eaa",
-    "rain_max6h": "bbc66c416a49"
+    "rain_max6h": "bbc66c416a49",
+    "wind_v_rain": "67898e6dab06"
    },
    "years": {
-    "2016": "61d00ab1ecca",
-    "2017": "ae0c2e1d8865",
-    "2018": "3f6caad64625",
-    "2019": "55277cd25ebf",
-    "2020": "15a6938197cb",
-    "2021": "da84b327f65a",
-    "2022": "2cca2b608fad",
-    "2023": "fe6786654185",
-    "2024": "3150110e058d",
-    "2025": "1431036ab608",
-    "2026": "c98574cf42d9"
+    "2016": "f68f2102b610",
+    "2017": "349f491419e0",
+    "2018": "f0e5a33df83b",
+    "2019": "daa4baf11f80",
+    "2020": "003c5f52ad14",
+    "2021": "d80c04087132",
+    "2022": "6c6eee482189",
+    "2023": "03cabccfd655",
+    "2024": "b2edfa5f1fa8",
+    "2025": "bda684444b78",
+    "2026": "e337a605f3f9"
    }
   },
   "avg": {
@@ -222,7 +224,7 @@
     "2016-03-01",
     "2026-08-17"
    ],
-   "sha256": "02024d0da3006b0e7a04fe888e27130f00ed3b21645f4d6fdc2166b7231fc5a0",
+   "sha256": "d8a3179f18c3357a11b1b2263cba4ca7e8d9a91f8d8ac96b9a5a2f00b91f3716",
    "columns": {
     "date": "e24b0f825f2a",
     "Westside_csd": "d1b2a2630afc",
@@ -272,20 +274,21 @@
     "dry_spell_days": "3fc6bbacd321",
     "rain_max1h": "a420d6638d7d",
     "rain_max3h": "31bf22847eaa",
-    "rain_max6h": "bbc66c416a49"
+    "rain_max6h": "bbc66c416a49",
+    "wind_v_rain": "67898e6dab06"
    },
    "years": {
-    "2016": "39608576d3b5",
-    "2017": "d090f6e99886",
-    "2018": "49995cceed09",
-    "2019": "9b1f917f3643",
-    "2020": "cbbab8e64cdb",
-    "2021": "8adf00042d9d",
-    "2022": "12df6cbd65df",
-    "2023": "0c427b689985",
-    "2024": "5f672ce46dc1",
-    "2025": "ef2cf4d3af56",
-    "2026": "66d2bcec5e3a"
+    "2016": "8af0ce38370e",
+    "2017": "94f5a4478be0",
+    "2018": "bf3cbf7aa287",
+    "2019": "f17146c083c8",
+    "2020": "b8ad02ef6b20",
+    "2021": "a54f03f36bb6",
+    "2022": "7dd5989b2d68",
+    "2023": "8b7516cb7aaf",
+    "2024": "27863886555f",
+    "2025": "f4556cf87975",
+    "2026": "6f961edbf766"
    }
   },
   "archive_notes": "4517161203ae9e349a5cbdf0c771431b2d6d18b51616326a503f5064825f5913",
@@ -295,7 +298,7 @@
     "2016-03-01",
     "2026-08-17"
    ],
-   "sha256": "6428d33de8d686ba51593d042ae5323fd037211561ecd9742d2395218539564b",
+   "sha256": "02fe28053f54268577f6e5a0f17e9c1c963cf5d6385ee3408d12ed9f0a8454a3",
    "columns": {
     "date": "e24b0f825f2a",
     "Westside_csd": "d1b2a2630afc",
@@ -345,20 +348,21 @@
     "dry_spell_days": "2ac235040c1c",
     "rain_max1h": "a420d6638d7d",
     "rain_max3h": "31bf22847eaa",
-    "rain_max6h": "bbc66c416a49"
+    "rain_max6h": "bbc66c416a49",
+    "wind_v_rain": "67898e6dab06"
    },
    "years": {
-    "2016": "2d2d6e915177",
-    "2017": "24b82b868ac3",
-    "2018": "d5a9103fc8d9",
-    "2019": "32e8b6167d65",
-    "2020": "57eaa5e9fd9e",
-    "2021": "da9aef74443e",
-    "2022": "42aabe669a05",
-    "2023": "777e0a8420ba",
-    "2024": "341c80604c9f",
-    "2025": "0db065ebe37f",
-    "2026": "1a7eb7cc8012"
+    "2016": "2eccb93d28bf",
+    "2017": "06846f8c3220",
+    "2018": "905f1639668c",
+    "2019": "b494b8475724",
+    "2020": "945703e1eb25",
+    "2021": "c0b05f0fbed3",
+    "2022": "8e0b2ec34e24",
+    "2023": "635a057a7347",
+    "2024": "780821e0bb25",
+    "2025": "8ca7aba52e0f",
+    "2026": "745435cb4b82"
    }
   },
   "SF Oceanside|gauge_outage_v1": {
@@ -367,7 +371,7 @@
     "2016-03-01",
     "2026-08-17"
    ],
-   "sha256": "0038aff3a60ccf5e81ad8792178d17a16de0fd73f49da25ce4db559dbd5327a6",
+   "sha256": "2a9e78c7a4be46e365bcf74748344525358049664f556fc91ca4b4682f6dc527",
    "columns": {
     "date": "e24b0f825f2a",
     "Westside_csd": "d1b2a2630afc",
@@ -417,20 +421,21 @@
     "dry_spell_days": "313b2136d13d",
     "rain_max1h": "a420d6638d7d",
     "rain_max3h": "31bf22847eaa",
-    "rain_max6h": "bbc66c416a49"
+    "rain_max6h": "bbc66c416a49",
+    "wind_v_rain": "67898e6dab06"
    },
    "years": {
-    "2016": "61d00ab1ecca",
-    "2017": "ae0c2e1d8865",
-    "2018": "7533b79518a9",
-    "2019": "d12794ae9af8",
-    "2020": "524dd9265cef",
-    "2021": "da84b327f65a",
-    "2022": "2cca2b608fad",
-    "2023": "a944df66ba56",
-    "2024": "977e5b53ae28",
-    "2025": "1431036ab608",
-    "2026": "d9552d476647"
+    "2016": "f68f2102b610",
+    "2017": "349f491419e0",
+    "2018": "8d1acf0dc63c",
+    "2019": "f10101862975",
+    "2020": "2b4e092ea225",
+    "2021": "d80c04087132",
+    "2022": "6c6eee482189",
+    "2023": "2a1975f6422b",
+    "2024": "0437792dc059",
+    "2025": "bda684444b78",
+    "2026": "b5f716d41a3c"
    }
   },
   "avg|gauge_outage_v1": {
@@ -439,7 +444,7 @@
     "2016-03-01",
     "2026-08-17"
    ],
-   "sha256": "3f6422aa83982ba3e391716dce4cbb98daba639f30c4d10b187a1bad66aacb49",
+   "sha256": "a3c28d913eb35cbcd552d4dbb2ba2ac75daa88c3d2fcf61ea0d3506fbf6a30d6",
    "columns": {
     "date": "e24b0f825f2a",
     "Westside_csd": "d1b2a2630afc",
@@ -489,34 +494,35 @@
     "dry_spell_days": "65ce32c131c7",
     "rain_max1h": "a420d6638d7d",
     "rain_max3h": "31bf22847eaa",
-    "rain_max6h": "bbc66c416a49"
+    "rain_max6h": "bbc66c416a49",
+    "wind_v_rain": "67898e6dab06"
    },
    "years": {
-    "2016": "39608576d3b5",
-    "2017": "d090f6e99886",
-    "2018": "138689647801",
-    "2019": "53a93651e1e4",
-    "2020": "de6b2d1f2bb5",
-    "2021": "d9890423465f",
-    "2022": "12df6cbd65df",
-    "2023": "66547d54370b",
-    "2024": "44011462cb26",
-    "2025": "ef2cf4d3af56",
-    "2026": "34d6a0f923ba"
+    "2016": "8af0ce38370e",
+    "2017": "94f5a4478be0",
+    "2018": "b1aa3dec00cb",
+    "2019": "055cd2edeb9d",
+    "2020": "04c760df793e",
+    "2021": "a5d4913871bf",
+    "2022": "7dd5989b2d68",
+    "2023": "e10888dd3573",
+    "2024": "8fed939eea88",
+    "2025": "f4556cf87975",
+    "2026": "a4664864ef53"
    }
   },
   "archive_notes|gauge_outage_v1": "4517161203ae9e349a5cbdf0c771431b2d6d18b51616326a503f5064825f5913"
  },
  "scorecard": {
   "labels": "0edb582fa1b27209f4cb76523704f070b9a0ddb42c3382ab00e825eb56a237c2",
-  "risks": "b850f09f46dddf3527ba0ed787cc4904414167bcc517221a758efba5cd78647a",
+  "risks": "19ca09ecc22c405b03a4af736ad29bb8f2f4239f8bf877c9328cc437b4523ae1",
   "days": [
    "2016-03-01",
    "2026-08-17",
    3822
   ],
   "labels|gauge_outage_v1": "0edb582fa1b27209f4cb76523704f070b9a0ddb42c3382ab00e825eb56a237c2",
-  "risks|gauge_outage_v1": "fdf6fc2ace1135db3a82e3d5fbf0ca8350876edf30ada80521d055b84c1af027",
+  "risks|gauge_outage_v1": "07dc85ba6870a54198eef6eac7d24d23b0b75969cdde4783097f1f935f7d15a6",
   "days|gauge_outage_v1": [
    "2016-03-01",
    "2026-08-17",

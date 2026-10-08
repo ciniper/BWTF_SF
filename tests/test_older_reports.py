@@ -18,6 +18,7 @@ for p in (str(ROOT), str(ROOT / "features/forecast/src/models"), str(ROOT / "fea
 
 import csd_pre2018 as P  # noqa: E402
 import stages_s2 as S2  # noqa: E402
+import stages_candidates as SC  # noqa: E402
 import train_older_reports as TO  # noqa: E402
 import train_v4 as T  # noqa: E402
 
@@ -131,12 +132,12 @@ def test_t2_folds_fit_the_longer_record_never_score_it():
     plan = {p[1]: p for p in S2._plan(("T2",), tuple(range(2010, 2016)))}
     kept = set(frame[plan["2019-20"][5](frame)]["season"])
     assert kept == set(range(2010, 2016)) | (set(S2.T2_SEASONS) - {2019}), kept
-    served = S2.load_set(json.loads((T.SERVE_DIR / "served.json").read_text())["name"], "served")
-    assert served.train_record is None and S2.extra_seasons(served) == ()
+    ref = S2.load_set(SC.REFERENCE, "candidates")         # the 38-weight design on the CIWQS record (served until 2026-10-07)
+    assert ref.train_record is None and S2.extra_seasons(ref) == ()
 
 
 def test_the_candidates_are_the_served_design_on_their_record():
-    served = {k: S2.load_set(json.loads((T.SERVE_DIR / "served.json").read_text())["name"], "served").models[k]
+    served = {k: S2.load_set(SC.REFERENCE, "candidates").models[k]      # the 38-weight design they refit
               for k in ("westside", "north_shore", "central", "southeast")}
     for stage1, rec in TO.RECORDS.items():
         name = TO.set_name(stage1)
