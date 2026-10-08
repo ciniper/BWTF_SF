@@ -228,7 +228,7 @@
       <div class="ticks" aria-hidden="true"><span style="left:0">None</span><span style="left:16%">Light</span><span style="left:50%">Heavy</span><span style="left:85%">Storm</span></div>
     </div>
     <div class="scene-wrap">
-      <svg class="scene" id="scene" viewBox="0 0 960 440" role="img" aria-label="Cross-section: homes, a roof drain and a storm drain feed one combined sewer, which slopes down to a storage structure under the shore; it is pumped from the bottom to a treatment plant, and when full it spills over a weir to an outfall at the beach">
+      <svg class="scene" id="scene" viewBox="0 0 960 440" role="img" aria-label="Cross-section: homes, a roof drain and two storm drains feed one combined sewer, which slopes down to a storage structure under the shore; it is pumped from the bottom to a treatment plant, and when full the settled water passes under a baffle and over the outlet's weir to an outfall at the beach">
         <defs>
           <linearGradient id="soil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e7dccb"/><stop offset="1" stop-color="#d3c4ab"/></linearGradient>
           <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fd0ec"/><stop offset="1" stop-color="#5aa5d3"/></linearGradient>
@@ -258,7 +258,7 @@
         {# homes with a roof drain, a storm drain #}
         <g fill="#fff" stroke="#26272a" stroke-width="2"><rect x="24" y="118" width="70" height="52"/><path d="M18 120 L59 88 L100 120 Z"/><rect x="104" y="126" width="64" height="44"/><path d="M98 128 L136 98 L174 128 Z"/></g>
         <path d="M172 128 H178 V170" fill="none" stroke="#26272a" stroke-width="3"/>
-        <rect x="216" y="166" width="30" height="6" fill="#26272a"/>
+        <rect x="216" y="166" width="30" height="6" fill="#26272a"/><rect x="345" y="166" width="30" height="6" fill="#26272a"/>
         {# the beach sign #}
         <g id="sign"><rect x="712" y="150" width="4" height="40" fill="#26272a"/><rect id="sign-b" x="684" y="124" width="62" height="28" rx="5" fill="#237059"/><text id="sign-t" x="715" y="143" text-anchor="middle" font-size="12" font-weight="900" fill="#fff">OPEN</text></g>
         {# the treatment plant, miles away: off the scene in life, so it sits in a dashed inset, the way SFPUC draws it #}
@@ -270,29 +270,33 @@
         <g fill="none" stroke="#8a949b" stroke-linecap="round" stroke-linejoin="round">
           <path d="M59 170 V233 M136 170 V239" stroke-width="12"/>
           <path d="M178 172 V242" stroke-width="10"/>
-          <path d="M231 172 V246" stroke-width="12"/>
+          <path d="M231 172 V246 M360 172 V252" stroke-width="12"/>
           <path d="M40 232 L446 258" stroke-width="26"/>
           <path d="M520 316 V352 H334" stroke-width="14"/>
           <path d="M258 400 V416 H960" stroke-width="12"/>
-          <path d="M644 234 H775 V206" stroke-width="16"/>
+          <path d="M644 243 H775 V206" stroke-width="16"/>
         </g>
         {# the pump station on the line from the storage's floor #}
         <circle cx="420" cy="352" r="15" fill="#fff" stroke="#26272a" stroke-width="2"/><path id="impeller" d="M420 341 V363 M409 352 H431 M412 344 L428 360 M428 344 L412 360" stroke="#26272a" stroke-width="1.6"/>
         {# the transport/storage structure: fills from the floor; a weir near the shore side lets it spill only when full #}
         <rect x="446" y="226" width="198" height="90" rx="10" fill="#f3f6f9" stroke="#26272a" stroke-width="2"/>
-        <rect id="box-fill" x="448" y="314" width="174" height="0" fill="#8b6a4a" opacity=".85"/>
-        <rect id="box-ch" x="624" y="232" width="18" height="82" fill="#7a5a3a" opacity="0"/>
-        <path d="M622 316 V240" stroke="#26272a" stroke-width="3"/>
+        <rect id="box-fill" x="448" y="314" width="194" height="0" fill="#8b6a4a" opacity=".85"/>
+        <g id="trash" opacity="0">{# floating trash, held back by the baffle #}<rect x="566" y="-4" width="11" height="4" rx="2" fill="#e8e1cf"/><rect x="584" y="-5" width="6" height="5" rx="1" fill="#c7623b"/><ellipse cx="598" cy="-2" rx="5" ry="2.5" fill="#d9e2c4"/></g>
+        <rect x="604" y="227" width="6" height="52" fill="#f3f6f9" stroke="#26272a" stroke-width="1.6"/>{# the baffle, hanging from the ceiling #}
+        <rect x="641" y="236" width="6" height="14" fill="#8a949b"/>{# the outlet: an opening near the top of the wall #}
+        <path d="M630 251 H644" stroke="#26272a" stroke-width="2.5"/>{# its lip: the weir #}
         <text x="534" y="300" text-anchor="middle" font-size="12" font-weight="700" fill="#26272a">storage</text>
-        <text x="633" y="226" text-anchor="middle" font-size="10" font-weight="700" fill="#54576F" transform="translate(0 -4)">weir</text>
+        <text x="607" y="221" text-anchor="middle" font-size="10" font-weight="700" fill="#54576F">baffle</text>
+        <text x="652" y="266" font-size="10" font-weight="700" fill="#54576F">weir</text>
         {# flows #}
         <path id="f-home" class="flow" d="M59 172 V233 M136 172 V239" stroke="#8b6a4a" stroke-width="5"/>
         <path id="f-roof" class="flow" d="M178 130 V242" stroke="#3b8fc4" stroke-width="0"/>
         <path id="f-drain" class="flow" d="M231 174 V246" stroke="#3b8fc4" stroke-width="0"/>
+        <path id="f-drain2" class="flow" d="M360 174 V252" stroke="#3b8fc4" stroke-width="0"/>
         <path id="f-main" class="flow" d="M40 232 L446 258" stroke="#8b6a4a" stroke-width="8"/>
         <path id="f-pump" class="flow" d="M520 316 V352 H334" stroke="#8b6a4a" stroke-width="6" stroke-linejoin="round"/>
         <path id="f-out" class="flow" d="M258 400 V416 H960" stroke="#3aa6a0" stroke-width="5" stroke-linejoin="round"/>
-        <path id="f-over" class="flow" d="M644 234 H775 V206" stroke="#7a5a3a" stroke-width="0" stroke-linejoin="round"/>
+        <path id="f-over" class="flow" d="M644 243 H775 V206" stroke="#7a5a3a" stroke-width="0" stroke-linejoin="round"/>
         {# numbered markers, keyed below the diagram #}
         <g font-size="12" font-weight="700" text-anchor="middle">
           {% for n, x, y in [(1, 59, 76), (2, 231, 150), (3, 300, 222), (4, 534, 250), (5, 420, 384), (6, 806, 236), (7, 900, 400)] %}
@@ -305,11 +309,11 @@
     <div class="caption" id="rain-cap" aria-live="polite"><span class="step" id="cap-step">Dry</span><span id="cap-text"></span></div>
     <ol class="key">
       <li><b>1</b>Homes and businesses: everything down the drain, and the rain off the roofs.</li>
-      <li><b>2</b>A storm drain: rain off the street.</li>
+      <li><b>2</b>Storm drains: rain off the street.</li>
       <li><b>3</b>One combined sewer carries both, downhill to the shore. Over 90% of the city is served this way.</li>
       <li><b>4</b>Transport/storage structures ring the shoreline and hold what the plant cannot take yet.</li>
       <li><b>5</b>Pumped from the storage's floor to a treatment plant.</li>
-      <li><b>6</b>When storage is full it spills over a weir to an outfall at the shore: a combined sewer discharge.</li>
+      <li><b>6</b>When storage is full, the settled water passes under a baffle that holds back floating trash, over the outlet's weir and out an outfall at the shore: a combined sewer discharge.</li>
       <li><b>7</b>Treated water leaves through the plant's deep-water outfall: about four miles offshore for the Oceanside plant, into the bay for the Southeast plant.</li>
     </ol>
     <div class="plants"><span>Westside: the Oceanside plant · {{ plants.oceanside }} overflow outfalls on the Pacific</span><span>Bayside: the Southeast plant · {{ plants.bayside }} overflow outfalls on the bay</span></div>
@@ -514,7 +518,7 @@
     [0.03, "Dry", "Everything from homes and businesses runs downhill to the shoreline storage and is pumped from its floor to the treatment plant."],
     [0.3, "Rain", "Rain off roofs and streets joins the sewage in the same pipes. The plant still takes it all."],
     [0.7, "Heavy rain", "The plant takes all it can; the rest waits in the storage, where solids settle out and floating trash is trapped."],
-    [1.01, "Overflow", "Storage is full. The settled water spills over the weir and out a permitted outfall at the shore: a combined sewer discharge. Being fresh water, it rises and spreads across the surface. Settling in the storage counts as the equivalent of primary treatment, which is why SFPUC calls it a discharge rather than an overflow. SFPUC posts the nearby beaches and samples them until they clear."],
+    [1.01, "Overflow", "Storage is full. The settled water passes under the baffle, which holds back floating trash, then over the weir and out a permitted outfall at the shore: a combined sewer discharge. Being fresh water, it rises and spreads across the surface. Settling in the storage counts as the equivalent of primary treatment, which is why SFPUC calls it a discharge rather than an overflow. SFPUC posts the nearby beaches and samples them until they clear."],
   ];
   function width(id, w) { const el = $(id); el.setAttribute("stroke-width", w.toFixed(1)); el.style.opacity = w > 0.5 ? 1 : 0; }
   function speed(id, s) { $(id).style.setProperty("--dur", (1.8 - 1.3 * s).toFixed(2) + "s"); }
@@ -523,15 +527,15 @@
     LIGHT.forEach((d, i) => { d.style.display = i < light ? "" : "none"; }); HEAVY.forEach((d, i) => { d.style.display = i < heavy ? "" : "none"; });
     $("sky-dim").setAttribute("opacity", (0.42 * clamp((r - 0.15) / 0.85)).toFixed(2)); $("clouds").setAttribute("opacity", clamp(r / 0.35).toFixed(2));
     $("rain-out").textContent = r < 0.03 ? "None" : r < 0.3 ? "Light" : r < 0.7 ? "Heavy" : "Storm";
-    width("f-drain", r < 0.03 ? 0 : 3 + 6 * r); speed("f-drain", r);
+    width("f-drain", r < 0.03 ? 0 : 3 + 6 * r); speed("f-drain", r); width("f-drain2", r < 0.03 ? 0 : 3 + 6 * r); speed("f-drain2", r);
     width("f-roof", r < 0.03 ? 0 : 2 + 4 * r); speed("f-roof", r);
     $("impeller").style.transformOrigin = "420px 352px"; $("impeller").style.animation = REDUCE ? "none" : "spin " + (1.6 - 1.2 * clamp(r / 0.3)).toFixed(2) + "s linear infinite";
     width("f-main", 7 + 13 * clamp(r / 0.8)); speed("f-main", clamp(0.3 + r));
     width("f-pump", 5 + 5 * clamp(r / 0.3)); speed("f-pump", clamp(r / 0.3));
     width("f-out", 4 + 4 * clamp(r / 0.3)); speed("f-out", clamp(r / 0.3));
     $("plant-cap").style.opacity = r >= 0.3 ? 1 : 0;
-    const fill = clamp((r - 0.3) / 0.4); const h = 76 * fill; $("box-fill").setAttribute("y", 314 - h); $("box-fill").setAttribute("height", h);   // up to the weir's crest
-    $("box-ch").setAttribute("opacity", r >= 0.7 ? 0.85 : 0);
+    const fill = clamp((r - 0.3) / 0.4); const h = 63 * fill; $("box-fill").setAttribute("y", 314 - h); $("box-fill").setAttribute("height", h);   // up to the weir, the outlet's lip
+    $("trash").setAttribute("transform", `translate(0 ${(314 - h).toFixed(1)})`); $("trash").setAttribute("opacity", clamp((fill - 0.35) / 0.3).toFixed(2));   // it floats up with the water
     const over = clamp((r - 0.7) / 0.3); width("f-over", r >= 0.7 ? 5 + 10 * over : 0); speed("f-over", over);
     const flowing = r >= 0.7 ? 0.35 + 0.65 * over : 0, E = Math.max(flowing, linger || 0), L = 40 + 130 * E, T = 6 + 20 * E;
     $("stain").setAttribute("d", `M790 199 H${(790 + L).toFixed(0)} C${(790 + L * 0.85).toFixed(0)} ${(200 + T * 0.3).toFixed(1)} ${(790 + L * 0.45).toFixed(0)} ${(200 + T).toFixed(1)} 790 ${(203 + T).toFixed(1)} Z`);
@@ -550,16 +554,16 @@
   $("storm").addEventListener("click", () => {
     if (playing) { stopStorm(); setRain(0, false, 0); slider.value = 0; return; }
     playing = true; $("storm").textContent = "Stop"; $("storm").classList.add("ghost");
-    // ms → rain: builds over 15 s, holds the overflow for 7, eases off, then the beach stays posted a while after
-    const plan = [[0, 0], [5000, 0.26], [11000, 0.62], [15000, 0.96], [22000, 0.96], [28000, 0.05], [36000, 0.05], [38000, 0]];
+    // ms → rain: builds over 12 s, holds the overflow for 6, eases off, then the beach stays posted a while after (30 s in all)
+    const plan = [[0, 0], [4000, 0.26], [8500, 0.62], [12000, 0.96], [18000, 0.96], [23000, 0.05], [28500, 0.05], [30000, 0]];
     const t0 = performance.now(), speedUp = REDUCE ? 3 : 1; let mem = 0, last = t0;
     (function tick(now) {
       if (!playing) return;
       const t = (now - t0) * speedUp; let r = 0;
       for (let i = 1; i < plan.length; i++) if (t <= plan[i][0]) { const [a, ra] = plan[i - 1], [b, rb] = plan[i]; r = ra + (rb - ra) * (t - a) / (b - a); break; }
       const over = r >= 0.7 ? 0.35 + 0.65 * clamp((r - 0.7) / 0.3) : 0;
-      mem = Math.max(over, mem - (now - last) * speedUp / 10000); last = now;   // the plume thins out over about ten seconds
-      slider.value = Math.round(r * 100); setRain(r, t > 16000 && t < 36000, mem);
+      mem = Math.max(over, mem - (now - last) * speedUp / 8000); last = now;   // the plume thins out over about eight seconds
+      slider.value = Math.round(r * 100); setRain(r, t > 13000 && t < 28500, mem);
       if (t < plan[plan.length - 1][0]) requestAnimationFrame(tick); else { stopStorm(); setRain(0, false, 0); slider.value = 0; }
     })(t0);
   });
