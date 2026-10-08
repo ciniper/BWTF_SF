@@ -1,0 +1,11 @@
+# The gridded-rain collectors' extra packages (src/collectors/rain_grids.py; RAIN_SOURCES.md). Research only:
+# kept out of requirements.txt so the app and its Vercel bundle never carry them.
+#   python3 -m venv <dir> && <dir>/bin/pip install -r features/forecast/requirements-rain.txt
+xarray
+zarr<3
+s3fs
+fsspec
+numcodecs
+eccodes
+pandas
+numpy
