@@ -782,8 +782,8 @@ def test_the_perfect_feeds_silence_is_circular():
     """Part B 9's reason, on OUT's label: on the perfect feed (the ledger, recall 1) the downgrade's silent days go to 0
     exactly where the ledger filed nothing, the fact OUT's label grades (41 of the 44 scored T1 zone-days, as of
     2026-08-17), so circular_on_perfect marks its comparisons there; live_v2's own no-flag downgrade reads the same
-    silence (it moves 3 of those 44 zone-days: replay_live's live_v2 is the rows' basin_swap, its 'no_downgrade'
-    differs there), so basin_swap and all_floors against no correction are marked too; all_floors against basin_swap
+    silence (it moves 4 of those 44 zone-days under the live set since 2026-10-07, 3 under the 38-weight one:
+    replay_live's live_v2 is the rows' basin_swap, its 'no_downgrade' differs there), so basin_swap and all_floors against no correction are marked too; all_floors against basin_swap
     (one downgrade) and link_zone_swap against basin_swap (protocol §8's primary, the silence on the incumbent's
     side) are not."""
     sc = _rows("oracle")
@@ -805,7 +805,7 @@ def test_the_perfect_feeds_silence_is_circular():
     nodg = RL.per_day_risks(on, _feeds()["oracle"].attrs["flags"], era, variant="no_downgrade", cutoff="end")
     bsw = by["basin_swap"].reset_index()
     assert all(live[str(d.date())]["zones"][z] == p for d, z, p in zip(bsw["date"], bsw["unit"], bsw["p"]))
-    assert sum(live[str(d.date())]["zones"][z] != nodg[str(d.date())]["zones"][z] for d, z in zip(bsw["date"], bsw["unit"])) == 3
+    assert sum(live[str(d.date())]["zones"][z] != nodg[str(d.date())]["zones"][z] for d, z in zip(bsw["date"], bsw["unit"])) == 4
 
 
 # ── (10) exclusions' variant column is additive ────────────────────────────

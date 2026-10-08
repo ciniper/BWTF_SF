@@ -117,9 +117,15 @@ def _t1_folds():
 
 @functools.lru_cache(maxsize=1)
 def _train():
+    """(the served bundle, the served record's frames): what the build's S3 / S4 fold fits read for every set."""
     bundle = B.load_set("served")
     need = sorted(set(bundle.s2.sources) | set(bundle.chosen.values()) | {"avg"})
-    return bundle, T4.build_dataset(sources=need)[0]
+    return bundle, T4.build_dataset(sources=need, wind=True)[0]
+
+
+def _s2_train(bundle, train):
+    """The frames S2 refits on: the served record's, or the set's own longer record (the build's s2_train)."""
+    return train if bundle.s2.train_record is None else S2.training_frames(bundle.s2, sorted(train))
 
 
 def _raises(fn, *exc) -> bool:
@@ -184,7 +190,7 @@ def test_a_fold_never_sees_its_scored_days_s3_s4_specs_included():
         assert not f.seen["westside"].isin(pd.date_range(f.start, f.end)).any()
     # perturb every scored day of 2019-20 (labels, volumes, events, samples): the fold's specs do not move
     bundle, train = _train()
-    fitted = S2.fit(bundle.name, "served", ("T2",), train_frames=train)
+    fitted = S2.fit(bundle.name, "served", ("T2",), train_frames=_s2_train(bundle, train))
     fold = next(f for f in fitted.folds if f.fold == "2019-20")
     keep = {(p[0], p[1]): p for p in S2._plan(("T2",))}[("T2", "2019-20")][5]
     events, samples = T4.load_events(), T4.load_samples()
@@ -276,7 +282,13 @@ def test_as_served_differs_from_lead_1_only_in_history_features():
     p = s2[s2["entry"].isin(["L1", "L1s"]) & (s2["tier"] == "T1")].pivot_table(index=["unit", "date"], columns="entry", values="p")
     w = p.xs("westside", level="unit")
     assert np.array_equal(w["L1"].to_numpy(), p1.loc[w.index, "westside"].to_numpy())
-    assert (p["L1"] != p["L1s"]).mean() > 0.5
+    # as served differs where the served model's own terms read a history feature; the 9-term model (2026-10-07)
+    # reads none, so the page's 7 past days lose it nothing
+    m = bundle.s2.models["westside"]
+    if set(E.HISTORY_FEATURES) & {t.partition(">")[0] for t in (m.get("terms") or m["features"])}:
+        assert (p["L1"] != p["L1s"]).mean() > 0.5
+    else:
+        assert (p["L1"] == p["L1s"]).all()
 
 
 def test_a_lead_entrys_s4_and_out_read_its_issue_days_chain():
@@ -870,21 +882,45 @@ def test_writing_stays_under_the_sets_directory_and_needs_the_protocols_bootstra
     assert _raises(lambda: B.build("served", steps=("s7",)), KeyError)
 
 
+def _served_s2_without_split() -> tuple:
+    """(name, candidates directory): a stand-in candidate under a temporary candidates directory, the served pickles
+    and the served descriptor's design with stage 2 v1 (no split, the first table), so its S2 is the served set's own.
+    No candidate on disk shares the served S2 since the 9-term promotion (STAGES_DESIGN.md Part B 38)."""
+    import shutil
+    C_ = B.CAND
+    sv = C_.served_info()
+    lineup = {**sv["lineup"], "s3": "basin_v1", "s4": "impact_v1"}
+    name = C_.set_name(lineup)
+    root = Path(_TMP.name) / "candidates"
+    d = root / name
+    if not d.exists():
+        d.mkdir(parents=True)
+        for key in ("citywide", "westside", "north_shore", "central", "southeast"):
+            shutil.copy2(C_.SERVE_DIR / f"{key}_model.pkl", d / f"{key}_model.pkl")
+        man = {k: sv[k] for k in ("family", "trained_through", "holdout_start", "rain_sources", "per_basin", "record",
+                                  "fold_terms", "terms") if sv.get(k) is not None}
+        man.update(name=name, lineup=lineup, stage1={"name": sv["stage1"], "from": "served", "family": sv["family"]},
+                   stage2={"variant": "v1"})
+        (d / "manifest.json").write_text(json.dumps(man, default=str))
+    return name, root
+
+
 def test_a_candidate_is_compared_with_the_served_set_on_identical_rows():
     """A GEO_V1 candidate against the served slice written by this code (the committed artifacts' currency is
     test_the_committed_artifacts_are_current's): Δ on identical rows, and the primaries and §9 block stated."""
     d = _served_dir()
-    old = B.STAGES_DIR
+    name, cdir = _served_s2_without_split()
+    old, old_c = B.STAGES_DIR, B.CAND.CANDIDATES_DIR
     try:
-        B.STAGES_DIR = d
-        c = B.build("icon-w38-nosplit-lt1-bflags", "candidates", entries=("oracle", "rain"), tiers=("T1",), feeds=("oracle",), n_boot=50,
+        B.STAGES_DIR, B.CAND.CANDIDATES_DIR = d, cdir
+        c = B.build(name, "candidates", entries=("oracle", "rain"), tiers=("T1",), feeds=("oracle",), n_boot=50,
                     log=lambda *a: None)
     finally:
-        B.STAGES_DIR = old
+        B.STAGES_DIR, B.CAND.CANDIDATES_DIR = old, old_c
     vs = c.scores["paired"]["vs_served"]
     assert "skipped" not in vs, vs.get("skipped")
     assert vs["served"] == B.served_name() and c.manifest["components"]["s3"] == "basin_v1"
-    # logit_v1 is the served set's stage 1: S2 is the same to the last written digit, so Δ is exactly 0
+    # its S2 is the served set's own: the same to the last written digit, so Δ is exactly 0
     for u, cell in vs["s2"].items():
         d = cell["oracle"]["T1"]
         assert d["delta"] == 0 and d["lo"] == d["hi"] == 0 and d["verdict"] == "no clear difference", u
@@ -892,8 +928,9 @@ def test_a_candidate_is_compared_with_the_served_set_on_identical_rows():
     assert vs["s3"]["pooled"]["oracle"]["T1"]["delta"] > 0
     assert set(vs["s3"]) >= {"ocean", "baker_china"} and vs["out"]["pooled"]["rain"]["T1"]["mcb"]["metric"] == "_mcb"
     assert vs["geography"] == {"candidate": "geo_v1", "served": "geo_v1", "invariant_only": False}
-    if B.out_dir("icon-w38-nosplit-lt1-bflags").exists():                 # a candidate's directory holds no rows
-        assert not (B.out_dir("icon-w38-nosplit-lt1-bflags") / "rows.csv.gz").exists()
+    for n in (name, "icon-w38-nosplit-lt1-bflags"):                   # a candidate's directory holds no rows
+        if B.out_dir(n).exists():
+            assert not (B.out_dir(n) / "rows.csv.gz").exists()
     # the primaries of a GEO_V1 candidate: S2 against the served component itself (no T2 in this slice), no
     # geography or South row, S5 from its own build (basin_swap exists on GEO_V1); a changed S3 that no §8 row
     # scores (no split, no size share) leaves criterion 1 not met
@@ -904,7 +941,7 @@ def test_a_candidate_is_compared_with_the_served_set_on_identical_rows():
     assert c.scores["primaries"]["changed"] == {"s1": False, "s2": False, "s3": True, "s4": True, "s5": False}
     c1 = c.scores["promotion"]["criteria"][0]
     assert c1["status"] == "not met" and "s3: no §8 primary scores this change" in c1["reason"], c1
-    # §8's S4 row tests S4 v3: logit_v1's changed S4 (stage 2 v1's raw table) has no row, so it decides nothing
+    # §8's S4 row tests S4 v3: its changed S4 (stage 2 v1's raw table) has no row, so it decides nothing
     assert c.manifest["components"]["s4"] == "impact_v1" and pr["S4"]["status"] == "not applicable", pr["S4"]
     assert "S4 v3" in pr["S4"]["reason"] and "s4: no §8 primary scores this change" in c1["reason"], (pr["S4"], c1)
 

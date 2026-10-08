@@ -75,10 +75,11 @@ def test_the_forecast_record_is_untouched():
     import subprocess
     out = subprocess.run([sys.executable, "-c", probe], capture_output=True, text=True, cwd=ROOT)
     assert out.returncode == 0 and out.stdout.strip().endswith("ok"), out.stderr[-2000:]
-    # the served set names no record (promote.py copies a promoted candidate's record into served.json: that commit
-    # moves this line); a candidate that names one says so in its overflow model's name (its lineup's S2)
+    # a set names a record only when trained on it, and says so in its overflow model's name (its lineup's S2): the
+    # served set too, since 2026-10-07 (promote.py copied the 9-term set's record into served.json)
     models_dir = ROOT / "features/forecast/data/models"
-    assert "record" not in json.loads((models_dir / "served.json").read_text())
+    sv = json.loads((models_dir / "served.json").read_text())
+    assert ("record" in sv) == ("_older" in sv["lineup"]["s2"]) and sv.get("record", {}).get("labels", "csd_pre2018") == "csd_pre2018"
     for man in sorted((models_dir / "candidates").glob("*/manifest.json")):
         m = json.loads(man.read_text())
         rec = m.get("record")

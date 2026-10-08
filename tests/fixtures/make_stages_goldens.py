@@ -23,7 +23,11 @@ What it writes (all under tests/fixtures/):
                               committed fixture rain, with no network: live
                               corrections off, and on with fixed flags and samples
   stages_golden_rain.csv      the fixture rain. Written only when missing or
-                              with --rain: it is an input, committed once
+                              with --rain: it is an input, committed once. Its
+                              hourly 10 m wind columns are added (--wind, or
+                              when a served model reads the wind and they are
+                              missing): ERA5's up to NOW, ICON's archived
+                              forecast at each hour's lead after it
 
 As-of date (Part B 23): the label, frame and scorecard hashes cover days on or
 before AS_OF, so a quarterly refresh that only adds later days leaves them
@@ -185,7 +189,7 @@ def served_pickles_on_disk() -> list:
 def load_fixture_rain() -> tuple:
     """(hourly rain_df the way the refresh hands it to _daily_frames, {gauge: {Timestamp: inches}})."""
     df = pd.read_csv(RAIN_CSV, parse_dates=["timestamp"])
-    rain_df = df[["timestamp", "precip_inches", "rain_source"]].copy()
+    rain_df = df[["timestamp", "precip_inches", "rain_source"] + [c for c in WIND_COLS if c in df]].copy()
     day = df["timestamp"].dt.normalize()
     gauges = {name: df.assign(day=day).groupby("day")[col].first().dropna().to_dict() for name, col in GAUGE_COLS.items()}
     return rain_df, gauges
@@ -293,10 +297,10 @@ def label_hashes() -> dict:
 
 @functools.lru_cache(maxsize=None)
 def dataset(rules: tuple = ()) -> tuple:
-    """train_v4.build_dataset(end=AS_OF, input_rules=rules or None), built once
-    per process (build_scorecard only reads the frames)."""
+    """train_v4.build_dataset(end=AS_OF, input_rules=rules or None), with the south wind when a served model reads
+    it, built once per process (build_scorecard only reads the frames)."""
     import train_v4
-    return train_v4.build_dataset(end=pd.Timestamp(AS_OF), input_rules=list(rules) or None)
+    return train_v4.build_dataset(end=pd.Timestamp(AS_OF), input_rules=list(rules) or None, wind=served_reads_wind())
 
 
 def _tag(rules: tuple) -> str:
@@ -430,6 +434,32 @@ def write_rain_fixture() -> None:
     print(f"wrote {RAIN_CSV.relative_to(ROOT)}: {len(hours)} hours {WINDOW[0]} → {WINDOW[1]}")
 
 
+WIND_COLS = ("wind_speed_kmh", "wind_dir_deg")      # LiveData's hourly wind columns (Open-Meteo's km/h and degrees)
+
+
+def write_wind_fixture() -> None:
+    """The fixture's hourly 10 m wind beside its rain, the rain columns untouched: ERA5's up to NOW (as the rain),
+    ICON's archived forecast at each hour's lead after it (openmeteo_previous_runs.py --wind), in LiveData's units."""
+    df = pd.read_csv(RAIN_CSV, parse_dates=["timestamp"]).drop(columns=list(WIND_COLS), errors="ignore")
+    era5 = pd.read_csv(RAW_DIR / "openmeteo_wind_hourly.csv", parse_dates=["timestamp"])
+    icon = pd.read_csv(RAW_DIR / "openmeteo_wind_icon_seamless.csv", parse_dates=["timestamp"])
+    past = (df["timestamp"] <= pd.Timestamp(NOW)).to_numpy()
+    lead = (df["timestamp"].dt.normalize() - pd.Timestamp(TODAY)).dt.days.clip(0, 5)
+    e = df[["timestamp"]].merge(era5, on="timestamp", how="left")
+    i = df[["timestamp"]].assign(lead_day=lead).merge(icon, on=["timestamp", "lead_day"], how="left")
+    df["wind_speed_kmh"] = np.round(np.where(past, e["wind_speed_ms"], i["wind_speed_ms"]) * 3.6, 3)
+    df["wind_dir_deg"] = np.where(past, e["wind_dir_deg"], i["wind_dir_deg"])
+    assert df[list(WIND_COLS)].notna().all().all(), "fixture window not covered by the wind archives"
+    df.to_csv(RAIN_CSV, index=False)
+    print(f"wrote the wind into {RAIN_CSV.relative_to(ROOT)}: ERA5 to {NOW}, ICON's forecast after")
+
+
+def served_reads_wind() -> bool:
+    """Whether a served model reads the south wind (rain_features.WIND_FEATURES)."""
+    from rain_features import WIND_FEATURES
+    return any(set(f["features"]) & set(WIND_FEATURES) for f in served_bundle()[0].values())
+
+
 def _risks(live: dict) -> dict:
     return {d: (day["zones"], day["impact_groups"]) for d, day in live.items()}
 
@@ -476,6 +506,8 @@ def build_hash_golden() -> dict:
 def main(argv: list) -> None:
     if "--rain" in argv or not RAIN_CSV.exists():
         write_rain_fixture()
+    if "--wind" in argv or (served_reads_wind() and not set(WIND_COLS) <= set(pd.read_csv(RAIN_CSV, nrows=0).columns)):
+        write_wind_fixture()
     stored, built = stored_scorecard_days()[0], code_path_artifact_days()
     assert digest([scorecard_day_labels(d) for d in stored]) == digest([scorecard_day_labels(d) for d in built]) and \
         digest([scorecard_day_risks(d) for d in stored]) == digest([scorecard_day_risks(d) for d in built]), \

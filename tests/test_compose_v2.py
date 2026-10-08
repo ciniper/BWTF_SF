@@ -78,7 +78,7 @@ def _served_inputs() -> dict:
     sources = sorted(set(chosen.values()) | set(T.RAIN_SOURCES) | {h.get("rain_source", "avg") for h in heads.values()})
     out = {}
     for tag, rules in (("pre", None), ("post", sc["input_rules_post"])):
-        fr = T.build_dataset(end=pd.Timestamp(sc["span"][1]), sources=sources, input_rules=rules)[0]
+        fr = T.build_dataset(end=pd.Timestamp(sc["span"][1]), sources=sources, input_rules=rules, wind=True)[0]   # a set may read the wind
         idx = pd.DatetimeIndex(fr["avg"]["date"])
         p = pd.DataFrame({BASIN_KEYS[b]: T.calibrated(finals[BASIN_KEYS[b]], fr[chosen[b]]) for b in T.APP_BASINS}, index=idx)
         v = pd.DataFrame({BASIN_KEYS[b]: T.predicted_volume(heads[b], fr[heads[b].get("rain_source", chosen[b])])

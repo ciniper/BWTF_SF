@@ -748,11 +748,15 @@ def load_inputs(tiers=TIERS, log=print) -> Inputs:
     fu = followup_free_truth(ctx.sources)
     pool["y_bg"] = fu.reindex(pd.MultiIndex.from_arrays([pool["zone"], pool["date"]])).to_numpy(dtype=float)
     el = T.zone_elevated(geo, ctx.sources, end=end)
-    bundle = SB.load_set("served")                    # the served set's name comes from served.json
+    # the 38-weight set the stage candidates were built against (stages_candidates.REFERENCE): served until
+    # 2026-10-07, a retired candidate since; its S2 folds, split and record are the ones these refits read
+    import stages_candidates as SC  # noqa: PLC0415
+    root = "served" if SB.served_name() == SC.REFERENCE else "candidates"
+    bundle = SB.load_set(SC.REFERENCE, root)
     s2set = bundle.s2
     need = sorted(set(s2set.sources) | set(bundle.chosen.values()) | {"avg"})
     train, _ = T4.build_dataset(sources=need)
-    fitted = S2.fit(bundle.name, "served", tiers, train_frames=train)
+    fitted = S2.fit(bundle.name, root, tiers, train_frames=train)
     frames = E.frames("oracle", need, model=E.served_weather_model(), end=end)
     ef = S2._entry_frames(s2set, "oracle", frames)
     days = pd.DatetimeIndex(next(iter(ef.values())).index)

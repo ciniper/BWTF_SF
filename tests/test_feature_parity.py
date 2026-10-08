@@ -64,10 +64,16 @@ def test_training_and_serving_share_the_formula():
 
 
 def test_models_were_trained_on_exactly_these_columns():
+    """The served models read the 19 inputs, or (a named-terms set, train_terms.py) the inputs of their own terms, the
+    south wind among them; the volume heads always read the 19."""
     for pkl in (FORECAST / "data" / "models").glob("*_model.pkl"):
         with open(pkl, "rb") as f:
             md = pickle.load(f)
-        assert list(md["features"]) == rf.ALL_FEATURES, pkl.name
+        if "terms" in getattr(md["model"], "named_steps", {}):
+            assert set(md["features"]) <= set(rf.ALL_FEATURES) | set(rf.WIND_FEATURES) and md["terms"], pkl.name
+            assert {t.partition(">")[0] for t in md["terms"]} <= set(md["features"]), pkl.name
+        else:
+            assert list(md["features"]) == rf.ALL_FEATURES, pkl.name
     for pkl in (FORECAST / "data" / "models").glob("*_volume.pkl"):
         with open(pkl, "rb") as f:
             md = pickle.load(f)

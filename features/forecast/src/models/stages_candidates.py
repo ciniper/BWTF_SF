@@ -135,6 +135,12 @@ WEIGHT_TOL = 1e-12                           # a solver's −0.0 / round-off is 
 FALLBACK_KIND = "pooled_bayside_loglinear"   # Part B 7's declared volume fallback (stages_s2_sfpuc4 fits it)
 PICKLE_STAMPS = ("geography", "pipeline", "set", "component", "fold", "basin")   # what save_component stamps a pickle with
 TAGS = ("post_seen",)                        # protocol §2: designed after its post-training scores were seen
+# The 38-weight set the SFPUC stage candidates were built against: the live set until 2026-10-07 (STAGES_DESIGN.md
+# Part B 38), a retired candidate since. Its overflow model, record and split are what the bake-off's benchmark recipe
+# (stages_s2_sfpuc4.served_recipe), the served-parts S3 and S4 refits (stages_s4_v3.load_inputs) and the older-report
+# candidates' design (train_older_reports) read: frozen research keeps the design it was run with when the live set
+# moves on.
+REFERENCE = "icon-w38-osplit-lt2-bflags"
 
 
 # ── plumbing ───────────────────────────────────────────────────────────────

@@ -644,10 +644,11 @@ def test_the_split_candidates_committed_spec():
     pairs = S.split_pairs(GEO)
     served = C.geo_v1_adapter_specs()["s3"]["links"]                     # T1: the served stage2.json itself
     assert all(got["links"][lid]["share"] == served[g]["share"] for lid, g in pairs.items())
-    bundle = SB.load_set("served")                                       # T1-holdout: the served recipe refit before 2023-07-01
+    import stages_candidates as SC                                       # T1-holdout: the served recipe refit before 2023-07-01,
+    bundle = SB.load_set(SC.REFERENCE, "candidates")                     # on the 38-weight set it was built against
     need = sorted(set(bundle.s2.sources) | set(bundle.chosen.values()) | {"avg"})
     train = T4.build_dataset(sources=need)[0]
-    fitted = S2.fit(bundle.name, "served", ("T1-holdout",), train_frames=train)
+    fitted = S2.fit(bundle.name, "candidates", ("T1-holdout",), train_frames=train)
     plan = {(p[0], p[1]): p for p in S2._plan(("T1-holdout",))}
     refit = S.served_split(bundle, fitted.folds, plan, train, T4.load_events(), T4.load_samples())[("T1-holdout", S2.FOLD_HOLDOUT)]
     rec = next(r for r in got["fit"]["folds"] if r["tier"] == "T1-holdout")

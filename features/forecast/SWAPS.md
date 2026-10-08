@@ -176,7 +176,7 @@ venv/bin/python features/forecast/src/models/stages_build.py --set icon-t8wind-o
    (`fold_terms`), so the stages build refits every fold on its own pick.
 4. The fourth saves the 8-term set plus the day's 3-hour peak, forced: 9
    terms, with the linger table on more samples
-   (`icon-t8wind3h-osplit-lt2more-bflags`; Chase, 2026-10-07: "it may help
+   (`icon-t9wind3h-osplit-lt2more-bflags`, live since 2026-10-07; Chase: "it may help
    later on when we get better rain info"). It reads the committed selection
    instead of choosing again. Each graded fold takes its own 8 picks plus the
    peak; a fold that picked the peak itself takes its next pick instead. A

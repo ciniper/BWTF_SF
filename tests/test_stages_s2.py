@@ -59,6 +59,13 @@ def _served() -> str:
     return C.served_info()["name"]     # never hard-coded
 
 
+def _ref() -> str:
+    """The 38-weight set on the CIWQS record (stages_candidates.REFERENCE: served until 2026-10-07): the fixture for
+    the checks of the 38-weight tools and of the archive-label rule, which a longer record overrides."""
+    import stages_candidates as SC
+    return SC.REFERENCE
+
+
 @functools.lru_cache(maxsize=None)
 def _sources() -> tuple:
     """Every rain source the served set and its heads read (S2Set.sources)."""
@@ -67,14 +74,23 @@ def _sources() -> tuple:
 
 @functools.lru_cache(maxsize=None)
 def _frames(masked: bool) -> dict:
-    """The 'rain' entry: the training record's features through AS_OF, outage-masked or raw."""
-    return T.build_dataset(end=AS_OF, sources=list(_sources()), input_rules=["gauge_outage_v1"] if masked else None)[0]
+    """The 'rain' entry: the training record's features through AS_OF, outage-masked or raw, with the south wind (the
+    served set may read it)."""
+    return T.build_dataset(end=AS_OF, sources=list(_sources()), input_rules=["gauge_outage_v1"] if masked else None,
+                           wind=True)[0]
 
 
 @functools.lru_cache(maxsize=None)
 def _train() -> dict:
     """The raw training record through 2025-10-31 (stages_s2.training_frames)."""
     return S.training_frames(S.load_set(_served()))
+
+
+@functools.lru_cache(maxsize=None)
+def _ciwqs() -> dict:
+    """The CIWQS record through 2025-10-31 on the served set's sources: what the leaderboard's and the shared-terms
+    candidates were fit on (the served set's own record may be longer, _train)."""
+    return T.build_dataset(sources=list(_sources()), wind=True)[0]
 
 
 @functools.lru_cache(maxsize=None)
@@ -118,7 +134,7 @@ def test_leaderboard_season_cv_default_is_the_recorded_one_and_its_oof_reproduce
     unchanged by a later data refresh), so it stays byte-identical; with return_oof the pooled OOF
     gives the same dict exactly. Every logit row the record's sources reach, and one GBM row."""
     board = json.loads(L.OUT_JSON.read_text())
-    frames = _train()
+    frames = _ciwqs()
     checked = {"logit": 0, "gb": 0}
     for key, bd in board["basins"].items():
         for r in bd["rows"]:
@@ -138,7 +154,7 @@ def test_leaderboard_season_cv_default_is_the_recorded_one_and_its_oof_reproduce
 
 
 def test_shared_logit_season_cv_default_is_the_recorded_one_and_its_oof_reproduces_it():
-    frames = _train()
+    frames = _ciwqs()
     use_archive = json.loads((T.SERVE_DIR / "eval_report.json").read_text())["stage1_archive_labels"]
     for name, dk in (("icon-four-nosplit-lt1-bflags", "four"), ("icon-t5-nosplit-lt1-bflags", "shared5")):
         man = json.loads((C.candidate_dir(name) / "manifest.json").read_text())
@@ -173,20 +189,19 @@ def test_t1_is_the_served_predict_path_on_the_scorecards_post_training_inputs():
 
 def test_t1_holdout_refits_like_refit_holdouts_and_reproduces_the_stored_holdout_p():
     import stage2_variants as SV
-    fitted = _fit(_served())
+    fitted = _fit(_ref(), "candidates")                         # stage2_variants' 38-weight tool: on the reference set
     s2set = fitted.set
-    rows = _rows(_served(), masked=False)                       # the unmasked inputs the scorecard's holdout used
+    rows = _rows(_ref(), "candidates", masked=False)            # the unmasked inputs the scorecard's holdout used
     ho = rows[rows["tier"] == "T1-holdout"]
     assert len(ho) == HOLDOUT_DAYS * len(KEYS) and set(ho["fold"]) == {S.FOLD_HOLDOUT}
-    stored = _stored(_scorecard(T.SERVE_DIR / "scorecard.json.gz"), "ph")
+    stored = _stored(C.load_scorecard(_ref()), "ph")
     worst = max(abs(p - stored[(d, k)]) for d, k, p in zip(ho["date"], ho["basin"], ho["p"]))
     assert worst <= 0.002, worst
     # the same weights stage2_variants._refit_holdouts fits
     models = dict(s2set.models)
-    with open(T.SERVE_DIR / "citywide_model.pkl", "rb") as f:
-        models["citywide"] = pickle.load(f)
+    models["citywide"] = C.load_models(_ref())["citywide"]
     chosen = {s2set.geo.basin(k).name: s2set.models[k]["rain_source"] for k in KEYS} | {"citywide": "avg"}
-    train = _train()
+    train = _ciwqs()
     theirs = SV._refit_holdouts(models, chosen, train, T.get_feature_columns_v21())
     fold = next(f for f in fitted.folds if f.tier == "T1-holdout")
     X0 = _frames(False)["avg"][T.get_feature_columns_v21()]
@@ -199,7 +214,7 @@ def test_volume_heads_are_refit_with_the_bundles_own_design():
     fitted = _fit(_served())
     s2set = fitted.set
     train = _train()
-    full = S.fit_fold(s2set, train, "T1-holdout", "check", S.HOLDOUT_START, S.TRAINED_THROUGH, None,
+    full = S.fit_fold(s2set, train, "T1-holdout", S.FOLD_HOLDOUT, S.HOLDOUT_START, S.TRAINED_THROUGH, None,
                       lambda f: f["date"] <= S.TRAINED_THROUGH)
     X0 = _frames(True)
     for key in KEYS:                                            # all training events → the bundle's head, exactly
@@ -233,7 +248,7 @@ def test_the_training_record_is_the_sets_own():
     masked training inputs or a missing month all raise before any fold is fit."""
     import dataclasses
     from sklearn.base import clone
-    s2set, train = S.load_set(_served()), _train()
+    s2set, train = S.load_set(_ref(), "candidates"), _ciwqs()
     S.check_training_record(s2set, train)
     for key in KEYS:
         m, rows = s2set.models[key], S.set_rows(s2set, train, key)
@@ -242,12 +257,13 @@ def test_the_training_record_is_the_sets_own():
         assert np.abs(again.predict_proba(Xr)[:, 1] - m["model"].predict_proba(Xr)[:, 1]).max() == 0.0, key
     flipped = dataclasses.replace(s2set, use_archive={**s2set.use_archive, "Westside": True})
     _raises(lambda: S.check_training_record(flipped, train), "the set recorded")
-    masked = T.build_dataset(sources=list(s2set.sources), input_rules=["gauge_outage_v1"])[0]
+    own = {"record": s2set.train_record, "wind": True}                   # the set's own record, as training_frames builds it
+    masked = T.build_dataset(sources=list(s2set.sources), input_rules=["gauge_outage_v1"], **own)[0]
     _raises(lambda: S.check_training_record(s2set, masked), "misses the final")
     gap = {s: f[(f["date"] < pd.Timestamp("2019-01-01")) | (f["date"] > pd.Timestamp("2019-01-31"))] for s, f in train.items()}
     _raises(lambda: S.check_training_record(s2set, gap), "the set recorded")
-    _raises(lambda: S.fit(_served(), tiers=("T1",), train_frames=masked), "misses the final")
-    longer = T.build_dataset(end=AS_OF, sources=list(s2set.sources))[0]      # days past the training end are cut
+    _raises(lambda: S.fit(_ref(), "candidates", tiers=("T1",), train_frames=masked), "misses the final")
+    longer = T.build_dataset(end=AS_OF, sources=list(s2set.sources), **own)[0]      # days past the training end are cut
     S.check_training_record(s2set, longer)
 
 
@@ -303,13 +319,16 @@ def test_a_t2_fold_equals_a_refit_by_hand():
     s2set = _fit(_served()).set
     rows = _rows(_served())
     train = _train()
-    season, others = 2019, [s for s in S.T2_SEASONS if s != 2019]
+    season, others = 2019, [s for s in S.T2_SEASONS if s != 2019] + list(S.extra_seasons(s2set))
     for key in KEYS:
         m, h = s2set.models[key], s2set.heads[key]
         name = s2set.geo.basin(key).name
         sub = _set_rows(s2set, train, key)
         tr = sub[sub["season"].isin(others)]
-        model = clone(m["model"]).fit(tr[m["features"]], tr["y"])
+        model = clone(m["model"])
+        if s2set.fold_terms:                                    # a named-terms set refits each fold on its own pick
+            model.set_params(terms__kw_args={"terms": s2set.fold_terms["2019-20"]})
+        model = model.fit(tr[m["features"]], tr["y"])
         hs = T.target_frame(train[h["rain_source"]], name)
         ev = hs[(hs["y"] == 1) & (hs[f"{name}_volume_known"] == 1) & hs["season"].isin(others)]
         head = {**h, "model": clone(h["model"]).fit(ev[h["features"]], np.log1p(ev[f"{name}_volume_mg"]))}
@@ -337,7 +356,8 @@ def test_no_t3_row_and_no_fold_trains_on_what_it_scores():
     for f in t2:
         s = int(f["fold"][:4])
         for key, info in f["train"].items():
-            assert s not in info["seasons"] and set(info["seasons"]) <= set(S.T2_SEASONS) - {s}, (f["fold"], key)   # never 2015, never 2025
+            assert s not in info["seasons"] and set(info["seasons"]) <= (set(S.T2_SEASONS) - {s}) | set(S.extra_seasons(fitted.set)), \
+                (f["fold"], key)   # never 2025, and never 2015 unless the set's own longer record holds it
     ho = next(f for f in stamp["folds"] if f["tier"] == "T1-holdout")
     assert all(pd.Timestamp(i["span"][1]) < S.HOLDOUT_START for i in ho["train"].values())
     t1 = next(f for f in stamp["folds"] if f["tier"] == "T1")

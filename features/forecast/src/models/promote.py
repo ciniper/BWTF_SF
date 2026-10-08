@@ -86,7 +86,7 @@ def _scorecard(path: Path) -> dict:
 # refitting it as it was fit, served or retired.
 DESIGN_FIELDS = ("record", "fold_terms", "terms")
 # what else a set carries both ways: protocol §2's tags (a post_seen set stays post_seen when it serves)
-CARRIED = DESIGN_FIELDS + ("tags",)
+CARRIED = DESIGN_FIELDS + ("tags", "term_selection")
 
 
 def retire_served(now: str, dry_run: bool) -> str:

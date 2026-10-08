@@ -1,0 +1,302 @@
+{
+ "name": "icon-w38-osplit-lt2more-bflags",
+ "family": "logit",
+ "note": "Retired from serving on 2026-10-07 (served 2026-10-07 \u2192 2026-10-07); stage 1 logit_v1 with stage 2 v2_d10. Kept as a candidate so it stays gradable.",
+ "created_at": "2026-10-07T10:45:36",
+ "retired_at": "2026-10-07T19:39:12",
+ "trained_through": "2025-10-31",
+ "span": [
+  "2016-03-01",
+  "2026-08-17"
+ ],
+ "holdout_start": "2023-07-01",
+ "rain_sources": {
+  "citywide": "avg",
+  "westside": "avg",
+  "north_shore": "SF Downtown",
+  "central": "SF Downtown",
+  "southeast": "SF Downtown"
+ },
+ "per_basin": {
+  "westside": {
+   "source": "avg",
+   "C": 0.1,
+   "holdout": {
+    "n": 854,
+    "pos": 12,
+    "roc_auc": 0.9969319081551861,
+    "pr_auc": 0.8544337606837608,
+    "brier": 0.006319498449207048
+   },
+   "season_cv_pre_holdout": {
+    "n": 2038,
+    "pos": 39,
+    "roc_auc": 0.9874937468734367,
+    "pr_auc": 0.6556423409202696,
+    "brier": 0.011947843491327458
+   },
+   "n_events": 51
+  },
+  "north_shore": {
+   "source": "SF Downtown",
+   "C": 0.03,
+   "holdout": {
+    "n": 854,
+    "pos": 9,
+    "roc_auc": 0.9996055226824458,
+    "pr_auc": 0.9626543209876544,
+    "brier": 0.0016344423913581185
+   },
+   "season_cv_pre_holdout": {
+    "n": 2647,
+    "pos": 31,
+    "roc_auc": 0.9949319325244155,
+    "pr_auc": 0.7280439981489266,
+    "brier": 0.005914489335737074
+   },
+   "n_events": 40
+  },
+  "central": {
+   "source": "SF Downtown",
+   "C": 0.03,
+   "holdout": {
+    "n": 854,
+    "pos": 20,
+    "roc_auc": 0.9995203836930455,
+    "pr_auc": 0.9767387525185512,
+    "brier": 0.004460916643662821
+   },
+   "season_cv_pre_holdout": {
+    "n": 2647,
+    "pos": 58,
+    "roc_auc": 0.9742278339393454,
+    "pr_auc": 0.6811647714601871,
+    "brier": 0.01066838887930852
+   },
+   "n_events": 78
+  },
+  "southeast": {
+   "source": "SF Downtown",
+   "C": 0.03,
+   "holdout": {
+    "n": 854,
+    "pos": 17,
+    "roc_auc": 0.9988052568697731,
+    "pr_auc": 0.9222065637472667,
+    "brier": 0.004330013885027062
+   },
+   "season_cv_pre_holdout": {
+    "n": 2647,
+    "pos": 61,
+    "roc_auc": 0.9920061364471999,
+    "pr_auc": 0.7608716691447874,
+    "brier": 0.010157491921572075
+   },
+   "n_events": 78
+  }
+ },
+ "stage1": {
+  "name": "logit_v1",
+  "from": "retired-served",
+  "family": "logit"
+ },
+ "stage2": {
+  "variant": "v2_d10",
+  "kind": "outfall_split",
+  "impact_table_refit": true,
+  "fitted_at": "2026-10-07T10:45:23"
+ },
+ "zone_confusion_holdout": {
+  "ocean": {
+   "0.1": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 47,
+     "fn": 1,
+     "tn": 797
+    },
+    "vs_bacteria_elevated": {
+     "tp": 16,
+     "fp": 13,
+     "fn": 11,
+     "tn": 117
+    }
+   },
+   "0.25": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 28,
+     "fn": 1,
+     "tn": 816
+    },
+    "vs_bacteria_elevated": {
+     "tp": 16,
+     "fp": 8,
+     "fn": 11,
+     "tn": 122
+    }
+   },
+   "0.5": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 8,
+     "fn": 1,
+     "tn": 836
+    },
+    "vs_bacteria_elevated": {
+     "tp": 11,
+     "fp": 2,
+     "fn": 16,
+     "tn": 128
+    }
+   }
+  },
+  "baker_china": {
+   "0.1": {
+    "vs_discharge_posting": {
+     "tp": 10,
+     "fp": 40,
+     "fn": 0,
+     "tn": 804
+    },
+    "vs_bacteria_elevated": {
+     "tp": 8,
+     "fp": 7,
+     "fn": 31,
+     "tn": 123
+    }
+   },
+   "0.25": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 15,
+     "fn": 1,
+     "tn": 829
+    },
+    "vs_bacteria_elevated": {
+     "tp": 4,
+     "fp": 4,
+     "fn": 35,
+     "tn": 126
+    }
+   },
+   "0.5": {
+    "vs_discharge_posting": {
+     "tp": 8,
+     "fp": 5,
+     "fn": 2,
+     "tn": 839
+    },
+    "vs_bacteria_elevated": {
+     "tp": 3,
+     "fp": 1,
+     "fn": 36,
+     "tn": 129
+    }
+   }
+  },
+  "north": {
+   "0.1": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 38,
+     "fn": 0,
+     "tn": 807
+    },
+    "vs_bacteria_elevated": {
+     "tp": 17,
+     "fp": 10,
+     "fn": 11,
+     "tn": 119
+    }
+   },
+   "0.25": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 15,
+     "fn": 0,
+     "tn": 830
+    },
+    "vs_bacteria_elevated": {
+     "tp": 14,
+     "fp": 6,
+     "fn": 14,
+     "tn": 123
+    }
+   },
+   "0.5": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 2,
+     "fn": 0,
+     "tn": 843
+    },
+    "vs_bacteria_elevated": {
+     "tp": 9,
+     "fp": 1,
+     "fn": 19,
+     "tn": 128
+    }
+   }
+  },
+  "east": {
+   "0.1": {
+    "vs_discharge_posting": {
+     "tp": 20,
+     "fp": 131,
+     "fn": 0,
+     "tn": 703
+    },
+    "vs_bacteria_elevated": {
+     "tp": 78,
+     "fp": 21,
+     "fn": 59,
+     "tn": 101
+    }
+   },
+   "0.25": {
+    "vs_discharge_posting": {
+     "tp": 20,
+     "fp": 86,
+     "fn": 0,
+     "tn": 748
+    },
+    "vs_bacteria_elevated": {
+     "tp": 70,
+     "fp": 14,
+     "fn": 67,
+     "tn": 108
+    }
+   },
+   "0.5": {
+    "vs_discharge_posting": {
+     "tp": 18,
+     "fp": 36,
+     "fn": 2,
+     "tn": 798
+    },
+    "vs_bacteria_elevated": {
+     "tp": 47,
+     "fp": 4,
+     "fn": 90,
+     "tn": 118
+    }
+   }
+  }
+ },
+ "input_rules_post": [
+  "gauge_outage_v1"
+ ],
+ "stage1_source": "retired-served",
+ "lineup": {
+  "geography": "geo_v1",
+  "s1": "icon_seamless",
+  "s2": "logit_v1",
+  "s3": "split_v2",
+  "s4": "impact_v2_d10",
+  "s5": "live_v2"
+ },
+ "tags": {
+  "post_seen": "its linger table on more samples was built after sfpuc-icon-t8s-osplits-pickout-lzflags's post-training scores showed the extra samples helping the public number"
+ }
+}

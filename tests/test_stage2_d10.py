@@ -1,5 +1,5 @@
 """Stage 2 v2_d10 (stage2_variants.py fit --variant v2_d10): v2's split with its linger table fit on the stages' S4
-truth samples, served since 2026-10-07 (icon-w38-osplit-lt2more-bflags). The spec is v2 on more samples, its sets
+truth samples, served since 2026-10-07 (first under the 38-weight model, then under the 9-term one). The spec is v2 on more samples, its sets
 record the id v2_d10, the stages build refits it on those samples, the served stage2.json is the spec, and nothing
 on the serving path reads the samples field. Offline. Run: venv/bin/python tests/test_stage2_d10.py
 """
@@ -72,9 +72,10 @@ def test_the_build_refits_it_on_the_d10_samples():
 def test_its_post_training_scores_are_tagged():
     """Built after sfpuc-icon-t8s-osplits-pickout-lzflags's post-training scores were seen (protocol §2): served since,
     its build carries the tag (promote.py carried it into served.json)."""
-    man = CAND.served_info()
-    assert man["name"] == "icon-w38-osplit-lt2more-bflags" and "sfpuc-icon-t8s-osplits-pickout-lzflags" in man["tags"]["post_seen"]
-    p = B.STAGES_DIR / man["name"] / "scores.json"
+    name = "icon-w38-osplit-lt2more-bflags"               # served for part of 2026-10-07, a retired candidate since
+    man = CAND.served_info() if CAND.served_info()["name"] == name else json.loads((CAND.candidate_dir(name) / "manifest.json").read_text())
+    assert "sfpuc-icon-t8s-osplits-pickout-lzflags" in man["tags"]["post_seen"]
+    p = B.STAGES_DIR / name / "scores.json"
     if p.exists():
         sc = json.loads(p.read_text())
         assert sc["windows"]["T1"]["post_seen"] == man["tags"]["post_seen"]
