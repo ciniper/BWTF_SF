@@ -21,6 +21,12 @@ them); the protocol's scores come from the stages build:
     venv/bin/python features/forecast/src/models/train_older_reports.py            # compare, write nothing
     venv/bin/python features/forecast/src/models/train_older_reports.py --save all
     venv/bin/python features/forecast/src/models/stages_build.py --set icon-w38r16f-osplit-lt2-bflags --root candidates --write
+
+Trimmed 2026-10-08 (STAGES_DESIGN Part B 39): the four candidates are gone from disk. Their finding, the 2011 record
+with every discharge day, trains the live overflow model (train_terms.py), and tag archive/pre-trim-2026-10-08 holds
+them. OLDER_REPORTS.md is frozen as written then: ``--report`` needs the four sets' stage scores, so it refuses unless
+they are restored (``--save all`` and a stages build each). The record's machinery (training_rows, record_counts,
+the RECORDS) stays: train_terms.py reads it.
 """
 from __future__ import annotations
 
@@ -351,6 +357,10 @@ def main(argv=None) -> None:
     ap.add_argument("--report", action="store_true", help=f"write {REPORT.name} from the stage scores")
     a = ap.parse_args(argv)
     if a.report:
+        missing = [set_name(st1) for st1 in RECORDS if not (CAND.candidate_dir(set_name(st1)) / "manifest.json").exists()]
+        if missing:
+            raise SystemExit(f"{REPORT.name} is frozen: {', '.join(missing)} were trimmed on 2026-10-08 (tag "
+                             "archive/pre-trim-2026-10-08). Restore them with --save all and a stages build each to regenerate it.")
         REPORT.write_text(report())
         print(f"→ {REPORT}")
         return

@@ -27,7 +27,14 @@ stages build scores:
                "the current 8 term set that you selected PLUS the 3 hour peak"; it adds nothing yet, "it may help
                later on when we get better rain info"). Each graded fold takes its own 8 picks plus the peak; a fold
                that picked the peak itself takes its next pick instead, so every fold has 9 (``ADDED``,
-               ``PEAK_SETS``; saved with the linger table on more samples only, ``--peak``).
+               ``PEAK_SETS``; saved with the linger table on more samples only, ``--peak``). Served since 2026-10-07.
+
+    trimmed    2026-10-08 (Chase: "let's trim the others that you suggested"; STAGES_DESIGN Part B 39): the 9- and
+               10-term sets are gone from disk (tag archive/pre-trim-2026-10-08 holds them). ``--save`` would make them
+               again.
+    the grid   every overflow model kept is scored with every split and table pair (Part B 39): ``--grid`` saves the
+               8-term set and the 8 terms + the peak with each linger table (``GRID``, ``STAGE2``, v1 = no split and
+               Linger table 1 included) from the committed selection, skipping a set already on disk or served.
 
 A fold's refit in the stages build uses that fold's own terms (the manifest's ``fold_terms``, stages_s2.
 check_fold_terms), so the T2 and holdout scores grade the procedure, not one term list picked with every season in
@@ -38,6 +45,7 @@ lab's nine-season grades in view. Post-training and the live season were never s
     venv/bin/python features/forecast/src/models/train_terms.py --save
     venv/bin/python features/forecast/src/models/train_terms.py --peak     # the 8 terms + the 3-hour peak, from the
                                                                             # committed selection (no re-selection)
+    venv/bin/python features/forecast/src/models/train_terms.py --grid     # the kept sets on every linger table
     venv/bin/python features/forecast/src/models/stages_build.py --set icon-t8wind-osplit-lt2-bflags --root candidates --write
 """
 from __future__ import annotations
@@ -70,9 +78,10 @@ RECORD_KEY = "older11"                                # term_lab.RECORDS: the ol
 SELECTION = {"rules": True, "path": True, "C": "live", "nonneg": False, "max_terms": max(SIZES)}
 KEYS = TOR.KEYS                                       # the four basins and citywide
 SELECTION_FILE = "selection.json"
-STAGE2 = {"s2v2": "v2", "s2v2d10": "v2_d10"}         # which linger table → stage 2 id (stage2_variants.load_spec)
+STAGE2 = {"s2v1": "v1", "s2v2": "v2", "s2v2d10": "v2_d10"}   # which linger table → stage 2 id (v1: no spec, no split)
 ADDED = {"max3h": ["rain_max3h"]}                     # terms forced on top of a size's picks (Chase, 2026-10-07)
 PEAK_SETS = ((8, "max3h", "s2v2d10"),)                # (size, addition, linger table): the 8 terms + the 3-hour peak
+GRID = ((8, None), (8, "max3h"))                      # the term-list overflow models kept (Part B 39), each on every STAGE2
 # protocol §2's post_seen reasons (candidates.tag_candidate): the record, and the linger table on more samples
 POST_SEEN = {"record": ("its training record (the older SFPUC reports from 2011, every discharge day) was chosen in "
                         "OLDER_REPORTS.md with the older-report sets' post-training scores in view"),
@@ -84,9 +93,15 @@ def stage1_name(k: int, added: str | None = None) -> str:
     return f"logit_wind{k}_{added + '_' if added else ''}{RECORD_KEY}"
 
 
+def stage2_spec(suffix: str) -> dict | None:
+    """The stage 2 spec STAGE2[suffix] names: None for v1 (no split, Linger table 1: candidates.save_candidate)."""
+    variant = STAGE2[suffix]
+    return None if variant == "v1" else SV.load_spec(variant)
+
+
 def set_name(k: int, suffix: str = "s2v2", added: str | None = None) -> str:
     """The set saved for k terms (plus ADDED[added]) and stage 2 STAGE2[suffix]: its lineup's id (candidates.geo_v1_set)."""
-    return CAND.geo_v1_set(stage1_name(k, added), SV.load_spec(STAGE2[suffix]))[0]
+    return CAND.geo_v1_set(stage1_name(k, added), stage2_spec(suffix))[0]
 
 
 def with_added(ts: list, k: int, added: str | None = None) -> list:
@@ -190,10 +205,11 @@ def save(sel: dict, k: int, got: dict, suffix: str = "s2v2", added: str | None =
     """Save size k (plus ADDED[added], whose nested ``grade`` lab_grade gives) with stage 2 STAGE2[suffix], tagged
     post_seen (POST_SEEN)."""
     variant = STAGE2[suffix]
-    spec = SV.load_spec(variant)
+    spec = stage2_spec(suffix)
     check_pairing(spec)
     name, lineup = CAND.geo_v1_set(stage1_name(k, added), spec)
-    table = {"v2": "stage 2 v2", "v2_d10": "stage 2 v2 with its linger table fit on the stages' S4 truth samples (v2_d10)"}[variant]
+    table = {"v1": "stage 2 v1 (no split, Linger table 1)", "v2": "stage 2 v2",
+             "v2_d10": "stage 2 v2 with its linger table fit on the stages' S4 truth samples (v2_d10)"}[variant]
     n = len(got["terms"])
     how = (f"{n} named terms per basin, the same in every basin: {', '.join(got['terms'])}. The day's rain, the 2- and "
            f"3-day sums and the south wind on the rainy hours are forced; the rest picked by nested forward selection "
@@ -239,7 +255,21 @@ def main(argv=None) -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--save", action="store_true", help=f"save the {', '.join(map(str, SIZES))}-term candidates")
     ap.add_argument("--peak", action="store_true", help="save PEAK_SETS from the committed selection (no re-selection)")
+    ap.add_argument("--grid", action="store_true", help="save GRID on every linger table from the committed selection, "
+                                                         "skipping sets on disk or served")
     a = ap.parse_args(argv)
+    if a.grid:
+        sel = json.loads((CAND.candidate_dir(set_name(8, "s2v2d10")) / SELECTION_FILE).read_text())
+        models, served = served_models(), CAND.served_info()["name"]
+        on_disk = {m["name"] for m in CAND.list_candidates()} | {served}
+        for k, added in GRID:
+            todo = [x for x in STAGE2 if set_name(k, x, added) not in on_disk]
+            if not todo:
+                continue
+            got, grade = fit(sel, k, models, added), (lab_grade(sel, k, added) if added else None)
+            for suffix in todo:
+                save(sel, k, got, suffix, added, grade)
+        return
     if a.peak:
         sel = json.loads((CAND.candidate_dir(set_name(8, "s2v2d10")) / SELECTION_FILE).read_text())
         models = served_models()

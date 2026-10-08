@@ -12,6 +12,7 @@ the page reads it and names no set "today's".
 from __future__ import annotations
 
 import fnmatch
+import gzip
 import json
 import re
 import sys
@@ -83,7 +84,8 @@ def test_the_json_is_current():
     assert E.render() == JSON_PATH.read_text(encoding="utf-8"), \
         "stage_builder.json is stale: run venv/bin/python features/forecast/src/models/export_stage_builder.py and commit it"
     assert "NaN" not in JSON_PATH.read_text() and built()["schema"] == E.SCHEMA
-    assert JSON_PATH.stat().st_size < 120_000, "the builder's file should stay small: it is fetched by the page"
+    # what the page downloads: Vercel sends it compressed (brotli: 14.7 KB for 81 KB on 2026-10-08, before the zone cells)
+    assert len(gzip.compress(JSON_PATH.read_bytes())) < 40_000, "the builder's file should stay small: it is fetched by the page"
 
 
 def test_sampled_numbers_are_their_fields():
@@ -153,6 +155,51 @@ def test_every_number_is_its_artifact_field():
     print(f"   {n} scores checked against their artifact fields")
 
 
+def test_every_basin_and_zone_number_is_its_artifact_field():
+    """A module's breakdown: S2 per basin of its set's map, S3/S4 and the public number per zone, each the artifact's
+    cell (skill and range rounded), every unit the artifact scores on the window and none it does not."""
+    from shared import geography as G
+    from shared.zones import ZONES
+    b = built()
+    digits = E.UNIT_DIGITS
+
+    def same(mine, art, where):
+        want = {"bss": round(art["bss"], digits), "lo": round(art["ci"]["bss"][0], digits), "hi": round(art["ci"]["bss"][1], digits),
+                "n": art["n"], "n_pos": art["n_pos"], "storms": art["n_storm_blocks"], "low_power": art["low_power"]}
+        assert mine == want, (where, mine, want)
+
+    def check(by, blk, entry, units, where):
+        k = 0
+        for w in ("T2", "T1", "T1-holdout", "T0"):
+            arts = {u: (blk.get(u) or {}).get(entry, {}).get(w) for u in units}
+            arts = {u: a for u, a in arts.items() if isinstance(a, dict) and a.get("bss") is not None}
+            mine = (by or {}).get(w) or {}
+            assert list(mine) == list(arts), (where, w, list(mine), list(arts))   # the same units, in display order
+            for u, a in arts.items():
+                same(mine[u], a, f"{where} {u} {w}")
+                k += 1
+        return k
+
+    n = 0
+    for sid in ("s2", "s3", "s4"):
+        for p in stage(sid)["parts"]:
+            if p["scores"] is None:
+                assert "by_unit" not in p
+                continue
+            sc = scores(p["from"])
+            man = json.loads((STAGES / p["from"] / "manifest.json").read_text())
+            units = list(G.get(man["geography"]).keys) if sid == "s2" else list(ZONES)
+            n += check(p["by_unit"], sc[sid], "oracle", units, f"{sid} {p['id']}")
+    for c in b["chains"]:
+        for e in ("L1", "rain"):
+            n += check(c["zones"][e], scores(c["set"])["out"], e, list(ZONES), f"chain {c['set']} {e}")
+    assert set(b["units"]) == {k for g in b["basins"] for k in G.get(g["id"]).keys} | set(ZONES)
+    for k, name in b["units"].items():
+        assert name == (ZONES[k].label if k in ZONES else next(x.name for g in b["basins"] for x in G.get(g["id"]).basins if x.key == k))
+    assert n >= 500, n   # 19 sets' zones and their parts' basins and zones (656 on 2026-10-08)
+    print(f"   {n} basin and zone scores checked against their artifact fields")
+
+
 def test_the_realistic_mean_is_the_rule_it_is_shown_for():
     """A stored mean is the set's own rule (live_v2 = basin_swap on the served basins) or link/zone beside it."""
     st5 = stage("s5")
@@ -215,10 +262,26 @@ def test_parts_on_disk_are_listed_and_unscored_ones_say_so():
         cand = json.loads(m.read_text())
         assert cand["stage1"]["name"] in s2, cand["name"]
     unscored = [p for p in s2.values() if p["scores"] is None]
-    assert unscored and all(p["from"] is None for p in unscored)
-    assert "logit_v2_shared5" in {p["id"] for p in unscored}   # the 5-term model: on disk, no stage score yet
+    assert all(p["from"] is None for p in unscored)
     lineup_sets = {x["set"] for x in built()["lineups"]}
-    assert lineup_sets and not lineup_sets & set(scored_sets())
+    assert not lineup_sets & set(scored_sets())
+
+
+def test_every_overflow_model_is_scored_with_every_split_and_table_pair():
+    """Part B 39 (Chase, 2026-10-08: "make sure every other combo is scored"): on each basin map, every S2 part a
+    scored set uses is scored with every S3 + S4 pair a scored set uses there, so no pick of the builder's S2, S3
+    and S4 menus lacks a public number. No candidate on disk is left unscored."""
+    b = built()
+    assert not b["lineups"], [x["set"] for x in b["lineups"]]
+    for g in b["basins"]:
+        mine = [c for c in b["chains"] if c["basins"] == g["id"]]
+        s2s = {c["parts"]["s2"] for c in mine}
+        pairs = {(c["parts"]["s3"], c["parts"]["s4"]) for c in mine}
+        have = {(c["parts"]["s2"], c["parts"]["s3"], c["parts"]["s4"]) for c in mine}
+        if g["id"] == "geo_v1":
+            assert pairs == set(LU.GEO_V1_STAGE2.values()), pairs
+        missing = sorted((s2, *pr) for s2 in s2s for pr in pairs if (s2, *pr) not in have)
+        assert not missing, (g["id"], missing)
 
 
 def test_the_served_set_is_live():
@@ -271,6 +334,10 @@ def test_the_page_reads_the_builder_and_names_no_set_todays():
     assert "How to read this" in html and "Day by day" in html and "sb-live" in html
     assert not re.search(r"today['’]s", html, re.I), re.findall(r".{40}today['’]s.{40}", html, re.I)[:3]
     assert "S5 is scored on its own and does not enter this number" in html
+    # a module opens to its basins or zones: S2–S4's cells and the public number's two
+    assert "SB.units[u]" in html and "p.by_unit" in html and "match.zones.L1" in html and "match.zones.rain" in html
+    # S3 and S4 move as a pair (Part B 39), and the public number reads the chain with the picked weather model
+    assert "function sbSet(st, id)" in html and "sbPairs()" in html and "c.parts.s1 === sbPick.s1" in html
 
 
 if __name__ == "__main__":

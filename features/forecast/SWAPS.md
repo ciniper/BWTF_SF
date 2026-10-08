@@ -73,6 +73,18 @@ the same commit, since its S1 is part of its name
 (`src/models/promote.py --rename-served`). Then rebuild the stage scores (the
 last section), because every forecast-day entry reads it.
 
+To score the live set with another weather model before switching (nothing
+served moves; STAGES_DESIGN.md Part B 39):
+
+```bash
+venv/bin/python features/forecast/src/models/promote.py --weather ecmwf_ifs025
+venv/bin/python features/forecast/src/models/stages_build.py --set ecmwf-t9wind3h-osplit-lt2more-bflags --root candidates --write
+```
+
+The copy's lineup names the weather model, and the stages build reads every lead
+entry from that model's archived forecasts (`stages_build.weather_model`). The
+Model check shows its public number when that weather model is picked.
+
 ## The overflow model's weights or terms (stage 2)
 
 A set of weights is a model set: one model per basin, with its terms, weights
@@ -237,6 +249,10 @@ venv/bin/python features/forecast/src/models/stages_build.py --set icon-w38r11a-
 venv/bin/python features/forecast/src/models/train_older_reports.py --report
 ```
 
+Since 2026-10-08 the four candidates are trimmed (STAGES_DESIGN.md Part B 39) and
+OLDER_REPORTS.md is frozen: `--report` refuses until `--save all` and a stages
+build each bring them back. Their 2011 record trains the live overflow model.
+
 1. The first command fetches the 2011–2015 rain (both gauges, and ERA5's
    hourly rain) into two files of their own,
    `data/raw/historical_rain_2011-2015.csv` and
@@ -325,11 +341,12 @@ venv/bin/python features/forecast/src/models/stages_build.py --set icon-w38-nosp
 venv/bin/python features/forecast/src/models/stages_build.py --set icon-trees-nosplit-lt1-bflags --root candidates --write
 ```
 
-Then rebuild each stage candidate you are keeping with
-`--set <name> --root stages_candidates --write`, and each candidate trained on
-the older reports with `--set icon-w38r<…>-osplit-lt2-bflags --root candidates --write`
-(then `train_older_reports.py --report`). That takes about 4 minutes per
-set; the S1 step takes about 2.
+Then rebuild every other candidate (`ls features/forecast/data/models/candidates/`)
+with `--set <name> --root candidates --write`, and each stage candidate you are
+keeping with `--set <name> --root stages_candidates --write`. Every candidate on
+disk is scored, so the Model check has a public number for every pick (Part B 39;
+`tests/test_stage_builder.py`). That takes about 5 minutes per set, four at a time
+in parallel; the S1 step takes about 2.
 
 After rebuilding the stage scores, run `venv/bin/python features/forecast/src/models/export_stage_builder.py` and commit its `data/models/stage_builder.json`: the Model check's stage builder reads that file, since the app bundle leaves the stage artifacts out (`tests/test_stage_builder.py` fails while it is stale).
 

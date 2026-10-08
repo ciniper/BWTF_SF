@@ -24,8 +24,10 @@ import stages_s2 as S2  # noqa: E402
 import term_lab as TL  # noqa: E402
 import train_terms as TT  # noqa: E402
 
-NAMES = [TT.set_name(k, s) for k in TT.SIZES for s in TT.STAGE2]
-PEAKS = [TT.set_name(k, s, added) for k, added, s in TT.PEAK_SETS]
+# the term-list sets on disk since the trim (Part B 39): GRID's models, each on every linger table (STAGE2)
+NAMES = [TT.set_name(k, s) for k, added in TT.GRID if added is None for s in TT.STAGE2]
+PEAK_GRID = [(k, added, s) for k, added in TT.GRID if added for s in TT.STAGE2]
+PEAKS = [TT.set_name(k, s, added) for k, added, s in PEAK_GRID]
 
 
 def _manifest(name: str) -> dict:
@@ -37,6 +39,17 @@ def _manifest(name: str) -> dict:
 
 def _root(name: str) -> str:
     return "served" if name == CAND.served_info()["name"] else "candidates"
+
+
+def _models(name: str) -> dict:
+    if _root(name) == "served":
+        return {k: pickle.load(open(CAND.SERVE_DIR / f"{k}_model.pkl", "rb")) for k in TT.KEYS}
+    return CAND.load_models(name)
+
+
+def _variant(man: dict) -> str:
+    sv = man["stage2"]                                  # served.json names it; a manifest describes it
+    return sv if isinstance(sv, str) else sv["variant"]
 
 
 def test_the_term_pipeline_is_the_labs_design():
@@ -69,7 +82,8 @@ def test_the_peak_set_is_the_8_terms_plus_the_3_hour_peak():
     """Chase, 2026-10-07: "the current 8 term set that you selected PLUS the 3 hour peak". The finals are the 8-term
     set's terms plus rain_max3h; every graded fold has its own 8 picks plus the peak (a fold that picked it takes its
     next pick), 9 terms each; the term lab's nested grade is the stages build's S2 score, as for every size."""
-    for name, (k, added, suffix) in zip(PEAKS, TT.PEAK_SETS):
+    assert set(TT.PEAK_SETS) <= set(PEAK_GRID)
+    for name, (k, added, suffix) in zip(PEAKS, PEAK_GRID):
         man, base = _manifest(name), _manifest(TT.set_name(k, suffix))
         assert man["terms"] == base["terms"] + TT.ADDED[added]
         sel = json.loads((CAND.candidate_dir(TT.set_name(k, suffix)) / TT.SELECTION_FILE).read_text())   # the 8-term set's
@@ -93,14 +107,19 @@ def test_the_peak_set_is_the_8_terms_plus_the_3_hour_peak():
                 assert abs(got - lab) < 1e-5, (name, tier, got, lab)
 
 
-def test_both_tables_share_one_overflow_model():
-    for k in TT.SIZES:
-        a, b = (CAND.load_models(TT.set_name(k, s)) for s in TT.STAGE2)
-        assert set(a) == set(b)
-        for key in a:
-            assert pickle.dumps(a[key]["model"]) == pickle.dumps(b[key]["model"]), (k, key)
-        assert _manifest(TT.set_name(k, "s2v2"))["stage2"]["variant"] == "v2"
-        assert _manifest(TT.set_name(k, "s2v2d10"))["stage2"]["variant"] == "v2_d10"
+def test_every_table_shares_one_overflow_model():
+    """A GRID model on each linger table is one overflow model: the same weights (the live one's sets included, refit
+    from the committed choice: Part B 39), each set naming its own stage 2."""
+    for k, added in TT.GRID:
+        names = [TT.set_name(k, s, added) for s in TT.STAGE2]
+        sets = [_models(n) for n in names]
+        for other, n in zip(sets[1:], names[1:]):
+            assert set(other) == set(sets[0]), n
+            for key in other:
+                a, b = sets[0][key]["model"].named_steps["lr"], other[key]["model"].named_steps["lr"]
+                assert np.array_equal(a.coef_, b.coef_) and np.array_equal(a.intercept_, b.intercept_), (n, key)
+        for n, suffix in zip(names, TT.STAGE2):
+            assert _variant(_manifest(n)) == TT.STAGE2[suffix], n
 
 
 def test_the_stage_build_grades_what_the_lab_graded():

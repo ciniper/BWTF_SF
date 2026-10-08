@@ -81,7 +81,7 @@ def test_the_weights_reproduce_every_logistic_model():
             p = 1.0 / (1.0 + np.exp(-(cat["intercept"] + ((np.asarray(cols, float) - mu) / sd) @ w)))
             assert np.allclose(p, pipe.predict_proba(X)[:, 1], rtol=0, atol=1e-9), (entry["name"], key)
             checked += 1
-    assert checked > 100, checked
+    assert checked >= 80, checked   # 86 on 2026-10-08, after the trim (Part B 39)
 
 
 if __name__ == "__main__":

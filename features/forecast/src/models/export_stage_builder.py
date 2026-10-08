@@ -13,7 +13,8 @@ It reads committed artifacts only and never recomputes a number:
 
     data/models/served.json                      the served set (the LIVE badge)
     data/models/stages/<set>/manifest.json       each scored set's basins and parts: its chain
-    data/models/stages/<set>/scores.json         S2–S4 oracle skill, S5 per correction rule, the public number
+    data/models/stages/<set>/scores.json         S2–S4 oracle skill, S5 per correction rule, the public number, and
+                                                 each of those S2–S4 and public-number scores per basin (S2) or zone
     data/models/stages/_s1/s1_scores.json        S1 one day ahead, and the floor
     data/models/candidates/<set>/manifest.json   overflow models and lineups with no stage score yet
 
@@ -38,6 +39,7 @@ for _p in (str(REPO), str(HERE)):
 import stages_spec as SP  # noqa: E402  (each stage's question and what its oracle is fed, in words)
 from shared import geography as G  # noqa: E402
 from shared import lineup as LU  # noqa: E402
+from shared.zones import ZONES  # noqa: E402
 
 MODELS = FORECAST / "data" / "models"
 SERVED = MODELS / "served.json"
@@ -67,6 +69,12 @@ S5_NOTES = {"plain": {"short": "the baseline", "long": "No correction is the bas
 # field → path inside a stage cell (scores.json <stage>/pooled/<entry>/<window>)
 CELL = (("bss", ("bss",)), ("lo", ("ci", "bss", 0)), ("hi", ("ci", "bss", 1)), ("pr", ("pr",)), ("roc", ("roc",)),
         ("n", ("n",)), ("n_pos", ("n_pos",)), ("storms", ("n_storm_blocks",)), ("low_power", ("low_power",)), ("span", ("span",)))
+# … a basin's (S2) or zone's (S3, S4, the public number) cell beside the pooled one (scores.json <stage>/<unit>/<entry>/
+# <window>). The breakdown a module opens on the page: the skill rounded to UNIT_DIGITS (shown at two), so the file stays small.
+UNIT_CELL = (("bss", ("bss",)), ("lo", ("ci", "bss", 0)), ("hi", ("ci", "bss", 1)), ("n", ("n",)), ("n_pos", ("n_pos",)),
+             ("storms", ("n_storm_blocks",)), ("low_power", ("low_power",)))
+UNIT_DIGITS = 4
+ROUNDED = ("bss", "lo", "hi")
 # … inside an S1 model or floor block (s1_scores.json by_lead/1/avg/models/<model>, floor/<name>)
 S1_CELL = (("mae", ("continuous", S1_SUBSET, "mae")), ("lo", ("ci", "continuous", S1_SUBSET, "mae", 0)),
            ("hi", ("ci", "continuous", S1_SUBSET, "mae", 1)), ("n", (f"n_{S1_SUBSET}",)), ("first", ("first",)), ("last", ("last",)))
@@ -86,6 +94,9 @@ PATHS = {
           + "; realistic.draws: s5/pooled/<feed>/<window>/<part>/delta_vs_plain; realistic.mean: <mean.src>: "
           + ", ".join(f"{k} = {'/'.join(map(str, p))}" for k, p in S5_MEAN),
     "chains": "stages/<set>/scores.json out/pooled/<L1|rain>/<window>, the s2-s4 fields; parts: manifest.json components",
+    "units": "by_unit (s2-s4 parts): stages/<from>/scores.json <stage>/<basin|zone>/oracle/<window>; zones (chains): "
+             "stages/<set>/scores.json out/<zone>/<L1|rain>/<window>: " + ", ".join(f"{k} = {'/'.join(map(str, p))}" for k, p in UNIT_CELL)
+             + f" ({', '.join(ROUNDED)} rounded to {UNIT_DIGITS} places); a window with no unit scored is left out",
 }
 
 
@@ -103,6 +114,42 @@ def cell(scores: dict, blk: str, entry: str, w: str) -> dict | None:
     """A stage cell's fields, or None when the window holds no score (not scored, or the live season not graded)."""
     c = (((scores.get(blk) or {}).get("pooled") or {}).get(entry) or {}).get(w)
     return pick(c, CELL) if isinstance(c, dict) and c.get("bss") is not None else None
+
+
+def unit_cell(scores: dict, blk: str, unit: str, entry: str, w: str) -> dict | None:
+    c = (((scores.get(blk) or {}).get(unit) or {}).get(entry) or {}).get(w)
+    if not (isinstance(c, dict) and c.get("bss") is not None):
+        return None
+    out = pick(c, UNIT_CELL)
+    return {k: round(v, UNIT_DIGITS) if k in ROUNDED else v for k, v in out.items()}
+
+
+def by_unit(scores: dict, blk: str, entry: str, units: list) -> dict | None:
+    """{window: {unit: cell}} for each window where a unit has a score, units in display order; None when none has."""
+    out = {}
+    for w, _ in WINDOWS:
+        cells = {u: c for u in units if (c := unit_cell(scores, blk, u, entry, w)) is not None}
+        if cells:
+            out[w] = cells
+    return out or None
+
+
+def units_of(st: str, geography: str) -> list:
+    """S2 is scored per basin of its set's map; S3, S4 and the public number per zone (the same four on every map)."""
+    return list(G.get(geography).keys) if st == "s2" else list(ZONES)
+
+
+def unit_names(geos: list) -> dict:
+    """Every basin and zone a breakdown can show, by key, with its display name (a key two maps share means one basin)."""
+    names = {}
+    for g in geos:
+        for b in G.get(g).basins:
+            if names.setdefault(b.key, b.name) != b.name:
+                raise ValueError(f"basin {b.key!r} is {names[b.key]!r} on one map and {b.name!r} on {g}")
+    for z in ZONES.values():
+        if names.setdefault(z.key, z.label) != z.label:
+            raise ValueError(f"zone {z.key!r} shares its key with a basin")
+    return names
 
 
 # ── loading ──────────────────────────────────────────────────────────────────
@@ -200,7 +247,8 @@ def stage_parts(D: dict, st: str, geos: list) -> dict:
             basins = {s["manifest"]["geography"] for s in users[pid]}
             scores = {w: cell(src["scores"], st, "oracle", w) for w, _ in WINDOWS}
             parts.append({"id": pid, "name": name, "basins": [g for g in geos if g in basins], "live": pid == live,
-                          "from": src["name"], "scores": scores})
+                          "from": src["name"], "scores": scores,
+                          "by_unit": by_unit(src["scores"], st, "oracle", units_of(st, src["manifest"]["geography"]))})
         else:
             parts.append({"id": pid, "name": name, "basins": [g for g in geos if g in unscored[pid]], "live": False,
                           "from": None, "scores": None})
@@ -294,7 +342,8 @@ def chains(D: dict) -> tuple[list, list]:
         parts = {c: man["components"][c] for c in STAGES}
         out.append({"set": s["name"], "live": s["name"] == D["served"], "name": lineup_name(parts), "basins": man["geography"],
                     "parts": parts, "scorecard": s["name"] == D["served"] or s["name"] in cand_names,
-                    "scores": {w: {"L1": cell(sc, "out", "L1", w), "rain": cell(sc, "out", "rain", w)} for w, _ in WINDOWS}})
+                    "scores": {w: {"L1": cell(sc, "out", "L1", w), "rain": cell(sc, "out", "rain", w)} for w, _ in WINDOWS},
+                    "zones": {e: by_unit(sc, "out", e, list(ZONES)) for e in ("L1", "rain")}})
         seen.add(LU.set_id({"geography": man["geography"], **parts}))
     unscored = []
     for c in D["candidates"]:
@@ -332,7 +381,7 @@ def build(D: dict | None = None) -> dict:
     stages = [stage_s1(D, geos), stage_parts(D, "s2", geos), stage_parts(D, "s3", geos), stage_parts(D, "s4", geos), stage_s5(D, geos)]
     return {"schema": SCHEMA, "served": D["served"], "protocol": sv["protocol"], "as_of": sv["as_of"],
             "bootstrap": {"n": sv["bootstrap"]["n"], "level": sv["bootstrap"]["level"]}, "paths": PATHS,
-            "windows": windows(D), "basins": [{"id": g, "name": LU.words("geography", g)} for g in geos],
+            "windows": windows(D), "basins": [{"id": g, "name": LU.words("geography", g)} for g in geos], "units": unit_names(geos),
             "aliases": {"s5": S5_ALIASES}, "stages": stages, "chains": chain_list, "lineups": unscored}
 
 

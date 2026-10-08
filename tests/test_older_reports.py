@@ -136,7 +136,9 @@ def test_t2_folds_fit_the_longer_record_never_score_it():
     assert ref.train_record is None and S2.extra_seasons(ref) == ()
 
 
-def test_the_candidates_are_the_served_design_on_their_record():
+def _the_candidates_are_the_served_design_on_their_record():
+    """Not run since 2026-10-08: the four candidates were trimmed (Part B 39; tag archive/pre-trim-2026-10-08).
+    Restore them (train_older_reports.py --save all) and rename this test_… to check them again."""
     served = {k: S2.load_set(SC.REFERENCE, "candidates").models[k]      # the 38-weight design they refit
               for k in ("westside", "north_shore", "central", "southeast")}
     for stage1, rec in TO.RECORDS.items():
@@ -157,9 +159,17 @@ def test_the_candidates_are_the_served_design_on_their_record():
         assert json.loads((TO.CAND.candidate_dir(name) / "stage2.json").read_text()) == TO.ST2.load_variant("v2")
 
 
-def test_the_write_up_is_current():
-    """OLDER_REPORTS.md is the script's output on the committed stage scores (rerun --report after a rebuild)."""
-    assert TO.REPORT.read_text() == TO.report(), "OLDER_REPORTS.md is stale: run train_older_reports.py --report"
+def test_the_write_up_is_frozen_while_its_candidates_are_trimmed():
+    """OLDER_REPORTS.md was the script's output on the committed stage scores until its four candidates were trimmed
+    (2026-10-08, Part B 39): it says so, and --report refuses rather than write it without them."""
+    assert all(not TO.CAND.candidate_dir(TO.set_name(st1)).exists() for st1 in TO.RECORDS)
+    assert TO.REPORT.read_text().split("\n")[2].startswith("**Frozen 2026-10-08.**")
+    try:
+        TO.main(["--report"])
+    except SystemExit as e:
+        assert "frozen" in str(e) and "archive/pre-trim-2026-10-08" in str(e), e
+    else:
+        raise AssertionError("--report wrote the frozen page")
 
 
 if __name__ == "__main__":

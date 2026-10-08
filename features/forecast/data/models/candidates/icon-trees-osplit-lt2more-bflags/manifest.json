@@ -1,0 +1,280 @@
+{
+ "name": "icon-trees-osplit-lt2more-bflags",
+ "family": "gb",
+ "note": "Stage 1 gb_v1 (from icon-trees-osplit-lt2-bflags) composed with stage 2 v2_d10 (outfall_split): p_group(D\u2212k) = p_basin(D\u2212k) \u00b7 [w\u00b7g_large + (1\u2212w)\u00b7g_small], w = V/(V+median), g_size = share of the basin's CIWQS discharge days of that size on which \u22651 of the group's outfalls discharged",
+ "created_at": "2026-10-08T01:00:31",
+ "trained_through": "2025-10-31",
+ "span": [
+  "2016-03-01",
+  "2026-08-17"
+ ],
+ "holdout_start": "2023-07-01",
+ "rain_sources": {
+  "westside": "avg",
+  "north_shore": "SF Downtown",
+  "central": "SF Downtown",
+  "southeast": "avg",
+  "citywide": "avg"
+ },
+ "per_basin": {
+  "westside": {
+   "source": "avg",
+   "holdout": {
+    "n_test": 854,
+    "pos_test": 12,
+    "roc_auc": 0.9956452889944577,
+    "pr_auc": 0.8283195970695972,
+    "brier": 0.007082503786548205
+   },
+   "n_events": 51
+  },
+  "north_shore": {
+   "source": "SF Downtown",
+   "holdout": {
+    "n_test": 854,
+    "pos_test": 9,
+    "roc_auc": 0.9993425378040763,
+    "pr_auc": 0.9534662867996202,
+    "brier": 0.003219967258129928
+   },
+   "n_events": 40
+  },
+  "central": {
+   "source": "SF Downtown",
+   "holdout": {
+    "n_test": 854,
+    "pos_test": 20,
+    "roc_auc": 0.9991007194244604,
+    "pr_auc": 0.9671773182957395,
+    "brier": 0.004531826447787953
+   },
+   "n_events": 78
+  },
+  "southeast": {
+   "source": "avg",
+   "holdout": {
+    "n_test": 854,
+    "pos_test": 17,
+    "roc_auc": 0.9962049335863377,
+    "pr_auc": 0.835391118169756,
+    "brier": 0.005981375564908106
+   },
+   "n_events": 78
+  },
+  "citywide": {
+   "source": "avg",
+   "holdout": {
+    "n_test": 854,
+    "pos_test": 20,
+    "roc_auc": 0.9977817745803357,
+    "pr_auc": 0.9110309238405214,
+    "brier": 0.005718003166767336
+   },
+   "n_events": 78
+  }
+ },
+ "stage1": {
+  "name": "gb_v1",
+  "from": "icon-trees-osplit-lt2-bflags",
+  "family": "gb"
+ },
+ "stage2": {
+  "variant": "v2_d10",
+  "kind": "outfall_split",
+  "impact_table_refit": true,
+  "fitted_at": "2026-10-07T10:45:23"
+ },
+ "zone_confusion_holdout": {
+  "ocean": {
+   "0.1": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 51,
+     "fn": 1,
+     "tn": 793
+    },
+    "vs_bacteria_elevated": {
+     "tp": 16,
+     "fp": 14,
+     "fn": 11,
+     "tn": 116
+    }
+   },
+   "0.25": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 28,
+     "fn": 1,
+     "tn": 816
+    },
+    "vs_bacteria_elevated": {
+     "tp": 14,
+     "fp": 9,
+     "fn": 13,
+     "tn": 121
+    }
+   },
+   "0.5": {
+    "vs_discharge_posting": {
+     "tp": 8,
+     "fp": 11,
+     "fn": 2,
+     "tn": 833
+    },
+    "vs_bacteria_elevated": {
+     "tp": 12,
+     "fp": 3,
+     "fn": 15,
+     "tn": 127
+    }
+   }
+  },
+  "baker_china": {
+   "0.1": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 42,
+     "fn": 1,
+     "tn": 802
+    },
+    "vs_bacteria_elevated": {
+     "tp": 7,
+     "fp": 9,
+     "fn": 32,
+     "tn": 121
+    }
+   },
+   "0.25": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 17,
+     "fn": 1,
+     "tn": 827
+    },
+    "vs_bacteria_elevated": {
+     "tp": 4,
+     "fp": 5,
+     "fn": 35,
+     "tn": 125
+    }
+   },
+   "0.5": {
+    "vs_discharge_posting": {
+     "tp": 7,
+     "fp": 7,
+     "fn": 3,
+     "tn": 837
+    },
+    "vs_bacteria_elevated": {
+     "tp": 3,
+     "fp": 2,
+     "fn": 36,
+     "tn": 128
+    }
+   }
+  },
+  "north": {
+   "0.1": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 37,
+     "fn": 0,
+     "tn": 808
+    },
+    "vs_bacteria_elevated": {
+     "tp": 17,
+     "fp": 10,
+     "fn": 11,
+     "tn": 119
+    }
+   },
+   "0.25": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 20,
+     "fn": 0,
+     "tn": 825
+    },
+    "vs_bacteria_elevated": {
+     "tp": 15,
+     "fp": 8,
+     "fn": 13,
+     "tn": 121
+    }
+   },
+   "0.5": {
+    "vs_discharge_posting": {
+     "tp": 9,
+     "fp": 4,
+     "fn": 0,
+     "tn": 841
+    },
+    "vs_bacteria_elevated": {
+     "tp": 10,
+     "fp": 1,
+     "fn": 18,
+     "tn": 128
+    }
+   }
+  },
+  "east": {
+   "0.1": {
+    "vs_discharge_posting": {
+     "tp": 20,
+     "fp": 118,
+     "fn": 0,
+     "tn": 716
+    },
+    "vs_bacteria_elevated": {
+     "tp": 73,
+     "fp": 16,
+     "fn": 64,
+     "tn": 106
+    }
+   },
+   "0.25": {
+    "vs_discharge_posting": {
+     "tp": 19,
+     "fp": 84,
+     "fn": 1,
+     "tn": 750
+    },
+    "vs_bacteria_elevated": {
+     "tp": 64,
+     "fp": 14,
+     "fn": 73,
+     "tn": 108
+    }
+   },
+   "0.5": {
+    "vs_discharge_posting": {
+     "tp": 19,
+     "fp": 47,
+     "fn": 1,
+     "tn": 787
+    },
+    "vs_bacteria_elevated": {
+     "tp": 54,
+     "fp": 4,
+     "fn": 83,
+     "tn": 118
+    }
+   }
+  }
+ },
+ "lineup": {
+  "geography": "geo_v1",
+  "s1": "icon_seamless",
+  "s2": "gb_v1",
+  "s3": "split_v2",
+  "s4": "impact_v2_d10",
+  "s5": "live_v2"
+ },
+ "stage1_source": "icon-trees-osplit-lt2-bflags",
+ "tags": {
+  "post_seen": "its linger table on more samples was built after sfpuc-icon-t8s-osplits-pickout-lzflags's post-training scores showed the extra samples helping the public number"
+ },
+ "input_rules_post": [
+  "gauge_outage_v1"
+ ]
+}

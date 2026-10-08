@@ -41,6 +41,11 @@ served.json records the rule as "corrections". It changes the public number,
 and the served set's S5, so its name (its lineup's id) changes with it:
 re-run tests/fixtures/make_stages_goldens.py in the same commit.
 
+The live set read with another weather model, as a candidate the stages build scores (Part B 39; nothing served
+moves):
+
+    venv/bin/python features/forecast/src/models/promote.py --weather ecmwf_ifs025 [--dry-run]
+
 A new weather model on the live page (live_dashboard METEO_PARAMS) changes the
 served set's S1 the same way; rename it in the same commit:
 
@@ -91,40 +96,66 @@ CARRIED = DESIGN_FIELDS + ("tags", "term_selection")
 
 def retire_served(now: str, dry_run: bool) -> str:
     """Copy the served set into candidates/<its name>/ with a manifest. Returns its name."""
+    return served_as_candidate(now, dry_run)
+
+
+def weather_variant(model: str, dry_run: bool = False) -> str:
+    """The served set read with another weather model's forecasts: its pickles, tables and design copied into
+    candidates/<the id of its lineup with S1 = model>/, so the stages build scores the swap on every lead entry
+    (stages_build.weather_model; Part B 39). Nothing served moves. Returns its name."""
+    import stages_entries as E  # noqa: PLC0415
+    if model not in E.MODELS:
+        raise SystemExit(f"no archived forecasts of {model!r}; known {E.MODELS}")
+    if model == _weather_model():
+        raise SystemExit(f"{model} is the live page's weather model: the served set already reads it")
+    return served_as_candidate(datetime.now().isoformat(timespec="seconds"), dry_run, weather=model)
+
+
+def served_as_candidate(now: str, dry_run: bool, weather: str | None = None) -> str:
+    """The served set as a candidate: retired (``weather`` None, under its own name), or read with weather model
+    ``weather`` (under that lineup's id, a candidate). Returns its name."""
     served = C.served_info()
-    name = served["name"]
+    if not served.get("lineup") or C.set_name(served["lineup"]) != served["name"]:
+        raise SystemExit(f"served.json records no lineup whose id is {served['name']!r}: rename_served first")
+    lineup = dict(served["lineup"], **({"s1": weather} if weather else {}))
+    name = C.set_name(lineup)
     dest = C.candidate_dir(name)
     if dest.exists():
-        raise SystemExit(f"candidates/{name}/ already exists — refusing to overwrite the retired set's record")
+        raise SystemExit(f"candidates/{name}/ already exists — refusing to overwrite its record")
     models = _load_pickles(SERVE_DIR)
     sc = _scorecard(SERVE_DIR / "scorecard.json.gz")
     s2_path = SERVE_DIR / "stage2.json"
     s2 = json.loads(s2_path.read_text()) if s2_path.exists() else None
     family = served.get("family") or models["westside"].get("family") or "gb"
-    if not served.get("lineup") or C.set_name(served["lineup"]) != name:
-        raise SystemExit(f"served.json records no lineup whose id is {name!r}: rename_served first")
     per_basin = served.get("per_basin")
     if per_basin is None:   # the original gb_v1 bundle: its training report carries the per-basin picks
         ev_path = SERVE_DIR / "eval_report.json"
         ev = json.loads(ev_path.read_text()) if ev_path.exists() else {}
         per_basin = {k: {"source": t.get("rain_source"), "holdout": t.get("holdout"), "n_events": t.get("n_events")}
                      for k, t in ev.get("targets", {}).items()}
+    if weather:
+        from shared import lineup as LU  # noqa: PLC0415
+        note = (f"The live set {served['name']} read with {LU.words('s1', weather)}'s forecasts instead of "
+                f"{LU.words('s1', served['lineup']['s1'])}'s: the same overflow model, split, table and correction rule, "
+                f"copied on {now[:10]} (promote.py --weather). Not served.")
+        when = {"created_at": now}
+    else:
+        note = (f"Retired from serving on {now[:10]} (served {served.get('promoted_at', 'from the 2026-09-12 launch')[:10]} → {now[:10]}); "
+                f"stage 1 {served['stage1']} with stage 2 {served['stage2']}. Kept as a candidate so it stays gradable.")
+        when = {"created_at": models["westside"].get("trained_at") or now, "retired_at": now}
     manifest = {
-        "name": name, "family": family,
-        "note": f"Retired from serving on {now[:10]} (served {served.get('promoted_at', 'from the 2026-09-12 launch')[:10]} → {now[:10]}); "
-                f"stage 1 {served['stage1']} with stage 2 {served['stage2']}. Kept as a candidate so it stays gradable.",
-        "created_at": models["westside"].get("trained_at") or now, "retired_at": now,
+        "name": name, "family": family, "note": note, **when,
         "trained_through": sc.get("trained_through") or sc["span"][1], "span": sc["span"], "holdout_start": sc.get("holdout_start"),
         "rain_sources": {k: m.get("rain_source", "avg") for k, m in models.items()},
         "per_basin": per_basin,
-        "stage1": {"name": served["stage1"], "from": "retired-served", "family": family},
+        "stage1": {"name": served["stage1"], "from": served["name"] if weather else "retired-served", "family": family},
         "stage2": {"variant": served["stage2"], "kind": (s2 or {}).get("kind", "basin composition"),
                    "impact_table_refit": bool(s2 and s2.get("impact_table")), "fitted_at": (s2 or {}).get("fitted_at")},
         "zone_confusion_holdout": sc.get("zone_confusion_holdout"), "input_rules_post": sc.get("input_rules_post") or [],
-        "stage1_source": "retired-served", "lineup": dict(served["lineup"]),
+        "stage1_source": served["name"] if weather else "retired-served", "lineup": lineup,
         **{k: served[k] for k in CARRIED if served.get(k) is not None},
     }
-    print(f"retire {name}: {len(models)} pickles, scorecard ({len(sc['days'])} days), stage2 {served['stage2']} → candidates/{name}/")
+    print(f"{'weather variant' if weather else 'retire'} {name}: {len(models)} pickles, scorecard ({len(sc['days'])} days), stage2 {served['stage2']} → candidates/{name}/")
     if not dry_run:
         dest.mkdir(parents=True)
         for k in KEYS:
@@ -282,6 +313,9 @@ if __name__ == "__main__":
         raise SystemExit(0)
     if "--rename-served" in args:
         rename_served(dry_run="--dry-run" in args)
+        raise SystemExit(0)
+    if "--weather" in args:
+        weather_variant(args[args.index("--weather") + 1], dry_run="--dry-run" in args)
         raise SystemExit(0)
     if not args or args[0].startswith("--"):
         raise SystemExit(__doc__)

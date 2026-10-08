@@ -33,11 +33,16 @@ def test_the_live_design_grades_as_its_stage_scores():
     assert got["prediction_rel_gap"] < 1e-4 and got["grade_gap"] < 1e-5 and got["delta_gap"] < 1e-12, got
 
 
-def test_the_longer_record_grades_as_its_candidate_does():
-    """The 38-weight design on the older-reports record is the scored candidate icon-w38r11a-osplit-lt2-bflags: the
-    lab's skill and its change against the live model match that candidate's stage scores."""
-    sc = json.loads((TL.B.STAGES_DIR / "icon-w38r11a-osplit-lt2-bflags" / "scores.json").read_text())
-    g = lab().run(TL.W38_TERMS, record="older11")["grade"]
+def test_a_nested_candidate_grades_as_its_stage_scores():
+    """A term list picked nested on the older-reports record, not live: the 8 terms with the south wind
+    (icon-t8wind-osplit-lt2more-bflags), each fold on its own picks. The lab's skill and its change against the live
+    model match the candidate's stage scores. (The 38-weight design on that record, which this test read until
+    2026-10-08, was trimmed: Part B 39.)"""
+    name = "icon-t8wind-osplit-lt2more-bflags"
+    sc = json.loads((TL.B.STAGES_DIR / name / "scores.json").read_text())
+    man = json.loads((TL.CAND.candidate_dir(name) / "manifest.json").read_text())
+    sel = json.loads((TL.CAND.candidate_dir(name) / "selection.json").read_text())
+    g = lab().grade(lab().oof(None, C=sel["C"], nonneg=sel["nonneg"], record="older11", terms_by_fold=man["fold_terms"]))
     for tier in TL.TIERS:
         for unit in ["pooled"] + lab().keys:
             assert abs(g[tier][unit]["skill"] - sc["s2"][unit]["oracle"][tier]["bss"]) < 1e-5, (tier, unit)

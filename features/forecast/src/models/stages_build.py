@@ -413,11 +413,19 @@ def load_set(set_name: str, root: str = "served", stage_set=None) -> SetBundle:
 GEO_V1_VARIANTS = ("v1", "v2", "v2_d10")          # the stage 2 ids a GEO_V1 set may record (candidates.stage2_variant_id)
 
 
+def weather_model(bundle: SetBundle) -> str:
+    """S1: the weather model the set's lineup names, its forecasts feeding every lead entry. A set saved with another
+    weather model (promote.py --weather, Part B 39) names it; a set whose lineup names none reads the live page's."""
+    if bundle.stage is not None:
+        return bundle.stage.manifest["components"]["s1"]
+    return ((bundle.descriptor or {}).get("lineup") or {}).get("s1") or E.served_weather_model()
+
+
 def components(bundle: SetBundle) -> dict:
     """Design §2.7: the components behind each stage, by name (a stage candidate's from its manifest)."""
     if bundle.stage is not None:
         return {c: bundle.stage.manifest["components"][c] for c in COMPONENTS}
-    return {"s1": E.served_weather_model(), "s2": bundle.s2.stage1, **LU.geo_v1_parts(bundle.s2.stage1, bundle.variant),
+    return {"s1": weather_model(bundle), "s2": bundle.s2.stage1, **LU.geo_v1_parts(bundle.s2.stage1, bundle.variant),
             "s5": S5.LR.VERSION}
 
 
@@ -2206,7 +2214,9 @@ def build(set_name: str = "served", root: str = "served", entries=ENTRIES, tiers
         tiers = (tuple(t for t in TIERS if any(f.tier == t for f in st.folds)) if st is not None
                  else TIERS if s2set.family in S2.REFIT_FAMILIES else S2.FINAL_TIERS)
     tiers = tuple(tiers)
-    model = E.served_weather_model()
+    model = weather_model(bundle)
+    if model not in E.MODELS:
+        raise ValueError(f"{bundle.name}: no archived forecasts of weather model {model!r} (stages_entries.MODELS)")
     end = E.data_end()
     what = f"stage set {components(bundle)}" if st is not None else f"stage 2 {bundle.variant}"
     log(f"{bundle.name} ({root}, {s2set.family}, {what}, {geo.version}); tiers {tiers}; entries {entries}; data to {end.date()}")
