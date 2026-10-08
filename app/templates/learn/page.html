@@ -84,7 +84,56 @@
   .swatches{display:flex;flex-wrap:wrap;gap:12px;font-size:12.5px;color:var(--muted);margin:4px 0 0}
   .swatches i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
 
-  /* ── 4. From the archive ── */
+  /* ── 2. The system from above ── */
+  .storms{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 10px}
+  .play-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:0 0 10px}
+  .play-row output{font-weight:900;min-width:190px}
+  #sys-count{font-size:13.5px;color:var(--muted)} #sys-count b{color:var(--ink)}
+  .sys-map{position:relative;z-index:0;height:540px;border:1px solid var(--line);border-radius:var(--r);background:#eaf3fb;display:grid;place-items:center;overflow:hidden;--mdur:1.8s}
+  .sys-map.leaflet-container{display:block}
+  .mflow{stroke-dasharray:6 12;animation:mflow var(--mdur,1.8s) linear infinite}
+  @keyframes mflow{to{stroke-dashoffset:-36}}
+  .of-ico{border-radius:50%;background:#fff;border:2.5px solid #6b4c2e;box-sizing:border-box;transition:background .25s,border-color .25s}
+  .of-ico.on{background:var(--discharge);border-color:#fff;box-shadow:0 0 0 1.5px var(--discharge)}
+  .of-ico.on::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--discharge);animation:ping 1.4s ease-out infinite}
+  @keyframes ping{from{transform:scale(1);opacity:.9}to{transform:scale(2.8);opacity:0}}
+  .pl-ico{background:#26272a;border:2px solid #fff;border-radius:4px;box-sizing:border-box;box-shadow:0 1px 3px rgba(0,0,0,.35)}
+  .leaflet-tooltip.pl-tip{font:700 12px Roboto,sans-serif;padding:2px 7px}
+  .leaflet-popup-content{font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:13px;line-height:1.45}
+  .strip{margin:10px 0 0}
+  .strip svg{display:block;width:100%;height:44px;background:var(--sand2);border-radius:8px 8px 0 0}
+  .strip input{display:block;width:100%;margin:0;accent-color:var(--discharge)}
+  .strip-ends{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--faint)}
+  .map-key{margin:8px 0 0}
+  .map-key i.k-ring{width:20px;height:7px;background:#8b6a4a;opacity:.55;border-radius:4px}
+  .map-key i.k-main{width:20px;height:3px;background:repeating-linear-gradient(90deg,#6b4c2e 0 5px,transparent 5px 9px)}
+  .map-key i.k-out{width:20px;height:4px;background:#2f9c96}
+  .map-key i.k-pl{background:#26272a}
+  .map-key i.k-of{border-radius:50%;background:#fff;border:2px solid #6b4c2e;box-sizing:border-box}
+  .map-key i.k-on{border-radius:50%;background:var(--discharge)}
+
+  /* ── 5. A century and a half ── */
+  .tl{position:relative;margin:6px 0 12px}
+  .tl .rail{position:absolute;top:0;bottom:0;left:50%;width:4px;margin-left:-2px;background:var(--sand2);border-radius:2px}
+  .tl .rail span{position:absolute;left:0;right:0;top:0;height:var(--p,0%);background:linear-gradient(var(--sky),var(--brand));border-radius:2px}
+  .tl ol{list-style:none;margin:0;padding:0}
+  .tl .stop{position:relative;width:50%;box-sizing:border-box;padding:0 34px 18px 0}
+  .tl .stop:nth-child(even){margin-left:50%;padding:0 0 18px 34px}
+  .tl .stop + .stop{margin-top:-56px}   /* the two columns interleave; every card is taller than twice this */
+  .tl .dot{position:absolute;top:10px;right:-9px;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid var(--line);box-sizing:border-box;transition:background .3s,border-color .3s}
+  .tl .stop:nth-child(even) .dot{right:auto;left:-9px}
+  .tl .stop.past .dot{border-color:var(--brand);background:var(--brand)} .tl .stop.kept.past .dot{border-color:var(--safe);background:var(--safe)}
+  .tl .card{background:var(--sand2);border-radius:var(--r);padding:12px 16px 10px}
+  .tl .when{font-size:24px;font-weight:900;line-height:1.1;letter-spacing:-.01em;color:var(--brand)}   /* not Bebas: it has no lowercase, and "1850s" would read 1850S */ .tl .kept .when{color:var(--safe)}
+  .tl h3{margin:2px 0 4px;font-size:16px;font-weight:900}
+  .tl p{margin:0;font-size:14px;color:var(--muted)}
+  .tl .ph-frame{margin:10px 0 0;border:2px dashed var(--line);border-radius:10px;padding:20px 12px;text-align:center;font-size:12.5px;color:var(--faint);background:#fff}
+  .tl .src{display:block;margin:8px 0 0;font-size:11.5px;color:var(--faint)}
+  .tl.js .card{opacity:0;transform:translateX(-20px);transition:opacity .5s ease-out,transform .5s ease-out}
+  .tl.js .stop:nth-child(even) .card{transform:translateX(20px)}
+  .tl.js .stop.in .card{opacity:1;transform:none}
+
+  /* ── 6. From the archive ── */
   .compare{position:relative;aspect-ratio:16/7;max-height:380px;width:100%;border-radius:var(--r);overflow:hidden;user-select:none;touch-action:none;background:#ccc}
   .compare .pane{position:absolute;inset:0;display:flex;align-items:flex-end;padding:14px 16px;font:700 13px Roboto,sans-serif}
   .compare .now{background:linear-gradient(160deg,#9fd0ec,#5aa5d3 55%,#e8d9b5 56%,#d9c79c);color:#1b3a52}
@@ -101,8 +150,11 @@
   details.notes li{margin:4px 0}
 
   @media (max-width:760px){.scene-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}.scene{min-width:680px}.swipe{display:block}.caption{flex-direction:column;gap:6px}.caption .step{align-self:flex-start}   /* the numbers stay legible on a phone; the caption stacks under its label */
-    .wrap{padding:14px 14px 30px}.sec{padding:16px}.sec h2{font-size:28px}.lab{grid-template-columns:1fr}.compare{aspect-ratio:4/3}}
-  @media (prefers-reduced-motion:reduce){.flow,.drop,.m{animation:none!important}.chart .bar,.well{transition:none!important}}
+    .wrap{padding:14px 14px 30px}.sec{padding:16px}.sec h2{font-size:28px}.lab{grid-template-columns:1fr}.compare{aspect-ratio:4/3}
+    .sys-map{height:440px}.play-row output{min-width:0}.strip-ends span:nth-child(2){display:none}
+    .tl .rail{left:9px;margin-left:0}.tl .stop,.tl .stop:nth-child(even){width:auto;margin-left:0;padding:0 0 14px 34px}.tl .stop + .stop{margin-top:0}
+    .tl .dot,.tl .stop:nth-child(even) .dot{left:2px;right:auto}.tl.js .card,.tl.js .stop:nth-child(even) .card{transform:translateY(16px)}}
+  @media (prefers-reduced-motion:reduce){.flow,.drop,.m,.mflow,.of-ico.on::after{animation:none!important}.tl .dot{transition:none!important}.chart .bar,.well{transition:none!important}}
 </style>
 </head>
 <body>
@@ -112,7 +164,7 @@
   {{ page_head("Learn", "How San Francisco's sewers meet the shore, the bacteria the labs count, and the record so far.") }}
   <p class="proto"><b>Prototype</b> on a design branch: not linked from the site, kept out of search. Facts to check before it goes public are listed at the bottom.</p>
   <nav class="jump" aria-label="Sections">
-    <a class="preset" href="#rain">Where the rain goes</a><a class="preset" href="#bugs">Meet the indicators</a><a class="preset" href="#record">The record, in motion</a><a class="preset" href="#archive">From the archive</a>
+    <a class="preset" href="#rain">Where the rain goes</a>{% if system %}<a class="preset" href="#above">The system from above</a>{% endif %}<a class="preset" href="#bugs">Meet the indicators</a><a class="preset" href="#record">The record, in motion</a><a class="preset" href="#history">A century and a half</a><a class="preset" href="#archive">From the archive</a>
   </nav>
 
   {# ── 1 ── #}
@@ -199,7 +251,31 @@
     <p class="more">Drawn after Figure 2-4 of SFPUC's Sewer System Master Plan (2010), the source of the facts in the key. All {{ plants.total }} outfalls are on the <a href="/?layers=outfalls">Today map's Outfalls layer</a>; every discharge since 2016 is in the <a href="/discharges">Discharge Ledger</a>; the <a href="/forecast">CSO Forecast</a> estimates the odds from rain.</p>
   </section>
 
-  {# ── 2 ── #}
+  {# ── 2. The system from above ── #}
+  {% if system %}
+  <section class="sec" id="above" aria-labelledby="above-h">
+    <h2 id="above-h">The system from above</h2>
+    <p class="sub">The diagram's storage, on the map: a brown ring of storage under the shore holds what the plants cannot take yet, and teal lines carry treated water out. Pick one of the six biggest storm days in the record and play it. Each outfall lights up when SFPUC reported it started discharging and goes dark when it stopped.</p>
+    <div class="storms" id="storms" role="group" aria-label="Storm day">
+      {% for s in system.storms %}<button type="button" class="preset{% if loop.first %} active{% endif %}" data-i="{{ loop.index0 }}" aria-pressed="{{ 'true' if loop.first else 'false' }}">{{ s.label }}</button>{% endfor %}
+    </div>
+    <div class="play-row">
+      <button type="button" class="btn" id="sys-play">Play</button>
+      <output id="sys-clock" for="sys-t">—</output>
+      <span id="sys-count" aria-live="polite"></span>
+    </div>
+    <div class="sys-map" id="sys-map"><button type="button" class="btn ghost" id="sys-load">Load the map</button></div>
+    <div class="strip">
+      <svg id="sys-strip" viewBox="0 0 1000 60" preserveAspectRatio="none" aria-hidden="true"><path id="strip-area" fill="#e8c9bd" stroke="#b5310a" stroke-width="1.5" vector-effect="non-scaling-stroke"/><line id="strip-head" y1="0" y2="60" stroke="#26272a" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>
+      <input type="range" id="sys-t" min="0" max="1000" value="0" aria-label="Time in the storm">
+      <div class="strip-ends"><span id="sys-t0"></span><span>outfalls discharging, through the storm</span><span id="sys-t1"></span></div>
+    </div>
+    <div class="swatches map-key"><span><i class="k-ring"></i>storage ring (schematic)</span><span><i class="k-main"></i>sewage to a plant</span><span><i class="k-out"></i>treated water out</span><span><i class="k-pl"></i>treatment plant</span><span><i class="k-of"></i>outfall</span><span><i class="k-on"></i>discharging</span></div>
+    <p class="more">Plant sites and offshore pipes are approximate, after Figures 2-1 and 2-5 of SFPUC's master plan; the ring is schematic, joining the outfalls in shoreline order rather than tracing the real structures. Start times, durations and volumes are SFPUC's reports to the State, with each discharge's volume spread evenly over its duration; all of them are in the <a href="/discharges">Discharge Ledger</a>. MG = million gallons (≈1.5 Olympic pools).</p>
+  </section>
+  {% endif %}
+
+  {# ── 3 ── #}
   <section class="sec" id="bugs" aria-labelledby="bugs-h">
     <h2 id="bugs-h">Meet the indicators</h2>
     <p class="sub">Labs do not look for every germ in sewage. They count a few easy-to-grow gut bacteria that travel with it: when these are high, sewage or runoff is likely in the water.</p>
@@ -235,7 +311,7 @@
     </div>
   </section>
 
-  {# ── 3 ── #}
+  {# ── 4 ── #}
   <section class="sec" id="record" aria-labelledby="record-h">
     <h2 id="record-h">The record, in motion</h2>
     <p class="sub">Two records this site already keeps, drawn from the files behind the Beach Postings and Discharge Ledger pages. Tap a bar for its numbers.</p>
@@ -262,7 +338,31 @@
     <p class="more">The full records: <a href="/postings">Beach Postings</a> · <a href="/discharges">Discharge Ledger</a> · <a href="/analysis">Site Report Card</a></p>
   </section>
 
-  {# ── 4 ── #}
+  {# ── 5. A century and a half ── #}
+  <section class="sec" id="history" aria-labelledby="history-h">
+    <h2 id="history-h">A century and a half</h2>
+    <p class="sub">From the first sewers to this site, as SFPUC's 2010 master plan tells it, with the records this site keeps. The line fills as you scroll.</p>
+    <div class="tl" id="tl">
+      <div class="rail" aria-hidden="true"><span id="tl-fill"></span></div>
+      <ol>
+        {% for s in timeline %}
+        <li class="stop {{ 'plan' if 'Master Plan' in s.src else 'kept' }}">
+          <span class="dot" aria-hidden="true"></span>
+          <div class="card">
+            <div class="when">{{ s.when }}</div>
+            <h3>{{ s.title }}</h3>
+            <p>{{ s.text }}</p>
+            {% if s.photo %}<div class="ph-frame">Photo to come · {{ s.photo }}</div>{% endif %}
+            <small class="src">{{ s.src }}</small>
+          </div>
+        </li>
+        {% endfor %}
+      </ol>
+    </div>
+    <div class="swatches"><span><i style="background:var(--brand);border-radius:50%"></i>from SFPUC's master plan</span><span><i style="background:var(--safe);border-radius:50%"></i>from the records this site keeps</span></div>
+  </section>
+
+  {# ── 6 ── #}
   <section class="sec" id="archive" aria-labelledby="archive-h">
     <h2 id="archive-h">From the archive</h2>
     <p class="sub">Then and now, the same view: drag the line. The frames below are placeholders; real photos come once their rights are cleared.</p>
@@ -284,6 +384,8 @@
     <ul>
       <li>From the repo, already used on the site: the two plants and their outfall counts (shared/outfalls.py), the four state limits and Surfrider's caution tier (shared/standards.py), when the city began each indicator (Samples and Site Report Card notes), and both charts' numbers (the BeachWatch and CIWQS files).</li>
       <li>Confirmed by SFPUC's Sewer System Master Plan (Summary Report, Final Draft, March 2010): over 90% of the city is combined; the transport/storage structures ring the perimeter "like a moat", hold flow until the storm passes, and give discharges the equivalent of primary treatment, which is why they are called CSDs; flow is pumped to the plants; the Oceanside plant's outfall runs about four miles offshore (1986) and the Southeast plant's two outfalls go to the bay. Check that the 2010 numbers still hold before quoting any.</li>
+      <li>The map: outfall positions come from shared/outfalls.py; the plant sites and the offshore pipes are placed by eye from the master plan's Figures 2-1 and 2-5 and need real coordinates; the brown ring is schematic and does not trace the real transport/storage structures or force mains. Storm replays use CIWQS start times and durations as reported, with volume spread evenly over each discharge; the handful of reports without a usable start time or duration are left out.</li>
+      <li>The timeline: every stop names its source. The master plan stops follow its text and its Figure 1-1 (Southeast's year is 1952 in the text and 1962 in that figure; the text wins); the 2023 and 2026 stops are this site's own dates, to confirm with the team.</li>
       <li>To confirm: the method in "Count it like the lab", the 97-well tray, one-in-ten dilution and overnight incubation, with both the city lab and Surfrider's.</li>
       <li>To confirm with a reviewer: each indicator's "what" and "why" lines, and E. coli's "most strains are harmless".</li>
       <li>Photo sources to ask: SFPUC, the SF Public Library's historical photograph collection, OpenSFHistory. Use only with permission and credit each photo.</li>
@@ -354,7 +456,104 @@
   });
   setRain(0, false);
 
-  // ── 2. Microbes under the scope: shapes by indicator, each drifting on its own clock ──
+  // ── 2. The system from above: Leaflet loads only when the map nears the screen ──
+  {% if system %}
+  const SYS = {{ system|tojson }}, mapBox = $("sys-map"), OF = {}, PLUME = {};
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+  const num = v => v < 10 ? v.toFixed(1) : Math.round(v).toLocaleString();
+  const hm = m => { const h = Math.floor(m / 60), r = Math.round(m % 60); return h ? h + " h" + (r ? " " + r + " min" : "") : r + " min"; };
+  let MAP = null, ASKED = false, SI = 0, T = 0, PLAY = false, W = [0, 1];
+  const span = s => { const a = Math.min(...s.events.map(e => e.start)), b = Math.max(...s.events.map(e => e.start + e.dur)); return [Math.floor((a - 60) / 60) * 60, Math.ceil((b + 60) / 60) * 60]; };
+  const clock = (s, m, short) => { const [y, mo, d] = s.date.split("-").map(Number), t = new Date(Date.UTC(y, mo - 1, d, 0, Math.round(m)));   // as reported, Pacific time
+    return t.toLocaleString("en-US", short ? {timeZone: "UTC", weekday: "short", hour: "numeric", minute: "2-digit"} : {timeZone: "UTC", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit"}); };
+  function loadMap() {
+    if (ASKED) return; ASKED = true; $("sys-load").textContent = "Loading the map…";
+    const css = document.createElement("link"); css.rel = "stylesheet"; css.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"; document.head.appendChild(css);
+    const js = document.createElement("script"); js.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+    js.onload = drawMap; js.onerror = () => { ASKED = false; js.remove(); $("sys-load").textContent = "The map did not load: tap to try again"; };
+    document.head.appendChild(js);
+  }
+  function ofPopup(o) {
+    const s = SYS.storms[SI], ev = s.events.filter(e => e.id === o.id);
+    const storm = ev.length ? ev.map(e => "from " + clock(s, e.start, true) + " for " + hm(e.dur) + ", " + num(e.mg) + " MG").join("; then ") : "no discharge reported";
+    return "<b>" + esc(o.name) + "</b><br>" + esc(o.water) + "<br>" + (o.plant === "oceanside" ? "Westside" : "Bayside") + " system · discharged on " + o.days + " days since October 2016"
+         + "<br><b>" + esc(s.label) + ":</b> " + storm;
+  }
+  function drawMap() {
+    $("sys-load").remove();
+    MAP = L.map(mapBox, {scrollWheelZoom: false, zoomSnap: 0.25});
+    L.tileLayer({{ BASEMAP.url|tojson }}, {{ BASEMAP.options|tojson }}).addTo(MAP);   // the site's one basemap: shared/basemap.py
+    SYS.ring.forEach(r => {
+      if (r.kind === "storage") L.polyline(r.pts, {color: "#8b6a4a", weight: 10, opacity: 0.35, interactive: false}).addTo(MAP);
+      L.polyline(r.pts, {color: "#6b4c2e", weight: 3, opacity: 0.9, className: "mflow", interactive: false}).addTo(MAP);   // drawn in the direction the sewage moves
+    });
+    SYS.deep.forEach(d => L.polyline(d.pts, {color: "#2f9c96", weight: 4, opacity: 0.95, className: "mflow"}).bindTooltip(esc(d.name), {sticky: true}).addTo(MAP));
+    SYS.outfalls.forEach(o => {
+      PLUME[o.id] = L.circle([o.lat, o.lon], {radius: 1, stroke: false, fillColor: "#7a5a3a", fillOpacity: 0, interactive: false}).addTo(MAP);
+      OF[o.id] = L.marker([o.lat, o.lon], {icon: L.divIcon({className: "of-ico", iconSize: [14, 14]}), title: o.name, riseOnHover: true}).bindPopup(() => ofPopup(o)).addTo(MAP);
+    });
+    const tip = {oceanside: "right", southeast: "left", northpoint: "left"};   // labels toward land, inside the frame on a phone
+    Object.entries(SYS.plants).forEach(([k, p]) => L.marker([p.lat, p.lon], {icon: L.divIcon({className: "pl-ico", iconSize: [16, 16]}), title: p.name, zIndexOffset: 500})
+      .bindTooltip(esc(p.short), {permanent: true, direction: tip[k], className: "pl-tip", offset: [tip[k] === "left" ? -8 : tip[k] === "right" ? 8 : 0, tip[k] === "top" ? -8 : 0]})
+      .bindPopup("<b>" + esc(p.name) + "</b><br>" + esc(p.note)).addTo(MAP));
+    const shore = SYS.outfalls.map(o => [o.lat, o.lon]), far = SYS.deep[0].pts[SYS.deep[0].pts.length - 1], bounds = L.latLngBounds(shore.concat([far]));
+    let fitted = false; const fit = () => { if (fitted || !mapBox.clientWidth) return; fitted = true; MAP.invalidateSize();
+      MAP.fitBounds(mapBox.clientWidth < 600 ? L.latLngBounds(shore) : bounds, {padding: [14, 14]}); };   // a phone fits the shore; the ocean outfall runs off the edge
+    MAP.setView(bounds.getCenter(), 11); fit(); addEventListener("resize", fit);   // a map drawn in a hidden tab fits once it has a size
+    paint();
+  }
+  function paint() {
+    const s = SYS.storms[SI], on = new Set(), seen = new Set(), vol = {}, end = {};
+    let mg = 0;
+    s.events.forEach(e => {
+      const f = clamp((T - e.start) / e.dur);
+      if (T >= e.start) seen.add(e.id); if (T >= e.start && T < e.start + e.dur) on.add(e.id);
+      mg += e.mg * f; vol[e.id] = (vol[e.id] || 0) + e.mg * f; end[e.id] = Math.max(end[e.id] || 0, e.start + e.dur);
+    });
+    if (MAP) SYS.outfalls.forEach(o => {
+      const m = OF[o.id].getElement(); if (m) m.classList.toggle("on", on.has(o.id));
+      const v = vol[o.id] || 0, fade = on.has(o.id) ? 1 : v ? clamp(1 - (T - end[o.id]) / 240) : 0;   // a plume fades over four hours once its outfall stops
+      PLUME[o.id].setRadius(v ? Math.min(520, 50 + 26 * Math.sqrt(v)) : 1); PLUME[o.id].setStyle({fillOpacity: 0.34 * fade});
+    });
+    mapBox.style.setProperty("--mdur", (1.8 - 1.1 * on.size / 30).toFixed(2) + "s");
+    $("sys-clock").textContent = clock(s, T);
+    $("sys-count").innerHTML = "<b>" + on.size + "</b> discharging now · " + seen.size + " of " + s.outfalls + " so far · <b>" + num(mg) + "</b> MG (≈" + num(mg * 1.5) + " Olympic pools)";
+    const x = 1000 * (T - W[0]) / (W[1] - W[0]); $("strip-head").setAttribute("x1", x); $("strip-head").setAttribute("x2", x);
+    $("sys-t").value = Math.round(x);
+  }
+  function strip() {
+    const s = SYS.storms[SI], n = 200; let d = "M0 60";
+    for (let i = 0; i < n; i++) { const t = W[0] + (W[1] - W[0]) * i / (n - 1), k = s.events.filter(e => t >= e.start && t < e.start + e.dur).length; d += " L" + (1000 * i / (n - 1)).toFixed(1) + " " + (58 - 54 * Math.min(1, k / 30)).toFixed(1); }
+    $("strip-area").setAttribute("d", d + " L1000 60 Z");
+    $("sys-t0").textContent = clock(s, W[0]); $("sys-t1").textContent = clock(s, W[1]);
+  }
+  function pick(i) {
+    SI = i; W = span(SYS.storms[i]); T = W[0]; stop();
+    document.querySelectorAll("#storms .preset").forEach(b => { const a = +b.dataset.i === i; b.classList.toggle("active", a); b.setAttribute("aria-pressed", String(a)); });
+    if (MAP) MAP.closePopup(); strip(); paint();
+  }
+  function stop() { PLAY = false; $("sys-play").textContent = T >= W[1] ? "Play again" : T > W[0] ? "Resume" : "Play"; }
+  $("sys-play").addEventListener("click", () => {
+    if (PLAY) return stop();
+    if (T >= W[1]) T = W[0];
+    PLAY = true; $("sys-play").textContent = "Pause"; loadMap();
+    let last = performance.now();
+    (function tick(now) {
+      if (!PLAY) return;
+      T = Math.min(W[1], T + (now - last) * (W[1] - W[0]) / 24000); last = now; paint();   // a storm day plays in about 24 seconds
+      if (T >= W[1]) stop(); else requestAnimationFrame(tick);
+    })(last);
+  });
+  $("sys-t").addEventListener("input", e => { if (PLAY) stop(); T = W[0] + (W[1] - W[0]) * e.target.value / 1000; paint(); $("sys-play").textContent = T >= W[1] ? "Play again" : "Resume"; });
+  $("storms").addEventListener("click", e => { const b = e.target.closest(".preset"); if (b) pick(+b.dataset.i); });
+  $("sys-load").addEventListener("click", loadMap);
+  if ("IntersectionObserver" in window) { const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { loadMap(); io.disconnect(); } }, {rootMargin: "400px 0px"}); io.observe(mapBox); }
+  const nearMap = () => { const b = mapBox.getBoundingClientRect(); if (b.top < innerHeight + 400 && b.bottom > -400) { loadMap(); removeEventListener("scroll", nearMap); } };   // backup for browsers that hold back the observer
+  addEventListener("scroll", nearMap, {passive: true}); nearMap();
+  pick(0);
+  {% endif %}
+
+  // ── 3. Microbes under the scope: shapes by indicator, each drifting on its own clock ──
   const NS = "http://www.w3.org/2000/svg";
   const el = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
   function microbe(shape, color, i) {
@@ -400,7 +599,7 @@
   $("conc").addEventListener("input", drawTray);
   $("resample").addEventListener("click", () => { reseed(); drawTray(); });
 
-  // ── 3. The record: bars rise when the charts scroll into view ──
+  // ── 4. The record: bars rise when the charts scroll into view ──
   function bars(svgId, readId, items, series, fmt) {
     const svg = $(svgId); if (!svg) return;
     const W = 520, H = 240, L = 34, B = 26, T = 10, n = items.length, bw = (W - L - 8) / n;
@@ -430,7 +629,20 @@
   {% if discharges %}bars("ch-csd", "rd-csd", {{ discharges.seasons|tojson }}, [["days", "#7a5a3a"]],
        d => "<b>" + d.label + "</b>: " + d.days + " days with a discharge · " + d.outfall_days + " outfall-days");{% endif %}
 
-  // ── 4. Then and now: drag, tap, or arrow keys ──
+  // ── 5. The timeline: the rail fills with the scroll, each stop slides in as it arrives ──
+  const tl = $("tl");
+  if (tl) {
+    const stops = [...tl.querySelectorAll(".stop")];
+    if (!REDUCE) tl.classList.add("js");   // without script, or with reduced motion, every stop simply shows
+    const step = () => {
+      const b = tl.getBoundingClientRect(), line = innerHeight * 0.6;
+      tl.style.setProperty("--p", (100 * clamp((line - b.top) / b.height)).toFixed(1) + "%");
+      stops.forEach(s => { const t = s.querySelector(".dot").getBoundingClientRect().top; s.classList.toggle("past", t < line); if (t < innerHeight * 0.92) s.classList.add("in"); });
+    };
+    addEventListener("scroll", step, {passive: true}); addEventListener("resize", step); step();
+  }
+
+  // ── 6. Then and now: drag, tap, or arrow keys ──
   const cmp = $("compare"), hd = cmp.querySelector(".handle");
   const setX = p => { p = clamp(p, 0.02, 0.98); cmp.style.setProperty("--x", (p * 100).toFixed(1) + "%"); hd.setAttribute("aria-valuenow", Math.round(p * 100)); };
   let drag = false; const at = e => { const b = cmp.getBoundingClientRect(); setX((e.clientX - b.left) / b.width); };

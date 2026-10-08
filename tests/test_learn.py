@@ -2,6 +2,7 @@
 and record files, never linked from the nav, kept out of search. Offline."""
 import csv
 import pathlib
+import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -24,15 +25,43 @@ def test_numbers_come_from_the_registries_and_record_files():
     assert c["discharges"]["seasons"][0]["label"].startswith("2016")
 
 
-def test_page_renders_four_sections_and_stays_unlinked():
+def test_the_map_replays_the_record_s_biggest_storms_from_the_registry():
+    from shared.outfalls import OUTFALLS
+    sy = P.learn_context()["system"]
+    ids = {o["id"] for o in sy["outfalls"]}
+    assert ids == set(OUTFALLS) - {"CSD-119"} and all(o["days"] >= 0 for o in sy["outfalls"])       # one dot per structure
+    assert all(i in ids for run in P.RING for i in run["ids"]) and {i for run in P.RING for i in run["ids"]} == ids   # the ring reaches every outfall
+    ev = list(csv.DictReader(open(P.CSD_CSV, newline="")))
+    per_day = {}
+    for e in ev:
+        per_day.setdefault(e["event_date"], set()).add(e["outfall_id"])
+    storms = sy["storms"]
+    assert len(storms) == 6 and storms[0]["outfalls"] == max(len(v) for v in per_day.values())           # the biggest day first
+    assert [s["outfalls"] for s in storms] == sorted((s["outfalls"] for s in storms), reverse=True)
+    for s in storms:
+        assert all(0 <= e["start"] < 1440 and e["dur"] > 0 and e["id"] in ids for e in s["events"])
+        assert s["outfalls"] == len({e["id"] for e in s["events"]}) <= len(per_day[s["date"]])
+    assert [P._minutes(t) for t in ("10:13 AM", "12:46 AM", "1:03 PM", "13:26", "0.5", "", "n/a")] == [613, 46, 783, 806, 720, None, None]
+
+
+def test_timeline_runs_in_order_and_names_its_sources():
+    tl = P.learn_context()["timeline"]
+    years = [int(re.search(r"\d{4}", t["when"]).group()) for t in tl]                                    # "1850s", "1938–1952", "Early 1980s"
+    assert years == sorted(years) and len(tl) >= 12
+    assert all(t["src"] and t["title"] and t["text"] for t in tl) and any("Master Plan" in t["src"] for t in tl)
+
+
+def test_page_renders_its_sections_and_stays_unlinked():
     from app.wsgi import app
     from app.landing import nav_model
     with app.test_client() as c:
         r = c.get("/learn"); h = r.data.decode()
         home = c.get("/").data.decode()
     assert r.status_code == 200 and "{{" not in h and "{%" not in h
-    for sec in ('id="rain"', 'id="bugs"', 'id="record"', 'id="archive"'):
-        assert sec in h, sec
+    for sec in ('id="rain"', 'id="above"', 'id="bugs"', 'id="record"', 'id="history"', 'id="archive"'):
+        assert sec in h and 'href="#' + sec[4:-1] + '"' in h, sec                                           # each section, and its jump link
+    assert 'id="sys-map"' in h and "unpkg.com/leaflet" not in h.split("<script>")[0]                          # Leaflet waits for the map
+    assert h.count('class="stop ') == len(P.TIMELINE) and h.count('data-i="') == 6
     assert h.count('class="bug"') == 4 and 'id="tray"' in h and 'id="ch-post"' in h and 'id="ch-csd"' in h and 'id="compare"' in h
     assert '<meta name="robots" content="noindex">' in h and "prefers-reduced-motion:reduce" in h        # out of search; motion respects the setting
     assert 'href="/learn"' not in home and all("/learn" not in h2["paths"] for h2 in nav_model())     # a prototype: reachable by URL only
