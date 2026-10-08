@@ -156,7 +156,7 @@ def test_leaderboard_season_cv_default_is_the_recorded_one_and_its_oof_reproduce
 def test_shared_logit_season_cv_default_is_the_recorded_one_and_its_oof_reproduces_it():
     frames = _ciwqs()
     use_archive = json.loads((T.SERVE_DIR / "eval_report.json").read_text())["stage1_archive_labels"]
-    for name, dk in (("icon-four-nosplit-lt1-bflags", "four"), ("icon-t5-nosplit-lt1-bflags", "shared5")):
+    for name, dk in (("icon-four-nosplit-lt1-bflags", "four"),):    # the 5-term set was trimmed 2026-10-08 (Part B 39)
         man = json.loads((C.candidate_dir(name) / "manifest.json").read_text())
         for key, want in man["per_basin"].items():
             basin = "citywide" if key == "citywide" else G.get("geo_v1").basin(key).name

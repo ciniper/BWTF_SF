@@ -26,7 +26,9 @@ import leaderboard as L  # noqa: E402
 import candidates as C  # noqa: E402
 
 BASINS = ("westside", "north_shore", "central", "southeast", "citywide")
-SETS = {"logit_v2_shared5": "shared5", "logit_v2_shared6": "shared6", "logit_v2_shared8": "shared8", "logit_v2_half": "half", "logit_v2_four": "four"}
+# the saved sets of each design still on disk: the 5-, 6-, 8- and 19-term ones were trimmed 2026-10-08 (STAGES_DESIGN
+# Part B 39; tag archive/pre-trim-2026-10-08), the designs themselves stay in leaderboard.SHARED_DESIGNS
+SETS = {"logit_v2_four": "four"}
 
 
 def _sets(stage1: str) -> tuple:

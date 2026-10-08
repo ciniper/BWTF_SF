@@ -15,7 +15,7 @@
  "family": "logit",
  "spec_version": "2e03a1eae7",
  "protocol": "stages_v3@22a2695e2e950188d37b753928932c6f6f2dc83296482a4fddf5a373ce86df3f",
- "built_at": "2026-10-08T03:38:45+00:00",
+ "built_at": "2026-10-08T08:13:05+00:00",
  "windows": {
   "holdout_start": "2023-07-01",
   "post_start": "2025-11-01",
@@ -139,7 +139,7 @@
   "features/forecast/src/models/scorecard.py": "48b85b4a6bfe95753cd9fceb5f149d808f59a7f368e96edf9fa6ee471d52efdf",
   "features/forecast/src/models/stage2.py": "e2b66927afdef42398212e25c8f7a1b53793a6fe2d4e7117a118eb2ed1a43569",
   "features/forecast/src/models/stage2_variants.py": "cd057b3d8de0eb5f9bc801deeb668bc489e83c74536a8665d3d881b83ebfa779",
-  "features/forecast/src/models/stages_build.py": "75726bba3388fb0ffe369f4ad2ff76a64dd8ebbd50c3eccf0be6524f3ce98fd7",
+  "features/forecast/src/models/stages_build.py": "1cc8d1223853705bc4b65b4a3ded7b51cb24c93329e989fa6fe2e8560f013fbd",
   "features/forecast/src/models/stages_candidates.py": "4d512e90661671f0b950e2d5c0df018eb947fe54f2e506398ef0610f00b40482",
   "features/forecast/src/models/stages_entries.py": "0e60efdc9a6976c3ae4d23565be180b1baced902caa7238c2761b6f50508e9f8",
   "features/forecast/src/models/stages_flowchart.py": "18e98a89ab64af066e17a256b10d0253853e89e9cb75b19b8653a49a4b2a8585",

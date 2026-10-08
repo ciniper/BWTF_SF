@@ -845,8 +845,18 @@ function sbSetBasins(g) {   // other basins: start from their first scored chain
     renderBuilder();
 }
 function sbSetWin(w) { sbPick.win = w; renderBuilder(); }
+// S3 and S4 come in pairs: each lingering table was fit on its split's groups. The pairs scored sets use on these basins.
+const sbPairs = () => [...new Set(SB.chains.filter(c => c.basins === sbPick.basins).map(c => c.parts.s3 + '\t' + c.parts.s4))].map(k => k.split('\t'));
 function sbSet(st, id) {
-    sbPick[st] = id; renderBuilder();
+    sbPick[st] = id;
+    if (st === 's3' || st === 's4') {   // picking one moves the other to a pair that exists, the live part when it pairs
+        const other = st === 's3' ? 's4' : 's3', i = st === 's3' ? 0 : 1, pairs = sbPairs();
+        if (!pairs.some(q => q[i] === id && q[1 - i] === sbPick[other])) {
+            const mine = pairs.filter(q => q[i] === id);
+            if (mine.length) sbPick[other] = (mine.find(q => (sbPart(other, q[1 - i]) || {}).live) || mine[0])[1 - i];
+        }
+    }
+    renderBuilder();
     const sel = document.querySelector(`#builder [data-stage="${st}"] select`); if (sel) sel.focus();
 }
 
@@ -965,7 +975,7 @@ function sbControls(win) {
 
 // The scored chains nearest the pick: most parts in common (basins, S2, S3, S4), then the report's order.
 function sbClosest() {
-    const same = c => (c.basins === sbPick.basins) + (c.parts.s2 === sbPick.s2) + (c.parts.s3 === sbPick.s3) + (c.parts.s4 === sbPick.s4);
+    const same = c => (c.basins === sbPick.basins) + (c.parts.s1 === sbPick.s1) + (c.parts.s2 === sbPick.s2) + (c.parts.s3 === sbPick.s3) + (c.parts.s4 === sbPick.s4);
     return SB.chains.map((c, i) => ({ c, k: same(c), i })).sort((a, b) => b.k - a.k || a.i - b.i).slice(0, 3).map(x => x.c);
 }
 const sbDayLink = key => `<button type="button" class="sb-link" onclick="sbDayByDay('${esc(key)}')" title="Grade this lineup day by day: the scorecard below, on its own stored hindcast">Day by day ▸</button>`;
@@ -976,7 +986,7 @@ function sbDayByDay(key) {
 }
 function sbChainCard(win) {
     const same = c => c.basins === sbPick.basins && c.parts.s2 === sbPick.s2 && c.parts.s3 === sbPick.s3 && c.parts.s4 === sbPick.s4;
-    const match = SB.chains.find(same), lineup = match ? null : SB.lineups.find(same);
+    const match = SB.chains.find(c => same(c) && c.parts.s1 === sbPick.s1) || SB.chains.find(same), lineup = match ? null : SB.lineups.find(same);
     const words = match ? match.name : ['s2', 's3', 's4'].map(st => (sbPart(st, sbPick[st]) || {}).name || '—').join(' · ');
     const rainOf = (sbPart('s1', (match || SB.chains[0]).parts.s1) || {}).name;
     const tip = `The percentage people see: the chance a zone's beaches are affected by a sewer overflow, graded on bad beach days (an overflow day, or a sample over the standard in the week after one). It is scored for whole lineups: basins, S2, S3 and S4, with ${rainOf}'s rain one day ahead. S5 is scored on its own and does not enter this number.`;
@@ -993,8 +1003,11 @@ function sbChainCard(win) {
         ? `${sbNone(`not scored with ${s1 ? s1.name : sbPick.s1} yet`)} <button type="button" class="sb-link" onclick="sbSet('s1', '${esc(match.parts.s1)}')">use ${esc(ran ? ran.name : match.parts.s1)}</button>`
         : s.L1 ? sbOpener('out', sbSkillCell(s.L1, SB_UNITS.out, '')) + (sbOpen.out ? sbUnits((match.zones.L1 || {})[win.key], SB_UNITS.out) : '') : sbNone('not scored on this window');
     const rain = pending ? sbNone('not graded yet') : s.rain ? sbOpener('out', sbSkillCell(s.rain, SB_UNITS.out, '')) + (sbOpen.out ? sbUnits((match.zones.rain || {})[win.key], SB_UNITS.out) : '') : sbNone('not scored on this window');
+    // a set scored on other windows only (Trees: its kind is never refit season by season) points to them
+    const elsewhere = pending || has ? [] : SB.windows.filter(w => (match.scores[w.key] || {}).L1 || (match.scores[w.key] || {}).rain);
+    const where = elsewhere.length ? `<div class="sb-out-foot"><span>Scored on:</span>${elsewhere.map(w => `<button type="button" class="sb-chip" onclick="sbSetWin('${esc(w.key)}')">${esc(w.name)}</button>`).join('')}</div>` : '';
     return `<div class="sb-out${match.live ? ' live' : ''}">${head}
-        <div><div class="sb-feed">one day ahead</div>${ahead}</div><div><div class="sb-feed">with rain known</div>${rain}</div>
+        <div><div class="sb-feed">one day ahead</div>${ahead}</div><div><div class="sb-feed">with rain known</div>${rain}</div>${where}
         ${match.scorecard ? `<div class="sb-out-foot">${sbDayLink(match.live ? '' : match.set)}</div>` : ''}</div>`;
 }
 
@@ -1007,6 +1020,7 @@ function sbHow() {
         <li><b>Windows:</b> nine seasons (${esc(sbSpan(t2.span))}), each season scored by a fit that never saw it; post-training (${esc(sbSpan(t1.span))}), days after the training data ended; the holdout (${esc(sbSpan(th.span))}) is development only, because it was used to pick the model; the live season, every day after the rules froze on ${esc(sbDay(t0.after))}, is graded after the next data refresh.</li>
         <li><b>S1 and S5 are lower-is-better.</b> S1 is the weather model's average miss on wet days one day ahead; the floor is one city gauge as a forecast of the other. S5 is the change in error on the days after an observation, against no correction. Neither is refit season by season, so each keeps its own window.</li>
         <li><b>The public number</b> is scored for whole lineups only; pick one with stage scores to see it.</li>
+        <li><b>S3 and S4 come in pairs:</b> each lingering table was fit on its split's beach groups, so picking one moves the other to a pair that exists.</li>
         <li><b>By basin, by zone:</b> click a score in S2, S3 or S4, or the public number, to see it for each basin (S2) or zone. A zone has fewer storms than the city, so its range is wider.</li></ul></details>`;
 }
 

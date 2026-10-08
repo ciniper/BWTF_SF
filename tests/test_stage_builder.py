@@ -262,10 +262,26 @@ def test_parts_on_disk_are_listed_and_unscored_ones_say_so():
         cand = json.loads(m.read_text())
         assert cand["stage1"]["name"] in s2, cand["name"]
     unscored = [p for p in s2.values() if p["scores"] is None]
-    assert unscored and all(p["from"] is None for p in unscored)
-    assert "logit_v2_shared5" in {p["id"] for p in unscored}   # the 5-term model: on disk, no stage score yet
+    assert all(p["from"] is None for p in unscored)
     lineup_sets = {x["set"] for x in built()["lineups"]}
-    assert lineup_sets and not lineup_sets & set(scored_sets())
+    assert not lineup_sets & set(scored_sets())
+
+
+def test_every_overflow_model_is_scored_with_every_split_and_table_pair():
+    """Part B 39 (Chase, 2026-10-08: "make sure every other combo is scored"): on each basin map, every S2 part a
+    scored set uses is scored with every S3 + S4 pair a scored set uses there, so no pick of the builder's S2, S3
+    and S4 menus lacks a public number. No candidate on disk is left unscored."""
+    b = built()
+    assert not b["lineups"], [x["set"] for x in b["lineups"]]
+    for g in b["basins"]:
+        mine = [c for c in b["chains"] if c["basins"] == g["id"]]
+        s2s = {c["parts"]["s2"] for c in mine}
+        pairs = {(c["parts"]["s3"], c["parts"]["s4"]) for c in mine}
+        have = {(c["parts"]["s2"], c["parts"]["s3"], c["parts"]["s4"]) for c in mine}
+        if g["id"] == "geo_v1":
+            assert pairs == set(LU.GEO_V1_STAGE2.values()), pairs
+        missing = sorted((s2, *pr) for s2 in s2s for pr in pairs if (s2, *pr) not in have)
+        assert not missing, (g["id"], missing)
 
 
 def test_the_served_set_is_live():
@@ -320,6 +336,8 @@ def test_the_page_reads_the_builder_and_names_no_set_todays():
     assert "S5 is scored on its own and does not enter this number" in html
     # a module opens to its basins or zones: S2–S4's cells and the public number's two
     assert "SB.units[u]" in html and "p.by_unit" in html and "match.zones.L1" in html and "match.zones.rain" in html
+    # S3 and S4 move as a pair (Part B 39), and the public number reads the chain with the picked weather model
+    assert "function sbSet(st, id)" in html and "sbPairs()" in html and "c.parts.s1 === sbPick.s1" in html
 
 
 if __name__ == "__main__":
