@@ -1,5 +1,5 @@
-"""Learn — PROTOTYPE page (/learn, branch design/learn-prototype): renders from the repo's own registries
-and record files, never linked from the nav, kept out of search. Offline."""
+"""Learn (/learn): renders from the repo's own registries and record files, linked from Today's page
+but not a main tab, kept out of search until docs/learn_facts_to_check.md is done. Offline."""
 import csv
 import pathlib
 import re
@@ -69,7 +69,7 @@ def test_timeline_photos_are_on_disk_and_credited():
     assert "Used with permission" in P.PHOTO_CREDIT
 
 
-def test_page_renders_its_sections_and_stays_unlinked():
+def test_page_renders_its_sections_and_is_linked_from_today_only():
     from app.wsgi import app
     from app.landing import nav_model
     with app.test_client() as c:
@@ -83,7 +83,8 @@ def test_page_renders_its_sections_and_stays_unlinked():
     assert h.index('id="count"') < h.index('id="tray"') < h.index('id="record"')                           # the hands-on tray follows the story
     assert h.count('class="bug"') == 4 and 'id="tray"' in h and 'id="ch-post"' in h and 'id="ch-csd"' in h and 'id="compare"' in h
     assert '<meta name="robots" content="noindex">' in h and "prefers-reduced-motion:reduce" in h        # out of search; motion respects the setting
-    assert 'href="/learn"' not in home and all("/learn" not in h2["paths"] for h2 in nav_model())     # a prototype: reachable by URL only
+    assert home.count('href="/learn"') == 1 and all("/learn" not in h2["paths"] for h2 in nav_model())   # one link on Today, no tab
+    assert 'class="proto"' not in h and "Prototype notes" not in h
 
 
 if __name__ == "__main__":

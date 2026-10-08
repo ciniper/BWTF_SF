@@ -37,6 +37,11 @@
   .rows .sub{display:block;padding:0 2px 8px 16px;margin-top:-4px;border-top:0;font-size:13px;color:var(--muted);font-weight:600}
   .hub .cta{display:block;margin:10px 0 6px;background:var(--brand);color:#fff;text-align:center;border-radius:999px;padding:10px 14px;font-weight:700;font-size:14px;text-decoration:none}
   .hub .cta:hover{background:var(--brand-deep)}   /* scoped: a bare .cta also restyled the top bar's Get beach alerts button */
+  .learn{display:flex;align-items:center;gap:12px;margin-top:14px;padding:14px 18px;background:#fff;border:1px solid var(--line);border-radius:var(--r);text-decoration:none;color:var(--ink)}   /* the whole bar is the link */
+  .learn:hover{border-color:var(--sky)} .learn:hover .learn-go{background:var(--brand-deep)}
+  .learn-text{display:flex;flex-direction:column;min-width:0} .learn-text b{font-size:17px;font-weight:900} .learn-text small{color:var(--muted);font-size:13px}
+  .learn-go{margin-left:auto;flex:none;background:var(--brand);color:#fff;border-radius:999px;padding:8px 16px;font-weight:700;font-size:14px}
+  @media (max-width:560px){.learn-go{display:none}.learn-text b::after{content:" →";color:var(--brand)}}   /* a phone gives the words the room */
   .hood{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin-top:14px;padding:10px 18px;border:1px dashed #b9c6cd;border-radius:var(--r);font-size:13px;color:var(--muted)}
   .hood b{color:var(--ink)}
   .hood a{color:var(--brand);text-decoration:none;font-weight:600}
@@ -86,6 +91,12 @@
     </section>
     {% endfor %}
   </div>
+
+  <a class="learn" href="/learn">
+    <span class="hub-icon"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-microscope"/></svg></span>
+    <span class="learn-text"><b>Learn</b><small>How the city's sewers meet the shore, how the lab counts bacteria, and a century and a half of the system</small></span>
+    <span class="learn-go">Open →</span>
+  </a>
 
   <div class="hood">
     <b>Under the hood</b>

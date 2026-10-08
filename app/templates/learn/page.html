@@ -3,7 +3,7 @@
 <link rel="icon" href="{{ asset('brand/favicon.ico') }}"><link rel="apple-touch-icon" sizes="144x144" href="{{ asset('brand/bwtf_144x144.png') }}">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Learn — SF Beach Water · Surfrider SF Blue Water Task Force</title>
-<meta name="robots" content="noindex">   {# prototype: keep it out of search until it is linked #}
+<meta name="robots" content="noindex">   {# out of search until the facts in docs/learn_facts_to_check.md are checked; linked from Today since 2026-10-08 #}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -11,7 +11,6 @@
 <style>
   body{margin:0;background:var(--sand);color:var(--ink);font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:15px;line-height:1.55}
   .wrap{max-width:var(--page-w);margin:0 auto;padding:20px 24px 40px}
-  .proto{display:flex;gap:10px;align-items:center;background:#fff6e5;border:1px dashed #d4a24a;border-radius:var(--r);padding:8px 14px;font-size:13px;color:#7a5200;margin:0 0 14px}
   .jump{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
   .jump a{text-decoration:none}
   .sec{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg,16px);padding:22px 24px;margin:0 0 16px;scroll-margin-top:80px}
@@ -183,8 +182,6 @@
   .frames{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:12px;margin:14px 0 0}
   .frame{border:2px dashed var(--line);border-radius:var(--r);padding:12px 14px;font-size:13.5px;color:var(--muted)}
   .frame b{display:block;color:var(--ink);margin-bottom:2px}
-  details.notes{margin:4px 0 0;font-size:13.5px;color:var(--muted)} details.notes summary{cursor:pointer;font-weight:700;color:var(--ink)}
-  details.notes li{margin:4px 0}
 
   @media (max-width:760px){.scene-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}.scene{min-width:680px}.swipe{display:block}.caption{flex-direction:column;gap:6px}.caption .step{align-self:flex-start}   /* the numbers stay legible on a phone; the caption stacks under its label */
     .wrap{padding:14px 14px 30px}.sec{padding:16px}.sec h2{font-size:28px}.lab{grid-template-columns:1fr}.compare{aspect-ratio:4/3}
@@ -201,7 +198,6 @@
 {{ topbar() }}
 <div class="wrap">
   {{ page_head("Learn", "How San Francisco's sewers meet the shore, the bacteria the labs count, and the record so far.") }}
-  <p class="proto"><b>Prototype</b> on a design branch: not linked from the site, kept out of search. Facts to check before it goes public are listed at the bottom.</p>
   <nav class="jump" aria-label="Sections">
     <a class="preset" href="#rain">Where the rain goes</a>{% if system %}<a class="preset" href="#above">The system from above</a>{% endif %}<a class="preset" href="#bugs">Meet the indicators</a><a class="preset" href="#count">How the lab counts</a><a class="preset" href="#record">The record, in motion</a><a class="preset" href="#history">A century and a half</a><a class="preset" href="#archive">From the archive</a>
   </nav>
@@ -451,21 +447,6 @@
     </div>
   </section>
 
-  <details class="notes">
-    <summary>Prototype notes: facts to check before this goes public</summary>
-    <ul>
-      <li>From the repo, already used on the site: the two plants and their outfall counts (shared/outfalls.py), the four state limits and Surfrider's caution tier (shared/standards.py), when the city began each indicator (Samples and Site Report Card notes), and both charts' numbers (the BeachWatch and CIWQS files).</li>
-      <li>Confirmed by SFPUC's Sewer System Master Plan (Summary Report, Final Draft, March 2010): over 90% of the city is combined; the transport/storage structures ring the perimeter "like a moat", hold flow until the storm passes, and give discharges the equivalent of primary treatment, which is why they are called CSDs; flow is pumped to the plants; the Oceanside plant's outfall runs about four miles offshore (1986) and the Southeast plant's two outfalls go to the bay. Check that the 2010 numbers still hold before quoting any.</li>
-      <li>The map: outfall positions come from shared/outfalls.py; the plant sites and the offshore pipes are placed by eye from the master plan's Figures 2-1 and 2-5 and need real coordinates; the brown ring is schematic and does not trace the real transport/storage structures or force mains. Storm replays use CIWQS start times and durations as reported, with volume spread evenly over each discharge; the handful of reports without a usable start time or duration are left out.</li>
-      <li>The timeline: every stop names its source. The master plan stops follow its text and its Figure 1-1 (Southeast's year is 1952 in the text and 1962 in that figure; the text wins); the 2023 and 2026 stops are this site's own dates, to confirm with the team.</li>
-      <li>The photos are SFPUC's, from the 2010 master plan; Chase cleared their use (2026-10-08). The plan credits its photographers as a group, not per photo. The plant photos are cut from its Figure 1-1 (which dates Southeast 1962; the text says 1952). Two captions are descriptions of uncaptioned chapter-opener photos, to confirm with SFPUC: the brick sewer and the surf.</li>
-      <li>"How the lab counts": the method as IDEXX describes Enterolert in a Quanti-Tray/2000 (49 wells of about 1.86 mL and 48 of about 0.186 mL, a 1:10 dilution for seawater, 24 hours at 41 °C, long-wave UV). The readings are computed by maximum likelihood, the method behind the MPN tables: check them against IDEXX's printed table before quoting. "Millions by morning" is to confirm with a lab. The tray's well layout is schematic.</li>
-      <li>To confirm with both the city lab and Surfrider's: that each uses this method for Enterococcus, as both the story and "Try it yourself" assume.</li>
-      <li>To confirm with a reviewer: each indicator's "what" and "why" lines, and E. coli's "most strains are harmless".</li>
-      <li>Photo sources to ask: SFPUC, the SF Public Library's historical photograph collection, OpenSFHistory. Use only with permission and credit each photo.</li>
-      <li>As a fourth main tab it would add "Learn" to the top bar and the phone bar; the top bar's fit from 320 to 1280 px would need a re-check.</li>
-    </ul>
-  </details>
 </div>
 {{ footer() }}
 {{ tabbar() }}

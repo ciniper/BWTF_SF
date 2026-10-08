@@ -1,7 +1,8 @@
-"""Learn — a PROTOTYPE on branch design/learn-prototype (2026-10-07). Not linked from the site.
+"""Learn — how San Francisco's sewers meet the shore, the bacteria the labs count, and the record.
 
-Chase's idea: a "Learn" tab with how San Francisco's sewers meet the shore, the bacteria the labs
-count, historical photos, and moving graphics. One page, four sections, no libraries:
+Chase's idea (2026-10-07), built on design/learn-prototype and live since 2026-10-08: linked from
+Today's page below the hub cards (not a main tab), kept out of search until the facts in
+docs/learn_facts_to_check.md are checked. Leaflet loads only for the map; nothing else uses a library:
 
   1. Where the rain goes   an animated cross-section of a combined sewer: a rain slider and a
                            "Play a storm" button, from dry weather to an overflow at the shore.
@@ -13,8 +14,9 @@ count, historical photos, and moving graphics. One page, four sections, no libra
   2b. The system from above  a Leaflet map of the shoreline storage ring (schematic, through the outfalls),
                            the three treatment plants and their deep-water outfalls, with the six biggest
                            storms in the CIWQS record replayed outfall by outfall, hour by hour.
+  2c. How the lab counts   a scroll-pinned side-scroller: one bottle through Enterolert in a Quanti-Tray.
   4. A century and a half  a scrolling timeline, 1850s → today, from SFPUC's Sewer System Master Plan
-                           (2010) and this site's own records.
+                           (2010) and this site's own records, with the plan's own photos.
   5. From the archive      a then-and-now slider on placeholder frames: no photos until rights are cleared.
 
 Everything here is read from the repo's own registries and record files; nothing calls a live API.
