@@ -26,6 +26,14 @@
   .btn:disabled{opacity:.5;cursor:default}
 
   /* ── 1. Where the rain goes ── */
+  .rainctl{max-width:560px;margin:0 0 14px}
+  .rain-top{display:flex;align-items:center;gap:10px;margin:0 0 4px}
+  .rain-top label{font-weight:900;font-size:15px}
+  .rain-top output{font-weight:700;color:var(--brand);min-width:56px}
+  .rain-top .btn{margin-left:auto}
+  .rainctl input[type=range]{display:block;width:100%;margin:0;accent-color:var(--brand)}
+  .ticks{position:relative;height:16px;font-size:11.5px;color:var(--muted)}
+  .ticks span{position:absolute;top:2px;transform:translateX(-50%)} .ticks span:first-child{transform:none}
   .scene-wrap{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:#eaf3fb}
   .swipe{display:none;font-size:12.5px;color:var(--faint);margin:6px 0 0}
   .scene{display:block;width:100%;height:auto}
@@ -38,6 +46,7 @@
   .plants span{background:var(--sand2);border-radius:999px;padding:6px 12px;font-size:13px;color:var(--ink)}
   .flow{fill:none;stroke-linecap:round;stroke-dasharray:10 12;animation:flow var(--dur,1.4s) linear infinite}
   @keyframes flow{to{stroke-dashoffset:-44}}
+  @keyframes spin{to{transform:rotate(360deg)}}
   .drop{stroke:#5b8fb9;stroke-width:2;stroke-linecap:round;animation:fall var(--fall,.9s) linear infinite}
   @keyframes fall{from{transform:translateY(-40px)}to{transform:translateY(150px)}}
 
@@ -110,19 +119,17 @@
   <section class="sec" id="rain" aria-labelledby="rain-h">
     <h2 id="rain-h">Where the rain goes</h2>
     <p class="sub">San Francisco's sewers are combined: what goes down the drain at home and the rain off the street share the same pipes. Move the slider, or play a storm.</p>
-    <div class="ctl">
-      <label for="rain-r"><b>Rain</b></label>
+    <div class="rainctl">
+      <div class="rain-top"><label for="rain-r">Rain</label><output id="rain-out" for="rain-r">None</output><button type="button" class="btn" id="storm">Play a storm</button></div>
       <input type="range" id="rain-r" min="0" max="100" value="0" aria-describedby="rain-cap">
-      <output id="rain-out" for="rain-r">None</output>
-      <button type="button" class="btn" id="storm">Play a storm</button>
+      <div class="ticks" aria-hidden="true"><span style="left:0">None</span><span style="left:16%">Light</span><span style="left:50%">Heavy</span><span style="left:85%">Storm</span></div>
     </div>
     <div class="scene-wrap">
-      <svg class="scene" id="scene" viewBox="0 0 960 440" role="img" aria-label="Cross-section: homes and a storm drain feed one combined sewer, which runs to a storage structure under the shore, a treatment plant, and an overflow outfall at the beach">
+      <svg class="scene" id="scene" viewBox="0 0 960 440" role="img" aria-label="Cross-section: homes, a roof drain and a storm drain feed one combined sewer, which slopes down to a storage structure under the shore; it is pumped from the bottom to a treatment plant, and when full it spills over a weir to an outfall at the beach">
         <defs>
           <linearGradient id="soil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e7dccb"/><stop offset="1" stop-color="#d3c4ab"/></linearGradient>
           <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fd0ec"/><stop offset="1" stop-color="#5aa5d3"/></linearGradient>
           <clipPath id="sky"><rect x="0" y="0" width="960" height="200"/></clipPath>
-          <clipPath id="box"><rect x="446" y="226" width="198" height="88" rx="10"/></clipPath>
         </defs>
         <rect x="0" y="0" width="960" height="440" fill="#eaf3fb"/>
         <g id="drops" clip-path="url(#sky)"></g>
@@ -131,37 +138,47 @@
         <polygon points="790,300 960,330 960,440 790,440" fill="#cdbb98"/>
         <path d="M660 170 L790 200" stroke="#e8d7a9" stroke-width="6"/>
         <ellipse id="plume" cx="830" cy="214" rx="10" ry="6" fill="#7a5a3a" opacity="0"/>
-        {# homes, a storm drain, the plant #}
+        {# homes with a roof drain, a storm drain #}
         <g fill="#fff" stroke="#26272a" stroke-width="2"><rect x="24" y="118" width="70" height="52"/><path d="M18 120 L59 88 L100 120 Z"/><rect x="104" y="126" width="64" height="44"/><path d="M98 128 L136 98 L174 128 Z"/></g>
+        <path d="M172 128 H178 V170" fill="none" stroke="#26272a" stroke-width="3"/>
         <rect x="216" y="166" width="30" height="6" fill="#26272a"/>
-        <g stroke="#26272a" stroke-width="2"><rect x="470" y="120" width="160" height="50" fill="#f3f6f9"/><ellipse cx="510" cy="120" rx="26" ry="8" fill="#cfe3ee"/><ellipse cx="584" cy="120" rx="26" ry="8" fill="#cfe3ee"/></g>
-        <text x="550" y="152" text-anchor="middle" font-size="13" font-weight="700" fill="#26272a">Treatment plant</text>
-        <text id="plant-cap" x="550" y="110" text-anchor="middle" font-size="12" font-weight="700" fill="#b5310a" opacity="0">at capacity</text>
         {# the beach sign #}
         <g id="sign"><rect x="712" y="150" width="4" height="40" fill="#26272a"/><rect id="sign-b" x="684" y="124" width="62" height="28" rx="5" fill="#237059"/><text id="sign-t" x="715" y="143" text-anchor="middle" font-size="12" font-weight="900" fill="#fff">OPEN</text></g>
-        {# the plant's own outfall, deepest: drawn first so the overflow pipe crosses in front of it #}
-        <path d="M626 172 V196 H668 V378 H960" fill="none" stroke="#9aa6ad" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
-        <path id="f-out" class="flow" d="M626 174 V196 H668 V378 H960" fill="none" stroke="#3aa6a0" stroke-width="5" stroke-linejoin="round"/>
+        {# the treatment plant, miles away: off the scene in life, so it sits in a dashed inset, the way SFPUC draws it #}
+        <rect x="120" y="318" width="214" height="82" rx="10" fill="#f8fafb" stroke="#8a949b" stroke-width="1.5" stroke-dasharray="6 5"/>
+        <g stroke="#26272a" stroke-width="2"><rect x="150" y="352" width="108" height="34" fill="#f3f6f9"/><ellipse cx="178" cy="352" rx="18" ry="6" fill="#cfe3ee"/><ellipse cx="230" cy="352" rx="18" ry="6" fill="#cfe3ee"/></g>
+        <text x="227" y="337" text-anchor="middle" font-size="12.5" font-weight="700" fill="#26272a">Treatment plant · miles away</text>
+        <text id="plant-cap" x="296" y="374" text-anchor="middle" font-size="11.5" font-weight="700" fill="#b5310a" opacity="0">at capacity</text>
         {# pipe casings #}
-        <g fill="none" stroke="#8a949b" stroke-linecap="round">
-          <path d="M59 170 V256 M136 170 V256" stroke-width="12"/>
-          <path d="M231 172 V256" stroke-width="12"/>
-          <path d="M40 256 H446" stroke-width="26"/>
-          <path d="M600 226 V172" stroke-width="14"/>
-          <path d="M644 240 H775 V206" stroke-width="16"/>
+        <g fill="none" stroke="#8a949b" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M59 170 V233 M136 170 V239" stroke-width="12"/>
+          <path d="M178 172 V242" stroke-width="10"/>
+          <path d="M231 172 V246" stroke-width="12"/>
+          <path d="M40 232 L446 258" stroke-width="26"/>
+          <path d="M520 316 V352 H334" stroke-width="14"/>
+          <path d="M258 400 V416 H960" stroke-width="12"/>
+          <path d="M644 234 H775 V206" stroke-width="16"/>
         </g>
-        <rect x="446" y="226" width="198" height="88" rx="10" fill="#f3f6f9" stroke="#26272a" stroke-width="2"/>
-        <rect id="box-fill" x="446" y="314" width="198" height="0" fill="#8b6a4a" opacity=".85" clip-path="url(#box)"/>
-        <text x="545" y="300" text-anchor="middle" font-size="12" font-weight="700" fill="#26272a">storage</text>
+        {# the pump station on the line from the storage's floor #}
+        <circle cx="420" cy="352" r="15" fill="#fff" stroke="#26272a" stroke-width="2"/><path id="impeller" d="M420 341 V363 M409 352 H431 M412 344 L428 360 M428 344 L412 360" stroke="#26272a" stroke-width="1.6"/>
+        {# the transport/storage structure: fills from the floor; a weir near the shore side lets it spill only when full #}
+        <rect x="446" y="226" width="198" height="90" rx="10" fill="#f3f6f9" stroke="#26272a" stroke-width="2"/>
+        <rect id="box-fill" x="448" y="314" width="174" height="0" fill="#8b6a4a" opacity=".85"/>
+        <rect id="box-ch" x="624" y="232" width="18" height="82" fill="#7a5a3a" opacity="0"/>
+        <path d="M622 316 V240" stroke="#26272a" stroke-width="3"/>
+        <text x="534" y="300" text-anchor="middle" font-size="12" font-weight="700" fill="#26272a">storage</text>
+        <text x="633" y="226" text-anchor="middle" font-size="10" font-weight="700" fill="#54576F" transform="translate(0 -4)">weir</text>
         {# flows #}
-        <path id="f-home" class="flow" d="M59 172 V256 M136 172 V256" stroke="#8b6a4a" stroke-width="5"/>
-        <path id="f-drain" class="flow" d="M231 174 V256" stroke="#3b8fc4" stroke-width="0"/>
-        <path id="f-main" class="flow" d="M40 256 H446" stroke="#8b6a4a" stroke-width="8"/>
-        <path id="f-pump" class="flow" d="M600 226 V172" stroke="#8b6a4a" stroke-width="6"/>
-        <path id="f-over" class="flow" d="M644 240 H775 V206" stroke="#7a5a3a" stroke-width="0"/>
-        {# numbered markers #}
+        <path id="f-home" class="flow" d="M59 172 V233 M136 172 V239" stroke="#8b6a4a" stroke-width="5"/>
+        <path id="f-roof" class="flow" d="M178 130 V242" stroke="#3b8fc4" stroke-width="0"/>
+        <path id="f-drain" class="flow" d="M231 174 V246" stroke="#3b8fc4" stroke-width="0"/>
+        <path id="f-main" class="flow" d="M40 232 L446 258" stroke="#8b6a4a" stroke-width="8"/>
+        <path id="f-pump" class="flow" d="M520 316 V352 H334" stroke="#8b6a4a" stroke-width="6" stroke-linejoin="round"/>
+        <path id="f-out" class="flow" d="M258 400 V416 H960" stroke="#3aa6a0" stroke-width="5" stroke-linejoin="round"/>
+        <path id="f-over" class="flow" d="M644 234 H775 V206" stroke="#7a5a3a" stroke-width="0" stroke-linejoin="round"/>
+        {# numbered markers, keyed below the diagram #}
         <g font-size="12" font-weight="700" text-anchor="middle">
-          {% for n, x, y in [(1, 59, 76), (2, 231, 150), (3, 300, 232), (4, 545, 250), (5, 650, 104), (6, 806, 236), (7, 900, 404)] %}
+          {% for n, x, y in [(1, 59, 76), (2, 231, 150), (3, 300, 222), (4, 534, 250), (5, 420, 384), (6, 806, 236), (7, 900, 400)] %}
           <circle cx="{{ x }}" cy="{{ y }}" r="11" fill="#26272a"/><text x="{{ x }}" y="{{ y + 4 }}" fill="#fff">{{ n }}</text>
           {% endfor %}
         </g>
@@ -170,16 +187,16 @@
     <p class="swipe">Swipe the diagram sideways to see the shore.</p>
     <div class="caption" id="rain-cap" aria-live="polite"><span class="step" id="cap-step">Dry</span><span id="cap-text"></span></div>
     <ol class="key">
-      <li><b>1</b>Homes and businesses: everything down the drain.</li>
+      <li><b>1</b>Homes and businesses: everything down the drain, and the rain off the roofs.</li>
       <li><b>2</b>A storm drain: rain off the street.</li>
-      <li><b>3</b>One combined sewer carries both.</li>
-      <li><b>4</b>Transport/storage structures under the shoreline hold what the plant cannot take yet.</li>
-      <li><b>5</b>The treatment plant.</li>
-      <li><b>6</b>An overflow outfall at the shore: a combined sewer discharge.</li>
-      <li><b>7</b>Treated water leaves through the plant's own outfall.</li>
+      <li><b>3</b>One combined sewer carries both, downhill to the shore. Over 90% of the city is served this way.</li>
+      <li><b>4</b>Transport/storage structures ring the shoreline and hold what the plant cannot take yet.</li>
+      <li><b>5</b>Pumped from the storage's floor to a treatment plant.</li>
+      <li><b>6</b>When storage is full it spills over a weir to an outfall at the shore: a combined sewer discharge.</li>
+      <li><b>7</b>Treated water leaves through the plant's deep-water outfall: about four miles offshore for the Oceanside plant, into the bay for the Southeast plant.</li>
     </ol>
     <div class="plants"><span>Westside: the Oceanside plant · {{ plants.oceanside }} overflow outfalls on the Pacific</span><span>Bayside: the Southeast plant · {{ plants.bayside }} overflow outfalls on the bay</span></div>
-    <p class="more">All {{ plants.total }} outfalls are on the <a href="/?layers=outfalls">Today map's Outfalls layer</a>; every discharge since 2016 is in the <a href="/discharges">Discharge Ledger</a>; the <a href="/forecast">CSO Forecast</a> estimates the odds from rain.</p>
+    <p class="more">Drawn after Figure 2-4 of SFPUC's Sewer System Master Plan (2010), the source of the facts in the key. All {{ plants.total }} outfalls are on the <a href="/?layers=outfalls">Today map's Outfalls layer</a>; every discharge since 2016 is in the <a href="/discharges">Discharge Ledger</a>; the <a href="/forecast">CSO Forecast</a> estimates the odds from rain.</p>
   </section>
 
   {# ── 2 ── #}
@@ -266,7 +283,7 @@
     <summary>Prototype notes: facts to check before this goes public</summary>
     <ul>
       <li>From the repo, already used on the site: the two plants and their outfall counts (shared/outfalls.py), the four state limits and Surfrider's caution tier (shared/standards.py), when the city began each indicator (Samples and Site Report Card notes), and both charts' numbers (the BeachWatch and CIWQS files).</li>
-      <li>To confirm: that the storage structures sit "under the shoreline" everywhere, and the wording for what the plant's own outfall is and where it releases.</li>
+      <li>Confirmed by SFPUC's Sewer System Master Plan (Summary Report, Final Draft, March 2010): over 90% of the city is combined; the transport/storage structures ring the perimeter "like a moat", hold flow until the storm passes, and give discharges the equivalent of primary treatment, which is why they are called CSDs; flow is pumped to the plants; the Oceanside plant's outfall runs about four miles offshore (1986) and the Southeast plant's two outfalls go to the bay. Check that the 2010 numbers still hold before quoting any.</li>
       <li>To confirm: the method in "Count it like the lab", the 97-well tray, one-in-ten dilution and overnight incubation, with both the city lab and Surfrider's.</li>
       <li>To confirm with a reviewer: each indicator's "what" and "why" lines, and E. coli's "most strains are harmless".</li>
       <li>Photo sources to ask: SFPUC, the SF Public Library's historical photograph collection, OpenSFHistory. Use only with permission and credit each photo.</li>
@@ -292,10 +309,10 @@
     l.style.display = "none"; drops.appendChild(l);
   }
   const STATES = [
-    [0.03, "Dry", "Everything from homes and businesses flows to the treatment plant."],
-    [0.3, "Rain", "Rain joins the sewage in the same pipes. The plant still takes it all."],
-    [0.7, "Heavy rain", "The plant takes all it can; the rest fills the transport/storage structures along the shore."],
-    [1.01, "Overflow", "Storage is full. The excess leaves through a permitted outfall at the shore: a combined sewer discharge. SFPUC posts the nearby beaches and samples them until they clear."],
+    [0.03, "Dry", "Everything from homes and businesses runs downhill to the shoreline storage and is pumped from its floor to the treatment plant."],
+    [0.3, "Rain", "Rain off roofs and streets joins the sewage in the same pipes. The plant still takes it all."],
+    [0.7, "Heavy rain", "The plant takes all it can; the rest waits in the storage, where solids settle out and floating trash is trapped."],
+    [1.01, "Overflow", "Storage is full. The settled water spills over the weir and out a permitted outfall at the shore: a combined sewer discharge. Settling in the storage counts as the equivalent of primary treatment, which is why SFPUC calls it a discharge rather than an overflow. SFPUC posts the nearby beaches and samples them until they clear."],
   ];
   let POSTED_UNTIL = 0;
   function width(id, w) { const el = $(id); el.setAttribute("stroke-width", w.toFixed(1)); el.style.opacity = w > 0.5 ? 1 : 0; }
@@ -304,11 +321,14 @@
     const shown = Math.round(r * N); [...drops.children].forEach((d, i) => { d.style.display = i < shown ? "" : "none"; });
     $("rain-out").textContent = r < 0.03 ? "None" : r < 0.3 ? "Light" : r < 0.7 ? "Heavy" : "Storm";
     width("f-drain", r < 0.03 ? 0 : 3 + 6 * r); speed("f-drain", r);
+    width("f-roof", r < 0.03 ? 0 : 2 + 4 * r); speed("f-roof", r);
+    $("impeller").style.transformOrigin = "420px 352px"; $("impeller").style.animation = REDUCE ? "none" : "spin " + (1.6 - 1.2 * clamp(r / 0.3)).toFixed(2) + "s linear infinite";
     width("f-main", 7 + 13 * clamp(r / 0.8)); speed("f-main", clamp(0.3 + r));
     width("f-pump", 5 + 5 * clamp(r / 0.3)); speed("f-pump", clamp(r / 0.3));
     width("f-out", 4 + 4 * clamp(r / 0.3)); speed("f-out", clamp(r / 0.3));
     $("plant-cap").style.opacity = r >= 0.3 ? 1 : 0;
-    const fill = clamp((r - 0.3) / 0.4); const h = 88 * fill; $("box-fill").setAttribute("y", 314 - h); $("box-fill").setAttribute("height", h);
+    const fill = clamp((r - 0.3) / 0.4); const h = 76 * fill; $("box-fill").setAttribute("y", 314 - h); $("box-fill").setAttribute("height", h);   // up to the weir's crest
+    $("box-ch").setAttribute("opacity", r >= 0.7 ? 0.85 : 0);
     const over = clamp((r - 0.7) / 0.3); width("f-over", r >= 0.7 ? 5 + 10 * over : 0); speed("f-over", over);
     const pl = $("plume"); pl.setAttribute("rx", 10 + 70 * over); pl.setAttribute("ry", 6 + 18 * over); pl.setAttribute("opacity", (0.65 * over).toFixed(2));
     const posted = r >= 0.7 || aftermath;
