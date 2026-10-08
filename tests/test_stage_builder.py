@@ -114,20 +114,29 @@ def test_every_number_is_its_artifact_field():
             if p["scores"] is None:
                 assert p["from"] is None
                 continue
-            for w, cell in p["scores"].items():
-                n += same_cell(cell, (((scores(p["from"]).get(sid) or {}).get("pooled") or {}).get("oracle") or {}).get(w), f"{sid} {p['id']} {w}")
+            for q in [p, *(p.get("by_rain") or {}).values()]:       # S2 on another S1 part's rain (Part B 41) too
+                for w, cell in q["scores"].items():
+                    n += same_cell(cell, (((scores(q["from"]).get(sid) or {}).get("pooled") or {}).get("oracle") or {}).get(w), f"{sid} {p['id']} {w}")
+            if sid == "s2":
+                for r, q in [(p["rain"], p), *(p.get("by_rain") or {}).items()]:
+                    s1 = json.loads((STAGES / q["from"] / "manifest.json").read_text())["components"]["s1"]
+                    assert LU.rain_rule_of(s1) == r, (p["id"], q["from"], r)
+            else:
+                assert "rain" not in p and "by_rain" not in p, (sid, p["id"])
     for c in built()["chains"]:
         for w, both in c["scores"].items():
             for e in ("L1", "rain"):
                 n += same_cell(both[e], scores(c["set"])["out"]["pooled"][e].get(w), f"chain {c['set']} {e} {w}")
     S = s1_scores()
     for p in stage("s1")["parts"] + [dict(stage("s1")["floor"], id=None)]:
-        blk = S["by_lead"]["1"]["avg"]["models"][p["id"]] if p["id"] else S["floor"][p["name"]]
+        # an S1 part whose gauges read another rule scores as its weather model (lineup.S1_RAIN, Part B 41)
+        assert (p.get("scored_as") or p["id"]) == (LU.weather_of(p["id"]) if p["id"] else None), p
+        blk = S["by_lead"]["1"]["avg"]["models"][p.get("scored_as") or p["id"]] if p["id"] else S["floor"][p["name"]]
         mine = p["score"] if p["id"] else p
         want = {"mae": blk["continuous"]["either_wet"]["mae"], "lo": blk["ci"]["continuous"]["either_wet"]["mae"][0],
                 "hi": blk["ci"]["continuous"]["either_wet"]["mae"][1], "n": blk["n_either_wet"], "span": [blk["first"], blk["last"]]}
         assert {k: mine[k] for k in want} == want, (p["id"], mine, want)
-        if p["id"] and not p["live"]:
+        if p["id"] and not p["live"] and not p.get("scored_as"):
             assert p["vs_live"] == S["primary"]["vs_served"][p["id"]]["verdict"]
         n += 1
     st5 = stage("s5")
@@ -338,6 +347,8 @@ def test_the_page_reads_the_builder_and_names_no_set_todays():
     assert "SB.units[u]" in html and "p.by_unit" in html and "match.zones.L1" in html and "match.zones.rain" in html
     # S3 and S4 move as a pair (Part B 39), and the public number reads the chain with the picked weather model
     assert "function sbSet(st, id)" in html and "sbPairs()" in html and "c.parts.s1 === sbPick.s1" in html
+    # S2's own score and the rain-known number follow the S1 pick's rain (Part B 41)
+    assert "function sbRainPart(st, p)" in html and "sbSkillSlot(st, sbRainPart(st, p), win)" in html and "rainIn(match.parts.s1) !== rainIn(sbPick.s1)" in html
 
 
 if __name__ == "__main__":

@@ -66,6 +66,18 @@ def _antecedent(x: np.ndarray) -> float:
 # is wet are real and are deliberately NOT touched.
 GAUGE_OUTAGE_RULE = {"name": "gauge_outage_v1", "min_run_days": 2, "other_gauge_min_in": 0.5}
 INPUT_RULES_LIVE = [GAUGE_OUTAGE_RULE["name"]]   # what serving and post-training rescoring apply
+# gauge_outage_v2 (2026-10-08, RAIN_SOURCES.md; STAGES_DESIGN Part B 40): the same runs as v1, but a dead (or missing)
+# gauge day reads MRMS's 24-hour multisensor total at that gauge's cell where MRMS has the day (Oct 2020 on), and the
+# other gauge only before that. Opt-in: a set names it (its manifest's input_rules), nothing served reads it, and the
+# live page cannot apply it until MRMS reaches it (INPUT_RULES_SERVABLE; TODO "MRMS on the live board").
+GAUGE_OUTAGE_V2 = {"name": "gauge_outage_v2", "runs": GAUGE_OUTAGE_RULE["name"], "fill": "mrms"}
+INPUT_RULES_KNOWN = (GAUGE_OUTAGE_RULE["name"], GAUGE_OUTAGE_V2["name"])
+INPUT_RULES_SERVABLE = (GAUGE_OUTAGE_RULE["name"],)   # the rules live_dashboard applies today
+
+
+def masks_outages(rules) -> bool:
+    """True when ``rules`` blank gauge_outage_v1's runs (v1 itself, or v2, which fills the same runs from MRMS)."""
+    return any(r in INPUT_RULES_KNOWN for r in (rules or ()))
 
 
 def find_gauge_outages(daily: pd.DataFrame, gauges=("SF Downtown", "SF Oceanside"), date_col: str = "date",

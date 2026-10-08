@@ -49,6 +49,7 @@ for _p in (HERE, HERE.parent / "collectors", HERE.parents[3]):
 
 import candidates as CAND  # noqa: E402
 import leaderboard as L  # noqa: E402
+import rain_features as RF  # noqa: E402  (the gauge-outage rules a design's rain may read)
 import stages_build as B  # noqa: E402  (references: the protocol's climatology for a row's fold)
 import stages_entries as E  # noqa: E402
 import stages_s2 as S2  # noqa: E402
@@ -208,7 +209,12 @@ def cell(y, a, b, ref, blocks, n_boot: int = N_BOOT) -> dict:
 class Lab:
     """The live set's scored S2 rows, their references and blocks, and the input frames, loaded once."""
 
-    def __init__(self):
+    def __init__(self, input_rules=None):
+        """``input_rules``: the gauge-outage rule a design's rain reads, in training and in the scored entries (None:
+        as the live set, the raw record to train and gauge_outage_v1 to score; ("gauge_outage_v2",): dead gauges from
+        MRMS in both, Part B 40)."""
+        self.train_rules = tuple(input_rules or ())
+        self.entry_rules = tuple(input_rules or (RF.GAUGE_OUTAGE_RULE["name"],))
         self.served = CAND.served_info()["name"]
         s = S2.load_set(self.served, "served")
         self.s2set, self.keys = s, list(s.keys)
@@ -228,7 +234,8 @@ class Lab:
         self.rows = rows
         extra = new_inputs(older=False)
         sources = sorted(set(self.source.values()))
-        self.entry = {src: add_new(f, extra).set_index("date") for src, f in E.frames("oracle", sources, end=self.end).items()}
+        self.entry = {src: add_new(f, extra).set_index("date")
+                      for src, f in E.frames("oracle", sources, end=self.end, input_rules=self.entry_rules).items()}
         self._train, self._masks = {}, {}
 
     def live_design(self) -> tuple:
@@ -247,7 +254,8 @@ class Lab:
     def train(self, record: str) -> dict:
         if record not in self._train:
             rec = RECORDS[record]
-            frames, _ = T.build_dataset(sources=sorted(set(self.source.values())), record=rec)
+            frames, _ = T.build_dataset(sources=sorted(set(self.source.values())), record=rec,
+                                        input_rules=list(self.train_rules) or None)
             extra = new_inputs(older=rec is not None and pd.Timestamp(rec["start"]) < T.TRAIN_START)
             self._train[record] = {src: add_new(f, extra) for src, f in frames.items()}
         return self._train[record]

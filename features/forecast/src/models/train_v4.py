@@ -66,7 +66,7 @@ from train_v2 import (  # noqa: E402  — shared formulas, kept in lockstep
 )
 from csd_labels import APP_BASINS, build_daily_labels, load_events  # noqa: E402
 from impact import compose, smooth_table  # noqa: E402
-from rain_features import GAUGE_OUTAGE_RULE, INPUT_RULES_LIVE, mask_gauge_outages  # noqa: E402
+from rain_features import GAUGE_OUTAGE_RULE, GAUGE_OUTAGE_V2, INPUT_RULES_LIVE, mask_gauge_outages, masks_outages  # noqa: E402
 from shared.outfalls import FEED_NAME_TO_OUTFALLS, OUTFALLS  # noqa: E402
 from shared.stations import STATIONS  # noqa: E402
 from shared.zones import ZONES  # noqa: E402
@@ -101,13 +101,38 @@ OLDER_HOURLY_CSV = RAW_DIR / "hourly_rain_openmeteo_2011-2015.csv"
 # ERA5's hourly 10 m wind at the hourly rain's point and clock, 2011 on (collectors/historical.py --wind): the south
 # wind on the rainy hours (rain_features.WIND_FEATURES), an extra frame column only a model naming it reads.
 HOURLY_WIND_CSV = RAW_DIR / "openmeteo_wind_hourly.csv"
+# MRMS's 24-hour Pass2 total at each Pacific midnight, read at each gauge's own cell (collectors/rain_grids.py
+# mrms-daily, Oct 2020 on): what gauge_outage_v2 fills a dead gauge's days with. Refresh it with the gauges.
+MRMS_DAILY_CSV = RAW_DIR / "rain_grids" / "mrms_daily.csv.gz"
+MRMS_CELL_OF_GAUGE = {"SF Downtown": "downtown_gauge", "SF Oceanside": "oceanside_gauge"}
+
+
+def mrms_at_gauges() -> pd.DataFrame:
+    """date × gauge name: MRMS's daily total at each NOAA gauge's cell (inches), every day of its record."""
+    m = pd.read_csv(MRMS_DAILY_CSV, parse_dates=["date"]).set_index("date")
+    return m[list(MRMS_CELL_OF_GAUGE.values())].rename(columns={v: k for k, v in MRMS_CELL_OF_GAUGE.items()})
+
+
+def fill_from_mrms(rp: pd.DataFrame, cols: list) -> tuple:
+    """(rp with every missing gauge day, a dead gauge's masked run included, read from MRMS at that gauge's cell where
+    MRMS has the day, the number filled). Days MRMS lacks (before Oct 2020, five missing files) stay missing, so the
+    usual fill (the other gauge) takes them."""
+    m = mrms_at_gauges().reindex(rp.index)
+    out, n = rp.copy(), 0
+    for c in cols:
+        take = out[c].isna() & m[c].notna()
+        out.loc[take, c] = m.loc[take, c]
+        n += int(take.sum())
+    return out, n
 
 
 def rain_series(source: str, input_rules: list | None = None, older_rain: bool = False) -> tuple:
     """Daily rain (inches) for `source` + fill note. ``input_rules`` may name
     "gauge_outage_v1" (rain_features.GAUGE_OUTAGE_RULE): a dead gauge's
     0.00 run becomes missing before any averaging or filling, so the other
-    gauge stands in. None = the raw record, as v4 was trained.
+    gauge stands in. "gauge_outage_v2" (GAUGE_OUTAGE_V2): the same runs, read
+    from MRMS at the dead gauge's cell where MRMS has the day (fill_from_mrms),
+    the other gauge before. None = the raw record, as v4 was trained.
 
     `source` is 'avg' (mean of the two NOAA gauges), a NOAA gauge name
     ('SF Downtown' / 'SF Oceanside'; a missing day takes the other gauge),
@@ -127,12 +152,14 @@ def rain_series(source: str, input_rules: list | None = None, older_rain: bool =
                              values="precip_inches", aggfunc="first").sort_index()
     cols = list(rp.columns)
     masked = []
-    if input_rules and GAUGE_OUTAGE_RULE["name"] in input_rules:
+    if masks_outages(input_rules):
         tmp, masked = mask_gauge_outages(rp.reset_index(), gauges=tuple(cols))
         rp = tmp.set_index("date")[cols]
     extra = {"outage_runs_masked": len(masked), "outage_days_masked": int(sum(r["days"] for r in masked))}
     if older_rain:
         rp, extra["older_rain"] = _with_older_rain(rp, cols)
+    if input_rules and GAUGE_OUTAGE_V2["name"] in input_rules:     # the masked days (and missing ones) from MRMS first
+        rp, extra["filled_from_mrms"] = fill_from_mrms(rp, cols)
     avg = rp[cols].mean(axis=1)
     if source == "avg":
         return avg.fillna(0.0), {"filled_from_other_gauge": 0, **extra}

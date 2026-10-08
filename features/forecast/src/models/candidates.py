@@ -159,8 +159,9 @@ def build_candidate_scorecard(finals: dict, holdout_models: dict, chosen: dict, 
 
 def rescore_post(name: str, input_rules: list | None = None) -> dict:
     """Re-score a candidate's POST-TRAINING days with its own pickles and stage 2
-    on inputs treated by ``input_rules`` (default: what serving applies,
-    rain_features.INPUT_RULES_LIVE — the gauge-outage rule). Pre-training days
+    on inputs treated by ``input_rules`` (default: the set's own manifest
+    ``input_rules``, else what serving applies, rain_features.INPUT_RULES_LIVE —
+    the gauge-outage rule). Pre-training days
     stay exactly as stored, so the holdout comparison across sets remains on
     one input treatment and the post-training comparison on another, each
     apples to apples. Mirrors train_v4.rescore(replace_post=True) for the
@@ -170,7 +171,8 @@ def rescore_post(name: str, input_rules: list | None = None) -> dict:
     import train_v4 as T
     from rain_features import INPUT_RULES_LIVE
     from groups import BASIN_KEYS
-    rules = list(input_rules or INPUT_RULES_LIVE)
+    own = json.loads((candidate_dir(name) / "manifest.json").read_text()).get("input_rules")
+    rules = list(input_rules or own or INPUT_RULES_LIVE)          # a set that names its rule (gauge_outage_v2) reads it
     models = load_models(name)
     sc = load_scorecard(name)
     stage2 = load_stage2(name)
@@ -255,14 +257,16 @@ def _lineup_module():
     return LU
 
 
-def geo_v1_lineup(stage1: str, stage2: dict | None) -> dict:
-    """A new BWTF-basin set's lineup as it is saved (shared/lineup.py): the weather model the live page reads, its
-    overflow model, the split and table its stage 2 spec names, and the live correction rule."""
+def geo_v1_lineup(stage1: str, stage2: dict | None, rule: str | None = None) -> dict:
+    """A new BWTF-basin set's lineup as it is saved (shared/lineup.py): the weather model the live page reads (with
+    gauge-outage rule ``rule``, its S1 part: lineup.s1_part), its overflow model, the split and table its stage 2 spec
+    names, and the live correction rule."""
     if str(HERE) not in sys.path:
         sys.path.insert(0, str(HERE))
     import stages_entries as E                     # lazy: the weather model is read off live_dashboard's source
-    return _lineup_module().geo_v1_lineup(stage1, stage2_variant_id(stage2), E.served_weather_model(),
-                                          served_info().get("corrections") or "live_v2")
+    LU = _lineup_module()
+    return LU.geo_v1_lineup(stage1, stage2_variant_id(stage2), LU.s1_part(E.served_weather_model(), rule),
+                            served_info().get("corrections") or "live_v2")
 
 
 def set_name(lineup: dict) -> str:
@@ -270,10 +274,10 @@ def set_name(lineup: dict) -> str:
     return _lineup_module().set_id(lineup)
 
 
-def geo_v1_set(stage1: str, stage2: dict | None) -> tuple:
-    """(name, lineup) of a new BWTF-basin set with overflow model ``stage1`` and stage 2 spec ``stage2``, as it would
-    be saved today (geo_v1_lineup: today's weather model and correction rule)."""
-    lineup = geo_v1_lineup(stage1, stage2)
+def geo_v1_set(stage1: str, stage2: dict | None, rule: str | None = None) -> tuple:
+    """(name, lineup) of a new BWTF-basin set with overflow model ``stage1``, stage 2 spec ``stage2`` and gauge rule
+    ``rule``, as it would be saved today (geo_v1_lineup: today's weather model and correction rule)."""
+    lineup = geo_v1_lineup(stage1, stage2, rule)
     return set_name(lineup), lineup
 
 
@@ -295,6 +299,10 @@ def save_candidate(name: str, family: str, finals: dict, holdout_models: dict, c
                          f"{set_name(lineup) if lineup else 'derivable without a lineup'}")
     if stage1_name and stage1_name != lineup["s2"]:
         raise ValueError(f"{name}: its overflow model is {stage1_name!r}, its lineup's S2 is {lineup['s2']!r}")
+    rain = _lineup_module().rain_rule_of(lineup["s1"])               # S1's gauge rule is the rule its rain reads
+    for key in ("input_rules", "train_input_rules"):
+        if list((extra or {}).get(key) or [_lineup_module().GAUGE_RULE]) != [rain]:
+            raise ValueError(f"{name}: its S1 ({lineup['s1']}) reads {rain}, its {key} {(extra or {}).get(key)}")
     d = candidate_dir(name)
     d.mkdir(parents=True, exist_ok=True)
     if str(HERE) not in sys.path:

@@ -218,10 +218,13 @@ def served_weather_model() -> str:
 
 
 def _rules(input_rules) -> tuple:
+    """The input rules as a tuple: none, gauge_outage_v1, or gauge_outage_v2 (v1's runs, filled from MRMS; Part B 40)."""
     rules = tuple(input_rules or ())
-    bad = [r for r in rules if r != RF.GAUGE_OUTAGE_RULE["name"]]
+    bad = [r for r in rules if r not in RF.INPUT_RULES_KNOWN]
     if bad:
-        raise KeyError(f"unknown input rules {bad}; known: {[RF.GAUGE_OUTAGE_RULE['name']]}")
+        raise KeyError(f"unknown input rules {bad}; known: {list(RF.INPUT_RULES_KNOWN)}")
+    if sum(r in RF.INPUT_RULES_KNOWN for r in rules) > 1:
+        raise ValueError(f"one gauge-outage rule at a time, not {list(rules)}")
     return rules
 
 
@@ -479,7 +482,7 @@ def _hindsight(rules: tuple) -> pd.DataFrame:
     issue − 1 does not. Only a run reaching I − 1 can differ (a run that ends sooner reads the same in
     both), and only by being too young or too dry to qualify yet: its days s … I − 1 then stay as filed."""
     out = pd.DataFrame({"issue": pd.DatetimeIndex([]), "date": pd.DatetimeIndex([]), "gauge": pd.Series([], dtype=object)})
-    if RF.GAUGE_OUTAGE_RULE["name"] not in rules:
+    if not RF.masks_outages(rules):                               # v2 masks the same runs, so it shares v1's hindsight
         return out
     raw = _per_gauge()[0]
     rows = []
@@ -493,7 +496,7 @@ def _hindsight(rules: tuple) -> pd.DataFrame:
     return pd.DataFrame(rows, columns=list(out.columns)) if rows else out
 
 
-def issue_time_unmasked(input_rules=(RF.GAUGE_OUTAGE_RULE["name"],)) -> pd.DataFrame:
+def issue_time_unmasked(input_rules=(RF.GAUGE_OUTAGE_RULE["name"],)) -> pd.DataFrame:  # v1 and v2 alike
     """DataFrame[issue, date, gauge]: for each issue day I, the gauge-days (date ≤ I − 1) the whole-record
     gauge_outage_v1 mask hides but the gauges through I − 1 cannot yet call an outage. The lead entries
     read them as filed (dead-gauge 0.00s); rain known reads them masked. Empty with no rules."""
@@ -511,9 +514,13 @@ def _per_gauge() -> tuple:
     return raw, raw.where(status != "outage")
 
 
-def _combine(vals: pd.DataFrame, source: str) -> pd.Series:
-    """train_v4.rain_series' fills: the mean of the gauges read, or the source gauge falling back to the
-    other; then 0. _issue_records checks it reproduces rain_series on the whole record, exactly."""
+def _combine(vals: pd.DataFrame, source: str, rules: tuple = ()) -> pd.Series:
+    """train_v4.rain_series' fills: under gauge_outage_v2 a blank gauge day from MRMS at its cell first; then the
+    mean of the gauges read, or the source gauge falling back to the other; then 0. _issue_records checks it
+    reproduces rain_series on the whole record, exactly. A dead-gauge day the issue day cannot yet call an outage
+    holds its filed 0.00, not a blank, so MRMS never fills it (the issue day did not know)."""
+    if RF.GAUGE_OUTAGE_V2["name"] in rules:
+        vals = T4.fill_from_mrms(vals, list(T.GAUGE_SERIES))[0]
     if source == T.MEAN_SERIES:
         return vals[list(T.GAUGE_SERIES)].mean(axis=1).fillna(0.0)
     other = [g for g in T.GAUGE_SERIES if g != source]
@@ -532,14 +539,14 @@ def _issue_records(source: str, rules: tuple) -> dict:
         return {}
     whole = _gauge(source, rules)
     raw, masked = _per_gauge()
-    if not np.array_equal(_combine(masked, source).reindex(whole.index).to_numpy(), whole.to_numpy()):
+    if not np.array_equal(_combine(masked, source, rules).reindex(whole.index).to_numpy(), whole.to_numpy()):
         raise AssertionError(f"the per-gauge record no longer reproduces train_v4.rain_series({source!r})")
     out = {}
     for I, c in cells.groupby("issue"):
         vals = masked.copy()
         for d, g in zip(c["date"], c["gauge"]):
             vals.at[d, g] = raw.at[d, g]
-        series = _combine(vals, source).reindex(whole.index)
+        series = _combine(vals, source, rules).reindex(whole.index)
         eve = I - (FULL_PAST_DAYS + 1) * _DAY
         dry = RF.add_daily_features(pd.DataFrame({"precip_inches": series.loc[:eve].to_numpy()}))["dry_spell_days"].iloc[-1]
         out[pd.Timestamp(I)] = (series, float(dry))

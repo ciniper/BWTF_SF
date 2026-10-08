@@ -561,7 +561,10 @@ RECOMMENDATIONS = [
     "1. **A dead-gauge fill from MRMS** (`gauge_outage_v2`, a candidate input rule): a dead gauge's run read from MRMS "
     "at its cell, the other gauge before Oct 2020 as today, in training, scoring and on the live page. Build it as an "
     "opt-in input rule, save a candidate whose id names the change, and let the stages build score it on every entry, "
-    "one day ahead included. Promotion is Chase's call.",
+    "one day ahead included. Promotion is Chase's call. **Built 2026-10-08** (STAGES_DESIGN Part B 40): "
+    "`iconmrms-t9wind3h-osplit-lt2more-bflags` (Part B 41: stage 1 is ICON with dead gauges from MRMS, the live "
+    "overflow model refit on that rain), clearly better one day ahead on the nine seasons and the holdout, "
+    "no clear difference post-training, §9 at 2 of 5.",
     "2. **MRMS on the live board** as that backup, and as rain so far today. Decoding GRIB2 needs eccodes, which may "
     "not fit the app's function bundle (its dependencies are near the limit already), so the live path needs its own "
     "small job that writes the city's numbers where the app reads them.",

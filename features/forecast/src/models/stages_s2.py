@@ -32,8 +32,9 @@ volume head is clone of the bundle's head (its regressor, features and rain
 source) on the event days with a filed volume, train_v4.fit_volume_heads' rows;
 a fold under that function's 20-event floor raises (no head silently means v̂ = 0;
 the declared fallback of Part B 7 is P8f's). The training record is the raw one
-the sets were fit on (train_v4.build_dataset with no input rules); the entries'
-inputs are whatever the caller passes. ``check_training_record`` proves it before
+the sets were fit on (train_v4.build_dataset with no input rules), or a set's own
+``train_input_rules`` (gauge_outage_v2, Part B 40); the entries' inputs are whatever
+the caller passes. ``check_training_record`` proves it before
 any fold is fit: each basin's rows match the set's recorded counts (events; the
 pre-holdout season-CV n and positives), and for a refit family a clone fit on all
 of them reproduces the set's final, so the rows, the archive-label rule, the
@@ -110,6 +111,7 @@ for _p in (HERE, HERE.parent / "collectors", HERE.parents[3]):
 
 import candidates as CAND  # noqa: E402  (served.json, candidate manifests and pickles)
 import exclusions as X  # noqa: E402  (ENTRIES, X-SEL, the protocol's freeze date)
+import rain_features as RF  # noqa: E402  (the input rules a set may train on)
 import train_v4 as T  # noqa: E402  (frames, rows, the predict path, the bundle's volume heads)
 import truth as TR  # noqa: E402  (ledger_start: each basin's first scored T2 season)
 from shared import clock  # noqa: E402
@@ -164,6 +166,8 @@ class S2Set:
     record: dict          # basin key → the descriptor's per_basin entry (n_events, season_cv_pre_holdout, …)
     train_record: dict | None = None   # the descriptor's longer label record (train_v4.check_record); None = the served record
     fold_terms: dict | None = None     # fold → terms, a nested term choice (train_terms.py); None = the finals' design everywhere
+    train_input_rules: tuple = ()      # the input rules its training rain read: () = the raw record (every served set);
+                                       # ("gauge_outage_v2",) = dead gauges from MRMS (Part B 40)
 
     @property
     def keys(self) -> tuple:
@@ -264,7 +268,12 @@ def load_set(set_name: str, root: str = "served") -> S2Set:
     record = {k: desc["per_basin"][k] for k in geo.keys}
     train_record = T.check_record(desc["record"]) if desc.get("record") is not None else None
     fold_terms = check_fold_terms(set_name, desc, models) if desc.get("fold_terms") is not None else None
-    return S2Set(set_name, root, family, stage1, geo, tt, models, heads, use_archive, record, train_record, fold_terms)
+    train_rules = tuple(desc.get("train_input_rules") or ())
+    bad = [r for r in train_rules if r not in RF.INPUT_RULES_KNOWN]
+    if bad:
+        raise ValueError(f"{set_name}: unknown training input rules {bad}")
+    return S2Set(set_name, root, family, stage1, geo, tt, models, heads, use_archive, record, train_record, fold_terms,
+                 train_rules)
 
 
 def check_fold_terms(set_name: str, desc: dict, models: dict) -> dict:
@@ -289,9 +298,11 @@ def check_fold_terms(set_name: str, desc: dict, models: dict) -> dict:
 
 
 def training_frames(s2set: S2Set, sources=None) -> dict:
-    """{source: frame}: the raw record the set was trained on (no input rules), through 2025-10-31: the served
-    record, or the set's longer label record, with the south wind (a set may read it). ``sources`` default: the set's own."""
-    return T.build_dataset(sources=list(sources or s2set.sources), record=s2set.train_record, wind=True)[0]
+    """{source: frame}: the record the set was trained on, through 2025-10-31: the served record, or the set's longer
+    label record, raw or under its own training input rules (``train_input_rules``: gauge_outage_v2 reads dead gauges
+    from MRMS), with the south wind (a set may read it). ``sources`` default: the set's own."""
+    return T.build_dataset(sources=list(sources or s2set.sources), record=s2set.train_record, wind=True,
+                           input_rules=list(s2set.train_input_rules) or None)[0]
 
 
 def extra_seasons(s2set: S2Set) -> tuple:
@@ -505,7 +516,7 @@ def fit(set_name: str, root: str = "served", tiers=TIERS, train_frames: dict | N
              "protocol": X.protocol_stamp(), "built_at": clock.utc_iso(),
              "trained_through": str(s2set.trained_through.date()), "holdout_start": str(HOLDOUT_START.date()),
              "post_start": str(POST_START.date()), "freeze": str(X.freeze_date().date()),
-             "train_input_rules": [], "train_record": s2set.train_record,
+             "train_input_rules": list(s2set.train_input_rules), "train_record": s2set.train_record,
              "t2_extra_train_seasons": [season_label(x) for x in extra_seasons(s2set)],
              "rain_sources": {k: s2set.models[k]["rain_source"] for k in s2set.keys},
              "head_sources": {k: s2set.heads[k]["rain_source"] for k in s2set.keys},

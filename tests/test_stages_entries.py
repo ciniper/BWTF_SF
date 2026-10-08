@@ -624,7 +624,7 @@ def test_unknown_ids_and_spans_raise():
     _raises(KeyError, E.frames, "L2s", ["avg"])                       # protocol §3 lists L0s and L1s only
     _raises(KeyError, E.frames, "L1", ["avg"], model="best_match")
     _raises(KeyError, E.frames, "rain", ["US1CASF0017"])
-    _raises(KeyError, E.frames, "rain", ["avg"], input_rules=["gauge_outage_v2"])
+    _raises(KeyError, E.frames, "rain", ["avg"], input_rules=["gauge_outage_v9"])   # v2 exists since Part B 40
     _raises(KeyError, E.frames, "L1s", ["avg"], history="long")
     _raises(ValueError, E.frames, "L1", ["avg"], history="full")       # history is the as-served window
     _raises(ValueError, E.frames, "rain", ["avg", "avg"])
@@ -638,7 +638,7 @@ def test_unknown_ids_and_spans_raise():
         _raises(KeyError, fn, "icon_seamless", 6)
         _raises(KeyError, fn, "icon_seamless", "1")
     _raises(KeyError, E.nwp_hours, "icon_seamless", leads=(0, 6))
-    _raises(KeyError, E.issue_time_unmasked, input_rules=["gauge_outage_v2"])
+    _raises(KeyError, E.issue_time_unmasked, input_rules=["gauge_outage_v9"])
 
 
 def test_every_entry_builds_in_minutes():

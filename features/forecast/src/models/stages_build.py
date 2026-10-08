@@ -259,6 +259,7 @@ import candidates as CAND  # noqa: E402  (served.json, candidate manifests and s
 import compose_v2 as C  # noqa: E402
 import exclusions as X  # noqa: E402
 import grade_prospective as GP  # noqa: E402  (the committed forecast_history snapshot: the served set's T0 as served)
+import rain_features as RF  # noqa: E402  (the gauge-outage rules a set's rain may read)
 import samples as SMP  # noqa: E402  (the lab records S4's truth reads)
 import stage2 as STG2  # noqa: E402  (read only: the served S3 split fitter)
 import stage2_variants as SV  # noqa: E402  (read only: the rain sources the served split was fit on)
@@ -413,19 +414,39 @@ def load_set(set_name: str, root: str = "served", stage_set=None) -> SetBundle:
 GEO_V1_VARIANTS = ("v1", "v2", "v2_d10")          # the stage 2 ids a GEO_V1 set may record (candidates.stage2_variant_id)
 
 
-def weather_model(bundle: SetBundle) -> str:
-    """S1: the weather model the set's lineup names, its forecasts feeding every lead entry. A set saved with another
-    weather model (promote.py --weather, Part B 39) names it; a set whose lineup names none reads the live page's."""
+def s1_part(bundle: SetBundle) -> str:
+    """S1: the part the set's lineup names, a weather model (shared/lineup.py S1_RAIN for one whose gauges read
+    another rule). A set saved with another weather model (promote.py --weather, Part B 39) names it; a set whose
+    lineup names none reads the live page's."""
     if bundle.stage is not None:
         return bundle.stage.manifest["components"]["s1"]
     return ((bundle.descriptor or {}).get("lineup") or {}).get("s1") or E.served_weather_model()
+
+
+def weather_model(bundle: SetBundle) -> str:
+    """The weather model whose forecasts feed every lead entry: the S1 part's (lineup.weather_of)."""
+    return LU.weather_of(s1_part(bundle))
+
+
+def input_rules(bundle: SetBundle) -> tuple:
+    """The gauge-outage rule the set's rain reads in every entry: its descriptor's ``input_rules`` (gauge_outage_v2:
+    dead gauges from MRMS, Part B 40), else gauge_outage_v1, the rule every entry has read since the protocol froze.
+    It is the S1 part's rule (lineup.rain_rule_of, Part B 41): a set whose two disagree raises."""
+    if bundle.stage is not None:
+        rules = (RF.GAUGE_OUTAGE_RULE["name"],)
+    else:
+        rules = E._rules((bundle.descriptor or {}).get("input_rules") or (RF.GAUGE_OUTAGE_RULE["name"],))
+    if list(rules) != [LU.rain_rule_of(s1_part(bundle))]:
+        raise ValueError(f"{bundle.name}: its S1 part {s1_part(bundle)} reads {LU.rain_rule_of(s1_part(bundle))}, "
+                         f"its input_rules {list(rules)}")
+    return rules
 
 
 def components(bundle: SetBundle) -> dict:
     """Design §2.7: the components behind each stage, by name (a stage candidate's from its manifest)."""
     if bundle.stage is not None:
         return {c: bundle.stage.manifest["components"][c] for c in COMPONENTS}
-    return {"s1": weather_model(bundle), "s2": bundle.s2.stage1, **LU.geo_v1_parts(bundle.s2.stage1, bundle.variant),
+    return {"s1": s1_part(bundle), "s2": bundle.s2.stage1, **LU.geo_v1_parts(bundle.s2.stage1, bundle.variant),
             "s5": S5.LR.VERSION}
 
 
@@ -2170,6 +2191,8 @@ def input_files(bundle: SetBundle, model: str) -> list:
              T4.SERVE_DIR / "impact_table.json"]
     files += [SMP.SOURCE_FILES[n] for n in SMP.PRECEDENCE]          # S4's truth reads all three (design D10)
     files += [T4.HOURLY_WIND_CSV, E.OMP.wind_path(model)]           # every entry's south wind (rain_features.WIND_FEATURES)
+    if RF.GAUGE_OUTAGE_V2["name"] in input_rules(bundle) or (bundle.stage is None and RF.GAUGE_OUTAGE_V2["name"] in bundle.s2.train_input_rules):
+        files.append(T4.MRMS_DAILY_CSV)                             # what gauge_outage_v2 fills a dead gauge with
     if bundle.stage is not None:
         files += list(bundle.stage.files)
     else:
@@ -2236,7 +2259,8 @@ def build(set_name: str = "served", root: str = "served", entries=ENTRIES, tiers
     need = sorted(set(s2set.sources) | set(bundle.chosen.values()) | {"avg"})
     if st is None:
         train, _ = T4.build_dataset(sources=need, wind=True)   # the served record: S3 / S4 fold fits read it for every set
-        s2_train = train if s2set.train_record is None else S2.training_frames(s2set, need)   # a longer record: S2 only
+        own = s2set.train_record is not None or bool(s2set.train_input_rules)   # a longer record or its own rules: S2 only
+        s2_train = S2.training_frames(s2set, need) if own else train
         fitted = S2.fit(bundle.name, root, tiers, train_frames=s2_train)
         plan = {(p[0], p[1]): p for p in S2._plan(tiers)}
         all_folds = list(fitted.folds)
@@ -2251,8 +2275,9 @@ def build(set_name: str = "served", root: str = "served", entries=ENTRIES, tiers
     # rain known always (S5's inputs; every issue day's days before it), and every entry a lead's issue day reads
     need_entries = tuple(dict.fromkeys(("oracle",) + tuple(x for e in entries if e != "rain" for x in issue_entries(e))))
     frames = {}
+    rules = input_rules(bundle)
     for e in need_entries:
-        frames[e] = E.frames(e, need, model=model, end=end)
+        frames[e] = E.frames(e, need, model=model, end=end, input_rules=rules)
     pred = fitted.predict(frames) if fitted.folds else pd.DataFrame(columns=list(S2.COLUMNS))
     if st is not None:                                 # a stage candidate's T2: the bake-off's outer-fold rows
         pred = pd.concat([pred, t2_pred(st, folds)], ignore_index=True)
@@ -2967,10 +2992,16 @@ def served_components(art: dict) -> dict:
 
 def changed_components(bundle: SetBundle, served: dict, served_geo: str) -> dict:
     """{component: whether the candidate's differs from the served set's}: by name, and S2 / S3 by geography too
-    (a basin model or a link set under another geography is another component)."""
+    (a basin model or a link set under another geography is another component). S1 by its weather model, the only
+    thing S1's own primary grades; an S1 part whose gauges read another rule (Part B 41) feeds S2 other rain, so S2,
+    fit and scored on that rain, is another component."""
     mine = components(bundle)
     cross = bundle.geo.version != served_geo
-    return {c: bool(mine[c] != served[c] or (cross and c in ("s2", "s3"))) for c in COMPONENTS}
+    rain = LU.rain_rule_of(mine["s1"]) != LU.rain_rule_of(served["s1"])
+    out = {c: bool(mine[c] != served[c] or (cross and c in ("s2", "s3"))) for c in COMPONENTS}
+    out["s1"] = LU.weather_of(mine["s1"]) != LU.weather_of(served["s1"])
+    out["s2"] = out["s2"] or rain
+    return out
 
 
 def _row(rid: str, changed: bool, status: str, reason: str, d: dict | None = None, **kw) -> dict:
@@ -3039,9 +3070,12 @@ def primaries(bundle: SetBundle, sc: dict, rows: dict, art: dict, ctx: X.Context
     no_served = f"the served set's build is not readable ({skipped})" if skipped else None
     out_rows = []
     # S1 · the weather model, chosen on S1 only (set-independent)
-    m = components(bundle)["s1"]
+    m = LU.weather_of(components(bundle)["s1"])
     if not changed["s1"]:
-        out_rows.append(_row("S1", False, NA, f"the candidate reads the served weather model ({m}): S1 is set-independent (stages_s1)"))
+        fill = LU.rain_rule_of(components(bundle)["s1"])
+        out_rows.append(_row("S1", False, NA, f"the candidate reads the served weather model ({m}): S1 is set-independent (stages_s1)"
+                             + (f"; its gauges' dead days read {fill}, days S1's grade leaves out (X-S1-OUTAGE)"
+                                if fill != LU.GAUGE_RULE else "")))
     else:
         s1 = json.loads(S1_SCORES.read_text()) if S1_SCORES.exists() else {}
         cell = ((s1.get("primary") or {}).get("vs_served") or {}).get(m)
@@ -3314,7 +3348,8 @@ def manifest(bundle: SetBundle, entries, tiers, steps, model: str, end, n_boot: 
             "windows": {"holdout_start": str(S2.HOLDOUT_START.date()), "post_start": str(S2.POST_START.date()),
                         "freeze": str(X.freeze_date().date()), "seasons": list(S2.T2_SEASONS), "data_end": str(end.date()),
                         "tiers": list(tiers), "t2_label": S2.T2_LABEL if st is None else t2_label("s2", bundle.geo, st.nested)},
-            "entries": list(entries), "steps": list(steps), "weather_model": model, "bootstrap": {"n": n_boot, "seed": SEED},
+            "entries": list(entries), "steps": list(steps), "weather_model": model, "input_rules": list(input_rules(bundle)),
+            "bootstrap": {"n": n_boot, "seed": SEED},
             "inputs": {_repo_path(p): input_sha(p) for p in input_files(bundle, model)},
             "inputs_unstamped": {str(Path(p).relative_to(REPO)): list(k) for p, k in UNSTAMPED.items()},
             "code": {str(p.relative_to(REPO)): _sha(p) for p in code_files()}, **extra,

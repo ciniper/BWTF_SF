@@ -89,7 +89,7 @@ def _scorecard(path: Path) -> dict:
 # What the stage build refits a set from, beyond its pickles: a longer label record (train_older_reports.py), a
 # nested term choice and its final terms (train_terms.py). They travel with the set both ways, so the build keeps
 # refitting it as it was fit, served or retired.
-DESIGN_FIELDS = ("record", "fold_terms", "terms")
+DESIGN_FIELDS = ("record", "fold_terms", "terms", "input_rules", "train_input_rules")
 # what else a set carries both ways: protocol §2's tags (a post_seen set stays post_seen when it serves)
 CARRIED = DESIGN_FIELDS + ("tags", "term_selection")
 
@@ -167,12 +167,24 @@ def served_as_candidate(now: str, dry_run: bool, weather: str | None = None) -> 
     return name
 
 
+def check_servable(manifest: dict) -> None:
+    """Refuse a set whose input rule the live page cannot apply (rain_features.INPUT_RULES_SERVABLE): gauge_outage_v2
+    reads MRMS, which the live page does not fetch yet (TODO "MRMS on the live board"). Serving it now would score
+    the live days on another rain than the set was built for."""
+    from rain_features import INPUT_RULES_SERVABLE  # noqa: PLC0415
+    bad = [r for r in (manifest.get("input_rules") or []) if r not in INPUT_RULES_SERVABLE]
+    if bad:
+        raise SystemExit(f"{manifest.get('name')} reads input rule {bad}, which the live page cannot apply yet "
+                         f"(it applies {list(INPUT_RULES_SERVABLE)}): bring MRMS to the live page first")
+
+
 def promote(candidate: str, line: float, dry_run: bool = False) -> dict:
     if not C.valid_name(candidate):
         raise SystemExit(f"bad candidate name {candidate!r}")
     src = C.candidate_dir(candidate)
     if not src.exists():
         raise SystemExit(f"no candidate {candidate}")
+    check_servable(json.loads((src / "manifest.json").read_text()))
     if candidate == C.served_info()["name"]:
         raise SystemExit(f"{candidate} is already the served set")
     now = datetime.now().isoformat(timespec="seconds")

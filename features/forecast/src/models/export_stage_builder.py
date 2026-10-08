@@ -206,11 +206,24 @@ def stage_s1(D: dict, geos: list) -> dict:
         raise ValueError("S1's artifact tests another model, lead or series than the builder shows")
     parts = []
     for m in S["models"]:
-        part = {"id": m, "name": LU.words("s1", m), "basins": geos, "live": m == live,
+        part = {"id": m, "name": LU.words("s1", m), "basins": geos, "live": m == live, "rain": LU.GAUGE_RULE,
                 "score": s1_cell(get(S, ("by_lead", S1_LEAD, S1_SERIES, "models", m)))}
         if m != live:
             part["vs_live"] = get(S, ("primary", "vs_served", m, "verdict"))
         parts.append(part)
+    # an S1 part whose gauges read another rule (lineup.S1_RAIN, Part B 41): its weather model's forecast, so its S1
+    # score; the days its rule fills are ones S1's grade leaves out (X-S1-OUTAGE). Its rain shows from S2 on.
+    used = {}
+    for s in D["sets"]:
+        used.setdefault(s["manifest"]["components"]["s1"], set()).add(s["manifest"]["geography"])
+    for m in sorted(set(used) - set(S["models"]), key=lambda i: list(LU.WORDS["s1"]).index(i)):
+        wx = LU.weather_of(m)
+        if wx not in S["models"]:
+            raise ValueError(f"S1 part {m} reads weather model {wx}, which S1's artifact does not grade")
+        base = next(q for q in parts if q["id"] == wx)
+        parts.append({"id": m, "name": LU.words("s1", m), "basins": [g for g in geos if g in used[m]], "live": False,
+                      "rain": LU.rain_rule_of(m), "score": base["score"], "scored_as": wx,
+                      "note": f"Same forecast as {base['name']}, so the same score: S1's grade leaves out the dead-gauge days"})
     name = next(iter(S["floor"]))
     return {**stage_head("s1"), "window": S["windows"]["previous_runs"], "parts": parts,
             "floor": {"name": name, **s1_cell(S["floor"][name])}}
@@ -239,16 +252,25 @@ def stage_parts(D: dict, st: str, geos: list) -> dict:
                 unscored.setdefault(pid, set()).add(geography_of(c))
     live = D["sets"][0]["manifest"]["components"][st]
     order = list(LU.WORDS[st])
+    rain = lambda s: LU.rain_rule_of(s["manifest"]["components"]["s1"])   # noqa: E731
+    own = lambda src: {"from": src["name"], "scores": {w: cell(src["scores"], st, "oracle", w) for w, _ in WINDOWS},  # noqa: E731
+                       "by_unit": by_unit(src["scores"], st, "oracle", units_of(st, src["manifest"]["geography"]))}
     parts = []
     for pid in sorted(set(users) | set(unscored), key=lambda i: (order.index(i) if i in order else len(order), i)):
         name = LU.words(st, pid)                               # raises for a part with no plain words
         if pid in users:
-            src = home(users[pid], st, D)
+            # S2's own score is fed rain known, the rain its S1 part reads (Part B 41): a set on other rain scores it
+            # apart, under by_rain; S3 and S4 are fed true overflow, the same whatever the rain
+            mine = [s for s in users[pid] if st != "s2" or rain(s) == LU.GAUGE_RULE] or users[pid]
+            src = home(mine, st, D)
             basins = {s["manifest"]["geography"] for s in users[pid]}
-            scores = {w: cell(src["scores"], st, "oracle", w) for w, _ in WINDOWS}
-            parts.append({"id": pid, "name": name, "basins": [g for g in geos if g in basins], "live": pid == live,
-                          "from": src["name"], "scores": scores,
-                          "by_unit": by_unit(src["scores"], st, "oracle", units_of(st, src["manifest"]["geography"]))})
+            part = {"id": pid, "name": name, "basins": [g for g in geos if g in basins], "live": pid == live, **own(src)}
+            if st == "s2":
+                part["rain"] = rain(src)
+                other = sorted({rain(s) for s in users[pid]} - {part["rain"]})
+                if other:
+                    part["by_rain"] = {r: own(home([s for s in users[pid] if rain(s) == r], st, D)) for r in other}
+            parts.append(part)
         else:
             parts.append({"id": pid, "name": name, "basins": [g for g in geos if g in unscored[pid]], "live": False,
                           "from": None, "scores": None})
