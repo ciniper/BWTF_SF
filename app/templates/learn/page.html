@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link rel="icon" href="{{ asset('brand/favicon.ico') }}"><link rel="apple-touch-icon" sizes="144x144" href="{{ asset('brand/bwtf_144x144.png') }}">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Learn — SF Beach Water · Surfrider SF Blue Water Task Force</title>
+<meta name="robots" content="noindex">   {# prototype: keep it out of search until it is linked #}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ asset('brand.css') }}">
+<style>
+  body{margin:0;background:var(--sand);color:var(--ink);font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:15px;line-height:1.55}
+  .wrap{max-width:var(--page-w);margin:0 auto;padding:20px 24px 40px}
+  .proto{display:flex;gap:10px;align-items:center;background:#fff6e5;border:1px dashed #d4a24a;border-radius:var(--r);padding:8px 14px;font-size:13px;color:#7a5200;margin:0 0 14px}
+  .jump{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+  .jump a{text-decoration:none}
+  .sec{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg,16px);padding:22px 24px;margin:0 0 16px;scroll-margin-top:80px}
+  .sec h2{font-family:'Bebas Neue',Impact,sans-serif;font-weight:400;font-size:34px;letter-spacing:.02em;line-height:1;margin:0 0 6px}
+  .sec .sub{color:var(--muted);margin:0 0 16px;max-width:90ch}
+  .sec .more{margin:12px 0 0;font-size:14px;color:var(--muted)} .sec .more a{color:var(--brand);font-weight:700;text-decoration:none}
+  .ctl{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin:0 0 12px}
+  .ctl input[type=range]{flex:1;min-width:180px;max-width:420px;accent-color:var(--brand)}
+  .ctl output{font-weight:700;min-width:92px}
+  .btn{padding:8px 14px;border-radius:999px;border:2px solid var(--brand);background:var(--brand);color:#fff;font:700 13px Roboto,sans-serif;cursor:pointer}
+  .btn.ghost{background:#fff;color:var(--brand)}
+  .btn:disabled{opacity:.5;cursor:default}
+
+  /* ── 1. Where the rain goes ── */
+  .scene-wrap{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:#eaf3fb}
+  .swipe{display:none;font-size:12.5px;color:var(--faint);margin:6px 0 0}
+  .scene{display:block;width:100%;height:auto}
+  .caption{display:flex;gap:12px;align-items:flex-start;margin:12px 0 0;padding:12px 14px;border-radius:var(--r);background:var(--sand2);min-height:48px}
+  .caption .step{flex:none;font:700 11px Roboto,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:var(--brand);border-radius:999px;padding:4px 10px;margin-top:1px}
+  .caption.overflow .step{background:var(--discharge,#b5310a)}
+  .key{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr));gap:6px 18px;margin:12px 0 0;padding:0;list-style:none;font-size:13.5px;color:var(--muted)}
+  .key li{display:flex;gap:8px;align-items:baseline} .key b{flex:none;display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--ink);color:#fff;font-size:11px}
+  .plants{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 0}
+  .plants span{background:var(--sand2);border-radius:999px;padding:6px 12px;font-size:13px;color:var(--ink)}
+  .flow{fill:none;stroke-linecap:round;stroke-dasharray:10 12;animation:flow var(--dur,1.4s) linear infinite}
+  @keyframes flow{to{stroke-dashoffset:-44}}
+  .drop{stroke:#5b8fb9;stroke-width:2;stroke-linecap:round;animation:fall var(--fall,.9s) linear infinite}
+  @keyframes fall{from{transform:translateY(-40px)}to{transform:translateY(150px)}}
+
+  /* ── 2. Meet the indicators ── */
+  .bugs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:14px}
+  .bug{border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:8px}
+  .bug .scope{width:132px;height:132px;margin:0 auto 4px;border-radius:50%;background:radial-gradient(circle at 50% 45%,#ffffff 0,#f1f6f9 60%,#dfe8ee 100%);box-shadow:inset 0 0 0 6px #26272a,inset 0 0 0 9px #8a949b;overflow:hidden}
+  .bug .scope svg{width:100%;height:100%}
+  .bug h3{margin:0;font-size:18px;font-weight:900}
+  .bug p{margin:0;color:var(--muted);font-size:14px}
+  .bug .limit{margin-top:auto;padding-top:8px;border-top:1px solid var(--sand2);font-size:13.5px}
+  .bug .limit b{font-size:20px;font-weight:900;color:var(--ink)} .bug .limit small{display:block;color:var(--muted)}
+  .bug .who{font-size:13px;color:var(--faint)}
+  .m{animation:drift var(--d,7s) ease-in-out infinite alternate;transform-box:fill-box;transform-origin:center}
+  @keyframes drift{0%{transform:translate(0,0) rotate(0)}50%{transform:translate(var(--dx,6px),var(--dy,-5px)) rotate(var(--r,12deg))}100%{transform:translate(calc(var(--dx,6px)*-1),var(--dy,4px)) rotate(calc(var(--r,12deg)*-1))}}
+  .lab{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:20px;align-items:center;margin:20px 0 0;padding:18px;border-radius:var(--r);background:#0f1b2a;color:#dbe7f2}
+  .lab h3{margin:0 0 6px;font-size:18px;color:#fff}
+  .lab p{margin:0 0 10px;font-size:14px;color:#a9bccd}
+  .lab .ctl output{color:#fff}
+  .tray{width:100%;height:auto;display:block}
+  .well{fill:#1d2c3d;stroke:#2c3f55;stroke-width:1;transition:fill .35s,filter .35s}
+  .well.on{fill:#5ec8ff;filter:url(#glow)}
+  .reading{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0 0;font-size:14px}
+  .grade{border-radius:999px;padding:4px 12px;font-weight:700;font-size:13px}
+  .grade.safe{background:#d9efe6;color:#1d5c46}.grade.caution{background:#fbeccd;color:#7a5200}.grade.over{background:#f6d6cc;color:#8a2a0c}
+
+  /* ── 3. The record, in motion ── */
+  .charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(420px,100%),1fr));gap:18px}
+  .chart h3{margin:0 0 2px;font-size:16px;font-weight:900}
+  .chart .note{margin:0 0 8px;font-size:13px;color:var(--muted)}
+  .chart svg{width:100%;height:auto;display:block}
+  .chart .bar{transition:height .7s cubic-bezier(.2,.8,.2,1),y .7s cubic-bezier(.2,.8,.2,1);cursor:pointer}
+  .chart .bar:hover,.chart .bar.sel{opacity:.75}
+  .chart .readout{min-height:22px;font-size:13.5px;color:var(--ink);margin:6px 0 0}
+  .swatches{display:flex;flex-wrap:wrap;gap:12px;font-size:12.5px;color:var(--muted);margin:4px 0 0}
+  .swatches i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+
+  /* ── 4. From the archive ── */
+  .compare{position:relative;aspect-ratio:16/7;max-height:380px;width:100%;border-radius:var(--r);overflow:hidden;user-select:none;touch-action:none;background:#ccc}
+  .compare .pane{position:absolute;inset:0;display:flex;align-items:flex-end;padding:14px 16px;font:700 13px Roboto,sans-serif}
+  .compare .now{background:linear-gradient(160deg,#9fd0ec,#5aa5d3 55%,#e8d9b5 56%,#d9c79c);color:#1b3a52}
+  .compare .then{background:linear-gradient(160deg,#d8cbb0,#b6a27f 55%,#8f7b5a 56%,#6f5e42);color:#2f2416;filter:sepia(.35) contrast(.95);clip-path:inset(0 calc(100% - var(--x,50%)) 0 0)}
+  .compare .then::after{content:"";position:absolute;inset:0;background:repeating-radial-gradient(circle at 30% 40%,rgba(0,0,0,.05) 0 1px,transparent 1px 3px);mix-blend-mode:multiply}
+  .compare .ph{position:absolute;top:14px;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.8);font-size:12px}
+  .compare .then .ph{left:14px}.compare .now .ph{right:14px}
+  .compare .handle{position:absolute;top:0;bottom:0;left:var(--x,50%);width:3px;margin-left:-1.5px;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.2)}
+  .compare .handle::after{content:"⟷";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:36px;height:36px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:18px;color:var(--ink);box-shadow:0 2px 6px rgba(0,0,0,.25)}
+  .frames{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:12px;margin:14px 0 0}
+  .frame{border:2px dashed var(--line);border-radius:var(--r);padding:12px 14px;font-size:13.5px;color:var(--muted)}
+  .frame b{display:block;color:var(--ink);margin-bottom:2px}
+  details.notes{margin:4px 0 0;font-size:13.5px;color:var(--muted)} details.notes summary{cursor:pointer;font-weight:700;color:var(--ink)}
+  details.notes li{margin:4px 0}
+
+  @media (max-width:760px){.scene-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}.scene{min-width:680px}.swipe{display:block}.caption{flex-direction:column;gap:6px}.caption .step{align-self:flex-start}   /* the numbers stay legible on a phone; the caption stacks under its label */
+    .wrap{padding:14px 14px 30px}.sec{padding:16px}.sec h2{font-size:28px}.lab{grid-template-columns:1fr}.compare{aspect-ratio:4/3}}
+  @media (prefers-reduced-motion:reduce){.flow,.drop,.m{animation:none!important}.chart .bar,.well{transition:none!important}}
+</style>
+</head>
+<body>
+{% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
+{{ topbar() }}
+<div class="wrap">
+  {{ page_head("Learn", "How San Francisco's sewers meet the shore, the bacteria the labs count, and the record so far.") }}
+  <p class="proto"><b>Prototype</b> on a design branch: not linked from the site, kept out of search. Facts to check before it goes public are listed at the bottom.</p>
+  <nav class="jump" aria-label="Sections">
+    <a class="preset" href="#rain">Where the rain goes</a><a class="preset" href="#bugs">Meet the indicators</a><a class="preset" href="#record">The record, in motion</a><a class="preset" href="#archive">From the archive</a>
+  </nav>
+
+  {# ── 1 ── #}
+  <section class="sec" id="rain" aria-labelledby="rain-h">
+    <h2 id="rain-h">Where the rain goes</h2>
+    <p class="sub">San Francisco's sewers are combined: what goes down the drain at home and the rain off the street share the same pipes. Move the slider, or play a storm.</p>
+    <div class="ctl">
+      <label for="rain-r"><b>Rain</b></label>
+      <input type="range" id="rain-r" min="0" max="100" value="0" aria-describedby="rain-cap">
+      <output id="rain-out" for="rain-r">None</output>
+      <button type="button" class="btn" id="storm">Play a storm</button>
+    </div>
+    <div class="scene-wrap">
+      <svg class="scene" id="scene" viewBox="0 0 960 440" role="img" aria-label="Cross-section: homes and a storm drain feed one combined sewer, which runs to a storage structure under the shore, a treatment plant, and an overflow outfall at the beach">
+        <defs>
+          <linearGradient id="soil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e7dccb"/><stop offset="1" stop-color="#d3c4ab"/></linearGradient>
+          <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fd0ec"/><stop offset="1" stop-color="#5aa5d3"/></linearGradient>
+          <clipPath id="sky"><rect x="0" y="0" width="960" height="200"/></clipPath>
+          <clipPath id="box"><rect x="446" y="226" width="198" height="88" rx="10"/></clipPath>
+        </defs>
+        <rect x="0" y="0" width="960" height="440" fill="#eaf3fb"/>
+        <g id="drops" clip-path="url(#sky)"></g>
+        <polygon points="0,170 660,170 790,200 790,440 0,440" fill="url(#soil)"/>
+        <polygon points="790,200 960,200 960,330 790,300" fill="url(#sea)"/>
+        <polygon points="790,300 960,330 960,440 790,440" fill="#cdbb98"/>
+        <path d="M660 170 L790 200" stroke="#e8d7a9" stroke-width="6"/>
+        <ellipse id="plume" cx="830" cy="214" rx="10" ry="6" fill="#7a5a3a" opacity="0"/>
+        {# homes, a storm drain, the plant #}
+        <g fill="#fff" stroke="#26272a" stroke-width="2"><rect x="24" y="118" width="70" height="52"/><path d="M18 120 L59 88 L100 120 Z"/><rect x="104" y="126" width="64" height="44"/><path d="M98 128 L136 98 L174 128 Z"/></g>
+        <rect x="216" y="166" width="30" height="6" fill="#26272a"/>
+        <g stroke="#26272a" stroke-width="2"><rect x="470" y="120" width="160" height="50" fill="#f3f6f9"/><ellipse cx="510" cy="120" rx="26" ry="8" fill="#cfe3ee"/><ellipse cx="584" cy="120" rx="26" ry="8" fill="#cfe3ee"/></g>
+        <text x="550" y="152" text-anchor="middle" font-size="13" font-weight="700" fill="#26272a">Treatment plant</text>
+        <text id="plant-cap" x="550" y="110" text-anchor="middle" font-size="12" font-weight="700" fill="#b5310a" opacity="0">at capacity</text>
+        {# the beach sign #}
+        <g id="sign"><rect x="712" y="150" width="4" height="40" fill="#26272a"/><rect id="sign-b" x="684" y="124" width="62" height="28" rx="5" fill="#237059"/><text id="sign-t" x="715" y="143" text-anchor="middle" font-size="12" font-weight="900" fill="#fff">OPEN</text></g>
+        {# the plant's own outfall, deepest: drawn first so the overflow pipe crosses in front of it #}
+        <path d="M626 172 V196 H668 V378 H960" fill="none" stroke="#9aa6ad" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+        <path id="f-out" class="flow" d="M626 174 V196 H668 V378 H960" fill="none" stroke="#3aa6a0" stroke-width="5" stroke-linejoin="round"/>
+        {# pipe casings #}
+        <g fill="none" stroke="#8a949b" stroke-linecap="round">
+          <path d="M59 170 V256 M136 170 V256" stroke-width="12"/>
+          <path d="M231 172 V256" stroke-width="12"/>
+          <path d="M40 256 H446" stroke-width="26"/>
+          <path d="M600 226 V172" stroke-width="14"/>
+          <path d="M644 240 H775 V206" stroke-width="16"/>
+        </g>
+        <rect x="446" y="226" width="198" height="88" rx="10" fill="#f3f6f9" stroke="#26272a" stroke-width="2"/>
+        <rect id="box-fill" x="446" y="314" width="198" height="0" fill="#8b6a4a" opacity=".85" clip-path="url(#box)"/>
+        <text x="545" y="300" text-anchor="middle" font-size="12" font-weight="700" fill="#26272a">storage</text>
+        {# flows #}
+        <path id="f-home" class="flow" d="M59 172 V256 M136 172 V256" stroke="#8b6a4a" stroke-width="5"/>
+        <path id="f-drain" class="flow" d="M231 174 V256" stroke="#3b8fc4" stroke-width="0"/>
+        <path id="f-main" class="flow" d="M40 256 H446" stroke="#8b6a4a" stroke-width="8"/>
+        <path id="f-pump" class="flow" d="M600 226 V172" stroke="#8b6a4a" stroke-width="6"/>
+        <path id="f-over" class="flow" d="M644 240 H775 V206" stroke="#7a5a3a" stroke-width="0"/>
+        {# numbered markers #}
+        <g font-size="12" font-weight="700" text-anchor="middle">
+          {% for n, x, y in [(1, 59, 76), (2, 231, 150), (3, 300, 232), (4, 545, 250), (5, 650, 104), (6, 806, 236), (7, 900, 404)] %}
+          <circle cx="{{ x }}" cy="{{ y }}" r="11" fill="#26272a"/><text x="{{ x }}" y="{{ y + 4 }}" fill="#fff">{{ n }}</text>
+          {% endfor %}
+        </g>
+      </svg>
+    </div>
+    <p class="swipe">Swipe the diagram sideways to see the shore.</p>
+    <div class="caption" id="rain-cap" aria-live="polite"><span class="step" id="cap-step">Dry</span><span id="cap-text"></span></div>
+    <ol class="key">
+      <li><b>1</b>Homes and businesses: everything down the drain.</li>
+      <li><b>2</b>A storm drain: rain off the street.</li>
+      <li><b>3</b>One combined sewer carries both.</li>
+      <li><b>4</b>Transport/storage structures under the shoreline hold what the plant cannot take yet.</li>
+      <li><b>5</b>The treatment plant.</li>
+      <li><b>6</b>An overflow outfall at the shore: a combined sewer discharge.</li>
+      <li><b>7</b>Treated water leaves through the plant's own outfall.</li>
+    </ol>
+    <div class="plants"><span>Westside: the Oceanside plant · {{ plants.oceanside }} overflow outfalls on the Pacific</span><span>Bayside: the Southeast plant · {{ plants.bayside }} overflow outfalls on the bay</span></div>
+    <p class="more">All {{ plants.total }} outfalls are on the <a href="/?layers=outfalls">Today map's Outfalls layer</a>; every discharge since 2016 is in the <a href="/discharges">Discharge Ledger</a>; the <a href="/forecast">CSO Forecast</a> estimates the odds from rain.</p>
+  </section>
+
+  {# ── 2 ── #}
+  <section class="sec" id="bugs" aria-labelledby="bugs-h">
+    <h2 id="bugs-h">Meet the indicators</h2>
+    <p class="sub">Labs do not look for every germ in sewage. They count a few easy-to-grow gut bacteria that travel with it: when these are high, sewage or runoff is likely in the water.</p>
+    <div class="bugs">
+      {% for b in indicators %}
+      <article class="bug">
+        <div class="scope"><svg viewBox="0 0 120 120" data-shape="{{ b.shape }}" data-color="{{ b.color }}" aria-hidden="true"></svg></div>
+        <h3>{{ b.name }}</h3>
+        <p>{{ b.what }}</p>
+        <p>{{ b.why }}</p>
+        <div class="limit">State limit, one sample: <b>{{ b.limit }}</b> per 100 mL{% if b.limit_note %}<small>{{ b.limit_note }}</small>{% endif %}</div>
+        <div class="who">{{ b.who }}</div>
+      </article>
+      {% endfor %}
+    </div>
+    <div class="lab">
+      <div>
+        <h3>Count it like the lab</h3>
+        <p>The water is diluted one part in ten, sealed into a tray of 97 wells, and kept warm overnight. Each well with Enterococcus in it glows blue under ultraviolet light. Count the glowing big and small wells and a table gives the Most Probable Number per 100 mL. Two samples of the same water rarely read the same: press New sample.</p>
+        <div class="ctl">
+          <label for="conc"><b>Enterococcus in the water</b></label>
+          <input type="range" id="conc" min="0" max="1000" value="380" aria-describedby="lab-read">
+          <output id="conc-out" for="conc"></output>
+          <button type="button" class="btn ghost" id="resample">New sample</button>
+        </div>
+        <div class="reading" id="lab-read" aria-live="polite"></div>
+      </div>
+      <svg class="tray" id="tray" viewBox="0 0 400 230" role="img" aria-label="A 97-well tray; glowing wells hold Enterococcus">
+        <defs><filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+        <rect x="4" y="4" width="392" height="222" rx="14" fill="#14212f" stroke="#33495f"/>
+        <g id="wells"></g>
+      </svg>
+    </div>
+  </section>
+
+  {# ── 3 ── #}
+  <section class="sec" id="record" aria-labelledby="record-h">
+    <h2 id="record-h">The record, in motion</h2>
+    <p class="sub">Two records this site already keeps, drawn from the files behind the Beach Postings and Discharge Ledger pages. Tap a bar for its numbers.</p>
+    <div class="charts">
+      {% if postings %}
+      <div class="chart">
+        <h3>Beach advisories San Francisco filed with the State</h3>
+        <p class="note">Per year, {{ postings.years[0].year }} to {{ postings.years[-1].year }}. The State's record runs months behind; it ends {{ postings.through }}.</p>
+        <svg id="ch-post" viewBox="0 0 520 240" role="img" aria-label="Bar chart of beach advisories per year"></svg>
+        <div class="swatches"><span><i style="background:#b5310a"></i>sewage discharge</span><span><i style="background:#0072BC"></i>rain advisory</span><span><i style="background:#8a949b"></i>other or unknown</span></div>
+        <p class="readout" id="rd-post" aria-live="polite"></p>
+      </div>
+      {% endif %}
+      {% if discharges %}
+      <div class="chart">
+        <h3>Days with a combined sewer discharge</h3>
+        <p class="note">Per wet season, October to September, from SFPUC's reports to regulators, {{ discharges.first }} to {{ discharges.through }}.</p>
+        <svg id="ch-csd" viewBox="0 0 520 240" role="img" aria-label="Bar chart of discharge days per wet season"></svg>
+        <div class="swatches"><span><i style="background:#7a5a3a"></i>days with at least one outfall discharging</span></div>
+        <p class="readout" id="rd-csd" aria-live="polite"></p>
+      </div>
+      {% endif %}
+    </div>
+    <p class="more">The full records: <a href="/postings">Beach Postings</a> · <a href="/discharges">Discharge Ledger</a> · <a href="/analysis">Site Report Card</a></p>
+  </section>
+
+  {# ── 4 ── #}
+  <section class="sec" id="archive" aria-labelledby="archive-h">
+    <h2 id="archive-h">From the archive</h2>
+    <p class="sub">Then and now, the same view: drag the line. The frames below are placeholders; real photos come once their rights are cleared.</p>
+    <div class="compare" id="compare" style="--x:50%" aria-label="Then and now comparison; drag to reveal">
+      <div class="pane now"><span class="ph">Now · photo to come</span></div>
+      <div class="pane then"><span class="ph">Then · photo to come</span></div>
+      <div class="handle" role="slider" tabindex="0" aria-label="Then and now divider" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"></div>
+    </div>
+    <div class="frames">
+      <div class="frame"><b>Ocean Beach, early 1900s</b>The same stretch today, from the same spot.</div>
+      <div class="frame"><b>Building the shoreline storage</b>Construction photos of a transport/storage structure.</div>
+      <div class="frame"><b>A posted sign</b>Beach advisory signs through the decades.</div>
+      <div class="frame"><b>The volunteers' lab</b>Surfrider's Blue Water Task Force at work.</div>
+    </div>
+  </section>
+
+  <details class="notes">
+    <summary>Prototype notes: facts to check before this goes public</summary>
+    <ul>
+      <li>From the repo, already used on the site: the two plants and their outfall counts (shared/outfalls.py), the four state limits and Surfrider's caution tier (shared/standards.py), when the city began each indicator (Samples and Site Report Card notes), and both charts' numbers (the BeachWatch and CIWQS files).</li>
+      <li>To confirm: that the storage structures sit "under the shoreline" everywhere, and the wording for what the plant's own outfall is and where it releases.</li>
+      <li>To confirm: the method in "Count it like the lab", the 97-well tray, one-in-ten dilution and overnight incubation, with both the city lab and Surfrider's.</li>
+      <li>To confirm with a reviewer: each indicator's "what" and "why" lines, and E. coli's "most strains are harmless".</li>
+      <li>Photo sources to ask: SFPUC, the SF Public Library's historical photograph collection, OpenSFHistory. Use only with permission and credit each photo.</li>
+      <li>As a fourth main tab it would add "Learn" to the top bar and the phone bar; the top bar's fit from 320 to 1280 px would need a re-check.</li>
+    </ul>
+  </details>
+</div>
+{{ footer() }}
+{{ tabbar() }}
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const REDUCE = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+
+  // ── 1. Where the rain goes: one number, r from 0 to 1, drives every pipe ──
+  const drops = $("drops"), N = 70;
+  for (let i = 0; i < N; i++) {
+    const l = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    const x = Math.random() * 960, y = Math.random() * 60;
+    l.setAttribute("x1", x); l.setAttribute("y1", y); l.setAttribute("x2", x - 4); l.setAttribute("y2", y + 14);
+    l.setAttribute("class", "drop"); l.style.setProperty("--fall", (0.6 + Math.random() * 0.5).toFixed(2) + "s"); l.style.animationDelay = (-Math.random()).toFixed(2) + "s";
+    l.style.display = "none"; drops.appendChild(l);
+  }
+  const STATES = [
+    [0.03, "Dry", "Everything from homes and businesses flows to the treatment plant."],
+    [0.3, "Rain", "Rain joins the sewage in the same pipes. The plant still takes it all."],
+    [0.7, "Heavy rain", "The plant takes all it can; the rest fills the transport/storage structures along the shore."],
+    [1.01, "Overflow", "Storage is full. The excess leaves through a permitted outfall at the shore: a combined sewer discharge. SFPUC posts the nearby beaches and samples them until they clear."],
+  ];
+  let POSTED_UNTIL = 0;
+  function width(id, w) { const el = $(id); el.setAttribute("stroke-width", w.toFixed(1)); el.style.opacity = w > 0.5 ? 1 : 0; }
+  function speed(id, s) { $(id).style.setProperty("--dur", (1.8 - 1.3 * s).toFixed(2) + "s"); }
+  function setRain(r, aftermath) {
+    const shown = Math.round(r * N); [...drops.children].forEach((d, i) => { d.style.display = i < shown ? "" : "none"; });
+    $("rain-out").textContent = r < 0.03 ? "None" : r < 0.3 ? "Light" : r < 0.7 ? "Heavy" : "Storm";
+    width("f-drain", r < 0.03 ? 0 : 3 + 6 * r); speed("f-drain", r);
+    width("f-main", 7 + 13 * clamp(r / 0.8)); speed("f-main", clamp(0.3 + r));
+    width("f-pump", 5 + 5 * clamp(r / 0.3)); speed("f-pump", clamp(r / 0.3));
+    width("f-out", 4 + 4 * clamp(r / 0.3)); speed("f-out", clamp(r / 0.3));
+    $("plant-cap").style.opacity = r >= 0.3 ? 1 : 0;
+    const fill = clamp((r - 0.3) / 0.4); const h = 88 * fill; $("box-fill").setAttribute("y", 314 - h); $("box-fill").setAttribute("height", h);
+    const over = clamp((r - 0.7) / 0.3); width("f-over", r >= 0.7 ? 5 + 10 * over : 0); speed("f-over", over);
+    const pl = $("plume"); pl.setAttribute("rx", 10 + 70 * over); pl.setAttribute("ry", 6 + 18 * over); pl.setAttribute("opacity", (0.65 * over).toFixed(2));
+    const posted = r >= 0.7 || aftermath;
+    $("sign-b").setAttribute("fill", posted ? "#d4763a" : "#237059"); $("sign-t").textContent = posted ? "POSTED" : "OPEN";
+    let st = STATES.find(s => r < s[0]) || STATES[3];
+    if (aftermath && r < 0.7) st = [0, "After the storm", "The overflow has stopped, but the beach stays posted while SFPUC samples it, until results show it is clear."];
+    $("cap-step").textContent = st[1]; $("cap-text").textContent = st[2]; $("rain-cap").classList.toggle("overflow", st[1] === "Overflow");
+  }
+  const slider = $("rain-r");
+  slider.addEventListener("input", () => setRain(slider.value / 100, false));
+  let playing = false;
+  $("storm").addEventListener("click", () => {
+    if (playing) return; playing = true; $("storm").disabled = true;
+    const plan = [[0, 0], [5500, 0.92], [8000, 0.92], [13000, 0.05], [16500, 0.05], [17500, 0]];   // ms → rain
+    const t0 = performance.now(), speedUp = REDUCE ? 3 : 1;
+    (function tick(now) {
+      const t = (now - t0) * speedUp; let r = 0, after = false;
+      for (let i = 1; i < plan.length; i++) if (t <= plan[i][0]) { const [a, ra] = plan[i - 1], [b, rb] = plan[i]; r = ra + (rb - ra) * (t - a) / (b - a); break; }
+      after = t > 9000 && t < 16500;
+      slider.value = Math.round(r * 100); setRain(r, after);
+      if (t < plan[plan.length - 1][0]) requestAnimationFrame(tick); else { playing = false; $("storm").disabled = false; setRain(0, false); slider.value = 0; }
+    })(t0);
+  });
+  setRain(0, false);
+
+  // ── 2. Microbes under the scope: shapes by indicator, each drifting on its own clock ──
+  const NS = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
+  function microbe(shape, color, i) {
+    const g = el("g", {}), x = 18 + Math.random() * 84, y = 18 + Math.random() * 84, rot = Math.random() * 180;
+    g.setAttribute("transform", `translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${rot.toFixed(0)})`);
+    const inner = el("g", {class: "m"});
+    inner.style.setProperty("--d", (5 + Math.random() * 5).toFixed(1) + "s"); inner.style.setProperty("--dx", ((Math.random() - .5) * 14).toFixed(1) + "px"); inner.style.setProperty("--dy", ((Math.random() - .5) * 14).toFixed(1) + "px"); inner.style.setProperty("--r", ((Math.random() - .5) * 40).toFixed(0) + "deg"); inner.style.animationDelay = (-Math.random() * 6).toFixed(1) + "s";
+    if (shape === "cocci") { const n = 2 + (i % 3); for (let k = 0; k < n; k++) inner.appendChild(el("circle", {cx: k * 9 - (n - 1) * 4.5, cy: 0, r: 4.6, fill: color, opacity: .9})); }
+    else {
+      const long = shape === "mixed" ? 12 + Math.random() * 16 : 20, c = shape === "mixed" && i % 3 === 0 ? "#8a9a6b" : color;   // total coliform: some from soil and plants
+      if (shape === "flagella") for (let k = 0; k < 4; k++) { const sx = -long / 2 + k * long / 3, sy = k % 2 ? 4 : -4, dir = k % 2 ? 1 : -1; inner.appendChild(el("path", {d: `M${sx} ${sy} q 3 ${dir * 6} 0 ${dir * 10} t 0 ${dir * 9}`, stroke: color, "stroke-width": 1.1, fill: "none", opacity: .7})); }
+      inner.appendChild(el("rect", {x: -long / 2, y: -4, width: long, height: 8, rx: 4, fill: c, opacity: .9}));
+    }
+    g.appendChild(inner); return g;
+  }
+  document.querySelectorAll(".scope svg").forEach(svg => { const n = svg.dataset.shape === "cocci" ? 9 : 8; for (let i = 0; i < n; i++) svg.appendChild(microbe(svg.dataset.shape, svg.dataset.color, i)); });
+
+  // ── the 97-well tray: 49 big wells (about 1.86 mL) and 48 small (about 0.186 mL), 100 mL in all ──
+  const VL = 1.86, VS = 0.186, LIMIT = {{ entero_limit }}, CAUTION = {{ caution }};
+  const wells = $("wells"), big = [], small = [];
+  for (let r = 0; r < 7; r++) for (let c = 0; c < 7; c++) { const w = el("rect", {x: 20 + c * 26, y: 24 + r * 27, width: 20, height: 21, rx: 5, class: "well"}); wells.appendChild(w); big.push(w); }
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 6; c++) { const w = el("circle", {cx: 228 + c * 27, cy: 30 + r * 24.5, r: 8, class: "well"}); wells.appendChild(w); small.push(w); }
+  let SEEDS = null; const reseed = () => { SEEDS = [...big, ...small].map(() => Math.random()); };
+  const conc = () => Math.round(Math.pow(10, 1 + 3.39 * ($("conc").value / 1000)));   // 10 → about 24,500 per 100 mL, on a log slider
+  function mpn(pL, pS) {   // the lab's table is the maximum-likelihood count for these wells; solve for it, then undo the 1:10 dilution
+    if (pL === 0 && pS === 0) return "<10";
+    if (pL === 49 && pS === 48) return ">24,196";
+    const total = 49 * VL + 48 * VS, f = lam => (pL ? pL * VL / (1 - Math.exp(-lam * VL)) : 0) + (pS ? pS * VS / (1 - Math.exp(-lam * VS)) : 0) - total;
+    let lo = 1e-6, hi = 60; for (let k = 0; k < 80; k++) { const mid = (lo + hi) / 2; if (f(mid) > 0) lo = mid; else hi = mid; }
+    return Math.round(lo * 100 * 10).toLocaleString();
+  }
+  function drawTray() {
+    const c = conc(), inTray = c / 10 / 100;   // per mL in the tray after dilution
+    let pL = 0, pS = 0;
+    big.forEach((w, i) => { const on = SEEDS[i] < 1 - Math.exp(-inTray * VL); w.classList.toggle("on", on); pL += on; });
+    small.forEach((w, i) => { const on = SEEDS[49 + i] < 1 - Math.exp(-inTray * VS); w.classList.toggle("on", on); pS += on; });
+    $("conc-out").textContent = c.toLocaleString() + " per 100 mL";
+    const read = mpn(pL, pS), num = parseFloat(String(read).replace(/[^0-9.]/g, "")) || 0;
+    const g = read.startsWith(">") || num >= LIMIT ? ["over", "over the state limit of " + LIMIT] : num >= CAUTION ? ["caution", "caution, Surfrider's tier from " + CAUTION] : ["safe", "meets the standard"];
+    $("lab-read").innerHTML = "<span>" + pL + " big and " + pS + " small wells glow · the lab reads <b>" + read + "</b></span><span class='grade " + g[0] + "'>" + g[1] + "</span>";
+  }
+  reseed(); drawTray();
+  $("conc").addEventListener("input", drawTray);
+  $("resample").addEventListener("click", () => { reseed(); drawTray(); });
+
+  // ── 3. The record: bars rise when the charts scroll into view ──
+  function bars(svgId, readId, items, series, fmt) {
+    const svg = $(svgId); if (!svg) return;
+    const W = 520, H = 240, L = 34, B = 26, T = 10, n = items.length, bw = (W - L - 8) / n;
+    const max = Math.max(...items.map(d => series.reduce((s, k) => s + d[k[0]], 0)));
+    const step = max > 150 ? 50 : max > 60 ? 20 : max > 25 ? 10 : 5, top = Math.ceil(max / step) * step, y = v => H - B - (H - B - T) * v / top;
+    for (let v = 0; v <= top; v += step) { svg.appendChild(el("line", {x1: L, x2: W - 4, y1: y(v), y2: y(v), stroke: "#e3eaef"})); const t = el("text", {x: L - 6, y: y(v) + 4, "text-anchor": "end", "font-size": 10, fill: "#8a949b"}); t.textContent = v; svg.appendChild(t); }
+    const all = [];
+    items.forEach((d, i) => {
+      const x = L + i * bw + 2, g = el("g", {});
+      let base = 0;
+      series.forEach(([k, color]) => { const v = d[k]; if (!v) return; const r = el("rect", {x: x, width: Math.max(1, bw - 4), y: y(0), height: 0, fill: color, class: "bar"}); r.dataset.y = y(base + v); r.dataset.h = y(base) - y(base + v); g.appendChild(r); all.push(r); base += v; });
+      const hit = el("rect", {x: x - 2, y: T, width: bw, height: H - B - T, fill: "transparent", style: "cursor:pointer"});
+      hit.addEventListener("click", () => { svg.querySelectorAll(".sel").forEach(e => e.classList.remove("sel")); g.querySelectorAll(".bar").forEach(e => e.classList.add("sel")); $(readId).innerHTML = fmt(d); });
+      g.appendChild(hit); svg.appendChild(g);
+      const every = n > 14 ? 5 : 1, lab = String(d.year || d.label);
+      if (i % every === 0 || i === n - 1) { const t = el("text", {x: x + bw / 2 - 2, y: H - 8, "text-anchor": "middle", "font-size": 10, fill: "#54576F"}); t.textContent = n > 14 ? lab : lab.replace(/^20/, "'"); svg.appendChild(t); }
+    });
+    let done = false;
+    const grow = () => { if (done) return; done = true; all.forEach((r, i) => setTimeout(() => { r.setAttribute("y", r.dataset.y); r.setAttribute("height", r.dataset.h); }, REDUCE ? 0 : 18 * i)); };
+    if (REDUCE || !("IntersectionObserver" in window)) return grow();
+    const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { grow(); io.disconnect(); } }, {threshold: 0.35}); io.observe(svg);
+    const seen = () => { const b = svg.getBoundingClientRect(); if (b.top < innerHeight * 0.85 && b.bottom > 0) { grow(); removeEventListener("scroll", seen); } };   // backup for browsers that hold back the observer
+    addEventListener("scroll", seen, {passive: true}); seen();
+  }
+  {% if postings %}bars("ch-post", "rd-post", {{ postings.years|tojson }}, [["cso", "#b5310a"], ["rain", "#0072BC"], ["other", "#8a949b"]],
+       d => "<b>" + d.year + "</b>: " + (d.cso + d.rain + d.other) + " advisories · " + d.cso + " sewage discharge · " + d.rain + " rain · " + d.other + " other or unknown");{% endif %}
+  {% if discharges %}bars("ch-csd", "rd-csd", {{ discharges.seasons|tojson }}, [["days", "#7a5a3a"]],
+       d => "<b>" + d.label + "</b>: " + d.days + " days with a discharge · " + d.outfall_days + " outfall-days");{% endif %}
+
+  // ── 4. Then and now: drag, tap, or arrow keys ──
+  const cmp = $("compare"), hd = cmp.querySelector(".handle");
+  const setX = p => { p = clamp(p, 0.02, 0.98); cmp.style.setProperty("--x", (p * 100).toFixed(1) + "%"); hd.setAttribute("aria-valuenow", Math.round(p * 100)); };
+  let drag = false; const at = e => { const b = cmp.getBoundingClientRect(); setX((e.clientX - b.left) / b.width); };
+  cmp.addEventListener("pointerdown", e => { drag = true; cmp.setPointerCapture(e.pointerId); at(e); });
+  cmp.addEventListener("pointermove", e => { if (drag) at(e); });
+  cmp.addEventListener("pointerup", () => { drag = false; });
+  hd.addEventListener("keydown", e => { const v = +hd.getAttribute("aria-valuenow"); if (e.key === "ArrowLeft") setX((v - 5) / 100); if (e.key === "ArrowRight") setX((v + 5) / 100); });
+})();
+</script>
+</body></html>

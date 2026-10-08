@@ -46,6 +46,7 @@ from flask import Flask, Response, abort, redirect, render_template, request, se
 
 import features.about.page as about_page
 import features.today.page as today_page
+import features.learn.page as learn_page   # PROTOTYPE (design/learn-prototype): /learn, not linked from the nav
 import features.cso_history.page as cso_history_page
 import features.discharges.page as discharges_page
 import features.forecast.page as forecast_page
@@ -331,6 +332,10 @@ def create_app():
         app.add_url_rule(path, f"about-get:{path}", _forecast_view(handler), methods=["GET"])
 
     # Today: the home page (also at /) — the board, its layers (/api/today/*), the page directory below it
+    # Learn: PROTOTYPE page (design/learn-prototype) — reachable by URL only, not in NAV
+    for path, handler in learn_page.GET_ROUTES.items():
+        app.add_url_rule(path, f"learn-get:{path}", _forecast_view(handler), methods=["GET"])
+
     for path, handler in today_page.GET_ROUTES.items():
         app.add_url_rule(path, f"today-get:{path}", _forecast_view(handler), methods=["GET"])
 
