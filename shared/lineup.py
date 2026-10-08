@@ -1,6 +1,6 @@
 """A forecast's stage lineup in plain words and in its name (STAGES_DESIGN.md A8; Part B 36).
 
-A set is its lineup: basins · S1 weather model · S2 overflow model · S3 beach split · S4 lingering table · S5 live
+A set is its lineup: basins · S1 rain (its weather model; S1_RAIN for a dead gauge's days) · S2 overflow model · S3 beach split · S4 lingering table · S5 live
 correction rule. Its full name is each stage's name at the time it was made, in that order (Chase, 2026-10-07: "the
 full model name should have a combo of each stage at the time's name"):
 
@@ -19,12 +19,15 @@ set on disk). Standard library only, no IO: the web app, the stage build and the
 """
 from __future__ import annotations
 
-COLUMNS = (("geography", "Basins"), ("s1", "S1 · weather model"), ("s2", "S2 · overflow model"),
-           ("s3", "S3 · beach split"), ("s4", "S4 · lingering table"), ("s5", "S5 · live correction rule"))
+# The column titles a lineup shows under are display only, in shared/lineup_titles.py: the stage build imports this
+# module, so a title here staled every build (Part B 41).
 
 WORDS = {
     "geography": {"geo_v1": "BWTF basins", "sfpuc4_v1": "SFPUC basins"},
-    "s1": {"icon_seamless": "ICON", "ecmwf_ifs025": "ECMWF", "gfs_seamless": "GFS"},
+    # S1 is the rain a set reads: its weather model's forecast for the days ahead, the gauges for the days before. A
+    # part with a rule after the model's id fills a dead gauge's days another way (S1_RAIN; Part B 41)
+    "s1": {"icon_seamless": "ICON", "ecmwf_ifs025": "ECMWF", "gfs_seamless": "GFS",
+           "icon_seamless_mrmsfill": "ICON, dead gauges from MRMS"},
     "s2": {"logit_v1": "38-weight", "gb_v1": "Trees", "shared8_nonneg_sfpuc4": "8-term SFPUC",
            # the shared-terms sets on BWTF basins (leaderboard.SHARED_DESIGNS; the count is their bands)
            "logit_v2_shared5": "5-term", "logit_v2_shared6": "6-term", "logit_v2_shared8": "8-term",
@@ -59,7 +62,7 @@ WORDS = {
 # components share a code only when they share their words (the same part under two ids).
 CODES = {
     "geography": {"geo_v1": "", "sfpuc4_v1": "sfpuc"},
-    "s1": {"icon_seamless": "icon", "ecmwf_ifs025": "ecmwf", "gfs_seamless": "gfs"},
+    "s1": {"icon_seamless": "icon", "ecmwf_ifs025": "ecmwf", "gfs_seamless": "gfs", "icon_seamless_mrmsfill": "iconmrms"},
     "s2": {"logit_v1": "w38", "gb_v1": "trees", "shared8_nonneg_sfpuc4": "t8s",
            "logit_v2_shared5": "t5", "logit_v2_shared6": "t6", "logit_v2_shared8": "t8", "logit_v2_half": "t19",
            "logit_v2_four": "four",
@@ -112,7 +115,39 @@ RENAMED = {
     "sfpuc4_shared8_v3b": "sfpuc-icon-t8s-osplits-pickout-lzflags",
     # 2026-10-07, Chase: "give it a better name that actually accurately describes the terms": 9 terms, not 8
     "icon-t8wind3h-osplit-lt2more-bflags": "icon-t9wind3h-osplit-lt2more-bflags",
+    # 2026-10-08, Chase: the MRMS fill changes the rain, so it is stage 1's code, not the overflow model's (Part B 41)
+    "icon-t9wind3hmrms-nosplit-lt1-bflags": "iconmrms-t9wind3h-nosplit-lt1-bflags",
+    "icon-t9wind3hmrms-osplit-lt2-bflags": "iconmrms-t9wind3h-osplit-lt2-bflags",
+    "icon-t9wind3hmrms-osplit-lt2more-bflags": "iconmrms-t9wind3h-osplit-lt2more-bflags",
 }
+
+# The S1 parts that are more than a weather model: part → (the weather model whose forecasts it reads, the
+# gauge-outage rule its gauges read; rain_features.INPUT_RULES_KNOWN). Every other S1 part is a weather model read
+# with GAUGE_RULE, as every set was before Part B 41. The rule changes only the days a dead gauge reads, which S1's
+# own grade leaves out (X-S1-OUTAGE), so an S1 part here scores as its weather model on S1; its rain shows in S2 on.
+GAUGE_RULE = "gauge_outage_v1"                                   # rain_features.GAUGE_OUTAGE_RULE (no imports here)
+S1_RAIN = {"icon_seamless_mrmsfill": ("icon_seamless", "gauge_outage_v2")}
+
+
+def weather_of(s1: str) -> str:
+    """The weather model an S1 part reads its forecasts from."""
+    return S1_RAIN.get(s1, (s1, GAUGE_RULE))[0]
+
+
+def rain_rule_of(s1: str) -> str:
+    """The gauge-outage rule an S1 part's gauges read."""
+    return S1_RAIN.get(s1, (s1, GAUGE_RULE))[1]
+
+
+def s1_part(weather: str, rule: str | None = None) -> str:
+    """The S1 part for weather model ``weather`` with gauge rule ``rule`` (None: GAUGE_RULE); raises for a pair with
+    no part, so a new one is named here first."""
+    if rule in (None, GAUGE_RULE):
+        return weather
+    for part, pair in S1_RAIN.items():
+        if pair == (weather, rule):
+            return part
+    raise KeyError(f"no S1 part reads {weather} with {rule}: add one to shared/lineup.py S1_RAIN, WORDS and CODES")
 
 
 def code(col: str, cid: str) -> str:

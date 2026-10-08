@@ -291,6 +291,41 @@ Adding a new gauge is a bigger change. It touches the gauge collector, the rain
 series names in `train_v4`, the truth tables (`truth.gauges`), the outage rule
 and retraining. Plan it as its own piece of work.
 
+## A dead gauge's days (the gauge-outage rule)
+
+A gauge that dies reads 0.00 for days or weeks. `gauge_outage_v1` (the live
+rule) finds those runs and reads the other gauge in their place.
+`gauge_outage_v2` finds the same runs but reads MRMS, NOAA's radar + gauge
+rain, at the dead gauge's own cell where MRMS has the day (October 2020 on),
+and the other gauge before that (`rain_features.GAUGE_OUTAGE_V2`,
+`train_v4.fill_from_mrms`; RAIN_SOURCES.md; STAGES_DESIGN.md Part B 40).
+
+v2 is opt-in, set by set, and it is the set's stage 1: S1 is the rain a set
+reads, and v2 changes a dead gauge's days. Its S1 part is "ICON, dead gauges
+from MRMS" (code `iconmrms`, `shared/lineup.py` `S1_RAIN`); the overflow
+model keeps its own name, refit on that rain (`iconmrms-t9wind3h-…`; Part B
+41). A candidate also names the rule in its manifest (`input_rules` for
+scoring, `train_input_rules` for training), and the two must agree. The stages
+build reads it from there in every entry, as the issue day knew it, and pins
+the MRMS file. The term lab takes it too (`term_lab.Lab(input_rules=[...])`).
+Nothing served reads it.
+
+```bash
+<rain env>/bin/python features/forecast/src/collectors/rain_grids.py mrms-daily --end <the gauges' last day>
+venv/bin/python features/forecast/src/models/train_terms.py --fill mrmsfill
+venv/bin/python features/forecast/src/models/stages_build.py --set iconmrms-t9wind3h-osplit-lt2more-bflags --root candidates --write
+```
+
+The first command refreshes MRMS's daily totals (the rain environment:
+`features/forecast/requirements-rain.txt`); run it whenever the gauges are
+refreshed. The second saves the live design under v2 on every split and
+table pair. The third scores one of them.
+
+`promote.py` refuses a set whose rule the live page cannot apply
+(`rain_features.INPUT_RULES_SERVABLE`). Serving v2 first needs MRMS on the
+live page (TODO "MRMS on the live board"), then that rule added to the
+servable list in the same commit.
+
 ## The basins and zones (the geography)
 
 Geographies are versioned in `shared/geography.py`: `geo_v1` is the served one

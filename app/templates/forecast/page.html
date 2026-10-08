@@ -889,8 +889,15 @@ function sbSkillCell(c, units, extra) {
         <div class="sb-val">skill <b>${sbNum(c.bss, 2)}</b> <span class="ci">${sbRange(c.lo, c.hi, v => sbNum(v, 2))}</span> <span class="sb-pr">PR ${sbNum(c.pr, 2)}</span></div>
         ${sbBar(c.bss, c.lo, c.hi)}${c.bss < 0 ? '<div class="sb-worse">worse than the usual rate</div>' : ''}${c.low_power ? '<div class="sb-sub">few storms</div>' : ''}</div>`;
 }
+// S2's own score is fed rain known, the rain the S1 pick reads: an S1 part that fills a dead gauge's days another way
+// has S2 scored on its rain apart (by_rain), or not at all
+function sbRainPart(st, p) {
+    const s1 = sbPart('s1', sbPick.s1) || {};
+    if (st !== 's2' || !p || !p.rain || !s1.rain || s1.rain === p.rain) return p;
+    return (p.by_rain || {})[s1.rain] ? { ...p, ...p.by_rain[s1.rain] } : { ...p, scores: null, why: `not scored with ${s1.name} yet` };
+}
 function sbSkillSlot(st, p, win) {
-    if (!p.scores) return sbNone('not scored yet');
+    if (!p.scores) return sbNone(p.why || 'not scored yet');
     const c = p.scores[win.key];
     if (!c) return sbNone(win.key === 'T0' && !win.graded ? 'not graded yet' : 'not scored on this window');
     const from = sbChainOf(p.from), units = (p.by_unit || {})[win.key];
@@ -907,7 +914,7 @@ function sbS1Slot(st, p, win) {
     return `<div class="sb-cell" title="${esc(tip)}">
         <div class="sb-val">miss <b>${sbIn(c.mae)}</b> <span class="ci">${sbRange(c.lo, c.hi, sbIn)}</span></div>
         ${sbBar(c.mae / top, c.lo / top, c.hi / top, [f.mae / top])}
-        <div class="sb-sub">floor ${sbIn(f.mae)} · lower is better · ${esc(sbSpan(st.window))}</div>${p.vs_live ? `<div class="sb-sub">vs ${esc(live.name)}: ${esc(p.vs_live)}</div>` : ''}</div>`;
+        <div class="sb-sub">floor ${sbIn(f.mae)} · lower is better · ${esc(sbSpan(st.window))}</div>${p.vs_live ? `<div class="sb-sub">vs ${esc(live.name)}: ${esc(p.vs_live)}</div>` : ''}${p.note ? `<div class="sb-sub">${esc(p.note)}</div>` : ''}</div>`;
 }
 // The realistic feeds: worse / better on k of the draws (the build's own verdict per draw, counted).
 function sbDrawWords(ds) {
@@ -954,7 +961,7 @@ function sbS5Slot(st, p, win) {
 
 function sbSlot(st, win) {
     const stage = sbStage(st), p = sbPart(st, sbPick[st]), [code, ...rest] = stage.title.split(' · ');
-    const body = !p ? sbNone('no part for these basins') : st === 's1' ? sbS1Slot(stage, p, win) : st === 's5' ? sbS5Slot(stage, p, win) : sbSkillSlot(st, p, win);
+    const body = !p ? sbNone('no part for these basins') : st === 's1' ? sbS1Slot(stage, p, win) : st === 's5' ? sbS5Slot(stage, p, win) : sbSkillSlot(st, sbRainPart(st, p), win);
     return `<div class="sb-slot${p && p.live ? ' live' : ''}" data-stage="${st}">
         <div class="sb-head" title="${esc(sbStageTip(stage))}"><b>${esc(code)}</b>${esc(rest.join(' · '))}${p && p.live ? '<span class="sb-live" title="The part the live forecast runs">LIVE</span>' : ''}</div>
         <div class="sb-body"><select aria-label="${esc(stage.title)}" onchange="sbSet('${st}', this.value)">${sbParts(st).map(q => `<option value="${esc(q.id)}"${q.id === sbPick[st] ? ' selected' : ''}>${esc(q.name)}</option>`).join('')}</select>
@@ -986,7 +993,9 @@ function sbDayByDay(key) {
 }
 function sbChainCard(win) {
     const same = c => c.basins === sbPick.basins && c.parts.s2 === sbPick.s2 && c.parts.s3 === sbPick.s3 && c.parts.s4 === sbPick.s4;
-    const match = SB.chains.find(c => same(c) && c.parts.s1 === sbPick.s1) || SB.chains.find(same), lineup = match ? null : SB.lineups.find(same);
+    const rainIn = id => (sbPart('s1', id) || {}).rain;   // an S1 part's gauge rule: rain known is that rain
+    const match = SB.chains.find(c => same(c) && c.parts.s1 === sbPick.s1) || SB.chains.find(c => same(c) && rainIn(c.parts.s1) === rainIn(sbPick.s1))
+        || SB.chains.find(same), lineup = match ? null : SB.lineups.find(same);
     const words = match ? match.name : ['s2', 's3', 's4'].map(st => (sbPart(st, sbPick[st]) || {}).name || '—').join(' · ');
     const rainOf = (sbPart('s1', (match || SB.chains[0]).parts.s1) || {}).name;
     const tip = `The percentage people see: the chance a zone's beaches are affected by a sewer overflow, graded on bad beach days (an overflow day, or a sample over the standard in the week after one). It is scored for whole lineups: basins, S2, S3 and S4, with ${rainOf}'s rain one day ahead. S5 is scored on its own and does not enter this number.`;
@@ -1002,7 +1011,7 @@ function sbChainCard(win) {
     const ahead = pending ? sbNone('not graded yet') : sbPick.s1 !== match.parts.s1
         ? `${sbNone(`not scored with ${s1 ? s1.name : sbPick.s1} yet`)} <button type="button" class="sb-link" onclick="sbSet('s1', '${esc(match.parts.s1)}')">use ${esc(ran ? ran.name : match.parts.s1)}</button>`
         : s.L1 ? sbOpener('out', sbSkillCell(s.L1, SB_UNITS.out, '')) + (sbOpen.out ? sbUnits((match.zones.L1 || {})[win.key], SB_UNITS.out) : '') : sbNone('not scored on this window');
-    const rain = pending ? sbNone('not graded yet') : s.rain ? sbOpener('out', sbSkillCell(s.rain, SB_UNITS.out, '')) + (sbOpen.out ? sbUnits((match.zones.rain || {})[win.key], SB_UNITS.out) : '') : sbNone('not scored on this window');
+    const rain = pending ? sbNone('not graded yet') : rainIn(match.parts.s1) !== rainIn(sbPick.s1) ? sbNone(`not scored with ${s1 ? s1.name : sbPick.s1} yet`) : s.rain ? sbOpener('out', sbSkillCell(s.rain, SB_UNITS.out, '')) + (sbOpen.out ? sbUnits((match.zones.rain || {})[win.key], SB_UNITS.out) : '') : sbNone('not scored on this window');
     // a set scored on other windows only (Trees: its kind is never refit season by season) points to them
     const elsewhere = pending || has ? [] : SB.windows.filter(w => (match.scores[w.key] || {}).L1 || (match.scores[w.key] || {}).rain);
     const where = elsewhere.length ? `<div class="sb-out-foot"><span>Scored on:</span>${elsewhere.map(w => `<button type="button" class="sb-chip" onclick="sbSetWin('${esc(w.key)}')">${esc(w.name)}</button>`).join('')}</div>` : '';
