@@ -200,6 +200,15 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 .sb-feed { font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--faint); }
 .sb-cell.lp .sb-val, .sb-cell.lp .sb-bar { opacity: .5; }
 .sb-none { font-size: 13px; color: var(--faint); font-style: italic; }
+.sb-opener { display: flex; flex-direction: column; gap: 5px; cursor: pointer; border-radius: 8px; margin: -5px; padding: 5px; }
+.sb-opener:hover, .sb-opener:focus-visible { background: #eef4f8; outline: none; }
+.sb-by { font-size: 11.5px; font-weight: 700; color: var(--brand); }
+.sb-units { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; padding-top: 8px; border-top: 1px solid var(--line); }
+.sb-unit { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 8px; align-items: baseline; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.sb-unit .sb-bar { grid-column: 1 / -1; height: 6px; }
+.sb-unit-name { font-weight: 700; color: var(--ink); min-width: 0; }
+.sb-unit b { font-size: 13.5px; color: var(--ink); } .sb-unit b.neg { color: var(--discharge); }
+.sb-unit.lp .sb-unit-val, .sb-unit.lp .sb-bar { opacity: .5; }
 .sb-worse { font-size: 11.5px; font-weight: 700; color: var(--discharge); }
 .sb-verdict { font-size: 11.5px; font-weight: 700; color: var(--muted); }
 .sb-verdict.better { color: var(--safe); } .sb-verdict.worse { color: var(--discharge); }
@@ -796,6 +805,28 @@ function loadBuilder() {
 }
 async function showBuilder() { await loadBuilder(); renderBuilder(); }
 
+// A module opened to its basins (S2) or zones (S3, S4, the public number); it stays open while parts are swapped.
+const sbOpen = { s2: false, s3: false, s4: false, out: false };
+const SB_BY = { s2: 'By basin', s3: 'By zone', s4: 'By zone', out: 'By zone' };
+function sbToggle(k) {
+    sbOpen[k] = !sbOpen[k]; renderBuilder();
+    const el = document.querySelector(`#builder [data-open="${k}"]`); if (el) el.focus();
+}
+const sbOpener = (k, inner) => `<div class="sb-opener" data-open="${k}" role="button" tabindex="0" aria-expanded="${sbOpen[k]}" onclick="sbToggle('${k}')" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); sbToggle('${k}'); }">${inner}<span class="sb-by">${SB_BY[k]} ${sbOpen[k] ? '▾' : '▸'}</span></div>`;
+// Each basin or zone on the window: its skill, range and bar; faded when too few storms.
+function sbUnits(cells, units, note) {
+    if (!cells) return `<div class="sb-units">${sbNone('no basin or zone scores on this window')}</div>`;
+    return `<div class="sb-units">${Object.entries(cells).map(([u, c]) => {
+        const name = SB.units[u] || u;
+        const tip = [`${name}: Brier skill score ${sbNum(c.bss, 3)}, 90% range ${sbNum(c.lo, 3)} to ${sbNum(c.hi, 3)}`,
+                     `${c.n.toLocaleString()} ${units[0]} · ${c.n_pos.toLocaleString()} ${units[1]} · ${c.storms} storms`].concat(c.low_power ? ['Too few storms to decide'] : []).join('\n');
+        return `<div class="sb-unit${c.low_power ? ' lp' : ''}" title="${esc(tip)}"><span class="sb-unit-name">${esc(name)}</span>
+            <span class="sb-unit-val"><b${c.bss < 0 ? ' class="neg"' : ''}>${sbNum(c.bss, 2)}</b> <span class="ci">${sbRange(c.lo, c.hi, v => sbNum(v, 2))}</span></span>${sbBar(c.bss, c.lo, c.hi)}</div>`;
+    }).join('')}${note ? `<div class="sb-sub">${esc(note)}</div>` : ''}</div>`;
+}
+// S3 splits a basin's overflow between zones; a zone fed by one basin whole has nothing for S3 to score.
+const SB_S3_NOTE = 'A zone not listed takes its basin’s overflow whole, so S3 has nothing to score there.';
+
 // Pick a scored chain: its basins and S1–S4; S5 stays when those basins have it (it is scored on its own).
 function sbUse(set, all) {
     const c = sbChainOf(set); if (!c) return;
@@ -852,8 +883,9 @@ function sbSkillSlot(st, p, win) {
     if (!p.scores) return sbNone('not scored yet');
     const c = p.scores[win.key];
     if (!c) return sbNone(win.key === 'T0' && !win.graded ? 'not graded yet' : 'not scored on this window');
-    const from = sbChainOf(p.from);
-    return sbSkillCell(c, SB_UNITS[st], from ? `Scored in ${from.name}${from.live ? ' (live)' : ''}` : '');
+    const from = sbChainOf(p.from), units = (p.by_unit || {})[win.key];
+    return sbOpener(st, sbSkillCell(c, SB_UNITS[st], from ? `Scored in ${from.name}${from.live ? ' (live)' : ''}` : ''))
+        + (sbOpen[st] ? sbUnits(units, SB_UNITS[st], st === 's3' && units && Object.keys(units).length < ZONES.length ? SB_S3_NOTE : '') : '');
 }
 function sbS1Slot(st, p, win) {
     if (!win.shows.s1) return sbNone('not graded yet');
@@ -959,8 +991,8 @@ function sbChainCard(win) {
     const s1 = sbPart('s1', sbPick.s1), ran = sbPart('s1', match.parts.s1);
     const ahead = pending ? sbNone('not graded yet') : sbPick.s1 !== match.parts.s1
         ? `${sbNone(`not scored with ${s1 ? s1.name : sbPick.s1} yet`)} <button type="button" class="sb-link" onclick="sbSet('s1', '${esc(match.parts.s1)}')">use ${esc(ran ? ran.name : match.parts.s1)}</button>`
-        : s.L1 ? sbSkillCell(s.L1, SB_UNITS.out, '') : sbNone('not scored on this window');
-    const rain = pending ? sbNone('not graded yet') : s.rain ? sbSkillCell(s.rain, SB_UNITS.out, '') : sbNone('not scored on this window');
+        : s.L1 ? sbOpener('out', sbSkillCell(s.L1, SB_UNITS.out, '')) + (sbOpen.out ? sbUnits((match.zones.L1 || {})[win.key], SB_UNITS.out) : '') : sbNone('not scored on this window');
+    const rain = pending ? sbNone('not graded yet') : s.rain ? sbOpener('out', sbSkillCell(s.rain, SB_UNITS.out, '')) + (sbOpen.out ? sbUnits((match.zones.rain || {})[win.key], SB_UNITS.out) : '') : sbNone('not scored on this window');
     return `<div class="sb-out${match.live ? ' live' : ''}">${head}
         <div><div class="sb-feed">one day ahead</div>${ahead}</div><div><div class="sb-feed">with rain known</div>${rain}</div>
         ${match.scorecard ? `<div class="sb-out-foot">${sbDayLink(match.live ? '' : match.set)}</div>` : ''}</div>`;
@@ -974,7 +1006,8 @@ function sbHow() {
         <li><b>Ranges</b> hold the middle ${Math.round(SB.bootstrap.level * 100)}% of ${SB.bootstrap.n.toLocaleString()} resamples of whole storms. A faded score rests on too few storms to decide anything.</li>
         <li><b>Windows:</b> nine seasons (${esc(sbSpan(t2.span))}), each season scored by a fit that never saw it; post-training (${esc(sbSpan(t1.span))}), days after the training data ended; the holdout (${esc(sbSpan(th.span))}) is development only, because it was used to pick the model; the live season, every day after the rules froze on ${esc(sbDay(t0.after))}, is graded after the next data refresh.</li>
         <li><b>S1 and S5 are lower-is-better.</b> S1 is the weather model's average miss on wet days one day ahead; the floor is one city gauge as a forecast of the other. S5 is the change in error on the days after an observation, against no correction. Neither is refit season by season, so each keeps its own window.</li>
-        <li><b>The public number</b> is scored for whole lineups only; pick one with stage scores to see it.</li></ul></details>`;
+        <li><b>The public number</b> is scored for whole lineups only; pick one with stage scores to see it.</li>
+        <li><b>By basin, by zone:</b> click a score in S2, S3 or S4, or the public number, to see it for each basin (S2) or zone. A zone has fewer storms than the city, so its range is wider.</li></ul></details>`;
 }
 
 function renderBuilder() {

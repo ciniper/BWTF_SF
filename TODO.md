@@ -423,6 +423,14 @@ The model lives at `/alerts/costs`, the alerts dashboard's Running costs tab (`f
     3. GEFS is the real ensemble, later.
 
     Grade it as a new S1 → S2 entry under the protocol: one day ahead, against the live forecast on the same days.
+  - [ ] **Freeze the SFPUC-basin sets and hide the Basins switch (Chase, 2026-10-08: "let's maybe just add this as a todo")** — the four city-basin sets (`sfpuc-icon-t8s-…`) have given their finding (the linger table on more samples, live since 2026-10-07) and meet 1 of 5 promotion checks at best. Every rebuild still rebuilds and re-tests them.
+    1. Mark them frozen (a `frozen_at` in each manifest). The full rebuild and the tests skip frozen sets; their files stay.
+    2. Model check lists a basin map only when it has a set that is not frozen. The Basins switch then disappears by itself and comes back when a city-basin set is rebuilt; no page code is deleted.
+    3. The stages report keeps their rows, marked "frozen 2026-10-08": their comparisons are against the live set of that day.
+
+    Saves about a fifth of the ~35-minute rebuild and about a minute of the test suite. The bigger saving is freezing the other research sets too (the older-report variants, the wind sets on Linger table 2), keeping the live set plus 2–3 challengers.
+
+    The cost: the city's map was clearly better for East, and that flaw stays in the live forecast. Our Southeast basin holds Islais Creek (the city's Central), so the Candlestick beaches' forecast carries Islais's overflows. A cheaper fix than the city's whole design: move Islais to Central in our basin map and retrain the overflow model.
   - [ ] **Radar rainfall per basin (research 2026-10-07; nothing downloaded yet)** — NOAA MRMS gives 1-km hourly rain over each basin from Nov 2014. The easiest access is dynamical.org's MRMS Zarr store (needs `icechunk` + `xarray`); the raw GRIB files are about 0.6 MB/hour (AWS from 2020-10, Iowa State mtarchive before, about 50 GB for 2016–2026). Plan:
     - **Pilot:** extract a few big storms per basin. Compare with the two NOAA gauges and the CoCoRaHS three; check the 2020-10 product seam.
     - **Lab test:** if it holds up, add per-basin radar rain as a term-lab input and see whether S2 improves.
