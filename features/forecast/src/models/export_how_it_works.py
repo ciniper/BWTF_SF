@@ -619,10 +619,17 @@ def report_works(S: dict, reg: dict, wx_model: str) -> str:
         x0, x1 = tl_x(a), min(tl_x(b), 980)
         return (f'<rect x="{x0:.0f}" y="{y}" width="{max(x1 - x0, 2):.0f}" height="16" rx="5" fill="{color}"/>'
                 f'<text x="{x0 + 6:.0f}" y="{y + 12}" class="bl" fill="{"#26272a" if dark else "#fff"}">{esc(label)}</text>')
+    # the city lab export (STARDB): read by the served linger table from Oct 2016 when it was fit on the stages' S4 truth
+    # samples (stage 2 impact_samples 'd10', samples.D10_SOURCES), else not read at all
+    if ((S.get("stage2") or {}).get("impact_samples")) == "d10":
+        lab_export = (bar(74, "2013-01-01", "2016-09-30", "#c4b5e6", "city lab export from 2000 (not read)", dark=True)
+                      + bar(74, "2016-10-01", "2020-07-31", "#7b5ea7", "city lab export: S4's table"))
+    else:
+        lab_export = bar(74, "2013-01-01", "2020-07-26", "#c4b5e6", "city lab export 2000–2020 (not yet read by the forecast)", dark=True)
     timeline = f'''<svg class="tl" viewBox="0 0 1000 176" role="img"><title>The record and the windows</title>{years}
       {bar(30, "2013-01-01", "2016-10-15", "#b8c4cc", "bay overflows, legacy list", dark=True)}{bar(30, "2016-10-16", str(ev_span[1]), "#54576F", f"SFPUC's filed overflows (CIWQS): {n_events} events on {n_days} days")}
       {bar(52, "2016-03-19", "2017-01-10", "#7b5ea7", "feed archive")}{bar(52, "2020-07-27", "2026-08-31", "#7b5ea7", "DataSF samples")}
-      {bar(74, "2013-01-01", "2020-07-26", "#c4b5e6", "city lab export 2000–2020 (not yet read by the forecast)", dark=True)}
+      {lab_export}
       {bar(96, "2016-01-01", "2026-09-30", "#85BFDF", "rain: two NOAA gauges + ERA5 hourly", dark=True)}
       {bar(122, tw[0], hs, BRAND, "S2 fitted here")}{bar(122, hs, tt, "#237059", "holdout")}{bar(122, str(dt.date.fromisoformat(tt) + dt.timedelta(days=1)), "2026-09-30", "#d4763a", "since training")}
       <text x="60" y="162" class="ax">S2 was fitted on {esc(fmt_month(tw[0]))} → {esc(fmt_month(hs))}; its settings were chosen on the holdout, {esc(fmt_month(hs))} → {esc(fmt_month(tt))}, days it never saw while being chosen; every day after {esc(fmt_month(tt))} is a genuine forward test.</text></svg>'''

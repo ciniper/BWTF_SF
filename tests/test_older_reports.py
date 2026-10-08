@@ -152,7 +152,8 @@ def test_the_candidates_are_the_served_design_on_their_record():
             assert not S2.head_rows(s, tr, key)[f"{s.geo.basin(key).name}_label_source"].eq(P.SOURCE).any()   # no volume
         man = json.loads((TO.CAND.candidate_dir(name) / "manifest.json").read_text())
         assert man["stage2"]["variant"] == "v2" and man["stage1"] == {"name": stage1, "from": "fit", "family": "logit"}
-        assert json.loads((TO.CAND.candidate_dir(name) / "stage2.json").read_text()) == json.loads((T.SERVE_DIR / "stage2.json").read_text())
+        # stage 2 v2, the served one when they were made (the live set's table moved to more samples on 2026-10-07)
+        assert json.loads((TO.CAND.candidate_dir(name) / "stage2.json").read_text()) == TO.ST2.load_variant("v2")
 
 
 def test_the_write_up_is_current():

@@ -1,7 +1,7 @@
 {
 "schema": "bwtf.stages.s1/1",
 "protocol": "stages_v3@22a2695e2e950188d37b753928932c6f6f2dc83296482a4fddf5a373ce86df3f",
-"built_at": "2026-10-07T22:24:03+00:00",
+"built_at": "2026-10-08T00:31:14+00:00",
 "inputs": {"features/forecast/data/raw/historical_rain.csv":"c4742eb23766ee048bd91a035a769270e207e21d0e39adf140c8b4153afdc7ed","features/forecast/live_dashboard.py":"0ba83a5c964ed3e8beca71fe198a29c76fad4aaffce3eef92b90ad654c6a06cc","features/forecast/data/models/weather_models_eval.json":"2d75454ce0ac8eda37e9596782dd84a19e0fa541a88fd9c233526c450f926766","features/forecast/data/raw/openmeteo_hist_forecast_icon_seamless.csv":"34e8719e6704b0edd5558c61cd2916f44af541b4bebd24b3a45bd37319ec3a73","features/forecast/data/raw/openmeteo_prev_runs_icon_seamless.csv":"3fe8e19f87255f7762c03c723006f2288058e7a23b9cf29803b7d4b5a45a07c6","features/forecast/data/raw/openmeteo_hist_forecast_ecmwf_ifs025.csv":"dccc5446452900ae2a0d798758e2662ebe113cdc6c019fb442e9885cb74100d3","features/forecast/data/raw/openmeteo_prev_runs_ecmwf_ifs025.csv":"3d33ed38494fc187f7fac5aacbbae18954cb384e5c823614d1ab56596de9cfa8","features/forecast/data/raw/openmeteo_hist_forecast_gfs_seamless.csv":"52bf10df2f2d849b25ff05c9c0802f17e2c665767da2291c49b3d56d22608f12","features/forecast/data/raw/openmeteo_prev_runs_gfs_seamless.csv":"4ed395b9abaeaf34974ccdf80e35b6d6dae49b9992ca12e3ea05ea1d18d8c929"},
 "data_end": "2026-08-17",
 "rows": ["2022-11-16","2026-08-31"],

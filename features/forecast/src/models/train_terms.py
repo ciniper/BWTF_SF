@@ -23,6 +23,12 @@ stages build scores:
                stage2_variants.py fit --variant v2_d10): the two lingering tables under the same overflow model.
                Each set is named by its lineup (shared/lineup.py set_id).
 
+    added      the 8-term set plus the day's 3-hour peak (``rain_max3h``), forced: 9 terms (Chase, 2026-10-07:
+               "the current 8 term set that you selected PLUS the 3 hour peak"; it adds nothing yet, "it may help
+               later on when we get better rain info"). Each graded fold takes its own 8 picks plus the peak; a fold
+               that picked the peak itself takes its next pick instead, so every fold has 9 (``ADDED``,
+               ``PEAK_SETS``; saved with the linger table on more samples only, ``--peak``).
+
 A fold's refit in the stages build uses that fold's own terms (the manifest's ``fold_terms``, stages_s2.
 check_fold_terms), so the T2 and holdout scores grade the procedure, not one term list picked with every season in
 view. T2 stays labelled selection-contaminated all the same: the forced terms and the sizes were chosen with the
@@ -30,6 +36,8 @@ lab's nine-season grades in view. Post-training and the live season were never s
 
     venv/bin/python features/forecast/src/models/train_terms.py            # select and print the nested grades
     venv/bin/python features/forecast/src/models/train_terms.py --save
+    venv/bin/python features/forecast/src/models/train_terms.py --peak     # the 8 terms + the 3-hour peak, from the
+                                                                            # committed selection (no re-selection)
     venv/bin/python features/forecast/src/models/stages_build.py --set icon-t8wind-osplit-lt2-bflags --root candidates --write
 """
 from __future__ import annotations
@@ -63,15 +71,29 @@ SELECTION = {"rules": True, "path": True, "C": "live", "nonneg": False, "max_ter
 KEYS = TOR.KEYS                                       # the four basins and citywide
 SELECTION_FILE = "selection.json"
 STAGE2 = {"s2v2": "v2", "s2v2d10": "v2_d10"}         # which linger table → stage 2 id (stage2_variants.load_spec)
+ADDED = {"max3h": ["rain_max3h"]}                     # terms forced on top of a size's picks (Chase, 2026-10-07)
+PEAK_SETS = ((8, "max3h", "s2v2d10"),)                # (size, addition, linger table): the 8 terms + the 3-hour peak
+# protocol §2's post_seen reasons (candidates.tag_candidate): the record, and the linger table on more samples
+POST_SEEN = {"record": ("its training record (the older SFPUC reports from 2011, every discharge day) was chosen in "
+                        "OLDER_REPORTS.md with the older-report sets' post-training scores in view"),
+             "v2_d10": ("its linger table on more samples was built after sfpuc-icon-t8s-osplits-pickout-lzflags's "
+                        "post-training scores showed the extra samples helping the public number")}
 
 
-def stage1_name(k: int) -> str:
-    return f"logit_wind{k}_{RECORD_KEY}"
+def stage1_name(k: int, added: str | None = None) -> str:
+    return f"logit_wind{k}_{added + '_' if added else ''}{RECORD_KEY}"
 
 
-def set_name(k: int, suffix: str = "s2v2") -> str:
-    """The set saved for k terms and stage 2 STAGE2[suffix]: its lineup's id (candidates.geo_v1_set)."""
-    return CAND.geo_v1_set(stage1_name(k), SV.load_spec(STAGE2[suffix]))[0]
+def set_name(k: int, suffix: str = "s2v2", added: str | None = None) -> str:
+    """The set saved for k terms (plus ADDED[added]) and stage 2 STAGE2[suffix]: its lineup's id (candidates.geo_v1_set)."""
+    return CAND.geo_v1_set(stage1_name(k, added), SV.load_spec(STAGE2[suffix]))[0]
+
+
+def with_added(ts: list, k: int, added: str | None = None) -> list:
+    """A pick order's first k terms plus ADDED[added]; an added term the order already holds is taken out of it first,
+    so the next pick fills its place and the list always has k + len(ADDED[added]) terms."""
+    extra = ADDED[added] if added else []
+    return [t for t in ts if t not in extra][:k] + extra
 
 
 def servable(terms) -> list:
@@ -93,8 +115,17 @@ def select(lab=None) -> dict:
             "by_fold": r["by_fold"], "path": [{"k": s["k"], "terms": s["terms"], "grade": s["grade"]} for s in r["path"]]}
 
 
-def fold_terms(sel: dict, k: int) -> dict:
-    return {f: ts[:k] for f, ts in sel["by_fold"].items()}
+def fold_terms(sel: dict, k: int, added: str | None = None) -> dict:
+    return {f: with_added(ts, k, added) for f, ts in sel["by_fold"].items()}
+
+
+def lab_grade(sel: dict, k: int, added: str, lab=None) -> dict:
+    """The term lab's nested grade of k picks plus ADDED[added], each graded fold on its own list (the grade the
+    selection path records for a plain size): {tier: pooled cell}."""
+    import term_lab as TL
+    lab = lab or TL.Lab()
+    g = lab.grade(lab.oof(None, C=sel["C"], nonneg=sel["nonneg"], record=RECORD_KEY, terms_by_fold=fold_terms(sel, k, added)))
+    return {t: v["pooled"] for t, v in g.items()}
 
 
 def terms_season_cv(sub: pd.DataFrame, terms: list, C: float, features: list) -> dict:
@@ -111,10 +142,10 @@ def terms_season_cv(sub: pd.DataFrame, terms: list, C: float, features: list) ->
     return L.scores(np.concatenate(ys), np.concatenate(ps)) if ys else {}
 
 
-def fit(sel: dict, k: int, models: dict) -> dict:
-    """{finals, holdouts, chosen, per_basin, notes, rows, terms, fold_terms} for size k."""
+def fit(sel: dict, k: int, models: dict, added: str | None = None) -> dict:
+    """{finals, holdouts, chosen, per_basin, notes, rows, terms, fold_terms} for size k (plus ADDED[added])."""
     basin_of = {v: b for b, v in BASIN_KEYS.items()}
-    terms, ft = sel["terms"][:k], fold_terms(sel, k)
+    terms, ft = with_added(sel["terms"], k, added), fold_terms(sel, k, added)
     features = L.term_inputs(sorted({t for ts in [terms, *ft.values()] for t in ts}))
     chosen = {basin_of.get(key, "citywide"): m["rain_source"] for key, m in models.items()}
     heads, _ = T.stage2_from_served()
@@ -148,25 +179,46 @@ def _grade_words(g: dict) -> str:
             f"holdout {h['skill']:.3f} (live {h['live_skill']:.3f}, {h['verdict']})")
 
 
-def save(sel: dict, k: int, got: dict, suffix: str = "s2v2") -> Path:
+def check_pairing(spec: dict) -> None:
+    """A spec carrying the served stage 2's id must be the served stage2.json (a stale data/models/stage2/ file
+    would pair a candidate with a table the live forecast does not use)."""
+    if CAND.stage2_variant_id(spec) == CAND.served_info()["stage2"] and spec != json.loads((T.SERVE_DIR / "stage2.json").read_text()):
+        raise SystemExit(f"data/models/stage2/ {CAND.stage2_variant_id(spec)} is not the served stage 2: refusing to pair with it")
+
+
+def save(sel: dict, k: int, got: dict, suffix: str = "s2v2", added: str | None = None, grade: dict | None = None) -> Path:
+    """Save size k (plus ADDED[added], whose nested ``grade`` lab_grade gives) with stage 2 STAGE2[suffix], tagged
+    post_seen (POST_SEEN)."""
     variant = STAGE2[suffix]
     spec = SV.load_spec(variant)
-    name, lineup = CAND.geo_v1_set(stage1_name(k), spec)
-    if variant == "v2" and spec != json.loads((T.SERVE_DIR / "stage2.json").read_text()):
-        raise SystemExit("data/models/stage2/v2.json is not the served stage 2: refusing to pair with it")
+    check_pairing(spec)
+    name, lineup = CAND.geo_v1_set(stage1_name(k, added), spec)
     table = {"v2": "stage 2 v2", "v2_d10": "stage 2 v2 with its linger table fit on the stages' S4 truth samples (v2_d10)"}[variant]
-    note = (f"{k} named terms per basin, the same in every basin: {', '.join(got['terms'])}. The day's rain, the 2- and "
-            f"3-day sums and the south wind on the rainy hours are forced; the rest picked by nested forward selection "
-            f"(train_terms.py), each fold on its own seasons. The served rain sources and C, the older SFPUC reports from "
-            f"2011 (every discharge day), {table}. Not served.")
-    path = next(s for s in sel["path"] if s["k"] == k)
+    n = len(got["terms"])
+    how = (f"{n} named terms per basin, the same in every basin: {', '.join(got['terms'])}. The day's rain, the 2- and "
+           f"3-day sums and the south wind on the rainy hours are forced; the rest picked by nested forward selection "
+           f"(train_terms.py), each fold on its own seasons")
+    if added:
+        how += (f"; then {', '.join(ADDED[added])} forced on top of the {k} picks (Chase, 2026-10-07), a fold that picked "
+                f"it taking its next pick instead")
+    note = (f"{how}. The served rain sources and C, the older SFPUC reports from 2011 (every discharge day), {table}. "
+            f"Not served.")
+    if added:
+        if grade is None:
+            raise ValueError("an added term's nested grade comes from lab_grade")
+    else:
+        grade = {t: g["pooled"] for t, g in next(s for s in sel["path"] if s["k"] == k)["grade"].items()}
     extra = {"record": sel["record"], "record_notes": got["notes"]["record"], "record_counts": TOR.record_counts(got["rows"]),
              "stage1_source": "fit", "terms": got["terms"], "fold_terms": got["fold_terms"],
              "term_selection": {"by": "train_terms.py → term_lab.Lab.choose", "must": sel["must"], "rules": sel["rules"],
-                                "pool": sel["pool"], "size": k, "lab_grade": {t: g["pooled"] for t, g in path["grade"].items()}}}
+                                "pool": sel["pool"], "size": k, **({"added": ADDED[added]} if added else {}),
+                                "lab_grade": grade}}
     d = CAND.save_candidate(name, "logit", got["finals"], got["holdouts"], got["chosen"], got["features"], got["per_basin"],
-                            note=note, extra=extra, stage2=spec, stage1_from="fit", stage1_name=stage1_name(k),
+                            note=note, extra=extra, stage2=spec, stage1_from="fit", stage1_name=stage1_name(k, added),
                             lineup=lineup)
+    (d / SELECTION_FILE).write_text(json.dumps(sel, indent=1, default=float) + "\n")
+    CAND.tag_candidate(name, "post_seen", "; ".join([POST_SEEN["record"]] + ([POST_SEEN[variant]] if variant in POST_SEEN else [])))
+    CAND.rescore_post(name)                         # post-training days on the served input rules, as every set's
     print(f"candidate → {d}")
     return d
 
@@ -186,7 +238,17 @@ def served_models() -> dict:
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--save", action="store_true", help=f"save the {', '.join(map(str, SIZES))}-term candidates")
+    ap.add_argument("--peak", action="store_true", help="save PEAK_SETS from the committed selection (no re-selection)")
     a = ap.parse_args(argv)
+    if a.peak:
+        sel = json.loads((CAND.candidate_dir(set_name(8, "s2v2d10")) / SELECTION_FILE).read_text())
+        models = served_models()
+        for k, added, suffix in PEAK_SETS:
+            grade = lab_grade(sel, k, added)
+            print(f"  {k} terms + {', '.join(ADDED[added])}: " + " · ".join(
+                f"{t} {g['skill']:.3f} (live {g['live_skill']:.3f}, {g['verdict']})" for t, g in grade.items()))
+            save(sel, k, fit(sel, k, models, added), suffix, added, grade)
+        return
     sel = select()
     for s in sel["path"]:
         print(f"  {s['k']:2} terms  {_grade_words(s['grade'])}")
@@ -200,8 +262,6 @@ def main(argv=None) -> None:
         got = fit(sel, k, models)
         for suffix in STAGE2:
             save(sel, k, got, suffix)
-            (CAND.candidate_dir(set_name(k, suffix)) / SELECTION_FILE).write_text(json.dumps(sel, indent=1, default=float) + "\n")
-            CAND.rescore_post(set_name(k, suffix))      # post-training days on the served input rules, as every set's
 
 
 if __name__ == "__main__":

@@ -235,11 +235,13 @@ def test_the_s3_s4_fitter_reproduces_the_served_artifacts_on_the_training_window
     bundle, train = _train()
     heads, raw_json = T4.stage2_from_served()
     events, samples = T4.load_events(), T4.load_samples()
-    fit = B.fit_s3_s4(train, bundle.chosen, heads, samples, events, "v2")
     served = json.loads((T4.SERVE_DIR / "stage2.json").read_text())
-    assert fit["raw"] == raw_json
-    for k in ("variant", "kind", "group_outfalls", "shares", "median_event_volume_mg", "impact_table"):
-        assert fit["stage2"][k] == served[k], k
+    variant = B.CAND.stage2_variant_id(served)          # v2_d10 since 2026-10-07: its table on the stages' S4 samples
+    own = B.SV.impact_samples(served["impact_samples"]) if served.get("impact_samples") else samples
+    fit = B.fit_s3_s4(train, bundle.chosen, heads, own, events, variant)
+    assert fit["raw"] == raw_json or own is not samples       # impact_table.json is the raw table on the served record's samples
+    for k in ("variant", "kind", "group_outfalls", "shares", "median_event_volume_mg", "impact_table", "impact_samples"):
+        assert fit["stage2"].get(k) == served.get(k), k
     a = C.geo_v1_adapter_specs(stage2=fit["stage2"])
     t1 = C.geo_v1_adapter_specs()
     for k in ("s3", "s4"):
@@ -543,20 +545,22 @@ def test_the_figure_shows_each_stages_powered_window_with_post_training_in_the_t
     assert svg.count('opacity=".55"') == sum(bool(e["low_power"]) for _, _, e in _pills(fig)) + sum(bool(e["low_power"]) for e in lead)
     assert any(not e["low_power"] for _, _, e in _pills(fig)) and any(e["post"]["low_power"] for _, _, e in _pills(fig) if e.get("post"))
     t = re.search(r"<title>(oracle: BSS [^<]*selection-contaminated[^<]*)</title>", svg).group(1)
-    assert f"post-training, Nov 2025 – Aug 2026 ({B.POST_SELECTED_WORDS}): BSS" in t and t.count("[") == 2, t   # both CIs
+    seen = f"; {B.POST_SEEN_WORDS}" if B.CAND.served_info().get("tags", {}).get("post_seen") else ""   # promoted post_seen
+    assert f"post-training, Nov 2025 – Aug 2026 ({B.POST_SELECTED_WORDS}){seen}: BSS" in t and t.count("[") == 2, t   # both CIs
     # a GEO_V1 set's post-training days also picked the served set (X-SEL post_selected): its S2 → OUT pills say so,
     # S1 (set-independent) and S5 (the correction rule, which X-SEL does not tag) do not
     for node in ("m.s2", "m.s3", "m.s4", "m.out"):
         for k in ("oracle", "chained"):
             post = (fig[node].get(k) or {}).get("post")
             if post:
-                assert post["window"].endswith(f"({B.POST_SELECTED_WORDS})"), (node, k, post["window"])
+                assert post["window"].endswith(f"({B.POST_SELECTED_WORDS}){seen}"), (node, k, post["window"])
     assert all(B.POST_SELECTED_WORDS not in (fig[n][k].get("post") or {}).get("window", "") for n in ("m.s1", "m.s5")
                for k in ("oracle", "chained") if fig[n].get(k))
     # the caption: one plain line, in the figure's title and under the page's
     cap = fig["caption"]
     assert cap == F.caption(sc) and cap.startswith("Pills: S1 one day ahead, Jan 2024 – Aug 2026 · S2 to OUT on 1 season"), cap
-    assert "each scored by weights that never saw it" in cap and cap.endswith("Post-training (Nov 2025 – Aug 2026) is in each pill’s tooltip."), cap
+    tail = f": {B.POST_SEEN_WORDS}." if seen else "."                 # a served set promoted post_seen says so
+    assert "each scored by weights that never saw it" in cap and cap.endswith(f"Post-training (Nov 2025 – Aug 2026) is in each pill’s tooltip{tail}"), cap
     assert "never saw it: development scores, S2's selection-contaminated" in cap, cap      # protocol §2's label, on the face
     assert "\n" not in cap and not re.search(r"\bT[0-3]\b|geo_v1|sfpuc4|X-[A-Z]|\bBSS\b|cost", cap), cap
     assert f'</h3><p class="figcap">{F.K.esc(cap)}</p>' in F.page("geo_v1", fig, sc["figure_counts"]) and F.K.esc(cap) in svg

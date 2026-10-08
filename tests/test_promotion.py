@@ -1,6 +1,8 @@
 """The served set is whatever data/models/served.json says (promote.py), and the
 serving path applies its stage 2 split. Written for the 2026-09-28 promotion of
-icon-w38-osplit-lt2-bflags over gb_v1; holds for any later promotion."""
+icon-w38-osplit-lt2-bflags over gb_v1; updated for the 2026-10-07 promotion of
+icon-w38-osplit-lt2more-bflags (the same overflow model and split, its linger
+table fit on more samples) over it."""
 import gzip
 import json
 import pathlib
@@ -20,26 +22,31 @@ SERVE = ROOT / "features/forecast/data/models"
 def test_served_descriptor_matches_the_bundle_on_disk():
     sv = C.served_info()
     assert C.SERVED_FILE.exists(), "served.json missing — promote.py writes it"
-    assert sv["name"] == "icon-w38-osplit-lt2-bflags" and sv["stage1"] == "logit_v1" and sv["stage2"] == "v2" and sv["family"] == "logit" and sv["line"] == 0.25
-    assert sv["replaced"] == "icon-trees-nosplit-lt1-bflags" and sv["from_candidate"] == sv["name"]
-    assert sv["renamed_from"] == "logit_v1_s2v2" and sv["artifact"] == "logit_v1_s2v2"     # the pickles keep their stamps
+    assert sv["name"] == "icon-w38-osplit-lt2more-bflags" and sv["stage1"] == "logit_v1" and sv["stage2"] == "v2_d10" and sv["family"] == "logit" and sv["line"] == 0.25
+    assert sv["replaced"] == "icon-w38-osplit-lt2-bflags" and sv["from_candidate"] == sv["name"] and sv["corrections"] == "live_v2"
+    assert sv["artifact"] == "logit_v1_s2v2d10" and sv["lineup"]["s4"] == "impact_v2_d10"     # the pickles keep their stamps
+    assert "post_seen" in sv["tags"]                     # a post_seen set stays post_seen when it serves (promote.CARRIED)
     import leaderboard  # noqa: F401
     for key in ("citywide", "westside", "north_shore", "central", "southeast"):
         pk = pickle.load(open(SERVE / f"{key}_model.pkl", "rb"))
         assert pk["version"] == sv["artifact"] and pk.get("family") == sv["family"], key
         assert pk["rain_source"] == sv["rain_sources"][key], key
     spec = json.loads((SERVE / "stage2.json").read_text())
-    assert spec["variant"] == sv["stage2"] and spec.get("impact_table"), "served stage2.json must be the variant with its refit table"
+    assert C.stage2_variant_id(spec) == sv["stage2"] and spec.get("impact_table"), "served stage2.json must be the variant with its refit table"
+    assert spec["variant"] == "v2" and spec["impact_samples"] == "d10"      # v2's split, its table on the stages' S4 samples
     with gzip.open(SERVE / "scorecard.json.gz", "rt") as f:
         sc = json.load(f)
-    assert (sc.get("stage2") or {}).get("variant") == sv["stage2"] and sc.get("candidate") == sv["name"]
+    assert (sc.get("stage2") or {}).get("variant") == spec["variant"] and sc.get("candidate") == sv["name"]
     assert sc.get("trained_through") == sv["trained_through"] and sc.get("input_rules_post") == sv["input_rules_post"]
 
 
 def test_retired_set_is_a_candidate_and_the_served_one_is_not():
     retired = "icon-trees-nosplit-lt1-bflags"            # gb_v1 until the 2026-10-07 rename
     names = {m["name"] for m in C.list_candidates()}
-    assert retired in names and "icon-w38-osplit-lt2-bflags" not in names, names
+    assert retired in names and C.served_info()["name"] not in names, names
+    last = json.loads((C.candidate_dir("icon-w38-osplit-lt2-bflags") / "manifest.json").read_text())   # served until 2026-10-07
+    assert last["stage1"] == {"name": "logit_v1", "from": "retired-served", "family": "logit"} and last["stage2"]["variant"] == "v2"
+    assert last.get("retired_at") and last["lineup"]["s4"] == "impact_v2" and last["name"] == C.set_name(last["lineup"])
     man = json.loads((C.candidate_dir(retired) / "manifest.json").read_text())
     assert man["family"] == "gb" and man["stage1"] == {"name": "gb_v1", "from": "retired-served", "family": "gb"} and man["stage2"]["variant"] == "v1"
     assert man.get("retired_at") and man["per_basin"] and man["trained_through"] == "2025-10-31"
@@ -60,7 +67,7 @@ def test_engine_serves_the_split_and_labels_the_served_set():
     assert all(m.get("family") == "logit" for m in E.models.values())
     assert E.list_models()[0]["label"] == f'{sv["name"]} (served)' and E.list_models()[0]["line"] == 0.25
     stamp = E.model_stamp()
-    assert stamp["name"] == sv["name"] and stamp["stage2"] == "v2" and stamp["line"] == 0.25 and stamp["family"] == "logit"
+    assert stamp["name"] == sv["name"] and stamp["stage2"] == "v2_d10" and stamp["line"] == 0.25 and stamp["family"] == "logit"
     # the split bites on the Westside groups only
     probs = [{"westside": 0.9, "southeast": 0.9, "north_shore": 0.0, "central": 0.0, "citywide": 0.9},
              {"westside": 0.0, "southeast": 0.0, "north_shore": 0.0, "central": 0.0, "citywide": 0.0}]

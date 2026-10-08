@@ -25,6 +25,7 @@ import term_lab as TL  # noqa: E402
 import train_terms as TT  # noqa: E402
 
 NAMES = [TT.set_name(k, s) for k in TT.SIZES for s in TT.STAGE2]
+PEAKS = [TT.set_name(k, s, added) for k, added, s in TT.PEAK_SETS]
 
 
 def _manifest(name: str) -> dict:
@@ -55,6 +56,31 @@ def test_each_fold_refits_on_its_own_nested_pick():
         need = L.term_inputs(sorted({t for ts in [man["terms"], *man["fold_terms"].values()] for t in ts}))
         for key, m in s.models.items():
             assert m["model"].named_steps["terms"].kw_args["terms"] == man["terms"] and m["features"] == need, (name, key)
+
+
+def test_the_peak_set_is_the_8_terms_plus_the_3_hour_peak():
+    """Chase, 2026-10-07: "the current 8 term set that you selected PLUS the 3 hour peak". The finals are the 8-term
+    set's terms plus rain_max3h; every graded fold has its own 8 picks plus the peak (a fold that picked it takes its
+    next pick), 9 terms each; the term lab's nested grade is the stages build's S2 score, as for every size."""
+    for name, (k, added, suffix) in zip(PEAKS, TT.PEAK_SETS):
+        man, base = _manifest(name), _manifest(TT.set_name(k, suffix))
+        assert man["terms"] == base["terms"] + TT.ADDED[added] and man["term_selection"]["added"] == TT.ADDED[added]
+        sel = json.loads((CAND.candidate_dir(name) / TT.SELECTION_FILE).read_text())
+        for f, ts in man["fold_terms"].items():
+            assert len(ts) == k + len(TT.ADDED[added]) and set(TT.ADDED[added]) <= set(ts), (name, f)
+            if not set(TT.ADDED[added]) & set(sel["by_fold"][f][:k]):
+                assert ts == sel["by_fold"][f][:k] + TT.ADDED[added], (name, f)
+        assert man["fold_terms"]["2016-17"][:8] == [t for t in sel["by_fold"]["2016-17"] if t != "rain_max3h"][:8]
+        assert man["lineup"]["s2"] == TT.stage1_name(k, added) and man["stage2"]["variant"] == TT.STAGE2[suffix]
+        assert man["tags"]["post_seen"] == base["tags"]["post_seen"]
+        s = S2.load_set(name, "candidates")
+        assert s.fold_terms == man["fold_terms"] and all(m["terms"] == man["terms"] for m in s.models.values())
+        p = B.STAGES_DIR / name / "scores.json"
+        if p.exists():
+            sc = json.loads(p.read_text())
+            for tier in TL.TIERS:
+                got, lab = sc["s2"]["pooled"]["oracle"][tier]["bss"], man["term_selection"]["lab_grade"][tier]["skill"]
+                assert abs(got - lab) < 1e-5, (name, tier, got, lab)
 
 
 def test_both_tables_share_one_overflow_model():

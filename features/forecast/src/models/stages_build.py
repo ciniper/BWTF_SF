@@ -342,10 +342,11 @@ class SetBundle:
 
     @property
     def post_seen(self) -> str | None:
-        """Protocol §2's tag, or None: a stage candidate's, or a GEO_V1 candidate manifest's (candidates.tag_candidate)."""
+        """Protocol §2's tag, or None: a stage candidate's, a GEO_V1 candidate manifest's (candidates.tag_candidate), or
+        the served set's when it was promoted with one (promote.py carries it into served.json)."""
         if self.stage is not None:
             return self.stage.post_seen
-        return None if self.is_served else (self.descriptor.get("tags") or {}).get("post_seen")
+        return (self.descriptor.get("tags") or {}).get("post_seen")
 
 
 def served_name() -> str:

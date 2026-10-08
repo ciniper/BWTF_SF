@@ -199,7 +199,9 @@ def save(stage1: str, variant: str, name: str | None = None, note: str = "") -> 
         raise SystemExit("refit holdout models do not match the source artifact — refusing to write")
 
     per_basin = {}
-    if stage1 in SERVED_ALIASES:
+    if stage1 in SERVED_ALIASES and candidates.served_info().get("per_basin"):
+        per_basin = candidates.served_info()["per_basin"]    # a promoted set: its own record (served.json)
+    elif stage1 in SERVED_ALIASES:                           # the original gb_v1 bundle: its training report
         ev = json.loads((T.SERVE_DIR / "eval_report.json").read_text())
         for key, t in ev.get("targets", {}).items():
             per_basin[key] = {"source": t.get("rain_source"), "holdout": t.get("holdout"), "n_events": t.get("n_events")}

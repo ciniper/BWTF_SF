@@ -37,7 +37,10 @@ WORDS = {
            "logit_v1_older11_every": "38-weight + 2011–17 reports (all days)",
            # a short named term list with the south wind, picked nested (train_terms.py), on the 2011 record
            "logit_wind8_older11": "8 terms + south wind", "logit_wind9_older11": "9 terms + south wind",
-           "logit_wind10_older11": "10 terms + south wind"},
+           "logit_wind10_older11": "10 terms + south wind",
+           # the 8-term set's terms plus the day's 3-hour peak, forced (Chase, 2026-10-07: "the current 8 term set ...
+           # PLUS the 3 hour peak"): 9 terms
+           "logit_wind8_max3h_older11": "8 terms + south wind + 3-hour peak"},
     "s3": {"basin_v1": "No split", "split_v2": "Outfall split", "split_v2_sfpuc4": "Outfall split SFPUC", "links_v1": "Size split"},
     "s4": {"impact_v1": "Linger table 1", "impact_v2": "Linger table 2", "impact_v2_zone": "Linger table 2 per zone",
            "impact_v2_d10": "Linger table 2, more samples",
@@ -61,7 +64,8 @@ CODES = {
            "logit_v2_four": "four",
            "logit_v1_older16_first": "w38r16f", "logit_v1_older16_every": "w38r16a",
            "logit_v1_older11_first": "w38r11f", "logit_v1_older11_every": "w38r11a",
-           "logit_wind8_older11": "t8wind", "logit_wind9_older11": "t9wind", "logit_wind10_older11": "t10wind"},
+           "logit_wind8_older11": "t8wind", "logit_wind9_older11": "t9wind", "logit_wind10_older11": "t10wind",
+           "logit_wind8_max3h_older11": "t8wind3h"},
     "s3": {"basin_v1": "nosplit", "split_v2": "osplit", "split_v2_sfpuc4": "osplits", "links_v1": "ssplit"},
     "s4": {"impact_v1": "lt1", "impact_v2": "lt2", "impact_v2_zone": "lt2zone", "impact_v2_d10": "lt2more",
            "zone_v3": "rain", "zone_choice_v1": "pick4", "zone_choice_v2": "pickout"},

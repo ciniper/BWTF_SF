@@ -18,6 +18,22 @@ The rule for every swap:
 The live page and the stage scores compose with the same code
 (`src/models/compose_v2.py`), so what is scored is what serves.
 
+## The model catalog
+
+`features/forecast/data/models/catalog.json` lists every set on disk, the
+live one first. For each set it gives its status (live, candidate or
+retired), its five parts in words and ids, its description and its record.
+It also gives every basin's overflow-model weights as plain numbers: the
+intercept, and per term its weight per standard deviation, mean and sd (trees:
+their size and gain shares). It is generated, never edited. Re-run it after
+any save, promotion or rebuild:
+
+```bash
+venv/bin/python features/forecast/src/models/export_catalog.py
+```
+
+`tests/test_catalog.py` fails while it is stale.
+
 ## A set's name
 
 A set is named by its five stages as they were when it was made: one short
@@ -140,6 +156,7 @@ Candidates on a named term list, picked nested, with the wind (Chase,
 venv/bin/python features/forecast/src/collectors/openmeteo_previous_runs.py --wind
 venv/bin/python features/forecast/src/models/train_terms.py
 venv/bin/python features/forecast/src/models/train_terms.py --save
+venv/bin/python features/forecast/src/models/train_terms.py --peak
 venv/bin/python features/forecast/src/models/stages_build.py --set icon-t8wind-osplit-lt2-bflags --root candidates --write
 ```
 
@@ -157,6 +174,13 @@ venv/bin/python features/forecast/src/models/stages_build.py --set icon-t8wind-o
    table on more samples (`…-lt2more-…`, next section). All use the served rain sources and C, and the older reports from
    2011 (every discharge day). The manifest keeps each fold's own terms
    (`fold_terms`), so the stages build refits every fold on its own pick.
+4. The fourth saves the 8-term set plus the day's 3-hour peak, forced: 9
+   terms, with the linger table on more samples
+   (`icon-t8wind3h-osplit-lt2more-bflags`; Chase, 2026-10-07: "it may help
+   later on when we get better rain info"). It reads the committed selection
+   instead of choosing again. Each graded fold takes its own 8 picks plus the
+   peak; a fold that picked the peak itself takes its next pick instead. A
+   forced term is a line in `train_terms.ADDED` and `PEAK_SETS`.
 
 The wind is one shared formula (`rain_features.wind_rain_features`): the
 rain-weighted south → north wind over the day's hours, in m/s, 0 on a day
@@ -169,8 +193,8 @@ were chosen with the lab's nine-season grades in view. Each set is also tagged
 `post_seen` (`candidates.tag_candidate`): its record was chosen in
 `OLDER_REPORTS.md` with post-training scores in view, so its post-training
 scores carry the tag and only the live season can confirm it. Promoting such a
-set copies `record`, `terms` and `fold_terms` into `served.json`
-(`promote.DESIGN_FIELDS`).
+set copies `record`, `terms`, `fold_terms` and the tag into `served.json`
+(`promote.CARRIED`).
 
 ## The linger table on more samples
 

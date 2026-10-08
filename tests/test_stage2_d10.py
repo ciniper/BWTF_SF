@@ -1,6 +1,7 @@
 """Stage 2 v2_d10 (stage2_variants.py fit --variant v2_d10): v2's split with its linger table fit on the stages' S4
-truth samples. The spec is v2 on more samples, its sets record the id v2_d10, the stages build refits it on those
-samples, and nothing served reads the samples field. Offline. Run: venv/bin/python tests/test_stage2_d10.py
+truth samples, served since 2026-10-07 (icon-w38-osplit-lt2more-bflags). The spec is v2 on more samples, its sets
+record the id v2_d10, the stages build refits it on those samples, the served stage2.json is the spec, and nothing
+on the serving path reads the samples field. Offline. Run: venv/bin/python tests/test_stage2_d10.py
 """
 from __future__ import annotations
 
@@ -45,6 +46,8 @@ def test_the_id_a_set_records():
     assert LU.geo_v1_parts("x", "v2_d10") == {"s2": "x", "s3": "split_v2", "s4": "impact_v2_d10"}
     assert _raises(lambda: LU.geo_v1_parts("x", "v3"), KeyError)
     spec = SV.load_spec("v2_d10")
+    served = json.loads((CAND.SERVE_DIR / "stage2.json").read_text())
+    assert CAND.served_info()["stage2"] == "v2_d10" and served == spec          # promoted 2026-10-07
     for m in CAND.list_candidates():
         man = json.loads((CAND.candidate_dir(m["name"]) / "manifest.json").read_text())
         s2 = CAND.load_stage2(m["name"])
@@ -67,10 +70,11 @@ def test_the_build_refits_it_on_the_d10_samples():
 
 
 def test_its_post_training_scores_are_tagged():
-    """Built after sfpuc-icon-t8s-osplits-pickout-lzflags's post-training scores were seen (protocol §2): the build carries the tag."""
-    man = json.loads((CAND.candidate_dir("icon-w38-osplit-lt2more-bflags") / "manifest.json").read_text())
-    assert "sfpuc-icon-t8s-osplits-pickout-lzflags" in man["tags"]["post_seen"]
-    p = B.STAGES_DIR / "icon-w38-osplit-lt2more-bflags" / "scores.json"
+    """Built after sfpuc-icon-t8s-osplits-pickout-lzflags's post-training scores were seen (protocol §2): served since,
+    its build carries the tag (promote.py carried it into served.json)."""
+    man = CAND.served_info()
+    assert man["name"] == "icon-w38-osplit-lt2more-bflags" and "sfpuc-icon-t8s-osplits-pickout-lzflags" in man["tags"]["post_seen"]
+    p = B.STAGES_DIR / man["name"] / "scores.json"
     if p.exists():
         sc = json.loads(p.read_text())
         assert sc["windows"]["T1"]["post_seen"] == man["tags"]["post_seen"]

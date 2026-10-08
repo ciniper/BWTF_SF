@@ -85,6 +85,8 @@ def _scorecard(path: Path) -> dict:
 # nested term choice and its final terms (train_terms.py). They travel with the set both ways, so the build keeps
 # refitting it as it was fit, served or retired.
 DESIGN_FIELDS = ("record", "fold_terms", "terms")
+# what else a set carries both ways: protocol §2's tags (a post_seen set stays post_seen when it serves)
+CARRIED = DESIGN_FIELDS + ("tags",)
 
 
 def retire_served(now: str, dry_run: bool) -> str:
@@ -120,7 +122,7 @@ def retire_served(now: str, dry_run: bool) -> str:
                    "impact_table_refit": bool(s2 and s2.get("impact_table")), "fitted_at": (s2 or {}).get("fitted_at")},
         "zone_confusion_holdout": sc.get("zone_confusion_holdout"), "input_rules_post": sc.get("input_rules_post") or [],
         "stage1_source": "retired-served", "lineup": dict(served["lineup"]),
-        **{k: served[k] for k in DESIGN_FIELDS if served.get(k) is not None},
+        **{k: served[k] for k in CARRIED if served.get(k) is not None},
     }
     print(f"retire {name}: {len(models)} pickles, scorecard ({len(sc['days'])} days), stage2 {served['stage2']} → candidates/{name}/")
     if not dry_run:
@@ -167,7 +169,7 @@ def promote(candidate: str, line: float, dry_run: bool = False) -> dict:
         "rain_sources": man.get("rain_sources"), "per_basin": man.get("per_basin"), "input_rules_post": man.get("input_rules_post"),
         "stage2_kind": (s2 or {}).get("kind", "basin composition"), "note": man.get("note", ""),
     }
-    for k in DESIGN_FIELDS:                # the stage build refits the served set from these (DESIGN_FIELDS)
+    for k in CARRIED:                      # the stage build refits the served set from DESIGN_FIELDS, and tags it
         if man.get(k) is not None:
             served[k] = man[k]
     served["corrections"] = C.served_info().get("corrections", "live_v2")   # the correction rule is promoted on its own

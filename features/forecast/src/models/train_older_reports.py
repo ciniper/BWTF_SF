@@ -140,7 +140,7 @@ def _row(key: str, a: dict, b: dict) -> str:
 def save(stage1: str, record: dict, got: dict) -> Path:
     spec = ST2.load_variant("v2")
     name, lineup = CAND.geo_v1_set(stage1, spec)
-    if spec != json.loads((T.SERVE_DIR / "stage2.json").read_text()):
+    if CAND.stage2_variant_id(spec) == CAND.served_info()["stage2"] and spec != json.loads((T.SERVE_DIR / "stage2.json").read_text()):
         raise SystemExit("data/models/stage2/v2.json is not the served stage 2: refusing to pair with it")
     rule = {"first": "the first day of each run of discharge days", "every": "every discharge day"}[record["day_rule"]]
     note = (f"The served overflow model's design (38 weights: 19 inputs + hinges, L2 logistic, the served C and rain sources) "
@@ -217,7 +217,11 @@ def _season_rows(frames: dict) -> list:
 
 # The reading, dated: hand-written from the tables below (rerun --report after a rebuild and re-read it).
 READING = [
-    "*Read 2026-10-06, from the tables below.*", "",
+    "*Read 2026-10-06, from the tables below, against the live set then (38-weight · Outfall split · Linger table 2). "
+    "Since 2026-10-07 the live set's linger table is fit on more samples (STAGES_DESIGN.md Part B 37), while these "
+    "candidates keep Linger table 2. The tables pair against the live set of the latest build: the overflow-model (S2) "
+    "rows are unchanged, the public-number rows now include the table change, and the numbers quoted in this section "
+    "are the 2026-10-06 read.*", "",
     "- **Count every discharge day.** \"All days\" beats \"first days\" in every window, bar one tie: the public number on "
     "the holdout.",
     "  - With all days counted, an older-report day behaves like a CIWQS day. At each rain level the share of days with an "
@@ -262,7 +266,7 @@ def report() -> str:
              "`STAGES_DESIGN.md` Part B 31.", "",
              f"Every candidate is the live overflow model's design ({LU_WORDS['logit_v1']}) refit on a longer label record:",
              "- the same 19 inputs and hinges, the same C, the same rain gauge per basin;",
-             "- the live beach split and linger table.", "",
+             "- the outfall split and Linger table 2, the live forecast's until 2026-10-07.", "",
              f"The scoring is the frozen protocol's: the same days, the same truth (the CIWQS ledger only), the same holdout "
              f"from {T.HOLDOUT_START.date()}. An older-report day is a training day, never a scored one.", "",
              "## Result", "", *READING, ""]
