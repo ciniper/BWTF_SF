@@ -144,6 +144,7 @@ Terminology (public and code): **basin** (4, SFPUC's), **zone** (4, public), **o
     - **One rule, two places.** A set's S1 part and its manifest's `input_rules` / `train_input_rules` must agree; `candidates.save_candidate` and `stages_build.input_rules` refuse otherwise.
     - **Scoring is unchanged.** S1's own primary grades the weather model only, and it leaves the dead-gauge days out (X-S1-OUTAGE), so the S1 part scores as ICON and §8's S1 row stays not applicable (`changed_components` compares S1 by its weather model). S2 is fed rain known, so an S2 fit and scored on other rain counts as changed, as Part B 40's S2 rows did. Part B 40's numbers and §9's 2 of 5 stand.
     - **The Model check.** The new S1 part shows ICON's S1 score with a note. S2's own score follows the S1 pick's rain (`by_rain`; "not scored on … rain yet" where no set was), and so does the public number's rain-known cell.
+    - **S1's column is "S1 · rain"** (it was "weather model"), as §3 and the flowchart call it. The column titles moved to `shared/lineup_titles.py`, which only the Model check and the stages report read. The build pins every module it imports, so a title in `shared/lineup.py` staled every build; `tests/test_lineup.py` fails if a build pins the titles file.
 
 ## Part C — Merged design (verbatim)
 

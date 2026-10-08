@@ -19,8 +19,8 @@ set on disk). Standard library only, no IO: the web app, the stage build and the
 """
 from __future__ import annotations
 
-COLUMNS = (("geography", "Basins"), ("s1", "S1 · weather model"), ("s2", "S2 · overflow model"),
-           ("s3", "S3 · beach split"), ("s4", "S4 · lingering table"), ("s5", "S5 · live correction rule"))
+# The column titles a lineup shows under are display only, in shared/lineup_titles.py: the stage build imports this
+# module, so a title here staled every build (Part B 41).
 
 WORDS = {
     "geography": {"geo_v1": "BWTF basins", "sfpuc4_v1": "SFPUC basins"},

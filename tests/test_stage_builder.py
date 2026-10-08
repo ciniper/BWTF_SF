@@ -27,6 +27,7 @@ for p in (str(ROOT), str(MODELS_SRC)):
 
 import export_stage_builder as E  # noqa: E402
 from shared import lineup as LU  # noqa: E402
+from shared import lineup_titles as LT  # noqa: E402  (the column titles, display only)
 
 DATA = ROOT / "features" / "forecast" / "data" / "models"
 STAGES = DATA / "stages"
@@ -232,7 +233,7 @@ def test_the_realistic_mean_is_the_rule_it_is_shown_for():
 
 def test_every_name_comes_from_the_lineup_words_and_none_says_today():
     for st in built()["stages"]:
-        assert st["title"] == dict(LU.COLUMNS)[st["id"]]
+        assert st["title"] == dict(LT.COLUMNS)[st["id"]]
         for p in st["parts"]:
             assert p["name"] == LU.words(st["id"], p["id"]), (st["id"], p)
             assert "today" not in p["name"].lower(), p

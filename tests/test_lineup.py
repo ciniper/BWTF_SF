@@ -17,6 +17,7 @@ for p in (str(ROOT), str(ROOT / "features" / "forecast"), str(MODELS)):
         sys.path.insert(0, p)
 
 from shared import lineup as LU  # noqa: E402
+from shared import lineup_titles as LT  # noqa: E402  (the column titles, display only)
 
 STAGES = ROOT / "features" / "forecast" / "data" / "models" / "stages"
 
@@ -55,7 +56,7 @@ def test_every_scored_set_has_words_for_every_part():
     for d in built:
         man = json.loads((d / "manifest.json").read_text())
         comps = {"geography": man["geography"], **man["components"]}
-        for col, _ in LU.COLUMNS:
+        for col, _ in LT.COLUMNS:
             LU.words(col, comps[col])
 
 
@@ -105,7 +106,7 @@ def test_the_served_lineup_is_what_serves():
 def test_every_part_has_one_code_of_its_own():
     """A part with words has a code; a code is letters and digits only (an id splits on "-"); two parts share a
     code only when they share their words (the same rule under two ids), and only the BWTF basins have none."""
-    assert set(LU.CODES) == set(LU.WORDS) == {c for c, _ in LU.COLUMNS} == set(LU.NAME_COLS)
+    assert set(LU.CODES) == set(LU.WORDS) == {c for c, _ in LT.COLUMNS} == set(LU.NAME_COLS)
     for col, codes in LU.CODES.items():
         assert set(codes) == set(LU.WORDS[col]), col
         for cid, c in codes.items():
@@ -180,9 +181,22 @@ def test_names_are_distinct_and_never_relative():
             assert "today" not in name.lower(), (col, name)
 
 
+def test_no_build_pins_the_column_titles():
+    """The titles are display only (shared/lineup_titles.py): no stage build imports them, so changing one never stales
+    a build. A build that pins the file would bring back a 40-minute rebuild for a label (Part B 41)."""
+    title_file = "shared/lineup_titles.py"
+    built = sorted(d for d in STAGES.iterdir() if (d / "manifest.json").exists())
+    assert built
+    for d in built:
+        man = json.loads((d / "manifest.json").read_text())
+        assert title_file not in man.get("code", {}), d.name
+        assert "shared/lineup.py" in man.get("code", {}) or "code" not in man, d.name   # the names stay pinned
+    assert not hasattr(LU, "COLUMNS")
+
+
 def test_the_report_reads_the_same_map():
     import export_stages_report as R
-    assert R.LABELS is LU.WORDS and R.LINEUP_COLS is LU.COLUMNS and R.label is LU.words
+    assert R.LABELS is LU.WORDS and R.LINEUP_COLS is LT.COLUMNS and R.label is LU.words
 
 
 if __name__ == "__main__":

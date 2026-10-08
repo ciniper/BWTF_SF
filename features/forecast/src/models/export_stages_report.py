@@ -48,6 +48,7 @@ import stages_spec as SP  # noqa: E402
 from export_reports_index import LIVE_BADGE, LIVE_CSS  # noqa: E402  (the LIVE badge, one look on every report)
 from shared import geography as G  # noqa: E402
 from shared import lineup as LU  # noqa: E402  (the lineup's plain words, A8: one map for this page and the Model check)
+from shared import lineup_titles as LT  # noqa: E402  (the column titles, display only)
 from shared.risk_levels import LEVELS  # noqa: E402  (the public levels and their colours, A3)
 from shared.zones import ZONES  # noqa: E402
 
@@ -65,7 +66,7 @@ HOW_IT_WORKS = "/reports/2026-09_forecast_how_it_works.html"
 INDEX = "/reports/"                                         # every report, current and archived (export_reports_index.py)
 ROOTS = ("served", "candidates", "stages_candidates")       # lineup order after the live forecast: BWTF basins first
 
-LABELS, LINEUP_COLS = LU.WORDS, LU.COLUMNS
+LABELS, LINEUP_COLS = LU.WORDS, LT.COLUMNS
 
 # A rules version's one line (from STAGES_PROTOCOL.md's "Changes from" blocks; the dates are read from the
 # files). Rule ids go in the tooltip. A version the files name with no line here raises.

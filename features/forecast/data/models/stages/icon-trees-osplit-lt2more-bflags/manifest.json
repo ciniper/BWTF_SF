@@ -15,7 +15,7 @@
  "family": "gb",
  "spec_version": "2e03a1eae7",
  "protocol": "stages_v3@22a2695e2e950188d37b753928932c6f6f2dc83296482a4fddf5a373ce86df3f",
- "built_at": "2026-10-08T19:33:23+00:00",
+ "built_at": "2026-10-08T21:52:56+00:00",
  "windows": {
   "holdout_start": "2023-07-01",
   "post_start": "2025-11-01",
@@ -147,7 +147,7 @@
   "shared/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "shared/clock.py": "fe3cf416126533924a15ab74666d2c99058173c56678229b432106512ac981f1",
   "shared/geography.py": "c900c1247df24577581497d1a1f4aa85cd9874bd67c04681a19ea4243871df2b",
-  "shared/lineup.py": "19b3838eacecb269f9209c37214692284f259e1adbefd0d82fc9ef035149ed93",
+  "shared/lineup.py": "610f49e656204d41b534fb1c8e06cff2abeb0c9eb4bfe068c17f9241e2e03e0f",
   "shared/outfalls.py": "1f9fe66d0d45785bdf47f468903766f6a242ab6022960ce33924a5550031bc65",
   "shared/risk_levels.py": "dbf0d046b2734eefaea3140b649e46544e57c29639319a9730fa84e4800aa1f7",
   "shared/standards.py": "1f035d62715b4549fa0cb8d5da7d732518b318b158ac3048c97ff6b19d2fc151",

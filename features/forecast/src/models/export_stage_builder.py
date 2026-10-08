@@ -39,6 +39,7 @@ for _p in (str(REPO), str(HERE)):
 import stages_spec as SP  # noqa: E402  (each stage's question and what its oracle is fed, in words)
 from shared import geography as G  # noqa: E402
 from shared import lineup as LU  # noqa: E402
+from shared import lineup_titles as LT  # noqa: E402  (the column titles, display only)
 from shared.zones import ZONES  # noqa: E402
 
 MODELS = FORECAST / "data" / "models"
@@ -52,7 +53,7 @@ ROOTS = ("served", "candidates", "stages_candidates")   # the stages report's or
 
 WINDOWS = (("T2", "Nine seasons"), ("T1", "Post-training"), ("T1-holdout", "Holdout"), ("T0", "Live season"))
 STAGES = ("s1", "s2", "s3", "s4", "s5")
-TITLES = dict(LU.COLUMNS)
+TITLES = dict(LT.COLUMNS)
 # What S1 and S5 show under each window: neither is refit season by season. S1 has one window, the weather model's
 # archive (weights-clean throughout: s1_scores' tier). S5's nine-seasons view is its own window, every observation
 # day since the holdout began (the realistic feeds are drawn from then on), as the stages report's figure shows it.
