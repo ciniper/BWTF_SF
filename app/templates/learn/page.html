@@ -47,7 +47,13 @@
   @keyframes flow{to{stroke-dashoffset:-44}}
   @keyframes spin{to{transform:rotate(360deg)}}
   .drop{stroke:#5b8fb9;stroke-width:2;stroke-linecap:round;animation:fall var(--fall,.9s) linear infinite}
+  .drop.heavy{stroke:#456f95;stroke-width:1.7;animation-name:fallh}
   @keyframes fall{from{transform:translateY(-40px)}to{transform:translateY(150px)}}
+  @keyframes fallh{from{transform:translate(14px,-60px)}to{transform:translate(-34px,190px)}}
+  .cloud > g{animation:drift-c var(--cd,10s) ease-in-out infinite alternate}
+  @keyframes drift-c{from{transform:translateX(-18px)}to{transform:translateX(18px)}}
+  .puff{transform-box:fill-box;transform-origin:center;animation:puff var(--pd,5s) ease-out infinite}
+  @keyframes puff{0%{transform:translate(0,0) scale(.35);opacity:0}12%{opacity:.85}100%{transform:translate(var(--dx),var(--dy)) scale(var(--s));opacity:0}}
 
   /* ── 3. Meet the indicators ── */
   .bugs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:14px}
@@ -95,8 +101,10 @@
   .qt-cap{flex:1;display:flex;gap:10px;align-items:flex-start;padding:12px 16px 14px;border-top:1px solid var(--sand2)}
   .qt-n{width:26px;height:26px;font-size:13px;margin-top:1px}
   .qt-cap h3{margin:0 0 2px;font-size:16px;font-weight:900} .qt-cap p{margin:0;font-size:14px;color:var(--muted)}
-  .qt-nav{display:flex;align-items:center;justify-content:center;gap:10px}
+  .qt-nav{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px 10px}
   .qt-nav .btn{padding:5px 14px;font-size:15px}
+  .qt-skip{margin-left:6px;font-size:13px;font-weight:700;color:var(--brand);text-decoration:none;white-space:nowrap} .qt-skip:hover{text-decoration:underline}
+  #qt-after{scroll-margin-top:16px}
   .qt-dots{display:flex}
   .qt-dots button{width:22px;height:22px;border:0;padding:0;background:none;cursor:pointer;display:grid;place-items:center}
   .qt-dots button::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--line);transition:transform .2s,background .2s}
@@ -131,13 +139,17 @@
   .of-ico.on::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--discharge);animation:ping 1.4s ease-out infinite}
   @keyframes ping{from{transform:scale(1);opacity:.9}to{transform:scale(2.8);opacity:0}}
   .pl-ico{background:#26272a;border:2px solid #fff;border-radius:4px;box-sizing:border-box;box-shadow:0 1px 3px rgba(0,0,0,.35)}
-  .leaflet-tooltip.pl-tip{font:700 12px Roboto,sans-serif;padding:2px 7px}
+  .leaflet-tooltip.pl-tip{font:700 12px Roboto,sans-serif;padding:2px 7px;cursor:pointer}
+  .pl-pop{margin:0} .pl-pop img{display:block;width:260px;height:170px;object-fit:cover;border-radius:8px;background:#dfe7ec}
+  .pl-pop figcaption{margin:8px 0 0;font-size:13px;line-height:1.4} .pl-pop small{display:block;margin-top:4px;color:var(--faint);font-size:11.5px}
+  .mflow.art{stroke-dasharray:4 10}
   .leaflet-popup-content{font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:13px;line-height:1.45}
   .strip{margin:10px 0 0}
   .strip svg{display:block;width:100%;height:44px;background:var(--sand2);border-radius:8px 8px 0 0}
   .strip input{display:block;width:100%;margin:0;accent-color:var(--discharge)}
   .strip-ends{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--faint)}
   .map-key{margin:8px 0 0}
+  .map-key i.k-art{width:20px;height:2px;background:repeating-linear-gradient(90deg,#8b6a4a 0 4px,transparent 4px 9px)}
   .map-key i.k-ring{width:20px;height:7px;background:#8b6a4a;opacity:.55;border-radius:4px}
   .map-key i.k-main{width:20px;height:3px;background:repeating-linear-gradient(90deg,#6b4c2e 0 5px,transparent 5px 9px)}
   .map-key i.k-out{width:20px;height:4px;background:#2f9c96}
@@ -160,6 +172,9 @@
   .tl .when{font-size:24px;font-weight:900;line-height:1.1;letter-spacing:-.01em;color:var(--brand)}   /* not Bebas: it has no lowercase, and "1850s" would read 1850S */ .tl .kept .when{color:var(--safe)}
   .tl h3{margin:2px 0 4px;font-size:16px;font-weight:900}
   .tl p{margin:0;font-size:14px;color:var(--muted)}
+  .tl.collapsed .stop:nth-child(n+5){display:none}   /* folded: the first four stops, fading out */
+  .tl.collapsed::after{content:"";position:absolute;left:0;right:0;bottom:0;height:140px;background:linear-gradient(rgba(255,255,255,0),#fff);pointer-events:none}
+  .tl-toggle{text-align:center;margin:4px 0 14px}
   .tl .photos{display:grid;gap:8px;margin:10px 0 0} .tl .photos.n3{grid-template-columns:repeat(3,minmax(0,1fr))}
   .tl .photos figure{margin:0} .tl .photos img{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:10px;background:#dfe7ec}
   .tl .photos.n3 img{aspect-ratio:3/2} .tl .photos .small{max-width:340px} .tl .photos figcaption{font-size:12px;color:var(--faint);margin:4px 0 0;line-height:1.35}
@@ -189,8 +204,9 @@
     .tl .rail{left:9px;margin-left:0}.tl .stop,.tl .stop:nth-child(even){width:auto;margin-left:0;padding:0 0 14px 34px}.tl .stop + .stop{margin-top:0}
     .tl .dot,.tl .stop:nth-child(even) .dot{left:2px;right:auto}.tl.js .card,.tl.js .stop:nth-child(even) .card{transform:translateY(16px)}
     .qt-view{margin:0 -31px;border-radius:0;border-left:0;border-right:0}.qt-art .lbl{font-size:calc(var(--fs) * 1.35)}   /* edge to edge (the card's 16 + 1 and the page's 14 px), labels legible */
+    .qt-skip{flex-basis:100%;text-align:center;margin:0}
     .qt-intro{padding:18px}.qt-intro h3{font-size:34px}.qt-cap{padding:10px 12px 12px}.qt-cap p{font-size:13.5px}}
-  @media (prefers-reduced-motion:reduce){.flow,.drop,.m,.mflow,.of-ico.on::after,.cw,.qt-wave{animation:none!important}.tl .dot{transition:none!important}.chart .bar,.well{transition:none!important}}
+  @media (prefers-reduced-motion:reduce){.flow,.drop,.m,.mflow,.of-ico.on::after,.cw,.qt-wave,.cloud > g{animation:none!important}.puff{animation:none!important;transform:translate(calc(var(--dx) * .5),0) scale(1.4);opacity:.5}.tl .dot{transition:none!important}.chart .bar,.well{transition:none!important}}
 </style>
 </head>
 <body>
@@ -217,14 +233,28 @@
           <linearGradient id="soil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e7dccb"/><stop offset="1" stop-color="#d3c4ab"/></linearGradient>
           <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fd0ec"/><stop offset="1" stop-color="#5aa5d3"/></linearGradient>
           <clipPath id="sky"><rect x="0" y="0" width="960" height="200"/></clipPath>
+          <clipPath id="water"><polygon points="790,200 960,200 960,330 790,300"/></clipPath>
+          <filter id="murk" x="-10%" y="-60%" width="120%" height="220%"><feTurbulence type="fractalNoise" baseFrequency="0.035 0.11" numOctaves="2" seed="7"/><feDisplacementMap in="SourceGraphic" scale="14" xChannelSelector="R" yChannelSelector="G"/><feGaussianBlur stdDeviation="1.2"/></filter>
+          <linearGradient id="stain-g" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5f4127" stop-opacity=".9"/><stop offset=".55" stop-color="#7a5a3a" stop-opacity=".55"/><stop offset="1" stop-color="#8b6a4a" stop-opacity="0"/></linearGradient>
         </defs>
         <rect x="0" y="0" width="960" height="440" fill="#eaf3fb"/>
+        <rect id="sky-dim" x="0" y="0" width="960" height="200" fill="#4d5f70" opacity="0"/>
+        <g id="clouds" opacity="0">
+          {% for x, y, s, c in [(60, 22, 1.1, "#9fb0bf"), (260, 14, 1.4, "#8a9cad"), (470, 26, 1.0, "#a7b6c3"), (640, 12, 1.3, "#8e9fb0"), (840, 24, 1.15, "#9aabba")] %}
+          <g class="cloud" style="--cd:{{ 9 + loop.index * 2 }}s" transform="translate({{ x }} {{ y }}) scale({{ s }})"><g fill="{{ c }}"><ellipse cx="0" cy="18" rx="56" ry="16"/><circle cx="-22" cy="10" r="18"/><circle cx="8" cy="2" r="24"/><circle cx="34" cy="12" r="16"/></g></g>
+          {% endfor %}
+        </g>
         <g id="drops" clip-path="url(#sky)"></g>
+        <g id="drops-heavy" clip-path="url(#sky)"></g>
         <polygon points="0,170 660,170 790,200 790,440 0,440" fill="url(#soil)"/>
         <polygon points="790,200 960,200 960,330 790,300" fill="url(#sea)"/>
         <polygon points="790,300 960,330 960,440 790,440" fill="#cdbb98"/>
         <path d="M660 170 L790 200" stroke="#e8d7a9" stroke-width="6"/>
-        <ellipse id="plume" cx="830" cy="214" rx="10" ry="6" fill="#7a5a3a" opacity="0"/>
+        {# the discharge in the water: sewage is fresh water, lighter than the sea, so it rises and spreads at the surface #}
+        <g id="plume" clip-path="url(#water)" opacity="0">
+          <path id="stain" d="M790 200 Z" fill="url(#stain-g)" filter="url(#murk)"/>
+          <g id="puffs"></g>
+        </g>
         {# homes with a roof drain, a storm drain #}
         <g fill="#fff" stroke="#26272a" stroke-width="2"><rect x="24" y="118" width="70" height="52"/><path d="M18 120 L59 88 L100 120 Z"/><rect x="104" y="126" width="64" height="44"/><path d="M98 128 L136 98 L174 128 Z"/></g>
         <path d="M172 128 H178 V170" fill="none" stroke="#26272a" stroke-width="3"/>
@@ -305,8 +335,8 @@
       <input type="range" id="sys-t" min="0" max="1000" value="0" aria-label="Time in the storm">
       <div class="strip-ends"><span id="sys-t0"></span><span>outfalls discharging, through the storm</span><span id="sys-t1"></span></div>
     </div>
-    <div class="swatches map-key"><span><i class="k-ring"></i>storage ring (schematic)</span><span><i class="k-main"></i>sewage to a plant</span><span><i class="k-out"></i>treated water out</span><span><i class="k-pl"></i>treatment plant</span><span><i class="k-of"></i>outfall</span><span><i class="k-on"></i>discharging</span></div>
-    <p class="more">Plant sites and offshore pipes are approximate, after Figures 2-1 and 2-5 of SFPUC's master plan; the ring is schematic, joining the outfalls in shoreline order rather than tracing the real structures. Start times, durations and volumes are SFPUC's reports to the State, with each discharge's volume spread evenly over its duration; all of them are in the <a href="/discharges">Discharge Ledger</a>. MG = million gallons (≈1.5 Olympic pools).</p>
+    <div class="swatches map-key"><span><i class="k-art"></i>main sewers (schematic)</span><span><i class="k-ring"></i>storage ring (schematic)</span><span><i class="k-main"></i>sewage to a plant</span><span><i class="k-out"></i>treated water out</span><span><i class="k-pl"></i>treatment plant (tap for a photo)</span><span><i class="k-of"></i>outfall</span><span><i class="k-on"></i>discharging</span></div>
+    <p class="more">Plant sites and offshore pipes are approximate, after Figures 2-1 and 2-5 of SFPUC's master plan; the ring is schematic, joining the outfalls in shoreline order rather than tracing the real structures, and the thin brown arteries show which way each neighborhood drains, downhill to the shore, not where its pipes run. Tap any line for its name. Start times, durations and volumes are SFPUC's reports to the State, with each discharge's volume spread evenly over its duration; all of them are in the <a href="/discharges">Discharge Ledger</a>. MG = million gallons (≈1.5 Olympic pools).</p>
   </section>
   {% endif %}
 
@@ -354,10 +384,11 @@
           <button type="button" class="btn ghost" id="qt-prev" aria-label="Previous step">←</button>
           <div class="qt-dots" id="qt-dots">{% for st in qt_steps %}<button type="button" data-i="{{ loop.index }}" aria-label="Step {{ loop.index }}: {{ st.title }}"></button>{% endfor %}</div>
           <button type="button" class="btn ghost" id="qt-next" aria-label="Next step">→</button>
+          <a class="qt-skip" id="qt-skip" href="#qt-after">Skip the steps ↓</a>
         </div>
       </div>
     </div>
-    <div class="lab">
+    <div class="lab" id="qt-after">
       <div>
         <h3>Try it yourself</h3>
         <p>Set how much Enterococcus is in the water and watch which wells glow, with the reading the table gives. Two samples of the same water rarely read the same: press New sample.</p>
@@ -426,6 +457,7 @@
         {% endfor %}
       </ol>
     </div>
+    <p class="tl-toggle"><button type="button" class="btn ghost" id="tl-more" aria-controls="tl" aria-expanded="true" hidden>Collapse the timeline ↑</button></p>
     <div class="swatches"><span><i style="background:var(--brand);border-radius:50%"></i>from SFPUC's master plan</span><span><i style="background:var(--safe);border-radius:50%"></i>from the records this site keeps</span></div>
     <p class="more">{{ photo_credit }}</p>
   </section>
@@ -457,25 +489,39 @@
   const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
 
   // ── 1. Where the rain goes: one number, r from 0 to 1, drives every pipe ──
-  const drops = $("drops"), N = 70;
-  for (let i = 0; i < N; i++) {
-    const l = document.createElementNS("http://www.w3.org/2000/svg", "line");
-    const x = Math.random() * 960, y = Math.random() * 60;
-    l.setAttribute("x1", x); l.setAttribute("y1", y); l.setAttribute("x2", x - 4); l.setAttribute("y2", y + 14);
-    l.setAttribute("class", "drop"); l.style.setProperty("--fall", (0.6 + Math.random() * 0.5).toFixed(2) + "s"); l.style.animationDelay = (-Math.random()).toFixed(2) + "s";
-    l.style.display = "none"; drops.appendChild(l);
+  const SVGNS = "http://www.w3.org/2000/svg";
+  function rainLayer(id, n, heavy) {   // light rain: short, slow, upright streaks; heavy rain: long, fast, slanted ones
+    const g = $(id), out = [];
+    for (let i = 0; i < n; i++) {
+      const l = document.createElementNS(SVGNS, "line"), x = Math.random() * 1000, y = Math.random() * 60, len = heavy ? 22 + Math.random() * 10 : 12, lean = heavy ? 9 : 3;
+      l.setAttribute("x1", x); l.setAttribute("y1", y); l.setAttribute("x2", x - lean); l.setAttribute("y2", y + len);
+      l.setAttribute("class", heavy ? "drop heavy" : "drop"); l.style.setProperty("--fall", ((heavy ? 0.42 : 0.7) + Math.random() * (heavy ? 0.2 : 0.4)).toFixed(2) + "s");
+      l.style.animationDelay = (-Math.random()).toFixed(2) + "s"; l.style.display = "none"; g.appendChild(l); out.push(l);
+    }
+    return out;
+  }
+  const LIGHT = rainLayer("drops", 90, false), HEAVY = rainLayer("drops-heavy", 200, true);
+  const puffs = [];   // the plume: puffs leave the outfall's mouth, rise and spread offshore, each on its own clock
+  for (let i = 0; i < 18; i++) {
+    const speck = i % 3 === 2, c = document.createElementNS(SVGNS, "circle");
+    c.setAttribute("cx", 792); c.setAttribute("cy", 207 + Math.random() * 6); c.setAttribute("r", speck ? 1.6 : 7 + Math.random() * 7);
+    c.setAttribute("fill", speck ? "#3f2a17" : i % 2 ? "#6e4f31" : "#86653f"); c.setAttribute("class", "puff");
+    c.style.setProperty("--dx", (50 + Math.random() * 130).toFixed(0) + "px"); c.style.setProperty("--dy", (speck ? 4 + Math.random() * 30 : -4 + Math.random() * 10).toFixed(0) + "px");
+    c.style.setProperty("--s", speck ? 1 : (1.6 + Math.random() * 1.6).toFixed(2)); c.style.setProperty("--pd", (3.5 + Math.random() * 3).toFixed(1) + "s");
+    c.style.animationDelay = (-Math.random() * 6).toFixed(1) + "s"; c.style.display = "none"; $("puffs").appendChild(c); puffs.push(c);
   }
   const STATES = [
     [0.03, "Dry", "Everything from homes and businesses runs downhill to the shoreline storage and is pumped from its floor to the treatment plant."],
     [0.3, "Rain", "Rain off roofs and streets joins the sewage in the same pipes. The plant still takes it all."],
     [0.7, "Heavy rain", "The plant takes all it can; the rest waits in the storage, where solids settle out and floating trash is trapped."],
-    [1.01, "Overflow", "Storage is full. The settled water spills over the weir and out a permitted outfall at the shore: a combined sewer discharge. Settling in the storage counts as the equivalent of primary treatment, which is why SFPUC calls it a discharge rather than an overflow. SFPUC posts the nearby beaches and samples them until they clear."],
+    [1.01, "Overflow", "Storage is full. The settled water spills over the weir and out a permitted outfall at the shore: a combined sewer discharge. Being fresh water, it rises and spreads across the surface. Settling in the storage counts as the equivalent of primary treatment, which is why SFPUC calls it a discharge rather than an overflow. SFPUC posts the nearby beaches and samples them until they clear."],
   ];
-  let POSTED_UNTIL = 0;
   function width(id, w) { const el = $(id); el.setAttribute("stroke-width", w.toFixed(1)); el.style.opacity = w > 0.5 ? 1 : 0; }
   function speed(id, s) { $(id).style.setProperty("--dur", (1.8 - 1.3 * s).toFixed(2) + "s"); }
-  function setRain(r, aftermath) {
-    const shown = Math.round(r * N); [...drops.children].forEach((d, i) => { d.style.display = i < shown ? "" : "none"; });
+  function setRain(r, aftermath, linger) {   // linger: what is left of the plume once the overflow has stopped (0 to 1)
+    const light = Math.round(clamp(r / 0.45) * LIGHT.length), heavy = Math.round(Math.pow(clamp((r - 0.3) / 0.7), 0.8) * HEAVY.length);
+    LIGHT.forEach((d, i) => { d.style.display = i < light ? "" : "none"; }); HEAVY.forEach((d, i) => { d.style.display = i < heavy ? "" : "none"; });
+    $("sky-dim").setAttribute("opacity", (0.42 * clamp((r - 0.15) / 0.85)).toFixed(2)); $("clouds").setAttribute("opacity", clamp(r / 0.35).toFixed(2));
     $("rain-out").textContent = r < 0.03 ? "None" : r < 0.3 ? "Light" : r < 0.7 ? "Heavy" : "Storm";
     width("f-drain", r < 0.03 ? 0 : 3 + 6 * r); speed("f-drain", r);
     width("f-roof", r < 0.03 ? 0 : 2 + 4 * r); speed("f-roof", r);
@@ -487,33 +533,42 @@
     const fill = clamp((r - 0.3) / 0.4); const h = 76 * fill; $("box-fill").setAttribute("y", 314 - h); $("box-fill").setAttribute("height", h);   // up to the weir's crest
     $("box-ch").setAttribute("opacity", r >= 0.7 ? 0.85 : 0);
     const over = clamp((r - 0.7) / 0.3); width("f-over", r >= 0.7 ? 5 + 10 * over : 0); speed("f-over", over);
-    const pl = $("plume"); pl.setAttribute("rx", 10 + 70 * over); pl.setAttribute("ry", 6 + 18 * over); pl.setAttribute("opacity", (0.65 * over).toFixed(2));
+    const flowing = r >= 0.7 ? 0.35 + 0.65 * over : 0, E = Math.max(flowing, linger || 0), L = 40 + 130 * E, T = 6 + 20 * E;
+    $("stain").setAttribute("d", `M790 199 H${(790 + L).toFixed(0)} C${(790 + L * 0.85).toFixed(0)} ${(200 + T * 0.3).toFixed(1)} ${(790 + L * 0.45).toFixed(0)} ${(200 + T).toFixed(1)} 790 ${(203 + T).toFixed(1)} Z`);
+    $("plume").setAttribute("opacity", E.toFixed(2));
+    const live = Math.round(flowing * puffs.length); puffs.forEach((c, i) => { c.style.display = i < live ? "" : "none"; });
     const posted = r >= 0.7 || aftermath;
     $("sign-b").setAttribute("fill", posted ? "#d4763a" : "#237059"); $("sign-t").textContent = posted ? "POSTED" : "OPEN";
     let st = STATES.find(s => r < s[0]) || STATES[3];
-    if (aftermath && r < 0.7) st = [0, "After the storm", "The overflow has stopped, but the beach stays posted while SFPUC samples it, until results show it is clear."];
+    if (aftermath && r < 0.7) st = [0, "After the storm", "The overflow has stopped and the plume is drifting off and thinning, but the beach stays posted while SFPUC samples it, until results show it is clear."];
     $("cap-step").textContent = st[1]; $("cap-text").textContent = st[2]; $("rain-cap").classList.toggle("overflow", st[1] === "Overflow");
   }
   const slider = $("rain-r");
-  slider.addEventListener("input", () => setRain(slider.value / 100, false));
+  slider.addEventListener("input", () => { if (playing) stopStorm(); setRain(slider.value / 100, false, 0); });
   let playing = false;
+  function stopStorm() { playing = false; $("storm").textContent = "Play a storm"; $("storm").classList.remove("ghost"); }
   $("storm").addEventListener("click", () => {
-    if (playing) return; playing = true; $("storm").disabled = true;
-    const plan = [[0, 0], [5500, 0.92], [8000, 0.92], [13000, 0.05], [16500, 0.05], [17500, 0]];   // ms → rain
-    const t0 = performance.now(), speedUp = REDUCE ? 3 : 1;
+    if (playing) { stopStorm(); setRain(0, false, 0); slider.value = 0; return; }
+    playing = true; $("storm").textContent = "Stop"; $("storm").classList.add("ghost");
+    // ms → rain: builds over 15 s, holds the overflow for 7, eases off, then the beach stays posted a while after
+    const plan = [[0, 0], [5000, 0.26], [11000, 0.62], [15000, 0.96], [22000, 0.96], [28000, 0.05], [36000, 0.05], [38000, 0]];
+    const t0 = performance.now(), speedUp = REDUCE ? 3 : 1; let mem = 0, last = t0;
     (function tick(now) {
-      const t = (now - t0) * speedUp; let r = 0, after = false;
+      if (!playing) return;
+      const t = (now - t0) * speedUp; let r = 0;
       for (let i = 1; i < plan.length; i++) if (t <= plan[i][0]) { const [a, ra] = plan[i - 1], [b, rb] = plan[i]; r = ra + (rb - ra) * (t - a) / (b - a); break; }
-      after = t > 9000 && t < 16500;
-      slider.value = Math.round(r * 100); setRain(r, after);
-      if (t < plan[plan.length - 1][0]) requestAnimationFrame(tick); else { playing = false; $("storm").disabled = false; setRain(0, false); slider.value = 0; }
+      const over = r >= 0.7 ? 0.35 + 0.65 * clamp((r - 0.7) / 0.3) : 0;
+      mem = Math.max(over, mem - (now - last) * speedUp / 10000); last = now;   // the plume thins out over about ten seconds
+      slider.value = Math.round(r * 100); setRain(r, t > 16000 && t < 36000, mem);
+      if (t < plan[plan.length - 1][0]) requestAnimationFrame(tick); else { stopStorm(); setRain(0, false, 0); slider.value = 0; }
     })(t0);
   });
-  setRain(0, false);
+  setRain(0, false, 0);
 
   // ── 2. The system from above: Leaflet loads only when the map nears the screen ──
   {% if system %}
   const SYS = {{ system|tojson }}, mapBox = $("sys-map"), OF = {}, PLUME = {};
+  const PHOTO = { {% for k, p in system.plants.items() %}{{ k|tojson }}: {{ asset(p.photo)|tojson }}, {% endfor %} };
   const esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
   const num = v => v < 10 ? v.toFixed(1) : Math.round(v).toLocaleString();
   const hm = m => { const h = Math.floor(m / 60), r = Math.round(m % 60); return h ? h + " h" + (r ? " " + r + " min" : "") : r + " min"; };
@@ -538,24 +593,47 @@
     $("sys-load").remove();
     MAP = L.map(mapBox, {scrollWheelZoom: false, zoomSnap: 0.25});
     L.tileLayer({{ BASEMAP.url|tojson }}, {{ BASEMAP.options|tojson }}).addTo(MAP);   // the site's one basemap: shared/basemap.py
+    SYS.arteries.forEach(r => {   // schematic: which way each neighborhood drains, not where its pipes run
+      L.polyline(r.pts, {color: "#a8875f", weight: 6, opacity: 0.18, interactive: false}).addTo(MAP);
+      L.polyline(r.pts, {color: "#8b6a4a", weight: 2, opacity: 0.75, className: "mflow art"}).bindTooltip(esc(r.name) + " → the shoreline storage", {sticky: true}).addTo(MAP);
+    });
     SYS.ring.forEach(r => {
       if (r.kind === "storage") L.polyline(r.pts, {color: "#8b6a4a", weight: 10, opacity: 0.35, interactive: false}).addTo(MAP);
-      L.polyline(r.pts, {color: "#6b4c2e", weight: 3, opacity: 0.9, className: "mflow", interactive: false}).addTo(MAP);   // drawn in the direction the sewage moves
+      L.polyline(r.pts, {color: "#6b4c2e", weight: 3, opacity: 0.9, className: "mflow"}).bindTooltip(esc(r.name), {sticky: true}).addTo(MAP);   // drawn in the direction the sewage moves
     });
     SYS.deep.forEach(d => L.polyline(d.pts, {color: "#2f9c96", weight: 4, opacity: 0.95, className: "mflow"}).bindTooltip(esc(d.name), {sticky: true}).addTo(MAP));
     SYS.outfalls.forEach(o => {
       PLUME[o.id] = L.circle([o.lat, o.lon], {radius: 1, stroke: false, fillColor: "#7a5a3a", fillOpacity: 0, interactive: false}).addTo(MAP);
       OF[o.id] = L.marker([o.lat, o.lon], {icon: L.divIcon({className: "of-ico", iconSize: [14, 14]}), title: o.name, riseOnHover: true}).bindPopup(() => ofPopup(o)).addTo(MAP);
     });
-    const tip = {oceanside: "right", southeast: "left", northpoint: "left"};   // labels toward land, inside the frame on a phone
-    Object.entries(SYS.plants).forEach(([k, p]) => L.marker([p.lat, p.lon], {icon: L.divIcon({className: "pl-ico", iconSize: [16, 16]}), title: p.name, zIndexOffset: 500})
-      .bindTooltip(esc(p.short), {permanent: true, direction: tip[k], className: "pl-tip", offset: [tip[k] === "left" ? -8 : tip[k] === "right" ? 8 : 0, tip[k] === "top" ? -8 : 0]})
-      .bindPopup("<b>" + esc(p.name) + "</b><br>" + esc(p.note)).addTo(MAP));
+    const plants = Object.entries(SYS.plants).map(([k, p]) => L.marker([p.lat, p.lon], {icon: L.divIcon({className: "pl-ico", iconSize: [16, 16]}), title: p.name, zIndexOffset: 500})
+      .bindTooltip(esc(p.short), {permanent: true, direction: "right", className: "pl-tip", interactive: true})
+      .bindPopup(`<figure class="pl-pop"><img src="${PHOTO[k]}" alt="${esc(p.name)}" width="260"><figcaption><b>${esc(p.name)}</b><br>${esc(p.note)}<small>Photo: SFPUC, Sewer System Master Plan (2010)</small></figcaption></figure>`, {maxWidth: 280, minWidth: 260})
+      .addTo(MAP));
+    plants.forEach(m => m.getTooltip().on("click", () => m.openPopup()));   // the label opens the photo too
+    // Each label takes the first spot around its plant that covers no outfall, no other label, and stays in the frame.
+    const SPOTS = [["right", [10, 0]], ["left", [-10, 0]], ["top", [0, -10]], ["bottom", [0, 10]], ["right", [12, 20]], ["left", [-12, 20]], ["right", [12, -20]], ["left", [-12, -20]], ["bottom", [0, 30]], ["top", [0, -30]]];
+    const overlap = (a, b) => !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom);
+    function placeLabels() {
+      const frame = mapBox.getBoundingClientRect(), dots = [...mapBox.querySelectorAll(".of-ico")].map(e => e.getBoundingClientRect()), taken = [];
+      plants.forEach(m => {
+        const t = m.getTooltip(); if (!t || !t.getElement()) return;   // not drawn yet
+        let best = SPOTS[0], fewest = Infinity;
+        for (const spot of SPOTS) {
+          t.options.direction = spot[0]; t.options.offset = L.point(spot[1]); t.update();
+          const r = t.getElement().getBoundingClientRect(), out = r.left < frame.left || r.right > frame.right || r.top < frame.top || r.bottom > frame.bottom;
+          const hits = dots.filter(d => overlap(d, r)).length + 3 * taken.filter(d => overlap(d, r)).length + (out ? 5 : 0);
+          if (hits < fewest) { fewest = hits; best = spot; if (!hits) break; }
+        }
+        t.options.direction = best[0]; t.options.offset = L.point(best[1]); t.update(); taken.push(t.getElement().getBoundingClientRect());
+      });
+    }
+
     const shore = SYS.outfalls.map(o => [o.lat, o.lon]), far = SYS.deep[0].pts[SYS.deep[0].pts.length - 1], bounds = L.latLngBounds(shore.concat([far]));
     let fitted = false; const fit = () => { if (fitted || !mapBox.clientWidth) return; fitted = true; MAP.invalidateSize();
       MAP.fitBounds(mapBox.clientWidth < 600 ? L.latLngBounds(shore) : bounds, {padding: [14, 14]}); };   // a phone fits the shore; the ocean outfall runs off the edge
     MAP.setView(bounds.getCenter(), 11); fit(); addEventListener("resize", fit);   // a map drawn in a hidden tab fits once it has a size
-    paint();
+    MAP.on("zoomend moveend", placeLabels); placeLabels(); paint();
   }
   function paint() {
     const s = SYS.storms[SI], on = new Set(), seen = new Set(), vol = {}, end = {};
@@ -969,11 +1047,24 @@
       $("qt-prev").disabled = best === 0; $("qt-next").disabled = best === centers.length - 1;
       return best;
     }
-    function go(i) {   // to the end of step i's hold, so the scroll there plays it
-      i = Math.max(0, Math.min(centers.length - 1, i)); const how = REDUCE ? "auto" : "smooth";
-      if (qtBox.classList.contains("pinned")) scrollTo({top: qtBox.getBoundingClientRect().top + scrollY - 8 + ENDS[i], behavior: how});
-      else view.scrollTo({left: centers[i], behavior: how});
+    // The arrows glide: about two and a half seconds a step, so each step plays on the way; any wheel, touch or key stops it.
+    let glide = 0;
+    const stopGlide = () => { glide = 0; };
+    ["wheel", "touchstart", "keydown", "mousedown"].forEach(ev => addEventListener(ev, e => { if (!e.target.closest || !e.target.closest(".qt-nav")) stopGlide(); }, {passive: true}));
+    function glideTo(y) {
+      const y0 = scrollY, d = y - y0, ms = Math.min(6000, Math.max(900, Math.abs(d) * 3.2)), t0 = performance.now(), id = ++glide;
+      (function step(now) {
+        if (glide !== id) return;
+        const t = Math.min(1, (now - t0) / ms); scrollTo(0, y0 + d * (t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2));
+        if (t < 1) requestAnimationFrame(step); else glide = 0;
+      })(t0);
     }
+    function go(i) {   // to the end of step i's hold, so the glide there plays it
+      i = Math.max(0, Math.min(centers.length - 1, i));
+      if (qtBox.classList.contains("pinned")) { const y = qtBox.getBoundingClientRect().top + scrollY - 8 + ENDS[i]; REDUCE ? scrollTo(0, y) : glideTo(y); }
+      else view.scrollTo({left: centers[i], behavior: REDUCE ? "auto" : "smooth"});
+    }
+    $("qt-skip").addEventListener("click", e => { e.preventDefault(); stopGlide(); $("qt-after").scrollIntoView({block: "start"}); });
     $("qt-prev").addEventListener("click", () => go(frame() - 1));
     $("qt-next").addEventListener("click", () => go(frame() + 1));
     $("qt-dots").addEventListener("click", e => { const b = e.target.closest("button"); if (b) go(+b.dataset.i); });
@@ -1021,7 +1112,14 @@
       tl.style.setProperty("--p", (100 * clamp((line - b.top) / b.height)).toFixed(1) + "%");
       stops.forEach(s => { const t = s.querySelector(".dot").getBoundingClientRect().top; s.classList.toggle("past", t < line); if (t < innerHeight * 0.92) s.classList.add("in"); });
     };
-    addEventListener("scroll", step, {passive: true}); addEventListener("resize", step); step();
+    addEventListener("scroll", step, {passive: true}); addEventListener("resize", step);
+    const more = $("tl-more"), fold = on => {
+      tl.classList.toggle("collapsed", on); more.setAttribute("aria-expanded", String(!on));
+      more.textContent = on ? `Show all ${stops.length} stops, to ${stops[stops.length - 1].querySelector(".when").textContent} ↓` : "Collapse the timeline ↑";
+      step();
+    };
+    more.hidden = false; fold(true);
+    more.addEventListener("click", () => { const open = tl.classList.contains("collapsed"); fold(!open); if (!open) $("history").scrollIntoView({block: "start"}); });
   }
 
   // ── 7. Then and now: drag, tap, or arrow keys ──

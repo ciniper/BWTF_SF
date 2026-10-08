@@ -42,6 +42,11 @@ def test_the_map_replays_the_record_s_biggest_storms_from_the_registry():
         assert all(0 <= e["start"] < 1440 and e["dur"] > 0 and e["id"] in ids for e in s["events"])
         assert s["outfalls"] == len({e["id"] for e in s["events"]}) <= len(per_day[s["date"]])
     assert [P._minutes(t) for t in ("10:13 AM", "12:46 AM", "1:03 PM", "13:26", "0.5", "", "n/a")] == [613, 46, 783, 806, 720, None, None]
+    pos = {o["id"]: [o["lat"], o["lon"]] for o in sy["outfalls"]}
+    assert all(r["name"] for r in sy["ring"]) and len(sy["arteries"]) == len(P.ARTERIES)                  # every line named
+    assert all(list(a["pts"][-1]) == pos[b["to"]] for a, b in zip(sy["arteries"], P.ARTERIES))             # each artery ends on its outfall
+    assert all(37.70 < lat < 37.82 and -122.52 < lon < -122.37 for a in sy["arteries"] for lat, lon in a["pts"])
+    assert all((ROOT / "app" / "static" / p["photo"]).is_file() for p in sy["plants"].values())           # a photo behind every plant
 
 
 def test_timeline_runs_in_order_and_names_its_sources():
@@ -79,6 +84,7 @@ def test_page_renders_its_sections_and_is_linked_from_today_only():
     for sec in ('id="rain"', 'id="above"', 'id="bugs"', 'id="count"', 'id="record"', 'id="history"', 'id="archive"'):
         assert sec in h and 'href="#' + sec[4:-1] + '"' in h, sec                                           # each section, and its jump link
     assert 'id="sys-map"' in h and "unpkg.com/leaflet" not in h.split("<script>")[0]                          # Leaflet waits for the map
+    assert 'id="qt-skip"' in h and 'id="qt-after"' in h and 'id="tl-more"' in h and 'id="drops-heavy"' in h
     assert h.count('class="stop ') == len(P.TIMELINE) and h.count('<article class="qt-step"') == 8 and h.count('<figure') >= 8
     assert h.index('id="count"') < h.index('id="tray"') < h.index('id="record"')                           # the hands-on tray follows the story
     assert h.count('class="bug"') == 4 and 'id="tray"' in h and 'id="ch-post"' in h and 'id="ch-csd"' in h and 'id="compare"' in h

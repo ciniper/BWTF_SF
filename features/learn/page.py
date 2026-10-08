@@ -100,9 +100,12 @@ def _discharges() -> dict:
 # 2-5) at approximate positions; the storage ring is schematic: it runs through the registry's outfalls in
 # the shoreline order the master plan's map shows, each run toward the plant it drains to.
 PLANTS = {
-    "oceanside": {"name": "Oceanside plant", "short": "Oceanside plant", "lat": 37.7297, "lon": -122.5047, "note": "Westside: secondary treatment; opened 1993"},
-    "southeast": {"name": "Southeast plant", "short": "Southeast plant", "lat": 37.7426, "lon": -122.3884, "note": "Bayside: secondary treatment; opened 1952"},
-    "northpoint": {"name": "North Point wet-weather facility", "short": "North Point · storms only", "lat": 37.8063, "lon": -122.4057, "note": "Bayside, storms only: primary treatment; built 1951"},
+    "oceanside": {"name": "Oceanside plant", "short": "Oceanside plant", "lat": 37.7297, "lon": -122.5047, "note": "Westside: secondary treatment; opened 1993",
+                  "photo": "learn/oceanside_aerial.jpg"},
+    "southeast": {"name": "Southeast plant", "short": "Southeast plant", "lat": 37.7426, "lon": -122.3884, "note": "Bayside: secondary treatment; opened 1952",
+                  "photo": "learn/southeast_aerial.jpg"},
+    "northpoint": {"name": "North Point wet-weather facility", "short": "North Point · storms only", "lat": 37.8063, "lon": -122.4057, "note": "Bayside, storms only: primary treatment; built 1951",
+                   "photo": "learn/plant_north_point_1951.jpg"},
 }
 DEEP_OUTFALLS = [   # treated water: approximate routes
     {"name": "Southwest Ocean Outfall, about four miles offshore (1986)", "pts": [(37.7297, -122.5047), (37.7300, -122.5110), (37.7150, -122.5790)]},
@@ -112,17 +115,39 @@ DEEP_OUTFALLS = [   # treated water: approximate routes
 ]
 # runs of the storage ring, by outfall id, each ending where it drains; "main" = a force main or tunnel to a plant
 RING = [
-    {"kind": "storage", "to": "oceanside", "ids": ["CSD-007", "CSD-006", "CSD-005", "CSD-004", "CSD-003", "CSD-002"], "end": "oceanside"},
-    {"kind": "storage", "to": "oceanside", "ids": ["CSD-001"], "end": "oceanside"},
-    {"kind": "storage", "to": "southeast", "ids": ["CSD-009", "CSD-010", "CSD-011", "CSD-013", "CSD-015", "CSD-017", "CSD-018", "CSD-022"]},
-    {"kind": "storage", "to": "southeast", "ids": ["CSD-027", "CSD-026", "CSD-025", "CSD-024", "CSD-023", "CSD-022"]},
-    {"kind": "main", "to": "southeast", "ids": ["CSD-022"], "via": [(37.7650, -122.3905), (37.7540, -122.3895)], "end": "southeast"},
-    {"kind": "storage", "to": "southeast", "ids": ["CSD-029", "CSD-030", "CSD-030A", "CSD-031"], "end": "southeast"},
-    {"kind": "storage", "to": "southeast", "ids": ["CSD-033", "CSD-032", "CSD-031A", "CSD-035"], "end": "southeast"},
-    {"kind": "main", "to": "southeast", "ids": ["CSD-037"], "end": "southeast"},
-    {"kind": "storage", "to": "southeast", "ids": ["CSD-042", "CSD-040", "CSD-041"]},
-    {"kind": "main", "to": "southeast", "ids": ["CSD-041"], "via": [(37.7300, -122.3900)], "end": "southeast"},
-    {"kind": "main", "to": "southeast", "ids": ["CSD-043"], "via": [(37.7200, -122.3960), (37.7330, -122.3930)], "end": "southeast"},
+    {"kind": "storage", "to": "oceanside", "ids": ["CSD-007", "CSD-006", "CSD-005", "CSD-004", "CSD-003", "CSD-002"], "end": "oceanside",
+     "name": "Westside: the Richmond Tunnel and the Westside storage under the Great Highway, to the Westside Pump Station"},
+    {"kind": "storage", "to": "oceanside", "ids": ["CSD-001"], "end": "oceanside", "name": "The Lake Merced Tunnel, to the Westside Pump Station"},
+    {"kind": "storage", "to": "southeast", "ids": ["CSD-009", "CSD-010", "CSD-011", "CSD-013", "CSD-015", "CSD-017", "CSD-018", "CSD-022"],
+     "name": "North Shore: storage along the Marina and the Embarcadero; the North Shore Pump Station and Force Main carry it on to the Channel storage"},
+    {"kind": "storage", "to": "southeast", "ids": ["CSD-027", "CSD-026", "CSD-025", "CSD-024", "CSD-023", "CSD-022"], "name": "Channel: storage along Mission Creek"},
+    {"kind": "main", "to": "southeast", "ids": ["CSD-022"], "via": [(37.7650, -122.3905), (37.7540, -122.3895)], "end": "southeast",
+     "name": "The Channel Force Main, from the Channel Pump Station to the Southeast plant: a major artery with no backup, the master plan says"},
+    {"kind": "storage", "to": "southeast", "ids": ["CSD-029", "CSD-030", "CSD-030A", "CSD-031"], "end": "southeast", "name": "Storage along the Central Basin"},
+    {"kind": "storage", "to": "southeast", "ids": ["CSD-033", "CSD-032", "CSD-031A", "CSD-035"], "end": "southeast", "name": "Islais Creek storage"},
+    {"kind": "main", "to": "southeast", "ids": ["CSD-037"], "end": "southeast", "name": "From Evans Avenue to the Southeast plant"},
+    {"kind": "storage", "to": "southeast", "ids": ["CSD-042", "CSD-040", "CSD-041"], "name": "Storage along Yosemite Creek and South Basin"},
+    {"kind": "main", "to": "southeast", "ids": ["CSD-041"], "via": [(37.7300, -122.3900)], "end": "southeast", "name": "From Yosemite Creek to the Southeast plant"},
+    {"kind": "main", "to": "southeast", "ids": ["CSD-043"], "via": [(37.7200, -122.3960), (37.7330, -122.3930)], "end": "southeast", "name": "From Sunnydale to the Southeast plant"},
+]
+# The main collecting sewers, schematic: each drawn from a neighborhood down the valley it drains to the storage
+# ring (the master plan: the system "utilizes natural watershed areas wherever possible to take advantage of
+# gravity flow"). The real pipes run under streets; these show which way the water goes, not where the pipes are.
+ARTERIES = [
+    {"name": "The Richmond", "pts": [(37.7815, -122.4600), (37.7800, -122.4850), (37.7830, -122.5020)], "to": "CSD-004"},
+    {"name": "Sea Cliff", "pts": [(37.7840, -122.4750), (37.7878, -122.4862)], "to": "CSD-007"},
+    {"name": "The Sunset, north of Golden Gate Heights", "pts": [(37.7620, -122.4650), (37.7625, -122.4900), (37.7635, -122.5080)], "to": "CSD-003"},
+    {"name": "West Portal and the Parkside", "pts": [(37.7450, -122.4620), (37.7410, -122.4850), (37.7385, -122.5060)], "to": "CSD-002"},
+    {"name": "Pacific Heights and the Marina", "pts": [(37.7905, -122.4400), (37.7980, -122.4405), (37.8060, -122.4400)], "to": "CSD-010"},
+    {"name": "Russian Hill and North Beach", "pts": [(37.7980, -122.4150), (37.8030, -122.4100), (37.8075, -122.4070)], "to": "CSD-013"},
+    {"name": "Nob Hill and Downtown", "pts": [(37.7895, -122.4100), (37.7950, -122.4000), (37.7978, -122.3952)], "to": "CSD-017"},
+    {"name": "Hayes Valley, Civic Center and Market Street", "pts": [(37.7740, -122.4300), (37.7810, -122.4100), (37.7880, -122.3980), (37.7925, -122.3910)], "to": "CSD-018"},
+    {"name": "The Mission, down Mission Creek's old valley", "pts": [(37.7520, -122.4200), (37.7620, -122.4150), (37.7680, -122.4050), (37.7700, -122.3985)], "to": "CSD-026"},
+    {"name": "Potrero Hill", "pts": [(37.7590, -122.4020), (37.7630, -122.3920), (37.7645, -122.3860)], "to": "CSD-029"},
+    {"name": "Glen Park and Bernal, down the Islais Creek valley", "pts": [(37.7330, -122.4350), (37.7330, -122.4200), (37.7390, -122.4070), (37.7460, -122.3960), (37.7476, -122.3912)], "to": "CSD-033"},
+    {"name": "Bayview and Hunters Point", "pts": [(37.7300, -122.3900), (37.7340, -122.3800), (37.7356, -122.3745)], "to": "CSD-037"},
+    {"name": "The Excelsior and Portola, to Yosemite Creek", "pts": [(37.7200, -122.4300), (37.7180, -122.4100), (37.7230, -122.3950), (37.7238, -122.3860)], "to": "CSD-041"},
+    {"name": "Visitacion Valley, to Sunnydale", "pts": [(37.7140, -122.4100), (37.7110, -122.3980), (37.7098, -122.3905)], "to": "CSD-043"},
 ]
 
 
@@ -156,7 +181,7 @@ def _system(n_storms: int = 6) -> dict:
         if run.get("end"):
             pts.append((PLANTS[run["end"]]["lat"], PLANTS[run["end"]]["lon"]))
         if len(pts) > 1:
-            ring.append({"kind": run["kind"], "pts": pts})
+            ring.append({"kind": run["kind"], "pts": pts, "name": run["name"]})
     by_day = defaultdict(list)
     for e in ev:
         m = _minutes(e["start_time"])
@@ -173,7 +198,8 @@ def _system(n_storms: int = 6) -> dict:
         d = datetime.strptime(day, "%Y-%m-%d")
         storms.append({"date": day, "label": f"{d:%b} {d.day}, {d.year}", "outfalls": len({x["id"] for x in events}),
                        "mg": round(sum(x["mg"] for x in events)), "events": sorted(events, key=lambda x: x["start"])})
-    return {"outfalls": outfalls, "ring": ring, "plants": PLANTS, "deep": DEEP_OUTFALLS, "storms": storms}
+    arteries = [{"name": a["name"], "pts": a["pts"] + [pos[a["to"]]]} for a in ARTERIES]   # each ends on its outfall's storage
+    return {"outfalls": outfalls, "ring": ring, "arteries": arteries, "plants": PLANTS, "deep": DEEP_OUTFALLS, "storms": storms}
 
 
 # ── 4. How the lab counts: one sample, followed through IDEXX's Enterolert test in a Quanti-Tray ─────────

@@ -71,6 +71,12 @@ Order: the no-tradeoff wins first, then caching once Chase has made its calls.
   Edge caching (above) would also hide most of them.
 - Not worth it (checked): a bigger Supabase compute tier — the database part is ~32 ms of each call, the rest is network.
 
+
+### A4. Learn page (/learn, live 2026-10-08)
+- [ ] **Check the facts flagged on the Learn page** — the checklist is `docs/learn_facts_to_check.md` (map positions,
+  timeline dates, photo captions, the Enterolert / Quanti-Tray method and the MPN readings, the indicator lines).
+  The page stays `noindex` until it is done; then drop the robots meta tag in `app/templates/learn/page.html`.
+
 ---
 
 # B. Sewage alert system
