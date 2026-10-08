@@ -51,6 +51,24 @@ def test_timeline_runs_in_order_and_names_its_sources():
     assert all(t["src"] and t["title"] and t["text"] for t in tl) and any("Master Plan" in t["src"] for t in tl)
 
 
+def test_the_lab_story_adds_up():
+    q = P.learn_context()["qt"]
+    assert q["cells"] == len(q["wells"]) == q["conc"] // 10 and all(0 <= w < 97 for w in q["wells"])        # a tenth of the bottle, each in a well
+    hit = set(q["wells"])
+    assert q["big"] == sum(w < 49 for w in hit) and q["small"] == sum(w >= 49 for w in hit) and q["big"] + q["small"] < q["cells"]   # doubles hide cells
+    assert q["result"] == round(P.mpn_per_100ml(q["big"], q["small"]) * 10) and abs(q["result"] - q["conc"]) <= 20
+    assert P._quanti_story()["wells"] == q["wells"]                                                         # the same story on every visit
+    assert [round(P.mpn_per_100ml(b, s), 1) for b, s in ((1, 0), (10, 0), (0, 1))] == [1.0, 11.1, 1.0] and P.mpn_per_100ml(49, 48) is None
+    steps = P._quanti_steps(q)
+    assert len(steps) == 8 and f"{q['big']} big and {q['small']} small" in steps[-1]["text"] and f"{q['result']:,}" in steps[-1]["text"]
+
+
+def test_timeline_photos_are_on_disk_and_credited():
+    photos = [ph for t in P.TIMELINE for ph in t.get("photos", [])]
+    assert len(photos) >= 8 and all((ROOT / "app" / "static" / ph["file"]).is_file() and ph["cap"] for ph in photos)
+    assert "Used with permission" in P.PHOTO_CREDIT
+
+
 def test_page_renders_its_sections_and_stays_unlinked():
     from app.wsgi import app
     from app.landing import nav_model
@@ -58,10 +76,11 @@ def test_page_renders_its_sections_and_stays_unlinked():
         r = c.get("/learn"); h = r.data.decode()
         home = c.get("/").data.decode()
     assert r.status_code == 200 and "{{" not in h and "{%" not in h
-    for sec in ('id="rain"', 'id="above"', 'id="bugs"', 'id="record"', 'id="history"', 'id="archive"'):
+    for sec in ('id="rain"', 'id="above"', 'id="bugs"', 'id="count"', 'id="record"', 'id="history"', 'id="archive"'):
         assert sec in h and 'href="#' + sec[4:-1] + '"' in h, sec                                           # each section, and its jump link
     assert 'id="sys-map"' in h and "unpkg.com/leaflet" not in h.split("<script>")[0]                          # Leaflet waits for the map
-    assert h.count('class="stop ') == len(P.TIMELINE) and h.count('data-i="') == 6
+    assert h.count('class="stop ') == len(P.TIMELINE) and h.count('<article class="qt-step"') == 8 and h.count('<figure') >= 8
+    assert h.index('id="count"') < h.index('id="tray"') < h.index('id="record"')                           # the hands-on tray follows the story
     assert h.count('class="bug"') == 4 and 'id="tray"' in h and 'id="ch-post"' in h and 'id="ch-csd"' in h and 'id="compare"' in h
     assert '<meta name="robots" content="noindex">' in h and "prefers-reduced-motion:reduce" in h        # out of search; motion respects the setting
     assert 'href="/learn"' not in home and all("/learn" not in h2["paths"] for h2 in nav_model())     # a prototype: reachable by URL only

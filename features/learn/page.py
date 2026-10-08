@@ -25,7 +25,8 @@ import csv
 from collections import Counter, defaultdict
 
 from datetime import datetime
-from math import cos, radians
+from math import exp
+from random import Random
 
 from flask import render_template
 
@@ -173,40 +174,116 @@ def _system(n_storms: int = 6) -> dict:
     return {"outfalls": outfalls, "ring": ring, "plants": PLANTS, "deep": DEEP_OUTFALLS, "storms": storms}
 
 
-# ── 4. A century and a half ───────────────────────────────────────────────────────────────────────
+# ── 4. How the lab counts: one sample, followed through IDEXX's Enterolert test in a Quanti-Tray ─────────
+# The water holds QT_CONC Enterococcus per 100 mL; a 1:10 dilution puts about a tenth of them in the tray;
+# each one lands in a well with odds by volume (49 big wells of 1.86 mL, 48 small of 0.186 mL); every well
+# that catches one or more glows; the most probable number of the glowing wells, times ten, is the result.
+QT_CONC, QT_VL, QT_VS = 300, 1.86, 0.186
+
+
+def mpn_per_100ml(big: int, small: int) -> float | None:
+    """The Most Probable Number per 100 mL for big + small glowing wells: the maximum-likelihood
+    concentration, the estimate MPN tables are built on. None when every well glows (above the range)."""
+    if big == 0 and small == 0:
+        return 0.0
+    if big == 49 and small == 48:
+        return None
+    total = 49 * QT_VL + 48 * QT_VS
+    f = lambda lam: (big * QT_VL / (1 - exp(-lam * QT_VL)) if big else 0) + (small * QT_VS / (1 - exp(-lam * QT_VS)) if small else 0) - total
+    lo, hi = 1e-6, 60.0
+    for _ in range(80):
+        mid = (lo + hi) / 2
+        lo, hi = (mid, hi) if f(mid) > 0 else (lo, mid)
+    return lo * 100
+
+
+def _quanti_story() -> dict:
+    """The side-scroller's one sample, the same on every visit: the first seed whose draw is typical
+    (a few big wells catch two, a small well or two catch one) and reads back within 20 of the truth."""
+    cells = QT_CONC // 10
+    vols = [QT_VL] * 49 + [QT_VS] * 48
+    for seed in range(1, 500):
+        rng = Random(seed)
+        wells = rng.choices(range(97), weights=vols, k=cells)
+        hits = Counter(wells)
+        doubles, small = sum(1 for w, n in hits.items() if n >= 2 and w < 49), sum(1 for w in hits if w >= 49)
+        big_on, small_on = sum(1 for w in hits if w < 49), sum(1 for w in hits if w >= 49)
+        tray = mpn_per_100ml(big_on, small_on)
+        if 3 <= doubles <= 5 and small in (1, 2) and abs(tray * 10 - QT_CONC) <= 20:
+            break
+    else:
+        raise RuntimeError("no typical draw in 500 seeds")
+    return {"conc": QT_CONC, "cells": cells, "wells": wells, "big": big_on, "small": small_on, "doubles": doubles,
+            "tray": round(tray, 1), "result": round(tray * 10), "vl": QT_VL, "vs": QT_VS}
+
+
+def _quanti_steps(q: dict) -> list[dict]:
+    lim = STANDARDS["ENTERO"]["single_sample_max"]
+    return [
+        {"title": "Fill a bottle", "alt": "A sample bottle filling at the shore, its bacteria drawn one by one",
+         "text": f"A sterile bottle is filled in the surf and kept cold on the way to the lab. Say this water holds {q['conc']} Enterococcus per 100 mL, about three times the state limit of {lim}: that is only {q['conc']} bacteria in the whole bottle, each one drawn here."},
+        {"title": "Dilute it one in ten", "alt": "A pipette moves 10 mL of the sample into 90 mL of sterile water",
+         "text": f"10 mL of the sample go into 90 mL of sterile water. Seawater has to be diluted for this test, which is why the lowest result is \"under 10\". The new bottle holds about {q['cells']} Enterococcus."},
+        {"title": "Add the food", "alt": "A packet of reagent powder pours into the bottle and dissolves",
+         "text": "A packet of Enterolert powder dissolves in: a nutrient only enterococci can break down. When they do, it releases a compound that glows blue under ultraviolet light."},
+        {"title": "Pour it into the tray", "alt": "The bottle pours into an upright tray of wells",
+         "text": "All 100 mL go into a Quanti-Tray, a plastic sheet of 97 wells: 49 big ones and 48 small ones."},
+        {"title": "Seal it", "alt": "The tray passes through a sealer and comes out with the water split among its wells",
+         "text": f"A sealer presses the tray shut and splits the water among the wells. Each bacterium ends up in whichever well its drop lands in: most wells get none, many get one, and here {q['doubles']} caught two or more."},
+        {"title": "Keep it warm overnight", "alt": "The tray in a 41 degree incubator; a clock runs to 24 hours while one well fills with bacteria",
+         "text": "24 hours at 41 °C. In any well with even one bacterium, it multiplies, two to four to eight, until the well is crowded and full of the glowing compound. A well that started with one looks the same by morning as a well that started with two."},
+        {"title": "Turn on the UV lamp", "alt": "Under ultraviolet light the wells with bacteria glow blue",
+         "text": f"Under long-wave ultraviolet light, every well where Enterococcus grew glows blue. A well only says yes or no: here {q['big']} big wells and {q['small']} small {'one glows' if q['small'] == 1 else 'ones glow'}."},
+        {"title": "Look up the number", "alt": "The count of glowing wells becomes a result per 100 mL",
+         "text": f"The glowing wells go into IDEXX's Most Probable Number table: {q['big']} big and {q['small']} small read {q['tray']:g} per 100 mL, and ten times that for the dilution is {q['result']:,}. The water held {q['conc']}; the method estimates, it does not count one by one. The table allows for wells that caught two or more, so it reads a little above the number of glowing wells."},
+    ]
+
+
+# ── 5. A century and a half ───────────────────────────────────────────────────────────────────────
 # Each stop's source: SFPUC's Sewer System Master Plan, Summary Report (Final Draft, March 2010), or this
-# site's own record files. photo = a placeholder frame until a photo's rights are cleared.
+# site's own record files. photos = the plan's own photos (Chase cleared their use, 2026-10-08), saved under
+# app/static/learn/; the plant photos are cut from its Figure 1-1. todo = a placeholder frame for a photo to find.
 _SSMP, _SITE = "SFPUC Sewer System Master Plan (2010)", "this site's records"
+PHOTO_CREDIT = ("Photos: SFPUC, from its Sewer System Master Plan (2010); photography by Ben Chan, Randall Homan, "
+                "Tim Ormond, William John Smith and Cliff Wong. Used with permission.")
+
+
+def _ph(file: str, cap: str, small: bool = False) -> dict:
+    return {"file": "learn/" + file, "cap": cap, "small": small}   # small: the original is under 400 px, shown near its size
+
 TIMELINE = [
     {"when": "1850s", "title": "The first sewers", "src": _SSMP,
      "text": "Gold Rush San Francisco starts laying sewers that carry sewage and rain in the same pipe, downhill to the shoreline. A tenth of the city's smaller sewers (36 inches or less) still in use went in before 1900."},
-    {"when": "1899", "title": "The first master plan", "src": _SSMP, "photo": "A brick sewer under construction",
+    {"when": "1899", "title": "The first master plan", "src": _SSMP, "todo": "A brick sewer under construction",
      "text": "Over 300 miles of combined sewers are already built. The city's first coordinated sewer plan leads to 700 miles of them, four pump stations, and an end to sewage spilling onto land."},
-    {"when": "1901–1940", "title": "Half of today's pipes", "src": _SSMP,
+    {"when": "1901–1940", "title": "Half of today's pipes", "src": _SSMP, "photos": [_ph("brick_sewer.jpg", "Inside one of the old brick sewers", small=True)],
      "text": "Nearly half of the smaller sewers in use today (49%) are laid in these four decades."},
+    {"when": "1932", "title": "The McQueen plant", "src": _SSMP, "photos": [_ph("plant_mcqueen_1932.jpg", "The McQueen plant", small=True)],
+     "text": "The first treatment plant on SFPUC's own timeline of the system, three years before the second master plan."},
     {"when": "1935", "title": "A plan for treatment", "src": _SSMP,
      "text": "The second master plan brings the city's first treatment plants and deep-water outfalls, 900 miles of sewers in all, and an end to sewage spills in dry weather."},
     {"when": "1938–1952", "title": "Three plants", "src": _SSMP,
+     "photos": [_ph("plant_richmond_sunset_1938.jpg", "Richmond-Sunset"), _ph("plant_north_point_1951.jpg", "North Point"), _ph("plant_southeast_early.jpg", "Southeast")],
      "text": "The Richmond-Sunset plant opens in 1938, North Point in 1951 and Southeast in 1952."},
     {"when": "1972", "title": "The Clean Water Act", "src": _SSMP,
      "text": "Congress passes the Clean Water Act. The city's next master plan, two years later, is its answer."},
-    {"when": "1974", "title": "The plan that built the moat", "src": _SSMP, "photo": "Building a transport/storage structure",
+    {"when": "1974", "title": "The plan that built the moat", "src": _SSMP, "todo": "Building a transport/storage structure",
      "text": "Built over about 25 years: secondary treatment for all dry-weather flow, the Southwest Ocean Outfall, and 17 miles of transport/storage structures around the shore holding 197 million gallons. Discharges fall to an average of 4.4% of the year's flow."},
-    {"when": "Early 1980s", "title": "Southeast goes secondary", "src": _SSMP,
+    {"when": "Early 1980s", "title": "Southeast goes secondary", "src": _SSMP, "photos": [_ph("southeast_aerial.jpg", "The Southeast plant and its Bayview neighbors")],
      "text": "The Southeast plant is upgraded to secondary treatment in 1982 and takes all of the Bayside's dry-weather flow; North Point becomes a wet-weather facility, running only in storms."},
-    {"when": "1986", "title": "Four miles out", "src": _SSMP, "photo": "Laying the ocean outfall",
+    {"when": "1986", "title": "Four miles out", "src": _SSMP, "todo": "Laying the ocean outfall",
      "text": "The Southwest Ocean Outfall opens: a 12-foot pipe buried under the seabed, running about four miles offshore to 85 diffusers about 80 feet down."},
-    {"when": "1993", "title": "The Oceanside plant", "src": _SSMP,
+    {"when": "1993", "title": "The Oceanside plant", "src": _SSMP, "photos": [_ph("oceanside_aerial.jpg", "The Oceanside plant, the Great Highway at left and Lake Merced at lower right")],
      "text": "The Westside's new plant opens on the Great Highway between Lake Merced and the Zoo, replacing Richmond-Sunset."},
-    {"when": "1999", "title": "Beach postings on the record", "src": "State Water Board BeachWatch",
+    {"when": "1999", "title": "Beach postings on the record", "src": "State Water Board BeachWatch", "photos": [_ph("ocean_surf.jpg", "Surf on the ocean side")],
      "text": "The State's record of San Francisco's beach advisories begins. The Beach Postings page reads it."},
     {"when": "2002–2003", "title": "Counting Enterococcus", "src": _SITE,
      "text": "The city lab adds Enterococcus and E. coli to total coliform: at the bay stations in July 2002, the ocean beaches in October 2003."},
-    {"when": "2010", "title": "A plan for the next century", "src": _SSMP,
+    {"when": "2010", "title": "A plan for the next century", "src": _SSMP, "photos": [_ph("sunnydale_outfall.jpg", "The Sunnydale outfall at Candlestick Cove, the plan's example for a backflow valve at a weir")],
      "text": "976 miles of sewers, 27 pump stations, 36 discharge sites. If seas rise at the higher estimates, it warns, the daily high tide will top the lowest discharge weirs by 2050."},
     {"when": "2016", "title": "Every discharge, outfall by outfall", "src": _SITE,
      "text": "The per-outfall discharge reports this site keeps begin in October 2016. The Discharge Ledger and the storms on the map above come from them."},
-    {"when": "2023", "title": "Volunteers' results", "src": _SITE, "photo": "The Blue Water Task Force lab",
+    {"when": "2023", "title": "Volunteers' results", "src": _SITE, "todo": "The Blue Water Task Force lab",
      "text": "Surfrider SF's Blue Water Task Force results join the city's on this site's record from September 2023."},
     {"when": "2026", "title": "Watching the map", "src": _SITE,
      "text": "From August 2026 this site checks SFPUC's beach map every minute and keeps the Online Postings Timeline."},
@@ -214,8 +291,10 @@ TIMELINE = [
 
 
 def learn_context() -> dict:
-    ctx = {"plants": _plants(), "indicators": _indicators(), "timeline": TIMELINE, "caution": ENTERO_CAUTION,
+    ctx = {"plants": _plants(), "indicators": _indicators(), "timeline": TIMELINE, "photo_credit": PHOTO_CREDIT, "caution": ENTERO_CAUTION,
            "entero_limit": STANDARDS["ENTERO"]["single_sample_max"]}
+    q = _quanti_story()
+    ctx.update(qt=q, qt_steps=_quanti_steps(q), entero_color=next(b["color"] for b in ctx["indicators"] if b["code"] == "ENTERO"))
     for key, fn in (("postings", _postings), ("discharges", _discharges), ("system", _system)):
         try:
             ctx[key] = fn()
