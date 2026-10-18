@@ -19,9 +19,9 @@ from shared.risk_levels import LEVELS, level_of, level_of_percent, whole_percent
 
 SURFRIDER_LOGO_URL = "https://f.hubspotusercontent20.net/hubfs/20811975/SF-Horizontal-Logo_RGB_Black_crop_small.png"
 
-# The nine feature pages, grouped into three hubs by the question a visitor is
+# The feature pages, grouped into hubs by the question a visitor is
 # asking (Chase, 2026-09-28): is it safe today · what did the labs find · what
-# did the city report. Each row is (href, title, blurb, static fact); the fact
+# did the city report · how it all works (Learn, 2026-10-18). Each row is (href, title, blurb, static fact); the fact
 # is replaced by a live one from _live_facts when a source answers in time.
 # Icon keys map to the inline SVG sprite in _icons.html.
 HUBS = [
@@ -77,10 +77,22 @@ HUBS = [
              "as the feed showed them · since Aug 2026"),
         ],
     },
+    {
+        "key": "learn", "icon": "microscope", "title": "Learn",
+        "sub": "How the sewers, the labs and the record work",
+        "primary": None, "card": False,   # its own top tab (Chase, 2026-10-18); Today links it with the Learn bar, not a hub card
+        "rows": [
+            ("/learn", "Learn",
+             "How San Francisco's sewers meet the shore, how the lab counts bacteria, and a century and a half of the system.",
+             "the system · the lab · the record"),
+            ("/learn/collect", "Collect", "How a water sample is collected.", "coming soon"),
+            ("/learn/lab-sop", "Lab SOP", "The lab's standard operating procedure.", "coming soon"),
+        ],
+    },
 ]
 
 def nav_model() -> list[dict]:
-    """The three hubs for the shared two-tier tab bar (app/templates/_frame.html):
+    """The hubs for the shared two-tier tab bar (app/templates/_frame.html):
     row one is the hubs (the logo goes home), row two the active hub's pages as tabs (Chase,
     2026-09-29: "almost like they are within the same main page"). Each hub opens
     on its first page; a row's subpage (Source Comparison) gets its own tab; the
@@ -125,7 +137,7 @@ GATED = {"/alerts"}
 # Flat (href, icon, title, blurb) view of the same pages, kept for anything
 # that wants the list (tests, the sitemap of this repo's docs).
 PAGES = [(h["primary"][0], "mail", h["primary"][1], h["primary"][2]) for h in HUBS if h["primary"]] + [
-    (r[0], {"today": "cloud-rain", "water": "chart", "record": "receipt"}[h["key"]], r[1], r[2])
+    (r[0], {"today": "cloud-rain", "water": "chart", "record": "receipt", "learn": "microscope"}[h["key"]], r[1], r[2])
     for h in HUBS for r in h["rows"]
 ]
 
@@ -252,6 +264,8 @@ def hubs_with_facts(facts: dict | None, skip: tuple = ()) -> list[dict]:
     facts = facts or {}
     rendered = []
     for h in HUBS:
+        if h.get("card") is False:
+            continue
         rows = [{"href": r[0], "title": r[1], "blurb": r[2], "gated": r[0] in GATED,
                  "fact": facts.get(r[0], r[3]), "live": r[0] in facts,
                  "sub": r[4] if len(r) > 4 else None}   # optional (href, label): a subpage under this row
@@ -364,9 +378,8 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
         lead.append("Discharging: " + describe(cso_by_zone) + ".")
     if n_posted:   # the status word is SFPUC's; the reason, in their terms, follows — the feed does not say which applies
         lead.append("Posted: " + describe(posted_by_zone) + ". SFPUC posts a beach when samples show bacteria above State standards, and sometimes as a precaution.")
-    if not n_cso and n_graded:
-        lead.append("No active sewage discharge.")
     zr = risks.get("zones") or {}
+    risk_lead = ""   # the forecast's sentence: shown only with the Risk view on (Chase, 2026-10-18)
     if zr:
         worst = max(zr.values())
         where = "in every zone" if len(set(zr.values())) == 1 else f"at most ({ZONES[max(zr, key=zr.get)].label})"
@@ -378,10 +391,10 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
             lbl, pk = max(ahead, key=lambda t: t[1]); trend = f", rising to {pk}% by {lbl}"
         else:
             trend = ""
-        lead.append(f"Sewer-overflow risk today: {worst}% {where}{trend}.")
+        risk_lead = f"Sewer-overflow risk today: {worst}% {where}{trend}."
     if samples_fact:
         lead.append("Latest samples: " + samples_fact.replace("city", "city lab").replace("Surfrider", "Surfrider volunteers") + ".")
-    return {"tone": tone, "headline": headline, "headline_html": headline_html, "lead": " ".join(lead), "zones": tiles, "feed_ok": bool(stations),
+    return {"tone": tone, "headline": headline, "headline_html": headline_html, "lead": " ".join(lead), "risk_lead": risk_lead, "zones": tiles, "feed_ok": bool(stations),
             "posted": posted, "discharging": discharging, "n_safe": n_safe, "n_graded": n_graded,
             "date": now.strftime("%a %b %-d"), "checked": now.strftime("%-I:%M %p")}
 

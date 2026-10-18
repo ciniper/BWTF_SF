@@ -107,11 +107,13 @@ def test_forecast_page_draws_the_levels_from_the_one_table():
 
 def test_today_board_tiles_and_risk_view_use_the_levels():
     h = _today_html({"ocean": 20, "baker_china": 21, "north": 51, "east": 81})
-    assert _injected(h) == R.export()
     for key, pct in (("low", 20), ("medium", 21), ("high", 51), ("extreme", 81)):
         assert f'<b class="lvl-{key}">{pct}%</b> overflow risk today' in h, key
     for lv in R.LEVELS:
-        assert f".zone.lvl-{lv.key}{{border-color:{lv.color}}}" in h and f".status-dot.lvl-{lv.key}{{background:{lv.color}}}" in h
+        assert f".zone .risk b.lvl-{lv.key}{{color:{lv.color}}}" in h                     # the number's colour, from the one table
+    # the Risk view only reveals the numbers and the forecast's sentence; it no longer recolours (Chase, 2026-10-18)
+    assert ".zone .risk{font-size:13px;color:var(--muted);display:none}" in h and ".board.show-risk .zone .risk{display:block}" in h
+    assert '<span class="risk-lead">Sewer-overflow risk today: 81% at most (East Beaches)' in h and "const RISK_LEVELS" not in h
     assert 'class="hi"' not in h and "under 10%" not in h and "50% or more" not in h
     assert "{{" not in h and "{%" not in h
 
@@ -138,7 +140,7 @@ def test_home_page_rising_means_the_level_goes_up():
         assert L._forecast_risks() == {"zones": {"ocean": 13, "east": 1}, "ahead": [("Day 1", 21), ("Day 2", 50)]}   # halves up, as the page rounds
     finally:
         fp._read_row = saved
-    lead = lambda worst, *ahead: L.today_board([], {"zones": {"ocean": worst, "east": 0}, "ahead": [(f"Day {i}", p) for i, p in enumerate(ahead, 1)]}, "")["lead"]  # noqa: E731
+    lead = lambda worst, *ahead: L.today_board([], {"zones": {"ocean": worst, "east": 0}, "ahead": [(f"Day {i}", p) for i, p in enumerate(ahead, 1)]}, "")["risk_lead"]  # noqa: E731
     assert lead(15, 18, 20).endswith("at most (Ocean Beach), staying low through Day 2.")
     assert lead(15, 30).endswith("at most (Ocean Beach), rising to 30% by Day 1.")
     assert lead(25, 45).endswith("at most (Ocean Beach).")                    # same level: no trend
@@ -148,7 +150,8 @@ def test_home_page_rising_means_the_level_goes_up():
 
 
 def test_the_pages_js_matches_the_python_table():
-    """The forecast page's riskInfo and the board's band, run in node on every whole percent and the edges."""
+    """The forecast page's riskInfo, run in node on every whole percent and the edges (the board's Risk view
+    stopped recolouring on 2026-10-18, so it no longer carries a band of its own)."""
     node = shutil.which("node")
     if not node:
         print("  (node not installed: JS parity skipped)"); return
@@ -156,16 +159,12 @@ def test_the_pages_js_matches_the_python_table():
     lv = re.search(r"const RISK_LEVELS = \{.*?\};\n", h).group(0)
     pct = re.search(r"const pct = p => .*?;\n", h).group(0)
     risk_info = re.search(r"function riskInfo\(prob\) \{.*?\n\}\n", h, re.S).group(0)
-    band = re.search(r"const band = pct => .*?;\n", b).group(0)
     probs = [i / 1000 for i in range(1001)] + [0.2049, 0.5049, 0.8049, None]
-    js = (lv + pct + risk_info + "const COL = {};\n" + re.search(r"for \(const l of RISK_LEVELS\.levels\) COL.*?;\n", b).group(0) + band +
-          f"console.log(JSON.stringify({{info: {json.dumps(probs)}.map(p => riskInfo(p).cls), shown: {json.dumps(probs)}.map(p => pct(p)), "
-          f"band: [...Array(101).keys()].map(w => band(w)), cols: COL}}));")
+    js = (lv + pct + risk_info +
+          f"console.log(JSON.stringify({{info: {json.dumps(probs)}.map(p => riskInfo(p).cls), shown: {json.dumps(probs)}.map(p => pct(p))}}));")
     out = json.loads(subprocess.run([node, "-e", js], capture_output=True, text=True, check=True).stdout)
     assert out["info"] == [R.level_of(p).key for p in probs]
     assert out["shown"] == [R.whole_percent(p) for p in probs]
-    assert out["band"] == ["lvl-" + R.level_of_percent(w).key for w in range(101)]
-    assert out["cols"] == {f"lvl-{x.key}": x.color for x in R.LEVELS}
     for html in (h, b):                                                        # every inline script on both pages parses
         for i, src in enumerate(re.findall(r"<script>(.*?)</script>", html, re.S)):
             r = subprocess.run([node, "--check", "-"], input=src, capture_output=True, text=True)
@@ -248,7 +247,7 @@ def test_risk_levels_is_wired_where_risk_is_shown():
     page = (ROOT / "app/templates/forecast/page.html").read_text()
     board = (ROOT / "app/templates/_today_board.html").read_text()
     landing = (ROOT / "app/landing.py").read_text()
-    assert "RISK_LEVELS | tojson" in page and "RISK_LEVELS|tojson" in board and "from shared.risk_levels import" in landing
+    assert "RISK_LEVELS | tojson" in page and "{% for l in RISK_LEVELS.levels %}" in board and "from shared.risk_levels import" in landing   # the board colours its numbers from the table
     assert 'globals["RISK_LEVELS"] = risk_levels.export()' in (ROOT / "app/wsgi.py").read_text()
     assert "round(float(v) * 100)" not in landing and "max(risk + 0.10, 0.25)" not in landing
     src = (ROOT / "shared/risk_levels.py").read_text()

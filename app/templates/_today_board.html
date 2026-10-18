@@ -3,7 +3,8 @@
     statuses, one tile per zone, the city map with a dot per station; zone tiles zoom the map, a
     station opens the sample popover. Three macros, so any page that wants the board shares one implementation:
       board_styles()                     the <style> block
-      board_section(board, conditions, sites=false)   the markup; sites lists every station as a chip under the zone tiles (/today)
+      board_section(board, sites=false)  the markup; sites lists every station as a chip under the zone tiles (/today)
+      conditions_strip(conditions)       the rain and tide pills, wherever the page puts them
       board_script(board)                the map + tiles JS; the layers JS activates itself when the page has a #layers strip (/today)
     Pages must load Leaflet 1.9.4 (CSS + deferred JS) and /static/sample_popover.js themselves. -#}
 
@@ -30,9 +31,14 @@
   .zone .st{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px}
   .zone.posted .st{color:var(--posted)}.zone.discharge .st{color:var(--discharge)}.zone.unknown .st{color:var(--faint)}
   .zone .nm{font-size:16px;font-weight:900;margin:5px 0 1px;line-height:1.2}
-  .zone .risk{font-size:13px;color:var(--muted)}
-  /* the risk levels (shared/risk_levels.py, Chase, 2026-10-01): the tile's number, and the Risk view's tiles and dots */
-  {% for l in RISK_LEVELS.levels %}.zone .risk b.lvl-{{ l.key }},.zone.lvl-{{ l.key }} .st{color:{{ l.color }}}.zone.lvl-{{ l.key }}{border-color:{{ l.color }}}.status-dot.lvl-{{ l.key }}{background:{{ l.color }}}
+  .zone .risk{font-size:13px;color:var(--muted);display:none}
+  /* the Risk view only reveals: each tile's overflow risk and the forecast's sentence in the subhead; the tiles keep the
+     city's status and colours (Chase, 2026-10-18: "toggling risk will no longer replace all clear") */
+  .board.show-risk .zone .risk{display:block}
+  .board .risk-lead{display:none}.board.show-risk .risk-lead{display:inline}
+  .board:not(.show-risk):not(.replaying) .lead.only-risk{display:none}   /* a replayed day writes its own subhead into it */
+  /* the risk levels (shared/risk_levels.py, Chase, 2026-10-01): the colour of the tile's number */
+  {% for l in RISK_LEVELS.levels %}.zone .risk b.lvl-{{ l.key }}{color:{{ l.color }}}
   {% endfor %}
   .zone .stations{display:flex;flex-wrap:wrap;gap:4px;margin:9px 0 5px;min-height:9px}
   .zone .stations .status-dot{width:9px;height:9px}
@@ -58,6 +64,7 @@
   .st-label.bad{border-color:var(--posted);color:var(--posted)}
   /* Surfrider's latest result per site: a diamond in Surfrider blue, filled with the result's grade */
   .bwtf-pin{background:none;border:0}
+  #today-map .leaflet-pane > svg{pointer-events:none}   /* one pane per status rank (initMap): a pane's empty drawing area must not swallow taps meant for the dots below */
   .bwtf-dot{display:block;width:11px;height:11px;margin:1px;transform:rotate(45deg);border:1px solid rgba(38,39,42,.55);border-radius:2px;background:#fff;box-shadow:0 0 0 1px #fff}   /* Surfrider's diamond: a hairline ring so the grade colour reads true (Chase: the thick ring looked blue) */
   .bwtf-dot.safe{background:var(--safe)}.bwtf-dot.caution{background:var(--caution)}.bwtf-dot.posted{background:var(--posted)}.bwtf-dot.unknown{background:var(--unknown)}
   .map-legend .bwtf-dot{display:inline-block;width:8px;height:8px;margin:0 2px}
@@ -108,7 +115,7 @@
     .layers-toggle{display:inline-flex}
     .layers .layer-group{display:none}.layers .layer-group.open{display:flex}
   }
-  .conds{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 0}
+  .conds{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 0}   /* rain, tide and the feed's cadence: at the bottom of the page for now (Chase, 2026-10-18) */
   .conds span{background:var(--sand2);border-radius:999px;padding:6px 12px;font-size:13px;color:var(--muted)}
   .conds .ic{color:var(--brand)}
   @media (max-width:980px){.board .grid{grid-template-columns:1fr}.map-wrap{min-height:300px}}
@@ -119,19 +126,19 @@
     .zone{padding:11px}.zone .nm{font-size:15px}
     .map-wrap{min-height:260px}
     .map-legend{position:static;background:none;border-radius:0;padding:8px 2px 0;gap:6px 12px}   /* under the map: over it, it covered 4 of 20 stations on the north shore (6 with Surfrider on) */
-    .conds{overflow:auto;flex-wrap:nowrap;margin:12px -16px 0;padding:0 16px;scrollbar-width:none}.conds span{flex:none}
+    .conds.page-end{flex-wrap:wrap}
   }
   @media (max-width:420px){.zones{gap:8px}}
 </style>
 {%- endmacro %}
 
-{% macro board_section(board, conditions, sites=false) -%}
+{% macro board_section(board, sites=false) -%}
   <section class="board tone-{{ board.tone }}" aria-labelledby="today-h">
     <div class="grid">
       <div class="left">
         <div class="eyebrow">Beach status · {{ board.date }} · {% if board.feed_ok %}SFPUC map checked {{ board.checked }}{% else %}SFPUC map unreachable{% endif %}</div>
         <h1 id="today-h">{{ board.headline_html|safe }}</h1>
-        {% if board.lead %}<p class="lead">{{ board.lead }}</p>{% endif %}
+        {% if board.lead or board.risk_lead %}<p class="lead{% if not board.lead %} only-risk{% endif %}">{{ board.lead }}{% if board.risk_lead %}{% if board.lead %} {% endif %}<span class="risk-lead">{{ board.risk_lead }}</span>{% endif %}</p>{% endif %}
         {% if board.zones %}
         <div class="zones" id="zones">
           {% for z in board.zones %}
@@ -160,10 +167,14 @@
       {% for z in board.zones %}{% for s in z.stations %}<button type="button" class="site" data-zone="{{ z.key }}" data-station="{{ s.source }}" data-sample-station="{{ s.source }}" data-sample-name="{{ s.full_name }}" data-sample-feed-date="{{ s.sampled }}" title="Latest lab results"><i class="status-dot {{ s.status }}"></i>{{ s.full_name }}<small>{{ s.sampled_text }}</small></button>{% endfor %}{% endfor %}
     </div>
     {% endif %}
-    {% if conditions %}
-    <div class="conds">{% for c in conditions %}<span class="with-ic">{{ c|safe }}</span>{% endfor %}<span>Status as the city reports it, checked every minute</span></div>
-    {% endif %}
   </section>
+{%- endmacro %}
+
+{#- The rain and tide pills, on their own: Today draws them at the bottom of the page (Chase, 2026-10-18: "I may delete them later"). -#}
+{% macro conditions_strip(conditions) -%}
+  {% if conditions %}
+  <div class="conds page-end">{% for c in conditions %}<span class="with-ic">{{ c|safe }}</span>{% endfor %}<span>Status as the city reports it, checked every minute</span></div>
+  {% endif %}
 {%- endmacro %}
 
 {% macro board_script(board) -%}
@@ -204,13 +215,15 @@ function initMap() {
   };
   credits.addTo(MAP);
   L.tileLayer({{ BASEMAP.url|tojson }}, {{ BASEMAP.options|tojson }}).addTo(MAP);
-  // Stacking order: Leaflet draws vector markers in the order they are added, so add them by rank —
-  // not sampled underneath, then safe, posted, and discharge on top (Chase, 2026-09-29).
+  // Stacking order by status, across both sources: not sampled underneath, then safe, posted, and discharge on top
+  // (Chase, 2026-09-29), and an orange city dot over a green Surfrider diamond (2026-10-18). One map pane per rank:
+  // the city's dots in st0–st3, Surfrider's diamonds in bw0–bw3 just under the city's dots of the same rank.
+  for (let r = 0; r <= 3; r++) { MAP.createPane("bw" + r).style.zIndex = 405 + 10 * r; MAP.createPane("st" + r).style.zIndex = 410 + 10 * r; }
   const RANK = {unknown: 0, caution: 1, safe: 1, posted: 2, discharge: 3};
   const ordered = ZONES.flatMap(z => z.stations.map(s => [z, s])).sort((a, b) => (RANK[a[1].status] || 0) - (RANK[b[1].status] || 0));
   for (const [z, s] of ordered) {
     const bad = s.status === "posted" || s.status === "discharge";
-    const m = L.circleMarker([s.lat, s.lon], {radius: bad ? 9 : 7, color: "#fff", weight: 2, fillColor: COL[s.status] || COL.unknown, fillOpacity: .95, bubblingMouseEvents: false}).addTo(MAP);
+    const m = L.circleMarker([s.lat, s.lon], {pane: "st" + (RANK[s.status] || 0), radius: bad ? 9 : 7, color: "#fff", weight: 2, fillColor: COL[s.status] || COL.unknown, fillOpacity: .95, bubblingMouseEvents: false}).addTo(MAP);
     m.__s = s; m.__z = z; ALL_ORDERED.push(m);   // the layers recolour markers by zone risk or by a replayed day; focusZone re-adds them in this order
     m.bindTooltip(bad ? s.name + " · " + (s.status === "discharge" ? "discharge" : "posted") : s.full_name + " · " + s.status_text + (s.sampled ? " · sampled " + s.sampled : ""),
                   {permanent: bad, direction: "auto", offset: [9, 0], className: "st-label" + (bad ? " bad" : "")});   // auto: a bayside label flips left so it stays on the map
@@ -234,20 +247,16 @@ const status = t => { const el = $("layer-status"); if (el) el.textContent = t |
 const fmtIn = v => v == null ? "—" : Number(v).toFixed(2) + '"';
 const fmtDay = iso => new Date(iso + "T12:00:00").toLocaleDateString(undefined, {weekday: "short", month: "short", day: "numeric"});
 const shortSpan = w => !w ? "" : new Date(w[0] + "T12:00:00").toLocaleDateString(undefined, {month: "short", day: "numeric"}) + "–" + new Date(w[1] + "T12:00:00").toLocaleDateString(undefined, {day: "numeric"});
-// The risk levels, injected once from shared/risk_levels.py, as the Forecast page draws them (Chase, 2026-10-01:
-// Low 0–20, Medium 21–50, High 51–80, Extreme 81–100 on the whole percent shown). A zone's risk is already that percent.
-const RISK_LEVELS = {{ RISK_LEVELS|tojson }};
-for (const l of RISK_LEVELS.levels) COL["lvl-" + l.key] = l.color;
-const band = pct => pct == null ? "unknown" : "lvl-" + (RISK_LEVELS.levels.find(l => pct <= l.hi) || RISK_LEVELS.levels[RISK_LEVELS.levels.length - 1]).key;
 const RANK_ST = {unknown: 0, safe: 1, caution: 1, posted: 2, discharge: 3};
+// a city dot moves to its rank's pane when a replayed day changes its status (and back when Today returns)
+function placeRank(m, st) { const p = "st" + (RANK_ST[st] || 0); if (m.options.pane === p) return; const on = MAP.hasLayer(m); if (on) MAP.removeLayer(m); m.options.pane = p; if (on) m.addTo(MAP); }
 
 function renderLegend() {
   // colours once (both shapes share them), then the shape key when Surfrider is on: ● city · ◆ Surfrider
   const lg = $("map-legend"); if (!lg) return;
   const dot = (c, t) => '<span><i class="status-dot ' + c + '"></i>' + t + "</span>";
   let h = "";
-  if (RISK_VIEW) h = RISK_LEVELS.levels.map(l => dot("lvl-" + l.key, l.label + " " + l.lo + "–" + l.hi + "%")).join("") + '<span class="mut">overflow risk today</span>';
-  else {
+  {
     const parts = [];
     if (CITY_ON || LAYER.bwtf.on) parts.push(dot("safe", REPLAY_OFFSET ? "not posted" : "safe"));
     if (LAYER.bwtf.on) parts.push(dot("caution", "caution"));
@@ -264,7 +273,7 @@ function renderLegend() {
 function tileParts(key) { const b = document.querySelector('.zone[data-zone="' + key + '"]'); return b ? {b, st: b.querySelector(".st"), dots: [...b.querySelectorAll(".stations .status-dot")]} : null; }
 function snapshotBoard() {
   if (ORIG) return;
-  ORIG = {eyebrow: document.querySelector(".board .eyebrow").innerHTML, h1: $("today-h").innerHTML, lead: (document.querySelector(".board .lead") || {}).innerHTML, tone: document.querySelector(".board").className,
+  ORIG = {eyebrow: document.querySelector(".board .eyebrow").innerHTML, h1: $("today-h").innerHTML, lead: (document.querySelector(".board .lead") || {}).innerHTML, tone: document.querySelector(".board").className.replace(" show-risk", ""),
           tiles: Object.fromEntries(ZONES.map(z => { const t = tileParts(z.key); return [z.key, t ? {cls: t.b.className.replace(" focus", ""), st: t.st.innerHTML, dots: t.dots.map(d => d.className)} : null]; })),
           sites: [...document.querySelectorAll("#zone-sites .site .status-dot")].map(d => [d.parentElement.dataset.station, d.className])};
 }
@@ -272,24 +281,13 @@ function restoreBoard() {
   if (!ORIG) return;
   document.querySelector(".board .eyebrow").innerHTML = ORIG.eyebrow; $("today-h").innerHTML = ORIG.h1;
   const lead = document.querySelector(".board .lead"); if (lead && ORIG.lead != null) lead.innerHTML = ORIG.lead;
-  document.querySelector(".board").className = ORIG.tone;
+  document.querySelector(".board").className = ORIG.tone; applyRisk();   // the Risk view outlives a replay's snapshot
   for (const z of ZONES) { const t = tileParts(z.key), o = ORIG.tiles[z.key]; if (!t || !o) continue; t.b.className = o.cls + (t.b.classList.contains("focus") ? " focus" : ""); t.b.style.borderColor = ""; t.st.innerHTML = o.st; t.dots.forEach((d, i) => d.className = o.dots[i]); }
-  for (const m of allMarkers()) m.setStyle({fillColor: COL[m.__s.status] || COL.unknown, radius: m.__s.status === "posted" || m.__s.status === "discharge" ? 9 : 7});
+  for (const m of allMarkers()) { m.setStyle({fillColor: COL[m.__s.status] || COL.unknown, radius: m.__s.status === "posted" || m.__s.status === "discharge" ? 9 : 7}); placeRank(m, m.__s.status); }
   for (const [src, cls] of ORIG.sites || []) { const d = document.querySelector('#zone-sites .site[data-station="' + src + '"] .status-dot'); if (d) d.className = cls; }
 }
-// Risk view: every zone and its stations take the colour of the zone's overflow risk today
-function applyRisk() {
-  snapshotBoard(); restoreBoard();
-  if (!RISK_VIEW) return renderLegend();
-  for (const z of ZONES) {
-    const c = band(z.risk), t = tileParts(z.key); if (!t) continue;
-    t.b.className = "zone " + c + (t.b.classList.contains("focus") ? " focus" : "");
-    t.st.innerHTML = '<i class="status-dot ' + c + '"></i>' + (z.risk == null ? "risk unavailable" : z.risk + "% overflow risk today");
-    t.dots.forEach(d => d.className = "status-dot " + c);
-  }
-  for (const m of allMarkers()) m.setStyle({fillColor: COL[band(m.__z.risk)], radius: 7});
-  renderLegend();
-}
+// Risk view: reveals each tile's overflow risk today and the forecast's sentence; the city's status stays as it is
+function applyRisk() { document.querySelector(".board").classList.toggle("show-risk", RISK_VIEW); }
 // Replay: the map as SFPUC showed it at the last check of a past day
 function applyReplay() {
   snapshotBoard(); restoreBoard();
@@ -301,7 +299,7 @@ function applyReplay() {
     z.stations.forEach((st, i) => {
       const c = ((REPLAY.stations[st.source] || {})[day]) || "unknown"; zc[c]++; counts[c]++;
       if (RANK_ST[c] > RANK_ST[zw] || zw === "unknown") zw = c === "unknown" && zw !== "unknown" ? zw : c;
-      const m = allMarkers().find(m => m.__s === st); if (m) m.setStyle({fillColor: COL[c], radius: c === "posted" || c === "discharge" ? 9 : 7});
+      const m = allMarkers().find(m => m.__s === st); if (m) { m.setStyle({fillColor: COL[c], radius: c === "posted" || c === "discharge" ? 9 : 7}); placeRank(m, c); }
       const chip = document.querySelector('#zone-sites .site[data-station="' + st.source + '"] .status-dot'); if (chip) chip.className = "status-dot " + c;
       if (t) t.dots[i].className = "status-dot " + c;
     });
@@ -355,9 +353,19 @@ const BUILD = {
     return g;
   },
   bwtf(d) {
+    // A Surfrider site within 300 m of a city station is drawn 16 px outward, away from the middle of the city (toward the
+    // water at every beach here), so both results show (Chase, 2026-10-18); the offset is in pixels, the same at every zoom.
+    const MID = [37.762, -122.445], NEAR_M = 300, city = ZONES.flatMap(z => z.stations);
+    const metres = (a, b) => Math.hypot((a.lat - b.lat) * 111000, (a.lon - b.lon) * 88000);
+    const nudge = s => {
+      if (!city.some(c => metres(c, s) < NEAR_M)) return [0, 0];
+      const e = (s.lon - MID[1]) * 88000, n = (s.lat - MID[0]) * 111000, k = 16 / (Math.hypot(e, n) || 1);
+      return [e * k, -n * k];   // screen x east, y down
+    };
     const g = L.layerGroup(d.sites.filter(s => s.lat != null && s.lon != null).map(s => {
-      const grade = s.over ? "posted" : s.caution ? "caution" : s.value == null ? "unknown" : "safe";
-      const m = L.marker([s.lat, s.lon], {icon: L.divIcon({className: "bwtf-pin", html: '<i class="bwtf-dot ' + grade + '"></i>', iconSize: [15, 15], iconAnchor: [7, 7]}), zIndexOffset: 1000 + 100 * (RANK_ST[grade] || 0), keyboard: false});   // the same hierarchy as the city's markers
+      const grade = s.over ? "posted" : s.caution ? "caution" : s.value == null ? "unknown" : "safe", [ox, oy] = nudge(s);
+      const m = L.marker([s.lat, s.lon], {pane: "bw" + (RANK_ST[grade] || 0), keyboard: false,   // the same hierarchy as the city's dots, just under them at a tie
+        icon: L.divIcon({className: "bwtf-pin", html: '<i class="bwtf-dot ' + grade + '"></i>', iconSize: [15, 15], iconAnchor: [7 - ox, 7 - oy], tooltipAnchor: [ox, oy]})});
       m.bindTooltip("Surfrider · " + s.name + " · " + (s.raw || "no result") + (s.raw ? " MPN/100 mL" : "") + (s.date ? " · " + s.date : ""), {direction: "auto", offset: [9, 0], className: "st-label"});
       m.on("click", () => { if (window.SamplePopover) SamplePopover.open({bwtf: s.name, name: s.city_name || s.name, date: s.date}); });
       return m;
@@ -399,7 +407,7 @@ function setReplay(offset) {
   REPLAY_OFFSET = Math.max(0, Math.min(max, offset | 0)); slider.value = max - REPLAY_OFFSET;   // today at the right end; sliding left goes back
   const label = REPLAY_OFFSET === 0 ? "Today" : REPLAY_OFFSET === 1 ? "Yesterday" : REPLAY && REPLAY.days ? fmtDay(REPLAY.days[REPLAY.days.length - 1 - REPLAY_OFFSET]) : REPLAY_OFFSET + " days ago";
   out.textContent = label; slider.setAttribute("aria-valuetext", label);
-  if (REPLAY_OFFSET && RISK_VIEW) { RISK_VIEW = false; riskBtn.classList.remove("active"); }
+  if (REPLAY_OFFSET && RISK_VIEW) { RISK_VIEW = false; riskBtn.classList.remove("active"); applyRisk(); }   // today's risk is not a past day's
   riskBtn.disabled = REPLAY_OFFSET > 0;
   applyReplay();
 }

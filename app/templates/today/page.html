@@ -12,7 +12,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 <script src="{{ asset('sample_popover.js') }}" defer></script>
 
-{% from "_today_board.html" import board_styles, board_section, board_script with context %}
+{% from "_today_board.html" import board_styles, board_section, conditions_strip, board_script with context %}
 {{ board_styles() }}
 <link rel="stylesheet" href="{{ asset('brand.css') }}">
 <style>
@@ -66,13 +66,13 @@
     <span class="ctl-label" id="lbl-layers">Layers</span>
     <button type="button" class="preset layer" data-layer="rain" aria-pressed="false" title="The last three daily totals at the forecast's two NOAA gauges">Rain, 3 days</button>
     <button type="button" class="preset layer" data-layer="outfalls" aria-pressed="false" title="The 34 permitted sewer outfalls, sized by the past year's reported discharge">Outfalls</button>
-    <button type="button" class="preset layer" data-layer="risk" aria-pressed="false" title="Colour zones and stations by today's overflow risk instead of the city's status">Risk view</button>
+    <button type="button" class="preset layer" data-layer="risk" aria-pressed="false" title="Show each zone's overflow risk today, from the CSO Forecast">Risk view</button>
     <button type="button" class="preset layer" data-layer="replay" aria-pressed="false" title="Redraw the board as the city's map stood on a past day">Replay</button>
     <span class="replay-ctl" id="replay-ctl" hidden><span class="tick" id="replay-oldest"></span><input type="range" id="replay" min="0" max="7" step="1" value="7" aria-label="Day to replay — today at the right, slide left to go back" aria-valuetext="Today"><output id="replay-out" for="replay">Today</output></span>
     </div>
     <span class="layer-status" id="layer-status" role="status" aria-live="polite"></span>
   </div>
-  {{ board_section(board, conditions, sites=true) }}
+  {{ board_section(board, sites=true) }}
   <p class="foot-note">Statuses from SFPUC's beach map, checked every minute; overflow risk from the <a href="/forecast">CSO Forecast</a>; rain from NOAA's two city gauges; outfalls from SFPUC's reports to regulators; Surfrider's results from the volunteers' lab. Updated {{ generated }}.</p>
 
   <div class="hubs">
@@ -103,6 +103,7 @@
     {% for href, label in hood %}<a href="{{ href }}">{{ label }}</a>{% endfor %}
     <span class="stamp">{{ build.label if build else '' }} · updated {{ generated }}</span>
   </div>
+  {{ conditions_strip(conditions) }}   {# rain and tide: at the bottom for now (Chase, 2026-10-18) #}
 </div>
 {{ footer() }}
 {{ tabbar() }}

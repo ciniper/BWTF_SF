@@ -1,5 +1,6 @@
-"""Learn (/learn): renders from the repo's own registries and record files, linked from Today's page
-but not a main tab, kept out of search until docs/learn_facts_to_check.md is done. Offline."""
+"""Learn (/learn, with /learn/collect and /learn/lab-sop): renders from the repo's own registries and record files;
+its own top tab since 2026-10-18 and still linked from Today's page; kept out of search until docs/learn_facts_to_check.md
+is done. Offline."""
 import csv
 import pathlib
 import re
@@ -74,7 +75,7 @@ def test_timeline_photos_are_on_disk_and_credited():
     assert "Used with permission" in P.PHOTO_CREDIT
 
 
-def test_page_renders_its_sections_and_is_linked_from_today_only():
+def test_page_renders_its_sections_and_has_its_own_tab():
     from app.wsgi import app
     from app.landing import nav_model
     with app.test_client() as c:
@@ -89,7 +90,12 @@ def test_page_renders_its_sections_and_is_linked_from_today_only():
     assert h.index('id="count"') < h.index('id="tray"') < h.index('id="record"')                           # the hands-on tray follows the story
     assert h.count('class="bug"') == 4 and 'id="tray"' in h and 'id="ch-post"' in h and 'id="ch-csd"' in h and 'id="compare"' in h
     assert '<meta name="robots" content="noindex">' in h and "prefers-reduced-motion:reduce" in h        # out of search; motion respects the setting
-    assert home.count('href="/learn"') == 1 and all("/learn" not in h2["paths"] for h2 in nav_model())   # one link on Today, no tab
+    learn = next(h2 for h2 in nav_model() if h2["key"] == "learn")
+    assert learn["paths"] == ["/learn", "/learn/collect", "/learn/lab-sop"] and 'class="learn" href="/learn"' in home   # its own tab (2026-10-18), and Today's bar
+    with app.test_client() as c:
+        for u, t in (("/learn/collect", "Collect"), ("/learn/lab-sop", "Lab SOP")):
+            b = c.get(u).data.decode()
+            assert f"<h1>{t}</h1>" in b and "coming soon" in b and '<meta name="robots" content="noindex">' in b and f'class="on" aria-current="page">{t}' in b, u
     assert 'class="proto"' not in h and "Prototype notes" not in h
 
 

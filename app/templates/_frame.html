@@ -1,5 +1,5 @@
-{#- The shared page frame (redesign, 2026-09-29): a two-tier top bar (Main + the three
-    hubs; inside a hub, its pages as a second row of tabs), a compact page head that
+{#- The shared page frame (redesign, 2026-09-29): a two-tier top bar (the
+    hubs, Learn among them since 2026-10-18; inside a hub, its pages as a second row of tabs), a compact page head that
     replaces the tall blue heroes, the site footer as a full-bleed band (place it OUTSIDE the page's
     .wrap), and a phone tab bar. Styles live in app/static/brand.css; the nav model
     (NAV) is a Jinja global built from app/landing.py's HUBS.
@@ -94,7 +94,7 @@
 {%- set p = canonical_path(request.path) %}
 <nav class="tabbar" aria-label="Sections">
   {%- for h in NAV %}
-  <a href="{{ h.href }}"{% if p in h.paths %} class="on"{% endif %}><svg class="ic"><use href="#i-{{ {'today': 'bell', 'water': 'flask', 'record': 'clipboard'}[h.key] }}"/></svg>{{ {'today': 'Today', 'water': 'Water record', 'record': 'Postings'}[h.key] }}</a>
+  <a href="{{ h.href }}"{% if p in h.paths %} class="on"{% endif %}><svg class="ic"><use href="#i-{{ {'today': 'bell', 'water': 'flask', 'record': 'clipboard', 'learn': 'microscope'}[h.key] }}"/></svg>{{ {'today': 'Today', 'water': 'Water record', 'record': 'Postings', 'learn': 'Learn'}[h.key] }}</a>
   {%- endfor %}
 </nav>
 <script src="{{ asset('kit.js') }}" defer></script>

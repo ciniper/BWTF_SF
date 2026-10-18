@@ -107,6 +107,11 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
   .topbar .about{padding:6px}
   .topbar .cta{margin-left:0;padding:8px 12px;font-size:13px}
 }
+/* With Learn the fourth hub (2026-10-18) the tabs need ~410px; under 861px the logo keeps its mark but drops the wordmark,
+   so all four tabs show on a 768px iPad instead of the last one scrolling out of the bar. */
+@media (min-width:761px) and (max-width:860px){
+  .topbar .mark span{display:none}
+}
 
 /* ── Frame: page head (replaces the blue hero on tool pages) ─────────────── */
 .page-head{position:relative;margin:0 0 14px}

@@ -1,4 +1,4 @@
-"""The page directory (app/landing.py HUBS): the feature pages grouped into three hubs, each row
+"""The page directory (app/landing.py HUBS): the feature pages grouped into hubs (Learn the fourth, 2026-10-18), each row
 with a static fact that a live one replaces when its source answers in time — the shared tabs and
 the hub cards under the Today board. The Main page at / that first showed the cards was deleted
 2026-09-30; since 2026-10-01 Today IS / (and still answers at /today). Offline: stubbed status client, facts injected or disabled."""
@@ -11,15 +11,17 @@ sys.path.insert(0, str(ROOT))
 
 from app import landing as L  # noqa: E402
 
-FEATURE_PAGES = {"/", "/signup", "/alerts", "/forecast", "/samples", "/graphs", "/compare", "/cso-history", "/analysis", "/discharges", "/postings"}
+FEATURE_PAGES = {"/", "/signup", "/alerts", "/forecast", "/samples", "/graphs", "/compare", "/cso-history", "/analysis", "/discharges", "/postings",
+                 "/learn", "/learn/collect", "/learn/lab-sop"}
 
 
 def test_every_feature_page_sits_in_exactly_one_hub_and_every_link_resolves():
     hrefs = [h["primary"][0] for h in L.HUBS if h["primary"]] + [r[0] for h in L.HUBS for r in h["rows"]]
     subs = [r[4][0] for h in L.HUBS for r in h["rows"] if len(r) > 4]
     assert subs == []             # Source Comparison is a row like the others (Chase, 2026-09-29)
-    assert sorted(hrefs) == sorted(FEATURE_PAGES) and len(hrefs) == len(set(hrefs)) == 11
-    assert [h["title"] for h in L.HUBS] == ["Today & alerts", "The water record", "Postings & discharges"]
+    assert sorted(hrefs) == sorted(FEATURE_PAGES) and len(hrefs) == len(set(hrefs)) == 14
+    assert [h["title"] for h in L.HUBS] == ["Today & alerts", "The water record", "Postings & discharges", "Learn"]
+    assert [h["key"] for h in L.hubs_with_facts({})] == ["today", "water", "record"]   # Learn has its tab and Today's Learn bar, not a hub card
     assert L.HUBS[2]["sub"] == "What the city reported, and when"
     assert {href for href, *_ in L.PAGES} == FEATURE_PAGES            # the flat view still lists them all
     from app.wsgi import app
@@ -93,8 +95,9 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
     b = L.today_board(sts, risks, "city 9/23 · Surfrider 9/24", now=datetime(2026, 9, 29, 6, 12))
     assert b["tone"] == "warn" and b["headline"] == "Posted at 1 beach. 3 others meet state standards."
     assert b["headline_html"] == '<em class="posted">Posted at 1 beach.</em> 3 others meet state standards.' and b["date"] == "Tue Sep 29" and b["checked"] == "6:12 AM" and b["feed_ok"]
-    assert b["lead"] == ("Posted: Crissy East. SFPUC posts a beach when samples show bacteria above State standards, and sometimes as a precaution. No active sewage discharge. Sewer-overflow risk today: 4% at most (East Beaches), staying low through Sun Oct 04. "
-                         "Latest samples: city lab 9/23 · Surfrider volunteers 9/24.")
+    assert b["lead"] == ("Posted: Crissy East. SFPUC posts a beach when samples show bacteria above State standards, and sometimes as a precaution. "
+                         "Latest samples: city lab 9/23 · Surfrider volunteers 9/24.")                       # facts only: no "no discharge", no forecast (2026-10-18)
+    assert b["risk_lead"] == "Sewer-overflow risk today: 4% at most (East Beaches), staying low through Sun Oct 04."   # shown with the Risk view
     z = {t["key"]: t for t in b["zones"]}
     assert [t["key"] for t in b["zones"]] == ["ocean", "baker_china", "north", "east"]           # registry order, every zone even when empty
     assert (z["north"]["status"], z["north"]["status_text"], z["north"]["meta"]) == ("posted", "1 beach posted", "Crissy East · sampled Sep 23")
@@ -110,7 +113,7 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
     assert cso["lead"] == "Discharging: Crane Cove Park. Posted: Crissy East. SFPUC posts a beach when samples show bacteria above State standards, and sometimes as a precaution."                                   # facts only, no advice
     ok = L.today_board([S("4601", "Fort Funston", "safe"), S("4602", "Ocean Beach at Sloat", "safe")], {}, "")
     assert ok["headline"] == "All 2 monitored beaches meet state standards today." and ok["headline_html"] == 'All 2 monitored beaches <em class="good">meet state standards</em> today.'
-    assert ok["lead"] == "No active sewage discharge." and L.today_board([], {}, "")["feed_ok"] is False
+    assert ok["lead"] == "" and ok["risk_lead"] == "" and L.today_board([], {}, "")["feed_ok"] is False
     one = L.today_board([S("4612", "Crissy Field East", "posted"), S("4613", "Aquatic Park", "safe")], {}, "")
     assert one["headline"] == "Posted at 1 beach. 1 other meets state standards." and one["lead"].startswith("Posted: Crissy East.")
     assert L.today_board([S("4612", "Crissy Field East", "posted")], {}, "")["headline"] == "Posted at 1 beach."
@@ -125,7 +128,8 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
     down = L.today_board([], {}, "")
     assert down["tone"] == "warn" and down["headline_html"] == '<em class="warn">Beach status is unavailable right now.</em>'    # orange, like a posting
     nav = L.nav_model()
-    assert [h["key"] for h in nav] == ["today", "water", "record"] and [h["href"] for h in nav] == ["/", "/analysis", "/discharges"]   # a hub opens on its first page; Today's is the root
+    assert [h["key"] for h in nav] == ["today", "water", "record", "learn"] and [h["href"] for h in nav] == ["/", "/analysis", "/discharges", "/learn"]   # a hub opens on its first page; Today's is the root
+    assert [r["title"] for r in nav[3]["rows"]] == ["Learn", "Collect", "Lab SOP"]
     assert [r["title"] for r in nav[1]["rows"]] == ["Site Report Card", "Samples", "Graphs", "Source Comparison"] and "/compare" in nav[1]["paths"]  # subpage = its own tab
     assert [r["href"] for r in nav[0]["rows"]] == ["/", "/forecast", "/signup", "/alerts"] and "/" in nav[0]["paths"]                                  # the hub opens on Today, at the root; the locked page last
     assert L.canonical_path("/today") == L.canonical_path("/index.html") == "/" and L.canonical_path("/graphs") == "/graphs"

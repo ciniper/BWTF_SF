@@ -1,8 +1,8 @@
 """Learn — how San Francisco's sewers meet the shore, the bacteria the labs count, and the record.
 
-Chase's idea (2026-10-07), built on design/learn-prototype and live since 2026-10-08: linked from
-Today's page below the hub cards (not a main tab), kept out of search until the facts in
-docs/learn_facts_to_check.md are checked. Leaflet loads only for the map; nothing else uses a library:
+Chase's idea (2026-10-07), built on design/learn-prototype and live since 2026-10-08: its own top tab since
+2026-10-18 (with the Collect and Lab SOP pages, blank for now) and still linked from Today's page; kept out of
+search until the facts in docs/learn_facts_to_check.md are checked. Leaflet loads only for the map; nothing else uses a library:
 
   1. Where the rain goes   an animated cross-section of a combined sewer: a rain slider and a
                            "Play a storm" button, from dry weather to an overflow at the shore.
@@ -335,4 +335,16 @@ def handle_page(query, body):
     return 200, "text/html; charset=utf-8", render_template("learn/page.html", **learn_context()).encode()
 
 
-GET_ROUTES = {"/learn": handle_page}
+# Two more pages in the Learn hub (Chase, 2026-10-18), blank until their content is written.
+BLANK_PAGES = {
+    "/learn/collect": ("Collect", "How a water sample is collected, from the surf to the lab."),
+    "/learn/lab-sop": ("Lab SOP", "The lab's standard operating procedure, step by step."),
+}
+
+
+def _blank(path: str):
+    title, lead = BLANK_PAGES[path]
+    return lambda query, body: (200, "text/html; charset=utf-8", render_template("learn/blank.html", title=title, lead=lead).encode())
+
+
+GET_ROUTES = {"/learn": handle_page, **{path: _blank(path) for path in BLANK_PAGES}}
