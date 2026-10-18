@@ -170,7 +170,7 @@ def build_rain_layer(fetch: Callable = fetch_acis_daily, now: Optional[datetime]
     return rain_layer(readings, today)
 
 
-# ── Outfalls, sized by the trailing year of reported discharge ─────────────────────────
+# ── Outfalls, with the trailing year of reported discharge ────────────────────────────
 
 def outfalls_layer(payload: dict, months: int = 12) -> dict:
     """Pure over the Discharge Ledger's payload (features/discharges/page._load):
@@ -206,10 +206,9 @@ def outfalls_layer(payload: dict, months: int = 12) -> dict:
                       "n": a["n"], "volume_mg": round(a["volume_mg"], 2), "last": a["last"], "unreported": a["unreported"]})
     sites.sort(key=lambda s: (-s["volume_mg"], -s["n"], s["name"] or ""))
     return {"ok": True, "sites": sites, "window": {"from": frm.isoformat(), "to": to.isoformat(), "months": months},
-            "max_volume_mg": max((s["volume_mg"] for s in sites), default=0.0),
             "coverage": (payload.get("coverage") or {}).get("note", ""), "source": payload.get("source"),
             "note": "Experimental: what each outfall reported to regulators in the trailing twelve months of public records. "
-                    "Circle area follows volume; a ring means discharges with no volume reported."}
+                    "Every outfall is the same dot: filled if it discharged in the window, a ring if not."}
 
 
 def build_outfalls_layer() -> dict:

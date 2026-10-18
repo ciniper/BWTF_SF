@@ -105,7 +105,7 @@ def test_outfalls_layer_sums_the_trailing_year_per_outfall_and_lists_quiet_ones_
                              "CSD-030": {"name": "Quiet", "lat": 37.7, "lon": -122.4, "basin": "Southeast", "water": "Bay", "stations": ["Islais Creek"]}},
                "coverage": {"note": "Records after Apr 2026 aren't public yet."}, "source": "CIWQS"}
     o = T.outfalls_layer(payload)
-    assert o["ok"] and o["window"] == {"from": "2025-04-22", "to": "2026-04-22", "months": 12} and o["max_volume_mg"] == 10.5
+    assert o["ok"] and o["window"] == {"from": "2025-04-22", "to": "2026-04-22", "months": 12} and "max_volume_mg" not in o
     by = {s["id"]: s for s in o["sites"]}
     assert (by["CSD-001"]["n"], by["CSD-001"]["volume_mg"], by["CSD-001"]["unreported"], by["CSD-001"]["last"]) == (2, 10.5, 1, "2026-04-22")
     assert (by["CSD-007"]["n"], by["CSD-007"]["volume_mg"], by["CSD-007"]["stations"]) == (1, 2.25, ["Baker Beach East", "China Beach"])
