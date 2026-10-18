@@ -1,4 +1,5 @@
-{#- The shared page frame (redesign, 2026-09-29): a two-tier top bar (the
+{#- The shared page frame (redesign, 2026-09-29): a slim Beta notice above everything (2026-10-18: a banner, not a
+    popup, so it never covers the board and is there on every visit), a two-tier top bar (the
     hubs, Learn among them since 2026-10-18; inside a hub, its pages as a second row of tabs), a compact page head that
     replaces the tall blue heroes, the site footer as a full-bleed band (place it OUTSIDE the page's
     .wrap), and a phone tab bar. Styles live in app/static/brand.css; the nav model
@@ -14,6 +15,7 @@
 {% macro topbar() -%}
 {%- set p = canonical_path(request.path) %}
 {%- set ns = namespace(hub=None) %}{% for h in NAV %}{% if p in h.paths %}{% set ns.hub = h %}{% endif %}{% endfor %}
+<aside class="beta" aria-label="Beta notice"><div class="in"><b>Beta</b><p>This site is still being tested and is not an official beach advisory. <span class="more">Its data can be late or wrong. </span>Always follow posted signs and <a href="https://webapps.sfpuc.org/sapps/beachesandbay.html" target="_blank" rel="noopener">SFPUC's beach map</a>.</p></div></aside>
 <header class="topbar">
   <div class="in">
     <a class="mark" href="/"><img src="{{ asset('brand/bwtf_144x144.png') }}" alt=""><span><b>SF Beach Water</b><small>Surfrider SF · Blue Water Task Force</small></span></a>

@@ -68,6 +68,11 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
 .seg-btn:focus-visible{outline-offset:-3px}
 
 /* ── Frame: top bar ───────────────────────────────────────────────────────── */
+.beta{background:var(--brand-deep);color:#fff;font:400 12.5px/1.35 'Roboto','Segoe UI',Arial,sans-serif}   /* the site-wide Beta notice (_frame.html topbar), above the bar on every page */
+.beta .in{max-width:var(--page-w);margin:0 auto;padding:6px 24px;display:flex;align-items:baseline;gap:10px}
+.beta b{flex:none;font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--brand-deep);background:#fff;border-radius:999px;padding:2px 8px;position:relative;top:-1px}
+.beta p{margin:0}
+.beta a{color:#fff;font-weight:700;text-decoration:underline;text-underline-offset:2px}
 .topbar{background:#fff;border-bottom:1px solid var(--line);position:relative;z-index:30;font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:14px;line-height:1.2}   /* the frame sets its own type: a page's body rule (Today's line-height:1.5) would otherwise resize the bar between pages (Chase, 2026-09-30: no jumping) */
 .topbar .in{max-width:var(--page-w);margin:0 auto;padding:8px 24px;display:flex;align-items:center;gap:14px}
 .topbar .mark{display:flex;align-items:center;gap:9px;color:var(--ink);text-decoration:none;white-space:nowrap}
@@ -152,6 +157,8 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
 /* ── Frame: phone tab bar (hidden on wide screens) ────────────────────────── */
 .tabbar{display:none}
 @media (max-width:760px){
+  .beta .in{padding:6px 14px;gap:8px;font-size:12px}
+  .beta .more{display:none}   /* shorter on a phone: three lines, not five */
   .topbar .tabs{display:none}
   .topbar .subtabs .in{padding:0 8px}
   .topbar .subtabs a{padding:10px 11px 9px;font-size:13px}

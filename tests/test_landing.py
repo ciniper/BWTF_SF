@@ -169,6 +169,7 @@ def test_today_page_offline_shows_the_board_then_the_hubs_and_hood():
         assert needle in html, needle
     assert html.count('class="hub') >= 3 and 'class="card"' not in html
     assert 'class="topbar"' in html and 'class="tabbar"' in html and 'class="site-footer"' in html and 'class="board tone-warn"' in html   # the shared frame + the Today board
+    assert html.index('class="beta"') < html.index('class="topbar"') and "not an official beach advisory" in html   # the Beta notice, a banner above the bar (2026-10-18)
     assert 'id="today"' in html and 'id="water"' in html and 'id="record"' in html                                                       # the hub anchors
     assert html.index('class="board') < html.index('class="hubs"') < html.index('class="hood"') < html.index('class="site-footer"')   # board, then the directory
     cards = html[html.index('class="hubs"'):html.index('class="hood"')]
@@ -207,7 +208,7 @@ def test_one_frame_width_on_every_page():
     overrides it — the frame must not jump between pages (Chase, 2026-09-29)."""
     css = (ROOT / "app/static/brand.css").read_text()
     assert "--page-w:1280px" in css and "body.wide" not in css
-    for sel in (".wrap{", ".topbar .in{", ".site-footer .in{"):
+    for sel in (".wrap{", ".beta .in{", ".topbar .in{", ".site-footer .in{"):
         rule = css[css.index(sel):]; rule = rule[:rule.index("}")]
         assert "max-width:var(--page-w)" in rule, sel
     for f in sorted((ROOT / "app/templates").rglob("*.html")):
