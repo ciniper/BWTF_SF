@@ -73,7 +73,6 @@
   .map-legend .divider{width:1px;height:12px;background:var(--line);margin:0 2px}
   .map-legend .ring{display:inline-block;width:10px;height:10px;border-radius:50%;border:2px solid var(--brand);background:rgba(0,114,188,.15)}
   .map-legend .of{display:inline-block;width:9px;height:9px;border-radius:50%;background:#7a5a3a}
-  .map-legend .of.quiet{background:none;box-shadow:inset 0 0 0 1.5px #7a5a3a}
   /* Above the board: Sources (what the map shows) and Layers (what you add on top) as two boxes (Chase, 2026-10-01);
      on phones the Layers box folds behind a button in the Sources box, and opens itself for a ?layers= / ?risk= / ?replay= link */
   .layers{display:flex;flex-wrap:wrap;align-items:stretch;gap:10px;margin:0 0 12px}
@@ -220,6 +219,7 @@ function initMap() {
   // (Chase, 2026-09-29), and an orange city dot over a green Surfrider diamond (2026-10-18). One map pane per rank:
   // the city's dots in st0–st3, Surfrider's diamonds in bw0–bw3 just under the city's dots of the same rank.
   for (let r = 0; r <= 3; r++) { MAP.createPane("bw" + r).style.zIndex = 405 + 10 * r; MAP.createPane("st" + r).style.zIndex = 410 + 10 * r; }
+  MAP.createPane("of").style.zIndex = 450;   // the outfalls sit above every station and Surfrider site (Chase, 2026-10-18)
   const RANK = {unknown: 0, caution: 1, safe: 1, posted: 2, discharge: 3};
   const ordered = ZONES.flatMap(z => z.stations.map(s => [z, s])).sort((a, b) => (RANK[a[1].status] || 0) - (RANK[b[1].status] || 0));
   for (const [z, s] of ordered) {
@@ -268,7 +268,7 @@ function renderLegend() {
     if (LAYER.bwtf.on) h += '<i class="divider"></i><span class="shape"><i class="status-dot"></i>city</span><span class="shape"><i class="bwtf-dot"></i>Surfrider</span>';
   }
   if (LAYER.rain.on) h += '<span><i class="ring"></i>rain, 3 days</span>';
-  if (LAYER.outfalls.on) h += '<span><i class="of"></i>outfall, discharged in the past year</span><span><i class="of quiet"></i>outfall, quiet</span>';
+  if (LAYER.outfalls.on) h += '<span><i class="of"></i>outfall</span>';
   lg.innerHTML = h;
 }
 function tileParts(key) { const b = document.querySelector('.zone[data-zone="' + key + '"]'); return b ? {b, st: b.querySelector(".st"), dots: [...b.querySelectorAll(".stations .status-dot")]} : null; }
@@ -340,10 +340,10 @@ const BUILD = {
   },
   outfalls(d) {
     const g = L.layerGroup();
-    for (const o of [...d.sites.filter(o => !o.n), ...d.sites.filter(o => o.n)]) {   // one size for every outfall (Chase, 2026-10-18): filled if it discharged in the year, a ring if not, the filled ones on top
+    for (const o of d.sites) {   // every outfall the same filled brown dot, in its own pane on top (Chase, 2026-10-18); the popup carries the year
       if (o.lat == null) continue;
       const quiet = !o.n;
-      const m = L.circleMarker([o.lat, o.lon], {radius: 5, color: "#7a5a3a", weight: quiet ? 1.5 : 2, fillColor: "#7a5a3a", fillOpacity: quiet ? 0 : .8, bubblingMouseEvents: false}).addTo(g);
+      const m = L.circleMarker([o.lat, o.lon], {pane: "of", radius: 5, color: "#7a5a3a", weight: 2, fillColor: "#7a5a3a", fillOpacity: 1, bubblingMouseEvents: false}).addTo(g);
       const posts = o.stations.length ? "posts " + o.stations.join(", ") : "posts no monitored beach";
       m.bindTooltip(o.name + " · " + (quiet ? "no discharge reported" : o.n + " discharge" + (o.n > 1 ? "s" : "") + " · " + (o.volume_mg ? o.volume_mg.toFixed(1) + " MG" : "volume not reported")), {direction: "auto", offset: [8, 0], className: "st-label"});
       m.bindPopup('<div><b>' + esc(o.name) + '</b><span class="mut">' + esc(o.basin) + " basin · " + esc(o.water) + "</span><br>" +

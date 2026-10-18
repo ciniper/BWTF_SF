@@ -208,7 +208,7 @@ def outfalls_layer(payload: dict, months: int = 12) -> dict:
     return {"ok": True, "sites": sites, "window": {"from": frm.isoformat(), "to": to.isoformat(), "months": months},
             "coverage": (payload.get("coverage") or {}).get("note", ""), "source": payload.get("source"),
             "note": "Experimental: what each outfall reported to regulators in the trailing twelve months of public records. "
-                    "Every outfall is the same dot: filled if it discharged in the window, a ring if not."}
+                    "Every outfall is the same dot; its popup gives the window's discharges."}
 
 
 def build_outfalls_layer() -> dict:
