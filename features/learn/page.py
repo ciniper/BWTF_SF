@@ -34,6 +34,7 @@ from flask import render_template
 
 from features.discharges.page import _CSV as CSD_CSV
 from features.learn.collect import GET_ROUTES as COLLECT_ROUTES
+from features.learn.sop import GET_ROUTES as SOP_ROUTES
 from features.postings.page import _CSV as POSTINGS_CSV
 from shared.outfalls import OUTFALLS
 from shared.standards import ENTERO_CAUTION, STANDARDS
@@ -336,15 +337,6 @@ def handle_page(query, body):
     return 200, "text/html; charset=utf-8", render_template("learn/page.html", **learn_context()).encode()
 
 
-# Two more pages in the Learn hub (Chase, 2026-10-18), blank until their content is written.
-BLANK_PAGES = {
-    "/learn/lab-sop": ("Lab SOP", "The lab's standard operating procedure, step by step."),
-}
-
-
-def _blank(path: str):
-    title, lead = BLANK_PAGES[path]
-    return lambda query, body: (200, "text/html; charset=utf-8", render_template("learn/blank.html", title=title, lead=lead).encode())
-
-
-GET_ROUTES = {"/learn": handle_page, **COLLECT_ROUTES, **{path: _blank(path) for path in BLANK_PAGES}}   # Collect: features/learn/collect.py
+# The hub's two other pages (Chase, 2026-10-18) live in their own modules: Collect (features/learn/collect.py) and the
+# Lab SOP (features/learn/sop.py).
+GET_ROUTES = {"/learn": handle_page, **COLLECT_ROUTES, **SOP_ROUTES}

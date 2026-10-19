@@ -86,7 +86,7 @@ HUBS = [
              "How San Francisco's sewers meet the shore, how the lab counts bacteria, and a century and a half of the system.",
              "the system · the lab · the record"),
             ("/learn/collect", "Collect", "Where we sample, how to take a sample, and the sheet's conditions.", "four sites · the sheet"),
-            ("/learn/lab-sop", "Lab SOP", "The lab's standard operating procedure.", "coming soon"),
+            ("/learn/lab-sop", "Lab SOP", "How the lab tests a sample, step by step, from the lab's wall pages.", "4 phases · 25 steps"),
         ],
     },
 ]

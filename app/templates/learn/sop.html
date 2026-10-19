@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link rel="icon" href="{{ asset('brand/favicon.ico') }}"><link rel="apple-touch-icon" sizes="144x144" href="{{ asset('brand/bwtf_144x144.png') }}">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab SOP — SF Beach Water · Surfrider SF Blue Water Task Force</title>
+<meta name="robots" content="noindex">   {# with the rest of Learn: out of search until docs/learn_facts_to_check.md is done #}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ asset('brand.css') }}">
+<style>
+  body{margin:0;background:var(--sand);color:var(--ink);font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:15px;line-height:1.55;min-height:100vh;display:flex;flex-direction:column}
+  .wrap{width:100%;max-width:var(--page-w);margin:0 auto;padding:20px 24px 40px;box-sizing:border-box;flex:1}
+  .mix{color:#1f3fd1}  .risk{color:#c81e1e}
+  /* the four phases, as the wall pages colour them */
+  .phases{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0 0 16px}
+  .phases a{display:block;text-decoration:none;color:var(--ink);background:#fff;border:1px solid var(--line);border-top:5px solid var(--a);border-radius:10px;padding:8px 12px;font-size:13px;line-height:1.3}
+  .phases a b{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--a)}
+  .phase{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg,16px);margin:0 0 16px;overflow:hidden;scroll-margin-top:16px}
+  .ph-head{display:flex;align-items:stretch;background:var(--t)}
+  .ph-head .no{flex:none;width:76px;display:grid;place-items:center;background:var(--a);color:#fff;font:400 48px/1 'Bebas Neue',sans-serif}
+  .ph-head .tt{padding:12px 18px}
+  .ph-head small{display:block;font-size:11px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--a)}
+  .ph-head h2{margin:0;font-size:24px;line-height:1.15;color:var(--ink)}
+  .items{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:18px;align-items:start}
+  .wide{grid-column:1/-1}
+  /* a step */
+  .step{border:1px solid var(--line);border-right:5px solid var(--a);border-radius:12px;overflow:hidden;scroll-margin-top:16px}
+  .step .head{display:flex;align-items:stretch;position:relative}
+  .step .num{flex:none;width:74px;background:var(--t);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 0;border-right:1px solid var(--line)}
+  .step .num small{font-size:10px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  .step .num b{font:400 38px/1 'Bebas Neue',sans-serif;color:var(--a)}
+  .step .txt{padding:12px 16px;flex:1;min-width:0}
+  .step h3{margin:0 0 3px;font-size:17px;line-height:1.3}
+  .step p{margin:0;color:var(--muted);font-size:14.5px}
+  .step p b{color:var(--ink)} .step p a{color:var(--brand);font-weight:700}
+  .step .see{display:inline-block;margin-top:6px;font-size:13.5px;font-weight:700;color:var(--brand);text-decoration:none}
+  .flag{position:absolute;top:-1px;right:-1px;font-size:10.5px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#fff;border-radius:0 0 0 10px;padding:4px 10px;display:flex;gap:5px;align-items:center}
+  .flag.contamination{background:#d61f1f} .flag.control{background:#2f7fcb}
+  .flag .ic{width:13px;height:13px}
+  .step.flagged .txt{padding-top:24px}
+  .sbadge{flex:none;align-self:center;margin:0 14px;border:2px solid var(--ink);border-radius:8px;padding:4px 10px;text-align:center;background:#fff;line-height:1.05}
+  .sbadge b,.pbadge b{display:block;font-size:20px;font-weight:900}
+  .sbadge small,.pbadge small{font-size:9.5px;font-weight:900;letter-spacing:.1em;text-transform:uppercase}
+  .pics{display:grid;gap:8px;padding:0 10px 10px}
+  .pics.n2{grid-template-columns:repeat(2,minmax(0,1fr))} .pics.n3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .pic{position:relative;margin:0;border-radius:10px;overflow:hidden;background:var(--sand2);aspect-ratio:4/3}
+  .pics.tall .pic{aspect-ratio:3/4}
+  .pic a,.pic img.main{display:block;width:100%;height:100%}
+  .pic img.main{object-fit:cover}
+  .pic img.inset{position:absolute;right:8px;top:8px;width:34%;aspect-ratio:4/3;object-fit:cover;border:3px solid #fff;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+  .pic .tag{position:absolute;left:8px;top:8px;background:var(--a);color:#fff;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;padding:3px 10px}
+  .pbadge{position:absolute;right:8px;top:8px;background:#fff;border:2px solid var(--ink);border-radius:8px;padding:3px 10px;text-align:center;line-height:1.05}
+  .pic.slot{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:14px;color:var(--muted);font-size:13px;background:repeating-linear-gradient(135deg,var(--t) 0 10px,#fff 10px 20px);border:1px dashed var(--line)}
+  .pic.slot small{color:var(--faint);font-size:11.5px;margin-top:4px}
+  .checks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:0 10px 10px}
+  .checks div{display:flex;justify-content:space-between;gap:8px;align-items:center;border-left:4px solid;border-radius:6px;padding:8px 10px;font-size:13.5px}
+  .checks span{flex:none;font-size:10.5px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#fff;border-radius:999px;padding:3px 9px}
+  .checks .good{background:#e4f2ec;border-color:#16725a} .checks .good span{background:#16725a}
+  .checks .valid{background:#e3eef8;border-color:#127c8c} .checks .valid span{background:#127c8c}
+  .checks .discard{background:#fbe9e9;border-color:#c94a4a;color:#a33} .checks .discard span{background:#c94a4a}
+  /* the callouts between steps */
+  .note.banner{background:#e81b1b;color:#fff;border-radius:10px;border:2px solid #7a0d0d;text-align:center;font-size:13px;font-weight:900;letter-spacing:.2em;text-transform:uppercase;padding:8px 12px;display:flex;align-items:center;gap:12px}
+  .note.banner::before,.note.banner::after{content:"";flex:1;border-top:1px solid rgba(255,255,255,.7)}
+  .note.repeat{display:flex;gap:12px;align-items:center;border:1px solid var(--line);border-left:5px solid var(--a);border-radius:12px;padding:10px 16px;background:var(--t)}
+  .note.repeat .ic{flex:none;width:26px;height:26px;color:var(--a)}
+  .note.repeat b{display:block;font:400 22px/1.1 'Bebas Neue',sans-serif;letter-spacing:.02em;color:var(--a)}
+  .note.repeat p,.note.rule p,.note.standing p{margin:0;font-size:14px;color:var(--muted)}
+  .note.rule{border-top:1px solid var(--line);padding:10px 2px 0;display:flex;gap:16px;align-items:baseline;flex-wrap:wrap}
+  .note.rule b{font-size:13px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+  .note.standing{background:var(--t);border-radius:12px;padding:12px 16px}
+  .note.standing b{display:block;font-size:11.5px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--a);margin-bottom:2px}
+  .note.warn{background:#fbe9e9;border-left:4px solid #d14b4b;border-radius:6px;padding:10px 14px;font-size:14px;color:#b23a3a}
+  .note.warn b{color:var(--ink)}
+  .note.caps{border-top:1px solid var(--line);padding-top:10px;font-size:13px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+  .draft{background:#fff;border:1px dashed var(--line);border-radius:12px;padding:10px 14px;font-size:13.5px;color:var(--muted);margin:0 0 16px}
+  @media (max-width:760px){
+    .wrap{padding:14px 14px 30px}
+    .phases{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .items{grid-template-columns:1fr;padding:12px;gap:12px}
+    .ph-head .no{width:58px;font-size:40px} .ph-head h2{font-size:20px}
+    .step .num{width:58px} .step .num b{font-size:32px}
+    .pics.n3{grid-template-columns:1fr 1fr} .pics.n3 .pic:last-child{grid-column:1/-1;aspect-ratio:4/3}
+    .pbadge{top:auto;bottom:8px;padding:2px 8px} .pbadge b{font-size:16px}   /* clear of the tag on a narrow photo */
+    .checks{grid-template-columns:1fr}
+    .sbadge{margin:0 10px}
+  }
+</style>
+</head>
+<body>
+{% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
+{{ topbar() }}
+<div class="wrap">
+  {{ page_head("Lab SOP", "How the Blue Water Task Force lab tests a water sample for Enterococcus with Enterolert and a Quanti-Tray: " ~ phases|length ~ " phases, " ~ n_steps ~ " steps, from bringing the samples in to entering the results.") }}
+  <nav class="phases" aria-label="Phases">
+    {%- for ph in phases %}<a href="#{{ ph.key }}" style="--a:{{ ph.accent }}"><b>Phase {{ ph.n }}</b>{{ ph.title }}</a>{% endfor %}
+  </nav>
+  <p class="draft">From the lab's wall pages, still a draft: the striped frames are photos still to be taken. To learn why the tray works, see <a href="/learn#count">how the lab counts</a> on the Learn page.</p>
+
+  {%- for ph in phases %}
+  <section class="phase" id="{{ ph.key }}" style="--a:{{ ph.accent }};--t:{{ ph.tint }}">
+    <div class="ph-head"><div class="no">{{ ph.n }}</div><div class="tt"><small>Phase</small><h2>{{ ph.title }}</h2></div></div>
+    <div class="items">
+      {%- for it in ph["items"] %}
+      {%- if it.note %}
+      <div class="note {{ it.note }}{% if it.wide %} wide{% endif %}">
+        {%- if it.note == "banner" %}{{ it.text }}
+        {%- elif it.note == "repeat" %}<svg class="ic" aria-hidden="true"><use href="#i-refresh-cw"/></svg><div><b>{{ it.title }}</b><p>{{ it.text|safe }}</p></div>
+        {%- elif it.note in ("rule", "standing") %}<b>{{ it.title }}</b><p>{{ it.text|safe }}</p>
+        {%- else %}{{ it.text|safe }}{% endif %}
+      </div>
+      {%- else %}
+      <article class="step{% if it.wide %} wide{% endif %}{% if it.flag %} flagged{% endif %}" id="step-{{ it.n }}">
+        <div class="head">
+          <div class="num"><small>Step</small><b>{{ it.n }}</b></div>
+          <div class="txt"><h3>{{ it.title }}</h3><p>{{ it.text|safe }}</p>{% if it.see %}<a class="see" href="{{ it.see[0] }}">{{ it.see[1] }} →</a>{% endif %}</div>
+          {%- if it.badge %}<div class="sbadge"><b>{{ it.badge.big }}</b><small>{{ it.badge.small }}</small></div>{% endif %}
+          {%- if it.flag == "contamination" %}<span class="flag contamination"><svg class="ic" aria-hidden="true"><use href="#i-circle-alert"/></svg>Contamination risk</span>
+          {%- elif it.flag == "control" %}<span class="flag control"><svg class="ic" aria-hidden="true"><use href="#i-circle-alert"/></svg>Check control first</span>{% endif %}
+        </div>
+        {%- if it.checks %}<div class="checks">{% for k, label, what in it.checks %}<div class="{{ k }}">{{ what }}<span>{{ label }}</span></div>{% endfor %}</div>{% endif %}
+        {%- set count = (it.pics|length) + (it.slots|default([])|length) %}
+        {%- if count %}
+        <div class="pics n{{ [count, 3]|min }}{% if it.tall %} tall{% endif %}">
+          {%- for p in it.pics %}
+          <figure class="pic"><a href="{{ asset(p.src) }}" target="_blank" rel="noopener"><img class="main" src="{{ asset(p.src) }}" alt="{{ p.alt }}" loading="lazy"{% if p.pos %} style="object-position:{{ p.pos }}"{% endif %}></a>
+            {%- if p.inset %}<img class="inset" src="{{ asset(p.inset.src) }}" alt="{{ p.inset.alt }}" loading="lazy">{% endif %}
+            {%- if p.tag %}<span class="tag">{{ p.tag }}</span>{% endif %}
+            {%- if p.badge %}<span class="pbadge"><b>{{ p.badge.big }}</b><small>{{ p.badge.small }}</small></span>{% endif %}</figure>
+          {%- endfor %}
+          {%- for s in it.slots|default([]) %}<figure class="pic slot"><span>{{ s }}</span><small>Photo to come</small></figure>{% endfor %}
+        </div>
+        {%- endif %}
+      </article>
+      {%- endif %}
+      {%- endfor %}
+    </div>
+  </section>
+  {%- endfor %}
+</div>
+{{ footer() }}
+{{ tabbar() }}
+</body></html>
