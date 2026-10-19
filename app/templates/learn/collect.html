@@ -62,6 +62,14 @@
   .cx-actions{display:flex;gap:10px;align-items:center;margin:12px 0 0;flex-wrap:wrap}
   .cx-actions small{color:var(--muted)}
   .cx-err{color:var(--discharge);font-weight:700}
+  .cx .v .lvl{font-size:16px;font-weight:700;color:var(--muted);margin-left:6px}
+  .tide-strip{margin:10px 0 0;border:1px solid var(--line);border-radius:var(--r);padding:10px 12px 6px}
+  .tide-strip .k{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .tide-strip svg{display:block;width:100%;height:auto;margin-top:2px}
+  .tide-strip text{font-family:Roboto,sans-serif}
+  .obs{display:flex;flex-direction:column;gap:6px;margin:16px 0 0}
+  .obs span{font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+  .obs textarea{font:400 15px/1.45 Roboto,sans-serif;color:var(--ink);padding:10px 12px;border:1px solid var(--line);border-radius:10px;resize:vertical;min-height:84px}
 
   @media (max-width:1023px){.how{grid-template-columns:1fr}.diagram{max-width:600px}.sites{grid-template-columns:repeat(2,minmax(0,1fr))}.cx-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
   @media (max-width:760px){
@@ -101,19 +109,19 @@
 
   <section class="sec" id="how">
     <h2>Taking a sample</h2>
-    <p class="sub">The short version. The full procedure is in the <a href="/learn/lab-sop">Lab SOP</a>.</p>
+    <p class="sub">The short version. What happens once the jars reach the lab is in the <a href="/learn/lab-sop">Lab SOP</a>.</p>
     <div class="how">
       <ol class="steps">
-        <li>Write the site, date and time on the bottle.</li>
+        <li>Write the site, date and time on the sample jar.</li>
         <li>Wade out until the water is about 2 feet deep, around your knees.</li>
         <li>Face the waves. If it's wavy, sample as a wave comes in.</li>
-        <li>Uncap the bottle without touching the inside of it or the cap.</li>
+        <li>Uncap the jar without touching its rim or the inside of the lid.</li>
         <li>Push it mouth-down to about 6 inches under the surface, then tip it up to fill, away from your body.</li>
         <li>Cap it, keep it cold in the cooler, and note the conditions for the sheet.</li>
       </ol>
       <figure class="diagram" style="margin:0">
         <svg viewBox="40 44 480 236" role="img" aria-labelledby="dg-t">
-          <title id="dg-t">A volunteer standing in about 2 feet of water, facing an incoming wave, holding the bottle about 6 inches under the surface</title>
+          <title id="dg-t">A volunteer standing in about 2 feet of water, facing an incoming wave, holding the sample jar about 6 inches under the surface</title>
           <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#26272a"/></marker>
             <marker id="ahb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#005a96"/></marker></defs>
           <path d="M40 158 L520 262 L520 280 L40 280Z" fill="#e8d7b0"/>                                    <!-- the sand, sloping out to sea -->
@@ -158,10 +166,13 @@
     <div id="cx-out" hidden>
       <p class="cx-when" id="cx-when"></p>
       <div class="cx-grid" id="cx-grid"></div>
-      <div class="cx-actions"><button type="button" class="btn ghost" id="cx-copy">Copy for the sheet</button><small id="cx-copied" aria-live="polite"></small></div>
+      <div class="tide-strip" id="cx-tide" hidden></div>
     </div>
     <p class="cx-err" id="cx-err" hidden></p>
-    <p class="more">Tide from NOAA's predictions for the beach; air, sky and wind from Open-Meteo at the site's pin; waves and water temperature from Open-Meteo's ocean model; rain from the NOAA gauge the <a href="/forecast">CSO Forecast</a> reads. Times are Pacific; the sheet covers the last 90 days and the next week.</p>
+    <label class="obs" for="cx-obs"><span>Observations</span>
+      <textarea id="cx-obs" rows="3" placeholder="Birds, swimmers, surfers, debris, odor, water color, anything unusual"></textarea></label>
+    <div class="cx-actions"><button type="button" class="btn ghost" id="cx-copy" disabled>Copy for the sheet</button><button type="button" class="btn" id="cx-save" disabled>Save as image</button><small id="cx-copied" aria-live="polite"></small></div>
+    <p class="more">Tide from NOAA's predictions for the beach, its level in feet above the average lowest low (MLLW); air, sky and wind from Open-Meteo at the site's pin; waves and water temperature from Open-Meteo's ocean model; rain from the NOAA gauge the <a href="/forecast">CSO Forecast</a> reads. Times are Pacific; the sheet covers the last 90 days and the next week. Observations stay on this device, saved with the site and date, until you save the image.</p>
   </section>
 </div>
 {{ footer() }}
@@ -169,7 +180,26 @@
 <script>
 (() => {
   const $ = id => document.getElementById(id), esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"})[c]);
+  const SITES = {{ sites|map(attribute='key')|list|tojson }}, NUM = {{ sites|map(attribute='n')|list|tojson }};
   let last = null;
+  const obsKey = () => "collect-obs:" + $("cx-site").value + ":" + $("cx-date").value;   // a note belongs to a site and a day
+  const restoreObs = () => { try { $("cx-obs").value = localStorage.getItem(obsKey()) || ""; } catch (e) {} };
+  $("cx-obs").addEventListener("input", () => { try { localStorage.setItem(obsKey(), $("cx-obs").value); } catch (e) {} });
+  ["cx-site", "cx-date"].forEach(id => $(id).addEventListener("change", restoreObs)); restoreObs();
+
+  const hhmm = m => { const h = Math.floor(m / 60) % 24, mm = String(m % 60).padStart(2, "0"); return (h % 12 || 12) + ":" + mm + (h < 12 ? " AM" : " PM"); };
+  const tick = m => ["12a", "6a", "12p", "6p", "12a"][m / 360];
+  function tideSvg(c) {   // the day's tide, its turns, and the moment
+    const W = 640, H = 120, L = 30, R = 10, T = 22, B = 22, top = Math.max(...c.pts.map(p => p[1]), 6), bot = Math.min(...c.pts.map(p => p[1]), 0);
+    const x = m => L + (W - L - R) * m / 1440, y = ft => T + (H - T - B) * (top - ft) / (top - bot || 1);
+    const line = c.pts.map((p, i) => (i ? "L" : "M") + x(p[0]).toFixed(1) + " " + y(p[1]).toFixed(1)).join(" ");
+    let g = `<path d="${line} L${x(1440)} ${H - B} L${x(0)} ${H - B}Z" fill="#cfe6f6"/><path d="${line}" fill="none" stroke="#0072bc" stroke-width="2.5"/>`;
+    for (let m = 0; m <= 1440; m += 360) g += `<text x="${x(m)}" y="${H - 6}" font-size="11" fill="#8a949b" text-anchor="${m ? m === 1440 ? "end" : "middle" : "start"}">${tick(m)}</text>`;
+    c.turns.forEach(t => g += `<text x="${x(t.m)}" y="${t.type === "H" ? y(t.ft) - 6 : y(t.ft) + 14}" font-size="11" fill="#54576f" text-anchor="middle">${t.type === "H" ? "high" : "low"} ${t.ft.toFixed(1)}</text>`);
+    g += `<line x1="${x(c.at)}" x2="${x(c.at)}" y1="${T - 8}" y2="${H - B}" stroke="#26272a" stroke-dasharray="3 3"/><circle cx="${x(c.at)}" cy="${y(c.level)}" r="5.5" fill="#26272a" stroke="#fff" stroke-width="2"/>`;
+    return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="The tide through the day, ${c.level.toFixed(1)} feet at ${hhmm(c.at)}">${g}</svg>`;
+  }
+
   async function load() {
     const q = new URLSearchParams({site: $("cx-site").value, date: $("cx-date").value, time: $("cx-time").value});
     $("cx-go").disabled = true; $("cx-go").textContent = "Getting…"; $("cx-err").hidden = true; $("cx-copied").textContent = "";
@@ -179,21 +209,113 @@
       last = j;
       $("cx-when").textContent = j.name + " · " + j.when;
       $("cx-grid").innerHTML = j.rows.map(x => '<div class="cx"><div class="k">' + esc(x.label) + '</div>' +
-        (x.value == null ? '<div class="v na">' + esc(x.blank || "Not available") + '</div>' : '<div class="v">' + esc(x.value) + '</div>') +
+        (x.value == null ? '<div class="v na">' + esc(x.blank || "Not available") + '</div>' : '<div class="v">' + esc(x.value) + (x.level ? '<span class="lvl">' + esc(x.level) + '</span>' : "") + '</div>') +
         (x.detail ? '<div class="d">' + esc(x.detail) + '</div>' : "") + (x.source ? '<div class="s">' + esc(x.source) + '</div>' : "") + '</div>').join("");
-      $("cx-out").hidden = false;
+      const tide = j.rows.find(x => x.key === "tide");
+      $("cx-tide").hidden = !(tide && tide.curve);
+      if (tide && tide.curve) $("cx-tide").innerHTML = '<div class="k">The tide that day · ' + esc(tide.level) + ' at ' + esc(hhmm(tide.curve.at)) + '</div>' + tideSvg(tide.curve);
+      $("cx-out").hidden = false; $("cx-copy").disabled = $("cx-save").disabled = false;
     } catch (e) { $("cx-err").textContent = "Couldn't get the conditions: " + e.message; $("cx-err").hidden = false; $("cx-out").hidden = true; }
     finally { $("cx-go").disabled = false; $("cx-go").textContent = "Get conditions"; }
   }
   $("cx-form").addEventListener("submit", e => { e.preventDefault(); load(); });
   document.querySelectorAll(".site .use").forEach(b => b.addEventListener("click", () => {   // a site card fills the form and jumps to it
-    $("cx-site").value = b.dataset.site; $("sheet").scrollIntoView({behavior: "smooth", block: "start"}); load();
+    $("cx-site").value = b.dataset.site; restoreObs(); $("sheet").scrollIntoView({behavior: "smooth", block: "start"}); load();
   }));
+  const valueText = x => x.value == null ? "" : x.value + (x.level ? " (" + x.level + ")" : "");
   $("cx-copy").addEventListener("click", async () => {
     if (!last) return;
-    const text = last.name + ", " + last.when + "\n" + last.rows.map(x => x.label + ": " + (x.value == null ? "" : x.value)).join("\n");
+    const obs = $("cx-obs").value.trim();
+    const text = last.name + ", " + last.when + "\n" + last.rows.map(x => x.label + ": " + valueText(x)).join("\n") + (obs ? "\nObservations: " + obs : "");
     try { await navigator.clipboard.writeText(text); $("cx-copied").textContent = "Copied."; }
     catch (e) { $("cx-copied").textContent = "Couldn't copy: select the values above instead."; }
+  });
+
+  // ── The snapshot as an image: drawn on a canvas, no library ──
+  function wrap(ctx, text, maxW) {
+    const out = []; let line = "";
+    for (const w of String(text).split(/\s+/)) { const t = line ? line + " " + w : w; if (ctx.measureText(t).width > maxW && line) { out.push(line); line = w; } else line = t; }
+    if (line) out.push(line); return out;
+  }
+  function box(ctx, x, y, w, h, r, fill, stroke) {
+    ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+    if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 2; ctx.stroke(); }
+  }
+  async function drawSheet(j, obs) {
+    await Promise.all(["400 46px 'Bebas Neue'", "900 40px Roboto", "700 16px Roboto", "500 24px Roboto", "400 17px Roboto"].map(f => document.fonts.load(f).catch(() => null)));
+    const W = 1080, P = 48, G = 20, CW = (W - 2 * P - G) / 2, S = 2, INK = "#26272a", MUT = "#54576f", FAINT = "#8a949b", LINE = "#d9e4e8";
+    const m = document.createElement("canvas").getContext("2d");
+    const font = (w, px, fam) => (m.font = `${w} ${px}px ${fam || "Roboto"}`);
+    const cells = j.rows.map(x => { font(400, 17); const d = x.detail ? wrap(m, x.detail, CW - 36).slice(0, 4) : []; return {x, d, h: 18 + 20 + 52 + d.length * 23 + 26 + 16}; });
+    const rowsH = []; for (let i = 0; i < cells.length; i += 2) rowsH.push(Math.max(cells[i].h, (cells[i + 1] || cells[i]).h));
+    const tide = j.rows.find(x => x.key === "tide"), curve = tide && tide.curve;
+    font(400, 22); const obsLines = obs ? wrap(m, obs, W - 2 * P - 36) : ["—"];
+    font(400, 15); const srcLines = wrap(m, "Sources: " + [...new Set(j.rows.map(x => x.source).filter(Boolean))].join(" · "), W - 2 * P);
+    const H = 112 + 132 + rowsH.reduce((a, b) => a + b + G, 0) + (curve ? 230 + G : 0) + (66 + obsLines.length * 30) + G + srcLines.length * 21 + 70;
+    const cv = document.createElement("canvas"); cv.width = W * S; cv.height = H * S;
+    const ctx = cv.getContext("2d"); ctx.scale(S, S); ctx.textBaseline = "alphabetic";
+    const f = (w, px, fam) => (ctx.font = `${w} ${px}px ${fam || "Roboto"}`);
+    ctx.fillStyle = "#e3ebf2"; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = "#0072bc"; ctx.fillRect(0, 0, W, 112);
+    ctx.fillStyle = "#fff"; f(400, 50, "'Bebas Neue'"); ctx.fillText("SF BEACH WATER · FIELD SHEET", P, 66);
+    f(500, 18); ctx.fillStyle = "rgba(255,255,255,.85)"; ctx.fillText("Surfrider SF · Blue Water Task Force", P, 94);
+    let y = 112 + 66;
+    ctx.fillStyle = INK; f(400, 58, "'Bebas Neue'"); ctx.fillText(NUM[SITES.indexOf(j.site)] + " · " + j.name, P, y);
+    f(500, 24); ctx.fillStyle = MUT; ctx.fillText(j.when + " (Pacific)", P, y + 38);
+    y = 112 + 132;
+    cells.forEach((c, i) => {
+      const cx = P + (i % 2) * (CW + G), h = rowsH[Math.floor(i / 2)], x = c.x;
+      box(ctx, cx, y, CW, h, 14, "#fff", LINE);
+      f(700, 15); ctx.fillStyle = MUT; ctx.fillText(x.label.toUpperCase(), cx + 18, y + 34);
+      if (x.value == null) { f(700, 26); ctx.fillStyle = FAINT; ctx.fillText(x.blank || "Not available", cx + 18, y + 80); }
+      else { f(900, 40); ctx.fillStyle = INK; ctx.fillText(x.value, cx + 18, y + 84);
+        if (x.level) { const vw = ctx.measureText(x.value).width; f(700, 24); ctx.fillStyle = MUT; ctx.fillText(x.level, cx + 18 + vw + 12, y + 84); } }
+      f(400, 17); ctx.fillStyle = MUT; c.d.forEach((ln, k) => ctx.fillText(ln, cx + 18, y + 112 + k * 23));
+      f(400, 13); ctx.fillStyle = FAINT; ctx.fillText(x.source || "", cx + 18, y + h - 18);
+      if (i % 2 || i === cells.length - 1) y += h + G;
+    });
+    if (curve) {
+      box(ctx, P, y, W - 2 * P, 230, 14, "#fff", LINE);
+      f(700, 15); ctx.fillStyle = MUT; ctx.fillText("THE TIDE THAT DAY · " + tide.level + " AT " + hhmm(curve.at), P + 18, y + 34);
+      const L = P + 52, R = W - P - 24, T = y + 70, B = y + 196, top = Math.max(...curve.pts.map(p => p[1]), 6), bot = Math.min(...curve.pts.map(p => p[1]), 0);
+      const X = mm => L + (R - L) * mm / 1440, Y = ft => T + (B - T) * (top - ft) / (top - bot || 1);
+      ctx.beginPath(); curve.pts.forEach((p, i) => i ? ctx.lineTo(X(p[0]), Y(p[1])) : ctx.moveTo(X(p[0]), Y(p[1])));
+      ctx.lineTo(X(1440), B); ctx.lineTo(X(0), B); ctx.closePath(); ctx.fillStyle = "#cfe6f6"; ctx.fill();
+      ctx.beginPath(); curve.pts.forEach((p, i) => i ? ctx.lineTo(X(p[0]), Y(p[1])) : ctx.moveTo(X(p[0]), Y(p[1]))); ctx.strokeStyle = "#0072bc"; ctx.lineWidth = 3; ctx.stroke();
+      f(400, 14); ctx.fillStyle = FAINT; ctx.textAlign = "center";
+      for (let mm = 0; mm <= 1440; mm += 360) ctx.fillText(tick(mm), X(mm), B + 22);
+      ctx.fillStyle = MUT; curve.turns.forEach(t => ctx.fillText((t.type === "H" ? "high " : "low ") + t.ft.toFixed(1) + " ft", X(t.m), t.type === "H" ? Y(t.ft) - 10 : Y(t.ft) + 22));
+      ctx.textAlign = "left";
+      ctx.setLineDash([5, 5]); ctx.strokeStyle = INK; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(X(curve.at), T - 14); ctx.lineTo(X(curve.at), B); ctx.stroke(); ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(X(curve.at), Y(curve.level), 8, 0, 2 * Math.PI); ctx.fillStyle = INK; ctx.fill(); ctx.strokeStyle = "#fff"; ctx.lineWidth = 3; ctx.stroke();
+      y += 230 + G;
+    }
+    const oh = 66 + obsLines.length * 30;
+    box(ctx, P, y, W - 2 * P, oh, 14, "#fff", LINE);
+    f(700, 15); ctx.fillStyle = MUT; ctx.fillText("OBSERVATIONS", P + 18, y + 34);
+    f(400, 22); ctx.fillStyle = obs ? INK : FAINT; obsLines.forEach((ln, k) => ctx.fillText(ln, P + 18, y + 66 + k * 30));
+    y += oh + G + 8;
+    f(400, 15); ctx.fillStyle = MUT; srcLines.forEach((ln, k) => ctx.fillText(ln, P, y + k * 21));
+    f(700, 15); ctx.fillStyle = MUT; ctx.fillText("bwtf-sf.vercel.app/learn/collect · Beta: not an official advisory", P, y + srcLines.length * 21 + 18);
+    return cv;
+  }
+  $("cx-save").addEventListener("click", async () => {
+    if (!last) return;
+    $("cx-save").disabled = true; $("cx-copied").textContent = "";
+    try {
+      const cv = await drawSheet(last, $("cx-obs").value.trim());
+      const blob = await new Promise(r => cv.toBlob(r, "image/png"));
+      const name = "bwtf-sheet-" + last.site + "-" + last.at.replace("T", "-").replace(":", "") + ".png";
+      const file = new File([blob], name, {type: "image/png"});
+      if (matchMedia("(pointer:coarse)").matches && navigator.canShare && navigator.canShare({files: [file]})) {   // a phone: the share sheet saves to Photos
+        try { await navigator.share({files: [file], title: last.name + " · " + last.when}); } catch (e) { if (e.name !== "AbortError") throw e; }
+      } else {
+        const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      }
+      $("cx-copied").textContent = "Saved.";
+    } catch (e) { $("cx-copied").textContent = "Couldn't save the image: " + e.message; }
+    finally { $("cx-save").disabled = false; }
   });
 })();
 </script>

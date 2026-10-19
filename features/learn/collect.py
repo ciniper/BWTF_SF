@@ -8,7 +8,8 @@ water temperature in °F, current weather (Sunny / Partly Cloudy / Overcast / Li
 precipitation yes/no, tide (high / low / incoming / outgoing), wave height in bins, and wind as an
 8-point compass direction and mph. Each value comes from a public source and says which:
 
-  tide        NOAA CO-OPS high/low predictions at the site's own prediction station
+  tide        NOAA CO-OPS high/low predictions at the site's own prediction station; the level at the time
+              (feet above MLLW, the average lower low) on NOAA's half-cosine between the turns
   air, sky,   Open-Meteo's forecast API at the site's pin (model hours, nearest hour)
   wind
   waves,      Open-Meteo's marine API, the nearest sea cell (it cannot see inside a breakwater,
@@ -22,6 +23,7 @@ only network code, each fails on its own and leaves its fields marked unavailabl
 from __future__ import annotations
 
 import json
+import math
 import re
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta
@@ -158,14 +160,25 @@ def _pick(hourly: dict, key: str, i: Optional[int]):
     return vals[i] if i is not None and i < len(vals) else None
 
 
+def tide_height(hilo: list[dict], at: datetime) -> Optional[float]:
+    """Feet above MLLW at ``at``, on a half-cosine between the turns either side: NOAA's own rule for the
+    height between a high and a low (its tide tables' Table 3), the same at a subordinate station like Ocean
+    Beach, which publishes only its highs and lows."""
+    for a, b in zip(hilo, hilo[1:]):
+        if a["t"] <= at <= b["t"]:
+            k = (at - a["t"]).total_seconds() / max((b["t"] - a["t"]).total_seconds(), 1)
+            return round(a["ft"] + (b["ft"] - a["ft"]) * (1 - math.cos(math.pi * k)) / 2, 2)
+    return None
+
+
 def assemble(site: dict, at: datetime, weather: Optional[dict], marine: Optional[dict],
              hilo: Optional[list], rain: Optional[dict]) -> dict:
     """Pure. The sheet's fields in the sheet's order, each {label, value, detail, source}; a source
     that failed (None) leaves its fields with value None."""
     rows = []
 
-    def row(key, label, value, detail="", source="", blank=None):   # blank: what to show in place of a value left to the volunteer
-        rows.append({"key": key, "label": label, "value": value, "detail": detail, "source": source, "blank": blank})
+    def row(key, label, value, detail="", source="", blank=None, **extra):   # blank: what to show in place of a value left to the volunteer
+        rows.append({"key": key, "label": label, "value": value, "detail": detail, "source": source, "blank": blank, **extra})
 
     wh = (weather or {}).get("hourly") or {}
     wi = _nearest_hour(wh, at)
@@ -204,11 +217,24 @@ def assemble(site: dict, at: datetime, weather: Optional[dict], marine: Optional
 
     st, where = site["tide"]
     ts = tide_state(hilo, at) if hilo else None
+    level = tide_height(hilo, at) if hilo else None
+    day0 = datetime(at.year, at.month, at.day)
+    mins = lambda t: round((t - day0).total_seconds() / 60)
+    steps = [day0 + timedelta(minutes=30 * i) for i in range(49)]
+    pts = [[mins(t), tide_height(hilo, t)] for t in steps] if hilo else []
+    shape = None if level is None else {   # the day's curve for the card and the saved image: every 30 minutes, the turns, and the moment
+        "pts": [p for p in pts if p[1] is not None],
+        "turns": [{"m": mins(h["t"]), "ft": h["ft"], "type": h["type"]} for h in hilo if h["t"].date() == at.date()],
+        "at": mins(at), "level": level}
+    src = f"NOAA tide predictions, {where} ({st})"
     if ts:
         nm = lambda h: ("high" if h["type"] == "H" else "low") + f" {_clock(h['t'])} ({h['ft']:.1f} ft)"
-        row("tide", "Tide", ts["state"].capitalize(), f"{nm(ts['prev']).capitalize()}, then {nm(ts['next'])}", f"NOAA tide predictions, {where} ({st})")
+        lead = "" if level is None else f"{level:.1f} ft above the lowest lows at {_clock(at)}. "
+        first = nm(ts["prev"])
+        row("tide", "Tide", ts["state"].capitalize(), lead + f"{first[0].upper() + first[1:]}, then {nm(ts['next'])}.", src,
+            level=None if level is None else f"{level:.1f} ft", curve=shape)
     else:
-        row("tide", "Tide", None, source=f"NOAA tide predictions, {where} ({st})")
+        row("tide", "Tide", None, source=src, level=None if level is None else f"{level:.1f} ft", curve=shape)
 
     wv = _pick(mh, "wave_height", mi)
     if site["sheltered"]:
@@ -273,7 +299,7 @@ def conditions(site: dict, at: datetime, fetchers: Optional[dict[str, Callable]]
     jobs = {"weather": (f["weather"], lat, lon, at.date()), "marine": (f["marine"], lat, lon, at.date()),
             "hilo": (f["hilo"], site["tide"][0], at.date()), "rain": (f["rain"], site, at.date())}
     got = {}
-    with ThreadPoolExecutor(max_workers=4) as ex:   # four sources at once: the slowest sets the wait, not the sum
+    with ThreadPoolExecutor(max_workers=4) as ex:   # every source at once: the slowest sets the wait, not the sum
         futs = {k: ex.submit(fn, *args) for k, (fn, *args) in jobs.items()}
         for k, fut in futs.items():
             try:

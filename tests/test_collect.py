@@ -47,6 +47,15 @@ def test_tide_state_matches_the_volunteers_on_2026_10_08():
     assert C.tide_state(ob, at("02:00")) is None                                                     # no turn before: not guessed
 
 
+def test_tide_height_follows_noaa_half_cosine_between_turns():
+    hilo = _hilo(("2026-10-08 10:02", "H", 5.9), ("2026-10-08 16:05", "L", .9), ("2026-10-08 22:06", "H", 5.5))
+    at = lambda hm: datetime.strptime("2026-10-08 " + hm, "%Y-%m-%d %H:%M")
+    assert C.tide_height(hilo, at("10:02")) == 5.9 and C.tide_height(hilo, at("16:05")) == 0.9
+    assert abs(C.tide_height(hilo, at("13:03")) - 3.4) < 0.05          # halfway in time is halfway in height
+    assert C.tide_height(hilo, at("11:00")) > C.tide_height(hilo, at("12:00")) > C.tide_height(hilo, at("15:00"))
+    assert C.tide_height(hilo, at("09:00")) is None                     # no turn before: not guessed
+
+
 def _weather():
     return {"hourly": {"time": [f"2026-10-08T{h:02d}:00" for h in range(24)], "temperature_2m": [60.4] * 24, "weather_code": [2] * 24,
                        "cloud_cover": [40] * 24, "wind_speed_10m": [9.6] * 24, "wind_direction_10m": [300] * 24}}
@@ -66,6 +75,10 @@ def test_the_sheet_assembles_in_its_order_and_falls_back_between_gauges():
     assert [r["key"] for r in out["rows"]] == ["air_temp", "water_temp", "current_weather", "precipitation", "tide", "wave_height", "wind_direction", "wind_speed"]
     assert v == {"air_temp": "60°F", "water_temp": "62°F", "current_weather": "Partly Cloudy", "precipitation": "Yes", "tide": "Low",
                  "wave_height": "4-6 ft", "wind_direction": "NW", "wind_speed": "10 mph"}
+    td = next(r for r in out["rows"] if r["key"] == "tide")
+    assert td["level"] == "1.2 ft" and td["detail"].startswith("1.2 ft above the lowest lows at 5:05 PM. Low 4:05 PM (0.9 ft)")
+    assert td["curve"]["at"] == 17 * 60 + 5 and [t["type"] for t in td["curve"]["turns"]] == ["H", "L", "H"]
+    assert len(td["curve"]["pts"]) == 24 and td["curve"]["pts"][0][0] == 10 * 60 + 30   # the curve only where the turns cover it
     pr = next(r for r in out["rows"] if r["key"] == "precipitation")
     assert "SF Downtown" in pr["source"] and "hasn't reported" in pr["detail"] and "Oct 8" in pr["detail"]   # the lagging gauge is named
     # a sheltered site leaves the waves to the eye; a source that failed leaves its fields blank, never the sheet
@@ -93,6 +106,7 @@ def test_routes_render_and_refuse_bad_input():
     assert "{{" not in h and "{%" not in h and "<h1>Collect</h1>" in h and '<meta name="robots" content="noindex">' in h
     assert h.count('class="site"') == 4 and h.count("https://www.google.com/maps/search/?api=1&amp;query=") == 4 and h.count("Photo of the sampling spot coming soon") == 4
     assert h.count('<li>') >= 6 and "about 2 ft" in h and "6 in" in h and "wave coming in" in h and 'id="cx-form"' in h
+    assert 'id="cx-obs"' in h and 'id="cx-save"' in h and 'id="cx-tide"' in h and "localStorage" in h and "toBlob" in h   # observations, the image
     assert 'class="on" aria-current="page">Collect' in h and "coming soon" not in h.replace("Photo of the sampling spot coming soon", "")
     assert bad.status_code == 400 and json.loads(bad.data)["error"] == "unknown site"
     assert far.status_code == 400 and "last 90 days" in json.loads(far.data)["error"]
