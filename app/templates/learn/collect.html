@@ -11,7 +11,6 @@
 <style>
   body{margin:0;background:var(--sand);color:var(--ink);font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:15px;line-height:1.55;min-height:100vh;display:flex;flex-direction:column}
   .wrap{width:100%;max-width:var(--page-w);margin:0 auto;padding:20px 24px 40px;box-sizing:border-box;flex:1}
-  .jump{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px} .jump a{text-decoration:none}
   .sec{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg,16px);padding:22px 24px;margin:0 0 16px;scroll-margin-top:20px}
   .sec h2{font-family:'Bebas Neue',Impact,sans-serif;font-weight:400;font-size:34px;letter-spacing:.02em;line-height:1;margin:0 0 6px}
   .sec .sub{color:var(--muted);margin:0 0 16px;max-width:90ch}
@@ -20,20 +19,29 @@
   .btn.ghost{background:#fff;color:var(--brand)}
   .btn:disabled{opacity:.5;cursor:default}
 
-  /* ── 1. The sites ── */
-  .sites{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
-  .site{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column}
-  .site .photo{aspect-ratio:16/10;background:var(--sand2);display:grid;place-items:center;text-align:center;color:var(--faint);font-size:12.5px;padding:10px;border-bottom:1px solid var(--line)}
-  .site .photo.slot{background:repeating-linear-gradient(135deg,var(--sand2) 0 10px,#f6f9fb 10px 20px)}
-  .site img.photo{display:block;width:100%;object-fit:cover;padding:0}
-  .site .body{padding:12px 14px 14px;display:flex;flex-direction:column;gap:8px;flex:1}
-  .site h3{margin:0;font-size:16px;line-height:1.25;display:flex;gap:8px;align-items:flex-start}
-  .site h3 .n{flex:none;width:24px;height:24px;border-radius:50%;background:var(--brand);color:#fff;font-size:12.5px;font-weight:900;display:grid;place-items:center;margin-top:-1px}
-  .site .maps{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:13.5px;color:var(--brand);text-decoration:none}
-  .site .maps:hover{text-decoration:underline}
-  .site .pin{display:block;font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums}
-  .site .park{margin:0;font-size:13.5px;color:var(--muted)} .site .park b{color:var(--ink);display:block;font-size:12px;letter-spacing:.06em;text-transform:uppercase}
-  .site .use{margin-top:auto;align-self:flex-start}
+  /* ── 1. Your site: pick one, see only it ── */
+  .picks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+  .pick{display:flex;gap:10px;align-items:center;text-align:left;padding:12px 14px;border:2px solid var(--line);border-radius:var(--r);background:#fff;color:var(--ink);font:700 15px/1.25 Roboto,sans-serif;cursor:pointer}
+  .pick:hover{border-color:var(--sky)}
+  .pick .n,.site-card h2 .n{flex:none;width:28px;height:28px;border-radius:50%;background:var(--brand);color:#fff;font:900 13.5px Roboto,sans-serif;display:grid;place-items:center}
+  .pick[aria-pressed="true"]{border-color:var(--brand);background:#e8f2fa}
+  .hint{margin:12px 0 0;color:var(--muted);font-size:14px}
+  .howto{margin:0 0 16px}
+  .howto > summary{list-style:none;display:inline-flex;align-items:center;gap:8px}
+  .howto > summary::-webkit-details-marker{display:none}
+  .howto > summary::after{content:"";width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);margin-left:2px;transition:transform .15s}
+  .howto[open] > summary{border-color:var(--brand);color:var(--brand)}
+  .howto[open] > summary::after{transform:rotate(45deg);margin-top:-4px}
+  .howto > .sec{margin:12px 0 0}
+  .site-top{display:grid;grid-template-columns:minmax(0,360px) minmax(0,1fr);gap:20px;align-items:start}
+  .site-card .photo{aspect-ratio:16/10;border-radius:var(--r);background:var(--sand2);display:grid;place-items:center;text-align:center;color:var(--faint);font-size:13px;padding:10px;border:1px solid var(--line)}
+  .site-card .photo.slot{background:repeating-linear-gradient(135deg,var(--sand2) 0 10px,#f6f9fb 10px 20px)}
+  .site-card img.photo{display:block;width:100%;object-fit:cover;padding:0}
+  .site-card h2{display:flex;gap:10px;align-items:center}
+  .site-card .maps{display:inline-flex;align-items:center;gap:6px;margin:8px 0 2px}
+  .site-card .maps .ic{width:15px;height:15px}
+  .site-card .pin{display:block;font-size:12.5px;color:var(--faint);font-variant-numeric:tabular-nums}
+  .site-card .park{margin:14px 0 0;font-size:14.5px;color:var(--muted);max-width:60ch} .site-card .park b{color:var(--ink);display:block;font-size:12px;letter-spacing:.06em;text-transform:uppercase}
 
   /* ── 2. Taking a sample ── */
   .how{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:24px;align-items:center}
@@ -63,6 +71,15 @@
   .cx-actions small{color:var(--muted)}
   .cx-err{color:var(--discharge);font-weight:700}
   .cx .v .lvl{font-size:16px;font-weight:700;color:var(--muted);margin-left:6px}
+  .cx .k{display:flex;justify-content:space-between;align-items:center;gap:6px}
+  .cx .ed,.cx .lnk{border:0;background:none;padding:2px 0;font:700 12px Roboto,sans-serif;color:var(--brand);cursor:pointer;text-transform:none;letter-spacing:0}
+  .cx .ed:hover,.cx .lnk:hover{text-decoration:underline}
+  .cx.edited{border-color:var(--brand);box-shadow:inset 3px 0 0 var(--brand)}
+  .cx .ctl{display:flex;gap:6px;align-items:center;margin:4px 0 2px;flex-wrap:wrap}
+  .cx .ctl select,.cx .ctl input{font:700 16px Roboto,sans-serif;color:var(--ink);padding:6px 8px;border:1px solid var(--brand);border-radius:8px;background:#fff;min-height:36px;min-width:0}
+  .cx .ctl input{width:84px}
+  .cx .ctl .unit{font-weight:700;color:var(--muted)}
+  .cx .ctl .btn{padding:6px 12px;font-size:12.5px}
   .tide-strip{margin:10px 0 0;border:1px solid var(--line);border-radius:var(--r);padding:10px 12px 6px}
   .tide-strip .k{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
   .tide-strip svg{display:block;width:100%;height:auto;margin-top:2px}
@@ -71,13 +88,14 @@
   .obs span{font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
   .obs textarea{font:400 15px/1.45 Roboto,sans-serif;color:var(--ink);padding:10px 12px;border:1px solid var(--line);border-radius:10px;resize:vertical;min-height:84px}
 
-  @media (max-width:1023px){.how{grid-template-columns:1fr}.diagram{max-width:600px}.sites{grid-template-columns:repeat(2,minmax(0,1fr))}.cx-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media (max-width:1023px){.how{grid-template-columns:1fr}.diagram{max-width:600px}.picks{grid-template-columns:repeat(2,minmax(0,1fr))}.cx-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
   @media (max-width:760px){
     .wrap{padding:14px 14px 30px}.sec{padding:18px 16px}
-    .sites{grid-template-columns:1fr}.site{display:grid;grid-template-columns:120px minmax(0,1fr)}.site .photo{aspect-ratio:auto;border-bottom:0;border-right:1px solid var(--line)}
+    .site-top{grid-template-columns:1fr;gap:14px}.pick{font-size:14px;padding:10px 12px}
     .cx-form label{flex:1 1 40%}.cx-form .btn{flex:1 1 100%}
   }
-  @media (max-width:420px){.diagram text{font-size:19px}.diagram .dim{font-size:21px}.site{grid-template-columns:1fr}.site .photo{aspect-ratio:16/9;border-right:0;border-bottom:1px solid var(--line)}}
+  @media (max-width:420px){.diagram text{font-size:19px}.diagram .dim{font-size:21px}}
+  @media (max-width:359px){.cx-grid{grid-template-columns:1fr}}   /* two cards a row stop fitting a 320 px phone */
   @media (prefers-reduced-motion:reduce){.wave-in{animation:none}}
 </style>
 </head>
@@ -85,30 +103,20 @@
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
 {{ topbar() }}
 <div class="wrap">
-  {{ page_head("Collect", "Where Surfrider's volunteers sample, how to take a sample, and the conditions for the field sheet.") }}
-  <nav class="jump" aria-label="On this page"><a class="preset" href="#sites">The four sites</a><a class="preset" href="#how">Taking a sample</a><a class="preset" href="#sheet">Conditions for the sheet</a></nav>
+  {{ page_head("Collect", "Pick the site you're at for where to park, the conditions for the field sheet, and a place for your notes.") }}
 
-  <section class="sec" id="sites">
-    <h2>The four sites</h2>
-    <p class="sub">Every collection run samples these four beaches. Tap a pin to open it in Google Maps.</p>
-    <div class="sites">
+  <section class="sec" id="pick">
+    <h2>Your site</h2>
+    <div class="picks" role="group" aria-label="Your site">
       {%- for s in sites %}
-      <article class="site">
-        {%- if s.photo %}<img class="photo" src="{{ asset('learn/' ~ s.photo) }}" alt="The sampling spot at {{ s.name }}">
-        {%- else %}<div class="photo slot">Photo of the sampling spot coming soon</div>{% endif %}
-        <div class="body">
-          <h3><span class="n">{{ s.n }}</span>{{ s.name }}</h3>
-          <div><a class="maps" href="{{ s.maps }}" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-map-pin"/></svg>Open in Google Maps</a><span class="pin">{{ s.pin }}</span></div>
-          <p class="park"><b>Parking</b>{{ s.parking }}</p>
-          <button type="button" class="btn ghost use" data-site="{{ s.key }}">Conditions for the sheet</button>
-        </div>
-      </article>
+      <button type="button" class="pick" data-site="{{ s.key }}" aria-pressed="{{ 'true' if s.key == picked else 'false' }}"><span class="n">{{ s.n }}</span><span>{{ s.name }}</span></button>
       {%- endfor %}
     </div>
+    <p class="hint" id="pick-hint"{% if picked %} hidden{% endif %}>Pick your site to see it here.</p>
   </section>
 
-  <section class="sec" id="how">
-    <h2>Taking a sample</h2>
+  <details class="howto" id="how"><summary class="preset">Taking a sample</summary>
+  <section class="sec">
     <p class="sub">The short version. What happens once the jars reach the lab is in the <a href="/learn/lab-sop">Lab SOP</a>.</p>
     <div class="how">
       <ol class="steps">
@@ -153,12 +161,27 @@
       </figure>
     </div>
   </section>
+  </details>
 
-  <section class="sec" id="sheet">
+  {%- for s in sites %}
+  <section class="sec site-card" data-site="{{ s.key }}"{% if s.key != picked %} hidden{% endif %}>
+    <div class="site-top">
+      {%- if s.photo %}<img class="photo" src="{{ asset('learn/' ~ s.photo) }}" alt="The sampling spot at {{ s.name }}">
+      {%- else %}<div class="photo slot">Photo of the sampling spot coming soon</div>{% endif %}
+      <div>
+        <h2><span class="n">{{ s.n }}</span>{{ s.name }}</h2>
+        <a class="btn ghost maps" href="{{ s.maps }}" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-map-pin"/></svg>Open in Google Maps</a>
+        <span class="pin">{{ s.pin }}</span>
+        <p class="park"><b>Parking</b>{{ s.parking }}</p>
+      </div>
+    </div>
+  </section>
+  {%- endfor %}
+
+  <section class="sec" id="sheet"{% if not picked %} hidden{% endif %}>
     <h2>Conditions for the sheet</h2>
-    <p class="sub">Pick a site and the time you sampled to fill in the sheet's weather from public sources, in the sheet's own choices. Your own eyes and thermometer win where they differ.</p>
+    <p class="sub">The sheet's weather at the time you sampled, from public sources, in the sheet's own choices. Tap Edit on any of them to put in your own reading: your eyes and thermometer win.</p>
     <form class="cx-form" id="cx-form">
-      <label>Site<select name="site" id="cx-site">{% for s in sites %}<option value="{{ s.key }}">{{ s.n }} · {{ s.name }}</option>{% endfor %}</select></label>
       <label>Date<input type="date" name="date" id="cx-date" value="{{ today }}" min="{{ earliest }}" max="{{ latest }}" required></label>
       <label>Time<input type="time" name="time" id="cx-time" value="{{ now }}" required></label>
       <button class="btn" type="submit" id="cx-go">Get conditions</button>
@@ -181,11 +204,27 @@
 (() => {
   const $ = id => document.getElementById(id), esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"})[c]);
   const SITES = {{ sites|map(attribute='key')|list|tojson }}, NUM = {{ sites|map(attribute='n')|list|tojson }};
-  let last = null;
-  const obsKey = () => "collect-obs:" + $("cx-site").value + ":" + $("cx-date").value;   // a note belongs to a site and a day
-  const restoreObs = () => { try { $("cx-obs").value = localStorage.getItem(obsKey()) || ""; } catch (e) {} };
-  $("cx-obs").addEventListener("input", () => { try { localStorage.setItem(obsKey(), $("cx-obs").value); } catch (e) {} });
-  ["cx-site", "cx-date"].forEach(id => $(id).addEventListener("change", restoreObs)); restoreObs();
+  let last = null, site = {{ picked|tojson }}, edits = {}, editing = null;
+  const dayKey = kind => "collect-" + kind + ":" + site + ":" + $("cx-date").value;   // notes and edits belong to a site and a day
+  const store = (kind, v) => { try { localStorage.setItem(dayKey(kind), typeof v === "string" ? v : JSON.stringify(v)); } catch (e) {} };
+  function restore() {
+    try { $("cx-obs").value = localStorage.getItem(dayKey("obs")) || ""; edits = JSON.parse(localStorage.getItem(dayKey("edits")) || "{}"); }
+    catch (e) { edits = {}; }
+    editing = null; if (last) render();
+  }
+  $("cx-obs").addEventListener("input", () => store("obs", $("cx-obs").value));
+  $("cx-date").addEventListener("change", restore);
+
+  function pick(key) {   // one site at a time: its card, its sheet
+    site = key;
+    document.querySelectorAll(".pick").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.site === key)));
+    document.querySelectorAll(".site-card").forEach(c => c.hidden = c.dataset.site !== key);
+    $("sheet").hidden = false; $("pick-hint").hidden = true;
+    history.replaceState(null, "", "?site=" + key);
+    last = null; $("cx-out").hidden = true; $("cx-copy").disabled = $("cx-save").disabled = true;
+    restore(); load();
+  }
+  document.querySelectorAll(".pick").forEach(b => b.addEventListener("click", () => pick(b.dataset.site)));
 
   const hhmm = m => { const h = Math.floor(m / 60) % 24, mm = String(m % 60).padStart(2, "0"); return (h % 12 || 12) + ":" + mm + (h < 12 ? " AM" : " PM"); };
   const tick = m => ["12a", "6a", "12p", "6p", "12a"][m / 360];
@@ -200,17 +239,57 @@
     return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="The tide through the day, ${c.level.toFixed(1)} feet at ${hhmm(c.at)}">${g}</svg>`;
   }
 
+  // A volunteer's own reading replaces the automatic one, in the card, the copy and the image.
+  const eff = x => edits[x.key] != null ? {value: edits[x.key], edited: true} : {value: x.value, edited: false};
+  const fmt = (n, unit) => unit === "°F" ? n + "°F" : n + " " + unit;
+  function control(x, cur) {
+    if (x.edit.choices) return '<div class="ctl"><select aria-label="' + esc(x.label) + '">' + x.edit.choices.map(c => '<option' + (c === cur ? " selected" : "") + '>' + esc(c) + '</option>').join("") + '</select><button type="button" class="btn done">Done</button></div>';
+    const n = cur == null ? NaN : parseFloat(cur);
+    return '<div class="ctl"><input type="number" inputmode="decimal" step="any" aria-label="' + esc(x.label) + '" value="' + (isNaN(n) ? "" : n) + '"><span class="unit">' + esc(x.edit.unit) + '</span><button type="button" class="btn done">Done</button></div>';
+  }
+  function card(x) {
+    const e = eff(x), open = editing === x.key;
+    const v = open ? control(x, e.value)
+      : e.value == null ? '<div class="v na">' + esc(x.blank || "Not available") + '</div>'
+      : '<div class="v">' + esc(e.value) + (x.level ? '<span class="lvl">' + esc(x.level) + '</span>' : "") + '</div>';
+    const foot = e.edited ? '<div class="s">Your entry · ' + (x.value == null ? "no automatic value" : "automatic: " + esc(x.value)) + ' · <button type="button" class="lnk reset">Use automatic</button></div>'
+      : x.source ? '<div class="s">' + esc(x.source) + '</div>' : "";
+    return '<div class="cx' + (e.edited ? " edited" : "") + '" data-k="' + x.key + '"><div class="k"><span>' + esc(x.label) + '</span>' + (open ? "" : '<button type="button" class="ed">Edit</button>') + '</div>' + v +
+      (x.detail && !e.edited ? '<div class="d">' + esc(x.detail) + '</div>' : "") + foot + '</div>';
+  }
+  function render() {
+    $("cx-grid").innerHTML = last.rows.map(card).join("");
+    const f = $("cx-grid").querySelector(".ctl select, .ctl input"); if (f) f.focus();
+  }
+  function commit(k) {
+    const x = last.rows.find(r => r.key === k), c = $("cx-grid").querySelector('[data-k="' + k + '"] .ctl'), sel = c.querySelector("select"), inp = c.querySelector("input");
+    const v = sel ? sel.value : inp.value.trim() === "" || isNaN(parseFloat(inp.value)) ? null : fmt(Number(inp.value), x.edit.unit);
+    if (v == null || v === x.value) delete edits[k]; else edits[k] = v;   // back to the automatic value when they match
+    store("edits", edits); editing = null; render();
+  }
+  $("cx-grid").addEventListener("click", e => {
+    const c = e.target.closest(".cx"); if (!c) return; const k = c.dataset.k;
+    if (e.target.closest(".ed")) { editing = k; render(); }
+    else if (e.target.closest(".done")) commit(k);
+    else if (e.target.closest(".reset")) { delete edits[k]; store("edits", edits); render(); }
+  });
+  $("cx-grid").addEventListener("keydown", e => {
+    if (!e.target.closest(".ctl")) return;
+    if (e.key === "Enter") { e.preventDefault(); commit(e.target.closest(".cx").dataset.k); }
+    if (e.key === "Escape") { editing = null; render(); }
+  });
+
   async function load() {
-    const q = new URLSearchParams({site: $("cx-site").value, date: $("cx-date").value, time: $("cx-time").value});
+    if (!site) return;
+    const q = new URLSearchParams({site, date: $("cx-date").value, time: $("cx-time").value}), want = site;
     $("cx-go").disabled = true; $("cx-go").textContent = "Getting…"; $("cx-err").hidden = true; $("cx-copied").textContent = "";
     try {
       const r = await fetch("/api/learn/conditions?" + q), j = await r.json();
       if (!j.ok) throw new Error(j.error || "no data");
-      last = j;
-      $("cx-when").textContent = j.name + " · " + j.when;
-      $("cx-grid").innerHTML = j.rows.map(x => '<div class="cx"><div class="k">' + esc(x.label) + '</div>' +
-        (x.value == null ? '<div class="v na">' + esc(x.blank || "Not available") + '</div>' : '<div class="v">' + esc(x.value) + (x.level ? '<span class="lvl">' + esc(x.level) + '</span>' : "") + '</div>') +
-        (x.detail ? '<div class="d">' + esc(x.detail) + '</div>' : "") + (x.source ? '<div class="s">' + esc(x.source) + '</div>' : "") + '</div>').join("");
+      if (want !== site) return;   // a newer pick won
+      last = j; editing = null;
+      $("cx-when").textContent = j.when;
+      render();
       const tide = j.rows.find(x => x.key === "tide");
       $("cx-tide").hidden = !(tide && tide.curve);
       if (tide && tide.curve) $("cx-tide").innerHTML = '<div class="k">The tide that day · ' + esc(tide.level) + ' at ' + esc(hhmm(tide.curve.at)) + '</div>' + tideSvg(tide.curve);
@@ -219,17 +298,16 @@
     finally { $("cx-go").disabled = false; $("cx-go").textContent = "Get conditions"; }
   }
   $("cx-form").addEventListener("submit", e => { e.preventDefault(); load(); });
-  document.querySelectorAll(".site .use").forEach(b => b.addEventListener("click", () => {   // a site card fills the form and jumps to it
-    $("cx-site").value = b.dataset.site; restoreObs(); $("sheet").scrollIntoView({behavior: "smooth", block: "start"}); load();
-  }));
+  const sheetRows = () => last.rows.map(x => { const e = eff(x); return {...x, value: e.value, detail: e.edited ? "" : x.detail, source: e.edited ? "Your entry" : x.source}; });
   const valueText = x => x.value == null ? "" : x.value + (x.level ? " (" + x.level + ")" : "");
   $("cx-copy").addEventListener("click", async () => {
     if (!last) return;
     const obs = $("cx-obs").value.trim();
-    const text = last.name + ", " + last.when + "\n" + last.rows.map(x => x.label + ": " + valueText(x)).join("\n") + (obs ? "\nObservations: " + obs : "");
+    const text = last.name + ", " + last.when + "\n" + sheetRows().map(x => x.label + ": " + valueText(x)).join("\n") + (obs ? "\nObservations: " + obs : "");
     try { await navigator.clipboard.writeText(text); $("cx-copied").textContent = "Copied."; }
     catch (e) { $("cx-copied").textContent = "Couldn't copy: select the values above instead."; }
   });
+  if (site) { restore(); load(); }
 
   // ── The snapshot as an image: drawn on a canvas, no library ──
   function wrap(ctx, text, maxW) {
@@ -250,7 +328,7 @@
     const rowsH = []; for (let i = 0; i < cells.length; i += 2) rowsH.push(Math.max(cells[i].h, (cells[i + 1] || cells[i]).h));
     const tide = j.rows.find(x => x.key === "tide"), curve = tide && tide.curve;
     font(400, 22); const obsLines = obs ? wrap(m, obs, W - 2 * P - 36) : ["—"];
-    font(400, 15); const srcLines = wrap(m, "Sources: " + [...new Set(j.rows.map(x => x.source).filter(Boolean))].join(" · "), W - 2 * P);
+    font(400, 15); const srcLines = wrap(m, "Sources: " + [...new Set(j.rows.map(x => x.source).filter(x => x && x !== "Your entry"))].join(" · ") + (j.rows.some(x => x.source === "Your entry") ? ". Values marked Your entry are the volunteer's own." : ""), W - 2 * P);
     const H = 112 + 132 + rowsH.reduce((a, b) => a + b + G, 0) + (curve ? 230 + G : 0) + (66 + obsLines.length * 30) + G + srcLines.length * 21 + 70;
     const cv = document.createElement("canvas"); cv.width = W * S; cv.height = H * S;
     const ctx = cv.getContext("2d"); ctx.scale(S, S); ctx.textBaseline = "alphabetic";
@@ -303,7 +381,7 @@
     if (!last) return;
     $("cx-save").disabled = true; $("cx-copied").textContent = "";
     try {
-      const cv = await drawSheet(last, $("cx-obs").value.trim());
+      const cv = await drawSheet({...last, rows: sheetRows()}, $("cx-obs").value.trim());
       const blob = await new Promise(r => cv.toBlob(r, "image/png"));
       const name = "bwtf-sheet-" + last.site + "-" + last.at.replace("T", "-").replace(":", "") + ".png";
       const file = new File([blob], name, {type: "image/png"});

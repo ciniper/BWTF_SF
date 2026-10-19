@@ -93,6 +93,16 @@ def sites_view() -> list[dict]:
 # ── The sheet's vocabulary ──────────────────────────────────────────────────────────────
 
 WAVE_BINS = [(1, "<1 ft"), (2, "1-2 ft"), (4, "2-4 ft"), (6, "4-6 ft"), (9, "6-9 ft"), (12, "9-12 ft")]
+COMPASS8 = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+SKY = ["Sunny", "Partly Cloudy", "Overcast", "Light Rain", "Rain"]
+# How a volunteer edits each field (2026-10-18): a pick from the sheet's own choices, or a number in the sheet's unit.
+EDIT = {
+    "air_temp": {"unit": "°F"}, "water_temp": {"unit": "°F"},
+    "current_weather": {"choices": SKY}, "precipitation": {"choices": ["Yes", "No"]},
+    "tide": {"choices": ["High", "Low", "Incoming", "Outgoing"]},
+    "wave_height": {"choices": [label for _, label in WAVE_BINS] + ["12+ ft"]},
+    "wind_direction": {"choices": COMPASS8}, "wind_speed": {"unit": "mph"},
+}
 TIDE_TURN_MIN = 60   # within an hour of a high or low the sheet says "high" / "low"; between them, incoming / outgoing
 RAIN_YES_IN = 0.01   # any measurable rain at the gauge
 
@@ -106,7 +116,7 @@ def wave_bin(ft: Optional[float]) -> Optional[str]:
 def compass8(deg: Optional[float]) -> Optional[str]:
     if deg is None:
         return None
-    return ["N", "NE", "E", "SE", "S", "SW", "W", "NW"][int((deg % 360) / 45 + 0.5) % 8]
+    return COMPASS8[int((deg % 360) / 45 + 0.5) % 8]
 
 
 def sky_label(code: Optional[int]) -> Optional[str]:
@@ -178,7 +188,7 @@ def assemble(site: dict, at: datetime, weather: Optional[dict], marine: Optional
     rows = []
 
     def row(key, label, value, detail="", source="", blank=None, **extra):   # blank: what to show in place of a value left to the volunteer
-        rows.append({"key": key, "label": label, "value": value, "detail": detail, "source": source, "blank": blank, **extra})
+        rows.append({"key": key, "label": label, "value": value, "detail": detail, "source": source, "blank": blank, "edit": EDIT[key], **extra})
 
     wh = (weather or {}).get("hourly") or {}
     wi = _nearest_hour(wh, at)
@@ -337,7 +347,9 @@ def handle_conditions(query, body):
 
 def handle_page(query, body):
     now = now_pacific()
-    html = render_template("learn/collect.html", sites=sites_view(), today=now.strftime("%Y-%m-%d"), now=now.strftime("%H:%M"),
+    picked = (query.get("site") or [""])[0]   # ?site= opens on a site, so a link or a reload keeps it
+    html = render_template("learn/collect.html", sites=sites_view(), picked=picked if picked in SITE else "",
+                           today=now.strftime("%Y-%m-%d"), now=now.strftime("%H:%M"),
                            earliest=(now - timedelta(days=EARLIEST_DAYS)).strftime("%Y-%m-%d"),
                            latest=(now + timedelta(days=LATEST_DAYS)).strftime("%Y-%m-%d"))
     return 200, "text/html; charset=utf-8", html.encode()

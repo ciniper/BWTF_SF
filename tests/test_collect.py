@@ -1,6 +1,7 @@
 """Collect (/learn/collect, 2026-10-18): the four sites, the procedure, and the sheet's conditions.
 All offline: the fetchers are replaced by fixed payloads."""
 import json
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -88,6 +89,18 @@ def test_the_sheet_assembles_in_its_order_and_falls_back_between_gauges():
     assert va["air_temp"]["value"] is None and va["tide"]["value"] is None and va["precipitation"]["value"] is None and va["water_temp"]["value"] == "62°F"
 
 
+def test_every_field_can_be_edited_in_the_sheets_own_terms():
+    out = C.assemble(C.SITE["china"], datetime(2026, 10, 8, 16, 20), _weather(), _marine(), None, None)
+    ed = {r["key"]: r["edit"] for r in out["rows"]}
+    assert set(ed) == set(C.EDIT) and len(ed) == 8
+    assert ed["air_temp"] == ed["water_temp"] == {"unit": "°F"} and ed["wind_speed"] == {"unit": "mph"}
+    assert ed["tide"]["choices"] == ["High", "Low", "Incoming", "Outgoing"] and ed["precipitation"]["choices"] == ["Yes", "No"]
+    assert ed["wave_height"]["choices"][0] == "<1 ft" and ed["wave_height"]["choices"][-1] == "12+ ft" and ed["wind_direction"]["choices"] == C.COMPASS8
+    for r in out["rows"]:   # whatever the page fills in automatically is one of the choices it offers
+        if r["value"] is not None and "choices" in r["edit"]:
+            assert r["value"] in r["edit"]["choices"], r
+
+
 def test_conditions_survives_a_source_failing():
     def boom(*a):
         raise RuntimeError("down")
@@ -101,11 +114,19 @@ def test_routes_render_and_refuse_bad_input():
     from app.wsgi import app
     with app.test_client() as c:
         h = c.get("/learn/collect").data.decode()
+        china = c.get("/learn/collect?site=china").data.decode()
         bad = c.get("/api/learn/conditions?site=nowhere&date=2026-10-08&time=10:00")
         far = c.get("/api/learn/conditions?site=china&date=2020-01-01&time=10:00")
     assert "{{" not in h and "{%" not in h and "<h1>Collect</h1>" in h and '<meta name="robots" content="noindex">' in h
-    assert h.count('class="site"') == 4 and h.count("https://www.google.com/maps/search/?api=1&amp;query=") == 4 and h.count("Photo of the sampling spot coming soon") == 4
-    assert h.count('<li>') >= 6 and "about 2 ft" in h and "6 in" in h and "wave coming in" in h and 'id="cx-form"' in h
+    assert h.count('class="pick"') == 4 and h.count('class="sec site-card"') == 4 and h.count("https://www.google.com/maps/search/?api=1&amp;query=") == 4
+    pressed = lambda page: re.findall(r'class="pick" data-site="([\w-]+)" aria-pressed="true"', page)
+    assert h.count("Photo of the sampling spot coming soon") == 4 and pressed(h) == []
+    # pick a site first (2026-10-18): no site shows until one is picked; ?site= opens on one, the others stay hidden
+    shown = lambda page: re.findall(r'<section class="sec site-card" data-site="([\w-]+)">', page)
+    assert shown(h) == [] and '<section class="sec" id="sheet" hidden>' in h and 'id="pick-hint">' in h
+    assert shown(china) == ["china"] and '<section class="sec" id="sheet">' in china and pressed(china) == ["china"]
+    assert '<details class="howto" id="how">' in h and "<details open" not in h                     # Taking a sample, folded
+    assert h.count('<li>') >= 6 and "about 2 ft" in h and "6 in" in h and "wave coming in" in h and 'id="cx-form"' in h and 'id="cx-site"' not in h
     assert 'id="cx-obs"' in h and 'id="cx-save"' in h and 'id="cx-tide"' in h and "localStorage" in h and "toBlob" in h   # observations, the image
     assert 'class="on" aria-current="page">Collect' in h and "coming soon" not in h.replace("Photo of the sampling spot coming soon", "")
     assert bad.status_code == 400 and json.loads(bad.data)["error"] == "unknown site"
