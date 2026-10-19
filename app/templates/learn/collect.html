@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link rel="icon" href="{{ asset('brand/favicon.ico') }}"><link rel="apple-touch-icon" sizes="144x144" href="{{ asset('brand/bwtf_144x144.png') }}">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Collect — SF Beach Water · Surfrider SF Blue Water Task Force</title>
+<meta name="robots" content="noindex">   {# with the rest of Learn: out of search until docs/learn_facts_to_check.md is done #}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ asset('brand.css') }}">
+<style>
+  body{margin:0;background:var(--sand);color:var(--ink);font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:15px;line-height:1.55;min-height:100vh;display:flex;flex-direction:column}
+  .wrap{width:100%;max-width:var(--page-w);margin:0 auto;padding:20px 24px 40px;box-sizing:border-box;flex:1}
+  .jump{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px} .jump a{text-decoration:none}
+  .sec{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg,16px);padding:22px 24px;margin:0 0 16px;scroll-margin-top:20px}
+  .sec h2{font-family:'Bebas Neue',Impact,sans-serif;font-weight:400;font-size:34px;letter-spacing:.02em;line-height:1;margin:0 0 6px}
+  .sec .sub{color:var(--muted);margin:0 0 16px;max-width:90ch}
+  .sec .more{margin:14px 0 0;font-size:13.5px;color:var(--muted)} .sec .more a{color:var(--brand);font-weight:700;text-decoration:none}
+  .btn{padding:8px 16px;border-radius:999px;border:2px solid var(--brand);background:var(--brand);color:#fff;font:700 13.5px Roboto,sans-serif;cursor:pointer;text-decoration:none;display:inline-block}
+  .btn.ghost{background:#fff;color:var(--brand)}
+  .btn:disabled{opacity:.5;cursor:default}
+
+  /* ── 1. The sites ── */
+  .sites{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+  .site{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column}
+  .site .photo{aspect-ratio:16/10;background:var(--sand2);display:grid;place-items:center;text-align:center;color:var(--faint);font-size:12.5px;padding:10px;border-bottom:1px solid var(--line)}
+  .site .photo.slot{background:repeating-linear-gradient(135deg,var(--sand2) 0 10px,#f6f9fb 10px 20px)}
+  .site img.photo{display:block;width:100%;object-fit:cover;padding:0}
+  .site .body{padding:12px 14px 14px;display:flex;flex-direction:column;gap:8px;flex:1}
+  .site h3{margin:0;font-size:16px;line-height:1.25;display:flex;gap:8px;align-items:flex-start}
+  .site h3 .n{flex:none;width:24px;height:24px;border-radius:50%;background:var(--brand);color:#fff;font-size:12.5px;font-weight:900;display:grid;place-items:center;margin-top:-1px}
+  .site .maps{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:13.5px;color:var(--brand);text-decoration:none}
+  .site .maps:hover{text-decoration:underline}
+  .site .pin{display:block;font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums}
+  .site .park{margin:0;font-size:13.5px;color:var(--muted)} .site .park b{color:var(--ink);display:block;font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+  .site .use{margin-top:auto;align-self:flex-start}
+
+  /* ── 2. Taking a sample ── */
+  .how{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:24px;align-items:center}
+  .steps{margin:0;padding:0;list-style:none;counter-reset:s;display:flex;flex-direction:column;gap:10px}
+  .steps li{counter-increment:s;display:flex;gap:10px;align-items:flex-start}
+  .steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-radius:50%;background:var(--ink);color:#fff;font-size:12px;font-weight:900;display:grid;place-items:center;margin-top:1px}
+  .diagram{border:1px solid var(--line);border-radius:var(--r);background:#f4f9fd;overflow:hidden}
+  .diagram svg{display:block;width:100%;height:auto}
+  .diagram text{font-family:Roboto,sans-serif}
+  .wave-in{animation:wave-in 3.2s ease-in-out infinite}
+  @keyframes wave-in{0%,100%{transform:translateX(10px)}50%{transform:translateX(-12px)}}   /* a surge toward the shore, never hidden */
+
+  /* ── 3. Conditions for the sheet ── */
+  .cx-form{display:flex;flex-wrap:wrap;gap:12px 14px;align-items:flex-end;margin:0 0 16px}
+  .cx-form label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+  .cx-form select,.cx-form input{font:500 15px Roboto,sans-serif;color:var(--ink);padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;min-height:40px}
+  .cx-form .btn{min-height:40px;font-size:14px}
+  .cx-when{margin:0 0 10px;font-weight:700}
+  .cx-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+  .cx{border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;background:#fff}
+  .cx .k{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .cx .v{font-size:22px;font-weight:900;line-height:1.2;margin:2px 0}
+  .cx .v.na{color:var(--faint);font-size:16px;font-weight:700}
+  .cx .d{font-size:12.5px;color:var(--muted);line-height:1.4}
+  .cx .s{font-size:11.5px;color:var(--faint);margin-top:4px;line-height:1.35}
+  .cx-actions{display:flex;gap:10px;align-items:center;margin:12px 0 0;flex-wrap:wrap}
+  .cx-actions small{color:var(--muted)}
+  .cx-err{color:var(--discharge);font-weight:700}
+
+  @media (max-width:1023px){.how{grid-template-columns:1fr}.diagram{max-width:600px}.sites{grid-template-columns:repeat(2,minmax(0,1fr))}.cx-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media (max-width:760px){
+    .wrap{padding:14px 14px 30px}.sec{padding:18px 16px}
+    .sites{grid-template-columns:1fr}.site{display:grid;grid-template-columns:120px minmax(0,1fr)}.site .photo{aspect-ratio:auto;border-bottom:0;border-right:1px solid var(--line)}
+    .cx-form label{flex:1 1 40%}.cx-form .btn{flex:1 1 100%}
+  }
+  @media (max-width:420px){.diagram text{font-size:19px}.diagram .dim{font-size:21px}.site{grid-template-columns:1fr}.site .photo{aspect-ratio:16/9;border-right:0;border-bottom:1px solid var(--line)}}
+  @media (prefers-reduced-motion:reduce){.wave-in{animation:none}}
+</style>
+</head>
+<body>
+{% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
+{{ topbar() }}
+<div class="wrap">
+  {{ page_head("Collect", "Where Surfrider's volunteers sample, how to take a sample, and the conditions for the field sheet.") }}
+  <nav class="jump" aria-label="On this page"><a class="preset" href="#sites">The four sites</a><a class="preset" href="#how">Taking a sample</a><a class="preset" href="#sheet">Conditions for the sheet</a></nav>
+
+  <section class="sec" id="sites">
+    <h2>The four sites</h2>
+    <p class="sub">Every collection run samples these four beaches. Tap a pin to open it in Google Maps.</p>
+    <div class="sites">
+      {%- for s in sites %}
+      <article class="site">
+        {%- if s.photo %}<img class="photo" src="{{ asset('learn/' ~ s.photo) }}" alt="The sampling spot at {{ s.name }}">
+        {%- else %}<div class="photo slot">Photo of the sampling spot coming soon</div>{% endif %}
+        <div class="body">
+          <h3><span class="n">{{ s.n }}</span>{{ s.name }}</h3>
+          <div><a class="maps" href="{{ s.maps }}" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-map-pin"/></svg>Open in Google Maps</a><span class="pin">{{ s.pin }}</span></div>
+          <p class="park"><b>Parking</b>{{ s.parking }}</p>
+          <button type="button" class="btn ghost use" data-site="{{ s.key }}">Conditions for the sheet</button>
+        </div>
+      </article>
+      {%- endfor %}
+    </div>
+  </section>
+
+  <section class="sec" id="how">
+    <h2>Taking a sample</h2>
+    <p class="sub">The short version. The full procedure is in the <a href="/learn/lab-sop">Lab SOP</a>.</p>
+    <div class="how">
+      <ol class="steps">
+        <li>Write the site, date and time on the bottle.</li>
+        <li>Wade out until the water is about 2 feet deep, around your knees.</li>
+        <li>Face the waves. If it's wavy, sample as a wave comes in.</li>
+        <li>Uncap the bottle without touching the inside of it or the cap.</li>
+        <li>Push it mouth-down to about 6 inches under the surface, then tip it up to fill, away from your body.</li>
+        <li>Cap it, keep it cold in the cooler, and note the conditions for the sheet.</li>
+      </ol>
+      <figure class="diagram" style="margin:0">
+        <svg viewBox="40 44 480 236" role="img" aria-labelledby="dg-t">
+          <title id="dg-t">A volunteer standing in about 2 feet of water, facing an incoming wave, holding the bottle about 6 inches under the surface</title>
+          <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#26272a"/></marker>
+            <marker id="ahb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#005a96"/></marker></defs>
+          <path d="M40 158 L520 262 L520 280 L40 280Z" fill="#e8d7b0"/>                                    <!-- the sand, sloping out to sea -->
+          <text x="50" y="146" font-size="15" font-weight="700" fill="#8a6d3b">shore</text>
+          <!-- the volunteer: legs first, so the water covers them -->
+          <g stroke="#26272a" stroke-width="8" stroke-linecap="round" fill="none">
+            <path d="M360 148 L352 226"/><path d="M360 148 L370 226"/>
+            <path d="M360 90 L360 148"/>
+            <path d="M360 102 L342 140"/>
+          </g>
+          <circle cx="360" cy="72" r="15" fill="#26272a"/>
+          <path d="M95 170 L520 170 L520 262 Z" fill="#7fbfe6" opacity=".6"/>                              <!-- the water, over the legs -->
+          <path d="M95 170 L520 170" stroke="#0072bc" stroke-width="2.5"/>
+          <!-- the reaching arm and the bottle, 6 in under -->
+          <path d="M360 102 L402 178" stroke="#26272a" stroke-width="8" stroke-linecap="round"/>
+          <g transform="rotate(-30 410 188)"><rect x="401" y="177" width="18" height="24" rx="4" fill="#fff" stroke="#26272a" stroke-width="2.5"/><rect x="404" y="172" width="12" height="7" rx="1.5" fill="#26272a"/></g>
+          <!-- an incoming wave -->
+          <g class="wave-in"><path d="M446 170 C457,157 468,140 490,133 C504,129 516,131 522,136 L522 170 Z" fill="#0072bc" opacity=".85"/>
+            <path d="M490 133 C482 138 478 147 482 154" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/></g>
+          <path d="M514 112 L452 112" stroke="#005a96" stroke-width="2.5" marker-end="url(#ahb)"/>
+          <text x="516" y="100" font-size="15" font-weight="700" fill="#005a96" text-anchor="end">wave coming in</text>
+          <!-- 2 ft -->
+          <path d="M318 172 L318 222" stroke="#26272a" stroke-width="1.8" marker-start="url(#ah)" marker-end="url(#ah)"/>
+          <text class="dim" x="310" y="202" font-size="16" font-weight="900" fill="#26272a" text-anchor="end">about 2 ft</text>
+          <!-- 6 in -->
+          <path d="M440 172 L440 186" stroke="#26272a" stroke-width="1.8" marker-start="url(#ah)" marker-end="url(#ah)"/>
+          <text class="dim" x="448" y="192" font-size="16" font-weight="900" fill="#26272a">6 in</text>
+        </svg>
+      </figure>
+    </div>
+  </section>
+
+  <section class="sec" id="sheet">
+    <h2>Conditions for the sheet</h2>
+    <p class="sub">Pick a site and the time you sampled to fill in the sheet's weather from public sources, in the sheet's own choices. Your own eyes and thermometer win where they differ.</p>
+    <form class="cx-form" id="cx-form">
+      <label>Site<select name="site" id="cx-site">{% for s in sites %}<option value="{{ s.key }}">{{ s.n }} · {{ s.name }}</option>{% endfor %}</select></label>
+      <label>Date<input type="date" name="date" id="cx-date" value="{{ today }}" min="{{ earliest }}" max="{{ latest }}" required></label>
+      <label>Time<input type="time" name="time" id="cx-time" value="{{ now }}" required></label>
+      <button class="btn" type="submit" id="cx-go">Get conditions</button>
+    </form>
+    <div id="cx-out" hidden>
+      <p class="cx-when" id="cx-when"></p>
+      <div class="cx-grid" id="cx-grid"></div>
+      <div class="cx-actions"><button type="button" class="btn ghost" id="cx-copy">Copy for the sheet</button><small id="cx-copied" aria-live="polite"></small></div>
+    </div>
+    <p class="cx-err" id="cx-err" hidden></p>
+    <p class="more">Tide from NOAA's predictions for the beach; air, sky and wind from Open-Meteo at the site's pin; waves and water temperature from Open-Meteo's ocean model; rain from the NOAA gauge the <a href="/forecast">CSO Forecast</a> reads. Times are Pacific; the sheet covers the last 90 days and the next week.</p>
+  </section>
+</div>
+{{ footer() }}
+{{ tabbar() }}
+<script>
+(() => {
+  const $ = id => document.getElementById(id), esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"})[c]);
+  let last = null;
+  async function load() {
+    const q = new URLSearchParams({site: $("cx-site").value, date: $("cx-date").value, time: $("cx-time").value});
+    $("cx-go").disabled = true; $("cx-go").textContent = "Getting…"; $("cx-err").hidden = true; $("cx-copied").textContent = "";
+    try {
+      const r = await fetch("/api/learn/conditions?" + q), j = await r.json();
+      if (!j.ok) throw new Error(j.error || "no data");
+      last = j;
+      $("cx-when").textContent = j.name + " · " + j.when;
+      $("cx-grid").innerHTML = j.rows.map(x => '<div class="cx"><div class="k">' + esc(x.label) + '</div>' +
+        (x.value == null ? '<div class="v na">' + esc(x.blank || "Not available") + '</div>' : '<div class="v">' + esc(x.value) + '</div>') +
+        (x.detail ? '<div class="d">' + esc(x.detail) + '</div>' : "") + (x.source ? '<div class="s">' + esc(x.source) + '</div>' : "") + '</div>').join("");
+      $("cx-out").hidden = false;
+    } catch (e) { $("cx-err").textContent = "Couldn't get the conditions: " + e.message; $("cx-err").hidden = false; $("cx-out").hidden = true; }
+    finally { $("cx-go").disabled = false; $("cx-go").textContent = "Get conditions"; }
+  }
+  $("cx-form").addEventListener("submit", e => { e.preventDefault(); load(); });
+  document.querySelectorAll(".site .use").forEach(b => b.addEventListener("click", () => {   // a site card fills the form and jumps to it
+    $("cx-site").value = b.dataset.site; $("sheet").scrollIntoView({behavior: "smooth", block: "start"}); load();
+  }));
+  $("cx-copy").addEventListener("click", async () => {
+    if (!last) return;
+    const text = last.name + ", " + last.when + "\n" + last.rows.map(x => x.label + ": " + (x.value == null ? "" : x.value)).join("\n");
+    try { await navigator.clipboard.writeText(text); $("cx-copied").textContent = "Copied."; }
+    catch (e) { $("cx-copied").textContent = "Couldn't copy: select the values above instead."; }
+  });
+})();
+</script>
+</body></html>

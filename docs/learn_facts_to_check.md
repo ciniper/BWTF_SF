@@ -16,4 +16,12 @@ drop that meta tag from the template once the list is done. Tick each line as it
 - [ ] To confirm with a reviewer: each indicator's "what" and "why" lines, and E. coli's "most strains are harmless".
 - [ ] Photo sources to ask: SFPUC, the SF Public Library's historical photograph collection, OpenSFHistory. Use only with permission and credit each photo.
 
-Not a main tab: adding "Learn" to the top bar and the phone bar would need the top bar's 320–1280 px fit re-checked.
+## Collect (/learn/collect, added 2026-10-18; features/learn/collect.py + app/templates/learn/collect.html)
+
+- [ ] The four pins are Chase's (2026-10-18), as Google Maps writes them; the Maps links are built from them.
+- [ ] Parking notes are drafts written without a site visit: Lincoln Way and Vicente street parking with the Great Highway south of Lincoln now Sunset Dunes park (car-free); China Beach's small lot at the end of Sea Cliff Ave; Aquatic Park's metered street parking and the Fort Mason lots. Confirm each with the volunteers.
+- [ ] The procedure is the short version: about 2 ft of water, face the waves and sample as a wave comes in, uncap without touching the inside, mouth-down to about 6 in then tip up away from the body, cap, keep cold. Confirm against the team's own procedure, and add the lab's holding time once the Lab SOP page has it.
+- [ ] Conditions for the sheet: the fields and their choices follow the volunteers' entries in Surfrider's BWTF database (air/water °F, Sunny/Partly Cloudy/Overcast/Light Rain, precipitation yes/no read as rain in the past 72 hours, high/low/incoming/outgoing, the wave bins, 8-point wind and mph). Confirm that the precipitation box means the past 72 hours, and whether the sheet has other weather choices (Fog? Rain?). Checked on 2026-10-08's four collections: the tide matched all four; waves matched at Ocean Beach (China read a bin high); air and wind were within a few degrees and mph; the water-temperature model read 2–5 °F under the volunteers' thermometer.
+- [ ] Photos of each sampling spot: slots for now (``photo`` in collect.SITES, a file under app/static/learn/).
+
+Learn has been a main tab since 2026-10-18 (the top bar fits 320–1280 px with the wordmark hidden at 761–860).

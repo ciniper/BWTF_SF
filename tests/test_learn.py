@@ -93,7 +93,7 @@ def test_page_renders_its_sections_and_has_its_own_tab():
     learn = next(h2 for h2 in nav_model() if h2["key"] == "learn")
     assert learn["paths"] == ["/learn", "/learn/collect", "/learn/lab-sop"] and 'class="learn" href="/learn"' in home   # its own tab (2026-10-18), and Today's bar
     with app.test_client() as c:
-        for u, t in (("/learn/collect", "Collect"), ("/learn/lab-sop", "Lab SOP")):
+        for u, t in (("/learn/lab-sop", "Lab SOP"),):   # Collect has its own page and tests since 2026-10-18 (tests/test_collect.py)
             b = c.get(u).data.decode()
             assert f"<h1>{t}</h1>" in b and "coming soon" in b and '<meta name="robots" content="noindex">' in b and f'class="on" aria-current="page">{t}' in b, u
     assert 'class="proto"' not in h and "Prototype notes" not in h

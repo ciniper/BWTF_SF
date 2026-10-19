@@ -33,6 +33,7 @@ from random import Random
 from flask import render_template
 
 from features.discharges.page import _CSV as CSD_CSV
+from features.learn.collect import GET_ROUTES as COLLECT_ROUTES
 from features.postings.page import _CSV as POSTINGS_CSV
 from shared.outfalls import OUTFALLS
 from shared.standards import ENTERO_CAUTION, STANDARDS
@@ -337,7 +338,6 @@ def handle_page(query, body):
 
 # Two more pages in the Learn hub (Chase, 2026-10-18), blank until their content is written.
 BLANK_PAGES = {
-    "/learn/collect": ("Collect", "How a water sample is collected, from the surf to the lab."),
     "/learn/lab-sop": ("Lab SOP", "The lab's standard operating procedure, step by step."),
 }
 
@@ -347,4 +347,4 @@ def _blank(path: str):
     return lambda query, body: (200, "text/html; charset=utf-8", render_template("learn/blank.html", title=title, lead=lead).encode())
 
 
-GET_ROUTES = {"/learn": handle_page, **{path: _blank(path) for path in BLANK_PAGES}}
+GET_ROUTES = {"/learn": handle_page, **COLLECT_ROUTES, **{path: _blank(path) for path in BLANK_PAGES}}   # Collect: features/learn/collect.py

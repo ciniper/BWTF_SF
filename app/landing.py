@@ -85,7 +85,7 @@ HUBS = [
             ("/learn", "Learn",
              "How San Francisco's sewers meet the shore, how the lab counts bacteria, and a century and a half of the system.",
              "the system · the lab · the record"),
-            ("/learn/collect", "Collect", "How a water sample is collected.", "coming soon"),
+            ("/learn/collect", "Collect", "Where we sample, how to take a sample, and the sheet's conditions.", "four sites · the sheet"),
             ("/learn/lab-sop", "Lab SOP", "The lab's standard operating procedure.", "coming soon"),
         ],
     },
