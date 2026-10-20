@@ -72,7 +72,7 @@
   .map-legend .shape .status-dot,.map-legend .shape .bwtf-dot{background:#8a949b}
   .map-legend .divider{width:1px;height:12px;background:var(--line);margin:0 2px}
   .map-legend .ring{display:inline-block;width:10px;height:10px;border-radius:50%;border:2px solid var(--brand);background:rgba(0,114,188,.15)}
-  .map-legend .of{display:inline-block;width:9px;height:9px;border-radius:50%;background:#7a5a3a}
+  .map-legend .of{display:inline-block;width:8px;height:8px;border-radius:50%;background:#7a5a3a}
   /* Above the board: Sources (what the map shows) and Layers (what you add on top) as two boxes (Chase, 2026-10-01);
      on phones the Layers box folds behind a button in the Sources box, and opens itself for a ?layers= / ?risk= / ?replay= link */
   .layers{display:flex;flex-wrap:wrap;align-items:stretch;gap:10px;margin:0 0 12px}
@@ -340,10 +340,10 @@ const BUILD = {
   },
   outfalls(d) {
     const g = L.layerGroup();
-    for (const o of d.sites) {   // every outfall the same filled brown dot, in its own pane on top (Chase, 2026-10-18); the popup carries the year
+    for (const o of d.sites) {   // every outfall the same small filled brown dot, in its own pane on top (Chase, 2026-10-18; smaller 10-19 so stations show round it)
       if (o.lat == null) continue;
       const quiet = !o.n;
-      const m = L.circleMarker([o.lat, o.lon], {pane: "of", radius: 5, color: "#7a5a3a", weight: 2, fillColor: "#7a5a3a", fillOpacity: 1, bubblingMouseEvents: false}).addTo(g);
+      const m = L.circleMarker([o.lat, o.lon], {pane: "of", radius: 3.5, color: "#7a5a3a", weight: 1.5, fillColor: "#7a5a3a", fillOpacity: 1, bubblingMouseEvents: false}).addTo(g);
       const posts = o.stations.length ? "posts " + o.stations.join(", ") : "posts no monitored beach";
       m.bindTooltip(o.name + " · " + (quiet ? "no discharge reported" : o.n + " discharge" + (o.n > 1 ? "s" : "") + " · " + (o.volume_mg ? o.volume_mg.toFixed(1) + " MG" : "volume not reported")), {direction: "auto", offset: [8, 0], className: "st-label"});
       m.bindPopup('<div><b>' + esc(o.name) + '</b><span class="mut">' + esc(o.basin) + " basin · " + esc(o.water) + "</span><br>" +

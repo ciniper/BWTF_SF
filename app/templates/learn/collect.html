@@ -51,14 +51,17 @@
   .diagram{border:1px solid var(--line);border-radius:var(--r);background:#f4f9fd;overflow:hidden}
   .diagram svg{display:block;width:100%;height:auto}
   .diagram text{font-family:Roboto,sans-serif}
+  .diagram .lbl{font-size:15px;font-weight:700} .diagram .lbl.big{font-size:17px;font-weight:900} .diagram .lbl.sm{font-size:13px;font-weight:500}
+  .diagram .step-no circle{fill:#26272a} .diagram .step-no text{fill:#fff;font-size:12.5px;font-weight:900;text-anchor:middle}
   .wave-in{animation:wave-in 3.2s ease-in-out infinite}
-  @keyframes wave-in{0%,100%{transform:translateX(10px)}50%{transform:translateX(-12px)}}   /* a surge toward the shore, never hidden */
+  @keyframes wave-in{0%,100%{transform:translateX(4px)}50%{transform:translateX(-14px)}}   /* a surge toward the shore, never hidden or cut off */
 
   /* ── 3. Conditions for the sheet ── */
   .cx-form{display:flex;flex-wrap:wrap;gap:12px 14px;align-items:flex-end;margin:0 0 16px}
   .cx-form label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
   .cx-form select,.cx-form input{font:500 15px Roboto,sans-serif;color:var(--ink);padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;min-height:40px}
   .cx-form .btn{min-height:40px;font-size:14px}
+  .cx-form #cx-now{margin-left:-6px}
   .cx-when{margin:0 0 10px;font-weight:700}
   .cx-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
   .cx{border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;background:#fff}
@@ -92,9 +95,9 @@
   @media (max-width:760px){
     .wrap{padding:14px 14px 30px}.sec{padding:18px 16px}
     .site-top{grid-template-columns:1fr;gap:14px}.pick{font-size:14px;padding:10px 12px}
-    .cx-form label{flex:1 1 40%}.cx-form .btn{flex:1 1 100%}
+    .cx-form label{flex:1 1 34%}.cx-form .btn{flex:1 1 100%}.cx-form #cx-now{flex:0 0 auto;margin-left:0}
   }
-  @media (max-width:420px){.diagram text{font-size:19px}.diagram .dim{font-size:21px}}
+  @media (max-width:420px){.diagram .lbl{font-size:21px}.diagram .lbl.big{font-size:24px}.diagram .lbl.sm{font-size:18px}.diagram .step-no{display:none}}   /* a 640-wide drawing at half its size on a phone: bigger labels, and the steps list just above stands in for the badges */
   @media (max-width:359px){.cx-grid{grid-template-columns:1fr}}   /* two cards a row stop fitting a 320 px phone */
   @media (prefers-reduced-motion:reduce){.wave-in{animation:none}}
 </style>
@@ -128,35 +131,52 @@
         <li>Cap it, keep it cold in the cooler, and note the conditions for the sheet.</li>
       </ol>
       <figure class="diagram" style="margin:0">
-        <svg viewBox="40 44 480 236" role="img" aria-labelledby="dg-t">
-          <title id="dg-t">A volunteer standing in about 2 feet of water, facing an incoming wave, holding the sample jar about 6 inches under the surface</title>
-          <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#26272a"/></marker>
-            <marker id="ahb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#005a96"/></marker></defs>
-          <path d="M40 158 L520 262 L520 280 L40 280Z" fill="#e8d7b0"/>                                    <!-- the sand, sloping out to sea -->
-          <text x="50" y="146" font-size="15" font-weight="700" fill="#8a6d3b">shore</text>
-          <!-- the volunteer: legs first, so the water covers them -->
-          <g stroke="#26272a" stroke-width="8" stroke-linecap="round" fill="none">
-            <path d="M360 148 L352 226"/><path d="M360 148 L370 226"/>
-            <path d="M360 90 L360 148"/>
-            <path d="M360 102 L342 140"/>
+        <svg viewBox="0 20 640 290" role="img" aria-labelledby="dg-t">
+          <title id="dg-t">A volunteer standing in about 2 feet of water, knee-deep, facing an incoming wave, holding the sample jar about 6 inches under the surface; a close-up shows the jar 6 inches down</title>
+          <defs>
+            <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#26272a"/></marker>
+            <marker id="ahb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#005a96"/></marker>
+            <clipPath id="zoom"><circle cx="530" cy="96" r="64"/></clipPath>
+          </defs>
+          <!-- the beach, sloping out to sea; the water's surface at y 200, 28 px to the foot -->
+          <path d="M0 160 L533 320 L0 320Z" fill="#e8d7b0"/>
+          <text class="lbl" x="16" y="148" fill="#8a6d3b">shore</text>
+          <!-- the volunteer, facing the sea: what is under water is drawn before the water, so it shows through -->
+          <g stroke="#26272a" stroke-linecap="round" fill="none">
+            <path d="M314 176 L308 256" stroke-width="10"/><path d="M326 176 L334 256" stroke-width="10"/>
+            <path d="M328 134 L354 170 L376 206" stroke-width="9" stroke-linejoin="round"/>
           </g>
-          <circle cx="360" cy="72" r="15" fill="#26272a"/>
-          <path d="M95 170 L520 170 L520 262 Z" fill="#7fbfe6" opacity=".6"/>                              <!-- the water, over the legs -->
-          <path d="M95 170 L520 170" stroke="#0072bc" stroke-width="2.5"/>
-          <!-- the reaching arm and the bottle, 6 in under -->
-          <path d="M360 102 L402 178" stroke="#26272a" stroke-width="8" stroke-linecap="round"/>
-          <g transform="rotate(-30 410 188)"><rect x="401" y="177" width="18" height="24" rx="4" fill="#fff" stroke="#26272a" stroke-width="2.5"/><rect x="404" y="172" width="12" height="7" rx="1.5" fill="#26272a"/></g>
-          <!-- an incoming wave -->
-          <g class="wave-in"><path d="M446 170 C457,157 468,140 490,133 C504,129 516,131 522,136 L522 170 Z" fill="#0072bc" opacity=".85"/>
-            <path d="M490 133 C482 138 478 147 482 154" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/></g>
-          <path d="M514 112 L452 112" stroke="#005a96" stroke-width="2.5" marker-end="url(#ahb)"/>
-          <text x="516" y="100" font-size="15" font-weight="700" fill="#005a96" text-anchor="end">wave coming in</text>
-          <!-- 2 ft -->
-          <path d="M318 172 L318 222" stroke="#26272a" stroke-width="1.8" marker-start="url(#ah)" marker-end="url(#ah)"/>
-          <text class="dim" x="310" y="202" font-size="16" font-weight="900" fill="#26272a" text-anchor="end">about 2 ft</text>
-          <!-- 6 in -->
-          <path d="M440 172 L440 186" stroke="#26272a" stroke-width="1.8" marker-start="url(#ah)" marker-end="url(#ah)"/>
-          <text class="dim" x="448" y="192" font-size="16" font-weight="900" fill="#26272a">6 in</text>
+          <g transform="rotate(60 382 214)"><rect x="374" y="203" width="16" height="22" rx="4" fill="#fff" stroke="#26272a" stroke-width="2.5"/></g>
+          <path d="M133 200 L640 200 L640 320 L533 320Z" fill="#7fbfe6" opacity=".62"/>
+          <path d="M133 200 L640 200" stroke="#0072bc" stroke-width="3"/>
+          <rect x="306" y="124" width="28" height="56" rx="12" fill="#26272a"/>
+          <path d="M312 134 L296 172" stroke="#26272a" stroke-width="9" stroke-linecap="round"/>
+          <circle cx="320" cy="108" r="14" fill="#26272a"/><path d="M328 99 h16 a3.5 3.5 0 0 1 0 7 h-16z" fill="#26272a"/>
+          <!-- 2: about 2 ft deep, around the knees -->
+          <path d="M290 203 L290 246" stroke="#26272a" stroke-width="2" marker-start="url(#ah)" marker-end="url(#ah)"/>
+          <text class="lbl big" x="280" y="226" fill="#26272a" text-anchor="end">about 2 ft</text>
+          <text class="lbl sm" x="280" y="244" fill="#54576f" text-anchor="end">knee-deep</text>
+          <g class="step-no"><circle cx="186" cy="220" r="11"/><text x="186" y="224.5">2</text></g>
+          <!-- 3: face the waves; sample as one comes in -->
+          <g class="wave-in"><path d="M552 200 C566 188 579 167 602 160 C616 156 628 159 636 165 L636 200Z" fill="#0072bc" opacity=".85"/>
+            <path d="M602 160 C594 166 591 176 594 186" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/></g>
+          <path d="M544 174 L466 174" stroke="#005a96" stroke-width="2.5" marker-end="url(#ahb)"/>
+          <text class="lbl" x="544" y="193" fill="#005a96" text-anchor="end">wave coming in</text>
+          <g class="step-no"><circle cx="420" cy="188" r="11"/><text x="420" y="192.5">3</text></g>
+          <!-- 5: the jar 6 in under, in close-up -->
+          <circle cx="382" cy="214" r="15" fill="none" stroke="#26272a" stroke-width="1.6" stroke-dasharray="4 3"/>
+          <path d="M394 205 L478 138" stroke="#26272a" stroke-width="1.6" stroke-dasharray="4 3"/>
+          <circle cx="530" cy="96" r="66" fill="#f4f9fd" stroke="#26272a" stroke-width="2.5"/>
+          <g clip-path="url(#zoom)">
+            <rect x="460" y="86" width="140" height="80" fill="#7fbfe6" opacity=".75"/>
+            <path d="M440 40 L506 116" stroke="#26272a" stroke-width="12" stroke-linecap="round"/>
+            <g transform="rotate(60 514 128)"><rect x="500" y="110" width="28" height="38" rx="7" fill="#fff" stroke="#26272a" stroke-width="3"/><rect x="503" y="106" width="22" height="7" rx="2" fill="#dfe9f1" stroke="#26272a" stroke-width="2"/></g>
+            <path d="M460 86 L600 86" stroke="#0072bc" stroke-width="3.5"/>
+            <text class="lbl sm" x="590" y="80" fill="#0072bc" text-anchor="end">surface</text>
+            <path d="M572 89 L572 127" stroke="#26272a" stroke-width="2.2" marker-start="url(#ah)" marker-end="url(#ah)"/>
+            <text class="lbl big" x="564" y="114" fill="#26272a" text-anchor="end">6 in</text>
+          </g>
+          <g class="step-no"><circle cx="472" cy="40" r="11"/><text x="472" y="44.5">5</text></g>
         </svg>
       </figure>
     </div>
@@ -184,6 +204,7 @@
     <form class="cx-form" id="cx-form">
       <label>Date<input type="date" name="date" id="cx-date" value="{{ today }}" min="{{ earliest }}" max="{{ latest }}" required></label>
       <label>Time<input type="time" name="time" id="cx-time" value="{{ now }}" required></label>
+      <button type="button" class="btn ghost" id="cx-now" title="Set the date and time to right now">Now</button>
       <button class="btn" type="submit" id="cx-go">Get conditions</button>
     </form>
     <div id="cx-out" hidden>
@@ -298,6 +319,13 @@
     finally { $("cx-go").disabled = false; $("cx-go").textContent = "Get conditions"; }
   }
   $("cx-form").addEventListener("submit", e => { e.preventDefault(); load(); });
+  $("cx-now").addEventListener("click", () => {   // this device's clock, as the date and time inputs read it
+    const d = new Date(), two = n => String(n).padStart(2, "0"), day = d.getFullYear() + "-" + two(d.getMonth() + 1) + "-" + two(d.getDate());
+    const changed = day !== $("cx-date").value;
+    $("cx-date").value = day; $("cx-time").value = two(d.getHours()) + ":" + two(d.getMinutes());
+    if (changed) restore();   // a new day has its own notes and edits
+    load();
+  });
   const sheetRows = () => last.rows.map(x => { const e = eff(x); return {...x, value: e.value, detail: e.edited ? "" : x.detail, source: e.edited ? "Your entry" : x.source}; });
   const valueText = x => x.value == null ? "" : x.value + (x.level ? " (" + x.level + ")" : "");
   $("cx-copy").addEventListener("click", async () => {
