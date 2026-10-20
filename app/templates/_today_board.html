@@ -249,6 +249,12 @@ const fmtIn = v => v == null ? "—" : Number(v).toFixed(2) + '"';
 const fmtDay = iso => new Date(iso + "T12:00:00").toLocaleDateString(undefined, {weekday: "short", month: "short", day: "numeric"});
 const shortSpan = w => !w ? "" : new Date(w[0] + "T12:00:00").toLocaleDateString(undefined, {month: "short", day: "numeric"}) + "–" + new Date(w[1] + "T12:00:00").toLocaleDateString(undefined, {day: "numeric"});
 const RANK_ST = {unknown: 0, safe: 1, caution: 1, posted: 2, discharge: 3};
+// today's "posted" / "discharge" label on a dot is permanent; a replayed day where that beach was fine hides it (and Today shows it again)
+function labelFor(m, st) {
+  const t = m.getTooltip && m.getTooltip(), el = t && t.options.permanent && t.getElement(); if (!el) return;
+  const show = st === "posted" || st === "discharge"; el.style.display = show ? "" : "none";
+  if (show) t.update();   // placed while hidden it measured 0 px wide and sat on the wrong side of its dot
+}
 // a city dot moves to its rank's pane when a replayed day changes its status (and back when Today returns)
 function placeRank(m, st) { const p = "st" + (RANK_ST[st] || 0); if (m.options.pane === p) return; const on = MAP.hasLayer(m); if (on) MAP.removeLayer(m); m.options.pane = p; if (on) m.addTo(MAP); }
 
@@ -284,7 +290,7 @@ function restoreBoard() {
   const lead = document.querySelector(".board .lead"); if (lead && ORIG.lead != null) lead.innerHTML = ORIG.lead;
   document.querySelector(".board").className = ORIG.tone; applyRisk();   // the Risk view outlives a replay's snapshot
   for (const z of ZONES) { const t = tileParts(z.key), o = ORIG.tiles[z.key]; if (!t || !o) continue; t.b.className = o.cls + (t.b.classList.contains("focus") ? " focus" : ""); t.b.style.borderColor = ""; t.st.innerHTML = o.st; t.dots.forEach((d, i) => d.className = o.dots[i]); }
-  for (const m of allMarkers()) { m.setStyle({fillColor: COL[m.__s.status] || COL.unknown, radius: m.__s.status === "posted" || m.__s.status === "discharge" ? 9 : 7}); placeRank(m, m.__s.status); }
+  for (const m of allMarkers()) { m.setStyle({fillColor: COL[m.__s.status] || COL.unknown, radius: m.__s.status === "posted" || m.__s.status === "discharge" ? 9 : 7}); placeRank(m, m.__s.status); labelFor(m, m.__s.status); }
   for (const [src, cls] of ORIG.sites || []) { const d = document.querySelector('#zone-sites .site[data-station="' + src + '"] .status-dot'); if (d) d.className = cls; }
 }
 // Risk view: reveals each tile's overflow risk today and the forecast's sentence; the city's status stays as it is
@@ -300,7 +306,7 @@ function applyReplay() {
     z.stations.forEach((st, i) => {
       const c = ((REPLAY.stations[st.source] || {})[day]) || "unknown"; zc[c]++; counts[c]++;
       if (RANK_ST[c] > RANK_ST[zw] || zw === "unknown") zw = c === "unknown" && zw !== "unknown" ? zw : c;
-      const m = allMarkers().find(m => m.__s === st); if (m) { m.setStyle({fillColor: COL[c], radius: c === "posted" || c === "discharge" ? 9 : 7}); placeRank(m, c); }
+      const m = allMarkers().find(m => m.__s === st); if (m) { m.setStyle({fillColor: COL[c], radius: c === "posted" || c === "discharge" ? 9 : 7}); placeRank(m, c); labelFor(m, c); }
       const chip = document.querySelector('#zone-sites .site[data-station="' + st.source + '"] .status-dot'); if (chip) chip.className = "status-dot " + c;
       if (t) t.dots[i].className = "status-dot " + c;
     });

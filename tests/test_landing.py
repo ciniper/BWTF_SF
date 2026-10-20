@@ -172,7 +172,7 @@ def test_today_page_offline_shows_the_board_then_the_hubs_and_hood():
     assert html.index('class="beta"') < html.index('class="topbar"') and "not an official beach advisory" in html   # the Beta notice, a banner above the bar (2026-10-18)
     assert 'id="today"' in html and 'id="water"' in html and 'id="record"' in html                                                       # the hub anchors
     assert html.index('class="board') < html.index('class="hubs"') < html.index('class="learn"') < html.index('class="site-footer"')   # board, then the directory
-    assert "Under the hood" not in html and 'class="hood"' not in html                                  # gone from Today (2026-10-20); its links live on About
+    assert "<b>Under the hood</b>" not in html and 'class="hood"' not in html                           # gone from Today (2026-10-20); its links live on About (the footer's build tooltip can quote a commit message naming it)
     cards = html[html.index('class="hubs"'):html.index('class="learn"')]
     assert '<li><a href="/"' not in cards and '<li><a href="/today"' not in cards and '<li><a href="/forecast"' in cards and '<li><a href="/postings"' in cards        # no card row links to the page it sits on
     assert not (ROOT / "app/templates/landing.html").exists() and not hasattr(L, "render_landing")
