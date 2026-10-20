@@ -6,12 +6,14 @@
                    by hand, the script that automates it, cadence and gaps.
                    Freshness comes from the same manifests the record pages
                    read, so a refresh moves this page too.
-``/architecture``  one diagram of the infrastructure — sources, Supabase,
-                   Vercel, GitHub, Brevo, the people on the other end. Each
-                   box opens the sources registered for it with their date
-                   coverage (``/api/sources`` ← ``shared/sources.py``).
 ``/about``         who runs the site, what it draws on, what the colours
-                   mean, the disclaimer — the framing behind the ⓘ link.
+                   mean, the disclaimer — the framing behind the ⓘ link —
+                   and, since 2026-10-20, How it's built (#built): one diagram
+                   of the infrastructure — sources, Supabase, Vercel, GitHub,
+                   Brevo, the people on the other end. Each box opens the
+                   sources registered for it with their date coverage
+                   (``/api/sources`` ← ``shared/sources.py``). The old
+                   ``/architecture`` address redirects there.
 
 Both are static apart from the freshness lines. Serverless-safe: no threads,
 no external calls. Each route handler returns ``(status, content_type,
@@ -64,10 +66,6 @@ def handle_about(query, body):
     return 200, "text/html; charset=utf-8", render_template("about/index.html").encode()
 
 
-def handle_architecture(query, body):
-    return 200, "text/html; charset=utf-8", render_template("about/architecture.html").encode()
-
-
 def handle_sources(query, body):
     """Every source with its date coverage (shared/sources.py) — the panel behind the diagram's tiles."""
     return 200, "application/json", json.dumps(sources_registry.registry(), default=str).encode()
@@ -76,7 +74,8 @@ def handle_sources(query, body):
 GET_ROUTES = {
     "/about": handle_about,
     "/records": handle_records,
-    "/architecture": handle_architecture,
     "/api/sources": handle_sources,
 }
 POST_ROUTES: dict = {}
+# Pages that moved: the old address answers with a redirect (app/wsgi.py), so links in old emails and docs still land.
+REDIRECTS = {"/architecture": "/about#built"}   # How it's built became a section of About (Chase, 2026-10-20)

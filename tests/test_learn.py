@@ -82,13 +82,14 @@ def test_page_renders_its_sections_and_has_its_own_tab():
         r = c.get("/learn"); h = r.data.decode()
         home = c.get("/").data.decode()
     assert r.status_code == 200 and "{{" not in h and "{%" not in h
-    for sec in ('id="rain"', 'id="above"', 'id="bugs"', 'id="count"', 'id="record"', 'id="history"', 'id="archive"'):
+    for sec in ('id="rain"', 'id="above"', 'id="bugs"', 'id="count"', 'id="record"', 'id="history"'):
         assert sec in h and 'href="#' + sec[4:-1] + '"' in h, sec                                           # each section, and its jump link
     assert 'id="sys-map"' in h and "unpkg.com/leaflet" not in h.split("<script>")[0]                          # Leaflet waits for the map
     assert 'id="qt-skip"' in h and 'id="qt-after"' in h and 'id="tl-more"' in h and 'id="drops-heavy"' in h
     assert h.count('class="stop ') == len(P.TIMELINE) and h.count('<article class="qt-step"') == 8 and h.count('<figure') >= 8
     assert h.index('id="count"') < h.index('id="tray"') < h.index('id="record"')                           # the hands-on tray follows the story
-    assert h.count('class="bug"') == 4 and 'id="tray"' in h and 'id="ch-post"' in h and 'id="ch-csd"' in h and 'id="compare"' in h
+    assert h.count('class="bug"') == 4 and 'id="tray"' in h and 'id="ch-post"' in h and 'id="ch-csd"' in h
+    assert 'id="archive"' not in h and 'id="compare"' not in h                                             # the then-and-now placeholder is gone (2026-10-20)
     assert '<meta name="robots" content="noindex">' in h and "prefers-reduced-motion:reduce" in h        # out of search; motion respects the setting
     learn = next(h2 for h2 in nav_model() if h2["key"] == "learn")
     assert learn["paths"] == ["/learn", "/learn/collect", "/learn/lab-sop"] and 'class="learn" href="/learn"' in home   # its own tab (2026-10-18), and Today's bar

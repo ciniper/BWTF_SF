@@ -1,3 +1,7 @@
+{#- How it's built: the site's infrastructure diagram (desktop and phone), its sources panel and the script
+    that opens it. A section of the About page since 2026-10-20 (Chase: "put how it's built within the info
+    page"); /architecture redirects to /about#built (features/about/page.py REDIRECTS). Import with context
+    (the nodes stamp assets):  {% from "about/_built.html" import built_styles, built_section, built_script with context %} -#}
 {%- macro node(x, y, w, h, icon, title, sub, tip, tile="") -%}
 <g class="node{% if tile %} src{% endif %}" transform="translate({{ x }},{{ y }})"{% if tile %} data-tile="{{ tile }}" tabindex="0" role="button" aria-label="{{ title }}: sources and dates"{% endif %}><title>{{ tip }}</title>
   <rect class="box" width="{{ w }}" height="{{ h }}" rx="16"/>
@@ -35,17 +39,9 @@
   {% if right %}<text class="cr" x="216" y="22" text-anchor="end">{{ right }}</text>{% endif %}
 </g>
 {%- endmacro -%}
-<!doctype html>
-<html lang="en"><head><meta charset="utf-8">
-<link rel="icon" href="{{ asset('brand/favicon.ico') }}"><link rel="apple-touch-icon" sizes="144x144" href="{{ asset('brand/bwtf_144x144.png') }}">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>How It's Built — Surfrider SF Blue Water Task Force</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{{ asset('brand.css') }}">
+
+{% macro built_styles() -%}
 <style>
-  .wrap{max-width:var(--page-w);margin:0 auto;padding:24px}
   .panel{background:#fff;border:1px solid #d9e4e8;border-radius:24px;padding:18px 14px;overflow-x:auto}
   svg.arch{display:block;width:100%;min-width:760px;height:auto;font-family:'Roboto','Segoe UI',Arial,sans-serif}
   .box{fill:#fff;stroke:#d9e4e8;stroke-width:1.5}
@@ -84,15 +80,10 @@
   .srcitem .w{color:#54576F;font-size:13.5px;margin:2px 0 8px}
   .srcitem dl{display:grid;grid-template-columns:84px 1fr;gap:3px 12px;margin:0;font-size:13px}.srcitem dt{color:#8a949b;font-weight:600}.srcitem dd{margin:0}
   .srcnote{color:#8a949b;font-size:12px;margin-top:6px}
-  @media (max-width:560px){.wrap{padding:16px}}
 </style>
-</head>
-<body>
-{% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
-{{ topbar() }}
-<div class="wrap">
-  {{ page_head("How it's built", "Where the data comes from, where it lives, and who it reaches.") }}
+{%- endmacro %}
 
+{% macro built_section() -%}
   <div class="panel">
   <svg class="arch d" viewBox="0 0 1000 600" role="img" aria-labelledby="archTitle archDesc">
     <title id="archTitle">Infrastructure of the SF beach water quality site</title>
@@ -224,10 +215,10 @@
     <div id="srcBody"></div>
   </section>
 
-  <p class="foot">Click a box for its sources and their dates. How the records are gathered: <a href="/records">How we get the records</a>. · {{ build.label if build else '' }}</p>
-</div>
-{{ footer() }}
-{{ tabbar() }}
+  <p class="foot">Click a box for its sources and their dates. How the records are gathered: <a href="/records">How we get the records</a>.</p>
+{%- endmacro %}
+
+{% macro built_script() -%}
 <script>
 (function () {
   var panel = document.getElementById('srcPanel'), title = document.getElementById('srcTitle'), body = document.getElementById('srcBody');
@@ -265,4 +256,4 @@
   window.__sources = { open: open };
 })();
 </script>
-</body></html>
+{%- endmacro %}

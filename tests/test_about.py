@@ -1,5 +1,5 @@
-"""About pages: /records (how each record is obtained) and /architecture (the
-infrastructure diagram), plus the links that lead to them. Offline."""
+"""About pages: /records (how each record is obtained) and /about, with How it's built (the infrastructure
+diagram) as its section since 2026-10-20 (/architecture redirects there), plus the links that lead to them. Offline."""
 import pathlib
 import sys
 
@@ -20,9 +20,15 @@ def test_records_page_covers_each_record_with_live_freshness():
     assert "records_request_draft.md" in html
 
 
-def test_architecture_page_has_both_layouts():
+def test_how_its_built_is_a_section_of_about_with_both_layouts():
     from app.wsgi import app
-    html = app.test_client().get("/architecture").data.decode()
+    c = app.test_client()
+    html = c.get("/about").data.decode()
+    moved = c.get("/architecture")
+    assert moved.status_code == 302 and moved.headers["Location"].endswith("/about#built")          # old links still land
+    assert 'id="built"' in html and "How it's built" in html and 'href="#built"' in html
+    assert html.index('class="cards"') < html.index('id="built"') < html.index('class="site-footer"')   # after About's cards
+    assert not (ROOT / "app/templates/about/architecture.html").exists() and 'href="/architecture"' not in html
     assert 'class="arch d"' in html and 'class="arch m"' in html
     for name in ("Supabase", "Vercel", "GitHub", "Brevo", "Subscribers", "Visitors", "Healthchecks"):
         assert html.count(f">{name}<") >= 2, name          # in the wide diagram and the phone one
@@ -35,8 +41,9 @@ def test_record_pages_and_landing_link_here():
     from app import landing as L
     for page, anchor in (("discharges", "discharges"), ("postings", "postings"), ("cso_history", "timeline")):
         assert f'link=("/records#{anchor}"' in (ROOT / f"app/templates/{page}/page.html").read_text(), page   # the page head's action pill (rendered as href by _frame.html)
-    hood = [h for h, _ in L.UNDER_THE_HOOD]
-    assert "/architecture" in hood and "/records" in hood
+    about = (ROOT / "app/templates/about/index.html").read_text()   # Under the hood left Today (2026-10-20): About's Go deeper row carries its links
+    assert 'href="#built"' in about and 'href="/records"' in about and 'href="/forecast#check"' in about and not hasattr(L, "UNDER_THE_HOOD")
+    assert 'href="/about#built">How it\'s built' in (ROOT / "app/templates/_frame.html").read_text()   # the footer
 
 
 def test_sources_registry_dates_every_tile_and_the_boxes_open_it():
@@ -65,7 +72,7 @@ def test_sources_registry_dates_every_tile_and_the_boxes_open_it():
     # the page: every source box is a button in both layouts, the panel exists, and the endpoint answers offline
     from app.wsgi import app
     c = app.test_client()
-    html = c.get("/architecture").data.decode()
+    html = c.get("/about").data.decode()
     for tile in ("sfpuc", "datasf", "bwtf", "weather", "state", "supabase", "vercel", "github", "brevo", "subscribers", "healthchecks", "visitors"):
         assert html.count(f'data-tile="{tile}"') >= 2, tile
     assert 'id="srcPanel"' in html and "/api/sources" in html and 'role="button"' in html

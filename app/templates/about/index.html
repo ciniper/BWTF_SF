@@ -1,3 +1,4 @@
+{%- from "about/_built.html" import built_styles, built_section, built_script with context %}
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <link rel="icon" href="{{ asset('brand/favicon.ico') }}"><link rel="apple-touch-icon" sizes="144x144" href="{{ asset('brand/bwtf_144x144.png') }}">
@@ -24,7 +25,11 @@
   .wide{grid-column:1/-1}
   .links{display:flex;flex-wrap:wrap;gap:8px}.links a{background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:13.5px}
   .links a:hover{border-color:var(--brand);text-decoration:none}
+  .built{margin:14px 0 0;scroll-margin-top:16px}
+  .built > h2{margin:0 0 2px;font-size:17px;font-weight:900}
+  .built > .lead{margin:0 0 10px;color:var(--muted)}
 </style>
+{{ built_styles() }}
 </head>
 <body>
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
@@ -47,7 +52,7 @@
         <li><b>CIWQS self-monitoring reports</b> — every combined-sewer discharge SFPUC reported to regulators since 2016.</li>
         <li><b>NOAA rain gauges, NWS forecasts and NOAA tides</b> — the inputs to the overflow forecast and the conditions chips.</li>
       </ul>
-      <p class="more">How these feeds move from the city's map to your inbox, minute by minute, is drawn out on <a href="/architecture">How it's built</a>. The collection steps behind the records pages are on <a href="/records">How we get the records</a>.</p>
+      <p class="more">How these feeds move from the city's map to your inbox, minute by minute, is drawn out <a href="#built">below</a>. The collection steps behind the records pages are on <a href="/records">How we get the records</a>.</p>
     </section>
     <section class="card">
       <h2>What the colours mean</h2>
@@ -67,13 +72,19 @@
     <section class="card wide">
       <h2>Go deeper</h2>
       <div class="links">
-        <a href="/architecture">How it's built</a><a href="/records">How we get the records</a><a href="/forecast#check">Model check</a><a href="/signup">Get beach alerts</a>
+        <a href="#built">How it's built</a><a href="/records">How we get the records</a><a href="/forecast#check">Model check</a><a href="/signup">Get beach alerts</a>
         <a href="https://sf.surfrider.org/programs/blue-water-task-force" target="_blank" rel="noopener">Surfrider SF Blue Water Task Force</a>
         <a href="https://github.com/ciniper/BWTF_SF" target="_blank" rel="noopener">Source code on GitHub</a>
       </div>
     </section>
   </div>
+  <section class="built" id="built">   {# its own page, /architecture, until 2026-10-20 #}
+    <h2>How it's built</h2>
+    <p class="lead">Where the data comes from, where it lives, and who it reaches.</p>
+    {{ built_section() }}
+  </section>
 </div>
 {{ footer() }}
 {{ tabbar() }}
+{{ built_script() }}
 </body></html>

@@ -1424,7 +1424,7 @@ function setRiskLine(v) {
 }
 
 // ─── boot ───────────────────────────────────────────────────────────────────
-if (location.hash === '#check') setMode('check'); else loadData();   // /forecast#check opens the Model check (Under the hood links there)
+if (location.hash === '#check') setMode('check'); else loadData();   // /forecast#check opens the Model check (About's Go deeper row links there)
 setInterval(() => { if (currentMode === 'live') loadData(); }, 300000);
 </script>
 <script src="{{ asset('sample_popover.js') }}" defer></script>

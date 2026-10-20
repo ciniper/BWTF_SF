@@ -327,9 +327,11 @@ def create_app():
     for path, handler in postings_page.GET_ROUTES.items():
         app.add_url_rule(path, f"postings-get:{path}", _forecast_view(handler), methods=["GET"])
 
-    # About: how the records were obtained (/records) and the infrastructure diagram (/architecture)
+    # About: how the records were obtained (/records); the infrastructure diagram is a section of /about (/architecture redirects)
     for path, handler in about_page.GET_ROUTES.items():
         app.add_url_rule(path, f"about-get:{path}", _forecast_view(handler), methods=["GET"])
+    for path, to in about_page.REDIRECTS.items():
+        app.add_url_rule(path, f"moved:{path}", lambda to=to: redirect(to, 302), methods=["GET"])   # 302: a page that moves again is not cached forever
 
     # Today: the home page (also at /) — the board, its layers (/api/today/*), the page directory below it
     # Learn: its own hub in NAV (2026-10-18), and Today's Learn bar

@@ -72,7 +72,7 @@ def test_today_page_is_the_board_plus_the_experimental_row_and_the_api_route_exi
     assert 'id="tg-city" checked' in h and 'id="tg-bwtf">' in h and 'data-layer="bwtf"' not in h and h.index('id="tg-bwtf"') < h.index('data-layer="rain"')   # two source switches: city on, Surfrider off (Chase, 2026-09-30)
     assert 'if (!q.has("layers")) want.add("bwtf")' not in (ROOT / "app/templates/_today_board.html").read_text()
     assert 'class="topbar"' in h and 'href="/" class="on" aria-current="page">Today' in h                                       # /today is the home page: its tab, named /, lights
-    assert 'class="hubs"' in h and 'class="hood"' in h and h.index('id="zone-sites"') < h.index('class="hubs"')                   # the Main page's directory, below the board (Chase, 2026-09-30)
+    assert 'class="hubs"' in h and 'class="hood"' not in h and h.index('id="zone-sites"') < h.index('class="hubs"')               # the Main page's directory, below the board (Chase, 2026-09-30); no Under the hood since 2026-10-20
     assert ".hub .cta{" in h and "\n  .cta{" not in h                                                                            # the card's button style must not reach the frame's Get beach alerts
     with app.test_client() as c:
         root = c.get("/")

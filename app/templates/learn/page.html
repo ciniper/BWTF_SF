@@ -184,22 +184,9 @@
   .tl.js .stop:nth-child(even) .card{transform:translateX(20px)}
   .tl.js .stop.in .card{opacity:1;transform:none}
 
-  /* ── 7. From the archive ── */
-  .compare{position:relative;aspect-ratio:16/7;max-height:380px;width:100%;border-radius:var(--r);overflow:hidden;user-select:none;touch-action:none;background:#ccc}
-  .compare .pane{position:absolute;inset:0;display:flex;align-items:flex-end;padding:14px 16px;font:700 13px Roboto,sans-serif}
-  .compare .now{background:linear-gradient(160deg,#9fd0ec,#5aa5d3 55%,#e8d9b5 56%,#d9c79c);color:#1b3a52}
-  .compare .then{background:linear-gradient(160deg,#d8cbb0,#b6a27f 55%,#8f7b5a 56%,#6f5e42);color:#2f2416;filter:sepia(.35) contrast(.95);clip-path:inset(0 calc(100% - var(--x,50%)) 0 0)}
-  .compare .then::after{content:"";position:absolute;inset:0;background:repeating-radial-gradient(circle at 30% 40%,rgba(0,0,0,.05) 0 1px,transparent 1px 3px);mix-blend-mode:multiply}
-  .compare .ph{position:absolute;top:14px;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.8);font-size:12px}
-  .compare .then .ph{left:14px}.compare .now .ph{right:14px}
-  .compare .handle{position:absolute;top:0;bottom:0;left:var(--x,50%);width:3px;margin-left:-1.5px;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.2)}
-  .compare .handle::after{content:"⟷";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:36px;height:36px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:18px;color:var(--ink);box-shadow:0 2px 6px rgba(0,0,0,.25)}
-  .frames{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:12px;margin:14px 0 0}
-  .frame{border:2px dashed var(--line);border-radius:var(--r);padding:12px 14px;font-size:13.5px;color:var(--muted)}
-  .frame b{display:block;color:var(--ink);margin-bottom:2px}
 
   @media (max-width:760px){.scene-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}.scene{min-width:680px}.swipe{display:block}.caption{flex-direction:column;gap:6px}.caption .step{align-self:flex-start}   /* the numbers stay legible on a phone; the caption stacks under its label */
-    .wrap{padding:14px 14px 30px}.sec{padding:16px}.sec h2{font-size:28px}.lab{grid-template-columns:1fr}.compare{aspect-ratio:4/3}
+    .wrap{padding:14px 14px 30px}.sec{padding:16px}.sec h2{font-size:28px}.lab{grid-template-columns:1fr}
     .sys-map{height:440px}.play-row output{min-width:0}.strip-ends span:nth-child(2){display:none}
     .tl .rail{left:9px;margin-left:0}.tl .stop,.tl .stop:nth-child(even){width:auto;margin-left:0;padding:0 0 14px 34px}.tl .stop + .stop{margin-top:0}
     .tl .dot,.tl .stop:nth-child(even) .dot{left:2px;right:auto}.tl.js .card,.tl.js .stop:nth-child(even) .card{transform:translateY(16px)}
@@ -215,7 +202,7 @@
 <div class="wrap">
   {{ page_head("Learn", "How San Francisco's sewers meet the shore, the bacteria the labs count, and the record so far.") }}
   <nav class="jump" aria-label="Sections">
-    <a class="preset" href="#rain">Where the rain goes</a>{% if system %}<a class="preset" href="#above">The system from above</a>{% endif %}<a class="preset" href="#bugs">Meet the indicators</a><a class="preset" href="#count">How the lab counts</a><a class="preset" href="#record">The record, in motion</a><a class="preset" href="#history">A century and a half</a><a class="preset" href="#archive">From the archive</a>
+    <a class="preset" href="#rain">Where the rain goes</a>{% if system %}<a class="preset" href="#above">The system from above</a>{% endif %}<a class="preset" href="#bugs">Meet the indicators</a><a class="preset" href="#count">How the lab counts</a><a class="preset" href="#record">The record, in motion</a><a class="preset" href="#history">A century and a half</a>
   </nav>
 
   {# ── 1 ── #}
@@ -466,22 +453,6 @@
     <p class="more">{{ photo_credit }}</p>
   </section>
 
-  {# ── 7 ── #}
-  <section class="sec" id="archive" aria-labelledby="archive-h">
-    <h2 id="archive-h">From the archive</h2>
-    <p class="sub">Then and now, the same view: drag the line. The frames below are placeholders; real photos come once their rights are cleared.</p>
-    <div class="compare" id="compare" style="--x:50%" aria-label="Then and now comparison; drag to reveal">
-      <div class="pane now"><span class="ph">Now · photo to come</span></div>
-      <div class="pane then"><span class="ph">Then · photo to come</span></div>
-      <div class="handle" role="slider" tabindex="0" aria-label="Then and now divider" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"></div>
-    </div>
-    <div class="frames">
-      <div class="frame"><b>Ocean Beach, early 1900s</b>The same stretch today, from the same spot.</div>
-      <div class="frame"><b>Building the shoreline storage</b>Construction photos of a transport/storage structure.</div>
-      <div class="frame"><b>A posted sign</b>Beach advisory signs through the decades.</div>
-      <div class="frame"><b>The volunteers' lab</b>Surfrider's Blue Water Task Force at work.</div>
-    </div>
-  </section>
 
 </div>
 {{ footer() }}
@@ -1125,15 +1096,6 @@
     more.hidden = false; fold(true);
     more.addEventListener("click", () => { const open = tl.classList.contains("collapsed"); fold(!open); if (!open) $("history").scrollIntoView({block: "start"}); });
   }
-
-  // ── 7. Then and now: drag, tap, or arrow keys ──
-  const cmp = $("compare"), hd = cmp.querySelector(".handle");
-  const setX = p => { p = clamp(p, 0.02, 0.98); cmp.style.setProperty("--x", (p * 100).toFixed(1) + "%"); hd.setAttribute("aria-valuenow", Math.round(p * 100)); };
-  let drag = false; const at = e => { const b = cmp.getBoundingClientRect(); setX((e.clientX - b.left) / b.width); };
-  cmp.addEventListener("pointerdown", e => { drag = true; cmp.setPointerCapture(e.pointerId); at(e); });
-  cmp.addEventListener("pointermove", e => { if (drag) at(e); });
-  cmp.addEventListener("pointerup", () => { drag = false; });
-  hd.addEventListener("keydown", e => { const v = +hd.getAttribute("aria-valuenow"); if (e.key === "ArrowLeft") setX((v - 5) / 100); if (e.key === "ArrowRight") setX((v + 5) / 100); });
 })();
 </script>
 </body></html>

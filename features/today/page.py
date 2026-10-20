@@ -5,7 +5,7 @@ the main page") and Today took the root 2026-10-01, with a canonical tag naming 
 
 ``/today``                the Today board (app/landing.board_context → the shared
                           _today_board.html macros), the Layers strip above it, and the
-                          hub cards + Under the hood strip below it (render_page).
+                          hub cards and the Learn bar below it (render_page).
 ``/api/today/surfrider``  Surfrider's latest Enterococcus result at every site the
                           volunteers sample, with coordinates, graded by the shared
                           rule — drawn on the map as diamonds when toggled on.
@@ -32,7 +32,7 @@ from zoneinfo import ZoneInfo
 import requests
 from flask import render_template
 
-from app.landing import HOME_URL, UNDER_THE_HOOD, board_context, hubs_with_facts
+from app.landing import HOME_URL, board_context, hubs_with_facts
 from features.comparison.bwtf_api import SFBWTFClient
 from features.comparison.comparison import BWTF_TO_SFPUC_NAME, resolve_site
 from shared import supabase as sb
@@ -264,9 +264,9 @@ def build_replay_layer(now: Optional[datetime] = None, days: int = REPLAY_DAYS) 
 def render_page(ctx: dict) -> str:
     """The home page from a board_context: the board, then the page directory that used to sit
     under the Main page's board — the three hub cards (live facts where they answered; no card
-    row for Today itself) and the Under the hood strip."""
+    row for Today itself) and the Learn bar."""
     return render_template("today/page.html", board=ctx["board"], conditions=ctx["conditions"], generated=ctx["generated"],
-                           hubs=hubs_with_facts(ctx.get("facts"), skip=("/",)), hood=UNDER_THE_HOOD, canonical=HOME_URL)
+                           hubs=hubs_with_facts(ctx.get("facts"), skip=("/",)), canonical=HOME_URL)
 
 
 def handle_page(query, body):

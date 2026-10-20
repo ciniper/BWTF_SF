@@ -26,7 +26,7 @@ def test_every_feature_page_sits_in_exactly_one_hub_and_every_link_resolves():
     assert {href for href, *_ in L.PAGES} == FEATURE_PAGES            # the flat view still lists them all
     from app.wsgi import app
     rules = {r.rule for r in app.url_map.iter_rules()}
-    for href in hrefs + subs + [h for h, _ in L.UNDER_THE_HOOD]:
+    for href in hrefs + subs:
         path = href.split("#")[0]
         if path.startswith("/reports/"):
             assert (ROOT / "reports" / path.split("/")[-1]).is_file(), path
@@ -133,7 +133,7 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
     assert [r["title"] for r in nav[1]["rows"]] == ["Site Report Card", "Samples", "Graphs", "Source Comparison"] and "/compare" in nav[1]["paths"]  # subpage = its own tab
     assert [r["href"] for r in nav[0]["rows"]] == ["/", "/forecast", "/signup", "/alerts"] and "/" in nav[0]["paths"]                                  # the hub opens on Today, at the root; the locked page last
     assert L.canonical_path("/today") == L.canonical_path("/index.html") == "/" and L.canonical_path("/graphs") == "/graphs"
-    assert [r["gated"] for r in nav[0]["rows"]] == [False, False, False, True] and L.UNDER_THE_HOOD == [("/architecture", "How it's built"), ("/records", "How we get the records"), ("/forecast#check", "Model check")]
+    assert [r["gated"] for r in nav[0]["rows"]] == [False, False, False, True]
     from app.wsgi import app
     with app.test_client() as c:
         g = c.get("/graphs").data.decode()
@@ -150,7 +150,7 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
         assert 'class=" gated" title="Coordinators only' in f and f.index('href="/signup"', f.index('class="subtabs"')) < f.index('href="/alerts"', f.index('class="subtabs"'))   # lock icon, rightmost
         a = c.get("/about").data.decode()
         assert "About this site" in a and "Blue Water Task Force" in a and 'class="topbar"' in a and "SFPUC's live beach map" in a and 'class="status-dot discharge"' in a
-        assert 'class="topbar"' in c.get("/records").data.decode() and 'class="topbar"' in c.get("/architecture").data.decode() and "back-to-dash\" href" not in c.get("/records").data.decode()
+        assert 'class="topbar"' in c.get("/records").data.decode() and "back-to-dash\" href" not in c.get("/records").data.decode()
 
 
 def test_today_page_offline_shows_the_board_then_the_hubs_and_hood():
@@ -164,15 +164,16 @@ def test_today_page_offline_shows_the_board_then_the_hubs_and_hood():
     with app.test_request_context("/today"):
         html = T.render_page(L.board_context(Sfpuc(), None, live_facts=False))
     for needle in ("Today &amp; alerts", "The water record", "Postings &amp; discharges", "What the city reported, and when",
-                   'class="cta" href="/signup"', "Online Postings Timeline", "Under the hood", 'href="/architecture"', 'href="/about"',  # the ⓘ About link in the frame
+                   'class="cta" href="/signup"', "Online Postings Timeline", 'href="/about"',  'href="/about#built"',  # the ⓘ About link in the frame
                    "1 site(s) posted for elevated bacteria", "is the water safe today?"):
         assert needle in html, needle
     assert html.count('class="hub') >= 3 and 'class="card"' not in html
     assert 'class="topbar"' in html and 'class="tabbar"' in html and 'class="site-footer"' in html and 'class="board tone-warn"' in html   # the shared frame + the Today board
     assert html.index('class="beta"') < html.index('class="topbar"') and "not an official beach advisory" in html   # the Beta notice, a banner above the bar (2026-10-18)
     assert 'id="today"' in html and 'id="water"' in html and 'id="record"' in html                                                       # the hub anchors
-    assert html.index('class="board') < html.index('class="hubs"') < html.index('class="hood"') < html.index('class="site-footer"')   # board, then the directory
-    cards = html[html.index('class="hubs"'):html.index('class="hood"')]
+    assert html.index('class="board') < html.index('class="hubs"') < html.index('class="learn"') < html.index('class="site-footer"')   # board, then the directory
+    assert "Under the hood" not in html and 'class="hood"' not in html                                  # gone from Today (2026-10-20); its links live on About
+    cards = html[html.index('class="hubs"'):html.index('class="learn"')]
     assert '<li><a href="/"' not in cards and '<li><a href="/today"' not in cards and '<li><a href="/forecast"' in cards and '<li><a href="/postings"' in cards        # no card row links to the page it sits on
     assert not (ROOT / "app/templates/landing.html").exists() and not hasattr(L, "render_landing")
 

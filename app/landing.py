@@ -113,11 +113,8 @@ def nav_model() -> list[dict]:
 
 
 # Model pages and reports — for the curious, out of the public cards.
-UNDER_THE_HOOD = [
-    ("/architecture", "How it's built"),
-    ("/records", "How we get the records"),
-    ("/forecast#check", "Model check"),
-]   # the model reports stay reachable from Model check; Chase dropped them from the strip (2026-09-29)
+# Under the hood (How it's built, How we get the records, Model check) left Today on 2026-10-20 (Chase); all three are
+# linked from About's "Go deeper" row, How it's built as a section of About itself.
 
 # The home page answers at two addresses: "/" is its name (tabs, logo, links, the canonical tag),
 # "/today" serves the same page for every alert email and text since migration 021 links there.

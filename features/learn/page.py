@@ -17,7 +17,6 @@ search until the facts in docs/learn_facts_to_check.md are checked. Leaflet load
   2c. How the lab counts   a scroll-pinned side-scroller: one bottle through Enterolert in a Quanti-Tray.
   4. A century and a half  a scrolling timeline, 1850s → today, from SFPUC's Sewer System Master Plan
                            (2010) and this site's own records, with the plan's own photos.
-  5. From the archive      a then-and-now slider on placeholder frames: no photos until rights are cleared.
 
 Everything here is read from the repo's own registries and record files; nothing calls a live API.
 """
