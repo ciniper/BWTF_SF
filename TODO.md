@@ -76,6 +76,14 @@ Order: the no-tradeoff wins first, then caching once Chase has made its calls.
 - [ ] **Check the facts flagged on the Learn page** — the checklist is `docs/learn_facts_to_check.md` (map positions,
   timeline dates, photo captions, the Enterolert / Quanti-Tray method and the MPN readings, the indicator lines).
   The page stays `noindex` until it is done; then drop the robots meta tag in `app/templates/learn/page.html`.
+- [ ] **"Ask" chat box on Learn (idea, 2026-10-20)** — a Q&A box that answers questions about the beaches, the sewer
+  system and the site's records. Not trained: grounded on a cached reference pack (stations, outfalls, zones, the
+  Learn / About / records / forecast text) plus read-only tools calling the site's own JSON APIs for live and
+  historical data. Guardrails: cite the page or dataset behind each answer, never call a beach safe beyond what the
+  board says, defer to posted signs and SFPUC, decline off-topic and medical questions. Rough cost per answer
+  (2026-10 pricing): Opus 5.5 ~2–4¢, Sonnet 5.5 about half, Haiku 5.5 under 0.1¢. Plan: pilot behind the
+  coordinators' passphrase; test against ~30 known questions; then decide on public access with per-visitor rate
+  limits and a daily spend cap. Needs an Anthropic API key in Vercel's env (Chase adds it).
 
 ---
 
