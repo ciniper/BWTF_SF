@@ -1,6 +1,6 @@
 /* site_picker.js — the one site picker Graphs and Samples share (markup: app/templates/_site_picker.html).
  * The chosen site is the board's title; the name (with its chevron) opens the zone-grouped tiles beneath
- * it, a tap on a tile picks it and closes them, and ‹ › step through the sites in view (zone order). A page hands in the tiles' Source rule with filter()
+ * it, a tap on a tile picks it and closes them. A page hands in the tiles' Source rule with filter()
  * — tiles that source never sampled hide, and a hidden current site falls back: to "All sites" when the
  * page offers it (Samples), else to the page's first site (data-first, Graphs), else to a beach both programs sample.
  *   SitePicker.init({ key, onPick })   // onPick(key) fires on a tap, never on filter()/set()
@@ -14,13 +14,6 @@
     $("tiles").classList.toggle("open", on);
     $("siteChange").setAttribute("aria-expanded", String(on));
     $("siteChange").classList.toggle("open", on);
-  }
-  function step(dir) {   // ‹ › : the previous / next site in view, wrapping; the All tile is not a stop
-    var shown = tiles().filter(function (t) { return !t.hidden && t.dataset.key !== ""; });
-    if (!shown.length) return;
-    var i = shown.findIndex(function (t) { return t.dataset.key === P.key; });
-    var next = shown[(i < 0 ? (dir > 0 ? 0 : shown.length - 1) : (i + dir + shown.length) % shown.length)];
-    open(false); P.key = next.dataset.key; paint(); P.onPick(P.key);
   }
   function paint() {
     var cur = tiles().filter(function (t) { return t.dataset.key === P.key; })[0] || null;
@@ -56,9 +49,7 @@
       P.key = t.dataset.key; paint(); P.onPick(P.key);
     });
     $("siteChange").addEventListener("click", function () { open(!$("tiles").classList.contains("open")); });
-    $("sitePrev").addEventListener("click", function () { step(-1); });
-    $("siteNext").addEventListener("click", function () { step(1); });
     paint();
   }
-  window.SitePicker = { init: init, set: set, filter: filter, open: open, step: step, key: function () { return P.key; } };
+  window.SitePicker = { init: init, set: set, filter: filter, open: open, key: function () { return P.key; } };
 })();
