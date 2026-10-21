@@ -123,8 +123,12 @@
     loadNav(d, opts);
     if (newer) {   // Chase, 2026-09-29: "if the sample you click on is not available yet, the fact that it's an old sample should be louder"
       var days = d.found ? Math.round((new Date(opts.feedDate + "T12:00:00") - new Date(d.date + "T12:00:00")) / 864e5) : null;
-      stale.innerHTML = "<b>Newest sample not published yet</b>The city's map shows a sample taken " + esc(opts.feedDate) + "; its lab numbers are not on SF Gov Open Data yet — they usually follow about five days later. " +
-        (d.found ? "Below is the last <b style=\"display:inline;font-size:inherit\">published</b> sample, " + esc(d.date) + (days ? " (" + days + " day" + (days > 1 ? "s" : "") + " older)" : "") + "." : "Nothing older has been published for this station either.");
+      // The city's lab numbers reach SF Gov Open Data around 11 PM the day after collection (Chase, 2026-10-20: "always by 11:40")
+      var taken = new Date(opts.feedDate + "T12:00:00"), due = new Date(opts.feedDate + "T23:00:00"); due.setDate(due.getDate() + 1);
+      var late = Date.now() > due.getTime() + 2 * 36e5, day = function (t) { return t.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" }); };
+      stale.innerHTML = "<b>Newest sample not published yet</b>The city's map shows a sample taken " + esc(day(taken)) + ". Its lab numbers usually arrive on SF Gov Open Data around 11 PM the day after collection, " +
+        (late ? "so these are running late. " : "so expect them around 11 PM " + esc(day(due)) + ". ") +
+        (d.found ? "Below is the last <b style=\"display:inline;font-size:inherit\">published</b> sample, " + esc(day(new Date(d.date + "T12:00:00"))) + (days ? " (" + days + " day" + (days > 1 ? "s" : "") + " older)" : "") + "." : "Nothing older has been published for this station either.");
       stale.hidden = false;
     }
     if (!d.found) { note.textContent = (surf ? "No Surfrider sample at this site" : "No published lab results for this station") + (opts.date ? " on " + opts.date : "") + "."; return; }
