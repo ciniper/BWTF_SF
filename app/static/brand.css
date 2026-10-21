@@ -45,11 +45,18 @@ body>.wrap,body>.container{width:100%}   /* body is a flex column and auto margi
 .preset:hover,.v-preset:hover,.group-btn:hover,.range-btn:hover{border-color:var(--sky)}
 .preset.active,.v-preset.active,.group-btn.active,.range-btn.active{border-color:var(--brand);background:var(--brand);color:#fff}
 a.preset{display:inline-block;text-decoration:none;line-height:normal} a.preset.cross{color:var(--brand);border-color:#c9dcea} a.preset.cross:hover{border-color:var(--brand)}
-/* the site picker Graphs and Samples share (_site_picker.html + site_picker.js): a pill naming the chosen site, tiles on demand */
-.site-bar{display:flex;align-items:center;gap:10px;margin:0 0 12px;flex-wrap:wrap}
-.site-now{display:inline-flex;align-items:baseline;gap:8px;padding:7px 16px;border-radius:999px;background:var(--brand);border:2px solid var(--brand);color:#fff}
-.site-now b{font-size:16px;font-weight:900;letter-spacing:.01em} .site-now small{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;opacity:.85} .site-now small:empty{display:none}
-.tiles{display:none;flex-direction:column;gap:10px;margin:0 0 14px} .tiles.open{display:flex}
+/* the site picker Graphs and Samples share (_site_picker.html + site_picker.js): the site is the board's title;
+   the name + chevron opens the zone tiles beneath, ‹ › step through the sites in view (Chase, 2026-10-20) */
+.site-head{display:flex;align-items:center;gap:10px 12px;margin:0 0 10px;flex-wrap:wrap}
+.site-title{display:inline-flex;align-items:center;gap:6px;border:0;background:none;padding:0;cursor:pointer;color:var(--ink);font-family:inherit;text-align:left}
+.site-title .site-now b{font-size:24px;font-weight:900;line-height:1.15;letter-spacing:.005em}
+.site-title .chev{color:var(--brand);flex:none;transition:transform .15s} .site-title.open .chev{transform:rotate(180deg)}
+.site-title:hover .site-now b{color:var(--brand)}
+.zone-chip{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:4px 10px;border-radius:999px;background:#e3f1fa;color:var(--brand)} .zone-chip:empty{display:none}
+.site-nav{display:inline-flex;gap:4px} .site-nav button{width:32px;height:32px;border-radius:999px;border:2px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;font:700 18px/1 'Roboto','Segoe UI',Arial,sans-serif;padding:0 0 2px} .site-nav button:hover{border-color:var(--brand);color:var(--brand)}
+.site-head a.preset.cross{margin-left:auto}
+.tiles{display:none;flex-direction:column;gap:10px;margin:0 0 14px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:#f7fafb} .tiles.open{display:flex}
+.board .controls{margin:0 0 10px} .board .controls+.controls{margin-top:-2px}
 .tile-group-name{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;margin:0 0 6px}
 .tile-row{display:flex;flex-wrap:wrap;gap:8px}
 .tile{padding:8px 12px;border-radius:12px;border:2px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;font:700 13px 'Roboto','Segoe UI',Arial,sans-serif;text-align:left;line-height:1.25}

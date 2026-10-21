@@ -32,12 +32,11 @@
 {{ topbar() }}
 <div class="wrap">
   {% call page_head("Samples", "Every published result from both programs, one row per sample, with the volunteers' field notes.", "water") %}
-    
-    <p>Every published result from both programs, one row per sample: the city's lab (SFPUC, on SF Gov Open Data) and Surfrider's volunteer lab.
-    A day the city sampled twice shows both values. Surfrider rows carry the volunteer's field notes — open them row by row, show them as columns, or hide them.
-    Click a row for that day's results as a graph; the same samples plotted over time are on <a href="/graphs">Graphs</a>.</p>
+    <p>Click a row for that day's results as a graph. The same samples plotted over time are on <a href="/graphs">Graphs</a>.</p>
   {% endcall %}
 
+  <div class="board">
+  {{ site_picker(site_groups, all_label="All sites", cross=("Graph this site →", "v-graph", "/graphs")) }}
   <div class="controls">
     <span class="ctl-label">Source</span>
     <div class="seg-toggle" id="v-source">
@@ -47,7 +46,6 @@
       <button class="seg-btn active" data-source="all" title="Every site, whichever lab has results">All</button>
     </div>
   </div>
-  {{ site_picker(site_groups, all_label="All sites", cross=("Graph this site →", "v-graph", "/graphs")) }}
   <div class="controls">
     <span class="ctl-label">Range</span>
     <input type="date" id="v-start" aria-label="Start date" min="{{ dataset_floor }}"> <span style="color:#54576F">→</span> <input type="date" id="v-end" aria-label="End date">
@@ -55,7 +53,8 @@
     <span class="ctl-label" style="margin-left:8px">Field notes</span>
     <div class="seg-toggle" id="v-notes"><button class="seg-btn" data-notes="hidden">Hidden</button><button class="seg-btn active" data-notes="expand">Expandable</button><button class="seg-btn" data-notes="columns">Columns</button></div>
   </div>
-  <p class="status" id="v-status">Loading samples…</p>
+  <p class="status" id="v-status" style="margin:0">Loading samples…</p>
+  </div>
   <p class="foot">City rows are SF Gov Open Data from {{ datasf_from }} and, before that, SFPUC's own lab export (Jan 2000 → Jul 2020). Enterococcus and E. coli were first measured in Jul 2002 at the bay stations and Oct 2003 on the ocean beaches (only total coliform before); until Mar 2021 the city ran E. coli where it now runs fecal coliform, so one of those two columns is empty depending on the year.</p>
   <div class="board tbl">
   <table class="viewer" id="v-table" style="display:none">
