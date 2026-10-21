@@ -2,7 +2,7 @@
 <html lang="en"><head><meta charset="utf-8">
 <link rel="icon" href="{{ asset('brand/favicon.ico') }}"><link rel="apple-touch-icon" sizes="144x144" href="{{ asset('brand/bwtf_144x144.png') }}">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Alerts — restricted | SF Beach Water Quality</title>
+<title>{{ heading or 'Alerts access' }} — restricted | SF Beach Water Quality</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -23,10 +23,11 @@
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
 {{ topbar() }}
 <div class="wrap">
-  {{ page_head("Alerts access", "The coordinators' board: live subscriptions and real email — task-force members only.") }}
+  {{ page_head(heading or "Alerts access", lead or "The coordinators' board: live subscriptions and real email — task-force members only.") }}
   <div class="card">
     {% if error %}<p class="error">{{ error }}</p>{% endif %}
     <form method="post" action="/alerts/unlock">
+      <input type="hidden" name="next" value="{{ next or '/alerts' }}">
       <label for="passphrase">Passphrase</label>
       <input id="passphrase" name="passphrase" type="password" autocomplete="off" autofocus required>
       <button type="submit">Enter</button>

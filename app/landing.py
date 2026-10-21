@@ -129,7 +129,7 @@ def canonical_path(path: str) -> str:
 
 
 # Pages behind the coordinators' passphrase: a lock icon in the tabs and the hub rows, and last in their row.
-GATED = {"/alerts"}
+GATED = {"/alerts", "/learn/lab-sop"}   # the Lab SOP since 2026-10-20 (app/wsgi.py gates the route and its photos)
 
 # Flat (href, icon, title, blurb) view of the same pages, kept for anything
 # that wants the list (tests, the sitemap of this repo's docs).

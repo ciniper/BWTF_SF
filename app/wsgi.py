@@ -47,6 +47,7 @@ from flask import Flask, Response, abort, redirect, render_template, request, se
 import features.about.page as about_page
 import features.today.page as today_page
 import features.learn.page as learn_page   # /learn, /learn/collect, /learn/lab-sop: the Learn tab
+import features.learn.sop as sop_page       # the Lab SOP's gated photos
 import features.cso_history.page as cso_history_page
 import features.discharges.page as discharges_page
 import features.forecast.page as forecast_page
@@ -67,7 +68,7 @@ from features.alerts.subscriptions import SubscriptionStore
 from features.alerts.cso_alerts import SimulatedCSOStore
 from shared.sfpuc_api import SFPUCRealTimeAPI
 from app.assets import asset, cache_stamped_static
-from app.landing import canonical_path, nav_model
+from app.landing import GATED, canonical_path, nav_model
 from app.build_info import build_info
 
 try:
@@ -128,13 +129,27 @@ def _alerts_unlocked() -> bool:
     return session.get("alerts_unlocked") is True
 
 
-def _gated_page(inner_view):
+_GATED_PAGES: set = set()   # every page path behind the passphrase: where the unlock form may send you back to
+# The unlock page's heading per gated area (2026-10-20: the Lab SOP joined the alerts board behind the same passphrase).
+_GATE_COPY = {
+    "/alerts": ("Alerts access", "The coordinators' board: live subscriptions and real email — task-force members only."),
+    "/learn": ("Lab SOP", "The lab's procedure is for Blue Water Task Force volunteers: enter the coordinators' passphrase."),
+}
+
+
+def _unlock_page(next_path: str, error=None, status=200):
+    heading, lead = next((v for k, v in _GATE_COPY.items() if next_path.startswith(k)), _GATE_COPY["/alerts"])
+    return Response(render_template("alerts/unlock.html", error=error, next=next_path, heading=heading, lead=lead),
+                    status=status, content_type="text/html; charset=utf-8")
+
+
+def _gated_page(inner_view, path: str):
     """Show the unlock page instead of the wrapped page until the session is unlocked."""
+    _GATED_PAGES.add(path)
     def view(**kwargs):
         if _alerts_unlocked():
             return inner_view(**kwargs)
-        return Response(render_template("alerts/unlock.html", error=None),
-                        status=200, content_type="text/html; charset=utf-8")
+        return _unlock_page(path)
     return view
 
 
@@ -150,11 +165,24 @@ def _gated_api(inner_view):
 
 def _unlock_submit():
     supplied = _normalize_passphrase(request.form.get("passphrase", ""))
+    nxt = request.form.get("next", "")
+    nxt = nxt if nxt in _GATED_PAGES else "/alerts"   # back to the page that asked, never anywhere else
     if hmac.compare_digest(supplied, _normalize_passphrase(ALERTS_PASSPHRASE)):
         session["alerts_unlocked"] = True
-        return redirect("/alerts")
-    return Response(render_template("alerts/unlock.html", error="That's not it — check with the coordinator and try again."),
-                    status=401, content_type="text/html; charset=utf-8")
+        return redirect(nxt)
+    return _unlock_page(nxt, error="That's not it — check with the coordinator and try again.", status=401)
+
+
+def _sop_photo(name):
+    """The Lab SOP's photos sit behind the passphrase with the page (features/learn/sop_photos/, not app/static)."""
+    if not _alerts_unlocked():
+        abort(401)
+    path = sop_page.photo_path(name)
+    if path is None:
+        abort(404)
+    resp = send_from_directory(path.parent, path.name, max_age=86400)
+    resp.headers["Cache-Control"] = "private, max-age=86400"   # the URL carries a content stamp; private: never a shared cache
+    return resp
 
 
 class _RequestAdapter(AlertsRoutes, ComparisonRoutes):
@@ -287,7 +315,7 @@ def create_app():
     # BWTF Sample Log
 
     # Alerts page (passphrase-gated) + its GET/POST APIs
-    app.add_url_rule("/alerts", "alerts", _gated_page(_mixin_view("send_dashboard")), methods=["GET"])
+    app.add_url_rule("/alerts", "alerts", _gated_page(_mixin_view("send_dashboard"), "/alerts"), methods=["GET"])
     app.add_url_rule("/alerts/unlock", "alerts-unlock", _unlock_submit, methods=["POST"])
     for path, method_name in _ALERT_GET.items():
         view = _mixin_view(method_name)
@@ -298,8 +326,8 @@ def create_app():
         app.add_url_rule(path, f"alert-post:{path}", _gated_api(_mixin_view(method_name)), methods=["POST"])
     # Running costs: the alerts dashboard's third tab (features/alerts/costs.py), behind the same passphrase
     for path, handler in costs_page.GET_ROUTES.items():
-        gate = _gated_api if path.startswith("/alerts/api/") else _gated_page
-        app.add_url_rule(path, f"costs-get:{path}", gate(_forecast_view(handler)), methods=["GET"])
+        view = _gated_api(_forecast_view(handler)) if path.startswith("/alerts/api/") else _gated_page(_forecast_view(handler), path)
+        app.add_url_rule(path, f"costs-get:{path}", view, methods=["GET"])
 
     # Comparison page + its GET APIs
     for path, method_name in _COMPARE_GET.items():
@@ -336,7 +364,11 @@ def create_app():
     # Today: the home page (also at /) — the board, its layers (/api/today/*), the page directory below it
     # Learn: its own hub in NAV (2026-10-18), and Today's Learn bar
     for path, handler in learn_page.GET_ROUTES.items():
-        app.add_url_rule(path, f"learn-get:{path}", _forecast_view(handler), methods=["GET"])
+        view = _forecast_view(handler)
+        if path in GATED:   # the Lab SOP, behind the alerts passphrase (Chase, 2026-10-20)
+            view = _gated_page(view, path)
+        app.add_url_rule(path, f"learn-get:{path}", view, methods=["GET"])
+    app.add_url_rule("/learn/lab-sop/photos/<name>", "sop-photo", _sop_photo, methods=["GET"])
 
     for path, handler in today_page.GET_ROUTES.items():
         app.add_url_rule(path, f"today-get:{path}", _forecast_view(handler), methods=["GET"])

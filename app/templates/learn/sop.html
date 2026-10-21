@@ -123,8 +123,8 @@
         {%- if count %}
         <div class="pics n{{ [count, 3]|min }}{% if it.tall %} tall{% endif %}">
           {%- for p in it.pics %}
-          <figure class="pic"><a href="{{ asset(p.src) }}" target="_blank" rel="noopener"><img class="main" src="{{ asset(p.src) }}" alt="{{ p.alt }}" loading="lazy"{% if p.pos %} style="object-position:{{ p.pos }}"{% endif %}></a>
-            {%- if p.inset %}<img class="inset" src="{{ asset(p.inset.src) }}" alt="{{ p.inset.alt }}" loading="lazy">{% endif %}
+          <figure class="pic"><a href="{{ p.url }}" target="_blank" rel="noopener"><img class="main" src="{{ p.url }}" alt="{{ p.alt }}" loading="lazy"{% if p.pos %} style="object-position:{{ p.pos }}"{% endif %}></a>
+            {%- if p.inset %}<img class="inset" src="{{ p.inset.url }}" alt="{{ p.inset.alt }}" loading="lazy">{% endif %}
             {%- if p.tag %}<span class="tag">{{ p.tag }}</span>{% endif %}
             {%- if p.badge %}<span class="pbadge"><b>{{ p.badge.big }}</b><small>{{ p.badge.small }}</small></span>{% endif %}</figure>
           {%- endfor %}

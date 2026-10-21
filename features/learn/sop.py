@@ -4,7 +4,8 @@ Instructions Wall Pages", Chase, 2026-10-18): four phases, 25 steps.
 
 Content only, so the procedure can be edited without touching the template (app/templates/learn/sop.html):
   steps   n, title, text (trusted HTML: <b>, <b class="mix"> for the blue "mixing"), flag, photos, slots, tall (portrait crops)
-  photos  files under app/static/learn/sop/ (cut from the wall pages' PDF), with an optional tag
+  photos  files in features/learn/sop_photos/ (cut from the wall pages' PDF), served only behind the passphrase at
+          /learn/lab-sop/photos/<file> (app/wsgi.py, since 2026-10-20), with an optional tag
           (COARSE, IN, ...), badge ({"big", "small"}), inset (drawn small over the photo before it) and
           pos (CSS object-position for the crop)
   slots   the wall pages' empty photo frames, by their caption; replace one with a photo when it is taken
@@ -13,9 +14,15 @@ A step with two or more photos, or none, spans the phase's width; the rest sit t
 """
 from __future__ import annotations
 
+import hashlib
+from functools import lru_cache
+from pathlib import Path
+from typing import Optional
+
 from flask import render_template
 
-P = "learn/sop/"   # under app/static
+P = ""   # photos are file names in PHOTO_DIR
+PHOTO_DIR = Path(__file__).resolve().parent / "sop_photos"
 
 PHASES = [
     {"n": 1, "key": "return-clean", "title": "Return & Clean", "accent": "#2f7fcb", "tint": "#e7f0fa", "items": [
@@ -137,6 +144,21 @@ PHASES = [
 ]
 
 
+def photo_path(name: str) -> Optional[Path]:
+    """A photo the SOP names, or None: only registered files are served, so no path in the URL reaches anything else."""
+    known = {ph["src"] for st in steps() for ph in st.get("photos", [])}
+    return PHOTO_DIR / name if name in known and (PHOTO_DIR / name).is_file() else None
+
+
+@lru_cache(maxsize=None)
+def _stamp(name: str) -> str:
+    return hashlib.sha1((PHOTO_DIR / name).read_bytes()).hexdigest()[:10]
+
+
+def photo_url(name: str) -> str:
+    return f"/learn/lab-sop/photos/{name}?v={_stamp(name)}"   # content-stamped like asset(), so the private cache can keep it a day
+
+
 def steps() -> list[dict]:
     return [it for ph in PHASES for it in ph["items"] if "n" in it]
 
@@ -150,10 +172,11 @@ def layout(items: list[dict]) -> list[dict]:
         else:
             pics = []
             for ph in it.get("photos", []):   # an inset rides on the photo before it
+                ph = {**ph, "url": photo_url(ph["src"])}
                 if ph.get("inset") and pics:
                     pics[-1] = {**pics[-1], "inset": ph}
                 else:
-                    pics.append(dict(ph))
+                    pics.append(ph)
             it = {**it, "pics": pics}
             wide = len(pics) + len(it.get("slots", [])) != 1 or bool(it.get("checks"))
         out.append({**it, "wide": wide})

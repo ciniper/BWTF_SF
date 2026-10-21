@@ -28,7 +28,7 @@ drop that meta tag from the template once the list is done. Tick each line as it
 
 ## Lab SOP (/learn/lab-sop, added 2026-10-18; features/learn/sop.py + app/templates/learn/sop.html)
 
-- [ ] Transcribed from "(Incomplete) BWTF Lab Instructions Wall Pages" (13 pages, Chase, 2026-10-18), its 21 photos cut from the PDF into app/static/learn/sop/. Wording kept, with small fixes: IDEXX's "Quanti-Tray" for "quantitray", stray commas, "pour the surplus" for "pour roughly the surplus", and step 24's "that control's lab tech" for "that control's lab tech control". Confirm with the lab.
+- [ ] Transcribed from "(Incomplete) BWTF Lab Instructions Wall Pages" (13 pages, Chase, 2026-10-18), its 21 photos cut from the PDF into features/learn/sop_photos/ (behind the passphrase with the page since 2026-10-20; the repo is public, so GitHub still shows them). Wording kept, with small fixes: IDEXX's "Quanti-Tray" for "quantitray", stray commas, "pour the surplus" for "pour roughly the surplus", and step 24's "that control's lab tech" for "that control's lab tech control". Confirm with the lab.
 - [ ] Nine frames are still empty on the wall pages (step 12; step 18's correct and incorrect trays; step 19's incubator and data sheet; steps 21–24): slots on the page until the photos are taken.
 - [ ] Step 24, "Calculate MPN", only says when a control voids the results; the MPN lookup itself (IDEXX's Quanti-Tray/2000 table from the large and small well counts) is not written yet. The page links to the Learn page's "Try it yourself" tray in the meantime.
 - [ ] Photo credits: who took the wall pages' photos, and is everyone pictured happy to be on the site (step 7's fine fill shows a face)?
