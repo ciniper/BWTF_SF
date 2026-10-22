@@ -13,7 +13,11 @@
   var LABELS = { ENTERO: "Enterococcus", COLI_FECAL: "Fecal coliform", COLI_E: "E. coli", COLI_TOTAL: "Total coliform" };
   var fmt = function (n) { return n == null ? "—" : Number(n).toLocaleString(); };
   var monthTick = function (v) { return new Date(v).toLocaleDateString(undefined, { month: "short", year: "2-digit" }); };
-  var LOG_TICKS = [5, 10, 36, 100, 400, 1000, 10000];
+  var LOG_TICKS = [1, 2, 5, 10, 36, 100, 400, 1000, 10000];
+  function logFloor(series, want) {   // the axis floor: 4 unless a plotted value sits lower (the city's "<5" is 2.5, "<2" is 1), so nothing falls off the bottom
+    var lo = Infinity; (series || []).forEach(function (s) { (s.points || []).forEach(function (p) { if (p.y != null && p.y > 0 && p.y < lo) lo = p.y; }); });
+    var base = want || 4; return lo >= base ? base : lo >= 2 ? 2 : lo >= 1 ? 1 : 0.5;
+  }
   var pending = null;
   function ensureChart() {
     if (window.Chart) return Promise.resolve();
@@ -41,10 +45,10 @@
   /* series: [{label, color, dash, pointColors?, points:[{x, y, raw, over, date, station, name}]}]; lines: [limitLine…];
      onPoint(point) fires on click. Log axis by default; yMin / yTicks / yFormat reshape it (the % view);
      tooltip(point, seriesLabel) replaces the default line. */
-  function yScale(o) {   // the shared y axis: log by default (yMin / yTicks / yFormat reshape it), linear on request
+  function yScale(o, series) {   // the shared y axis: log by default (yMin / yTicks / yFormat reshape it; the floor drops for below-detection values), linear on request
     var yTicks = o.yTicks || LOG_TICKS, yFmt = o.yFormat || fmt;
     return o.log === false ? { beginAtZero: true, title: { display: true, text: o.yTitle || "MPN/100 mL" } }
-      : { type: "logarithmic", min: o.yMin || 4, title: { display: true, text: o.yTitle || "MPN/100 mL, log scale" },
+      : { type: "logarithmic", min: logFloor(series, o.yMin), title: { display: true, text: o.yTitle || "MPN/100 mL, log scale" },
           afterBuildTicks: o.yTicks ? function (ax) { ax.ticks = o.yTicks.filter(function (v) { return v >= ax.min && v <= ax.max; }).map(function (v) { return { value: v }; }); } : undefined,
           ticks: { callback: function (v) { return yTicks.indexOf(v) >= 0 ? yFmt(v) : ""; } } };
   }
@@ -69,7 +73,7 @@
     return new Chart(canvas, { type: "line", plugins: [limitLines], data: { datasets: datasets }, options: {
       responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: "nearest", intersect: false },
       onClick: function (_e, els) { if (o.onPoint && els.length) { var el = els[0]; o.onPoint(datasets[el.datasetIndex].data[el.index]); } },
-      scales: { x: { type: "linear", min: xmin, max: xmax, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8, callback: monthTick } }, y: yScale(o) },
+      scales: { x: { type: "linear", min: xmin, max: xmax, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8, callback: monthTick } }, y: yScale(o, o.series) },
       plugins: { legend: { display: o.legend !== false, position: "top" }, limitLines: { lines: o.lines || [] },
                  tooltip: { callbacks: { title: function (it) { return it.length ? new Date(it[0].parsed.x).toLocaleDateString() : ""; },
                                          label: function (it) { return pointText(o, it.raw || {}, it.dataset.label, it.parsed.y); } } } }
@@ -93,7 +97,7 @@
     return new Chart(canvas, { type: "bar", plugins: [limitLines], data: { labels: labels, datasets: datasets }, options: {
       responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: "index", intersect: false },
       onClick: function (_e, els) { if (!o.onPoint || !els.length) return; var el = els[0], p = datasets[el.datasetIndex].meta[el.index]; if (p) o.onPoint(p); },
-      scales: { x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8, callback: function (_v, i) { return labels[i] ? dayText(labels[i]) : ""; } } }, y: yScale(o) },
+      scales: { x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8, callback: function (_v, i) { return labels[i] ? dayText(labels[i]) : ""; } } }, y: yScale(o, o.series) },
       plugins: { legend: { display: o.legend !== false, position: "top" }, limitLines: { lines: o.lines || [] },
                  tooltip: { filter: function (it) { return it.raw != null; },
                             callbacks: { title: function (it) { return it.length ? dayText(labels[it[0].dataIndex]) : ""; },

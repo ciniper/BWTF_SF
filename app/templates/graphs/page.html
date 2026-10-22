@@ -24,10 +24,10 @@
 {{ topbar() }}
 <div class="wrap">
   {% call page_head("Water Quality Graphs", "Any site, any window, any indicator: the city's lab and Surfrider's volunteers on one axis.", "water") %}
-    
-    <p>Pick a site, a range, and an indicator — or all three at once — and choose the city's lab, Surfrider's, only the beaches both sample, or all sites. Click any point or bar for that day's results. The same samples, row by row, are on <a href="/samples">Samples</a>.</p>
+    <p>Click any point or bar for that day's results. The same samples, row by row, are on <a href="/samples">Samples</a>.</p>
   {% endcall %}
-  <p class="subpage">Looking for the original head to head? <a href="/compare">Source Comparison</a> keeps the six beaches both programs sample, latest result and agreement per site, with the same graphs one click away.</p>
+  <div class="board">
+  {{ site_picker(site_groups, cross=("Samples →", "toSamples", "/samples"), first_site=first_site) }}
   <div class="controls">
     <span class="ctl-label">Bacteria</span>
     <select id="analyte" aria-label="Bacteria type">
@@ -48,14 +48,12 @@
       <button class="seg-btn" data-k="bar" title="One bar per sample day, a day's bars side by side">Bars</button>
     </div>
   </div>
-  {{ site_picker(site_groups, cross=("Samples →", "toSamples", "/samples"), first_site=first_site) }}
   <div class="controls">
     <span class="ctl-label">Range</span>
     <input type="date" id="start" min="{{ dataset_floor }}" aria-label="Start date"> <span style="color:#54576F">→</span> <input type="date" id="end" aria-label="End date">
     <button class="preset" data-days="91">Last 3 mo</button><button class="preset" data-days="365">Last 12 mo</button><button class="preset" data-days="1096">Last 3 yrs</button><button class="preset" data-days="">Full record</button>
   </div>
-  <div class="board">
-    <h2 id="title">Loading…</h2>
+    <h2 id="title" class="view-title">Loading…</h2>
     <p class="sub" id="sub"></p>
     <div class="chart"><canvas id="c1"></canvas></div>
     <div class="legend" id="legend"></div>
@@ -63,7 +61,8 @@
     <p class="foot" id="explain"></p>
   </div>
   <p class="foot">City = SFPUC's lab results — SF Gov Open Data from {{ datasf_from }}, and for the years before that SFPUC's own lab export (Jan 2000 → Jul 2020; Enterococcus and E. coli from Jul 2002 at the bay stations and Oct 2003 on the ocean beaches, E. coli in place of fecal coliform until Mar 2021) — a station's worst value per day; a double-sampled day says so in the tooltip. Surfrider = the Blue Water Task Force volunteer lab, Enterococcus only.
-  Log scale keeps 10 and 24,196 on one axis. Dashed lines are the state single-sample limits; total coliform's baseline is 10,000 and drops to 1,000 when fecal is over 10% of total, which the tooltip notes.</p>
+  Log scale keeps 10 and 24,196 on one axis. Dashed lines are the state single-sample limits; total coliform's baseline is 10,000 and drops to 1,000 when fecal is over 10% of total, which the tooltip notes.
+  The original head to head — the six beaches both programs sample, latest result and agreement per site — is <a href="/compare">Source Comparison</a>.</p>
 
 </div>
 <script src="{{ asset('charts.js') }}"></script>
@@ -99,7 +98,7 @@ function syncUrl() { const u = new URL(location.href); u.search = ""; u.searchPa
   const q = new URLSearchParams({ site: S.site }); if (S.src !== "all") q.set("source", S.src); if ($("start").value) q.set("start", $("start").value); if ($("end").value) q.set("end", $("end").value); $("toSamples").href = "/samples?" + q; }   // the Samples link follows site, source and the range shown
 function load() {
   const my = ++seq; filterTiles(); if (!S.site) { $("title").textContent = "No site for this source"; return; }
-  $("title").textContent = siteOf(S.site).name + " — loading…"; syncUrl();
+  $("title").textContent = "Loading…"; syncUrl();
   const q = new URLSearchParams({ site: S.site }); if (S.start) q.set("start", S.start); if (S.end) q.set("end", S.end);
   Promise.all([fetch("/api/site-series?" + q).then(r => r.json()), CH.ensureChart()]).then(([d]) => {
     if (my !== seq) return;
@@ -124,7 +123,7 @@ function render() {
     if (wantCity) lines.push(CH.limitLine(L.COLI_FECAL, C.COLI_FECAL, "Fecal limit " + CH.fmt(L.COLI_FECAL)), CH.limitLine(L.COLI_E, C.COLI_E, "E. coli limit " + CH.fmt(L.COLI_E)), CH.limitLine(L.COLI_TOTAL, C.COLI_TOTAL, "Total limit " + CH.fmt(L.COLI_TOTAL)));
     lines.push(CH.limitLine(DATA.caution, C.CAUTION_LINE, "caution " + DATA.caution, "dotted"));
     c1 = draw($("c1"), { series, lines, legend: false, onPoint });
-    $("title").textContent = DATA.site + " — all indicators";
+    $("title").textContent = "All indicators";
     $("legend").innerHTML = series.map(s => '<span><i style="background:' + s.color + '"></i>' + s.label + "</span>").join("") + '<span><i class="dash" style="color:#54576F"></i>state limits</span>';
     $("sub").textContent = (wantCity ? DATA.counts.city_days + " city sample days" : "") + (wantBwtf ? (wantCity ? " · " : "") + DATA.bwtf.length + " Surfrider samples" : "") + " · " + range;
   } else if (S.analyte === "PCT") {   // each sample day's worst indicator as % of its own limit; the dot's colour names the indicator
@@ -137,7 +136,7 @@ function render() {
     c1 = draw($("c1"), { series, lines: [CH.limitLine(100, C.LIMIT, "state limit = 100%")], legend: false, onPoint,
                                     yMin: 1, yTicks: PCT_TICKS, yFormat: v => CH.fmt(v) + "%", yTitle: "% of that indicator's state limit, log scale",
                                     tooltip: (p, who) => who + " · " + p.label + " " + p.raw + " = " + pf(p.pct) + "% of " + CH.fmt(p.limit) + (p.ratio ? " (ratio rule)" : "") });
-    $("title").textContent = DATA.site + " — worst indicator each day, % of its limit";
+    $("title").textContent = "Worst indicator each day, % of its limit";
     $("legend").innerHTML = (wantCity ? DATA.analytes.map(a => '<span><i class="dot" style="background:' + C[a.code] + '"></i>' + a.label + '</span>').join("") : "")
       + (wantBwtf ? '<span><i style="background:' + C.BWTF_LIGHT + '"></i>Surfrider Enterococcus</span>' : "") + '<span><i class="dash" style="color:#54576F"></i>100% = state limit</span>';
     $("sub").textContent = (wantCity ? W.city.length + " city sample days" : "") + (wantBwtf ? (wantCity ? " · " : "") + W.bwtf.length + " Surfrider sample days" : "") + " · " + range;
@@ -150,7 +149,7 @@ function render() {
     const lines = [CH.limitLine(L[a], C.LIMIT, "CA limit " + CH.fmt(L[a]))]; if (entero) lines.push(CH.limitLine(DATA.caution, C.CAUTION_LINE, "caution " + DATA.caution, "dotted"));
     c1 = draw($("c1"), { series, lines, yTitle: label + " (MPN/100 mL), log scale", onPoint });
     const both = series.length === 2;
-    $("title").textContent = DATA.site + " — " + label + (both ? ", city vs Surfrider" : "");
+    $("title").textContent = label + (both ? ", city vs Surfrider" : "");
     $("legend").innerHTML = "";
     $("sub").textContent = [wantCity ? (DATA.city[a] || []).length + " city samples" : "", entero && wantBwtf ? DATA.bwtf.length + " Surfrider samples" : "", !entero && S.src !== "city" ? "Surfrider measures Enterococcus only" : ""].filter(Boolean).join(" · ") + " · " + range;
     const P = entero && both ? DATA.paired : [];

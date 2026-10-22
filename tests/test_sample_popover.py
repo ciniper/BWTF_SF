@@ -54,6 +54,7 @@ def test_both_pages_include_the_shared_script_and_the_route_exists():
     charts = (ROOT / "app" / "static" / "charts.js").read_text()
     assert "/api/sample-day?" in js and "data-sample-station" in js and "BWTFCharts.miniBars" in js and "chart.umd.js" not in js   # one chart module
     assert "chart.umd.js" in charts and '"limitLines"' in charts and "seriesChart" in charts and "pairedBars" in charts and "miniBars" in charts
+    assert "function logFloor(series, want)" in charts and charts.count("y: yScale(o, o.series) }") == 2 and "LOG_TICKS = [1, 2, 5, 10" in charts   # below-detection values stay on the axis
     assert "barSeries: barSeries" in charts and "skipNull: true" in charts.split("function barSeries")[1]          # the Graphs page's Bars choice, one slot per sample day
     assert "p.over ? COLORS.OVER" not in charts.split("function seriesChart")[1].split("function pairedBars")[0]   # dots keep their series colour (Chase, 2026-09-28)
     for tpl in ("app/templates/alerts/dashboard.html", "app/templates/forecast/page.html", "app/templates/graphs/page.html", "app/templates/samples/page.html"):

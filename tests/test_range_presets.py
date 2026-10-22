@@ -58,17 +58,19 @@ def test_a_preset_fills_both_date_boxes():
 
 def test_graphs_and_samples_share_the_site_picker_and_link_to_each_other():
     macro = T("app/templates/_site_picker.html")
+    assert 'class="site-title" id="siteChange"' in macro and 'id="sitePrev"' not in macro   # the site is the title (no step arrows: Chase, 2026-10-20)
     assert 'id="siteNow"' in macro and 'id="siteName"' in macro and 'id="siteZone"' in macro and 'id="siteChange"' in macro and "all_label" in macro and 'class="preset cross"' in macro
     js = T("app/static/site_picker.js")
     assert "window.SitePicker" in js and "function filter(fits)" in js and "onPick" in js and "var pick = all || first || dual || shown[0];" in js
     kit = T("app/static/brand.css")
-    assert ".site-now{" in kit and ".site-now b{font-size:16px;font-weight:900" in kit and ".tile.active{" in kit and "a.preset.cross" in kit
+    assert ".site-head{" in kit and ".site-title .site-now b{font-size:24px;font-weight:900" in kit and ".zone-chip{" in kit and ".site-nav" not in kit and ".tile.active{" in kit and "a.preset.cross" in kit
     g, s = T("app/templates/graphs/page.html"), T("app/templates/samples/page.html")
     assert 'site_picker(site_groups, cross=("Samples →", "toSamples", "/samples"), first_site=first_site)' in g and '$("toSamples").href = "/samples?" + q' in g
     assert 'site_picker(site_groups, all_label="All sites", cross=("Graph this site →", "v-graph", "/graphs"))' in s and '$("v-graph").href = graphHref()' in s
     for page in (g, s):
         assert "asset('site_picker.js')" in page and "SitePicker.init({" in page and "SitePicker.filter(tileFits)" in page
-        assert ".tile{" not in page and ".site-bar{" not in page   # styles live in the kit
+        assert ".tile{" not in page and ".site-head{" not in page and 'class="subpage"' not in page   # styles live in the kit; the hero is one line
+        assert page.index('class="board"') < page.index("site_picker(") < page.index('class="controls"')   # the board opens with the site as its title, filters beneath
     assert "Latest by site" not in s and 'id="v-site"' not in s and "/api/compare" not in s   # the strip and the select are gone
     assert 'tr class="v-row' in s and "SamplePopover.open(r.source" in s                        # a row opens that day's results as a graph
     page_py = T("features/comparison/page.py")

@@ -1,14 +1,18 @@
 {# The site picker Graphs and Samples share (behaviour: app/static/site_picker.js; styles: brand.css).
+   Since 2026-10-20 the site IS the board's title (Chase: the old pill row read as one more filter): the name
+   with a chevron opens the zone tiles beneath it, a zone chip sits beside it.
    site_groups: [(zone label, [site dicts with key, name, city, bwtf])] from features/comparison/page.py.
    all_label:   offer an "All sites" tile first (Samples) — its key is "".
    cross:       (label, id, href) for one link beside "Change site" to the sibling page over the same
                 site and range; the page keeps its href in step.
    first_site:  the key a fresh visit opens on when the page has no All tile (Graphs). #}
 {% macro site_picker(site_groups, all_label=none, cross=none, first_site=none) %}
-  <div class="site-bar" id="siteBar">
-    <span class="ctl-label">Site</span>
-    <span class="site-now" id="siteNow"><b id="siteName">—</b><small id="siteZone"></small></span>
-    <button class="preset" id="siteChange" type="button" aria-controls="tiles" aria-expanded="false">Change site</button>
+  <div class="site-head" id="siteBar">
+    <button class="site-title" id="siteChange" type="button" aria-controls="tiles" aria-expanded="false" title="Change site">
+      <span class="site-now" id="siteNow"><b id="siteName">—</b></span>
+      <svg class="chev" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+    <small class="zone-chip" id="siteZone"></small>
     {% if cross %}<a class="preset cross" id="{{ cross[1] }}" href="{{ cross[2] }}">{{ cross[0] }}</a>{% endif %}
   </div>
   <div class="tiles" id="tiles" aria-label="Site">

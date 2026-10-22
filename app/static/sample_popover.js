@@ -32,7 +32,8 @@
     ".sp-cell{border:1px solid #d9e4e8;border-radius:14px;padding:10px 12px}.sp-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#54576F;font-weight:700;margin:0 0 4px}" +
     ".sp-chart{position:relative;height:170px}.sp-vals{margin-top:6px;font-size:13px;font-weight:700}.sp-val{display:inline-block;padding:1px 7px;border-radius:6px;background:#eef2f4;margin-right:4px}" +
     ".sp-val.over{background:#d15c5c;color:#fff}.sp-val.caution{background:#fbeccd;color:#7a5200}.sp-val.none{background:transparent;color:#98a3ab;font-weight:600}" +
-    ".sp-links{margin:14px 0 0;font-size:13px;color:#54576F}.sp-links a{color:#0072BC;font-weight:700}.sp-links a+a{margin-left:14px}";
+    ".sp-links{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0;font-size:12.5px}" +
+    ".sp-links a{display:inline-block;padding:6px 13px;border-radius:999px;border:2px solid #c9dcea;background:#fff;color:#0072BC;font-weight:700;text-decoration:none;line-height:normal}.sp-links a:hover{border-color:#0072BC}";   // pills, like the pages' cross-links (Chase, 2026-10-20)
   var el = null, charts = [];
   var esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); };
   var fmt = function (n) { return n == null ? "—" : Number(n).toLocaleString(); };
