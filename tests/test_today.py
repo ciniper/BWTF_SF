@@ -142,6 +142,22 @@ def test_layer_routes_exist_and_answer_json():
         assert j["ok"] and len(j["sites"]) == 34 and j["sites"][0]["volume_mg"] >= j["sites"][-1]["volume_mg"]
 
 
+def test_labels_layer_is_a_chip_off_by_default_drawn_from_the_stations():
+    """Chase, 2026-10-21: a Labels layer, default off — zone names on the whole-city map, station names zoomed in or
+    with a zone chosen, an overlapping name tried on the dot's other side and then hidden; posted labels win."""
+    from app.wsgi import app
+    with app.test_client() as c:
+        h = c.get("/").data.decode()
+    chip = h.split('data-layer="labels"')[0][-80:] + h.split('data-layer="labels"')[1][:200]
+    assert 'aria-pressed="false"' in chip and ">Labels</button>" in chip and "active" not in chip.split("<button")[-1].split(">")[0]
+    group = h.split('id="layer-group"')[1].split('id="layer-status"')[0]
+    assert group.index('data-layer="outfalls"') < group.index('data-layer="labels"') < group.index('data-layer="risk"')
+    board = (ROOT / "app/templates/_today_board.html").read_text()
+    assert "labels: {}" in board and 'if (key === "labels")' in board and "LABEL_ZOOM = 13" in board        # no fetch; ?layers=labels deep-links like the rest
+    assert 'MAP.createPane("lbl").style.zIndex = 445' in board and 'MAP.on("zoomend moveend", refreshLabels)' in board
+    assert board.count("refreshLabels()") >= 4 and 'classList.add("lft")' in board and 'classList.add("off")' in board
+
+
 if __name__ == "__main__":
     failures = 0
     for name, fn in sorted(globals().items()):
