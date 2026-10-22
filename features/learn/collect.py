@@ -14,8 +14,10 @@ precipitation yes/no, tide (high / low / incoming / outgoing), wave height in bi
   wind
   waves,      Open-Meteo's marine API, the nearest sea cell (it cannot see inside a breakwater,
   water temp  so a sheltered site's waves are left to the eye)
-  rain        the forecast's NOAA daily gauge for the site's zone, via ACIS (features/today); the other
-              gauge when the zone's has not reported (Oceanside reports a month at a time)
+  rain        Open-Meteo's hourly precipitation, summed over the 72 hours before the sheet's time — the
+              same model hours the sky row reads (Chase, 2026-10-22: the NOAA gauges post a day's total
+              the next day, so on a rainy morning they said No while the sky said Light Rain; for now
+              the gauges are out of the sheet altogether)
 
 Pure helpers (pins, labels, tide state, the assembly) are tested offline; the fetchers are the
 only network code, each fails on its own and leaves its fields marked unavailable.
@@ -32,13 +34,12 @@ from typing import Callable, Optional
 import requests
 from flask import render_template
 
-from features.today.page import GAUGES, ZONE_GAUGE, fetch_acis_daily
 from shared.clock import now_pacific
 from shared.zones import ZONES
 
 # ── The sites ───────────────────────────────────────────────────────────────────────────
 # Pins are Chase's (2026-10-18), as Google Maps writes them. ``station`` is the city's station at
-# the same beach (shared/stations.py), which gives the zone and so the rain gauge. ``tide`` is the
+# the same beach (shared/stations.py), which gives the zone. ``tide`` is the
 # NOAA prediction station nearest the beach. Parking notes are drafts: docs/learn_facts_to_check.md.
 SITES = [
     {"key": "ob-lincoln", "n": 1, "name": "Ocean Beach at Lincoln Way", "pin": "37°45'50.1\"N 122°30'42.0\"W", "station": "4605",
@@ -104,7 +105,8 @@ EDIT = {
     "wind_direction": {"choices": COMPASS8}, "wind_speed": {"unit": "mph"},
 }
 TIDE_TURN_MIN = 60   # within an hour of a high or low the sheet says "high" / "low"; between them, incoming / outgoing
-RAIN_YES_IN = 0.01   # any measurable rain at the gauge
+RAIN_YES_IN = 0.01   # any measurable rain in the model hours
+RAIN_HOURS = 72
 
 
 def wave_bin(ft: Optional[float]) -> Optional[str]:
@@ -181,8 +183,7 @@ def tide_height(hilo: list[dict], at: datetime) -> Optional[float]:
     return None
 
 
-def assemble(site: dict, at: datetime, weather: Optional[dict], marine: Optional[dict],
-             hilo: Optional[list], rain: Optional[dict]) -> dict:
+def assemble(site: dict, at: datetime, weather: Optional[dict], marine: Optional[dict], hilo: Optional[list]) -> dict:
     """Pure. The sheet's fields in the sheet's order, each {label, value, detail, source}; a source
     that failed (None) leaves its fields with value None."""
     rows = []
@@ -205,25 +206,12 @@ def assemble(site: dict, at: datetime, weather: Optional[dict], marine: Optional
     row("current_weather", "Current weather", sky_label(_pick(wh, "weather_code", wi)),
         "" if _pick(wh, "cloud_cover", wi) is None else f"{_pick(wh, 'cloud_cover', wi)}% cloud cover", om)
 
-    want = [at.date() - timedelta(days=k) for k in (3, 2, 1, 0)]   # the three days before and the day itself: a calendar view of "72 hours"
-    own = ZONE_GAUGE[zone_of(site)]
-    gauge, note = own, ""
-    if rain is not None and not any((rain.get(own) or {}).get(d.isoformat()) is not None for d in want):
-        other = next(g for g in GAUGES if g != own)   # Oceanside reports a month at a time (2026-10): read Downtown until it does
-        if any((rain.get(other) or {}).get(d.isoformat()) is not None for d in want):
-            gauge, note = other, f" The {own} gauge hasn't reported these days yet, so this is {other}'s."
-    src = f"NOAA {gauge} gauge, daily totals via ACIS"
-    got = (rain or {}).get(gauge) or {}
-    known = [got[d.isoformat()] for d in want if got.get(d.isoformat()) is not None]
-    if not known:
-        row("precipitation", "Rain in the past 72 hours", None, "" if rain is None else "Neither gauge has reported these days yet.", src)
-    else:
-        total = round(sum(known), 2)
-        detail = f"{total:.2f} in, {_day(want[0])} to {_day(want[-1])}"
-        late = [_day(d) for d in want if got.get(d.isoformat()) is None]
-        if late:
-            detail += f" (not reported yet: {', '.join(late)})"
-        row("precipitation", "Rain in the past 72 hours", "Yes" if total >= RAIN_YES_IN else "No", detail + "." + note, src)
+    since = at - timedelta(hours=RAIN_HOURS)
+    hours = [(datetime.fromisoformat(t), p) for t, p in zip(wh.get("time") or [], wh.get("precipitation") or [])]
+    seen = [p for t, p in hours if since < t <= at and p is not None]
+    total = round(sum(seen), 2)
+    row("precipitation", "Rain in the past 72 hours", None if not seen else ("Yes" if total >= RAIN_YES_IN else "No"),
+        "" if not seen else f"{total:.2f} in in the 72 hours to {_clock(at)}", "Open-Meteo, model hours")
 
     st, where = site["tide"]
     ts = tide_state(hilo, at) if hilo else None
@@ -238,10 +226,9 @@ def assemble(site: dict, at: datetime, weather: Optional[dict], marine: Optional
         "at": mins(at), "level": level}
     src = f"NOAA tide predictions, {where} ({st})"
     if ts:
-        nm = lambda h: ("high" if h["type"] == "H" else "low") + f" {_clock(h['t'])} ({h['ft']:.1f} ft)"
-        lead = "" if level is None else f"{level:.1f} ft above the lowest lows at {_clock(at)}. "
-        first = nm(ts["prev"])
-        row("tide", "Tide", ts["state"].capitalize(), lead + f"{first[0].upper() + first[1:]}, then {nm(ts['next'])}.", src,
+        nm = lambda h: ("High" if h["type"] == "H" else "Low") + f" {_clock(h['t'])}"   # the turn before and the turn after, nothing else
+        nxt = nm(ts["next"])
+        row("tide", "Tide", ts["state"].capitalize(), f"{nm(ts['prev'])} → {nxt[0].lower() + nxt[1:]}", src,
             level=None if level is None else f"{level:.1f} ft", curve=shape)
     else:
         row("tide", "Tide", None, source=src, level=None if level is None else f"{level:.1f} ft", curve=shape)
@@ -274,9 +261,10 @@ LATEST_DAYS = 7      # and the marine forecast reaches about a week ahead
 
 
 def fetch_weather(lat: float, lon: float, day: date) -> dict:
-    r = requests.get(OPEN_METEO, params={"latitude": lat, "longitude": lon, "start_date": day.isoformat(), "end_date": day.isoformat(),
-                                         "hourly": "temperature_2m,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m",
-                                         "temperature_unit": "fahrenheit", "wind_speed_unit": "mph", "timezone": "America/Los_Angeles"}, timeout=TIMEOUT)
+    r = requests.get(OPEN_METEO, params={"latitude": lat, "longitude": lon, "start_date": (day - timedelta(days=3)).isoformat(), "end_date": day.isoformat(),   # three days back: the rain row's unreported tail
+                                         "hourly": "temperature_2m,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,precipitation",
+                                         "temperature_unit": "fahrenheit", "wind_speed_unit": "mph", "precipitation_unit": "inch",
+                                         "timezone": "America/Los_Angeles"}, timeout=TIMEOUT)
     r.raise_for_status()
     return r.json()
 
@@ -298,25 +286,20 @@ def fetch_hilo(station: str, day: date) -> list[dict]:
     return [{"t": datetime.strptime(p["t"], "%Y-%m-%d %H:%M"), "type": p["type"], "ft": float(p["v"])} for p in preds]
 
 
-def fetch_rain(site: dict, day: date) -> dict:
-    """Both gauges, {name: {ISO day: inches | None}}: the site's own first, the other if it lags."""
-    return {name: dict(fetch_acis_daily(g["sid"], (day - timedelta(days=3)).isoformat(), day.isoformat())) for name, g in GAUGES.items()}
-
-
 def conditions(site: dict, at: datetime, fetchers: Optional[dict[str, Callable]] = None) -> dict:
-    f = {"weather": fetch_weather, "marine": fetch_marine, "hilo": fetch_hilo, "rain": fetch_rain, **(fetchers or {})}
+    f = {"weather": fetch_weather, "marine": fetch_marine, "hilo": fetch_hilo, **(fetchers or {})}
     lat, lon = pin_to_decimal(site["pin"])
     jobs = {"weather": (f["weather"], lat, lon, at.date()), "marine": (f["marine"], lat, lon, at.date()),
-            "hilo": (f["hilo"], site["tide"][0], at.date()), "rain": (f["rain"], site, at.date())}
+            "hilo": (f["hilo"], site["tide"][0], at.date())}
     got = {}
-    with ThreadPoolExecutor(max_workers=4) as ex:   # every source at once: the slowest sets the wait, not the sum
+    with ThreadPoolExecutor(max_workers=3) as ex:   # every source at once: the slowest sets the wait, not the sum
         futs = {k: ex.submit(fn, *args) for k, (fn, *args) in jobs.items()}
         for k, fut in futs.items():
             try:
                 got[k] = fut.result()
             except Exception:  # noqa: BLE001 — one source down leaves its fields blank, never the whole sheet
                 got[k] = None
-    return assemble(site, at, got["weather"], got["marine"], got["hilo"], got["rain"])
+    return assemble(site, at, got["weather"], got["marine"], got["hilo"])
 
 
 # ── Routes ──────────────────────────────────────────────────────────────────────────────

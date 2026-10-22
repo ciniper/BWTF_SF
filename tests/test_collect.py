@@ -22,8 +22,7 @@ def test_pins_decode_to_the_beaches_they_name():
         assert view[k]["maps"] == f"https://www.google.com/maps/search/?api=1&query={lat},{lon}"
         city = next(st for z in C.ZONES.values() for st in z.stations if st.sfpuc_id == C.SITE[k]["station"])
         assert abs(city.lat - lat) < 0.01 and abs(city.lon - lon) < 0.01, k      # the city's station at the same beach
-    assert {k: C.ZONE_GAUGE[C.zone_of(C.SITE[k])] for k in want} == {"ob-lincoln": "SF Oceanside", "ob-vicente": "SF Oceanside",
-                                                                     "china": "SF Oceanside", "aquatic": "SF Downtown"}
+    assert {C.zone_of(C.SITE[k]) for k in want} == {"ocean", "baker_china", "north"}
 
 
 def test_the_sheets_vocabulary():
@@ -57,9 +56,12 @@ def test_tide_height_follows_noaa_half_cosine_between_turns():
     assert C.tide_height(hilo, at("09:00")) is None                     # no turn before: not guessed
 
 
-def _weather():
-    return {"hourly": {"time": [f"2026-10-08T{h:02d}:00" for h in range(24)], "temperature_2m": [60.4] * 24, "weather_code": [2] * 24,
-                       "cloud_cover": [40] * 24, "wind_speed_10m": [9.6] * 24, "wind_direction_10m": [300] * 24}}
+def _weather(rain_hours=(6, 7)):   # Open-Meteo's four model days (three back + the day), light rain on the day's morning unless told otherwise
+    hrs = [f"2026-10-{d:02d}T{h:02d}:00" for d in (5, 6, 7, 8) for h in range(24)]
+    prec = [0.0] * 96
+    for h in rain_hours: prec[72 + h] = 0.016
+    return {"hourly": {"time": hrs, "temperature_2m": [60.4] * 96, "weather_code": [2] * 96, "cloud_cover": [40] * 96,
+                       "wind_speed_10m": [9.6] * 96, "wind_direction_10m": [300] * 96, "precipitation": prec}}
 
 
 def _marine():
@@ -69,28 +71,43 @@ def _marine():
 def test_the_sheet_assembles_in_its_order_and_falls_back_between_gauges():
     at = datetime(2026, 10, 8, 17, 5)
     hilo = _hilo(("2026-10-08 10:02", "H", 5.9), ("2026-10-08 16:05", "L", .9), ("2026-10-08 22:06", "H", 5.5))
-    rain = {"SF Oceanside": {d: None for d in ("2026-10-05", "2026-10-06", "2026-10-07", "2026-10-08")},
-            "SF Downtown": {"2026-10-05": 0.0, "2026-10-06": 0.12, "2026-10-07": 0.0}}
-    out = C.assemble(C.SITE["ob-lincoln"], at, _weather(), _marine(), hilo, rain)
+    out = C.assemble(C.SITE["ob-lincoln"], at, _weather(), _marine(), hilo)
     v = {r["key"]: r["value"] for r in out["rows"]}
     assert [r["key"] for r in out["rows"]] == ["air_temp", "water_temp", "current_weather", "precipitation", "tide", "wave_height", "wind_direction", "wind_speed"]
     assert v == {"air_temp": "60°F", "water_temp": "62°F", "current_weather": "Partly Cloudy", "precipitation": "Yes", "tide": "Low",
                  "wave_height": "4-6 ft", "wind_direction": "NW", "wind_speed": "10 mph"}
     td = next(r for r in out["rows"] if r["key"] == "tide")
-    assert td["level"] == "1.2 ft" and td["detail"].startswith("1.2 ft above the lowest lows at 5:05 PM. Low 4:05 PM (0.9 ft)")
+    assert td["level"] == "1.2 ft" and td["detail"] == "Low 4:05 PM → high 10:06 PM"   # the turn before and the turn after, nothing else
     assert td["curve"]["at"] == 17 * 60 + 5 and [t["type"] for t in td["curve"]["turns"]] == ["H", "L", "H"]
     assert len(td["curve"]["pts"]) == 24 and td["curve"]["pts"][0][0] == 10 * 60 + 30   # the curve only where the turns cover it
     pr = next(r for r in out["rows"] if r["key"] == "precipitation")
-    assert "SF Downtown" in pr["source"] and "hasn't reported" in pr["detail"] and "Oct 8" in pr["detail"]   # the lagging gauge is named
+    assert pr["detail"] == "0.03 in in the 72 hours to 5:05 PM" and pr["source"] == "Open-Meteo, model hours"
     # a sheltered site leaves the waves to the eye; a source that failed leaves its fields blank, never the sheet
-    aq = C.assemble(C.SITE["aquatic"], at, None, _marine(), None, None)
+    aq = C.assemble(C.SITE["aquatic"], at, None, _marine(), None)
     va = {r["key"]: r for r in aq["rows"]}
     assert va["wave_height"]["value"] is None and va["wave_height"]["blank"] == "Check by eye" and "breakwater" in va["wave_height"]["detail"]
     assert va["air_temp"]["value"] is None and va["tide"]["value"] is None and va["precipitation"]["value"] is None and va["water_temp"]["value"] == "62°F"
 
 
+def test_rain_is_the_model_hours_in_the_72_hours_before_the_sheets_time():
+    """2026-10-22: it rained from 5 am and the sky row said Light Rain while the gauge-based row said No (a gauge's
+    day posts the next day). The row now sums Open-Meteo's hourly precipitation over the 72 hours before the time:
+    forecast hours after it and hours older than 72 don't count."""
+    at = datetime(2026, 10, 8, 10, 27)
+    hilo = _hilo(("2026-10-08 06:02", "H", 5.9), ("2026-10-08 12:05", "L", .9), ("2026-10-08 18:06", "H", 5.5))
+    pr = lambda w: next(r for r in C.assemble(C.SITE["ob-lincoln"], at, w, _marine(), hilo)["rows"] if r["key"] == "precipitation")  # noqa: E731
+    w = _weather(rain_hours=(5, 7, 8)); w["hourly"]["precipitation"][72 + 20] = 0.5          # tonight's forecast is not rain that fell
+    assert pr(w)["value"] == "Yes" and pr(w)["detail"] == "0.05 in in the 72 hours to 10:27 AM"
+    w = _weather(rain_hours=()); w["hourly"]["precipitation"][72 + 20] = 0.5; w["hourly"]["precipitation"][5] = 0.3   # Oct 5 05:00 is 77 h back
+    assert pr(w)["value"] == "No" and pr(w)["detail"] == "0.00 in in the 72 hours to 10:27 AM"
+    w = _weather(rain_hours=()); w["hourly"]["precipitation"][24 + 11] = 0.3                 # Oct 6 11:00 is within the window
+    assert pr(w)["value"] == "Yes" and pr(w)["detail"] == "0.30 in in the 72 hours to 10:27 AM"
+    w = _weather(); del w["hourly"]["precipitation"]
+    assert pr(w)["value"] is None                                                              # no model hours: left blank
+
+
 def test_every_field_can_be_edited_in_the_sheets_own_terms():
-    out = C.assemble(C.SITE["china"], datetime(2026, 10, 8, 16, 20), _weather(), _marine(), None, None)
+    out = C.assemble(C.SITE["china"], datetime(2026, 10, 8, 16, 20), _weather(), _marine(), None)
     ed = {r["key"]: r["edit"] for r in out["rows"]}
     assert set(ed) == set(C.EDIT) and len(ed) == 8
     assert ed["air_temp"] == ed["water_temp"] == {"unit": "°F"} and ed["wind_speed"] == {"unit": "mph"}
@@ -105,9 +122,9 @@ def test_conditions_survives_a_source_failing():
     def boom(*a):
         raise RuntimeError("down")
     out = C.conditions(C.SITE["china"], datetime(2026, 10, 8, 16, 20),
-                       {"weather": lambda *a: _weather(), "marine": lambda *a: _marine(), "hilo": boom, "rain": boom})
+                       {"weather": lambda *a: _weather(), "marine": lambda *a: _marine(), "hilo": boom})
     v = {r["key"]: r["value"] for r in out["rows"]}
-    assert out["ok"] and v["tide"] is None and v["precipitation"] is None and v["air_temp"] == "60°F"
+    assert out["ok"] and v["tide"] is None and v["precipitation"] == "Yes" and v["air_temp"] == "60°F"   # rain rides on the weather call now
 
 
 def test_routes_render_and_refuse_bad_input():
@@ -127,7 +144,7 @@ def test_routes_render_and_refuse_bad_input():
     assert shown(china) == ["china"] and '<section class="sec" id="sheet">' in china and pressed(china) == ["china"]
     assert '<details class="howto" id="how">' in h and "<details open" not in h                     # Taking a sample, folded
     assert h.count('<li>') >= 6 and "about 2 ft" in h and "6 in" in h and "wave coming in" in h and 'id="cx-form"' in h and 'id="cx-site"' not in h
-    assert 'id="cx-obs"' in h and 'id="cx-save"' in h and 'id="cx-tide"' in h and "localStorage" in h and "toBlob" in h   # observations, the image
+    assert 'id="cx-obs"' in h and 'id="cx-save"' in h and 'id="cx-tide"' not in h and 'class="tide"' in h and "localStorage" in h and "toBlob" in h   # observations, the image; the tide curve lives in its tile
     assert 'class="on" aria-current="page">Collect' in h and "coming soon" not in h.replace("Photo of the sampling spot coming soon", "")
     assert bad.status_code == 400 and json.loads(bad.data)["error"] == "unknown site"
     assert far.status_code == 400 and "last 90 days" in json.loads(far.data)["error"]

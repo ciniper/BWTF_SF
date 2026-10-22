@@ -63,7 +63,7 @@
   .cx-form .btn{min-height:40px;font-size:14px}
   .cx-form #cx-now{margin-left:-6px}
   .cx-when{margin:0 0 10px;font-weight:700}
-  .cx-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+  .cx-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}   /* three across: with the tide tile two wide, eight tiles fill three rows */
   .cx{border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;background:#fff}
   .cx .k{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
   .cx .v{font-size:22px;font-weight:900;line-height:1.2;margin:2px 0}
@@ -83,10 +83,7 @@
   .cx .ctl input{width:84px}
   .cx .ctl .unit{font-weight:700;color:var(--muted)}
   .cx .ctl .btn{padding:6px 12px;font-size:12.5px}
-  .tide-strip{margin:10px 0 0;border:1px solid var(--line);border-radius:var(--r);padding:10px 12px 6px}
-  .tide-strip .k{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-  .tide-strip svg{display:block;width:100%;height:auto;margin-top:2px}
-  .tide-strip text{font-family:Roboto,sans-serif}
+  .cx[data-k="tide"]{grid-column:span 2} .cx svg.tide{display:block;width:100%;height:auto;margin:6px 0 2px} .cx svg.tide text{font-family:Roboto,sans-serif}   /* the tide tile is two wide: its curve needs the room */
   .obs{display:flex;flex-direction:column;gap:6px;margin:16px 0 0}
   .obs span{font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
   .obs textarea{font:400 15px/1.45 Roboto,sans-serif;color:var(--ink);padding:10px 12px;border:1px solid var(--line);border-radius:10px;resize:vertical;min-height:84px}
@@ -210,13 +207,12 @@
     <div id="cx-out" hidden>
       <p class="cx-when" id="cx-when"></p>
       <div class="cx-grid" id="cx-grid"></div>
-      <div class="tide-strip" id="cx-tide" hidden></div>
     </div>
     <p class="cx-err" id="cx-err" hidden></p>
     <label class="obs" for="cx-obs"><span>Observations</span>
       <textarea id="cx-obs" rows="3" placeholder="Birds, swimmers, surfers, debris, odor, water color, anything unusual"></textarea></label>
     <div class="cx-actions"><button type="button" class="btn ghost" id="cx-copy" disabled>Copy for the sheet</button><button type="button" class="btn" id="cx-save" disabled>Save as image</button><small id="cx-copied" aria-live="polite"></small></div>
-    <p class="more">Tide from NOAA's predictions for the beach, its level in feet above the average lowest low (MLLW); air, sky and wind from Open-Meteo at the site's pin; waves and water temperature from Open-Meteo's ocean model; rain from the NOAA gauge the <a href="/forecast">CSO Forecast</a> reads. Times are Pacific; the sheet covers the last 90 days and the next week. Observations stay on this device, saved with the site and date, until you save the image.</p>
+    <p class="more">Tide from NOAA's predictions for the beach, its level in feet above the average lowest low (MLLW); air, sky and wind from Open-Meteo at the site's pin; waves and water temperature from Open-Meteo's ocean model; rain from Open-Meteo's model hours, summed over the 72 hours before the time you picked. Times are Pacific; the sheet covers the last 90 days and the next week. Observations stay on this device, saved with the site and date, until you save the image.</p>
   </section>
 </div>
 {{ footer() }}
@@ -249,15 +245,17 @@
 
   const hhmm = m => { const h = Math.floor(m / 60) % 24, mm = String(m % 60).padStart(2, "0"); return (h % 12 || 12) + ":" + mm + (h < 12 ? " AM" : " PM"); };
   const tick = m => ["12a", "6a", "12p", "6p", "12a"][m / 360];
-  function tideSvg(c) {   // the day's tide, its turns, and the moment
-    const W = 640, H = 120, L = 30, R = 10, T = 22, B = 22, top = Math.max(...c.pts.map(p => p[1]), 6), bot = Math.min(...c.pts.map(p => p[1]), 0);
+  function tideSvg(c) {   // the day's tide inside the tide tile: the turns, and the level at the moment of collection
+    const W = 480, H = 100, L = 6, R = 6, T = 22, B = 16, top = Math.max(...c.pts.map(p => p[1]), 6), bot = Math.min(...c.pts.map(p => p[1]), 0);
     const x = m => L + (W - L - R) * m / 1440, y = ft => T + (H - T - B) * (top - ft) / (top - bot || 1);
     const line = c.pts.map((p, i) => (i ? "L" : "M") + x(p[0]).toFixed(1) + " " + y(p[1]).toFixed(1)).join(" ");
-    let g = `<path d="${line} L${x(1440)} ${H - B} L${x(0)} ${H - B}Z" fill="#cfe6f6"/><path d="${line}" fill="none" stroke="#0072bc" stroke-width="2.5"/>`;
-    for (let m = 0; m <= 1440; m += 360) g += `<text x="${x(m)}" y="${H - 6}" font-size="11" fill="#8a949b" text-anchor="${m ? m === 1440 ? "end" : "middle" : "start"}">${tick(m)}</text>`;
-    c.turns.forEach(t => g += `<text x="${x(t.m)}" y="${t.type === "H" ? y(t.ft) - 6 : y(t.ft) + 14}" font-size="11" fill="#54576f" text-anchor="middle">${t.type === "H" ? "high" : "low"} ${t.ft.toFixed(1)}</text>`);
-    g += `<line x1="${x(c.at)}" x2="${x(c.at)}" y1="${T - 8}" y2="${H - B}" stroke="#26272a" stroke-dasharray="3 3"/><circle cx="${x(c.at)}" cy="${y(c.level)}" r="5.5" fill="#26272a" stroke="#fff" stroke-width="2"/>`;
-    return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="The tide through the day, ${c.level.toFixed(1)} feet at ${hhmm(c.at)}">${g}</svg>`;
+    let g = `<path d="${line} L${x(1440)} ${H - B} L${x(0)} ${H - B}Z" fill="#cfe6f6"/><path d="${line}" fill="none" stroke="#0072bc" stroke-width="2"/>`;
+    [0, 720, 1440].forEach(m => g += `<text x="${x(m)}" y="${H - 4}" font-size="10" fill="#8a949b" text-anchor="${m ? m === 1440 ? "end" : "middle" : "start"}">${tick(m)}</text>`);
+    c.turns.forEach(t => g += `<text x="${x(t.m)}" y="${t.type === "H" ? y(t.ft) - 5 : y(t.ft) + 12}" font-size="10" fill="#54576f" text-anchor="middle">${t.type === "H" ? "high" : "low"} ${t.ft.toFixed(1)}</text>`);
+    const ax = x(c.at), left = ax < W / 2;   // the moment of collection: a dashed line and a dot, named in the corner away from it
+    g += `<line x1="${ax}" x2="${ax}" y1="${T - 4}" y2="${H - B}" stroke="#26272a" stroke-dasharray="3 3"/><circle cx="${ax}" cy="${y(c.level)}" r="4.5" fill="#26272a" stroke="#fff" stroke-width="2"/>`;
+    g += `<text x="${left ? W - R : L}" y="11" font-size="11" font-weight="700" fill="#26272a" text-anchor="${left ? "end" : "start"}">${c.level.toFixed(1)} ft at ${hhmm(c.at)}</text>`;
+    return `<svg class="tide" viewBox="0 0 ${W} ${H}" role="img" aria-label="The tide through the day, ${c.level.toFixed(1)} feet at ${hhmm(c.at)}">${g}</svg>`;
   }
 
   // A volunteer's own reading replaces the automatic one, in the card, the copy and the image.
@@ -272,7 +270,7 @@
     const e = eff(x), open = editing === x.key;
     const v = open ? control(x, e.value)
       : e.value == null ? '<div class="v na">' + esc(x.blank || "Not available") + '</div>'
-      : '<div class="v">' + esc(e.value) + (x.level ? '<span class="lvl">' + esc(x.level) + '</span>' : "") + '</div>';
+      : '<div class="v">' + esc(e.value) + (x.level ? '<span class="lvl">' + esc(x.level) + '</span>' : "") + '</div>' + (x.curve && !open ? tideSvg(x.curve) : "");
     const foot = e.edited ? '<div class="s">Your entry · ' + (x.value == null ? "no automatic value" : "automatic: " + esc(x.value)) + ' · <button type="button" class="lnk reset">Use automatic</button></div>'
       : x.source ? '<div class="s">' + esc(x.source) + '</div>' : "";
     return '<div class="cx' + (e.edited ? " edited" : "") + '" data-k="' + x.key + '"><div class="k"><span>' + esc(x.label) + '</span>' + (open ? "" : '<button type="button" class="ed">Edit</button>') + '</div>' + v +
@@ -311,9 +309,6 @@
       last = j; editing = null;
       $("cx-when").textContent = j.when;
       render();
-      const tide = j.rows.find(x => x.key === "tide");
-      $("cx-tide").hidden = !(tide && tide.curve);
-      if (tide && tide.curve) $("cx-tide").innerHTML = '<div class="k">The tide that day · ' + esc(tide.level) + ' at ' + esc(hhmm(tide.curve.at)) + '</div>' + tideSvg(tide.curve);
       $("cx-out").hidden = false; $("cx-copy").disabled = $("cx-save").disabled = false;
     } catch (e) { $("cx-err").textContent = "Couldn't get the conditions: " + e.message; $("cx-err").hidden = false; $("cx-out").hidden = true; }
     finally { $("cx-go").disabled = false; $("cx-go").textContent = "Get conditions"; }
