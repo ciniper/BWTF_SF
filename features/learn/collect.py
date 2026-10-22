@@ -39,22 +39,28 @@ from shared.zones import ZONES
 
 # ── The sites ───────────────────────────────────────────────────────────────────────────
 # Pins are Chase's (2026-10-18), as Google Maps writes them. ``station`` is the city's station at
-# the same beach (shared/stations.py), which gives the zone. ``tide`` is the
+# the same beach (shared/stations.py), which gives the zone. ``photos`` are Chase's (2026-10-08 / 10-22), resized to
+# 1600px under app/static/learn/sites/: the way in and the sampling spot, each with its caption. ``tide`` is the
 # NOAA prediction station nearest the beach. Parking notes are drafts: docs/learn_facts_to_check.md.
 SITES = [
     {"key": "ob-lincoln", "n": 1, "name": "Ocean Beach at Lincoln Way", "pin": "37°45'50.1\"N 122°30'42.0\"W", "station": "4605",
-     "tide": ("9414275", "Ocean Beach"), "sheltered": False, "photo": None,
+     "tide": ("9414275", "Ocean Beach"), "sheltered": False,
+     "photos": [("ob-lincoln-1.jpg", "The path over the dune at Lincoln Way, the beach sign on the right")],
      "parking": "Street parking on Lincoln Way and the avenues just inland. The Great Highway south of Lincoln is now "
                 "Sunset Dunes park, closed to cars."},
     {"key": "ob-vicente", "n": 2, "name": "Ocean Beach at Vicente St", "pin": "37°44'16.5\"N 122°30'29.6\"W", "station": "4603",
-     "tide": ("9414275", "Ocean Beach"), "sheltered": False, "photo": None,
+     "tide": ("9414275", "Ocean Beach"), "sheltered": False,
+     "photos": [("ob-vicente-1.jpg", "The way in: the Vicente St sign at the old Great Highway"),
+                ("ob-vicente-2.jpg", "The sampling spot: the concrete platform on the sand")],
      "parking": "Street parking on Vicente St and the nearby avenues, then walk across Sunset Dunes (the old Great Highway) "
                 "to the sand."},
     {"key": "china", "n": 3, "name": "China Beach", "pin": "37°47'17.4\"N 122°29'30.3\"W", "station": "4607",
-     "tide": ("9414290", "the Golden Gate"), "sheltered": False, "photo": None,
+     "tide": ("9414290", "the Golden Gate"), "sheltered": False, "photos": [],
      "parking": "A small free lot at the end of Sea Cliff Ave, above the beach; a path and stairs lead down."},
     {"key": "aquatic", "n": 4, "name": "Aquatic Park", "pin": "37°48'25.9\"N 122°25'22.3\"W", "station": "4613",
-     "tide": ("9414305", "North Point"), "sheltered": True, "photo": None,
+     "tide": ("9414305", "North Point"), "sheltered": True,
+     "photos": [("aquatic-1.jpg", "The way in: the ramp beside the bleachers, below Ghirardelli Square"),
+                ("aquatic-2.jpg", "The sampling spot: the cove's beach, Municipal Pier beyond")],
      "parking": "Metered street parking on Beach St, Van Ness Ave and around Ghirardelli Square; the Fort Mason lots "
                 "are a short walk west."},
 ]

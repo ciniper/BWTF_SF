@@ -137,7 +137,7 @@ def test_routes_render_and_refuse_bad_input():
     assert "{{" not in h and "{%" not in h and "<h1>Collect</h1>" in h and '<meta name="robots" content="noindex">' in h
     assert h.count('class="pick"') == 4 and h.count('class="sec site-card"') == 4 and h.count("https://www.google.com/maps/search/?api=1&amp;query=") == 4
     pressed = lambda page: re.findall(r'class="pick" data-site="([\w-]+)" aria-pressed="true"', page)
-    assert h.count("Photo of the sampling spot coming soon") == 4 and pressed(h) == []
+    assert h.count("Photo of the sampling spot coming soon") == 1 and h.count("learn/sites/") == 5 and pressed(h) == []   # China Beach's placeholder; five photos
     # pick a site first (2026-10-18): no site shows until one is picked; ?site= opens on one, the others stay hidden
     shown = lambda page: re.findall(r'<section class="sec site-card" data-site="([\w-]+)">', page)
     assert shown(h) == [] and '<section class="sec" id="sheet" hidden>' in h and 'id="pick-hint">' in h
@@ -148,6 +148,18 @@ def test_routes_render_and_refuse_bad_input():
     assert 'class="on" aria-current="page">Collect' in h and "coming soon" not in h.replace("Photo of the sampling spot coming soon", "")
     assert bad.status_code == 400 and json.loads(bad.data)["error"] == "unknown site"
     assert far.status_code == 400 and "last 90 days" in json.loads(far.data)["error"]
+
+
+def test_site_photos_exist_and_say_what_they_show():
+    """Chase's photos (2026-10-22): the way in and the sampling spot, resized under app/static/learn/sites/."""
+    for site in C.SITES:
+        for file, caption in site["photos"]:
+            path = ROOT / "app/static/learn/sites" / file
+            assert path.exists() and path.stat().st_size < 400_000, file          # web-sized, no 4 MB originals
+            assert caption and caption[0].isupper() and not caption.endswith("."), file
+    assert [len(s["photos"]) for s in C.SITES] == [1, 2, 0, 2]                       # China Beach still wants one
+    html = (ROOT / "app/templates/learn/collect.html").read_text()
+    assert "s.photos" in html and "figcaption" in html and "learn/sites/" in html and "s.photo }}" not in html
 
 
 if __name__ == "__main__":

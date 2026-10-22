@@ -33,10 +33,12 @@
   .howto[open] > summary{border-color:var(--brand);color:var(--brand)}
   .howto[open] > summary::after{transform:rotate(45deg);margin-top:-4px}
   .howto > .sec{margin:12px 0 0}
-  .site-top{display:grid;grid-template-columns:minmax(0,360px) minmax(0,1fr);gap:20px;align-items:start}
+  .site-top{display:grid;grid-template-columns:minmax(300px,480px) minmax(0,1fr);gap:20px;align-items:start}   /* a floor on the photo column: a two-photo grid has no intrinsic width to claim one */
   .site-card .photo{aspect-ratio:16/10;border-radius:var(--r);background:var(--sand2);display:grid;place-items:center;text-align:center;color:var(--faint);font-size:13px;padding:10px;border:1px solid var(--line)}
   .site-card .photo.slot{background:repeating-linear-gradient(135deg,var(--sand2) 0 10px,#f6f9fb 10px 20px)}
   .site-card img.photo{display:block;width:100%;object-fit:cover;padding:0}
+  .site-card .photos{display:grid;gap:10px} .site-card .photos.n2{grid-template-columns:1fr 1fr}
+  .site-card .photos figure{margin:0} .site-card .photos figcaption{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.35}
   .site-card h2{display:flex;gap:10px;align-items:center}
   .site-card .maps{display:inline-flex;align-items:center;gap:6px;margin:8px 0 2px}
   .site-card .maps .ic{width:15px;height:15px}
@@ -183,7 +185,7 @@
   {%- for s in sites %}
   <section class="sec site-card" data-site="{{ s.key }}"{% if s.key != picked %} hidden{% endif %}>
     <div class="site-top">
-      {%- if s.photo %}<img class="photo" src="{{ asset('learn/' ~ s.photo) }}" alt="The sampling spot at {{ s.name }}">
+      {%- if s.photos %}<div class="photos n{{ s.photos|length }}">{% for file, caption in s.photos %}<figure><img class="photo" src="{{ asset('learn/sites/' ~ file) }}" alt="{{ caption }}" loading="lazy"><figcaption>{{ caption }}</figcaption></figure>{% endfor %}</div>
       {%- else %}<div class="photo slot">Photo of the sampling spot coming soon</div>{% endif %}
       <div>
         <h2><span class="n">{{ s.n }}</span>{{ s.name }}</h2>
