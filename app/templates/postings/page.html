@@ -16,6 +16,8 @@
   .board{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:14px 18px;margin:0 0 16px;overflow-x:auto}
   .board h2{font-size:16px;margin:2px 0 10px;color:#26272a}
   .board h2 span{font-weight:600;color:#54576F;font-size:13px}
+  figure.sign{float:right;width:min(300px,42%);margin:0 0 10px 18px} figure.sign img{display:block;width:100%;height:auto;border-radius:10px} figure.sign figcaption{font-size:12px;color:#54576F;margin-top:5px;line-height:1.4} figure.sign a{color:#0072BC;font-weight:700}
+  @media (max-width:640px){figure.sign{float:none;width:100%;margin:0 0 12px}}
   table{border-collapse:collapse;width:100%;font-size:13.5px}
   th{text-align:left;color:#54576F;font-weight:700;padding:9px 10px 7px;border-bottom:2px solid #d9e4e8;white-space:nowrap}
   td{padding:8px 10px;border-bottom:1px solid #eef2f4;vertical-align:middle}
@@ -116,6 +118,7 @@
   </div>
 
   <div class="notes" id="notes">
+    <figure class="sign"><img src="{{ asset('postings/sfpuc_posted_sign.jpg') }}" alt="A worker hangs a yellow notice sign with a no-swimming symbol at the shore" width="300" height="225" loading="lazy"><figcaption>A beach posting going up. Photo: <a href="https://www.sfpuc.gov/programs/ocean-and-beach-monitoring" target="_blank" rel="noopener">SFPUC, Ocean and Beach Monitoring</a></figcaption></figure>
     <h2>Reading these numbers</h2>
     <b>A posting</b> is one station-advisory: a sign up at one station from the posted date through the reopened date, both
     inclusive, so a same-day post-and-reopen counts as one posted day. <b>Days with any posting</b> counts a calendar day once

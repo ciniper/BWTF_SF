@@ -51,7 +51,7 @@ SITES = [
     {"key": "ob-vicente", "n": 2, "name": "Ocean Beach at Vicente St", "pin": "37°44'16.5\"N 122°30'29.6\"W", "station": "4603",
      "tide": ("9414275", "Ocean Beach"), "sheltered": False,
      "photos": [("ob-vicente-1.jpg", "The way in: the Vicente St sign at the old Great Highway"),
-                ("ob-vicente-2.jpg", "The sampling spot: the concrete platform on the sand")],
+                ("ob-vicente-2.jpg", "The sampling spot: the surf straight out from the concrete platform")],
      "parking": "Street parking on Vicente St and the nearby avenues, then walk across Sunset Dunes (the old Great Highway) "
                 "to the sand."},
     {"key": "china", "n": 3, "name": "China Beach", "pin": "37°47'17.4\"N 122°29'30.3\"W", "station": "4607",
