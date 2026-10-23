@@ -45,13 +45,15 @@ from shared.zones import ZONES
 SITES = [
     {"key": "ob-lincoln", "n": 1, "name": "Ocean Beach at Lincoln Way", "pin": "37°45'50.1\"N 122°30'42.0\"W", "station": "4605",
      "tide": ("9414275", "Ocean Beach"), "sheltered": False,
-     "photos": [("ob-lincoln-1.jpg", "The path over the dune at Lincoln Way, the beach sign on the right")],
+     "photos": [("ob-lincoln-1.jpg", "The way in: the path over the dune at Lincoln Way, the beach sign on the right"),
+                ("ob-lincoln-2.jpg", "The Lincoln outfall and its pool; the sampling spot is the surf straight out from it")],
      "parking": "Street parking on Lincoln Way and the avenues just inland. The Great Highway south of Lincoln is now "
                 "Sunset Dunes park, closed to cars."},
     {"key": "ob-vicente", "n": 2, "name": "Ocean Beach at Vicente St", "pin": "37°44'16.5\"N 122°30'29.6\"W", "station": "4603",
      "tide": ("9414275", "Ocean Beach"), "sheltered": False,
      "photos": [("ob-vicente-1.jpg", "The way in: the Vicente St sign at the old Great Highway"),
-                ("ob-vicente-2.jpg", "The sampling spot: the surf straight out from the concrete platform")],
+                ("ob-vicente-2.jpg", "The Vicente outfall, the concrete platform on the sand"),
+                ("ob-vicente-3.jpg", "The sampling spot: the surf straight out from the outfall")],
      "parking": "Street parking on Vicente St and the nearby avenues, then walk across Sunset Dunes (the old Great Highway) "
                 "to the sand."},
     {"key": "china", "n": 3, "name": "China Beach", "pin": "37°47'17.4\"N 122°29'30.3\"W", "station": "4607",
