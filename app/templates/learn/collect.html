@@ -39,6 +39,10 @@
   .site-card img.photo{display:block;width:100%;object-fit:cover;padding:0}
   .site-card .photos{display:grid;gap:10px} .site-card .photos.n2{grid-template-columns:1fr 1fr} .site-card .photos.n3{grid-template-columns:1fr 1fr 1fr}
   .site-card .photos figure{margin:0} .site-card .photos figcaption{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.35}
+  .site-card .zoom{display:block;width:100%;padding:0;border:0;background:none;cursor:zoom-in;border-radius:var(--r)} .site-card .zoom:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+  .lightbox{position:fixed;inset:0;z-index:80;background:rgba(20,24,28,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px;cursor:zoom-out}
+  .lightbox[hidden]{display:none} .lightbox img{max-width:min(1200px,100%);max-height:82vh;border-radius:12px;display:block}
+  .lightbox p{color:#fff;font-size:14px;margin:12px 0 0;text-align:center;max-width:720px} .lightbox .close{position:absolute;top:14px;right:16px;border:0;background:rgba(255,255,255,.14);color:#fff;border-radius:999px;padding:8px 14px;font:700 14px Roboto,sans-serif;cursor:pointer}
   .site-card h2{display:flex;gap:10px;align-items:center}
   .site-card .maps{display:inline-flex;align-items:center;gap:6px;margin:8px 0 2px}
   .site-card .maps .ic{width:15px;height:15px}
@@ -182,10 +186,11 @@
   </section>
   </details>
 
+  <div class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Photo"><button type="button" class="close">Close ×</button><img alt=""><p></p></div>
   {%- for s in sites %}
   <section class="sec site-card" data-site="{{ s.key }}"{% if s.key != picked %} hidden{% endif %}>
     <div class="site-top">
-      {%- if s.photos %}<div class="photos n{{ s.photos|length }}">{% for file, caption in s.photos %}<figure><img class="photo" src="{{ asset('learn/sites/' ~ file) }}" alt="{{ caption }}" loading="lazy"><figcaption>{{ caption }}</figcaption></figure>{% endfor %}</div>
+      {%- if s.photos %}<div class="photos n{{ s.photos|length }}">{% for file, caption in s.photos %}<figure><button type="button" class="zoom" aria-label="Larger view: {{ caption }}"><img class="photo" src="{{ asset('learn/sites/' ~ file) }}" alt="{{ caption }}" loading="lazy"></button><figcaption>{{ caption }}</figcaption></figure>{% endfor %}</div>
       {%- else %}<div class="photo slot">Photo of the sampling spot coming soon</div>{% endif %}
       <div>
         <h2><span class="n">{{ s.n }}</span>{{ s.name }}</h2>
@@ -299,6 +304,14 @@
     if (e.key === "Enter") { e.preventDefault(); commit(e.target.closest(".cx").dataset.k); }
     if (e.key === "Escape") { editing = null; render(); }
   });
+
+  const lb = $("lightbox"), lbImg = lb.querySelector("img"), lbCap = lb.querySelector("p");   // a photo tapped opens large, with its caption
+  document.addEventListener("click", e => {
+    const z = e.target.closest(".site-card .zoom");
+    if (z) { const im = z.querySelector("img"); lbImg.src = im.currentSrc || im.src; lbImg.alt = im.alt; lbCap.textContent = im.alt; lb.hidden = false; lb.querySelector(".close").focus(); return; }
+    if (!lb.hidden && (e.target === lb || e.target.closest(".lightbox .close") || e.target === lbImg)) lb.hidden = true;
+  });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && !lb.hidden) lb.hidden = true; });
 
   async function load() {
     if (!site) return;
