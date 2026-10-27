@@ -148,8 +148,8 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
 .site-footer .in{max-width:var(--page-w);margin:0 auto;padding:0 24px}
 .site-footer .cols{display:flex;justify-content:space-between;align-items:flex-start;gap:20px 40px;flex-wrap:wrap}
 .site-footer .who p,.site-footer .reach p{margin:0}
-.site-footer .footer-logo{display:inline-block;background:#fff;border-radius:8px;padding:5px 10px;margin:0 0 10px}   /* Surfrider's colours as shipped, on a small white tile */
-.site-footer .footer-logo img{display:block;height:26px;width:auto}
+.site-footer .footer-logo{display:inline-block;background:#fff;border-radius:8px;padding:7px 10px;margin:0 0 10px}   /* the chapter's black logo (brand/surfrider_sf.png, transparent, 3x) on a small white tile */
+.site-footer .footer-logo img{display:block;height:52px;width:auto}   /* SAN FRANCISCO stays readable */
 .site-footer .org{color:#fff;font-weight:700}
 .site-footer .footer-note{color:rgba(255,255,255,.7)}   /* footer- prefix on note, hotline, links, sources: pages have their own .note/.links/.sources/.hotline rules, and those restyled the footer on About, Discharges, Signup, Forecast, Manage and Alerts (2026-09-30) */
 .site-footer .reach{text-align:right}

@@ -62,7 +62,6 @@ from features.comparison.page import ComparisonRoutes
 from shared.datasf import DATASET_PAGE_URL
 from shared.basemap import basemap
 from shared import lineup, risk_levels
-from features.alerts.cso_alerts import SURFRIDER_LOGO_URL
 from features.alerts.monitoring import CombinedWaterQualityMonitor
 from features.alerts.subscriptions import SubscriptionStore
 from features.alerts.cso_alerts import SimulatedCSOStore
@@ -289,7 +288,6 @@ def _report_view(name: str):
 def create_app():
     app = Flask(__name__)
     app.jinja_env.globals["DATASF_DATASET_URL"] = DATASET_PAGE_URL  # shared/datasf.py
-    app.jinja_env.globals["SURFRIDER_LOGO_URL"] = SURFRIDER_LOGO_URL
     app.jinja_env.globals["BASEMAP"] = basemap()  # shared/basemap.py: the one tile layer every map draws
     app.jinja_env.globals["RISK_LEVELS"] = risk_levels.export()   # shared/risk_levels.py: Low / Medium / High / Extreme on every page (Chase, 2026-10-01)
     # Vercel Web Analytics + Speed Insights: production only (_frame.html vercel_insights; enable both in the dashboard)
