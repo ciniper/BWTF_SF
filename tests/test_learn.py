@@ -85,13 +85,14 @@ def test_page_renders_its_sections_and_has_its_own_tab():
     for sec in ('id="rain"', 'id="above"', 'id="bugs"', 'id="count"', 'id="record"', 'id="history"'):
         assert sec in h and 'href="#' + sec[4:-1] + '"' in h, sec                                           # each section, and its jump link
     assert 'id="sys-map"' in h and "unpkg.com/leaflet" not in h.split("<script>")[0]                          # Leaflet waits for the map
-    assert 'id="qt-skip"' in h and 'id="qt-after"' in h and 'id="tl-more"' in h and 'id="drops-heavy"' in h
-    assert h.count('class="stop ') == len(P.TIMELINE) and h.count('<article class="qt-step"') == 8 and h.count('<figure') >= 8
+    assert 'id="qt-after"' in h and 'id="tl-more"' in h and 'id="drops-heavy"' in h
+    assert h.count('class="stop ') == len(P.TIMELINE) and h.count('<article class="pstep"') == 8 and h.count('<figure') >= 8
+    assert h.count('<section class="phase"') == 4 and h.count('class="kart"') == 8 and h.count('class="kof"') == len(P._system()["outfalls"])   # Kyle's phases, drawings and map
     assert h.index('id="count"') < h.index('id="tray"') < h.index('id="record"')                           # the hands-on tray follows the story
     assert h.count('class="bug"') == 4 and 'id="tray"' in h and 'id="ch-post"' in h and 'id="ch-csd"' in h
     # Kyle's reskin (2026-11-01): a numbered band on each section, four rain stages for the slider, the grades in the site's colours
     assert h.count('<header class="sec-head">') == 6 and 'id="tracker"' in h and 'id="rain-r"' not in h
-    assert f"Under {P.ENTERO_CAUTION} per 100 mL" in h and 'class="g-caution"' in h and "#8932d3" not in h   # amber caution, never Kyle's purple
+    assert f"Under {P.ENTERO_CAUTION} per 100 mL" in h and 'class="g-caution"' in h
     assert 'id="archive"' not in h and 'id="compare"' not in h                                             # the then-and-now placeholder is gone (2026-10-20)
     assert '<meta name="robots" content="noindex">' in h and "prefers-reduced-motion:reduce" in h        # out of search; motion respects the setting
     learn = next(h2 for h2 in nav_model() if h2["key"] == "learn")

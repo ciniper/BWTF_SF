@@ -20,9 +20,10 @@
   .sec{background:#fff;border:1px solid var(--k-line);border-left:14px solid var(--k-sky);border-radius:0 8px 8px 0;padding:0 28px 26px;margin:0 0 18px;scroll-margin-top:80px;color:var(--k-ink)}
   .sec-head{display:flex;align-items:stretch;min-height:54px;margin:0 -28px 22px;background:var(--k-tint)}   /* the numbered band across the top of each section */
   .sec-no{flex:none;width:101px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;padding:0 12px 0 8px;background:var(--k-blue)}
-  .sec-no svg{flex:none;width:40px;height:40px}
+  .sec-no svg{flex:none;width:40px;height:40px} .sec-no img{flex:none;width:46px;height:46px;object-fit:contain}
+  .sec-head .shield{flex:none;width:43px;height:51px;object-fit:contain;margin:1px 6px 0 12px;align-self:center}   /* Kyle's BWTF shield, on every band */
   .sec-no b{font:400 50.67px/.85 'Bebas Neue',Impact,sans-serif;color:#26272a;padding-top:6px}
-  .sec-tt{align-self:center;padding:8px 20px}
+  .sec-tt{flex:1;min-width:0;align-self:center;padding:8px 20px}
   .eyebrow{display:block;margin:0;font-size:10px;line-height:1.4;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--k-navy)}
   .sec h2{margin:0;font:700 23px/1.1 'Roboto','Segoe UI',Arial,sans-serif;color:var(--k-navy)}
   .sec .sub{color:var(--k-muted);margin:0 0 18px;max-width:760px;line-height:1.45} .sec .sub b{font-weight:500;color:var(--k-ink)}
@@ -42,8 +43,8 @@
   .k b{font:400 40px/.85 'Bebas Neue',Impact,sans-serif;color:var(--num,var(--k-blue));padding-top:2px}
   .stepc .k{border:1px solid var(--k-line);border-width:1px 0}
   .stepc > div{flex:1;min-width:0;background:#fff;border:1px solid var(--k-line);border-left:0;border-radius:0 6px 6px 0;padding:13px 17px}
-  .stepc h3,.qt-cap h3{margin:0 0 4px;font-size:19px;line-height:1.2;font-weight:700;color:var(--k-ink)}
-  .stepc p,.qt-cap p{margin:0;font-size:15px;line-height:1.4;color:var(--k-muted)} .stepc p b{font-weight:500;color:var(--k-ink)}
+  .stepc h3{margin:0 0 4px;font-size:19px;line-height:1.2;font-weight:700;color:var(--k-ink)}
+  .stepc p{margin:0;font-size:15px;line-height:1.4;color:var(--k-muted)} .stepc p b{font-weight:500;color:var(--k-ink)}
 
   /* ── 1. Where the rain goes ── */
   .rain-row{display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px;margin:0 0 16px}
@@ -93,25 +94,25 @@
   .m{animation:drift var(--d,7s) ease-in-out infinite alternate;transform-box:fill-box;transform-origin:center}
   @keyframes drift{0%{transform:translate(0,0) rotate(0)}50%{transform:translate(var(--dx,6px),var(--dy,-5px)) rotate(var(--r,12deg))}100%{transform:translate(calc(var(--dx,6px)*-1),var(--dy,4px)) rotate(calc(var(--r,12deg)*-1))}}
 
-  /* ── Try it yourself: the controls and the reading beside a front view of the tray, the three grades under both ── */
-  .lab{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;margin:24px 0 0}
+  /* ── Try it yourself, on Kyle's phase-4 board: purple, and his grade colours (caution purple, not the site's amber) ── */
+  .lab{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;margin:28px 0 0;--p-stripe:#c680ff;--p-ink:#5c0ba3;--p-accent:#8932d3;--p-tint:#f1e8fa}
   .lab-ctl{display:flex;flex-direction:column;gap:12px}
-  .lab-intro{display:flex;align-items:stretch} .lab-intro::before{content:"";flex:none;width:8px;background:var(--k-sky);border-radius:6px 0 0 6px}
+  .lab-intro{display:flex;align-items:stretch} .lab-intro::before{content:"";flex:none;width:8px;background:var(--p-stripe);border-radius:6px 0 0 6px}
   .lab-intro > div{flex:1;border:1px solid var(--k-line);border-left:0;border-radius:0 6px 6px 0;padding:13px 17px}
   .lab-intro h3{margin:0 0 8px;font-size:19px;line-height:1.2;font-weight:700;color:var(--k-ink)}
   .lab-intro p{margin:0;font-size:15px;line-height:1.4;color:var(--k-muted)}
-  .lab-ctl .eyebrow{letter-spacing:.14em}
+  .lab-ctl .eyebrow{letter-spacing:.14em;color:var(--p-ink)}
   .conc{font-size:24px;line-height:1.1;font-weight:700;letter-spacing:.05em;color:#26272a} .conc span{font-size:15px;font-weight:400;letter-spacing:0;color:var(--k-ink)}
-  .lab-ctl input[type=range]{width:100%;margin:0;accent-color:var(--k-navy)}
-  #resample{align-self:flex-start}
+  .lab-ctl input[type=range]{width:100%;margin:0;accent-color:var(--p-accent)}
+  #resample{align-self:flex-start;border-color:var(--p-ink);color:var(--p-ink)}
   .reading{display:flex;flex-direction:column;gap:10px;margin-top:auto;font-size:15px;line-height:1.4}
-  .result{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:58px;padding:8px 12px 8px 19px;box-sizing:border-box;border-left:5px solid var(--gb);background:var(--gt)}
+  .result{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:58px;padding:8px 12px 8px 19px;box-sizing:border-box;border-left:5px solid var(--gb);background:var(--gt);color:var(--gi)}
   .result .eyebrow{color:var(--gi);letter-spacing:.14em} .result b{display:block;font-size:24px;line-height:1.1;font-weight:700;letter-spacing:.05em;color:#26272a}
   .reading .note{font-size:13px;line-height:1.3;font-weight:500;color:var(--k-muted)}
-  .chip{display:inline-flex;align-items:center;height:23px;padding:0 11.5px;border-radius:12px;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#fff;background:var(--gc);white-space:nowrap}
-  .g-safe{--gb:var(--safe);--gt:#d9efe6;--gi:#1d5c46;--gc:var(--safe)} .g-caution{--gb:var(--caution);--gt:#fbeccd;--gi:#7a5200;--gc:#7a5200} .g-over{--gb:var(--discharge);--gt:#f6d6cc;--gi:#8a2a0c;--gc:var(--discharge)}   /* the site's grades: amber caution, as on Today (Chase, 2026-11-01) */
+  .chip{display:inline-flex;align-items:center;height:23px;padding:0 11.5px;border-radius:12px;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#fff;background:var(--gb);white-space:nowrap}
+  .g-safe{--gb:#0f6e56;--gt:#e1f5ee;--gi:#04342c} .g-caution{--gb:#8932d3;--gt:#f1e8fa;--gi:#2a0044} .g-over{--gb:#d15c5c;--gt:#fcebeb;--gi:#2c2c2a}   /* Kyle's grades */
   .lab-tray{display:flex;flex-direction:column;gap:10px}
-  .tray-box{flex:1;display:flex;align-items:center;justify-content:center;padding:18px;background:var(--k-tint);border:1px solid var(--k-line);border-radius:8px}
+  .tray-box{flex:1;display:flex;align-items:center;justify-content:center;padding:18px;background:var(--p-tint);border:1px solid var(--k-line);border-radius:8px}
   .tray{display:block;width:244px;max-width:100%;height:auto}
   .well{fill:#fff;stroke:#26272a;stroke-width:1.5;transition:fill .35s}
   .well.on{fill:#368add}
@@ -120,40 +121,29 @@
   .bands{grid-column:1/-1;display:flex;gap:10px;margin:0;padding:0;list-style:none}
   .bands li{flex:1;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:58px;padding:0 12px 0 19px;border-left:5px solid var(--gb);background:var(--gt);color:var(--gi);font-size:15px;line-height:1.35}
 
-  /* ── 4. How the lab counts ── */
-  .qt{position:relative;margin:2px 0 0}
-  .qt-pin{display:flex;flex-direction:column;justify-content:center;gap:10px}
-  .qt.pinned .qt-pin{position:sticky;top:8px}
-  .qt-view{overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;border:1px solid var(--k-line);border-radius:8px;background:#fff}
-  .qt.pinned .qt-view{overflow:hidden;scroll-snap-type:none}
-  .qt-track{position:relative;display:flex;align-items:stretch}
-  .qt-step,.qt-intro{flex:none;width:var(--pw,620px);box-sizing:border-box;scroll-snap-align:center;display:flex;flex-direction:column}
-  .qt-step + .qt-step{box-shadow:inset 1px 0 0 rgba(0,0,0,.06)}
-  .qt-intro{width:var(--iw,620px);justify-content:center;padding:28px 40px;background:var(--k-tint)}   /* fixed padding: a % would read the whole track's width */
-  .qt-intro > *{max-width:640px}
-  .qt-intro h3{font:700 23px/1.15 'Roboto','Segoe UI',Arial,sans-serif;color:var(--k-navy);margin:0 0 8px}
-  .qt-intro p{margin:0 0 14px;color:var(--k-muted);max-width:52ch}
-  .qt-route{list-style:none;margin:0 0 16px;padding:0;display:flex;flex-wrap:wrap;gap:8px}
-  .qt-route li{display:flex;align-items:center;gap:7px;background:#fff;border:1px solid var(--k-line);border-radius:999px;padding:4px 12px 4px 4px;font-size:13px;font-weight:700}
-  .qt-route b{flex:none;width:22px;height:22px;border-radius:50%;background:var(--k-navy);color:#fff;font:400 15px/1 'Bebas Neue',Impact,sans-serif;padding-top:2px;box-sizing:border-box;display:grid;place-items:center}
-  .qt-hint{font-weight:700;color:var(--k-navy)!important;margin:0!important}
-  .qt.pinned .qt-hint::after{content:"→";display:inline-block;margin-left:8px;animation:nudge 1.2s ease-in-out infinite alternate}
-  @keyframes nudge{to{transform:translateX(8px)}}
-  .qt-art{display:block;width:100%;height:auto} .qt-art .lbl{font-size:var(--fs)}
-  .qt-cap{flex:1;display:flex;align-items:stretch;border-top:1px solid var(--k-line)}   /* Kyle's step card: the tinted STEP number, then the words */
-  .qt-cap .k{border-right:1px solid var(--k-line)} .qt-cap > div{flex:1;min-width:0;padding:12px 16px 14px}
-  .qt-nav{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px 10px}
-  .qt-nav .btn{min-height:40px;padding:0 16px;font-size:15px}
-  .qt-skip{margin-left:6px;font-size:13px;font-weight:700;color:var(--k-navy);text-decoration:none;white-space:nowrap} .qt-skip:hover{text-decoration:underline}
+  /* ── 4. How the lab counts: Kyle's four phases, each with its own colours (the Lab SOP's), one shown at a time ── */
+  #count{border-left-color:var(--sec-stripe,var(--k-sky));transition:border-color .3s}
+  .phase{margin:0}
+  .ph-band{display:flex;align-items:stretch;min-height:54px;background:var(--ph-band);margin:0 0 20px}
+  .ph-no{flex:none;width:101px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;padding:0 12px 0 5px;background:var(--ph-block)}
+  .ph-no img{width:46px;height:46px;object-fit:contain} .ph-no b{font:400 50.67px/.85 'Bebas Neue',Impact,sans-serif;color:#26272a;padding-top:6px}
+  .ph-tt{flex:1;min-width:0;align-self:center;padding:8px 20px}
+  .ph-tt .eyebrow{color:var(--ph-eye)} .ph-tt h3{margin:0;font-size:23px;line-height:1.1;font-weight:700;color:var(--ph-title)}
+  .ph-track{display:flex;align-items:flex-start;padding-top:12px}
+  .ph-track button{width:71.25px;padding:0 1px;border:0;background:none;cursor:pointer;font-family:inherit;text-align:center}
+  .ph-track .bar{display:block;height:6px;border-radius:3px;margin:0 1px 4px;background:var(--lo)}
+  .ph-track .lb{display:block;font-size:11.66px;line-height:1.4;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--lo)}
+  .ph-track [aria-pressed=true] .bar{background:var(--hi)} .ph-track [aria-pressed=true] .lb{color:var(--hi);font-size:14.25px}
+  .ph-track button:focus-visible{outline:3px solid var(--k-navy);outline-offset:2px}
+  .ph-band .shield{flex:none;width:43px;height:51px;object-fit:contain;margin:1px 6px 0 12px;align-self:center}
+  .ph-cols{display:flex;gap:10px}
+  .pstep{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px}
+  .ph-art{flex:none;box-sizing:border-box;background:var(--ph-tint);border:1px solid var(--k-line);border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:6px}
+  .kart{display:block;width:100%;height:100%}
+  .pstep .stepc{flex:1;--bar:var(--ph-bar);--tint:var(--ph-tint);--num:var(--ph-num)} .pstep .k{width:90px} .pstep .k small{color:#888780}
+  .pstep .stepc h3{margin:0 0 8px}
+  .ph-nav{display:flex;justify-content:space-between;gap:10px;margin:16px 0 0}
   #qt-after{scroll-margin-top:16px}
-  .qt-dots{display:flex}
-  .qt-dots button{width:22px;height:22px;border:0;padding:0;background:none;cursor:pointer;display:grid;place-items:center}
-  .qt-dots button::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--k-sky);transition:transform .2s,background .2s}
-  .qt-dots button.on::before{background:var(--k-navy);transform:scale(1.35)}
-  .cw{animation:jig 2.2s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:center}
-  @keyframes jig{from{transform:rotate(var(--rot,0deg)) translate(-.8px,.4px)}to{transform:rotate(calc(var(--rot,0deg) + 35deg)) translate(.8px,-.8px)}}
-  .qt-wave{animation:wave 3.6s ease-in-out infinite alternate}
-  @keyframes wave{from{transform:translateX(-34px)}to{transform:translateX(12px)}}
 
   /* ── 5. The record, in motion ── */
   .charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(420px,100%),1fr));gap:18px}
@@ -172,33 +162,17 @@
   .play-row output{font-size:24px;line-height:1.1;font-weight:700;letter-spacing:.05em;color:#26272a}
   #sys-count{font-size:15px;color:var(--k-ink)} #sys-count b{font-weight:700}
   #sys-sum{margin-left:auto;font-size:13px;font-weight:500;color:var(--k-muted)}
-  .sys-map{position:relative;z-index:0;height:540px;border:1px solid var(--k-line);border-radius:8px;background:var(--k-tint);display:grid;place-items:center;overflow:hidden}
-  .sys-map.leaflet-container{display:block}
-  .mflow{stroke-dasharray:6 12}
-  .of-ico{border-radius:50%;background:#fff;border:1.5px solid #26272a;box-sizing:border-box;transition:background .25s}
-  .of-ico.on{background:#d15c5c}
-  .of-ico.on::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid #d15c5c;animation:ping 1.4s ease-out infinite}
-  @keyframes ping{from{transform:scale(1);opacity:.9}to{transform:scale(2.8);opacity:0}}
-  .pl-ico{background:#95cdeb;border:2px solid #26272a;border-radius:3px;box-sizing:border-box}
-  .leaflet-tooltip.pl-tip{font:700 12px Roboto,sans-serif;padding:2px 7px;cursor:pointer}
-  .pl-pop{margin:0} .pl-pop img{display:block;width:260px;height:170px;object-fit:cover;border-radius:8px;background:#dfe7ec}
-  .pl-pop figcaption{margin:8px 0 0;font-size:13px;line-height:1.4} .pl-pop small{display:block;margin-top:4px;color:var(--faint);font-size:11.5px}
-  .mflow.art{stroke-dasharray:4 10}
-  .leaflet-popup-content{font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:13px;line-height:1.45}
+  .sys-map{border:1px solid var(--k-line);border-radius:8px;overflow:hidden;background:var(--k-tint)}   /* Kyle's drawing of the system, not a map */
+  .kmap{display:block;width:100%;height:auto}
+  .kof{transition:fill .25s,r .25s} .kof.on{fill:#d15c5c}
+  .kof title{pointer-events:none}
   .strip{margin:10px 0 0}
   .strip svg{display:block;width:100%;height:60px;background:var(--k-red-t);border-radius:6px}
   .strip input{display:block;width:100%;margin:4px 0 0;accent-color:var(--k-blue)}
   .strip-ends{display:flex;justify-content:space-between;gap:10px;font-size:13px;font-weight:500;color:var(--k-muted)}
   .swatches{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:13px;line-height:1.3;font-weight:500;color:var(--k-muted);margin:6px 0 0}
   .swatches i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
-  .map-key{margin:12px 0 0} .map-key span{display:inline-flex;align-items:center} .map-key i{vertical-align:middle}
-  .map-key i.k-art{width:24px;height:2px;border-radius:0;background:repeating-linear-gradient(90deg,#888780 0 4px,transparent 4px 9px)}
-  .map-key i.k-ring{width:24px;height:6px;background:#5f5e5a;opacity:.75;border-radius:3px}
-  .map-key i.k-main{width:24px;height:3px;border-radius:0;background:repeating-linear-gradient(90deg,#5f5e5a 0 6px,transparent 6px 11px)}
-  .map-key i.k-out{width:24px;height:4px;background:#0f6e56}
-  .map-key i.k-pl{width:13px;height:13px;background:#95cdeb;border:2px solid #26272a;border-radius:3px;box-sizing:border-box}
-  .map-key i.k-of{width:11px;height:11px;border-radius:50%;background:#fff;border:1.5px solid #26272a;box-sizing:border-box}
-  .map-key i.k-on{width:14px;height:14px;border-radius:50%;background:#d15c5c;border:1.5px solid #26272a;box-sizing:border-box}
+  .map-key{margin:12px 0 0}
 
   /* ── 6. A century and a half ── */
   .tl{position:relative;margin:6px 0 12px}
@@ -231,17 +205,18 @@
   @media (max-width:760px){.scene-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}.scene{min-width:680px}.swipe{display:block}.caption{flex-direction:column;align-items:flex-start;gap:6px}   /* the numbers stay legible on a phone; the caption stacks under its label */
     .wrap{padding:14px 14px 30px}.sec{padding:0 16px 18px;border-left-width:8px}.sec-head{margin:0 -16px 16px;min-height:50px}.sec-no{width:80px;padding:0 8px 0 6px}.sec-no svg{width:30px;height:30px}.sec-no b{font-size:40px}.sec-tt{padding:7px 14px}.sec h2{font-size:20px}
     .tracker{width:100%}.tracker button{flex:1;width:auto;min-width:0}.tracker .lb,.tracker [aria-pressed=true] .lb{font-size:11px;letter-spacing:.03em}.rain-row .btn{margin-left:0}
-    .steps{grid-template-columns:1fr}.k{width:58px}.k b{font-size:34px}.stepc > div{padding:11px 13px}.stepc h3,.qt-cap h3{font-size:17px}.stepc p,.qt-cap p{font-size:14px}
+    .steps{grid-template-columns:1fr}.k{width:58px}.k b{font-size:34px}.stepc > div{padding:11px 13px}.stepc h3{font-size:17px}.stepc p{font-size:14px}
     .bug{flex-direction:column}.bug::before{width:auto;height:8px;border-radius:6px 6px 0 0}.bug .look{width:auto;flex-direction:row;justify-content:flex-start;gap:14px;border-width:0 1px;padding:12px 14px}.bug .scope{width:92px;height:92px}.bug .look > span{text-align:left}
     .bug-body{border-left:1px solid var(--k-line);border-radius:0 0 6px 6px;padding:14px 16px}.bug-grid{grid-template-columns:1fr;gap:12px}
     .lab{grid-template-columns:1fr}.tray-box{padding:14px}.tray{width:200px}.bands{flex-direction:column}
-    .sys-map{height:440px}#sys-sum{margin-left:0;flex-basis:100%}.play-row output{font-size:20px}.strip-ends span:nth-child(2){display:none}
+    .ph-band{flex-wrap:wrap;margin:0 0 14px}.ph-no{width:80px;padding:0 8px 0 4px}.ph-no img{width:34px;height:34px}.ph-no b{font-size:40px}.ph-tt{padding:7px 12px}.ph-tt h3{font-size:19px}
+    .ph-band .shield{display:none}.ph-track{flex-basis:100%;padding:8px 8px 6px;background:#fff}.ph-track button{flex:1;width:auto}.ph-track .lb,.ph-track [aria-pressed=true] .lb{font-size:11px}
+    .ph-cols{flex-direction:column;gap:16px}.ph-art{height:auto!important;aspect-ratio:600/340}.pstep .k{width:64px}.ph-nav .btn{padding:0 14px;font-size:12px}
+    .sec-head .shield{width:32px;height:38px;margin:0 8px 0 4px}
+    #sys-sum{margin-left:0;flex-basis:100%}.play-row output{font-size:20px}.strip-ends span:nth-child(2){display:none}
     .tl .rail{left:9px;margin-left:0}.tl .stop,.tl .stop:nth-child(even){width:auto;margin-left:0;padding:0 0 14px 34px}.tl .stop + .stop{margin-top:0}
     .tl .dot,.tl .stop:nth-child(even) .dot{left:2px;right:auto}.tl.js .card,.tl.js .stop:nth-child(even) .card{transform:translateY(16px)}
-    .qt-view{margin:0 -16px;border-radius:0;border-left:0;border-right:0}.qt-art .lbl{font-size:calc(var(--fs) * 1.35)}   /* across the card's padding, up to its stripe; labels legible */
-    .qt-skip{flex-basis:100%;text-align:center;margin:0}
-    .qt-intro{padding:18px}.qt-intro h3{font-size:21px}.qt-cap > div{padding:10px 12px 12px}}
-  @media (prefers-reduced-motion:reduce){.drop,.m,.of-ico.on::after,.cw,.qt-wave,.cloud > g{animation:none!important}.puff{animation:none!important;transform:translate(calc(var(--dx) * .5),0) scale(1.4);opacity:.5}.tl .dot{transition:none!important}.chart .bar,.well{transition:none!important}}
+  @media (prefers-reduced-motion:reduce){.drop,.m,.cloud > g{animation:none!important}.puff{animation:none!important;transform:translate(calc(var(--dx) * .5),0) scale(1.4);opacity:.5}.tl .dot{transition:none!important}.chart .bar,.well{transition:none!important}}
 </style>
 </head>
 <body>
@@ -254,7 +229,7 @@
   "tray": '<rect x="8" y="5" width="24" height="31" rx="4" fill="#fff" stroke="#26272a" stroke-width="2.2"/><g stroke="#26272a" stroke-width="1.4"><rect x="12" y="10" width="6" height="6" rx="1.5" fill="#95cdeb"/><rect x="22" y="10" width="6" height="6" rx="1.5" fill="#fff"/><rect x="12" y="19" width="6" height="6" rx="1.5" fill="#fff"/><rect x="22" y="19" width="6" height="6" rx="1.5" fill="#95cdeb"/></g><path d="M13 30.5 H27" stroke="#26272a" stroke-width="1.6" stroke-dasharray="2 2"/>',
   "bars": '<path d="M6 34 H34" stroke="#26272a" stroke-width="2.2" stroke-linecap="round"/><g fill="#95cdeb" stroke="#26272a" stroke-width="2"><rect x="9" y="20" width="6" height="14"/><rect x="17" y="9" width="6" height="25"/><rect x="25" y="15" width="6" height="19"/></g>',
   "clock": '<circle cx="20" cy="20" r="14" fill="#95cdeb" stroke="#26272a" stroke-width="2.2"/><path d="M20 11 V20 L26 24" fill="none" stroke="#26272a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>'} -%}
-<header class="sec-head"><span class="sec-no" aria-hidden="true"><svg viewBox="0 0 40 40">{{ ICONS[icon]|safe }}</svg><b>{{ n }}</b></span><div class="sec-tt"><span class="eyebrow">Learn · {{ eyebrow }}</span><h2 id="{{ key }}-h">{{ title }}</h2></div></header>
+<header class="sec-head"><span class="sec-no" aria-hidden="true">{% if icon.endswith(('.png', '.svg')) %}<img src="{{ asset(icon) }}" alt="">{% else %}<svg viewBox="0 0 40 40">{{ ICONS[icon]|safe }}</svg>{% endif %}<b>{{ n }}</b></span><div class="sec-tt"><span class="eyebrow">Learn · {{ eyebrow }}</span><h2 id="{{ key }}-h">{{ title }}</h2></div><img class="shield" src="{{ asset('learn/kyle/bwtf_shield.svg') }}" alt="Surfrider Blue Water Task Force"></header>
 {%- endmacro %}
 {% set k = 1 if system else 0 %}
 {{ topbar() }}
@@ -287,8 +262,8 @@
         <rect x="0" y="0" width="960" height="440" fill="#e6f1fb"/>
         <rect id="sky-dim" x="0" y="0" width="960" height="200" fill="#042c53" opacity="0"/>
         <g id="clouds" opacity="0">
-          {% for x, y, s in [(70, 40, 1.0), (270, 30, 1.2), (470, 44, 0.95), (650, 28, 1.15), (860, 42, 1.05)] %}
-          <g class="cloud" style="--cd:{{ 9 + loop.index * 2 }}s" transform="translate({{ x }} {{ y }}) scale({{ s }})"><g><path d="M-44 18 C-62 18 -62 -6 -42 -6 C-40 -26 -10 -30 0 -14 C10 -30 40 -24 38 -4 C58 -4 58 18 40 18 Z" fill="#fff" stroke="#26272a" stroke-width="2" stroke-linejoin="round"/></g></g>
+          {% for x, y, s in [(120, 44, 1.0), (430, 36, 1.25), (720, 48, 1.05)] %}
+          <g transform="translate({{ x }} {{ y }}) scale({{ s }})"><g><path d="M-44 18 C-62 18 -62 -6 -42 -6 C-40 -26 -10 -30 0 -14 C10 -30 40 -24 38 -4 C58 -4 58 18 40 18 Z" fill="#fff" stroke="#26272a" stroke-width="2" stroke-linejoin="round"/></g></g>
           {% endfor %}
         </g>
         <g id="drops" clip-path="url(#sky)"></g>
@@ -307,7 +282,7 @@
         <path d="M172 128 H178 V170" fill="none" stroke="#26272a" stroke-width="3"/>
         <rect x="216" y="166" width="30" height="6" fill="#26272a"/><rect x="345" y="166" width="30" height="6" fill="#26272a"/>
         {# the beach sign #}
-        <g id="sign"><rect x="712" y="150" width="4" height="40" fill="#26272a"/><rect id="sign-b" x="680" y="124" width="70" height="28" rx="6" fill="#237059" stroke="#26272a" stroke-width="1.5"/><text id="sign-t" x="715" y="143" text-anchor="middle" font-size="12" font-weight="700" letter-spacing=".8" fill="#fff">OPEN</text></g>
+        <g id="sign"><rect x="712" y="150" width="4" height="40" fill="#26272a"/><rect id="sign-b" x="680" y="124" width="70" height="28" rx="6" fill="#0f6e56" stroke="#26272a" stroke-width="1.5"/><text id="sign-t" x="715" y="143" text-anchor="middle" font-size="12" font-weight="700" letter-spacing=".8" fill="#fff">OPEN</text></g>
         {# the treatment plant, miles away: off the scene in life, so it sits in a dashed inset, the way SFPUC draws it #}
         <rect x="120" y="318" width="214" height="82" rx="8" fill="#fff" stroke="#b4b2a9" stroke-width="1.5" stroke-dasharray="6 5"/>
         <g stroke="#26272a" stroke-width="2"><rect x="150" y="352" width="108" height="34" fill="#fff"/><ellipse cx="178" cy="352" rx="18" ry="6" fill="#95cdeb"/><ellipse cx="230" cy="352" rx="18" ry="6" fill="#95cdeb"/></g>
@@ -385,20 +360,29 @@
       <span id="sys-count" aria-live="polite"></span>
       <span id="sys-sum"></span>
     </div>
-    <div class="sys-map" id="sys-map"><button type="button" class="btn ghost" id="sys-load">Load the map</button></div>
+    <div class="sys-map" id="sys-map">{% include "learn/kyle/map.svg" %}</div>
     <div class="strip">
       <svg id="sys-strip" viewBox="0 0 1000 60" preserveAspectRatio="none" aria-hidden="true"><path id="strip-area" fill="#d15c5c" fill-opacity=".55" stroke="#d15c5c" stroke-width="1.5" vector-effect="non-scaling-stroke"/><line id="strip-head" y1="0" y2="60" stroke="#26272a" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>
       <input type="range" id="sys-t" min="0" max="1000" value="0" aria-label="Time in the storm">
       <div class="strip-ends"><span id="sys-t0"></span><span>Outfalls discharging, through the storm</span><span id="sys-t1"></span></div>
     </div>
-    <div class="swatches map-key"><span><i class="k-art"></i>Main sewers (schematic)</span><span><i class="k-ring"></i>Storage ring (schematic)</span><span><i class="k-main"></i>Sewage to a plant</span><span><i class="k-out"></i>Treated water out</span><span><i class="k-pl"></i>Treatment plant (tap for a photo)</span><span><i class="k-of"></i>Outfall</span><span><i class="k-on"></i>Discharging</span></div>
-    <p class="more">Plant sites and offshore pipes are approximate, after Figures 2-1 and 2-5 of SFPUC's master plan; the ring is schematic, joining the outfalls in shoreline order rather than tracing the real structures, and the thin grey arteries show which way each neighborhood drains, downhill to the shore, not where its pipes run. Tap any line for its name. Start times, durations and volumes are SFPUC's reports to the State, with each discharge's volume spread evenly over its duration; all of them are in the <a href="/discharges">Discharge Ledger</a>. MG = million gallons (≈1.5 Olympic pools).</p>
+    {% macro sw(w, h, inner) %}<svg width="{{ w }}" height="{{ h }}" viewBox="0 0 {{ w }} {{ h }}" aria-hidden="true">{{ inner|safe }}</svg>{% endmacro %}
+    <ul class="legend map-key">
+      <li>{{ sw(28, 8, '<line x1="2" y1="4" x2="26" y2="4" stroke="#888780" stroke-width="1.6"/>') }}Main sewers (schematic)</li>
+      <li>{{ sw(28, 8, '<line x1="2" y1="4" x2="26" y2="4" stroke="#5f5e5a" stroke-width="6" stroke-linecap="round" opacity=".75"/>') }}Storage ring (schematic)</li>
+      <li>{{ sw(28, 8, '<line x1="2" y1="4" x2="26" y2="4" stroke="#5f5e5a" stroke-width="2.5" stroke-dasharray="6 5"/>') }}Sewage to a plant</li>
+      <li>{{ sw(28, 8, '<line x1="2" y1="4" x2="26" y2="4" stroke="#0f6e56" stroke-width="3.5" stroke-linecap="round"/>') }}Treated water out</li>
+      <li>{{ sw(16, 16, '<rect x="2" y="2" width="12" height="12" rx="3" fill="#95cdeb" stroke="#26272a" stroke-width="2"/>') }}Treatment plant</li>
+      <li>{{ sw(16, 16, '<circle cx="8" cy="8" r="5" fill="#fff" stroke="#26272a" stroke-width="1.5"/>') }}Outfall</li>
+      <li>{{ sw(18, 18, '<circle cx="9" cy="9" r="7" fill="#d15c5c" stroke="#26272a" stroke-width="1.5"/>') }}Discharging</li>
+    </ul>
+    <p class="more">The coastline is a schematic traced through the outfalls, not a survey. Plant sites and offshore pipes are approximate, after Figures 2-1 and 2-5 of SFPUC's master plan; the ring joins the outfalls in shoreline order rather than tracing the real structures, and the thin grey arteries show which way each neighborhood drains, not where its pipes run. Start times, durations and volumes are SFPUC's reports; all of them are in the <a href="/discharges">Discharge Ledger</a>.</p>
   </section>
   {% endif %}
 
   {# ── 3 ── #}
   <section class="sec" id="bugs" aria-labelledby="bugs-h">
-    {{ head(2 + k, "bugs", "What the lab counts", "Meet the indicators", "microbes") }}
+    {{ head(2 + k, "bugs", "What the lab counts", "Meet the indicators", "learn/kyle/microbes.svg") }}
     <p class="sub">Labs do not look for every germ in sewage. They count a few <b>easy-to-grow gut bacteria</b> that travel with it: when these are high, sewage or runoff is likely in the water.</p>
     <div class="bugs">
       {% for b in indicators %}
@@ -430,32 +414,40 @@
   {# ── 4. How the lab counts ── #}
   <section class="sec" id="count" aria-labelledby="count-h">
     {{ head(3 + k, "count", "One sample", "How the lab counts", "tray") }}
-    <p class="sub">From a bottle of seawater to the number on this site, one bacterium at a time.</p>
-    <div class="qt" id="qt">
-      <div class="qt-pin" id="qt-pin">
-        <div class="qt-view" id="qt-view">
-          <div class="qt-track" id="qt-track">
-            <div class="qt-intro">
-              <h3>One bottle, eight steps</h3>
-              <p>Follow one sample through the test behind an Enterococcus number: IDEXX's Enterolert in a Quanti-Tray.</p>
-              <ol class="qt-route">{% for st in qt_steps %}<li><b>{{ loop.index }}</b>{{ st.title }}</li>{% endfor %}</ol>
-              <p class="qt-hint" id="qt-hint">Swipe sideways, or use the arrows below</p>
-            </div>
-            {% for st in qt_steps %}
-            <article class="qt-step" aria-label="Step {{ loop.index }}: {{ st.title }}">
-              <svg class="qt-art" viewBox="0 0 600 340" role="img" aria-label="{{ st.alt }}"></svg>
-              <div class="qt-cap"><span class="k" aria-hidden="true"><small>Step</small><b>{{ loop.index }}</b></span><div><h3>{{ st.title }}</h3><p>{{ st.text }}</p></div></div>
-            </article>
-            {% endfor %}
+    <p class="sub"><b>One bottle, eight steps.</b> Follow one sample through the test behind an Enterococcus number: <b>IDEXX's Enterolert</b> in a Quanti-Tray.</p>
+    {# Kyle's four phases (his 2026-11-01 boards): the names and colours of the Lab SOP's phases, two to three steps each, his drawings #}
+    {% set PHASES = [
+      {"n": 1, "name": "Return & Clean", "steps": [1], "icon": "learn/kyle/phase1.png", "h": 380,
+       "c": "--ph-stripe:#85b7eb;--ph-band:#e6f1fb;--ph-block:#368add;--ph-eye:#042c53;--ph-title:#042c53;--ph-bar:#85b7eb;--ph-tint:#e6f1fb;--ph-num:#368add"},
+      {"n": 2, "name": "Make Diluted Sample", "steps": [2, 3], "icon": "learn/kyle/phase2.png", "h": 300,
+       "c": "--ph-stripe:#88c8d2;--ph-band:#e6f1fb;--ph-block:#057b8d;--ph-eye:#057b8d;--ph-title:#042c53;--ph-bar:#88c8d2;--ph-tint:#e6f1fb;--ph-num:#057b8d"},
+      {"n": 3, "name": "Fill, Seal, Incubate", "steps": [4, 5, 6], "icon": "learn/kyle/phase3.png", "h": 220,
+       "c": "--ph-stripe:#0f6e55;--ph-band:#e8f5f1;--ph-block:#9acec1;--ph-eye:#0f6e55;--ph-title:#0c3a32;--ph-bar:#9acec1;--ph-tint:#e8f5f1;--ph-num:#0f6e55"},
+      {"n": 4, "name": "Read Results · Next Day", "steps": [7, 8], "icon": "learn/kyle/microbes.svg", "h": 250,
+       "c": "--ph-stripe:#8932d3;--ph-band:#f1e8fa;--ph-block:#c680ff;--ph-eye:#5c0ba3;--ph-title:#2a0044;--ph-bar:#c680ff;--ph-tint:#f1e8fa;--ph-num:#5c0ba3"}] %}
+    {% set TRACK = [("#85b7eb", "#368add"), ("#88c8d2", "#057b8d"), ("#9acec1", "#0f6e55"), ("#c680ff", "#8932d3")] %}
+    <div class="phases" id="phases">
+      {% for ph in PHASES %}
+      <section class="phase" id="phase-{{ ph.n }}" style="{{ ph.c }}" aria-labelledby="phase-{{ ph.n }}-h"{% if not loop.first %} hidden{% endif %}>
+        <header class="ph-band">
+          <span class="ph-no" aria-hidden="true"><img src="{{ asset(ph.icon) }}" alt=""><b>{{ ph.n }}</b></span>
+          <div class="ph-tt"><span class="eyebrow">Phase</span><h3 id="phase-{{ ph.n }}-h">{{ ph.name }}</h3></div>
+          <div class="ph-track" role="group" aria-label="Phase {{ ph.n }} of 4">
+            {% for lo, hi in TRACK %}<button type="button" data-p="{{ loop.index }}" aria-pressed="{{ 'true' if loop.index == ph.n else 'false' }}" style="--lo:{{ lo }};--hi:{{ hi }}"><span class="bar"></span><span class="lb">Phase {{ loop.index }}</span></button>{% endfor %}
           </div>
+          <img class="shield" src="{{ asset('learn/kyle/bwtf_shield.svg') }}" alt="">
+        </header>
+        <div class="ph-cols n{{ ph.steps|length }}">
+          {% for n in ph.steps %}{% set st = qt_steps[n - 1] %}
+          <article class="pstep" aria-label="Step {{ n }}: {{ st.title }}">
+            <div class="ph-art" style="height:{{ ph.h }}px">{% include "learn/kyle/step" ~ n ~ ".svg" %}</div>
+            <div class="stepc"><span class="k"><small>Step</small><b>{{ n }}</b></span><div><h3>{{ st.title }}</h3><p>{{ st.text }}</p></div></div>
+          </article>
+          {% endfor %}
         </div>
-        <div class="qt-nav">
-          <button type="button" class="btn ghost" id="qt-prev" aria-label="Previous step">←</button>
-          <div class="qt-dots" id="qt-dots">{% for st in qt_steps %}<button type="button" data-i="{{ loop.index }}" aria-label="Step {{ loop.index }}: {{ st.title }}"></button>{% endfor %}</div>
-          <button type="button" class="btn ghost" id="qt-next" aria-label="Next step">→</button>
-          <a class="qt-skip" id="qt-skip" href="#qt-after">Skip the steps ↓</a>
-        </div>
-      </div>
+      </section>
+      {% endfor %}
+      <nav class="ph-nav" aria-label="Phases"><button type="button" class="btn ghost" id="ph-prev">← Previous phase</button><button type="button" class="btn" id="ph-next">Next phase →</button></nav>
     </div>
     <div class="lab" id="qt-after">
       <div class="lab-ctl">
@@ -631,7 +623,7 @@
     $("plume").setAttribute("opacity", E.toFixed(2));
     const live = Math.round(flowing * puffs.length); puffs.forEach((c, i) => { c.style.display = i < live ? "" : "none"; });
     const posted = r >= 0.7 || aftermath;
-    $("sign-b").setAttribute("fill", posted ? "#d4763a" : "#237059"); $("sign-t").textContent = posted ? "POSTED" : "OPEN";   // the site's posted orange and open green
+    $("sign-b").setAttribute("fill", posted ? "#d15c5c" : "#0f6e56"); $("sign-t").textContent = posted ? "POSTED" : "OPEN";   // Kyle's open green and posted red
     $("risk").setAttribute("opacity", posted ? 1 : 0);
     let st = STATES.find(s => r < s[0]) || STATES[3];
     if (aftermath && r < 0.7) st = [0, "After the storm", "The overflow has stopped and the plume is drifting off and thinning, but the beach stays posted while SFPUC samples it, until results show it is clear."];
@@ -659,115 +651,42 @@
   });
   setRain(0, false, 0); watch("rain", $("scene"));
 
-  // ── 2. The system from above: Leaflet loads only when the map nears the screen ──
+  // ── 2. The system from above: Kyle's drawing; each outfall turns red while SFPUC reported it discharging ──
   {% if system %}
-  const SYS = {{ system|tojson }}, mapBox = $("sys-map"), OF = {}, PLUME = {};
-  const PHOTO = { {% for k, p in system.plants.items() %}{{ k|tojson }}: {{ asset(p.photo)|tojson }}, {% endfor %} };
-  const esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
-  const num = v => v < 10 ? v.toFixed(1) : Math.round(v).toLocaleString();
-  const hm = m => { const h = Math.floor(m / 60), r = Math.round(m % 60); return h ? h + " h" + (r ? " " + r + " min" : "") : r + " min"; };
-  let MAP = null, ASKED = false, SI = 0, T = 0, PLAY = false, W = [0, 1];
-  const span = s => { const a = Math.min(...s.events.map(e => e.start)), b = Math.max(...s.events.map(e => e.start + e.dur)); return [Math.floor((a - 60) / 60) * 60, Math.ceil((b + 60) / 60) * 60]; };
-  const clock = (s, m, short) => { const [y, mo, d] = s.date.split("-").map(Number), t = new Date(Date.UTC(y, mo - 1, d, 0, Math.round(m)));   // as reported, Pacific time
-    return t.toLocaleString("en-US", short ? {timeZone: "UTC", weekday: "short", hour: "numeric", minute: "2-digit"} : {timeZone: "UTC", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit"}); };
-  function loadMap() {
-    if (ASKED) return; ASKED = true; $("sys-load").textContent = "Loading the map…";
-    const css = document.createElement("link"); css.rel = "stylesheet"; css.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"; document.head.appendChild(css);
-    const js = document.createElement("script"); js.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-    js.onload = drawMap; js.onerror = () => { ASKED = false; js.remove(); $("sys-load").textContent = "The map did not load: tap to try again"; };
-    document.head.appendChild(js);
-  }
-  function ofPopup(o) {
-    const s = SYS.storms[SI], ev = s.events.filter(e => e.id === o.id);
-    const storm = ev.length ? ev.map(e => "from " + clock(s, e.start, true) + " for " + hm(e.dur) + ", " + num(e.mg) + " MG").join("; then ") : "no discharge reported";
-    return "<b>" + esc(o.name) + "</b><br>" + esc(o.water) + "<br>" + (o.plant === "oceanside" ? "Westside" : "Bayside") + " system · discharged on " + o.days + " days since October 2016"
-         + "<br><b>" + esc(s.label) + ":</b> " + storm;
-  }
-  const MAP_FLOWS = [];
-  function mapFlow(line, period) { const m = mover("map", line.getElement(), period); m.v = 20; MAP_FLOWS.push(m); return line; }   // a dash pattern's length: 18 px (6 + 12), the arteries' 14 (4 + 10)
-  function drawMap() {
-    $("sys-load").remove();
-    MAP = L.map(mapBox, {scrollWheelZoom: false, zoomSnap: 0.25});
-    L.tileLayer({{ BASEMAP.url|tojson }}, {{ BASEMAP.options|tojson }}).addTo(MAP);   // the site's one basemap: shared/basemap.py
-    SYS.arteries.forEach(r => {   // schematic: which way each neighborhood drains, not where its pipes run
-      L.polyline(r.pts, {color: "#888780", weight: 6, opacity: 0.14, interactive: false}).addTo(MAP);
-      mapFlow(L.polyline(r.pts, {color: "#888780", weight: 1.8, opacity: 0.95, className: "mflow art"}).bindTooltip(esc(r.name) + " → the shoreline storage", {sticky: true}).addTo(MAP), 14);
-    });
-    SYS.ring.forEach(r => {
-      if (r.kind === "storage") L.polyline(r.pts, {color: "#5f5e5a", weight: 8, opacity: 0.4, interactive: false}).addTo(MAP);
-      mapFlow(L.polyline(r.pts, {color: "#5f5e5a", weight: 2.5, opacity: 0.95, className: "mflow"}).bindTooltip(esc(r.name), {sticky: true}).addTo(MAP), 18);   // drawn in the direction the sewage moves
-    });
-    SYS.deep.forEach(d => mapFlow(L.polyline(d.pts, {color: "#0f6e56", weight: 4, opacity: 0.95, className: "mflow"}).bindTooltip(esc(d.name), {sticky: true}).addTo(MAP), 18));
-    watch("map", mapBox);
-    SYS.outfalls.forEach(o => {
-      PLUME[o.id] = L.circle([o.lat, o.lon], {radius: 1, stroke: false, fillColor: "#d15c5c", fillOpacity: 0, interactive: false}).addTo(MAP);
-      OF[o.id] = L.marker([o.lat, o.lon], {icon: L.divIcon({className: "of-ico", iconSize: [14, 14]}), title: o.name, riseOnHover: true}).bindPopup(() => ofPopup(o)).addTo(MAP);
-    });
-    const plants = Object.entries(SYS.plants).map(([k, p]) => L.marker([p.lat, p.lon], {icon: L.divIcon({className: "pl-ico", iconSize: [16, 16]}), title: p.name, zIndexOffset: 500})
-      .bindTooltip(esc(p.short), {permanent: true, direction: "right", className: "pl-tip", interactive: true})
-      .bindPopup(`<figure class="pl-pop"><img src="${PHOTO[k]}" alt="${esc(p.name)}" width="260"><figcaption><b>${esc(p.name)}</b><br>${esc(p.note)}<small>Photo: SFPUC, Sewer System Master Plan (2010)</small></figcaption></figure>`, {maxWidth: 280, minWidth: 260})
-      .addTo(MAP));
-    plants.forEach(m => m.getTooltip().on("click", () => m.openPopup()));   // the label opens the photo too
-    // Each label takes the first spot around its plant that covers no outfall, no other label, and stays in the frame.
-    const SPOTS = [["right", [10, 0]], ["left", [-10, 0]], ["top", [0, -10]], ["bottom", [0, 10]], ["right", [12, 20]], ["left", [-12, 20]], ["right", [12, -20]], ["left", [-12, -20]], ["bottom", [0, 30]], ["top", [0, -30]]];
-    const overlap = (a, b) => !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom);
-    function placeLabels() {
-      const frame = mapBox.getBoundingClientRect(), dots = [...mapBox.querySelectorAll(".of-ico")].map(e => e.getBoundingClientRect()), taken = [];
-      plants.forEach(m => {
-        const t = m.getTooltip(); if (!t || !t.getElement()) return;   // not drawn yet
-        let best = SPOTS[0], fewest = Infinity;
-        for (const spot of SPOTS) {
-          t.options.direction = spot[0]; t.options.offset = L.point(spot[1]); t.update();
-          const r = t.getElement().getBoundingClientRect(), out = r.left < frame.left || r.right > frame.right || r.top < frame.top || r.bottom > frame.bottom;
-          const hits = dots.filter(d => overlap(d, r)).length + 3 * taken.filter(d => overlap(d, r)).length + (out ? 5 : 0);
-          if (hits < fewest) { fewest = hits; best = spot; if (!hits) break; }
-        }
-        t.options.direction = best[0]; t.options.offset = L.point(best[1]); t.update(); taken.push(t.getElement().getBoundingClientRect());
-      });
-    }
-
-    const shore = SYS.outfalls.map(o => [o.lat, o.lon]), far = SYS.deep[0].pts[SYS.deep[0].pts.length - 1], bounds = L.latLngBounds(shore.concat([far]));
-    let fitted = false; const fit = () => { if (fitted || !mapBox.clientWidth) return; fitted = true; MAP.invalidateSize();
-      MAP.fitBounds(mapBox.clientWidth < 600 ? L.latLngBounds(shore) : bounds, {padding: [14, 14]}); };   // a phone fits the shore; the ocean outfall runs off the edge
-    MAP.setView(bounds.getCenter(), 11); fit(); addEventListener("resize", fit);   // a map drawn in a hidden tab fits once it has a size
-    MAP.on("zoomend moveend", placeLabels); placeLabels(); paint();
-  }
+  const SYS = {{ system|tojson }};
+  const DOTS = [...document.querySelectorAll("#kmap .kof")];
+  DOTS.forEach(c => { const o = SYS.outfalls[+c.dataset.i]; if (o) c.appendChild(Object.assign(document.createElementNS("http://www.w3.org/2000/svg", "title"), {textContent: o.name + " · " + o.water})); });
+  let SI = 0, T = 0, PLAY = false, W = [0, 1];
+  const span = s => { const a = Math.min(...s.events.map(e => e.start)), b = Math.max(...s.events.map(e => e.start + e.dur)), pad = Math.max(30, (b - a) * 0.04); return [Math.max(0, a - pad), b + pad]; };
+  const clock = m => { const d = Math.floor(m / 1440), x = Math.round(m) % 1440, h = Math.floor(x / 60), mm = x % 60;   // as reported, Pacific time; +1d past midnight
+    return (h % 12 || 12) + ":" + String(mm).padStart(2, "0") + " " + (h < 12 ? "AM" : "PM") + (d > 0 ? " +" + d + "d" : ""); };
+  const at = (s, t) => { const on = new Set(); s.events.forEach(e => { if (e.start <= t && t < e.start + e.dur) on.add(e.id); }); return on; };
   function paint() {
-    const s = SYS.storms[SI], on = new Set(), seen = new Set(), vol = {}, end = {};
-    let mg = 0;
-    s.events.forEach(e => {
-      const f = clamp((T - e.start) / e.dur);
-      if (T >= e.start) seen.add(e.id); if (T >= e.start && T < e.start + e.dur) on.add(e.id);
-      mg += e.mg * f; vol[e.id] = (vol[e.id] || 0) + e.mg * f; end[e.id] = Math.max(end[e.id] || 0, e.start + e.dur);
-    });
-    if (MAP) SYS.outfalls.forEach(o => {
-      const m = OF[o.id].getElement(); if (m) m.classList.toggle("on", on.has(o.id));
-      const v = vol[o.id] || 0, fade = on.has(o.id) ? 1 : v ? clamp(1 - (T - end[o.id]) / 240) : 0;   // a plume fades over four hours once its outfall stops
-      PLUME[o.id].setRadius(v ? Math.min(520, 50 + 26 * Math.sqrt(v)) : 1); PLUME[o.id].setStyle({fillOpacity: 0.3 * fade});
-    });
-    MAP_FLOWS.forEach(m => { m.v = 20 + 30 * Math.min(1, on.size / 30); });   // the pipes run faster as more outfalls open
-    $("sys-clock").textContent = clock(s, T);
-    $("sys-count").innerHTML = "<b>" + on.size + "</b> discharging now · " + seen.size + " of " + s.outfalls + " so far · <b>" + num(mg) + "</b> MG";
-    const x = 1000 * (T - W[0]) / (W[1] - W[0]); $("strip-head").setAttribute("x1", x); $("strip-head").setAttribute("x2", x);
-    $("sys-t").value = Math.round(x);
+    const s = SYS.storms[SI], on = at(s, T);
+    DOTS.forEach(c => { const o = SYS.outfalls[+c.dataset.i], lit = !!o && on.has(o.id); c.classList.toggle("on", lit); c.setAttribute("r", lit ? 8 : 5); });
+    $("sys-clock").textContent = clock(T);
+    $("sys-count").innerHTML = "<b>" + on.size + "</b> of " + SYS.outfalls.length + " outfalls discharging";
+    const x = 1000 * (T - W[0]) / (W[1] - W[0]); $("strip-head").setAttribute("x1", x); $("strip-head").setAttribute("x2", x); $("sys-t").value = Math.round(x);
   }
   function strip() {
-    const s = SYS.storms[SI], n = 200; let d = "M0 60";
-    for (let i = 0; i < n; i++) { const t = W[0] + (W[1] - W[0]) * i / (n - 1), k = s.events.filter(e => t >= e.start && t < e.start + e.dur).length; d += " L" + (1000 * i / (n - 1)).toFixed(1) + " " + (58 - 54 * Math.min(1, k / 30)).toFixed(1); }
+    const s = SYS.storms[SI], n = 200, counts = [];
+    for (let i = 0; i <= n; i++) counts.push(at(s, W[0] + (W[1] - W[0]) * i / n).size);
+    const mx = Math.max(1, ...counts); let d = "M0 60";
+    counts.forEach((k, i) => { d += " L" + (1000 * i / n).toFixed(1) + " " + (60 - 56 * k / mx).toFixed(1); });
     $("strip-area").setAttribute("d", d + " L1000 60 Z");
-    $("sys-t0").textContent = clock(s, W[0]); $("sys-t1").textContent = clock(s, W[1]);
+    $("sys-t0").textContent = clock(W[0]); $("sys-t1").textContent = clock(W[1]);
   }
   function pick(i) {
     SI = i; W = span(SYS.storms[i]); T = W[0]; stop();
     document.querySelectorAll("#storms .preset").forEach(b => { const a = +b.dataset.i === i; b.classList.toggle("active", a); b.setAttribute("aria-pressed", String(a)); });
     $("sys-sum").textContent = SYS.storms[i].label + " · " + SYS.storms[i].outfalls + " outfalls · " + SYS.storms[i].mg.toLocaleString() + " million gallons";
-    if (MAP) MAP.closePopup(); strip(); paint();
+    strip(); paint();
   }
   function stop() { PLAY = false; $("sys-play").textContent = T >= W[1] ? "Play again" : T > W[0] ? "Resume" : "Play the storm"; }
   $("sys-play").addEventListener("click", () => {
     if (PLAY) return stop();
     if (T >= W[1]) T = W[0];
-    PLAY = true; $("sys-play").textContent = "Pause"; loadMap();
+    PLAY = true; $("sys-play").textContent = "Pause";
     let last = performance.now();
     (function tick(now) {
       if (!PLAY) return;
@@ -777,10 +696,6 @@
   });
   $("sys-t").addEventListener("input", e => { if (PLAY) stop(); T = W[0] + (W[1] - W[0]) * e.target.value / 1000; paint(); $("sys-play").textContent = T >= W[1] ? "Play again" : "Resume"; });
   $("storms").addEventListener("click", e => { const b = e.target.closest(".preset"); if (b) pick(+b.dataset.i); });
-  $("sys-load").addEventListener("click", loadMap);
-  if ("IntersectionObserver" in window) { const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { loadMap(); io.disconnect(); } }, {rootMargin: "400px 0px"}); io.observe(mapBox); }
-  const nearMap = () => { const b = mapBox.getBoundingClientRect(); if (b.top < innerHeight + 400 && b.bottom > -400) { loadMap(); removeEventListener("scroll", nearMap); } };   // backup for browsers that hold back the observer
-  addEventListener("scroll", nearMap, {passive: true}); nearMap();
   pick(0);
   {% endif %}
 
@@ -837,345 +752,21 @@
   $("conc").addEventListener("input", drawTray);
   $("resample").addEventListener("click", () => { reseed(); drawTray(); });
 
-  // ── 4. How the lab counts: one bottle through the Quanti-Tray; the bench slides sideways as the page scrolls ──
-  const qtBox = $("qt");
-  if (qtBox) {
-    const QT = {{ qt|tojson }}, ENT = {{ entero_color|tojson }};
-    const rnd = (a, b) => a + Math.random() * (b - a), lerp = (p, q, t) => p + (q - p) * t;
-    const ease = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-    const seg = (a, lo, hi) => clamp((a - lo) / (hi - lo));                  // a's progress through [lo, hi]
-    const at = (g, x, y, more) => g.setAttribute("transform", `translate(${x.toFixed(1)} ${y.toFixed(1)})${more || ""}`);
-    const show = (e, on) => { e.style.display = on ? "" : "none"; };
-    const add = (p, tag, attrs, text) => {
-      const e = el(tag, attrs); if (text != null) e.textContent = text; p.appendChild(e);
-      if (attrs.fixed) e.removeAttribute("fixed");
-      else if (tag === "text" && attrs["font-size"] <= 15) { e.classList.add("lbl"); e.style.setProperty("--fs", attrs["font-size"] + "px"); }   // small labels grow on phones
-      return e;
-    };
-    const fade = (e, o) => { e.setAttribute("opacity", o.toFixed(2)); };
-    const mix = (c1, c2, t) => "#" + [1, 3, 5].map(i => Math.round(lerp(parseInt(c1.substr(i, 2), 16), parseInt(c2.substr(i, 2), 16), t)).toString(16).padStart(2, "0")).join("");
-    let uid = 0;
-    function kf(a, frames) {   // [[a, x, y], …] → the eased point at a
-      if (a <= frames[0][0]) return [frames[0][1], frames[0][2]];
-      for (let i = 1; i < frames.length; i++) if (a <= frames[i][0]) { const [a0, x0, y0] = frames[i - 1], [a1, x1, y1] = frames[i], t = ease((a - a0) / (a1 - a0)); return [lerp(x0, x1, t), lerp(y0, y1, t)]; }
-      const f = frames[frames.length - 1]; return [f[1], f[2]];
-    }
-    function cell(parent, x, y, s) {   // one Enterococcus: a pair of cocci, jiggling on its own clock
-      const g = add(parent, "g", {}), w = add(g, "g", {class: "cw"}), r = 2.5 * (s || 1);
-      add(w, "circle", {cx: -r * .95, cy: 0, r, fill: ENT}); add(w, "circle", {cx: r * .95, cy: 0, r, fill: ENT});
-      w.style.animationDelay = (-Math.random() * 3).toFixed(2) + "s"; w.style.setProperty("--rot", Math.round(Math.random() * 360) + "deg");
-      at(g, x, y); return g;
-    }
-    function lab(svg) {   // the bench runs on unbroken from panel to panel
-      add(svg, "rect", {x: 0, y: 0, width: 600, height: 290, fill: "#e6f1fb"});
-      add(svg, "rect", {x: 0, y: 284, width: 600, height: 8, fill: "#b4b2a9"});
-      add(svg, "rect", {x: 0, y: 292, width: 600, height: 48, fill: "#e3e1da"});
-    }
-    function bottle(parent, x, y, w, h, label, cap) {
-      const id = "qb" + (++uid), g = add(parent, "g", {});
-      const body = `M${x} ${y + 18} q0 -18 18 -18 h${w - 36} q18 0 18 18 v${h - 30} q0 12 -12 12 h${-(w - 24)} q-12 0 -12 -12 Z`;
-      add(add(g, "clipPath", {id}), "path", {d: body});
-      const water = add(g, "rect", {x, width: w, y: y + h, height: 0, fill: "#95cdeb", opacity: .9, "clip-path": `url(#${id})`});
-      const cells = add(g, "g", {"clip-path": `url(#${id})`});
-      add(g, "path", {d: body, fill: "rgba(255,255,255,.25)", stroke: "#26272a", "stroke-width": 2.5});
-      add(g, "rect", {x: x + w * .32, y: y - 22, width: w * .36, height: 24, fill: "#fff", stroke: "#26272a", "stroke-width": 2.5});
-      if (cap) add(g, "rect", {x: x + w * .28, y: y - 38, width: w * .44, height: 18, rx: 4, fill: "#fff", stroke: "#26272a", "stroke-width": 2.5});
-      const t = label ? add(g, "text", {x: x + w / 2, y: y + h + 28, "text-anchor": "middle", "font-size": 14, "font-weight": 700, fill: "#26272a"}, label) : null;
-      return {g, cells, label: t, set: f => { water.setAttribute("y", y + h - h * f); water.setAttribute("height", h * f); }};
-    }
-    // the tray, front view, in its own 200 × 260 units: 49 big wells over 48 small (schematic layout)
-    const TB = [], TS = [];
-    for (let r = 0; r < 7; r++) for (let c = 0; c < 7; c++) TB.push({x: 16 + c * 25.2, y: 16 + r * 23.5});
-    for (let r = 0; r < 6; r++) for (let c = 0; c < 8; c++) TS.push({x: 22 + c * 22.3, y: 192 + r * 11});
-    const center = i => i < 49 ? [TB[i].x + 10, TB[i].y + 9.5] : [TS[i - 49].x, TS[i - 49].y];
-    function tray(parent, x, y, s, dark) {
-      const g = add(parent, "g", {transform: `translate(${x} ${y}) scale(${s})`});
-      const face = dark ? ["#223244", "#3d5268", "#1b2a3a", "#2f4459"] : ["#ffffff", "#26272a", "#ffffff", "#26272a"];
-      add(g, "rect", {x: 70, y: -15, width: 60, height: 18, rx: 6, fill: face[0], stroke: face[1], "stroke-width": 2});
-      add(g, "rect", {x: 0, y: 0, width: 200, height: 260, rx: 16, fill: face[0], stroke: face[1], "stroke-width": 2.5});
-      const wells = TB.map(b => add(g, "rect", {x: b.x, y: b.y, width: 20, height: 19, rx: 5, fill: face[2], stroke: face[3], "stroke-width": 1.2}))
-        .concat(TS.map(c => add(g, "circle", {cx: c.x, cy: c.y, r: 4.2, fill: face[2], stroke: face[3], "stroke-width": 1})));
-      return {g, wells, top: add(g, "g", {})};
-    }
-    const seat = [], filled = {};   // where each bacterium settles: a second one in a well sits beside the first
-    QT.wells.forEach(w => { const n = filled[w] = (filled[w] || 0) + 1, [cx, cy] = center(w);
-      const o = w < 49 ? ([[0, 0], [-4.5, 3.5], [4.5, -3.5], [0, 5]][n - 1] || [0, 0]) : ([[0, 0], [2, 1.5]][n - 1] || [0, 0]); seat.push([cx + o[0], cy + o[1]]); });
-    const occupied = Object.keys(filled).map(Number).sort((a, b) => a - b);
-
-    // ─ 1. fill a bottle at the shore: every bacterium in it drawn ─
-    function s1(svg) {
-      add(svg, "rect", {x: 0, y: 0, width: 600, height: 340, fill: "#e6f1fb"});
-      add(svg, "rect", {x: 0, y: 150, width: 600, height: 110, fill: "#95cdeb"});
-      add(svg, "path", {d: "M-60 226 q15 -12 30 0 " + "t30 0 ".repeat(24) + "V262 H-60 Z", fill: "#c4e3f5", class: "qt-wave"});
-      add(svg, "path", {d: "M0 340 V250 Q300 232 600 246 V340 Z", fill: "#f1ebdc", stroke: "#26272a", "stroke-width": 2});
-      const b = bottle(svg, 380, 104, 140, 170, "100 mL of seawater", true), pts = [];
-      for (let i = 0; i < QT.conc; i++) pts.push([rnd(388, 512), rnd(124, 266)]);
-      const cs = pts.map(([x, y]) => cell(b.cells, x, y, .6));
-      const n = add(svg, "text", {x: 40, y: 80, "font-size": 40, "font-weight": 900, fill: "#26272a"}, "0");
-      add(svg, "text", {x: 40, y: 104, "font-size": 15, "font-weight": 700, fill: "#26272a"}, "Enterococcus in the bottle");
-      add(svg, "text", {x: 40, y: 124, "font-size": 13, fill: "#5f5e5a"}, "every one drawn, not to size");
-      return a => {
-        const f = ease(seg(a, .05, .8)), lvl = 274 - 170 * f; b.set(f);
-        let k = 0; cs.forEach((c, i) => { const on = pts[i][1] > lvl + 3; show(c, on); k += on; });
-        n.textContent = (a >= .8 ? QT.conc : k).toLocaleString();
-      };
-    }
-    // ─ 2. a pipette carries 10 mL into 90 mL of sterile water ─
-    function s2(svg) {
-      lab(svg);
-      const src = bottle(svg, 70, 150, 110, 130, "the sample"), dst = bottle(svg, 400, 150, 110, 130, "90 mL sterile water");
-      const sp = []; for (let i = 0; i < QT.conc; i++) sp.push([rnd(78, 172), rnd(176, 272)]);
-      const scs = sp.map(([x, y]) => cell(src.cells, x, y, .55));
-      const pip = add(svg, "g", {});
-      add(pip, "rect", {x: -5, y: -100, width: 10, height: 100, rx: 3, fill: "rgba(255,255,255,.75)", stroke: "#5d7d93", "stroke-width": 2});
-      add(pip, "ellipse", {cx: 0, cy: -110, rx: 11, ry: 14, fill: "#d9534f"});
-      const tag = add(pip, "text", {x: 12, y: -50, "font-size": 13, "font-weight": 700, fill: "#26272a"}, "10 mL");
-      const fly = add(svg, "g", {}), taken = [];
-      for (let k = 0; k < QT.cells; k++) taken.push({from: sp[k], tube: [rnd(-2.5, 2.5), rnd(-50, -6)], to: [rnd(410, 500), rnd(184, 272)], g: cell(fly, 0, 0, .55)});
-      const note = add(svg, "text", {x: 300, y: 40, "text-anchor": "middle", "font-size": 15, "font-weight": 900, fill: "#26272a"}, `${QT.cells} Enterococcus came along`);
-      const F = [[0, 125, 124], [.16, 125, 255], [.3, 125, 124], [.5, 455, 124], [.64, 455, 255], [.8, 455, 255], [.94, 455, 124]];
-      return a => {
-        const [x, y] = kf(a, F); at(pip, x, y);
-        src.set(lerp(.86, .79, seg(a, .12, .18))); dst.set(lerp(.72, .8, seg(a, .66, .8)));
-        dst.label.textContent = a < .8 ? "90 mL sterile water" : "now 100 mL: 1 part in 10";
-        taken.forEach((t, k) => {
-          show(scs[k], a < .12); show(t.g, a >= .12);
-          const tip = [x + t.tube[0], y + t.tube[1]];
-          const p = a < .18 ? [lerp(t.from[0], tip[0], seg(a, .12, .18)), lerp(t.from[1], tip[1], seg(a, .12, .18))]
-                  : a < .7 ? tip : [lerp(tip[0], t.to[0], ease(seg(a, .7, .82))), lerp(tip[1], t.to[1], ease(seg(a, .7, .82)))];
-          at(t.g, p[0], p[1]);
-        });
-        fade(note, seg(a, .82, .95)); fade(tag, 1 - seg(a, .8, .9));
-      };
-    }
-    // ─ 3. the reagent pours in and dissolves; a shake mixes it ─
-    function s3(svg) {
-      lab(svg);
-      const shake = add(svg, "g", {}), b = bottle(shake, 245, 150, 110, 130, "100 mL"); b.set(.8);
-      for (let k = 0; k < QT.cells; k++) cell(b.cells, rnd(254, 346), rnd(182, 272), .7);
-      const pack = add(svg, "g", {});
-      add(pack, "rect", {x: -40, y: -22, width: 80, height: 44, rx: 5, fill: "#fff", stroke: "#97a6b1", "stroke-width": 2});
-      add(pack, "text", {x: 0, y: 5, "text-anchor": "middle", "font-size": 11, "font-weight": 900, fill: "#26272a", fixed: 1}, "Enterolert");
-      const grains = [];
-      for (let i = 0; i < 46; i++) grains.push({c: add(svg, "circle", {r: rnd(1.3, 2.5).toFixed(1), fill: "#f7f2e8", stroke: "#c8bea9", "stroke-width": .7}), t0: rnd(.14, .4), dx: rnd(-6, 6), sx: rnd(-40, 40), sink: rnd(8, 80)});
-      const note = add(svg, "text", {x: 300, y: 44, "text-anchor": "middle", "font-size": 15, "font-weight": 900, fill: "#26272a"}, "Food only enterococci can unlock");
-      return a => {
-        const [x, y] = kf(a, [[0, 480, 60], [.12, 340, 86], [.44, 340, 86], [.56, 480, 60]]);
-        at(pack, x, y, ` rotate(${(70 * seg(a, .04, .12) - 70 * seg(a, .44, .54)).toFixed(1)})`); fade(pack, 1 - seg(a, .5, .58));
-        grains.forEach(g => {
-          const fall = seg(a, g.t0, g.t0 + .08), melt = seg(a, g.t0 + .08, g.t0 + .32);
-          g.c.setAttribute("cx", (lerp(304 + g.dx, 300 + g.sx * melt, fall)).toFixed(1)); g.c.setAttribute("cy", (lerp(104, 178, fall) + g.sink * melt).toFixed(1));
-          fade(g.c, a < g.t0 ? 0 : 1 - melt);
-        });
-        const sh = seg(a, .62, .9); shake.setAttribute("transform", `rotate(${(Math.sin(sh * Math.PI * 6) * 7 * (1 - sh)).toFixed(2)} 300 280)`);
-        fade(note, seg(a, .86, .97));
-      };
-    }
-    // ─ 4. pour it into the tray ─
-    function s4(svg) {
-      lab(svg);
-      const T = tray(svg, 395, 108, .7);
-      const pool = add(T.top, "rect", {x: 6, width: 188, y: 254, height: 0, rx: 10, fill: "#9fd0ec", opacity: .6});
-      const stream = add(svg, "path", {fill: "none", stroke: "#9fd0ec", "stroke-width": 7, "stroke-linecap": "round", opacity: 0});
-      const holder = add(svg, "g", {}), b = bottle(holder, -45, -55, 90, 110, "");
-      const bc = [], tc = [], fc = [], pool0 = [];
-      for (let k = 0; k < QT.cells; k++) {
-        bc.push(cell(b.cells, rnd(-37, 37), rnd(-24, 50), .7));
-        const p = [rnd(16, 184), rnd(166, 248)]; pool0.push(p); tc.push(cell(T.top, p[0], p[1], 1)); fc.push(cell(svg, 0, 0, .7));
-      }
-      add(svg, "text", {x: 465, y: 312, "text-anchor": "middle", "font-size": 14, "font-weight": 700, fill: "#26272a"}, "97 wells: 49 big, 48 small");
-      return a => {
-        const [cx, cy] = kf(a, [[0, 170, 225], [.26, 380, 64], [.86, 380, 64], [1, 175, 225]]), rot = 112 * ease(seg(a, .05, .28)) - 112 * ease(seg(a, .86, 1));
-        at(holder, cx, cy, ` rotate(${rot.toFixed(1)})`); b.set(lerp(.8, 0, ease(seg(a, .3, .82))));
-        const r = rot * Math.PI / 180, mx = cx + 77 * Math.sin(r), my = cy - 77 * Math.cos(r);
-        const level = lerp(254, 150, ease(seg(a, .3, .84))), sy = 108 + .7 * level;
-        pool.setAttribute("y", level.toFixed(1)); pool.setAttribute("height", (254 - level).toFixed(1));
-        stream.setAttribute("d", `M${mx.toFixed(1)} ${my.toFixed(1)} Q 470 106 466 ${sy.toFixed(1)}`); fade(stream, a > .28 && a < .84 ? 1 : 0);
-        for (let k = 0; k < QT.cells; k++) {
-          const tk = .32 + .44 * k / QT.cells, u = seg(a, tk, tk + .06);
-          show(bc[k], a < tk); show(fc[k], a >= tk && u < 1); show(tc[k], u >= 1);
-          if (a >= tk && u < 1) at(fc[k], lerp(lerp(mx, 470, u), lerp(470, 466, u), u), lerp(lerp(my, 106, u), lerp(106, sy + 8, u), u));
-        }
-      };
-    }
-    // ─ 5. through the sealer: in pooled, out split among the wells ─
-    function s5(svg) {
-      lab(svg);
-      const L = add(svg, "g", {}), R = add(svg, "g", {}), idL = "qs" + (++uid), idR = "qs" + (++uid);
-      add(add(svg, "clipPath", {id: idL}), "rect", {x: 0, y: 0, width: 300, height: 340}); add(add(svg, "clipPath", {id: idR}), "rect", {x: 300, y: 0, width: 300, height: 340});
-      L.setAttribute("clip-path", `url(#${idL})`); R.setAttribute("clip-path", `url(#${idR})`);
-      const mL = add(L, "g", {}), mR = add(R, "g", {}), before = tray(mL, 0, 0, .7), after = tray(mR, 0, 0, .7);
-      add(before.top, "rect", {x: 6, y: 150, width: 188, height: 104, rx: 10, fill: "#9fd0ec", opacity: .6});
-      for (let k = 0; k < QT.cells; k++) cell(before.top, rnd(16, 184), rnd(166, 248), 1);
-      after.wells.forEach(w => w.setAttribute("fill", "#cde8f6"));
-      seat.forEach(([x, y]) => cell(after.top, x, y, 1));
-      const m = add(svg, "g", {});
-      add(m, "rect", {x: 226, y: 70, width: 148, height: 220, rx: 12, fill: "#6f7c86"});
-      add(m, "rect", {x: 226, y: 70, width: 148, height: 34, rx: 12, fill: "#59656e"});
-      add(m, "text", {x: 288, y: 93, "text-anchor": "middle", "font-size": 15, "font-weight": 900, fill: "#fff"}, "Sealer");
-      const light = add(m, "circle", {cx: 352, cy: 87, r: 5.5, fill: "#3f4a52"});
-      add(m, "rect", {x: 226, y: 180, width: 148, height: 8, fill: "#4a555d"});
-      const tl = add(svg, "text", {x: 110, y: 316, "text-anchor": "middle", "font-size": 13.5, "font-weight": 700, fill: "#26272a"}, "in: the water pooled");
-      const tr = add(svg, "text", {x: 490, y: 316, "text-anchor": "middle", "font-size": 13.5, "font-weight": 700, fill: "#26272a"}, "out: split among 97 wells");
-      return a => {
-        const x = lerp(36, 424, ease(seg(a, .06, .94)));
-        at(mL, x, 96, " scale(1)"); at(mR, x, 96, " scale(1)");
-        light.setAttribute("fill", x > 160 && x < 300 ? "#3fd07a" : "#3f4a52");
-        fade(tl, 1 - seg(a, .3, .45)); fade(tr, seg(a, .75, .9));
-      };
-    }
-    // ─ 6. a night at 41 °C: one cell becomes a crowd ─
-    function s6(svg) {
-      lab(svg);
-      add(svg, "rect", {x: 34, y: 28, width: 284, height: 262, rx: 14, fill: "#66737d"});
-      add(svg, "text", {x: 176, y: 52, "text-anchor": "middle", "font-size": 16, "font-weight": 900, fill: "#fff"}, "Incubator · 41 °C");
-      add(svg, "rect", {x: 58, y: 64, width: 236, height: 210, rx: 8, fill: "#e3edf3"});
-      add(svg, "rect", {x: 300, y: 140, width: 8, height: 60, rx: 3, fill: "#4a555d"});
-      const T = tray(svg, 106, 72, .7);
-      T.wells.forEach(w => w.setAttribute("fill", "#cde8f6"));
-      const colonies = occupied.map(w => {
-        const big = w < 49, cap = big ? 14 : 4, [cx, cy] = center(w), dots = [];
-        for (let i = 0; i < cap; i++) dots.push(add(T.top, "circle", {cx: (cx + (big ? rnd(-7, 7) : rnd(-2.2, 2.2))).toFixed(1), cy: (cy + (big ? rnd(-6.5, 6.5) : rnd(-2.2, 2.2))).toFixed(1), r: big ? 1.7 : 1.2, fill: ENT}));
-        return {w, m: filled[w], cap, dots};
-      });
-      const seats = seat.map(([x, y]) => cell(T.top, x, y, 1));
-      add(svg, "circle", {cx: 452, cy: 92, r: 52, fill: "#fff", stroke: "#26272a", "stroke-width": 3});
-      for (let i = 0; i < 12; i++) add(svg, "line", {x1: 452, y1: 46, x2: 452, y2: i % 3 ? 50 : 54, stroke: "#26272a", "stroke-width": i % 3 ? 1.5 : 2.5, transform: `rotate(${i * 30} 452 92)`});
-      const hand = add(svg, "line", {x1: 452, y1: 92, x2: 452, y2: 54, stroke: "#b5310a", "stroke-width": 3, "stroke-linecap": "round"});
-      add(svg, "circle", {cx: 452, cy: 92, r: 4, fill: "#26272a"});
-      const hrs = add(svg, "text", {x: 452, y: 168, "text-anchor": "middle", "font-size": 16, "font-weight": 900, fill: "#26272a"}, "0 h");
-      const one = occupied.find(w => w < 49 && filled[w] === 1), [ox, oy] = center(one);
-      add(svg, "line", {x1: 106 + .7 * ox, y1: 72 + .7 * oy, x2: 406, y2: 236, stroke: "#26272a", "stroke-width": 1.2, "stroke-dasharray": "3 3", opacity: .55});
-      const zid = "qz" + (++uid);
-      add(add(svg, "clipPath", {id: zid}), "circle", {cx: 452, cy: 236, r: 44});
-      const zf = add(svg, "circle", {cx: 452, cy: 236, r: 46, fill: "#eef6fa", stroke: "#26272a", "stroke-width": 2.5});
-      const zg = add(svg, "g", {"clip-path": `url(#${zid})`}), zc = [];
-      for (let i = 0; i < 128; i++) { const r = 40 * Math.sqrt(Math.random()), t = Math.random() * 2 * Math.PI; zc.push(cell(zg, 452 + r * Math.cos(t), 236 + r * Math.sin(t), .8)); }
-      at(zc[0], 452, 236);
-      const zl = add(svg, "text", {x: 452, y: 304, "text-anchor": "middle", "font-size": 13, "font-weight": 700, fill: "#26272a"}, "one well: 1 cell");
-      return a => {
-        const p = seg(a, .04, .82), d = Math.floor(p * 14);   // doublings: 1, 2, 4 … 1,024, then millions by morning
-        hand.setAttribute("transform", `rotate(${(720 * p).toFixed(1)} 452 92)`); hrs.textContent = Math.round(24 * p) + " h";
-        colonies.forEach(c => { const n = Math.min(c.cap, Math.round(c.m * Math.pow(2, 9 * p))); c.dots.forEach((e, i) => show(e, p > .02 && i < n)); });
-        seats.forEach(e => show(e, p <= .02));
-        occupied.forEach(w => T.wells[w].setAttribute("fill", mix("#cde8f6", "#8fdccf", p)));
-        const n = Math.min(128, Math.pow(2, d)); zc.forEach((e, i) => show(e, i < n));
-        zf.setAttribute("fill", mix("#eef6fa", "#b9ece3", p));
-        zl.textContent = "one well: " + (d === 0 ? "1 cell" : d < 11 ? Math.pow(2, d).toLocaleString() + " cells" : "millions of cells");
-      };
-    }
-    // ─ 7. under the UV lamp the wells with growth glow ─
-    function s7(svg) {
-      const gid = "qg" + (++uid), defs = add(svg, "defs", {}), f = add(defs, "filter", {id: gid, x: "-80%", y: "-80%", width: "260%", height: "260%"});
-      add(f, "feGaussianBlur", {stdDeviation: 3, result: "b"}); const mg = add(f, "feMerge", {}); add(mg, "feMergeNode", {in: "b"}); add(mg, "feMergeNode", {in: "SourceGraphic"});
-      const cg = add(defs, "linearGradient", {id: gid + "c", x1: 0, y1: 0, x2: 0, y2: 1}); add(cg, "stop", {offset: 0, "stop-color": "#b48cff", "stop-opacity": .55}); add(cg, "stop", {offset: 1, "stop-color": "#b48cff", "stop-opacity": 0});
-      add(svg, "rect", {x: 0, y: 0, width: 600, height: 340, fill: "#0f1b2a"});
-      add(svg, "rect", {x: 0, y: 284, width: 600, height: 8, fill: "#24364a"}); add(svg, "rect", {x: 0, y: 292, width: 600, height: 48, fill: "#1a2838"});
-      const cone = add(svg, "polygon", {points: "184,52 416,52 500,286 100,286", fill: `url(#${gid}c)`, opacity: 0});
-      add(svg, "rect", {x: 170, y: 24, width: 260, height: 26, rx: 7, fill: "#3b4a5c"});
-      const tube = add(svg, "rect", {x: 184, y: 44, width: 232, height: 9, rx: 4, fill: "#4b3a8a"});
-      add(svg, "text", {x: 300, y: 42, "text-anchor": "middle", "font-size": 12, "font-weight": 700, fill: "#a9bccd"}, "long-wave UV lamp");
-      const T = tray(svg, 228, 84, .7, true), order = occupied.slice().sort(() => Math.random() - .5);
-      add(svg, "text", {x: 40, y: 124, "font-size": 13, "font-weight": 700, fill: "#a9bccd"}, "big wells glowing");
-      const nb = add(svg, "text", {x: 40, y: 168, "font-size": 42, "font-weight": 900, fill: "#5ec8ff"}, "0");
-      add(svg, "text", {x: 40, y: 212, "font-size": 13, "font-weight": 700, fill: "#a9bccd"}, "small wells glowing");
-      const ns = add(svg, "text", {x: 40, y: 256, "font-size": 42, "font-weight": 900, fill: "#5ec8ff"}, "0");
-      return a => {
-        const on = a >= .18; tube.setAttribute("fill", on ? "#cdb2ff" : "#4b3a8a"); tube.setAttribute("filter", on ? `url(#${gid})` : ""); fade(cone, seg(a, .18, .3));
-        let b = 0, s = 0;
-        order.forEach((w, i) => { const lit = a >= .3 + .5 * i / order.length; T.wells[w].setAttribute("fill", lit ? "#5ec8ff" : "#1b2a3a"); T.wells[w].setAttribute("filter", lit ? `url(#${gid})` : ""); if (lit) w < 49 ? b++ : s++; });
-        nb.textContent = b; ns.textContent = s;
-      };
-    }
-    // ─ 8. the count becomes a number ─
-    function s8(svg) {
-      lab(svg);
-      add(svg, "rect", {x: 70, y: 22, width: 460, height: 260, rx: 16, fill: "#fff", stroke: "#d9e4e8", "stroke-width": 1.5});
-      const rows = [add(svg, "g", {}), add(svg, "g", {}), add(svg, "g", {}), add(svg, "g", {})];
-      add(rows[0], "rect", {x: 96, y: 48, width: 36, height: 40, rx: 5, fill: "#1d2c3d"});
-      [[105, 58], [118, 58], [105, 70], [123, 76], [112, 80]].forEach(([x, y]) => add(rows[0], "circle", {cx: x, cy: y, r: 3.6, fill: "#5ec8ff"}));
-      add(rows[0], "text", {x: 148, y: 74, "font-size": 18, "font-weight": 900, fill: "#26272a"}, `${QT.big} big + ${QT.small} small wells glowed`);
-      for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) add(rows[1], "rect", {x: 96 + c * 9, y: 104 + r * 10, width: 8, height: 9, fill: r === 1 && c === 2 ? "#5ec8ff" : "#e3eaef"});
-      add(rows[1], "text", {x: 148, y: 122, "font-size": 18, "font-weight": 900, fill: "#26272a"}, `MPN table: ${QT.tray} per 100 mL`);
-      add(rows[1], "text", {x: 148, y: 140, "font-size": 12.5, fill: "#5f5e5a"}, "the most likely number of bacteria");
-      add(rows[2], "circle", {cx: 114, cy: 172, r: 17, fill: "#eef3f7"}); add(rows[2], "text", {x: 114, y: 177, "text-anchor": "middle", "font-size": 13, "font-weight": 900, fill: "#26272a"}, "×10");
-      add(rows[2], "text", {x: 148, y: 178, "font-size": 18, "font-weight": 900, fill: "#26272a"}, "for the 1-in-10 dilution");
-      const g = QT.result >= LIMIT ? ["over the state limit of " + LIMIT, "#f6d6cc", "#8a2a0c"] : QT.result >= CAUTION ? ["caution, Surfrider's tier from " + CAUTION, "#fbeccd", "#7a5200"] : ["meets the standard", "#d9efe6", "#1d5c46"];
-      add(rows[3], "line", {x1: 96, x2: 504, y1: 202, y2: 202, stroke: "#e3eaef", "stroke-width": 1.5});
-      add(rows[3], "text", {x: 96, y: 262, "font-size": 54, "font-weight": 900, fill: "#26272a"}, QT.result.toLocaleString());
-      add(rows[3], "text", {x: 222, y: 234, "font-size": 15, "font-weight": 700, fill: "#26272a"}, "Enterococcus per 100 mL of seawater");
-      add(rows[3], "rect", {x: 222, y: 244, width: 7.4 * g[0].length + 24, height: 26, rx: 13, fill: g[1]});
-      add(rows[3], "text", {x: 234, y: 262, "font-size": 13, "font-weight": 700, fill: g[2]}, g[0]);
-      return a => rows.forEach((r, i) => { const o = seg(a, .08 + .2 * i, .22 + .2 * i); fade(r, o); at(r, 0, 10 * (1 - o)); });
-    }
-
-    const view = $("qt-view"), track = $("qt-track"), pin = $("qt-pin"), intro = track.querySelector(".qt-intro");
-    const panels = [...track.querySelectorAll(".qt-step")], dots = [...$("qt-dots").children];
-    const ups = panels.map((p, i) => [s1, s2, s3, s4, s5, s6, s7, s8][i](p.querySelector(".qt-art")));
-    // Pinned, the page's scroll runs a script of segments: slide to a step, hold while it plays, slide on.
-    let W = 0, S = 0, centers = [], SEG = [], ENDS = [], last = [];
-    function layout() {
-      W = view.clientWidth;
-      const pw = W < 700 ? W : Math.min(620, Math.round(W * .56)), on = !REDUCE && innerHeight >= 520;
-      qtBox.style.setProperty("--pw", pw + "px"); qtBox.style.setProperty("--iw", W + "px");   // the intro fills the view, so step 1 slides in from the right
-      const total = W + panels.length * pw + (W - pw) / 2;
-      track.style.width = total + "px"; track.style.paddingRight = ((W - pw) / 2) + "px";
-      qtBox.classList.toggle("pinned", on);
-      $("qt-hint").textContent = on ? "Keep scrolling down: the bench slides sideways" : "Swipe sideways, or use the arrows below";
-      centers = [0].concat(panels.map((p, i) => W + i * pw + pw / 2 - W / 2));
-      const hold = Math.max(300, Math.min(480, innerHeight * .5));   // scroll spent on each step's animation
-      SEG = []; ENDS = [0]; S = 0;
-      centers.slice(1).forEach((c, i) => { const len = (c - centers[i]) * .6; SEG.push({x0: centers[i], x1: c, s0: S, s1: S + len}); S += len; SEG.push({i: i + 1, x: c, s0: S, s1: S + hold}); S += hold; ENDS.push(S); });
-      if (on) {
-        const bar = document.querySelector(".tabbar"), barH = bar && getComputedStyle(bar).display !== "none" ? bar.getBoundingClientRect().height : 0, h = innerHeight - barH - 16;
-        pin.style.minHeight = h + "px"; qtBox.style.height = (h + S) + "px";
-      } else { pin.style.minHeight = ""; qtBox.style.height = ""; track.style.transform = ""; }
-      last = []; frame();
-    }
-    function frame() {
-      const A = new Array(centers.length).fill(0); let x = 0, best = 0;
-      if (qtBox.classList.contains("pinned")) {
-        const s = clamp(8 - qtBox.getBoundingClientRect().top, 0, S);
-        for (const g of SEG) {
-          if (g.i) { if (s >= g.s1) { A[g.i] = 1; continue; } if (s > g.s0) A[g.i] = (s - g.s0) / (g.s1 - g.s0); x = g.x; best = g.i; break; }
-          if (s >= g.s1) { x = g.x1; best = centers.indexOf(g.x1); continue; }
-          x = lerp(g.x0, g.x1, Math.max(0, (s - g.s0) / (g.s1 - g.s0))); best = x - g.x0 > (g.x1 - g.x0) / 2 ? centers.indexOf(g.x1) : centers.indexOf(g.x0); break;
-        }
-        if (s >= S) { x = centers[centers.length - 1]; best = centers.length - 1; }
-        track.style.transform = `translate3d(${(-x).toFixed(1)}px,0,0)`;
-      } else {   // swiping: a step plays as it comes to the middle
-        x = view.scrollLeft; const pw = panels[0].offsetWidth;
-        centers.forEach((c, i) => { A[i] = REDUCE ? 1 : clamp((x - (c - pw * .8)) / (pw * .8)); if (Math.abs(c - x) < Math.abs(centers[best] - x)) best = i; });
-      }
-      for (let i = 1; i < centers.length; i++) if (last[i] === undefined || Math.abs(last[i] - A[i]) > .002) { ups[i - 1](A[i]); last[i] = A[i]; }
-      dots.forEach((d, i) => d.classList.toggle("on", i + 1 === best));
-      $("qt-prev").disabled = best === 0; $("qt-next").disabled = best === centers.length - 1;
-      return best;
-    }
-    // The arrows glide: about two and a half seconds a step, so each step plays on the way; any wheel, touch or key stops it.
-    let glide = 0;
-    const stopGlide = () => { glide = 0; };
-    ["wheel", "touchstart", "keydown", "mousedown"].forEach(ev => addEventListener(ev, e => { if (!e.target.closest || !e.target.closest(".qt-nav")) stopGlide(); }, {passive: true}));
-    function glideTo(y) {
-      const y0 = scrollY, d = y - y0, ms = Math.min(6000, Math.max(900, Math.abs(d) * 3.2)), t0 = performance.now(), id = ++glide;
-      (function step(now) {
-        if (glide !== id) return;
-        const t = Math.min(1, (now - t0) / ms); scrollTo(0, y0 + d * (t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2));
-        if (t < 1) requestAnimationFrame(step); else glide = 0;
-      })(t0);
-    }
-    function go(i) {   // to the end of step i's hold, so the glide there plays it
-      i = Math.max(0, Math.min(centers.length - 1, i));
-      if (qtBox.classList.contains("pinned")) { const y = qtBox.getBoundingClientRect().top + scrollY - 8 + ENDS[i]; REDUCE ? scrollTo(0, y) : glideTo(y); }
-      else view.scrollTo({left: centers[i], behavior: REDUCE ? "auto" : "smooth"});
-    }
-    $("qt-skip").addEventListener("click", e => { e.preventDefault(); stopGlide(); $("qt-after").scrollIntoView({block: "start"}); });
-    $("qt-prev").addEventListener("click", () => go(frame() - 1));
-    $("qt-next").addEventListener("click", () => go(frame() + 1));
-    $("qt-dots").addEventListener("click", e => { const b = e.target.closest("button"); if (b) go(+b.dataset.i); });
-    addEventListener("scroll", frame, {passive: true}); view.addEventListener("scroll", frame, {passive: true}); addEventListener("resize", layout);
-    layout();
+  // ── 4. How the lab counts: Kyle's four phases, one at a time; the section's stripe takes the phase's colour ──
+  const PH = [...document.querySelectorAll("#phases .phase")], STRIPES = ["#85b7eb", "#88c8d2", "#0f6e55", "#8932d3"];
+  let phase = 1;
+  function showPhase(n, focus) {
+    phase = Math.max(1, Math.min(PH.length, n));
+    PH.forEach((s, i) => { s.hidden = i + 1 !== phase; });
+    $("count").style.setProperty("--sec-stripe", STRIPES[phase - 1]);
+    $("ph-prev").disabled = phase === 1; $("ph-next").disabled = phase === PH.length;
+    $("ph-next").textContent = phase === PH.length ? "Try it yourself ↓" : "Next phase →"; $("ph-next").disabled = false;
+    if (focus) { const b = PH[phase - 1].querySelector(`.ph-track [data-p="${phase}"]`); if (b) b.focus({preventScroll: true}); }
   }
+  $("phases").addEventListener("click", e => { const b = e.target.closest(".ph-track button"); if (b) showPhase(+b.dataset.p, true); });
+  $("ph-prev").addEventListener("click", () => showPhase(phase - 1));
+  $("ph-next").addEventListener("click", () => { if (phase === PH.length) $("qt-after").scrollIntoView({behavior: REDUCE ? "auto" : "smooth"}); else showPhase(phase + 1); });
+  showPhase(1);
 
   // ── 5. The record: bars rise when the charts scroll into view ──
   function bars(svgId, readId, items, series, fmt) {
