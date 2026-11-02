@@ -63,9 +63,7 @@
   .caption.overflow{border-left-color:var(--k-red);background:var(--k-red-t)} .caption.overflow .step{background:var(--k-red)}
   .plants{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0}
   .plants span{background:var(--k-tint);border:1px solid var(--k-line);border-radius:12px;padding:4px 12px;font-size:13px;font-weight:500;color:var(--k-navy)}
-  .flow{fill:none;stroke-linecap:round;stroke-dasharray:10 12;animation:flow var(--dur,1.4s) linear infinite}
-  @keyframes flow{to{stroke-dashoffset:-44}}
-  @keyframes spin{to{transform:rotate(360deg)}}
+  .flow{fill:none;stroke-linecap:round;stroke-dasharray:10 12}   /* moved by the script's dash loop, not a CSS animation: see MOVE below */
   .drop{stroke:#368add;stroke-width:2;stroke-linecap:round;animation:fall var(--fall,.9s) linear infinite}
   .drop.heavy{stroke:#042c53;stroke-width:1.7;animation-name:fallh}
   @keyframes fall{from{transform:translateY(-40px)}to{transform:translateY(150px)}}
@@ -174,10 +172,9 @@
   .play-row output{font-size:24px;line-height:1.1;font-weight:700;letter-spacing:.05em;color:#26272a}
   #sys-count{font-size:15px;color:var(--k-ink)} #sys-count b{font-weight:700}
   #sys-sum{margin-left:auto;font-size:13px;font-weight:500;color:var(--k-muted)}
-  .sys-map{position:relative;z-index:0;height:540px;border:1px solid var(--k-line);border-radius:8px;background:var(--k-tint);display:grid;place-items:center;overflow:hidden;--mdur:1.8s}
+  .sys-map{position:relative;z-index:0;height:540px;border:1px solid var(--k-line);border-radius:8px;background:var(--k-tint);display:grid;place-items:center;overflow:hidden}
   .sys-map.leaflet-container{display:block}
-  .mflow{stroke-dasharray:6 12;animation:mflow var(--mdur,1.8s) linear infinite}
-  @keyframes mflow{to{stroke-dashoffset:-36}}
+  .mflow{stroke-dasharray:6 12}
   .of-ico{border-radius:50%;background:#fff;border:1.5px solid #26272a;box-sizing:border-box;transition:background .25s}
   .of-ico.on{background:#d15c5c}
   .of-ico.on::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid #d15c5c;animation:ping 1.4s ease-out infinite}
@@ -244,7 +241,7 @@
     .qt-view{margin:0 -16px;border-radius:0;border-left:0;border-right:0}.qt-art .lbl{font-size:calc(var(--fs) * 1.35)}   /* across the card's padding, up to its stripe; labels legible */
     .qt-skip{flex-basis:100%;text-align:center;margin:0}
     .qt-intro{padding:18px}.qt-intro h3{font-size:21px}.qt-cap > div{padding:10px 12px 12px}}
-  @media (prefers-reduced-motion:reduce){.flow,.drop,.m,.mflow,.of-ico.on::after,.cw,.qt-wave,.cloud > g{animation:none!important}.puff{animation:none!important;transform:translate(calc(var(--dx) * .5),0) scale(1.4);opacity:.5}.tl .dot{transition:none!important}.chart .bar,.well{transition:none!important}}
+  @media (prefers-reduced-motion:reduce){.drop,.m,.of-ico.on::after,.cw,.qt-wave,.cloud > g{animation:none!important}.puff{animation:none!important;transform:translate(calc(var(--dx) * .5),0) scale(1.4);opacity:.5}.tl .dot{transition:none!important}.chart .bar,.well{transition:none!important}}
 </style>
 </head>
 <body>
@@ -553,6 +550,32 @@
   const REDUCE = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
   const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
 
+  // Moving dashes and the pump's impeller: one loop moves each by its own speed, eased toward its target, so a change of
+  // speed glides. (A CSS animation whose duration changes mid-run jumps to a new point in its cycle, and the pipes'
+  // dashes skipped backwards and lurched while a storm played.) Each group runs only while it is near the screen.
+  const MOVE = {groups: {}, last: 0, raf: 0};
+  function mover(group, el, period, spin) {
+    const g = MOVE.groups[group] = MOVE.groups[group] || {on: false, items: []};
+    const m = {el, period, spin, v: 0, cur: null, off: 0}; g.items.push(m); return m;
+  }
+  function moveFrame(now) {
+    const dt = MOVE.last ? Math.min(0.1, (now - MOVE.last) / 1000) : 0; MOVE.last = now; let any = false;
+    for (const g of Object.values(MOVE.groups)) {
+      if (!g.on) continue; any = true;
+      for (const m of g.items) {
+        m.cur = m.cur == null ? m.v : m.cur + (m.v - m.cur) * Math.min(1, dt * 3);   // about a third of a second to a new speed
+        m.off = (m.off + m.cur * dt) % m.period;
+        if (m.spin) m.el.setAttribute("transform", `rotate(${m.off.toFixed(1)} ${m.spin})`); else m.el.style.strokeDashoffset = (-m.off).toFixed(2);
+      }
+    }
+    MOVE.raf = any ? requestAnimationFrame(moveFrame) : 0; if (!any) MOVE.last = 0;
+  }
+  function watch(group, box) {   // run the group while its box is within 300 px of the screen
+    if (REDUCE) return;
+    const set = on => { MOVE.groups[group].on = on; if (on && !MOVE.raf) MOVE.raf = requestAnimationFrame(moveFrame); };
+    if ("IntersectionObserver" in window) new IntersectionObserver(es => set(es.some(e => e.isIntersecting)), {rootMargin: "300px 0px"}).observe(box); else set(true);
+  }
+
   // ── 1. Where the rain goes: one number, r from 0 to 1, drives every pipe; the four stages pick r, a storm sweeps it ──
   const SVGNS = "http://www.w3.org/2000/svg";
   function rainLayer(id, n, heavy) {   // light rain: short, slow, upright streaks; heavy rain: long, fast, slanted ones
@@ -582,7 +605,11 @@
     [1.01, "Overflow", "Storage is full. The settled water passes under the baffle, which holds back floating trash, then over the weir and out a permitted outfall at the shore: a combined sewer discharge. Being fresh water, it rises and spreads across the surface. Settling in the storage counts as the equivalent of primary treatment, which is why SFPUC calls it a discharge rather than an overflow. SFPUC posts the nearby beaches and samples them until they clear."],
   ];
   function width(id, w) { const el = $(id); el.setAttribute("stroke-width", w.toFixed(1)); el.style.opacity = w > 0.5 ? 1 : 0; }
-  function speed(id, s) { $(id).style.setProperty("--dur", (1.8 - 1.3 * s).toFixed(2) + "s"); }
+  const FLOW = {};   // each pipe's dashes: one 22 px pattern (10 on, 12 off), from 24 px/s idling to 88 px/s in a storm
+  ["f-home", "f-roof", "f-drain", "f-drain2", "f-main", "f-pump", "f-out", "f-over"].forEach(id => { FLOW[id] = mover("rain", $(id), 22); });
+  FLOW["f-home"].v = 32;
+  const IMPELLER = mover("rain", $("impeller"), 360, "420 352");
+  function speed(id, s) { FLOW[id].v = 44 / (1.8 - 1.3 * s); }
   function setRain(r, aftermath, linger) {   // linger: what is left of the plume once the overflow has stopped (0 to 1)
     const light = Math.round(clamp(r / 0.45) * LIGHT.length), heavy = Math.round(Math.pow(clamp((r - 0.3) / 0.7), 0.8) * HEAVY.length);
     LIGHT.forEach((d, i) => { d.style.display = i < light ? "" : "none"; }); HEAVY.forEach((d, i) => { d.style.display = i < heavy ? "" : "none"; });
@@ -591,7 +618,7 @@
     STAGES.forEach((b, i) => b.setAttribute("aria-pressed", String(i === stage)));
     width("f-drain", r < 0.03 ? 0 : 3 + 6 * r); speed("f-drain", r); width("f-drain2", r < 0.03 ? 0 : 3 + 6 * r); speed("f-drain2", r);
     width("f-roof", r < 0.03 ? 0 : 2 + 4 * r); speed("f-roof", r);
-    $("impeller").style.transformOrigin = "420px 352px"; $("impeller").style.animation = REDUCE ? "none" : "spin " + (1.6 - 1.2 * clamp(r / 0.3)).toFixed(2) + "s linear infinite";
+    IMPELLER.v = 360 / (1.6 - 1.2 * clamp(r / 0.3));   // degrees a second: a turn in 1.6 s dry, 0.4 s once it rains
     width("f-main", 7 + 13 * clamp(r / 0.8)); speed("f-main", clamp(0.3 + r));
     width("f-pump", 5 + 5 * clamp(r / 0.3)); speed("f-pump", clamp(r / 0.3));
     width("f-out", 4 + 4 * clamp(r / 0.3)); speed("f-out", clamp(r / 0.3));
@@ -630,7 +657,7 @@
       if (t < plan[plan.length - 1][0]) requestAnimationFrame(tick); else { stopStorm(); setRain(0, false, 0); }
     })(t0);
   });
-  setRain(0, false, 0);
+  setRain(0, false, 0); watch("rain", $("scene"));
 
   // ── 2. The system from above: Leaflet loads only when the map nears the screen ──
   {% if system %}
@@ -656,19 +683,22 @@
     return "<b>" + esc(o.name) + "</b><br>" + esc(o.water) + "<br>" + (o.plant === "oceanside" ? "Westside" : "Bayside") + " system · discharged on " + o.days + " days since October 2016"
          + "<br><b>" + esc(s.label) + ":</b> " + storm;
   }
+  const MAP_FLOWS = [];
+  function mapFlow(line, period) { const m = mover("map", line.getElement(), period); m.v = 20; MAP_FLOWS.push(m); return line; }   // a dash pattern's length: 18 px (6 + 12), the arteries' 14 (4 + 10)
   function drawMap() {
     $("sys-load").remove();
     MAP = L.map(mapBox, {scrollWheelZoom: false, zoomSnap: 0.25});
     L.tileLayer({{ BASEMAP.url|tojson }}, {{ BASEMAP.options|tojson }}).addTo(MAP);   // the site's one basemap: shared/basemap.py
     SYS.arteries.forEach(r => {   // schematic: which way each neighborhood drains, not where its pipes run
       L.polyline(r.pts, {color: "#888780", weight: 6, opacity: 0.14, interactive: false}).addTo(MAP);
-      L.polyline(r.pts, {color: "#888780", weight: 1.8, opacity: 0.95, className: "mflow art"}).bindTooltip(esc(r.name) + " → the shoreline storage", {sticky: true}).addTo(MAP);
+      mapFlow(L.polyline(r.pts, {color: "#888780", weight: 1.8, opacity: 0.95, className: "mflow art"}).bindTooltip(esc(r.name) + " → the shoreline storage", {sticky: true}).addTo(MAP), 14);
     });
     SYS.ring.forEach(r => {
       if (r.kind === "storage") L.polyline(r.pts, {color: "#5f5e5a", weight: 8, opacity: 0.4, interactive: false}).addTo(MAP);
-      L.polyline(r.pts, {color: "#5f5e5a", weight: 2.5, opacity: 0.95, className: "mflow"}).bindTooltip(esc(r.name), {sticky: true}).addTo(MAP);   // drawn in the direction the sewage moves
+      mapFlow(L.polyline(r.pts, {color: "#5f5e5a", weight: 2.5, opacity: 0.95, className: "mflow"}).bindTooltip(esc(r.name), {sticky: true}).addTo(MAP), 18);   // drawn in the direction the sewage moves
     });
-    SYS.deep.forEach(d => L.polyline(d.pts, {color: "#0f6e56", weight: 4, opacity: 0.95, className: "mflow"}).bindTooltip(esc(d.name), {sticky: true}).addTo(MAP));
+    SYS.deep.forEach(d => mapFlow(L.polyline(d.pts, {color: "#0f6e56", weight: 4, opacity: 0.95, className: "mflow"}).bindTooltip(esc(d.name), {sticky: true}).addTo(MAP), 18));
+    watch("map", mapBox);
     SYS.outfalls.forEach(o => {
       PLUME[o.id] = L.circle([o.lat, o.lon], {radius: 1, stroke: false, fillColor: "#d15c5c", fillOpacity: 0, interactive: false}).addTo(MAP);
       OF[o.id] = L.marker([o.lat, o.lon], {icon: L.divIcon({className: "of-ico", iconSize: [14, 14]}), title: o.name, riseOnHover: true}).bindPopup(() => ofPopup(o)).addTo(MAP);
@@ -715,7 +745,7 @@
       const v = vol[o.id] || 0, fade = on.has(o.id) ? 1 : v ? clamp(1 - (T - end[o.id]) / 240) : 0;   // a plume fades over four hours once its outfall stops
       PLUME[o.id].setRadius(v ? Math.min(520, 50 + 26 * Math.sqrt(v)) : 1); PLUME[o.id].setStyle({fillOpacity: 0.3 * fade});
     });
-    mapBox.style.setProperty("--mdur", (1.8 - 1.1 * on.size / 30).toFixed(2) + "s");
+    MAP_FLOWS.forEach(m => { m.v = 20 + 30 * Math.min(1, on.size / 30); });   // the pipes run faster as more outfalls open
     $("sys-clock").textContent = clock(s, T);
     $("sys-count").innerHTML = "<b>" + on.size + "</b> discharging now · " + seen.size + " of " + s.outfalls + " so far · <b>" + num(mg) + "</b> MG";
     const x = 1000 * (T - W[0]) / (W[1] - W[0]); $("strip-head").setAttribute("x1", x); $("strip-head").setAttribute("x2", x);
