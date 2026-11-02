@@ -89,6 +89,9 @@ def test_page_renders_its_sections_and_has_its_own_tab():
     assert h.count('class="stop ') == len(P.TIMELINE) and h.count('<article class="qt-step"') == 8 and h.count('<figure') >= 8
     assert h.index('id="count"') < h.index('id="tray"') < h.index('id="record"')                           # the hands-on tray follows the story
     assert h.count('class="bug"') == 4 and 'id="tray"' in h and 'id="ch-post"' in h and 'id="ch-csd"' in h
+    # Kyle's reskin (2026-11-01): a numbered band on each section, four rain stages for the slider, the grades in the site's colours
+    assert h.count('<header class="sec-head">') == 6 and 'id="tracker"' in h and 'id="rain-r"' not in h
+    assert f"Under {P.ENTERO_CAUTION} per 100 mL" in h and 'class="g-caution"' in h and "#8932d3" not in h   # amber caution, never Kyle's purple
     assert 'id="archive"' not in h and 'id="compare"' not in h                                             # the then-and-now placeholder is gone (2026-10-20)
     assert '<meta name="robots" content="noindex">' in h and "prefers-reduced-motion:reduce" in h        # out of search; motion respects the setting
     learn = next(h2 for h2 in nav_model() if h2["key"] == "learn")

@@ -46,25 +46,26 @@ def _plants() -> dict:
 
 
 def _indicators() -> list[dict]:
-    """The four indicators, their single-sample limits from the shared standards, and who counts them here."""
+    """The four indicators, their single-sample limits from the shared standards, and who counts them here.
+    `look` captions the microscope drawing (Kyle's reskin, 2026-11-01)."""
     s = STANDARDS
     return [
-        {"code": "ENTERO", "name": "Enterococcus", "shape": "cocci", "color": "#2f8f83",
+        {"code": "ENTERO", "name": "Enterococcus", "shape": "cocci", "color": "#2f8f83", "look": "Round cells in pairs and short chains",
          "what": "Round bacteria that sit in pairs and short chains. They live in the guts of people and animals.",
          "why": "The indicator for ocean and bay beaches: it lasts longer in salt water than the coliforms do.",
          "limit": f"{s['ENTERO']['single_sample_max']:,}", "limit_note": f"Surfrider marks {ENTERO_CAUTION} and up as caution",
          "who": "The city lab, since July 2002 at the bay stations and October 2003 on the ocean beaches, and Surfrider's volunteers."},
-        {"code": "COLI_E", "name": "E. coli", "shape": "flagella", "color": "#7a63a8",
+        {"code": "COLI_E", "name": "E. coli", "shape": "flagella", "color": "#7a63a8", "look": "Rods with whip-like flagella",
          "what": "A rod-shaped gut bacterium, the best-known coliform, that swims with whip-like flagella.",
          "why": "A sign of fresh fecal contamination; most strains are harmless, which is what makes it a good stand-in.",
          "limit": f"{s['COLI_E']['single_sample_max']:,}", "limit_note": "",
          "who": "The city lab, from July 2002 at the bay stations and October 2003 on the ocean beaches until March 2021, when fecal coliform took its place."},
-        {"code": "COLI_FECAL", "name": "Fecal coliform", "shape": "rods", "color": "#b07a3a",
+        {"code": "COLI_FECAL", "name": "Fecal coliform", "shape": "rods", "color": "#b07a3a", "look": "Short rods that grow at body temperature",
          "what": "The coliforms that grow at body temperature, the gut-dwelling group that includes E. coli.",
          "why": "One of California's three beach indicators; when it is a large share of total coliform, the total coliform limit tightens.",
          "limit": f"{s['COLI_FECAL']['single_sample_max']:,}", "limit_note": "",
          "who": "The city lab, since March 2021, in place of E. coli."},
-        {"code": "COLI_TOTAL", "name": "Total coliform", "shape": "mixed", "color": "#5b7f99",
+        {"code": "COLI_TOTAL", "name": "Total coliform", "shape": "mixed", "color": "#5b7f99", "look": "Rods of every length; green ones come from soil and plants",
          "what": "The widest net: rod-shaped bacteria from guts, and also from soil and plants.",
          "why": "The city's longest record here: the only indicator it ran before 2002.",
          "limit": f"{s['COLI_TOTAL']['single_sample_max']:,}",
