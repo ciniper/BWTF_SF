@@ -41,8 +41,8 @@ def test_page_and_photos_sit_behind_the_passphrase():
     assert GATED == {"/alerts"} and not any("/learn/lab-sop" in h["paths"] or "/alerts/lab-sop" in h["paths"] for h in nav_model())   # a tab of Admin, not a hub row
     with app.test_client() as c:
         old = c.get("/learn/lab-sop")
-        assert old.status_code == 302 and old.headers["Location"].endswith("/alerts/lab-sop")      # old links and the Collect page's still land
-        assert 'href="/alerts/lab-sop">Lab SOP</a>' in c.get("/learn/collect").data.decode()
+        assert old.status_code == 302 and old.headers["Location"].endswith("/alerts/lab-sop")      # old links still land
+        assert "lab-sop" not in c.get("/learn/collect").data.decode()                                 # the public Collect page no longer points at a locked page (2026-11-04)
         locked = c.get("/alerts/lab-sop").data.decode()
         assert "passphrase" in locked.lower() and 'class="step' not in locked and 'name="next" value="/alerts/lab-sop"' in locked and "<h1>Lab SOP</h1>" in locked
         assert c.get(f"/alerts/lab-sop/photos/{name}").status_code == 401 and c.get(f"/learn/lab-sop/photos/{name}").status_code == 404
