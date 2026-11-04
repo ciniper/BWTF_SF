@@ -14,7 +14,8 @@
   .wrap{max-width:var(--page-w);margin:0 auto;padding:20px 24px 40px}
   .card .more{margin:10px 0 0;padding-top:10px;border-top:1px solid var(--sand2);color:var(--muted);font-size:14px}
   .card .more a{font-weight:600}
-  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:14px}   /* min(): a 320px phone's column is only 272px wide */
+  .cards{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  @media(max-width:599px){.cards{grid-template-columns:1fr}}
   .card{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:18px 20px}
   .card h2{margin:0 0 8px;font-size:17px;font-weight:900}
   .card p{margin:0 0 8px;color:var(--muted)}.card p:last-child{margin:0}
@@ -22,6 +23,9 @@
   .card ul{margin:0;padding:0 0 0 18px;color:var(--muted)}.card li{margin:0 0 6px}
   .card li b{color:var(--ink)}
   .legend{list-style:none;padding:0}.legend li{display:flex;gap:10px;align-items:flex-start}.legend .status-dot{margin-top:6px}
+  .card .sub-note{list-style-type:"○ ";margin:4px 0 0;padding-left:14px}
+  .card .sub-note li{margin:0}
+  .legend .sub-note li{display:list-item}
   .wide{grid-column:1/-1}
   .links{display:flex;flex-wrap:wrap;gap:8px}.links a{background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:13.5px}
   .links a:hover{border-color:var(--brand);text-decoration:none}
@@ -35,36 +39,57 @@
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
 {{ topbar() }}
 <div class="wrap">
-  {{ page_head("About this site", "Community science for San Francisco's beaches, by the volunteers of Surfrider Foundation San Francisco's Blue Water Task Force.") }}
+  {{ page_head("About this site", "Community science for San Francisco's beaches and the people who use them, from the volunteers of Surfrider San Francisco's Blue Water Task Force.") }}
   <div class="cards">
     <section class="card">
-      <h2>What this is</h2>
-      <p>A public dashboard of San Francisco's beach water quality: today's status as the city reports it, a rain-driven forecast of sewage overflows, the lab record from the city and from our volunteers, and the official record of beach postings and discharges.</p>
-      <p>The Blue Water Task Force is Surfrider's volunteer water-testing program. In San Francisco the chapter samples several beaches every two weeks, with extra rounds during storms, and runs its own lab; this site puts those results next to the city's, and watches the city's beach map so you hear about a posting or a discharge within minutes.</p>
+      <h2>What it is</h2>
+      <p>This site brings San Francisco's beach water quality into one place:</p>
+      <ul>
+        <li><b>Today's water quality status, as the city reports it.</b> Can I swim, surf, or play in the water today?</li>
+        <li><b>A forecast of rain-driven sewage overflows.</b> Has it rained enough that a sewage overflow is likely?</li>
+        <li><b>Lab results from the city and our volunteers.</b> What did the city's lab find, and what did the Blue Water Task Force find?</li>
+        <li><b>The official history of beach postings and discharges.</b> How often has each beach been posted or affected by sewage, and when?</li>
+      </ul>
+      <p>The Blue Water Task Force is Surfrider's volunteer-led water testing program. In San Francisco, our volunteers sample six locations across Ocean Beach, China Beach, Baker Beach, Crissy Field, and Aquatic Park every two weeks, add extra rounds during storms, and run the samples in our own lab. This site puts those results side by side with the city's, and watches the city's beach map so you hear about a posting (a warning sign for high bacteria) or a sewage discharge within minutes.</p>
+    </section>
+    <section class="card">
+      <h2>What we test for</h2>
+      <p>Beach water is tested for "indicator" bacteria, or bacteria that indicate whether water is contaminated and potentially unsafe to enter. While these bacteria aren't usually harmful on their own—and many are actually naturally occurring within our bodies—they do signal fecal contamination, which can carry viruses and bacteria that cause stomach illness, rashes, and ear or eye infections.</p>
+      <ul>
+        <li><b><em>Enterococcus</em> spp.</b>—a group of bacterial species that live in the intestines of humans and other warm-blooded animals. They survive well in salt water, which makes them the main indicator California uses for ocean beaches. For brevity, the rest of the site refers to them as <em>Enterococcus</em>.</li>
+        <li><b>Coliforms</b>—a large group of bacteria that have long been used to check water quality, especially in fresh water. They die off faster in salt water than <em>Enterococcus</em>, but California still sets beach limits for two measures:
+          <ul>
+            <li><b>Fecal coliforms</b>—a subset of coliforms that come specifically from the intestines of warm-blooded animals, pointing more directly to fecal contamination.</li>
+            <li><b>Total coliforms</b>—all coliforms, spanning those found in soil, plants, and water as well as in animal intestines.</li>
+          </ul>
+        </li>
+      </ul>
     </section>
     <section class="card">
       <h2>Where the numbers come from</h2>
+      <p>This site pulls together data from city (San Francisco), state (California), federal, and volunteer sources:</p>
       <ul>
-        <li><b>SFPUC's live beach map</b> — the posted signs and discharge flags the city shows right now, checked every minute. This drives the Today board and the alerts.</li>
-        <li><b>SF Gov Open Data</b> — the city lab's bacteria results (Enterococcus, fecal and total coliform) for twenty shoreline stations since July 2020.</li>
-        <li><b>Surfrider's Blue Water Task Force lab</b> — the volunteers' Enterococcus results and field notes since September 2023.</li>
-        <li><b>State Water Board BeachWatch</b> — every beach advisory San Francisco filed with the State since 1999.</li>
-        <li><b>CIWQS self-monitoring reports</b> — every combined-sewer discharge SFPUC reported to regulators since 2016.</li>
-        <li><b>NOAA rain gauges, NWS forecasts and NOAA tides</b> — the inputs to the overflow forecast and the conditions chips.</li>
+        <li><b>SFPUC's live beach map</b> — the warning signs and sewage discharge flags that the San Francisco Public Utilities Commission is showing right now. We check it every minute, and that data powers the Today page and the alerts.</li>
+        <li><b>SF Open Data</b> — the city lab's bacteria results (<em>Enterococcus</em>, fecal coliforms, and total coliforms) for 20 shoreline stations, going back to July 2020.</li>
+        <li><b>Surfrider's Blue Water Task Force lab</b> — our volunteers' <em>Enterococcus</em> results and field notes, going back to September 2023.</li>
+        <li><b>State Water Board BeachWatch</b> — every beach advisory San Francisco has filed with the state since 1999.</li>
+        <li><b>CIWQS self-monitoring reports</b> — every combined sewer discharge SFPUC has reported to state regulators since 2016, from the California Integrated Water Quality System.</li>
+        <li><b>NOAA and the National Weather Service</b> — rain gauges, rain forecasts, and tides, which feed the sewage overflow forecast and the rain and tide readings on the Today page.</li>
       </ul>
-      <p class="more">How these feeds move from the city's map to your inbox, minute by minute, is drawn out <a href="#built">below</a>. The collection steps behind the records pages are on <a href="/records">How we get the records</a>.</p>
+      <p class="more">How these feeds move from the city's map to your inbox, minute by minute, is drawn out <a href="#built">below</a>. The steps behind the records pages are on <a href="/records">How we get the records</a>.</p>
     </section>
     <section class="card">
-      <h2>What the colours mean</h2>
+      <h2>What the colors mean</h2>
+      <p>Each dot on the map shows the latest status for that sampling station. Here's how to read them:</p>
       <ul class="legend">
-        <li><i class="status-dot safe"></i><span><b>Safe</b> — the city's map shows the station meeting California's standards.</span></li>
-        <li><i class="status-dot caution"></i><span><b>Caution</b> — an Enterococcus result at or above 36 MPN/100 mL but under the 104 single-sample limit.</span></li>
-        <li><i class="status-dot posted"></i><span><b>Posted</b> — SFPUC's sign is up. Usually samples above State standards, sometimes a precaution; repeat samples are collected until it clears.</span></li>
-        <li><i class="status-dot discharge"></i><span><b>Discharge</b> — SFPUC's combined-sewer-discharge flag; the beach is posted proactively and sampled until it clears.</span></li>
-        <li><i class="status-dot unknown"></i><span><b>Not sampled</b> — no current result for the station.</span></li>
+        <li><i class="status-dot safe"></i><span><b>Safe</b> — the city's map shows this station meeting California's water quality standards.</span></li>
+        <li><i class="status-dot caution"></i><div><b>Caution</b> — bacteria levels are elevated but still within the state limit.<ul class="sub-note"><li>Specifically, an <em>Enterococcus</em> result of at least 36 MPN per 100 mL but below the 104 single-sample limit. (MPN, or "most probable number," is the standard estimate of how many bacteria are in a sample.)</li></ul></div></li>
+        <li><i class="status-dot posted"></i><div><b>Posted</b> — the city (SFPUC) has put up a warning sign at the beach.<ul class="sub-note"><li>This usually means bacteria levels are above state standards, though sometimes it's a precaution. The city will keep resampling that beach until the water tests safe.</li></ul></div></li>
+        <li><i class="status-dot discharge"></i><span><b>Discharge</b> — the city's combined sewer system has overflowed into the water nearby, usually after heavy rain. The beach is posted as a precaution and sampled until it clears.</span></li>
+        <li><i class="status-dot unknown"></i><span><b>Not sampled</b> — there's no current result for this station, meaning water safety is unknown.</span></li>
       </ul>
     </section>
-    <section class="card">
+    <section class="card wide">
       <h2>Not an official advisory</h2>
       <p>This is a community-science tool; posted signs and notices from SFPUC or the health department take precedence. SFPUC's own advice: during and immediately after rainfall, nearshore bacteria concentrations may be elevated, even when there has not been a combined sewer discharge.</p>
       <p>Beach Hotline: 1-877-SFBEACH (1-877-732-3224) or 415-242-2214. The city's own map is at <a href="https://webapps.sfpuc.org/sapps/beachesandbay.html" target="_blank" rel="noopener">webapps.sfpuc.org</a>.</p>
