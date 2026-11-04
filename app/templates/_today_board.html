@@ -4,7 +4,6 @@
     station opens the sample popover. Three macros, so any page that wants the board shares one implementation:
       board_styles()                     the <style> block
       board_section(board, sites=false)  the markup; sites lists every station as a chip under the zone tiles (/today)
-      conditions_strip(conditions)       the rain and tide pills, wherever the page puts them
       board_script(board)                the map + tiles JS; the layers JS activates itself when the page has a #layers strip (/today)
     Pages must load Leaflet 1.9.4 (CSS + deferred JS) and /static/sample_popover.js themselves. -#}
 
@@ -123,9 +122,6 @@
     .layers-toggle{display:inline-flex}
     .layers .layer-group{display:none}.layers .layer-group.open{display:flex}
   }
-  .conds{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 0}   /* rain, tide and the feed's cadence: at the bottom of the page for now (Chase, 2026-10-18) */
-  .conds span{background:var(--sand2);border-radius:999px;padding:6px 12px;font-size:13px;color:var(--muted)}
-  .conds .ic{color:var(--brand)}
   @media (max-width:980px){.board .grid{grid-template-columns:1fr}.map-wrap{min-height:300px}}
   @media (max-width:760px){
     .board{padding:18px 16px}
@@ -134,7 +130,6 @@
     .zone{padding:11px}.zone .nm{font-size:15px}
     .map-wrap{min-height:260px}
     .map-legend{position:static;background:none;border-radius:0;padding:8px 2px 0;gap:6px 12px}   /* under the map: over it, it covered 4 of 20 stations on the north shore (6 with Surfrider on) */
-    .conds.page-end{flex-wrap:wrap}
   }
   @media (max-width:420px){.zones{gap:8px}}
 </style>
@@ -179,12 +174,6 @@
 {%- endmacro %}
 
 {#- The rain and tide pills, on their own: Today draws them at the bottom of the page (Chase, 2026-10-18: "I may delete them later"). -#}
-{% macro conditions_strip(conditions) -%}
-  {% if conditions %}
-  <div class="conds page-end">{% for c in conditions %}<span class="with-ic">{{ c|safe }}</span>{% endfor %}<span>Status as the city reports it, checked every minute</span></div>
-  {% endif %}
-{%- endmacro %}
-
 {% macro board_script(board) -%}
 <script>
 // The city map: every monitoring station coloured by the status SFPUC shows right now

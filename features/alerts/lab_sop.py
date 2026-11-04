@@ -1,11 +1,12 @@
-"""Lab SOP (/learn/lab-sop, 2026-10-18): the Blue Water Task Force lab's procedure for testing a sample
+"""Lab SOP (/alerts/lab-sop, an Admin tab since 2026-11-04; Learn's /learn/lab-sop from 2026-10-18, which now redirects
+here): the Blue Water Task Force lab's procedure for testing a sample
 for Enterococcus with Enterolert and a Quanti-Tray, from the lab's wall pages ("(Incomplete) BWTF Lab
 Instructions Wall Pages", Chase, 2026-10-18): four phases, 25 steps.
 
-Content only, so the procedure can be edited without touching the template (app/templates/learn/sop.html):
+Content only, so the procedure can be edited without touching the template (app/templates/alerts/lab_sop.html):
   steps   n, title, text (trusted HTML: <b>, <b class="mix"> for the blue "mixing"), flag, photos, slots, tall (portrait crops)
-  photos  files in features/learn/sop_photos/ (cut from the wall pages' PDF), served only behind the passphrase at
-          /learn/lab-sop/photos/<file> (app/wsgi.py, since 2026-10-20), with an optional tag
+  photos  files in features/alerts/sop_photos/ (cut from the wall pages' PDF), served only behind the passphrase at
+          /alerts/lab-sop/photos/<file> (app/wsgi.py, since 2026-10-20), with an optional tag
           (COARSE, IN, ...), badge ({"big", "small"}), inset (drawn small over the photo before it) and
           pos (CSS object-position for the crop)
   slots   the wall pages' empty photo frames, by their caption; replace one with a photo when it is taken
@@ -156,7 +157,7 @@ def _stamp(name: str) -> str:
 
 
 def photo_url(name: str) -> str:
-    return f"/learn/lab-sop/photos/{name}?v={_stamp(name)}"   # content-stamped like asset(), so the private cache can keep it a day
+    return f"/alerts/lab-sop/photos/{name}?v={_stamp(name)}"   # content-stamped like asset(), so the private cache can keep it a day
 
 
 def steps() -> list[dict]:
@@ -185,8 +186,9 @@ def layout(items: list[dict]) -> list[dict]:
 
 def handle_page(query, body):
     phases = [{**ph, "items": layout(ph["items"])} for ph in PHASES]
-    html = render_template("learn/sop.html", phases=phases, n_steps=len(steps()))
+    html = render_template("alerts/lab_sop.html", phases=phases, n_steps=len(steps()))
     return 200, "text/html; charset=utf-8", html.encode()
 
 
-GET_ROUTES = {"/learn/lab-sop": handle_page}
+GET_ROUTES = {"/alerts/lab-sop": handle_page}
+REDIRECTS = {"/learn/lab-sop": "/alerts/lab-sop"}   # its Learn address, 2026-10-18 → 11-04 (the Collect page and old links)

@@ -3,7 +3,7 @@
 <link rel="icon" href="{{ asset('brand/favicon.ico') }}"><link rel="apple-touch-icon" sizes="144x144" href="{{ asset('brand/bwtf_144x144.png') }}">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Running costs — Sewage Alert System · Surfrider SF Blue Water Task Force</title>
+<title>Running costs — Admin · Surfrider SF Blue Water Task Force</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -11,12 +11,6 @@
 <style>
   body{margin:0;background:var(--sand);color:var(--ink);font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:15px;line-height:1.5}
   .wrap{max-width:var(--page-w);margin:0 auto;padding:20px 24px 40px}
-  /* the admin dashboard's tabs, as on /alerts: Real · Simulation · Running costs */
-  .admin-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 18px}
-  .admin-tabs a{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:999px;border:2px solid var(--line);background:#fff;color:var(--muted);font-weight:700;text-decoration:none}
-  .admin-tabs a small{font-weight:500;color:var(--faint)}
-  .admin-tabs a:hover{border-color:var(--sky)}
-  .admin-tabs a.on{background:var(--brand);border-color:var(--brand);color:#fff}.admin-tabs a.on small{color:rgba(255,255,255,.8)}
   .card{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;margin:0 0 14px}
   .card h2{margin:0 0 10px;font-size:17px;font-weight:900}
   .today{color:var(--muted);font-size:14px;margin:0 0 14px}.today b{color:var(--ink)}
@@ -45,6 +39,7 @@
   .status{color:var(--muted);font-size:13px;min-height:1.2em;margin:6px 0 0}
   @media (max-width:760px){.wrap{padding:14px 14px 30px}.ctl{grid-template-columns:1fr;gap:6px 0}.ctl .ctl-label{margin-top:8px}.kpis{grid-template-columns:1fr}}
 </style>
+{% from "alerts/_tabs.html" import admin_tab_styles, admin_tabs %}{{ admin_tab_styles() }}   {# Admin's tab row (2026-11-04) #}
 </head>
 <body>
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
@@ -57,11 +52,7 @@
     Brevo turns paid at {{ data.thresholds.brevo_paid_from }} subscribers; Vercel Pro, Supabase Pro and a domain start at {{ data.thresholds.pro_from }}. Prices were checked on {{ data.prices_checked }}.</p>
   {% endcall %}
 
-  <nav class="admin-tabs" aria-label="Sewage Alert System">
-    <a href="/alerts"><svg class="ic"><use href="#i-waves"/></svg> Real <small>SFPUC feed as published</small></a>
-    <a href="/alerts#sim"><svg class="ic"><use href="#i-flask"/></svg> Simulation</a>
-    <a href="/alerts/costs" class="on" aria-current="page"><svg class="ic"><use href="#i-receipt"/></svg> Running costs</a>
-  </nav>
+  {{ admin_tabs("costs") }}
 
   {% if data.today %}<p class="today">Today: <b>{{ data.today.subscribers }}</b> subscriber{{ '' if data.today.subscribers == 1 else 's' }}, <b>{{ data.today.texting }}</b> by text, averaging <b>{{ data.today.alerts_per_year }}</b> alerts a year from the zones they chose.</p>{% endif %}
 

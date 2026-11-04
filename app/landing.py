@@ -37,9 +37,8 @@ HUBS = [
             ("/forecast", "CSO Forecast",
              "Machine-learning forecast of combined-sewer-overflow risk from rainfall — a warning before discharges happen.",
              "risk from rain · next 3 days"),
-            ("/alerts", "Sewage Alert System",
-             "Live SFPUC status, bacteria readings, and real-time CSO alerts you can subscribe to by text or email.",
-             "coordinators · live board"),
+            # Admin (/alerts, the Sewage Alert System until 2026-11-04) left this row for a footer link the same day
+            # (app/templates/_frame.html), so beta testers never meet a passphrase page in the tabs
         ],
     },
     {
@@ -62,7 +61,7 @@ HUBS = [
         ],
     },
     {
-        "key": "record", "icon": "clipboard", "title": "Postings & discharges",
+        "key": "record", "icon": "clipboard", "title": "Discharges & postings",   # discharges first (Chase, 2026-11-04)
         "sub": "What the city reported, and when",
         "primary": None,
         "rows": [
@@ -86,7 +85,6 @@ HUBS = [
              "How San Francisco's sewers meet the shore, how the lab counts bacteria, and a century and a half of the system.",
              "the system · the lab · the record"),
             ("/learn/collect", "Collect", "Where we sample, how to take a sample, and the sheet's conditions.", "four sites · the sheet"),
-            ("/learn/lab-sop", "Lab SOP", "How the lab tests a sample, step by step, from the lab's wall pages.", "4 phases · 25 steps"),
         ],
     },
 ]
@@ -120,7 +118,9 @@ def nav_model() -> list[dict]:
 # "/today" serves the same page for every alert email and text since migration 021 links there.
 # Never make one redirect to the other: whichever side redirects pays a round trip on every visit.
 HOME_URL = "https://bwtf-sf.vercel.app/"
-PAGE_ALIASES = {"/today": "/", "/index.html": "/", "/alerts/costs": "/alerts"}   # Running costs is a tab of the alerts dashboard
+# Admin and its tabs (/alerts, /alerts/costs, /alerts/lab-sop, /alerts/ui-overflow) sit in no hub since 2026-11-04,
+# so nothing in the tabs lights for them; their own tab row (alerts/_tabs.html) does
+PAGE_ALIASES = {"/today": "/", "/index.html": "/"}
 
 
 def canonical_path(path: str) -> str:
@@ -129,7 +129,7 @@ def canonical_path(path: str) -> str:
 
 
 # Pages behind the coordinators' passphrase: a lock icon in the tabs and the hub rows, and last in their row.
-GATED = {"/alerts", "/learn/lab-sop"}   # the Lab SOP since 2026-10-20 (app/wsgi.py gates the route and its photos)
+GATED = {"/alerts"}   # Admin, reached from the footer (no hub row since 2026-11-04); its tabs are gated with it in app/wsgi.py
 
 # Flat (href, icon, title, blurb) view of the same pages, kept for anything
 # that wants the list (tests, the sitemap of this repo's docs).
@@ -459,9 +459,14 @@ def _stations(sfpuc_api) -> list:
         return []
 
 
-def board_context(sfpuc_api, env_context=None, live_facts: bool = True) -> dict:
+# The live facts the board itself reads: each zone's forecast risk and the samples line. The hub cards' facts left Today
+# with the cards (2026-11-04, Admin's UI overflow tab), so Today reads only these.
+BOARD_FACTS = ("_forecast", "/samples")
+
+
+def board_context(sfpuc_api, env_context=None, live_facts: bool = True, fact_keys: tuple | None = None) -> dict:
     """Everything the Today page needs: the board, the conditions chips, the live facts
-    (the hub cards' and the board's), a timestamp.
+    (``fact_keys`` of them, every one when None), a timestamp.
 
     The four slow lookups — SFPUC's beach feed, the live facts, NWS rain, NOAA tides — run at the
     same time, so the page waits for the slowest one instead of all four in a row (2026-10-01:
@@ -470,7 +475,8 @@ def board_context(sfpuc_api, env_context=None, live_facts: bool = True) -> dict:
     from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=4, thread_name_prefix="board") as pool:
         f_stations = pool.submit(_stations, sfpuc_api)
-        f_facts = pool.submit(_live_facts) if live_facts else None
+        sources = None if fact_keys is None else {k: _FACT_SOURCES[k] for k in fact_keys}
+        f_facts = pool.submit(_live_facts, FACTS_BUDGET_SECONDS, sources) if live_facts else None
         f_rain = pool.submit(_rain_line, env_context)
         f_tide = pool.submit(_tide_line, env_context)
         stations = f_stations.result()
@@ -485,5 +491,18 @@ def board_context(sfpuc_api, env_context=None, live_facts: bool = True) -> dict:
         board["tone"], message = _status_banner(summary)
         board["headline"] = board["headline_html"] = message.split("</svg> ", 1)[-1]
     return {"board": board, "conditions": conditions, "facts": facts,
+            "generated": now_pacific().strftime("%B %-d, %Y at %-I:%M %p %Z")}
+
+
+def directory_context(env_context=None) -> dict:
+    """Admin's UI overflow tab (2026-11-04): what came off Today for the beta, as Today drew it — the hub cards with
+    their live facts (no row for Today itself), and the rain and tide pills. The facts and the two lookups run at once."""
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=3, thread_name_prefix="directory") as pool:
+        f_facts = pool.submit(_live_facts)
+        f_rain = pool.submit(_rain_line, env_context)
+        f_tide = pool.submit(_tide_line, env_context)
+        facts, conditions = f_facts.result(), f_rain.result() + f_tide.result()
+    return {"hubs": hubs_with_facts(facts, skip=("/",)), "conditions": conditions,
             "generated": now_pacific().strftime("%B %-d, %Y at %-I:%M %p %Z")}
 

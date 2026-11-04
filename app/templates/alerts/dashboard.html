@@ -5,7 +5,7 @@
 <link rel="icon" href="{{ asset('brand/favicon.ico') }}"><link rel="apple-touch-icon" sizes="144x144" href="{{ asset('brand/bwtf_144x144.png') }}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="refresh" content="120">
-    <title>SF Beach Water Quality Dashboard</title>
+    <title>Admin — SF Beach Water · Surfrider SF Blue Water Task Force</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -327,7 +327,7 @@
             font-size: 1.1em;
         }
 
-        .view-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 18px; }   /* three tabs wrap on a phone */
+        .view-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 18px; }   /* five tabs wrap on a phone */
         .view-tab { font-family: inherit; display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 999px; border: 2px solid #d9e4e8; background: #fff; color: #54576F; font-weight: 700; cursor: pointer; }
         .view-tab small { font-weight: 500; color: #8a93a3; }
         .view-tab.active { background: #0072BC; border-color: #0072BC; color: #fff; }
@@ -741,7 +741,7 @@
             <div class="header-row">
                 <div class="hero-copy">
                     <div class="hero-kicker">Blue Water Task Force • Surfrider SF</div>
-                    <h1>SF Sewage Alerts Dashboard</h1>
+                    <h1>Admin</h1>
                     <div class="subtitle">
                         Live SFPUC status, SF Gov lab results, and subscriber alert testing for the Surfrider San Francisco Blue Water Task Force.
                     </div>
@@ -765,6 +765,9 @@
             <button class="view-tab active" data-view="real" onclick="showView('real')"><svg class="ic"><use href="#i-waves"/></svg> Real <small>SFPUC feed as published</small></button>
             <button class="view-tab" data-view="sim" onclick="showView('sim')"><svg class="ic"><use href="#i-flask"/></svg> Simulation {% if simulation_count %}<span class="view-badge">{{ simulation_count }} active</span>{% endif %}</button>
             <a class="view-tab" href="/alerts/costs" style="text-decoration:none"><svg class="ic"><use href="#i-receipt"/></svg> Running costs <small>by subscriber count</small></a>
+            {#- the Lab SOP and UI overflow joined Admin on 2026-11-04: the same row as alerts/_tabs.html's ADMIN_TABS #}
+            <a class="view-tab" href="/alerts/lab-sop" style="text-decoration:none"><svg class="ic"><use href="#i-microscope"/></svg> Lab SOP</a>
+            <a class="view-tab" href="/alerts/ui-overflow" style="text-decoration:none"><svg class="ic"><use href="#i-clipboard"/></svg> UI overflow</a>
         </div>
 
         <div id="view-real" class="view">

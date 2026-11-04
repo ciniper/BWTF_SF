@@ -16,7 +16,9 @@ search until the facts in docs/learn_facts_to_check.md are checked. Leaflet load
                            storms in the CIWQS record replayed outfall by outfall, hour by hour.
   2c. How the lab counts   a scroll-pinned side-scroller: one bottle through Enterolert in a Quanti-Tray.
   4. A century and a half  a scrolling timeline, 1850s → today, from SFPUC's Sewer System Master Plan
-                           (2010) and this site's own records, with the plan's own photos.
+                           (2010) and this site's own records, with the plan's own photos. Parked in Admin's
+                           UI overflow tab since 2026-11-04 (app/templates/learn/_timeline.html): TIMELINE
+                           and PHOTO_CREDIT stay here, its content, for when it comes back.
 
 Everything here is read from the repo's own registries and record files; nothing calls a live API.
 """
@@ -33,7 +35,6 @@ from flask import render_template
 
 from features.discharges.page import _CSV as CSD_CSV
 from features.learn.collect import GET_ROUTES as COLLECT_ROUTES
-from features.learn.sop import GET_ROUTES as SOP_ROUTES
 from features.postings.page import _CSV as POSTINGS_CSV
 from shared.outfalls import OUTFALLS
 from shared.standards import ENTERO_CAUTION, STANDARDS
@@ -320,7 +321,7 @@ TIMELINE = [
 
 
 def learn_context() -> dict:
-    ctx = {"plants": _plants(), "indicators": _indicators(), "timeline": TIMELINE, "photo_credit": PHOTO_CREDIT, "caution": ENTERO_CAUTION,
+    ctx = {"plants": _plants(), "indicators": _indicators(), "caution": ENTERO_CAUTION,
            "entero_limit": STANDARDS["ENTERO"]["single_sample_max"]}
     q = _quanti_story()
     ctx.update(qt=q, qt_steps=_quanti_steps(q), entero_color=next(b["color"] for b in ctx["indicators"] if b["code"] == "ENTERO"))
@@ -337,5 +338,5 @@ def handle_page(query, body):
 
 
 # The hub's two other pages (Chase, 2026-10-18) live in their own modules: Collect (features/learn/collect.py) and the
-# Lab SOP (features/learn/sop.py).
-GET_ROUTES = {"/learn": handle_page, **COLLECT_ROUTES, **SOP_ROUTES}
+# The Lab SOP moved to an Admin tab on 2026-11-04 (features/alerts/lab_sop.py); /learn/lab-sop redirects there.
+GET_ROUTES = {"/learn": handle_page, **COLLECT_ROUTES}

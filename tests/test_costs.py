@@ -69,7 +69,7 @@ def test_the_page_and_its_api_sit_behind_the_alerts_passphrase():
         j = c.get("/alerts/api/costs?subscribers=2500&sms_share=0.1&email=ses&hyphen=1&prune=1").get_json()
         d = c.get("/alerts").data.decode()
     assert 'id="curve"' in h and 'class="seg-toggle" data-k="sms_share"' in h and 'href="/alerts/costs" class="on"' in h and 'name="robots" content="noindex"' in h
-    assert 'href="/alerts" class="on gated"' in h                                      # the Sewage Alert System tab stays lit on its costs tab
+    assert 'class="subtabs"' not in h and 'title="Coordinators only — needs the passphrase">Admin</a>' in h   # Admin is in no hub; its way in is the footer (2026-11-04)
     assert j["ok"] and j["params"]["email"] == "ses" and j["params"]["plain_hyphen"] and j["month"]["subscribers"] == 2_500 and len(j["curve"]["with_texts"]) == len(C.STEPS)
     assert all(x["source"].startswith("https://") for x in j["month"]["lines"]) and j["prices_checked"] == C.PRICES_CHECKED
     assert d.index('data-view="sim"') < d.index('href="/alerts/costs"')                 # the third tab on the dashboard

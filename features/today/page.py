@@ -4,8 +4,10 @@ board with room to experiment; the Main page was deleted 2026-09-30 (Chase: "who
 the main page") and Today took the root 2026-10-01, with a canonical tag naming ``/``.
 
 ``/today``                the Today board (app/landing.board_context → the shared
-                          _today_board.html macros), the Layers strip above it, and the
-                          hub cards and the Learn bar below it (render_page).
+                          _today_board.html macros) and the Layers strip above it
+                          (render_page). The hub cards, the Learn bar and the rain and
+                          tide pills under it moved to Admin's UI overflow tab on
+                          2026-11-04 (features/alerts/ui_overflow.py).
 ``/api/today/surfrider``  Surfrider's latest Enterococcus result at every site the
                           volunteers sample, with coordinates, graded by the shared
                           rule — drawn on the map as diamonds when toggled on.
@@ -32,18 +34,13 @@ from zoneinfo import ZoneInfo
 import requests
 from flask import render_template
 
-from app.landing import HOME_URL, board_context, hubs_with_facts
+from app.landing import BOARD_FACTS, HOME_URL, board_context
 from features.comparison.bwtf_api import SFBWTFClient
 from features.comparison.comparison import BWTF_TO_SFPUC_NAME, resolve_site
 from shared import supabase as sb
 from shared.sfpuc_api import SFPUCRealTimeAPI
 from shared.standards import ENTERO_CAUTION, STANDARDS, exceeds
 from shared.zones import ZONES
-
-try:
-    from shared.weather_tides import EnvironmentalContext
-except Exception:  # noqa: BLE001 — weather/tides are optional, as in app/wsgi.py
-    EnvironmentalContext = None
 
 _PACIFIC = ZoneInfo("America/Los_Angeles")
 
@@ -262,18 +259,14 @@ def build_replay_layer(now: Optional[datetime] = None, days: int = REPLAY_DAYS) 
 # ── routes ─────────────────────────────────────────────────────────────────────────────
 
 def render_page(ctx: dict) -> str:
-    """The home page from a board_context: the board, then the page directory that used to sit
-    under the Main page's board — the three hub cards (live facts where they answered; no card
-    row for Today itself) and the Learn bar."""
-    return render_template("today/page.html", board=ctx["board"], conditions=ctx["conditions"], generated=ctx["generated"],
-                           hubs=hubs_with_facts(ctx.get("facts"), skip=("/",)), canonical=HOME_URL)
+    """The home page from a board_context: the Layers strip and the board."""
+    return render_template("today/page.html", board=ctx["board"], generated=ctx["generated"], canonical=HOME_URL)
 
 
 def handle_page(query, body):
     sfpuc = SFPUCRealTimeAPI()
-    env = EnvironmentalContext() if EnvironmentalContext else None
-    try:
-        ctx = board_context(sfpuc, env)
+    try:   # no weather or tides (their pills moved to UI overflow), and only the facts the board reads
+        ctx = board_context(sfpuc, None, fact_keys=BOARD_FACTS)
     except Exception as e:  # noqa: BLE001 — never blank the page on a flaky upstream
         return 500, "text/html; charset=utf-8", f"<!doctype html><meta charset='utf-8'><h1>Today</h1><pre>{e}</pre>".encode()
     return 200, "text/html; charset=utf-8", render_page(ctx).encode()
