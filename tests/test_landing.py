@@ -11,16 +11,16 @@ sys.path.insert(0, str(ROOT))
 
 from app import landing as L  # noqa: E402
 
-FEATURE_PAGES = {"/", "/signup", "/alerts", "/forecast", "/samples", "/graphs", "/compare", "/cso-history", "/analysis", "/discharges", "/postings",
-                 "/learn", "/learn/collect", "/learn/lab-sop"}
+FEATURE_PAGES = {"/", "/signup", "/forecast", "/samples", "/graphs", "/compare", "/cso-history", "/analysis", "/discharges", "/postings",
+                 "/learn", "/learn/collect"}   # the Lab SOP is an Admin tab since 2026-11-04, not a hub row
 
 
 def test_every_feature_page_sits_in_exactly_one_hub_and_every_link_resolves():
     hrefs = [h["primary"][0] for h in L.HUBS if h["primary"]] + [r[0] for h in L.HUBS for r in h["rows"]]
     subs = [r[4][0] for h in L.HUBS for r in h["rows"] if len(r) > 4]
     assert subs == []             # Source Comparison is a row like the others (Chase, 2026-09-29)
-    assert sorted(hrefs) == sorted(FEATURE_PAGES) and len(hrefs) == len(set(hrefs)) == 14
-    assert [h["title"] for h in L.HUBS] == ["Today & alerts", "The water record", "Postings & discharges", "Learn"]
+    assert sorted(hrefs) == sorted(FEATURE_PAGES) and len(hrefs) == len(set(hrefs)) == 12   # Admin is a footer link (2026-11-04)
+    assert [h["title"] for h in L.HUBS] == ["Today & alerts", "The water record", "Discharges & postings", "Learn"]   # discharges first (2026-11-04)
     assert [h["key"] for h in L.hubs_with_facts({})] == ["today", "water", "record"]   # Learn has its tab and Today's Learn bar, not a hub card
     assert L.HUBS[2]["sub"] == "What the city reported, and when"
     assert {href for href, *_ in L.PAGES} == FEATURE_PAGES            # the flat view still lists them all
@@ -129,11 +129,13 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
     assert down["tone"] == "warn" and down["headline_html"] == '<em class="warn">Beach status is unavailable right now.</em>'    # orange, like a posting
     nav = L.nav_model()
     assert [h["key"] for h in nav] == ["today", "water", "record", "learn"] and [h["href"] for h in nav] == ["/", "/analysis", "/discharges", "/learn"]   # a hub opens on its first page; Today's is the root
-    assert [r["title"] for r in nav[3]["rows"]] == ["Learn", "Collect", "Lab SOP"]
+    assert [r["title"] for r in nav[3]["rows"]] == ["Learn", "Collect"]
+    assert not any("/alerts" in h["paths"] for h in nav) and L.GATED == {"/alerts"}   # Admin (the Sewage Alert System, renamed) is in no hub: a footer link (2026-11-04)
+    assert {L.canonical_path(u) for u in ("/alerts", "/alerts/costs", "/alerts/lab-sop", "/alerts/ui-overflow")} == {"/alerts", "/alerts/costs", "/alerts/lab-sop", "/alerts/ui-overflow"}
     assert [r["title"] for r in nav[1]["rows"]] == ["Site Report Card", "Samples", "Graphs", "Source Comparison"] and "/compare" in nav[1]["paths"]  # subpage = its own tab
-    assert [r["href"] for r in nav[0]["rows"]] == ["/", "/forecast", "/signup", "/alerts"] and "/" in nav[0]["paths"]                                  # the hub opens on Today, at the root; the locked page last
+    assert [r["href"] for r in nav[0]["rows"]] == ["/", "/forecast", "/signup"] and "/" in nav[0]["paths"]                                  # the hub opens on Today, at the root
     assert L.canonical_path("/today") == L.canonical_path("/index.html") == "/" and L.canonical_path("/graphs") == "/graphs"
-    assert [r["gated"] for r in nav[0]["rows"]] == [False, False, False, True]
+    assert [r["gated"] for r in nav[0]["rows"]] == [False, False, False]
     from app.wsgi import app
     with app.test_client() as c:
         g = c.get("/graphs").data.decode()
@@ -141,21 +143,26 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
         assert "The water record</a>" in g and 'class="crumbs"' not in g and "navhub" not in g
         for u in ("/", "/today"):   # Today IS the home page: served at the root, and at /today for the alert emails — never a redirect (2026-10-01)
             r = c.get(u); body = r.data.decode()
-            assert r.status_code == 200 and "Location" not in r.headers and 'id="today-map"' in body and 'class="hubs"' in body, u
+            assert r.status_code == 200 and "Location" not in r.headers and 'id="today-map"' in body and 'class="hubs"' not in body, u   # the cards moved to Admin's UI overflow (2026-11-04)
             assert '<link rel="canonical" href="https://bwtf-sf.vercel.app/">' in body, u                  # search engines index the root
             assert 'href="/" class="on" aria-current="page">Today' in body and 'aria-current="page"' in body.split('class="tabbar"')[0], u   # the Today tab lights at both addresses
         assert c.get("/index.html").status_code == 200 and "Location" not in c.get("/index.html").headers
         assert ">Main</a>" not in g and "Main</a>" not in g and 'class="mark" href="/"' in g          # no Main tab in either bar; the logo goes home
         f = c.get("/forecast").data.decode()
-        assert 'class=" gated" title="Coordinators only' in f and f.index('href="/signup"', f.index('class="subtabs"')) < f.index('href="/alerts"', f.index('class="subtabs"'))   # lock icon, rightmost
+        sub = f[f.index('class="subtabs"'):f.index("</nav>", f.index('class="subtabs"'))]
+        assert 'href="/alerts"' not in sub and 'class=" gated"' not in sub                                  # no locked tab since Admin moved to the footer (2026-11-04)
+        foot = f[f.index('class="site-footer"'):]
+        assert '<a href="/alerts" title="Coordinators only — needs the passphrase">Admin</a>' in foot       # the coordinators' way in
         a = c.get("/about").data.decode()
         assert "About this site" in a and "Blue Water Task Force" in a and 'class="topbar"' in a and "SFPUC's live beach map" in a and 'class="status-dot discharge"' in a
         assert 'class="topbar"' in c.get("/records").data.decode() and "back-to-dash\" href" not in c.get("/records").data.decode()
 
 
-def test_today_page_offline_shows_the_board_then_the_hubs_and_hood():
-    """What the Main page carried below its board now sits below Today's (Chase, 2026-09-30)."""
+def test_today_page_offline_shows_the_board_and_admin_keeps_the_directory():
+    """Today is the board and its Layers strip; what sat under it — the hub cards, the Learn bar and the rain and tide
+    pills — moved to Admin's UI overflow tab for the beta (Chase, 2026-11-04)."""
     from app.wsgi import app
+    from features.alerts import ui_overflow as UO
     from features.today import page as T
 
     class Sfpuc:
@@ -163,18 +170,32 @@ def test_today_page_offline_shows_the_board_then_the_hubs_and_hood():
 
     with app.test_request_context("/today"):
         html = T.render_page(L.board_context(Sfpuc(), None, live_facts=False))
-    for needle in ("Today &amp; alerts", "The water record", "Postings &amp; discharges", "What the city reported, and when",
-                   'class="cta" href="/signup"', "Online Postings Timeline", 'href="/about"',  'href="/about#built"',  # the ⓘ About link in the frame
-                   "1 site(s) posted for elevated bacteria", "is the water safe today?"):
+    for needle in ("Today &amp; alerts", "The water record", "Discharges &amp; postings", 'href="/about"',  'href="/about#built"',  # the tabs and the ⓘ About link in the frame
+                   "1 site(s) posted for elevated bacteria", "is the water safe today?", 'class="foot-note">Statuses from SFPUC'):   # the board's sources line stays
         assert needle in html, needle
-    assert html.count('class="hub') >= 3 and 'class="card"' not in html
     assert 'class="topbar"' in html and 'class="tabbar"' in html and 'class="site-footer"' in html and 'class="board tone-warn"' in html   # the shared frame + the Today board
     assert html.index('class="beta"') < html.index('class="topbar"') and "not an official beach advisory" in html   # the Beta notice, a banner above the bar (2026-10-18)
-    assert 'id="today"' in html and 'id="water"' in html and 'id="record"' in html                                                       # the hub anchors
-    assert html.index('class="board') < html.index('class="hubs"') < html.index('class="learn"') < html.index('class="site-footer"')   # board, then the directory
+    assert '<span class="fb">Send Beta <a href="mailto:ciniper@gmail.com?subject=BWTF-SF%20BETA%20FEEDBACK">Feedback</a>.</span>' in html.split('class="topbar"')[0]   # the testers' feedback (2026-11-04)
+    assert 'class="hubs"' not in html and 'class="learn"' not in html and 'class="conds' not in html and 'class="cta" href="/signup" title=' not in html   # gone from Today (the top bar keeps its own Get beach alerts)
     assert "<b>Under the hood</b>" not in html and 'class="hood"' not in html                           # gone from Today (2026-10-20); its links live on About (the footer's build tooltip can quote a commit message naming it)
-    cards = html[html.index('class="hubs"'):html.index('class="learn"')]
-    assert '<li><a href="/"' not in cards and '<li><a href="/today"' not in cards and '<li><a href="/forecast"' in cards and '<li><a href="/postings"' in cards        # no card row links to the page it sits on
+    tabbar = html[html.index('class="tabbar"'):]
+    assert "Discharges</a>" in tabbar and ">Postings</a>" not in tabbar                                 # the phone tab bar's short name (2026-11-04)
+    ctx = {"hubs": L.hubs_with_facts({}, skip=("/",)), "conditions": ['<svg class="ic"><use href="#i-waves"/></svg> Tide rising'], "generated": "Nov 4"}
+    with app.test_request_context("/alerts/ui-overflow"):
+        ui = UO.render_page(ctx)
+    assert ui.count('class="hub ') + ui.count('class="hub"') >= 3 and 'id="today"' in ui and 'id="water"' in ui and 'id="record"' in ui   # the hub cards and their anchors
+    assert ui.index('class="hubs"') < ui.index('class="learn"') < ui.index('class="conds"') < ui.index('class="site-footer"')   # cards, the Learn bar, the pills
+    assert 'class="cta" href="/signup" title=' in ui and "Online Postings Timeline" in ui and "Tide rising" in ui and "<h1>UI overflow</h1>" in ui
+    cards = ui[ui.index('class="hubs"'):ui.index('class="learn"')]
+    assert '<li><a href="/"' not in cards and '<li><a href="/forecast"' in cards and '<li><a href="/postings"' in cards        # as Today drew them: no row for Today itself
+    assert 'href="/alerts/ui-overflow" class="on" aria-current="page"' in ui and 'class="subtabs"' not in ui      # its own tab lit; no hub in the top bar
+    from features.learn import page as LP   # the Learn page's timeline, parked here (2026-11-04)
+    assert ui.count('class="stop ') == len(LP.TIMELINE) and 'id="history"' in ui and 'id="tl-more"' in ui and "Used with permission" in ui
+    assert ui.count('<figure') == sum(len(t.get("photos", [])) for t in LP.TIMELINE) >= 8   # the master plan's photos, with it
+    assert ui.index('class="conds"') < ui.index('id="history"') < ui.index('class="site-footer"') < ui.index('const tl = $("tl")')
+    with app.test_client() as c:   # behind the coordinators' passphrase with the rest of Admin
+        locked = c.get("/alerts/ui-overflow").data.decode()
+        assert 'name="next" value="/alerts/ui-overflow"' in locked and 'class="hubs"' not in locked and "<h1>Admin</h1>" in locked
     assert not (ROOT / "app/templates/landing.html").exists() and not hasattr(L, "render_landing")
 
 

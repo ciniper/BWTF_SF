@@ -138,7 +138,7 @@ def registry(include_supabase: bool = True) -> dict:
         "live API", first=watcher_first, last="live", cadence="read every minute by the watcher; on each visit by the pages",
         refreshed=(last_tick or "")[:16].replace("T", " ") or None,
         stored="Supabase alert_log (transitions since the watcher went live) and feed_station_days (per station and day since 2026-09-27)",
-        used_by=["Dashboard", "Sewage Alert System", "Online Postings Timeline", "CSO Forecast (live corrections)"]))
+        used_by=["Dashboard", "Admin", "Online Postings Timeline", "CSO Forecast (live corrections)"]))
 
     # DataSF + the older years + the Poo Bot archive
     newest = (sup.get("samples") or {}).get("last") or _csv_span(DATA / "raw" / "historical_bacteria.csv", "sample_date")[1]
@@ -146,7 +146,7 @@ def registry(include_supabase: bool = True) -> dict:
         "DataSF — Beach Water Quality Monitoring", "the city's lab results per station, sample date and indicator",
         "live API", first=DATASET_FLOOR, last=newest, cadence="the city publishes nightly; read live; mirrored into Supabase every 30 minutes",
         stored="Supabase samples (with the day each result first appeared) and data/raw/historical_bacteria.csv (the training copy)",
-        used_by=["Samples", "Graphs", "Site Report Card", "Sewage Alert System", "CSO Forecast (samples ruler, live corrections)", "Online Postings Timeline"],
+        used_by=["Samples", "Graphs", "Site Report Card", "Admin", "CSO Forecast (samples ruler, live corrections)", "Online Postings Timeline"],
         note=DATASET_PAGE_URL))
     prov = city_history.provenance()
     if prov.get("available"):

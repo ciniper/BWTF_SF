@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link rel="icon" href="{{ asset('brand/favicon.ico') }}"><link rel="apple-touch-icon" sizes="144x144" href="{{ asset('brand/bwtf_144x144.png') }}">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>UI overflow — Admin · Surfrider SF Blue Water Task Force</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ asset('brand.css') }}">
+<style>
+  body{margin:0;background:var(--sand);color:var(--ink);font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:15px;line-height:1.5}
+  .wrap{max-width:var(--page-w);margin:0 auto;padding:20px 24px 40px}
+  /* Today's page directory, as Today drew it under the board until 2026-11-04 */
+  .hubs{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
+  .hub{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:16px 18px 8px;scroll-margin-top:70px}
+  .hub-head{display:flex;align-items:center;gap:10px}
+  .hub-icon{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;background:var(--sand);color:var(--brand);flex-shrink:0}
+  .hub-icon svg{width:20px;height:20px}
+  .hub-title{font-size:17px;font-weight:900;margin:0}
+  .hub-q{color:var(--muted);font-size:13px;margin:0}
+  .rows{margin:8px 0 0;padding:0;list-style:none}
+  .rows a{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:9px 2px;border-top:1px solid var(--sand2);text-decoration:none;color:var(--ink)}
+  .rows a:hover{color:var(--brand)}
+  .rows .name{font-weight:600;font-size:14px}
+  .rows .ic.lock{width:12px;height:12px;color:var(--faint);vertical-align:-1px}
+  .rows .fact{color:var(--muted);font-size:13px;text-align:right;max-width:55%}   /* one grey for every fact, live or static (Chase, 2026-09-29) */
+  .rows .sub{display:block;padding:0 2px 8px 16px;margin-top:-4px;border-top:0;font-size:13px;color:var(--muted);font-weight:600}
+  .hub .cta{display:block;margin:10px 0 6px;background:var(--brand);color:#fff;text-align:center;border-radius:999px;padding:10px 14px;font-weight:700;font-size:14px;text-decoration:none}
+  .hub .cta:hover{background:var(--brand-deep)}   /* scoped: a bare .cta also restyled the top bar's Get beach alerts button */
+  .learn{display:flex;align-items:center;gap:12px;margin-top:14px;padding:14px 18px;background:#fff;border:1px solid var(--line);border-radius:var(--r);text-decoration:none;color:var(--ink)}   /* the whole bar is the link */
+  .learn:hover{border-color:var(--sky)} .learn:hover .learn-go{background:var(--brand-deep)}
+  .learn-text{display:flex;flex-direction:column;min-width:0} .learn-text b{font-size:17px;font-weight:900} .learn-text small{color:var(--muted);font-size:13px}
+  .learn-go{margin-left:auto;flex:none;background:var(--brand);color:#fff;border-radius:999px;padding:8px 16px;font-weight:700;font-size:14px}
+  /* the rain and tide pills and the feed's cadence, from the bottom of Today */
+  .conds{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 0}
+  .conds span{background:var(--sand2);border-radius:999px;padding:6px 12px;font-size:13px;color:var(--muted)}
+  .conds .ic{color:var(--brand)}
+  @media (max-width:560px){.learn-go{display:none}.learn-text b::after{content:" →";color:var(--brand)}}   /* a phone gives the words the room */
+  @media (max-width:980px){.hubs{grid-template-columns:1fr}}
+  @media (max-width:760px){.wrap{padding:14px 14px 30px}}
+</style>
+{% from "alerts/_tabs.html" import admin_tab_styles, admin_tabs %}{{ admin_tab_styles() }}
+{% from "learn/_timeline.html" import timeline_styles, timeline_section, timeline_script %}{{ timeline_styles() }}
+</head>
+<body>
+{% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
+{{ topbar() }}
+<div class="wrap">
+  {{ page_head("UI overflow", "What came off the site for the beta, kept as it was drawn until it finds a home: Today's page directory, its Learn bar and its rain and tide pills, and the Learn page's timeline. Updated " ~ generated ~ ".") }}
+
+  {{ admin_tabs("ui-overflow") }}
+
+  <div class="hubs">
+    {% for hub in hubs %}
+    <section class="hub{% if hub.primary %} primary{% endif %}" id="{{ hub.key }}" aria-labelledby="hub-{{ hub.key }}">
+      <div class="hub-head">
+        <span class="hub-icon"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-{{ hub.icon }}"/></svg></span>
+        <div><h2 class="hub-title" id="hub-{{ hub.key }}">{{ hub.title }}</h2><p class="hub-q">{{ hub.sub }}</p></div>
+      </div>
+      {% if hub.primary %}<a class="cta" href="{{ hub.primary[0] }}" title="{{ hub.primary[2] }}">{{ hub.primary[1] }} →</a>{% endif %}
+      <ul class="rows">
+        {% for r in hub.rows %}
+        <li><a href="{{ r.href }}" title="{{ r.blurb }}"><span class="name">{{ r.title }}{% if r.gated %} <svg class="ic lock" title="Coordinators only"><use href="#i-lock"/></svg>{% endif %}</span><span class="fact{% if r.live %} live{% endif %}">{{ r.fact }}</span></a>{% if r.sub %}<a class="sub" href="{{ r.sub[0] }}">↳ {{ r.sub[1] }}</a>{% endif %}</li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endfor %}
+  </div>
+
+  <a class="learn" href="/learn">
+    <span class="hub-icon"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-microscope"/></svg></span>
+    <span class="learn-text"><b>Learn</b><small>How the city's sewers meet the shore, how the lab counts bacteria, and a century and a half of the system</small></span>
+    <span class="learn-go">Open →</span>
+  </a>
+
+  {% if conditions %}
+  <div class="conds">{% for c in conditions %}<span class="with-ic">{{ c|safe }}</span>{% endfor %}<span>Status as the city reports it, checked every minute</span></div>
+  {% endif %}
+
+  {{ timeline_section(timeline, photo_credit) }}   {# from the Learn page (2026-11-04) #}
+</div>
+{{ footer() }}
+{{ tabbar() }}
+{{ timeline_script() }}
+</body></html>

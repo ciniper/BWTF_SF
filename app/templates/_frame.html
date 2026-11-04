@@ -15,7 +15,7 @@
 {% macro topbar() -%}
 {%- set p = canonical_path(request.path) %}
 {%- set ns = namespace(hub=None) %}{% for h in NAV %}{% if p in h.paths %}{% set ns.hub = h %}{% endif %}{% endfor %}
-<aside class="beta" aria-label="Beta notice"><div class="in"><b>Beta</b><p>This site is still being tested and is not an official beach advisory. <span class="more">Its data can be late or wrong. </span>Always follow posted signs and <a href="https://webapps.sfpuc.org/sapps/beachesandbay.html" target="_blank" rel="noopener">SFPUC's beach map</a>.</p></div></aside>
+<aside class="beta" aria-label="Beta notice"><div class="in"><b>Beta</b><p>This site is still being tested and is not an official beach advisory. <span class="more">Its data can be late or wrong. </span>Always follow posted signs and <a href="https://webapps.sfpuc.org/sapps/beachesandbay.html" target="_blank" rel="noopener">SFPUC's beach map</a>. <span class="fb">Send Beta <a href="mailto:ciniper@gmail.com?subject=BWTF-SF%20BETA%20FEEDBACK">Feedback</a>.</span></p></div></aside>
 <header class="topbar">
   <div class="in">
     <a class="mark" href="/"><img src="{{ asset('brand/bwtf_144x144.png') }}" alt=""><span><b>SF Beach Water</b><small>Surfrider SF · Blue Water Task Force</small></span></a>
@@ -63,7 +63,8 @@
         <a href="{{ DATASF_DATASET_URL }}" target="_blank" rel="noopener">SF Gov Data</a> ·
         <a href="https://sf.surfrider.org/programs/blue-water-task-force" target="_blank" rel="noopener">Surfrider BWTF</a> ·
         <a href="/about">About this site</a> ·
-        <a href="/about#built">How it's built</a>
+        <a href="/about#built">How it's built</a> ·
+        <a href="/alerts" title="Coordinators only — needs the passphrase">Admin</a>   {#- out of the tabs, 2026-11-04 #}
       </p>
     </div>
   </div>
@@ -96,7 +97,7 @@
 {%- set p = canonical_path(request.path) %}
 <nav class="tabbar" aria-label="Sections">
   {%- for h in NAV %}
-  <a href="{{ h.href }}"{% if p in h.paths %} class="on"{% endif %}><svg class="ic"><use href="#i-{{ {'today': 'bell', 'water': 'flask', 'record': 'clipboard', 'learn': 'microscope'}[h.key] }}"/></svg>{{ {'today': 'Today', 'water': 'Water record', 'record': 'Postings', 'learn': 'Learn'}[h.key] }}</a>
+  <a href="{{ h.href }}"{% if p in h.paths %} class="on"{% endif %}><svg class="ic"><use href="#i-{{ {'today': 'bell', 'water': 'flask', 'record': 'clipboard', 'learn': 'microscope'}[h.key] }}"/></svg>{{ {'today': 'Today', 'water': 'Water record', 'record': 'Discharges', 'learn': 'Learn'}[h.key] }}</a>
   {%- endfor %}
 </nav>
 <script src="{{ asset('kit.js') }}" defer></script>

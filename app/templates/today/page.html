@@ -12,7 +12,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 <script src="{{ asset('sample_popover.js') }}" defer></script>
 
-{% from "_today_board.html" import board_styles, board_section, conditions_strip, board_script with context %}
+{% from "_today_board.html" import board_styles, board_section, board_script with context %}
 {{ board_styles() }}
 <link rel="stylesheet" href="{{ asset('brand.css') }}">
 <style>
@@ -20,29 +20,6 @@
   .wrap{max-width:var(--page-w);margin:0 auto;padding:20px 24px 40px}
   .foot-note{color:var(--faint);font-size:13px;margin:12px 0 0;line-height:1.6}
   .foot-note a{color:var(--brand)}
-  /* ── below the board: the page directory (it was the Main page's, deleted 2026-09-30) ── */
-  .hubs{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
-  .hub{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:16px 18px 8px;scroll-margin-top:70px}
-  .hub-head{display:flex;align-items:center;gap:10px}
-  .hub-icon{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;background:var(--sand);color:var(--brand);flex-shrink:0}
-  .hub-icon svg{width:20px;height:20px}
-  .hub-title{font-size:17px;font-weight:900;margin:0}
-  .hub-q{color:var(--muted);font-size:13px;margin:0}
-  .rows{margin:8px 0 0;padding:0;list-style:none}
-  .rows a{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:9px 2px;border-top:1px solid var(--sand2);text-decoration:none;color:var(--ink)}
-  .rows a:hover{color:var(--brand)}
-  .rows .name{font-weight:600;font-size:14px}
-  .rows .ic.lock{width:12px;height:12px;color:var(--faint);vertical-align:-1px}
-  .rows .fact{color:var(--muted);font-size:13px;text-align:right;max-width:55%}   /* one grey for every fact, live or static (Chase, 2026-09-29) */
-  .rows .sub{display:block;padding:0 2px 8px 16px;margin-top:-4px;border-top:0;font-size:13px;color:var(--muted);font-weight:600}
-  .hub .cta{display:block;margin:10px 0 6px;background:var(--brand);color:#fff;text-align:center;border-radius:999px;padding:10px 14px;font-weight:700;font-size:14px;text-decoration:none}
-  .hub .cta:hover{background:var(--brand-deep)}   /* scoped: a bare .cta also restyled the top bar's Get beach alerts button */
-  .learn{display:flex;align-items:center;gap:12px;margin-top:14px;padding:14px 18px;background:#fff;border:1px solid var(--line);border-radius:var(--r);text-decoration:none;color:var(--ink)}   /* the whole bar is the link */
-  .learn:hover{border-color:var(--sky)} .learn:hover .learn-go{background:var(--brand-deep)}
-  .learn-text{display:flex;flex-direction:column;min-width:0} .learn-text b{font-size:17px;font-weight:900} .learn-text small{color:var(--muted);font-size:13px}
-  .learn-go{margin-left:auto;flex:none;background:var(--brand);color:#fff;border-radius:999px;padding:8px 16px;font-weight:700;font-size:14px}
-  @media (max-width:560px){.learn-go{display:none}.learn-text b::after{content:" →";color:var(--brand)}}   /* a phone gives the words the room */
-  @media (max-width:980px){.hubs{grid-template-columns:1fr}}
   @media (max-width:760px){.wrap{padding:14px 14px 30px}}
 </style>
 </head>
@@ -71,30 +48,7 @@
   {{ board_section(board, sites=true) }}
   <p class="foot-note">Statuses from SFPUC's beach map, checked every minute; overflow risk from the <a href="/forecast">CSO Forecast</a>; rain from NOAA's two city gauges; outfalls from SFPUC's reports to regulators; Surfrider's results from the volunteers' lab. Updated {{ generated }}.</p>
 
-  <div class="hubs">
-    {% for hub in hubs %}
-    <section class="hub{% if hub.primary %} primary{% endif %}" id="{{ hub.key }}" aria-labelledby="hub-{{ hub.key }}">
-      <div class="hub-head">
-        <span class="hub-icon"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-{{ hub.icon }}"/></svg></span>
-        <div><h2 class="hub-title" id="hub-{{ hub.key }}">{{ hub.title }}</h2><p class="hub-q">{{ hub.sub }}</p></div>
-      </div>
-      {% if hub.primary %}<a class="cta" href="{{ hub.primary[0] }}" title="{{ hub.primary[2] }}">{{ hub.primary[1] }} →</a>{% endif %}
-      <ul class="rows">
-        {% for r in hub.rows %}
-        <li><a href="{{ r.href }}" title="{{ r.blurb }}"><span class="name">{{ r.title }}{% if r.gated %} <svg class="ic lock" title="Coordinators only"><use href="#i-lock"/></svg>{% endif %}</span><span class="fact{% if r.live %} live{% endif %}">{{ r.fact }}</span></a>{% if r.sub %}<a class="sub" href="{{ r.sub[0] }}">↳ {{ r.sub[1] }}</a>{% endif %}</li>
-        {% endfor %}
-      </ul>
-    </section>
-    {% endfor %}
-  </div>
-
-  <a class="learn" href="/learn">
-    <span class="hub-icon"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-microscope"/></svg></span>
-    <span class="learn-text"><b>Learn</b><small>How the city's sewers meet the shore, how the lab counts bacteria, and a century and a half of the system</small></span>
-    <span class="learn-go">Open →</span>
-  </a>
-
-  {{ conditions_strip(conditions) }}   {# rain and tide: at the bottom for now (Chase, 2026-10-18) #}
+  {#- the hub cards, the Learn bar and the rain and tide pills moved to Admin's UI overflow tab (2026-11-04) #}
 </div>
 {{ footer() }}
 {{ tabbar() }}

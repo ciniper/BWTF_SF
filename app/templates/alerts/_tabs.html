@@ -1,0 +1,31 @@
+{#- Admin's tabs (/alerts; the Sewage Alert System until 2026-11-04): Real and Simulation are views of /alerts itself,
+    Running costs, the Lab SOP and UI overflow are their own pages behind the same passphrase (app/wsgi.py). One list,
+    ADMIN_TABS; the /alerts dashboard draws the same list as its own view-switching buttons (alerts/dashboard.html).
+      {% from "alerts/_tabs.html" import admin_tab_styles, admin_tabs %}
+      {{ admin_tab_styles() }} in the head, {{ admin_tabs("costs") }} where the row goes -#}
+
+{%- set ADMIN_TABS = [
+  ("real", "/alerts", "waves", "Real", "SFPUC feed as published"),
+  ("sim", "/alerts#sim", "flask", "Simulation", ""),
+  ("costs", "/alerts/costs", "receipt", "Running costs", ""),
+  ("lab-sop", "/alerts/lab-sop", "microscope", "Lab SOP", ""),
+  ("ui-overflow", "/alerts/ui-overflow", "clipboard", "UI overflow", ""),
+] %}
+
+{% macro admin_tab_styles() -%}
+<style>
+  .admin-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 18px}   /* five tabs wrap on a phone */
+  .admin-tabs a{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:999px;border:2px solid var(--line);background:#fff;color:var(--muted);font-weight:700;text-decoration:none}
+  .admin-tabs a small{font-weight:500;color:var(--faint)}
+  .admin-tabs a:hover{border-color:var(--sky)}
+  .admin-tabs a.on{background:var(--brand);border-color:var(--brand);color:#fff}.admin-tabs a.on small{color:rgba(255,255,255,.8)}
+</style>
+{%- endmacro %}
+
+{% macro admin_tabs(on) -%}
+<nav class="admin-tabs" aria-label="Admin">
+  {%- for key, href, icon, label, note in ADMIN_TABS %}
+  <a href="{{ href }}"{% if key == on %} class="on" aria-current="page"{% endif %}><svg class="ic"><use href="#i-{{ icon }}"/></svg> {{ label }}{% if note %} <small>{{ note }}</small>{% endif %}</a>
+  {%- endfor %}
+</nav>
+{%- endmacro %}

@@ -1,12 +1,12 @@
-"""Lab SOP (/learn/lab-sop, 2026-10-18): the lab's wall pages as a page — four phases, steps 1 to 25 in order,
-every photo on disk, the empty frames shown as slots."""
+"""Lab SOP (/alerts/lab-sop, an Admin tab since 2026-11-04; /learn/lab-sop from 2026-10-18, which redirects): the lab's
+wall pages as a page — four phases, steps 1 to 25 in order, every photo on disk, the empty frames shown as slots."""
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from features.learn import sop as S  # noqa: E402
+from features.alerts import lab_sop as S  # noqa: E402
 
 
 def test_four_phases_and_25_steps_in_order():
@@ -33,27 +33,33 @@ def test_layout_pairs_steps_as_the_wall_pages_do():
 
 
 def test_page_and_photos_sit_behind_the_passphrase():
-    """Chase, 2026-10-20: the SOP goes behind the alerts passphrase; unlocking returns you to it."""
-    from app.landing import GATED
+    """Chase, 2026-10-20: the SOP goes behind the alerts passphrase; unlocking returns you to it. 2026-11-04: an Admin
+    tab at /alerts/lab-sop, its Learn address redirecting there."""
+    from app.landing import GATED, nav_model
     from app.wsgi import ALERTS_PASSPHRASE as PASS, app
     name = S.steps()[0]["photos"][0]["src"]
-    assert "/learn/lab-sop" in GATED
+    assert GATED == {"/alerts"} and not any("/learn/lab-sop" in h["paths"] or "/alerts/lab-sop" in h["paths"] for h in nav_model())   # a tab of Admin, not a hub row
     with app.test_client() as c:
-        locked = c.get("/learn/lab-sop").data.decode()
-        assert "passphrase" in locked.lower() and 'class="step' not in locked and 'name="next" value="/learn/lab-sop"' in locked and "<h1>Lab SOP</h1>" in locked
-        assert c.get(f"/learn/lab-sop/photos/{name}").status_code == 401 and c.get(f"/static/learn/sop/{name}").status_code == 404
-        bad = c.post("/alerts/unlock", data={"passphrase": "wrong", "next": "/learn/lab-sop"})
-        assert bad.status_code == 401 and 'name="next" value="/learn/lab-sop"' in bad.data.decode()
+        old = c.get("/learn/lab-sop")
+        assert old.status_code == 302 and old.headers["Location"].endswith("/alerts/lab-sop")      # old links and the Collect page's still land
+        assert 'href="/alerts/lab-sop">Lab SOP</a>' in c.get("/learn/collect").data.decode()
+        locked = c.get("/alerts/lab-sop").data.decode()
+        assert "passphrase" in locked.lower() and 'class="step' not in locked and 'name="next" value="/alerts/lab-sop"' in locked and "<h1>Lab SOP</h1>" in locked
+        assert c.get(f"/alerts/lab-sop/photos/{name}").status_code == 401 and c.get(f"/learn/lab-sop/photos/{name}").status_code == 404
+        assert c.get(f"/static/learn/sop/{name}").status_code == 404
+        bad = c.post("/alerts/unlock", data={"passphrase": "wrong", "next": "/alerts/lab-sop"})
+        assert bad.status_code == 401 and 'name="next" value="/alerts/lab-sop"' in bad.data.decode()
         evil = c.post("/alerts/unlock", data={"passphrase": PASS, "next": "https://example.com/"})
         assert evil.status_code == 302 and evil.headers["Location"].endswith("/alerts")              # only back to a gated page
-        ok = c.post("/alerts/unlock", data={"passphrase": PASS, "next": "/learn/lab-sop"})
-        assert ok.status_code == 302 and ok.headers["Location"].endswith("/learn/lab-sop")
-        h = c.get("/learn/lab-sop").data.decode()
-        img = c.get(f"/learn/lab-sop/photos/{name}")
+        ok = c.post("/alerts/unlock", data={"passphrase": PASS, "next": "/alerts/lab-sop"})
+        assert ok.status_code == 302 and ok.headers["Location"].endswith("/alerts/lab-sop")
+        h = c.get("/alerts/lab-sop").data.decode()
+        img = c.get(f"/alerts/lab-sop/photos/{name}")
         assert img.status_code == 200 and img.mimetype == "image/jpeg" and "private" in img.headers["Cache-Control"]
-        assert c.get("/learn/lab-sop/photos/nope.jpg").status_code == 404
+        assert c.get("/alerts/lab-sop/photos/nope.jpg").status_code == 404
     assert "{{" not in h and "{%" not in h and "<h1>Lab SOP</h1>" in h and '<meta name="robots" content="noindex">' in h
-    assert 'href="/learn/lab-sop" class="on gated" aria-current="page" title="Coordinators only' in h and "coming soon" not in h   # the lock in the tabs and f"/learn/lab-sop/photos/{name}?v=" in h
+    assert 'class="subtabs"' not in h and "coming soon" not in h   # Admin and its tabs sit in no hub (2026-11-04)
+    assert 'href="/alerts/lab-sop" class="on" aria-current="page"' in h and f"/alerts/lab-sop/photos/{name}?v=" in h     # its own Admin tab, and its photos
     assert h.count('class="step') == 25 and h.count('<img class="main"') == 19 and h.count('<img class="inset"') == 2 and h.count('class="pic slot"') == 9
     assert "Begin aseptic protocol" in h and h.count("Contamination risk") == 2 and "Check control first" in h and "bwtf.surfrider.org" in h
     for ph in S.PHASES:

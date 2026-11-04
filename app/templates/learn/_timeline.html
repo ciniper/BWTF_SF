@@ -1,0 +1,105 @@
+{#- Learn's "A century and a half": the 1850s → today timeline, from SFPUC's 2010 master plan and the records this site
+    keeps. Parked in Admin's UI overflow tab since 2026-11-04 (Chase: "move the 'A century and a half' section to UI
+    overflow in admin for now"), as one piece so it can go back to the Learn page as it is: its own styles (the section's
+    card scoped to .tl-sec), markup and script. Data: features/learn/page.py TIMELINE and PHOTO_CREDIT; photos under
+    app/static/learn/.
+      {% from "learn/_timeline.html" import timeline_styles, timeline_section, timeline_script %}
+      {{ timeline_styles() }} in the head, {{ timeline_section(timeline, photo_credit) }}, {{ timeline_script() }} at the end -#}
+
+{% macro timeline_styles() -%}
+<style>
+  .tl-sec{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg,16px);padding:22px 24px;margin:16px 0;scroll-margin-top:80px}
+  .tl-sec h2{font-family:'Bebas Neue',Impact,sans-serif;font-weight:400;font-size:34px;letter-spacing:.02em;line-height:1;margin:0 0 6px}
+  .tl-sec .sub{color:var(--muted);margin:0 0 16px;max-width:90ch}
+  .tl-sec .more{margin:12px 0 0;font-size:14px;color:var(--muted)} .tl-sec .more a{color:var(--brand);font-weight:700;text-decoration:none}
+  .tl-sec .btn{padding:8px 14px;border-radius:999px;border:2px solid var(--brand);background:#fff;color:var(--brand);font:700 13px Roboto,sans-serif;cursor:pointer}
+  .tl-sec .swatches{display:flex;flex-wrap:wrap;gap:12px;font-size:12.5px;color:var(--muted);margin:4px 0 0}
+  .tl-sec .swatches i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+  .tl{position:relative;margin:6px 0 12px}
+  .tl .rail{position:absolute;top:0;bottom:0;left:50%;width:4px;margin-left:-2px;background:var(--sand2);border-radius:2px}
+  .tl .rail span{position:absolute;left:0;right:0;top:0;height:var(--p,0%);background:linear-gradient(var(--sky),var(--brand));border-radius:2px}
+  .tl ol{list-style:none;margin:0;padding:0}
+  .tl .stop{position:relative;width:50%;box-sizing:border-box;padding:0 34px 18px 0}
+  .tl .stop:nth-child(even){margin-left:50%;padding:0 0 18px 34px}
+  .tl .stop + .stop{margin-top:-56px}   /* the two columns interleave; every card is taller than twice this */
+  .tl .dot{position:absolute;top:10px;right:-9px;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid var(--line);box-sizing:border-box;transition:background .3s,border-color .3s}
+  .tl .stop:nth-child(even) .dot{right:auto;left:-9px}
+  .tl .stop.past .dot{border-color:var(--brand);background:var(--brand)} .tl .stop.kept.past .dot{border-color:var(--safe);background:var(--safe)}
+  .tl .card{background:var(--sand2);border-radius:var(--r);padding:12px 16px 10px}
+  .tl .when{font-size:24px;font-weight:900;line-height:1.1;letter-spacing:-.01em;color:var(--brand)}   /* not Bebas: it has no lowercase, and "1850s" would read 1850S */ .tl .kept .when{color:var(--safe)}
+  .tl h3{margin:2px 0 4px;font-size:16px;font-weight:900}
+  .tl p{margin:0;font-size:14px;color:var(--muted)}
+  .tl.collapsed .stop:nth-child(n+5){display:none}   /* folded: the first four stops, fading out */
+  .tl.collapsed::after{content:"";position:absolute;left:0;right:0;bottom:0;height:140px;background:linear-gradient(rgba(255,255,255,0),#fff);pointer-events:none}
+  .tl-toggle{text-align:center;margin:4px 0 14px}
+  .tl .photos{display:grid;gap:8px;margin:10px 0 0} .tl .photos.n3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .tl .photos figure{margin:0} .tl .photos img{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:10px;background:#dfe7ec}
+  .tl .photos.n3 img{aspect-ratio:3/2} .tl .photos .small{max-width:340px} .tl .photos figcaption{font-size:12px;color:var(--faint);margin:4px 0 0;line-height:1.35}
+  .tl .ph-frame{margin:10px 0 0;border:2px dashed var(--line);border-radius:10px;padding:20px 12px;text-align:center;font-size:12.5px;color:var(--faint);background:#fff}
+  .tl .src{display:block;margin:8px 0 0;font-size:11.5px;color:var(--faint)}
+  .tl.js .card{opacity:0;transform:translateX(-20px);transition:opacity .5s ease-out,transform .5s ease-out}
+  .tl.js .stop:nth-child(even) .card{transform:translateX(20px)}
+  .tl.js .stop.in .card{opacity:1;transform:none}
+  @media (max-width:760px){.tl-sec{padding:16px}.tl-sec h2{font-size:28px}
+    .tl .rail{left:9px;margin-left:0}.tl .stop,.tl .stop:nth-child(even){width:auto;margin-left:0;padding:0 0 14px 34px}.tl .stop + .stop{margin-top:0}
+    .tl .dot,.tl .stop:nth-child(even) .dot{left:2px;right:auto}.tl.js .card,.tl.js .stop:nth-child(even) .card{transform:translateY(16px)}}
+  @media (prefers-reduced-motion:reduce){.tl .dot{transition:none!important}}
+</style>
+{%- endmacro %}
+
+{% macro timeline_section(timeline, photo_credit) -%}
+  <section class="tl-sec" id="history" aria-labelledby="history-h">
+    <h2 id="history-h">A century and a half</h2>
+    <p class="sub">From the first sewers to this site, as SFPUC's 2010 master plan tells it, with the records this site keeps. The line fills as you scroll.</p>
+    <div class="tl" id="tl">
+      <div class="rail" aria-hidden="true"><span id="tl-fill"></span></div>
+      <ol>
+        {% for s in timeline %}
+        <li class="stop {{ 'plan' if 'Master Plan' in s.src else 'kept' }}">
+          <span class="dot" aria-hidden="true"></span>
+          <div class="card">
+            <div class="when">{{ s.when }}</div>
+            <h3>{{ s.title }}</h3>
+            <p>{{ s.text }}</p>
+            {% if s.photos %}<div class="photos n{{ s.photos|length }}">{% for ph in s.photos %}<figure{% if ph.small %} class="small"{% endif %}><img src="{{ asset(ph.file) }}" alt="{{ ph.cap }}" loading="lazy" decoding="async"><figcaption>{{ ph.cap }}</figcaption></figure>{% endfor %}</div>{% endif %}
+            {% if s.todo %}<div class="ph-frame">Photo to come · {{ s.todo }}</div>{% endif %}
+            <small class="src">{{ s.src }}</small>
+          </div>
+        </li>
+        {% endfor %}
+      </ol>
+    </div>
+    <p class="tl-toggle"><button type="button" class="btn ghost" id="tl-more" aria-controls="tl" aria-expanded="true" hidden>Collapse the timeline ↑</button></p>
+    <div class="swatches"><span><i style="background:var(--brand);border-radius:50%"></i>from SFPUC's master plan</span><span><i style="background:var(--safe);border-radius:50%"></i>from the records this site keeps</span></div>
+    <p class="more">{{ photo_credit }}</p>
+  </section>
+{%- endmacro %}
+
+{% macro timeline_script() -%}
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const REDUCE = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+  // the rail fills with the scroll, each stop slides in as it arrives
+  const tl = $("tl");
+  if (tl) {
+    const stops = [...tl.querySelectorAll(".stop")];
+    if (!REDUCE) tl.classList.add("js");   // without script, or with reduced motion, every stop simply shows
+    const step = () => {
+      const b = tl.getBoundingClientRect(), line = innerHeight * 0.6;
+      tl.style.setProperty("--p", (100 * clamp((line - b.top) / b.height)).toFixed(1) + "%");
+      stops.forEach(s => { const t = s.querySelector(".dot").getBoundingClientRect().top; s.classList.toggle("past", t < line); if (t < innerHeight * 0.92) s.classList.add("in"); });
+    };
+    addEventListener("scroll", step, {passive: true}); addEventListener("resize", step);
+    const more = $("tl-more"), fold = on => {
+      tl.classList.toggle("collapsed", on); more.setAttribute("aria-expanded", String(!on));
+      more.textContent = on ? `Show all ${stops.length} stops, to ${stops[stops.length - 1].querySelector(".when").textContent} ↓` : "Collapse the timeline ↑";
+      step();
+    };
+    more.hidden = false; fold(true);
+    more.addEventListener("click", () => { const open = tl.classList.contains("collapsed"); fold(!open); if (!open) $("history").scrollIntoView({block: "start"}); });
+  }
+})();
+</script>
+{%- endmacro %}

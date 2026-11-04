@@ -1,4 +1,4 @@
-"""Learn (/learn, with /learn/collect and /learn/lab-sop): renders from the repo's own registries and record files;
+"""Learn (/learn, with /learn/collect; the Lab SOP was its third page until it became an Admin tab, 2026-11-04): renders from the repo's own registries and record files;
 its own top tab since 2026-10-18 and still linked from Today's page; kept out of search until docs/learn_facts_to_check.md
 is done. Offline."""
 import csv
@@ -51,7 +51,8 @@ def test_the_map_replays_the_record_s_biggest_storms_from_the_registry():
 
 
 def test_timeline_runs_in_order_and_names_its_sources():
-    tl = P.learn_context()["timeline"]
+    """The timeline's content stays here while it is parked in Admin's UI overflow tab (2026-11-04)."""
+    tl = P.TIMELINE
     years = [int(re.search(r"\d{4}", t["when"]).group()) for t in tl]                                    # "1850s", "1938–1952", "Early 1980s"
     assert years == sorted(years) and len(tl) >= 12
     assert all(t["src"] and t["title"] and t["text"] for t in tl) and any("Master Plan" in t["src"] for t in tl)
@@ -82,18 +83,19 @@ def test_page_renders_its_sections_and_has_its_own_tab():
         r = c.get("/learn"); h = r.data.decode()
         home = c.get("/").data.decode()
     assert r.status_code == 200 and "{{" not in h and "{%" not in h
-    for sec in ('id="rain"', 'id="above"', 'id="bugs"', 'id="count"', 'id="record"', 'id="history"'):
+    for sec in ('id="rain"', 'id="above"', 'id="bugs"', 'id="count"', 'id="record"'):
         assert sec in h and 'href="#' + sec[4:-1] + '"' in h, sec                                           # each section, and its jump link
     assert 'id="sys-map"' in h and "unpkg.com/leaflet" not in h.split("<script>")[0]                          # Leaflet waits for the map
-    assert 'id="qt-skip"' in h and 'id="qt-after"' in h and 'id="tl-more"' in h and 'id="drops-heavy"' in h
-    assert h.count('class="stop ') == len(P.TIMELINE) and h.count('<article class="qt-step"') == 8 and h.count('<figure') >= 8
+    assert 'id="qt-skip"' in h and 'id="qt-after"' in h and 'id="drops-heavy"' in h
+    assert 'id="history"' not in h and 'class="stop ' not in h and 'href="#history"' not in h and 'id="tl-more"' not in h   # the timeline is parked in Admin's UI overflow (2026-11-04; tests/test_landing.py)
+    assert h.count('<article class="qt-step"') == 8   # the master plan's photos left with the timeline (they were the page's figures)
     assert h.index('id="count"') < h.index('id="tray"') < h.index('id="record"')                           # the hands-on tray follows the story
     assert h.count('class="bug"') == 4 and 'id="tray"' in h and 'id="ch-post"' in h and 'id="ch-csd"' in h
     assert 'id="archive"' not in h and 'id="compare"' not in h                                             # the then-and-now placeholder is gone (2026-10-20)
     assert '<meta name="robots" content="noindex">' in h and "prefers-reduced-motion:reduce" in h        # out of search; motion respects the setting
     learn = next(h2 for h2 in nav_model() if h2["key"] == "learn")
-    assert learn["paths"] == ["/learn", "/learn/collect", "/learn/lab-sop"] and 'class="learn" href="/learn"' in home   # its own tab (2026-10-18), and Today's bar
-    # Collect and the Lab SOP have their own pages and tests since 2026-10-18 (tests/test_collect.py, tests/test_sop.py)
+    assert learn["paths"] == ["/learn", "/learn/collect"] and 'class="learn" href="/learn"' not in home   # its own tab (2026-10-18); Today's Learn bar moved to Admin's UI overflow (2026-11-04)
+    # Collect has its own page and tests since 2026-10-18 (tests/test_collect.py); the Lab SOP is an Admin tab (tests/test_sop.py)
     assert 'class="proto"' not in h and "Prototype notes" not in h
 
 

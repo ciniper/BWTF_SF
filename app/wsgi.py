@@ -46,8 +46,9 @@ from flask import Flask, Response, abort, redirect, render_template, request, se
 
 import features.about.page as about_page
 import features.today.page as today_page
-import features.learn.page as learn_page   # /learn, /learn/collect, /learn/lab-sop: the Learn tab
-import features.learn.sop as sop_page       # the Lab SOP's gated photos
+import features.learn.page as learn_page   # /learn, /learn/collect: the Learn tab
+import features.alerts.lab_sop as sop_page  # the Lab SOP, an Admin tab (2026-11-04), and its gated photos
+import features.alerts.ui_overflow as ui_overflow_page   # Admin's UI overflow tab: what came off Today (2026-11-04)
 import features.cso_history.page as cso_history_page
 import features.discharges.page as discharges_page
 import features.forecast.page as forecast_page
@@ -67,7 +68,7 @@ from features.alerts.subscriptions import SubscriptionStore
 from features.alerts.cso_alerts import SimulatedCSOStore
 from shared.sfpuc_api import SFPUCRealTimeAPI
 from app.assets import asset, cache_stamped_static
-from app.landing import GATED, canonical_path, nav_model
+from app.landing import canonical_path, nav_model
 from app.build_info import build_info
 
 try:
@@ -129,10 +130,11 @@ def _alerts_unlocked() -> bool:
 
 
 _GATED_PAGES: set = set()   # every page path behind the passphrase: where the unlock form may send you back to
-# The unlock page's heading per gated area (2026-10-20: the Lab SOP joined the alerts board behind the same passphrase).
+# The unlock page's heading per gated area, the first prefix that matches (2026-10-20: the Lab SOP joined the alerts
+# board behind the same passphrase; 2026-11-04: both are Admin, the Lab SOP one of its tabs).
 _GATE_COPY = {
-    "/alerts": ("Alerts access", "The coordinators' board: live subscriptions and real email — task-force members only."),
-    "/learn": ("Lab SOP", "The lab's procedure is for Blue Water Task Force volunteers: enter the coordinators' passphrase."),
+    "/alerts/lab-sop": ("Lab SOP", "The lab's procedure is for Blue Water Task Force volunteers: enter the coordinators' passphrase."),
+    "/alerts": ("Admin", "The coordinators' board: live subscriptions and real email — task-force members only."),
 }
 
 
@@ -173,7 +175,7 @@ def _unlock_submit():
 
 
 def _sop_photo(name):
-    """The Lab SOP's photos sit behind the passphrase with the page (features/learn/sop_photos/, not app/static)."""
+    """The Lab SOP's photos sit behind the passphrase with the page (features/alerts/sop_photos/, not app/static)."""
     if not _alerts_unlocked():
         abort(401)
     path = sop_page.photo_path(name)
@@ -326,6 +328,12 @@ def create_app():
     for path, handler in costs_page.GET_ROUTES.items():
         view = _gated_api(_forecast_view(handler)) if path.startswith("/alerts/api/") else _gated_page(_forecast_view(handler), path)
         app.add_url_rule(path, f"costs-get:{path}", view, methods=["GET"])
+    # Admin's Lab SOP and UI overflow tabs (2026-11-04), behind the same passphrase; the Lab SOP's photos with it
+    for path, handler in {**sop_page.GET_ROUTES, **ui_overflow_page.GET_ROUTES}.items():
+        app.add_url_rule(path, f"admin-get:{path}", _gated_page(_forecast_view(handler), path), methods=["GET"])
+    app.add_url_rule("/alerts/lab-sop/photos/<name>", "sop-photo", _sop_photo, methods=["GET"])
+    for path, to in sop_page.REDIRECTS.items():
+        app.add_url_rule(path, f"moved:{path}", lambda to=to: redirect(to, 302), methods=["GET"])   # 302, as About's moves
 
     # Comparison page + its GET APIs
     for path, method_name in _COMPARE_GET.items():
@@ -359,14 +367,10 @@ def create_app():
     for path, to in about_page.REDIRECTS.items():
         app.add_url_rule(path, f"moved:{path}", lambda to=to: redirect(to, 302), methods=["GET"])   # 302: a page that moves again is not cached forever
 
-    # Today: the home page (also at /) — the board, its layers (/api/today/*), the page directory below it
-    # Learn: its own hub in NAV (2026-10-18), and Today's Learn bar
+    # Today: the home page (also at /) — the board and its layers (/api/today/*)
+    # Learn: its own hub in NAV (2026-10-18)
     for path, handler in learn_page.GET_ROUTES.items():
-        view = _forecast_view(handler)
-        if path in GATED:   # the Lab SOP, behind the alerts passphrase (Chase, 2026-10-20)
-            view = _gated_page(view, path)
-        app.add_url_rule(path, f"learn-get:{path}", view, methods=["GET"])
-    app.add_url_rule("/learn/lab-sop/photos/<name>", "sop-photo", _sop_photo, methods=["GET"])
+        app.add_url_rule(path, f"learn-get:{path}", _forecast_view(handler), methods=["GET"])
 
     for path, handler in today_page.GET_ROUTES.items():
         app.add_url_rule(path, f"today-get:{path}", _forecast_view(handler), methods=["GET"])

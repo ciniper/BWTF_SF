@@ -2,8 +2,8 @@
 <html lang="en"><head><meta charset="utf-8">
 <link rel="icon" href="{{ asset('brand/favicon.ico') }}"><link rel="apple-touch-icon" sizes="144x144" href="{{ asset('brand/bwtf_144x144.png') }}">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lab SOP — SF Beach Water · Surfrider SF Blue Water Task Force</title>
-<meta name="robots" content="noindex">   {# with the rest of Learn: out of search until docs/learn_facts_to_check.md is done #}
+<title>Lab SOP — Admin · Surfrider SF Blue Water Task Force</title>
+<meta name="robots" content="noindex">   {# an Admin tab, behind the passphrase: never in search #}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -86,12 +86,14 @@
     .sbadge{margin:0 10px}
   }
 </style>
+{% from "alerts/_tabs.html" import admin_tab_styles %}{{ admin_tab_styles() }}
 </head>
 <body>
-{% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
+{% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}{% from "alerts/_tabs.html" import admin_tabs %}
 {{ topbar() }}
 <div class="wrap">
   {{ page_head("Lab SOP", "How the Blue Water Task Force lab tests a water sample for Enterococcus with Enterolert and a Quanti-Tray: " ~ phases|length ~ " phases, " ~ n_steps ~ " steps, from bringing the samples in to entering the results.") }}
+  {{ admin_tabs("lab-sop") }}
   <nav class="phases" aria-label="Phases">
     {%- for ph in phases %}<a href="#{{ ph.key }}" style="--a:{{ ph.accent }}"><b>Phase {{ ph.n }}</b>{{ ph.title }}</a>{% endfor %}
   </nav>
