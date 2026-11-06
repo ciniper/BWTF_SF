@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link rel="icon" href="{{ asset('brand/favicon.ico') }}"><link rel="apple-touch-icon" sizes="144x144" href="{{ asset('brand/bwtf_144x144.png') }}">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data — Surfrider SF Blue Water Task Force</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ asset('brand.css') }}">
+<style>
+  body{margin:0;background:var(--sand);color:var(--ink);font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:15px;line-height:1.5}
+  .wrap{max-width:var(--page-w);margin:0 auto;padding:20px 24px 40px}
+  /* Two columns, one per group: its featured page as a large card, the group's other pages listed under it.
+     The grid fills by column so the two large cards share a row (and a height); a phone stacks group by group. */
+  .groups{display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:auto auto;grid-auto-flow:column;gap:14px}
+  .feature,.rest{background:#fff;border:1px solid var(--line);border-radius:var(--r)}
+  .feature{position:relative;display:flex;flex-direction:column;padding:20px 22px 20px;scroll-margin-top:16px}
+  .feature:hover{border-color:var(--sky)}
+  .eyebrow{display:flex;align-items:center;gap:7px;margin:0;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--faint)}
+  .eyebrow .ic{width:15px;height:15px;color:var(--brand)}
+  .feature h2{margin:6px 0 0;font-size:22px;font-weight:900;line-height:1.2}
+  .feature h2 a{color:var(--ink);text-decoration:none}
+  .feature h2 a::after{content:"";position:absolute;inset:0;border-radius:var(--r)}   /* the whole card is the link */
+  .feature .blurb{margin:6px 0 16px;color:var(--muted);max-width:60ch}
+  .stat{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px;margin:0 0 16px;padding-top:14px;border-top:1px solid var(--sand2);min-height:76px}
+  .stat b{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:46px;line-height:1;letter-spacing:.02em;color:var(--ink);white-space:nowrap}
+  .stat b:empty{display:none}
+  .stat span{flex:1 1 220px;color:var(--muted);font-size:14px;line-height:1.45}
+  .stat span strong{color:var(--ink);font-weight:700}
+  .stat.pending span{color:var(--faint)}   /* while the number loads (DataSF can take seconds): its room is kept, so nothing under it jumps */
+  .stat[hidden]{display:none}
+  .go{align-self:flex-start;margin-top:auto;padding:8px 15px;border:2px solid var(--line);border-radius:999px;color:var(--brand);font-weight:700;font-size:13.5px;white-space:nowrap}
+  .feature:hover .go{border-color:var(--brand)}
+  .rest{padding:14px 22px 6px}
+  .rest h3{margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--faint)}
+  .pages{margin:0;padding:0;list-style:none}
+  .pages a{display:block;padding:10px 0 11px;border-top:1px solid var(--sand2);text-decoration:none;color:var(--ink)}
+  .pages .name{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-weight:700;font-size:15px}
+  .pages .name::after{content:"→";color:var(--brand);font-weight:700}
+  .pages a:hover .name{color:var(--brand)}
+  .pages .blurb{display:block;color:var(--muted);font-size:13.5px;margin-top:2px;max-width:62ch}
+  @media (max-width:900px){.groups{grid-template-columns:1fr;grid-template-rows:none;grid-auto-flow:row}}
+  @media (max-width:760px){.wrap{padding:14px 14px 30px}.feature{padding:16px 16px 18px}.rest{padding:12px 16px 4px}.stat b{font-size:40px}}
+</style>
+</head>
+<body>
+{% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
+{{ topbar() }}
+<div class="wrap">
+  {{ page_head("Data", "The records behind the board: what the labs found in the water, and what the city reported about its sewers and beaches.") }}
+  <div class="groups">
+    {% for g in groups %}
+    {%- set f = g.featured %}
+    <section class="feature" id="{{ g.key }}" aria-labelledby="feature-{{ g.key }}">
+      <p class="eyebrow"><svg class="ic"><use href="#i-{{ g.icon }}"/></svg>{{ g.label }}</p>
+      <h2 id="feature-{{ g.key }}"><a href="{{ f.href }}">{{ f.title }}</a></h2>
+      <p class="blurb">{{ f.blurb }}</p>
+      {% if f.href == "/discharges" %}
+      {%- if ledger %}
+      <p class="stat"><b>{{ "{:,}".format(ledger.count) }} discharge{{ "" if ledger.count == 1 else "s" }}</b><span>reported in {{ ledger.year }}, totalling <strong>{{ ledger.volume }}</strong>. Reports filed through {{ ledger.through }}.</span></p>
+      {%- endif %}
+      <span class="go">Open the ledger →</span>
+      {% else %}
+      <p class="stat pending" id="rc-stat"><b id="rc-pct"></b><span id="rc-text">Counting the last year of samples…</span></p>   {#- filled from /analysis/api/summary once the page has drawn #}
+      <span class="go">Open the report card →</span>
+      {% endif %}
+    </section>
+    <nav class="rest" aria-label="More {{ g.label | lower }}">
+      <h3>More {{ g.label | lower }}</h3>
+      <ul class="pages">
+        {% for p in g.more %}
+        <li><a href="{{ p.href }}"><span class="name">{{ p.title }}</span><span class="blurb">{{ p.blurb }}</span></a></li>
+        {% endfor %}
+      </ul>
+    </nav>
+    {% endfor %}
+  </div>
+</div>
+{{ footer() }}
+{{ tabbar() }}
+<script>
+// The Report Card's headline: the ranked site with the most samples over the state limit in the last year,
+// from the Report Card's own endpoint with its own opening view (weekly samples, Enterococcus, the last year),
+// so the number here is the number at the top of that page. Any failure leaves the card without a number.
+(async function () {
+  try {
+    const start = new Date(Date.now() - 365 * 864e5).toISOString().slice(0, 10);
+    const d = await (await fetch("/analysis/api/summary?start=" + start)).json();
+    const ranked = (d.sites || []).filter(s => s.routine && s.samples && s.exceed_pct != null).sort((a, b) => b.exceed_pct - a.exceed_pct);
+    if (d.error || !ranked.length) throw new Error("no ranked sites");
+    const worst = ranked[0], text = document.getElementById("rc-text"), name = document.createElement("strong");
+    name.textContent = worst.name;
+    document.getElementById("rc-pct").textContent = worst.exceed_pct.toFixed(1) + "%";
+    text.textContent = "";
+    text.append("of weekly samples at ", name, " were over the state " + d.indicator_label + " limit in the last year, the most of the " + ranked.length + " ranked sites.");
+    document.getElementById("rc-stat").classList.remove("pending");
+  } catch (e) { document.getElementById("rc-stat").hidden = true; }   // the card stands without its number
+})();
+</script>
+</body>
+</html>

@@ -1,43 +1,60 @@
 {#- The shared page frame (redesign, 2026-09-29): a slim Beta notice above everything (2026-10-18: a banner, not a
-    popup, so it never covers the board and is there on every visit), a two-tier top bar (the
-    hubs, Learn among them since 2026-10-18; inside a hub, its pages as a second row of tabs), a compact page head that
-    replaces the tall blue heroes, the site footer as a full-bleed band (place it OUTSIDE the page's
+    popup, so it never covers the board and is there on every visit), a one-row top bar (design/nav, 2026-11-06: Today,
+    Forecast, Data, Learn, each a real page), a compact page head that replaces the tall blue heroes and, in a
+    section with several pages (Data, Learn), opens with that section's page switcher, the site footer as a full-bleed band (place it OUTSIDE the page's
     .wrap), and a phone tab bar. Styles live in app/static/brand.css; the nav model
-    (NAV) is a Jinja global built from app/landing.py's HUBS.
+    (NAV) is a Jinja global built from app/landing.py's NAV_SECTIONS.
     Import with context so `request` is in scope:
       {% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
-    Row one of the top bar is Main + the three hubs; inside a hub, row two lists its pages as
-    tabs (so Samples ↔ Graphs is one click). page_head(..., link=(href, label)) adds a visible
+    The top bar never grows a second row: a section's pages are pills above the page title (so
+    Samples ↔ Graphs is one click), grouped and labelled. page_head(..., link=(href, label)) adds a visible
     action link under the lead (the records pages' "How we get these records"). A page head with a
     "How to read this" drawer:
       {% call page_head("Graphs", "one-line lead", "water") %} …the longer explanation… {% endcall %} -#}
 
 {% macro topbar() -%}
 {%- set p = canonical_path(request.path) %}
-{%- set ns = namespace(hub=None) %}{% for h in NAV %}{% if p in h.paths %}{% set ns.hub = h %}{% endif %}{% endfor %}
 <aside class="beta" aria-label="Beta notice"><div class="in"><b>Beta</b><p>This site is still being tested and is not an official beach advisory. <span class="more">Its data can be late or wrong. </span>Always follow posted signs and <a href="https://webapps.sfpuc.org/sapps/beachesandbay.html" target="_blank" rel="noopener">SFPUC's beach map</a>. <span class="fb">Send Beta <a href="mailto:ciniper@gmail.com?subject=BWTF-SF%20BETA%20FEEDBACK">Feedback</a>.</span></p></div></aside>
 <header class="topbar">
   <div class="in">
     <a class="mark" href="/"><img src="{{ asset('brand/bwtf_144x144.png') }}" alt=""><span><b>SF Beach Water</b><small>Surfrider SF · Blue Water Task Force</small></span></a>
     <nav class="tabs" aria-label="Sections">
       {%- for h in NAV %}
-      <a href="{{ h.href }}"{% if ns.hub and ns.hub.key == h.key %} class="on"{% endif %}>{{ h.title }}</a>
+      <a href="{{ h.href }}"{% if p in h.paths %} class="on"{% endif %}{% if p == h.href %} aria-current="page"{% endif %}>{{ h.title }}</a>
       {%- endfor %}
     </nav>
     <a class="about" href="/about" title="About this site: who runs it, where the numbers come from"><svg class="ic"><use href="#i-info"/></svg><span>About</span></a>
     <a class="cta" href="/signup">Get beach alerts</a>
   </div>
-  {%- if ns.hub %}
-  <nav class="subtabs" aria-label="{{ ns.hub.title }} pages"><div class="in">
-    {%- for r in ns.hub.rows %}
-    <a href="{{ r.href }}" class="{% if r.href == p %}on{% endif %}{% if r.gated %} gated{% endif %}"{% if r.href == p %} aria-current="page"{% endif %}{% if r.gated %} title="Coordinators only — needs the passphrase"{% endif %}>{{ r.title }}{% if r.gated %}<svg class="ic"><use href="#i-lock"/></svg>{% endif %}</a>
-    {%- endfor %}
-  </div></nav>
-  {%- endif %}
 </header>
 {%- endmacro %}
 
+{#- The section's pages, as pills above the page title: only on a page that is one of them (so not on the
+    Data index, whose cards are the same list), and only in a section with more than one. A page's subpage
+    (How testing changed) lights its parent without claiming to be it. -#}
+{% macro section_nav() -%}
+{%- set p = canonical_path(request.path) %}
+{%- for s in NAV if s.switcher %}
+{%- set ns = namespace(here=false) %}{% for g in s.groups %}{% for pg in g.pages %}{% if p in pg.paths %}{% set ns.here = true %}{% endif %}{% endfor %}{% endfor %}
+{%- if ns.here %}
+<nav class="secnav" aria-label="{{ s.title }} pages">
+  {%- for g in s.groups %}
+  <div class="grp">
+    {%- if g.label %}<span class="lbl">{{ g.label }}</span>{% endif %}
+    <div class="pills">
+      {%- for pg in g.pages %}
+      <a href="{{ pg.href }}"{% if p in pg.paths %} class="on"{% endif %}{% if p == pg.href %} aria-current="page"{% endif %}>{{ pg.title }}</a>
+      {%- endfor %}
+    </div>
+  </div>
+  {%- endfor %}
+</nav>
+{%- endif %}
+{%- endfor %}
+{%- endmacro %}
+
 {% macro page_head(title, lead="", hub_key=None, how_label="How to read this", link=None) -%}
+{{ section_nav() }}
 <div class="page-head">
   <div class="ph-main">
     <h1>{{ title }}</h1>
@@ -97,7 +114,7 @@
 {%- set p = canonical_path(request.path) %}
 <nav class="tabbar" aria-label="Sections">
   {%- for h in NAV %}
-  <a href="{{ h.href }}"{% if p in h.paths %} class="on"{% endif %}><svg class="ic"><use href="#i-{{ {'today': 'bell', 'water': 'flask', 'record': 'clipboard', 'learn': 'microscope'}[h.key] }}"/></svg>{{ {'today': 'Today', 'water': 'Water record', 'record': 'Discharges', 'learn': 'Learn'}[h.key] }}</a>
+  <a href="{{ h.href }}"{% if p in h.paths %} class="on"{% endif %}><svg class="ic"><use href="#i-{{ h.icon }}"/></svg>{{ h.title }}</a>
   {%- endfor %}
 </nav>
 <script src="{{ asset('kit.js') }}" defer></script>

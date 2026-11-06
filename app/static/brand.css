@@ -24,7 +24,7 @@
    One palette, one radius scale, one set of status colours. Pages should read
    these instead of re-declaring hex values. */
 :root{--brand:#0072BC;--brand-deep:#005a96;--sky:#85BFDF;--ink:#26272A;--muted:#54576F;--faint:#8a949b;--line:#d9e4e8;--sand:#E3EBF2;--sand2:#eef3f7;
-      --safe:#237059;--caution:#c99a12;--posted:#d4763a;--discharge:#b5310a;--unknown:#98a3ab;--r:14px;--r-lg:20px;--page-w:1280px}   /* one frame width on every page — header, sub-tabs, content and footer (Chase, 2026-09-29: no jumping between pages) */
+      --safe:#237059;--caution:#c99a12;--posted:#d4763a;--discharge:#b5310a;--unknown:#98a3ab;--r:14px;--r-lg:20px;--page-w:1280px}   /* one frame width on every page — header, content and footer (Chase, 2026-09-29: no jumping between pages) */
 
 /* ── Kit: page basics and the shared controls (redesign, 2026-09-29) ─────────────
    brand.css loads BEFORE each page's own <style>, so a page may still specialise a
@@ -95,14 +95,6 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
 .topbar .tabs a{display:block;color:var(--muted);text-decoration:none;font-weight:600;font-size:14px;padding:12px 12px 10px;border-bottom:2px solid transparent;white-space:nowrap}
 .topbar .tabs a:hover{color:var(--ink)}
 .topbar .tabs a.on{color:var(--ink);border-color:var(--brand)}
-.topbar .subtabs{border-top:1px solid var(--line);background:#fff}
-.topbar .subtabs .in{padding:0 24px;gap:0;overflow-x:auto;scrollbar-width:none}
-.topbar .subtabs .in::-webkit-scrollbar{display:none}
-.topbar .subtabs a{display:block;color:var(--muted);text-decoration:none;font-weight:600;font-size:13.5px;padding:10px 14px 9px;border-bottom:2px solid transparent;white-space:nowrap}
-.topbar .subtabs a:hover{color:var(--ink)}
-.topbar .subtabs a.on{color:var(--brand);border-color:var(--brand)}
-.topbar .subtabs a.gated{margin-left:auto;color:var(--faint)}
-.topbar .subtabs a .ic{width:13px;height:13px;margin-left:5px;vertical-align:-2px}
 .topbar .cta{margin:0 0 0 6px;background:var(--brand);color:#fff;border-radius:999px;padding:9px 16px;font-weight:700;font-size:14px;text-decoration:none;white-space:nowrap}   /* margin in full: a page's own .cta margin (the old Main page's hub cards) used to push it down */
 .topbar .cta:hover{background:var(--brand-deep)}
 /* Between the phone layout and full width the bar tightens in two steps instead of scrolling every page sideways:
@@ -113,7 +105,7 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
 }
 @media (min-width:761px) and (max-width:900px){
   .topbar .in{gap:10px}
-  .topbar .tabs{margin-left:0;min-width:0;overflow-x:auto;scrollbar-width:none}   /* if a fallback font runs wide, the tabs scroll inside the bar (like the sub-tabs) rather than the page */
+  .topbar .tabs{margin-left:0;min-width:0;overflow-x:auto;scrollbar-width:none}   /* if a fallback font runs wide, the tabs scroll inside the bar rather than the page */
   .topbar .tabs::-webkit-scrollbar{display:none}
   .topbar .tabs a{font-size:13px;padding:12px 7px 10px}
   .topbar .tabs a:focus-visible{outline-offset:-3px}   /* inside the scroller an outside outline would be clipped */
@@ -162,14 +154,28 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
 .site-footer a:hover{text-decoration:underline}
 .site-footer .footer-sources{display:flex;justify-content:space-between;gap:8px 20px;flex-wrap:wrap;margin:18px 0 0;padding-top:12px;border-top:1px solid rgba(255,255,255,.14);font-size:13px;color:#8a949b}
 
+/* ── Frame: a section's page switcher (design/nav, 2026-11-06) ──────────────────
+   The pages of the section a page belongs to (Data, Learn), above its title: pills in a tinted
+   track, grouped and labelled, so it reads as "pages in this section" and not as a second top bar. */
+.secnav{display:flex;flex-wrap:wrap;align-items:center;gap:8px 22px;margin:0 0 16px;font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:13px;line-height:1.2}
+.secnav .grp{display:flex;align-items:center;gap:8px;min-width:0}
+.secnav .lbl{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);white-space:nowrap}
+.secnav .pills{display:flex;gap:2px;padding:3px;border-radius:999px;background:#d3dfe9;min-width:0;overflow-x:auto;scrollbar-width:none}
+.secnav .pills::-webkit-scrollbar{display:none}
+.secnav a{display:block;padding:6px 13px;border-radius:999px;color:var(--muted);font-weight:600;text-decoration:none;white-space:nowrap}
+.secnav a:hover{color:var(--ink)}
+.secnav a.on{background:#fff;color:var(--brand);font-weight:700;box-shadow:0 1px 2px rgba(38,39,42,.14)}
+
 /* ── Frame: phone tab bar (hidden on wide screens) ────────────────────────── */
 .tabbar{display:none}
 @media (max-width:760px){
   .beta .in{padding:6px 14px;gap:8px;font-size:12px}
   .beta .more{display:none}   /* shorter on a phone: three lines, not five */
   .topbar .tabs{display:none}
-  .topbar .subtabs .in{padding:0 8px}
-  .topbar .subtabs a{padding:10px 11px 9px;font-size:13px}
+  .secnav{gap:10px;margin-bottom:14px}
+  .secnav .grp{flex-direction:column;align-items:flex-start;gap:4px;width:100%}   /* a phone: each group on its own line, its label above */
+  .secnav .pills{max-width:100%}
+  .secnav a{padding:6px 11px}
   .topbar .in{padding:8px 14px;gap:10px}
   .topbar .about{padding:6px}
   .topbar .cta{margin-left:0;padding:8px 13px;font-size:13px}

@@ -45,6 +45,7 @@ from urllib.parse import parse_qs, urlparse
 from flask import Flask, Response, abort, redirect, render_template, request, send_from_directory, session
 
 import features.about.page as about_page
+import features.data_index.page as data_index_page   # /data: the index the top bar's Data tab opens on (design/nav)
 import features.today.page as today_page
 import features.learn.page as learn_page   # /learn, /learn/collect: the Learn tab
 import features.alerts.lab_sop as sop_page  # the Lab SOP, an Admin tab (2026-11-04), and its gated photos
@@ -294,7 +295,7 @@ def create_app():
     app.jinja_env.globals["RISK_LEVELS"] = risk_levels.export()   # shared/risk_levels.py: Low / Medium / High / Extreme on every page (Chase, 2026-10-01)
     # Vercel Web Analytics + Speed Insights: production only (_frame.html vercel_insights; enable both in the dashboard)
     app.jinja_env.globals["VERCEL_INSIGHTS"] = os.environ.get("VERCEL_ENV") == "production"
-    app.jinja_env.globals["NAV"] = nav_model()   # app/landing.py: the three hubs, for the shared top bar (_frame.html)
+    app.jinja_env.globals["NAV"] = nav_model()   # app/landing.py: the four sections of the shared top bar (_frame.html)
     app.jinja_env.globals["canonical_path"] = canonical_path   # /today and /index.html light the home page's tabs
     app.jinja_env.globals["asset"] = asset                     # app/assets.py: /static links stamped with their contents
     app.after_request(cache_stamped_static)                    # …and a year-long cache only for a current stamp
@@ -361,6 +362,10 @@ def create_app():
     for path, handler in postings_page.GET_ROUTES.items():
         app.add_url_rule(path, f"postings-get:{path}", _forecast_view(handler), methods=["GET"])
 
+    # Data: the index of the lab-result and city-record pages (public read-only; static)
+    for path, handler in data_index_page.GET_ROUTES.items():
+        app.add_url_rule(path, f"data-get:{path}", _forecast_view(handler), methods=["GET"])
+
     # About: how the records were obtained (/records); the infrastructure diagram is a section of /about (/architecture redirects)
     for path, handler in about_page.GET_ROUTES.items():
         app.add_url_rule(path, f"about-get:{path}", _forecast_view(handler), methods=["GET"])
@@ -368,7 +373,7 @@ def create_app():
         app.add_url_rule(path, f"moved:{path}", lambda to=to: redirect(to, 302), methods=["GET"])   # 302: a page that moves again is not cached forever
 
     # Today: the home page (also at /) — the board and its layers (/api/today/*)
-    # Learn: its own hub in NAV (2026-10-18)
+    # Learn: its own section in NAV (2026-10-18)
     for path, handler in learn_page.GET_ROUTES.items():
         app.add_url_rule(path, f"learn-get:{path}", _forecast_view(handler), methods=["GET"])
 
