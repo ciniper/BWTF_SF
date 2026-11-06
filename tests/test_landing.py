@@ -1,6 +1,6 @@
 """The page directory (app/landing.py HUBS): the feature pages grouped into hubs (Learn the fourth, 2026-10-18), each row
-with a static fact that a live one replaces when its source answers in time — the shared tabs and
-the hub cards under the Today board. The Main page at / that first showed the cards was deleted
+with a static fact that a live one replaces when its source answers in time — the hub cards under the Today board —
+and the shared top bar (NAV_SECTIONS: Today, Forecast, Data, Learn; design/nav, 2026-11-06). The Main page at / that first showed the cards was deleted
 2026-09-30; since 2026-10-01 Today IS / (and still answers at /today). Offline: stubbed status client, facts injected or disabled."""
 import pathlib
 import re, sys
@@ -128,34 +128,72 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
     down = L.today_board([], {}, "")
     assert down["tone"] == "warn" and down["headline_html"] == '<em class="warn">Beach status is unavailable right now.</em>'    # orange, like a posting
     nav = L.nav_model()
-    assert [h["key"] for h in nav] == ["today", "water", "record", "learn"] and [h["href"] for h in nav] == ["/", "/analysis", "/discharges", "/learn"]   # a hub opens on its first page; Today's is the root
-    assert [r["title"] for r in nav[3]["rows"]] == ["Learn", "Collect"]
+    assert [h["key"] for h in nav] == ["today", "forecast", "data", "learn"] and [h["href"] for h in nav] == ["/", "/forecast", "/data", "/learn"]   # one row, each tab a real page (design/nav, 2026-11-06)
+    assert [h["title"] for h in nav] == ["Today", "Forecast", "Data", "Learn"] and [h["switcher"] for h in nav] == [False, False, True, True]   # only a section with several pages gets the switcher
+    assert [p["title"] for g in nav[3]["groups"] for p in g["pages"]] == ["How it works", "Collect a sample"]
     assert not any("/alerts" in h["paths"] for h in nav) and L.GATED == {"/alerts"}   # Admin (the Sewage Alert System, renamed) is in no hub: a footer link (2026-11-04)
     assert {L.canonical_path(u) for u in ("/alerts", "/alerts/costs", "/alerts/lab-sop", "/alerts/ui-overflow")} == {"/alerts", "/alerts/costs", "/alerts/lab-sop", "/alerts/ui-overflow"}
-    assert [r["title"] for r in nav[1]["rows"]] == ["Site Report Card", "Samples", "Graphs", "Source Comparison"] and "/compare" in nav[1]["paths"]  # subpage = its own tab
-    assert [r["href"] for r in nav[0]["rows"]] == ["/", "/forecast", "/signup"] and "/" in nav[0]["paths"]                                  # the hub opens on Today, at the root
+    assert [(g["label"], [p["title"] for p in g["pages"]]) for g in nav[2]["groups"]] == [
+        ("Lab results", ["Report card", "Samples", "Graphs", "Compare"]), ("City records", ["Discharges", "Postings", "Online timeline"])]
+    assert nav[0]["paths"] == ["/"] and nav[1]["paths"] == ["/forecast"] and not any("/signup" in h["paths"] or "/about" in h["paths"] for h in nav)   # signup is the bar's button, About its link
+    assert {"/analysis/testing", "/discharges/reporting", "/compare"} <= set(nav[2]["paths"])              # a page's subpage lights Data too
+    paged = [p["href"] for h in nav for g in h["groups"] for p in g["pages"]]
+    assert sorted(paged + ["/", "/forecast", "/signup"]) == sorted(FEATURE_PAGES)                           # every feature page is in the bar, once
     assert L.canonical_path("/today") == L.canonical_path("/index.html") == "/" and L.canonical_path("/graphs") == "/graphs"
-    assert [r["gated"] for r in nav[0]["rows"]] == [False, False, False]
     from app.wsgi import app
     with app.test_client() as c:
         g = c.get("/graphs").data.decode()
-        assert 'class="subtabs"' in g and g.count('aria-current="page"') == 1 and '<a href="/samples">Samples</a>' in g and 'href="/graphs" class="on" aria-current="page">Graphs' in g
-        assert "The water record</a>" in g and 'class="crumbs"' not in g and "navhub" not in g
+        assert 'class="subtabs"' not in g and g.count('aria-current="page"') == 1 and '<a href="/samples">Samples</a>' in g and 'href="/graphs" class="on" aria-current="page">Graphs' in g
+        assert g.index('class="topbar"') < g.index("</header>") < g.index('class="secnav"') < g.index('class="page-head"')   # the switcher opens the page head, outside the top bar
+        assert '<a href="/data" class="on">Data</a>' in g and '<span class="lbl">Lab results</span>' in g and '<span class="lbl">City records</span>' in g
+        assert "The water record</a>" not in g and 'class="crumbs"' not in g and "navhub" not in g
+        t = c.get("/analysis/testing").data.decode()
+        assert '<a href="/analysis" class="on">Report card</a>' in t and '<a href="/data" class="on">Data</a>' in t   # a subpage lights its parent, without claiming to be it
+        d = c.get("/data"); dh = d.data.decode()
+        assert d.status_code == 200 and "{{" not in dh and 'class="secnav"' not in dh and '<a href="/data" class="on" aria-current="page">Data</a>' in dh   # the index: its cards are the list
+        assert [dh.count('<li><a href="%s">' % u) for u in ("/samples", "/graphs", "/compare", "/postings", "/cso-history")] == [1] * 5   # the rest of each group, listed under its large card
+        assert dh.count('class="feature"') == 2 and '<h2 id="feature-water"><a href="/analysis">Site Report Card</a></h2>' in dh and '<h2 id="feature-record"><a href="/discharges">Discharge Ledger</a></h2>' in dh   # the two the index leads with
+        assert dh.index('id="water"') < dh.index("Site Report Card") < dh.index("Source Comparison") < dh.index('id="record"') < dh.index("Discharge Ledger") < dh.index("Online Postings Timeline")   # group by group, so a phone reads lab results then city records
+        assert 'id="rc-stat"' in dh and 'fetch("/analysis/api/summary?start="' in dh and "Every combined-sewer discharge" in dh   # the Report Card's number arrives after the page has drawn
+        assert re.search(r'<p class="stat"><b>[\d,]+ discharges?</b><span>reported in 20\d\d, totalling <strong>[\d.,]+ (million|billion) gallons</strong>\. Reports filed through [A-Z][a-z]{2} 20\d\d\.</span></p>', dh)   # the Ledger's, from the committed record
+        beta = dh[dh.index('class="beta"'):dh.index('class="topbar"')]
+        assert '<span class="more">' in beta and ".more" not in dh.split("</style>")[0]   # the page must not restyle the Beta notice's "more" span (it did: a white box over the sentence)
         for u in ("/", "/today"):   # Today IS the home page: served at the root, and at /today for the alert emails — never a redirect (2026-10-01)
             r = c.get(u); body = r.data.decode()
             assert r.status_code == 200 and "Location" not in r.headers and 'id="today-map"' in body and 'class="hubs"' not in body, u   # the cards moved to Admin's UI overflow (2026-11-04)
             assert '<link rel="canonical" href="https://bwtf-sf.vercel.app/">' in body, u                  # search engines index the root
             assert 'href="/" class="on" aria-current="page">Today' in body and 'aria-current="page"' in body.split('class="tabbar"')[0], u   # the Today tab lights at both addresses
+            assert 'class="secnav"' not in body and body.split('class="tabbar"')[0].count('href="/signup"') == 1, u   # one bar on the home page, and one Get beach alerts in it
         assert c.get("/index.html").status_code == 200 and "Location" not in c.get("/index.html").headers
         assert ">Main</a>" not in g and "Main</a>" not in g and 'class="mark" href="/"' in g          # no Main tab in either bar; the logo goes home
         f = c.get("/forecast").data.decode()
-        sub = f[f.index('class="subtabs"'):f.index("</nav>", f.index('class="subtabs"'))]
-        assert 'href="/alerts"' not in sub and 'class=" gated"' not in sub                                  # no locked tab since Admin moved to the footer (2026-11-04)
+        bar = f[f.index('class="topbar"'):f.index("</header>")]
+        assert 'href="/alerts"' not in bar and 'class="secnav"' not in f and 'class="subtabs"' not in f     # no Admin tab (the footer, 2026-11-04); Forecast stands alone, so no switcher
+        assert '<a href="/forecast" class="on" aria-current="page">Forecast</a>' in bar
         foot = f[f.index('class="site-footer"'):]
         assert '<a href="/alerts" title="Coordinators only — needs the passphrase">Admin</a>' in foot       # the coordinators' way in
         a = c.get("/about").data.decode()
         assert "About this site" in a and "Blue Water Task Force" in a and 'class="topbar"' in a and "SFPUC's live beach map" in a and 'class="status-dot discharge"' in a
         assert 'class="topbar"' in c.get("/records").data.decode() and "back-to-dash\" href" not in c.get("/records").data.decode()
+
+
+def test_the_data_index_leads_with_the_report_card_and_the_ledger():
+    """/data (features/data_index): one column per group of the Data section, its featured page first."""
+    from datetime import date
+    from features.data_index import page as DI
+    groups = L.data_index()
+    assert [(g["key"], g["label"], g["featured"]["href"], [p["href"] for p in g["more"]]) for g in groups] == [
+        ("water", "Lab results", "/analysis", ["/samples", "/graphs", "/compare"]),
+        ("record", "City records", "/discharges", ["/postings", "/cso-history"])]
+    assert all(p["title"] and p["blurb"] for g in groups for p in g["pages"]) and set(L.DATA_FEATURED) == {"/analysis", "/discharges"}
+    ev = [["2025-12-26", "Bayside", "CSD-031", "x", "Bay", 30.0, 400.0], ["2026-01-04", "Oceanside", "CSD-001", "x", "Pacific", 60.0, 150.25],
+          ["2026-02-11", "Oceanside", "CSD-002", "x", "Pacific", 20.0, None], ["2026-04-22", "Oceanside", "CSD-007", "x", "Pacific", 9.0, 46.95]]
+    assert DI.ledger_stat(ev, "2026-08", date(2026, 11, 6)) == {"year": 2026, "count": 3, "volume": "197 million gallons", "through": "Aug 2026"}   # this calendar year, as the Ledger opens; an unreported volume adds nothing
+    assert DI.ledger_stat(ev, "2026-11", date(2027, 1, 20)) == {"year": 2026, "count": 3, "volume": "197 million gallons", "through": "Nov 2026"}   # no 2027 report filed yet: the last filed year stands in, named
+    assert DI.ledger_stat(ev, "2027-02", date(2027, 3, 1)) == {"year": 2027, "count": 0, "volume": "0.00 million gallons", "through": "Feb 2027"}       # filed and empty is a real zero
+    assert DI.ledger_stat(ev, "", date(2026, 11, 6)) is None and DI._volume(1960.8) == "1.96 billion gallons" and DI._volume(0.09) == "0.09 million gallons"
+    real = DI.ledger_stat()
+    assert real and real["count"] >= 0 and real["through"][-4:].isdigit()                                # the committed record answers
 
 
 def test_today_page_offline_shows_the_board_and_admin_keeps_the_directory():
@@ -170,7 +208,7 @@ def test_today_page_offline_shows_the_board_and_admin_keeps_the_directory():
 
     with app.test_request_context("/today"):
         html = T.render_page(L.board_context(Sfpuc(), None, live_facts=False))
-    for needle in ("Today &amp; alerts", "The water record", "Discharges &amp; postings", 'href="/about"',  'href="/about#built"',  # the tabs and the ⓘ About link in the frame
+    for needle in ('<a href="/forecast">Forecast</a>', '<a href="/data">Data</a>', '<a href="/learn">Learn</a>', 'href="/about"',  'href="/about#built"',  # the tabs and the ⓘ About link in the frame
                    "1 site(s) posted for elevated bacteria", "is the water safe today?", 'class="foot-note">Statuses from SFPUC'):   # the board's sources line stays
         assert needle in html, needle
     assert 'class="topbar"' in html and 'class="tabbar"' in html and 'class="site-footer"' in html and 'class="board tone-warn"' in html   # the shared frame + the Today board
@@ -179,7 +217,7 @@ def test_today_page_offline_shows_the_board_and_admin_keeps_the_directory():
     assert 'class="hubs"' not in html and 'class="learn"' not in html and 'class="conds' not in html and 'class="cta" href="/signup" title=' not in html   # gone from Today (the top bar keeps its own Get beach alerts)
     assert "<b>Under the hood</b>" not in html and 'class="hood"' not in html                           # gone from Today (2026-10-20); its links live on About (the footer's build tooltip can quote a commit message naming it)
     tabbar = html[html.index('class="tabbar"'):]
-    assert "Discharges</a>" in tabbar and ">Postings</a>" not in tabbar                                 # the phone tab bar's short name (2026-11-04)
+    assert [w in tabbar for w in ("Today</a>", "Forecast</a>", "Data</a>", "Learn</a>")] == [True] * 4 and "Discharges</a>" not in tabbar   # the phone tab bar: the same four (design/nav)
     ctx = {"hubs": L.hubs_with_facts({}, skip=("/",)), "conditions": ['<svg class="ic"><use href="#i-waves"/></svg> Tide rising'], "generated": "Nov 4"}
     with app.test_request_context("/alerts/ui-overflow"):
         ui = UO.render_page(ctx)
@@ -188,7 +226,7 @@ def test_today_page_offline_shows_the_board_and_admin_keeps_the_directory():
     assert 'class="cta" href="/signup" title=' in ui and "Online Postings Timeline" in ui and "Tide rising" in ui and "<h1>UI overflow</h1>" in ui
     cards = ui[ui.index('class="hubs"'):ui.index('class="learn"')]
     assert '<li><a href="/"' not in cards and '<li><a href="/forecast"' in cards and '<li><a href="/postings"' in cards        # as Today drew them: no row for Today itself
-    assert 'href="/alerts/ui-overflow" class="on" aria-current="page"' in ui and 'class="subtabs"' not in ui      # its own tab lit; no hub in the top bar
+    assert 'href="/alerts/ui-overflow" class="on" aria-current="page"' in ui and 'class="secnav"' not in ui and 'class="subtabs"' not in ui      # its own tab lit; no hub in the top bar
     from features.learn import page as LP   # the Learn page's timeline, parked here (2026-11-04)
     assert ui.count('class="stop ') == len(LP.TIMELINE) and 'id="history"' in ui and 'id="tl-more"' in ui and "Used with permission" in ui
     assert ui.count('<figure') == sum(len(t.get("photos", [])) for t in LP.TIMELINE) >= 8   # the master plan's photos, with it
