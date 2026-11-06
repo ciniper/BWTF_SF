@@ -140,10 +140,13 @@ class ComparisonRow:
     # City — SFPUC official posted status (context)
     sfpuc_status: Optional[str]
 
-    # Comparison
+    # Comparison. Agreement is judged only when the two latest results come from the SAME day: water
+    # quality moves with the rain from one day to the next, so results days apart answer different
+    # questions (2026-11-06; the pairs on view that day were 11 to 158 days apart). Otherwise the row
+    # shows how far apart the samples were and takes no side.
     both_have: bool
-    agree: Optional[bool]          # do the two sources agree on pass/fail vs the standard?
-    value_delta: Optional[float]   # |bwtf - city|
+    agree: Optional[bool]          # same day only: do the two sources agree on pass/fail vs the standard?
+    value_delta: Optional[float]   # same day only: |bwtf - city|
     day_gap: Optional[int]         # days between the two samples
 
     # Which kind of site: key = DataSF station id (or "bwtf:<name>"); dual =
@@ -152,6 +155,7 @@ class ComparisonRow:
     site_key: str = ""
     dual: bool = False
     bwtf_site: bool = False
+    same_day: bool = False         # both latest results are from one day, so the row is comparable
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -399,6 +403,40 @@ def _sfpuc_status_by_name(sfpuc_api: SFPUCRealTimeAPI) -> dict:
     return status
 
 
+SAME_DAY_WINDOW_DAYS = 365   # the summary's same-day record: the last year
+
+
+def same_day_pairs(bwtf_history: list[dict], city_by_source: dict, dual_sites: list[tuple[str, list[str]]],
+                   limit: float, substance: str, since: datetime, until: datetime) -> dict:
+    """Pure: the days both programs sampled the same site, over every dual site, and how often they agreed
+    on the standard. ``bwtf_history`` is SFBWTFClient.fetch_history's list (every site, newest first);
+    ``city_by_source`` is _fetch_city_series's dict; ``dual_sites`` pairs a BWTF site name with its city
+    station ids. A day is graded on each program's worst reading that day at that site (the city often
+    has two). Returns counts for the cards, the latest pair's date, and one entry per site."""
+    until_end = until + timedelta(days=1)
+    per_site, pairs, agreed, latest = {}, 0, 0, None
+    for name, sources in dual_sites:
+        b_series = []
+        for rec in bwtf_history:
+            when, value = rec.get("collection_time"), rec.get("result_value")
+            if rec.get("site_name") != name or rec.get("substance") != substance or when is None or value is None:
+                continue
+            if when < since or when > until_end:
+                continue
+            b_series.append({"date": when.strftime("%Y-%m-%d"), "ts": int(when.timestamp() * 1000), "value": value, "raw": rec.get("result_raw")})
+        c_series = [p for src in sources for p in city_by_source.get(src, [])]
+        b_by_day, c_by_day = _by_day_max(b_series), _by_day_max(c_series)
+        days = sorted(set(b_by_day) & set(c_by_day))
+        n_agree = sum(1 for d in days if _exceeds(b_by_day[d]["value"], limit) == _exceeds(c_by_day[d]["value"], limit))
+        per_site[name] = {"pairs": len(days), "agree": n_agree, "latest": days[-1] if days else None}
+        pairs += len(days); agreed += n_agree
+        if days and (latest is None or days[-1] > latest):
+            latest = days[-1]
+    return {"window_days": (until - since).days, "since": since.strftime("%Y-%m-%d"), "until": until.strftime("%Y-%m-%d"),
+            "pairs": pairs, "agree": agreed, "differ": pairs - agreed, "sites": sum(1 for v in per_site.values() if v["pairs"]),
+            "latest": latest, "per_site": per_site}
+
+
 def build_comparison(
     bwtf_client: Optional[SFBWTFClient] = None,
     sf_gov_monitor: Optional[SFWaterQualityMonitor] = None,
@@ -439,11 +477,12 @@ def build_comparison(
         both_have = bwtf_value is not None and city_value is not None
 
         agree = value_delta = day_gap = None
-        if both_have:
+        if both_have and bwtf_time and city["date"]:
+            day_gap = abs((bwtf_time.date() - city["date"].date()).days)
+        same_day = day_gap == 0
+        if same_day:
             agree = bwtf_exceeds == city_exceeds
             value_delta = round(abs(bwtf_value - city_value), 1)
-            if bwtf_time and city["date"]:
-                day_gap = abs((bwtf_time.date() - city["date"].date()).days)
 
         return ComparisonRow(
             site_name=site_name,
@@ -469,6 +508,7 @@ def build_comparison(
             site_key=site_key,
             dual=dual,
             bwtf_site=bwtf_site,
+            same_day=same_day,
         )
 
     rows: list[ComparisonRow] = []
@@ -489,7 +529,9 @@ def build_comparison(
         rows.append(row_for(st.name, st.lat, st.lon, [sid], st.sfpuc_name, (None, None, None),
                             site_key=sid, dual=False, bwtf_site=False))
 
-    # The head-to-head summary is about the BWTF lab's sites, as it always was.
+    # The head-to-head summary is about the BWTF lab's sites, as it always was. agree_count and
+    # disagree_count are the latest results' same-day rows only; the same-day record over the last year
+    # (``same_day``) is where the two programs are actually compared.
     lab_rows = [r for r in rows if r.bwtf_site]
     comparable = [r for r in lab_rows if r.both_have]
     summary = {
@@ -501,7 +543,19 @@ def build_comparison(
         "bwtf_exceed_count": sum(1 for r in lab_rows if r.bwtf_exceeds),
         "city_exceed_count": sum(1 for r in lab_rows if r.city_exceeds),
         "max_day_gap": max((r.day_gap for r in comparable if r.day_gap is not None), default=None),
+        "same_day": None,
     }
+    dual_sites = [(site.name, SFPUC_TO_SFGOV_SOURCES.get(BWTF_TO_SFPUC_NAME.get(site.name), [])) for site in bwtf_sites]
+    dual_sites = [(name, srcs) for name, srcs in dual_sites if srcs]
+    if analyte == "ENTERO" and dual_sites:   # BWTF measures Enterococcus only: the other standards have no pairs
+        try:
+            until = now_pacific_naive()
+            since = until - timedelta(days=SAME_DAY_WINDOW_DAYS)
+            history = bwtf_client.fetch_history(since=since, max_pages=40)
+            by_source = _fetch_city_series(sf_gov_monitor, sorted({src for _, srcs in dual_sites for src in srcs}), since, until, analyte)
+            summary["same_day"] = same_day_pairs(history, by_source, dual_sites, limit, cfg["bwtf_substance"], since, until)
+        except Exception as exc:   # noqa: BLE001 — the cards show a dash; the table stands
+            print(f"Same-day pairs unavailable: {exc}")
 
     return {
         "generated_at": utc_iso(),
@@ -628,11 +682,14 @@ def main():
     for r in data["rows"]:
         bwtf = f"{r['bwtf_raw'] or '—'} ({r['bwtf_date'] or '—'})"
         city = f"{r['city_raw'] or '—'} ({r['city_date'] or '—'})"
-        agree = "—" if r["agree"] is None else ("yes" if r["agree"] else "NO")
+        agree = ("yes" if r["agree"] else "NO") if r["agree"] is not None else (f"{r['day_gap']}d apart" if r["day_gap"] else "—")
         print(f"{r['site_name']:32s} {bwtf:>14s} {city:>16s} {str(r['sfpuc_status'] or '—'):>8s}  {agree}")
     print("-" * 82)
-    print(f"{s['comparable_count']} comparable | agree {s['agree_count']} / disagree {s['disagree_count']} "
+    print(f"{s['comparable_count']} with both results | same-day latest: agree {s['agree_count']} / disagree {s['disagree_count']} "
           f"| BWTF exceed {s['bwtf_exceed_count']} | city exceed {s['city_exceed_count']} | max gap {s['max_day_gap']}d")
+    sd = s.get("same_day")
+    if sd:
+        print(f"Same-day samples, last {sd['window_days']} days: {sd['pairs']} at {sd['sites']} sites | agree {sd['agree']} / differ {sd['differ']} | latest {sd['latest'] or '—'}")
 
 
 if __name__ == "__main__":
