@@ -104,9 +104,9 @@ class _Monitor:
 
 
 class _Bwtf:
-    def __init__(self, lab): self._lab = lab
+    def __init__(self, lab, history=()): self._lab = lab; self._history = list(history)
     def fetch_lab(self): return self._lab
-    def fetch_history(self, since=None, **kw): return []
+    def fetch_history(self, since=None, **kw): return self._history
 
 
 class _Sfpuc:
@@ -127,19 +127,46 @@ def test_comparison_lists_every_station_with_the_lab_sites_first():
         {"source": "BAY#320_SL", "sample_date": "2026-09-22T00:00:00.000", "data": "148"},
     ]
     mon = _Monitor(records)
-    data = C.build_comparison(bwtf_client=_Bwtf(lab), sf_gov_monitor=mon, sfpuc_api=_Sfpuc())
+    history = [{"site_name": "Aquatic Park", "collection_time": datetime(2026, 9, 22, 7, 0), "substance": "Enterococcus", "result_value": 20.0, "result_raw": "20"}]
+    data = C.build_comparison(bwtf_client=_Bwtf(lab, history), sf_gov_monitor=mon, sfpuc_api=_Sfpuc())
     rows = data["rows"]
     assert len(rows) == 21 and [r["site_name"] for r in rows[:2]] == ["Aquatic Park", "Bayview Hunters Point"]
     aq = rows[0]
     assert aq["dual"] and aq["bwtf_site"] and aq["site_key"] == "BAY#211_SL"
-    assert aq["city_raw"] == "20 / 399" and aq["city_n"] == 2 and aq["city_exceeds"] is True and aq["agree"] is False
+    assert aq["city_raw"] == "20 / 399" and aq["city_n"] == 2 and aq["city_exceeds"] is True
+    assert aq["day_gap"] == 2 and aq["same_day"] is False and aq["agree"] is None and aq["value_delta"] is None   # two days apart: no verdict (2026-11-06)
     assert rows[1]["site_key"] == "bwtf:Bayview Hunters Point" and rows[1]["city_raw"] is None and rows[1]["bwtf_site"]
     islais = next(r for r in rows if r["site_key"] == "BAY#320_SL")
     assert islais["bwtf_site"] is False and islais["dual"] is False and islais["city_raw"] == "148" and islais["bwtf_raw"] is None
-    # one city query covered every station; the head-to-head summary is still about the lab's sites
-    assert len(mon.session.calls) == 1 and all(f"source='{sid}'" in mon.session.calls[0]["$where"] for sid in ("BAY#320_SL", "OCEAN#22_SL"))
+    # one city query covered every station, and one more the dual sites' last year for the same-day record; the head-to-head summary is still about the lab's sites
+    assert len(mon.session.calls) == 2 and all(f"source='{sid}'" in mon.session.calls[0]["$where"] for sid in ("BAY#320_SL", "OCEAN#22_SL"))
+    assert "source='BAY#211_SL'" in mon.session.calls[1]["$where"] and "OCEAN#22_SL" not in mon.session.calls[1]["$where"]
     s = data["summary"]
-    assert (s["site_count"], s["all_site_count"], s["comparable_count"], s["disagree_count"], s["city_exceed_count"]) == (2, 21, 1, 1, 1)
+    assert (s["site_count"], s["all_site_count"], s["comparable_count"], s["agree_count"], s["disagree_count"], s["city_exceed_count"]) == (2, 21, 1, 0, 0, 1)
+    sd = s["same_day"]   # the stub answers every city query with the same three rows, so the one same-day pair is Aquatic Park on 2026-09-22: BWTF 20 within, city 399 over
+    assert (sd["pairs"], sd["agree"], sd["differ"], sd["sites"], sd["latest"], sd["window_days"]) == (1, 0, 1, 1, "2026-09-22", 365)
+    assert sd["per_site"] == {"Aquatic Park": {"pairs": 1, "agree": 0, "latest": "2026-09-22"}}
+    other = C.build_comparison(bwtf_client=_Bwtf(lab, history), sf_gov_monitor=_Monitor(records), sfpuc_api=_Sfpuc(), analyte="COLI_TOTAL")
+    assert other["summary"]["same_day"] is None and not other["bwtf_measures"]                     # BWTF measures Enterococcus only: no pairs for the other standards
+
+
+def test_same_day_pairs_count_the_days_both_programs_sampled_a_site_and_grade_each_on_its_worst_reading():
+    """Pure: the days both programs sampled the same site, over the dual sites, graded on the standard (2026-11-06)."""
+    since, until = datetime(2025, 11, 6), datetime(2026, 11, 6)
+    rec = lambda site, day, value, hour=7: {"site_name": site, "collection_time": datetime(2026, *day, hour), "substance": "Enterococcus", "result_value": value, "result_raw": str(value)}  # noqa: E731
+    pt = lambda day, value: {"date": f"2026-{day[0]:02d}-{day[1]:02d}", "ts": 0, "value": value, "raw": str(value)}  # noqa: E731
+    history = [rec("Aquatic Park", (2, 19), 10.0), rec("Aquatic Park", (2, 19), 200.0, 15), rec("Aquatic Park", (3, 1), 10.0),   # two bottles one day: the worse grades it
+               rec("Ocean Beach at Lincoln Way", (2, 19), 10.0), rec("Ocean Beach at Lincoln Way", (4, 12), 500.0),
+               rec("China Beach", (2, 17), 10.0), {"site_name": "Aquatic Park", "collection_time": datetime(2024, 2, 19, 7), "substance": "Enterococcus", "result_value": 999.0, "result_raw": "999"},
+               {"site_name": "Aquatic Park", "collection_time": datetime(2026, 2, 19, 7), "substance": "Total coliform", "result_value": 9999.0, "result_raw": "9999"}]   # another standard: ignored
+    city = {"BAY#211_SL": [pt((2, 19), 10.0), pt((3, 1), 150.0)], "OCEAN#19_SL": [pt((2, 19), 10.0), pt((4, 12), 20.0)], "OCEAN#19B_SL": [pt((4, 12), 300.0)], "OCEAN#17_SL": [pt((2, 18), 10.0)]}
+    dual = [("Aquatic Park", ["BAY#211_SL"]), ("Ocean Beach at Lincoln Way", ["OCEAN#19_SL", "OCEAN#19B_SL"]), ("China Beach", ["OCEAN#17_SL"])]
+    sd = C.same_day_pairs(history, city, dual, 104, "Enterococcus", since, until)
+    assert (sd["pairs"], sd["agree"], sd["differ"], sd["sites"], sd["latest"]) == (4, 2, 2, 2, "2026-04-12")
+    assert sd["per_site"] == {"Aquatic Park": {"pairs": 2, "agree": 0, "latest": "2026-03-01"},                # Feb 19: BWTF 200 over, city 10 within; Mar 1: BWTF 10, city 150 over
+                              "Ocean Beach at Lincoln Way": {"pairs": 2, "agree": 2, "latest": "2026-04-12"},  # Apr 12: both over, the city on its second station's 300
+                              "China Beach": {"pairs": 0, "agree": 0, "latest": None}}                        # a day apart is no pair
+    assert (sd["since"], sd["until"], sd["window_days"]) == ("2025-11-06", "2026-11-06", 365)
 
 
 def e_ratio_off(recs, station):
@@ -268,15 +295,23 @@ def test_source_comparison_page_renders_the_lab_sites_only_with_the_bacteria_sel
     from features.comparison.page import ComparisonRoutes
     row = lambda name, key, bwtf_site, dual, **kw: dict(site_name=name, latitude=None, longitude=None, bwtf_date="2026-09-24", bwtf_time="6:30 PM", bwtf_raw="20", bwtf_value=20.0, bwtf_exceeds=False,  # noqa: E731
         city_source=key, city_date="2026-09-22", city_raw="20 / 399", city_value=399.0, city_exceeds=True, city_raws=["20", "399"], city_n=2, sfpuc_status="posted",
-        both_have=True, agree=False, value_delta=379.0, day_gap=2, site_key=key, dual=dual, bwtf_site=bwtf_site, **kw)
+        both_have=True, agree=None, value_delta=None, day_gap=2, same_day=False, site_key=key, dual=dual, bwtf_site=bwtf_site, **kw)
     data = {"generated_at": "2026-09-28T20:00:00", "standard": {"analyte": "Enterococcus", "code": "ENTERO", "single_sample_max": 104, "units": "MPN/100mL"},
             "analytes": [{"code": "ENTERO", "label": "Enterococcus"}, {"code": "COLI_TOTAL", "label": "Total coliform"}], "bwtf_measures": True, "bwtf_available": True, "lab_name": "SF",
-            "summary": {"site_count": 1, "all_site_count": 2, "comparable_count": 1, "agree_count": 0, "disagree_count": 1, "bwtf_exceed_count": 0, "city_exceed_count": 1, "max_day_gap": 2},
+            "summary": {"site_count": 1, "all_site_count": 2, "comparable_count": 1, "agree_count": 0, "disagree_count": 0, "bwtf_exceed_count": 0, "city_exceed_count": 1, "max_day_gap": 2,
+                        "same_day": {"window_days": 365, "since": "2025-09-28", "until": "2026-09-28", "pairs": 14, "agree": 8, "differ": 6, "sites": 6, "latest": "2026-04-12", "per_site": {}}},
             "rows": [row("Aquatic Park", "BAY#211_SL", True, True), row("Islais Creek", "BAY#320_SL", False, False)]}
     with app.test_request_context("/compare"):
         h = ComparisonRoutes.generate_comparison_html(None, data)
     assert h.count('class="row-click"') == 1 and "Aquatic Park" in h and "Islais Creek" not in h     # city-only stations stay on /graphs and /samples
     assert '<option value="ENTERO" selected>' in h and "20 / 399" in h and "2 samples that day, graded on the worse" in h
+    assert '<span class="agree agree--na">Not comparable<small>sampled 2 days apart</small></span>' in h and "Sources differ" not in h   # two days apart: no verdict
+    assert '<div class="n">14</div><div class="l">Same-day samples, last 12 months</div>' in h and '<div class="n">8</div><div class="l">Agree on the standard</div>' in h and "Max sampling gap" not in h
+    assert "6 sites had such a day in the last year, most recently 2026-04-12" in h
+    same = {**data, "rows": [{**data["rows"][0], "bwtf_date": "2026-09-22", "day_gap": 0, "same_day": True, "agree": False, "value_delta": 379.0}], "summary": {**data["summary"], "same_day": None}}
+    with app.test_request_context("/compare"):
+        h2 = ComparisonRoutes.generate_comparison_html(None, same)
+    assert 'Sources differ<small>same day · Δ 379</small></span>' in h2 and '<div class="n">—</div><div class="l">Same-day samples</div>' in h2 and "no agreement is scored" in h2
     assert "/static/charts.js" in h and 'id="hist-modal"' in h and "/api/site-series?" in h and "chart.umd.js" not in h
 
 
