@@ -277,6 +277,19 @@ def test_one_frame_width_on_every_page():
         if f.parent.name not in ("alerts", "manage", "unsubscribe"):                    # only the form cards keep a narrower column inside the same frame
             assert not re.search(r"\.(wrap|container)\s*\{[^}]*max-width:\s*\d+px", t), f.name
 
+
+def test_a_segmented_toggle_wider_than_the_screen_scrolls_inside_its_pill():
+    """The shared segmented toggle (brand.css) never clips an option: on a phone the Report Card's five
+    standards squeezed onto two lines and the last was cut off, with no way to reach it (2026-11-06)."""
+    css = (ROOT / "app/static/brand.css").read_text()
+    rule = lambda sel: css[css.index(sel):].split("}")[0]   # noqa: E731
+    seg, btn = rule(".seg-toggle{"), rule(".seg-btn{")
+    assert "max-width:100%" in seg and "overflow:auto hidden" in seg and "overflow:hidden" not in seg   # as wide as its row at most, and it scrolls sideways
+    assert "flex:none" in btn and "white-space:nowrap" in btn                                            # a label keeps its width and its one line
+    for f in sorted((ROOT / "app/templates").rglob("*.html")):
+        assert not re.search(r"\.seg-toggle\s*\{[^}]*overflow\s*:\s*hidden", f.read_text()), f.name       # no page clips it again
+
+
 if __name__ == "__main__":
     failures = 0
     for name, fn in sorted(globals().items()):

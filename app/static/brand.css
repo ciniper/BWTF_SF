@@ -36,8 +36,9 @@ a{color:var(--brand)}
 body>.wrap,body>.container{width:100%}   /* body is a flex column and auto margins switch off stretch: without an explicit width the column shrink-wraps its widest child (a table, a card row) and grows past a phone's screen, so the phone zooms out */
 .controls{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:center;margin:0 0 12px}
 .ctl-label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
-.seg-toggle{display:inline-flex;border:2px solid var(--line);border-radius:999px;overflow:hidden;background:#fff}
-.seg-btn{padding:7px 14px;border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
+.seg-toggle{display:inline-flex;max-width:100%;border:2px solid var(--line);border-radius:999px;overflow:auto hidden;scrollbar-width:none;background:#fff}   /* wider than a phone (the Report Card's five standards): it scrolls sideways inside its pill; it used to squeeze its labels onto two lines and clip the last one */
+.seg-toggle::-webkit-scrollbar{display:none}
+.seg-btn{flex:none;white-space:nowrap;padding:7px 14px;border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
 .seg-btn:hover{color:var(--ink)}
 .seg-btn.active{background:var(--brand);color:#fff}
 .seg-btn:disabled{color:#b4b2a9;cursor:default}
