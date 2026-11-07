@@ -1,9 +1,8 @@
 """The Today board's builder and the site's page directory.
 
 ``today_board`` / ``board_context`` build the board the home page (/, also /today) opens on;
-``HUBS`` is the one list of pages, behind both the shared two-tier tabs (``nav_model``)
-and the hub cards under Today's board (``hubs_with_facts`` with live facts from
-``_live_facts``). The module name is historical: it rendered the Main page at ``/``,
+``HUBS`` is the page directory, behind the hub cards that sat under Today's board (``hubs_with_facts`` with live facts from
+``_live_facts``); ``NAV_SECTIONS`` is the shared top bar (``nav_model``). The module name is historical: it rendered the Main page at ``/``,
 deleted 2026-09-30 (Chase: "wholesale delete the main page"); Today has served ``/`` since
 2026-10-01 and keeps answering at /today too (``PAGE_ALIASES``).
 Everything is wrapped defensively so a flaky upstream never blanks the board.
@@ -89,24 +88,70 @@ HUBS = [
     },
 ]
 
+# The top bar (design/nav, 2026-11-06): one row of four destinations, each a real page. Today and Forecast
+# stand alone; Data and Learn hold several pages, listed in ``groups`` and drawn as a switcher in the page head
+# (_frame.html page_head), so sibling pages stay one click apart without a second bar under the first. Signup is
+# the bar's own button and About its own link, so neither is a section. Each page is (href, short nav label,
+# other addresses that light it: a page's own subpages). HUBS stays the page directory behind the cards.
+NAV_SECTIONS = [
+    {"key": "today", "title": "Today", "icon": "waves", "href": "/", "groups": []},
+    {"key": "forecast", "title": "Forecast", "icon": "cloud-rain", "href": "/forecast", "groups": []},
+    {"key": "data", "title": "Data", "icon": "chart", "href": "/data", "groups": [
+        {"key": "water", "label": "Lab results", "sub": "What the labs found", "icon": "flask", "pages": [
+            ("/analysis", "Report card", ("/analysis/testing",)),
+            ("/samples", "Samples", ()),
+            ("/graphs", "Graphs", ()),
+            ("/compare", "Compare", ()),
+        ]},
+        {"key": "record", "label": "City records", "sub": "What the city reported, and when", "icon": "clipboard", "pages": [
+            ("/discharges", "Discharges", ("/discharges/reporting",)),
+            ("/postings", "Postings", ()),
+            ("/cso-history", "Online timeline", ()),
+        ]},
+    ]},
+    {"key": "learn", "title": "Learn", "icon": "microscope", "href": "/learn", "groups": [
+        {"key": "learn", "label": "", "sub": "", "icon": "microscope", "pages": [
+            ("/learn", "How it works", ()),
+            ("/learn/collect", "Collect a sample", ()),
+        ]},
+    ]},
+]
+
+
 def nav_model() -> list[dict]:
-    """The hubs for the shared two-tier tab bar (app/templates/_frame.html):
-    row one is the hubs (the logo goes home), row two the active hub's pages as tabs (Chase,
-    2026-09-29: "almost like they are within the same main page"). Each hub opens
-    on its first page; a row's subpage (Source Comparison) gets its own tab; the
-    Today hub's signup CTA closes its row. ``paths`` light the hub. Set as the
-    Jinja global ``NAV`` in app/wsgi.py."""
+    """The sections for the shared top bar and the phone tab bar (app/templates/_frame.html), from
+    NAV_SECTIONS. ``paths`` are every address that lights the section; ``switcher`` says whether its
+    pages get the in-page switcher (more than one page). Each page carries ``paths`` too: its own
+    address and its subpages'. Set as the Jinja global ``NAV`` in app/wsgi.py."""
     out = []
-    for h in HUBS:
-        rows, gated = [], []
-        for r in h["rows"]:
-            (gated if r[0] in GATED else rows).append({"href": r[0], "title": r[1], "fact": r[3], "gated": r[0] in GATED})
-            if len(r) > 4:
-                rows.append({"href": r[4][0], "title": r[4][1].split(":")[0], "fact": "", "gated": False})
-        if h["primary"]:
-            rows.append({"href": h["primary"][0], "title": h["primary"][1], "fact": "", "gated": False})
-        rows += gated                                    # the locked page sits last in its row
-        out.append({"key": h["key"], "title": h["title"], "href": rows[0]["href"], "rows": rows, "paths": [r["href"] for r in rows]})
+    for s in NAV_SECTIONS:
+        groups = [{"key": g["key"], "label": g["label"], "sub": g["sub"], "icon": g["icon"],
+                   "pages": [{"href": href, "title": title, "paths": [href, *also]} for href, title, also in g["pages"]]}
+                  for g in s["groups"]]
+        pages = [p for g in groups for p in g["pages"]]
+        paths = list(dict.fromkeys([s["href"]] + [u for p in pages for u in p["paths"]]))
+        out.append({"key": s["key"], "title": s["title"], "icon": s["icon"], "href": s["href"],
+                    "groups": groups, "paths": paths, "switcher": len(pages) > 1})
+    return out
+
+
+# The two Data pages the index leads with (2026-11-06): the Report Card answers a beachgoer's next question after
+# "is it safe today" (how often is my beach a problem), and the Ledger is the accountability record. Each gets
+# a large card with a headline number; the group's other pages are listed under it.
+DATA_FEATURED = ("/analysis", "/discharges")
+
+
+def data_index() -> list[dict]:
+    """The Data page's cards (/data, features/data_index): the Data section's groups, each page with the
+    full title and blurb its HUBS row carries. ``featured`` is the group's page in DATA_FEATURED, ``more``
+    the rest in the bar's order."""
+    rows = {r[0]: r for h in HUBS for r in h["rows"]}
+    data = next(s for s in nav_model() if s["key"] == "data")
+    out = []
+    for g in data["groups"]:
+        pages = [{"href": p["href"], "title": rows[p["href"]][1], "blurb": rows[p["href"]][2]} for p in g["pages"]]
+        out.append({**g, "pages": pages, "featured": next(p for p in pages if p["href"] in DATA_FEATURED),
+                    "more": [p for p in pages if p["href"] not in DATA_FEATURED]})
     return out
 
 

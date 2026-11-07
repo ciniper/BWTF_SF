@@ -46,8 +46,8 @@ def test_page_and_csv_routes():
     with app.test_client() as c:   # registered in the app, linked from its neighbours
         assert c.get("/postings").status_code == 200 and c.get("/postings/api/advisories").status_code == 200
         assert 'href="/postings"' in c.get("/discharges").data.decode() and 'href="/postings"' in c.get("/analysis").data.decode()
-        from app.landing import nav_model   # a row of the "Discharges & postings" hub (app/landing.py HUBS), so one of its tabs
-        assert "/postings" in next(h for h in nav_model() if h["key"] == "record")["paths"]
+        from app.landing import nav_model   # a page of the Data section (app/landing.py NAV_SECTIONS), under City records
+        assert "/postings" in next(h for h in nav_model() if h["key"] == "data")["paths"]
 
 
 def test_ledger_carries_the_refresh_stamp_and_next_due():
