@@ -3,7 +3,8 @@
     statuses, one tile per zone, the city map with a dot per station; zone tiles zoom the map, a
     station opens the sample popover. Three macros, so any page that wants the board shares one implementation:
       board_styles()                     the <style> block
-      board_section(board, sites=false)  the markup; sites lists every station as a chip under the zone tiles (/today)
+      board_section(board, sites=false, controls=false)  the markup; sites lists every station as a chip under the zone tiles (/today);
+                                         controls draws the "Map shows" bar over the map (/today; design/today-map-controls, 2026-11-06)
       board_script(board)                the map + tiles JS; the layers JS activates itself when the page has a #layers strip (/today)
     Pages must load Leaflet 1.9.4 (CSS + deferred JS) and /static/sample_popover.js themselves. -#}
 
@@ -30,12 +31,14 @@
   .zone .st{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px}
   .zone.posted .st{color:var(--posted)}.zone.discharge .st{color:var(--discharge)}.zone.unknown .st{color:var(--faint)}
   .zone .nm{font-size:16px;font-weight:900;margin:5px 0 1px;line-height:1.2}
-  .zone .risk{font-size:13px;color:var(--muted);display:none}
-  /* the Risk view only reveals: each tile's overflow risk and the forecast's sentence in the subhead; the tiles keep the
-     city's status and colours (Chase, 2026-10-18: "toggling risk will no longer replace all clear") */
-  .board.show-risk .zone .risk{display:block}
-  .board .risk-lead{display:none}.board.show-risk .risk-lead{display:inline}
-  .board:not(.show-risk):not(.replaying) .lead.only-risk{display:none}   /* a replayed day writes its own subhead into it */
+  /* each tile's overflow risk and the forecast's sentence in the subhead are always shown (design/today-map-controls,
+     2026-11-06: the Risk view chip went; it had been the only control that changed the tiles and not the map). The
+     tiles keep the city's status and colours (Chase, 2026-10-18: "toggling risk will no longer replace all clear") */
+  .zone .risk{font-size:13px;color:var(--muted)}
+  .zone .risk:empty{display:none}   /* no forecast snapshot (a bare checkout, an outage): the line is simply absent */
+  .zone .bwtfline{font-size:12px;font-weight:600;color:var(--muted);margin-top:4px}   /* Surfrider's results in the zone, while that layer is on */
+  .zone .bwtfline:empty{display:none}
+  .zone .bwtfline .over{color:var(--posted)}
   /* the risk levels (shared/risk_levels.py, Chase, 2026-10-01): the colour of the tile's number */
   {% for l in RISK_LEVELS.levels %}.zone .risk b.lvl-{{ l.key }}{color:{{ l.color }}}
   {% endfor %}
@@ -43,8 +46,9 @@
   .zone .stations .status-dot{width:9px;height:9px}
   .zone .meta{font-size:13px;color:var(--faint)}
   .zones-hint{font-size:13px;color:var(--faint);margin:8px 0 0}
-  .map-col{position:relative;display:flex;flex-direction:column;min-width:0}   /* the map and its legend */
-  .map-col .map-wrap{flex:1}
+  .map-col{display:flex;flex-direction:column;min-width:0}   /* the "Map shows" bar, then the map with its legend */
+  .map-stack{position:relative;flex:1;display:flex;flex-direction:column;min-width:0}   /* the legend floats over the map, never over the bar above it */
+  .map-stack .map-wrap{flex:1}
   .map-wrap{position:relative;isolation:isolate;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;min-height:400px;background:var(--sand2)}   /* isolate: Leaflet's z-indexes stay inside the map */
   #today-map{position:absolute;inset:0}
   .map-reset{position:absolute;bottom:12px;left:12px;z-index:500;background:#fff;border:2px solid var(--line);border-radius:999px;padding:6px 12px;font:700 12.5px Roboto,sans-serif;color:var(--brand);cursor:pointer}
@@ -80,32 +84,24 @@
   .map-legend .divider{width:1px;height:12px;background:var(--line);margin:0 2px}
   .map-legend .ring{display:inline-block;width:10px;height:10px;border-radius:50%;border:2px solid var(--brand);background:rgba(0,114,188,.15)}
   .map-legend .of{display:inline-block;width:8px;height:8px;border-radius:50%;background:#7a5a3a}
-  /* Above the board: Sources (what the map shows) and Layers (what you add on top) as two boxes (Chase, 2026-10-01);
-     on phones the Layers box folds behind a button in the Sources box, and opens itself for a ?layers= / ?risk= / ?replay= link */
+  /* Above the board: the Replay control (a past day of the board). What the map shows is chosen ON the map (.map-ctl):
+     every layer there changes the map and nothing else changes it (design/today-map-controls, 2026-11-06; the Sources and
+     Layers boxes, and the phone fold, went with it) */
   .layers{display:flex;flex-wrap:wrap;align-items:stretch;gap:10px;margin:0 0 12px}
   .layers .ctl-group{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:10px 14px;background:#fff;border:1px solid var(--line);border-radius:var(--r)}
-  .layers .layer-group{flex:1}
   .layers .ctl-label{margin-right:2px}
-  .layers-toggle{display:none;align-items:center;gap:6px;margin-left:auto;padding:7px 13px;border-radius:999px;border:2px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;font-weight:700;font-size:13px;font-family:inherit}
-  .layers-toggle::after{content:"▸";font-size:11px}.layers-toggle[aria-expanded="true"]::after{content:"▾"}
-  .layers-toggle[aria-expanded="true"]{border-color:var(--brand);color:var(--brand)}
-  .layers-toggle .n{background:var(--brand);color:#fff;border-radius:999px;padding:0 7px;font-size:11.5px;line-height:18px}
-  .layers-toggle .n:empty{display:none}
-  .layers .switch{display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-weight:700;font-size:13px;color:var(--ink);position:relative}
-  .layers .switch input{position:absolute;opacity:0;width:0;height:0}
-  .layers .track{width:34px;height:20px;border-radius:999px;background:#cfd8e0;position:relative;transition:background .15s;flex:none}
-  .layers .track::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
-  .layers input:checked+.track{background:var(--brand)}.layers input:checked+.track::after{left:16px}
-  .layers input:focus-visible+.track{outline:3px solid var(--sky);outline-offset:2px}
-  .layers input:disabled+.track{opacity:.45}
   .layers .preset:disabled{opacity:.45;cursor:not-allowed}
   .layers .replay-ctl{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}   /* appears when the Replay chip is on: oldest day · slider · chosen day; today sits at the right */
   .layers .replay-ctl[hidden]{display:none}
   .layers .replay-ctl .tick{font-weight:600}
   .layers .replay-ctl input{width:140px;accent-color:var(--brand)}
   .layers .replay-ctl output{min-width:88px;color:var(--ink);font-weight:700}
-  .layers .layer-status{flex-basis:100%;color:var(--brand);font-weight:600;font-size:13px;margin:-2px 2px 0}   /* one line under both boxes: Surfrider's count and the layers' facts both land here */
-  .layers .layer-status:empty{display:none}
+  .map-ctl{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin:0 0 10px}
+  .map-ctl .ctl-label{margin-right:2px}
+  .map-ctl .preset{padding:6px 11px;font-size:12.5px}
+  .map-ctl .preset:disabled{opacity:.45;cursor:not-allowed}
+  .map-col .layer-status{display:block;color:var(--brand);font-weight:600;font-size:13px;margin:8px 2px 0}   /* one line under the map: what the layers found */
+  .map-col .layer-status:empty{display:none}
   .zone.wet{background:#eef5fb}
   .zone .rainline{color:var(--brand);font-size:12px;font-weight:600;margin-top:4px}
   .zone .rainline:empty{display:none}
@@ -115,12 +111,10 @@
   .of-pop b{display:block;font-size:14px;margin-bottom:2px}
   .of-pop .mut{color:var(--muted)}
   .board.replaying .eyebrow{color:var(--brand)}
-  .board.replaying .zone .risk,.board.replaying .zone .rainline,.board.replaying .zone .meta,.board.replaying .site small{display:none}   /* today's risk, rain and sample dates are not that day's */
+  .board.replaying .zone .risk,.board.replaying .zone .rainline,.board.replaying .zone .bwtfline,.board.replaying .zone .meta,.board.replaying .site small{display:none}   /* today's risk, rain, Surfrider results and sample dates are not that day's */
   @media (max-width:760px){
     .layers .replay-ctl{flex-basis:100%}.layers .replay-ctl input{flex:1}
     .layers .ctl-group{flex-basis:100%}
-    .layers-toggle{display:inline-flex}
-    .layers .layer-group{display:none}.layers .layer-group.open{display:flex}
   }
   @media (max-width:980px){.board .grid{grid-template-columns:1fr}.map-wrap{min-height:300px}}
   @media (max-width:760px){
@@ -135,20 +129,20 @@
 </style>
 {%- endmacro %}
 
-{% macro board_section(board, sites=false) -%}
+{% macro board_section(board, sites=false, controls=false) -%}
   <section class="board tone-{{ board.tone }}" aria-labelledby="today-h">
     <div class="grid">
       <div class="left">
         <div class="eyebrow">Beach status · {{ board.date }} · {% if board.feed_ok %}SFPUC map checked {{ board.checked }}{% else %}SFPUC map unreachable{% endif %}</div>
         <h1 id="today-h">{{ board.headline_html|safe }}</h1>
-        {% if board.lead or board.risk_lead %}<p class="lead{% if not board.lead %} only-risk{% endif %}">{{ board.lead }}{% if board.risk_lead %}{% if board.lead %} {% endif %}<span class="risk-lead">{{ board.risk_lead }}</span>{% endif %}</p>{% endif %}
+        {% if board.lead or board.risk_lead %}<p class="lead">{{ board.lead }}{% if board.risk_lead %}{% if board.lead %} {% endif %}<span class="risk-lead">{{ board.risk_lead }}</span>{% endif %}</p>{% endif %}
         {% if board.zones %}
         <div class="zones" id="zones">
           {% for z in board.zones %}
           <button type="button" class="zone {{ z.status }}" data-zone="{{ z.key }}" aria-pressed="false" title="Zoom the map to {{ z.label }}">
             <div class="st"><i class="status-dot {{ z.status }}"></i>{{ z.status_text }}</div>
             <div class="nm">{{ z.label }}</div>
-            <div class="risk">{% if z.risk is not none %}<b class="lvl-{{ z.level }}">{{ z.risk }}%</b> overflow risk today{% else %}overflow risk unavailable{% endif %}</div>
+            <div class="risk">{% if z.risk is not none %}<b class="lvl-{{ z.level }}">{{ z.risk }}%</b> overflow risk today{% endif %}</div>
             <div class="stations">{% for s in z.stations %}<i class="status-dot {{ s.status }}" title="{{ s.full_name }} · {{ s.status_text }}"></i>{% endfor %}</div>
             <div class="meta">{{ z.meta }}</div>
           </button>
@@ -158,11 +152,24 @@
         {% endif %}
       </div>
       <div class="map-col">
+      {% if controls %}
+      <div class="map-ctl" role="group" aria-labelledby="lbl-map">
+        <span class="ctl-label" id="lbl-map">Map shows</span>
+        <button type="button" class="preset layer active" data-layer="city" aria-pressed="true" title="The city's twenty monitoring stations, as SFPUC's map shows them">City stations</button>
+        <button type="button" class="preset layer" data-layer="bwtf" aria-pressed="false" title="Surfrider's latest Enterococcus result at each site the volunteers sample">Surfrider results</button>
+        <button type="button" class="preset layer" data-layer="rain" aria-pressed="false" title="The last three daily totals at the forecast's two NOAA gauges">Rain, 3 days</button>
+        <button type="button" class="preset layer" data-layer="outfalls" aria-pressed="false" title="The 34 permitted sewer outfalls; tap one for its past year of reported discharges">Outfalls</button>
+        <button type="button" class="preset layer" data-layer="labels" aria-pressed="false" title="Name the zones on the whole-city map, and each station when you zoom in">Names</button>
+      </div>
+      {% endif %}
+      <div class="map-stack">
       <div class="map-wrap">
         <div id="today-map" role="region" aria-label="Map of the city's beach monitoring stations, coloured by today's status"></div>
         <button type="button" class="map-reset" id="map-reset" hidden>Whole city</button>
       </div>
         <div class="map-legend" id="map-legend"><span><i class="status-dot safe"></i>safe</span><span><i class="status-dot posted"></i>posted</span><span><i class="status-dot discharge"></i>discharge</span><span><i class="status-dot unknown"></i>not sampled</span><span id="lg-bwtf" hidden><i class="bwtf-dot safe"></i>Surfrider latest</span></div>
+        {% if controls %}<span class="layer-status" id="layer-status" role="status" aria-live="polite"></span>{% endif %}
+      </div>
       </div>
     </div>
     {% if sites %}
@@ -310,11 +317,12 @@ function initMap() {
   initLayers();
 }
 // ── Layers (the /today page only; Main has no #layers strip) ───────────────────────────────
-// Each chip fetches its data once, draws a Leaflet group, and adds itself to the legend. Risk view and
-// Replay recolour what is already there (tiles + station markers) and are mutually exclusive: risk is
-// today's number, replay is another day's map.
+// "Map shows" (.map-ctl, on the map): every chip there changes the map and nothing else does. City stations and
+// Surfrider results are the two sources; Rain, Outfalls and Names go on top. Each fetched layer loads its data once,
+// draws a Leaflet group, and adds itself to the legend. Replay (above the board) recolours what is already there
+// (tiles + station markers) as a past day's map. Each zone tile always shows today's overflow risk (2026-11-06).
 const LAYER = {rain: {}, outfalls: {}, bwtf: {}, labels: {}};
-let RISK_VIEW = false, REPLAY = null, REPLAY_OFFSET = 0, ORIG = null;
+let REPLAY = null, REPLAY_OFFSET = 0, ORIG = null;
 const $ = id => document.getElementById(id);
 const esc = t => String(t == null ? "" : t).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 const status = t => { const el = $("layer-status"); if (el) el.textContent = t || ""; };
@@ -391,7 +399,7 @@ function renderLegend() {
 function tileParts(key) { const b = document.querySelector('.zone[data-zone="' + key + '"]'); return b ? {b, st: b.querySelector(".st"), dots: [...b.querySelectorAll(".stations .status-dot")]} : null; }
 function snapshotBoard() {
   if (ORIG) return;
-  ORIG = {eyebrow: document.querySelector(".board .eyebrow").innerHTML, h1: $("today-h").innerHTML, lead: (document.querySelector(".board .lead") || {}).innerHTML, tone: document.querySelector(".board").className.replace(" show-risk", ""),
+  ORIG = {eyebrow: document.querySelector(".board .eyebrow").innerHTML, h1: $("today-h").innerHTML, lead: (document.querySelector(".board .lead") || {}).innerHTML, tone: document.querySelector(".board").className,
           tiles: Object.fromEntries(ZONES.map(z => { const t = tileParts(z.key); return [z.key, t ? {cls: t.b.className.replace(" focus", ""), st: t.st.innerHTML, dots: t.dots.map(d => d.className)} : null]; })),
           sites: [...document.querySelectorAll("#zone-sites .site .status-dot")].map(d => [d.parentElement.dataset.station, d.className])};
 }
@@ -399,13 +407,11 @@ function restoreBoard() {
   if (!ORIG) return;
   document.querySelector(".board .eyebrow").innerHTML = ORIG.eyebrow; $("today-h").innerHTML = ORIG.h1;
   const lead = document.querySelector(".board .lead"); if (lead && ORIG.lead != null) lead.innerHTML = ORIG.lead;
-  document.querySelector(".board").className = ORIG.tone; applyRisk();   // the Risk view outlives a replay's snapshot
+  document.querySelector(".board").className = ORIG.tone;
   for (const z of ZONES) { const t = tileParts(z.key), o = ORIG.tiles[z.key]; if (!t || !o) continue; t.b.className = o.cls + (t.b.classList.contains("focus") ? " focus" : ""); t.b.style.borderColor = ""; t.st.innerHTML = o.st; t.dots.forEach((d, i) => d.className = o.dots[i]); }
   for (const m of allMarkers()) { m.setStyle({fillColor: COL[m.__s.status] || COL.unknown, radius: m.__s.status === "posted" || m.__s.status === "discharge" ? 9 : 7}); placeRank(m, m.__s.status); labelFor(m, m.__s.status); }
   for (const [src, cls] of ORIG.sites || []) { const d = document.querySelector('#zone-sites .site[data-station="' + src + '"] .status-dot'); if (d) d.className = cls; }
 }
-// Risk view: reveals each tile's overflow risk today and the forecast's sentence; the city's status stays as it is
-function applyRisk() { document.querySelector(".board").classList.toggle("show-risk", RISK_VIEW); }
 // Replay: the map as SFPUC showed it at the last check of a past day
 function applyReplay() {
   snapshotBoard(); restoreBoard();
@@ -502,17 +508,26 @@ const BUILD = {
       if (last) last.after(chip); else box.appendChild(chip);
     }
     filterSites();
+    // a line on each zone tile: how many Surfrider sites, the newest result there, how many over the limit (2026-11-06:
+    // the switch used to change the map alone, which on a phone is below the tiles, so it looked like nothing happened)
+    for (const z of ZONES) {
+      const t = tileParts(z.key); if (!t) continue;
+      const here = d.sites.filter(s => s.zone === z.key);
+      let el = t.b.querySelector(".bwtfline"); if (!el) { el = document.createElement("div"); el.className = "bwtfline"; (t.b.querySelector(".rainline") || t.b.querySelector(".risk")).after(el); }
+      const over = here.filter(s => s.over).length, newest = here.map(s => s.date || "").sort().pop();
+      el.innerHTML = !here.length ? "Surfrider: no site in this zone" : "Surfrider: " + here.length + " site" + (here.length > 1 ? "s" : "") + (newest ? " · newest " + esc(fmtDay(newest)) : "") + (over ? ' · <span class="over">' + over + " over the limit</span>" : "");
+    }
     status(d.sites.length + " Surfrider sites · newest " + (d.newest || "—"));
     return g;
   },
 };
-function markOn(btn, on) { if (!btn) return; if (btn.tagName === "INPUT") btn.checked = on; else btn.classList.toggle("active", on); }
+function markOn(btn, on) { if (!btn) return; btn.classList.toggle("active", on); btn.setAttribute("aria-pressed", on ? "true" : "false"); }
 async function setLayer(key, on, btn) {
   const L_ = LAYER[key];
   if (key === "labels") { L_.on = on; markOn(btn, on); refreshLabels(); return; }   // drawn from the stations already on the map: nothing to fetch
   if (!on) { if (L_.group) MAP.removeLayer(L_.group); L_.on = false; markOn(btn, false); setCityLimits();
     if (key === "rain") { document.querySelectorAll(".zone .rainline").forEach(e => e.remove()); document.querySelectorAll(".zone.wet").forEach(e => e.classList.remove("wet")); }
-    if (key === "bwtf") document.querySelectorAll("#zone-sites .site.bwtf").forEach(c => c.remove());
+    if (key === "bwtf") { document.querySelectorAll("#zone-sites .site.bwtf").forEach(c => c.remove()); document.querySelectorAll(".zone .bwtfline").forEach(e => e.remove()); }
     status(""); renderLegend(); return; }
   btn.disabled = true; status("Loading…");
   try {
@@ -522,13 +537,11 @@ async function setLayer(key, on, btn) {
   btn.disabled = false; renderLegend();
 }
 function setReplay(offset) {
-  const slider = $("replay"), out = $("replay-out"), riskBtn = document.querySelector('.layer[data-layer="risk"]');
+  const slider = $("replay"), out = $("replay-out");
   const max = slider.max | 0;
   REPLAY_OFFSET = Math.max(0, Math.min(max, offset | 0)); slider.value = max - REPLAY_OFFSET;   // today at the right end; sliding left goes back
   const label = REPLAY_OFFSET === 0 ? "Today" : REPLAY_OFFSET === 1 ? "Yesterday" : REPLAY && REPLAY.days ? fmtDay(REPLAY.days[REPLAY.days.length - 1 - REPLAY_OFFSET]) : REPLAY_OFFSET + " days ago";
   out.textContent = label; slider.setAttribute("aria-valuetext", label);
-  if (REPLAY_OFFSET && RISK_VIEW) { RISK_VIEW = false; riskBtn.classList.remove("active"); applyRisk(); }   // today's risk is not a past day's
-  riskBtn.disabled = REPLAY_OFFSET > 0;
   applyReplay();
 }
 async function enableReplay(btn) {
@@ -540,13 +553,13 @@ async function enableReplay(btn) {
   const oldest = REPLAY.covered && REPLAY.covered.length ? REPLAY.days.length - 1 - REPLAY.days.indexOf(REPLAY.covered[0]) : 0;
   if (!oldest) { status("The map's record has no earlier days yet."); return false; }
   const slider = $("replay"); slider.max = oldest; $("replay-oldest").textContent = fmtDay(REPLAY.covered[0]);
-  $("replay-ctl").hidden = false; btn.classList.add("active"); setReplay(0);
+  $("replay-ctl").hidden = false; markOn(btn, true); setReplay(0);
   return true;
 }
-function disableReplay(btn) { $("replay-ctl").hidden = true; btn.classList.remove("active"); setReplay(0); }
+function disableReplay(btn) { $("replay-ctl").hidden = true; markOn(btn, false); setReplay(0); }
 let CITY_ON = true;
-function setCity(on) {
-  CITY_ON = on;
+function setCity(on, btn) {
+  CITY_ON = on; markOn(btn || document.querySelector('.layer[data-layer="city"]'), on);
   for (const m of ALL_ORDERED) MAP.removeLayer(m);
   if (on) for (const m of ALL_ORDERED) if (!ACTIVE || m.__z.key === ACTIVE) m.addTo(MAP);
   document.querySelectorAll("#zone-sites .site:not(.bwtf)").forEach(c => { c.hidden = !on || (!!ACTIVE && c.dataset.zone !== ACTIVE); });
@@ -554,32 +567,22 @@ function setCity(on) {
 }
 function initLayers() {
   const strip = $("layers"); if (!strip) return;
-  const city = $("tg-city"), bw = $("tg-bwtf");
-  if (city) city.addEventListener("change", () => setCity(city.checked));
-  if (bw) bw.addEventListener("change", () => setLayer("bwtf", bw.checked, bw));
-  for (const btn of strip.querySelectorAll(".layer")) {
+  for (const btn of document.querySelectorAll(".layer")) {   // the map's chips and the strip's Replay
     const key = btn.dataset.layer;
     btn.addEventListener("click", async () => {
-      if (key === "risk") { RISK_VIEW = !RISK_VIEW; btn.classList.toggle("active", RISK_VIEW); if (RISK_VIEW && REPLAY_OFFSET) setReplay(0); applyRisk(); return; }
+      if (key === "city") { setCity(!CITY_ON, btn); return; }
       if (key === "replay") { if (btn.classList.contains("active")) disableReplay(btn); else await enableReplay(btn); return; }
       await setLayer(key, !LAYER[key].on, btn);
     });
   }
   const slider = $("replay");
   slider.addEventListener("input", () => setReplay((slider.max | 0) - (slider.value | 0)));
-  // phones: the Layers box folds behind a button; the button counts the layers that are on, so a folded layer is never forgotten
-  const fold = $("layer-group"), tog = $("layers-toggle"), n = $("layers-n");
-  const openLayers = on => { fold.classList.toggle("open", on); tog.setAttribute("aria-expanded", on ? "true" : "false"); };
-  const count = () => { n.textContent = String(fold.querySelectorAll(".layer.active").length || ""); };
-  tog.addEventListener("click", () => openLayers(!fold.classList.contains("open")));
-  new MutationObserver(count).observe(fold, {subtree: true, attributes: true, attributeFilter: ["class"]});
+  // deep links: ?layers=rain,outfalls,labels,bwtf (or ?surfrider=1), ?city=0, ?replay=N; ?risk=1 from older links is simply today's board
   const q = new URLSearchParams(location.search), want = new Set((q.get("layers") || "").split(",").filter(Boolean));
   if (q.get("surfrider") === "1") want.add("bwtf");        // Surfrider is off by default (Chase, 2026-09-30); ?layers=bwtf or ?surfrider=1 turns it on
-  if (q.get("city") === "0" && city) { city.checked = false; setCity(false); }
-  for (const key of want) { const btn = key === "bwtf" ? bw : strip.querySelector('.layer[data-layer="' + key + '"]'); if (btn && LAYER[key]) setLayer(key, true, btn); }
-  if (q.get("risk") === "1") strip.querySelector('.layer[data-layer="risk"]').click();
+  if (q.get("city") === "0") setCity(false);
+  for (const key of want) { const btn = document.querySelector('.layer[data-layer="' + key + '"]'); if (btn && LAYER[key]) setLayer(key, true, btn); }
   if (q.get("replay")) { const rb = strip.querySelector('.layer[data-layer="replay"]'); enableReplay(rb).then(ok => { if (ok) setReplay(q.get("replay") | 0); }); }
-  if ([...want].some(k => k !== "bwtf") || q.get("risk") === "1" || q.get("replay")) openLayers(true);   // a link that turns a layer on shows it
 }
 window.addEventListener("DOMContentLoaded", initMap);
 </script>

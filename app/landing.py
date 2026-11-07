@@ -421,7 +421,7 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
     if n_posted:   # the status word is SFPUC's; the reason, in their terms, follows — the feed does not say which applies
         lead.append("Posted: " + describe(posted_by_zone) + ". SFPUC posts a beach when samples show bacteria above State standards, and sometimes as a precaution.")
     zr = risks.get("zones") or {}
-    risk_lead = ""   # the forecast's sentence: shown only with the Risk view on (Chase, 2026-10-18)
+    risk_lead = ""   # the forecast's sentence, after the city's: always shown since 2026-11-06 (it sat behind the Risk view chip, Chase, 2026-10-18)
     if zr:
         worst = max(zr.values())
         where = "in every zone" if len(set(zr.values())) == 1 else f"at most ({ZONES[max(zr, key=zr.get)].label})"
