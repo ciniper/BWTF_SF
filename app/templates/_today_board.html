@@ -78,6 +78,7 @@
   #today-map .leaflet-pane > svg{pointer-events:none}   /* one pane per status rank (initMap): a pane's empty drawing area must not swallow taps meant for the dots below */
   .bwtf-dot{display:block;width:11px;height:11px;margin:1px;transform:rotate(45deg);border:1px solid rgba(38,39,42,.55);border-radius:2px;background:#fff;box-shadow:0 0 0 1px #fff}   /* Surfrider's diamond: a hairline ring so the grade colour reads true (Chase: the thick ring looked blue) */
   .bwtf-dot.safe{background:var(--safe)}.bwtf-dot.caution{background:var(--caution)}.bwtf-dot.posted{background:var(--posted)}.bwtf-dot.unknown{background:var(--unknown)}
+  .bwtf-dot.stale{background:#fff;border:1.5px dashed var(--faint);box-shadow:0 0 0 1px #fff}   /* older than STALE_AFTER_DAYS: hollow and grey, whatever its grade — it is not the water's state now (2026-11-06) */
   .map-legend .bwtf-dot{display:inline-block;width:8px;height:8px;margin:0 2px}
   .map-legend .shape{display:inline-flex;align-items:center;gap:4px;color:var(--muted)}
   .map-legend .shape .status-dot,.map-legend .shape .bwtf-dot{background:#8a949b}
@@ -234,7 +235,7 @@ function initMap() {
     const bad = s.status === "posted" || s.status === "discharge";
     const m = L.circleMarker([s.lat, s.lon], {pane: "st" + (RANK[s.status] || 0), radius: bad ? 9 : 7, color: "#fff", weight: 2, fillColor: COL[s.status] || COL.unknown, fillOpacity: .95, bubblingMouseEvents: false}).addTo(MAP);
     m.__s = s; m.__z = z; ALL_ORDERED.push(m);   // the layers recolour markers by zone risk or by a replayed day; focusZone re-adds them in this order
-    m.bindTooltip(bad ? s.name + " · " + (s.status === "discharge" ? "discharge" : "posted") : s.full_name + " · " + s.status_text + (s.sampled ? " · sampled " + s.sampled : ""),
+    m.bindTooltip(bad ? s.name + " · " + (s.status === "discharge" ? "discharge" : "posted") : s.full_name + " · " + s.status_text + (s.sampled ? " · " + s.sampled_text + " (" + s.sampled + ")" : ""),
                   {permanent: bad, direction: "auto", offset: [9, 0], className: "st-label" + (bad ? " bad" : "")});   // auto: a bayside label flips left so it stays on the map
     m.on("click", () => { if (window.SamplePopover) SamplePopover.open({station: s.source, name: s.full_name, feedDate: s.sampled}); });
     (MARKERS[z.key] = MARKERS[z.key] || []).push(m);
@@ -319,6 +320,7 @@ function renderLegend() {
     else if (LAYER.bwtf.on) parts.push(dot("unknown", "no result"));
     h = parts.join("");
     if (LAYER.bwtf.on) h += '<i class="divider"></i><span class="shape"><i class="status-dot"></i>city</span><span class="shape"><i class="bwtf-dot"></i>Surfrider</span>';
+    if (LAYER.bwtf.on && LAYER.bwtf.data && LAYER.bwtf.data.sites.some(s => s.stale)) h += '<span><i class="bwtf-dot stale"></i>over ' + LAYER.bwtf.data.stale_after_days + ' days old</span>';
   }
   if (LAYER.rain.on) h += '<span><i class="ring"></i>rain, 3 days</span>';
   if (LAYER.outfalls.on) h += '<span><i class="of"></i>outfall</span>';
@@ -417,9 +419,9 @@ const BUILD = {
     };
     const g = L.layerGroup(d.sites.filter(s => s.lat != null && s.lon != null).map(s => {
       const grade = s.over ? "posted" : s.caution ? "caution" : s.value == null ? "unknown" : "safe", [ox, oy] = nudge(s);
-      const m = L.marker([s.lat, s.lon], {pane: "bw" + (RANK_ST[grade] || 0), keyboard: false,   // the same hierarchy as the city's dots, just under them at a tie
-        icon: L.divIcon({className: "bwtf-pin", html: '<i class="bwtf-dot ' + grade + '"></i>', iconSize: [15, 15], iconAnchor: [7 - ox, 7 - oy], tooltipAnchor: [ox, oy]})});
-      m.bindTooltip("Surfrider · " + s.name + " · " + (s.raw || "no result") + (s.raw ? " MPN/100 mL" : "") + (s.date ? " · " + s.date : ""), {direction: "auto", offset: [9, 0], className: "st-label"});
+      const m = L.marker([s.lat, s.lon], {pane: "bw" + (s.stale ? 0 : RANK_ST[grade] || 0), keyboard: false,   // the same hierarchy as the city's dots, just under them at a tie; a stale result sits at the bottom
+        icon: L.divIcon({className: "bwtf-pin", html: '<i class="bwtf-dot ' + grade + (s.stale ? " stale" : "") + '"></i>', iconSize: [15, 15], iconAnchor: [7 - ox, 7 - oy], tooltipAnchor: [ox, oy]})});
+      m.bindTooltip("Surfrider · " + s.name + " · " + (s.raw || "no result") + (s.raw ? " MPN/100 mL" : "") + (s.date ? " · " + s.age_text + " (" + s.date + ")" : ""), {direction: "auto", offset: [9, 0], className: "st-label"});
       m.on("click", () => { if (window.SamplePopover) SamplePopover.open({bwtf: s.name, name: s.city_name || s.name, date: s.date}); });
       return m;
     }));
@@ -431,7 +433,7 @@ const BUILD = {
       const grade = s.over ? "posted" : s.caution ? "caution" : s.value == null ? "unknown" : "safe";
       const chip = document.createElement("button"); chip.type = "button"; chip.className = "site bwtf"; chip.dataset.zone = s.zone; chip.title = "Surfrider's latest result here";
       chip.dataset.sampleBwtf = s.name; chip.dataset.sampleName = s.city_name || s.name; chip.dataset.sampleDate = s.date || "";
-      chip.innerHTML = '<i class="bwtf-dot ' + grade + '"></i>' + esc(s.name) + "<small>Surfrider · " + (s.raw ? esc(s.raw) + " MPN" : "no result") + (s.date ? " · " + esc(s.date) : "") + "</small>";
+      chip.innerHTML = '<i class="bwtf-dot ' + grade + (s.stale ? " stale" : "") + '"></i>' + esc(s.name) + "<small>Surfrider · " + (s.raw ? esc(s.raw) + " MPN" : "no result") + (s.date ? " · sampled " + esc(s.age_text) : "") + "</small>";
       const last = [...box.querySelectorAll('.site[data-zone="' + s.zone + '"]')].pop();
       if (last) last.after(chip); else box.appendChild(chip);
     }
@@ -442,10 +444,11 @@ const BUILD = {
       const t = tileParts(z.key); if (!t) continue;
       const here = d.sites.filter(s => s.zone === z.key);
       let el = t.b.querySelector(".bwtfline"); if (!el) { el = document.createElement("div"); el.className = "bwtfline"; (t.b.querySelector(".rainline") || t.b.querySelector(".risk")).after(el); }
-      const over = here.filter(s => s.over).length, newest = here.map(s => s.date || "").sort().pop();
-      el.innerHTML = !here.length ? "Surfrider: no site in this zone" : "Surfrider: " + here.length + " site" + (here.length > 1 ? "s" : "") + (newest ? " · newest " + esc(fmtDay(newest)) : "") + (over ? ' · <span class="over">' + over + " over the limit</span>" : "");
+      const over = here.filter(s => s.over).length, dated = here.filter(s => s.date), newest = dated.sort((a, b) => a.age_days - b.age_days)[0];
+      el.innerHTML = !here.length ? "Surfrider: no site in this zone" : "Surfrider: " + here.length + " site" + (here.length > 1 ? "s" : "") + (newest ? " · newest sampled " + esc(newest.age_text) : "")
+        + (over ? ' · <span class="over">' + over + " over the limit</span>" : "") + (dated.length && dated.every(s => s.stale) ? " · results over " + d.stale_after_days + " days old" : "");
     }
-    status(d.sites.length + " Surfrider sites · newest " + (d.newest || "—"));
+    status(d.sites.length + " Surfrider sites · newest sampled " + (d.newest_text || "—") + (d.newest ? " (" + d.newest + ")" : ""));
     return g;
   },
 };

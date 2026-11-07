@@ -100,12 +100,12 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
     assert b["risk_lead"] == "Sewer-overflow risk today: 4% at most (East Beaches), staying low through Sun Oct 04."   # after the city's sentence in the subhead
     z = {t["key"]: t for t in b["zones"]}
     assert [t["key"] for t in b["zones"]] == ["ocean", "baker_china", "north", "east"]           # registry order, every zone even when empty
-    assert (z["north"]["status"], z["north"]["status_text"], z["north"]["meta"]) == ("posted", "1 beach posted", "Crissy East · sampled Sep 23")
-    assert (z["ocean"]["status"], z["ocean"]["risk"], z["ocean"]["meta"]) == ("safe", 0, "6 stations · sampled Sep 23")     # every registry station, fed or not
+    assert (z["north"]["status"], z["north"]["status_text"], z["north"]["meta"]) == ("posted", "1 beach posted", "Crissy East · sampled 6 days ago")   # the age in words, never a bare date (2026-11-06)
+    assert (z["ocean"]["status"], z["ocean"]["risk"], z["ocean"]["meta"]) == ("safe", 0, "6 stations · sampled 6 days ago")     # every registry station, fed or not
     assert z["baker_china"]["status"] == "unknown" and z["baker_china"]["meta"] == "4 stations · no sample date"
     assert z["east"]["risk"] == 4 and [s["status"] for s in z["east"]["stations"]] == ["unknown"] * 6
     ff = z["ocean"]["stations"][0]
-    assert (ff["full_name"], ff["source"], ff["status"], ff["sampled"]) == ("Fort Funston", "OCEAN#22_SL", "safe", "2026-09-23") and 37 < ff["lat"] < 38 and -123 < ff["lon"] < -122
+    assert (ff["full_name"], ff["source"], ff["status"], ff["sampled"], ff["sampled_text"], ff["sampled_age_days"]) == ("Fort Funston", "OCEAN#22_SL", "safe", "2026-09-23", "sampled 6 days ago", 6) and 37 < ff["lat"] < 38 and -123 < ff["lon"] < -122
     assert sum(len(t["stations"]) for t in b["zones"]) == 20                                                          # the map draws all twenty
     cso = L.today_board(sts + [S("4620", "Crane Cove Park", "posted", cso=True)], {}, "")
     assert cso["tone"] == "danger" and cso["headline"] == "Sewage discharge at 1 beach. Posted at 1 beach. 3 meet state standards."

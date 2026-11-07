@@ -3,7 +3,7 @@
 import pathlib
 import sys
 import types
-from datetime import datetime
+from datetime import date, datetime
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -17,6 +17,13 @@ def _site(name, value, raw, when, lat=37.8, lon=-122.4):
                                  report_url=f"https://bwtf.surfrider.org/report/76/9")
 
 
+def test_days_ago_text_reads_as_a_person_would_say_it():
+    from shared.clock import days_ago_text
+    t = date(2026, 11, 6)
+    assert [days_ago_text(d, t) for d in (date(2026, 11, 6), date(2026, 11, 5), date(2026, 11, 2), date(2026, 10, 22), date(2026, 5, 28))] == ["today", "yesterday", "4 days ago", "15 days ago", "162 days ago"]
+    assert days_ago_text(date(2026, 11, 7), t) == "today"   # a clock ahead of the beach never says "-1 days ago"
+
+
 def test_surfrider_layer_grades_each_site_and_maps_it_to_the_city_beach():
     lab = types.SimpleNamespace(sites=[
         _site("Ocean Beach at Vicente St", 20.0, "20", datetime(2026, 9, 24, 16, 45)),
@@ -24,9 +31,19 @@ def test_surfrider_layer_grades_each_site_and_maps_it_to_the_city_beach():
         _site("Crissy Field Beach East", 208.0, "208", datetime(2026, 9, 17, 9, 0)),
         _site("Bayview Hunters Point", None, None, None, lat=37.73, lon=-122.38),
     ])
-    d = T.surfrider_layer(lab)
+    d = T.surfrider_layer(lab, today=date(2026, 10, 2))
     by = {s["name"]: s for s in d["sites"]}
     assert d["ok"] and d["newest"] == "2026-09-24" and d["limit"] == standards.STANDARDS["ENTERO"]["single_sample_max"] and d["caution"] == standards.ENTERO_CAUTION
+    # the age of each result, in days and in words, and stale past STALE_AFTER_DAYS (14 to start, 2026-11-06): drawn hollow and grey
+    assert d["newest_text"] == "8 days ago" and d["stale_after_days"] == T.STALE_AFTER_DAYS == 14
+    assert (by["Aquatic Park"]["age_days"], by["Aquatic Park"]["age_text"], by["Aquatic Park"]["stale"]) == (8, "8 days ago", False)
+    assert (by["Crissy Field Beach East"]["age_days"], by["Crissy Field Beach East"]["age_text"], by["Crissy Field Beach East"]["stale"]) == (15, "15 days ago", True)
+    assert (by["Bayview Hunters Point"]["age_days"], by["Bayview Hunters Point"]["age_text"], by["Bayview Hunters Point"]["stale"]) == (None, "", False)
+    edge = T.surfrider_layer(types.SimpleNamespace(sites=[_site("Aquatic Park", 20.0, "20", datetime(2026, 9, 24, 18, 30))]), today=date(2026, 10, 8))["sites"][0]
+    assert (edge["age_days"], edge["stale"]) == (14, False)                                                   # exactly the threshold is still fresh
+    board = (ROOT / "app/templates/_today_board.html").read_text()
+    assert ".bwtf-dot.stale{background:#fff;border:1.5px dashed var(--faint)" in board and '(s.stale ? " stale" : "")' in board and "over ' + LAYER.bwtf.data.stale_after_days + ' days old" in board
+    assert '" · " + s.age_text + " (" + s.date + ")"' in board and 'newest sampled " + esc(newest.age_text)' in board and '" · " + s.sampled_text + " ("' in board   # ages in words on the map, the tiles and the city dots
     assert [s["name"] for s in d["sites"]] == sorted(by)                                                      # stable order
     v = by["Ocean Beach at Vicente St"]
     assert (v["city_name"], v["key"], v["over"], v["caution"], v["date"], v["time"]) == ("Ocean Beach at Vicente Street", "OCEAN#21_SL", False, False, "2026-09-24", "16:45")

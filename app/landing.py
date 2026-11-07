@@ -13,7 +13,7 @@ from html import escape as _esc
 from flask import render_template
 
 from shared.zones import ZONES
-from shared.clock import now_pacific
+from shared.clock import days_ago_text, now_pacific
 from shared.risk_levels import LEVELS, level_of, level_of_percent, whole_percent
 
 SURFRIDER_LOGO_URL = "https://f.hubspotusercontent20.net/hubfs/20811975/SF-Horizontal-Logo_RGB_Black_crop_small.png"
@@ -358,9 +358,10 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
             st = by_id.get(reg.sfpuc_id)
             status = _station_status(st) if st is not None else "unknown"
             d = getattr(st, "sample_date", None) if st is not None else None
+            age = (now.date() - d.date()).days if d else None   # how old the city's latest result is, in words wherever the date shows (2026-11-06)
             sts.append({"name": _short(reg.name), "full_name": reg.name, "status": status, "status_text": status_text[status],
-                        "source": source, "lat": reg.lat, "lon": reg.lon, "sampled": d.strftime("%Y-%m-%d") if d else "",
-                        "sampled_text": f"sampled {d:%b %-d}" if d else "no sample date"})
+                        "source": source, "lat": reg.lat, "lon": reg.lon, "sampled": d.strftime("%Y-%m-%d") if d else "", "sampled_age_days": age,
+                        "sampled_text": f"sampled {days_ago_text(d.date(), now.date())}" if d else "no sample date"})
         z_posted = [x["name"] for x in sts if x["status"] == "posted"]
         z_cso = [x["name"] for x in sts if x["status"] == "discharge"]
         z_safe = sum(1 for x in sts if x["status"] == "safe")
@@ -373,7 +374,7 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
         text = ("Sewage discharge" if status == "discharge" else f"{len(z_posted)} beach{'es' if len(z_posted) > 1 else ''} posted" if status == "posted"
                 else "All clear" if status == "safe" else "Not sampled")
         dates = [x["sampled"] for x in sts if x["sampled"]]
-        sampled = f"sampled {datetime.strptime(max(dates), '%Y-%m-%d'):%b %-d}" if dates else "no sample date"
+        sampled = f"sampled {days_ago_text(datetime.strptime(max(dates), '%Y-%m-%d').date(), now.date())}" if dates else "no sample date"
         meta = (" · ".join(z_cso + z_posted) + f" · {sampled}") if (z_cso or z_posted) else f"{len(sts)} stations · {sampled}"
         risk = (risks.get("zones") or {}).get(zk)
         tiles.append({"key": zk, "label": z.label, "status": status, "status_text": text, "risk": risk,
