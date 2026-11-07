@@ -7,7 +7,8 @@ deleted 2026-09-30 (Chase: "wholesale delete the main page"); Today has served `
 2026-10-01 and keeps answering at /today too (``PAGE_ALIASES``).
 Everything is wrapped defensively so a flaky upstream never blanks the board.
 """
-from datetime import datetime
+import re
+from datetime import date, datetime, timedelta
 
 from html import escape as _esc
 from flask import render_template
@@ -393,25 +394,27 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
         return _join(items) if len(items) <= 3 else ", ".join(items[:3]) + f" and {len(items) - 3} more"
     n_cso, n_posted = len(discharging), len(posted)
     plural = lambda n, one, many: one if n == 1 else many  # noqa: E731
-    # Colour carries the grade: the discharge sentence red, the posted sentence orange, the standard green
-    # when everyone meets it, the safe count plain (Chase, 2026-09-29).
+    # Colour carries the grade: the discharge sentence red, the posted sentence orange, the all-clear green,
+    # the safe count plain (Chase, 2026-09-29). The headline says what the feed knows today — whether a
+    # warning is posted; what the samples showed, and how old they are, goes in the subhead (2026-11-06: "meet
+    # state standards today" claimed today's water from a sample up to a week old).
     if n_cso:
         tone = "danger"
         parts = [("discharge", f"Sewage discharge at {n_cso} {plural(n_cso, 'beach', 'beaches')}.")]
         if n_posted:
             parts.append(("posted", f"Posted at {n_posted} {plural(n_posted, 'beach', 'beaches')}."))   # parallel to the discharge phrase, so two counts never sit side by side (Chase, 2026-09-30)
         if n_safe:
-            parts.append(("", f"{n_safe} {plural(n_safe, 'meets', 'meet')} state standards." if n_posted
-                          else f"{n_safe} other {plural(n_safe, 'beach meets', 'beaches meet')} state standards."))
+            parts.append(("", f"{n_safe} {plural(n_safe, 'has', 'have')} no warning." if n_posted
+                          else f"{n_safe} other {plural(n_safe, 'beach has', 'beaches have')} no warning."))
     elif n_graded == 0:
         tone, parts = "warn", [("warn", "Beach status is unavailable right now.")]
     elif n_posted:
         tone = "warn"
         parts = [("posted", f"Posted at {n_posted} {plural(n_posted, 'beach', 'beaches')}.")]
         if n_safe:
-            parts.append(("", f"{n_safe} {plural(n_safe, 'other meets', 'others meet')} state standards."))
+            parts.append(("", f"{n_safe} {plural(n_safe, 'other has', 'others have')} no warning."))
     else:
-        tone, parts = "ok", [("", f"All {n_graded} monitored beaches <good>meet state standards</good> today.")]
+        tone, parts = "ok", [("", f"<good>No warnings posted</good> at {'the' if n_graded == 1 else 'any of the'} {n_graded} monitored {plural(n_graded, 'beach', 'beaches')}.")]
     headline = " ".join(t for _, t in parts).replace("<good>", "").replace("</good>", "")
     headline_html = " ".join(f'<em class="{cls}">{_esc(t)}</em>' if cls else _esc(t).replace("&lt;good&gt;", '<em class="good">').replace("&lt;/good&gt;", "</em>")
                              for cls, t in parts)
@@ -435,8 +438,27 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
         else:
             trend = ""
         risk_lead = f"Sewer-overflow risk today: {worst}% {where}{trend}."
-    if samples_fact:
-        lead.append("Latest samples: " + samples_fact.replace("city", "city lab").replace("Surfrider", "Surfrider volunteers") + ".")
+    # The city's samples: how old, and what they showed. One age when every station was sampled the same day
+    # (the usual weekly round), a span otherwise; the "N over" count comes from the samples mirror's fact.
+    ages = sorted({x["sampled_age_days"] for t in tiles for x in t["stations"] if x["sampled_age_days"] is not None})
+    if ages and n_graded:
+        newest_d, oldest_d = now.date() - timedelta(days=ages[0]), now.date() - timedelta(days=ages[-1])
+        when = (f"{days_ago_text(newest_d, now.date())} ({newest_d:%b %-d})" if len(ages) == 1
+                else f"between {days_ago_text(newest_d, now.date())} and {days_ago_text(oldest_d, now.date())} ({oldest_d:%b %-d} to {newest_d:%b %-d})")
+        over = re.search(r"(\d+) over", samples_fact or "")
+        n_over = int(over.group(1)) if over else 0
+        if n_over:
+            lead.append(f"The city's latest samples, {when}, had {n_over} {plural(n_over, 'station', 'stations')} over the state limit.")
+        elif tone == "ok":
+            lead.append(f"{'It' if n_graded == 1 else f'All {n_graded}'} met the state standard in the city's latest samples, {when}. The city samples weekly and posts a warning when a result fails.")
+        else:
+            lead.append(f"The city's latest samples are from {when}.")
+    bw = re.search(r"Surfrider (\d{1,2})/(\d{1,2})", samples_fact or "")   # the volunteers' newest sample, by age too
+    if bw:
+        d = date(now.year, int(bw.group(1)), int(bw.group(2)))
+        if d > now.date():
+            d = d.replace(year=now.year - 1)
+        lead.append(f"Surfrider volunteers' latest sample: {days_ago_text(d, now.date())} ({d:%b %-d}).")
     return {"tone": tone, "headline": headline, "headline_html": headline_html, "lead": " ".join(lead), "risk_lead": risk_lead, "zones": tiles, "feed_ok": bool(stations),
             "posted": posted, "discharging": discharging, "n_safe": n_safe, "n_graded": n_graded,
             "date": now.strftime("%a %b %-d"), "checked": now.strftime("%-I:%M %p")}
