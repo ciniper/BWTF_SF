@@ -245,7 +245,7 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
     .sb { padding: 14px 12px; }
     .sb-body, .sb-out { grid-template-columns: minmax(0, 1fr); }
     .sb .seg-toggle { display: grid; grid-template-columns: 1fr 1fr; border-radius: 14px; }
-    .sb .seg-btn { padding: 7px 8px; }
+    .sb .seg-btn { padding: 7px 8px; white-space: normal; }   /* in this two-column grid a long label still wraps (brand.css keeps a toggle's labels on one line) */
 }
 </style>
 </head>
