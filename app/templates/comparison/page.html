@@ -71,17 +71,19 @@
       <li><b>Surfrider SF Blue Water Task Force (BWTF)</b></li>
       <li><b>San Francisco Public Utilities Commission (SFPUC)</b></li>
     </ul>
-    <p>Both are graded against the California single-sample maximum of <b>{{ limit }} MPN/100mL</b>.
-    Every site, and all three indicators at once, are on <a href="/graphs">Graphs</a>; every sample is on <a href="/samples">Samples</a>.</p>
+    <p>Both are graded against the California single-sample maximum of <b>{{ limit }} MPN/100mL</b>. The two are
+    compared only on days both sampled the same site: a result from one day says little about another day's, because
+    bacteria counts move with the rain. Every site, and all three indicators at once, are on <a href="/graphs">Graphs</a>; every sample is on <a href="/samples">Samples</a>.</p>
   {% endcall %}
 
   <div class="cards">
-    <div class="card"><div class="n">{{ s.comparable_count }}/{{ s.site_count }}</div><div class="l">Sites compared</div></div>
-    <div class="card"><div class="n">{{ s.agree_count }}</div><div class="l">Sources agree</div></div>
-    <div class="card"><div class="n">{{ s.disagree_count }}</div><div class="l">Sources differ</div></div>
-    <div class="card"><div class="n">{{ s.bwtf_exceed_count }} / {{ s.city_exceed_count }}</div><div class="l">BWTF / SFPUC exceed</div></div>
-    <div class="card"><div class="n">{{ max_gap_display }}</div><div class="l">Max sampling gap</div></div>
+    <div class="card"><div class="n">{{ same_day.pairs }}</div><div class="l">{{ same_day.label }}</div></div>
+    <div class="card"><div class="n">{{ same_day.agree }}</div><div class="l">Agree on the standard</div></div>
+    <div class="card"><div class="n">{{ same_day.differ }}</div><div class="l">Differ on the standard</div></div>
+    <div class="card"><div class="n">{{ s.comparable_count }}/{{ s.site_count }}</div><div class="l">Sites with a result from both</div></div>
+    <div class="card"><div class="n">{{ s.bwtf_exceed_count }} / {{ s.city_exceed_count }}</div><div class="l">BWTF / SFPUC latest exceed</div></div>
   </div>
+  <p class="hint">{% if same_day.sites %}The two programs are judged only on days both sampled the same site: {{ same_day.sites }} site{{ "" if same_day.sites == 1 else "s" }} had such a day in the last year{% if same_day.latest %}, most recently {{ same_day.latest }}{% endif %}. A site's latest results below are from different days unless marked "same day".{% else %}The two programs are judged only on days both sampled the same site; the last year has none on record, so no agreement is scored.{% endif %}</p>
 
   <p class="hint"><svg class="ic"><use href="#i-chart-line"/></svg> Click any site below for its {{ analyte_label }} history — BWTF vs. SFPUC over time, and the days both sampled, head to head.</p>
 
@@ -118,8 +120,9 @@
 
   <p class="foot">
     Generated {{ generated }}. Both sources grade {{ analyte_label }} against the CA single-sample max ({{ limit }} MPN/100mL);
-    "&lt;10" means below the lab's detection limit. Agreement compares whether each source's latest result meets
-    that standard — not the exact numbers, which differ because sampling days and exact sample points differ.
+    "&lt;10" means below the lab's detection limit. Agreement is scored only when both programs sampled a site on the
+    same day — whether each result meets the standard, not the exact numbers, which differ because the sample points
+    differ. Latest results from different days are shown side by side but not judged against each other.
     When the city's latest day carries two samples (a routine sample and a storm resample share a date in the
     city's dataset), both are shown and the worse one is graded.<br>
     Sources: <a href="https://bwtf.surfrider.org/explore/76" target="_blank" rel="noopener">Surfrider BWTF (SF)</a> ·

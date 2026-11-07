@@ -224,16 +224,18 @@ class ComparisonRoutes:
                 if r["city_value"] is not None and r["bwtf_value"] is None:
                     return '<span class="agree agree--na">SFPUC only</span>'
                 return '<span class="agree agree--na">— incomplete</span>'
-            sub = []
+            if not r.get("same_day"):   # results from different days answer different questions: no verdict (2026-11-06)
+                gap = r["day_gap"]
+                apart = "sampled on different days" if gap is None else f"sampled {gap} day{'' if gap == 1 else 's'} apart"
+                return f'<span class="agree agree--na">Not comparable<small>{apart}</small></span>'
+            sub = ["same day"]
             if r["value_delta"] is not None:
                 sub.append(f"Δ {r['value_delta']:g}")
-            if r["day_gap"] is not None:
-                sub.append(f"{r['day_gap']}d apart")
-            subline = f"<small>{' · '.join(sub)}</small>" if sub else ""
+            subline = f"<small>{' · '.join(sub)}</small>"
             if r["agree"]:
                 txt = "Both exceed" if r["bwtf_exceeds"] else "Both within standard"
-                return f'<span class="agree agree--yes"><svg class="ic"><use href="#i-circle-check"/></svg> {txt}</span>{subline}'
-            return f'<span class="agree agree--no"><svg class="ic"><use href="#i-triangle-alert"/></svg> Sources differ</span>{subline}'
+                return f'<span class="agree agree--yes"><svg class="ic"><use href="#i-circle-check"/></svg> {txt}{subline}</span>'
+            return f'<span class="agree agree--no"><svg class="ic"><use href="#i-triangle-alert"/></svg> Sources differ{subline}</span>'
 
         rows_html = ""
         for r in data["rows"]:
@@ -256,13 +258,21 @@ class ComparisonRoutes:
               </tr>"""
 
         generated = data["generated_at"][:16].replace("T", " ")
-        max_gap_display = '—' if s['max_day_gap'] is None else str(s['max_day_gap']) + 'd'
+        sd = s.get("same_day")
+        same_day_cards = {   # the record both programs can be judged on: the days both sampled a site, over the last year
+            "pairs": str(sd["pairs"]) if sd else "—",
+            "agree": str(sd["agree"]) if sd else "—",
+            "differ": str(sd["differ"]) if sd else "—",
+            "label": f"Same-day samples, last {round(sd['window_days'] / 30.44)} months" if sd else "Same-day samples",
+            "sites": sd["sites"] if sd else 0,
+            "latest": sd["latest"] if sd else None,
+        }
         return render_template(
             "comparison/page.html",
             analyte_label=analyte_label,
             limit=limit,
             s=s,
-            max_gap_display=max_gap_display,
+            same_day=same_day_cards,
             analyte_options=analyte_options,
             bwtf_note=bwtf_note,
             rows_html=rows_html,
