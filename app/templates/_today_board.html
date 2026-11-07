@@ -17,7 +17,14 @@
   .board h1{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:42px;line-height:1;margin:8px 0 6px;letter-spacing:.02em;color:var(--ink)}
   .board h1 em{font-style:normal}
   .board h1 em.posted,.board h1 em.warn{color:var(--posted)}.board h1 em.discharge{color:var(--discharge)}.board h1 em.good{color:var(--safe)}
-  .board .lead{font-size:16px;color:var(--muted);margin:0 0 16px}
+  .board .lead{font-size:16px;color:var(--muted);margin:0 0 14px}
+  .board .lead:empty{display:none}
+  /* the facts under the subhead, one labelled row each (2026-11-06): the city's samples, Surfrider's, the forecast's risk */
+  .board .facts{display:grid;gap:5px;margin:0 0 16px}
+  .board .facts div{display:flex;gap:12px;align-items:baseline;font-size:14px;line-height:1.4;color:var(--muted)}
+  .board .facts dt{flex:none;width:156px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+  .board .facts dd{margin:0}
+  .board.replaying .facts{display:none}   /* today's samples and risk are not a past day's */
   .zones{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .zone{border:1px solid var(--line);border-radius:var(--r);padding:12px 13px 11px;color:inherit;background:#fff;display:block;width:100%;text-align:left;cursor:pointer;font:inherit}
   .zone:hover{border-color:var(--sky)}
@@ -122,6 +129,8 @@
     .board{padding:18px 16px}
     .board h1{font-size:34px}
     .board .lead{font-size:14px;margin-bottom:12px}
+    .board .facts div{flex-direction:column;gap:1px;font-size:13.5px}
+    .board .facts dt{width:auto}
     .zone{padding:11px}.zone .nm{font-size:15px}
     .map-wrap{min-height:260px}
     .map-legend{position:static;background:none;border-radius:0;padding:8px 2px 0;gap:6px 12px}   /* under the map: over it, it covered 4 of 20 stations on the north shore (6 with Surfrider on) */
@@ -136,7 +145,8 @@
       <div class="left">
         <div class="eyebrow">Beach status · {{ board.date }} · {% if board.feed_ok %}SFPUC map checked {{ board.checked }}{% else %}SFPUC map unreachable{% endif %}</div>
         <h1 id="today-h">{{ board.headline_html|safe }}</h1>
-        {% if board.lead or board.risk_lead %}<p class="lead">{{ board.lead }}{% if board.risk_lead %}{% if board.lead %} {% endif %}<span class="risk-lead">{{ board.risk_lead }}</span>{% endif %}</p>{% endif %}
+        <p class="lead">{{ board.lead }}</p>   {#- the news: which beaches are posted or discharging; a replayed day writes its own sentence here #}
+        {% if board.facts %}<dl class="facts">{% for f in board.facts %}<div><dt>{{ f.label }}</dt><dd>{{ f.text }}</dd></div>{% endfor %}</dl>{% endif %}
         {% if board.zones %}
         <div class="zones" id="zones">
           {% for z in board.zones %}

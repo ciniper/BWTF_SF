@@ -113,7 +113,7 @@ def test_today_board_tiles_and_risk_view_use_the_levels():
         assert f".zone .risk b.lvl-{lv.key}{{color:{lv.color}}}" in h                     # the number's colour, from the one table
     # the numbers and the forecast's sentence are always shown (2026-11-06; they sat behind a Risk view chip from 2026-10-18); nothing recolours
     assert ".zone .risk{font-size:13px;color:var(--muted)}" in h and "show-risk" not in h and 'data-layer="risk"' not in h
-    assert '<span class="risk-lead">Sewer-overflow risk today: 81% at most (East Beaches)' in h and "const RISK_LEVELS" not in h
+    assert "<dt>Overflow risk today</dt><dd>81% at most (East Beaches)" in h and "risk-lead" not in h and "const RISK_LEVELS" not in h   # a labelled row under the subhead (2026-11-06)
     assert 'class="hi"' not in h and "under 10%" not in h and "50% or more" not in h
     assert "{{" not in h and "{%" not in h
 

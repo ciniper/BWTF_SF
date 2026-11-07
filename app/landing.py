@@ -438,8 +438,11 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
         else:
             trend = ""
         risk_lead = f"Sewer-overflow risk today: {worst}% {where}{trend}."
-    # The city's samples: how old, and what they showed. One age when every station was sampled the same day
-    # (the usual weekly round), a span otherwise; the "N over" count comes from the samples mirror's fact.
+    # Under the subhead, one labelled row per fact (2026-11-06: four facts in one paragraph read as a jumble):
+    # the city's samples — how old, what they showed, the rule; Surfrider's newest; the forecast's risk. One age
+    # when every station was sampled the same day (the usual weekly round), a span otherwise; the "N over"
+    # count comes from the samples mirror's fact.
+    facts = []
     ages = sorted({x["sampled_age_days"] for t in tiles for x in t["stations"] if x["sampled_age_days"] is not None})
     if ages and n_graded:
         newest_d, oldest_d = now.date() - timedelta(days=ages[0]), now.date() - timedelta(days=ages[-1])
@@ -448,18 +451,20 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
         over = re.search(r"(\d+) over", samples_fact or "")
         n_over = int(over.group(1)) if over else 0
         if n_over:
-            lead.append(f"The city's latest samples, {when}, had {n_over} {plural(n_over, 'station', 'stations')} over the state limit.")
+            facts.append({"label": "City samples", "text": f"{when} · {n_over} {plural(n_over, 'station', 'stations')} over the state limit"})
         elif tone == "ok":
-            lead.append(f"{'It' if n_graded == 1 else f'All {n_graded}'} met the state standard in the city's latest samples, {when}. The city samples weekly and posts a warning when a result fails.")
+            facts.append({"label": "City samples", "text": f"{when} · {'it' if n_graded == 1 else f'all {n_graded}'} met the state standard · weekly; a warning is posted when a result fails"})
         else:
-            lead.append(f"The city's latest samples are from {when}.")
+            facts.append({"label": "City samples", "text": when})
     bw = re.search(r"Surfrider (\d{1,2})/(\d{1,2})", samples_fact or "")   # the volunteers' newest sample, by age too
     if bw:
         d = date(now.year, int(bw.group(1)), int(bw.group(2)))
         if d > now.date():
             d = d.replace(year=now.year - 1)
-        lead.append(f"Surfrider volunteers' latest sample: {days_ago_text(d, now.date())} ({d:%b %-d}).")
-    return {"tone": tone, "headline": headline, "headline_html": headline_html, "lead": " ".join(lead), "risk_lead": risk_lead, "zones": tiles, "feed_ok": bool(stations),
+        facts.append({"label": "Surfrider samples", "text": f"{days_ago_text(d, now.date())} ({d:%b %-d})"})
+    if risk_lead:
+        facts.append({"label": "Overflow risk today", "text": risk_lead[len("Sewer-overflow risk today: "):].rstrip(".")})
+    return {"tone": tone, "headline": headline, "headline_html": headline_html, "lead": " ".join(lead), "risk_lead": risk_lead, "facts": facts, "zones": tiles, "feed_ok": bool(stations),
             "posted": posted, "discharging": discharging, "n_safe": n_safe, "n_graded": n_graded,
             "date": now.strftime("%a %b %-d"), "checked": now.strftime("%-I:%M %p")}
 
