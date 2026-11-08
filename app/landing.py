@@ -316,6 +316,13 @@ def hubs_with_facts(facts: dict | None, skip: tuple = ()) -> list[dict]:
     return rendered
 
 
+# The zone tiles' 2×2 grid, read like a mini map of the city (Chase, 2026-11-08): Baker & China top left (the northwest
+# corner), North Beaches top right (the north shore), Ocean Beach bottom left (the west coast), East Beaches bottom right
+# (the bay). Display only: board["zones"] keeps registry order, which the map, its labels, the layers and the lead's
+# "Discharging: …" list all read. The DOM follows this order, so a screen reader or Tab meets the tiles row by row.
+TILE_GRID = ("baker_china", "north", "ocean", "east")
+assert set(TILE_GRID) == set(ZONES) and len(TILE_GRID) == len(ZONES), "the tile grid must place every zone once"
+
 _SHORT = (("Ocean Beach at ", "OB "), ("Baker Beach at Lobos Creek", "Baker Lobos"), ("Baker Beach ", "Baker "), ("Crissy Field ", "Crissy "), (" Street Pier", " St Pier"))
 
 
@@ -437,6 +444,7 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
     if samples_fact:
         lead.append("Latest samples: " + samples_fact.replace("city", "city lab").replace("Surfrider", "Surfrider volunteers") + ".")
     return {"tone": tone, "headline": headline, "headline_html": headline_html, "lead": " ".join(lead), "risk_lead": risk_lead, "zones": tiles, "feed_ok": bool(stations),
+            "tiles": sorted(tiles, key=lambda t: TILE_GRID.index(t["key"])),   # the same tiles, in the grid's map order
             "posted": posted, "discharging": discharging, "n_safe": n_safe, "n_graded": n_graded,
             "date": now.strftime("%a %b %-d"), "checked": now.strftime("%-I:%M %p")}
 
