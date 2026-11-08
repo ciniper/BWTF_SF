@@ -18,6 +18,7 @@
   .board h1 em{font-style:normal}
   .board h1 em.posted,.board h1 em.warn{color:var(--posted)}.board h1 em.discharge{color:var(--discharge)}.board h1 em.good{color:var(--safe)}
   .board .lead{font-size:16px;color:var(--muted);margin:0 0 16px}
+  .board .lead:empty{display:none}   /* a clean day has no sentence; the element stays so Replay has somewhere to write its own */
   .zones{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .zone{border:1px solid var(--line);border-radius:var(--r);padding:12px 13px 11px;color:inherit;background:#fff;display:block;width:100%;text-align:left;cursor:pointer;font:inherit}
   .zone:hover{border-color:var(--sky)}
@@ -31,11 +32,23 @@
   .zone .st{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px}
   .zone.posted .st{color:var(--posted)}.zone.discharge .st{color:var(--discharge)}.zone.unknown .st{color:var(--faint)}
   .zone .nm{font-size:16px;font-weight:900;margin:5px 0 1px;line-height:1.2}
-  /* each tile's overflow risk and the forecast's sentence in the subhead are always shown (design/today-map-controls,
-     2026-11-06: the Risk view chip went; it had been the only control that changed the tiles and not the map). The
-     tiles keep the city's status and colours (Chase, 2026-10-18: "toggling risk will no longer replace all clear") */
-  .zone .risk{font-size:13px;color:var(--muted)}
-  .zone .risk:empty{display:none}   /* no forecast snapshot (a bare checkout, an outage): the line is simply absent */
+  /* The forecast is in beta (2026-11-08): the tiles show the city's word alone until the quiet "Sewer-overflow forecast"
+     line under them is opened, which shows the forecast's sentence and puts each zone's number on its tile. (The Risk
+     view chip went 2026-11-06, the only map control that changed the tiles and not the map; this disclosure sits in the
+     text column, beside the sentence it reveals.) The tiles keep the city's status and colours whatever it shows
+     (Chase, 2026-10-18: "toggling risk will no longer replace all clear"). */
+  .zone .risk{font-size:13px;color:var(--muted);display:none}
+  .board.forecast-open .zone .risk{display:block}
+  .board.forecast-open .zone .risk:empty{display:none}   /* no forecast snapshot (a bare checkout, an outage): the line is simply absent */
+  .forecast{margin:10px 0 0;font-size:13px;color:var(--faint)}
+  .forecast summary{display:inline-flex;align-items:center;gap:7px;cursor:pointer;list-style:none;color:var(--muted);font-weight:600}
+  .forecast summary::-webkit-details-marker{display:none}
+  .forecast summary::before{content:"▸";font-size:11px;color:var(--faint)}.forecast[open] summary::before{content:"▾"}
+  .forecast summary:hover{color:var(--ink)}
+  .forecast .tag{font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--brand-deep);background:var(--sand2);border-radius:999px;padding:1px 7px}   /* the frame's Beta banner's word, small */
+  .forecast p{margin:6px 0 0 18px;line-height:1.5;color:var(--muted)}
+  .forecast p .risk-lead{color:var(--ink)}
+  .forecast p a{color:var(--brand)}
   .zone .bwtfline{font-size:12px;font-weight:600;color:var(--muted);margin-top:4px}   /* Surfrider's results in the zone, while that layer is on */
   .zone .bwtfline:empty{display:none}
   .zone .bwtfline .over{color:var(--posted)}
@@ -111,7 +124,7 @@
   .of-pop b{display:block;font-size:14px;margin-bottom:2px}
   .of-pop .mut{color:var(--muted)}
   .board.replaying .eyebrow{color:var(--brand)}
-  .board.replaying .zone .risk,.board.replaying .zone .rainline,.board.replaying .zone .bwtfline,.board.replaying .zone .meta,.board.replaying .site small{display:none}   /* today's risk, rain, Surfrider results and sample dates are not that day's */
+  .board.replaying .zone .risk,.board.replaying .forecast,.board.replaying .zone .rainline,.board.replaying .zone .bwtfline,.board.replaying .zone .meta,.board.replaying .site small{display:none}   /* today's forecast, rain, Surfrider results and sample dates are not that day's */
   @media (max-width:760px){
     .layers .replay-ctl{flex-basis:100%}.layers .replay-ctl input{flex:1}
     .layers .ctl-group{flex-basis:100%}
@@ -135,7 +148,7 @@
       <div class="left">
         <div class="eyebrow">Beach status · {{ board.date }} · {% if board.feed_ok %}SFPUC map checked {{ board.checked }}{% else %}SFPUC map unreachable{% endif %}</div>
         <h1 id="today-h">{{ board.headline_html|safe }}</h1>
-        {% if board.lead or board.risk_lead %}<p class="lead">{{ board.lead }}{% if board.risk_lead %}{% if board.lead %} {% endif %}<span class="risk-lead">{{ board.risk_lead }}</span>{% endif %}</p>{% endif %}
+        <p class="lead">{{ board.lead }}</p>
         {% if board.zones %}
         <div class="zones" id="zones">
           {% for z in board.zones %}
@@ -149,6 +162,12 @@
           {% endfor %}
         </div>
         <p class="zones-hint">Tap a zone to see its stations{% if sites %} and Surfrider's sites there{% endif %}; tap one for its latest lab results.</p>
+        {% endif %}
+        {% if board.risk_lead %}
+        <details class="forecast" id="forecast">
+          <summary>Sewer-overflow forecast <span class="tag">Beta</span></summary>
+          <p><span class="risk-lead">{{ board.risk_lead }}</span> Each zone's number is on its tile while this is open. The <a href="/forecast">forecast</a> is a machine-learning estimate from rainfall, still being tested; it is not an official advisory — the status above is SFPUC's.</p>
+        </details>
         {% endif %}
       </div>
       <div class="map-col">
@@ -320,7 +339,17 @@ function initMap() {
 // "Map shows" (.map-ctl, on the map): every chip there changes the map and nothing else does. City stations and
 // Surfrider results are the two sources; Rain, Outfalls and Names go on top. Each fetched layer loads its data once,
 // draws a Leaflet group, and adds itself to the legend. Replay (above the board) recolours what is already there
-// (tiles + station markers) as a past day's map. Each zone tile always shows today's overflow risk (2026-11-06).
+// (tiles + station markers) as a past day's map.
+// The forecast disclosure (2026-11-08, the forecast is in beta): opening the quiet "Sewer-overflow forecast" line under
+// the tiles puts each zone's number on its tile (.board.forecast-open); closed on every visit, or open from ?risk=1.
+function initForecast() {
+  const d = document.getElementById("forecast"), board = document.querySelector(".board");
+  if (!d || !board) return;
+  const sync = () => board.classList.toggle("forecast-open", d.open);
+  d.addEventListener("toggle", sync);
+  if (new URLSearchParams(location.search).get("risk") === "1") d.open = true;
+  sync();
+}
 const LAYER = {rain: {}, outfalls: {}, bwtf: {}, labels: {}};
 let REPLAY = null, REPLAY_OFFSET = 0, ORIG = null;
 const $ = id => document.getElementById(id);
@@ -577,13 +606,13 @@ function initLayers() {
   }
   const slider = $("replay");
   slider.addEventListener("input", () => setReplay((slider.max | 0) - (slider.value | 0)));
-  // deep links: ?layers=rain,outfalls,labels,bwtf (or ?surfrider=1), ?city=0, ?replay=N; ?risk=1 from older links is simply today's board
+  // deep links: ?layers=rain,outfalls,labels,bwtf (or ?surfrider=1), ?city=0, ?replay=N; ?risk=1 opens the forecast disclosure (initForecast)
   const q = new URLSearchParams(location.search), want = new Set((q.get("layers") || "").split(",").filter(Boolean));
   if (q.get("surfrider") === "1") want.add("bwtf");        // Surfrider is off by default (Chase, 2026-09-30); ?layers=bwtf or ?surfrider=1 turns it on
   if (q.get("city") === "0") setCity(false);
   for (const key of want) { const btn = document.querySelector('.layer[data-layer="' + key + '"]'); if (btn && LAYER[key]) setLayer(key, true, btn); }
   if (q.get("replay")) { const rb = strip.querySelector('.layer[data-layer="replay"]'); enableReplay(rb).then(ok => { if (ok) setReplay(q.get("replay") | 0); }); }
 }
-window.addEventListener("DOMContentLoaded", initMap);
+window.addEventListener("DOMContentLoaded", () => { initForecast(); initMap(); });
 </script>
 {%- endmacro %}

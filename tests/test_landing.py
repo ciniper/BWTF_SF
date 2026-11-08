@@ -97,7 +97,7 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
     assert b["headline_html"] == '<em class="posted">Posted at 1 beach.</em> 3 others meet state standards.' and b["date"] == "Tue Sep 29" and b["checked"] == "6:12 AM" and b["feed_ok"]
     assert b["lead"] == ("Posted: Crissy East. SFPUC posts a beach when samples show bacteria above State standards, and sometimes as a precaution. "
                          "Latest samples: city lab 9/23 · Surfrider volunteers 9/24.")                       # facts only: no "no discharge", no forecast (2026-10-18)
-    assert b["risk_lead"] == "Sewer-overflow risk today: 4% at most (East Beaches), staying low through Sun Oct 04."   # after the city's sentence in the subhead
+    assert b["risk_lead"] == "Sewer-overflow risk today: 4% at most (East Beaches), staying low through Sun Oct 04."   # inside the board's collapsed forecast line
     z = {t["key"]: t for t in b["zones"]}
     assert [t["key"] for t in b["zones"]] == ["ocean", "baker_china", "north", "east"]           # registry order, every zone even when empty
     assert (z["north"]["status"], z["north"]["status_text"], z["north"]["meta"]) == ("posted", "1 beach posted", "Crissy East · sampled Sep 23")

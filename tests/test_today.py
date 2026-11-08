@@ -57,7 +57,7 @@ def test_today_page_is_the_board_plus_the_experimental_row_and_the_api_route_exi
     assert h.index('id="layers"') < h.index('class="board') and 'class="extras"' not in h                                            # the strip sits above the board; the old row is gone
     # The strip above the board holds Replay alone; what the map shows is chosen on the map, in one "Map shows" bar of chips
     # that each change the map and nothing else (design/today-map-controls, 2026-11-06: the Sources and Layers boxes and the
-    # phone fold went; Risk view went too, the tiles always show today's risk)
+    # phone fold went; Risk view went too — the risk now sits behind the board's collapsed forecast line, 2026-11-08)
     strip = h.split('id="layers"')[1].split('class="board')[0]
     assert '<span class="ctl-label" id="lbl-replay">Past days</span>' in strip and strip.count("<button") == 1 and "Experimental" not in strip and "Sources" not in strip
     assert 'id="lbl-sources"' not in h and 'id="layers-toggle"' not in h and 'id="layer-group"' not in h and 'id="tg-city"' not in h and 'id="tg-bwtf"' not in h and 'data-layer="risk"' not in h
@@ -70,7 +70,13 @@ def test_today_page_is_the_board_plus_the_experimental_row_and_the_api_route_exi
     assert '.map-stack{position:relative' in board and ".map-col{display:flex" in board and "position:relative" not in board.split(".map-col{")[1].split("}")[0]   # the legend floats over the map, not over the bar
     assert 'if (key === "city") { setCity(!CITY_ON, btn); return; }' in board and 'btn.setAttribute("aria-pressed", on ? "true" : "false")' in board
     assert 'el.className = "bwtfline"' in board and '.board.replaying .zone .bwtfline' in board and 'querySelectorAll(".zone .bwtfline").forEach(e => e.remove())' in board   # Surfrider's line on each tile, gone with the layer and on a replayed day
-    assert '.zone .risk{font-size:13px;color:var(--muted)}' in board and '.zone .risk:empty{display:none}' in board and 'class="risk">{% if z.risk is not none %}' in board   # the risk line always shows when there is a forecast
+    # The forecast is in beta (2026-11-08): the tiles show the city's word alone; a quiet collapsed "Sewer-overflow forecast · Beta"
+    # line under them holds the forecast's sentence and, open, puts each zone's number on its tile. Closed on every visit; ?risk=1 opens it.
+    # (tests/test_risk_levels.py renders it with a forecast and checks the markup; this bare checkout has no snapshot, so no disclosure)
+    assert '.zone .risk{font-size:13px;color:var(--muted);display:none}' in board and '.board.forecast-open .zone .risk{display:block}' in board and 'class="risk">{% if z.risk is not none %}' in board
+    assert '{% if board.risk_lead %}\n        <details class="forecast" id="forecast">' in board and '<details class="forecast"' not in h and 'class="risk-lead"' not in h   # no forecast: the line is simply absent
+    assert 'board.classList.toggle("forecast-open", d.open)' in board and 'get("risk") === "1") d.open = true' in board and '.board.replaying .forecast' in board   # the toggle, the deep link; hidden on a replayed day
+    assert board.index('class="zones-hint"') < board.index('<details class="forecast"') < board.index('class="map-col"')   # under the tiles, in the text column — not among the map's controls
     # the chosen zone: a brand ring outside its grade border, the others dimmed
     assert ".zone.focus{box-shadow:0 0 0 2px #fff,0 0 0 5px var(--brand)}" in board and ".zones.has-focus .zone:not(.focus){opacity:.5}" in board and 'classList.toggle("has-focus", !!ACTIVE)' in board
     # the legend: over the map on wider screens, under it on phones (it covered the north shore)
