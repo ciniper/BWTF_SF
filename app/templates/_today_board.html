@@ -130,6 +130,7 @@
     .zone{padding:11px}.zone .nm{font-size:15px}
     .map-wrap{min-height:260px}
     .map-legend{position:static;background:none;border-radius:0;padding:8px 2px 0;gap:6px 12px}   /* under the map: over it, it covered 4 of 20 stations on the north shore (6 with Surfrider on) */
+    .map-reset{top:12px;bottom:auto}   /* top right on a phone: the map pans no wider than the whole city, so East Beaches' zone view sits against the east edge and its south stations would land under a bottom-right button; up here nothing does, and the legend has moved out from under it (2026-11-08) */
   }
   @media (max-width:420px){.zones{gap:8px}}
 </style>
@@ -208,11 +209,10 @@ function zoneView(key) {
   const mid = MAP.project(b.getSouthWest(), zoom).add(MAP.project(b.getNorthEast(), zoom)).divideBy(2);
   return {center: MAP.unproject(mid.add(br.subtract(tl).divideBy(2)), zoom), zoom};
 }
-// Zoomed all the way out the map shows the whole city and no more, and it pans only within that area, widened where a zone
-// tile's view reaches past it (on a narrow phone, East Beaches would otherwise be pushed under the Whole-city button) (2026-11-07)
+// Zoomed all the way out the map shows the whole city and no more, and it pans only within that area: no sideways slack, even
+// where a zone tile's view would reach past it (Chase, 2026-11-08; the Whole-city button moved out of the way on a phone)
 function setCityLimits() {
   const v = cityView(); if (!v) return;
-  for (const key of Object.keys(MARKERS)) { const z = zoneView(key); v.area.extend(viewArea(z.center, z.zoom)); }
   MAP.setMinZoom(v.zoom);
   MAP.setMaxBounds(v.area);
 }
@@ -236,7 +236,7 @@ function filterSites() { const box = document.getElementById("zone-sites"); if (
 function initMap() {
   if (!window.L || !document.getElementById("today-map")) return;
   MAP = L.map("today-map", {scrollWheelZoom: false, zoomControl: true, attributionControl: false, zoomSnap: 0.25, maxBoundsViscosity: 1}).setView([37.765, -122.44], 11);
-  const credits = L.control({position: "bottomleft"});          // credits bottom left, collapsed to "© Esri"; the Whole-city button takes the bottom right
+  const credits = L.control({position: "bottomleft"});          // credits bottom left, collapsed to "© Esri"; the Whole-city button takes the bottom right (the top right on a phone)
   credits.onAdd = () => {
     const d = L.DomUtil.create("div", "credits");
     const attr = {{ BASEMAP.options.attribution|tojson }}, src = attr.split(" &mdash; ");   // "Tiles © <a>Esri</a> — Esri, HERE, …" → button "© Esri", drawer "Map tiles by Esri: Esri, HERE, …"
