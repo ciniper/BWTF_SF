@@ -70,12 +70,13 @@ def test_today_page_is_the_board_plus_the_experimental_row_and_the_api_route_exi
     assert '.map-stack{position:relative' in board and ".map-col{display:flex" in board and "position:relative" not in board.split(".map-col{")[1].split("}")[0]   # the legend floats over the map, not over the bar
     assert 'if (key === "city") { setCity(!CITY_ON, btn); return; }' in board and 'btn.setAttribute("aria-pressed", on ? "true" : "false")' in board
     assert 'el.className = "bwtfline"' in board and '.board.replaying .zone .bwtfline' in board and 'querySelectorAll(".zone .bwtfline").forEach(e => e.remove())' in board   # Surfrider's line on each tile, gone with the layer and on a replayed day
-    # The forecast is in beta (2026-11-08): the tiles show the city's word alone; a quiet collapsed "Sewer-overflow forecast · Beta"
-    # line under them holds the forecast's sentence and, open, puts each zone's number on its tile. Closed on every visit; ?risk=1 opens it.
-    # (tests/test_risk_levels.py renders it with a forecast and checks the markup; this bare checkout has no snapshot, so no disclosure)
-    assert '.zone .risk{font-size:13px;color:var(--muted);display:none}' in board and '.board.forecast-open .zone .risk{display:block}' in board and 'class="risk">{% if z.risk is not none %}' in board
+    # The forecast is in beta (2026-11-08): the tiles carry the city's word alone — no risk line — and the forecast is a quiet
+    # collapsed "Sewer-overflow forecast · Beta" line under them holding its sentence, each zone's number and what it is; opening
+    # it changes nothing above it. Closed on every visit; ?risk=1 opens it. (tests/test_risk_levels.py renders it with a forecast
+    # and checks the markup; this bare checkout has no snapshot, so no disclosure.)
+    assert 'class="risk"' not in board and ".zone .risk" not in board and "forecast-open" not in board and 'querySelector(".nm").after(el)' in board   # nothing on the tiles; the rain line anchors to the name
     assert '{% if board.risk_lead %}\n        <details class="forecast" id="forecast">' in board and '<details class="forecast"' not in h and 'class="risk-lead"' not in h   # no forecast: the line is simply absent
-    assert 'board.classList.toggle("forecast-open", d.open)' in board and 'get("risk") === "1") d.open = true' in board and '.board.replaying .forecast' in board   # the toggle, the deep link; hidden on a replayed day
+    assert 'get("risk") === "1") d.open = true' in board and '.board.replaying .forecast' in board   # the deep link; hidden on a replayed day
     assert board.index('class="zones-hint"') < board.index('<details class="forecast"') < board.index('class="map-col"')   # under the tiles, in the text column — not among the map's controls
     # the chosen zone: a brand ring outside its grade border, the others dimmed
     assert ".zone.focus{box-shadow:0 0 0 2px #fff,0 0 0 5px var(--brand)}" in board and ".zones.has-focus .zone:not(.focus){opacity:.5}" in board and 'classList.toggle("has-focus", !!ACTIVE)' in board
