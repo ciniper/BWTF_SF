@@ -48,6 +48,7 @@ import stages_spec as SP  # noqa: E402
 import train_v4 as T  # noqa: E402
 import truth as TR  # noqa: E402
 from shared import geography as G  # noqa: E402
+from close_enough import assert_close  # noqa: E402  (records vs a fresh fit: floats to a tolerance)
 
 AS_OF = pd.Timestamp("2026-08-17")     # the committed data's end: every count below is as of this day
 POST_DAYS, HOLDOUT_DAYS = 290, 854     # protocol §2: T1 2025-11-01 → AS_OF, T1-holdout 2023-07-01 → 2025-10-31
@@ -121,18 +122,21 @@ def _set_rows(s2set, frames, key):
 
 # ── the additive hooks (§8 P7a) ─────────────────────────────────────────────
 
-def _check_oof(oof: pd.DataFrame, want: dict, what) -> None:
-    """The pooled out-of-fold frame is the recorded season CV, exactly: its scores are the
-    recorded dict, one row per pre-holdout day, each tagged with the season that held it out."""
+def _check_oof(oof: pd.DataFrame, got: dict, what) -> None:
+    """The pooled out-of-fold frame is the season CV, exactly: its scores are the dict season_cv returned
+    with it (``got``, itself checked against the record), one row per pre-holdout day, each tagged with the
+    season that held it out."""
     assert list(oof.columns) == list(L.OOF_COLUMNS) and not oof["date"].duplicated().any(), what
     assert (T.wet_season(oof["date"]) == oof["season"]).all() and (oof["date"] < T.HOLDOUT_START).all(), what
-    assert L.scores(oof["y"], oof["p"]) == want, what
+    assert L.scores(oof["y"], oof["p"]) == got, what
 
 
 def test_leaderboard_season_cv_default_is_the_recorded_one_and_its_oof_reproduces_it():
-    """The default return equals what the pre-hook code wrote to leaderboard.json (pre-holdout rows,
-    unchanged by a later data refresh), so it stays byte-identical; with return_oof the pooled OOF
-    gives the same dict exactly. Every logit row the record's sources reach, and one GBM row."""
+    """The default return is what the pre-hook code wrote to leaderboard.json (pre-holdout rows,
+    unchanged by a later data refresh): every count exactly, every score to close_enough's tolerance
+    (another numeric runtime refits to the same answer only up to its last bits); with return_oof the
+    dict is the default's exactly and the pooled OOF gives it exactly. Every logit row the record's
+    sources reach, and one GBM row."""
     board = json.loads(L.OUT_JSON.read_text())
     frames = _ciwqs()
     checked = {"logit": 0, "gb": 0}
@@ -145,10 +149,12 @@ def test_leaderboard_season_cv_default_is_the_recorded_one_and_its_oof_reproduce
             if not board["stage1_archive_labels"][bd["name"]]:
                 sub = sub[sub[f"{bd['name']}_label_source"] != "poobot"]
             C_ = r["C"] if fam == "logit" else 0.3                         # make_model ignores C for gb
-            assert L.season_cv(sub, fam, C_) == want, (key, fam, r["source"], r["C"])   # the default, exactly
+            what = (key, fam, r["source"], r["C"])
+            default = L.season_cv(sub, fam, C_)
+            assert_close(default, want, what)                                       # the record
             got, oof = L.season_cv(sub, fam, C_, return_oof=True)
-            assert got == want, (key, fam, r["source"], r["C"])
-            _check_oof(oof, want, (key, fam, r["source"], r["C"]))
+            assert got == default, what                                             # the hook changes nothing
+            _check_oof(oof, got, what)
             checked[fam] += 1
     assert checked["logit"] >= 7 and checked["gb"] == 1, checked    # 7 logit rows read avg or SF Downtown
 
@@ -161,10 +167,11 @@ def test_shared_logit_season_cv_default_is_the_recorded_one_and_its_oof_reproduc
         for key, want in man["per_basin"].items():
             basin = "citywide" if key == "citywide" else G.get("geo_v1").basin(key).name
             sub = SL.basin_rows(basin, frames, {basin: man["rain_sources"][key]}, use_archive)
-            assert SL.season_cv(sub, L.SHARED_DESIGNS[dk], want["C"]) == want["season_cv_pre_holdout"], (name, key)
+            default = SL.season_cv(sub, L.SHARED_DESIGNS[dk], want["C"])
+            assert_close(default, want["season_cv_pre_holdout"], (name, key))      # the record
             got, oof = SL.season_cv(sub, L.SHARED_DESIGNS[dk], want["C"], return_oof=True)
-            assert got == want["season_cv_pre_holdout"], (name, key)
-            _check_oof(oof, want["season_cv_pre_holdout"], (name, key))
+            assert got == default, (name, key)                                      # the hook changes nothing
+            _check_oof(oof, got, (name, key))
 
 
 # ── fidelity: T1 and T1-holdout ─────────────────────────────────────────────
@@ -242,9 +249,13 @@ def _raises(fn, words, kinds=(ValueError, KeyError, TypeError, FileNotFoundError
     raise AssertionError(f"no raise for {words!r}")
 
 
+REFIT_ATOL = 1e-12      # a day's probability; another runtime's refit differs by ~2e-14 (2026-11-04), a wrong row by far more
+
+
 def test_the_training_record_is_the_sets_own():
     """Every refit starts from set_rows, so they must be the set's rows: a clone fit on all of them is
-    the pickled final exactly, and the record's counts are the set's. A flipped archive-label decision,
+    the pickled final (its probabilities within REFIT_ATOL: the pickle may come from another numeric
+    runtime, which refits to the same weights only up to its last bits), and the record's counts are the set's. A flipped archive-label decision,
     masked training inputs or a missing month all raise before any fold is fit."""
     import dataclasses
     from sklearn.base import clone
@@ -254,7 +265,8 @@ def test_the_training_record_is_the_sets_own():
         m, rows = s2set.models[key], S.set_rows(s2set, train, key)
         again = clone(m["model"]).fit(rows[m["features"]], rows["y"])
         Xr = rows[m["features"]]
-        assert np.abs(again.predict_proba(Xr)[:, 1] - m["model"].predict_proba(Xr)[:, 1]).max() == 0.0, key
+        gap = np.abs(again.predict_proba(Xr)[:, 1] - m["model"].predict_proba(Xr)[:, 1]).max()
+        assert gap <= REFIT_ATOL, (key, gap)
     flipped = dataclasses.replace(s2set, use_archive={**s2set.use_archive, "Westside": True})
     _raises(lambda: S.check_training_record(flipped, train), "the set recorded")
     own = {"record": s2set.train_record, "wind": True}                   # the set's own record, as training_frames builds it
