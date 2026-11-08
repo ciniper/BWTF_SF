@@ -60,15 +60,12 @@
   .map-legend span[hidden]{display:none}   /* the Surfrider entry stays out of the legend until its layer is switched on */
   .st-label{background:rgba(255,255,255,.94);border:1px solid #b9c6cd;border-radius:6px;padding:1px 6px;font:700 11px Roboto,sans-serif;color:var(--ink);white-space:nowrap;box-shadow:none}
   .st-label::before{display:none}
-  .st-label.bad{border-color:var(--posted);color:var(--posted)}
-  /* the Labels layer (2026-10-21): zone names zoomed out, station names zoomed in; a label that would overlap another is hidden */
+  /* the map's labels (refreshLabels): a posted or discharging beach's, always; with the Labels layer, zone names zoomed out and
+     station names zoomed in. Each is placed in map pixels at the first spot round its dot that is clear (2026-11-08). */
   .map-name{width:0;height:0;pointer-events:none}
-  .map-name span{position:absolute;white-space:nowrap;font:600 11px/1.3 Roboto,sans-serif;color:var(--ink);background:rgba(255,255,255,.86);border-radius:4px;padding:0 4px}
-  .map-name.st span{left:9px;top:0;transform:translateY(-50%)} .map-name.st.lft span{left:auto;right:9px}
+  .map-name span{position:absolute;left:0;top:0;white-space:nowrap;font:600 11px/1.3 Roboto,sans-serif;color:var(--ink);background:rgba(255,255,255,.86);border-radius:4px;padding:0 4px}
+  .map-name.bad span{background:rgba(255,255,255,.94);border:1px solid var(--posted);border-radius:6px;padding:1px 6px;font-weight:700;color:var(--posted)}
   .map-name.zn span{font-weight:800;font-size:11px;letter-spacing:.07em;text-transform:uppercase;background:rgba(255,255,255,.78);padding:1px 6px}
-  .map-name.zn.left span{right:12px;top:0;transform:translateY(-50%)} .map-name.zn.right span{left:12px;top:0;transform:translateY(-50%)}
-  .map-name.zn.top span{left:0;bottom:12px;transform:translateX(-50%)}
-  .map-name.off{visibility:hidden}
   /* Surfrider's latest result per site: a diamond in Surfrider blue, filled with the result's grade */
   .bwtf-pin{background:none;border:0}
   #today-map .leaflet-pane > svg{pointer-events:none}   /* one pane per status rank (initMap): a pane's empty drawing area must not swallow taps meant for the dots below */
@@ -291,15 +288,15 @@ function initMap() {
   MAP.createPane("of").style.zIndex = 450;   // the outfalls sit above every station and Surfrider site (Chase, 2026-10-18)
   MAP.createPane("lbl").style.zIndex = 445;  // the Labels layer: over the stations, under the outfalls; never takes a tap
   MAP.getPane("lbl").style.pointerEvents = "none";
-  MAP.on("zoomend moveend", refreshLabels);
+  MAP.on("zoomend moveend resize", refreshLabels);
+  MAP.on("tooltipopen", fitTooltip);
   const RANK = {unknown: 0, caution: 1, safe: 1, posted: 2, discharge: 3};
   const ordered = ZONES.flatMap(z => z.stations.map(s => [z, s])).sort((a, b) => (RANK[a[1].status] || 0) - (RANK[b[1].status] || 0));
   for (const [z, s] of ordered) {
     const bad = s.status === "posted" || s.status === "discharge";
     const m = L.circleMarker([s.lat, s.lon], {pane: "st" + (RANK[s.status] || 0), radius: bad ? 9 : 7, color: "#fff", weight: 2, fillColor: COL[s.status] || COL.unknown, fillOpacity: .95, bubblingMouseEvents: false}).addTo(MAP);
     m.__s = s; m.__z = z; ALL_ORDERED.push(m);   // the layers recolour markers by zone risk or by a replayed day; focusZone re-adds them in this order
-    m.bindTooltip(bad ? s.name + " · " + (s.status === "discharge" ? "discharge" : "posted") : s.full_name + " · " + s.status_text + (s.sampled ? " · sampled " + s.sampled : ""),
-                  {permanent: bad, direction: "auto", offset: [9, 0], className: "st-label" + (bad ? " bad" : "")});   // auto: a bayside label flips left so it stays on the map
+    m.bindTooltip(s.full_name + " · " + s.status_text + (s.sampled ? " · sampled " + s.sampled : ""), {direction: "right", offset: [9, 0], className: "st-label"});   // on hover; a posted beach's label on the map is refreshLabels'
     m.on("click", () => { if (window.SamplePopover) SamplePopover.open({station: s.source, name: s.full_name, feedDate: s.sampled}); });
     (MARKERS[z.key] = MARKERS[z.key] || []).push(m);
   }
@@ -322,51 +319,127 @@ const fmtIn = v => v == null ? "—" : Number(v).toFixed(2) + '"';
 const fmtDay = iso => new Date(iso + "T12:00:00").toLocaleDateString(undefined, {weekday: "short", month: "short", day: "numeric"});
 const shortSpan = w => !w ? "" : new Date(w[0] + "T12:00:00").toLocaleDateString(undefined, {month: "short", day: "numeric"}) + "–" + new Date(w[1] + "T12:00:00").toLocaleDateString(undefined, {day: "numeric"});
 const RANK_ST = {unknown: 0, safe: 1, caution: 1, posted: 2, discharge: 3};
-// today's "posted" / "discharge" label on a dot is permanent; a replayed day where that beach was fine hides it (and Today shows it again)
-function labelFor(m, st) {
-  const t = m.getTooltip && m.getTooltip(), el = t && t.options.permanent && t.getElement(); if (!el) return;
-  const show = st === "posted" || st === "discharge"; el.style.display = show ? "" : "none";
-  if (show) t.update();   // placed while hidden it measured 0 px wide and sat on the wrong side of its dot
-}
+// a dot's "posted" / "discharge" label follows a replayed day's status (and Today's again); refreshLabels draws it
+function labelFor(m, st) { m.__st = st; }
 // a city dot moves to its rank's pane when a replayed day changes its status (and back when Today returns)
 function placeRank(m, st) { const p = "st" + (RANK_ST[st] || 0); if (m.options.pane === p) return; const on = MAP.hasLayer(m); if (on) MAP.removeLayer(m); m.options.pane = p; if (on) m.addTo(MAP); }
 
-// ── Labels (Chase, 2026-10-21; off by default): the whole city names its four zones, seaward of their beaches; zoomed in,
-// or with a zone chosen, each station shown gets its short name, and a name that would overlap another is hidden. A beach's
-// "posted" / "discharge" label stands in for its plain name while it shows.
-const LABEL_ZOOM = 13, ZONE_SIDE = {ocean: "left", baker_china: "left", north: "top", east: "right"};
+// ── The map's labels. A posted or discharging beach is always labelled; the Labels layer (Chase, 2026-10-21; off by default)
+// adds the four zone names on the whole-city map, seaward of their beaches, and zoomed in, or with a zone chosen, each
+// station's short name. One placer draws them all (Chase, 2026-11-08: the labels were "a bit messy"): each label tries spots
+// round its dot in turn, beside it, at its corners, above and below, and takes the first that is on the map and clear of the
+// labels already placed, every dot, and the controls over the map (zoom, Whole city, the credit, the legend). Discharges go
+// first, then posted beaches, then names; dots that touch share one label. Zoomed out, a zone with three or more posted
+// beaches, or whose labels don't all fit, gets one label for the lot ("Ocean Beach · 6 posted"), which names the zone too;
+// a label with no room anywhere, even in its shorter wording, is left to its dot's hover tooltip.
+const LABEL_ZOOM = 13, ZONE_SUMMARY_AT = 3, ZONE_SIDE = {ocean: "left", baker_china: "left", north: "top", east: "right"};
+const LABEL_EDGE = 4, LABEL_GAP = 4, ZONE_GAP = 6;   // px: from the map's edge; from a dot to its label; from a zone's dots to its name
 let LABELS = null;
+const stAt = m => m.__st || m.__s.status;   // a replayed day's status, else today's
+const isBad = st => st === "posted" || st === "discharge";
+const pxBox = (l, t, w, h) => ({l, t, r: l + w, b: t + h});
+// the controls drawn over the map, in map pixels (the legend only where it sits over the map, on a wide screen)
+function mapControls() {
+  const c = MAP.getContainer(), box = c.getBoundingClientRect(), lg = document.getElementById("map-legend");
+  return [c.querySelector(".leaflet-control-zoom"), document.getElementById("map-reset"), c.querySelector(".credits"), lg && getComputedStyle(lg).position === "absolute" ? lg : null]
+    .filter(el => el && !el.hidden && el.offsetParent).map(el => { const r = el.getBoundingClientRect(); return {l: r.left - box.left, t: r.top - box.top, r: r.right - box.left, b: r.bottom - box.top}; });
+}
+// spots for a label w×h round a dot of radius r at p: right, left, the four corners, above, below
+function besideDot(p, r) {
+  return (w, h) => { const g = r + LABEL_GAP, d = Math.ceil(r) + 2;   // a corner spot sits just off the dot's box
+    return [[g, -h / 2], [-g - w, -h / 2], [d, -d - h], [d, d], [-d - w, -d - h], [-d - w, d], [-w / 2, -g - h], [-w / 2, g]].map(([x, y]) => pxBox(p.x + x, p.y + y, w, h)); };
+}
+// spots round a zone's dots (bb, their box) on the given sides, each centred on that side or flush with either end of it
+function besideZone(bb, sides) {
+  return (w, h) => { const cx = (bb.l + bb.r - w) / 2, cy = (bb.t + bb.b - h) / 2, lx = bb.l - ZONE_GAP - w, rx = bb.r + ZONE_GAP, ty = bb.t - ZONE_GAP - h, by = bb.b + ZONE_GAP;
+    const at = {left: [[lx, cy], [lx, bb.t], [lx, bb.b - h]], right: [[rx, cy], [rx, bb.t], [rx, bb.b - h]], top: [[cx, ty], [bb.l, ty], [bb.r - w, ty]], bottom: [[cx, by], [bb.l, by], [bb.r - w, by]]};
+    return sides.flatMap(k => at[k]).map(([x, y]) => pxBox(x, y, w, h)); };
+}
 function refreshLabels() {
   if (!MAP) return;
   if (LABELS) LABELS.clearLayers(); else LABELS = L.layerGroup().addTo(MAP);
-  if (!LAYER.labels.on) return;
-  const shown = ALL_ORDERED.filter(m => MAP.hasLayer(m)), add = (ll, cls, text) => L.marker(ll, {pane: "lbl", interactive: false, keyboard: false,
-    icon: L.divIcon({className: "map-name " + cls, html: "<span>" + esc(text) + "</span>", iconSize: [0, 0]})}).addTo(LABELS);
-  if (!ACTIVE && MAP.getZoom() < LABEL_ZOOM) {
-    for (const z of ZONES) {
-      const ms = shown.filter(m => m.__z.key === z.key); if (!ms.length) continue;
-      const lat = ms.reduce((a, m) => a + m.getLatLng().lat, 0) / ms.length, lon = ms.reduce((a, m) => a + m.getLatLng().lng, 0) / ms.length;
-      const side = ZONE_SIDE[z.key] || "right", el = add([lat, lon], "zn " + side, z.label).getElement();
-      const box = MAP.getContainer().getBoundingClientRect(), r = el.firstChild.getBoundingClientRect();
-      if (r.left < box.left + 4 || r.right > box.right - 4) {   // a narrow phone map: the label goes over the land instead of off the edge
-        const flip = {left: "right", right: "left", top: "top"}[side]; el.classList.replace(side, flip);
-        const q = el.firstChild.getBoundingClientRect();
-        if (q.left < box.left + 4) el.firstChild.style.marginLeft = (box.left + 4 - q.left) + "px";
-        if (q.right > box.right - 4) el.firstChild.style.marginLeft = (box.right - 4 - q.right) + "px";
-      }
+  const shown = ALL_ORDERED.filter(m => MAP.hasLayer(m)), size = MAP.getSize(), zoomedOut = !ACTIVE && MAP.getZoom() < LABEL_ZOOM;
+  const at = m => MAP.latLngToContainerPoint(m.getLatLng()), rad = m => m.options.radius + m.options.weight / 2;
+  const box = MAP.getContainer().getBoundingClientRect(), dots = shown.map(m => { const p = at(m), r = rad(m) + 1; return pxBox(p.x - r, p.y - r, 2 * r, 2 * r); });
+  if (LAYER.bwtf.on && LAYER.bwtf.group) LAYER.bwtf.group.eachLayer(l => { const el = l.getElement && l.getElement(); if (!el) return;   // Surfrider's diamonds too
+    const r = el.getBoundingClientRect(); dots.push({l: r.left - box.left, t: r.top - box.top, r: r.right - box.left, b: r.bottom - box.top}); });
+  const blocked = mapControls().concat(dots);
+  let taken;
+  const free = q => q.l >= LABEL_EDGE && q.t >= LABEL_EDGE && q.r <= size.x - LABEL_EDGE && q.b <= size.y - LABEL_EDGE &&
+    !taken.some(o => q.l < o.r + 2 && o.l < q.r + 2 && q.t < o.b + 1 && o.t < q.b + 1);
+  // draw a label anchored at map pixel p and keep it at the first free spot of its tries, each a wording and its spots; with none it goes
+  const put = (p, cls, tries) => {
+    const mk = L.marker(MAP.containerPointToLatLng(p), {pane: "lbl", interactive: false, keyboard: false,
+      icon: L.divIcon({className: "map-name " + cls, html: "<span></span>", iconSize: [0, 0]})}).addTo(LABELS);
+    const span = mk.getElement().firstChild;
+    for (const [html, spots] of tries) {
+      if (span.innerHTML !== html) span.innerHTML = html;
+      const q = spots(span.offsetWidth, span.offsetHeight).find(free);
+      if (q) { span.style.left = (q.l - p.x) + "px"; span.style.top = (q.t - p.y) + "px"; taken.push(q); return true; }
     }
+    LABELS.removeLayer(mk); return false;
+  };
+  // dots that touch and share a status share a label, a name a line (Aquatic Park and Hyde St Pier, the three at Candlestick)
+  const clusters = ms => { const out = [];
+    for (const m of ms) { const p = at(m), c = out.find(c => c.st === stAt(m) && c.ms.some(o => at(o).distanceTo(p) < rad(o) + rad(m) + 2)); if (c) c.ms.push(m); else out.push({st: stAt(m), ms: [m]}); }
+    return out.map(c => { const p = c.ms.map(at).reduce((a, q) => a.add(q), L.point(0, 0)).divideBy(c.ms.length);
+      return {...c, p, r: Math.max(...c.ms.map(m => at(m).distanceTo(p) + rad(m))), html: c.ms.map(m => esc(m.__s.name)).join(",<br>") + (isBad(c.st) ? " · " + c.st : "")}; }); };
+  const zoneBox = ms => { const bs = ms.map(m => { const p = at(m), r = rad(m); return pxBox(p.x - r, p.y - r, 2 * r, 2 * r); });   // the dots' edges
+    return {l: Math.min(...bs.map(q => q.l)), t: Math.min(...bs.map(q => q.t)), r: Math.max(...bs.map(q => q.r)), b: Math.max(...bs.map(q => q.b))}; };
+  // a zone's label: each wording on the zone's own side, then each on the other sides, then the last resort anywhere round it
+  const putZone = (z, ms, cls, words, last) => {
+    const bb = zoneBox(ms), own = ZONE_SIDE[z.key] || "right", rest = ["left", "right", "top", "bottom"].filter(k => k !== own);
+    const tries = [[own], rest].flatMap(sides => words.map(w => [w, besideZone(bb, sides)]));
+    if (last) tries.push([last, besideZone(bb, [own, ...rest])]);
+    return put(L.point((bb.l + bb.r) / 2, (bb.t + bb.b) / 2), cls, tries);
+  };
+  const short = z => z.label.replace(/ Beach(es)?$/, "");   // "Baker & China", for a phone's map
+  const bad = shown.filter(m => isBad(stAt(m))).sort((a, b) => (stAt(b) === "discharge") - (stAt(a) === "discharge"));
+  // posted and discharging beaches. Zoomed out, a zone with several, or one whose labels don't all fit, gets one label for the lot;
+  // a zone that didn't fit is placed again that way, until none is left over.
+  const grouped = new Set(zoomedOut ? ZONES.filter(z => bad.filter(m => m.__z.key === z.key).length >= ZONE_SUMMARY_AT).map(z => z.key) : []);
+  for (;;) {
+    LABELS.clearLayers(); taken = blocked.slice();
+    const tally = z => { const ms = bad.filter(m => m.__z.key === z.key); return [ms.filter(m => stAt(m) === "discharge").length, ms.length]; };
+    for (const z of ZONES.slice().sort((a, b) => tally(b)[0] - tally(a)[0] || tally(b)[1] - tally(a)[1])) {   // the most discharges, then the most posted, picks its spot first
+      const ms = bad.filter(m => m.__z.key === z.key); if (!grouped.has(z.key) || !ms.length) continue;
+      const n = st => ms.filter(m => stAt(m) === st).length, count = ["discharge", "posted"].filter(n).map(st => n(st) + " " + st).join(" · ");
+      putZone(z, ms, "bad", [esc(z.label) + " · " + count, esc(short(z)) + " · " + count], count); }
+    const left = new Set();
+    for (const c of clusters(bad.filter(m => !grouped.has(m.__z.key)))) if (!put(c.p, "bad", [[c.html, besideDot(c.p, c.r)]]) && zoomedOut) left.add(c.ms[0].__z.key);
+    if (!left.size) break;
+    left.forEach(k => grouped.add(k));
+  }
+  if (!LAYER.labels.on) return;
+  if (zoomedOut) {   // the zone names, but for a zone its posted label already names
+    for (const z of ZONES) { const ms = shown.filter(m => m.__z.key === z.key); if (ms.length && !grouped.has(z.key)) putZone(z, ms, "zn", [esc(z.label), esc(short(z))]); }
     return;
   }
-  const taken = [];
-  for (const m of shown.slice().reverse()) {   // the worst status first, so a posted beach keeps its name over a clear neighbour
-    const t = m.getTooltip && m.getTooltip(), bad = t && t.options.permanent && t.getElement() && t.getElement().style.display !== "none";
-    if (bad) { taken.push(t.getElement().getBoundingClientRect()); continue; }
-    const el = add(m.getLatLng(), "st", m.__s.name).getElement();
-    const hits = r => taken.some(o => !(r.right + 2 < o.left || r.left - 2 > o.right || r.bottom + 1 < o.top || r.top - 1 > o.bottom));
-    let r = el.firstChild.getBoundingClientRect();
-    if (hits(r)) { el.classList.add("lft"); r = el.firstChild.getBoundingClientRect(); }   // right of the dot, else left of it, else hidden
-    if (hits(r)) el.classList.add("off"); else taken.push(r);
+  for (const c of clusters(shown.slice().reverse().filter(m => !isBad(stAt(m))))) put(c.p, "st", [[c.html, besideDot(c.p, c.r)]]);   // a name that fits nowhere is left out
+}
+// a hover tooltip (a station, a Surfrider site, an outfall) opens on whichever side keeps it on the map and off the controls;
+// where no side has room for it on one line (a phone's map is narrower than two of them) it wraps to TIP_WRAP_PX and tries again
+const TIP_WRAP_PX = 150;
+function fitTooltip(e) {
+  const t = e.tooltip; if (t.options.permanent) return;
+  const el = t.getElement(), box = MAP.getContainer().getBoundingClientRect(), ctl = mapControls(), gap = t.__gap = t.__gap || Math.abs(t.options.offset[0]) || 9;
+  const overlap = (a, b) => Math.max(0, Math.min(a.r, b.r) - Math.max(a.l, b.l)) * Math.max(0, Math.min(a.b, b.b) - Math.max(a.t, b.t));
+  const hidden = () => { const r = el.getBoundingClientRect(), q = {l: r.left - box.left, t: r.top - box.top, r: r.right - box.left, b: r.bottom - box.top};   // px² off the map or under a control
+    return (q.r - q.l) * (q.b - q.t) - overlap(q, {l: LABEL_EDGE, t: LABEL_EDGE, r: box.width - LABEL_EDGE, b: box.height - LABEL_EDGE}) + ctl.reduce((a, o) => a + overlap(q, o), 0); };
+  const sides = [["right", [gap, 0]], ["left", [-gap, 0]], ["top", [0, -gap]], ["bottom", [0, gap]]];
+  let best = null;
+  el.style.whiteSpace = el.style.width = "";
+  for (const wrap of [false, true]) {
+    if (wrap) { el.style.whiteSpace = "normal"; el.style.width = TIP_WRAP_PX + "px"; }
+    for (const [dir, off] of sides) {
+      t.options.direction = dir; t.options.offset = off; t.update();
+      const h = hidden(); if (!h) return;
+      if (!best || h < best.h) best = {h, dir, off, wrap};
+    }
   }
+  // no side is clear (a point under the legend, or at the edge of the view): the side that hides least of it
+  if (!best.wrap) el.style.whiteSpace = el.style.width = "";
+  t.options.direction = best.dir; t.options.offset = best.off; t.update();
 }
 
 function renderLegend() {
@@ -387,6 +460,7 @@ function renderLegend() {
   if (LAYER.rain.on) h += '<span><i class="ring"></i>rain, 3 days</span>';
   if (LAYER.outfalls.on) h += '<span><i class="of"></i>outfall</span>';
   lg.innerHTML = h;
+  refreshLabels();   // the legend's new size, and a new layer's points, move where labels fit
 }
 function tileParts(key) { const b = document.querySelector('.zone[data-zone="' + key + '"]'); return b ? {b, st: b.querySelector(".st"), dots: [...b.querySelectorAll(".stations .status-dot")]} : null; }
 function snapshotBoard() {

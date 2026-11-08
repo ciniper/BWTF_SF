@@ -144,7 +144,8 @@ def test_layer_routes_exist_and_answer_json():
 
 def test_labels_layer_is_a_chip_off_by_default_drawn_from_the_stations():
     """Chase, 2026-10-21: a Labels layer, default off — zone names on the whole-city map, station names zoomed in or
-    with a zone chosen, an overlapping name tried on the dot's other side and then hidden; posted labels win."""
+    with a zone chosen; posted labels win. Since 2026-11-08 ("a bit messy") one placer draws every label, posted ones
+    included: each takes the first spot round its dot clear of other labels, the dots and the map's controls, or none."""
     from app.wsgi import app
     with app.test_client() as c:
         h = c.get("/").data.decode()
@@ -154,8 +155,10 @@ def test_labels_layer_is_a_chip_off_by_default_drawn_from_the_stations():
     assert group.index('data-layer="outfalls"') < group.index('data-layer="labels"') < group.index('data-layer="risk"')
     board = (ROOT / "app/templates/_today_board.html").read_text()
     assert "labels: {}" in board and 'if (key === "labels")' in board and "LABEL_ZOOM = 13" in board        # no fetch; ?layers=labels deep-links like the rest
-    assert 'MAP.createPane("lbl").style.zIndex = 445' in board and 'MAP.on("zoomend moveend", refreshLabels)' in board
-    assert board.count("refreshLabels()") >= 4 and 'classList.add("lft")' in board and 'classList.add("off")' in board
+    assert 'MAP.createPane("lbl").style.zIndex = 445' in board and 'MAP.on("zoomend moveend resize", refreshLabels)' in board
+    assert board.count("refreshLabels()") >= 4 and "function besideDot(" in board and "function besideZone(" in board
+    assert "permanent: bad" not in board and "function mapControls()" in board                                # posted labels are placed too, not left to Leaflet
+    assert 'MAP.on("tooltipopen", fitTooltip)' in board                                                     # a hover tooltip opens on the side that fits
 
 
 if __name__ == "__main__":
