@@ -183,13 +183,15 @@ const COL = {safe: "#237059", caution: "#c99a12", posted: "#d4763a", discharge: 
 let MAP = null, MARKERS = {}, ALL_ORDERED = [], ACTIVE = null;
 function allMarkers() { return Object.values(MARKERS).flat(); }
 // The whole-city view: every station, and every point a loaded layer adds (outfalls, Surfrider sites, rain gauges), with a
-// margin, at a whole zoom step (the zone zooms take quarter steps). It depends on the map's size, so it is worked out afresh.
+// margin, in quarter zoom steps like the zone views (rounding down to a whole step left a desktop map at 11 when the city
+// fits at 11.75), and clear of the legend where it sits over the map (Chase, 2026-11-08). It depends on the map's size, so it
+// is worked out afresh.
 function cityView() {
   const pts = allMarkers().map(m => m.getLatLng());
   for (const k of ["outfalls", "bwtf", "rain"]) { const g = typeof LAYER !== "undefined" && LAYER[k] && LAYER[k].on && LAYER[k].group; if (g) g.eachLayer(l => { if (l.getLatLng) pts.push(l.getLatLng()); }); }
   if (!pts.length) return null;
-  const b = L.latLngBounds(pts).pad(0.12), center = b.getCenter(), zoom = Math.floor(MAP.getBoundsZoom(b));
-  return {center, zoom, area: viewArea(center, zoom)};
+  const v = frame(L.latLngBounds(pts).pad(0.12), 0, Infinity);
+  return {...v, area: viewArea(v.center, v.zoom)};
 }
 function viewArea(center, zoom) {   // what the map shows at a view, edge to edge
   const px = MAP.getPixelBounds(center, zoom);
@@ -201,10 +203,13 @@ function viewArea(center, zoom) {   // what the map shows at a view, edge to edg
 // so the pan limit can take these views in too.)
 const NARROW_MAP_PX = 480;   // a map narrower than this (a phone's) gets the smaller margin
 function zoneView(key) {
-  const b = L.latLngBounds(MARKERS[key].map(m => m.getLatLng()));
-  const pad = MAP.getSize().x < NARROW_MAP_PX ? 28 : 44, lg = document.getElementById("map-legend");
+  return frame(L.latLngBounds(MARKERS[key].map(m => m.getLatLng())), MAP.getSize().x < NARROW_MAP_PX ? 28 : 44, 15);
+}
+// Fits bounds with a margin of `pad` pixels, the top one below the legend when it sits over the map, no closer than maxZoom
+function frame(b, pad, maxZoom) {
+  const lg = document.getElementById("map-legend");
   const top = lg && getComputedStyle(lg).position === "absolute" ? Math.max(pad, lg.offsetTop + lg.offsetHeight + 16) : pad;
-  const tl = L.point(pad, top), br = L.point(pad, pad), zoom = Math.min(15, MAP.getBoundsZoom(b, false, tl.add(br)));
+  const tl = L.point(pad, top), br = L.point(pad, pad), zoom = Math.min(maxZoom, MAP.getBoundsZoom(b, false, tl.add(br)));   // snapped down to zoomSnap's quarter steps
   const mid = MAP.project(b.getSouthWest(), zoom).add(MAP.project(b.getNorthEast(), zoom)).divideBy(2);
   return {center: MAP.unproject(mid.add(br.subtract(tl).divideBy(2)), zoom), zoom};
 }
