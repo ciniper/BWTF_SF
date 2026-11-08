@@ -47,12 +47,12 @@
   .map-col .map-wrap{flex:1}
   .map-wrap{position:relative;isolation:isolate;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;min-height:400px;background:var(--sand2)}   /* isolate: Leaflet's z-indexes stay inside the map */
   #today-map{position:absolute;inset:0}
-  .map-reset{position:absolute;bottom:12px;right:12px;z-index:500;background:#fff;border:2px solid var(--line);border-radius:999px;padding:6px 12px;font:700 12.5px Roboto,sans-serif;color:var(--brand);cursor:pointer}
+  .map-reset{position:absolute;bottom:12px;left:12px;z-index:500;background:#fff;border:2px solid var(--line);border-radius:999px;padding:6px 12px;font:700 12.5px Roboto,sans-serif;color:var(--brand);cursor:pointer}
   .map-reset:hover{border-color:var(--brand)}
   /* Map credits: collapsed to "© Esri", the full line on hover, focus or tap (Esri asks for the credit, not the space) */
-  .credits{background:rgba(255,255,255,.92);border-radius:0 8px 0 0;font:11px Roboto,sans-serif;color:var(--muted);padding:3px 7px;display:flex;align-items:center;gap:6px;max-width:75%;margin:0!important}
+  .credits{background:rgba(255,255,255,.92);border-radius:8px 0 0 0;flex-direction:row-reverse;font:11px Roboto,sans-serif;color:var(--muted);padding:3px 7px;display:flex;align-items:center;gap:6px;max-width:75%;margin:0!important}
   .credits-btn{border:0;background:none;font:inherit;color:var(--muted);cursor:pointer;padding:0;white-space:nowrap}
-  .credits-btn::after{content:" ▸"}.credits.open .credits-btn::after,.credits:hover .credits-btn::after{content:" ▾"}
+  .credits-btn::before{content:"◂ "}.credits.open .credits-btn::before,.credits:hover .credits-btn::before{content:"▾ "}
   .credits-full{display:none;line-height:1.3}.credits-full a{color:var(--brand)}
   .credits.open .credits-full,.credits:hover .credits-full,.credits:focus-within .credits-full{display:inline}
   .map-legend{position:absolute;left:56px;top:12px;z-index:500;display:flex;flex-wrap:wrap;gap:10px;background:rgba(255,255,255,.92);border-radius:999px;padding:5px 10px;font-size:11.5px;color:var(--muted)}
@@ -130,7 +130,6 @@
     .zone{padding:11px}.zone .nm{font-size:15px}
     .map-wrap{min-height:260px}
     .map-legend{position:static;background:none;border-radius:0;padding:8px 2px 0;gap:6px 12px}   /* under the map: over it, it covered 4 of 20 stations on the north shore (6 with Surfrider on) */
-    .map-reset{top:12px;bottom:auto}   /* top right on a phone: the map pans no wider than the whole city, so East Beaches' zone view sits against the east edge and its south stations would land under a bottom-right button; up here nothing does, and the legend has moved out from under it (2026-11-08) */
   }
   @media (max-width:420px){.zones{gap:8px}}
 </style>
@@ -209,12 +208,27 @@ function zoneView(key) {
   const mid = MAP.project(b.getSouthWest(), zoom).add(MAP.project(b.getNorthEast(), zoom)).divideBy(2);
   return {center: MAP.unproject(mid.add(br.subtract(tl).divideBy(2)), zoom), zoom};
 }
-// Zoomed all the way out the map shows the whole city and no more, and it pans only within that area: no sideways slack, even
-// where a zone tile's view would reach past it (Chase, 2026-11-08; the Whole-city button moved out of the way on a phone)
+// Zoomed all the way out the map shows the whole city and no more, and does not move: a phone scrolling the page doesn't
+// nudge it sideways. Zoomed in, it pans a little wider, as far as any zone tile's view reaches (East Beaches' runs past the
+// city's east edge), so a zone is framed on its stations rather than shoved against that edge (Chase, 2026-11-08).
+let LIMITS = null;   // {zoom: the whole-city zoom, city: its area, wide: that area and every zone's view}
 function setCityLimits() {
   const v = cityView(); if (!v) return;
+  const wide = L.latLngBounds(v.area.getSouthWest(), v.area.getNorthEast());
+  for (const key of Object.keys(MARKERS)) { const z = zoneView(key); wide.extend(viewArea(z.center, z.zoom)); }
+  LIMITS = {zoom: v.zoom, city: v.area, wide};
   MAP.setMinZoom(v.zoom);
-  MAP.setMaxBounds(v.area);
+  MAP.setMaxBounds(limitsAt(MAP.getZoom()));
+}
+function limitsAt(zoom) { return zoom > LIMITS.zoom ? LIMITS.wide : LIMITS.city; }
+// Leaflet clamps a new view to maxBounds as it is set, so the bounds have to match the zoom the map is going to, not the one
+// it is leaving: zooming out to the whole city lands inside it in one move. (A pinch doesn't pass through setView; it is
+// caught on zoomend, and Leaflet's own moveend check then eases it back inside.)
+function limitTo(zoom) { if (LIMITS) MAP.options.maxBounds = limitsAt(zoom); }
+function followZoomLimits() {
+  const setView = MAP.setView;
+  MAP.setView = function (center, zoom, options) { limitTo(zoom === undefined ? this.getZoom() : Math.max(zoom, this.getMinZoom())); return setView.call(this, center, zoom, options); };
+  MAP.on("zoomend", () => limitTo(MAP.getZoom()));
 }
 function fitAll(animate = true) { const v = cityView(); if (v) MAP.setView(v.center, v.zoom, {animate}); }
 function focusZone(key) {
@@ -236,7 +250,7 @@ function filterSites() { const box = document.getElementById("zone-sites"); if (
 function initMap() {
   if (!window.L || !document.getElementById("today-map")) return;
   MAP = L.map("today-map", {scrollWheelZoom: false, zoomControl: true, attributionControl: false, zoomSnap: 0.25, maxBoundsViscosity: 1}).setView([37.765, -122.44], 11);
-  const credits = L.control({position: "bottomleft"});          // credits bottom left, collapsed to "© Esri"; the Whole-city button takes the bottom right (the top right on a phone)
+  const credits = L.control({position: "bottomright"});         // credits bottom right, collapsed to "© Esri"; the Whole-city button takes the bottom left (Chase, 2026-11-08)
   credits.onAdd = () => {
     const d = L.DomUtil.create("div", "credits");
     const attr = {{ BASEMAP.options.attribution|tojson }}, src = attr.split(" &mdash; ");   // "Tiles © <a>Esri</a> — Esri, HERE, …" → button "© Esri", drawer "Map tiles by Esri: Esri, HERE, …"
@@ -267,7 +281,7 @@ function initMap() {
     m.on("click", () => { if (window.SamplePopover) SamplePopover.open({station: s.source, name: s.full_name, feedDate: s.sampled}); });
     (MARKERS[z.key] = MARKERS[z.key] || []).push(m);
   }
-  fitAll(false); setCityLimits();   // the first view is placed, not slid to from setView's placeholder
+  fitAll(false); setCityLimits(); followZoomLimits();   // the first view is placed, not slid to from setView's placeholder
   MAP.on("resize", setCityLimits);   // a turned phone or a resized window has a different whole-city view
   document.getElementById("zones").addEventListener("click", e => { const b = e.target.closest(".zone"); if (b) focusZone(b.dataset.zone); });
   document.getElementById("map-reset").addEventListener("click", () => focusZone(ACTIVE));
