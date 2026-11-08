@@ -219,6 +219,7 @@ function setCityLimits() {
   LIMITS = {zoom: v.zoom, city: v.area, wide};
   MAP.setMinZoom(v.zoom);
   MAP.setMaxBounds(limitsAt(MAP.getZoom()));
+  dragOnlyZoomedIn();   // a new size can move the whole-city zoom
 }
 function limitsAt(zoom) { return zoom > LIMITS.zoom ? LIMITS.wide : LIMITS.city; }
 // Leaflet clamps a new view to maxBounds as it is set, so the bounds have to match the zoom the map is going to, not the one
@@ -228,8 +229,12 @@ function limitTo(zoom) { if (LIMITS) MAP.options.maxBounds = limitsAt(zoom); }
 function followZoomLimits() {
   const setView = MAP.setView;
   MAP.setView = function (center, zoom, options) { limitTo(zoom === undefined ? this.getZoom() : Math.max(zoom, this.getMinZoom())); return setView.call(this, center, zoom, options); };
-  MAP.on("zoomend", () => limitTo(MAP.getZoom()));
+  MAP.on("zoomend", () => { limitTo(MAP.getZoom()); dragOnlyZoomedIn(); });
 }
+// At the whole city the map can't move, so it doesn't take a one-finger swipe either: with dragging off Leaflet lets the
+// browser have it, and a phone scrolls the page even when the swipe starts on the map. A pinch still zooms in, a tap still
+// opens a station, and once zoomed in the map drags again (Chase, 2026-11-08).
+function dragOnlyZoomedIn() { if (MAP.getZoom() > MAP.getMinZoom()) MAP.dragging.enable(); else MAP.dragging.disable(); }
 function fitAll(animate = true) { const v = cityView(); if (v) MAP.setView(v.center, v.zoom, {animate}); }
 function focusZone(key) {
   ACTIVE = ACTIVE === key ? null : key;
