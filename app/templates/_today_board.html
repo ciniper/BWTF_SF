@@ -19,12 +19,12 @@
   .board h1 em.posted,.board h1 em.warn{color:var(--posted)}.board h1 em.discharge{color:var(--discharge)}.board h1 em.good{color:var(--safe)}
   .board .lead{font-size:16px;color:var(--muted);margin:0 0 14px}
   .board .lead:empty{display:none}
-  /* the facts under the subhead, one labelled row each (2026-11-06): the city's samples, Surfrider's, the forecast's risk */
+  /* the facts under the subhead, one labelled row each (2026-11-06): the city's samples and Surfrider's (the forecast's risk moved to its own panel, 2026-11-09) */
   .board .facts{display:grid;gap:5px;margin:0 0 16px}
   .board .facts div{display:flex;gap:12px;align-items:baseline;font-size:14px;line-height:1.4;color:var(--muted)}
   .board .facts dt{flex:none;width:156px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
   .board .facts dd{margin:0}
-  .board.replaying .facts{display:none}   /* today's samples and risk are not a past day's */
+  .board.replaying .facts{display:none}   /* today's samples are not a past day's */
   .zones{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .zone{border:1px solid var(--line);border-radius:var(--r);padding:12px 13px 11px;color:inherit;background:#fff;display:block;width:100%;text-align:left;cursor:pointer;font:inherit}
   .zone:hover{border-color:var(--sky)}
@@ -38,17 +38,25 @@
   .zone .st{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px}
   .zone.posted .st{color:var(--posted)}.zone.discharge .st{color:var(--discharge)}.zone.unknown .st{color:var(--faint)}
   .zone .nm{font-size:16px;font-weight:900;margin:5px 0 1px;line-height:1.2}
-  /* each tile's overflow risk and the forecast's sentence in the subhead are always shown (design/today-map-controls,
-     2026-11-06: the Risk view chip went; it had been the only control that changed the tiles and not the map). The
-     tiles keep the city's status and colours (Chase, 2026-10-18: "toggling risk will no longer replace all clear") */
-  .zone .risk{font-size:13px;color:var(--muted)}
-  .zone .risk:empty{display:none}   /* no forecast snapshot (a bare checkout, an outage): the line is simply absent */
+  /* the tiles carry the city's status and colours alone (Chase, 2026-10-18: "toggling risk will no longer replace all clear").
+     The forecast's overflow risk left the tiles for its own panel under them, .risk-panel (2026-11-09: it is in beta, and
+     a prediction sat on the same card as the city's posting as if it were one of its facts) */
   .zone .bwtfline{font-size:12px;font-weight:600;color:var(--muted);margin-top:4px}   /* Surfrider's results in the zone, while that layer is on */
   .zone .bwtfline:empty{display:none}
   .zone .bwtfline .over{color:var(--posted)}
-  /* the risk levels (shared/risk_levels.py, Chase, 2026-10-01): the colour of the tile's number */
-  {% for l in RISK_LEVELS.levels %}.zone .risk b.lvl-{{ l.key }}{color:{{ l.color }}}
+  /* The overflow-risk panel under the zone tiles: the forecast's sentence, a number per zone coloured by its level
+     (shared/risk_levels.py, Chase, 2026-10-01), a Beta tag and what the number is not. Dashed, so it reads as a different kind of thing */
+  .risk-panel{margin:14px 0 0;padding:12px 14px 11px;border:1px dashed var(--sky);border-radius:var(--r);background:var(--sand2)}
+  .risk-panel .risk-head{display:flex;align-items:center;gap:8px}
+  .risk-panel .beta-tag{font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#fff;background:var(--brand-deep);border-radius:999px;padding:2px 7px}
+  .risk-panel .risk-lead{margin:6px 0 0;font-size:15px;color:var(--ink);font-weight:600}
+  .risk-panel .risk-zones{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;color:var(--muted)}
+  .risk-panel .risk-zones b{font-size:14px;margin-right:4px}
+  {% for l in RISK_LEVELS.levels %}.risk-panel b.lvl-{{ l.key }}{color:{{ l.color }}}
   {% endfor %}
+  .risk-panel .risk-note{margin:8px 0 0;font-size:12.5px;color:var(--faint);line-height:1.4}
+  .risk-panel .risk-note a{color:var(--brand)}
+  .board.replaying .risk-panel{display:none}   /* today's forecast is not a past day's */
   .zone .stations{display:flex;flex-wrap:wrap;gap:4px;margin:9px 0 5px;min-height:9px}
   .zone .stations .status-dot{width:9px;height:9px}
   .zone .meta{font-size:13px;color:var(--faint)}
@@ -133,7 +141,7 @@
   .of-pop b{display:block;font-size:14px;margin-bottom:2px}
   .of-pop .mut{color:var(--muted)}
   .board.replaying .eyebrow{color:var(--brand)}
-  .board.replaying .zone .risk,.board.replaying .zone .rainline,.board.replaying .zone .bwtfline,.board.replaying .zone .meta,.board.replaying .site small{display:none}   /* today's risk, rain, Surfrider results and sample dates are not that day's */
+  .board.replaying .zone .rainline,.board.replaying .zone .bwtfline,.board.replaying .zone .meta,.board.replaying .site small{display:none}   /* today's rain, Surfrider results and sample dates are not that day's */
   @media (max-width:760px){
     .layers .replay-ctl{flex-basis:100%}.layers .replay-ctl input{flex:1}
     .layers .ctl-group{flex-basis:100%}
@@ -167,13 +175,20 @@
           <button type="button" class="zone {{ z.status }}" data-zone="{{ z.key }}" aria-pressed="false" title="Zoom the map to {{ z.label }}">
             <div class="st"><i class="status-dot {{ z.status }}"></i>{{ z.status_text }}</div>
             <div class="nm">{{ z.label }}</div>
-            <div class="risk">{% if z.risk is not none %}<b class="lvl-{{ z.level }}">{{ z.risk }}%</b> overflow risk today{% endif %}</div>
             <div class="stations">{% for s in z.stations %}<i class="status-dot {{ s.status }}" title="{{ s.full_name }} · {{ s.status_text }}"></i>{% endfor %}</div>
             <div class="meta">{{ z.meta }}</div>
           </button>
           {% endfor %}
         </div>
         <p class="zones-hint">Tap a zone to see its stations{% if sites %} and Surfrider's sites there{% endif %}; tap one for its latest lab results.</p>
+        {% endif %}
+        {% if board.risk_text %}
+        <section class="risk-panel" aria-labelledby="risk-h">
+          <div class="risk-head"><span class="eyebrow" id="risk-h">Sewer-overflow risk today</span><span class="beta-tag">Beta</span></div>
+          <p class="risk-lead">{{ board.risk_text }}</p>
+          <ul class="risk-zones">{% for z in board.zones %}{% if z.risk is not none %}<li><b class="lvl-{{ z.level }}">{{ z.risk }}%</b>{{ z.label }}</li>{% endif %}{% endfor %}</ul>
+          <p class="risk-note">A prediction from our <a href="/forecast">forecast</a>, driven by rain and still being tested. It is not a measurement of the water and not the city's status.</p>
+        </section>
         {% endif %}
       </div>
       <div class="map-col">
@@ -210,8 +225,8 @@
         <div><dt><i class="bwtf-dot safe"></i> Surfrider diamonds <small>(with that layer on)</small></dt>
           <dd>The grade of one volunteer sample, for one indicator (Enterococcus), against the state single-sample limit of {{ ENTERO_LIMIT }} MPN/100 mL: <b>green</b> below it, <b>yellow</b> from {{ ENTERO_CAUTION }}, <b>orange</b> at or over it.
               Volunteers sample about every two weeks; a result over {{ STALE_AFTER_DAYS }} days old is drawn hollow. A volunteer result is not a health advisory. Where the two sources differ, both are shown.</dd></div>
-        <div><dt><b class="pct">%</b> The tile's percentage</dt>
-          <dd>Our <a href="/forecast">forecast</a>'s sewer-overflow risk for today, coloured by its level. A prediction, driven by rain, not a measurement of the water.</dd></div>
+        <div><dt><b class="pct">%</b> The overflow-risk percentages</dt>
+          <dd>In the Beta panel under the tiles: our <a href="/forecast">forecast</a>'s sewer-overflow risk for today, one number per zone coloured by its level. A prediction, driven by rain, not a measurement of the water.</dd></div>
       </dl>
     </details>
     {% if sites %}
@@ -362,7 +377,7 @@ function initMap() {
 // "Map shows" (.map-ctl, on the map): every chip there changes the map and nothing else does. City stations and
 // Surfrider results are the two sources; Rain, Outfalls and Names go on top. Each fetched layer loads its data once,
 // draws a Leaflet group, and adds itself to the legend. Replay (above the board) recolours what is already there
-// (tiles + station markers) as a past day's map. Each zone tile always shows today's overflow risk (2026-11-06).
+// (tiles + station markers) as a past day's map. Today's overflow risk sits in its own panel under the tiles (2026-11-09).
 const LAYER = {rain: {}, outfalls: {}, bwtf: {}, labels: {}};
 let REPLAY = null, REPLAY_OFFSET = 0, ORIG = null;
 const $ = id => document.getElementById(id);
@@ -502,7 +517,7 @@ const BUILD = {
       L.marker([x.lat, x.lon], {icon: L.divIcon({className: "gauge-pin", html: "", iconSize: [0, 0]}), keyboard: false, interactive: false})
         .bindTooltip(name + " · " + (t == null ? "no report" : fmtIn(t) + " · " + shortSpan(x.window)), {permanent: true, direction: "top", className: "gauge-label", offset: [0, -4]}).addTo(g);
     }
-    for (const z of ZONES) { const t = tileParts(z.key), zr = d.zones[z.key]; if (!t || !zr) continue; let el = t.b.querySelector(".rainline"); if (!el) { el = document.createElement("div"); el.className = "rainline"; t.b.querySelector(".risk").after(el); }
+    for (const z of ZONES) { const t = tileParts(z.key), zr = d.zones[z.key]; if (!t || !zr) continue; let el = t.b.querySelector(".rainline"); if (!el) { el = document.createElement("div"); el.className = "rainline"; t.b.querySelector(".nm").after(el); }
       el.textContent = zr.total_in == null ? "" : fmtIn(zr.total_in) + " of rain in 3 days · " + zr.gauge + " gauge"; t.b.classList.toggle("wet", (zr.total_in || 0) >= d.advisory_in); }
     status(d.wettest_in >= d.advisory_in ? fmtIn(d.wettest_in) + " at the wetter gauge over three days" : "Under " + fmtIn(d.advisory_in) + " at both gauges over three days");
     return g;
@@ -558,7 +573,7 @@ const BUILD = {
     for (const z of ZONES) {
       const t = tileParts(z.key); if (!t) continue;
       const here = d.sites.filter(s => s.zone === z.key);
-      let el = t.b.querySelector(".bwtfline"); if (!el) { el = document.createElement("div"); el.className = "bwtfline"; (t.b.querySelector(".rainline") || t.b.querySelector(".risk")).after(el); }
+      let el = t.b.querySelector(".bwtfline"); if (!el) { el = document.createElement("div"); el.className = "bwtfline"; (t.b.querySelector(".rainline") || t.b.querySelector(".nm")).after(el); }
       const over = here.filter(s => s.over).length, dated = here.filter(s => s.date), newest = dated.sort((a, b) => a.age_days - b.age_days)[0];
       // when the city has sampled this zone since Surfrider did, the tile says so — a fact beside the age, not a verdict on either (Chase, 2026-11-07)
       const cityNewest = z.stations.filter(s => s.sampled_age_days != null).sort((a, b) => a.sampled_age_days - b.sampled_age_days)[0];

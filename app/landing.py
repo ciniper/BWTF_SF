@@ -467,9 +467,10 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
         # a fact, not a verdict (Chase, 2026-11-07, on relative staleness): when the city has sampled since, say so and leave both on view
         since = " · the city has a newer sample" if newest_d and d < newest_d else ""
         facts.append({"label": "Surfrider samples", "text": f"{days_ago_text(d, now.date())} ({d:%b %-d}){since}"})
-    if risk_lead:
-        facts.append({"label": "Overflow risk today", "text": risk_lead[len("Sewer-overflow risk today: "):].rstrip(".")})
-    return {"tone": tone, "headline": headline, "headline_html": headline_html, "lead": " ".join(lead), "risk_lead": risk_lead, "facts": facts, "zones": tiles, "feed_ok": bool(stations),
+    # The forecast's risk has its own panel under the zone tiles (2026-11-09: it is in beta, so it sits apart from the city's
+    # facts rather than among them or on the tiles): risk_text is its sentence, each tile's risk and level its numbers.
+    risk_text = risk_lead[len("Sewer-overflow risk today: "):].rstrip(".") if risk_lead else ""
+    return {"tone": tone, "headline": headline, "headline_html": headline_html, "lead": " ".join(lead), "risk_lead": risk_lead, "risk_text": risk_text, "facts": facts, "zones": tiles, "feed_ok": bool(stations),
             "posted": posted, "discharging": discharging, "n_safe": n_safe, "n_graded": n_graded,
             "date": now.strftime("%a %b %-d"), "checked": now.strftime("%-I:%M %p")}
 

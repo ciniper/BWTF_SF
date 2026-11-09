@@ -97,9 +97,10 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
     assert b["tone"] == "warn" and b["headline"] == "Posted at 1 beach. 3 others have no warning."
     assert b["headline_html"] == '<em class="posted">Posted at 1 beach.</em> 3 others have no warning.' and b["date"] == "Tue Sep 29" and b["checked"] == "6:12 AM" and b["feed_ok"]
     assert b["lead"] == "Posted: Crissy East. SFPUC posts a beach when samples show bacteria above State standards, and sometimes as a precaution."   # the news only: no "no discharge", no forecast (2026-10-18)
-    assert b["facts"] == [{"label": "City samples", "text": "6 days ago (Sep 23)"}, {"label": "Surfrider samples", "text": "5 days ago (Sep 24)"},   # one labelled row per fact, ages not bare dates (2026-11-06)
-                          {"label": "Overflow risk today", "text": "4% at most (East Beaches), staying low through Sun Oct 04"}]
-    assert b["risk_lead"] == "Sewer-overflow risk today: 4% at most (East Beaches), staying low through Sun Oct 04."   # after the city's sentence in the subhead
+    assert b["facts"] == [{"label": "City samples", "text": "6 days ago (Sep 23)"}, {"label": "Surfrider samples", "text": "5 days ago (Sep 24)"}]   # one labelled row per fact, ages not bare dates (2026-11-06); the city's and Surfrider's only
+    # the forecast's risk is its own panel under the tiles, in beta (2026-11-09): its sentence body and the tiles' numbers, no facts row
+    assert b["risk_lead"] == "Sewer-overflow risk today: 4% at most (East Beaches), staying low through Sun Oct 04." and b["risk_text"] == "4% at most (East Beaches), staying low through Sun Oct 04"
+    assert not any(f["label"] == "Overflow risk today" for f in b["facts"])
     z = {t["key"]: t for t in b["zones"]}
     assert [t["key"] for t in b["zones"]] == ["ocean", "baker_china", "north", "east"]           # registry order, every zone even when empty
     assert (z["north"]["status"], z["north"]["status_text"], z["north"]["meta"]) == ("posted", "1 beach posted", "Crissy East · sampled 6 days ago")   # the age in words, never a bare date (2026-11-06)
@@ -121,7 +122,7 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
     ok = L.today_board([S("4601", "Fort Funston", "safe"), S("4602", "Ocean Beach at Sloat", "safe")], {}, "", now=now)
     assert ok["headline"] == "No warnings posted at any of the 2 monitored beaches." and ok["headline_html"] == '<em class="good">No warnings posted</em> at any of the 2 monitored beaches.'
     assert ok["lead"] == "" and ok["facts"] == [{"label": "City samples", "text": "6 days ago (Sep 23) · all 2 met the state standard · weekly; a warning is posted when a result fails"}]   # the age is the point: "meet standards today" was a week-old sample's claim
-    assert ok["risk_lead"] == "" and L.today_board([], {}, "")["feed_ok"] is False and L.today_board([], {}, "", now=now)["facts"] == []
+    assert ok["risk_lead"] == "" and ok["risk_text"] == "" and L.today_board([], {}, "")["feed_ok"] is False and L.today_board([], {}, "", now=now)["facts"] == []
     import types as _t
     split = L.today_board([S("4601", "Fort Funston", "safe"), _t.SimpleNamespace(station_id="4602", station_name="Ocean Beach at Sloat", status=_t.SimpleNamespace(value="safe"), has_cso=False, sample_date=datetime(2026, 9, 16))], {}, "city 9/23 · 1 over", now=now)
     assert split["facts"][0]["text"] == "between 6 days ago and 13 days ago (Sep 16 to Sep 23) · 1 station over the state limit"   # a span when the round was split; an over count outranks "all met"

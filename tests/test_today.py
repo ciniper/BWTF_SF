@@ -89,7 +89,11 @@ def test_today_page_is_the_board_plus_the_experimental_row_and_the_api_route_exi
     assert '.map-stack{position:relative' in board and ".map-col{display:flex" in board and "position:relative" not in board.split(".map-col{")[1].split("}")[0]   # the legend floats over the map, not over the bar
     assert 'if (key === "city") { setCity(!CITY_ON, btn); return; }' in board and 'btn.setAttribute("aria-pressed", on ? "true" : "false")' in board
     assert 'el.className = "bwtfline"' in board and '.board.replaying .zone .bwtfline' in board and 'querySelectorAll(".zone .bwtfline").forEach(e => e.remove())' in board   # Surfrider's line on each tile, gone with the layer and on a replayed day
-    assert '.zone .risk{font-size:13px;color:var(--muted)}' in board and '.zone .risk:empty{display:none}' in board and 'class="risk">{% if z.risk is not none %}' in board   # the risk line always shows when there is a forecast
+    # the forecast's risk left the tiles for its own Beta panel under them (2026-11-09); the rain and Surfrider lines now follow the zone's name
+    assert '.zone .risk' not in board and 'class="risk">' not in board and "overflow risk today{% endif %}" not in board
+    assert '{% if board.risk_text %}' in board and '<section class="risk-panel" aria-labelledby="risk-h">' in board and '<span class="beta-tag">Beta</span>' in board and ".board.replaying .risk-panel{display:none}" in board
+    assert board.index('class="zones-hint"') < board.index('class="risk-panel"') < board.index('class="map-col"')   # under the tiles, before the map column
+    assert 'el.className = "rainline"; t.b.querySelector(".nm").after(el); }' in board and '(t.b.querySelector(".rainline") || t.b.querySelector(".nm")).after(el); }' in board
     # the chosen zone: a brand ring outside its grade border, the others dimmed
     assert ".zone.focus{box-shadow:0 0 0 2px #fff,0 0 0 5px var(--brand)}" in board and ".zones.has-focus .zone:not(.focus){opacity:.5}" in board and 'classList.toggle("has-focus", !!ACTIVE)' in board
     # the legend: over the map on wider screens, under it on phones (it covered the north shore)
@@ -110,7 +114,7 @@ def test_today_page_is_the_board_plus_the_experimental_row_and_the_api_route_exi
     assert "<summary>What the colours mean</summary>" in key and key.count("<dt>") == 3 and h.index('<details class="colour-key">') > h.index('id="legend-note"') and h.index('<details class="colour-key">') < h.index('id="zone-sites"')
     assert "Tile borders and city dots" in key and "<b>Green</b> means no warning sign is up — not that the water was tested clean today" in key
     assert "Surfrider diamonds" in key and "limit of 104 MPN/100 mL" in key and "<b>yellow</b> from 36" in key and "over 14 days old is drawn hollow" in key and "not a health advisory" in key and "Where the two sources differ, both are shown." in key
-    assert "The tile's percentage" in key and 'href="/forecast"' in key and "A prediction, driven by rain, not a measurement of the water." in key
+    assert "The overflow-risk percentages" in key and "In the Beta panel under the tiles" in key and 'href="/forecast"' in key and "A prediction, driven by rain, not a measurement of the water." in key
     assert ".board.replaying .colour-key{display:none}" in board and "All clear" not in h and '"No warning" if status == "safe"' in (ROOT / "app/landing.py").read_text()   # the tiles read "No warning", not "All clear"
     assert h.count('class="site" data-zone=') == 20 and 'id="zone-sites"' in h and 'data-sample-station=' in h and "{{" not in h        # a chip per station under the zone tiles, each opening the popover
     assert ' hidden>' in h.split('id="zone-sites"')[1][:200] and ".site-chips[hidden]{display:none}" in (ROOT / "app/static/brand.css").read_text()   # chips wait for a zone tap — and the attribute must win over the strip's display:flex

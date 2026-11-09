@@ -105,15 +105,19 @@ def test_forecast_page_draws_the_levels_from_the_one_table():
     assert "{{" not in h and "{%" not in h
 
 
-def test_today_board_tiles_and_risk_view_use_the_levels():
+def test_today_board_risk_panel_uses_the_levels():
+    # The forecast's risk has its own Beta panel under the zone tiles (2026-11-09; it was a line on each tile, and before that
+    # behind a Risk view chip from 2026-10-18): one number per zone coloured by its level, the forecast's sentence, no facts row
     h = _today_html({"ocean": 20, "baker_china": 21, "north": 51, "east": 81})
-    for key, pct in (("low", 20), ("medium", 21), ("high", 51), ("extreme", 81)):
-        assert f'<b class="lvl-{key}">{pct}%</b> overflow risk today' in h, key
+    for key, pct, zone in (("low", 20, "Ocean Beach"), ("medium", 21, "Baker &amp; China Beach"), ("high", 51, "North Beaches"), ("extreme", 81, "East Beaches")):
+        assert f'<li><b class="lvl-{key}">{pct}%</b>{zone}</li>' in h, key
     for lv in R.LEVELS:
-        assert f".zone .risk b.lvl-{lv.key}{{color:{lv.color}}}" in h                     # the number's colour, from the one table
-    # the numbers and the forecast's sentence are always shown (2026-11-06; they sat behind a Risk view chip from 2026-10-18); nothing recolours
-    assert ".zone .risk{font-size:13px;color:var(--muted)}" in h and "show-risk" not in h and 'data-layer="risk"' not in h
-    assert "<dt>Overflow risk today</dt><dd>81% at most (East Beaches)" in h and "risk-lead" not in h and "const RISK_LEVELS" not in h   # a labelled row under the subhead (2026-11-06)
+        assert f".risk-panel b.lvl-{lv.key}{{color:{lv.color}}}" in h                    # the number's colour, from the one table
+    panel = h.split('<section class="risk-panel"')[1].split("</section>")[0]
+    assert '<span class="eyebrow" id="risk-h">Sewer-overflow risk today</span><span class="beta-tag">Beta</span>' in panel and '<p class="risk-lead">81% at most (East Beaches)' in panel
+    assert "not a measurement of the water and not the city's status" in panel and 'href="/forecast"' in panel
+    assert h.index('class="zones-hint"') < h.index('class="risk-panel"') < h.index('class="map-col"')                     # under the tiles
+    assert "overflow risk today</div>" not in h and ".zone .risk" not in h and "<dt>Overflow risk today</dt>" not in h and "show-risk" not in h and 'data-layer="risk"' not in h and "const RISK_LEVELS" not in h
     assert 'class="hi"' not in h and "under 10%" not in h and "50% or more" not in h
     assert "{{" not in h and "{%" not in h
 
