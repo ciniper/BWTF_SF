@@ -982,11 +982,31 @@ def test_the_committed_artifacts_are_current():
 # rain background, one record per fold. The served slice above is written to a temporary stages directory, so
 # the comparisons read rows built on this very code.
 
-# A complete set is stored under its lineup's id (Part B 36): the stub's own parts get codes, in this process only.
-for _col, _cid, _code in (("s2", "stub_s2", "stubs2"), ("s3", "stub_links", "stublinks"), ("s4", "stub_zone_v3", "stubzone")):
-    LU.CODES[_col].setdefault(_cid, _code)
+# A complete set is stored under its lineup's id (Part B 36): the stub's own parts get codes, but only while this
+# module's tests run (setup_module / teardown_module, and the __main__ runner below). pytest imports every test module
+# before running any, so codes left in LU.CODES from import on leak into other modules' checks of the real maps
+# (test_lineup: every code has words).
+_STUB_CODES = (("s2", "stub_s2", "stubs2"), ("s3", "stub_links", "stublinks"), ("s4", "stub_zone_v3", "stubzone"))
+_ADDED_CODES: list = []
+
+
+def setup_module(module=None):
+    for col, cid, code in _STUB_CODES:
+        if cid not in LU.CODES[col]:
+            LU.CODES[col][cid] = code
+            _ADDED_CODES.append((col, cid))
+
+
+def teardown_module(module=None):
+    while _ADDED_CODES:
+        col, cid = _ADDED_CODES.pop()
+        LU.CODES[col].pop(cid, None)
+
+
+setup_module()
 STUB = LU.set_id({"geography": "sfpuc4_v1", "s1": E.served_weather_model(), "s2": "stub_s2", "s3": "stub_links",
                   "s4": "stub_zone_v3", "s5": "link_zone_swap"})
+teardown_module()
 STUB_FEATURES = ["precip_avg", "rain_3d_cum", "rain_max3h"]
 RECIPE_FEATURES = ["precip_avg", "rain_2d_cum"]
 STUB_HEAD = ["precip_avg", "rain_max3h"]
@@ -1777,6 +1797,7 @@ def test_stage_candidates_load_through_stages_candidates():
 if __name__ == "__main__":
     import traceback
     failed = 0
+    setup_module()
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):
             try:
