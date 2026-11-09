@@ -30,14 +30,15 @@
   .zone .st{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px}
   .zone.posted .st{color:var(--posted)}.zone.discharge .st{color:var(--discharge)}.zone.unknown .st{color:var(--faint)}
   .zone .nm{font-size:16px;font-weight:900;margin:5px 0 1px;line-height:1.2}
-  .zone .risk{font-size:13px;color:var(--muted);display:none}
-  /* the Risk view only reveals: each tile's overflow risk and the forecast's sentence in the subhead; the tiles keep the
-     city's status and colours (Chase, 2026-10-18: "toggling risk will no longer replace all clear") */
-  .board.show-risk .zone .risk{display:block}
-  .board .risk-lead{display:none}.board.show-risk .risk-lead{display:inline}
-  .board:not(.show-risk):not(.replaying) .lead.only-risk{display:none}   /* a replayed day writes its own subhead into it */
-  /* the risk levels (shared/risk_levels.py, Chase, 2026-10-01): the colour of the tile's number */
-  {% for l in RISK_LEVELS.levels %}.zone .risk b.lvl-{{ l.key }}{color:{{ l.color }}}
+  .board .lead:empty{display:none}
+  .forecast-body{margin-top:8px;font-size:13px;color:var(--muted)}
+  .forecast-body[hidden]{display:none}
+  .forecast-body .risk-lead{color:var(--ink);margin:0 0 6px}
+  .forecast-body .by-zone{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;list-style:none;padding:0;margin:0 0 6px}
+  .forecast-body .by-zone li{display:flex;justify-content:space-between;gap:8px}
+  .forecast-body .note{margin:0;font-size:12px}
+  .forecast-body a{color:var(--brand)}
+  {% for l in RISK_LEVELS.levels %}.forecast-body b.lvl-{{ l.key }}{color:{{ l.color }}}
   {% endfor %}
   .zone .stations{display:flex;flex-wrap:wrap;gap:4px;margin:9px 0 5px;min-height:9px}
   .zone .stations .status-dot{width:9px;height:9px}
@@ -123,7 +124,7 @@
   .of-pop b{display:block;font-size:14px;margin-bottom:2px}
   .of-pop .mut{color:var(--muted)}
   .board.replaying .eyebrow{color:var(--brand)}
-  .board.replaying .zone .risk,.board.replaying .zone .rainline,.board.replaying .zone .meta,.board.replaying .site small{display:none}   /* today's risk, rain and sample dates are not that day's */
+  .board.replaying .board-forecast,.board.replaying .forecast-body,.board.replaying .zone .rainline,.board.replaying .zone .meta,.board.replaying .site small{display:none}   /* today's risk, rain and sample dates are not that day's */
   @media (max-width:760px){
     .layers .replay-ctl{flex-basis:100%}.layers .replay-ctl input{flex:1}
     .layers .ctl-group{flex-basis:100%}
@@ -161,7 +162,7 @@
   .map-col .layers .ctl-group{border:0;padding:0;background:none}
   .map-col .layers .sources{flex:1;min-width:0;flex-wrap:nowrap;gap:4px}
   .map-col .layers .sources .ctl-label{position:static;width:auto;height:auto;overflow:visible;clip-path:none;font-size:12px;text-transform:none;letter-spacing:0;white-space:nowrap;margin:0;font-weight:500}
-  .map-col .layers .switch,.map-col .layers-toggle{padding:4px 5px;font-size:11.5px;white-space:nowrap}
+  .map-col .layers .switch,.map-col .layers .preset,.map-col .layers-toggle{padding:4px 5px;font-size:11.5px;white-space:nowrap}
   .map-col .layers-toggle{display:inline-flex}
   .map-col .layers .layer-group{display:none;flex-basis:100%}.map-col .layers .layer-group.open{display:flex}
   .map-stack{position:relative;display:flex;flex-direction:column;flex:1;min-height:0}
@@ -200,22 +201,28 @@
         </div>
         {% if controls %}<div class="board-replay"><span class="replay-ctl" id="replay-ctl" hidden><span class="tick" id="replay-oldest"></span><input type="range" id="replay" min="0" max="7" step="1" value="7" aria-label="Day to replay — today at the right, slide left to go back" aria-valuetext="Today"><output id="replay-out" for="replay">Today</output></span></div>{% endif %}
         <h1 id="today-h">{{ board.headline_html|safe }}</h1>
-        {% if board.lead or board.risk_lead %}<p class="lead{% if not board.lead %} only-risk{% endif %}">{{ board.lead }}{% if board.risk_lead %}{% if board.lead %} {% endif %}<span class="risk-lead">{{ board.risk_lead }}</span>{% endif %}</p>{% endif %}
+        <p class="lead">{{ board.lead }}</p>
         {% if board.zones %}
         <div class="zones" id="zones">
           {% for z in board.zones %}
           <button type="button" class="zone {{ z.status }}" data-zone="{{ z.key }}" aria-pressed="false" title="Zoom the map to {{ z.label }}">
             <div class="st"><i class="status-dot {{ z.status }}"></i>{{ z.status_text }}</div>
             <div class="nm">{{ z.label }}</div>
-            <div class="risk">{% if z.risk is not none %}<b class="lvl-{{ z.level }}">{{ z.risk }}%</b> overflow risk today{% else %}overflow risk unavailable{% endif %}</div>
             <div class="stations">{% for s in z.stations %}<i class="status-dot {{ s.status }}" title="{{ s.full_name }} · {{ s.status_text }}"></i>{% endfor %}</div>
             <div class="meta">{{ z.meta }}</div>
           </button>
           {% endfor %}
         </div>
         <div class="zone-tools"><p class="zones-hint">Tap a zone to explore its stations.</p>
-        {% if controls %}<div class="board-forecast"><button type="button" class="preset layer" data-layer="risk" aria-pressed="false" title="Beta sewer-overflow forecast: show each zone's risk today">Forecast · Beta</button></div>{% endif %}
+        {% if controls %}<div class="board-forecast"><button type="button" class="preset layer" data-layer="risk" aria-expanded="false" aria-controls="forecast-body" title="Experimental sewer-overflow forecast for today">Today’s forecast · Beta</button></div>{% endif %}
         </div>
+        {% if controls %}
+        <div class="forecast-body" id="forecast-body" hidden>
+          {% if board.risk_lead %}<p class="risk-lead">{{ board.risk_lead }}</p>{% else %}<p class="risk-lead">Forecast currently unavailable.</p>{% endif %}
+          <ul class="by-zone">{% for z in board.zones if z.risk is not none %}<li><span>{{ z.label }}</span><b class="lvl-{{ z.level }}">{{ z.risk }}%</b></li>{% endfor %}</ul>
+          <p class="note">An experimental estimate of sewer-overflow risk from rainfall, not an official advisory. The cards above show SFPUC’s current posting status. <a href="/forecast">See the forecast and days ahead.</a></p>
+        </div>
+        {% endif %}
         {% endif %}
       </div>
       <div class="map-col">
@@ -468,8 +475,12 @@ function restoreBoard() {
   for (const m of allMarkers()) { m.setStyle({fillColor: COL[m.__s.status] || COL.unknown, radius: m.__s.status === "posted" || m.__s.status === "discharge" ? 9 : 7}); placeRank(m, m.__s.status); labelFor(m, m.__s.status); }
   for (const [src, cls] of ORIG.sites || []) { const d = document.querySelector('#zone-sites .site[data-station="' + src + '"] .status-dot'); if (d) d.className = cls; }
 }
-// Risk view: reveals each tile's overflow risk today and the forecast's sentence; the city's status stays as it is
-function applyRisk() { document.querySelector(".board").classList.toggle("show-risk", RISK_VIEW); }
+// Forecast details expand below their control, independently of the city status cards.
+function applyRisk() {
+  const panel = $("forecast-body"), button = document.querySelector('.layer[data-layer="risk"]');
+  if (panel) panel.hidden = !RISK_VIEW;
+  if (button) button.setAttribute("aria-expanded", String(RISK_VIEW));
+}
 // Replay: the map as SFPUC showed it at the last check of a past day
 function applyReplay() {
   snapshotBoard(); restoreBoard();
@@ -515,7 +526,7 @@ const BUILD = {
       L.marker([x.lat, x.lon], {icon: L.divIcon({className: "gauge-pin", html: "", iconSize: [0, 0]}), keyboard: false, interactive: false})
         .bindTooltip(name + " · " + (t == null ? "no report" : fmtIn(t) + " · " + shortSpan(x.window)), {permanent: true, direction: "top", className: "gauge-label", offset: [0, -4]}).addTo(g);
     }
-    for (const z of ZONES) { const t = tileParts(z.key), zr = d.zones[z.key]; if (!t || !zr) continue; let el = t.b.querySelector(".rainline"); if (!el) { el = document.createElement("div"); el.className = "rainline"; t.b.querySelector(".risk").after(el); }
+    for (const z of ZONES) { const t = tileParts(z.key), zr = d.zones[z.key]; if (!t || !zr) continue; let el = t.b.querySelector(".rainline"); if (!el) { el = document.createElement("div"); el.className = "rainline"; t.b.querySelector(".meta").before(el); }
       el.textContent = zr.total_in == null ? "" : fmtIn(zr.total_in) + " of rain in 3 days · " + zr.gauge + " gauge"; t.b.classList.toggle("wet", (zr.total_in || 0) >= d.advisory_in); }
     status(d.wettest_in >= d.advisory_in ? fmtIn(d.wettest_in) + " at the wetter gauge over three days" : "Under " + fmtIn(d.advisory_in) + " at both gauges over three days");
     return g;

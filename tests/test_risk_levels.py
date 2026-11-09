@@ -108,12 +108,12 @@ def test_forecast_page_draws_the_levels_from_the_one_table():
 def test_today_board_tiles_and_risk_view_use_the_levels():
     h = _today_html({"ocean": 20, "baker_china": 21, "north": 51, "east": 81})
     for key, pct in (("low", 20), ("medium", 21), ("high", 51), ("extreme", 81)):
-        assert f'<b class="lvl-{key}">{pct}%</b> overflow risk today' in h, key
+        assert f'<b class="lvl-{key}">{pct}%</b>' in h, key
     for lv in R.LEVELS:
-        assert f".zone .risk b.lvl-{lv.key}{{color:{lv.color}}}" in h                     # the number's colour, from the one table
+        assert f".forecast-body b.lvl-{lv.key}{{color:{lv.color}}}" in h                     # the number's colour, from the one table
     # the Risk view only reveals the numbers and the forecast's sentence; it no longer recolours (Chase, 2026-10-18)
-    assert ".zone .risk{font-size:13px;color:var(--muted);display:none}" in h and ".board.show-risk .zone .risk{display:block}" in h
-    assert '<span class="risk-lead">Sewer-overflow risk today: 81% at most (East Beaches)' in h and "const RISK_LEVELS" not in h
+    assert 'id="forecast-body" hidden' in h and 'aria-controls="forecast-body"' in h and 'class="risk"' not in h
+    assert '<p class="risk-lead">Sewer-overflow risk today: 81% at most (East Beaches)' in h and "const RISK_LEVELS" not in h
     assert 'class="hi"' not in h and "under 10%" not in h and "50% or more" not in h
     assert "{{" not in h and "{%" not in h
 
