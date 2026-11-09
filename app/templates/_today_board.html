@@ -65,6 +65,7 @@
   .map-name{width:0;height:0;pointer-events:none}
   .map-name span{position:absolute;left:0;top:0;white-space:nowrap;font:600 11px/1.3 Roboto,sans-serif;color:var(--ink);background:rgba(255,255,255,.86);border-radius:4px;padding:0 4px}
   .map-name.bad span{background:rgba(255,255,255,.94);border:1px solid var(--posted);border-radius:6px;padding:1px 6px;font-weight:700;color:var(--posted)}
+  .map-name.bad.discharge span{border-color:var(--discharge);color:var(--discharge)}   /* a discharge label in the discharge red, not posted's orange (Chase, 2026-11-08) */
   .map-name.zn span{font-weight:800;font-size:11px;letter-spacing:.07em;text-transform:uppercase;background:rgba(255,255,255,.78);padding:1px 6px}
   /* Surfrider's latest result per site: a diamond in Surfrider blue, filled with the result's grade */
   .bwtf-pin{background:none;border:0}
@@ -328,10 +329,11 @@ function placeRank(m, st) { const p = "st" + (RANK_ST[st] || 0); if (m.options.p
 // adds the four zone names on the whole-city map, seaward of their beaches, and zoomed in, or with a zone chosen, each
 // station's short name. One placer draws them all (Chase, 2026-11-08: the labels were "a bit messy"): each label tries spots
 // round its dot in turn, beside it, at its corners, above and below, and takes the first that is on the map and clear of the
-// labels already placed, every dot, and the controls over the map (zoom, Whole city, the credit, the legend). Discharges go
+// labels already placed, every dot (outfalls and Surfrider sites too), and the controls over the map (zoom, Whole city, the credit, the legend). Discharges go
 // first, then posted beaches, then names; dots that touch share one label. Zoomed out, a zone with three or more posted
 // beaches, or whose labels don't all fit, gets one label for the lot ("Ocean Beach · 6 posted"), which names the zone too;
-// a label with no room anywhere, even in its shorter wording, is left to its dot's hover tooltip.
+// a label with no room anywhere, even in its shorter wordings, is left to its dot's hover tooltip. A discharge label is in the
+// discharge red, so short of room it can drop its " · discharge" (Chase, 2026-11-08, from the all-outfalls review on #10).
 const LABEL_ZOOM = 13, ZONE_SUMMARY_AT = 3, ZONE_SIDE = {ocean: "left", baker_china: "left", north: "top", east: "right"};
 const LABEL_EDGE = 4, LABEL_GAP = 4, ZONE_GAP = 6;   // px: from the map's edge; from a dot to its label; from a zone's dots to its name
 let LABELS = null;
@@ -363,6 +365,8 @@ function refreshLabels() {
   const box = MAP.getContainer().getBoundingClientRect(), dots = shown.map(m => { const p = at(m), r = rad(m) + 1; return pxBox(p.x - r, p.y - r, 2 * r, 2 * r); });
   if (LAYER.bwtf.on && LAYER.bwtf.group) LAYER.bwtf.group.eachLayer(l => { const el = l.getElement && l.getElement(); if (!el) return;   // Surfrider's diamonds too
     const r = el.getBoundingClientRect(); dots.push({l: r.left - box.left, t: r.top - box.top, r: r.right - box.left, b: r.bottom - box.top}); });
+  // and the outfalls, drawn over the labels: with every beach discharging, labels sat under them (Chase, 2026-11-08, from #10's review)
+  if (LAYER.outfalls.on && LAYER.outfalls.group) LAYER.outfalls.group.eachLayer(m => { const p = at(m), r = rad(m); dots.push(pxBox(p.x - r, p.y - r, 2 * r, 2 * r)); });
   const blocked = mapControls().concat(dots);
   let taken;
   const free = q => q.l >= LABEL_EDGE && q.t >= LABEL_EDGE && q.r <= size.x - LABEL_EDGE && q.b <= size.y - LABEL_EDGE &&
@@ -383,7 +387,9 @@ function refreshLabels() {
   const clusters = ms => { const out = [];
     for (const m of ms) { const p = at(m), c = out.find(c => c.st === stAt(m) && c.ms.some(o => at(o).distanceTo(p) < rad(o) + rad(m) + 2)); if (c) c.ms.push(m); else out.push({st: stAt(m), ms: [m]}); }
     return out.map(c => { const p = c.ms.map(at).reduce((a, q) => a.add(q), L.point(0, 0)).divideBy(c.ms.length);
-      return {...c, p, r: Math.max(...c.ms.map(m => at(m).distanceTo(p) + rad(m))), html: c.ms.map(m => esc(m.__s.name)).join(",<br>") + (isBad(c.st) ? " · " + c.st : "")}; }); };
+      const names = c.ms.map(m => esc(m.__s.name));
+      return {...c, p, r: Math.max(...c.ms.map(m => at(m).distanceTo(p) + rad(m))), names: names.join(",<br>"), first: names[0] + (names.length > 1 ? " +" + (names.length - 1) : ""),
+        html: names.join(",<br>") + (isBad(c.st) ? " · " + c.st : "")}; }); };
   const zoneBox = ms => { const bs = ms.map(m => { const p = at(m), r = rad(m); return pxBox(p.x - r, p.y - r, 2 * r, 2 * r); });   // the dots' edges
     return {l: Math.min(...bs.map(q => q.l)), t: Math.min(...bs.map(q => q.t)), r: Math.max(...bs.map(q => q.r)), b: Math.max(...bs.map(q => q.b))}; };
   // a zone's label: each wording on the zone's own side, then each on the other sides, then the last resort anywhere round it
@@ -404,9 +410,10 @@ function refreshLabels() {
     for (const z of ZONES.slice().sort((a, b) => tally(b)[0] - tally(a)[0] || tally(b)[1] - tally(a)[1])) {   // the most discharges, then the most posted, picks its spot first
       const ms = bad.filter(m => m.__z.key === z.key); if (!grouped.has(z.key) || !ms.length) continue;
       const n = st => ms.filter(m => stAt(m) === st).length, count = ["discharge", "posted"].filter(n).map(st => n(st) + " " + st).join(" · ");
-      putZone(z, ms, "bad", [esc(z.label) + " · " + count, esc(short(z)) + " · " + count], count); }
+      putZone(z, ms, "bad" + (n("discharge") ? " discharge" : ""), [esc(z.label) + " · " + count, esc(short(z)) + " · " + count], count); }
     const left = new Set();
-    for (const c of clusters(bad.filter(m => !grouped.has(m.__z.key)))) if (!put(c.p, "bad", [[c.html, besideDot(c.p, c.r)]]) && zoomedOut) left.add(c.ms[0].__z.key);
+    // short of room, a label drops its " · discharge" (its colour says it), then names its first beach and how many more
+    for (const c of clusters(bad.filter(m => !grouped.has(m.__z.key)))) if (!put(c.p, "bad " + c.st, [c.html, c.names, c.first].filter((w, i, a) => a.indexOf(w) === i).map(w => [w, besideDot(c.p, c.r)])) && zoomedOut) left.add(c.ms[0].__z.key);
     if (!left.size) break;
     left.forEach(k => grouped.add(k));
   }
