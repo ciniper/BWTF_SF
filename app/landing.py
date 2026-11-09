@@ -349,7 +349,9 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
     now = now or now_pacific()
     risks = risks or {}
     by_id = {str(getattr(st, "station_id", "")): st for st in stations}   # SFPUC id → live feed row
-    status_text = {"safe": "safe", "posted": "posted", "discharge": "sewage discharge", "unknown": "not sampled"}   # "posted" is SFPUC's status word; the cause is not in the feed
+    # The city's colours say what SFPUC has posted, so the words do too (2026-11-08: "safe" was the one word on the board that
+    # claimed the water, and the feed knows only whether a sign is up). "posted" is SFPUC's status word; the cause is not in the feed.
+    status_text = {"safe": "no warning", "posted": "warning posted", "discharge": "sewage discharge", "unknown": "not sampled"}
     tiles, posted, discharging, n_safe, n_graded = [], [], [], 0, 0
     posted_by_zone: dict[str, list] = {}
     cso_by_zone: dict[str, list] = {}
@@ -373,7 +375,7 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
             cso_by_zone[zk] = z_cso
         status = "discharge" if z_cso else "posted" if z_posted else "safe" if z_safe else "unknown"
         text = ("Sewage discharge" if status == "discharge" else f"{len(z_posted)} beach{'es' if len(z_posted) > 1 else ''} posted" if status == "posted"
-                else "All clear" if status == "safe" else "Not sampled")
+                else "No warning" if status == "safe" else "Not sampled")   # "All clear" until 2026-11-08: the tile reports the city's posting, not the water
         dates = [x["sampled"] for x in sts if x["sampled"]]
         sampled = f"sampled {days_ago_text(datetime.strptime(max(dates), '%Y-%m-%d').date(), now.date())}" if dates else "no sample date"
         meta = (" · ".join(z_cso + z_posted) + f" · {sampled}") if (z_cso or z_posted) else f"{len(sts)} stations · {sampled}"
@@ -444,8 +446,9 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
     # count comes from the samples mirror's fact.
     facts = []
     ages = sorted({x["sampled_age_days"] for t in tiles for x in t["stations"] if x["sampled_age_days"] is not None})
+    newest_d = now.date() - timedelta(days=ages[0]) if ages else None
     if ages and n_graded:
-        newest_d, oldest_d = now.date() - timedelta(days=ages[0]), now.date() - timedelta(days=ages[-1])
+        oldest_d = now.date() - timedelta(days=ages[-1])
         when = (f"{days_ago_text(newest_d, now.date())} ({newest_d:%b %-d})" if len(ages) == 1
                 else f"between {days_ago_text(newest_d, now.date())} and {days_ago_text(oldest_d, now.date())} ({oldest_d:%b %-d} to {newest_d:%b %-d})")
         over = re.search(r"(\d+) over", samples_fact or "")
@@ -461,7 +464,9 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
         d = date(now.year, int(bw.group(1)), int(bw.group(2)))
         if d > now.date():
             d = d.replace(year=now.year - 1)
-        facts.append({"label": "Surfrider samples", "text": f"{days_ago_text(d, now.date())} ({d:%b %-d})"})
+        # a fact, not a verdict (Chase, 2026-11-07, on relative staleness): when the city has sampled since, say so and leave both on view
+        since = " · the city has a newer sample" if newest_d and d < newest_d else ""
+        facts.append({"label": "Surfrider samples", "text": f"{days_ago_text(d, now.date())} ({d:%b %-d}){since}"})
     if risk_lead:
         facts.append({"label": "Overflow risk today", "text": risk_lead[len("Sewer-overflow risk today: "):].rstrip(".")})
     return {"tone": tone, "headline": headline, "headline_html": headline_html, "lead": " ".join(lead), "risk_lead": risk_lead, "facts": facts, "zones": tiles, "feed_ok": bool(stations),

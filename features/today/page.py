@@ -273,8 +273,10 @@ def build_replay_layer(now: Optional[datetime] = None, days: int = REPLAY_DAYS) 
 # ── routes ─────────────────────────────────────────────────────────────────────────────
 
 def render_page(ctx: dict) -> str:
-    """The home page from a board_context: the Layers strip and the board."""
-    return render_template("today/page.html", board=ctx["board"], generated=ctx["generated"], canonical=HOME_URL)
+    """The home page from a board_context: the Layers strip and the board. The three constants feed the board's
+    "What the colours mean" key (2026-11-08), so the numbers there are the ones the layer and the grades use."""
+    return render_template("today/page.html", board=ctx["board"], generated=ctx["generated"], canonical=HOME_URL,
+                           STALE_AFTER_DAYS=STALE_AFTER_DAYS, ENTERO_LIMIT=STANDARDS["ENTERO"]["single_sample_max"], ENTERO_CAUTION=ENTERO_CAUTION)
 
 
 def handle_page(query, body):
