@@ -146,6 +146,17 @@ Terminology (public and code): **basin** (4, SFPUC's), **zone** (4, public), **o
     - **The Model check.** The new S1 part shows ICON's S1 score with a note. S2's own score follows the S1 pick's rain (`by_rain`; "not scored on … rain yet" where no set was), and so does the public number's rain-known cell.
     - **S1's column is "S1 · rain"** (it was "weather model"), as §3 and the flowchart call it. The column titles moved to `shared/lineup_titles.py`, which only the Model check and the stages report read. The build pins every module it imports, so a title in `shared/lineup.py` staled every build; `tests/test_lineup.py` fails if a build pins the titles file.
 
+42. **Promoting the MRMS fill: not yet (2026-11-09; Chase: "Do you think we should promote? or nah?").** The candidate is `iconmrms-t9wind3h-osplit-lt2more-bflags` (Part B 40, 41).
+    - **The live forecast cannot serve it.** It has no MRMS, so on a dead gauge's days the live page would still read the other gauge: the one case the set was built for. `promote.py` refuses it (`rain_features.INPUT_RULES_SERVABLE`), and that stays until MRMS reaches the live forecast.
+    - **Its gain is not confirmed yet.** One day ahead it is clearly better on the nine seasons and the holdout, but the fill was chosen on the holdout (RAIN_SOURCES.md), so the holdout cannot confirm it. Post-training shows no clear difference (+0.03 ×1000; East +0.34, worse there). T0 holds no graded day: the data end 2026-08-17, before the live season began (2026-10-03).
+    - **§9 at 2 of 5.** 1 not met: S2 is not superior on T2, because most of T2's dead-gauge storms come before MRMS (Oct 2020). 2 and 3 met: non-inferior and calibrated, rain known and one day ahead. 4 not made: the per-zone shadow-run report (P11). 5 is the owner's.
+    - **It only matters when a gauge dies.** With both gauges up it reads the same rain as the live set.
+    - **The plan, in order:**
+      1. MRMS on the live forecast (TODO "MRMS on the live board"): a small job writes each day's MRMS total at the two gauge cells where the forecast reads them, then v2 joins `INPUT_RULES_SERVABLE`.
+      2. Shadow-run the MRMS set beside the live one from then on, which makes criterion 4's per-zone report.
+      3. Decide after the Dec–Jan refresh, with the other challengers, once T0 has graded days.
+    - **The exception.** Once step 1 is live, a gauge dying mid-season before December is a reason to promote early: it is the case the fill fixes.
+
 ## Part C — Merged design (verbatim)
 
 # BWTF five-stage forecast: merged design (branch `forecast-stages`)
