@@ -129,7 +129,7 @@
     .board .lead{font-size:14px;margin-bottom:12px}
     .zone{padding:11px}.zone .nm{font-size:15px}
     .map-wrap{min-height:260px}
-    .map-legend{position:static;background:none;border-radius:0;padding:8px 2px 0;gap:6px 12px}   /* under the map: over it, it covered 4 of 20 stations on the north shore (6 with Surfrider on) */
+    .map-legend{position:static;z-index:auto;background:none;border-radius:0;padding:8px 2px 0;gap:6px 12px}   /* under the map; reset the flex item's stacking so it stays behind the phone tab bar */
   }
   @media (max-width:420px){.zones{gap:8px}}
 </style>
