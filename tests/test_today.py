@@ -76,7 +76,7 @@ def test_today_page_is_the_board_plus_the_experimental_row_and_the_api_route_exi
     assert h.index('id="layers"') < h.index('class="board') and 'class="extras"' not in h                                            # the strip sits above the board; the old row is gone
     # The strip above the board holds Replay alone; what the map shows is chosen on the map, in one "Map shows" bar of chips
     # that each change the map and nothing else (design/today-map-controls, 2026-11-06: the Sources and Layers boxes and the
-    # phone fold went; Risk view went too, the tiles always show today's risk)
+    # phone fold went; Risk view went too — the risk now sits behind the board's collapsed forecast line, 2026-11-08)
     strip = h.split('id="layers"')[1].split('class="board')[0]
     assert '<span class="ctl-label" id="lbl-replay">Past days</span>' in strip and strip.count("<button") == 1 and "Experimental" not in strip and "Sources" not in strip
     assert 'id="lbl-sources"' not in h and 'id="layers-toggle"' not in h and 'id="layer-group"' not in h and 'id="tg-city"' not in h and 'id="tg-bwtf"' not in h and 'data-layer="risk"' not in h
@@ -89,11 +89,14 @@ def test_today_page_is_the_board_plus_the_experimental_row_and_the_api_route_exi
     assert '.map-stack{position:relative' in board and ".map-col{display:flex" in board and "position:relative" not in board.split(".map-col{")[1].split("}")[0]   # the legend floats over the map, not over the bar
     assert 'if (key === "city") { setCity(!CITY_ON, btn); return; }' in board and 'btn.setAttribute("aria-pressed", on ? "true" : "false")' in board
     assert 'el.className = "bwtfline"' in board and '.board.replaying .zone .bwtfline' in board and 'querySelectorAll(".zone .bwtfline").forEach(e => e.remove())' in board   # Surfrider's line on each tile, gone with the layer and on a replayed day
-    # the forecast's risk left the tiles for its own Beta panel under them (2026-11-09); the rain and Surfrider lines now follow the zone's name
-    assert '.zone .risk' not in board and 'class="risk">' not in board and "overflow risk today{% endif %}" not in board
-    assert '{% if board.risk_text %}' in board and '<section class="risk-panel" aria-labelledby="risk-h">' in board and '<span class="beta-tag">Beta</span>' in board and ".board.replaying .risk-panel{display:none}" in board
-    assert board.index('class="zones-hint"') < board.index('class="risk-panel"') < board.index('class="map-col"')   # under the tiles, before the map column
-    assert 'el.className = "rainline"; t.b.querySelector(".nm").after(el); }' in board and '(t.b.querySelector(".rainline") || t.b.querySelector(".nm")).after(el); }' in board
+    # The forecast is in beta (2026-11-08): the tiles carry the city's word alone — no risk line — and the forecast is a quiet
+    # collapsed "Sewer-overflow forecast · Beta" line under them holding its sentence, each zone's number and what it is; opening
+    # it changes nothing above it. Closed on every visit; ?risk=1 opens it. (tests/test_risk_levels.py renders it with a forecast
+    # and checks the markup; this bare checkout has no snapshot, so no disclosure.)
+    assert 'class="risk"' not in board and ".zone .risk" not in board and "forecast-open" not in board and 'querySelector(".nm").after(el)' in board   # nothing on the tiles; the rain line anchors to the name
+    assert '{% if board.risk_lead %}\n        <details class="forecast" id="forecast">' in board and '<details class="forecast"' not in h and 'class="risk-lead"' not in h   # no forecast: the line is simply absent
+    assert 'get("risk") === "1") d.open = true' in board and '.board.replaying .forecast' in board   # the deep link; hidden on a replayed day
+    assert board.index('class="zones-hint"') < board.index('<details class="forecast"') < board.index('class="map-col"')   # under the tiles, in the text column — not among the map's controls
     # the chosen zone: a brand ring outside its grade border, the others dimmed
     assert ".zone.focus{box-shadow:0 0 0 2px #fff,0 0 0 5px var(--brand)}" in board and ".zones.has-focus .zone:not(.focus){opacity:.5}" in board and 'classList.toggle("has-focus", !!ACTIVE)' in board
     # the legend: over the map on wider screens, under it on phones (it covered the north shore)
@@ -114,7 +117,7 @@ def test_today_page_is_the_board_plus_the_experimental_row_and_the_api_route_exi
     assert "<summary>What the colours mean</summary>" in key and key.count("<dt>") == 3 and h.index('<details class="colour-key">') > h.index('id="legend-note"') and h.index('<details class="colour-key">') < h.index('id="zone-sites"')
     assert "Tile borders and city dots" in key and "<b>Green</b> means no warning sign is up — not that the water was tested clean today" in key
     assert "Surfrider diamonds" in key and "limit of 104 MPN/100 mL" in key and "<b>yellow</b> from 36" in key and "over 14 days old is drawn hollow" in key and "not a health advisory" in key and "Where the two sources differ, both are shown." in key
-    assert "The overflow-risk percentages" in key and "In the Beta panel under the tiles" in key and 'href="/forecast"' in key and "A prediction, driven by rain, not a measurement of the water." in key
+    assert "The forecast's percentages" in key and 'Inside the collapsed "Sewer-overflow forecast · Beta" line under the tiles' in key and 'href="/forecast"' in key and "A prediction, driven by rain, not a measurement of the water." in key
     assert ".board.replaying .colour-key{display:none}" in board and "All clear" not in h and '"No warning" if status == "safe"' in (ROOT / "app/landing.py").read_text()   # the tiles read "No warning", not "All clear"
     assert h.count('class="site" data-zone=') == 20 and 'id="zone-sites"' in h and 'data-sample-station=' in h and "{{" not in h        # a chip per station under the zone tiles, each opening the popover
     assert ' hidden>' in h.split('id="zone-sites"')[1][:200] and ".site-chips[hidden]{display:none}" in (ROOT / "app/static/brand.css").read_text()   # chips wait for a zone tap — and the attribute must win over the strip's display:flex

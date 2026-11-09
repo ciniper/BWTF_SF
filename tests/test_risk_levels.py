@@ -105,19 +105,22 @@ def test_forecast_page_draws_the_levels_from_the_one_table():
     assert "{{" not in h and "{%" not in h
 
 
-def test_today_board_risk_panel_uses_the_levels():
-    # The forecast's risk has its own Beta panel under the zone tiles (2026-11-09; it was a line on each tile, and before that
-    # behind a Risk view chip from 2026-10-18): one number per zone coloured by its level, the forecast's sentence, no facts row
+def test_today_board_forecast_disclosure_uses_the_levels():
     h = _today_html({"ocean": 20, "baker_china": 21, "north": 51, "east": 81})
-    for key, pct, zone in (("low", 20, "Ocean Beach"), ("medium", 21, "Baker &amp; China Beach"), ("high", 51, "North Beaches"), ("extreme", 81, "East Beaches")):
-        assert f'<li><b class="lvl-{key}">{pct}%</b>{zone}</li>' in h, key
+    # The forecast is in beta (2026-11-08): the tiles carry the city's word alone, and the numbers, the sentence and the caveat sit
+    # inside the board's collapsed "Sewer-overflow forecast · Beta" line under them, one entry per zone in the tiles' order (the
+    # numbers were on the tiles behind a Risk view chip from 2026-10-18, then always from 2026-11-06). Nothing recolours the tiles.
+    assert '<details class="forecast" id="forecast">' in h and '<summary>Sewer-overflow forecast <span class="tag">Beta</span></summary>' in h and "<details open" not in h
+    zones = h.split('<ul class="by-zone">')[1].split("</ul>")[0]
+    assert zones == ('<li>Ocean Beach <b class="lvl-low">20%</b></li><li>Baker &amp; China Beach <b class="lvl-medium">21%</b></li>'
+                     '<li>North Beaches <b class="lvl-high">51%</b></li><li>East Beaches <b class="lvl-extreme">81%</b></li>'), zones
     for lv in R.LEVELS:
-        assert f".risk-panel b.lvl-{lv.key}{{color:{lv.color}}}" in h                    # the number's colour, from the one table
-    panel = h.split('<section class="risk-panel"')[1].split("</section>")[0]
-    assert '<span class="eyebrow" id="risk-h">Sewer-overflow risk today</span><span class="beta-tag">Beta</span>' in panel and '<p class="risk-lead">81% at most (East Beaches)' in panel
-    assert "not a measurement of the water and not the city's status" in panel and 'href="/forecast"' in panel
-    assert h.index('class="zones-hint"') < h.index('class="risk-panel"') < h.index('class="map-col"')                     # under the tiles
-    assert "overflow risk today</div>" not in h and ".zone .risk" not in h and "<dt>Overflow risk today</dt>" not in h and "show-risk" not in h and 'data-layer="risk"' not in h and "const RISK_LEVELS" not in h
+        assert f".forecast .by-zone b.lvl-{lv.key}{{color:{lv.color}}}" in h             # the number's colour, from the one table
+    assert 'class="risk"' not in h and ".zone .risk" not in h and "forecast-open" not in h and "show-risk" not in h and 'data-layer="risk"' not in h
+    assert '<div class="risk-lead">Sewer-overflow risk today: 81% at most (East Beaches)' in h and h.index('<details class="forecast"') < h.index('class="risk-lead"') < h.index('<ul class="by-zone">') and "const RISK_LEVELS" not in h
+    assert 'risk-lead' not in h.split('class="lead">')[1].split("</p>")[0]                 # the sentence is out of the subhead
+    assert 'still being tested — not an official advisory; the status on the cards is SFPUC\'s. <a href="/forecast">' in h
+    assert "<dt>Overflow risk today</dt>" not in h                                           # and not a facts row either (2026-11-09)
     assert 'class="hi"' not in h and "under 10%" not in h and "50% or more" not in h
     assert "{{" not in h and "{%" not in h
 
