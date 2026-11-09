@@ -159,14 +159,16 @@
   .board-forecast .preset.active{color:var(--brand);background:none}
   .map-col .layers{margin:0 0 6px;gap:6px}
   .map-col .layers .ctl-group{border:0;padding:0;background:none}
-  .map-col .layers .sources{flex:1;flex-wrap:nowrap;gap:6px}
+  .map-col .layers .sources{flex:1;min-width:0;flex-wrap:nowrap;gap:4px}
   .map-col .layers .sources .ctl-label{position:static;width:auto;height:auto;overflow:visible;clip-path:none;font-size:12px;text-transform:none;letter-spacing:0;white-space:nowrap;margin:0;font-weight:500}
-  .map-col .layers .switch,.map-col .layers-toggle{padding:4px 8px;font-size:12px;white-space:nowrap}
+  .map-col .layers .switch,.map-col .layers-toggle{padding:4px 5px;font-size:11.5px;white-space:nowrap}
   .map-col .layers-toggle{display:inline-flex}
   .map-col .layers .layer-group{display:none;flex-basis:100%}.map-col .layers .layer-group.open{display:flex}
   .map-stack{position:relative;display:flex;flex-direction:column;flex:1;min-height:0}
   .map-stack .map-wrap{flex:1}
   @media (max-width:980px){.board .grid{row-gap:10px}}
+  @media (min-width:981px){.board-date{justify-content:flex-start}.board-date .eyebrow{flex:0 1 auto}}
+  @media (max-width:360px){.map-col .layers .sources{flex-wrap:wrap}.map-col .layers .sources .ctl-label{flex-basis:100%}}
   @media (max-width:420px){.zones{gap:8px}}
 </style>
 {%- endmacro %}
@@ -175,8 +177,8 @@
   <div class="layers" id="layers">
     <div class="ctl-group sources" role="group" aria-labelledby="lbl-sources">
     <span class="ctl-label" id="lbl-sources">Map shows:</span>
-    <label class="switch" title="City Results shows SFPUC's current posting status at twenty monitoring stations"><input type="checkbox" id="tg-city" checked><span class="track"></span><span class="lbl">City</span></label>
-    <label class="switch" title="Surfrider's latest Enterococcus result at each site the volunteers sample"><input type="checkbox" id="tg-bwtf"><span class="track"></span><span class="lbl">Surfrider</span></label>
+    <label class="switch" title="City Results shows SFPUC's current posting status at twenty monitoring stations"><input type="checkbox" id="tg-city" checked><span class="track"></span><span class="lbl">City Results</span></label>
+    <label class="switch" title="Surfrider's latest Enterococcus result at each site the volunteers sample"><input type="checkbox" id="tg-bwtf"><span class="track"></span><span class="lbl">Surfrider Results</span></label>
     <button type="button" class="layers-toggle" id="layers-toggle" aria-expanded="false" aria-controls="layer-group">More<span class="n" id="layers-n"></span></button>
     </div>
     <div class="ctl-group layer-group" id="layer-group" role="group" aria-label="More map options">
