@@ -209,7 +209,17 @@ function zoneView(key) {
 function frame(b, pad, maxZoom) {
   const lg = document.getElementById("map-legend");
   const top = lg && getComputedStyle(lg).position === "absolute" ? Math.max(pad, lg.offsetTop + lg.offsetHeight + 16) : pad;
-  const tl = L.point(pad, top), br = L.point(pad, pad), zoom = Math.min(maxZoom, MAP.getBoundsZoom(b, false, tl.add(br)));   // snapped down to zoomSnap's quarter steps
+  const tl = L.point(pad, top), br = L.point(pad, pad);
+  // getBoundsZoom clamps to the previous minimum, which can be too close after a resize.
+  // Measure without that limit; changing the option directly avoids firing zoom events.
+  const minZoom = MAP.options.minZoom;
+  let zoom;
+  try {
+    MAP.options.minZoom = -Infinity;
+    zoom = Math.min(maxZoom, MAP.getBoundsZoom(b, false, tl.add(br)));
+  } finally {
+    MAP.options.minZoom = minZoom;
+  }
   const mid = MAP.project(b.getSouthWest(), zoom).add(MAP.project(b.getNorthEast(), zoom)).divideBy(2);
   return {center: MAP.unproject(mid.add(br.subtract(tl).divideBy(2)), zoom), zoom};
 }
@@ -218,11 +228,13 @@ function frame(b, pad, maxZoom) {
 // city's east edge), so a zone is framed on its stations rather than shoved against that edge (Chase, 2026-11-08).
 let LIMITS = null;   // {zoom: the whole-city zoom, city: its area, wide: that area and every zone's view}
 function setCityLimits() {
+  const wasWholeCity = LIMITS && !ACTIVE && MAP.getZoom() <= LIMITS.zoom;
   const v = cityView(); if (!v) return;
   const wide = L.latLngBounds(v.area.getSouthWest(), v.area.getNorthEast());
   for (const key of Object.keys(MARKERS)) { const z = zoneView(key); wide.extend(viewArea(z.center, z.zoom)); }
   LIMITS = {zoom: v.zoom, city: v.area, wide};
   MAP.setMinZoom(v.zoom);
+  if (wasWholeCity) MAP.setView(v.center, v.zoom, {animate: false});
   MAP.setMaxBounds(limitsAt(MAP.getZoom()));
   dragOnlyZoomedIn();   // a new size can move the whole-city zoom
 }
