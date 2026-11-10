@@ -1,0 +1,28 @@
+event_date,facility,outfall_id,outfall_name,basin,receiving_water,duration_hours,volume_MG,volume_flag,method,source_document,page,report_period,note
+2008-01-04,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,5.88,,not_reported,hand_read,OSP 01-2008.pdf,19,2008-01,table gives hours and a No. column (left blank); no volumes before 2009
+2008-01-04,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,6.05,,not_reported,hand_read,OSP 01-2008.pdf,19,2008-01,
+2008-01-04,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,5.82,,not_reported,hand_read,OSP 01-2008.pdf,19,2008-01,
+2008-01-25,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,4.2,,not_reported,hand_read,OSP 01-2008.pdf,19,2008-01,
+2008-01-25,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,4,,not_reported,hand_read,OSP 01-2008.pdf,19,2008-01,
+2008-01-25,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,3.8,,not_reported,hand_read,OSP 01-2008.pdf,19,2008-01,
+2009-02-15,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,2.77,4.72,,hand_read,OSP 02-2009.pdf,19,2009-02,
+2009-02-15,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,3.23,7.95,,hand_read,OSP 02-2009.pdf,19,2009-02,
+2009-02-15,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,3.33,2.93,,hand_read,OSP 02-2009.pdf,19,2009-02,
+2009-02-15,Oceanside (CA0037681),CSD-006,Sea Cliff Brick Sewer,Oceanside,Pacific Ocean,0.2,0.18,,hand_read,OSP 02-2009.pdf,19,2009-02,the 2019 permit says CSD-006 was not monitored until telemetry in 2010
+2009-02-16,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,1.02,0.94,,hand_read,OSP 02-2009.pdf,19,2009-02,
+2009-02-16,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,1.83,1.59,,hand_read,OSP 02-2009.pdf,19,2009-02,
+2009-02-16,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,1.75,0.54,,hand_read,OSP 02-2009.pdf,19,2009-02,
+2009-03-05,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,1.63,2.77,,hand_read,OSP 03-2009.pdf,19,2009-03,
+2009-03-05,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,1.72,4.24,,hand_read,OSP 03-2009.pdf,19,2009-03,
+2009-03-05,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,1.65,1.45,,hand_read,OSP 03-2009.pdf,19,2009-03,
+2010-01-18,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,1.10,1.10,,hand_read,OSP 01-2010.pdf,15,2010-01,Lake Merced volume equals its hours on both days this month; possibly copied
+2010-01-18,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,1.25,12.20,,hand_read,OSP 01-2010.pdf,15,2010-01,
+2010-01-18,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,1.40,7.25,,hand_read,OSP 01-2010.pdf,15,2010-01,
+2010-01-18,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,1.00,0.52,,hand_read,OSP 01-2010.pdf,15,2010-01,
+2010-01-19,Oceanside (CA0037681),CSD-001,Lake Merced,Oceanside,Pacific Ocean,4.52,4.52,,hand_read,OSP 01-2010.pdf,15,2010-01,Lake Merced volume equals its hours on both days this month; possibly copied
+2010-01-19,Oceanside (CA0037681),CSD-002,Vicente,Oceanside,Pacific Ocean,4.34,24.78,,hand_read,OSP 01-2010.pdf,15,2010-01,
+2010-01-19,Oceanside (CA0037681),CSD-003,Lincoln,Oceanside,Pacific Ocean,5.32,6.54,,hand_read,OSP 01-2010.pdf,15,2010-01,
+2010-01-19,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,0.40,0.36,,hand_read,OSP 01-2010.pdf,15,2010-01,
+2010-01-29,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,0.04,0.02,,hand_read,OSP 01-2010.pdf,15,2010-01,the day-total column prints 0.019
+2010-02-26,Oceanside (CA0037681),CSD-005,Sea Cliff #1,Oceanside,Pacific Ocean,0.13,,not_reported,hand_read,OSP 02-2010.pdf,15,2010-02,"page is printed sideways; the cell sits between the 25th and 26th rows, and the day-total column puts it on the 26th; volume blank"
+2010-02-26,Oceanside (CA0037681),CSD-007,Sea Cliff #2,Oceanside,Pacific Ocean,0.33,0.02,,hand_read,OSP 02-2010.pdf,15,2010-02,page is printed sideways
