@@ -120,19 +120,26 @@
     var surf = d.source === "bwtf";
     m.querySelector("#sp-title").textContent = d.name || opts.name || opts.station || opts.bwtf;
     charts.forEach(function (c) { c.destroy(); }); charts = [];
-    var stale = m.querySelector("#sp-stale"), newer = !surf && !opts.date && opts.feedDate && (!d.found || opts.feedDate > d.date);   // the banner belongs to the newest view only
+    var newest = !surf && !opts.date;   // the banner belongs to the newest view only
+    var stale = m.querySelector("#sp-stale"), newer = newest && opts.feedDate && (!d.found || opts.feedDate > d.date);
+    var changed = newest && opts.changedAt && !newer;   // the posting moved this morning; the sample behind it is not on SFPUC's map yet (shared/result_gap.py)
     loadNav(d, opts);
+    var day = function (iso) { return new Date(iso + "T12:00:00").toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" }); };
+    var older = d.found ? "Below is the last <b style=\"display:inline;font-size:inherit\">published</b> sample, " + esc(day(d.date)) + "." : "Nothing older has been published for this station either.";
     if (newer) {   // Chase, 2026-09-29: "if the sample you click on is not available yet, the fact that it's an old sample should be louder"
       // The city's lab numbers reach SF Gov Open Data around 11 PM the day after collection (Chase, 2026-10-20: "always by 11:40")
-      var day = function (iso) { return new Date(iso + "T12:00:00").toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" }); };
-      stale.innerHTML = "<b>Newest sample not published yet</b>The city's map shows a sample taken " + esc(day(opts.feedDate)) + ". Its lab numbers usually arrive on SF Gov Open Data around 11 PM the day after collection. " +
-        (d.found ? "Below is the last <b style=\"display:inline;font-size:inherit\">published</b> sample, " + esc(day(d.date)) + "." : "Nothing older has been published for this station either.");
+      stale.innerHTML = "<b>Newest sample not published yet</b>The city's map shows a sample taken " + esc(day(opts.feedDate)) + ". Its lab numbers usually arrive on SF Gov Open Data around 11 PM the day after collection. " + older;
+      stale.hidden = false;
+    } else if (changed) {   // the morning gap: postings move ~8:30 AM, the sample date reaches the map ~10:30 AM–3 PM
+      var at = new Date(opts.changedAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles" });
+      stale.innerHTML = "<b>Newest sample not published yet</b>SFPUC " + (opts.changed === "cleared" ? "lifted this beach's posting" : "posted this beach") + " at " + esc(at) +
+        ", before the sample behind it reached their map. It usually appears there by early afternoon, and its lab numbers reach SF Gov Open Data around 11 PM. " + older;
       stale.hidden = false;
     }
     if (!d.found) { note.textContent = (surf ? "No Surfrider sample at this site" : "No published lab results for this station") + (opts.date ? " on " + opts.date : "") + "."; return; }
     var dt = new Date(d.date + "T12:00:00");
     m.querySelector("#sp-date").innerHTML = "Sampled " + esc(dt.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" })) + (surf && d.times && d.times.length ? " at " + esc(d.times.join(" and ")) : "")
-      + (opts.date ? "" : '<span class="sp-latest">Latest</span>');
+      + (opts.date || newer || changed ? "" : '<span class="sp-latest">Latest</span>');   // a newer sample exists: this one is not the latest
     var parts = [];
     if (surf) parts.push("Surfrider Blue Water Task Force volunteer lab");
     if (d.n_samples > 1) parts.push(surf ? d.n_samples + " collections that day" : d.n_samples + " samples that day (the city's dataset carries the date but not the time)");
@@ -160,7 +167,7 @@
     links.innerHTML = (d.results_url ? '<a href="' + esc(d.results_url) + '" target="_blank" rel="noopener noreferrer">' + (surf ? "Site report on bwtf.surfrider.org" : "Raw results on SF Gov Open Data") + "</a>" : "") +
       '<a href="' + esc(d.viewer_url) + '">All samples for this site</a><a href="' + esc(d.graph_url) + '">Graphs for this site</a>';
   }
-  function fromEl(a) { return { station: a.dataset.sampleStation, bwtf: a.dataset.sampleBwtf, name: a.dataset.sampleName, date: a.dataset.sampleDate || "", feedDate: a.dataset.sampleFeedDate || "" }; }
+  function fromEl(a) { return { station: a.dataset.sampleStation, bwtf: a.dataset.sampleBwtf, name: a.dataset.sampleName, date: a.dataset.sampleDate || "", feedDate: a.dataset.sampleFeedDate || "", changed: a.dataset.sampleChanged || "", changedAt: a.dataset.sampleChangedAt || "" }; }
   document.addEventListener("click", function (e) {
     var a = e.target.closest("[data-sample-station],[data-sample-bwtf]");
     if (!a) return;
