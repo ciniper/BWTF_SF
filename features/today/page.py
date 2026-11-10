@@ -53,9 +53,9 @@ def _json(obj, status: int = 200):
 # ── Surfrider results ──────────────────────────────────────────────────────────────────
 
 # A Surfrider result older than this is drawn hollow and grey, not in its grade's colour: it is the volunteers'
-# latest, not the water's state now. The number is a starting guess (2026-11-06) — the sampling schedule is not
-# settled yet; adjust it here and the map, the legend, the chips and the tile lines follow.
-STALE_AFTER_DAYS = 14
+# latest, not the water's state now. Seven days is the display policy (2026-11-10);
+# adjust it here and the map, legend, site chips and explanatory key follow.
+STALE_AFTER_DAYS = 7
 
 
 def surfrider_layer(lab, today: date | None = None) -> dict:
@@ -274,7 +274,7 @@ def build_replay_layer(now: Optional[datetime] = None, days: int = REPLAY_DAYS) 
 
 def render_page(ctx: dict) -> str:
     """The home page from a board_context: the Layers strip and the board. The three constants feed the board's
-    "What the colours mean" key (2026-11-08), so the numbers there are the ones the layer and the grades use."""
+    "What the colors mean" key (2026-11-08), so the numbers there are the ones the layer and the grades use."""
     return render_template("today/page.html", board=ctx["board"], generated=ctx["generated"], canonical=HOME_URL,
                            STALE_AFTER_DAYS=STALE_AFTER_DAYS, ENTERO_LIMIT=STANDARDS["ENTERO"]["single_sample_max"], ENTERO_CAUTION=ENTERO_CAUTION)
 

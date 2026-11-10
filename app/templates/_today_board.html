@@ -38,9 +38,6 @@
   .zone .st{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px}
   .zone.posted .st{color:var(--posted)}.zone.discharge .st{color:var(--discharge)}.zone.unknown .st{color:var(--faint)}
   .zone .nm{font-size:16px;font-weight:900;margin:5px 0 1px;line-height:1.2}
-  .zone .bwtfline{font-size:12px;font-weight:600;color:var(--muted);margin-top:4px}   /* Surfrider's results in the zone, while that layer is on */
-  .zone .bwtfline:empty{display:none}
-  .zone .bwtfline .over{color:var(--posted)}
   /* The forecast is in beta (2026-11-08): the tiles carry the city's word alone, and the forecast is a quiet collapsed
      line under them — its sentence, each zone's number, and what it is — that changes nothing above it. (The tiles
      showed the numbers from 2026-10-18, behind a Risk view chip, then always from 2026-11-06.) The tiles keep the
@@ -144,7 +141,7 @@
   .of-pop b{display:block;font-size:14px;margin-bottom:2px}
   .of-pop .mut{color:var(--muted)}
   .board.replaying .eyebrow{color:var(--brand)}
-  .board.replaying .forecast,.board.replaying .zone .rainline,.board.replaying .zone .bwtfline,.board.replaying .zone .meta,.board.replaying .site small{display:none}   /* today's forecast, rain, Surfrider results and sample dates are not that day's */
+  .board.replaying .forecast,.board.replaying .zone .rainline,.board.replaying .zone .meta,.board.replaying .site small{display:none}   /* today's forecast, rain and sample dates are not that day's */
   @media (max-width:760px){
     .layers .replay-ctl{flex-basis:100%}.layers .replay-ctl input{flex:1}
     .layers .ctl-group{flex-basis:100%}
@@ -171,7 +168,7 @@
         <div class="eyebrow">Beach status · {{ board.date }} · {% if board.feed_ok %}SFPUC map checked {{ board.checked }}{% else %}SFPUC map unreachable{% endif %}</div>
         <h1 id="today-h">{{ board.headline_html|safe }}</h1>
         <p class="lead">{{ board.lead }}</p>   {#- the news: which beaches are posted or discharging; a replayed day writes its own sentence here #}
-        {% if board.facts %}<dl class="facts">{% for f in board.facts %}<div><dt>{{ f.label }}</dt><dd>{{ f.text }}</dd></div>{% endfor %}</dl>{% endif %}
+        {% if board.facts %}<dl class="facts">{% for f in board.facts %}<div><dt>{{ f.label }}</dt><dd>{{ f.text[:1]|upper }}{{ f.text[1:] }}</dd></div>{% endfor %}</dl>{% endif %}
         {% if board.zones %}
         <div class="zones" id="zones">
           {% for z in board.zones %}
@@ -209,11 +206,11 @@
       {% endif %}
       <div class="map-stack">
       <div class="map-wrap">
-        <div id="today-map" role="region" aria-label="Map of the city's beach monitoring stations, coloured by the city's posted status"></div>
+        <div id="today-map" role="region" aria-label="Map of the city's beach monitoring stations, colored by the city's posted status"></div>
         <button type="button" class="map-reset" id="map-reset" hidden>Whole city</button>
       </div>
         <div class="map-legend" id="map-legend"><span><i class="status-dot safe"></i>no warning</span><span><i class="status-dot posted"></i>warning posted</span><span><i class="status-dot discharge"></i>sewage discharge</span><span><i class="status-dot unknown"></i>not sampled</span></div>
-        <p class="legend-note" id="legend-note">Colours are the city's posted status at the last check, not a measurement of today's water.</p>
+        <p class="legend-note" id="legend-note">Colors are the city's posted status at the last check, not a measurement of today's water.</p>
         {% if controls %}<span class="layer-status" id="layer-status" role="status" aria-live="polite"></span>{% endif %}
       </div>
       </div>
@@ -222,16 +219,16 @@
         posting, Surfrider's grade, the forecast's level — and a reader should be able to tell which one they are looking at). Collapsed,
         so the board stays a glance; it is a reporter's key, not advice: where the two sources differ, both are shown and neither is picked. -#}
     <details class="colour-key">
-      <summary>What the colours mean</summary>
+      <summary>What the colors mean</summary>
       <dl>
         <div><dt><i class="status-dot safe"></i> Tile borders and city dots</dt>
           <dd>SFPUC's posted status at the last check. <b>Green</b> means no warning sign is up — not that the water was tested clean today; the city samples weekly and posts a warning when a result fails.
-              <b>Orange</b>: a warning is posted. <b>Red</b>: a sewage discharge. <b>Grey</b>: no status on the city's map.</dd></div>
+              <b>Orange</b>: a warning is posted. <b>Red</b>: a sewage discharge. <b>Gray</b>: no status on the city's map.</dd></div>
         <div><dt><i class="bwtf-dot safe"></i> Surfrider diamonds <small>(with that layer on)</small></dt>
           <dd>The grade of one volunteer sample, for one indicator (Enterococcus), against the state single-sample limit of {{ ENTERO_LIMIT }} MPN/100 mL: <b>green</b> below it, <b>yellow</b> from {{ ENTERO_CAUTION }}, <b>orange</b> at or over it.
               Volunteers sample about every two weeks; a result over {{ STALE_AFTER_DAYS }} days old is drawn hollow. A volunteer result is not a health advisory. Where the two sources differ, both are shown.</dd></div>
         <div><dt><b class="pct">%</b> The forecast's percentages</dt>
-          <dd>Inside the collapsed "Sewer-overflow forecast · Beta" line under the tiles: our <a href="/forecast">forecast</a>'s sewer-overflow risk for today, one number per zone coloured by its level. A prediction, driven by rain, not a measurement of the water.</dd></div>
+          <dd>Inside the collapsed "Sewer-overflow forecast · Beta" line under the tiles: our <a href="/forecast">forecast</a>'s sewer-overflow risk for today, one number per zone colored by its level. A prediction, driven by rain, not a measurement of the water.</dd></div>
       </dl>
     </details>
     {% if sites %}
@@ -463,8 +460,8 @@ function renderLegend() {
   lg.innerHTML = h;
   // under the map: what the colours report, and what they do not
   const note = $("legend-note");
-  if (note) note.textContent = REPLAY_OFFSET ? "Colours are the city's posted status at its last check that day."
-    : (CITY_ON ? "Colours are the city's posted status at the last check, not a measurement of today's water." : "")
+  if (note) note.textContent = REPLAY_OFFSET ? "Colors are the city's posted status at its last check that day."
+    : (CITY_ON ? "Colors are the city's posted status at the last check, not a measurement of today's water." : "")
     + (bw ? (CITY_ON ? " " : "") + "Diamonds grade one volunteer Enterococcus sample per site, taken about every two weeks; not an advisory." : "");
 }
 function tileParts(key) { const b = document.querySelector('.zone[data-zone="' + key + '"]'); return b ? {b, st: b.querySelector(".st"), dots: [...b.querySelectorAll(".stations .status-dot")]} : null; }
@@ -579,19 +576,6 @@ const BUILD = {
       if (last) last.after(chip); else box.appendChild(chip);
     }
     filterSites();
-    // a line on each zone tile: how many Surfrider sites, the newest result there, how many over the limit (2026-11-06:
-    // the switch used to change the map alone, which on a phone is below the tiles, so it looked like nothing happened)
-    for (const z of ZONES) {
-      const t = tileParts(z.key); if (!t) continue;
-      const here = d.sites.filter(s => s.zone === z.key);
-      let el = t.b.querySelector(".bwtfline"); if (!el) { el = document.createElement("div"); el.className = "bwtfline"; (t.b.querySelector(".rainline") || t.b.querySelector(".nm")).after(el); }
-      const over = here.filter(s => s.over).length, dated = here.filter(s => s.date), newest = dated.sort((a, b) => a.age_days - b.age_days)[0];
-      // when the city has sampled this zone since Surfrider did, the tile says so — a fact beside the age, not a verdict on either (Chase, 2026-11-07)
-      const cityNewest = z.stations.filter(s => s.sampled_age_days != null).sort((a, b) => a.sampled_age_days - b.sampled_age_days)[0];
-      const since = newest && cityNewest && newest.age_days > cityNewest.sampled_age_days ? " · the city's newest is " + esc(cityNewest.sampled_text.replace(/^sampled /, "")) : "";
-      el.innerHTML = !here.length ? "Surfrider: no site in this zone" : "Surfrider: " + here.length + " site" + (here.length > 1 ? "s" : "") + (newest ? " · newest sampled " + esc(newest.age_text) : "") + since
-        + (over ? ' · <span class="over">' + over + " over the limit</span>" : "") + (dated.length && dated.every(s => s.stale) ? " · results over " + d.stale_after_days + " days old" : "");
-    }
     status(d.sites.length + " Surfrider sites · newest sampled " + (d.newest_text || "—") + (d.newest ? " (" + d.newest + ")" : ""));
     return g;
   },
@@ -602,7 +586,7 @@ async function setLayer(key, on, btn) {
   if (key === "labels") { L_.on = on; markOn(btn, on); refreshLabels(); return; }   // drawn from the stations already on the map: nothing to fetch
   if (!on) { if (L_.group) MAP.removeLayer(L_.group); L_.on = false; markOn(btn, false); setCityLimits();
     if (key === "rain") { document.querySelectorAll(".zone .rainline").forEach(e => e.remove()); document.querySelectorAll(".zone.wet").forEach(e => e.classList.remove("wet")); }
-    if (key === "bwtf") { document.querySelectorAll("#zone-sites .site.bwtf").forEach(c => c.remove()); document.querySelectorAll(".zone .bwtfline").forEach(e => e.remove()); }
+    if (key === "bwtf") { document.querySelectorAll("#zone-sites .site.bwtf").forEach(c => c.remove()); }
     status(""); renderLegend(); return; }
   btn.disabled = true; status("Loading…");
   try {

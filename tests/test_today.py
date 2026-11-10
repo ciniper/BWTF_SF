@@ -24,6 +24,24 @@ def test_days_ago_text_reads_as_a_person_would_say_it():
     assert days_ago_text(date(2026, 11, 7), t) == "today"   # a clock ahead of the beach never says "-1 days ago"
 
 
+def test_sample_facts_start_with_sentence_case_without_changing_embedded_ages():
+    from app.wsgi import app
+    from app.landing import today_board
+
+    def station(sid, day):
+        return types.SimpleNamespace(station_id=sid, status="safe", has_cso=False, sample_date=datetime(2026, 11, day))
+
+    with app.test_request_context("/"):
+        for day, age in ((9, "Yesterday"), (10, "Today")):
+            board = today_board([station("4601", day)], samples_fact=f"Surfrider 11/{day}", now=datetime(2026, 11, 10))
+            h = T.render_page({"board": board, "generated": "Preview"})
+            assert f"<dd>{age} (Nov {day})" in h
+            assert f"sampled {age.lower()}" in h
+        board = today_board([station("4601", 9), station("4602", 10)], now=datetime(2026, 11, 10))
+        h = T.render_page({"board": board, "generated": "Preview"})
+        assert "<dd>Between today and yesterday (Nov 9 to Nov 10)" in h
+
+
 def test_surfrider_layer_grades_each_site_and_maps_it_to_the_city_beach():
     lab = types.SimpleNamespace(sites=[
         _site("Ocean Beach at Vicente St", 20.0, "20", datetime(2026, 9, 24, 16, 45)),
@@ -34,18 +52,16 @@ def test_surfrider_layer_grades_each_site_and_maps_it_to_the_city_beach():
     d = T.surfrider_layer(lab, today=date(2026, 10, 2))
     by = {s["name"]: s for s in d["sites"]}
     assert d["ok"] and d["newest"] == "2026-09-24" and d["limit"] == standards.STANDARDS["ENTERO"]["single_sample_max"] and d["caution"] == standards.ENTERO_CAUTION
-    # the age of each result, in days and in words, and stale past STALE_AFTER_DAYS (14 to start, 2026-11-06): drawn hollow and grey
-    assert d["newest_text"] == "8 days ago" and d["stale_after_days"] == T.STALE_AFTER_DAYS == 14
-    assert (by["Aquatic Park"]["age_days"], by["Aquatic Park"]["age_text"], by["Aquatic Park"]["stale"]) == (8, "8 days ago", False)
+    # Results become stale after seven days, independent of the bacteria grade.
+    assert d["newest_text"] == "8 days ago" and d["stale_after_days"] == T.STALE_AFTER_DAYS == 7
+    assert (by["Aquatic Park"]["age_days"], by["Aquatic Park"]["age_text"], by["Aquatic Park"]["stale"]) == (8, "8 days ago", True)
     assert (by["Crissy Field Beach East"]["age_days"], by["Crissy Field Beach East"]["age_text"], by["Crissy Field Beach East"]["stale"]) == (15, "15 days ago", True)
     assert (by["Bayview Hunters Point"]["age_days"], by["Bayview Hunters Point"]["age_text"], by["Bayview Hunters Point"]["stale"]) == (None, "", False)
-    edge = T.surfrider_layer(types.SimpleNamespace(sites=[_site("Aquatic Park", 20.0, "20", datetime(2026, 9, 24, 18, 30))]), today=date(2026, 10, 8))["sites"][0]
-    assert (edge["age_days"], edge["stale"]) == (14, False)                                                   # exactly the threshold is still fresh
+    edge = T.surfrider_layer(types.SimpleNamespace(sites=[_site("Aquatic Park", 20.0, "20", datetime(2026, 9, 24, 18, 30))]), today=date(2026, 10, 1))["sites"][0]
+    assert (edge["age_days"], edge["stale"]) == (7, False)   # exactly the threshold is still fresh
     board = (ROOT / "app/templates/_today_board.html").read_text()
     assert ".bwtf-dot.stale{background:#fff;border:1.5px dashed var(--faint)" in board and '(s.stale ? " stale" : "")' in board and 'dia("stale", "over " + d.stale_after_days + " days old")' in board
-    assert '" · " + s.age_text + " (" + s.date + ")"' in board and 'newest sampled " + esc(newest.age_text)' in board and '" · " + s.sampled_text + " ("' in board   # ages in words on the map, the tiles and the city dots
-    # the tile says when the city has sampled the zone since Surfrider did — beside the age, deciding nothing (Chase, 2026-11-07)
-    assert 'newest.age_days > cityNewest.sampled_age_days ? " · the city\'s newest is " + esc(cityNewest.sampled_text.replace(/^sampled /, ""))' in board
+    assert '" · " + s.age_text + " (" + s.date + ")"' in board and '" · " + s.sampled_text + " ("' in board   # ages remain on the markers
     assert [s["name"] for s in d["sites"]] == sorted(by)                                                      # stable order
     v = by["Ocean Beach at Vicente St"]
     assert (v["city_name"], v["key"], v["over"], v["caution"], v["date"], v["time"]) == ("Ocean Beach at Vicente Street", "OCEAN#21_SL", False, False, "2026-09-24", "16:45")
@@ -88,7 +104,7 @@ def test_today_page_is_the_board_plus_the_experimental_row_and_the_api_route_exi
     assert "RISK_VIEW" not in board and "show-risk" not in board and "openLayers" not in board and ".switch" not in board   # no risk toggle, no fold, no switches
     assert '.map-stack{position:relative' in board and ".map-col{display:flex" in board and "position:relative" not in board.split(".map-col{")[1].split("}")[0]   # the legend floats over the map, not over the bar
     assert 'if (key === "city") { setCity(!CITY_ON, btn); return; }' in board and 'btn.setAttribute("aria-pressed", on ? "true" : "false")' in board
-    assert 'el.className = "bwtfline"' in board and '.board.replaying .zone .bwtfline' in board and 'querySelectorAll(".zone .bwtfline").forEach(e => e.remove())' in board   # Surfrider's line on each tile, gone with the layer and on a replayed day
+    assert "bwtfline" not in board   # enabling Surfrider must not add paragraphs to the zone tiles
     # The forecast is in beta (2026-11-08): the tiles carry the city's word alone — no risk line — and the forecast is a quiet
     # collapsed "Sewer-overflow forecast · Beta" line under them holding its sentence, each zone's number and what it is; opening
     # it changes nothing above it. Closed on every visit; ?risk=1 opens it. (tests/test_risk_levels.py renders it with a forecast
@@ -108,15 +124,15 @@ def test_today_page_is_the_board_plus_the_experimental_row_and_the_api_route_exi
     # out all three systems with the numbers the layer and the grades actually use.
     legend = h.split('id="map-legend"')[1].split("</div>")[0]
     assert [t.split("</span>")[0] for t in legend.split("</i>")[1:]] == ["no warning", "warning posted", "sewage discharge", "not sampled"] and "safe<" not in legend and "Surfrider latest" not in h
-    assert '<p class="legend-note" id="legend-note">Colours are the city\'s posted status at the last check, not a measurement of today\'s water.</p>' in h
-    assert "coloured by the city's posted status" in h and "coloured by today's status" not in h
+    assert '<p class="legend-note" id="legend-note">Colors are the city\'s posted status at the last check, not a measurement of today\'s water.</p>' in h
+    assert "colored by the city's posted status" in h and "colored by today's status" not in h
     assert 'dot("safe", REPLAY_OFFSET ? "not posted" : "no warning") + dot("posted", "warning posted") + dot("discharge", "sewage discharge")' in board
     assert '<span class="src">Surfrider</span>\' + dia("safe", "below limit") + dia("caution", "from " + (d ? d.caution : "") + " MPN") + dia("posted", "over limit") + dia("unknown", "no result")' in board
     assert 'if (CITY_ON) h += (bw ? \'<span class="src">City</span>\' : "")' in board and "Diamonds grade one volunteer Enterococcus sample per site, taken about every two weeks; not an advisory." in board
     key = h.split('<details class="colour-key">')[1].split("</details>")[0]
-    assert "<summary>What the colours mean</summary>" in key and key.count("<dt>") == 3 and h.index('<details class="colour-key">') > h.index('id="legend-note"') and h.index('<details class="colour-key">') < h.index('id="zone-sites"')
+    assert "<summary>What the colors mean</summary>" in key and key.count("<dt>") == 3 and h.index('<details class="colour-key">') > h.index('id="legend-note"') and h.index('<details class="colour-key">') < h.index('id="zone-sites"')
     assert "Tile borders and city dots" in key and "<b>Green</b> means no warning sign is up — not that the water was tested clean today" in key
-    assert "Surfrider diamonds" in key and "limit of 104 MPN/100 mL" in key and "<b>yellow</b> from 36" in key and "over 14 days old is drawn hollow" in key and "not a health advisory" in key and "Where the two sources differ, both are shown." in key
+    assert "Surfrider diamonds" in key and "limit of 104 MPN/100 mL" in key and "<b>yellow</b> from 36" in key and "over 7 days old is drawn hollow" in key and "not a health advisory" in key and "Where the two sources differ, both are shown." in key
     assert "The forecast's percentages" in key and 'Inside the collapsed "Sewer-overflow forecast · Beta" line under the tiles' in key and 'href="/forecast"' in key and "A prediction, driven by rain, not a measurement of the water." in key
     assert ".board.replaying .colour-key{display:none}" in board and "All clear" not in h and '"No warning" if status == "safe"' in (ROOT / "app/landing.py").read_text()   # the tiles read "No warning", not "All clear"
     assert h.count('class="site" data-zone=') == 20 and 'id="zone-sites"' in h and 'data-sample-station=' in h and "{{" not in h        # a chip per station under the zone tiles, each opening the popover
