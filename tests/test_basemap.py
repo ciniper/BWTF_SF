@@ -39,8 +39,11 @@ def test_map_pages_open_the_tile_and_leaflet_connections_early():
     assert B.basemap()["origin"] == "https://server.arcgisonline.com"
     assert B.tile_origin("https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png") is None
     from app.wsgi import app
-    pages = [p for p in sorted((ROOT / "app/templates").rglob("*.html")) if "leaflet@1.9.4/dist/leaflet.js" in p.read_text()]
-    assert len(pages) == 4, [p.name for p in pages]
+    # Learn loads Leaflet only when its map scrolls into view, so it gets no hint: the connections could go unused
+    lazy = {ROOT / "app/templates/learn/page.html"}
+    pages = [p for p in sorted((ROOT / "app/templates").rglob("*.html"))
+             if "leaflet@1.9.4/dist/leaflet.js" in p.read_text() and p not in lazy]
+    assert len(pages) == 4, [str(p.relative_to(ROOT)) for p in pages]
     with app.test_client() as c:
         for u in ("/", "/signup", "/discharges", "/analysis"):
             h = c.get(u).data.decode()
