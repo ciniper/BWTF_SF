@@ -14,8 +14,9 @@ model is chosen on S1 only (design §3.1 owner rule). No set's weights enter
 here, so one build serves every set.
 
 **Rows.** One per (day, series, lead) for each model: icon_seamless (the
-served one, read from live_dashboard's METEO_PARAMS), ecmwf_ifs025 and
-gfs_seamless; series SF Downtown (047772), SF Oceanside (047767) and the
+served one, read from live_dashboard's METEO_PARAMS), ecmwf_ifs025,
+gfs_seamless and ecmwf_ifs (ECMWF 9 km, added 2026-11-10, Part B 43: Previous
+Runs from 2025-10, so its fixed leads cover one season); series SF Downtown (047772), SF Oceanside (047767) and the
 two-gauge mean; leads 0–5, from the first day of ICON's short-lead archive
 (2022-11-16) to the last day exclusions' context covers (2026-08-31 on the
 committed data). Every scored window ends at the data end the stages share
@@ -49,7 +50,11 @@ disagree):
   model's own rows give its n_scored, but the three hold different days (ECMWF
   lacks February 2024), so models are set side by side only in ``common``:
   every model on the days all three scored (point scores), the way
-  weather_models_eval grades them. Either-wet days still differ by model
+  weather_models_eval grades them. "All three" are ``COMPARED``, the models
+  protocol §8 was registered on: ECMWF 9 km, added later on one season, is
+  graded on its own rows and in ``paired`` only, never in ``common``,
+  ``by_season``, the primary's Holm family or the reproduction, so adding it
+  moved no earlier number. Either-wet days still differ by model
   there; that difference is read in ``paired``;
 - benchmarks on the served model's rows: persistence (the gauge on D−L−1,
   the last day before the issue day, as that day read it: a 0.00 the
@@ -115,6 +120,10 @@ SCORES_JSON = OUT_DIR / "s1_scores.json"
 LIVE_DASHBOARD = E.LIVE_DASHBOARD
 EVAL_JSON = W.OUT_JSON                                  # weather_models_eval.json, the reproduction reference
 MODELS = E.MODELS
+# The three models protocol §8's comparison was registered on. ``common``, ``by_season``, the Holm family of the
+# primary and the reproduction stay theirs; a model added later (ECMWF 9 km, Previous Runs from 2025-10: Part B 43)
+# is graded on its own rows and paired with the served model, so adding it moves no earlier number.
+COMPARED = ("icon_seamless", "ecmwf_ifs025", "gfs_seamless")
 SERIES = T.SERIES                                       # SF Downtown, SF Oceanside, avg
 GAUGES = T.GAUGE_SERIES
 LEADS = E.LEADS
@@ -369,9 +378,9 @@ def reproduction(by_model: dict, served: str) -> dict:
     ev = json.loads(EVAL_JSON.read_text())
     lo, hi = (pd.Timestamp(d) for d in ev["window"])
     L, s = PRIMARY["lead"], PRIMARY["series"]
-    held = {m: _scored(by_model[m], L, s, lo=S1_START, hi=pd.Timestamp.max) for m in MODELS}
+    held = {m: _scored(by_model[m], L, s, lo=S1_START, hi=pd.Timestamp.max) for m in COMPARED}
     common = held[served].index
-    for m in MODELS:
+    for m in COMPARED:
         common = common.intersection(held[m].index)
     common = common[(common >= lo) & (common <= hi)]
     own = _scored(by_model[served], L, s)
@@ -389,7 +398,7 @@ def reproduction(by_model: dict, served: str) -> dict:
                             and abs(on_eval["continuous"]["either_wet"]["mae"] - ref["continuous"]["either_wet"]["mae"]) < 1e-5),
             "why_own_differs": {
                 "only_s1_before_the_report_window": int((only_own < lo).sum()),
-                "only_s1_another_model_lacks": {m: int(len(inside.difference(held[m].index))) for m in MODELS if m != served},
+                "only_s1_another_model_lacks": {m: int(len(inside.difference(held[m].index))) for m in COMPARED if m != served},
                 "only_report_after_the_data_end": int((only_eval > own.index.max()).sum()),
                 "note": "S1 scores each model on every day it holds, 2024-01-20 to the data end; the report scores all "
                         "three on the days all three hold, 2024-02-03 to 2026-08-27"}}
@@ -410,7 +419,7 @@ def build(served: str | None = None) -> tuple[dict, dict]:
     res = {"schema": SCHEMA, "protocol": X.protocol_stamp(), "built_at": clock.utc_iso(),
            "inputs": {str(p.relative_to(REPO)): _sha256(p) for p in input_files()},
            "data_end": str(end.date()), "rows": [str(ctx.start.date()), str(ctx.end.date())],
-           "served_model": served, "models": list(MODELS), "series": list(SERIES),
+           "served_model": served, "models": list(MODELS), "compared": list(COMPARED), "series": list(SERIES),
            "leads": {str(L): {"kind": OMP.LEAD_KIND[L], "label": W.LEAD_LABEL[L]} for L in LEADS},
            "tier": {"code": "T1", "why": "S1 has no fitted weights: every day before the freeze is weights-clean (T0 after it)",
                     "selection": "the served model (ICON, 2026-09-30) was chosen on 2024-02 → 2026-08 (protocol §2 decision log): "
@@ -424,26 +433,28 @@ def build(served: str | None = None) -> tuple[dict, dict]:
         res["by_lead"][str(L)], res["paired"][str(L)] = {}, {}
         for s in SERIES:
             subs = {m: _scored(by_model[m], L, s) for m in MODELS}
-            common = _common(subs)
+            common = _common({m: subs[m] for m in COMPARED})
             res["by_lead"][str(L)][s] = {"models": {m: _suite(subs[m]) for m in MODELS},
                                          "common": {"n": int(len(common)), "days": [str(common.min().date()), str(common.max().date())],
-                                                    "models": {m: _suite(subs[m].loc[common], ci=False) for m in MODELS}},
+                                                    "models": {m: _suite(subs[m].loc[common], ci=False) for m in COMPARED}},
                                          "benchmarks": _benchmarks(by_model[served], L, s, hist, raw)}
             res["paired"][str(L)][s] = {m: _paired(subs[m], subs[served]) for m in MODELS if m != served}
     p = res["paired"][str(PRIMARY["lead"])][PRIMARY["series"]]
     p2 = {m: _two_sided(d["mae_either_wet"]["p_neg"]) for m, d in p.items()}
-    held = _holm(p2, 1 - W.LEVEL)
+    held = _holm({m: v for m, v in p2.items() if m in COMPARED}, 1 - W.LEVEL)
     res["primary"]["vs_served"] = {m: {"mae_either_wet": d["mae_either_wet"], "ets_0.5": d["ets_0.5"], "p_two_sided": p2[m],
-                                       "verdict": d["mae_either_wet"]["verdict"] if held[m] else "no clear difference",
-                                       "verdict_unadjusted": d["mae_either_wet"]["verdict"], "days": d["days"]} for m, d in p.items()}
+                                       "verdict": d["mae_either_wet"]["verdict"] if held.get(m, True) else "no clear difference",
+                                       "verdict_unadjusted": d["mae_either_wet"]["verdict"], "days": d["days"],
+                                       **({} if m in COMPARED else {"family": "added after protocol §8: not Holm-adjusted"})}
+                                   for m, d in p.items()}
     for season in sorted({W.season_of(d) for d in pd.date_range(PR_START, end)}):
         blk = {}
         for L in LEADS:
-            subs = {m: _scored(by_model[m], L, T.MEAN_SERIES) for m in MODELS}
+            subs = {m: _scored(by_model[m], L, T.MEAN_SERIES) for m in COMPARED}
             common = _common(subs)
             days = common[[W.season_of(d) == season for d in common]]
             if len(days) and int((subs[served].loc[days, "obs_in"] >= W.WET_DAY_IN).sum()):   # a summer stub: nothing to verify
-                blk[str(L)] = {m: _suite(subs[m].loc[days], ci=False) for m in MODELS}
+                blk[str(L)] = {m: _suite(subs[m].loc[days], ci=False) for m in COMPARED}
         if blk:
             res["by_season"][season] = blk
     for g in GAUGES:
@@ -530,7 +541,7 @@ def main(argv=None) -> None:
         b = c["models"]
         print(f"lead {lead} ({c['n']} common days): " + "; ".join(
             f"{m} MAE {b[m]['continuous']['either_wet']['mae']:.3f} (n {b[m]['n_either_wet']}) "
-            f"ETS0.5 {W.f2(b[m]['thresholds']['0.5']['ets'])}" for m in MODELS))
+            f"ETS0.5 {W.f2(b[m]['thresholds']['0.5']['ets'])}" for m in COMPARED))
     for m, d in sc["primary"]["vs_served"].items():
         dm = d["mae_either_wet"]
         print(f"primary {m} − {sc['served_model']}: ΔMAE {dm['delta']:+.4f} [{dm['lo']:+.4f}, {dm['hi']:+.4f}] {d['verdict']} "

@@ -26,7 +26,7 @@ WORDS = {
     "geography": {"geo_v1": "BWTF basins", "sfpuc4_v1": "SFPUC basins"},
     # S1 is the rain a set reads: its weather model's forecast for the days ahead, the gauges for the days before. A
     # part with a rule after the model's id fills a dead gauge's days another way (S1_RAIN; Part B 41)
-    "s1": {"icon_seamless": "ICON", "ecmwf_ifs025": "ECMWF", "gfs_seamless": "GFS",
+    "s1": {"icon_seamless": "ICON", "ecmwf_ifs025": "ECMWF", "gfs_seamless": "GFS", "ecmwf_ifs": "ECMWF 9 km",
            "icon_seamless_mrmsfill": "ICON, dead gauges from MRMS"},
     "s2": {"logit_v1": "38-weight", "gb_v1": "Trees", "shared8_nonneg_sfpuc4": "8-term SFPUC",
            # the shared-terms sets on BWTF basins (leaderboard.SHARED_DESIGNS; the count is their bands)
@@ -62,7 +62,8 @@ WORDS = {
 # components share a code only when they share their words (the same part under two ids).
 CODES = {
     "geography": {"geo_v1": "", "sfpuc4_v1": "sfpuc"},
-    "s1": {"icon_seamless": "icon", "ecmwf_ifs025": "ecmwf", "gfs_seamless": "gfs", "icon_seamless_mrmsfill": "iconmrms"},
+    "s1": {"icon_seamless": "icon", "ecmwf_ifs025": "ecmwf", "gfs_seamless": "gfs", "ecmwf_ifs": "ecmwf9",
+           "icon_seamless_mrmsfill": "iconmrms"},
     "s2": {"logit_v1": "w38", "gb_v1": "trees", "shared8_nonneg_sfpuc4": "t8s",
            "logit_v2_shared5": "t5", "logit_v2_shared6": "t6", "logit_v2_shared8": "t8", "logit_v2_half": "t19",
            "logit_v2_four": "four",

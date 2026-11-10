@@ -593,6 +593,9 @@ SPANS_AS_OF = {   # entry: (first day, rows 2016-03-01 → 2026-08-17)
                      "L4": ("2024-02-07", 912), "L5": ("2024-02-08", 905)},
     "gfs_seamless": {"L0": ("2024-02-01", 929), "L1": ("2024-02-01", 929), "L2": ("2024-02-02", 928), "L3": ("2024-02-03", 927),
                      "L4": ("2024-02-04", 926), "L5": ("2024-02-05", 925)},
+    # ECMWF 9 km (Part B 43): its short lead fetched to the 0.25° cache's span, Previous Runs from 2025-10-01
+    "ecmwf_ifs": {"L0": ("2024-02-01", 929), "L1": ("2025-10-01", 317), "L2": ("2025-10-02", 303), "L3": ("2025-10-03", 287),
+                  "L4": ("2025-10-04", 287), "L5": ("2025-10-05", 286)},
 }
 
 
@@ -607,6 +610,26 @@ def test_lead_availability_as_of_2026_08_17():
     # (GFS's lead-1 rows wait for its lead-0 archive, which starts 2024-01-31: a lead-L row reads day I at lead 0)
     assert E.model_days("gfs_seamless", 1).query("complete")["date"].min() == pd.Timestamp("2024-01-20")
     assert E.model_days("gfs_seamless", 0).query("complete")["date"].min() == pd.Timestamp("2024-01-31")
+
+
+def test_a_rainy_hour_without_wind_is_a_missing_hour():
+    """Lead rows read the wind on the rainy hours (wind_v_rain), so a rainy hour the archive has no wind for is a
+    missing hour (_days, Part B 43): the day is a gap (X-S1-NWPGAP), never a calm one. ECMWF 9 km's spring 2026
+    holes: 2026-04-12 at lead 4 keeps 4 of its 24 hours (20 rainy hours lack wind) while lead 3 is whole. ICON and
+    GFS have no such hour, and ECMWF 0.25°'s two sit on days already short of rain hours, so the rule moved nothing
+    of the three models scored before it."""
+    day = pd.Timestamp("2026-04-12")
+    d4, d3 = E._days("ecmwf_ifs", 4).loc[day], E._days("ecmwf_ifs", 3).loc[day]
+    assert (int(d4["hours"]), d4["status"], np.isnan(d4["total"])) == (4, E.GAP, True), d4.to_dict()
+    assert (int(d3["hours"]), d3["status"]) == (24, E.OK) and d3["total"] > 0.5, d3.to_dict()
+    for m in ("icon_seamless", "ecmwf_ifs025", "gfs_seamless"):
+        for L in E.LEADS:
+            h = OMP.load_hourly(m, L).merge(OMP.load_wind(m, L), on="timestamp", how="left")
+            wet = h[(h["precip_mm"] > 0) & h["wind_speed_ms"].isna()]
+            raw = OMP.daily_totals(OMP.load_hourly(m, L))
+            for dd in set(wet["timestamp"].dt.normalize()):
+                assert raw.loc[dd, "hours"] < OMP.HOURS_PER_DAY, (m, L, dd)      # already a gap from its rain alone
+            assert (E._days(m, L)["hours"].to_numpy() <= raw["hours"].reindex(E._days(m, L).index).fillna(0).to_numpy()).all()
 
 
 # ── guards ──────────────────────────────────────────────────────────────────

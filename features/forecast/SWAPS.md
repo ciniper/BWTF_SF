@@ -65,7 +65,17 @@ venv/bin/python features/forecast/src/models/stages_s1.py --write
 
 The first command archives what each model forecast 1–5 days ahead (it needs
 the network; add a new model to `MODELS` in the collector first). The second
-scores every model against the gauges. The paired test against the served model
+scores every model against the gauges.
+
+A model new to the archive needs three fetches, in this order: its short lead
+(`--short-lead --models <id>`, over the 0.25° ECMWF cache's span), its fixed
+leads (`--fetch --models <id> --end 2026-09-30`, the other caches' end), and its
+wind (`--wind --models <id>`). Give it a part in `shared/lineup.py` (S1 words and
+code) too. If its archive starts late, as ECMWF 9 km's does (2025-10), S1 grades
+it on its own days and pairs it with the served model. It stays out of the
+three-model blocks (`stages_s1.COMPARED`), so adding it moves no earlier number
+(STAGES_DESIGN.md Part B 43). A rainy hour its archive holds no wind for counts
+as a missing hour, and that day drops as X-S1-NWPGAP. The paired test against the served model
 at lead 1 is in `features/forecast/data/models/stages/_s1/s1_scores.json`.
 
 To switch: change the one line in `METEO_PARAMS`, and rename the served set in

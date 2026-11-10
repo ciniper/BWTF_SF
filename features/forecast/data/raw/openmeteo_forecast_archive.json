@@ -1,6 +1,6 @@
 {
  "schema": "bwtf.openmeteo_forecast_archive/1",
- "written_at": "2026-10-07T17:35:54+00:00",
+ "written_at": "2026-11-10T19:49:37+00:00",
  "point": {
   "latitude": 37.7749,
   "longitude": -122.4194
@@ -224,6 +224,74 @@
     "incomplete_days_inside_span": 1,
     "nan_hours_inside_span": 0
    }
+  },
+  "ecmwf_ifs": {
+   "0": {
+    "kind": "short_lead_optimistic",
+    "file": "openmeteo_hist_forecast_ecmwf_ifs.csv",
+    "first_archived_day": "2024-01-31",
+    "last_archived_day": "2026-08-27",
+    "first_complete_day": "2024-01-31",
+    "last_complete_day": "2026-08-27",
+    "complete_days": 940,
+    "incomplete_days_inside_span": 0,
+    "nan_hours_inside_span": 0
+   },
+   "1": {
+    "kind": "fixed_lead",
+    "file": "openmeteo_prev_runs_ecmwf_ifs.csv",
+    "first_archived_day": "2025-09-30",
+    "last_archived_day": "2026-09-30",
+    "first_complete_day": "2025-10-01",
+    "last_complete_day": "2026-09-30",
+    "complete_days": 365,
+    "incomplete_days_inside_span": 1,
+    "nan_hours_inside_span": 0
+   },
+   "2": {
+    "kind": "fixed_lead",
+    "file": "openmeteo_prev_runs_ecmwf_ifs.csv",
+    "first_archived_day": "2025-10-01",
+    "last_archived_day": "2026-09-30",
+    "first_complete_day": "2025-10-02",
+    "last_complete_day": "2026-09-30",
+    "complete_days": 352,
+    "incomplete_days_inside_span": 13,
+    "nan_hours_inside_span": 263
+   },
+   "3": {
+    "kind": "fixed_lead",
+    "file": "openmeteo_prev_runs_ecmwf_ifs.csv",
+    "first_archived_day": "2025-10-02",
+    "last_archived_day": "2026-09-30",
+    "first_complete_day": "2025-10-03",
+    "last_complete_day": "2026-09-30",
+    "complete_days": 333,
+    "incomplete_days_inside_span": 31,
+    "nan_hours_inside_span": 677
+   },
+   "4": {
+    "kind": "fixed_lead",
+    "file": "openmeteo_prev_runs_ecmwf_ifs.csv",
+    "first_archived_day": "2025-10-03",
+    "last_archived_day": "2026-09-30",
+    "first_complete_day": "2025-10-04",
+    "last_complete_day": "2026-09-30",
+    "complete_days": 362,
+    "incomplete_days_inside_span": 1,
+    "nan_hours_inside_span": 0
+   },
+   "5": {
+    "kind": "fixed_lead",
+    "file": "openmeteo_prev_runs_ecmwf_ifs.csv",
+    "first_archived_day": "2025-10-04",
+    "last_archived_day": "2026-09-30",
+    "first_complete_day": "2025-10-05",
+    "last_complete_day": "2026-09-30",
+    "complete_days": 361,
+    "incomplete_days_inside_span": 1,
+    "nan_hours_inside_span": 0
+   }
   }
  },
  "probe": {
@@ -418,6 +486,47 @@
    "grid": [
     37.763283,
     -122.41286
+   ]
+  },
+  "short_lead_ecmwf_ifs": {
+   "model": "ecmwf_ifs",
+   "fetched_at": "2026-11-10T19:48:25+00:00",
+   "hours": 22560,
+   "nan_hours": 0,
+   "first": "2024-01-31 00:00:00",
+   "last": "2026-08-27 23:00:00",
+   "grid": [
+    37.785587,
+    -122.40964
+   ]
+  },
+  "prev_runs_ecmwf_ifs": {
+   "fetched_at": "2026-11-10T19:48:54+00:00",
+   "rows": 43595,
+   "lead0_vs_short_lead_cache": {
+    "grid": [
+     37.785587,
+     -122.40964
+    ],
+    "hours_compared": 22560,
+    "identical": 22560
+   }
+  },
+  "wind_ecmwf_ifs": {
+   "model": "ecmwf_ifs",
+   "fetched_at": "2026-11-10T19:48:55+00:00",
+   "rows": 66155,
+   "nan_hours": {
+    "0": 0,
+    "1": 263,
+    "2": 390,
+    "3": 414,
+    "4": 701,
+    "5": 0
+   },
+   "grid": [
+    37.785587,
+    -122.40964
    ]
   }
  }

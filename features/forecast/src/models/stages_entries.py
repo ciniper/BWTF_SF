@@ -65,7 +65,12 @@ archive's own hours (the windows run across midnight, as training's ERA5
 peaks do, so they read D − 1's last 5 hours at lead L too). A forecast value
 is used only when it is complete: a model-day with fewer than 24 archived
 hours drops the row (X-S1-NWPGAP), and so does a peak window holding a NaN
-hour; a (model, lead) the archive does not reach on a day the row needs drops
+hour. An hour counts as archived only when everything a row reads from it is:
+a rainy hour with no archived wind is a missing hour (``_days``; the wind is
+weighed by the rain, so a dry hour's wind is never read). That rule drops
+21 day-leads of ECMWF 9 km in spring 2026 and nothing of the other three
+models (ICON and GFS have no such hour; ECMWF 0.25°'s two fall on days
+already short of rain hours; Part B 43); a (model, lead) the archive does not reach on a day the row needs drops
 it as X-S1-NOLEAD. In first-match order NWPGAP wins when a row has both.
 Nothing is ever zero-filled.
 
@@ -159,7 +164,7 @@ import truth as T  # noqa: E402  (which gauge days were read at all)
 from src.collectors import openmeteo_previous_runs as OMP  # noqa: E402  (the archives and the complete-day rule)
 
 ENTRIES = X.ENTRIES                                    # oracle, rain, L0 … L5, L0s, L1s (protocol §3)
-MODELS = tuple(OMP.MODELS)                             # icon_seamless, ecmwf_ifs025, gfs_seamless
+MODELS = tuple(OMP.MODELS)                             # icon_seamless, ecmwf_ifs025, gfs_seamless, ecmwf_ifs (Part B 43)
 LEADS = OMP.LEADS                                      # 0 (short lead, optimistic), 1 … 5
 FEATURES = list(RF.DAILY_FEATURES) + list(RF.INTENSITY_FEATURES)   # the 19, build_dataset's order
 WIND = list(RF.WIND_FEATURES)                          # after the 19: read only by a set whose features name them
@@ -291,10 +296,15 @@ def _days(model: str, lead: int) -> pd.DataFrame:
     """date → total (inches; NaN unless all 24 hours are archived), n_hours, status (OK | GAP | ABSENT).
 
     OMP.daily_totals is the complete-day rule; a day inside the archive's span (OMP.archive_span) with
-    fewer than 24 hours is a gap, a day outside it is not in the archive."""
+    fewer than 24 hours is a gap, a day outside it is not in the archive. A rainy hour without archived wind
+    counts as missing: lead rows read the wind on the rainy hours (wind_v_rain), and a missing value is never calm."""
     h = OMP.load_hourly(model, int(lead))
     lo, hi = OMP.archive_span(h)
-    d = OMP.daily_totals(h)
+    w = OMP.load_wind(model, int(lead))[["timestamp", "wind_speed_ms"]]
+    h = h.merge(w, on="timestamp", how="left")
+    no_wind = (h["precip_mm"] > 0) & h["wind_speed_ms"].isna()         # a rainy hour the archive has no wind for
+    h.loc[no_wind, ["precip_mm", "precip_inches"]] = np.nan            # is a missing hour (module notes; Part B 43)
+    d = OMP.daily_totals(h.drop(columns="wind_speed_ms"))
     days = pd.date_range(lo, hi, name="date")
     d = d.reindex(days)
     d["hours"] = d["hours"].fillna(0).astype(int)                     # a day the file lacks: 0 archived hours

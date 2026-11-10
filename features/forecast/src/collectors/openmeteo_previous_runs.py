@@ -13,7 +13,14 @@ Each model is read at one cell: Open-Meteo snaps 37.7749, −122.4194 to the
 model's nearest land point — ICON 37.75, −122.50 (the Ocean Beach shore), GFS
 37.76, −122.41 (downtown), ECMWF IFS 0.25° 37.75, −122.25 (Alameda, across
 the bay: Open-Meteo prefers a land cell, and the 0.25° cell at −122.50 is
-mostly sea). The served page reads the same cells. What each lead means, per
+mostly sea), ECMWF IFS 9 km (``ecmwf_ifs``, the HRES at full resolution, free
+and open since 2026) 37.79, −122.41 (downtown). The served page reads the same
+cells. The 9 km model is hourly to 90 hours, then 3-hourly; the 0.25° product
+is 3-hourly throughout, spread evenly over its hours by Open-Meteo. It came
+later (STAGES_DESIGN.md Part B 43): Previous Runs holds it from 2025-10-01
+(lead 5 from 10-05), and its short-lead cache was fetched to the 0.25°
+cache's span (``--short-lead``) so the two ECMWF copies read the same days at
+lead 0. What each lead means, per
 valid hour t:
 
   lead 0   ``precipitation`` — the newest run covering t, i.e. its first
@@ -69,6 +76,7 @@ Usage (from the repo root):
   venv/bin/python features/forecast/src/collectors/openmeteo_previous_runs.py --extend-icon
   venv/bin/python features/forecast/src/collectors/openmeteo_previous_runs.py --manifest
   venv/bin/python features/forecast/src/collectors/openmeteo_previous_runs.py --wind      (after --fetch / --extend-icon)
+  venv/bin/python features/forecast/src/collectors/openmeteo_previous_runs.py --short-lead --models ecmwf_ifs   (a new model, before --fetch)
 """
 from __future__ import annotations
 
@@ -93,7 +101,8 @@ RAW_DIR = HERE.parents[1] / "data" / "raw"
 MANIFEST = RAW_DIR / "openmeteo_forecast_archive.json"
 
 LAT, LON = 37.7749, -122.4194                      # the point serving asks Open-Meteo for
-MODELS = {"icon_seamless": "ICON", "ecmwf_ifs025": "ECMWF IFS 0.25°", "gfs_seamless": "GFS"}
+MODELS = {"icon_seamless": "ICON", "ecmwf_ifs025": "ECMWF IFS 0.25°", "gfs_seamless": "GFS", "ecmwf_ifs": "ECMWF IFS 9 km"}
+SHORT_LEAD_SPAN = ("2024-01-31", "2026-08-27")      # the 0.25° ECMWF and GFS short-lead caches' span (--short-lead)
 FIXED_LEADS = (1, 2, 3, 4, 5)
 LEADS = (0,) + FIXED_LEADS
 LEAD_KIND = {0: "short_lead_optimistic", **{L: "fixed_lead" for L in FIXED_LEADS}}
@@ -234,6 +243,20 @@ def extend_short_lead(model: str = "icon_seamless", start: pd.Timestamp = ICON_S
     path.write_text(header + "\n" + block + body)
     return {"model": model, "prepended_hours": int(len(new)), "first": str(new["timestamp"].min()),
             "overlap_hours_identical": int(same.sum())}
+
+
+def fetch_short_lead(model: str, start: str = SHORT_LEAD_SPAN[0], end: str = SHORT_LEAD_SPAN[1]) -> dict:
+    """A new model's short-lead cache (lead 0, the Historical Forecast archive) over ``start`` → ``end``, in the
+    fixed UTC−7 day. Refuses to overwrite: the caches already committed stay byte-identical."""
+    path = short_lead_path(model)
+    if path.exists():
+        raise SystemExit(f"{path.name} exists — refusing to overwrite a committed cache")
+    h = _fetch_span(HIST_FORECAST_URL, model, ["precipitation"], pd.Timestamp(start), pd.Timestamp(end))
+    h = h.rename(columns={"precipitation": "precip_mm"})
+    h["precip_inches"] = h["precip_mm"] / MM_PER_IN
+    h[["timestamp", "precip_mm", "precip_inches"]].to_csv(path, index=False)
+    return {"model": model, "fetched_at": utc_iso(), "hours": int(len(h)), "nan_hours": int(h["precip_mm"].isna().sum()),
+            "first": str(h["timestamp"].min()), "last": str(h["timestamp"].max()), "grid": h.attrs.get("grid")}
 
 
 # ── the wind forecasts (the south-wind input, rain_features.wind_rain_features) ──
@@ -396,6 +419,7 @@ def main(argv=None) -> None:
     ap.add_argument("--extend-icon", action="store_true", help="prepend ICON's short lead back to 2022-11-16")
     ap.add_argument("--manifest", action="store_true", help="rewrite the manifest from the caches")
     ap.add_argument("--wind", action="store_true", help="fetch the wind forecasts at leads 0–5 over each rain cache's span")
+    ap.add_argument("--short-lead", action="store_true", help=f"a new model's lead-0 cache over {SHORT_LEAD_SPAN[0]} → {SHORT_LEAD_SPAN[1]}")
     ap.add_argument("--models", default=",".join(MODELS))
     ap.add_argument("--end", default=None, help="last day to fetch (default: yesterday, Pacific)")
     a = ap.parse_args(argv)
@@ -406,6 +430,10 @@ def main(argv=None) -> None:
     if a.extend_icon:
         notes["icon_short_lead_extension"] = {**extend_short_lead("icon_seamless"), "fetched_at": utc_iso()}
         print(notes["icon_short_lead_extension"])
+    if a.short_lead:
+        for m in a.models.split(","):
+            notes[f"short_lead_{m}"] = fetch_short_lead(m)
+            print(notes[f"short_lead_{m}"])
     if a.fetch:
         for i, m in enumerate(a.models.split(",")):
             if i:
@@ -419,7 +447,7 @@ def main(argv=None) -> None:
                 time.sleep(PAUSE_S)
             notes[f"wind_{m}"] = fetch_wind(m)
             print(notes[f"wind_{m}"])
-    if a.probe or a.fetch or a.extend_icon or a.manifest or a.wind:
+    if a.probe or a.fetch or a.extend_icon or a.manifest or a.wind or a.short_lead:
         man = write_manifest(pr, notes)
         for m, leads in man["models"].items():
             print(m, {L: (s or {}).get("first_complete_day") for L, s in leads.items()})

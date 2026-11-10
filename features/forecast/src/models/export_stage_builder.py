@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import date
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -211,6 +212,9 @@ def stage_s1(D: dict, geos: list) -> dict:
                 "score": s1_cell(get(S, ("by_lead", S1_LEAD, S1_SERIES, "models", m)))}
         if m != live:
             part["vs_live"] = get(S, ("primary", "vs_served", m, "verdict"))
+        first = part["score"]["span"][0]
+        if (date.fromisoformat(first) - date.fromisoformat(S["windows"]["previous_runs"][0])).days > 60:   # ECMWF 9 km (Part B 43)
+            part["note"] = f"Archived from {first}, so graded on {first} → {part['score']['span'][1]} only"
         parts.append(part)
     # an S1 part whose gauges read another rule (lineup.S1_RAIN, Part B 41): its weather model's forecast, so its S1
     # score; the days its rule fills are ones S1's grade leaves out (X-S1-OUTAGE). Its rain shows from S2 on.

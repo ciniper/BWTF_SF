@@ -120,9 +120,9 @@ def test_s1_primary_reproduces_weather_models_eval():
     ev = json.loads(W.OUT_JSON.read_text())
     ref = ev["by_lead"]["1"]["avg"]["inputs"]["icon_seamless"]
     lo, hi = (pd.Timestamp(d) for d in ev["window"])
-    held = {m: _rows(m).pipe(lambda r: r[(r["lead"] == 1) & (r["series"] == "avg") & (r["excl"] == "")]).set_index("date") for m in S.MODELS}
+    held = {m: _rows(m).pipe(lambda r: r[(r["lead"] == 1) & (r["series"] == "avg") & (r["excl"] == "")]).set_index("date") for m in S.COMPARED}
     common = held["icon_seamless"].index
-    for m in S.MODELS:
+    for m in S.COMPARED:
         common = common.intersection(held[m].index)
     common = common[(common >= lo) & (common <= hi)]
     icon = held["icon_seamless"].loc[common]
@@ -148,19 +148,26 @@ def test_primary_is_the_paired_lead_1_mean_comparison():
     assert set(vs) == set(S.MODELS) - {sc["served_model"]}
     for m, d in vs.items():
         dm = d["mae_either_wet"]
-        assert dm["metric"] == "mae" and dm["n_blocks"] >= 40 and dm["level"] == 0.9, (m, dm)
+        assert dm["metric"] == "mae" and dm["n_blocks"] >= (40 if m in S.COMPARED else 15) and dm["level"] == 0.9, (m, dm)
         assert dm["verdict"] == ("better" if dm["hi"] < 0 else "worse" if dm["lo"] > 0 else "no clear difference"), (m, dm)
         assert d["verdict_unadjusted"] == dm["verdict"] and d["ets_0.5"]["verdict"] in ("better", "worse", "no clear difference")
         assert dm == sc["paired"]["1"]["avg"][m]["mae_either_wet"], m          # the primary is the paired table's cell
-    # Holm across the candidates (protocol §6): the i-th smallest two-sided p must be ≤ 0.10 / (m − i)
+    # Holm across the candidates protocol §8 names (§6): the i-th smallest two-sided p must be ≤ 0.10 / (m − i). A model
+    # added later (ECMWF 9 km, Part B 43) is outside the family: its verdict is the unadjusted one, and says so
     p2 = {m: min(1.0, 2 * min(d["mae_either_wet"]["p_neg"], 1 - d["mae_either_wet"]["p_neg"])) for m, d in vs.items()}
+    fam = sorted((m for m in p2 if m in S.COMPARED), key=p2.get)
+    assert len(fam) == 2, fam
     held, ok = {}, True
-    for i, m in enumerate(sorted(p2, key=p2.get)):
-        ok = ok and p2[m] <= 0.10 / (len(p2) - i)
+    for i, m in enumerate(fam):
+        ok = ok and p2[m] <= 0.10 / (len(fam) - i)
         held[m] = ok
     for m, d in vs.items():
         assert abs(d["p_two_sided"] - p2[m]) < 1e-9, m
-        assert d["verdict"] == (d["verdict_unadjusted"] if held[m] else "no clear difference"), (m, d["verdict"], p2)
+        if m in S.COMPARED:
+            assert d["verdict"] == (d["verdict_unadjusted"] if held[m] else "no clear difference"), (m, d["verdict"], p2)
+            assert "family" not in d, m
+        else:
+            assert d["verdict"] == d["verdict_unadjusted"] and d["family"].startswith("added after protocol §8"), (m, d)
     # identical rows in both arms: the paired days are the days both models scored, recomputed from the rows
     served = _win(_rows(sc["served_model"]), hi=E.data_end())
     for m in vs:
@@ -234,9 +241,12 @@ def test_benchmarks_are_what_the_words_say():
 
 
 def test_models_side_by_side_share_their_days():
-    """by_lead[...]['common'] and by_season score every model on the same days: the days all three scored."""
+    """by_lead[...]['common'] and by_season score the three compared models on the same days: the days all three
+    scored. A model added later (ECMWF 9 km, one season) is in neither, so adding it moved none of their days."""
     sc = _scores()
-    rows = {m: _win(_rows(m), hi=E.data_end()) for m in S.MODELS}
+    assert sc["compared"] == list(S.COMPARED) == ["icon_seamless", "ecmwf_ifs025", "gfs_seamless"]
+    assert set(sc["models"]) - set(S.COMPARED) == {"ecmwf_ifs"}
+    rows = {m: _win(_rows(m), hi=E.data_end()) for m in S.COMPARED}
     for L in S.LEADS:
         for s in S.SERIES:
             held = [set(r.loc[(r["lead"] == L) & (r["series"] == s) & (r["excl"] == ""), "date"]) for r in rows.values()]
@@ -246,12 +256,13 @@ def test_models_side_by_side_share_their_days():
             ns = {m: (st["n"], st["n_obs_wet"]) for m, st in c["models"].items()}
             assert len(set(ns.values())) == 1 and ns[sc["served_model"]][0] == len(both), (L, s, ns)
             own = sc["by_lead"][str(L)][s]["models"]
-            assert all(own[m]["n"] >= c["n"] for m in S.MODELS), (L, s)        # common days are a subset of each model's own
+            assert set(c["models"]) == set(S.COMPARED), (L, s)
+            assert all(own[m]["n"] >= c["n"] for m in S.COMPARED), (L, s)      # common days are a subset of each model's own
     own1 = sc["by_lead"]["1"]["avg"]["models"]
     assert own1["icon_seamless"]["n"] > sc["by_lead"]["1"]["avg"]["common"]["n"] > 0, "ICON holds days ECMWF lacks (Jan–Feb 2024)"
     for season, blk in sc["by_season"].items():
         for L, cell in blk.items():
-            assert set(cell) == set(S.MODELS) and len({(st["n"], st["first"], st["last"]) for st in cell.values()}) == 1, (season, L)
+            assert set(cell) == set(S.COMPARED) and len({(st["n"], st["first"], st["last"]) for st in cell.values()}) == 1, (season, L)
     # the lead-0 ranking the own rows would show is not the paired one: the reason for the common block
     own0, com0 = sc["by_lead"]["0"]["avg"]["models"], sc["by_lead"]["0"]["avg"]["common"]["models"]
     mae = lambda st: st["continuous"]["either_wet"]["mae"]  # noqa: E731
@@ -285,13 +296,14 @@ def test_scores_hold_the_full_suite_by_lead_series_and_model():
                 assert set(st["continuous"]) == set(W.SUBSETS) and all(set(v) >= {"me", "mae", "rmse", "r", "mbias"} for v in st["continuous"].values())
                 assert set(st["thresholds"]) == {"0.1", "0.25", "0.5", "1"}, (L, s, m)
                 assert all(("sedi" in v) == (t == "1") for t, v in st["thresholds"].items()), "SEDI at 1.0 only"
-                assert st["ci"]["level"] == 0.9 and st["ci"]["n_blocks"] >= 100 and st["first"] >= "2024-01-20" and st["last"] <= sc["data_end"]
+                weeks = 100 if m in S.COMPARED or L == "0" else 40      # ECMWF 9 km's fixed leads: one season (Part B 43)
+                assert st["ci"]["level"] == 0.9 and st["ci"]["n_blocks"] >= weeks and st["first"] >= "2024-01-20" and st["last"] <= sc["data_end"]
                 assert st["n"] == sc["exclusions"][m]["previous_runs"][s][f"L{L}"]["T1"]["n_scored"], (L, s, m)
             assert set(cell["benchmarks"]) >= {"persistence", "climatology"}
             for b in ("persistence", "climatology"):
                 vs = cell["benchmarks"][b]["vs_served"]
                 assert vs["mae_either_wet"]["n_blocks"] >= 40 and vs["mae_either_wet"]["mde"] > 0 and vs["ets_0.5"]["mde"] > 0, (L, s, b)
-            assert set(cell["common"]["models"]) == set(S.MODELS)
+            assert set(cell["common"]["models"]) == set(S.COMPARED)
             assert set(sc["paired"][L][s]) == set(S.MODELS) - {sc["served_model"]}
             for m, d in sc["paired"][L][s].items():                     # an MDE beside every comparison (protocol §6)
                 assert d["mae_either_wet"]["mde"] > 0 and d["ets_0.5"]["mde"] > 0 and d["ets_0.5"]["se"] > 0, (L, s, m)
@@ -309,7 +321,8 @@ def test_peak_hours_are_never_scored():
         for s, ents in part.items():
             for e, tiers in ents.items():
                 cell = tiers["T1"]
-                assert cell["n_scored"] == 0 and cell["excluded"].get("X-S1-PEAK", 0) > 800, (m, s, e, cell)
+                short = m not in S.COMPARED and e != "L0"                  # ECMWF 9 km's fixed leads: one season
+                assert cell["n_scored"] == 0 and cell["excluded"].get("X-S1-PEAK", 0) > (250 if short else 800), (m, s, e, cell)
                 score = _scores()["exclusions"][m]["previous_runs"][s][e]["T1"]
                 assert cell["excluded"]["X-S1-PEAK"] == score["n_scored"], (m, s, e)
 
@@ -322,6 +335,8 @@ MODEL_COUNTS = {   # two-gauge mean, 2024-01-20 → 2026-08-17: lead → (X-S1-N
     "icon_seamless": {0: (0, 0), 1: (4, 0), 2: (5, 0), 3: (1, 1), 4: (1, 2), 5: (1, 3)},
     "ecmwf_ifs025": {0: (12, 13), 1: (1, 14), 2: (1, 15), 3: (1, 16), 4: (1, 17), 5: (7, 18)},
     "gfs_seamless": {0: (0, 11), 1: (0, 0), 2: (1, 0), 3: (1, 1), 4: (1, 2), 5: (1, 3)},
+    # ECMWF 9 km (Part B 43): fixed leads from 2025-10; its gaps are spring 2026's holes, rainy hours without wind among them
+    "ecmwf_ifs": {0: (0, 11), 1: (5, 619), 2: (18, 620), 3: (31, 621), 4: (11, 622), 5: (1, 623)},
 }
 
 
