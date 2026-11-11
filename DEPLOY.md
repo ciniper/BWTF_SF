@@ -343,6 +343,27 @@ refresh logs `deliveries not polled: …` — harmless, and gone once applied.
 Turn open tracking off in Brevo's transactional settings if the alerts should
 not track their readers at all; the column then simply stays null.
 
+## 022: forecast vs reality — the record behind Admin's Forecast check tab (built 2026-11-11 on branch `design/forecast-outcomes`)
+
+`db/migrations/022_forecast_outcomes.sql` — apply by hand in the Supabase SQL editor. It only
+creates two tables, `forecast_issued` and `forecast_outcomes`, with the usual RLS and service-role
+grants; no function, cron job or existing table changes, and it is safe to re-run. Until it is
+applied, `/alerts/forecast-check` shows "The record could not be read … PGRST205" and the production
+refresh logs `forecast outcomes: {'issued': -1, …}` — harmless, and gone once applied.
+
+**Then backfill once**, from a checkout with `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` in `.env`
+(the key is not on every machine — whoever has the dashboard runs this):
+
+    venv/bin/python -m features.forecast.outcomes --backfill
+
+It reads every first daily snapshot in `forecast_history` since 2026-09-27 into `forecast_issued`,
+then fills `forecast_outcomes` from `feed_station_days`, `samples` and the ACIS gauges. A minute or
+two; re-running is safe (issued rows are never overwritten, outcome rows are refreshed). Without the
+backfill the record simply starts at the first production refresh after the merge.
+
+**Check after applying:** `/alerts/forecast-check` shows the four tiles with "issue days recorded"
+counting up from 2026-09-27, and the next half-hour refresh adds today's row.
+
 ## 021: the "Live status" button opens the Today page (built 2026-09-30)
 
 `db/migrations/021_live_status_to_today.sql` — apply by hand in the Supabase SQL editor, with no
