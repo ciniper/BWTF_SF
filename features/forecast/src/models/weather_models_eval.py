@@ -94,7 +94,7 @@ OUT_JSON = MODEL_DIR / "weather_models_eval.json"
 OUT_HTML = REPO / "reports" / "2026-09_weather_models.html"
 
 WX_MODELS = {"ecmwf_ifs025": "ECMWF IFS", "gfs_seamless": "GFS", "icon_seamless": "ICON"}
-SERVED_WX = "icon_seamless"   # served since 2026-09-30 (ECMWF IFS 2026-09-04 → 09-30)
+SERVED_WX = "icon_seamless"   # served since 2026-09-30 (ECMWF IFS 2026-09-04 → 09-30); from 2026-11-10 at leads 0–2 only, ECMWF 9 km from lead 3 (Part B 44)
 INPUTS = {**WX_MODELS, "mean3": "mean of the three"}          # the candidate inputs
 BENCHMARKS = {"persistence": "persistence (last gauge day before issue)", "climatology": "monthly climatology"}
 REFERENCE = {"era5": "ERA5 reanalysis (training-time hourly source)"}

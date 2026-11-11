@@ -527,10 +527,19 @@ def _graded(sid: str) -> str:
 def card_s1(D: dict) -> str:
     S = D["s1"]
     served = S.get("served_model")
-    models = [served] + [m for m in S.get("models") if m != served]
     leads = [k for k in S.get("by_lead")]
-    live = "<div class=sm>the live forecast's</div>"
-    head = "<tr><th>Lead</th>" + "".join(f'<th>{esc(label("s1", m))}{live if m == served else ""}</th>' for m in models) + "</tr>"
+    # the model the live forecast reads at each lead (a by-lead part: ICON to 2 days ahead, ECMWF 9 km after; Part B 44)
+    by = S.opt("served_by_lead") or {L: served for L in leads}
+    models = list(dict.fromkeys([by[L] for L in leads] + list(S.get("models"))))
+
+    def live(m):
+        ls = [int(L) for L in leads if by[L] == m]
+        if not ls:
+            return ""
+        if len(ls) == len(leads):
+            return "<div class=sm>the live forecast's</div>"
+        return f"<div class=sm>the live forecast's, {esc(SP.LEAD_DAYS[ls[0]].lower())} → {esc(SP.LEAD_DAYS[ls[-1]].lower())}</div>"
+    head = "<tr><th>Lead</th>" + "".join(f'<th>{esc(label("s1", m))}{live(m)}</th>' for m in models) + "</tr>"
     rows = []
     for L in leads:
         day = SP.LEAD_DAYS[int(L)] + (" (optimistic)" if S.get("leads", L, "kind") == "short_lead_optimistic" else "")
@@ -540,7 +549,7 @@ def card_s1(D: dict) -> str:
             if S.opt(*base) is None:
                 cells.append('<td class="sc none">—</td>')
                 continue
-            rng = S.rng(*base, "ci", "continuous", "either_wet", "mae", f="in") if m == served else ""
+            rng = S.rng(*base, "ci", "continuous", "either_wet", "mae", f="in") if m == by[L] else ""
             cells.append(f'<td class="sc"><b>{S.n(*base, "continuous", "either_wet", "mae", f="in")}</b> {rng}'
                          f'<div class="sm">{S.n(*base, "n_either_wet", f="i")} wet days</div></td>')
         tip = SP.LEAD_TIPS[int(L)]

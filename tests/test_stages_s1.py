@@ -202,10 +202,10 @@ def test_floor_is_the_reports_masked_floor():
 def test_benchmarks_are_what_the_words_say():
     """Recomputed from weather_models_eval's gauge truth: monthly climatology over 2016-01 → 2024-01-19, and
     persistence = the gauge on D − L − 1, where a 0.00 the record through D − L − 1 could not yet call an
-    outage reads 0.00 (stages_entries.issue_time_unmasked); each scored on the served model's rows, and its
-    vs_served paired on exactly those rows."""
+    outage reads 0.00 (stages_entries.issue_time_unmasked); each scored on the rows of the model served at that lead
+    (ICON to lead 2, ECMWF 9 km from lead 3: Part B 44), and its vs_served paired on exactly those rows."""
     sc = _scores()
-    served = _rows(sc["served_model"])
+    rows = {m: _rows(m) for m in set(sc["served_by_lead"].values())}
     g = W.load_gauges()["truth"]
     late = E.issue_time_unmasked()
     late = set(zip(late["issue"], late["date"], late["gauge"]))
@@ -214,6 +214,7 @@ def test_benchmarks_are_what_the_words_say():
     for L in S.LEADS:
         for s in S.SERIES:
             b = sc["by_lead"][str(L)][s]["benchmarks"]
+            served = rows[sc["served_by_lead"][str(L)]]
             assert b["climatology_months"] == ["2016-01-01", "2024-01-19"], b["climatology_months"]
             sub = _win(served[(served["lead"] == L) & (served["series"] == s) & (served["excl"] == "")], hi=E.data_end()).set_index("date")
             src = g[s][(g[s].index >= "2016-01-01") & (g[s].index < S.PR_START)].dropna()
@@ -302,9 +303,11 @@ def test_scores_hold_the_full_suite_by_lead_series_and_model():
             assert set(cell["benchmarks"]) >= {"persistence", "climatology"}
             for b in ("persistence", "climatology"):
                 vs = cell["benchmarks"][b]["vs_served"]
-                assert vs["mae_either_wet"]["n_blocks"] >= 40 and vs["mae_either_wet"]["mde"] > 0 and vs["ets_0.5"]["mde"] > 0, (L, s, b)
+                # on the rows of the model served at L: ECMWF 9 km's one season from lead 3 (Part B 44) holds ~20 wet weeks
+                floor = 40 if sc["served_by_lead"][L] in S.COMPARED else 15
+                assert vs["mae_either_wet"]["n_blocks"] >= floor and vs["mae_either_wet"]["mde"] > 0 and vs["ets_0.5"]["mde"] > 0, (L, s, b)
             assert set(cell["common"]["models"]) == set(S.COMPARED)
-            assert set(sc["paired"][L][s]) == set(S.MODELS) - {sc["served_model"]}
+            assert set(sc["paired"][L][s]) == set(S.MODELS) - {sc["served_by_lead"][L]}   # vs the model served at that lead
             for m, d in sc["paired"][L][s].items():                     # an MDE beside every comparison (protocol §6)
                 assert d["mae_either_wet"]["mde"] > 0 and d["ets_0.5"]["mde"] > 0 and d["ets_0.5"]["se"] > 0, (L, s, m)
     icon = {L: sc["by_lead"][str(L)]["avg"]["models"]["icon_seamless"]["continuous"]["either_wet"]["mae"] for L in S.LEADS}
@@ -358,8 +361,15 @@ def test_exclusion_counts_as_of_2026_08_17():
 def test_the_entries_default_to_the_served_weather_model():
     """frames / drops / spans default to the model the live page reads: a switch there fails here first."""
     import inspect
-    served = S.served_model()
-    assert served == E.served_weather_model() == _scores()["served_model"]
+    from shared import lineup as LU
+    sc = _scores()
+    served = S.served_part()
+    assert served == E.served_weather_model() == sc["served_part"] == "icon_ecmwf_ifs_d3"      # Part B 44
+    # each lead is graded against the model the part reads there; served_model is lead 1's, the primary's
+    assert sc["served_by_lead"] == {str(L): LU.weather_at(served, L) for L in S.LEADS}
+    assert S.served_model() == sc["served_model"] == sc["served_by_lead"]["1"] == "icon_seamless"
+    assert all(S.served_at(L) == sc["served_by_lead"][str(L)] for L in S.LEADS)
+    assert served not in S.MODELS and set(S.MODELS) == set(E.ARCHIVED)                        # S1 grades archived models
     for fn in (E.frames, E.drops, E.spans):
         assert inspect.signature(fn).parameters["model"].default == served, fn.__name__
 

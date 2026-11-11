@@ -1,7 +1,7 @@
 {
  "as_of": "2026-08-17",
  "served_files": {
-  "served.json": "02aa29891479c19d5df5673264dc3e278b516a3e46b31f8ddf7d2e9d9f9b7b2f",
+  "served.json": "1d8bb1284945fb3031edd1289688ac4edd10c6fcdbc053e3e5466561fc83f644",
   "citywide_model.pkl": "611b5125720a1b8cbc344aa07c01a1f56fc5b5ee50dfa38d7236830b10fb20d3",
   "westside_model.pkl": "9cc9212c9172ccdf2b209978b3c35b17dd39c7d3ca462209b94bbadcc6d066ac",
   "north_shore_model.pkl": "d01cef8e425c139f66091ff036c6c1dc76a31e4a06748bc40125704a63848e69",

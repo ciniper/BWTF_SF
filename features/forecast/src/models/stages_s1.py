@@ -13,8 +13,17 @@ daily rain comes to what the two NOAA gauges then recorded, and a weather
 model is chosen on S1 only (design §3.1 owner rule). No set's weights enter
 here, so one build serves every set.
 
-**Rows.** One per (day, series, lead) for each model: icon_seamless (the
-served one, read from live_dashboard's METEO_PARAMS), ecmwf_ifs025,
+**The served model at each lead.** The live page reads an S1 part
+(live_dashboard WEATHER_MODEL): since 2026-11-10 ICON at leads 0–2 and ECMWF
+9 km at 3–5 (shared/lineup.py S1_BY_LEAD; Part B 44). S1 grades archived
+models only: a by-lead part's rows at lead L are its lead-L model's, so each
+lead's benchmarks and paired comparisons are against the model served there
+(``served_at``; ``served_by_lead`` in the scores). ``served_model`` is the one
+at the primary's lead 1, ICON: the primary, its Holm family and the
+reproduction did not move.
+
+**Rows.** One per (day, series, lead) for each model: icon_seamless (read
+at leads 0–2 by the served part), ecmwf_ifs025,
 gfs_seamless and ecmwf_ifs (ECMWF 9 km, added 2026-11-10, Part B 43: Previous
 Runs from 2025-10, so its fixed leads cover one season); series SF Downtown (047772), SF Oceanside (047767) and the
 two-gauge mean; leads 0–5, from the first day of ICON's short-lead archive
@@ -110,6 +119,7 @@ import stages_entries as E  # noqa: E402
 import truth as T  # noqa: E402
 from shared import clock  # noqa: E402
 from shared import geography as G  # noqa: E402
+from shared import lineup as LU  # noqa: E402  (a by-lead S1 part's model at each lead)
 from src.collectors import openmeteo_previous_runs as OMP  # noqa: E402
 from src.models import verify as V  # noqa: E402  (the MDE beside the ETS companion)
 from src.models import weather_models_eval as W  # noqa: E402  (the S1 suite, paired test, blocks and dumps)
@@ -119,7 +129,7 @@ OUT_DIR = FORECAST / "data" / "models" / "stages" / "_s1"
 SCORES_JSON = OUT_DIR / "s1_scores.json"
 LIVE_DASHBOARD = E.LIVE_DASHBOARD
 EVAL_JSON = W.OUT_JSON                                  # weather_models_eval.json, the reproduction reference
-MODELS = E.MODELS
+MODELS = E.ARCHIVED                                     # the archived models; a by-lead S1 part is graded as its lead's model
 # The three models protocol §8's comparison was registered on. ``common``, ``by_season``, the Holm family of the
 # primary and the reproduction stay theirs; a model added later (ECMWF 9 km, Previous Runs from 2025-10: Part B 43)
 # is graded on its own rows and paired with the served model, so adding it moves no earlier number.
@@ -141,9 +151,22 @@ MAX_REACH = {"fc_max1h": ("rain_max1h", 0), "fc_max3h": ("rain_max3h", 2)}   # h
 
 # ── what is served ──────────────────────────────────────────────────────────
 
-def served_model() -> str:
-    """The weather model the live forecast reads (stages_entries.served_weather_model: METEO_PARAMS)."""
+def served_part() -> str:
+    """The S1 part the live forecast reads (stages_entries.served_weather_model: live_dashboard WEATHER_MODEL): an
+    archived weather model, or a by-lead part (shared/lineup.py S1_BY_LEAD; Part B 44)."""
     return E.served_weather_model()
+
+
+def served_at(lead: int, part: str | None = None) -> str:
+    """The archived weather model the served S1 part reads at ``lead``: what every lead's paired comparison and
+    benchmark is against. A by-lead part's rows at a lead ARE that model's (stages_entries.archived_at)."""
+    return LU.weather_at(part or served_part(), int(lead))
+
+
+def served_model() -> str:
+    """The archived weather model the live forecast reads at S1's primary lead (lead 1): ``served_model`` in
+    s1_scores.json, the key every S1 reader looks the served rows up by. ICON, at lead 1, since 2026-09-30."""
+    return served_at(PRIMARY["lead"])
 
 
 def _sha256(path: Path) -> str:
@@ -404,9 +427,12 @@ def reproduction(by_model: dict, served: str) -> dict:
                         "three on the days all three hold, 2024-02-03 to 2026-08-27"}}
 
 
-def build(served: str | None = None) -> tuple[dict, dict]:
-    """({model: rows}, scores). Every score of s1_scores.json, from the rows."""
-    served = served or served_model()
+def build(part: str | None = None) -> tuple[dict, dict]:
+    """({model: rows}, scores). Every score of s1_scores.json, from the rows. ``part``: the served S1 part (default
+    the live page's); each lead is paired with and benchmarked on the model it reads there (``served_at``)."""
+    part = part or served_part()
+    at = {L: served_at(L, part) for L in LEADS}
+    served = at[PRIMARY["lead"]]                         # the primary's served model, the key S1's readers use
     ctx = context()
     end = window_end()
     if end > ctx.end:
@@ -419,7 +445,8 @@ def build(served: str | None = None) -> tuple[dict, dict]:
     res = {"schema": SCHEMA, "protocol": X.protocol_stamp(), "built_at": clock.utc_iso(),
            "inputs": {str(p.relative_to(REPO)): _sha256(p) for p in input_files()},
            "data_end": str(end.date()), "rows": [str(ctx.start.date()), str(ctx.end.date())],
-           "served_model": served, "models": list(MODELS), "compared": list(COMPARED), "series": list(SERIES),
+           "served_model": served, "served_part": part, "served_by_lead": {str(L): at[L] for L in LEADS},
+           "models": list(MODELS), "compared": list(COMPARED), "series": list(SERIES),
            "leads": {str(L): {"kind": OMP.LEAD_KIND[L], "label": W.LEAD_LABEL[L]} for L in LEADS},
            "tier": {"code": "T1", "why": "S1 has no fitted weights: every day before the freeze is weights-clean (T0 after it)",
                     "selection": "the served model (ICON, 2026-09-30) was chosen on 2024-02 → 2026-08 (protocol §2 decision log): "
@@ -437,8 +464,8 @@ def build(served: str | None = None) -> tuple[dict, dict]:
             res["by_lead"][str(L)][s] = {"models": {m: _suite(subs[m]) for m in MODELS},
                                          "common": {"n": int(len(common)), "days": [str(common.min().date()), str(common.max().date())],
                                                     "models": {m: _suite(subs[m].loc[common], ci=False) for m in COMPARED}},
-                                         "benchmarks": _benchmarks(by_model[served], L, s, hist, raw)}
-            res["paired"][str(L)][s] = {m: _paired(subs[m], subs[served]) for m in MODELS if m != served}
+                                         "benchmarks": _benchmarks(by_model[at[L]], L, s, hist, raw)}
+            res["paired"][str(L)][s] = {m: _paired(subs[m], subs[at[L]]) for m in MODELS if m != at[L]}
     p = res["paired"][str(PRIMARY["lead"])][PRIMARY["series"]]
     p2 = {m: _two_sided(d["mae_either_wet"]["p_neg"]) for m, d in p.items()}
     held = _holm({m: v for m, v in p2.items() if m in COMPARED}, 1 - W.LEVEL)
@@ -453,7 +480,7 @@ def build(served: str | None = None) -> tuple[dict, dict]:
             subs = {m: _scored(by_model[m], L, T.MEAN_SERIES) for m in COMPARED}
             common = _common(subs)
             days = common[[W.season_of(d) == season for d in common]]
-            if len(days) and int((subs[served].loc[days, "obs_in"] >= W.WET_DAY_IN).sum()):   # a summer stub: nothing to verify
+            if len(days) and int((subs[COMPARED[0]].loc[days, "obs_in"] >= W.WET_DAY_IN).sum()):   # a summer stub: nothing to verify
                 blk[str(L)] = {m: _suite(subs[m].loc[days], ci=False) for m in COMPARED}
         if blk:
             res["by_season"][season] = blk
@@ -461,7 +488,7 @@ def build(served: str | None = None) -> tuple[dict, dict]:
         other = GAUGES[1] if g == GAUGES[0] else GAUGES[0]
         res["floor"][f"{other} as {g}"] = _suite(_scored(fl, -1, g))
     for s in SERIES:
-        res["lead0_extension"][s] = {"model": served, "kind": OMP.LEAD_KIND[0], **_suite(_scored(by_model[served], 0, s, lo=S1_START))}
+        res["lead0_extension"][s] = {"model": at[0], "kind": OMP.LEAD_KIND[0], **_suite(_scored(by_model[at[0]], 0, s, lo=S1_START))}
     for m, r in {**by_model, FLOOR: fl}.items():
         res["exclusions"][m] = {"previous_runs": X.counts(_as_x(_in(r, PR_START, end)))["partition"]["s1"],
                                 "all_rows": X.counts(_as_x(r))["partition"]["s1"]}

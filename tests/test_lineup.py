@@ -135,7 +135,8 @@ def test_the_saver_refuses_a_hand_picked_name():
     lineup's S2; it refuses before anything is written."""
     import candidates as C
     lineup = C.geo_v1_lineup("logit_v1", None)
-    assert C.set_name(lineup) == "icon-w38-nosplit-lt1-bflags" == C.geo_v1_set("logit_v1", None)[0]
+    # a set saved today reads today's weather: ICON with ECMWF 9 km from three days ahead (Part B 44)
+    assert C.set_name(lineup) == "iconecmwf9-w38-nosplit-lt1-bflags" == C.geo_v1_set("logit_v1", None)[0]
     for name, kw in (("logit_v1_d10", {"lineup": lineup}), (C.set_name(lineup), {}),
                      (C.set_name(lineup), {"lineup": lineup, "stage1_name": "gb_v1"})):
         try:

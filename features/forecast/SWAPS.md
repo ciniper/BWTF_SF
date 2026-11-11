@@ -53,9 +53,12 @@ correction rule. `icon-w38-osplit-lt2-bflags` is the live forecast;
 
 ## The weather model (the forecast days' rain)
 
-The live forecast reads one weather model through Open-Meteo:
-`METEO_PARAMS["models"]` in `live_dashboard.py` (ICON, `icon_seamless`,
-since 2026-09-30). A weather model is an input, so it is chosen on stage 1
+The live forecast reads one S1 part through Open-Meteo: `WEATHER_MODEL` in
+`live_dashboard.py`. Since 2026-11-10 that is `icon_ecmwf_ifs_d3`, ICON
+for today and the next two days and ECMWF 9 km from three days ahead
+(STAGES_DESIGN.md Part B 44). ICON alone (`icon_seamless`) served
+2026-09-30 → 11-10. `METEO_PARAMS["models"]` fetches every model the part
+names in one call. A weather model is an input, so it is chosen on stage 1
 alone: how close its rain comes to the two NOAA gauges, by lead.
 
 ```bash
@@ -78,10 +81,27 @@ three-model blocks (`stages_s1.COMPARED`), so adding it moves no earlier number
 as a missing hour, and that day drops as X-S1-NWPGAP. The paired test against the served model
 at lead 1 is in `features/forecast/data/models/stages/_s1/s1_scores.json`.
 
-To switch: change the one line in `METEO_PARAMS`, and rename the served set in
+To switch: change the one line `WEATHER_MODEL`, and rename the served set in
 the same commit, since its S1 is part of its name
-(`src/models/promote.py --rename-served`). Then rebuild the stage scores (the
-last section), because every forecast-day entry reads it.
+(`src/models/promote.py --rename-served`). To keep the set that read the old
+model gradable, run `src/models/promote.py --retire-weather <old>` instead.
+It retires the served set to a candidate under its old name, then renames
+served.json. Then rebuild the S1 scores and the stage scores (the last
+section), because every forecast-day entry reads it. A switch is a
+promotion, so the served goldens are re-pinned in the same commit.
+
+**One model per lead.** A part can read a different model at each lead:
+`shared/lineup.py` `S1_BY_LEAD` maps the part to the model each lead 0–5
+reads. To the entries it is a weather model of its own
+(`stages_entries.archived_at`). Its lead-L rows, peaks and wind are its lead-L
+model's, so a lead-4 row reads days I … I + 2 from ICON and I + 3 and D from
+ECMWF 9 km. On the live page, `splice_by_lead` takes each local day from its
+lead's model. A day the model lacks a rain hour for reads lead 0's model
+instead. A day read from the later model takes its peak hours from that
+model's own series, the evening before included. S1 grades archived models
+only and compares each lead against the model served at that lead
+(`served_by_lead` in `s1_scores.json`). The §9 S1 row can only score such a
+part when its model one day ahead differs from the served one.
 
 To score the live set with another weather model before switching (nothing
 served moves; STAGES_DESIGN.md Part B 39):

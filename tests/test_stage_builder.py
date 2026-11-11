@@ -98,8 +98,8 @@ def test_sampled_numbers_are_their_fields():
     live = next(c for c in built()["chains"] if c["live"])
     assert live["scores"]["T2"]["L1"]["hi"] == sc["out"]["pooled"]["L1"]["T2"]["ci"]["bss"][1]
     assert live["scores"]["T1-holdout"]["rain"]["n_pos"] == sc["out"]["pooled"]["rain"]["T1-holdout"]["n_pos"]
-    icon = next(p for p in stage("s1")["parts"] if p["live"])
-    assert icon["score"]["mae"] == S["by_lead"]["1"]["avg"]["models"][icon["id"]]["continuous"]["either_wet"]["mae"]
+    live1 = next(p for p in stage("s1")["parts"] if p["live"])       # the live part scores as its lead-1 model (Part B 44)
+    assert live1["score"]["mae"] == S["by_lead"]["1"]["avg"]["models"][live1.get("scored_as") or live1["id"]]["continuous"]["either_wet"]["mae"]
     floor = stage("s1")["floor"]
     assert floor["mae"] == S["floor"][floor["name"]]["continuous"]["either_wet"]["mae"]
     basin = next(p for p in stage("s5")["parts"] if p["id"] == "basin_swap")["scores"]["geo_v1"]
@@ -130,14 +130,15 @@ def test_every_number_is_its_artifact_field():
                 n += same_cell(both[e], scores(c["set"])["out"]["pooled"][e].get(w), f"chain {c['set']} {e} {w}")
     S = s1_scores()
     for p in stage("s1")["parts"] + [dict(stage("s1")["floor"], id=None)]:
-        # an S1 part whose gauges read another rule scores as its weather model (lineup.S1_RAIN, Part B 41)
-        assert (p.get("scored_as") or p["id"]) == (LU.weather_of(p["id"]) if p["id"] else None), p
+        # an S1 part whose gauges read another rule scores as its weather model (lineup.S1_RAIN, Part B 41); a by-lead
+        # part as the model it reads one day ahead, S1's test (lineup.S1_BY_LEAD, Part B 44)
+        assert (p.get("scored_as") or p["id"]) == (LU.weather_at(p["id"], 1) if p["id"] else None), p
         blk = S["by_lead"]["1"]["avg"]["models"][p.get("scored_as") or p["id"]] if p["id"] else S["floor"][p["name"]]
         mine = p["score"] if p["id"] else p
         want = {"mae": blk["continuous"]["either_wet"]["mae"], "lo": blk["ci"]["continuous"]["either_wet"]["mae"][0],
                 "hi": blk["ci"]["continuous"]["either_wet"]["mae"][1], "n": blk["n_either_wet"], "span": [blk["first"], blk["last"]]}
         assert {k: mine[k] for k in want} == want, (p["id"], mine, want)
-        if p["id"] and not p["live"] and not p.get("scored_as"):
+        if p["id"] and not p["live"] and not p.get("scored_as") and p["id"] != S["served_model"]:   # vs the model live one day ahead
             assert p["vs_live"] == S["primary"]["vs_served"][p["id"]]["verdict"]
         n += 1
     st5 = stage("s5")

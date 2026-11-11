@@ -172,16 +172,22 @@ WEATHER_UNKNOWN = "the weather model"
 
 
 def weather_model() -> str:
-    """The weather model the live forecast reads ('icon_seamless' → 'ICON'), from METEO_PARAMS in
-    live_dashboard's source as export_how_it_works does: importing the engine would load the whole
-    model stack. Unreadable, it says "the weather model", never a name typed here that a model
-    switch would make wrong; tests/test_stages_spec.py fails if the parse ever stops finding it."""
+    """The weather model(s) the live forecast reads, in words ('icon_seamless' → 'ICON'; 'icon_ecmwf_ifs_d3' →
+    'ICON + ECMWF 9 km'), from WEATHER_MODEL in live_dashboard's source as export_how_it_works does: importing the
+    engine would load the whole model stack. Unreadable, it says "the weather model", never a name typed here that
+    a model switch would make wrong; tests/test_stages_spec.py fails if the parse ever stops finding it."""
     try:
         src = (REPO / "features" / "forecast" / "live_dashboard.py").read_text()
     except OSError:
         return WEATHER_UNKNOWN
-    m = re.search(r'^METEO_PARAMS\s*=\s*\{[^}]*?"models":\s*"([a-z0-9_]+)"', src, re.M | re.S)
-    return m.group(1).split("_")[0].upper() if m else WEATHER_UNKNOWN
+    m = re.search(r'^WEATHER_MODEL\s*=\s*"([a-z0-9_]+)"', src, re.M)
+    if not m:
+        return WEATHER_UNKNOWN
+    from shared import lineup as LU  # noqa: PLC0415  (standard library only)
+    try:
+        return " + ".join(LU.words("s1", w) for w in LU.weathers_of(m.group(1)))
+    except KeyError:
+        return WEATHER_UNKNOWN
 
 
 def _counts_of(scores, counts):

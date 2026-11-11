@@ -204,31 +204,41 @@ def stage_s1(D: dict, geos: list) -> dict:
     S = D["s1"]
     live = D["sets"][0]["manifest"]["components"]["s1"]
     prim = S["primary"]
-    if S["served_model"] != live or str(prim["lead"]) != S1_LEAD or prim["series"] != S1_SERIES or prim["subset"] != S1_SUBSET:
+    served = S["served_model"]                       # the archived model the live part reads one day ahead
+    if (S.get("served_part", served) != live or LU.weather_at(live, int(S1_LEAD)) != served or str(prim["lead"]) != S1_LEAD
+            or prim["series"] != S1_SERIES or prim["subset"] != S1_SUBSET):
         raise ValueError("S1's artifact tests another model, lead or series than the builder shows")
     parts = []
     for m in S["models"]:
         part = {"id": m, "name": LU.words("s1", m), "basins": geos, "live": m == live, "rain": LU.GAUGE_RULE,
                 "score": s1_cell(get(S, ("by_lead", S1_LEAD, S1_SERIES, "models", m)))}
-        if m != live:
+        if m != served:
             part["vs_live"] = get(S, ("primary", "vs_served", m, "verdict"))
         first = part["score"]["span"][0]
         if (date.fromisoformat(first) - date.fromisoformat(S["windows"]["previous_runs"][0])).days > 60:   # ECMWF 9 km (Part B 43)
             part["note"] = f"Archived from {first}, so graded on {first} → {part['score']['span'][1]} only"
         parts.append(part)
     # an S1 part whose gauges read another rule (lineup.S1_RAIN, Part B 41): its weather model's forecast, so its S1
-    # score; the days its rule fills are ones S1's grade leaves out (X-S1-OUTAGE). Its rain shows from S2 on.
+    # score; the days its rule fills are ones S1's grade leaves out (X-S1-OUTAGE). Its rain shows from S2 on. A
+    # by-lead part (lineup.S1_BY_LEAD, Part B 44) reads one model one day ahead, S1's test: that model's score.
     used = {}
     for s in D["sets"]:
         used.setdefault(s["manifest"]["components"]["s1"], set()).add(s["manifest"]["geography"])
     for m in sorted(set(used) - set(S["models"]), key=lambda i: list(LU.WORDS["s1"]).index(i)):
-        wx = LU.weather_of(m)
+        wx = LU.weather_at(m, int(S1_LEAD))
         if wx not in S["models"]:
             raise ValueError(f"S1 part {m} reads weather model {wx}, which S1's artifact does not grade")
         base = next(q for q in parts if q["id"] == wx)
-        parts.append({"id": m, "name": LU.words("s1", m), "basins": [g for g in geos if g in used[m]], "live": False,
-                      "rain": LU.rain_rule_of(m), "score": base["score"], "scored_as": wx,
-                      "note": f"Same forecast as {base['name']}, so the same score: S1's grade leaves out the dead-gauge days"})
+        if len(LU.weathers_of(m)) > 1:
+            later = [w for w in LU.weathers_of(m) if w != wx]
+            first_lead = min(L for L in range(6) if LU.weather_at(m, L) != wx)
+            note = (f"{base['name']} one day ahead, so {base['name']}'s score; from {first_lead} days ahead it reads "
+                    f"{' and '.join(LU.words('s1', w) for w in later)}, whose rows are S1's at those leads")
+        else:
+            note = f"Same forecast as {base['name']}, so the same score: S1's grade leaves out the dead-gauge days"
+        parts.append({"id": m, "name": LU.words("s1", m), "basins": [g for g in geos if g in used[m]], "live": m == live,
+                      "rain": LU.rain_rule_of(m), "score": base["score"], "scored_as": wx, "note": note,
+                      **({"vs_live": get(S, ("primary", "vs_served", wx, "verdict"))} if wx != served else {})})
     name = next(iter(S["floor"]))
     return {**stage_head("s1"), "window": S["windows"]["previous_runs"], "parts": parts,
             "floor": {"name": name, **s1_cell(S["floor"][name])}}

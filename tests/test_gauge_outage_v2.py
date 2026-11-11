@@ -108,7 +108,11 @@ def test_the_candidates_name_the_rule_and_the_build_reads_it():
         assert built["input_rules"] == [V2] and str(T.MRMS_DAILY_CSV.relative_to(ROOT)) in built["inputs"], name
         assert built["weather_model"] == "icon_seamless" and built["components"]["s1"] == S1_PART, name
         prim = json.loads((STAGES / name / "scores.json").read_text())["primaries"]
-        assert prim["changed"]["s1"] is False and prim["changed"]["s2"] is True, name    # S2 is fit and scored on its rain
+        # S1: ICON at every lead, where the page reads ECMWF 9 km from three days ahead (Part B 44), so S1 differs
+        # but its one-day-ahead primary cannot score it; S2 is fit and scored on its rain
+        assert prim["changed"]["s1"] is True and prim["changed"]["s2"] is True, name
+        s1row = next(r for r in prim["rows"] if r["id"] == "S1")
+        assert s1row["status"] == "not applicable" and "S1's primary cannot score the change" in s1row["reason"], (name, s1row)
     served = json.loads((STAGES / CAND.served_info()["name"] / "manifest.json").read_text())
     assert served["input_rules"] == [V1] and str(T.MRMS_DAILY_CSV.relative_to(ROOT)) not in served["inputs"]
 

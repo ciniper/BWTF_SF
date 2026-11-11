@@ -337,7 +337,7 @@ def pipeline_svg(sv: dict, wx_label: str, n_events: int = 0, n_sample_days: int 
     # rain, live
     a.append(node(20, 234, 250, 56, "logo:logos/noaa.svg", "Two NOAA gauges", "Downtown · Oceanside, daily"))
     a.append(node(20, 298, 250, 56, "logo:logos/noaa.svg", "SFO airport gauge", "NWS · today's hours so far"))
-    a.append(node(20, 362, 250, 56, "cloud-rain", f"{wx_label} weather model", "Open-Meteo · the hours ahead"))
+    a.append(node(20, 362, 250, 56, "cloud-rain", f"{wx_label} weather model{'s' if ' + ' in wx_label else ''}", "Open-Meteo · the hours ahead"))
     # observations, live
     a.append(node(20, 452, 250, 56, "logo:logos/sfpuc.png", "SFPUC beach map", "flags · postings, every minute"))
     a.append(node(20, 516, 250, 56, "logo:logos/sf-city-seal.png", "City lab results, new", "this week's samples (DataSF)"))
@@ -390,7 +390,7 @@ def pipeline_svg(sv: dict, wx_label: str, n_events: int = 0, n_sample_days: int 
     # the same story stacked, for phones
     steps = [
         ("logo:logos/water-boards.png", "Fitted once", f"{n_events:,} filed overflows taught S2 which rain overflows; {n_sample_days:,} sampled days taught S4 how long a beach stays dirty."),
-        ("logo:logos/noaa.svg", "S1 · rain in, live", f"Two NOAA gauges for every past day, the SFO gauge for today's hours, the {wx_label} model for the hours ahead: one hourly series."),
+        ("logo:logos/noaa.svg", "S1 · rain in, live", f"Two NOAA gauges for every past day, the SFO gauge for today's hours, the {wx_label} model{'s' if ' + ' in wx_label else ''} for the hours ahead: one hourly series."),
         ("gauge", in_title, in_text),
         ("chart", "S2 · 4 basins", "The chance the sewers overflow today."),
         ("waves", "S3–S4 · 6 beach groups", "Which beaches, and how long: a percentage from the last eight days."),
@@ -535,7 +535,9 @@ def report_works(S: dict, reg: dict, wx_model: str) -> str:
     # the live forecast by its lineup (A8): each stage's part by its fixed name; the stored name stays an identifier
     parts = {"geography": "geo_v1", "s1": wx_model, **LU.geo_v1_parts(sv["stage1"], sv["stage2"]), "s5": LR.VERSION}
     W = {c: plain(c, v) for c, v in parts.items()}
-    wx_label = W["s1"]
+    # a by-lead part reads two models (shared/lineup.py S1_BY_LEAD): "ICON + ECMWF 9 km"
+    wx_label = " + ".join(plain("s1", m) for m in LU.weathers_of(wx_model))
+    wx_noun = "weather model" if len(LU.weathers_of(wx_model)) == 1 else "weather models"
     D = s2_design(models)                       # the live overflow model's own terms and inputs
     hinges, n_in, n_w = D["kind"] == "hinges", len(D["inputs"]), len(D["names"])
     older = bool(sv.get("record"))              # trained on SFPUC's older monthly reports too (from 2011)
@@ -557,8 +559,10 @@ def report_works(S: dict, reg: dict, wx_model: str) -> str:
     rain_in = "".join([
         src_card("logo:logos/noaa.svg", "Rain that fell", "two NOAA gauges (daily) and the SFO airport gauge (hourly): the truth S2 was trained on",
                  [e for e in weather if "ACIS" in e["name"] or "KSFO" in e["name"]]),
-        src_card("cloud-rain", "Rain to come", f"the {wx_label} weather model through Open-Meteo, hourly for six days: the stand-in for the gauges on forecast days",
-                 [e for e in weather if "ICON" in e["name"]], "An input, not part of the model: the fitted weights never see which weather model produced the inches, so swapping it needs no retraining. ICON is the closest single model to the gauges (S1 in the stages report)."),
+        src_card("cloud-rain", "Rain to come", f"the {wx_label} {wx_noun} through Open-Meteo, hourly for six days: the stand-in for the gauges on forecast days",
+                 [e for e in weather if "ICON" in e["name"]], "An input, not part of the model: the fitted weights never see which weather model produced the inches, so swapping it needs no retraining. "
+                 + ("ICON is the closest single model to the gauges one day ahead; from three days ahead ECMWF 9 km misses less, so the forecast reads it there (S1 in the stages report)."
+                    if len(LU.weathers_of(wx_model)) > 1 else "ICON is the closest single model to the gauges (S1 in the stages report).")),
     ])
     also_in = "".join([
         src_card("logo:logos/sfpuc.png", "SFPUC beach map", "overflow flags and beach postings, read every minute by the watcher: what S5 corrects with", tiles.get("sfpuc", [])),
@@ -1033,7 +1037,7 @@ def main(argv=None):
     S = load_served()
     reg = registry(include_supabase=False)
     # the engine is heavy: read the weather model from live_dashboard's source instead of importing it
-    wx_model = re.search(r'"models":\s*"([a-z0-9_]+)"', (FORECAST / "live_dashboard.py").read_text()).group(1)
+    wx_model = re.search(r'^WEATHER_MODEL\s*=\s*"([a-z0-9_]+)"', (FORECAST / "live_dashboard.py").read_text(), re.M).group(1)
     OUT_WORKS.write_text(report_works(S, reg, wx_model))
     done = [f"{OUT_WORKS.relative_to(REPO)} ({OUT_WORKS.stat().st_size / 1e3:.0f} KB)"]
     if "--graded" in argv:

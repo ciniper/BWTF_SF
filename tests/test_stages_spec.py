@@ -270,8 +270,9 @@ def test_the_words_follow_the_geography():
     assert F.inset_data("sfpuc4_v1")["basins"][-1] == "South" and F.inset_data("geo_v1")["basins"][-1] == "Southeast"
     assert "Southeast" not in sf and not re.search(r"\bgroups?\b|\bKing\b|cheapest|alarm|alert line", sf + v1, re.I)
     wx = F.weather_model()
-    assert wx != F.WEATHER_UNKNOWN, "METEO_PARAMS['models'] no longer parses from live_dashboard.py"
-    assert wx == wx.upper() and f"{wx} via Open-Meteo, one point" in sf
+    assert wx != F.WEATHER_UNKNOWN, "WEATHER_MODEL no longer parses from live_dashboard.py"
+    # the served part's models in words: ICON to two days ahead, ECMWF 9 km from three (Part B 44)
+    assert wx == "ICON + ECMWF 9 km" and f"{wx} via Open-Meteo, one point" in sf
 
 
 def test_the_inset_draws_the_geography():

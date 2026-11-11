@@ -23,9 +23,13 @@ SERVE = ROOT / "features/forecast/data/models"
 def test_served_descriptor_matches_the_bundle_on_disk():
     sv = C.served_info()
     assert C.SERVED_FILE.exists(), "served.json missing — promote.py writes it"
-    assert sv["name"] == "icon-t9wind3h-osplit-lt2more-bflags" and sv["stage1"] == "logit_wind8_max3h_older11" and sv["stage2"] == "v2_d10" and sv["family"] == "logit" and sv["line"] == 0.25
-    assert sv["replaced"] == "icon-w38-osplit-lt2more-bflags" and sv["from_candidate"] == sv["name"] and sv["corrections"] == "live_v2"
-    assert sv["artifact"] == sv["name"] and sv["lineup"]["s4"] == "impact_v2_d10"   # restamped with the accurate name
+    assert sv["name"] == "iconecmwf9-t9wind3h-osplit-lt2more-bflags" and sv["stage1"] == "logit_wind8_max3h_older11" and sv["stage2"] == "v2_d10" and sv["family"] == "logit" and sv["line"] == 0.25
+    assert sv["replaced"] == "icon-w38-osplit-lt2more-bflags" and sv["from_candidate"] == sv["artifact"] and sv["corrections"] == "live_v2"
+    assert sv["lineup"]["s1"] == "icon_ecmwf_ifs_d3" and sv["lineup"]["s4"] == "impact_v2_d10"
+    # 2026-11-10 (Part B 44): the weather model switched to ICON with ECMWF 9 km from three days ahead; the fitted set is
+    # the one promoted 2026-10-07, so its artifact keeps that name, and the set as it read ICON is the retired candidate
+    assert sv["artifact"] == sv["renamed_from"] == sv["weather_replaced"]["set"] == "icon-t9wind3h-osplit-lt2more-bflags"
+    assert sv["weather_replaced"]["s1"] == "icon_seamless" and sv["weather_switched_at"].startswith("2026-11-10")
     assert "post_seen" in sv["tags"]                     # a post_seen set stays post_seen when it serves (promote.CARRIED)
     # a named-terms set serves with its design: its terms, each fold's own pick and its record (promote.DESIGN_FIELDS)
     assert len(sv["terms"]) == 9 and {"wind_v_rain", "rain_max3h"} <= set(sv["terms"]) and sv["record"]["start"] == "2011-03-01"
@@ -41,7 +45,7 @@ def test_served_descriptor_matches_the_bundle_on_disk():
     assert spec["variant"] == "v2" and spec["impact_samples"] == "d10"      # v2's split, its table on the stages' S4 samples
     with gzip.open(SERVE / "scorecard.json.gz", "rt") as f:
         sc = json.load(f)
-    assert (sc.get("stage2") or {}).get("variant") == spec["variant"] and sc.get("candidate") == sv["name"]
+    assert (sc.get("stage2") or {}).get("variant") == spec["variant"] and sc.get("candidate") == sv["artifact"]
     assert sc.get("trained_through") == sv["trained_through"] and sc.get("input_rules_post") == sv["input_rules_post"]
 
 
@@ -63,6 +67,26 @@ def test_retired_set_is_a_candidate_and_the_served_one_is_not():
     # candidates built on the retired stage 1 now name it
     m2 = json.loads((C.candidate_dir("icon-trees-osplit-lt2-bflags") / "manifest.json").read_text())
     assert m2["stage1"]["from"] == retired and m2["stage1_source"] == retired
+    # the set as it read ICON alone, retired when the weather model switched (promote.retire_weather; Part B 44): the
+    # served pickles, scorecard and stage 2, byte for byte
+    icon = json.loads((C.candidate_dir("icon-t9wind3h-osplit-lt2more-bflags") / "manifest.json").read_text())
+    assert icon["lineup"]["s1"] == "icon_seamless" and icon["name"] == C.set_name(icon["lineup"]) and icon.get("retired_at")
+    assert icon["stage1"] == {"name": "logit_wind8_max3h_older11", "from": "retired-served", "family": "logit"}
+    assert "replaced by ICON, ECMWF 9 km from 3 days ahead" in icon["note"] and icon["terms"] == C.served_info()["terms"]
+    for f in [f"{k}_model.pkl" for k in ("citywide", "westside", "north_shore", "central", "southeast")] + ["scorecard.json.gz", "stage2.json"]:
+        assert (C.candidate_dir(icon["name"]) / f).read_bytes() == (SERVE / f).read_bytes(), f
+
+
+def test_a_weather_switch_needs_the_page_switched_first():
+    """retire_weather refuses an S1 the served set no longer reads, and a switch the live page has not made."""
+    import promote
+    for old, why in (("icon_seamless", "not 'icon_seamless'"), ("icon_ecmwf_ifs_d3", "still reads")):
+        try:
+            promote.retire_weather(old, dry_run=True)
+        except SystemExit as e:
+            assert why in str(e), (old, e)
+        else:
+            raise AssertionError(f"retire_weather({old!r}) must refuse")
 
 
 def test_engine_serves_the_split_and_labels_the_served_set():

@@ -102,10 +102,23 @@ def stage2_spec(suffix: str) -> dict | None:
     return None if variant == "v1" else SV.load_spec(variant)
 
 
-def set_name(k: int, suffix: str = "s2v2", added: str | None = None, fill: str | None = None) -> str:
+# The weather model the committed term sets were saved with (2026-10-07/08): the live page read ICON alone until
+# 2026-11-10 (STAGES_DESIGN Part B 44), so their names start "icon-" / "iconmrms-". set_name(..., weather=SAVED_WEATHER)
+# finds them; without it, a name is what a set saved today would carry.
+SAVED_WEATHER = "icon_seamless"
+
+
+def set_name(k: int, suffix: str = "s2v2", added: str | None = None, fill: str | None = None,
+             weather: str | None = None) -> str:
     """The set saved for k terms (plus ADDED[added]), stage 2 STAGE2[suffix] and S1 on FILLS[fill]'s rain: its
-    lineup's id (candidates.geo_v1_set)."""
-    return CAND.geo_v1_set(stage1_name(k, added), stage2_spec(suffix), FILLS[fill] if fill else None)[0]
+    lineup's id (candidates.geo_v1_set: today's weather model), or, with ``weather``, the id it carries read with that
+    weather model (SAVED_WEATHER: the committed sets)."""
+    if weather is None:
+        return CAND.geo_v1_set(stage1_name(k, added), stage2_spec(suffix), FILLS[fill] if fill else None)[0]
+    LU = CAND._lineup_module()
+    s1 = LU.s1_part(weather, FILLS[fill] if fill else None)
+    return CAND.set_name(LU.geo_v1_lineup(stage1_name(k, added), CAND.stage2_variant_id(stage2_spec(suffix)), s1,
+                                          CAND.served_info().get("corrections") or "live_v2"))
 
 
 def with_added(ts: list, k: int, added: str | None = None) -> list:
@@ -272,7 +285,7 @@ def main(argv=None) -> None:
                                                           "fill on every linger table, skipping sets on disk (Part B 40)")
     a = ap.parse_args(argv)
     if a.fill:
-        sel = json.loads((CAND.candidate_dir(set_name(8, "s2v2d10")) / SELECTION_FILE).read_text())
+        sel = json.loads((CAND.candidate_dir(set_name(8, "s2v2d10", weather=SAVED_WEATHER)) / SELECTION_FILE).read_text())
         k, added, _ = PEAK_SETS[0]
         on_disk = {m["name"] for m in CAND.list_candidates()}
         todo = [x for x in STAGE2 if set_name(k, x, added, a.fill) not in on_disk]
@@ -286,7 +299,7 @@ def main(argv=None) -> None:
             save(sel, k, got, suffix, added, grade, a.fill)
         return
     if a.grid:
-        sel = json.loads((CAND.candidate_dir(set_name(8, "s2v2d10")) / SELECTION_FILE).read_text())
+        sel = json.loads((CAND.candidate_dir(set_name(8, "s2v2d10", weather=SAVED_WEATHER)) / SELECTION_FILE).read_text())
         models, served = served_models(), CAND.served_info()["name"]
         on_disk = {m["name"] for m in CAND.list_candidates()} | {served}
         for k, added in GRID:
@@ -298,7 +311,7 @@ def main(argv=None) -> None:
                 save(sel, k, got, suffix, added, grade)
         return
     if a.peak:
-        sel = json.loads((CAND.candidate_dir(set_name(8, "s2v2d10")) / SELECTION_FILE).read_text())
+        sel = json.loads((CAND.candidate_dir(set_name(8, "s2v2d10", weather=SAVED_WEATHER)) / SELECTION_FILE).read_text())
         models = served_models()
         for k, added, suffix in PEAK_SETS:
             grade = lab_grade(sel, k, added)

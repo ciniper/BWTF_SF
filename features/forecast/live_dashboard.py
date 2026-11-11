@@ -49,6 +49,7 @@ from shared.outfalls import FEED_NAME_TO_OUTFALLS, OUTFALLS  # noqa: E402
 from shared.datasf import BEACH_SAMPLES_URL  # noqa: E402
 from shared.alert_log import ESCALATIONS as _ESCALATIONS, REALTIME_SOURCES  # noqa: E402
 from shared.standards import STANDARDS, flag_exceedances, parse_result, single_sample_max  # noqa: E402
+from shared import lineup as _LU  # noqa: E402  (the served S1 part's weather model at each lead)
 try:
     from shared import supabase as _supabase
 except Exception:
@@ -113,8 +114,17 @@ NWS_FORECAST_URL = "https://api.weather.gov/gridpoints/MTR/88,126/forecast/hourl
 OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 SFPUC_API_URL = "https://infrastructure.sfwater.org/lims.asmx/getBeaches"
 
+# The S1 part the live page serves (shared/lineup.py S1_BY_LEAD): ICON for today and the next two days, ECMWF 9 km
+# (IFS HRES, `ecmwf_ifs`) from three days ahead, since 2026-11-10 (Chase: "the 3-5 day out 9km as a promoted
+# model"; STAGES_DESIGN Part B 44). ICON is the closest single model one day ahead (below); from three days ahead
+# ECMWF 9 km misses less against the gauges (Part B 43). Each local day's rain, wind and peak hours come from the
+# model its lead reads (days after today; a past day reads today's), all of them fetched in one call
+# (METEO_PARAMS "models"). stages_entries.served_weather_model and stages_flowchart parse this line.
+WEATHER_MODEL = "icon_ecmwf_ifs_d3"
+
 # Open-Meteo params for SF.
-# Model: ICON (DWD, `icon_seamless`) since 2026-09-30 (Chase: "easy decision").
+# Model: ICON (DWD, `icon_seamless`) since 2026-09-30 (Chase: "easy decision"); from three days ahead ECMWF 9 km
+# since 2026-11-10 (WEATHER_MODEL above).
 # The stage-1 models were trained on gauge inches, so the weather model is an
 # input standing in for the gauges on the forecast days, and it is graded as
 # one: against the two NOAA gauges, Feb 2024 → Aug 2026, ICON is the closest
@@ -134,8 +144,59 @@ METEO_PARAMS = {
     "past_days": 7,
     "forecast_days": 6,
     "timezone": "America/Los_Angeles",
-    "models": "icon_seamless",
+    "models": ",".join(_LU.weathers_of(WEATHER_MODEL)),      # icon_seamless,ecmwf_ifs
 }
+HOURLY_COLUMNS = {"precip_mm": "precipitation", "temp_c": "temperature_2m", "wind_speed_kmh": "wind_speed_10m",
+                  "wind_dir_deg": "wind_direction_10m"}
+
+
+def weather_frames(data: dict, models) -> dict:
+    """{model: hourly frame [timestamp, precip_mm, temp_c, wind_speed_kmh, wind_dir_deg, precip_inches]} from an
+    Open-Meteo forecast response for ``models``. One model's response names its variables plainly; several
+    suffix each with the model's id. A model whose rain is absent from the response raises."""
+    models = tuple(models)
+    hourly = data.get("hourly", {})
+    times = pd.to_datetime(hourly.get("time", []))
+    out = {}
+    for m in models:
+        suffix = f"_{m}" if len(models) > 1 else ""
+        if "precipitation" + suffix not in hourly:
+            raise ValueError(f"Open-Meteo returned no precipitation for {m}")
+        df = pd.DataFrame({"timestamp": times})
+        for col, var in HOURLY_COLUMNS.items():
+            v = hourly.get(var + suffix)
+            df[col] = pd.to_numeric(pd.Series(v if v is not None else [None] * len(times)), errors="coerce").astype(float).to_numpy()
+        df["precip_inches"] = df["precip_mm"] / 25.4
+        out[m] = df
+    return out
+
+
+def splice_by_lead(frames: dict, part: str, today) -> pd.DataFrame:
+    """One hourly frame from ``frames`` ({model: weather_frames' frame}, one call's, so one clock): each local day
+    from the model its lead reads under S1 part ``part`` (lineup.weather_at; lead = days after ``today``, a past day
+    reads lead 0's model), with a ``weather_model`` column naming it. A day whose model lacks one of its rain hours
+    reads lead 0's model instead (logged): a missing hour is never a dry one, and the page always has a forecast."""
+    lead0 = _LU.weather_at(part, 0)
+    base = frames[lead0].copy()
+    for m, f in frames.items():
+        if not f["timestamp"].equals(base["timestamp"]):
+            raise ValueError(f"{m}'s hours are not {lead0}'s: splice one call's frames")
+    day = base["timestamp"].dt.normalize()
+    lead = (day - pd.Timestamp(today)).dt.days.clip(lower=0, upper=5)
+    model = lead.map(lambda L: _LU.weather_at(part, int(L)))
+    for m, f in frames.items():
+        if m == lead0:
+            continue
+        pick = model == m
+        short = f.loc[pick, "precip_mm"].isna().groupby(day[pick]).any()
+        for d in short.index[short]:
+            print(f"weather: {m} lacks rain hours on {d.date()}; that day reads {lead0}")
+            model[day == d] = lead0
+        pick = (model == m).to_numpy()
+        for col in list(HOURLY_COLUMNS) + ["precip_inches"]:
+            base.loc[pick, col] = f.loc[pick, col].to_numpy()
+    base["weather_model"] = model.to_numpy()
+    return base
 
 # Observed rain for past hours: NWS hourly gauge observations at SFO (KSFO —
 # the nearest ASOS gauge to the city; there is none downtown). Weather-model
@@ -540,27 +601,14 @@ class LiveData:
             traceback.print_exc()
 
     def _fetch_open_meteo(self) -> pd.DataFrame:
-        """Fetch hourly precipitation from Open-Meteo (past 7 days + next 6 days)"""
+        """Hourly rain, temperature and wind from Open-Meteo (past 7 days + next 6 days): every model WEATHER_MODEL
+        names in one call, each local day from the model its lead reads (``splice_by_lead``). Each model's own
+        series is kept for the peak hours of the days it serves (``_peaks_by_lead``)."""
         r = requests.get(OPEN_METEO_URL, params=METEO_PARAMS, timeout=30)
         r.raise_for_status()
-        data = r.json()
-
-        hourly = data.get("hourly", {})
-        times = hourly.get("time", [])
-        precip = hourly.get("precipitation", [])
-        temp = hourly.get("temperature_2m", [])
-        wind_speed = hourly.get("wind_speed_10m", [])
-        wind_dir = hourly.get("wind_direction_10m", [])
-
-        df = pd.DataFrame({
-            "timestamp": pd.to_datetime(times),
-            "precip_mm": precip,
-            "temp_c": temp,
-            "wind_speed_kmh": wind_speed,
-            "wind_dir_deg": wind_dir,
-        })
-        df["precip_inches"] = df["precip_mm"] / 25.4
-        return df
+        frames = weather_frames(r.json(), _LU.weathers_of(WEATHER_MODEL))
+        self._weather_hours = frames
+        return splice_by_lead(frames, WEATHER_MODEL, _now_local().date())
 
     def _fetch_nws_observed_rain(self, start_local: datetime, end_local: datetime) -> pd.Series:
         """Hourly observed precipitation (mm) at KSFO for every COMPLETE local
@@ -727,8 +775,8 @@ class LiveData:
             agg["wind_dir_avg"] = ("wind_dir_deg", "mean")
         base = rain_df.groupby("date").agg(**agg).reset_index()
         base["date"] = pd.to_datetime(base["date"])
-        # peak 1h/3h/6h per day — the shared implementation (windows span midnight)
-        base = base.merge(_hourly_intensity(rain_df), on="date", how="left")
+        # peak 1h/3h/6h per day — the shared implementation (windows span midnight), each from its day's model
+        base = base.merge(self._peaks_by_lead(rain_df), on="date", how="left")
         # the south wind on the rainy hours (rain_features.WIND_FEATURES), when a loaded model reads it
         if self.reads_wind and {"wind_speed_kmh", "wind_dir_deg"} <= set(rain_df.columns):
             w = rain_df.assign(wind_speed_ms=rain_df["wind_speed_kmh"].astype(float) / 3.6)
@@ -779,6 +827,27 @@ class LiveData:
                 daily.loc[have, "rain_source"] = "gauges"
             frames[source] = self._add_daily_features(daily)
         return frames
+
+    def _peaks_by_lead(self, rain_df: pd.DataFrame) -> pd.DataFrame:
+        """Each day's peak 1/3/6-hour rain (rain_features.hourly_intensity). The windows run across midnight, so a
+        day read from another model than lead 0's (ECMWF 9 km from three days ahead) takes its peaks from that
+        model's own series, the evening before included, as the build's lead rows do (Part B 44); every other day
+        from ``rain_df`` (the gauges' past hours overlaid). Only the live frame names a model per hour; a
+        hindcast's is one model's."""
+        pk = _hourly_intensity(rain_df)
+        own = getattr(self, "_weather_hours", None) or {}
+        if "weather_model" not in rain_df or not own:
+            return pk
+        lead0 = _LU.weather_at(WEATHER_MODEL, 0)
+        day_model = rain_df.groupby(pd.to_datetime(rain_df["timestamp"]).dt.normalize())["weather_model"].first()
+        pk = pk.set_index("date")
+        for m, f in own.items():
+            days = day_model.index[(day_model == m).to_numpy()].intersection(pk.index)
+            if m == lead0 or not len(days):
+                continue
+            theirs = _hourly_intensity(f).set_index("date").reindex(days)
+            pk.loc[days, theirs.columns] = theirs.to_numpy()
+        return pk.reset_index()
 
     def _score_frames(self, frames: dict) -> tuple:
         """Per-day (features_by_source, probs, volumes, dates) over the daily table."""
@@ -1069,6 +1138,9 @@ class LiveData:
         feats, probs, vols, dates = self._score_frames(frames)
         observed = self._fetch_observed_cso(min(dates)) if dates else {}
         live = self._live_context(frames, probs, vols, dates, observed, today)
+        # the weather model each day's forecast hours came from (splice_by_lead): the page names it
+        day_model = (rain_df.groupby(pd.to_datetime(rain_df["timestamp"]).dt.date)["weather_model"].first().to_dict()
+                     if "weather_model" in rain_df else {})
 
         results = {}
         for day_offset in range(0, 6):
@@ -1084,6 +1156,8 @@ class LiveData:
             payload = self._day_payload(frames, idx, feats, probs, vols, dates, observed, live)
             payload.update({"label": label, "date": str(target_date), "day_offset": day_offset,
                             "is_forecast": day_offset > 0, "is_today": day_offset == 0})
+            if day_model.get(target_date):
+                payload.update(weather_model=day_model[target_date], weather=_LU.words("s1", day_model[target_date]))
             results[str(target_date)] = payload
         return results
 
@@ -1110,7 +1184,7 @@ class LiveData:
                 url = "https://archive-api.open-meteo.com/v1/archive"
             else:
                 url = OPEN_METEO_URL
-                params["models"] = METEO_PARAMS["models"]
+                params["models"] = _LU.weather_at(WEATHER_MODEL, 0)   # a hindcast of past days: today's model
                 params["past_days"] = (_now_local() - start).days
                 params["forecast_days"] = max(1, (end - _now_local()).days + 1)
                 del params["start_date"]
@@ -1661,7 +1735,7 @@ class LiveData:
             **{k: sv.get(k) for k in ("name", "stage1", "stage2", "artifact", "family", "line", "promoted_at")},
             "trained_at": first.get("trained_at"),
             "live_corrections": (getattr(self, "corrections", None) or {}).get("rule") or _lr.VERSION,   # s5.json's rule once switched (A7)
-            "weather_model": METEO_PARAMS.get("models"),   # the input standing in for the gauges on forecast days (ICON since 2026-09-30)
+            "weather_model": WEATHER_MODEL,   # the S1 part standing in for the gauges on forecast days (ICON 2026-09-30; ICON, ECMWF 9 km from 3 days ahead since 2026-11-10)
             "input_rules": list(INPUT_RULES_LIVE),
             "build": None,
         }
@@ -2048,8 +2122,8 @@ function render(data) {
     // Timeline
     const rainSourceLabel = day => {
         const src = day.rain_source || (day.is_forecast ? 'forecast' : 'model');
-        return {observed: '📊 SFO gauge', mixed: '📊 gauge + 📡 ICON',
-                model: '📡 model hindcast', forecast: '📡 ICON forecast'}[src] || src;
+        return {observed: '📊 SFO gauge', mixed: '📊 gauge + 📡 ' + (day.weather || 'ICON'),
+                model: '📡 model hindcast', forecast: '📡 ' + (day.weather || 'ICON') + ' forecast'}[src] || src;
     };
     const timeline = document.getElementById('timeline');
     timeline.innerHTML = '';

@@ -1,6 +1,6 @@
 """A forecast's stage lineup in plain words and in its name (STAGES_DESIGN.md A8; Part B 36).
 
-A set is its lineup: basins · S1 rain (its weather model; S1_RAIN for a dead gauge's days) · S2 overflow model · S3 beach split · S4 lingering table · S5 live
+A set is its lineup: basins · S1 rain (its weather model, or one per lead: S1_BY_LEAD; S1_RAIN for a dead gauge's days) · S2 overflow model · S3 beach split · S4 lingering table · S5 live
 correction rule. Its full name is each stage's name at the time it was made, in that order (Chase, 2026-10-07: "the
 full model name should have a combo of each stage at the time's name"):
 
@@ -25,9 +25,11 @@ from __future__ import annotations
 WORDS = {
     "geography": {"geo_v1": "BWTF basins", "sfpuc4_v1": "SFPUC basins"},
     # S1 is the rain a set reads: its weather model's forecast for the days ahead, the gauges for the days before. A
-    # part with a rule after the model's id fills a dead gauge's days another way (S1_RAIN; Part B 41)
+    # part with a rule after the model's id fills a dead gauge's days another way (S1_RAIN; Part B 41); a part named
+    # for two models reads each lead from one of them (S1_BY_LEAD; Part B 44)
     "s1": {"icon_seamless": "ICON", "ecmwf_ifs025": "ECMWF", "gfs_seamless": "GFS", "ecmwf_ifs": "ECMWF 9 km",
-           "icon_seamless_mrmsfill": "ICON, dead gauges from MRMS"},
+           "icon_seamless_mrmsfill": "ICON, dead gauges from MRMS",
+           "icon_ecmwf_ifs_d3": "ICON, ECMWF 9 km from 3 days ahead"},
     "s2": {"logit_v1": "38-weight", "gb_v1": "Trees", "shared8_nonneg_sfpuc4": "8-term SFPUC",
            # the shared-terms sets on BWTF basins (leaderboard.SHARED_DESIGNS; the count is their bands)
            "logit_v2_shared5": "5-term", "logit_v2_shared6": "6-term", "logit_v2_shared8": "8-term",
@@ -63,7 +65,7 @@ WORDS = {
 CODES = {
     "geography": {"geo_v1": "", "sfpuc4_v1": "sfpuc"},
     "s1": {"icon_seamless": "icon", "ecmwf_ifs025": "ecmwf", "gfs_seamless": "gfs", "ecmwf_ifs": "ecmwf9",
-           "icon_seamless_mrmsfill": "iconmrms"},
+           "icon_seamless_mrmsfill": "iconmrms", "icon_ecmwf_ifs_d3": "iconecmwf9"},
     "s2": {"logit_v1": "w38", "gb_v1": "trees", "shared8_nonneg_sfpuc4": "t8s",
            "logit_v2_shared5": "t5", "logit_v2_shared6": "t6", "logit_v2_shared8": "t8", "logit_v2_half": "t19",
            "logit_v2_four": "four",
@@ -130,9 +132,36 @@ GAUGE_RULE = "gauge_outage_v1"                                   # rain_features
 S1_RAIN = {"icon_seamless_mrmsfill": ("icon_seamless", "gauge_outage_v2")}
 
 
+# The S1 parts that read another weather model at some leads: part → the archived weather model each lead reads,
+# lead 0 (today) … 5 (the page's last day). Chase, 2026-11-10: "the 3-5 day out 9km as a promoted model" (Part B 44):
+# ICON is closest one day ahead, ECMWF 9 km misses less from three days ahead (Part B 43). A part here is a weather
+# model of its own to the entries (stages_entries reads lead L from BY_LEAD[part][L]) and to the live page
+# (live_dashboard fetches every model it names and takes each day from its lead's).
+S1_BY_LEAD = {"icon_ecmwf_ifs_d3": ("icon_seamless",) * 3 + ("ecmwf_ifs",) * 3}
+
+
 def weather_of(s1: str) -> str:
-    """The weather model an S1 part reads its forecasts from."""
+    """The weather model an S1 part reads its forecasts from (a by-lead part is a weather model of its own: S1_BY_LEAD)."""
     return S1_RAIN.get(s1, (s1, GAUGE_RULE))[0]
+
+
+def by_lead(s1: str) -> tuple:
+    """The archived weather model each lead 0 … 5 of S1 part ``s1`` reads: its S1_BY_LEAD row, else its one weather
+    model at every lead."""
+    w = weather_of(s1)
+    return S1_BY_LEAD.get(w, (w,) * 6)
+
+
+def weather_at(s1: str, lead: int) -> str:
+    """The archived weather model S1 part ``s1`` reads at ``lead`` (0 … 5)."""
+    if not 0 <= int(lead) <= 5:
+        raise KeyError(f"lead {lead!r}: the page's leads are 0 … 5")
+    return by_lead(s1)[int(lead)]
+
+
+def weathers_of(s1: str) -> tuple:
+    """The distinct archived weather models S1 part ``s1`` reads, in lead order (what the live page fetches)."""
+    return tuple(dict.fromkeys(by_lead(s1)))
 
 
 def rain_rule_of(s1: str) -> str:

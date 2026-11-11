@@ -255,7 +255,7 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 <div class="container">
 {% call page_head("CSO Forecast", "Sewage-overflow risk for San Francisco's beaches, by zone, updated every 30 minutes.", "today", "How this forecast works") %}
 <p><b>What it is.</b> For each beach zone, the chance that a sewage overflow has fouled the water: today and the next five days, as a percentage, refreshed every 30 minutes. It is a rain model. It does not see dry-weather dirtiness, and posted signs always win.</p>
-<p><b>Stage 1: how much rain?</b> What fell comes from two NOAA gauges, Downtown and Oceanside; the last few hours from the SFO airport gauge; the hours ahead from a weather model (ICON, via Open-Meteo). On past days the gauges replace everything else.</p>
+<p><b>Stage 1: how much rain?</b> What fell comes from two NOAA gauges, Downtown and Oceanside; the last few hours from the SFO airport gauge; the hours ahead from a weather model via Open-Meteo: ICON for today and the next two days, ECMWF 9 km from three days ahead. On past days the gauges replace everything else.</p>
 <p><b>Stage 2: will the sewers overflow?</b> San Francisco has four combined-sewer basins. For each one, a model trained on ten years of the city's filed overflow reports turns the rain pattern (the day's total, the last days' totals, the peak hour) into the chance of an overflow that day.</p>
 <p><b>Stage 3: which beaches?</b> An overflow reaches the beaches its outfalls post, and not every outfall spills when its basin does: each beach gets the basin's chance times the share of the basin's overflows of that size on which its own outfalls spilled, from the city's records.</p>
 <p><b>Stage 4: for how long?</b> An overflow fouls a beach for days. How long, by basin and by the size of the overflow, comes from the city's own bacteria samples after past overflows. The percentage shown is the combined risk from the last eight days of overflow chances.</p>
@@ -305,7 +305,7 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 </div>
 
 <div class="foot">   {# the page's own source note; the site footer is the frame's #}
-    <p><svg class="ic"><use href="#i-info"/></svg> Rain: NOAA gauges (Downtown 047772, Oceanside 047767), KSFO hourly, ICON forecast (Open-Meteo) · Discharges: SFPUC CIWQS reports · Beach status: SFPUC · Bacteria: DataSF</p>
+    <p><svg class="ic"><use href="#i-info"/></svg> Rain: NOAA gauges (Downtown 047772, Oceanside 047767), KSFO hourly, ICON and ECMWF 9 km forecasts (Open-Meteo) · Discharges: SFPUC CIWQS reports · Beach status: SFPUC · Bacteria: DataSF</p>
     <p>Community-science tool, not an official advisory — posted signs and SFPUC or health-department notices take precedence. <a href="/">Back to Today</a> · <a href="/api/build" title="{{ build.message or '' }}">{{ build.label }}</a></p>
 </div>
 </div>
@@ -388,8 +388,8 @@ const zoneRain = (day, zk) => {
 function rainSourceLabel(day) {
     const src = day.rain_source || (day.is_forecast ? 'forecast' : 'model');
     return { gauges: ic('gauge') + ' NOAA gauges', observed: ic('gauge') + ' KSFO gauge',
-             mixed: ic('gauge') + ' gauge + ' + ic('satellite-dish') + ' ICON',
-             model: ic('satellite-dish') + ' model hindcast', forecast: ic('satellite-dish') + ' ICON forecast' }[src] || esc(src);
+             mixed: ic('gauge') + ' gauge + ' + ic('satellite-dish') + ' ' + esc(day.weather || 'ICON'),
+             model: ic('satellite-dish') + ' model hindcast', forecast: ic('satellite-dish') + ' ' + esc(day.weather || 'ICON') + ' forecast' }[src] || esc(src);
 }
 
 // ─── state / mode / view ────────────────────────────────────────────────────

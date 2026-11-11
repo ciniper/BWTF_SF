@@ -46,10 +46,18 @@ moves):
 
     venv/bin/python features/forecast/src/models/promote.py --weather ecmwf_ifs025 [--dry-run]
 
-A new weather model on the live page (live_dashboard METEO_PARAMS) changes the
+A new weather model on the live page (live_dashboard WEATHER_MODEL) changes the
 served set's S1 the same way; rename it in the same commit:
 
     venv/bin/python features/forecast/src/models/promote.py --rename-served [--dry-run]
+
+or, to keep the set that read the old model gradable (Part B 44: ICON → ICON with
+ECMWF 9 km from three days ahead), switch WEATHER_MODEL first, then
+
+    venv/bin/python features/forecast/src/models/promote.py --retire-weather icon_seamless [--dry-run]
+
+which retires the served set as it read ``icon_seamless`` to a candidate, drops a
+--weather copy of the new lineup if one was saved, and renames served.json.
 """
 from __future__ import annotations
 
@@ -94,9 +102,9 @@ DESIGN_FIELDS = ("record", "fold_terms", "terms", "input_rules", "train_input_ru
 CARRIED = DESIGN_FIELDS + ("tags", "term_selection")
 
 
-def retire_served(now: str, dry_run: bool) -> str:
+def retire_served(now: str, dry_run: bool, why: str | None = None) -> str:
     """Copy the served set into candidates/<its name>/ with a manifest. Returns its name."""
-    return served_as_candidate(now, dry_run)
+    return served_as_candidate(now, dry_run, why=why)
 
 
 def weather_variant(model: str, dry_run: bool = False) -> str:
@@ -111,9 +119,10 @@ def weather_variant(model: str, dry_run: bool = False) -> str:
     return served_as_candidate(datetime.now().isoformat(timespec="seconds"), dry_run, weather=model)
 
 
-def served_as_candidate(now: str, dry_run: bool, weather: str | None = None) -> str:
+def served_as_candidate(now: str, dry_run: bool, weather: str | None = None, why: str | None = None) -> str:
     """The served set as a candidate: retired (``weather`` None, under its own name), or read with weather model
-    ``weather`` (under that lineup's id, a candidate). Returns its name."""
+    ``weather`` (under that lineup's id, a candidate). ``why``: a retired set's reason, added to its note. Returns its
+    name."""
     served = C.served_info()
     if not served.get("lineup") or C.set_name(served["lineup"]) != served["name"]:
         raise SystemExit(f"served.json records no lineup whose id is {served['name']!r}: rename_served first")
@@ -141,7 +150,8 @@ def served_as_candidate(now: str, dry_run: bool, weather: str | None = None) -> 
         when = {"created_at": now}
     else:
         note = (f"Retired from serving on {now[:10]} (served {served.get('promoted_at', 'from the 2026-09-12 launch')[:10]} → {now[:10]}); "
-                f"stage 1 {served['stage1']} with stage 2 {served['stage2']}. Kept as a candidate so it stays gradable.")
+                f"stage 1 {served['stage1']} with stage 2 {served['stage2']}. Kept as a candidate so it stays gradable."
+                + (f" {why}" if why else ""))
         when = {"created_at": models["westside"].get("trained_at") or now, "retired_at": now}
     manifest = {
         "name": name, "family": family, "note": note, **when,
@@ -279,6 +289,32 @@ def rename_served(dry_run: bool = False, serve_dir: Path | None = None, served: 
     return name
 
 
+def retire_weather(old: str, dry_run: bool = False) -> str:
+    """After the live page's weather model changed from ``old`` (live_dashboard WEATHER_MODEL): the served set, as it
+    read ``old``, becomes a candidate under its own name (retire_served), so it stays gradable next to the set that
+    replaces it; a --weather copy of the new lineup, if one was saved, is dropped (a set is served or a candidate,
+    never both); and served.json is renamed to the new lineup's id (rename_served), recording the switch. The
+    pickles, scorecard, stage 2 and line do not move: only S1 changed. Returns the new served name."""
+    served = C.served_info()
+    if (served.get("lineup") or {}).get("s1") != old:
+        raise SystemExit(f"served.json's S1 is {(served.get('lineup') or {}).get('s1')!r}, not {old!r}")
+    new = _weather_model()
+    if new == old:
+        raise SystemExit(f"the live page still reads {old}: switch live_dashboard WEATHER_MODEL first")
+    from shared import lineup as LU  # noqa: PLC0415
+    now = datetime.now().isoformat(timespec="seconds")
+    retired = retire_served(now, dry_run, why=f"Its weather model {LU.words('s1', old)} was replaced by "
+                                              f"{LU.words('s1', new)} on {now[:10]}; nothing else changed.")
+    name = C.set_name(served_lineup_now(served))
+    dup = C.candidate_dir(name)
+    if dup.exists():
+        print(f"   candidates/{name}/ is the lineup that now serves: removed")
+        if not dry_run:
+            shutil.rmtree(dup)
+    sv = dict(json.loads(C.SERVED_FILE.read_text()), weather_switched_at=now, weather_replaced={"s1": old, "set": retired})
+    return rename_served(dry_run=dry_run, served=sv)
+
+
 def promote_corrections(rule: str, dry_run: bool = False, serve_dir: Path | None = None) -> dict | None:
     """Switch the served live-correction rule (A7). link_zone_v1: write s5.json with the co-firing
     shares of geo_v1's links, fit on the ledger through the served set's trained_through (the shares
@@ -325,6 +361,9 @@ if __name__ == "__main__":
         raise SystemExit(0)
     if "--rename-served" in args:
         rename_served(dry_run="--dry-run" in args)
+        raise SystemExit(0)
+    if "--retire-weather" in args:
+        retire_weather(args[args.index("--retire-weather") + 1], dry_run="--dry-run" in args)
         raise SystemExit(0)
     if "--weather" in args:
         weather_variant(args[args.index("--weather") + 1], dry_run="--dry-run" in args)

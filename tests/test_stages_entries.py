@@ -551,6 +551,34 @@ def test_a_day_no_gauge_read_raises_never_reads_dry():
     E._gauge("avg", ("gauge_outage_v1",))                              # and the real record passes
 
 
+def test_a_by_lead_part_reads_each_lead_from_its_model():
+    """icon_ecmwf_ifs_d3 (shared/lineup.py S1_BY_LEAD; Part B 44): lead j's archive is ICON's for j ≤ 2 and ECMWF 9 km's
+    from 3, so its lead 0–2 rows ARE ICON's, and a lead-L row reads day I + j from the model lead j reads, D's peak
+    hours from lead L's."""
+    P = "icon_ecmwf_ifs_d3"
+    assert P in E.MODELS and P not in E.ARCHIVED and E.served_weather_model() == P
+    for L in E.LEADS:
+        a = E.archived_at(P, L)
+        assert a == ("icon_seamless" if L <= 2 else "ecmwf_ifs"), (L, a)
+        assert E.model_days(P, L).equals(E.model_days(a, L)) and E.model_peaks(P, L).equals(E.model_peaks(a, L)), L
+        assert E._wind(P, L).equals(E._wind(a, L)), L
+        got = E.nwp_hours(P, leads=(L,)).reset_index(drop=True)
+        assert got.equals(E.nwp_hours(a, leads=(L,)).reset_index(drop=True)), L
+    for e in ("L0", "L1", "L2", "L0s", "L1s"):
+        mine, icon = _frames(e, ("avg",), model=P)["avg"], _frames(e, ("avg",), model="icon_seamless")["avg"]
+        pd.testing.assert_frame_equal(mine, icon, check_exact=True)
+    f = _frames("L4", ("avg",), model=P)["avg"].set_index("date")
+    assert len(f) and f.index.min() == pd.Timestamp("2025-10-04")             # ECMWF 9 km's lead 4 starts 2025-10-04
+    tot = {j: E.model_days(E.archived_at(P, j), j).set_index("date")["total"] for j in range(5)}
+    for D in f.index[::7]:
+        assert abs(f.at[D, "precip_avg"] - tot[4].at[D]) < 1e-12, D            # D itself: ECMWF 9 km at lead 4
+        assert abs(f.at[D, "rain_lag1d"] - tot[3].at[D - DAY]) < 1e-12, D      # D − 1: ECMWF 9 km at lead 3
+        assert abs(f.at[D, "rain_lag2d"] - tot[2].at[D - 2 * DAY]) < 1e-12, D  # D − 2 = I + 2: ICON at lead 2
+        pk = E.model_peaks("ecmwf_ifs", 4, 2).set_index("date")
+        assert abs(f.at[D, "rain_max3h"] - pk.at[D, "rain_max3h"]) < 1e-12, D
+    _raises(KeyError, E.archived_at, P, 6)
+
+
 def test_drops_and_rows_partition_the_span():
     days = pd.date_range(E.START, E.data_end())
     for m in E.MODELS:

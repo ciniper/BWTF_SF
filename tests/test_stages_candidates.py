@@ -401,7 +401,7 @@ def test_assemble_needs_the_sets_own_s2():
 
 
 def test_the_assembled_candidates_components():
-    """Every stage candidate holding all five components was assembled consistently: S1 the served weather model, S3
+    """Every stage candidate holding all five components was assembled consistently: S1 the weather model served then, S3
     fit on the set's own S2 (stages_s3_links.candidate_s2), S4 v3 at its S3's φ with its own v̂, S5 the choice its
     own recorded table gives."""
     import stages_entries as E
@@ -410,7 +410,9 @@ def test_the_assembled_candidates_components():
         if set(m["components"]) != {"s1", "s2", "s3", "s4", "s5"}:
             continue
         st = SC.load_set(m["name"])
-        assert st.components["s1"] == E.served_weather_model() == m["s1"]["weather_model"], m["name"]
+        # the weather model served when it was assembled (ICON, 2026-10; the page reads ICON with ECMWF 9 km from three
+        # days ahead since 2026-11-10, Part B 44), recorded in its S1 and its name
+        assert st.components["s1"] == m["s1"]["weather_model"] == "icon_seamless" and "-icon-" in m["name"], m["name"]
         assert st.s3_links["sources"]["s2"]["name"] == m["name"], m["name"]
         assert st.s4_quality["fit"]["s2_set"] == m["name"] == st.s4_quality["fit"]["s3_set"], m["name"]
         assert all(r["v_hat_from"] == m["name"] and r["history_geography"] == S4V3.GEOGRAPHY for r in st.s4_quality["fit"]["folds"])

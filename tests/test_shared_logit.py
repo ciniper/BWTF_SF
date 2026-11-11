@@ -32,9 +32,12 @@ SETS = {"logit_v2_four": "four"}
 
 
 def _sets(stage1: str) -> tuple:
-    """The two sets of an overflow model: with stage 2 v1 and with the outfall split (their lineups' ids)."""
+    """The two sets of an overflow model: with stage 2 v1 and with the outfall split (their lineups' ids, as saved:
+    with ICON, the weather model served until 2026-11-10, Part B 44)."""
     import stage2_variants as SV
-    return C.geo_v1_set(stage1, None)[0], C.geo_v1_set(stage1, SV.load_spec("v2"))[0]
+    LU = C._lineup_module()
+    return tuple(C.set_name(LU.geo_v1_lineup(stage1, C.stage2_variant_id(spec), "icon_seamless", "live_v2"))
+                 for spec in (None, SV.load_spec("v2")))
 
 
 def _toy(n=600, seed=0):

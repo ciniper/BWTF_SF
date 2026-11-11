@@ -1,8 +1,8 @@
 {
- "name": "icon-t9wind3h-osplit-lt2more-bflags",
+ "name": "iconecmwf9-t9wind3h-osplit-lt2more-bflags",
  "lineup": {
   "geography": "geo_v1",
-  "s1": "icon_seamless",
+  "s1": "icon_ecmwf_ifs_d3",
   "s2": "logit_wind8_max3h_older11",
   "s3": "split_v2",
   "s4": "impact_v2_d10",
@@ -319,5 +319,11 @@
  "tags": {
   "post_seen": "its training record (the older SFPUC reports from 2011, every discharge day) was chosen in OLDER_REPORTS.md with the older-report sets' post-training scores in view; its linger table on more samples was built after sfpuc-icon-t8s-osplits-pickout-lzflags's post-training scores showed the extra samples helping the public number"
  },
- "corrections": "live_v2"
+ "corrections": "live_v2",
+ "weather_switched_at": "2026-11-10T15:50:23",
+ "weather_replaced": {
+  "s1": "icon_seamless",
+  "set": "icon-t9wind3h-osplit-lt2more-bflags"
+ },
+ "renamed_from": "icon-t9wind3h-osplit-lt2more-bflags"
 }

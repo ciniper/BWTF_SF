@@ -2182,15 +2182,17 @@ def input_files(bundle: SetBundle, model: str) -> list:
     the bake-off it names; the served set's: the forecast_history snapshot, once one is committed)."""
     raw = T4.RAW_DIR
     sd = T4.SERVE_DIR if bundle.is_served or bundle.stage is not None else CAND.candidate_dir(bundle.name)
-    files = [X.PROTOCOL, FORECAST / "live_dashboard.py", S1_SCORES, S1.OUT_DIR / f"{model}.csv.gz", raw / "historical_rain.csv",
+    wx = LU.weathers_of(model)                     # the archived models it reads (a by-lead S1 part reads two; Part B 44)
+    files = [X.PROTOCOL, FORECAST / "live_dashboard.py", S1_SCORES, *(S1.OUT_DIR / f"{m}.csv.gz" for m in wx), raw / "historical_rain.csv",
              raw / "hourly_rain_openmeteo.csv",
-             raw / "historical_bacteria.csv", raw / f"openmeteo_prev_runs_{model}.csv", raw / f"openmeteo_hist_forecast_{model}.csv",
+             raw / "historical_bacteria.csv", *(raw / f"openmeteo_prev_runs_{m}.csv" for m in wx),
+             *(raw / f"openmeteo_hist_forecast_{m}.csv" for m in wx),
              FORECAST / "data" / "csd" / "sf_csd_events.csv", FORECAST / "data" / "csd" / "sf_csd_monthly_coverage.csv",
              FORECAST / "data" / "poobot" / "samples.csv", FORECAST / "data" / "poobot" / "discharge_onsets.csv",
              FORECAST / "data" / "poobot" / "feed_status.csv", T4.SERVE_DIR / "served.json", T4.SERVE_DIR / "eval_report.json",
              T4.SERVE_DIR / "impact_table.json"]
     files += [SMP.SOURCE_FILES[n] for n in SMP.PRECEDENCE]          # S4's truth reads all three (design D10)
-    files += [T4.HOURLY_WIND_CSV, E.OMP.wind_path(model)]           # every entry's south wind (rain_features.WIND_FEATURES)
+    files += [T4.HOURLY_WIND_CSV, *(E.OMP.wind_path(m) for m in wx)]   # every entry's south wind (rain_features.WIND_FEATURES)
     if RF.GAUGE_OUTAGE_V2["name"] in input_rules(bundle) or (bundle.stage is None and RF.GAUGE_OUTAGE_V2["name"] in bundle.s2.train_input_rules):
         files.append(T4.MRMS_DAILY_CSV)                             # what gauge_outage_v2 fills a dead gauge with
     if bundle.stage is not None:
@@ -2999,7 +3001,7 @@ def changed_components(bundle: SetBundle, served: dict, served_geo: str) -> dict
     cross = bundle.geo.version != served_geo
     rain = LU.rain_rule_of(mine["s1"]) != LU.rain_rule_of(served["s1"])
     out = {c: bool(mine[c] != served[c] or (cross and c in ("s2", "s3"))) for c in COMPONENTS}
-    out["s1"] = LU.weather_of(mine["s1"]) != LU.weather_of(served["s1"])
+    out["s1"] = LU.by_lead(mine["s1"]) != LU.by_lead(served["s1"])     # a by-lead part by its model at every lead (Part B 44)
     out["s2"] = out["s2"] or rain
     return out
 
@@ -3069,13 +3071,19 @@ def primaries(bundle: SetBundle, sc: dict, rows: dict, art: dict, ctx: X.Context
     vs = paired.get("vs_served") or {}
     no_served = f"the served set's build is not readable ({skipped})" if skipped else None
     out_rows = []
-    # S1 · the weather model, chosen on S1 only (set-independent)
-    m = LU.weather_of(components(bundle)["s1"])
+    # S1 · the weather model, chosen on S1 only (set-independent); S1's primary is one day ahead, so it grades the model
+    # each part reads at lead 1 (a by-lead part: lineup.weather_at; Part B 44)
+    m = LU.weather_at(components(bundle)["s1"], 1)
+    same_at_primary = m == LU.weather_at(comps["s1"], 1)
     if not changed["s1"]:
         fill = LU.rain_rule_of(components(bundle)["s1"])
         out_rows.append(_row("S1", False, NA, f"the candidate reads the served weather model ({m}): S1 is set-independent (stages_s1)"
                              + (f"; its gauges' dead days read {fill}, days S1's grade leaves out (X-S1-OUTAGE)"
                                 if fill != LU.GAUGE_RULE else "")))
+    elif same_at_primary:
+        later = sorted({LU.weather_at(components(bundle)["s1"], L) for L in range(6)} ^ {LU.weather_at(comps["s1"], L) for L in range(6)})
+        out_rows.append(_row("S1", True, NA, f"the candidate reads the served weather model ({m}) one day ahead, S1's primary lead, "
+                             f"and another at a later lead ({', '.join(later)}): S1's primary cannot score the change"))
     else:
         s1 = json.loads(S1_SCORES.read_text()) if S1_SCORES.exists() else {}
         cell = ((s1.get("primary") or {}).get("vs_served") or {}).get(m)

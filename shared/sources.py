@@ -37,7 +37,7 @@ _CACHE_TTL_SECONDS = 15 * 60
 
 # Constants that describe live inputs (mirrors of the serving code's settings;
 # features/forecast/live_dashboard.py METEO_PARAMS / ACIS_GAUGES / NWS).
-ECMWF_FORECAST_DAYS = 6          # forecast_days of the Open-Meteo call (name kept; the model is ICON since 2026-09-30)
+ECMWF_FORECAST_DAYS = 6          # forecast_days of the Open-Meteo call (name kept; ICON since 2026-09-30, ECMWF 9 km from 3 days ahead since 2026-11-10)
 KSFO_PAST_DAYS = 7
 BWTF_SF_SINCE = "2023-09-01"     # the chapter's first SF collections in the BWTF database (features/comparison/samples.py)
 WATCHER_SINCE = "2026-08-20"     # features/forecast/live_dashboard.LiveData.WATCHER_SINCE — the fallback when alert_log is unreachable
@@ -183,7 +183,8 @@ def registry(include_supabase: bool = True) -> dict:
         _entry("Open-Meteo ERA5 hourly rain", "hourly intensity for the peak-intensity features",
                "live API", first=hr_lo, last=hr_hi, cadence="training only; refreshed at each retrain",
                stored="data/raw/hourly_rain_openmeteo.csv", used_by=["CSO Forecast (training)"]),
-        _entry("Open-Meteo ICON forecast", "hourly rain for the coming days (ICON, DWD; ECMWF IFS 2026-09-04 → 09-30)",
+        _entry("Open-Meteo ICON and ECMWF 9 km forecasts", "hourly rain for the coming days: ICON (DWD) for today and the next two days, "
+               "ECMWF 9 km (IFS HRES) from three days ahead since 2026-11-10 (ICON alone 2026-09-30 → 11-10; ECMWF IFS 2026-09-04 → 09-30)",
                "live API", first="today", last=f"next {ECMWF_FORECAST_DAYS} days", cadence="every forecast refresh (30 min)",
                stored="inside each forecast snapshot", used_by=["CSO Forecast"]),
         _entry("NWS hourly observations at SFO (KSFO)", "observed rain for the past days, overriding the model's hindcast",

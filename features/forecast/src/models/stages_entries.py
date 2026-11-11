@@ -74,6 +74,14 @@ already short of rain hours; Part B 43); a (model, lead) the archive does not re
 it as X-S1-NOLEAD. In first-match order NWPGAP wins when a row has both.
 Nothing is ever zero-filled.
 
+**A by-lead S1 part** (shared/lineup.py S1_BY_LEAD; Part B 44) is a weather
+model here of its own: lead j's archive is its lead-j model's (``archived_at``),
+so a lead-L row reads each day I + j from the model lead j reads, and D's peak
+hours and wind from lead L's: icon_ecmwf_ifs_d3's lead-4 row reads I … I + 2
+from ICON and I + 3, D and D's peak hours from ECMWF 9 km, as the live page
+takes each of its days from that day's lead's model. Its NWPGAP / NOLEAD are
+its lead models' own.
+
 **As served (L0s, L1s)** is what the page computes: its Open-Meteo frame holds
 7 past days (METEO_PARAMS past_days=7) and the 6 forecast days, so on each
 refresh it runs the shared add_daily_features over 13 rows, I − 7 … I + 5.
@@ -136,7 +144,8 @@ API (the build agent and the S2 engine call these):
     nwp_hours(model) -> DataFrame[date, lead, n_hours]   (exclusions.Context.nwp)
     model_days(model, lead), model_peaks(model, lead, reach)   (S1's forecast columns)
     issue_time_unmasked(input_rules) -> DataFrame[issue, date, gauge]   (what the issue day could not yet mask)
-    served_weather_model() -> str   (METEO_PARAMS['models']; the default ``model``, 'icon_seamless' today)
+    served_weather_model() -> str   (live_dashboard WEATHER_MODEL; 'icon_ecmwf_ifs_d3' since 2026-11-10, Part B 44)
+    archived_at(model, lead) -> str   (the archive a by-lead S1 part reads at a lead: lineup.S1_BY_LEAD)
     data_end() -> Timestamp
 """
 from __future__ import annotations
@@ -162,9 +171,13 @@ import rain_features as RF  # noqa: E402  (the one feature implementation, train
 import train_v4 as T4  # noqa: E402  (the gauge series, the training frame's features, its span)
 import truth as T  # noqa: E402  (which gauge days were read at all)
 from src.collectors import openmeteo_previous_runs as OMP  # noqa: E402  (the archives and the complete-day rule)
+from shared import lineup as LU  # noqa: E402  (a by-lead S1 part's model at each lead: S1_BY_LEAD)
 
 ENTRIES = X.ENTRIES                                    # oracle, rain, L0 … L5, L0s, L1s (protocol §3)
-MODELS = tuple(OMP.MODELS)                             # icon_seamless, ecmwf_ifs025, gfs_seamless, ecmwf_ifs (Part B 43)
+ARCHIVED = tuple(OMP.MODELS)                           # icon_seamless, ecmwf_ifs025, gfs_seamless, ecmwf_ifs (Part B 43)
+# … and the by-lead S1 parts, each a weather model of its own here: lead L reads lineup.weather_at(part, L)'s archive
+# (icon_ecmwf_ifs_d3: ICON at leads 0–2, ECMWF 9 km at 3–5; Part B 44)
+MODELS = ARCHIVED + tuple(m for m in LU.S1_BY_LEAD if m not in ARCHIVED)
 LEADS = OMP.LEADS                                      # 0 (short lead, optimistic), 1 … 5
 FEATURES = list(RF.DAILY_FEATURES) + list(RF.INTENSITY_FEATURES)   # the 19, build_dataset's order
 WIND = list(RF.WIND_FEATURES)                          # after the 19: read only by a set whose features name them
@@ -208,17 +221,30 @@ def _lead(lead) -> int:
     return int(lead)
 
 
+def archived_at(model: str, lead: int) -> str:
+    """The archive (model, lead) reads: a by-lead S1 part's model at that lead (lineup.weather_at), else the model's
+    own. Every archive read goes through here, so a by-lead part's lead-L rows, peaks and wind are exactly its
+    lead-L model's (Part B 44)."""
+    a = LU.weather_at(_model(model), int(lead))
+    if a not in ARCHIVED:
+        raise KeyError(f"{model} lead {lead} reads {a!r}, which the archive does not hold ({ARCHIVED})")
+    return a
+
+
 LIVE_DASHBOARD = FORECAST / "live_dashboard.py"
 
 
+WEATHER_MODEL_RE = re.compile(r'^WEATHER_MODEL\s*=\s*"([a-z0-9_]+)"', re.M)
+
+
 def served_weather_model() -> str:
-    """The weather model the live forecast reads: METEO_PARAMS["models"] in live_dashboard.py, parsed from
-    its source as stages_flowchart does (importing it would load the whole model stack). The lead entries'
-    default model; tests/test_stages_s1.py fails if the two ever part. Unreadable or not archived: raise."""
-    src = LIVE_DASHBOARD.read_text()
-    m = re.search(r'^METEO_PARAMS\s*=\s*\{[^}]*?"models":\s*"([a-z0-9_]+)"', src, re.M | re.S)
+    """The weather model the live forecast reads: WEATHER_MODEL in live_dashboard.py (an archived model, or a by-lead
+    S1 part whose models METEO_PARAMS fetches), parsed from its source as stages_flowchart does (importing it would
+    load the whole model stack). The lead entries' default model; tests/test_stages_s1.py fails if the two ever
+    part. Unreadable or not archived: raise."""
+    m = WEATHER_MODEL_RE.search(LIVE_DASHBOARD.read_text())
     if not m:
-        raise ValueError(f"{LIVE_DASHBOARD.name}: METEO_PARAMS names no weather model")
+        raise ValueError(f"{LIVE_DASHBOARD.name}: WEATHER_MODEL names no weather model")
     return _model(m.group(1))
 
 
@@ -279,7 +305,7 @@ def _hourly(model: str, lead: int) -> tuple:
     """(hourly inches on a gap-free grid, inside: the grid hour lies between the first and last archived hour).
 
     An hour the file lacks is NaN on the grid, never 0; the grid runs a day past the archive at each end."""
-    h = OMP.load_hourly(_model(model), int(lead))
+    h = OMP.load_hourly(archived_at(model, lead), int(lead))
     if h["timestamp"].duplicated().any():
         raise ValueError(f"{model} lead {lead}: the archive repeats an hour")
     s = h.set_index("timestamp")["precip_inches"].astype(float)
@@ -298,9 +324,10 @@ def _days(model: str, lead: int) -> pd.DataFrame:
     OMP.daily_totals is the complete-day rule; a day inside the archive's span (OMP.archive_span) with
     fewer than 24 hours is a gap, a day outside it is not in the archive. A rainy hour without archived wind
     counts as missing: lead rows read the wind on the rainy hours (wind_v_rain), and a missing value is never calm."""
-    h = OMP.load_hourly(model, int(lead))
+    a = archived_at(model, lead)
+    h = OMP.load_hourly(a, int(lead))
     lo, hi = OMP.archive_span(h)
-    w = OMP.load_wind(model, int(lead))[["timestamp", "wind_speed_ms"]]
+    w = OMP.load_wind(a, int(lead))[["timestamp", "wind_speed_ms"]]
     h = h.merge(w, on="timestamp", how="left")
     no_wind = (h["precip_mm"] > 0) & h["wind_speed_ms"].isna()         # a rainy hour the archive has no wind for
     h.loc[no_wind, ["precip_mm", "precip_inches"]] = np.nan            # is a missing hour (module notes; Part B 43)
@@ -394,7 +421,7 @@ def _row_status(model: str, lead: int, dates: pd.DatetimeIndex) -> pd.DataFrame:
     return pd.DataFrame({"date": dates, "reason": reason, "lead": lead_c, "day": day_c, "what": what_c})
 
 
-def drops(entry: str, model: str = "icon_seamless", start=None, end=None) -> pd.DataFrame:
+def drops(entry: str, model: str = "icon_ecmwf_ifs_d3", start=None, end=None) -> pd.DataFrame:
     """The days of [start, end] where ``entry`` has no row, and why: DataFrame[date, reason, lead, day, what].
 
     reason is X-S1-NWPGAP or X-S1-NOLEAD; (lead, day, what) name the first model-day behind it ('daily
@@ -420,7 +447,7 @@ def _runs(dates) -> list:
     return [[str(d[a].date()), str(d[b].date())] for a, b in zip(starts, ends)]
 
 
-def spans(model: str = "icon_seamless", start=None, end=None) -> dict:
+def spans(model: str = "icon_ecmwf_ifs_d3", start=None, end=None) -> dict:
     """{entry: {first, last, n_days, n_dropped}}: the first and last day each entry has a row for
     ``model`` over [start, end] (default the whole span), and how many days inside it it drops."""
     days = _span(start, end)
@@ -479,8 +506,9 @@ def _wind(model: str, lead: int) -> pd.Series:
     """date → wind_v_rain at (model, lead): the lead's own archived hours of rain weighing its archived wind
     (rain_features.wind_rain_features), on the archive's fixed UTC−7 day. The forecast issued on I says how the
     wind will blow while it rains on D; NaN where a rainy hour has no archived wind (a row needing it raises)."""
-    rain = OMP.load_hourly(model, int(lead))[["timestamp", "precip_inches"]]
-    h = rain.merge(OMP.load_wind(model, int(lead)), on="timestamp", how="left")
+    a = archived_at(model, lead)
+    rain = OMP.load_hourly(a, int(lead))[["timestamp", "precip_inches"]]
+    h = rain.merge(OMP.load_wind(a, int(lead)), on="timestamp", how="left")
     return RF.wind_rain_features(h).set_index("date")["wind_v_rain"]
 
 
@@ -663,7 +691,7 @@ def _ints(vals: np.ndarray, name: str) -> np.ndarray:
     return np.round(vals).astype("int64")
 
 
-def frames(entry: str, sources, model: str = "icon_seamless", start=None, end=None,
+def frames(entry: str, sources, model: str = "icon_ecmwf_ifs_d3", start=None, end=None,
            input_rules=(RF.GAUGE_OUTAGE_RULE["name"],), history: str = "served") -> dict:
     """{source: DataFrame[date + the 19 features + WIND]} for one entry: one row per day of [start, end] the
     entry holds, the columns, order and dtypes of train_v4.build_dataset's frames (date datetime64[us]; floats;

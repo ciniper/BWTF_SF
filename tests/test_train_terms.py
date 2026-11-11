@@ -25,9 +25,9 @@ import term_lab as TL  # noqa: E402
 import train_terms as TT  # noqa: E402
 
 # the term-list sets on disk since the trim (Part B 39): GRID's models, each on every linger table (STAGE2)
-NAMES = [TT.set_name(k, s) for k, added in TT.GRID if added is None for s in TT.STAGE2]
+NAMES = [TT.set_name(k, s, weather=TT.SAVED_WEATHER) for k, added in TT.GRID if added is None for s in TT.STAGE2]
 PEAK_GRID = [(k, added, s) for k, added in TT.GRID if added for s in TT.STAGE2]
-PEAKS = [TT.set_name(k, s, added) for k, added, s in PEAK_GRID]
+PEAKS = [TT.set_name(k, s, added, weather=TT.SAVED_WEATHER) for k, added, s in PEAK_GRID]
 
 
 def _manifest(name: str) -> dict:
@@ -84,9 +84,9 @@ def test_the_peak_set_is_the_8_terms_plus_the_3_hour_peak():
     next pick), 9 terms each; the term lab's nested grade is the stages build's S2 score, as for every size."""
     assert set(TT.PEAK_SETS) <= set(PEAK_GRID)
     for name, (k, added, suffix) in zip(PEAKS, PEAK_GRID):
-        man, base = _manifest(name), _manifest(TT.set_name(k, suffix))
+        man, base = _manifest(name), _manifest(TT.set_name(k, suffix, weather=TT.SAVED_WEATHER))
         assert man["terms"] == base["terms"] + TT.ADDED[added]
-        sel = json.loads((CAND.candidate_dir(TT.set_name(k, suffix)) / TT.SELECTION_FILE).read_text())   # the 8-term set's
+        sel = json.loads((CAND.candidate_dir(TT.set_name(k, suffix, weather=TT.SAVED_WEATHER)) / TT.SELECTION_FILE).read_text())   # the 8-term set's
         for f, ts in man["fold_terms"].items():
             assert len(ts) == k + len(TT.ADDED[added]) and set(TT.ADDED[added]) <= set(ts), (name, f)
             if not set(TT.ADDED[added]) & set(sel["by_fold"][f][:k]):
@@ -111,7 +111,7 @@ def test_every_table_shares_one_overflow_model():
     """A GRID model on each linger table is one overflow model: the same weights (the live one's sets included, refit
     from the committed choice: Part B 39), each set naming its own stage 2."""
     for k, added in TT.GRID:
-        names = [TT.set_name(k, s, added) for s in TT.STAGE2]
+        names = [TT.set_name(k, s, added, weather=TT.SAVED_WEATHER) for s in TT.STAGE2]
         sets = [_models(n) for n in names]
         for other, n in zip(sets[1:], names[1:]):
             assert set(other) == set(sets[0]), n
