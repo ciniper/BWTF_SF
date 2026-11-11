@@ -93,35 +93,53 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
     sts = [S("4601", "Fort Funston", "safe"), S("4602", "Ocean Beach at Sloat", "safe"), S("4612", "Crissy Field East", "posted"), S("4613", "Aquatic Park", "safe"), S("4615", "Jackrabbit Beach", "not_sampled")]
     risks = {"zones": {"ocean": 0, "baker_china": 0, "north": 0, "east": 4}, "ahead": [("Tomorrow", 0), ("Sun Oct 04", 3)]}
     b = L.today_board(sts, risks, "city 9/23 · Surfrider 9/24", now=datetime(2026, 9, 29, 6, 12))
-    assert b["tone"] == "warn" and b["headline"] == "Posted at 1 beach. 3 others meet state standards."
-    assert b["headline_html"] == '<em class="posted">Posted at 1 beach.</em> 3 others meet state standards.' and b["date"] == "Tue Sep 29" and b["checked"] == "6:12 AM" and b["feed_ok"]
-    assert b["lead"] == ("Posted: Crissy East. SFPUC posts a beach when samples show bacteria above State standards, and sometimes as a precaution. "
-                         "Latest samples: city lab 9/23 · Surfrider volunteers 9/24.")                       # facts only: no "no discharge", no forecast (2026-10-18)
-    assert b["risk_lead"] == "Sewer-overflow risk today: 4% at most (East Beaches), staying low through Sun Oct 04."   # inside the board's collapsed forecast line
+    # the headline says what the feed knows today — a warning is posted or not; what the samples showed and how old they are is the subhead's (2026-11-06)
+    assert b["tone"] == "warn" and b["headline"] == "Posted at 1 beach. 3 others have no warning."
+    assert b["headline_html"] == '<em class="posted">Posted at 1 beach.</em> 3 others have no warning.' and b["date"] == "Tue Sep 29" and b["checked"] == "6:12 AM" and b["feed_ok"]
+    assert b["lead"] == "Posted: Crissy East. SFPUC posts a beach when samples show bacteria above State standards, and sometimes as a precaution."   # the news only: no "no discharge", no forecast (2026-10-18)
+    assert b["facts"] == [{"label": "City samples", "text": "6 days ago (Sep 23)"}, {"label": "Surfrider samples", "text": "5 days ago (Sep 24)"}]   # one labelled row per fact, ages not bare dates (2026-11-06); the city's and Surfrider's only
+    # the forecast's risk is the board's collapsed "Sewer-overflow forecast · Beta" line under the tiles (2026-11-08): no facts row for it
+    assert b["risk_lead"] == "Sewer-overflow risk today: 4% at most (East Beaches), staying low through Sun Oct 04."
+    assert not any(f["label"] == "Overflow risk today" for f in b["facts"])
     z = {t["key"]: t for t in b["zones"]}
     assert [t["key"] for t in b["zones"]] == ["ocean", "baker_china", "north", "east"]           # registry order, every zone even when empty
-    assert (z["north"]["status"], z["north"]["status_text"], z["north"]["meta"]) == ("posted", "1 beach posted", "Crissy East · sampled Sep 23")
-    assert (z["ocean"]["status"], z["ocean"]["risk"], z["ocean"]["meta"]) == ("safe", 0, "6 stations · sampled Sep 23")     # every registry station, fed or not
-    assert z["baker_china"]["status"] == "unknown" and z["baker_china"]["meta"] == "4 stations · no sample date"
+    assert (z["north"]["status"], z["north"]["status_text"], z["north"]["meta"]) == ("posted", "1 beach posted", "Crissy East · sampled 6 days ago")   # the age in words, never a bare date (2026-11-06)
+    assert (z["ocean"]["status"], z["ocean"]["status_text"], z["ocean"]["risk"], z["ocean"]["meta"]) == ("safe", "No warning", 0, "6 stations · sampled 6 days ago")     # every registry station, fed or not
+    assert z["baker_china"]["status"] == "unknown" and z["baker_china"]["status_text"] == "Not sampled" and z["baker_china"]["meta"] == "4 stations · no sample date"
     assert z["east"]["risk"] == 4 and [s["status"] for s in z["east"]["stations"]] == ["unknown"] * 6
     ff = z["ocean"]["stations"][0]
-    assert (ff["full_name"], ff["source"], ff["status"], ff["sampled"]) == ("Fort Funston", "OCEAN#22_SL", "safe", "2026-09-23") and 37 < ff["lat"] < 38 and -123 < ff["lon"] < -122
+    assert (ff["full_name"], ff["source"], ff["status"], ff["sampled"], ff["sampled_text"], ff["sampled_age_days"]) == ("Fort Funston", "OCEAN#22_SL", "safe", "2026-09-23", "sampled 6 days ago", 6) and 37 < ff["lat"] < 38 and -123 < ff["lon"] < -122
+    # the words say what the colours report — the city's posting, not the water (2026-11-08: "safe" and "All clear" retired from the board)
+    assert ff["status_text"] == "no warning" and {s["status_text"] for t in b["zones"] for s in t["stations"]} == {"no warning", "warning posted", "not sampled"}
+    assert "safe" not in {s["status_text"] for t in b["zones"] for s in t["stations"]} and not any(t["status_text"] == "All clear" for t in b["zones"])
     assert sum(len(t["stations"]) for t in b["zones"]) == 20                                                          # the map draws all twenty
-    cso = L.today_board(sts + [S("4620", "Crane Cove Park", "posted", cso=True)], {}, "")
-    assert cso["tone"] == "danger" and cso["headline"] == "Sewage discharge at 1 beach. Posted at 1 beach. 3 meet state standards."
-    assert cso["headline_html"] == '<em class="discharge">Sewage discharge at 1 beach.</em> <em class="posted">Posted at 1 beach.</em> 3 meet state standards.'
-    assert cso["lead"] == "Discharging: Crane Cove Park. Posted: Crissy East. SFPUC posts a beach when samples show bacteria above State standards, and sometimes as a precaution."                                   # facts only, no advice
-    ok = L.today_board([S("4601", "Fort Funston", "safe"), S("4602", "Ocean Beach at Sloat", "safe")], {}, "")
-    assert ok["headline"] == "All 2 monitored beaches meet state standards today." and ok["headline_html"] == 'All 2 monitored beaches <em class="good">meet state standards</em> today.'
-    assert ok["lead"] == "" and ok["risk_lead"] == "" and L.today_board([], {}, "")["feed_ok"] is False
-    one = L.today_board([S("4612", "Crissy Field East", "posted"), S("4613", "Aquatic Park", "safe")], {}, "")
-    assert one["headline"] == "Posted at 1 beach. 1 other meets state standards." and one["lead"].startswith("Posted: Crissy East.")
-    assert L.today_board([S("4612", "Crissy Field East", "posted")], {}, "")["headline"] == "Posted at 1 beach."
+    now = datetime(2026, 9, 29, 6, 12)
+    cso = L.today_board(sts + [S("4620", "Crane Cove Park", "posted", cso=True)], {}, "", now=now)
+    assert cso["tone"] == "danger" and cso["headline"] == "Sewage discharge at 1 beach. Posted at 1 beach. 3 have no warning."
+    assert cso["headline_html"] == '<em class="discharge">Sewage discharge at 1 beach.</em> <em class="posted">Posted at 1 beach.</em> 3 have no warning.'
+    assert cso["lead"] == "Discharging: Crane Cove Park. Posted: Crissy East. SFPUC posts a beach when samples show bacteria above State standards, and sometimes as a precaution."   # facts only, no advice
+    assert cso["facts"] == [{"label": "City samples", "text": "6 days ago (Sep 23)"}]
+    ok = L.today_board([S("4601", "Fort Funston", "safe"), S("4602", "Ocean Beach at Sloat", "safe")], {}, "", now=now)
+    assert ok["headline"] == "No warnings posted at any of the 2 monitored beaches." and ok["headline_html"] == '<em class="good">No warnings posted</em> at any of the 2 monitored beaches.'
+    assert ok["lead"] == "" and ok["facts"] == [{"label": "City samples", "text": "6 days ago (Sep 23) · all 2 met the state standard · weekly; a warning is posted when a result fails"}]   # the age is the point: "meet standards today" was a week-old sample's claim
+    assert ok["risk_lead"] == "" and L.today_board([], {}, "")["feed_ok"] is False and L.today_board([], {}, "", now=now)["facts"] == []
+    import types as _t
+    split = L.today_board([S("4601", "Fort Funston", "safe"), _t.SimpleNamespace(station_id="4602", station_name="Ocean Beach at Sloat", status=_t.SimpleNamespace(value="safe"), has_cso=False, sample_date=datetime(2026, 9, 16))], {}, "city 9/23 · 1 over", now=now)
+    assert split["facts"][0]["text"] == "between 6 days ago and 13 days ago (Sep 16 to Sep 23) · 1 station over the state limit"   # a span when the round was split; an over count outranks "all met"
+    one = L.today_board([S("4612", "Crissy Field East", "posted"), S("4613", "Aquatic Park", "safe")], {}, "", now=now)
+    assert one["headline"] == "Posted at 1 beach. 1 other has no warning." and one["lead"].startswith("Posted: Crissy East.")
+    assert L.today_board([S("4612", "Crissy Field East", "posted")], {}, "", now=now)["headline"] == "Posted at 1 beach."
+    solo = L.today_board([S("4601", "Fort Funston", "safe")], {}, "Surfrider 12/28", now=datetime(2027, 1, 3))
+    assert solo["headline"] == "No warnings posted at the 1 monitored beach." and solo["facts"][-1] == {"label": "Surfrider samples", "text": "6 days ago (Dec 28)"}   # a December date read in January is last year's
+    # Surfrider older than the city's newest sample: the row says the city has sampled since — a fact, no verdict on either (Chase, 2026-11-07)
+    older = L.today_board([S("4601", "Fort Funston", "safe")], {}, "city 9/23 · Surfrider 9/14", now=now)
+    assert older["facts"][-1] == {"label": "Surfrider samples", "text": "15 days ago (Sep 14) · the city has a newer sample"}
+    assert L.today_board(sts, {}, "Surfrider 9/23", now=now)["facts"][-1]["text"] == "6 days ago (Sep 23)"   # the same day is not older
     from shared.zones import ZONES as Z
     storm = [S(sid, st.name, "posted", cso=True) for sid, st in zip(Z["ocean"].station_ids, Z["ocean"].stations)] + [S("4619", "Islais Creek", "posted", cso=True), S("4620", "Crane Cove Park", "posted", cso=True),
              S("4612", "Crissy Field East", "posted"), S("4613", "Aquatic Park", "posted"), S("4611", "Crissy Field West", "safe")]
-    st = L.today_board(storm, {}, "")
-    assert st["headline"] == "Sewage discharge at 8 beaches. Posted at 2 beaches. 1 meets state standards."
+    st = L.today_board(storm, {}, "", now=now)
+    assert st["headline"] == "Sewage discharge at 8 beaches. Posted at 2 beaches. 1 has no warning."
     assert st["lead"] == "Discharging: all of Ocean Beach, Islais Creek and Crane Cove Park. Posted: Crissy East and Aquatic Park. SFPUC posts a beach when samples show bacteria above State standards, and sometimes as a precaution."   # a whole zone collapses; no advice
     many = L.today_board([S(sid, st.name, "posted") for sid, st in zip(Z["east"].station_ids[:5], Z["east"].stations[:5])], {}, "")
     assert many["lead"].startswith("Posted: Jackrabbit Beach, Windsurfer Circle, Sunnydale Cove and 2 more.")                                       # the list stops at three

@@ -17,8 +17,14 @@
   .board h1{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:42px;line-height:1;margin:8px 0 6px;letter-spacing:.02em;color:var(--ink)}
   .board h1 em{font-style:normal}
   .board h1 em.posted,.board h1 em.warn{color:var(--posted)}.board h1 em.discharge{color:var(--discharge)}.board h1 em.good{color:var(--safe)}
-  .board .lead{font-size:16px;color:var(--muted);margin:0 0 16px}
+  .board .lead{font-size:16px;color:var(--muted);margin:0 0 14px}
   .board .lead:empty{display:none}   /* a clean day has no sentence; the element stays so Replay has somewhere to write its own */
+  /* the facts under the subhead, one labelled row each (2026-11-06): the city's samples and Surfrider's (the forecast's risk is its own collapsed line under the tiles, 2026-11-08) */
+  .board .facts{display:grid;gap:5px;margin:0 0 16px}
+  .board .facts div{display:flex;gap:12px;align-items:baseline;font-size:14px;line-height:1.4;color:var(--muted)}
+  .board .facts dt{flex:none;width:156px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+  .board .facts dd{margin:0}
+  .board.replaying .facts{display:none}   /* today's samples are not a past day's */
   .zones{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .zone{border:1px solid var(--line);border-radius:var(--r);padding:12px 13px 11px;color:inherit;background:#fff;display:block;width:100%;text-align:left;cursor:pointer;font:inherit}
   .zone:hover{border-color:var(--sky)}
@@ -90,10 +96,25 @@
   #today-map .leaflet-pane > svg{pointer-events:none}   /* one pane per status rank (initMap): a pane's empty drawing area must not swallow taps meant for the dots below */
   .bwtf-dot{display:block;width:11px;height:11px;margin:1px;transform:rotate(45deg);border:1px solid rgba(38,39,42,.55);border-radius:2px;background:#fff;box-shadow:0 0 0 1px #fff}   /* Surfrider's diamond: a hairline ring so the grade colour reads true (Chase: the thick ring looked blue) */
   .bwtf-dot.safe{background:var(--safe)}.bwtf-dot.caution{background:var(--caution)}.bwtf-dot.posted{background:var(--posted)}.bwtf-dot.unknown{background:var(--unknown)}
+  .bwtf-dot.stale{background:#fff;border:1.5px dashed var(--faint);box-shadow:0 0 0 1px #fff}   /* older than STALE_AFTER_DAYS: hollow and grey, whatever its grade — it is not the water's state now (2026-11-06) */
   .map-legend .bwtf-dot{display:inline-block;width:8px;height:8px;margin:0 2px}
   .map-legend .shape{display:inline-flex;align-items:center;gap:4px;color:var(--muted)}
   .map-legend .shape .status-dot,.map-legend .shape .bwtf-dot{background:#8a949b}
   .map-legend .divider{width:1px;height:12px;background:var(--line);margin:0 2px}
+  .map-legend .src{font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:10px;color:var(--faint)}   /* with Surfrider on, each source's colours are keyed under its own name (2026-11-08) */
+  .legend-note{font-size:12px;color:var(--faint);margin:8px 2px 0;line-height:1.4}   /* under the map: what the colours report, and what they do not */
+  .legend-note:empty{display:none}
+  /* the collapsed key under the board: one paragraph per colour system (2026-11-08) */
+  .colour-key{margin:18px 0 0;font-size:13.5px;color:var(--muted)}
+  .colour-key summary{cursor:pointer;font-weight:700;color:var(--brand);font-size:13px}
+  .colour-key dl{margin:10px 0 0;display:grid;gap:10px}
+  .colour-key dt{display:flex;align-items:center;gap:7px;font-weight:700;color:var(--ink);margin-bottom:2px}
+  .colour-key dt small{font-weight:400;color:var(--faint)}
+  .colour-key dt .bwtf-dot{display:inline-block;width:9px;height:9px;margin:0 2px}
+  .colour-key dt .pct{font-size:12px;color:var(--brand)}
+  .colour-key dd{margin:0;line-height:1.5}
+  .colour-key dd b{color:var(--ink);font-weight:600}
+  .board.replaying .colour-key{display:none}   /* a past day's colours are the city's alone; the replay's own sentence says so */
   .map-legend .ring{display:inline-block;width:10px;height:10px;border-radius:50%;border:2px solid var(--brand);background:rgba(0,114,188,.15)}
   .map-legend .of{display:inline-block;width:8px;height:8px;border-radius:50%;background:#7a5a3a}
   /* Above the board: the Replay control (a past day of the board). What the map shows is chosen ON the map (.map-ctl):
@@ -133,6 +154,8 @@
     .board{padding:18px 16px}
     .board h1{font-size:34px}
     .board .lead{font-size:14px;margin-bottom:12px}
+    .board .facts div{flex-direction:column;gap:1px;font-size:13.5px}
+    .board .facts dt{width:auto}
     .zone{padding:11px}.zone .nm{font-size:15px}
     .map-wrap{min-height:260px}
     .map-legend{position:static;background:none;border-radius:0;padding:8px 2px 0;gap:6px 12px}   /* under the map: over it, it covered 4 of 20 stations on the north shore (6 with Surfrider on) */
@@ -147,7 +170,8 @@
       <div class="left">
         <div class="eyebrow">Beach status · {{ board.date }} · {% if board.feed_ok %}SFPUC map checked {{ board.checked }}{% else %}SFPUC map unreachable{% endif %}</div>
         <h1 id="today-h">{{ board.headline_html|safe }}</h1>
-        <p class="lead">{{ board.lead }}</p>
+        <p class="lead">{{ board.lead }}</p>   {#- the news: which beaches are posted or discharging; a replayed day writes its own sentence here #}
+        {% if board.facts %}<dl class="facts">{% for f in board.facts %}<div><dt>{{ f.label }}</dt><dd>{{ f.text }}</dd></div>{% endfor %}</dl>{% endif %}
         {% if board.zones %}
         <div class="zones" id="zones">
           {% for z in board.zones %}
@@ -185,14 +209,31 @@
       {% endif %}
       <div class="map-stack">
       <div class="map-wrap">
-        <div id="today-map" role="region" aria-label="Map of the city's beach monitoring stations, coloured by today's status"></div>
+        <div id="today-map" role="region" aria-label="Map of the city's beach monitoring stations, coloured by the city's posted status"></div>
         <button type="button" class="map-reset" id="map-reset" hidden>Whole city</button>
       </div>
-        <div class="map-legend" id="map-legend"><span><i class="status-dot safe"></i>safe</span><span><i class="status-dot posted"></i>posted</span><span><i class="status-dot discharge"></i>discharge</span><span><i class="status-dot unknown"></i>not sampled</span><span id="lg-bwtf" hidden><i class="bwtf-dot safe"></i>Surfrider latest</span></div>
+        <div class="map-legend" id="map-legend"><span><i class="status-dot safe"></i>no warning</span><span><i class="status-dot posted"></i>warning posted</span><span><i class="status-dot discharge"></i>sewage discharge</span><span><i class="status-dot unknown"></i>not sampled</span></div>
+        <p class="legend-note" id="legend-note">Colours are the city's posted status at the last check, not a measurement of today's water.</p>
         {% if controls %}<span class="layer-status" id="layer-status" role="status" aria-live="polite"></span>{% endif %}
       </div>
       </div>
     </div>
+    {#- What sets each colour on the board, one source per paragraph (2026-11-08: three colour systems share one palette — the city's
+        posting, Surfrider's grade, the forecast's level — and a reader should be able to tell which one they are looking at). Collapsed,
+        so the board stays a glance; it is a reporter's key, not advice: where the two sources differ, both are shown and neither is picked. -#}
+    <details class="colour-key">
+      <summary>What the colours mean</summary>
+      <dl>
+        <div><dt><i class="status-dot safe"></i> Tile borders and city dots</dt>
+          <dd>SFPUC's posted status at the last check. <b>Green</b> means no warning sign is up — not that the water was tested clean today; the city samples weekly and posts a warning when a result fails.
+              <b>Orange</b>: a warning is posted. <b>Red</b>: a sewage discharge. <b>Grey</b>: no status on the city's map.</dd></div>
+        <div><dt><i class="bwtf-dot safe"></i> Surfrider diamonds <small>(with that layer on)</small></dt>
+          <dd>The grade of one volunteer sample, for one indicator (Enterococcus), against the state single-sample limit of {{ ENTERO_LIMIT }} MPN/100 mL: <b>green</b> below it, <b>yellow</b> from {{ ENTERO_CAUTION }}, <b>orange</b> at or over it.
+              Volunteers sample about every two weeks; a result over {{ STALE_AFTER_DAYS }} days old is drawn hollow. A volunteer result is not a health advisory. Where the two sources differ, both are shown.</dd></div>
+        <div><dt><b class="pct">%</b> The forecast's percentages</dt>
+          <dd>Inside the collapsed "Sewer-overflow forecast · Beta" line under the tiles: our <a href="/forecast">forecast</a>'s sewer-overflow risk for today, one number per zone coloured by its level. A prediction, driven by rain, not a measurement of the water.</dd></div>
+      </dl>
+    </details>
     {% if sites %}
     <div class="site-chips" id="zone-sites" aria-label="The chosen zone's stations, as the city shows them, and Surfrider's sites there" hidden>
       {% for z in board.zones %}{% for s in z.stations %}<button type="button" class="site" data-zone="{{ z.key }}" data-station="{{ s.source }}" data-sample-station="{{ s.source }}" data-sample-name="{{ s.full_name }}" data-sample-feed-date="{{ s.sampled }}" title="Latest lab results"><i class="status-dot {{ s.status }}"></i>{{ s.full_name }}<small>{{ s.sampled_text }}</small></button>{% endfor %}{% endfor %}
@@ -312,7 +353,7 @@ function initMap() {
   };
   credits.addTo(MAP);
   L.tileLayer({{ BASEMAP.url|tojson }}, {{ BASEMAP.options|tojson }}).addTo(MAP);
-  // Stacking order by status, across both sources: not sampled underneath, then safe, posted, and discharge on top
+  // Stacking order by status, across both sources: not sampled underneath, then no warning, posted, and discharge on top
   // (Chase, 2026-09-29), and an orange city dot over a green Surfrider diamond (2026-10-18). One map pane per rank:
   // the city's dots in st0–st3, Surfrider's diamonds in bw0–bw3 just under the city's dots of the same rank.
   for (let r = 0; r <= 3; r++) { MAP.createPane("bw" + r).style.zIndex = 405 + 10 * r; MAP.createPane("st" + r).style.zIndex = 410 + 10 * r; }
@@ -326,7 +367,7 @@ function initMap() {
     const bad = s.status === "posted" || s.status === "discharge";
     const m = L.circleMarker([s.lat, s.lon], {pane: "st" + (RANK[s.status] || 0), radius: bad ? 9 : 7, color: "#fff", weight: 2, fillColor: COL[s.status] || COL.unknown, fillOpacity: .95, bubblingMouseEvents: false}).addTo(MAP);
     m.__s = s; m.__z = z; ALL_ORDERED.push(m);   // the layers recolour markers by zone risk or by a replayed day; focusZone re-adds them in this order
-    m.bindTooltip(bad ? s.name + " · " + (s.status === "discharge" ? "discharge" : "posted") : s.full_name + " · " + s.status_text + (s.sampled ? " · sampled " + s.sampled : ""),
+    m.bindTooltip(bad ? s.name + " · " + (s.status === "discharge" ? "discharge" : "posted") : s.full_name + " · " + s.status_text + (s.sampled ? " · " + s.sampled_text + " (" + s.sampled + ")" : ""),
                   {permanent: bad, direction: "auto", offset: [9, 0], className: "st-label" + (bad ? " bad" : "")});   // auto: a bayside label flips left so it stays on the map
     m.on("click", () => { if (window.SamplePopover) SamplePopover.open({station: s.source, name: s.full_name, feedDate: s.sampled}); });
     (MARKERS[z.key] = MARKERS[z.key] || []).push(m);
@@ -405,23 +446,26 @@ function refreshLabels() {
 }
 
 function renderLegend() {
-  // colours once (both shapes share them), then the shape key when Surfrider is on: ● city · ◆ Surfrider
+  // Each source keys its own colours (2026-11-08): the city's dots say what SFPUC has posted, Surfrider's diamonds grade one
+  // volunteer sample. The same green meant both until now, with one shared row; a reader could not tell which claim a colour made.
   const lg = $("map-legend"); if (!lg) return;
-  const dot = (c, t) => '<span><i class="status-dot ' + c + '"></i>' + t + "</span>";
+  const dot = (c, t) => '<span><i class="status-dot ' + c + '"></i>' + t + "</span>", dia = (c, t) => '<span><i class="bwtf-dot ' + c + '"></i>' + t + "</span>";
+  const bw = LAYER.bwtf.on, d = LAYER.bwtf.data;
   let h = "";
-  {
-    const parts = [];
-    if (CITY_ON || LAYER.bwtf.on) parts.push(dot("safe", REPLAY_OFFSET ? "not posted" : "safe"));
-    if (LAYER.bwtf.on) parts.push(dot("caution", "caution"));
-    if (CITY_ON || LAYER.bwtf.on) parts.push(dot("posted", "posted"));
-    if (CITY_ON) parts.push(dot("discharge", "discharge"), dot("unknown", REPLAY_OFFSET ? "not recorded" : "not sampled"));
-    else if (LAYER.bwtf.on) parts.push(dot("unknown", "no result"));
-    h = parts.join("");
-    if (LAYER.bwtf.on) h += '<i class="divider"></i><span class="shape"><i class="status-dot"></i>city</span><span class="shape"><i class="bwtf-dot"></i>Surfrider</span>';
+  if (CITY_ON) h += (bw ? '<span class="src">City</span>' : "") + dot("safe", REPLAY_OFFSET ? "not posted" : "no warning") + dot("posted", "warning posted") + dot("discharge", "sewage discharge") + dot("unknown", REPLAY_OFFSET ? "not recorded" : "not sampled");
+  if (bw) {
+    if (CITY_ON) h += '<i class="divider"></i>';
+    h += '<span class="src">Surfrider</span>' + dia("safe", "below limit") + dia("caution", "from " + (d ? d.caution : "") + " MPN") + dia("posted", "over limit") + dia("unknown", "no result");
+    if (d && d.sites.some(s => s.stale)) h += dia("stale", "over " + d.stale_after_days + " days old");
   }
   if (LAYER.rain.on) h += '<span><i class="ring"></i>rain, 3 days</span>';
   if (LAYER.outfalls.on) h += '<span><i class="of"></i>outfall</span>';
   lg.innerHTML = h;
+  // under the map: what the colours report, and what they do not
+  const note = $("legend-note");
+  if (note) note.textContent = REPLAY_OFFSET ? "Colours are the city's posted status at its last check that day."
+    : (CITY_ON ? "Colours are the city's posted status at the last check, not a measurement of today's water." : "")
+    + (bw ? (CITY_ON ? " " : "") + "Diamonds grade one volunteer Enterococcus sample per site, taken about every two weeks; not an advisory." : "");
 }
 function tileParts(key) { const b = document.querySelector('.zone[data-zone="' + key + '"]'); return b ? {b, st: b.querySelector(".st"), dots: [...b.querySelectorAll(".stations .status-dot")]} : null; }
 function snapshotBoard() {
@@ -516,9 +560,9 @@ const BUILD = {
     };
     const g = L.layerGroup(d.sites.filter(s => s.lat != null && s.lon != null).map(s => {
       const grade = s.over ? "posted" : s.caution ? "caution" : s.value == null ? "unknown" : "safe", [ox, oy] = nudge(s);
-      const m = L.marker([s.lat, s.lon], {pane: "bw" + (RANK_ST[grade] || 0), keyboard: false,   // the same hierarchy as the city's dots, just under them at a tie
-        icon: L.divIcon({className: "bwtf-pin", html: '<i class="bwtf-dot ' + grade + '"></i>', iconSize: [15, 15], iconAnchor: [7 - ox, 7 - oy], tooltipAnchor: [ox, oy]})});
-      m.bindTooltip("Surfrider · " + s.name + " · " + (s.raw || "no result") + (s.raw ? " MPN/100 mL" : "") + (s.date ? " · " + s.date : ""), {direction: "auto", offset: [9, 0], className: "st-label"});
+      const m = L.marker([s.lat, s.lon], {pane: "bw" + (s.stale ? 0 : RANK_ST[grade] || 0), keyboard: false,   // the same hierarchy as the city's dots, just under them at a tie; a stale result sits at the bottom
+        icon: L.divIcon({className: "bwtf-pin", html: '<i class="bwtf-dot ' + grade + (s.stale ? " stale" : "") + '"></i>', iconSize: [15, 15], iconAnchor: [7 - ox, 7 - oy], tooltipAnchor: [ox, oy]})});
+      m.bindTooltip("Surfrider · " + s.name + " · " + (s.raw || "no result") + (s.raw ? " MPN/100 mL" : "") + (s.date ? " · " + s.age_text + " (" + s.date + ")" : ""), {direction: "auto", offset: [9, 0], className: "st-label"});
       m.on("click", () => { if (window.SamplePopover) SamplePopover.open({bwtf: s.name, name: s.city_name || s.name, date: s.date}); });
       return m;
     }));
@@ -530,7 +574,7 @@ const BUILD = {
       const grade = s.over ? "posted" : s.caution ? "caution" : s.value == null ? "unknown" : "safe";
       const chip = document.createElement("button"); chip.type = "button"; chip.className = "site bwtf"; chip.dataset.zone = s.zone; chip.title = "Surfrider's latest result here";
       chip.dataset.sampleBwtf = s.name; chip.dataset.sampleName = s.city_name || s.name; chip.dataset.sampleDate = s.date || "";
-      chip.innerHTML = '<i class="bwtf-dot ' + grade + '"></i>' + esc(s.name) + "<small>Surfrider · " + (s.raw ? esc(s.raw) + " MPN" : "no result") + (s.date ? " · " + esc(s.date) : "") + "</small>";
+      chip.innerHTML = '<i class="bwtf-dot ' + grade + (s.stale ? " stale" : "") + '"></i>' + esc(s.name) + "<small>Surfrider · " + (s.raw ? esc(s.raw) + " MPN" : "no result") + (s.date ? " · sampled " + esc(s.age_text) : "") + "</small>";
       const last = [...box.querySelectorAll('.site[data-zone="' + s.zone + '"]')].pop();
       if (last) last.after(chip); else box.appendChild(chip);
     }
@@ -541,10 +585,14 @@ const BUILD = {
       const t = tileParts(z.key); if (!t) continue;
       const here = d.sites.filter(s => s.zone === z.key);
       let el = t.b.querySelector(".bwtfline"); if (!el) { el = document.createElement("div"); el.className = "bwtfline"; (t.b.querySelector(".rainline") || t.b.querySelector(".nm")).after(el); }
-      const over = here.filter(s => s.over).length, newest = here.map(s => s.date || "").sort().pop();
-      el.innerHTML = !here.length ? "Surfrider: no site in this zone" : "Surfrider: " + here.length + " site" + (here.length > 1 ? "s" : "") + (newest ? " · newest " + esc(fmtDay(newest)) : "") + (over ? ' · <span class="over">' + over + " over the limit</span>" : "");
+      const over = here.filter(s => s.over).length, dated = here.filter(s => s.date), newest = dated.sort((a, b) => a.age_days - b.age_days)[0];
+      // when the city has sampled this zone since Surfrider did, the tile says so — a fact beside the age, not a verdict on either (Chase, 2026-11-07)
+      const cityNewest = z.stations.filter(s => s.sampled_age_days != null).sort((a, b) => a.sampled_age_days - b.sampled_age_days)[0];
+      const since = newest && cityNewest && newest.age_days > cityNewest.sampled_age_days ? " · the city's newest is " + esc(cityNewest.sampled_text.replace(/^sampled /, "")) : "";
+      el.innerHTML = !here.length ? "Surfrider: no site in this zone" : "Surfrider: " + here.length + " site" + (here.length > 1 ? "s" : "") + (newest ? " · newest sampled " + esc(newest.age_text) : "") + since
+        + (over ? ' · <span class="over">' + over + " over the limit</span>" : "") + (dated.length && dated.every(s => s.stale) ? " · results over " + d.stale_after_days + " days old" : "");
     }
-    status(d.sites.length + " Surfrider sites · newest " + (d.newest || "—"));
+    status(d.sites.length + " Surfrider sites · newest sampled " + (d.newest_text || "—") + (d.newest ? " (" + d.newest + ")" : ""));
     return g;
   },
 };

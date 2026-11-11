@@ -3,7 +3,7 @@
 import pathlib
 import sys
 import types
-from datetime import datetime
+from datetime import date, datetime
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -17,6 +17,13 @@ def _site(name, value, raw, when, lat=37.8, lon=-122.4):
                                  report_url=f"https://bwtf.surfrider.org/report/76/9")
 
 
+def test_days_ago_text_reads_as_a_person_would_say_it():
+    from shared.clock import days_ago_text
+    t = date(2026, 11, 6)
+    assert [days_ago_text(d, t) for d in (date(2026, 11, 6), date(2026, 11, 5), date(2026, 11, 2), date(2026, 10, 22), date(2026, 5, 28))] == ["today", "yesterday", "4 days ago", "15 days ago", "162 days ago"]
+    assert days_ago_text(date(2026, 11, 7), t) == "today"   # a clock ahead of the beach never says "-1 days ago"
+
+
 def test_surfrider_layer_grades_each_site_and_maps_it_to_the_city_beach():
     lab = types.SimpleNamespace(sites=[
         _site("Ocean Beach at Vicente St", 20.0, "20", datetime(2026, 9, 24, 16, 45)),
@@ -24,9 +31,21 @@ def test_surfrider_layer_grades_each_site_and_maps_it_to_the_city_beach():
         _site("Crissy Field Beach East", 208.0, "208", datetime(2026, 9, 17, 9, 0)),
         _site("Bayview Hunters Point", None, None, None, lat=37.73, lon=-122.38),
     ])
-    d = T.surfrider_layer(lab)
+    d = T.surfrider_layer(lab, today=date(2026, 10, 2))
     by = {s["name"]: s for s in d["sites"]}
     assert d["ok"] and d["newest"] == "2026-09-24" and d["limit"] == standards.STANDARDS["ENTERO"]["single_sample_max"] and d["caution"] == standards.ENTERO_CAUTION
+    # the age of each result, in days and in words, and stale past STALE_AFTER_DAYS (14 to start, 2026-11-06): drawn hollow and grey
+    assert d["newest_text"] == "8 days ago" and d["stale_after_days"] == T.STALE_AFTER_DAYS == 14
+    assert (by["Aquatic Park"]["age_days"], by["Aquatic Park"]["age_text"], by["Aquatic Park"]["stale"]) == (8, "8 days ago", False)
+    assert (by["Crissy Field Beach East"]["age_days"], by["Crissy Field Beach East"]["age_text"], by["Crissy Field Beach East"]["stale"]) == (15, "15 days ago", True)
+    assert (by["Bayview Hunters Point"]["age_days"], by["Bayview Hunters Point"]["age_text"], by["Bayview Hunters Point"]["stale"]) == (None, "", False)
+    edge = T.surfrider_layer(types.SimpleNamespace(sites=[_site("Aquatic Park", 20.0, "20", datetime(2026, 9, 24, 18, 30))]), today=date(2026, 10, 8))["sites"][0]
+    assert (edge["age_days"], edge["stale"]) == (14, False)                                                   # exactly the threshold is still fresh
+    board = (ROOT / "app/templates/_today_board.html").read_text()
+    assert ".bwtf-dot.stale{background:#fff;border:1.5px dashed var(--faint)" in board and '(s.stale ? " stale" : "")' in board and 'dia("stale", "over " + d.stale_after_days + " days old")' in board
+    assert '" · " + s.age_text + " (" + s.date + ")"' in board and 'newest sampled " + esc(newest.age_text)' in board and '" · " + s.sampled_text + " ("' in board   # ages in words on the map, the tiles and the city dots
+    # the tile says when the city has sampled the zone since Surfrider did — beside the age, deciding nothing (Chase, 2026-11-07)
+    assert 'newest.age_days > cityNewest.sampled_age_days ? " · the city\'s newest is " + esc(cityNewest.sampled_text.replace(/^sampled /, ""))' in board
     assert [s["name"] for s in d["sites"]] == sorted(by)                                                      # stable order
     v = by["Ocean Beach at Vicente St"]
     assert (v["city_name"], v["key"], v["over"], v["caution"], v["date"], v["time"]) == ("Ocean Beach at Vicente Street", "OCEAN#21_SL", False, False, "2026-09-24", "16:45")
@@ -84,6 +103,22 @@ def test_today_page_is_the_board_plus_the_experimental_row_and_the_api_route_exi
     col = h.split('class="map-col"')[1].split('id="zone-sites"')[0]
     assert col.index('class="map-wrap"') < col.index('id="today-map"') < col.index('id="map-legend"') and col.split('id="map-legend"')[0].count("</div>") >= 2   # legend outside the map frame
     assert ".map-legend{position:static;" in board
+    # The words say what each colour reports (2026-11-08). The city's: its posting, never "safe". With Surfrider on, each source
+    # keys its own colours under its name; one note under the map says what the colours are not; the key under the board spells
+    # out all three systems with the numbers the layer and the grades actually use.
+    legend = h.split('id="map-legend"')[1].split("</div>")[0]
+    assert [t.split("</span>")[0] for t in legend.split("</i>")[1:]] == ["no warning", "warning posted", "sewage discharge", "not sampled"] and "safe<" not in legend and "Surfrider latest" not in h
+    assert '<p class="legend-note" id="legend-note">Colours are the city\'s posted status at the last check, not a measurement of today\'s water.</p>' in h
+    assert "coloured by the city's posted status" in h and "coloured by today's status" not in h
+    assert 'dot("safe", REPLAY_OFFSET ? "not posted" : "no warning") + dot("posted", "warning posted") + dot("discharge", "sewage discharge")' in board
+    assert '<span class="src">Surfrider</span>\' + dia("safe", "below limit") + dia("caution", "from " + (d ? d.caution : "") + " MPN") + dia("posted", "over limit") + dia("unknown", "no result")' in board
+    assert 'if (CITY_ON) h += (bw ? \'<span class="src">City</span>\' : "")' in board and "Diamonds grade one volunteer Enterococcus sample per site, taken about every two weeks; not an advisory." in board
+    key = h.split('<details class="colour-key">')[1].split("</details>")[0]
+    assert "<summary>What the colours mean</summary>" in key and key.count("<dt>") == 3 and h.index('<details class="colour-key">') > h.index('id="legend-note"') and h.index('<details class="colour-key">') < h.index('id="zone-sites"')
+    assert "Tile borders and city dots" in key and "<b>Green</b> means no warning sign is up — not that the water was tested clean today" in key
+    assert "Surfrider diamonds" in key and "limit of 104 MPN/100 mL" in key and "<b>yellow</b> from 36" in key and "over 14 days old is drawn hollow" in key and "not a health advisory" in key and "Where the two sources differ, both are shown." in key
+    assert "The forecast's percentages" in key and 'Inside the collapsed "Sewer-overflow forecast · Beta" line under the tiles' in key and 'href="/forecast"' in key and "A prediction, driven by rain, not a measurement of the water." in key
+    assert ".board.replaying .colour-key{display:none}" in board and "All clear" not in h and '"No warning" if status == "safe"' in (ROOT / "app/landing.py").read_text()   # the tiles read "No warning", not "All clear"
     assert h.count('class="site" data-zone=') == 20 and 'id="zone-sites"' in h and 'data-sample-station=' in h and "{{" not in h        # a chip per station under the zone tiles, each opening the popover
     assert ' hidden>' in h.split('id="zone-sites"')[1][:200] and ".site-chips[hidden]{display:none}" in (ROOT / "app/static/brand.css").read_text()   # chips wait for a zone tap — and the attribute must win over the strip's display:flex
     assert 'data-layer="bwtf" aria-pressed="false"' in h and h.index('data-layer="bwtf"') < h.index('data-layer="rain"')   # the two sources lead the bar: city on, Surfrider off (Chase, 2026-09-30)

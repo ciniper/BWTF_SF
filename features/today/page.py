@@ -39,6 +39,7 @@ from features.comparison.bwtf_api import SFBWTFClient
 from features.comparison.comparison import BWTF_TO_SFPUC_NAME, resolve_site
 from shared import supabase as sb
 from shared.sfpuc_api import SFPUCRealTimeAPI
+from shared.clock import days_ago_text, today_pacific
 from shared.standards import ENTERO_CAUTION, STANDARDS, exceeds
 from shared.zones import ZONES
 
@@ -51,13 +52,21 @@ def _json(obj, status: int = 200):
 
 # ── Surfrider results ──────────────────────────────────────────────────────────────────
 
-def surfrider_layer(lab) -> dict:
+# A Surfrider result older than this is drawn hollow and grey, not in its grade's colour: it is the volunteers'
+# latest, not the water's state now. The number is a starting guess (2026-11-06) — the sampling schedule is not
+# settled yet; adjust it here and the map, the legend, the chips and the tile lines follow.
+STALE_AFTER_DAYS = 14
+
+
+def surfrider_layer(lab, today: date | None = None) -> dict:
     """Pure: a BWTFLab (fetch_lab) → the map layer payload. One entry per site the
     volunteers sample: name, the city's name for the same beach when there is one,
     the site key the other pages use, coordinates, the latest Enterococcus result
     graded by the shared single-sample rule (caution = at or above ENTERO_CAUTION
-    but not over), the collection date and the public report link."""
+    but not over), the collection date — with its age in days and in words, and
+    ``stale`` past STALE_AFTER_DAYS — and the public report link."""
     limit = STANDARDS["ENTERO"]["single_sample_max"]
+    today = today or today_pacific()
     sites, newest = [], ""
     for s in (lab.sites if lab else []):
         v = s.entero_value
@@ -69,16 +78,21 @@ def surfrider_layer(lab) -> dict:
         zone = zone_for_site(key, s.latitude, s.longitude)
         date_ = s.latest_time.strftime("%Y-%m-%d") if s.latest_time else ""
         newest = max(newest, date_)
+        age = (today - s.latest_time.date()).days if s.latest_time else None
         sites.append({
             "name": s.name, "city_name": BWTF_TO_SFPUC_NAME.get(s.name), "key": key, "zone": zone,
             "lat": s.latitude, "lon": s.longitude,
             "value": v, "raw": s.entero_raw, "date": date_,
             "time": s.latest_time.strftime("%H:%M") if s.latest_time else "",
+            "age_days": age, "age_text": days_ago_text(s.latest_time.date(), today) if s.latest_time else "",
+            "stale": age is not None and age > STALE_AFTER_DAYS,
             "over": bool(over), "caution": bool(v is not None and not over and v >= ENTERO_CAUTION),
             "report_url": s.report_url,
         })
     sites.sort(key=lambda x: x["name"])
-    return {"ok": True, "sites": sites, "newest": newest or None, "limit": limit, "caution": ENTERO_CAUTION,
+    newest_age = min((s["age_days"] for s in sites if s["age_days"] is not None), default=None)
+    return {"ok": True, "sites": sites, "newest": newest or None, "newest_text": days_ago_text(today - timedelta(days=newest_age), today) if newest_age is not None else "",
+            "stale_after_days": STALE_AFTER_DAYS, "limit": limit, "caution": ENTERO_CAUTION,
             "note": "Experimental: the volunteers' latest result per site, on their own schedule; the city does not post on these."}
 
 
@@ -259,8 +273,10 @@ def build_replay_layer(now: Optional[datetime] = None, days: int = REPLAY_DAYS) 
 # ── routes ─────────────────────────────────────────────────────────────────────────────
 
 def render_page(ctx: dict) -> str:
-    """The home page from a board_context: the Layers strip and the board."""
-    return render_template("today/page.html", board=ctx["board"], generated=ctx["generated"], canonical=HOME_URL)
+    """The home page from a board_context: the Layers strip and the board. The three constants feed the board's
+    "What the colours mean" key (2026-11-08), so the numbers there are the ones the layer and the grades use."""
+    return render_template("today/page.html", board=ctx["board"], generated=ctx["generated"], canonical=HOME_URL,
+                           STALE_AFTER_DAYS=STALE_AFTER_DAYS, ENTERO_LIMIT=STANDARDS["ENTERO"]["single_sample_max"], ENTERO_CAUTION=ENTERO_CAUTION)
 
 
 def handle_page(query, body):

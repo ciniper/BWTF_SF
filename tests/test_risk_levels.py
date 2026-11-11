@@ -120,6 +120,7 @@ def test_today_board_forecast_disclosure_uses_the_levels():
     assert '<div class="risk-lead">Sewer-overflow risk today: 81% at most (East Beaches)' in h and h.index('<details class="forecast"') < h.index('class="risk-lead"') < h.index('<ul class="by-zone">') and "const RISK_LEVELS" not in h
     assert 'risk-lead' not in h.split('class="lead">')[1].split("</p>")[0]                 # the sentence is out of the subhead
     assert 'still being tested — not an official advisory; the status on the cards is SFPUC\'s. <a href="/forecast">' in h
+    assert "<dt>Overflow risk today</dt>" not in h                                           # and not a facts row either (2026-11-09)
     assert 'class="hi"' not in h and "under 10%" not in h and "50% or more" not in h
     assert "{{" not in h and "{%" not in h
 
