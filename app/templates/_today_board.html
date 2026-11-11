@@ -142,7 +142,7 @@
   /* Sources belong to the map; time and forecast belong to the board. */
   /* Replay: the past week as a strip of days under the date line, each a dot in that day's worst status on the city's map;
      tap a day to redraw the board as it stood, Today (at the right) for the live board */
-  .day-strip{display:flex;gap:2px;max-width:440px;margin:8px 0 10px -4px}
+  .day-strip{display:flex;gap:2px;max-width:440px;margin:8px auto 10px}
   .day-strip[hidden]{display:none}
   .day-strip .day{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;padding:5px 0 7px;border:2px solid transparent;border-radius:10px;background:none;color:var(--muted);font-family:inherit;font-size:11.5px;font-weight:600;line-height:1.2;white-space:nowrap;cursor:pointer}
   .day-strip .day:hover{border-color:var(--line)}
