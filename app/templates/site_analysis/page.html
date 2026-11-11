@@ -51,6 +51,32 @@
   table.std{min-width:0;margin:12px 0 10px;font-size:13px}
   table.std th,table.std td{padding:7px 10px}
   table.std tr.graded td{background:#e3f1fa}
+  .bar{width:calc(var(--p,0) * 4px)}   /* 50% -> 200px */
+  .more,.sec-stats{display:none}
+  /* Phones: six columns needed 760 px and scrolled sideways inside the card. Under 600 px the table keeps the site and its
+     % bad; caution, wet season, dry season and the sample count move into the row's detail (tap a row), above the years. */
+  @media (max-width:600px){
+    .board{padding:4px 12px 10px;overflow-x:visible}
+    #tbl{min-width:0;table-layout:fixed}
+    #tbl th:first-child{width:56%}
+    #tbl th.barcell{width:44%}
+    #tbl .sec{display:none!important}
+    #tbl th{white-space:normal;padding-left:4px;padding-right:4px}
+    #tbl td{padding-left:4px;padding-right:4px}
+    #tbl .name{white-space:normal}
+    #tbl .name .nm{display:block}
+    #tbl .name .chip{margin:4px 6px 0 0;white-space:nowrap}
+    #tbl .barcell{min-width:0}
+    #tbl td.barcell{white-space:nowrap}
+    .bar{width:calc(var(--p,0) * 1.2px);max-width:18vw}
+    .more{display:inline-block;color:#0072BC;font-weight:700;margin-left:6px;transition:transform .15s}
+    tr.site.open .more{transform:rotate(90deg)}
+    tr.detail td{padding:10px 8px 12px}
+    .sec-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:6px 14px;margin:0 0 10px;font-size:13px}
+    .sec-stats div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid #e3ebf0;padding-bottom:4px}
+    .sec-stats span{color:#54576F}.sec-stats b{font-variant-numeric:tabular-nums}
+    .yr{min-width:0;flex:1 1 28%;padding:6px 6px}
+  }
   table.std td.note{color:#54576F;font-size:13px}
 </style>
 </head>
@@ -105,10 +131,10 @@
       <thead><tr>
         <th>Site</th>
         <th class="barcell" id="mainCol">% bad — selected range</th>
-        <th class="num cautioncol">caution (≥{{ caution }})</th>
-        <th class="num">wet season</th>
-        <th class="num">dry season</th>
-        <th class="num">samples</th>
+        <th class="num sec cautioncol">caution (≥{{ caution }})</th>
+        <th class="num sec">wet season</th>
+        <th class="num sec">dry season</th>
+        <th class="num sec">samples</th>
       </tr></thead>
       <tbody id="rows"></tbody>
     </table>
@@ -228,9 +254,8 @@ const pctTxt = p => p === null || p === undefined ? "—" : p.toFixed(1) + "%";
 
 function barCell(p, sporadic) {
   if (p === null || p === undefined) return "—";
-  const w = Math.round(p * 4);   // 50% -> 200px
   const cls = sporadic ? "" : p >= 25 ? " bad" : p >= 12 ? " warn" : "";
-  return `<span class="bar${cls}" style="width:${w}px"></span><span class="pct">${p.toFixed(1)}%</span>`;
+  return `<span class="bar${cls}" style="--p:${p}"></span><span class="pct">${p.toFixed(1)}%</span>`;
 }
 
 function render() {
@@ -241,25 +266,28 @@ function render() {
     const tr = document.createElement("tr");
     tr.className = "site" + (s.routine ? "" : " sporadic");
     tr.innerHTML = `
-      <td class="name">${s.name}${zoneChip(s)}${s.routine ? "" : '<span class="chip sporadic">sporadic</span>'}</td>
-      <td class="barcell">${barCell(s.exceed_pct, !s.routine)}</td>
-      <td class="num cautioncol">${pctTxt(s.caution_pct)}</td>
-      <td class="num">${pctTxt(s.wet.pct)}</td>
-      <td class="num">${pctTxt(s.dry.pct)}</td>
-      <td class="num">${s.samples}</td>`;
+      <td class="name"><span class="nm">${s.name}</span>${zoneChip(s)}${s.routine ? "" : '<span class="chip sporadic">sporadic</span>'}</td>
+      <td class="barcell">${barCell(s.exceed_pct, !s.routine)}<span class="more" aria-hidden="true">›</span></td>
+      <td class="num sec cautioncol">${pctTxt(s.caution_pct)}</td>
+      <td class="num sec">${pctTxt(s.wet.pct)}</td>
+      <td class="num sec">${pctTxt(s.dry.pct)}</td>
+      <td class="num sec">${s.samples}</td>`;
+    // phones hide those four columns; the same numbers lead the row's detail there
+    const secStats = `<div class="sec-stats">${DATA.indicator === "ENTERO" ? `<div><span>Caution</span><b>${pctTxt(s.caution_pct)}</b></div>` : ""}<div><span>Wet season</span><b>${pctTxt(s.wet.pct)}</b></div><div><span>Dry season</span><b>${pctTxt(s.dry.pct)}</b></div><div><span>Samples</span><b>${s.samples}</b></div></div>`;
     const detail = document.createElement("tr");
     detail.className = "detail";
     detail.style.display = "none";
     detail.innerHTML = s.samples === 0
       ? `<td colspan="6"><p class="detail-meta">${s.name} — no samples in the selected range/mode.</p></td>`
-      : `<td colspan="6">
+      : `<td colspan="6">${secStats}
       <p class="detail-meta">${s.name} — ${s.first} → ${s.last}${s.median === null ? "" :
         ` · median ${s.median} MPN · worst reading ${Math.round(s.max).toLocaleString()} MPN`}</p>
       <div class="years">${s.yearly.map(y =>
         `<div class="yr"><b>${pctTxt(y.pct)}</b><span>${y.year} · ${y.n} samples</span></div>`).join("")}
       </div></td>`;
     tr.addEventListener("click", () => {
-      detail.style.display = detail.style.display === "none" ? "" : "none";
+      const open = detail.style.display === "none";
+      detail.style.display = open ? "" : "none"; tr.classList.toggle("open", open);
     });
     tb.appendChild(tr);
     tb.appendChild(detail);
