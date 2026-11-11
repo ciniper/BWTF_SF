@@ -228,6 +228,26 @@ def _mirror_samples() -> int:
         return -1
 
 
+def _record_outcomes(snap: dict, now: datetime) -> dict:
+    """forecast_issued + forecast_outcomes (migration 022; features/forecast/outcomes):
+    the day's first forecast of every target day × lead × zone (DO NOTHING, so the
+    first refresh of the day wins) and the fast rulers — feed flags, samples over
+    standard, measured gauge rain — refilled for the last ten days. Production
+    refresh only, like every side job here; never raises."""
+    if not _cache_writable():
+        return {}
+    try:
+        from features.forecast import outcomes
+        fetch_rain = getattr(_engine.LIVE, "_fetch_acis_daily", None) if _engine is not None else None
+        out = outcomes.record(snap, _forecast_date(snap, now), _iso(now), fetch_rain, now)
+        if out.get("issued", 0) < 0 or out.get("outcomes", 0) < 0:
+            print(f"forecast outcomes: {out}")
+        return out
+    except Exception as e:  # noqa: BLE001
+        print(f"forecast outcomes not recorded: {e}")
+        return {}
+
+
 def _poll_deliveries() -> int:
     """alert_deliveries level 2: ask Brevo what became of the last week's
     accepted messages and stamp delivery_state (features/alerts/deliveries.
@@ -292,6 +312,7 @@ def _compute_and_store(row, now: datetime):
             _record_change(snap, now)    # capture on change (migration 013)
             _mirror_samples()
             _poll_deliveries()           # alert deliveries level 2: did the mail arrive? (Brevo events)
+            _record_outcomes(snap, now)  # forecast vs reality: the day's first forecast + the last ten days' truth (022)
     return _json(_with_meta(snap, now))
 
 
