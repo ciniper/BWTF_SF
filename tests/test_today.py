@@ -54,9 +54,9 @@ def test_today_page_is_the_board_plus_the_experimental_row_and_the_api_route_exi
     finally:
         T.SFBWTFClient = orig
     assert 'id="today-map"' in h and 'id="zones"' in h and 'id="layers"' in h and 'id="tg-bwtf"' in h and 'data-layer="replay"' in h and 'id="replay-ctl" hidden' in h and "/api/today/" in h
-    assert h.index('id="layers"') < h.index('class="board') and 'class="extras"' not in h                                            # the strip sits above the board; the old row is gone
-    # Sources and Layers are two boxes; on phones the Layers box folds behind a button that counts what is on (Chase, 2026-10-01)
-    assert '<span class="ctl-label" id="lbl-sources">Sources</span>' in h and '>Show<' not in h and 'class="layer-note"' not in h and "Experimental" not in h.split('id="layers"')[1].split('class="board')[0]
+    assert h.index('class="board') < h.index('id="zones"') < h.index('id="layers"') < h.index('id="today-map"') and 'class="extras"' not in h                                            # map sources sit after zones and immediately before the map
+    # Sources and map extras stay separate; forecast and time controls belong to the board.
+    assert '<span class="ctl-label" id="lbl-sources">Map shows:</span>' in h and '>Show<' not in h and 'class="layer-note"' not in h
     assert h.index('id="tg-bwtf"') < h.index('id="layers-toggle"') < h.index('id="layer-group"') < h.index('data-layer="rain"') < h.index('id="layer-status"')
     assert 'aria-controls="layer-group"' in h and 'aria-expanded="false"' in h.split('id="layers-toggle"')[0][-80:] + h.split('id="layers-toggle"')[1][:120]
     board = (ROOT / "app/templates/_today_board.html").read_text()
@@ -149,9 +149,12 @@ def test_labels_layer_is_a_chip_off_by_default_drawn_from_the_stations():
     with app.test_client() as c:
         h = c.get("/").data.decode()
     chip = h.split('data-layer="labels"')[0][-80:] + h.split('data-layer="labels"')[1][:200]
-    assert 'aria-pressed="false"' in chip and ">Labels</button>" in chip and "active" not in chip.split("<button")[-1].split(">")[0]
+    assert 'aria-pressed="false"' in chip and ">Names</button>" in chip and "active" not in chip.split("<button")[-1].split(">")[0]
     group = h.split('id="layer-group"')[1].split('id="layer-status"')[0]
-    assert group.index('data-layer="outfalls"') < group.index('data-layer="labels"') < group.index('data-layer="risk"')
+    assert group.index('data-layer="outfalls"') < group.index('data-layer="labels"')
+    assert 'data-layer="risk"' not in group and 'data-layer="replay"' not in group
+    assert h.index('class="board-date"') < h.index('data-layer="replay"') < h.index('id="zones"')
+    assert h.index('id="zones"') < h.index('data-layer="risk"') < h.index('id="layers"')
     board = (ROOT / "app/templates/_today_board.html").read_text()
     assert "labels: {}" in board and 'if (key === "labels")' in board and "LABEL_ZOOM = 13" in board        # no fetch; ?layers=labels deep-links like the rest
     assert 'MAP.createPane("lbl").style.zIndex = 445' in board and 'MAP.on("zoomend moveend", refreshLabels)' in board
