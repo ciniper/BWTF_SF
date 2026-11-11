@@ -104,17 +104,16 @@ def test_today_page_is_the_board_plus_the_experimental_row_and_the_api_route_exi
     assert ".map-legend{position:static;" in board
     assert "bwtfline" not in board
     # The words say what each colour reports (2026-11-08). The city's: its posting, never "safe". With Surfrider on, each source
-    # keys its own colours under its name; one note under the map says what the colours are not; the key under the board spells
+    # keys its own colours under its name; the expandable key under the board spells
     # out all three systems with the numbers the layer and the grades actually use.
     legend = h.split('id="map-legend"')[1].split("</div>")[0]
     assert [t.split("</span>")[0] for t in legend.split("</i>")[1:]] == ["no warning", "warning posted", "sewage discharge", "not sampled"] and "safe<" not in legend and "Surfrider latest" not in h
-    assert '<p class="legend-note" id="legend-note">Colors are the city\'s posted status at the last check, not a measurement of today\'s water.</p>' in h
     assert "colored by the city's posted status" in h and "colored by today's status" not in h
     assert 'dot("safe", REPLAY_OFFSET ? "not posted" : "no warning") + dot("posted", "warning posted") + dot("discharge", "sewage discharge")' in board
     assert '<span class="src">Surfrider</span>\' + dia("safe", "below limit") + dia("caution", "from " + (d ? d.caution : "") + " MPN") + dia("posted", "over limit") + dia("unknown", "no result")' in board
-    assert 'if (CITY_ON) h += (bw ? \'<span class="src">City</span>\' : "")' in board and "Diamonds grade one volunteer Enterococcus sample per site, taken about every two weeks; not an advisory." in board
+    assert 'if (CITY_ON) h += (bw ? \'<span class="src">City</span>\' : "")' in board
     key = h.split('<details class="colour-key">')[1].split("</details>")[0]
-    assert "<summary>What the colors mean</summary>" in key and key.count("<dt>") == 3 and h.index('<details class="colour-key">') > h.index('id="legend-note"') and h.index('<details class="colour-key">') < h.index('id="zone-sites"')
+    assert "<summary>What the colors mean</summary>" in key and key.count("<dt>") == 3 and h.index('<details class="colour-key">') > h.index('id="map-legend"') and h.index('<details class="colour-key">') < h.index('id="zone-sites"')
     assert "Tile borders and city dots" in key and "<b>Green</b> means no warning sign is up — not that the water was tested clean today" in key
     assert "Surfrider diamonds" in key and "limit of 104 MPN/100 mL" in key and "<b>yellow</b> from 36" in key and "over 7 days old is drawn hollow" in key and "not a health advisory" in key and "Where the two sources differ, both are shown." in key
     assert "The forecast's percentages" in key and 'Inside the collapsed "Today’s forecast · Beta" control under the tiles' in key and 'href="/forecast"' in key and "A prediction, driven by rain, not a measurement of the water." in key

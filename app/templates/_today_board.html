@@ -86,8 +86,6 @@
   .map-legend .shape .status-dot,.map-legend .shape .bwtf-dot{background:#8a949b}
   .map-legend .divider{width:1px;height:12px;background:var(--line);margin:0 2px}
   .map-legend .src{font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:10px;color:var(--faint)}   /* with Surfrider on, each source's colours are keyed under its own name (2026-11-08) */
-  .legend-note{font-size:12px;color:var(--faint);margin:8px 2px 0;line-height:1.4}   /* under the map: what the colours report, and what they do not */
-  .legend-note:empty{display:none}
   /* the collapsed key under the board: one paragraph per colour system (2026-11-08) */
   .colour-key{margin:18px 0 0;font-size:13.5px;color:var(--muted)}
   .colour-key summary{cursor:pointer;font-weight:700;color:var(--brand);font-size:13px}
@@ -125,7 +123,7 @@
   .layers .replay-ctl .tick{font-weight:600}
   .layers .replay-ctl input{width:140px;accent-color:var(--brand)}
   .layers .replay-ctl output{min-width:88px;color:var(--ink);font-weight:700}
-  .layers .layer-status{flex-basis:100%;color:var(--brand);font-weight:600;font-size:13px;margin:-2px 2px 0}   /* one line under both boxes: Surfrider's count and the layers' facts both land here */
+  .layers .layer-status{flex-basis:100%;color:var(--brand);font-weight:600;font-size:13px;margin:-2px 2px 0}   /* loading, errors, and extra-layer summaries */
   .layers .layer-status:empty{display:none}
   /* Keep main's shared toolbar; sources use the same compact pills as the optional layers. */
   .layers .ctl-group{gap:6px 8px;padding:8px 10px}
@@ -257,7 +255,6 @@
         <button type="button" class="map-reset" id="map-reset" hidden>Whole city</button>
       </div>
         <div class="map-legend" id="map-legend"><span><i class="status-dot safe"></i>no warning</span><span><i class="status-dot posted"></i>warning posted</span><span><i class="status-dot discharge"></i>sewage discharge</span><span><i class="status-dot unknown"></i>not sampled</span></div>
-        <p class="legend-note" id="legend-note">Colors are the city's posted status at the last check, not a measurement of today's water.</p>
       </div>
       </div>
     </div>
@@ -494,11 +491,6 @@ function renderLegend() {
   if (LAYER.rain.on) h += '<span><i class="ring"></i>rain, 3 days</span>';
   if (LAYER.outfalls.on) h += '<span><i class="of"></i>outfall</span>';
   lg.innerHTML = h;
-  // under the map: what the colours report, and what they do not
-  const note = $("legend-note");
-  if (note) note.textContent = REPLAY_OFFSET ? "Colors are the city's posted status at its last check that day."
-    : (CITY_ON ? "Colors are the city's posted status at the last check, not a measurement of today's water." : "")
-    + (bw ? (CITY_ON ? " " : "") + "Diamonds grade one volunteer Enterococcus sample per site, taken about every two weeks; not an advisory." : "");
 }
 function tileParts(key) { const b = document.querySelector('.zone[data-zone="' + key + '"]'); return b ? {b, st: b.querySelector(".st"), dots: [...b.querySelectorAll(".stations .status-dot")]} : null; }
 function snapshotBoard() {
@@ -618,7 +610,7 @@ const BUILD = {
       if (last) last.after(chip); else box.appendChild(chip);
     }
     filterSites();
-    status(d.sites.length + " Surfrider sites · newest sampled " + (d.newest_text || "—") + (d.newest ? " (" + d.newest + ")" : ""));
+    status("");
     return g;
   },
 };
