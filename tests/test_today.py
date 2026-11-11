@@ -88,37 +88,21 @@ def test_today_page_is_the_board_plus_the_experimental_row_and_the_api_route_exi
             h = c.get("/today").data.decode()
     finally:
         T.SFBWTFClient = orig
-    assert 'id="today-map"' in h and 'id="zones"' in h and 'id="layers"' in h and 'data-layer="replay"' in h and 'id="replay-ctl" hidden' in h and "/api/today/" in h
-    assert h.index('id="layers"') < h.index('class="board') and 'class="extras"' not in h                                            # the strip sits above the board; the old row is gone
-    # The strip above the board holds Replay alone; what the map shows is chosen on the map, in one "Map shows" bar of chips
-    # that each change the map and nothing else (design/today-map-controls, 2026-11-06: the Sources and Layers boxes and the
-    # phone fold went; Risk view went too — the risk now sits behind the board's collapsed forecast line, 2026-11-08)
-    strip = h.split('id="layers"')[1].split('class="board')[0]
-    assert '<span class="ctl-label" id="lbl-replay">Past days</span>' in strip and strip.count("<button") == 1 and "Experimental" not in strip and "Sources" not in strip
-    assert 'id="lbl-sources"' not in h and 'id="layers-toggle"' not in h and 'id="layer-group"' not in h and 'id="tg-city"' not in h and 'id="tg-bwtf"' not in h and 'data-layer="risk"' not in h
-    bar = h.split('class="map-ctl"')[1].split('class="map-stack"')[0]
-    assert '<span class="ctl-label" id="lbl-map">Map shows</span>' in bar and [b.split('"')[0] for b in bar.split('data-layer="')[1:]] == ["city", "bwtf", "rain", "outfalls", "labels"]
-    assert 'class="preset layer active" data-layer="city" aria-pressed="true"' in bar and bar.count('aria-pressed="false"') == 4 and ">Names</button>" in bar and ">Labels<" not in h
-    assert h.index('class="map-col"') < h.index('class="map-ctl"') < h.index('class="map-stack"') < h.index('id="today-map"') < h.index('id="map-legend"') < h.index('id="layer-status"')   # bar, map, legend, the layers' line
+    assert 'id="today-map"' in h and 'id="zones"' in h and 'id="layers"' in h and 'id="tg-bwtf"' in h and 'data-layer="replay"' in h and 'id="replay-ctl" hidden' in h and "/api/today/" in h
+    assert h.index('class="board') < h.index('id="zones"') < h.index('id="layers"') < h.index('id="today-map"') and 'class="extras"' not in h                                            # map sources sit after zones and immediately before the map
+    # Sources and map extras stay separate; forecast and time controls belong to the board.
+    assert '<span class="ctl-label" id="lbl-sources">Map shows:</span>' in h and '>Show<' not in h and 'class="layer-note"' not in h
+    assert h.index('id="tg-bwtf"') < h.index('id="layers-toggle"') < h.index('id="layer-group"') < h.index('data-layer="rain"') < h.index('id="layer-status"')
+    assert 'aria-controls="layer-group"' in h and 'aria-expanded="false"' in h.split('id="layers-toggle"')[0][-80:] + h.split('id="layers-toggle"')[1][:120]
     board = (ROOT / "app/templates/_today_board.html").read_text()
-    assert "RISK_VIEW" not in board and "show-risk" not in board and "openLayers" not in board and ".switch" not in board   # no risk toggle, no fold, no switches
-    assert '.map-stack{position:relative' in board and ".map-col{display:flex" in board and "position:relative" not in board.split(".map-col{")[1].split("}")[0]   # the legend floats over the map, not over the bar
-    assert 'if (key === "city") { setCity(!CITY_ON, btn); return; }' in board and 'btn.setAttribute("aria-pressed", on ? "true" : "false")' in board
-    assert "bwtfline" not in board   # enabling Surfrider must not add paragraphs to the zone tiles
-    # The forecast is in beta (2026-11-08): the tiles carry the city's word alone — no risk line — and the forecast is a quiet
-    # collapsed "Sewer-overflow forecast · Beta" line under them holding its sentence, each zone's number and what it is; opening
-    # it changes nothing above it. Closed on every visit; ?risk=1 opens it. (tests/test_risk_levels.py renders it with a forecast
-    # and checks the markup; this bare checkout has no snapshot, so no disclosure.)
-    assert 'class="risk"' not in board and ".zone .risk" not in board and "forecast-open" not in board and 'querySelector(".nm").after(el)' in board   # nothing on the tiles; the rain line anchors to the name
-    assert '{% if board.risk_lead %}\n        <details class="forecast" id="forecast">' in board and '<details class="forecast"' not in h and 'class="risk-lead"' not in h   # no forecast: the line is simply absent
-    assert 'get("risk") === "1") d.open = true' in board and '.board.replaying .forecast' in board   # the deep link; hidden on a replayed day
-    assert board.index('class="zones-hint"') < board.index('<details class="forecast"') < board.index('class="map-col"')   # under the tiles, in the text column — not among the map's controls
+    assert ".layers .layer-group{display:none}.layers .layer-group.open{display:flex}" in board and ".layers-toggle{display:inline-flex}" in board and "openLayers(true)" in board and 'querySelectorAll(".layer.active").length' in board
     # the chosen zone: a brand ring outside its grade border, the others dimmed
     assert ".zone.focus{box-shadow:0 0 0 2px #fff,0 0 0 5px var(--brand)}" in board and ".zones.has-focus .zone:not(.focus){opacity:.5}" in board and 'classList.toggle("has-focus", !!ACTIVE)' in board
     # the legend: over the map on wider screens, under it on phones (it covered the north shore)
     col = h.split('class="map-col"')[1].split('id="zone-sites"')[0]
     assert col.index('class="map-wrap"') < col.index('id="today-map"') < col.index('id="map-legend"') and col.split('id="map-legend"')[0].count("</div>") >= 2   # legend outside the map frame
     assert ".map-legend{position:static;" in board
+    assert "bwtfline" not in board
     # The words say what each colour reports (2026-11-08). The city's: its posting, never "safe". With Surfrider on, each source
     # keys its own colours under its name; one note under the map says what the colours are not; the key under the board spells
     # out all three systems with the numbers the layer and the grades actually use.
@@ -133,11 +117,11 @@ def test_today_page_is_the_board_plus_the_experimental_row_and_the_api_route_exi
     assert "<summary>What the colors mean</summary>" in key and key.count("<dt>") == 3 and h.index('<details class="colour-key">') > h.index('id="legend-note"') and h.index('<details class="colour-key">') < h.index('id="zone-sites"')
     assert "Tile borders and city dots" in key and "<b>Green</b> means no warning sign is up — not that the water was tested clean today" in key
     assert "Surfrider diamonds" in key and "limit of 104 MPN/100 mL" in key and "<b>yellow</b> from 36" in key and "over 7 days old is drawn hollow" in key and "not a health advisory" in key and "Where the two sources differ, both are shown." in key
-    assert "The forecast's percentages" in key and 'Inside the collapsed "Sewer-overflow forecast · Beta" line under the tiles' in key and 'href="/forecast"' in key and "A prediction, driven by rain, not a measurement of the water." in key
+    assert "The forecast's percentages" in key and 'Inside the collapsed "Today’s forecast · Beta" control under the tiles' in key and 'href="/forecast"' in key and "A prediction, driven by rain, not a measurement of the water." in key
     assert ".board.replaying .colour-key{display:none}" in board and "All clear" not in h and '"No warning" if status == "safe"' in (ROOT / "app/landing.py").read_text()   # the tiles read "No warning", not "All clear"
     assert h.count('class="site" data-zone=') == 20 and 'id="zone-sites"' in h and 'data-sample-station=' in h and "{{" not in h        # a chip per station under the zone tiles, each opening the popover
     assert ' hidden>' in h.split('id="zone-sites"')[1][:200] and ".site-chips[hidden]{display:none}" in (ROOT / "app/static/brand.css").read_text()   # chips wait for a zone tap — and the attribute must win over the strip's display:flex
-    assert 'data-layer="bwtf" aria-pressed="false"' in h and h.index('data-layer="bwtf"') < h.index('data-layer="rain"')   # the two sources lead the bar: city on, Surfrider off (Chase, 2026-09-30)
+    assert 'id="tg-city" checked' in h and 'id="tg-bwtf">' in h and 'data-layer="bwtf"' not in h and h.index('id="tg-bwtf"') < h.index('data-layer="rain"')   # two source switches: city on, Surfrider off (Chase, 2026-09-30)
     assert 'if (!q.has("layers")) want.add("bwtf")' not in (ROOT / "app/templates/_today_board.html").read_text()
     assert 'class="topbar"' in h and 'href="/" class="on" aria-current="page">Today' in h                                       # /today is the home page: its tab, named /, lights
     assert 'class="hubs"' not in h and 'class="hood"' not in h and 'class="learn"' not in h and 'class="conds' not in h          # the directory, the Learn bar and the pills moved to Admin's UI overflow (2026-11-04); no Under the hood since 2026-10-20
@@ -217,9 +201,12 @@ def test_labels_layer_is_a_chip_off_by_default_drawn_from_the_stations():
     with app.test_client() as c:
         h = c.get("/").data.decode()
     chip = h.split('data-layer="labels"')[0][-80:] + h.split('data-layer="labels"')[1][:200]
-    assert 'aria-pressed="false"' in chip and ">Names</button>" in chip and "active" not in chip.split("<button")[-1].split(">")[0]   # "Names" since 2026-11-06 (it was "Labels": nobody could tell what it did)
-    bar = h.split('class="map-ctl"')[1].split('class="map-stack"')[0]
-    assert bar.index('data-layer="outfalls"') < bar.index('data-layer="labels"') and 'data-layer="risk"' not in h              # last in the Map shows bar; no Risk view chip
+    assert 'aria-pressed="false"' in chip and ">Names</button>" in chip and "active" not in chip.split("<button")[-1].split(">")[0]
+    group = h.split('id="layer-group"')[1].split('id="layer-status"')[0]
+    assert group.index('data-layer="outfalls"') < group.index('data-layer="labels"')
+    assert 'data-layer="risk"' not in group and 'data-layer="replay"' not in group
+    assert h.index('class="board-date"') < h.index('data-layer="replay"') < h.index('id="zones"')
+    assert h.index('id="zones"') < h.index('data-layer="risk"') < h.index('id="layers"')
     board = (ROOT / "app/templates/_today_board.html").read_text()
     assert "labels: {}" in board and 'if (key === "labels")' in board and "LABEL_ZOOM = 13" in board        # no fetch; ?layers=labels deep-links like the rest
     assert 'MAP.createPane("lbl").style.zIndex = 445' in board and 'MAP.on("zoomend moveend", refreshLabels)' in board

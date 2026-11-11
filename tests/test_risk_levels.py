@@ -105,22 +105,15 @@ def test_forecast_page_draws_the_levels_from_the_one_table():
     assert "{{" not in h and "{%" not in h
 
 
-def test_today_board_forecast_disclosure_uses_the_levels():
+def test_today_board_tiles_and_risk_view_use_the_levels():
     h = _today_html({"ocean": 20, "baker_china": 21, "north": 51, "east": 81})
-    # The forecast is in beta (2026-11-08): the tiles carry the city's word alone, and the numbers, the sentence and the caveat sit
-    # inside the board's collapsed "Sewer-overflow forecast · Beta" line under them, one entry per zone in the tiles' order (the
-    # numbers were on the tiles behind a Risk view chip from 2026-10-18, then always from 2026-11-06). Nothing recolours the tiles.
-    assert '<details class="forecast" id="forecast">' in h and '<summary>Sewer-overflow forecast <span class="tag">Beta</span></summary>' in h and "<details open" not in h
-    zones = h.split('<ul class="by-zone">')[1].split("</ul>")[0]
-    assert zones == ('<li>Ocean Beach <b class="lvl-low">20%</b></li><li>Baker &amp; China Beach <b class="lvl-medium">21%</b></li>'
-                     '<li>North Beaches <b class="lvl-high">51%</b></li><li>East Beaches <b class="lvl-extreme">81%</b></li>'), zones
+    for key, pct in (("low", 20), ("medium", 21), ("high", 51), ("extreme", 81)):
+        assert f'<b class="lvl-{key}">{pct}%</b>' in h, key
     for lv in R.LEVELS:
-        assert f".forecast .by-zone b.lvl-{lv.key}{{color:{lv.color}}}" in h             # the number's colour, from the one table
-    assert 'class="risk"' not in h and ".zone .risk" not in h and "forecast-open" not in h and "show-risk" not in h and 'data-layer="risk"' not in h
-    assert '<div class="risk-lead">Sewer-overflow risk today: 81% at most (East Beaches)' in h and h.index('<details class="forecast"') < h.index('class="risk-lead"') < h.index('<ul class="by-zone">') and "const RISK_LEVELS" not in h
-    assert 'risk-lead' not in h.split('class="lead">')[1].split("</p>")[0]                 # the sentence is out of the subhead
-    assert 'still being tested — not an official advisory; the status on the cards is SFPUC\'s. <a href="/forecast">' in h
-    assert "<dt>Overflow risk today</dt>" not in h                                           # and not a facts row either (2026-11-09)
+        assert f".forecast-body b.lvl-{lv.key}{{color:{lv.color}}}" in h                     # the number's colour, from the one table
+    # the Risk view only reveals the numbers and the forecast's sentence; it no longer recolours (Chase, 2026-10-18)
+    assert 'id="forecast-body" hidden' in h and 'aria-controls="forecast-body"' in h and 'class="risk"' not in h
+    assert '<p class="risk-lead">Sewer-overflow risk today: 81% at most (East Beaches)' in h and "const RISK_LEVELS" not in h
     assert 'class="hi"' not in h and "under 10%" not in h and "50% or more" not in h
     assert "{{" not in h and "{%" not in h
 

@@ -3,8 +3,7 @@
     statuses, one tile per zone, the city map with a dot per station; zone tiles zoom the map, a
     station opens the sample popover. Three macros, so any page that wants the board shares one implementation:
       board_styles()                     the <style> block
-      board_section(board, sites=false, controls=false)  the markup; sites lists every station as a chip under the zone tiles (/today);
-                                         controls draws the "Map shows" bar over the map (/today; design/today-map-controls, 2026-11-06)
+      board_section(board, sites=false)  the markup; sites lists every station as a chip under the zone tiles (/today)
       board_script(board)                the map + tiles JS; the layers JS activates itself when the page has a #layers strip (/today)
     Pages must load Leaflet 1.9.4 (CSS + deferred JS) and /static/sample_popover.js themselves. -#}
 
@@ -17,9 +16,7 @@
   .board h1{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:42px;line-height:1;margin:8px 0 6px;letter-spacing:.02em;color:var(--ink)}
   .board h1 em{font-style:normal}
   .board h1 em.posted,.board h1 em.warn{color:var(--posted)}.board h1 em.discharge{color:var(--discharge)}.board h1 em.good{color:var(--safe)}
-  .board .lead{font-size:16px;color:var(--muted);margin:0 0 14px}
-  .board .lead:empty{display:none}   /* a clean day has no sentence; the element stays so Replay has somewhere to write its own */
-  /* the facts under the subhead, one labelled row each (2026-11-06): the city's samples and Surfrider's (the forecast's risk is its own collapsed line under the tiles, 2026-11-08) */
+  .board .lead{font-size:16px;color:var(--muted);margin:0 0 16px}
   .board .facts{display:grid;gap:5px;margin:0 0 16px}
   .board .facts div{display:flex;gap:12px;align-items:baseline;font-size:14px;line-height:1.4;color:var(--muted)}
   .board .facts dt{flex:none;width:156px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
@@ -38,32 +35,22 @@
   .zone .st{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px}
   .zone.posted .st{color:var(--posted)}.zone.discharge .st{color:var(--discharge)}.zone.unknown .st{color:var(--faint)}
   .zone .nm{font-size:16px;font-weight:900;margin:5px 0 1px;line-height:1.2}
-  /* The forecast is in beta (2026-11-08): the tiles carry the city's word alone, and the forecast is a quiet collapsed
-     line under them — its sentence, each zone's number, and what it is — that changes nothing above it. (The tiles
-     showed the numbers from 2026-10-18, behind a Risk view chip, then always from 2026-11-06.) The tiles keep the
-     city's status and colours (Chase, 2026-10-18: "toggling risk will no longer replace all clear"). */
-  .forecast{margin:10px 0 0;font-size:13px;color:var(--muted)}
-  .forecast summary{display:inline-flex;align-items:center;gap:7px;cursor:pointer;list-style:none;font-weight:600}
-  .forecast summary::-webkit-details-marker{display:none}
-  .forecast summary::before{content:"▸";font-size:11px;color:var(--faint)}.forecast[open] summary::before{content:"▾"}
-  .forecast summary:hover{color:var(--ink)}
-  .forecast .tag{font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--brand-deep);background:var(--sand2);border-radius:999px;padding:1px 7px}   /* the frame's Beta banner's word, small */
-  .forecast .in{margin:6px 0 0 18px;line-height:1.5}
-  .forecast .risk-lead{color:var(--ink)}
-  .forecast .by-zone{list-style:none;display:flex;flex-wrap:wrap;gap:3px 16px;margin:4px 0 5px;padding:0}   /* one entry per zone, in the tiles' order */
-  .forecast .by-zone b{font-weight:800}
-  .forecast .note{color:var(--faint)}
-  .forecast a{color:var(--brand)}
-  /* the risk levels (shared/risk_levels.py, Chase, 2026-10-01): the colour of each zone's number */
-  {% for l in RISK_LEVELS.levels %}.forecast .by-zone b.lvl-{{ l.key }}{color:{{ l.color }}}
+  .board .lead:empty{display:none}
+  .forecast-body{margin-top:8px;font-size:13px;color:var(--muted)}
+  .forecast-body[hidden]{display:none}
+  .forecast-body .risk-lead{color:var(--ink);margin:0 0 6px}
+  .forecast-body .by-zone{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;list-style:none;padding:0;margin:0 0 6px}
+  .forecast-body .by-zone li{display:flex;justify-content:space-between;gap:8px}
+  .forecast-body .note{margin:0;font-size:12px}
+  .forecast-body a{color:var(--brand)}
+  {% for l in RISK_LEVELS.levels %}.forecast-body b.lvl-{{ l.key }}{color:{{ l.color }}}
   {% endfor %}
   .zone .stations{display:flex;flex-wrap:wrap;gap:4px;margin:9px 0 5px;min-height:9px}
   .zone .stations .status-dot{width:9px;height:9px}
   .zone .meta{font-size:13px;color:var(--faint)}
   .zones-hint{font-size:13px;color:var(--faint);margin:8px 0 0}
-  .map-col{display:flex;flex-direction:column;min-width:0}   /* the "Map shows" bar, then the map with its legend */
-  .map-stack{position:relative;flex:1;display:flex;flex-direction:column;min-width:0}   /* the legend floats over the map, never over the bar above it */
-  .map-stack .map-wrap{flex:1}
+  .map-col{position:relative;display:flex;flex-direction:column;min-width:0}   /* the map and its legend */
+  .map-col .map-wrap{flex:1}
   .map-wrap{position:relative;isolation:isolate;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;min-height:400px;background:var(--sand2)}   /* isolate: Leaflet's z-indexes stay inside the map */
   #today-map{position:absolute;inset:0}
   .map-reset{position:absolute;bottom:12px;left:12px;z-index:500;background:#fff;border:2px solid var(--line);border-radius:999px;padding:6px 12px;font:700 12.5px Roboto,sans-serif;color:var(--brand);cursor:pointer}
@@ -114,24 +101,40 @@
   .board.replaying .colour-key{display:none}   /* a past day's colours are the city's alone; the replay's own sentence says so */
   .map-legend .ring{display:inline-block;width:10px;height:10px;border-radius:50%;border:2px solid var(--brand);background:rgba(0,114,188,.15)}
   .map-legend .of{display:inline-block;width:8px;height:8px;border-radius:50%;background:#7a5a3a}
-  /* Above the board: the Replay control (a past day of the board). What the map shows is chosen ON the map (.map-ctl):
-     every layer there changes the map and nothing else changes it (design/today-map-controls, 2026-11-06; the Sources and
-     Layers boxes, and the phone fold, went with it) */
+  /* Above the board: Sources (what the map shows) and Layers (what you add on top) as two boxes (Chase, 2026-10-01);
+     on phones the Layers box folds behind a button in the Sources box, and opens itself for a ?layers= / ?risk= / ?replay= link */
   .layers{display:flex;flex-wrap:wrap;align-items:stretch;gap:10px;margin:0 0 12px}
   .layers .ctl-group{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:10px 14px;background:#fff;border:1px solid var(--line);border-radius:var(--r)}
+  .layers .layer-group{flex:1}
   .layers .ctl-label{margin-right:2px}
+  .layers-toggle{display:none;align-items:center;gap:6px;margin-left:auto;padding:7px 13px;border-radius:999px;border:2px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;font-weight:700;font-size:13px;font-family:inherit}
+  .layers-toggle::after{content:"▸";font-size:11px}.layers-toggle[aria-expanded="true"]::after{content:"▾"}
+  .layers-toggle[aria-expanded="true"]{border-color:var(--brand);color:var(--brand)}
+  .layers-toggle .n{background:var(--brand);color:#fff;border-radius:999px;padding:0 7px;font-size:11.5px;line-height:18px}
+  .layers-toggle .n:empty{display:none}
+  .layers .switch{display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-weight:700;font-size:13px;color:var(--ink);position:relative}
+  .layers .switch input{position:absolute;opacity:0;width:0;height:0}
+  .layers .track{width:34px;height:20px;border-radius:999px;background:#cfd8e0;position:relative;transition:background .15s;flex:none}
+  .layers .track::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+  .layers input:checked+.track{background:var(--brand)}.layers input:checked+.track::after{left:16px}
+  .layers input:focus-visible+.track{outline:3px solid var(--sky);outline-offset:2px}
+  .layers input:disabled+.track{opacity:.45}
   .layers .preset:disabled{opacity:.45;cursor:not-allowed}
   .layers .replay-ctl{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}   /* appears when the Replay chip is on: oldest day · slider · chosen day; today sits at the right */
   .layers .replay-ctl[hidden]{display:none}
   .layers .replay-ctl .tick{font-weight:600}
   .layers .replay-ctl input{width:140px;accent-color:var(--brand)}
   .layers .replay-ctl output{min-width:88px;color:var(--ink);font-weight:700}
-  .map-ctl{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin:0 0 10px}
-  .map-ctl .ctl-label{margin-right:2px}
-  .map-ctl .preset{padding:6px 11px;font-size:12.5px}
-  .map-ctl .preset:disabled{opacity:.45;cursor:not-allowed}
-  .map-col .layer-status{display:block;color:var(--brand);font-weight:600;font-size:13px;margin:8px 2px 0}   /* one line under the map: what the layers found */
-  .map-col .layer-status:empty{display:none}
+  .layers .layer-status{flex-basis:100%;color:var(--brand);font-weight:600;font-size:13px;margin:-2px 2px 0}   /* one line under both boxes: Surfrider's count and the layers' facts both land here */
+  .layers .layer-status:empty{display:none}
+  /* Keep main's shared toolbar; sources use the same compact pills as the optional layers. */
+  .layers .ctl-group{gap:6px 8px;padding:8px 10px}
+  .layers .switch{gap:0;padding:6px 10px;border:2px solid var(--line);border-radius:999px;font-size:13px;color:var(--muted)}
+  .layers .switch .track{display:none}
+  .layers .switch:has(input:checked){background:var(--brand);border-color:var(--brand);color:#fff}
+  .layers .switch:has(input:focus-visible){outline:3px solid var(--sky);outline-offset:2px}
+  .layers .switch:hover{border-color:var(--sky)}
+  .layers .preset,.layers-toggle{padding:6px 10px;font-size:13px;line-height:1.5}
   .zone.wet{background:#eef5fb}
   .zone .rainline{color:var(--brand);font-size:12px;font-weight:600;margin-top:4px}
   .zone .rainline:empty{display:none}
@@ -141,10 +144,16 @@
   .of-pop b{display:block;font-size:14px;margin-bottom:2px}
   .of-pop .mut{color:var(--muted)}
   .board.replaying .eyebrow{color:var(--brand)}
-  .board.replaying .forecast,.board.replaying .zone .rainline,.board.replaying .zone .meta,.board.replaying .site small{display:none}   /* today's forecast, rain and sample dates are not that day's */
+  .board.replaying .board-forecast,.board.replaying .forecast-body,.board.replaying .zone .rainline,.board.replaying .zone .meta,.board.replaying .site small{display:none}   /* today's risk, rain and sample dates are not that day's */
   @media (max-width:760px){
     .layers .replay-ctl{flex-basis:100%}.layers .replay-ctl input{flex:1}
     .layers .ctl-group{flex-basis:100%}
+    .layers-toggle{display:inline-flex}
+    .layers .layer-group{display:none}.layers .layer-group.open{display:flex}
+    .layers .sources{flex-wrap:nowrap;gap:6px}
+    .layers .sources .ctl-label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+    .layers .switch,.layers-toggle{padding:6px 8px;font-size:12px;white-space:nowrap}
+    .layers-toggle{gap:4px}
   }
   @media (max-width:980px){.board .grid{grid-template-columns:1fr}.map-wrap{min-height:300px}}
   @media (max-width:760px){
@@ -157,21 +166,69 @@
     .map-wrap{min-height:260px}
     .map-legend{position:static;background:none;border-radius:0;padding:8px 2px 0;gap:6px 12px}   /* under the map: over it, it covered 4 of 20 stations on the north shore (6 with Surfrider on) */
   }
+
+  /* Sources belong to the map; time and forecast belong to the board. */
+  .board-date{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .board-date .eyebrow{flex:1}
+  .board-date .preset{padding:4px 9px;font-size:12px;white-space:nowrap}
+  .board-replay .replay-ctl{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:8px 0;font-size:13px;color:var(--muted)}
+  .board-replay .replay-ctl[hidden]{display:none}
+  .board-replay input{min-width:80px;flex:1;accent-color:var(--brand)}
+  .zone-tools{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px 12px;margin-top:6px}
+  .zone-tools .zones-hint{font-size:12px;margin:0}
+  .board-forecast{margin:0}
+  .board-forecast .preset{padding:0;border:0;background:none;font-size:12px;font-weight:600;color:var(--muted)}
+  .board-forecast .preset::before{content:"▸ ";}.board-forecast .preset.active::before{content:"▾ "}
+  .board-forecast .preset.active{color:var(--brand);background:none}
+  .map-col .layers{margin:0 0 6px;gap:6px}
+  .map-col .layers .ctl-group{border:0;padding:0;background:none}
+  .map-col .layers .sources{flex:1;min-width:0;flex-wrap:nowrap;gap:4px}
+  .map-col .layers .sources .ctl-label{position:static;width:auto;height:auto;overflow:visible;clip-path:none;font-size:12px;text-transform:none;letter-spacing:0;white-space:nowrap;margin:0;font-weight:500}
+  .map-col .layers .switch,.map-col .layers .preset,.map-col .layers-toggle{padding:4px 5px;font-size:11.5px;white-space:nowrap}
+  .map-col .layers-toggle{display:inline-flex}
+  .map-col .layers .layer-group{display:none;flex-basis:100%}.map-col .layers .layer-group.open{display:flex}
+  .map-stack{position:relative;display:flex;flex-direction:column;flex:1;min-height:0}
+  .map-stack .map-wrap{flex:1}
+  @media (max-width:980px){.board .grid{row-gap:10px}}
+  @media (min-width:981px){.board-date{justify-content:flex-start}.board-date .eyebrow{flex:0 1 auto}}
+  @media (max-width:360px){.map-col .layers .sources{flex-wrap:wrap}.map-col .layers .sources .ctl-label{flex-basis:100%}}
   @media (max-width:420px){.zones{gap:8px}}
 </style>
+{%- endmacro %}
+
+{% macro map_controls() -%}
+  <div class="layers" id="layers">
+    <div class="ctl-group sources" role="group" aria-labelledby="lbl-sources">
+    <span class="ctl-label" id="lbl-sources">Map shows:</span>
+    <label class="switch" title="City Results shows SFPUC's current posting status at twenty monitoring stations"><input type="checkbox" id="tg-city" checked><span class="track"></span><span class="lbl">City Results</span></label>
+    <label class="switch" title="Surfrider's latest Enterococcus result at each site the volunteers sample"><input type="checkbox" id="tg-bwtf"><span class="track"></span><span class="lbl">Surfrider Results</span></label>
+    <button type="button" class="layers-toggle" id="layers-toggle" aria-expanded="false" aria-controls="layer-group">More<span class="n" id="layers-n"></span></button>
+    </div>
+    <div class="ctl-group layer-group" id="layer-group" role="group" aria-label="More map options">
+    <button type="button" class="preset layer" data-layer="rain" aria-pressed="false" title="The last three daily totals at the forecast's two NOAA gauges">Rain</button>
+    <button type="button" class="preset layer" data-layer="outfalls" aria-pressed="false" title="The 34 permitted sewer outfalls; tap one for its past year of reported discharges">Outfalls</button>
+    <button type="button" class="preset layer" data-layer="labels" aria-pressed="false" title="Name the zones on the whole-city map, and each station when you zoom in">Names</button>
+    </div>
+    <span class="layer-status" id="layer-status" role="status" aria-live="polite"></span>
+  </div>
 {%- endmacro %}
 
 {% macro board_section(board, sites=false, controls=false) -%}
   <section class="board tone-{{ board.tone }}" aria-labelledby="today-h">
     <div class="grid">
       <div class="left">
+        <div class="board-date">
         <div class="eyebrow">Beach status · {{ board.date }} · {% if board.feed_ok %}SFPUC map checked {{ board.checked }}{% else %}SFPUC map unreachable{% endif %}</div>
+        {% if controls %}<button type="button" class="preset layer" data-layer="replay" aria-pressed="false" title="Redraw the board as the city's map stood on a past day">Replay</button>{% endif %}
+        </div>
+        {% if controls %}<div class="board-replay"><span class="replay-ctl" id="replay-ctl" hidden><span class="tick" id="replay-oldest"></span><input type="range" id="replay" min="0" max="7" step="1" value="7" aria-label="Day to replay — today at the right, slide left to go back" aria-valuetext="Today"><output id="replay-out" for="replay">Today</output></span></div>{% endif %}
         <h1 id="today-h">{{ board.headline_html|safe }}</h1>
-        <p class="lead">{{ board.lead }}</p>   {#- the news: which beaches are posted or discharging; a replayed day writes its own sentence here #}
+        <p class="lead">{{ board.lead }}</p>
         {% if board.facts %}<dl class="facts">{% for f in board.facts %}<div><dt>{{ f.label }}</dt><dd>{{ f.text[:1]|upper }}{{ f.text[1:] }}</dd></div>{% endfor %}</dl>{% endif %}
         {% if board.zones %}
         <div class="zones" id="zones">
-          {% for z in board.zones %}
+          {# the tiles sit where their zones are on the map (landing.TILE_GRID, Chase, 2026-11-08); board.zones keeps registry order #}
+          {% for z in board.tiles %}
           <button type="button" class="zone {{ z.status }}" data-zone="{{ z.key }}" aria-pressed="false" title="Zoom the map to {{ z.label }}">
             <div class="st"><i class="status-dot {{ z.status }}"></i>{{ z.status_text }}</div>
             <div class="nm">{{ z.label }}</div>
@@ -180,30 +237,20 @@
           </button>
           {% endfor %}
         </div>
-        <p class="zones-hint">Tap a zone to see its stations{% if sites %} and Surfrider's sites there{% endif %}; tap one for its latest lab results.</p>
+        <div class="zone-tools"><p class="zones-hint">Tap a zone to explore its stations.</p>
+        {% if controls %}<div class="board-forecast"><button type="button" class="preset layer" data-layer="risk" aria-expanded="false" aria-controls="forecast-body" title="Experimental sewer-overflow forecast for today">Today’s forecast · Beta</button></div>{% endif %}
+        </div>
+        {% if controls %}
+        <div class="forecast-body" id="forecast-body" hidden>
+          {% if board.risk_lead %}<p class="risk-lead">{{ board.risk_lead }}</p>{% else %}<p class="risk-lead">Forecast currently unavailable.</p>{% endif %}
+          <ul class="by-zone">{% for z in board.zones if z.risk is not none %}<li><span>{{ z.label }}</span><b class="lvl-{{ z.level }}">{{ z.risk }}%</b></li>{% endfor %}</ul>
+          <p class="note">An experimental estimate of sewer-overflow risk from rainfall, not an official advisory. The cards above show SFPUC’s current posting status. <a href="/forecast">See the forecast and days ahead.</a></p>
+        </div>
         {% endif %}
-        {% if board.risk_lead %}
-        <details class="forecast" id="forecast">
-          <summary>Sewer-overflow forecast <span class="tag">Beta</span></summary>
-          <div class="in">
-            <div class="risk-lead">{{ board.risk_lead }}</div>
-            <ul class="by-zone">{% for z in board.zones if z.risk is not none %}<li>{{ z.label }} <b class="lvl-{{ z.level }}">{{ z.risk }}%</b></li>{% endfor %}</ul>
-            <div class="note">A machine-learning estimate from rainfall, still being tested — not an official advisory; the status on the cards is SFPUC's. <a href="/forecast">The Forecast page has the days ahead.</a></div>
-          </div>
-        </details>
         {% endif %}
       </div>
       <div class="map-col">
-      {% if controls %}
-      <div class="map-ctl" role="group" aria-labelledby="lbl-map">
-        <span class="ctl-label" id="lbl-map">Map shows</span>
-        <button type="button" class="preset layer active" data-layer="city" aria-pressed="true" title="The city's twenty monitoring stations, as SFPUC's map shows them">City stations</button>
-        <button type="button" class="preset layer" data-layer="bwtf" aria-pressed="false" title="Surfrider's latest Enterococcus result at each site the volunteers sample">Surfrider results</button>
-        <button type="button" class="preset layer" data-layer="rain" aria-pressed="false" title="The last three daily totals at the forecast's two NOAA gauges">Rain, 3 days</button>
-        <button type="button" class="preset layer" data-layer="outfalls" aria-pressed="false" title="The 34 permitted sewer outfalls; tap one for its past year of reported discharges">Outfalls</button>
-        <button type="button" class="preset layer" data-layer="labels" aria-pressed="false" title="Name the zones on the whole-city map, and each station when you zoom in">Names</button>
-      </div>
-      {% endif %}
+      {% if controls %}{{ map_controls() }}{% endif %}
       <div class="map-stack">
       <div class="map-wrap">
         <div id="today-map" role="region" aria-label="Map of the city's beach monitoring stations, colored by the city's posted status"></div>
@@ -211,13 +258,9 @@
       </div>
         <div class="map-legend" id="map-legend"><span><i class="status-dot safe"></i>no warning</span><span><i class="status-dot posted"></i>warning posted</span><span><i class="status-dot discharge"></i>sewage discharge</span><span><i class="status-dot unknown"></i>not sampled</span></div>
         <p class="legend-note" id="legend-note">Colors are the city's posted status at the last check, not a measurement of today's water.</p>
-        {% if controls %}<span class="layer-status" id="layer-status" role="status" aria-live="polite"></span>{% endif %}
       </div>
       </div>
     </div>
-    {#- What sets each colour on the board, one source per paragraph (2026-11-08: three colour systems share one palette — the city's
-        posting, Surfrider's grade, the forecast's level — and a reader should be able to tell which one they are looking at). Collapsed,
-        so the board stays a glance; it is a reporter's key, not advice: where the two sources differ, both are shown and neither is picked. -#}
     <details class="colour-key">
       <summary>What the colors mean</summary>
       <dl>
@@ -228,7 +271,7 @@
           <dd>The grade of one volunteer sample, for one indicator (Enterococcus), against the state single-sample limit of {{ ENTERO_LIMIT }} MPN/100 mL: <b>green</b> below it, <b>yellow</b> from {{ ENTERO_CAUTION }}, <b>orange</b> at or over it.
               Volunteers sample about every two weeks; a result over {{ STALE_AFTER_DAYS }} days old is drawn hollow. A volunteer result is not a health advisory. Where the two sources differ, both are shown.</dd></div>
         <div><dt><b class="pct">%</b> The forecast's percentages</dt>
-          <dd>Inside the collapsed "Sewer-overflow forecast · Beta" line under the tiles: our <a href="/forecast">forecast</a>'s sewer-overflow risk for today, one number per zone colored by its level. A prediction, driven by rain, not a measurement of the water.</dd></div>
+          <dd>Inside the collapsed "Today’s forecast · Beta" control under the tiles: our <a href="/forecast">forecast</a>'s sewer-overflow risk for today, one number per zone colored by its level. A prediction, driven by rain, not a measurement of the water.</dd></div>
       </dl>
     </details>
     {% if sites %}
@@ -350,7 +393,7 @@ function initMap() {
   };
   credits.addTo(MAP);
   L.tileLayer({{ BASEMAP.url|tojson }}, {{ BASEMAP.options|tojson }}).addTo(MAP);
-  // Stacking order by status, across both sources: not sampled underneath, then no warning, posted, and discharge on top
+  // Stacking order by status, across both sources: not sampled underneath, then safe, posted, and discharge on top
   // (Chase, 2026-09-29), and an orange city dot over a green Surfrider diamond (2026-10-18). One map pane per rank:
   // the city's dots in st0–st3, Surfrider's diamonds in bw0–bw3 just under the city's dots of the same rank.
   for (let r = 0; r <= 3; r++) { MAP.createPane("bw" + r).style.zIndex = 405 + 10 * r; MAP.createPane("st" + r).style.zIndex = 410 + 10 * r; }
@@ -376,18 +419,11 @@ function initMap() {
   initLayers();
 }
 // ── Layers (the /today page only; Main has no #layers strip) ───────────────────────────────
-// "Map shows" (.map-ctl, on the map): every chip there changes the map and nothing else does. City stations and
-// Surfrider results are the two sources; Rain, Outfalls and Names go on top. Each fetched layer loads its data once,
-// draws a Leaflet group, and adds itself to the legend. Replay (above the board) recolours what is already there
-// (tiles + station markers) as a past day's map.
-// The forecast disclosure (2026-11-08, the forecast is in beta): the quiet "Sewer-overflow forecast" line under the tiles
-// holds the sentence and each zone's number; closed on every visit, open from ?risk=1 (the old Risk view deep link).
-function initForecast() {
-  const d = document.getElementById("forecast");
-  if (d && new URLSearchParams(location.search).get("risk") === "1") d.open = true;
-}
+// Each chip fetches its data once, draws a Leaflet group, and adds itself to the legend. Risk view and
+// Replay recolour what is already there (tiles + station markers) and are mutually exclusive: risk is
+// today's number, replay is another day's map.
 const LAYER = {rain: {}, outfalls: {}, bwtf: {}, labels: {}};
-let REPLAY = null, REPLAY_OFFSET = 0, ORIG = null;
+let RISK_VIEW = false, REPLAY = null, REPLAY_OFFSET = 0, ORIG = null;
 const $ = id => document.getElementById(id);
 const esc = t => String(t == null ? "" : t).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 const status = t => { const el = $("layer-status"); if (el) el.textContent = t || ""; };
@@ -467,7 +503,7 @@ function renderLegend() {
 function tileParts(key) { const b = document.querySelector('.zone[data-zone="' + key + '"]'); return b ? {b, st: b.querySelector(".st"), dots: [...b.querySelectorAll(".stations .status-dot")]} : null; }
 function snapshotBoard() {
   if (ORIG) return;
-  ORIG = {eyebrow: document.querySelector(".board .eyebrow").innerHTML, h1: $("today-h").innerHTML, lead: (document.querySelector(".board .lead") || {}).innerHTML, tone: document.querySelector(".board").className,
+  ORIG = {eyebrow: document.querySelector(".board .eyebrow").innerHTML, h1: $("today-h").innerHTML, lead: (document.querySelector(".board .lead") || {}).innerHTML, tone: document.querySelector(".board").className.replace(" show-risk", ""),
           tiles: Object.fromEntries(ZONES.map(z => { const t = tileParts(z.key); return [z.key, t ? {cls: t.b.className.replace(" focus", ""), st: t.st.innerHTML, dots: t.dots.map(d => d.className)} : null]; })),
           sites: [...document.querySelectorAll("#zone-sites .site .status-dot")].map(d => [d.parentElement.dataset.station, d.className])};
 }
@@ -475,10 +511,16 @@ function restoreBoard() {
   if (!ORIG) return;
   document.querySelector(".board .eyebrow").innerHTML = ORIG.eyebrow; $("today-h").innerHTML = ORIG.h1;
   const lead = document.querySelector(".board .lead"); if (lead && ORIG.lead != null) lead.innerHTML = ORIG.lead;
-  document.querySelector(".board").className = ORIG.tone;
+  document.querySelector(".board").className = ORIG.tone; applyRisk();   // the Risk view outlives a replay's snapshot
   for (const z of ZONES) { const t = tileParts(z.key), o = ORIG.tiles[z.key]; if (!t || !o) continue; t.b.className = o.cls + (t.b.classList.contains("focus") ? " focus" : ""); t.b.style.borderColor = ""; t.st.innerHTML = o.st; t.dots.forEach((d, i) => d.className = o.dots[i]); }
   for (const m of allMarkers()) { m.setStyle({fillColor: COL[m.__s.status] || COL.unknown, radius: m.__s.status === "posted" || m.__s.status === "discharge" ? 9 : 7}); placeRank(m, m.__s.status); labelFor(m, m.__s.status); }
   for (const [src, cls] of ORIG.sites || []) { const d = document.querySelector('#zone-sites .site[data-station="' + src + '"] .status-dot'); if (d) d.className = cls; }
+}
+// Forecast details expand below their control, independently of the city status cards.
+function applyRisk() {
+  const panel = $("forecast-body"), button = document.querySelector('.layer[data-layer="risk"]');
+  if (panel) panel.hidden = !RISK_VIEW;
+  if (button) button.setAttribute("aria-expanded", String(RISK_VIEW));
 }
 // Replay: the map as SFPUC showed it at the last check of a past day
 function applyReplay() {
@@ -525,7 +567,7 @@ const BUILD = {
       L.marker([x.lat, x.lon], {icon: L.divIcon({className: "gauge-pin", html: "", iconSize: [0, 0]}), keyboard: false, interactive: false})
         .bindTooltip(name + " · " + (t == null ? "no report" : fmtIn(t) + " · " + shortSpan(x.window)), {permanent: true, direction: "top", className: "gauge-label", offset: [0, -4]}).addTo(g);
     }
-    for (const z of ZONES) { const t = tileParts(z.key), zr = d.zones[z.key]; if (!t || !zr) continue; let el = t.b.querySelector(".rainline"); if (!el) { el = document.createElement("div"); el.className = "rainline"; t.b.querySelector(".nm").after(el); }
+    for (const z of ZONES) { const t = tileParts(z.key), zr = d.zones[z.key]; if (!t || !zr) continue; let el = t.b.querySelector(".rainline"); if (!el) { el = document.createElement("div"); el.className = "rainline"; t.b.querySelector(".meta").before(el); }
       el.textContent = zr.total_in == null ? "" : fmtIn(zr.total_in) + " of rain in 3 days · " + zr.gauge + " gauge"; t.b.classList.toggle("wet", (zr.total_in || 0) >= d.advisory_in); }
     status(d.wettest_in >= d.advisory_in ? fmtIn(d.wettest_in) + " at the wetter gauge over three days" : "Under " + fmtIn(d.advisory_in) + " at both gauges over three days");
     return g;
@@ -580,13 +622,13 @@ const BUILD = {
     return g;
   },
 };
-function markOn(btn, on) { if (!btn) return; btn.classList.toggle("active", on); btn.setAttribute("aria-pressed", on ? "true" : "false"); }
+function markOn(btn, on) { if (!btn) return; if (btn.tagName === "INPUT") btn.checked = on; else btn.classList.toggle("active", on); }
 async function setLayer(key, on, btn) {
   const L_ = LAYER[key];
   if (key === "labels") { L_.on = on; markOn(btn, on); refreshLabels(); return; }   // drawn from the stations already on the map: nothing to fetch
   if (!on) { if (L_.group) MAP.removeLayer(L_.group); L_.on = false; markOn(btn, false); setCityLimits();
     if (key === "rain") { document.querySelectorAll(".zone .rainline").forEach(e => e.remove()); document.querySelectorAll(".zone.wet").forEach(e => e.classList.remove("wet")); }
-    if (key === "bwtf") { document.querySelectorAll("#zone-sites .site.bwtf").forEach(c => c.remove()); }
+    if (key === "bwtf") document.querySelectorAll("#zone-sites .site.bwtf").forEach(c => c.remove());
     status(""); renderLegend(); return; }
   btn.disabled = true; status("Loading…");
   try {
@@ -596,11 +638,13 @@ async function setLayer(key, on, btn) {
   btn.disabled = false; renderLegend();
 }
 function setReplay(offset) {
-  const slider = $("replay"), out = $("replay-out");
+  const slider = $("replay"), out = $("replay-out"), riskBtn = document.querySelector('.layer[data-layer="risk"]');
   const max = slider.max | 0;
   REPLAY_OFFSET = Math.max(0, Math.min(max, offset | 0)); slider.value = max - REPLAY_OFFSET;   // today at the right end; sliding left goes back
   const label = REPLAY_OFFSET === 0 ? "Today" : REPLAY_OFFSET === 1 ? "Yesterday" : REPLAY && REPLAY.days ? fmtDay(REPLAY.days[REPLAY.days.length - 1 - REPLAY_OFFSET]) : REPLAY_OFFSET + " days ago";
   out.textContent = label; slider.setAttribute("aria-valuetext", label);
+  if (REPLAY_OFFSET && RISK_VIEW) { RISK_VIEW = false; riskBtn.classList.remove("active"); applyRisk(); }   // today's risk is not a past day's
+  riskBtn.disabled = REPLAY_OFFSET > 0;
   applyReplay();
 }
 async function enableReplay(btn) {
@@ -612,13 +656,13 @@ async function enableReplay(btn) {
   const oldest = REPLAY.covered && REPLAY.covered.length ? REPLAY.days.length - 1 - REPLAY.days.indexOf(REPLAY.covered[0]) : 0;
   if (!oldest) { status("The map's record has no earlier days yet."); return false; }
   const slider = $("replay"); slider.max = oldest; $("replay-oldest").textContent = fmtDay(REPLAY.covered[0]);
-  $("replay-ctl").hidden = false; markOn(btn, true); setReplay(0);
+  $("replay-ctl").hidden = false; btn.classList.add("active"); setReplay(0);
   return true;
 }
-function disableReplay(btn) { $("replay-ctl").hidden = true; markOn(btn, false); setReplay(0); }
+function disableReplay(btn) { $("replay-ctl").hidden = true; btn.classList.remove("active"); setReplay(0); }
 let CITY_ON = true;
-function setCity(on, btn) {
-  CITY_ON = on; markOn(btn || document.querySelector('.layer[data-layer="city"]'), on);
+function setCity(on) {
+  CITY_ON = on;
   for (const m of ALL_ORDERED) MAP.removeLayer(m);
   if (on) for (const m of ALL_ORDERED) if (!ACTIVE || m.__z.key === ACTIVE) m.addTo(MAP);
   document.querySelectorAll("#zone-sites .site:not(.bwtf)").forEach(c => { c.hidden = !on || (!!ACTIVE && c.dataset.zone !== ACTIVE); });
@@ -626,23 +670,33 @@ function setCity(on, btn) {
 }
 function initLayers() {
   const strip = $("layers"); if (!strip) return;
-  for (const btn of document.querySelectorAll(".layer")) {   // the map's chips and the strip's Replay
+  const city = $("tg-city"), bw = $("tg-bwtf");
+  if (city) city.addEventListener("change", () => setCity(city.checked));
+  if (bw) bw.addEventListener("change", () => setLayer("bwtf", bw.checked, bw));
+  for (const btn of document.querySelectorAll(".layer")) {
     const key = btn.dataset.layer;
     btn.addEventListener("click", async () => {
-      if (key === "city") { setCity(!CITY_ON, btn); return; }
+      if (key === "risk") { RISK_VIEW = !RISK_VIEW; btn.classList.toggle("active", RISK_VIEW); if (RISK_VIEW && REPLAY_OFFSET) setReplay(0); applyRisk(); return; }
       if (key === "replay") { if (btn.classList.contains("active")) disableReplay(btn); else await enableReplay(btn); return; }
       await setLayer(key, !LAYER[key].on, btn);
     });
   }
   const slider = $("replay");
   slider.addEventListener("input", () => setReplay((slider.max | 0) - (slider.value | 0)));
-  // deep links: ?layers=rain,outfalls,labels,bwtf (or ?surfrider=1), ?city=0, ?replay=N; ?risk=1 opens the forecast disclosure (initForecast)
+  // phones: the Layers box folds behind a button; the button counts the layers that are on, so a folded layer is never forgotten
+  const fold = $("layer-group"), tog = $("layers-toggle"), n = $("layers-n");
+  const openLayers = on => { fold.classList.toggle("open", on); tog.setAttribute("aria-expanded", on ? "true" : "false"); };
+  const count = () => { n.textContent = String(fold.querySelectorAll(".layer.active").length || ""); };
+  tog.addEventListener("click", () => openLayers(!fold.classList.contains("open")));
+  new MutationObserver(count).observe(fold, {subtree: true, attributes: true, attributeFilter: ["class"]});
   const q = new URLSearchParams(location.search), want = new Set((q.get("layers") || "").split(",").filter(Boolean));
   if (q.get("surfrider") === "1") want.add("bwtf");        // Surfrider is off by default (Chase, 2026-09-30); ?layers=bwtf or ?surfrider=1 turns it on
-  if (q.get("city") === "0") setCity(false);
-  for (const key of want) { const btn = document.querySelector('.layer[data-layer="' + key + '"]'); if (btn && LAYER[key]) setLayer(key, true, btn); }
-  if (q.get("replay")) { const rb = strip.querySelector('.layer[data-layer="replay"]'); enableReplay(rb).then(ok => { if (ok) setReplay(q.get("replay") | 0); }); }
+  if (q.get("city") === "0" && city) { city.checked = false; setCity(false); }
+  for (const key of want) { const btn = key === "bwtf" ? bw : document.querySelector('.layer[data-layer="' + key + '"]'); if (btn && LAYER[key]) setLayer(key, true, btn); }
+  if (q.get("risk") === "1") document.querySelector('.layer[data-layer="risk"]').click();
+  if (q.get("replay")) { const rb = document.querySelector('.layer[data-layer="replay"]'); enableReplay(rb).then(ok => { if (ok) setReplay(q.get("replay") | 0); }); }
+  if ([...want].some(k => ["rain", "outfalls", "labels"].includes(k))) openLayers(true);   // a link that turns a layer on shows it
 }
-window.addEventListener("DOMContentLoaded", () => { initForecast(); initMap(); });
+window.addEventListener("DOMContentLoaded", initMap);
 </script>
 {%- endmacro %}

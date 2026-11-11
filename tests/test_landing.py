@@ -103,6 +103,8 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
     assert not any(f["label"] == "Overflow risk today" for f in b["facts"])
     z = {t["key"]: t for t in b["zones"]}
     assert [t["key"] for t in b["zones"]] == ["ocean", "baker_china", "north", "east"]           # registry order, every zone even when empty
+    assert [t["key"] for t in b["tiles"]] == ["baker_china", "north", "ocean", "east"]           # the tiles' 2×2 grid reads like the map: NW, N shore / W coast, bay (2026-11-08)
+    assert [id(t) for t in b["tiles"]] == [id(z[k]) for k in ("baker_china", "north", "ocean", "east")]   # the same tiles, only reordered
     assert (z["north"]["status"], z["north"]["status_text"], z["north"]["meta"]) == ("posted", "1 beach posted", "Crissy East · sampled 6 days ago")   # the age in words, never a bare date (2026-11-06)
     assert (z["ocean"]["status"], z["ocean"]["status_text"], z["ocean"]["risk"], z["ocean"]["meta"]) == ("safe", "No warning", 0, "6 stations · sampled 6 days ago")     # every registry station, fed or not
     assert z["baker_china"]["status"] == "unknown" and z["baker_china"]["status_text"] == "Not sampled" and z["baker_china"]["meta"] == "4 stations · no sample date"
