@@ -153,6 +153,9 @@
   @media (max-width:360px){.day-strip{margin-left:-6px;margin-right:-6px}.day-strip .day{font-size:10.5px;padding-left:4px;padding-right:4px}}   /* eight days across a 320 px phone */
   .zone-tools{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px 12px;margin-top:6px}
   .zone-tools .zones-hint{font-size:12px;margin:0}
+  .past-status{margin:8px 0 0;font-size:12px;color:var(--muted)}   /* Past week's loading and error line, under its control (not the map's status line) */
+  .past-status:empty{display:none}
+  @media (min-width:761px){.past-status{text-align:right}}
   .board-toggles{display:flex;align-items:center;gap:4px 14px;flex-wrap:wrap}
   .board-forecast,.board-past{margin:0}
   .board-past .preset,.board-forecast .preset{padding:0;border:0;background:none;font-size:12px;font-weight:600;color:var(--muted)}
@@ -215,7 +218,8 @@
           <div class="board-forecast"><button type="button" class="preset layer" data-layer="risk" aria-expanded="false" aria-controls="forecast-body" title="Experimental sewer-overflow forecast for today">Today’s forecast · Beta</button></div>
         </div>{% endif %}
         </div>
-        {% if controls %}<div class="day-strip" id="day-strip" role="group" aria-label="Past week: the city's map on each day" hidden></div>{% endif %}
+        {% if controls %}<div class="day-strip" id="day-strip" role="group" aria-label="Past week: the city's map on each day" hidden></div>
+        <p class="past-status" id="past-status" role="status" aria-live="polite"></p>{% endif %}
         {% if controls %}
         <div class="forecast-body" id="forecast-body" hidden>
           {% if board.risk_lead %}<p class="risk-lead">{{ board.risk_lead }}</p>{% else %}<p class="risk-lead">Forecast currently unavailable.</p>{% endif %}
@@ -612,10 +616,10 @@ function setReplay(offset) {
 async function loadReplay() {
   const strip = $("day-strip"); if (!strip) return false;
   if (strip.children.length) return true;
-  status("Loading the map's past week…");
-  try { REPLAY = await fetchJSON("/api/today/replay"); status(""); } catch (e) { REPLAY = null; status("Past week unavailable: " + e.message); return false; }
+  pastStatus("Loading the map's past week…");
+  try { REPLAY = await fetchJSON("/api/today/replay"); pastStatus(""); } catch (e) { REPLAY = null; pastStatus("Past week unavailable: " + e.message); return false; }
   const n = REPLAY.days.length, oldest = REPLAY.covered && REPLAY.covered.length ? n - 1 - REPLAY.days.indexOf(REPLAY.covered[0]) : 0;
-  if (!oldest) { status("The map's record has no earlier days yet."); return false; }
+  if (!oldest) { pastStatus("The map's record has no earlier days yet."); return false; }
   let h = "";
   for (let off = oldest; off >= 0; off--) {
     const day = REPLAY.days[n - 1 - off], w = dayWorst(off ? day : null);   // Today's dot is the live board, not the record's last check
@@ -632,7 +636,9 @@ async function loadReplay() {
   return true;
 }
 // Past week opens the strip; closing it hides the strip and returns the board to Today
+const pastStatus = t => { const el = $("past-status"); if (el) el.textContent = t || ""; };
 async function toggleReplay(btn, on) {
+  if (!on) pastStatus("");
   if (on && !(await loadReplay())) on = false;
   if (!on && REPLAY_OFFSET) setReplay(0);
   $("day-strip").hidden = !on; btn.classList.toggle("active", on); btn.setAttribute("aria-expanded", on ? "true" : "false");
