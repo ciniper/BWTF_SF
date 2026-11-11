@@ -154,6 +154,43 @@ instance with `.env` shares the production database — set
 `ALERT_WATCHER_INTERVAL=off` locally while developing so a second watcher
 doesn't write state/logs alongside prod's.
 
+## A sandbox database of your own (built 2026-11-11, `db/scripts/sandbox_db.py`)
+
+Production's Supabase and Vercel projects are Chase's, and every migration there is a hand
+paste in the SQL editor. To build and try things without that step — or to rehearse a migration
+before it is pasted — point a checkout at a Supabase project you own:
+
+1. supabase.com → New project (free tier is enough; pg_cron and pg_net are available).
+2. Project settings → Database → Connect → **Session pooler** URI (IPv4; the direct
+   connection is IPv6-only on the free tier). Into `.env` at the repo root:
+
+   ```
+   SUPABASE_URL=https://<ref>.supabase.co          # the sandbox's API URL
+   SUPABASE_SERVICE_KEY=<its service_role key>     # the app, backfills and db/scripts now use the sandbox
+   SANDBOX_DB_URL=postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres
+   FORECAST_CACHE_WRITE=1                          # a local refresh writes its snapshot and history here
+   ALERT_WATCHER_INTERVAL=off
+   ```
+
+3. `venv/bin/python db/scripts/sandbox_db.py apply` — runs every `db/migrations/NNN_*.sql` not yet
+   recorded in the sandbox's `applied_migrations` table, in order, stopping at the first error.
+   Then it writes the sandbox's own values over the two production URLs the migrations bake in:
+   `forecast_refresh_url` from `SANDBOX_REFRESH_URL` (empty by default, so the half-hourly cron
+   does nothing until you have a deployment of your own to point it at) and `site_url` from
+   `SANDBOX_SITE_URL`. `mode` stays `shadow`: the tick polls SFPUC and records feed days and
+   would-send decisions, and nothing is ever emailed. `status` lists applied/pending and the cron
+   jobs; `shell` opens psql. Each new migration: `apply` again.
+
+4. Fill it: `FORECAST_CACHE_WRITE=1 venv/bin/python -m app.wsgi` and open
+   `/forecast/api/refresh` — one forecast snapshot, `forecast_history`, `forecast_changes` and the
+   samples mirror land in the sandbox. `/alerts` (passphrase) shows the record filling.
+
+The worktree rule still holds: `.env` is read from the checkout that runs, so a worktree needs its
+own copy (or a symlink to the main checkout's). `scripts/check.sh` blanks the Supabase variables,
+so the tests never touch a sandbox either. Nothing in a sandbox reaches production: the refresh
+URL is refused if it names `bwtf-sf.vercel.app`, and with `BWTF_PROD_SUPABASE_REF=<ref>` in `.env`
+the production connection string is refused too.
+
 ## Phase 2: pg shadow watcher (pg_cron + pg_net)
 
 `db/migrations/002_phase2_shadow_watcher.sql` runs the poll→detect loop inside
