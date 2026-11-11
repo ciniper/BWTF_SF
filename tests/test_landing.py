@@ -100,6 +100,8 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
     assert b["risk_lead"] == "Sewer-overflow risk today: 4% at most (East Beaches), staying low through Sun Oct 04."   # shown with the Risk view
     z = {t["key"]: t for t in b["zones"]}
     assert [t["key"] for t in b["zones"]] == ["ocean", "baker_china", "north", "east"]           # registry order, every zone even when empty
+    assert [t["key"] for t in b["tiles"]] == ["baker_china", "north", "ocean", "east"]           # the tiles' 2×2 grid reads like the map: NW, N shore / W coast, bay (2026-11-08)
+    assert [id(t) for t in b["tiles"]] == [id(z[k]) for k in ("baker_china", "north", "ocean", "east")]   # the same tiles, only reordered
     assert (z["north"]["status"], z["north"]["status_text"], z["north"]["meta"]) == ("posted", "1 beach posted", "Crissy East · sampled Sep 23")
     assert (z["ocean"]["status"], z["ocean"]["risk"], z["ocean"]["meta"]) == ("safe", 0, "6 stations · sampled Sep 23")     # every registry station, fed or not
     assert z["baker_china"]["status"] == "unknown" and z["baker_china"]["meta"] == "4 stations · no sample date"

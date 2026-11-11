@@ -144,7 +144,8 @@
         {% if board.lead or board.risk_lead %}<p class="lead{% if not board.lead %} only-risk{% endif %}">{{ board.lead }}{% if board.risk_lead %}{% if board.lead %} {% endif %}<span class="risk-lead">{{ board.risk_lead }}</span>{% endif %}</p>{% endif %}
         {% if board.zones %}
         <div class="zones" id="zones">
-          {% for z in board.zones %}
+          {# the tiles sit where their zones are on the map (landing.TILE_GRID, Chase, 2026-11-08); board.zones keeps registry order #}
+          {% for z in board.tiles %}
           <button type="button" class="zone {{ z.status }}" data-zone="{{ z.key }}" aria-pressed="false" title="Zoom the map to {{ z.label }}">
             <div class="st"><i class="status-dot {{ z.status }}"></i>{{ z.status_text }}</div>
             <div class="nm">{{ z.label }}</div>
