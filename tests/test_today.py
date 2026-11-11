@@ -53,7 +53,7 @@ def test_today_page_is_the_board_plus_the_experimental_row_and_the_api_route_exi
             h = c.get("/today").data.decode()
     finally:
         T.SFBWTFClient = orig
-    assert 'id="today-map"' in h and 'id="zones"' in h and 'id="layers"' in h and 'id="tg-bwtf"' in h and 'data-layer="replay"' in h and 'id="replay-ctl" hidden' in h and "/api/today/" in h
+    assert 'id="today-map"' in h and 'id="zones"' in h and 'id="layers"' in h and 'id="tg-bwtf"' in h and 'id="day-strip"' in h and 'data-layer="replay"' not in h and 'type="range"' not in h and "/api/today/" in h
     assert h.index('class="board') < h.index('id="zones"') < h.index('id="layers"') < h.index('id="today-map"') and 'class="extras"' not in h                                            # map sources sit after zones and immediately before the map
     # Sources and map extras stay separate; forecast and time controls belong to the board.
     assert '<span class="ctl-label" id="lbl-sources">Map shows:</span>' in h and '>Show<' not in h and 'class="layer-note"' not in h
@@ -153,7 +153,7 @@ def test_labels_layer_is_a_chip_off_by_default_drawn_from_the_stations():
     group = h.split('id="layer-group"')[1].split('id="layer-status"')[0]
     assert group.index('data-layer="outfalls"') < group.index('data-layer="labels"')
     assert 'data-layer="risk"' not in group and 'data-layer="replay"' not in group
-    assert h.index('class="board-date"') < h.index('data-layer="replay"') < h.index('id="zones"')
+    assert h.index('class="eyebrow"') < h.index('id="day-strip"') < h.index('id="today-h"') < h.index('id="zones"')   # the day strip sits under the date line
     assert h.index('id="zones"') < h.index('data-layer="risk"') < h.index('id="layers"')
     board = (ROOT / "app/templates/_today_board.html").read_text()
     assert "labels: {}" in board and 'if (key === "labels")' in board and "LABEL_ZOOM = 13" in board        # no fetch; ?layers=labels deep-links like the rest
