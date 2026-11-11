@@ -60,7 +60,7 @@ def test_surfrider_layer_grades_each_site_and_maps_it_to_the_city_beach():
     edge = T.surfrider_layer(types.SimpleNamespace(sites=[_site("Aquatic Park", 20.0, "20", datetime(2026, 9, 24, 18, 30))]), today=date(2026, 10, 1))["sites"][0]
     assert (edge["age_days"], edge["stale"]) == (7, False)   # exactly the threshold is still fresh
     board = (ROOT / "app/templates/_today_board.html").read_text()
-    assert ".bwtf-dot.stale{background:#fff;border:1.5px dashed var(--faint)" in board and '(s.stale ? " stale" : "")' in board and 'dia("stale", "over " + d.stale_after_days + " days old")' in board
+    assert ".bwtf-dot.stale{background:#fff;border:1.5px dashed var(--faint)" in board and '(s.stale ? " stale" : "")' in board and 'item("bwtf-dot", "stale", "Over " + data.stale_after_days + " days old")' in board
     assert '" · " + s.age_text + " (" + s.date + ")"' in board and '" · " + s.sampled_text + " ("' in board   # ages remain on the markers
     assert [s["name"] for s in d["sites"]] == sorted(by)                                                      # stable order
     v = by["Ocean Beach at Vicente St"]
@@ -98,25 +98,16 @@ def test_today_page_is_the_board_plus_the_experimental_row_and_the_api_route_exi
     assert ".layers .layer-group{display:none}.layers .layer-group.open{display:flex}" in board and ".layers-toggle{display:inline-flex}" in board and "openLayers(true)" in board and 'querySelectorAll(".layer.active").length' in board
     # the chosen zone: a brand ring outside its grade border, the others dimmed
     assert ".zone.focus{box-shadow:0 0 0 2px #fff,0 0 0 5px var(--brand)}" in board and ".zones.has-focus .zone:not(.focus){opacity:.5}" in board and 'classList.toggle("has-focus", !!ACTIVE)' in board
-    # the legend: over the map on wider screens, under it on phones (it covered the north shore)
-    col = h.split('class="map-col"')[1].split('id="zone-sites"')[0]
-    assert col.index('class="map-wrap"') < col.index('id="today-map"') < col.index('id="map-legend"') and col.split('id="map-legend"')[0].count("</div>") >= 2   # legend outside the map frame
-    assert ".map-legend{position:static;" in board
+    # The compact legend sits beneath the map and the disclosure explains both sources.
+    assert h.index('id="today-map"') < h.index('id="map-legend"') < h.index('<details class="colour-key">')
     assert "bwtfline" not in board
-    # The words say what each colour reports (2026-11-08). The city's: its posting, never "safe". With Surfrider on, each source
-    # keys its own colours under its name; the expandable key under the board spells
-    # out all three systems with the numbers the layer and the grades actually use.
     legend = h.split('id="map-legend"')[1].split("</div>")[0]
-    assert [t.split("</span>")[0] for t in legend.split("</i>")[1:]] == ["no warning", "warning posted", "sewage discharge", "not sampled"] and "safe<" not in legend and "Surfrider latest" not in h
-    assert "colored by the city's posted status" in h and "colored by today's status" not in h
-    assert 'dot("safe", REPLAY_OFFSET ? "not posted" : "no warning") + dot("posted", "warning posted") + dot("discharge", "sewage discharge")' in board
-    assert '<span class="src">Surfrider</span>\' + dia("safe", "below limit") + dia("caution", "from " + (d ? d.caution : "") + " MPN") + dia("posted", "over limit") + dia("unknown", "no result")' in board
-    assert 'if (CITY_ON) h += (bw ? \'<span class="src">City</span>\' : "")' in board
+    assert [t.split("</span>")[0] for t in legend.split("</i>")[1:]] == ["No warning", "Warning posted", "Sewage discharge", "No data"]
     key = h.split('<details class="colour-key">')[1].split("</details>")[0]
-    assert "<summary>What the colors mean</summary>" in key and key.count("<dt>") == 3 and h.index('<details class="colour-key">') > h.index('id="map-legend"') and h.index('<details class="colour-key">') < h.index('id="zone-sites"')
-    assert "Tile borders and city dots" in key and "<b>Green</b> means no warning sign is up — not that the water was tested clean today" in key
-    assert "Surfrider diamonds" in key and "limit of 104 MPN/100 mL" in key and "<b>yellow</b> from 36" in key and "over 7 days old is drawn hollow" in key and "not a health advisory" in key and "Where the two sources differ, both are shown." in key
-    assert "The forecast's percentages" in key and 'Inside the collapsed "Today’s forecast · Beta" control under the tiles' in key and 'href="/forecast"' in key and "A prediction, driven by rain, not a measurement of the water." in key
+    assert "<summary>What the colors mean</summary>" in key and key.count("<dt>") == 2
+    assert "See SFPUC’s official map and legend" in key and "recent combined sewer discharge" in key
+    assert "Below 36" in key and "36 through 104" in key and "Above 104" in key
+    assert "Over 7 days old (hollow)" in key and "No result (solid gray)" in key
     assert ".board.replaying .colour-key{display:none}" in board and "All clear" not in h and '"No warning" if status == "safe"' in (ROOT / "app/landing.py").read_text()   # the tiles read "No warning", not "All clear"
     assert h.count('class="site" data-zone=') == 20 and 'id="zone-sites"' in h and 'data-sample-station=' in h and "{{" not in h        # a chip per station under the zone tiles, each opening the popover
     assert ' hidden>' in h.split('id="zone-sites"')[1][:200] and ".site-chips[hidden]{display:none}" in (ROOT / "app/static/brand.css").read_text()   # chips wait for a zone tap — and the attribute must win over the strip's display:flex

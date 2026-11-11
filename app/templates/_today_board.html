@@ -61,9 +61,12 @@
   .credits-btn::before{content:"◂ "}.credits.open .credits-btn::before,.credits:hover .credits-btn::before{content:"▾ "}
   .credits-full{display:none;line-height:1.3}.credits-full a{color:var(--brand)}
   .credits.open .credits-full,.credits:hover .credits-full,.credits:focus-within .credits-full{display:inline}
-  .map-legend{position:absolute;left:56px;top:12px;z-index:500;display:flex;flex-wrap:wrap;gap:10px;background:rgba(255,255,255,.92);border-radius:999px;padding:5px 10px;font-size:11.5px;color:var(--muted)}
-  .map-legend span{display:inline-flex;align-items:center;gap:5px}
-  .map-legend span[hidden]{display:none}   /* the Surfrider entry stays out of the legend until its layer is switched on */
+  .map-legend{display:grid;gap:5px;padding:8px 2px 0;font-size:11.5px;color:var(--muted)}
+  .map-legend:empty{display:none}
+  .map-legend .legend-row{display:grid;grid-template-columns:50px minmax(0,1fr);gap:8px;align-items:baseline}
+  .map-legend .legend-items{display:flex;flex-wrap:wrap;gap:3px 12px}
+  .map-legend span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+  .map-legend .src{font-weight:700;color:var(--ink)}
   .st-label{background:rgba(255,255,255,.94);border:1px solid #b9c6cd;border-radius:6px;padding:1px 6px;font:700 11px Roboto,sans-serif;color:var(--ink);white-space:nowrap;box-shadow:none}
   .st-label::before{display:none}
   .st-label.bad{border-color:var(--posted);color:var(--posted)}
@@ -81,19 +84,23 @@
   .bwtf-dot{display:block;width:11px;height:11px;margin:1px;transform:rotate(45deg);border:1px solid rgba(38,39,42,.55);border-radius:2px;background:#fff;box-shadow:0 0 0 1px #fff}   /* Surfrider's diamond: a hairline ring so the grade colour reads true (Chase: the thick ring looked blue) */
   .bwtf-dot.safe{background:var(--safe)}.bwtf-dot.caution{background:var(--caution)}.bwtf-dot.posted{background:var(--posted)}.bwtf-dot.unknown{background:var(--unknown)}
   .bwtf-dot.stale{background:#fff;border:1.5px dashed var(--faint);box-shadow:0 0 0 1px #fff}   /* older than STALE_AFTER_DAYS: hollow and grey, whatever its grade — it is not the water's state now (2026-11-06) */
-  .map-legend .bwtf-dot{display:inline-block;width:8px;height:8px;margin:0 2px}
-  .map-legend .shape{display:inline-flex;align-items:center;gap:4px;color:var(--muted)}
-  .map-legend .shape .status-dot,.map-legend .shape .bwtf-dot{background:#8a949b}
-  .map-legend .divider{width:1px;height:12px;background:var(--line);margin:0 2px}
-  .map-legend .src{font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:10px;color:var(--faint)}   /* with Surfrider on, each source's colours are keyed under its own name (2026-11-08) */
+  /* Give diamonds similar visual weight to the circles in the legend and guide. */
+  .map-legend .bwtf-dot,.colour-key .bwtf-dot{width:8.5px;height:8.5px}
+  .map-legend .bwtf-dot{display:inline-block;margin:0 .75px}
   /* the collapsed key under the board: one paragraph per colour system (2026-11-08) */
   .colour-key{margin:18px 0 0;font-size:13.5px;color:var(--muted)}
   .colour-key summary{cursor:pointer;font-weight:700;color:var(--brand);font-size:13px}
-  .colour-key dl{margin:10px 0 0;display:grid;gap:10px}
+  .colour-key dl{margin:10px 0 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:16px 24px}
+  .colour-key ul{list-style:none;margin:6px 0;padding:0}
+  .colour-key li{display:grid;grid-template-columns:12px minmax(0,1fr);align-items:start;gap:7px}
+  .colour-key li i{margin:5px 0 0;justify-self:center}
+  .colour-key li .bwtf-dot{margin-top:5.75px}
+  .colour-key li+li{margin-top:3px}
+  .colour-key p{margin:6px 0}
+  .colour-key a{color:var(--brand)}
   .colour-key dt{display:flex;align-items:center;gap:7px;font-weight:700;color:var(--ink);margin-bottom:2px}
   .colour-key dt small{font-weight:400;color:var(--faint)}
-  .colour-key dt .bwtf-dot{display:inline-block;width:9px;height:9px;margin:0 2px}
-  .colour-key dt .pct{font-size:12px;color:var(--brand)}
+  .colour-key dt .bwtf-dot{display:inline-block;margin:0 .75px}
   .colour-key dd{margin:0;line-height:1.5}
   .colour-key dd b{color:var(--ink);font-weight:600}
   .board.replaying .colour-key{display:none}   /* a past day's colours are the city's alone; the replay's own sentence says so */
@@ -162,7 +169,6 @@
     .board .facts dt{width:auto}
     .zone{padding:11px}.zone .nm{font-size:15px}
     .map-wrap{min-height:260px}
-    .map-legend{position:static;background:none;border-radius:0;padding:8px 2px 0;gap:6px 12px}   /* under the map: over it, it covered 4 of 20 stations on the north shore (6 with Surfrider on) */
   }
 
   /* Sources belong to the map; time and forecast belong to the board. */
@@ -254,21 +260,36 @@
         <div id="today-map" role="region" aria-label="Map of the city's beach monitoring stations, colored by the city's posted status"></div>
         <button type="button" class="map-reset" id="map-reset" hidden>Whole city</button>
       </div>
-        <div class="map-legend" id="map-legend"><span><i class="status-dot safe"></i>no warning</span><span><i class="status-dot posted"></i>warning posted</span><span><i class="status-dot discharge"></i>sewage discharge</span><span><i class="status-dot unknown"></i>not sampled</span></div>
+        <div class="map-legend" id="map-legend" aria-label="Map legend"><div class="legend-row"><strong class="src">City</strong><div class="legend-items"><span><i class="status-dot safe"></i>No warning</span><span><i class="status-dot posted"></i>Warning posted</span><span><i class="status-dot discharge"></i>Sewage discharge</span><span><i class="status-dot unknown"></i>No data</span></div></div></div>
       </div>
       </div>
     </div>
     <details class="colour-key">
       <summary>What the colors mean</summary>
       <dl>
-        <div><dt><i class="status-dot safe"></i> Tile borders and city dots</dt>
-          <dd>SFPUC's posted status at the last check. <b>Green</b> means no warning sign is up — not that the water was tested clean today; the city samples weekly and posts a warning when a result fails.
-              <b>Orange</b>: a warning is posted. <b>Red</b>: a sewage discharge. <b>Gray</b>: no status on the city's map.</dd></div>
-        <div><dt><i class="bwtf-dot safe"></i> Surfrider diamonds <small>(with that layer on)</small></dt>
-          <dd>The grade of one volunteer sample, for one indicator (Enterococcus), against the state single-sample limit of {{ ENTERO_LIMIT }} MPN/100 mL: <b>green</b> below it, <b>yellow</b> from {{ ENTERO_CAUTION }}, <b>orange</b> at or over it.
-              Volunteers sample about every two weeks; a result over {{ STALE_AFTER_DAYS }} days old is drawn hollow. A volunteer result is not a health advisory. Where the two sources differ, both are shown.</dd></div>
-        <div><dt><b class="pct">%</b> The forecast's percentages</dt>
-          <dd>Inside the collapsed "Today’s forecast · Beta" control under the tiles: our <a href="/forecast">forecast</a>'s sewer-overflow risk for today, one number per zone colored by its level. A prediction, driven by rain, not a measurement of the water.</dd></div>
+        <div><dt><i class="status-dot safe"></i> City status</dt>
+          <dd>
+            <p>Circles and zone borders summarize the latest status available from SFPUC. Check the station’s sample date for when the water was collected.</p>
+            <ul role="list">
+              <li><i class="status-dot safe" aria-hidden="true"></i><span><b>No warning (green):</b> SFPUC’s open status indicates that the latest reported water quality met California’s bacteria standards for water contact recreation.</span></li>
+              <li><i class="status-dot posted" aria-hidden="true"></i><span><b>Warning posted (orange):</b> SFPUC can post a warning after detecting elevated bacteria within the past 24 hours or after a recent combined sewer discharge.</span></li>
+              <li><i class="status-dot discharge" aria-hidden="true"></i><span><b>Sewage discharge (red):</b> SFPUC flags a combined sewer discharge within the previous 24 to 72 hours.</span></li>
+              <li><i class="status-dot unknown" aria-hidden="true"></i><span><b>No data (gray):</b> We have no usable status for the station. SFPUC marks locations without data as not sampled or not routinely sampled.</span></li>
+            </ul>
+            <p><a href="https://webapps.sfpuc.org/sapps/beachesandbay.html">See SFPUC’s official map and legend</a>.</p>
+          </dd></div>
+        <div><dt><i class="bwtf-dot safe"></i> Surfrider samples</dt>
+          <dd>
+            <p>Each diamond shows the latest volunteer Enterococcus result at that site. Counts are in MPN (most probable number) per 100 mL.</p>
+            <ul role="list">
+              <li><i class="bwtf-dot safe" aria-hidden="true"></i><span><b>Low bacteria (green):</b> Below {{ ENTERO_CAUTION }}.</span></li>
+              <li><i class="bwtf-dot caution" aria-hidden="true"></i><span><b>Medium bacteria (yellow):</b> {{ ENTERO_CAUTION }} through {{ ENTERO_LIMIT }}. This is our caution range.</span></li>
+              <li><i class="bwtf-dot posted" aria-hidden="true"></i><span><b>High bacteria (orange):</b> Above {{ ENTERO_LIMIT }}, the single-sample threshold used here.</span></li>
+              <li><i class="bwtf-dot stale" aria-hidden="true"></i><span><b>Over {{ STALE_AFTER_DAYS }} days old (hollow):</b> We hide the grade color after {{ STALE_AFTER_DAYS }} days. Tap the marker for the result and date.</span></li>
+              <li><i class="bwtf-dot unknown" aria-hidden="true"></i><span><b>No result (solid gray):</b> No Enterococcus reading is available for that site.</span></li>
+            </ul>
+            <p>Volunteer results are supplemental. The City and Surfrider may sample different sites or dates, and official warnings come from SFPUC.</p>
+          </dd></div>
       </dl>
     </details>
     {% if sites %}
@@ -311,11 +332,9 @@ const NARROW_MAP_PX = 480;   // a map narrower than this (a phone's) gets the sm
 function zoneView(key) {
   return frame(L.latLngBounds(MARKERS[key].map(m => m.getLatLng())), MAP.getSize().x < NARROW_MAP_PX ? 28 : 44, 15);
 }
-// Fits bounds with a margin of `pad` pixels, the top one below the legend when it sits over the map, no closer than maxZoom
+// Fits bounds with a margin of pad pixels, no closer than maxZoom.
 function frame(b, pad, maxZoom) {
-  const lg = document.getElementById("map-legend");
-  const top = lg && getComputedStyle(lg).position === "absolute" ? Math.max(pad, lg.offsetTop + lg.offsetHeight + 16) : pad;
-  const tl = L.point(pad, top), br = L.point(pad, pad);
+  const tl = L.point(pad, pad), br = L.point(pad, pad);
   // getBoundsZoom clamps to the previous minimum, which can be too close after a resize.
   // Measure without that limit; changing the option directly avoids firing zoom events.
   const minZoom = MAP.options.minZoom;
@@ -476,21 +495,34 @@ function refreshLabels() {
 }
 
 function renderLegend() {
-  // Each source keys its own colours (2026-11-08): the city's dots say what SFPUC has posted, Surfrider's diamonds grade one
-  // volunteer sample. The same green meant both until now, with one shared row; a reader could not tell which claim a colour made.
-  const lg = $("map-legend"); if (!lg) return;
-  const dot = (c, t) => '<span><i class="status-dot ' + c + '"></i>' + t + "</span>", dia = (c, t) => '<span><i class="bwtf-dot ' + c + '"></i>' + t + "</span>";
-  const bw = LAYER.bwtf.on, d = LAYER.bwtf.data;
-  let h = "";
-  if (CITY_ON) h += (bw ? '<span class="src">City</span>' : "") + dot("safe", REPLAY_OFFSET ? "not posted" : "no warning") + dot("posted", "warning posted") + dot("discharge", "sewage discharge") + dot("unknown", REPLAY_OFFSET ? "not recorded" : "not sampled");
-  if (bw) {
-    if (CITY_ON) h += '<i class="divider"></i>';
-    h += '<span class="src">Surfrider</span>' + dia("safe", "below limit") + dia("caution", "from " + (d ? d.caution : "") + " MPN") + dia("posted", "over limit") + dia("unknown", "no result");
-    if (d && d.sites.some(s => s.stale)) h += dia("stale", "over " + d.stale_after_days + " days old");
+  const legend = $("map-legend");
+  if (!legend) return;
+  const item = (shape, grade, label) => '<span><i class="' + shape + ' ' + grade + '"></i>' + label + '</span>';
+  const row = (name, items) => '<div class="legend-row"><strong class="src">' + name
+    + '</strong><div class="legend-items">' + items.join("") + '</div></div>';
+  const rows = [];
+  if (CITY_ON) {
+    rows.push(row("City", [
+      item("status-dot", "safe", REPLAY_OFFSET ? "Not posted" : "No warning"),
+      item("status-dot", "posted", "Warning posted"),
+      item("status-dot", "discharge", "Sewage discharge"),
+      item("status-dot", "unknown", REPLAY_OFFSET ? "Not recorded" : "No data"),
+    ]));
   }
-  if (LAYER.rain.on) h += '<span><i class="ring"></i>rain, 3 days</span>';
-  if (LAYER.outfalls.on) h += '<span><i class="of"></i>outfall</span>';
-  lg.innerHTML = h;
+  const {on, data} = LAYER.bwtf;
+  if (on && data) {
+    rows.push(row("Surfrider", [
+      item("bwtf-dot", "safe", "Low bacteria"),
+      item("bwtf-dot", "caution", "Medium bacteria"),
+      item("bwtf-dot", "posted", "High bacteria"),
+      item("bwtf-dot", "stale", "Over " + data.stale_after_days + " days old"),
+    ]));
+  }
+  const extras = [];
+  if (LAYER.rain.on) extras.push('<span><i class="ring"></i>Rain, 3 days</span>');
+  if (LAYER.outfalls.on) extras.push('<span><i class="of"></i>Outfall</span>');
+  if (extras.length) rows.push(row("Extras", extras));
+  legend.innerHTML = rows.join("");
 }
 function tileParts(key) { const b = document.querySelector('.zone[data-zone="' + key + '"]'); return b ? {b, st: b.querySelector(".st"), dots: [...b.querySelectorAll(".stations .status-dot")]} : null; }
 function snapshotBoard() {
