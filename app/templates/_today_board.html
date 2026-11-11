@@ -140,9 +140,10 @@
   }
 
   /* Sources belong to the map; time and forecast belong to the board. */
-  /* Replay: the past week as a strip of days under the date line, each a dot in that day's worst status on the city's map;
-     tap a day to redraw the board as it stood, Today (at the right) for the live board */
-  .day-strip{display:flex;justify-content:space-between;gap:2px;max-width:440px;margin:8px auto 10px}   /* a compact row centred in the column; each day is as wide as its label, so the outline hugs it */
+  /* Replay: "Past week" under the zone tiles, beside Today's forecast, opens a strip of days, each a dot in that day's worst
+     status on the city's map; tap a day to redraw the board as it stood, Today (at the right) for the live board. Closed by
+     default (Chase, 2026-11-11: always shown at the top, the past days crowded today's headline) */
+  .day-strip{display:flex;justify-content:space-between;gap:2px;max-width:440px;margin:10px auto 0}   /* a compact row centred in the column; each day is as wide as its label, so the outline hugs it */
   .day-strip[hidden]{display:none}
   .day-strip .day{flex:0 1 auto;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;padding:5px 6px 7px;border:2px solid transparent;border-radius:10px;background:none;color:var(--muted);font-family:inherit;font-size:11.5px;font-weight:600;line-height:1.2;white-space:nowrap;cursor:pointer}
   .day-strip .day:hover{border-color:var(--line)}
@@ -152,10 +153,11 @@
   @media (max-width:360px){.day-strip{margin-left:-6px;margin-right:-6px}.day-strip .day{font-size:10.5px;padding-left:4px;padding-right:4px}}   /* eight days across a 320 px phone */
   .zone-tools{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px 12px;margin-top:6px}
   .zone-tools .zones-hint{font-size:12px;margin:0}
-  .board-forecast{margin:0}
-  .board-forecast .preset{padding:0;border:0;background:none;font-size:12px;font-weight:600;color:var(--muted)}
-  .board-forecast .preset::before{content:"▸ ";}.board-forecast .preset.active::before{content:"▾ "}
-  .board-forecast .preset.active{color:var(--brand);background:none}
+  .board-toggles{display:flex;align-items:center;gap:4px 14px;flex-wrap:wrap}
+  .board-forecast,.board-past{margin:0}
+  .board-past .preset,.board-forecast .preset{padding:0;border:0;background:none;font-size:12px;font-weight:600;color:var(--muted)}
+  .board-past .preset::before,.board-forecast .preset::before{content:"▸ ";}.board-past .preset.active::before,.board-forecast .preset.active::before{content:"▾ "}
+  .board-past .preset.active,.board-forecast .preset.active{color:var(--brand);background:none}
   .map-col .layers{margin:0 0 6px;gap:6px}
   .map-col .layers .ctl-group{border:0;padding:0;background:none}
   .map-col .layers .sources{flex:1;min-width:0;flex-wrap:nowrap;gap:4px}
@@ -193,7 +195,6 @@
     <div class="grid">
       <div class="left">
         <div class="eyebrow">Beach status · {{ board.date }} · {% if board.feed_ok %}SFPUC map checked {{ board.checked }}{% else %}SFPUC map unreachable{% endif %}</div>
-        {% if controls %}<div class="day-strip" id="day-strip" role="group" aria-label="Replay: the city's map on each of the past days" hidden></div>{% endif %}
         <h1 id="today-h">{{ board.headline_html|safe }}</h1>
         <p class="lead">{{ board.lead }}</p>
         {% if board.zones %}
@@ -209,8 +210,12 @@
           {% endfor %}
         </div>
         <div class="zone-tools"><p class="zones-hint">Tap a zone to explore its stations.</p>
-        {% if controls %}<div class="board-forecast"><button type="button" class="preset layer" data-layer="risk" aria-expanded="false" aria-controls="forecast-body" title="Experimental sewer-overflow forecast for today">Today’s forecast · Beta</button></div>{% endif %}
+        {% if controls %}<div class="board-toggles">
+          <div class="board-past"><button type="button" class="preset layer" data-layer="replay" aria-expanded="false" aria-controls="day-strip" title="The city's map on each of the past days">Past week</button></div>
+          <div class="board-forecast"><button type="button" class="preset layer" data-layer="risk" aria-expanded="false" aria-controls="forecast-body" title="Experimental sewer-overflow forecast for today">Today’s forecast · Beta</button></div>
+        </div>{% endif %}
         </div>
+        {% if controls %}<div class="day-strip" id="day-strip" role="group" aria-label="Past week: the city's map on each day" hidden></div>{% endif %}
         {% if controls %}
         <div class="forecast-body" id="forecast-body" hidden>
           {% if board.risk_lead %}<p class="risk-lead">{{ board.risk_lead }}</p>{% else %}<p class="risk-lead">Forecast currently unavailable.</p>{% endif %}
@@ -603,19 +608,21 @@ function setReplay(offset) {
   riskBtn.disabled = REPLAY_OFFSET > 0;
   applyReplay();
 }
-// fetched once on load; the strip stays hidden when the record is unreachable or has no earlier day (it began late Sep 2026)
+// fetched the first time Past week is opened; false when the record is unreachable or has no earlier day (it began late Sep 2026)
 async function loadReplay() {
   const strip = $("day-strip"); if (!strip) return false;
-  try { REPLAY = await fetchJSON("/api/today/replay"); } catch (e) { REPLAY = null; return false; }
+  if (strip.children.length) return true;
+  status("Loading the map's past week…");
+  try { REPLAY = await fetchJSON("/api/today/replay"); status(""); } catch (e) { REPLAY = null; status("Past week unavailable: " + e.message); return false; }
   const n = REPLAY.days.length, oldest = REPLAY.covered && REPLAY.covered.length ? n - 1 - REPLAY.days.indexOf(REPLAY.covered[0]) : 0;
-  if (!oldest) return false;
+  if (!oldest) { status("The map's record has no earlier days yet."); return false; }
   let h = "";
   for (let off = oldest; off >= 0; off--) {
     const day = REPLAY.days[n - 1 - off], w = dayWorst(off ? day : null);   // Today's dot is the live board, not the record's last check
     const name = off ? new Date(day + "T12:00:00").toLocaleDateString(undefined, {weekday: "short"}) : "Today";
     h += '<button type="button" class="day' + (off ? "" : " active") + '" data-offset="' + off + '" aria-pressed="' + (off ? "false" : "true") + '" title="' + esc((off ? fmtDay(day) : "Today") + " · " + DAY_SAYS[w]) + '">' + esc(name) + '<i class="status-dot ' + w + '"></i></button>';
   }
-  strip.innerHTML = h; strip.hidden = false;
+  strip.innerHTML = h;
   strip.addEventListener("click", e => { const b = e.target.closest(".day"); if (b) setReplay(b.dataset.offset | 0); });
   strip.addEventListener("keydown", e => {   // ← an earlier day, → a later one
     const step = e.key === "ArrowLeft" ? 1 : e.key === "ArrowRight" ? -1 : 0; if (!step) return;
@@ -623,6 +630,13 @@ async function loadReplay() {
     const b = strip.querySelector('.day[data-offset="' + REPLAY_OFFSET + '"]'); if (b) b.focus();
   });
   return true;
+}
+// Past week opens the strip; closing it hides the strip and returns the board to Today
+async function toggleReplay(btn, on) {
+  if (on && !(await loadReplay())) on = false;
+  if (!on && REPLAY_OFFSET) setReplay(0);
+  $("day-strip").hidden = !on; btn.classList.toggle("active", on); btn.setAttribute("aria-expanded", on ? "true" : "false");
+  return on;
 }
 let CITY_ON = true;
 function setCity(on) {
@@ -640,6 +654,7 @@ function initLayers() {
   for (const btn of document.querySelectorAll(".layer")) {
     const key = btn.dataset.layer;
     btn.addEventListener("click", async () => {
+      if (key === "replay") { await toggleReplay(btn, !btn.classList.contains("active")); return; }
       if (key === "risk") { RISK_VIEW = !RISK_VIEW; btn.classList.toggle("active", RISK_VIEW); if (RISK_VIEW && REPLAY_OFFSET) setReplay(0); applyRisk(); return; }
       await setLayer(key, !LAYER[key].on, btn);
     });
@@ -655,7 +670,7 @@ function initLayers() {
   if (q.get("city") === "0" && city) { city.checked = false; setCity(false); }
   for (const key of want) { const btn = key === "bwtf" ? bw : document.querySelector('.layer[data-layer="' + key + '"]'); if (btn && LAYER[key]) setLayer(key, true, btn); }
   if (q.get("risk") === "1") document.querySelector('.layer[data-layer="risk"]').click();
-  loadReplay().then(ok => { if (ok && q.get("replay")) setReplay(q.get("replay") | 0); else if (!ok && q.get("replay")) status("Replay is unavailable right now."); });
+  if (q.get("replay")) toggleReplay(document.querySelector('.layer[data-layer="replay"]'), true).then(ok => { if (ok) setReplay(q.get("replay") | 0); });
   if ([...want].some(k => ["rain", "outfalls", "labels"].includes(k))) openLayers(true);   // a link that turns a layer on shows it
 }
 window.addEventListener("DOMContentLoaded", initMap);
