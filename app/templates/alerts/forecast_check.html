@@ -55,7 +55,7 @@
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
 {{ topbar() }}
 <div class="wrap">
-  {% call page_head("Forecast check", "What each morning's forecast said, next to what then happened: the SFPUC map's flags, the city's samples over standard, and the rain that fell.", None, "How to read this") %}
+  {% call page_head("Forecast check", "What each morning's forecast said, next to what then happened: the SFPUC map's flags, the city's and Surfrider's samples over standard, and the rain that fell.", None, "How to read this") %}
     <p>Each row is a day. The chips are the forecast for that day as it developed, from five days out (left) to the morning of (right); a percentage is the chance the zone's beaches were affected by a sewer overflow,
     coloured by the page's four risk levels. A blue ring means a live rule fired that morning: a CSO flag, a lab result or a quiet feed moved the number. Hover a chip for the rain it was fed.
     To the right: whether SFPUC's map showed a posted or CSO flag at a station of the zone that day, how many stations the city sampled and how many were over standard, and the gauges' measured rain.
@@ -80,10 +80,10 @@
 
   <div class="card">
     <h2>The season so far, by lead</h2>
-    <p class="sub">Days up to yesterday whose ruler is known. <b>Feed</b>: a posted or CSO flag at a station of the zone on SFPUC's map. <b>Samples</b>: a city sample over the single-sample standard that day. <b>Either</b>: one or the other.
+    <p class="sub">Days up to yesterday whose ruler is known. <b>Feed</b>: a posted or CSO flag at a station of the zone on SFPUC's map. <b>Samples</b>: a city sample over the single-sample standard that day. <b>Surfrider</b>: a volunteer sample over the same standard that day. <b>Either</b>: any of them.
       Caught = alerted and bad; missed = quiet and bad; false alarm = alerted and fine. Brier is the mean squared gap between the percentage and what happened (0 is perfect, 0.25 is a coin flip).</p>
     <div class="zone-tabs" id="ruler-tabs" role="tablist">
-      {% for ruler in data.rulers %}<button type="button" class="{{ 'active' if loop.first }}" data-ruler="{{ ruler }}" onclick="showRuler('{{ ruler }}')">{{ {"feed": "Feed flags", "samples": "Samples", "either": "Either"}[ruler] }}</button>{% endfor %}
+      {% for ruler in data.rulers %}<button type="button" class="{{ 'active' if loop.first }}" data-ruler="{{ ruler }}" onclick="showRuler('{{ ruler }}')">{{ {"feed": "Feed flags", "samples": "City samples", "bwtf": "Surfrider", "either": "Either"}[ruler] }}</button>{% endfor %}
     </div>
     {% for ruler in data.rulers %}
     <div class="zone-pane ruler-pane{{ ' on' if loop.first }}" data-ruler="{{ ruler }}">
@@ -118,7 +118,7 @@
     {% for zk, label in data.zones.items() %}
     <div class="zone-pane{{ ' on' if loop.first }}" data-zone="{{ zk }}">
     <div class="tblwrap"><table class="lines">
-      <thead><tr><th>Day</th><th>Forecast, 5 days out → the morning of</th><th>SFPUC map</th><th>City samples</th><th class="n">Rain fell</th></tr></thead>
+      <thead><tr><th>Day</th><th>Forecast, 5 days out → the morning of</th><th>SFPUC map</th><th>City samples</th><th>Surfrider samples</th><th class="n">Rain fell</th></tr></thead>
       <tbody>
       {% for day in data.days %}{% set z = day.zones[zk] %}{% set o = z.outcome %}
       <tr{% if day.pending %} class="pending"{% endif %}>
@@ -131,6 +131,7 @@
         </div></td>
         <td>{% if not o or not o.feed_stations %}<span class="mark none">not watched</span>{% elif o.feed_cso %}<span class="mark bad">CSO flag</span>{% elif o.feed_posted %}<span class="mark flag">posted</span>{% else %}<span class="mark ok">clear</span>{% endif %}</td>
         <td>{% if not o or not o.samples_n %}<span class="mark none">no sample</span>{% elif o.samples_exceeded %}<span class="mark bad" title="{{ (o.exceeded_stations or []) | join(', ') }}">{{ o.samples_exceeded }} of {{ o.samples_n }} over</span>{% else %}<span class="mark ok">{{ o.samples_n }} clean</span>{% endif %}</td>
+        <td>{% if not o or not o.bwtf_n %}<span class="mark none">no sample</span>{% elif o.bwtf_exceeded %}<span class="mark bad" title="{{ (o.bwtf_exceeded_sites or []) | join(', ') }}">{{ o.bwtf_exceeded }} of {{ o.bwtf_n }} over</span>{% else %}<span class="mark ok">{{ o.bwtf_n }} clean</span>{% endif %}</td>
         <td class="n">{% if day.rain_obs and day.rain_obs.in is not none %}{{ "%.2f" | format(day.rain_obs.in) }}&quot;{% else %}—{% endif %}</td>
       </tr>
       {% endfor %}

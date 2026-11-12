@@ -8,11 +8,12 @@ The forecast and the truth are written by different hands at different times:
     key, so the first refresh of the Pacific day wins and the later refreshes stay what they are: the live rules at
     work (forecast_changes) — and refills the outcome columns for the last BACKFILL_DAYS target days from the fast
     rulers the site already keeps: the SFPUC map's posted / CSO flags (feed_station_days), the city's lab results
-    over standard (samples) and the gauges' measured rain (ACIS). It never writes ledger_overflow: that is the gold
+    over standard (samples), Surfrider's volunteer results over the same standard (bwtf_samples — mirrored here from the
+    chapter's public database each refresh, Enterococcus only) and the gauges' measured rain (ACIS). It never writes ledger_overflow: that is the gold
     truth, filled from the quarterly CIWQS refresh (TODO).
   * ``report`` — what the Admin tab shows: is the record healthy (an issue day for every calendar day), how each target
     day's forecast developed from five days out to the morning of, and the season's tally by lead at the Medium edge
-    on three rulers. The rulers are interim (STAGES_PROTOCOL.md §1: feed flags and postings are a second ruler, never
+    on four rulers. The rulers are interim (STAGES_PROTOCOL.md §1: feed flags and postings are a second ruler, never
     the truth); the protocol's own T0 grade stays grade_prospective.py → stages_build.t0_as_served.
 
 Why the first snapshot and not all 48: a visitor who read the page that morning saw it, and the protocol grades it
@@ -32,15 +33,18 @@ from typing import Callable, Iterable, Optional
 from shared import supabase as sb
 from shared.clock import now_utc, today_pacific
 from shared.stations import STATION_NAMES
+from shared.site_zones import zone_for_site
+from shared.standards import exceeds
 from shared.zones import ZONE_OF_SOURCE, ZONE_OF_STATION, ZONES
 
 ISSUED = "forecast_issued"
 OUTCOMES = "forecast_outcomes"
+BWTF = "bwtf_samples"       # Surfrider's results, mirrored (022)
 LEADS = range(0, 6)          # today and five days ahead, as the page shows them
 BACKFILL_DAYS = 10           # outcome columns refilled this far back on every refresh (truth keeps arriving)
 PAGE = 1000                  # PostgREST's default max rows per GET
 EDGES = {"medium": 0.205, "high": 0.505, "extreme": 0.805}   # STAGES_PROTOCOL.md §5 (A3): fixed, chosen from no data
-RULERS = ("feed", "samples", "either")
+RULERS = ("feed", "samples", "bwtf", "either")
 
 
 def level(p: Optional[float]) -> str:
@@ -149,6 +153,69 @@ def samples_by_zone_day(rows: Iterable[dict]) -> dict:
     return out
 
 
+def bwtf_rows(lab, history: Iterable[dict], now: datetime) -> list[dict]:
+    """Surfrider's results (features/comparison/bwtf_api: fetch_lab for the sites and their coordinates, fetch_history
+    for the samples) → bwtf_samples rows: Enterococcus only (the chapter's test), graded by the shared single-sample
+    rule, each site placed in a zone by the beach it shares with a city station, else the nearest one. A site the lab
+    no longer lists, or a result without a time, is skipped."""
+    from features.comparison.comparison import resolve_site
+    sites = {s.name: s for s in (lab.sites if lab else [])}
+    seen, rows, keys = _iso(now), [], set()
+    for h in history:
+        when = h.get("collection_time")
+        if (h.get("substance") or "").strip().lower() != "enterococcus" or when is None:
+            continue
+        site = sites.get(h.get("site_name"))
+        if site is None:
+            continue
+        try:
+            key = resolve_site(site.name)["key"]
+        except Exception:  # noqa: BLE001
+            key = f"bwtf:{site.name}"
+        zone = zone_for_site(key, site.latitude, site.longitude)
+        if zone is None:
+            continue
+        collected = when.isoformat(timespec="minutes")
+        if (site.name, collected) in keys:
+            continue
+        keys.add((site.name, collected))
+        value = h.get("result_value")
+        rows.append({"site_name": site.name, "site_id": str(site.site_id), "zone": zone, "collected_at": collected,
+                     "sample_date": when.date().isoformat(), "value_raw": h.get("result_raw") or "", "value": value,
+                     "exceeds": exceeds("ENTERO", value), "first_seen_at": seen})
+    return rows
+
+
+def mirror_bwtf(since: date, client=None, now: Optional[datetime] = None) -> int:
+    """Surfrider's results collected since ``since`` → bwtf_samples, DO NOTHING on the ones already there (the
+    first_seen_at of a row is when this record first saw it). Returns the rows offered."""
+    from features.comparison.bwtf_api import SFBWTFClient
+    client = client or SFBWTFClient(timeout=8)
+    rows = bwtf_rows(client.fetch_lab(), client.fetch_history(since=datetime(since.year, since.month, since.day)), now or now_utc())
+    for i in range(0, len(rows), 500):
+        sb.upsert(BWTF, rows[i:i + 500], "site_name,collected_at", resolution="ignore-duplicates")
+    return len(rows)
+
+
+def bwtf_by_zone_day(rows: Iterable[dict]) -> dict:
+    """bwtf_samples rows (site_name, zone, sample_date, exceeds) → {(day, zone): {bwtf_n, bwtf_exceeded,
+    bwtf_exceeded_sites}}: site-days the volunteers sampled, and how many were over."""
+    by_site: dict = defaultdict(bool)
+    for r in rows:
+        k = (str(r["sample_date"])[:10], r["zone"], r["site_name"])
+        by_site[k] = by_site[k] or bool(r.get("exceeds"))
+    out: dict = {}
+    for (day, zone, site), over in by_site.items():
+        cur = out.setdefault((day, zone), {"bwtf_n": 0, "bwtf_exceeded": 0, "bwtf_exceeded_sites": []})
+        cur["bwtf_n"] += 1
+        if over:
+            cur["bwtf_exceeded"] += 1
+            cur["bwtf_exceeded_sites"].append(site)
+    for cur in out.values():
+        cur["bwtf_exceeded_sites"].sort()
+    return out
+
+
 def rain_by_day(acis) -> dict:
     """The engine's ACIS frame (date + one column per gauge, inches, NaN when missing) → {day: {rain_obs_in,
     rain_obs_by_gauge}}. Empty / None → {}."""
@@ -167,10 +234,11 @@ def rain_by_day(acis) -> dict:
     return out
 
 
-def outcome_rows(days: Iterable[date], feed: dict, samples: dict, rain: dict, now: datetime) -> list[dict]:
-    """One forecast_outcomes row per day × zone from the three fast rulers. Columns a ruler cannot speak to are
-    null: no feed row → feed_* null (nobody was watching); no sample → samples_exceeded null. ledger_* are never
-    here — the merge upsert leaves them as they are."""
+def outcome_rows(days: Iterable[date], feed: dict, samples: dict, rain: dict, now: datetime,
+                 bwtf: Optional[dict] = None) -> list[dict]:
+    """One forecast_outcomes row per day × zone from the fast rulers. Columns a ruler cannot speak to are null: no
+    feed row → feed_* null (nobody was watching); no sample → samples_exceeded / bwtf_exceeded null. ledger_* are
+    never here — the merge upsert leaves them as they are."""
     stamp = _iso(now)
     out = []
     for d in days:
@@ -178,6 +246,7 @@ def outcome_rows(days: Iterable[date], feed: dict, samples: dict, rain: dict, no
         for zone in ZONES:
             f = feed.get((key_day, zone))
             s = samples.get((key_day, zone))
+            b = (bwtf or {}).get((key_day, zone))
             r = rain.get(key_day) or {}
             out.append({
                 "target_date": key_day, "zone": zone,
@@ -188,6 +257,9 @@ def outcome_rows(days: Iterable[date], feed: dict, samples: dict, rain: dict, no
                 "samples_n": s["samples_n"] if s else 0,
                 "samples_exceeded": s["samples_exceeded"] if s else None,
                 "exceeded_stations": s["exceeded_stations"] if s else [],
+                "bwtf_n": b["bwtf_n"] if b else 0,
+                "bwtf_exceeded": b["bwtf_exceeded"] if b else None,
+                "bwtf_exceeded_sites": b["bwtf_exceeded_sites"] if b else [],
                 "updated_at": stamp,
             })
     return out
@@ -197,22 +269,24 @@ def _between(col: str, start: date, end: date) -> dict:
     return {"and": f"({col}.gte.{start.isoformat()},{col}.lte.{end.isoformat()})"}
 
 
-def fetch_truth(start: date, end: date, rain_fetcher: Optional[Callable] = None) -> tuple[dict, dict, dict]:
-    """The three rulers over [start, end]: feed flags and samples from Supabase, rain through ``rain_fetcher``
-    (the engine's _fetch_acis_daily; None → no rain)."""
+def fetch_truth(start: date, end: date, rain_fetcher: Optional[Callable] = None) -> tuple[dict, dict, dict, dict]:
+    """The fast rulers over [start, end]: feed flags, city samples and Surfrider's mirrored samples from Supabase,
+    rain through ``rain_fetcher`` (the engine's _fetch_acis_daily; None → no rain)."""
     feed = feed_by_zone_day(sb.select("feed_station_days", {"select": "station_id,day,posted,cso", **_between("day", start, end)}))
     samples = samples_by_zone_day(sb.select("samples", {"select": "station_id,sample_date,exceeds",
                                                          **_between("sample_date", start, end)}))
+    bwtf = bwtf_by_zone_day(sb.select(BWTF, {"select": "site_name,zone,sample_date,exceeds", **_between("sample_date", start, end)}))
     rain = rain_by_day(rain_fetcher(start, end)) if rain_fetcher else {}
-    return feed, samples, rain
+    return feed, samples, rain, bwtf
 
 
 def record(snap: dict, issue_date: str, generated_at: str, rain_fetcher: Optional[Callable] = None,
-           now: Optional[datetime] = None) -> dict:
+           now: Optional[datetime] = None, bwtf_client=None) -> dict:
     """The refresh's side job: the day's first forecast rows (DO NOTHING) and the last BACKFILL_DAYS days' outcomes
-    (merge). Never raises; -1 in a count means that half failed and was printed."""
+    (merge), after mirroring Surfrider's recent results. Never raises; -1 in a count means that part failed and was
+    printed."""
     now = now or now_utc()
-    out = {"issued": 0, "outcomes": 0}
+    out = {"issued": 0, "bwtf": 0, "outcomes": 0}
     try:
         rows = issued_rows(snap, issue_date, generated_at)
         if rows:
@@ -224,8 +298,13 @@ def record(snap: dict, issue_date: str, generated_at: str, rain_fetcher: Optiona
     try:
         today = date.fromisoformat(str(issue_date)[:10])
         start = today - timedelta(days=BACKFILL_DAYS)
-        feed, samples, rain = fetch_truth(start, today, rain_fetcher)
-        rows = outcome_rows([start + timedelta(days=i) for i in range((today - start).days + 1)], feed, samples, rain, now)
+        try:
+            out["bwtf"] = mirror_bwtf(start, bwtf_client, now)
+        except Exception as e:  # noqa: BLE001
+            print(f"surfrider samples not mirrored: {e}")
+            out["bwtf"] = -1
+        feed, samples, rain, bwtf = fetch_truth(start, today, rain_fetcher)
+        rows = outcome_rows([start + timedelta(days=i) for i in range((today - start).days + 1)], feed, samples, rain, now, bwtf)
         sb.upsert(OUTCOMES, rows, "target_date,zone")
         out["outcomes"] = len(rows)
     except Exception as e:  # noqa: BLE001
@@ -261,8 +340,9 @@ def _truth(o: Optional[dict]) -> dict:
         return {k: None for k in RULERS}
     feed = None if not o.get("feed_stations") else bool(o.get("feed_posted") or o.get("feed_cso"))
     smp = None if not o.get("samples_n") else bool(o.get("samples_exceeded"))
-    either = None if feed is None and smp is None else bool(feed or smp)
-    return {"feed": feed, "samples": smp, "either": either}
+    bwtf = None if not o.get("bwtf_n") else bool(o.get("bwtf_exceeded"))
+    known = [v for v in (feed, smp, bwtf) if v is not None]
+    return {"feed": feed, "samples": smp, "bwtf": bwtf, "either": any(known) if known else None}
 
 
 def report(issued: list[dict], outcomes: list[dict], today: Optional[date] = None, edge: float = EDGES["medium"]) -> dict:
@@ -354,7 +434,8 @@ def build(days_back: int = 60, today: Optional[date] = None) -> dict:
 
 # ─── backfill ────────────────────────────────────────────────────────────────
 
-def backfill(since: Optional[str] = None, rain_fetcher: Optional[Callable] = None, now: Optional[datetime] = None) -> dict:
+def backfill(since: Optional[str] = None, rain_fetcher: Optional[Callable] = None, now: Optional[datetime] = None,
+             bwtf_client=None) -> dict:
     """Every first snapshot in forecast_history (GETs, paged) → forecast_issued, then the outcomes for every target
     day the record covers. Run once after applying 022, and any time the refresh was down."""
     now = now or now_utc()
@@ -373,15 +454,20 @@ def backfill(since: Optional[str] = None, rain_fetcher: Optional[Callable] = Non
         offset += 31
     for i in range(0, len(rows), 500):
         sb.upsert(ISSUED, rows[i:i + 500], "target_date,lead,zone", resolution="ignore-duplicates")
-    n_out = 0
+    n_out, n_bwtf = 0, 0
     if first_day:
         start, end = date.fromisoformat(first_day), min(date.fromisoformat(last_day) + timedelta(days=5), today_pacific())
-        feed, samples, rain = fetch_truth(start, end, rain_fetcher)
-        out_rows = outcome_rows([start + timedelta(days=i) for i in range((end - start).days + 1)], feed, samples, rain, now)
+        try:
+            n_bwtf = mirror_bwtf(start, bwtf_client, now)   # Surfrider's results since the record began
+        except Exception as e:  # noqa: BLE001
+            print(f"surfrider samples not mirrored: {e}")
+            n_bwtf = -1
+        feed, samples, rain, bwtf = fetch_truth(start, end, rain_fetcher)
+        out_rows = outcome_rows([start + timedelta(days=i) for i in range((end - start).days + 1)], feed, samples, rain, now, bwtf)
         for i in range(0, len(out_rows), 500):
             sb.upsert(OUTCOMES, out_rows[i:i + 500], "target_date,zone")
         n_out = len(out_rows)
-    return {"issued": len(rows), "outcomes": n_out, "first": first_day, "last": last_day}
+    return {"issued": len(rows), "bwtf": n_bwtf, "outcomes": n_out, "first": first_day, "last": last_day}
 
 
 if __name__ == "__main__":

@@ -346,8 +346,8 @@ not track their readers at all; the column then simply stays null.
 ## 022: forecast vs reality — the record behind Admin's Forecast check tab (built 2026-11-11 on branch `design/forecast-outcomes`)
 
 `db/migrations/022_forecast_outcomes.sql` — apply by hand in the Supabase SQL editor. It only
-creates two tables, `forecast_issued` and `forecast_outcomes`, with the usual RLS and service-role
-grants; no function, cron job or existing table changes, and it is safe to re-run. Until it is
+creates three tables, `forecast_issued`, `forecast_outcomes` and `bwtf_samples` (Surfrider's results,
+mirrored), with the usual RLS and service-role grants; no function, cron job or existing table changes, and it is safe to re-run. Until it is
 applied, `/alerts/forecast-check` shows "The record could not be read … PGRST205" and the production
 refresh logs `forecast outcomes: {'issued': -1, …}` — harmless, and gone once applied.
 
@@ -357,7 +357,8 @@ refresh logs `forecast outcomes: {'issued': -1, …}` — harmless, and gone onc
     venv/bin/python -m features.forecast.outcomes --backfill
 
 It reads every first daily snapshot in `forecast_history` since 2026-09-27 into `forecast_issued`,
-then fills `forecast_outcomes` from `feed_station_days`, `samples` and the ACIS gauges. A minute or
+mirrors Surfrider's results since then into `bwtf_samples`, then fills `forecast_outcomes` from
+`feed_station_days`, `samples`, `bwtf_samples` and the ACIS gauges. A minute or
 two; re-running is safe (issued rows are never overwritten, outcome rows are refreshed). Without the
 backfill the record simply starts at the first production refresh after the merge.
 

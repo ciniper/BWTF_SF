@@ -231,8 +231,9 @@ def _mirror_samples() -> int:
 def _record_outcomes(snap: dict, now: datetime) -> dict:
     """forecast_issued + forecast_outcomes (migration 022; features/forecast/outcomes):
     the day's first forecast of every target day × lead × zone (DO NOTHING, so the
-    first refresh of the day wins) and the fast rulers — feed flags, samples over
-    standard, measured gauge rain — refilled for the last ten days. Production
+    first refresh of the day wins) and the fast rulers — feed flags, city and
+    Surfrider samples over standard (Surfrider's mirrored into bwtf_samples first),
+    measured gauge rain — refilled for the last ten days. Production
     refresh only, like every side job here; never raises."""
     if not _cache_writable():
         return {}
@@ -240,7 +241,7 @@ def _record_outcomes(snap: dict, now: datetime) -> dict:
         from features.forecast import outcomes
         fetch_rain = getattr(_engine.LIVE, "_fetch_acis_daily", None) if _engine is not None else None
         out = outcomes.record(snap, _forecast_date(snap, now), _iso(now), fetch_rain, now)
-        if out.get("issued", 0) < 0 or out.get("outcomes", 0) < 0:
+        if any(v < 0 for v in out.values()):
             print(f"forecast outcomes: {out}")
         return out
     except Exception as e:  # noqa: BLE001

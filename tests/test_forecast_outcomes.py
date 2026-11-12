@@ -37,6 +37,39 @@ def snapshot(issue="2026-11-10", stale_day=False):
             "predictions": preds, "beach_status": []}
 
 
+class _Site:
+    def __init__(self, site_id, name, lat, lon):
+        self.site_id, self.name, self.latitude, self.longitude = site_id, name, lat, lon
+
+
+class _Lab:
+    def __init__(self, sites):
+        self.sites = sites
+
+
+class _Client:
+    """A Surfrider client with the chapter's answers canned: Ocean Beach at Lincoln Way shares a beach with a city
+    station (→ ocean); Bayview Hunters Point has no twin and lands in the nearest zone (east); a retired site is unlisted."""
+    def __init__(self):
+        self.lab = _Lab([_Site("11", "Ocean Beach at Lincoln Way", 37.7645, -122.5105), _Site("12", "Bayview Hunters Point", 37.73, -122.375)])
+        self.history = [
+            {"site_name": "Ocean Beach at Lincoln Way", "collection_time": datetime(2026, 11, 8, 9, 15), "substance": "Enterococcus", "result_value": 240.0, "result_raw": "240"},
+            {"site_name": "Ocean Beach at Lincoln Way", "collection_time": datetime(2026, 11, 8, 9, 15), "substance": "Enterococcus", "result_value": 240.0, "result_raw": "240"},   # the API repeats a page
+            {"site_name": "Ocean Beach at Lincoln Way", "collection_time": datetime(2026, 11, 8, 9, 15), "substance": "pH", "result_value": 7.9, "result_raw": "7.9"},             # not the test
+            {"site_name": "Bayview Hunters Point", "collection_time": datetime(2026, 11, 8, 10, 0), "substance": "Enterococcus", "result_value": 5.0, "result_raw": "<10"},
+            {"site_name": "Retired Site", "collection_time": datetime(2026, 11, 8, 10, 0), "substance": "Enterococcus", "result_value": 900.0, "result_raw": "900"},
+            {"site_name": "Bayview Hunters Point", "collection_time": None, "substance": "Enterococcus", "result_value": 900.0, "result_raw": "900"},
+        ]
+        self.since = None
+
+    def fetch_lab(self):
+        return self.lab
+
+    def fetch_history(self, since=None, **_):
+        self.since = since
+        return self.history
+
+
 def test_migration_022_makes_two_locked_tables_and_never_lets_the_refresh_write_the_ledger():
     sql = (ROOT / "db/migrations/022_forecast_outcomes.sql").read_text()
     for t in ("forecast_issued", "forecast_outcomes"):
@@ -46,6 +79,10 @@ def test_migration_022_makes_two_locked_tables_and_never_lets_the_refresh_write_
     assert "primary key (target_date, lead, zone)" in sql and "primary key (target_date, zone)" in sql
     assert "check (lead between 0 and 5)" in sql and "check (p between 0 and 1)" in sql
     assert "ledger_overflow" in sql and "ledger_as_of" in sql
+    assert "create table if not exists public.bwtf_samples (" in sql and "primary key (site_name, collected_at)" in sql
+    assert "revoke all on public.bwtf_samples from anon, authenticated;" in sql
+    for col in ("bwtf_n", "bwtf_exceeded", "bwtf_exceeded_sites"):
+        assert f"add column if not exists {col}" in sql, col                                      # the sandbox already had the table
     # the outcome rows the refresh writes carry no ledger column, so a merge upsert can never touch it
     row = O.outcome_rows([date(2026, 11, 9)], {}, {}, {}, NOW)[0]
     assert not any(k.startswith("ledger") for k in row) and set(row) >= {"target_date", "zone", "feed_posted", "samples_n", "rain_obs_in", "updated_at"}
@@ -98,6 +135,32 @@ def test_the_fast_rulers_aggregate_stations_to_zone_days():
     east = next(r for r in rows if r["zone"] == "east")
     assert east["feed_stations"] is None and east["feed_posted"] is None and east["samples_n"] == 0 and east["samples_exceeded"] is None
     assert ocean["updated_at"] == "2026-11-10T08:05:00Z"
+    assert ocean["bwtf_n"] == 0 and ocean["bwtf_exceeded"] is None and ocean["bwtf_exceeded_sites"] == []    # no mirror given → unknown
+
+
+def test_surfriders_results_are_mirrored_once_graded_by_the_shared_rule_and_placed_in_zones():
+    client = _Client()
+    rows = O.bwtf_rows(client.fetch_lab(), client.fetch_history(), NOW)
+    assert [(r["site_name"], r["zone"], r["sample_date"], r["exceeds"], r["value_raw"]) for r in rows] == [
+        ("Ocean Beach at Lincoln Way", "ocean", "2026-11-08", True, "240"),       # 240 > 104
+        ("Bayview Hunters Point", "east", "2026-11-08", False, "<10"),
+    ]
+    assert rows[0]["collected_at"] == "2026-11-08T09:15" and rows[0]["first_seen_at"] == "2026-11-10T08:05:00Z" and rows[0]["site_id"] == "11"
+    agg = O.bwtf_by_zone_day(rows)
+    assert agg[("2026-11-08", "ocean")] == {"bwtf_n": 1, "bwtf_exceeded": 1, "bwtf_exceeded_sites": ["Ocean Beach at Lincoln Way"]}
+    assert agg[("2026-11-08", "east")] == {"bwtf_n": 1, "bwtf_exceeded": 0, "bwtf_exceeded_sites": []}
+    out = O.outcome_rows([date(2026, 11, 8)], {}, {}, {}, NOW, agg)
+    ocean = next(r for r in out if r["zone"] == "ocean")
+    assert ocean["bwtf_n"] == 1 and ocean["bwtf_exceeded"] == 1 and O._truth(ocean) == {"feed": None, "samples": None, "bwtf": True, "either": True}
+    # the mirror: one DO NOTHING upsert on (site_name, collected_at), history asked for from the day given
+    calls = []
+    real = O.sb.upsert
+    O.sb.upsert = lambda table, rows, on_conflict, resolution="merge-duplicates": calls.append((table, len(rows), on_conflict, resolution))
+    try:
+        assert O.mirror_bwtf(date(2026, 11, 1), client=client, now=NOW) == 2
+    finally:
+        O.sb.upsert = real
+    assert calls == [("bwtf_samples", 2, "site_name,collected_at", "ignore-duplicates")] and client.since == datetime(2026, 11, 1)
 
 
 def test_record_writes_first_wins_rows_then_merges_outcomes_and_never_raises():
@@ -106,14 +169,15 @@ def test_record_writes_first_wins_rows_then_merges_outcomes_and_never_raises():
     O.sb.upsert = lambda table, rows, on_conflict, resolution="merge-duplicates": calls.append((table, len(rows), on_conflict, resolution))
     O.sb.select = lambda table, params: []
     try:
-        out = O.record(snapshot(), "2026-11-10", "2026-11-10T08:05:00Z", None, NOW)
-        assert out == {"issued": 24, "outcomes": (O.BACKFILL_DAYS + 1) * len(ZONES)}
+        out = O.record(snapshot(), "2026-11-10", "2026-11-10T08:05:00Z", None, NOW, bwtf_client=_Client())
+        assert out == {"issued": 24, "bwtf": 2, "outcomes": (O.BACKFILL_DAYS + 1) * len(ZONES)}
         assert calls[0] == ("forecast_issued", 24, "target_date,lead,zone", "ignore-duplicates")      # the day's first refresh wins
-        assert calls[1] == ("forecast_outcomes", (O.BACKFILL_DAYS + 1) * len(ZONES), "target_date,zone", "merge-duplicates")
+        assert calls[1] == ("bwtf_samples", 2, "site_name,collected_at", "ignore-duplicates")         # Surfrider's results, then the truth
+        assert calls[2] == ("forecast_outcomes", (O.BACKFILL_DAYS + 1) * len(ZONES), "target_date,zone", "merge-duplicates")
         def boom(*a, **k):
             raise RuntimeError("relation forecast_issued does not exist")
         O.sb.upsert = boom
-        assert O.record(snapshot(), "2026-11-10", "x", None, NOW) == {"issued": -1, "outcomes": -1}
+        assert O.record(snapshot(), "2026-11-10", "x", None, NOW, bwtf_client=_Client()) == {"issued": -1, "bwtf": -1, "outcomes": -1}
     finally:
         O.sb.upsert, O.sb.select = orig_upsert, orig_select
     # the refresh's hook: production only, same gate as the cache row
@@ -152,12 +216,12 @@ def test_the_report_grades_at_the_medium_edge_and_finds_the_missing_day():
     d9 = next(d for d in rep["days"] if d["date"] == "2026-11-09")
     assert d9["rain_obs"] == {"in": 1.4, "by_gauge": {}} and not d9["pending"]
     east = d9["zones"]["east"]
-    assert east["truth"] == {"feed": True, "samples": None, "either": True} and east["label"] == "East Beaches"
+    assert east["truth"] == {"feed": True, "samples": None, "bwtf": None, "either": True} and east["label"] == "East Beaches"
     assert east["trajectory"][0]["p"] == 0.9 and east["trajectory"][0]["level"] == "extreme" and east["trajectory"][0]["rules"] == ["cso_onset"]
     assert east["trajectory"][1]["p"] == 0.3 and east["trajectory"][1]["level"] == "medium"                 # issued the 8th about the 9th
     assert 2 not in east["trajectory"]                                                                        # the 7th never issued
-    assert d9["zones"]["ocean"]["truth"] == {"feed": False, "samples": False, "either": False}
-    assert d9["zones"]["north"]["truth"] == {"feed": None, "samples": None, "either": None}                  # nothing watched, nothing sampled
+    assert d9["zones"]["ocean"]["truth"] == {"feed": False, "samples": False, "bwtf": None, "either": False}
+    assert d9["zones"]["north"]["truth"] == {"feed": None, "samples": None, "bwtf": None, "either": None}                  # nothing watched, nothing sampled
     # the tally: only the 9th has truth; east lead 0 (0.9, bad) caught; east lead 1 (0.3, bad) caught; ocean lead 0 (0.05, fine) quiet;
     # ocean lead 1 (0.15, fine) quiet; north/baker have no truth
     t = rep["tally"]
