@@ -344,10 +344,23 @@ def _join(names: list[str]) -> str:
     return names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
 
 
-def today_board(stations: list, risks: dict | None = None, samples_fact: str = "", now: datetime | None = None) -> dict:
+def _pending_text(p: dict, now: datetime) -> str:
+    """"posted 8:32 AM · on a new sample, not published yet" — a posting change whose sample is not
+    on SFPUC's map yet: the status is current, only the numbers behind it are not out."""
+    from shared.result_gap import PACIFIC
+    at = datetime.fromisoformat(p["at"].replace("Z", "+00:00")).astimezone(PACIFIC)   # ``now`` is Pacific, aware or not
+    when = f"{at:%-I:%M %p}" if at.date() == now.date() else f"{at:%a %-I:%M %p}"
+    return f"{p['change']} {when} · on a new sample, not published yet"
+
+
+def today_board(stations: list, risks: dict | None = None, samples_fact: str = "", now: datetime | None = None,
+                pending: dict | None = None) -> dict:
     """Pure: the Today board, the home page's first screen. ``stations`` are SFPUC station
     objects (station_id = SFPUC id, station_name, status, has_cso, sample_date);
-    ``risks`` is _forecast_risks(); ``samples_fact`` the samples row's live fact.
+    ``risks`` is _forecast_risks(); ``samples_fact`` the samples row's live fact;
+    ``pending`` is shared.result_gap.pending_results(): stations whose posting changed
+    this morning before the sample behind it reached SFPUC's map — their row reads
+    "posted 8:32 AM · on a new sample, not published yet" in place of last week's sample date.
     Returns the headline (plain + HTML), the lead sentence, a tone, and one tile
     per zone with every registry station's status, coordinates and DataSF id —
     the tiles' dots and the city map's markers (Chase, 2026-09-29: lead with the
@@ -365,9 +378,13 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
             st = by_id.get(reg.sfpuc_id)
             status = _station_status(st) if st is not None else "unknown"
             d = getattr(st, "sample_date", None) if st is not None else None
+            p = (pending or {}).get(reg.sfpuc_id)
+            if p and status != {"posted": "posted", "cleared": "safe"}[p["change"]]:
+                p = None   # the feed has moved on since the log row (a discharge flag, or the change undone)
             sts.append({"name": _short(reg.name), "full_name": reg.name, "status": status, "status_text": status_text[status],
                         "source": source, "lat": reg.lat, "lon": reg.lon, "sampled": d.strftime("%Y-%m-%d") if d else "",
-                        "sampled_text": f"sampled {d:%b %-d}" if d else "no sample date"})
+                        "sampled_text": _pending_text(p, now) if p else f"sampled {d:%b %-d}" if d else "no sample date",
+                        "pending": p})
         z_posted = [x["name"] for x in sts if x["status"] == "posted"]
         z_cso = [x["name"] for x in sts if x["status"] == "discharge"]
         z_safe = sum(1 for x in sts if x["status"] == "safe")
@@ -380,7 +397,9 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
         text = ("Sewage discharge" if status == "discharge" else f"{len(z_posted)} beach{'es' if len(z_posted) > 1 else ''} posted" if status == "posted"
                 else "All clear" if status == "safe" else "Not sampled")
         dates = [x["sampled"] for x in sts if x["sampled"]]
-        sampled = f"sampled {datetime.strptime(max(dates), '%Y-%m-%d'):%b %-d}" if dates else "no sample date"
+        n_pending = sum(1 for x in sts if x["pending"])   # counted, so one waiting station doesn't read as the whole zone
+        sampled = (f"{n_pending} sample{'s' if n_pending > 1 else ''} unpublished" if n_pending
+                   else f"sampled {datetime.strptime(max(dates), '%Y-%m-%d'):%b %-d}" if dates else "no sample date")
         meta = (" · ".join(z_cso + z_posted) + f" · {sampled}") if (z_cso or z_posted) else f"{len(sts)} stations · {sampled}"
         risk = (risks.get("zones") or {}).get(zk)
         tiles.append({"key": zk, "label": z.label, "status": status, "status_text": text, "risk": risk,
@@ -517,6 +536,27 @@ def _stations(sfpuc_api) -> list:
 BOARD_FACTS = ("_forecast", "/samples")
 
 
+def _pending_results(stations: list, f_changes, gap_pool) -> dict:
+    """shared.result_gap.pending_results for the feed just read, inside the facts budget: the
+    change log was fetched alongside the feed; the feed-date ticks are read only when some
+    station changed recently. Any failure or timeout means no station is marked."""
+    from datetime import timezone
+    from shared import result_gap
+    try:
+        changes = f_changes.result(timeout=FACTS_BUDGET_SECONDS)
+        now = datetime.now(timezone.utc)
+        recent = result_gap.candidates(changes, now)
+        if not recent:
+            return {}
+        shown = {str(st.station_id): st.sample_date.strftime("%Y-%m-%d") for st in stations if getattr(st, "sample_date", None)}
+        first_seen = gap_pool.submit(result_gap.fetch_first_seen, list(recent)).result(timeout=FACTS_BUDGET_SECONDS)
+        return result_gap.pending_results(recent, shown, first_seen, now)
+    except Exception:
+        return {}
+    finally:
+        gap_pool.shutdown(wait=False, cancel_futures=True)
+
+
 def board_context(sfpuc_api, env_context=None, live_facts: bool = True, fact_keys: tuple | None = None) -> dict:
     """Everything the Today page needs: the board, the conditions chips, the live facts
     (``fact_keys`` of them, every one when None), a timestamp.
@@ -526,6 +566,9 @@ def board_context(sfpuc_api, env_context=None, live_facts: bool = True, fact_key
     ~2.5 s in a row, ~1 s together). Each job catches its own failures, so one slow or broken
     source still never blanks the page; the facts keep their own 2.5 s budget."""
     from concurrent.futures import ThreadPoolExecutor
+    from shared import result_gap
+    gap_pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="board-gap")   # never waited on past the facts budget
+    f_changes = gap_pool.submit(result_gap.fetch_changes)
     with ThreadPoolExecutor(max_workers=4, thread_name_prefix="board") as pool:
         f_stations = pool.submit(_stations, sfpuc_api)
         sources = None if fact_keys is None else {k: _FACT_SOURCES[k] for k in fact_keys}
@@ -539,7 +582,7 @@ def board_context(sfpuc_api, env_context=None, live_facts: bool = True, fact_key
         summary = sfpuc_api.get_status_summary() if not stations else {}   # the fallback, only when the feed came back empty
     except Exception:
         summary = {}
-    board = today_board(stations, facts.get("_forecast"), facts.get("/samples", ""))
+    board = today_board(stations, facts.get("_forecast"), facts.get("/samples", ""), pending=_pending_results(stations, f_changes, gap_pool))
     if not stations and summary:   # a client that only knows the summary: keep the old banner sentence as the headline
         board["tone"], message = _status_banner(summary)
         board["headline"] = board["headline_html"] = message.split("</svg> ", 1)[-1]
