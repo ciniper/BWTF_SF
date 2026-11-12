@@ -338,11 +338,12 @@ def _join(names: list[str]) -> str:
 
 
 def _pending_text(p: dict, now: datetime) -> str:
-    """"posted 8:32 AM · new result on the way" — a posting change whose sample is not on SFPUC's map yet."""
+    """"posted 8:32 AM · on a new sample, not published yet" — a posting change whose sample is not
+    on SFPUC's map yet: the status is current, only the numbers behind it are not out."""
     from shared.result_gap import PACIFIC
     at = datetime.fromisoformat(p["at"].replace("Z", "+00:00")).astimezone(PACIFIC)   # ``now`` is Pacific, aware or not
     when = f"{at:%-I:%M %p}" if at.date() == now.date() else f"{at:%a %-I:%M %p}"
-    return f"{p['change']} {when} · new result on the way"
+    return f"{p['change']} {when} · on a new sample, not published yet"
 
 
 def today_board(stations: list, risks: dict | None = None, samples_fact: str = "", now: datetime | None = None,
@@ -352,7 +353,7 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
     ``risks`` is _forecast_risks(); ``samples_fact`` the samples row's live fact;
     ``pending`` is shared.result_gap.pending_results(): stations whose posting changed
     this morning before the sample behind it reached SFPUC's map — their row reads
-    "posted 8:32 AM · new result on the way" in place of last week's sample date.
+    "posted 8:32 AM · on a new sample, not published yet" in place of last week's sample date.
     Returns the headline (plain + HTML), the lead sentence, a tone, and one tile
     per zone with every registry station's status, coordinates and DataSF id —
     the tiles' dots and the city map's markers (Chase, 2026-09-29: lead with the
@@ -389,7 +390,8 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
         text = ("Sewage discharge" if status == "discharge" else f"{len(z_posted)} beach{'es' if len(z_posted) > 1 else ''} posted" if status == "posted"
                 else "All clear" if status == "safe" else "Not sampled")
         dates = [x["sampled"] for x in sts if x["sampled"]]
-        sampled = ("new result on the way" if any(x["pending"] for x in sts)
+        n_pending = sum(1 for x in sts if x["pending"])   # counted, so one waiting station doesn't read as the whole zone
+        sampled = (f"{n_pending} sample{'s' if n_pending > 1 else ''} unpublished" if n_pending
                    else f"sampled {datetime.strptime(max(dates), '%Y-%m-%d'):%b %-d}" if dates else "no sample date")
         meta = (" · ".join(z_cso + z_posted) + f" · {sampled}") if (z_cso or z_posted) else f"{len(sts)} stations · {sampled}"
         risk = (risks.get("zones") or {}).get(zk)

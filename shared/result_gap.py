@@ -23,7 +23,7 @@ from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 PACIFIC = ZoneInfo("America/Los_Angeles")
-MAX_HOURS = 36   # the map has always caught up the same day; past this we stop claiming a result is on the way
+MAX_HOURS = 36   # the map has always caught up the same day; past this we stop claiming a sample is unpublished
 SAMPLE_CHANGES = {("ok", "posted"): "posted", ("posted", "ok"): "cleared"}   # the transitions a lab result makes
 
 

@@ -130,10 +130,12 @@
       // The city's lab numbers reach SF Gov Open Data around 11 PM the day after collection (Chase, 2026-10-20: "always by 11:40")
       stale.innerHTML = "<b>Newest sample not published yet</b>The city's map shows a sample taken " + esc(day(opts.feedDate)) + ". Its lab numbers usually arrive on SF Gov Open Data around 11 PM the day after collection. " + older;
       stale.hidden = false;
-    } else if (changed) {   // the morning gap: postings move ~8:30 AM, the sample date reaches the map ~10:30 AM–3 PM
+    } else if (changed) {   // the morning gap: postings move ~8:30 AM, ahead of the sample behind them
+      // The status is current; only its numbers are behind. They reach this popover with DataSF around 11 PM: SFPUC's map
+      // gets the sample date in the afternoon, but nothing a reader sees here changes then (Chase, 2026-11-12).
       var at = new Date(opts.changedAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles" });
-      stale.innerHTML = "<b>Newest sample not published yet</b>SFPUC " + (opts.changed === "cleared" ? "lifted this beach's posting" : "posted this beach") + " at " + esc(at) +
-        ", before the sample behind it reached their map. It usually appears there by early afternoon, and its lab numbers reach SF Gov Open Data around 11 PM. " + older;
+      stale.innerHTML = "<b>Newest sample not published yet; status is current</b>SFPUC " + (opts.changed === "cleared" ? "lifted this beach's posting" : "posted this beach") + " at " + esc(at) +
+        " based on a newer sample. Its lab numbers usually reach SF Gov Open Data around 11 PM. " + older;
       stale.hidden = false;
     }
     if (!d.found) { note.textContent = (surf ? "No Surfrider sample at this site" : "No published lab results for this station") + (opts.date ? " on " + opts.date : "") + "."; return; }

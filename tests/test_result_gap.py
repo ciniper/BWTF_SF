@@ -56,7 +56,7 @@ def test_without_feed_ticks_the_dates_decide():
     assert G.pending_results(ch, {}, None, pt("2026-11-10T09:46")) == {}                       # no sample date shown: nothing to contradict
 
 
-def test_board_row_reads_result_on_the_way_and_the_tile_follows():
+def test_board_row_reads_sample_not_published_and_the_tile_counts_it():
     from app import landing as L
     S = lambda sid, name, status, d: types.SimpleNamespace(station_id=sid, station_name=name, status=types.SimpleNamespace(value=status),  # noqa: E731
                                                            has_cso=False, sample_date=datetime.fromisoformat(d))
@@ -66,16 +66,16 @@ def test_board_row_reads_result_on_the_way_and_the_tile_follows():
     b = L.today_board(sts, {}, "", now=datetime(2026, 11, 10, 9, 46), pending=pending)
     z = {t["key"]: t for t in b["zones"]}
     lincoln = next(s for s in z["ocean"]["stations"] if s["full_name"].startswith("Ocean Beach at Lincoln"))
-    assert lincoln["sampled_text"] == "posted 8:32 AM · new result on the way" and lincoln["pending"] == pending["4605"]
+    assert lincoln["sampled_text"] == "posted 8:32 AM · on a new sample, not published yet" and lincoln["pending"] == pending["4605"]
     assert lincoln["sampled"] == "2026-11-02"                                    # the popover still knows which sample the map shows
-    assert z["ocean"]["meta"].endswith(" · new result on the way")
+    assert z["ocean"]["meta"].endswith(" · 1 sample unpublished")
     assert z["north"]["meta"].endswith("sampled Nov 2")                          # other zones untouched
     stale = L.today_board([S("4605", "Ocean Beach at Lincoln Way", "safe", "2026-11-02")], {}, "", now=datetime(2026, 11, 10, 9, 46), pending=pending)
     row = next(s for t in stale["zones"] for s in t["stations"] if s["full_name"].startswith("Ocean Beach at Lincoln"))
     assert row["pending"] is None and row["sampled_text"] == "sampled Nov 2"     # the feed no longer matches the log row
     ystd = L.today_board(sts, {}, "", now=datetime(2026, 11, 11, 7, 0), pending=pending)
     row = next(s for t in ystd["zones"] for s in t["stations"] if s["full_name"].startswith("Ocean Beach at Lincoln"))
-    assert row["sampled_text"] == "posted Tue 8:32 AM · new result on the way"
+    assert row["sampled_text"] == "posted Tue 8:32 AM · on a new sample, not published yet"
 
 
 def test_board_template_hands_the_change_to_the_popover():
@@ -83,7 +83,7 @@ def test_board_template_hands_the_change_to_the_popover():
     assert 'data-sample-changed="{{ s.pending.change }}" data-sample-changed-at="{{ s.pending.at }}"' in html
     assert 'changedAt: s.pending ? s.pending.at : ""' in html
     js = (ROOT / "app/static/sample_popover.js").read_text()
-    assert "changedAt: a.dataset.sampleChangedAt" in js and "before the sample behind it reached their map" in js
+    assert "changedAt: a.dataset.sampleChangedAt" in js and "Newest sample not published yet; status is current" in js and "early afternoon" not in js
 
 
 if __name__ == "__main__":
