@@ -56,7 +56,7 @@ SUPABASE_TABLES = [
     ("feed_station_days", "day", "the feed's flags per station and day, as the watcher saw them"),
     ("feed_sample_dates", "sample_date", "the sample dates the feed showed per station"),
     ("samples", "sample_date", "mirror of DataSF's lab results, with the day we first saw each"),
-    ("forecast_history", "forecast_date", "first and last forecast of every day"),
+    ("forecast_checkpoints", "forecast_date", "the forecast at 00:05, 06:05, 12:05 and 18:05 every day"),
     ("forecast_changes", "first_at", "every change of the forecast's numbers"),
     ("watcher_errors", "at", "watcher tick errors (90-day retention)"),
 ]
@@ -226,7 +226,7 @@ def registry(include_supabase: bool = True) -> dict:
     for table, col, what in SUPABASE_TABLES:
         span = sup.get(table) or {}
         tiles["supabase"].append(_entry(table, what, "Supabase table", first=span.get("first"), last=span.get("last"),
-                                        cadence={"samples": "every forecast refresh (30 min)", "forecast_history": "every forecast refresh",
+                                        cadence={"samples": "every forecast refresh (30 min)", "forecast_checkpoints": "four times a day (00:05, 06:05, 12:05, 18:05)",
                                                  "forecast_changes": "every forecast refresh", "feed_station_days": "every watcher tick (1 min)",
                                                  "feed_sample_dates": "every watcher tick", "alert_log": "on each transition",
                                                  "alert_deliveries": "on each send; Brevo status polled", "watcher_errors": "on each error",

@@ -42,7 +42,7 @@ data end, shadow-run through every stage exactly as T1 (S2 → S3 → S4 → OUT
 S5), on the same archived inputs in every set, so a comparison pairs identical
 inputs (Part B 16). Its runs start with the same warm-up, from the same models, so
 a T0 row is the row T1 would give on that day. The served set's T0 is also graded
-as served (``t0_as_served``): what forecast_history says the page showed, never one
+as served (``t0_as_served``): what forecast_checkpoints says the page showed, never one
 arm of a comparison. While the data end is before T0's first day (2026-10-03),
 T0 holds no row and nothing here differs from a build without it.
 
@@ -59,7 +59,7 @@ rows read their own run's D−7…D.
 the forecast issued on I = D − L "for days on or after the issue day, gauges
 before → S1 → …", which is what the page composes (live_dashboard._day_payload:
 one frame, past days from the gauges, I … I+5 from the forecast) and what the
-as-served T0 grades from forecast_history. So the S4 / OUT row of D at lead L reads, on
+as-served T0 grades from forecast_checkpoints. So the S4 / OUT row of D at lead L reads, on
 each history day d of D−7…D, the S2 output the issue day knew: rain known for
 d < I, and for d = I + j (j = 0 … L) the entry L_j's S2 output on d — the frame
 stages_entries builds for target d from the forecast issued on d − j = I (as
@@ -1717,7 +1717,7 @@ def score_s5(rows: pd.DataFrame, feeds: dict, blocks: pd.DataFrame, n_boot: int)
 
 def t0_as_served(served: str, ctx: X.Context, pool: pd.DataFrame, blocks: pd.DataFrame, n_boot: int, end,
                  path: Path = GP.SNAPSHOT) -> dict:
-    """scores['t0_as_served']: the served set's T0 as the public saw it (protocol §2: graded from forecast_history
+    """scores['t0_as_served']: the served set's T0 as the public saw it (protocol §2: graded from forecast_checkpoints
     rows whose stamp names it, read from the committed snapshot; Part B 20, 28). grade_prospective.rows → the rows
     whose model is ``served`` and whose target day is on or before the data end → OUT rows by lead (entry L0 … L5,
     tier T0; ``_rows``, zone by zone, day by day) → OUT's own scorer: exclusions.apply on ``ctx`` (the T0 context),

@@ -343,6 +343,34 @@ refresh logs `deliveries not polled: …` — harmless, and gone once applied.
 Turn open tracking off in Brevo's transactional settings if the alerts should
 not track their readers at all; the column then simply stays null.
 
+## 024: forecast_checkpoints replaces forecast_history (2026-11-12)
+
+`db/migrations/024_retire_forecast_history.sql`: apply by hand in the Supabase SQL editor **after** this
+change is deployed, away from the :05 and :35 refreshes. In one transaction it:
+
+1. copies every `forecast_history` first snapshot into `forecast_checkpoints`, in the slot its time falls
+   in: slot 0 (00:05) on every day except 2026-09-27, when 012 was applied at 11:26 (slot 6). The last
+   snapshots (~23:35) are not copied: they fall at no fixed time;
+2. checks every first snapshot arrived, and drops `forecast_history` only then (otherwise it raises and
+   nothing changes);
+3. makes `bwtf_record_forecast` write `forecast_checkpoints` only.
+
+Readers moved in the same change: `grade_prospective.py --export` reads slot 0 (the start-of-day forecast,
+the same snapshot it read from `forecast_history`), and the Data sources tile lists `forecast_checkpoints`.
+Re-running is safe: once `forecast_history` is gone the copy is skipped.
+
+Check after applying:
+
+```sql
+select to_regclass('public.forecast_history') as history_gone_if_null,
+       count(*) filter (where slot_hour = 0) as midnight_slots,
+       min(forecast_date), max(forecast_date)
+from public.forecast_checkpoints;
+```
+
+`midnight_slots` should be one per day from 2026-09-28 on (2026-09-27 has slot 6 only), and the next
+refresh should still add or keep today's slot.
+
 ## 023 Forecast checkpoints
 
 Apply `db/migrations/023_forecast_checkpoints.sql` in the Supabase SQL editor.
