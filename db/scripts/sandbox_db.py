@@ -101,9 +101,11 @@ def refuse_production(url: str, refresh_url: str) -> None:
         raise SystemExit("SANDBOX_DB_URL names the production project (BWTF_PROD_SUPABASE_REF); refusing")
 
 
-def psql(url: str, *args: str, check: bool = True) -> subprocess.CompletedProcess:
+def psql(url: str, *args: str, stdin: str | None = None, check: bool = True) -> subprocess.CompletedProcess:
+    """psql with ON_ERROR_STOP. SQL that uses :'variables' must come on stdin —
+    psql does not interpolate variables in a -c string."""
     cmd = ["psql", url, "-v", "ON_ERROR_STOP=1", "-q", "-X", *args]
-    return subprocess.run(cmd, check=check, text=True, capture_output=True)
+    return subprocess.run(cmd, check=check, text=True, capture_output=True, input=stdin)
 
 
 def query(url: str, sql: str) -> list[list[str]]:
@@ -136,7 +138,11 @@ def cmd_apply(url: str, through: int | None) -> int:
     refresh_url = os.environ.get("SANDBOX_REFRESH_URL", "")
     site_url = os.environ.get("SANDBOX_SITE_URL", "http://localhost:8080")
     refuse_production(url, refresh_url)
-    psql(url, "-v", f"refresh_url={refresh_url}", "-v", f"site_url={site_url}", "-c", OVERRIDES_SQL)
+    try:
+        psql(url, "-v", f"refresh_url={refresh_url}", "-v", f"site_url={site_url}", "-f", "-", stdin=OVERRIDES_SQL)
+    except subprocess.CalledProcessError as e:
+        print("overrides FAILED:", (e.stderr or e.stdout).strip())
+        return 1
     print(f"watcher_config: forecast_refresh_url={refresh_url or '(empty: the refresh cron does nothing)'} site_url={site_url}")
     return 0
 
