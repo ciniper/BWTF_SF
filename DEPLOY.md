@@ -343,6 +343,25 @@ refresh logs `deliveries not polled: …` — harmless, and gone once applied.
 Turn open tracking off in Brevo's transactional settings if the alerts should
 not track their readers at all; the column then simply stays null.
 
+## 023 Forecast checkpoints
+
+Apply `db/migrations/023_forecast_checkpoints.sql` in the Supabase SQL editor.
+The existing refresh records the earliest forecast generated in each Pacific
+time slot starting at 12:05 a.m., 6:05 a.m., noon plus five minutes, and 6:05 p.m.
+The evening slot ends at midnight. Each row includes the actual generation
+time, so a delayed capture is visible. Capture begins when the migration is applied.
+
+After the next successful refresh at or after a checkpoint, check the slot and
+generation time in the SQL editor:
+
+```sql
+select forecast_date, slot_hour,
+       generated_at at time zone 'America/Los_Angeles' as generated_pacific
+from public.forecast_checkpoints
+order by forecast_date desc, slot_hour desc
+limit 8;
+```
+
 ## 021: the "Live status" button opens the Today page (built 2026-09-30)
 
 `db/migrations/021_live_status_to_today.sql` — apply by hand in the Supabase SQL editor, with no
