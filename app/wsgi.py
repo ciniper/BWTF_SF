@@ -59,6 +59,7 @@ import features.manage.page as manage_page
 import features.site_analysis.page as site_analysis_page
 import features.postings.page as postings_page
 import features.alerts.costs as costs_page
+import features.alerts.forecast_check as forecast_check_page   # Admin's Forecast check tab: forecast vs reality (2026-11-11)
 from features.alerts.page import AlertsRoutes
 from features.comparison.page import ComparisonRoutes
 from shared.datasf import DATASET_PAGE_URL
@@ -325,8 +326,8 @@ def create_app():
         app.add_url_rule(path, f"alert-get:{path}", view, methods=["GET"])
     for path, method_name in _ALERT_POST.items():
         app.add_url_rule(path, f"alert-post:{path}", _gated_api(_mixin_view(method_name)), methods=["POST"])
-    # Running costs: the alerts dashboard's third tab (features/alerts/costs.py), behind the same passphrase
-    for path, handler in costs_page.GET_ROUTES.items():
+    # Running costs and Forecast check: Admin tabs with a page and a JSON API each, behind the same passphrase
+    for path, handler in {**costs_page.GET_ROUTES, **forecast_check_page.GET_ROUTES}.items():
         view = _gated_api(_forecast_view(handler)) if path.startswith("/alerts/api/") else _gated_page(_forecast_view(handler), path)
         app.add_url_rule(path, f"costs-get:{path}", view, methods=["GET"])
     # Admin's Lab SOP and UI overflow tabs (2026-11-04), behind the same passphrase; the Lab SOP's photos with it

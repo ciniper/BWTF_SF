@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link rel="icon" href="{{ asset('brand/favicon.ico') }}"><link rel="apple-touch-icon" sizes="144x144" href="{{ asset('brand/bwtf_144x144.png') }}">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Forecast check — Admin · Surfrider SF Blue Water Task Force</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ asset('brand.css') }}">
+<style>
+  body{margin:0;background:var(--sand);color:var(--ink);font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:15px;line-height:1.5}
+  .wrap{max-width:var(--page-w);margin:0 auto;padding:20px 24px 40px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;margin:0 0 14px}
+  .card h2{margin:0 0 6px;font-size:17px;font-weight:900}
+  .card .sub{color:var(--muted);font-size:13px;margin:0 0 12px}
+  .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:0 0 14px}
+  .kpi{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:14px 18px}
+  .kpi .k{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
+  .kpi .v{font-size:30px;font-weight:900;line-height:1.2;font-variant-numeric:tabular-nums}
+  .kpi .v.warn{color:var(--posted)} .kpi .v.bad{color:var(--discharge)} .kpi .v.ok{color:var(--safe)}
+  .kpi .s{font-size:13px;color:var(--muted)}
+  .notice{background:#fff;border:1px solid var(--line);border-left:5px solid var(--posted);border-radius:var(--r);padding:14px 18px;margin:0 0 14px;color:var(--muted)}
+  .notice b{color:var(--ink)}
+  .ctl{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin:0 0 12px}
+  .tblwrap{overflow-x:auto}
+  table.lines{width:100%;border-collapse:collapse;font-size:14px}
+  table.lines th{text-align:left;color:var(--muted);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.06em;padding:8px 10px;border-bottom:2px solid var(--line);white-space:nowrap}
+  table.lines td{padding:7px 10px;border-bottom:1px solid var(--sand2);vertical-align:middle}
+  table.lines td.n,table.lines th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  table.lines tr.pending td{color:var(--faint)}
+  td.date{white-space:nowrap;font-weight:700}
+  td.date small{display:block;font-weight:500;color:var(--muted);font-size:12px}
+  .chip{display:inline-flex;align-items:center;justify-content:center;min-width:40px;padding:3px 7px;border-radius:999px;font-size:12px;font-weight:800;font-variant-numeric:tabular-nums;color:#fff;background:var(--unknown);cursor:default}
+  .chip.low{background:var(--safe)} .chip.medium{background:var(--caution)} .chip.high{background:var(--posted)} .chip.extreme{background:var(--discharge)}
+  .chip.unknown{background:transparent;color:var(--faint);border:1px dashed var(--line)}
+  .chip.rules{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--brand)}   /* a live rule fired on this day's forecast */
+  .traj{display:flex;gap:4px;align-items:center}
+  .mark{display:inline-block;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:800;white-space:nowrap}
+  .mark.bad{background:#fbe3dc;color:var(--discharge)} .mark.ok{background:#e1f1ea;color:var(--safe)} .mark.none{color:var(--faint);font-weight:500}
+  .mark.flag{background:#fdebd9;color:var(--posted)}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--muted);margin:0 0 10px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .zone-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+  .zone-tabs button{padding:7px 14px;border-radius:999px;border:2px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
+  .zone-tabs button.active{border-color:var(--brand);background:var(--brand);color:#fff}
+  .zone-pane{display:none} .zone-pane.on{display:block}
+  .missing{color:var(--discharge);font-size:13px}
+  .foot{color:var(--faint);font-size:13px;margin-top:10px;line-height:1.6}
+  @media (max-width:760px){.wrap{padding:14px 14px 30px}.kpis{grid-template-columns:1fr 1fr}}
+</style>
+{% from "alerts/_tabs.html" import admin_tab_styles, admin_tabs %}{{ admin_tab_styles() }}
+</head>
+<body>
+{% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
+{{ topbar() }}
+<div class="wrap">
+  {% call page_head("Forecast check", "What each morning's forecast said, next to what then happened: the SFPUC map's flags, the city's and Surfrider's samples over standard, and the rain that fell.", None, "How to read this") %}
+    <p>Each row is a day. The chips are the forecast for that day as it developed, from five days out (left) to the morning of (right); a percentage is the chance the zone's beaches were affected by a sewer overflow,
+    coloured by the page's four risk levels. A blue ring means a live rule fired that morning: a CSO flag, a lab result or a quiet feed moved the number. Hover a chip for the rain it was fed.
+    To the right: whether SFPUC's map showed a posted or CSO flag at a station of the zone that day, how many stations the city sampled and how many were over standard, and the gauges' measured rain.
+    The tally grades every day up to yesterday at the <b>Medium</b> edge ({{ (edges.medium * 100) | round | int }}% and up counts as an alert), per lead. These rulers are fast and imperfect — the map misses onsets and the city samples weekly —
+    so this tab is a check, not the grade: the protocol grades the live season against the quarterly CIWQS ledger (<code>grade_prospective.py</code>).</p>
+  {% endcall %}
+
+  {{ admin_tabs("forecast-check") }}
+
+  {% if data.state in ("unconfigured", "error") %}
+  <div class="notice"><b>Nothing to show.</b> {{ data.words }}</div>
+  {% elif data.state == "empty" %}
+  <div class="notice"><b>The record is empty.</b> Apply migration 022, then run the backfill from the main checkout: <code>venv/bin/python -m features.forecast.outcomes --backfill</code>. From then on the production refresh fills it.</div>
+  {% else %}
+  {% set h = data.health %}
+  <div class="kpis">
+    <div class="kpi"><div class="k">Issue days recorded</div><div class="v {{ 'ok' if not h.missing else ('warn' if h.missing | length < 3 else 'bad') }}">{{ h.issue_days }} <small style="font-size:16px;color:var(--muted)">of {{ h.expected_days }}</small></div><div class="s">since {{ h.first_issue }}{% if h.missing %} · <span class="missing">missing {{ h.missing | join(", ") }}</span>{% endif %}</div></div>
+    <div class="kpi"><div class="k">Last forecast recorded</div><div class="v" style="font-size:20px">{{ (h.last_generated_at or "—") | replace("T", " ") | replace("Z", " UTC") }}</div><div class="s">the day's first refresh writes it</div></div>
+    <div class="kpi"><div class="k">Forecast rows</div><div class="v">{{ h.rows }}</div><div class="s">target day × lead × zone, last {{ data.days_back }} days</div></div>
+    <div class="kpi"><div class="k">Waiting for truth</div><div class="v">{{ h.waiting }}</div><div class="s">rows about today or later</div></div>
+  </div>
+
+  <div class="card">
+    <h2>The season so far, by lead</h2>
+    <p class="sub">Days up to yesterday whose ruler is known. <b>Feed</b>: a posted or CSO flag at a station of the zone on SFPUC's map. <b>Samples</b>: a city sample over the single-sample standard that day. <b>Surfrider</b>: a volunteer sample over the same standard that day. <b>Either</b>: any of them.
+      Caught = alerted and bad; missed = quiet and bad; false alarm = alerted and fine. Brier is the mean squared gap between the percentage and what happened (0 is perfect, 0.25 is a coin flip).</p>
+    <div class="zone-tabs" id="ruler-tabs" role="tablist">
+      {% for ruler in data.rulers %}<button type="button" class="{{ 'active' if loop.first }}" data-ruler="{{ ruler }}" onclick="showRuler('{{ ruler }}')">{{ {"feed": "Feed flags", "samples": "City samples", "bwtf": "Surfrider", "either": "Either"}[ruler] }}</button>{% endfor %}
+    </div>
+    {% for ruler in data.rulers %}
+    <div class="zone-pane ruler-pane{{ ' on' if loop.first }}" data-ruler="{{ ruler }}">
+    <div class="tblwrap"><table class="lines">
+      <thead><tr><th>Lead</th><th class="n">Days graded</th><th class="n">Caught</th><th class="n">Missed</th><th class="n">False alarms</th><th class="n">Quiet</th><th class="n">Brier</th></tr></thead>
+      <tbody>
+      {% for lead in data.leads %}{% set t = data.tally[lead][ruler] %}
+      <tr><td>{{ "The morning of" if lead == 0 else (lead ~ " day" ~ ("s" if lead > 1) ~ " ahead") }}</td>
+        <td class="n">{{ t.n }}</td><td class="n">{{ t.caught }}</td><td class="n">{{ t.missed }}</td><td class="n">{{ t.false_alarm }}</td><td class="n">{{ t.quiet }}</td>
+        <td class="n">{{ "%.3f" | format(t.brier) if t.brier is not none else "—" }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="card">
+    <h2>Day by day</h2>
+    <p class="sub">Newest first. Rows about today and later are pending.</p>
+    <div class="ctl">
+      <div class="zone-tabs" id="zone-tabs" role="tablist">
+        {% for zk, label in data.zones.items() %}<button type="button" class="{{ 'active' if loop.first }}" data-zone="{{ zk }}" onclick="showZone('{{ zk }}')">{{ label }}</button>{% endfor %}
+      </div>
+      <form method="get" style="margin-left:auto;display:flex;gap:8px;align-items:center"><label class="ctl-label" for="days">Days</label>
+        <select id="days" name="days" onchange="this.form.submit()">{% for n in (14, 30, 60, 90, 180) %}<option value="{{ n }}"{% if n == days %} selected{% endif %}>{{ n }}</option>{% endfor %}</select></form>
+    </div>
+    <div class="legend">
+      <span><i class="chip low">≤20</i> Low</span><span><i class="chip medium">21–50</i> Medium</span><span><i class="chip high">51–80</i> High</span><span><i class="chip extreme">81+</i> Extreme</span>
+      <span><i class="chip low rules">%</i> a live rule fired</span><span><i class="chip unknown">·</i> no forecast recorded</span>
+    </div>
+    {% for zk, label in data.zones.items() %}
+    <div class="zone-pane{{ ' on' if loop.first }}" data-zone="{{ zk }}">
+    <div class="tblwrap"><table class="lines">
+      <thead><tr><th>Day</th><th>Forecast, 5 days out → the morning of</th><th>SFPUC map</th><th>City samples</th><th>Surfrider samples</th><th class="n">Rain fell</th></tr></thead>
+      <tbody>
+      {% for day in data.days %}{% set z = day.zones[zk] %}{% set o = z.outcome %}
+      <tr{% if day.pending %} class="pending"{% endif %}>
+        <td class="date">{{ day.date }}<small>{{ "pending" if day.pending else "" }}</small></td>
+        <td><div class="traj">
+          {% for lead in data.leads | reverse %}{% set f = z.trajectory.get(lead) %}
+          {% if f %}<span class="chip {{ f.level }}{{ ' rules' if f.rules }}" title="{{ lead }} day{{ 's' if lead != 1 }} ahead: {{ (f.p * 100) | round | int }}%{% if f.p_plain is not none and (f.p_plain - f.p) | abs >= 0.005 %} (no corrections {{ (f.p_plain * 100) | round | int }}%){% endif %} · rain fed {{ f.rain_in if f.rain_in is not none else '?' }}&quot; that day, {{ f.rain_3d if f.rain_3d is not none else '?' }}&quot; over 3 days{% if f.rain_source %} ({{ f.rain_source }}){% endif %}{% if f.rules %} · rules: {{ f.rules | join(', ') }}{% endif %}">{{ (f.p * 100) | round | int }}</span>
+          {% else %}<span class="chip unknown" title="no forecast recorded {{ lead }} day{{ 's' if lead != 1 }} ahead">·</span>{% endif %}
+          {% endfor %}
+        </div></td>
+        <td>{% if not o or not o.feed_stations %}<span class="mark none">not watched</span>{% elif o.feed_cso %}<span class="mark bad">CSO flag</span>{% elif o.feed_posted %}<span class="mark flag">posted</span>{% else %}<span class="mark ok">clear</span>{% endif %}</td>
+        <td>{% if not o or not o.samples_n %}<span class="mark none">no sample</span>{% elif o.samples_exceeded %}<span class="mark bad" title="{{ (o.exceeded_stations or []) | join(', ') }}">{{ o.samples_exceeded }} of {{ o.samples_n }} over</span>{% else %}<span class="mark ok">{{ o.samples_n }} clean</span>{% endif %}</td>
+        <td>{% if not o or not o.bwtf_n %}<span class="mark none">no sample</span>{% elif o.bwtf_exceeded %}<span class="mark bad" title="{{ (o.bwtf_exceeded_sites or []) | join(', ') }}">{{ o.bwtf_exceeded }} of {{ o.bwtf_n }} over</span>{% else %}<span class="mark ok">{{ o.bwtf_n }} clean</span>{% endif %}</td>
+        <td class="n">{% if day.rain_obs and day.rain_obs.in is not none %}{{ "%.2f" | format(day.rain_obs.in) }}&quot;{% else %}—{% endif %}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    </div>
+    {% endfor %}
+    <p class="foot">The forecast is each day's first refresh (what a morning visitor saw); the later refreshes are the live rules reacting and are kept in forecast_changes. The CIWQS ledger column arrives with the quarterly refresh and is not shown yet. Today's measured rain is partial until tomorrow.</p>
+  </div>
+  {% endif %}
+</div>
+{{ footer() }}{{ tabbar() }}
+<script src="{{ asset('tables.js') }}" defer></script>   {# every table on the site carries it: 50 rows first, "Show all" for the rest #}
+<script>
+  function showZone(z){document.querySelectorAll('#zone-tabs button').forEach(b=>b.classList.toggle('active',b.dataset.zone===z));document.querySelectorAll('.zone-pane[data-zone]').forEach(p=>p.classList.toggle('on',p.dataset.zone===z));}
+  function showRuler(r){document.querySelectorAll('#ruler-tabs button').forEach(b=>b.classList.toggle('active',b.dataset.ruler===r));document.querySelectorAll('.ruler-pane').forEach(p=>p.classList.toggle('on',p.dataset.ruler===r));}
+</script>
+</body></html>

@@ -40,6 +40,7 @@ from features.comparison.comparison import BWTF_TO_SFPUC_NAME, resolve_site
 from shared import supabase as sb
 from shared.sfpuc_api import SFPUCRealTimeAPI
 from shared.standards import ENTERO_CAUTION, STANDARDS, exceeds
+from shared.site_zones import zone_for_site as _zone_for_site
 from shared.zones import ZONES
 
 _PACIFIC = ZoneInfo("America/Los_Angeles")
@@ -86,12 +87,7 @@ def zone_for_site(key: str, lat, lon) -> Optional[str]:
     """The zone a Surfrider site belongs to: the zone of the city station it shares a beach
     with, else the zone of the nearest registry station (Bayview Hunters Point has no city
     twin). None without coordinates. The Today chips list the site under that zone."""
-    for z in ZONES.values():
-        if key in z.source_ids:
-            return z.key
-    if lat is None or lon is None:
-        return None
-    return min(((st.lat - lat) ** 2 + (st.lon - lon) ** 2, z.key) for z in ZONES.values() for st in z.stations)[1]
+    return _zone_for_site(key, lat, lon)   # shared/site_zones: the forecast record places Surfrider's samples the same way
 
 
 def build_surfrider_layer(client: Optional[SFBWTFClient] = None) -> dict:

@@ -765,7 +765,8 @@
             <button class="view-tab active" data-view="real" onclick="showView('real')"><svg class="ic"><use href="#i-waves"/></svg> Real <small>SFPUC feed as published</small></button>
             <button class="view-tab" data-view="sim" onclick="showView('sim')"><svg class="ic"><use href="#i-flask"/></svg> Simulation {% if simulation_count %}<span class="view-badge">{{ simulation_count }} active</span>{% endif %}</button>
             <a class="view-tab" href="/alerts/costs" style="text-decoration:none"><svg class="ic"><use href="#i-receipt"/></svg> Running costs <small>by subscriber count</small></a>
-            {#- the Lab SOP and UI overflow joined Admin on 2026-11-04: the same row as alerts/_tabs.html's ADMIN_TABS #}
+            <a class="view-tab" href="/alerts/forecast-check" style="text-decoration:none"><svg class="ic"><use href="#i-scales"/></svg> Forecast check</a>
+            {#- the Lab SOP and UI overflow joined Admin on 2026-11-04, Forecast check on 2026-11-11: the same row as alerts/_tabs.html's ADMIN_TABS #}
             <a class="view-tab" href="/alerts/lab-sop" style="text-decoration:none"><svg class="ic"><use href="#i-microscope"/></svg> Lab SOP</a>
             <a class="view-tab" href="/alerts/ui-overflow" style="text-decoration:none"><svg class="ic"><use href="#i-clipboard"/></svg> UI overflow</a>
         </div>
