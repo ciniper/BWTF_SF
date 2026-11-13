@@ -32,6 +32,7 @@ import json
 from datetime import date, datetime, time, timedelta, timezone
 
 from flask import render_template
+from requests.exceptions import RequestException
 
 from shared import supabase as sb
 from shared.stations import STATIONS
@@ -412,6 +413,65 @@ def handle_page(query, body):
     return _html(render_template("cso_history/page.html"))
 
 
+def _fetch_daily_colors(first_day: date, last_day: date) -> list[dict]:
+    rows = []
+    page_size = 500
+    while True:
+        page = sb.select("feed_station_days", {
+            "select": "station_id,station_name,day,sample_color,status_last",
+            "and": f"(day.gte.{first_day},day.lte.{last_day})",
+            "order": "day.asc,station_id.asc",
+            "limit": str(page_size),
+            "offset": str(len(rows)),
+        })
+        rows.extend(page)
+        if len(page) < page_size:
+            return rows
+
+
+def build_daily_color_tracks(rows: list[dict], days: list[date]) -> list[dict]:
+    names = dict(_NAME_OF_SFPUC)
+    colors = {}
+    for row in rows:
+        station_id = row["station_id"]
+        names[station_id] = row["station_name"] or names.get(station_id, station_id)
+        if row["status_last"] == "ok":
+            colors[station_id, row["day"]] = {"W": "gray", "Y": "gray"}.get(row["sample_color"], "green")
+
+    tracks = []
+    for station_id, name in sorted(names.items(), key=lambda item: (item[1].casefold(), item[0])):
+        runs = []
+        for day in days:
+            color = colors.get((station_id, day.isoformat()))
+            if runs and runs[-1]["color"] == color:
+                runs[-1]["end"] = day
+                runs[-1]["days"] += 1
+            else:
+                runs.append({"color": color, "start": day, "end": day, "days": 1})
+        tracks.append({"name": name, "runs": runs})
+    return tracks
+
+
+def handle_daily_colors(query, body):
+    ranges = (14, 30, 90)
+    selected = query.get("days", ["30"])[0]
+    count = next((days for days in ranges if str(days) == selected), 30)
+    today = datetime.now(_PACIFIC).date()
+    days = [today - timedelta(days=offset) for offset in range(count - 1, -1, -1)]
+    tracks = []
+    unavailable = not sb.is_configured()
+    if not unavailable:
+        try:
+            rows = _fetch_daily_colors(days[0], days[-1])
+        except (sb.SupabaseError, RequestException):
+            unavailable = True
+        else:
+            if rows:
+                tracks = build_daily_color_tracks(rows, days)
+    return _html(render_template("cso_history/daily_colors.html", tracks=tracks, days=days,
+                                 count=count, ranges=ranges, unavailable=unavailable))
+
+
 def handle_events(query, body):
     now = datetime.now(timezone.utc)
     if not sb.is_configured():
@@ -471,5 +531,6 @@ def handle_events(query, body):
 
 GET_ROUTES = {
     "/cso-history": handle_page,
+    "/cso-history/daily-colors": handle_daily_colors,
     "/cso-history/api/events": handle_events,
 }

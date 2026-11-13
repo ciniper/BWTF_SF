@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gray and green history — Online Postings Timeline</title>
+  <link rel="stylesheet" href="{{ asset('brand.css') }}">
+  <script defer src="{{ asset('tables.js') }}"></script>
+  <style>
+    .daily-wrap{max-width:1200px;margin:auto;padding:20px}
+    .daily-controls,.daily-legend{display:flex;flex-wrap:wrap;gap:8px 16px;margin:16px 0}
+    .daily-controls a{padding:5px 10px;border:1px solid #cdd3d8;border-radius:6px}
+    .daily-controls a[aria-current]{font-weight:700;background:#e8eef3}
+    .daily-scroll{overflow-x:auto}
+    .daily-table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
+    .daily-table th,.daily-table td{border-bottom:1px solid #e5e8eb;padding:6px 0}
+    .daily-table thead th{height:2.4em;position:relative;vertical-align:top}
+    .daily-table thead th time{position:absolute;left:0;white-space:nowrap}
+    .daily-table th:first-child{position:sticky;left:0;z-index:1;background:#fff;text-align:left;min-width:10rem;padding:6px 12px 6px 0}
+    .daily-table col.day{width:1.3rem}
+    .daily-bar{display:block;height:12px;margin:0 1px;border-radius:3px}
+    .daily-bar.green,.daily-swatch.green{background:#25814d}
+    .daily-bar.gray,.daily-swatch.gray{background:#8a949b}
+    .daily-swatch{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:4px}
+  </style>
+</head>
+<body>
+{% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
+{{ topbar() }}
+<main class="daily-wrap">
+  {% call page_head("Gray and green history", "The last color observed each day on SFPUC’s beach map.", "record", link=("/cso-history", "Online Postings Timeline")) %}
+    <p>Bars join consecutive days with the same color. Gaps indicate a warning, discharge, or no recorded color. Today updates as new observations arrive.</p>
+  {% endcall %}
+  <nav class="daily-controls" aria-label="Date range">
+    {% for option in ranges %}
+      <a href="?days={{ option }}"{% if option == count %} aria-current="page"{% endif %}>{{ option }} days</a>
+    {% endfor %}
+  </nav>
+  {% if unavailable %}
+    <p>Daily history is unavailable right now.</p>
+  {% elif not tracks %}
+    <p>No daily observations in this date range.</p>
+  {% else %}
+    <div class="daily-legend">
+      <span><i class="daily-swatch gray" aria-hidden="true"></i>Gray · No data on SFPUC’s map</span>
+      <span><i class="daily-swatch green" aria-hidden="true"></i>Green · No warning</span>
+    </div>
+    <div class="daily-scroll" tabindex="0" role="region" aria-label="Daily station colors">
+      <table class="daily-table" style="min-width:{{ 10 + count * 1.3 }}rem">
+        <colgroup><col>{% for day in days %}<col class="day">{% endfor %}</colgroup>
+        <thead><tr><th scope="col">Station</th>
+          {% for day in days %}
+            <th scope="col" aria-label="{{ day.strftime('%b %-d, %Y') }}">
+              {% if loop.index0 % 7 == 0 and loop.revindex > 3 %}
+                <time datetime="{{ day.isoformat() }}">{{ day.strftime('%b %-d') }}</time>
+              {% endif %}
+            </th>
+          {% endfor %}
+        </tr></thead>
+        <tbody>
+          {% for track in tracks %}
+            <tr>
+              <th scope="row">{{ track.name }}</th>
+              {% for run in track.runs %}
+                {% set label %}{{ run.color|capitalize if run.color else "Gap" }} · {{ run.start.strftime('%b %-d') }}{% if run.days > 1 %}–{{ run.end.strftime('%b %-d') }}{% endif %} · {{ run.days }} {{ "day" if run.days == 1 else "days" }}{% endset %}
+                <td colspan="{{ run.days }}" title="{{ label }}" aria-label="{{ label }}">
+                  <span class="daily-bar{% if run.color %} {{ run.color }}{% endif %}"></span>
+                </td>
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+</main>
+{{ footer() }}
+{{ tabbar() }}
+</body>
+</html>

@@ -24,6 +24,18 @@ from zoneinfo import ZoneInfo
 PACIFIC = ZoneInfo("America/Los_Angeles")
 
 
+def days_ago_text(then: date, today: date) -> str:
+    """A past day in words a reader can weigh at once: "today", "yesterday", "15 days ago" (design/today-sample-age,
+    2026-11-06: a date alone read as current — a map all green from results five months old). Always days, never
+    weeks or months, so the number stays comparable with the sampling schedule and the stale threshold."""
+    n = (today - then).days
+    if n <= 0:
+        return "today"
+    if n == 1:
+        return "yesterday"
+    return f"{n} days ago"
+
+
 def now_pacific() -> datetime:
     return datetime.now(PACIFIC)
 

@@ -1,5 +1,7 @@
 # Project TODO & Roadmap
 
+- [ ] Today: combine "not sampled", "no result", and "stale result" into one display category; preserve each reason in the details.
+
 This roadmap has four parts:
 
 - **A. Overall project management** — the umbrella for organizing this and future projects, including a shared dashboard and a common structure every project plugs into.

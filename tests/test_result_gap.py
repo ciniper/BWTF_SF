@@ -67,12 +67,13 @@ def test_board_row_reads_sample_not_published_and_the_tile_counts_it():
     z = {t["key"]: t for t in b["zones"]}
     lincoln = next(s for s in z["ocean"]["stations"] if s["full_name"].startswith("Ocean Beach at Lincoln"))
     assert lincoln["sampled_text"] == "posted 8:32 AM · on a new sample, not published yet" and lincoln["pending"] == pending["4605"]
+    assert b["facts"][0] == {"label": "City samples", "text": "1 new sample not published yet"}
     assert lincoln["sampled"] == "2026-11-02"                                    # the popover still knows which sample the map shows
     assert z["ocean"]["meta"].endswith(" · 1 sample unpublished")
-    assert z["north"]["meta"].endswith("sampled Nov 2")                          # other zones untouched
+    assert z["north"]["meta"].endswith("sampled 8 days ago")                          # other zones show their published sample age
     stale = L.today_board([S("4605", "Ocean Beach at Lincoln Way", "safe", "2026-11-02")], {}, "", now=datetime(2026, 11, 10, 9, 46), pending=pending)
     row = next(s for t in stale["zones"] for s in t["stations"] if s["full_name"].startswith("Ocean Beach at Lincoln"))
-    assert row["pending"] is None and row["sampled_text"] == "sampled Nov 2"     # the feed no longer matches the log row
+    assert row["pending"] is None and row["sampled_text"] == "sampled 8 days ago"     # the feed no longer matches the log row
     ystd = L.today_board(sts, {}, "", now=datetime(2026, 11, 11, 7, 0), pending=pending)
     row = next(s for t in ystd["zones"] for s in t["stations"] if s["full_name"].startswith("Ocean Beach at Lincoln"))
     assert row["sampled_text"] == "posted Tue 8:32 AM · on a new sample, not published yet"
