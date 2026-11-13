@@ -467,28 +467,31 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
         else:
             trend = ""
         risk_lead = f"Sewer-overflow risk today: {worst}% {where}{trend}."
-    # Under the subhead, one labelled row per fact (2026-11-06: four facts in one paragraph read as a jumble):
-    # the city's samples — how old, what they showed, the rule; Surfrider's newest; the forecast's risk. One age
-    # when every station was sampled the same day (the usual weekly round), a span otherwise; the "N over"
-    # count comes from the samples mirror's fact.
+    # Collection dates describe the samples shown by the city feed.
     facts = []
-    ages = sorted({x["sampled_age_days"] for t in tiles for x in t["stations"] if x["sampled_age_days"] is not None})
+    ages = sorted({s["sampled_age_days"] for tile in tiles for s in tile["stations"]
+                   if s["sampled_age_days"] is not None and s["sampled_age_days"] >= 0})
     newest_d = now.date() - timedelta(days=ages[0]) if ages else None
     unpublished = sum(s["pending"] is not None for tile in tiles for s in tile["stations"])
     if unpublished:
         facts.append({"label": "City samples", "text": f"{unpublished} new {plural(unpublished, 'sample', 'samples')} not published yet"})
     elif ages and n_graded:
         oldest_d = now.date() - timedelta(days=ages[-1])
-        when = (f"{days_ago_text(newest_d, now.date())} ({newest_d:%b %-d})" if len(ages) == 1
-                else f"between {days_ago_text(newest_d, now.date())} and {days_ago_text(oldest_d, now.date())} ({oldest_d:%b %-d} to {newest_d:%b %-d})")
-        over = re.search(r"(\d+) over", samples_fact or "")
-        n_over = int(over.group(1)) if over else 0
-        if n_over:
-            facts.append({"label": "City samples", "text": f"{when} · {n_over} {plural(n_over, 'station', 'stations')} over the state limit"})
-        elif tone == "ok":
-            facts.append({"label": "City samples", "text": f"{when} · {'it' if n_graded == 1 else f'all {n_graded}'} met the state standard · weekly; a warning is posted when a result fails"})
+        if len(ages) == 1:
+            age_text = days_ago_text(newest_d, now.date())
+            date_text = f"{newest_d:%b %-d}"
         else:
-            facts.append({"label": "City samples", "text": when})
+            if oldest_d.year != newest_d.year:
+                date_text = f"{oldest_d:%b %-d, %Y}–{newest_d:%b %-d, %Y}"
+            elif oldest_d.month != newest_d.month:
+                date_text = f"{oldest_d:%b %-d}–{newest_d:%b %-d}"
+            else:
+                date_text = f"{oldest_d:%b %-d}–{newest_d:%-d}"
+            if ages[0] >= 2:
+                age_text = f"{ages[0]}–{ages[-1]} days ago"
+            else:
+                age_text = f"between {days_ago_text(oldest_d, now.date())} and {days_ago_text(newest_d, now.date())}"
+        facts.append({"label": "City samples", "text": f"Samples were collected {age_text} ({date_text})."})
     bw = re.search(r"Surfrider (\d{1,2})/(\d{1,2})", samples_fact or "")   # the volunteers' newest sample, by age too
     if bw:
         d = date(now.year, int(bw.group(1)), int(bw.group(2)))

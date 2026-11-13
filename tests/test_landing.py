@@ -97,7 +97,7 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
     assert b["tone"] == "warn" and b["headline"] == "Posted at 1 beach. 3 others have no warning."
     assert b["headline_html"] == '<em class="posted">Posted at 1 beach.</em> 3 others have no warning.' and b["date"] == "Tue Sep 29" and b["checked"] == "6:12 AM" and b["feed_ok"]
     assert b["lead"] == "Posted: Crissy East. SFPUC posts a beach when samples show bacteria above State standards, and sometimes as a precaution."   # the news only: no "no discharge", no forecast (2026-10-18)
-    assert b["facts"] == [{"label": "City samples", "text": "6 days ago (Sep 23)"}, {"label": "Surfrider samples", "text": "5 days ago (Sep 24)"}]   # one labelled row per fact, ages not bare dates (2026-11-06); the city's and Surfrider's only
+    assert b["facts"] == [{"label": "City samples", "text": "Samples were collected 6 days ago (Sep 23)."}, {"label": "Surfrider samples", "text": "5 days ago (Sep 24)"}]   # one labelled row per fact, ages not bare dates (2026-11-06); the city's and Surfrider's only
     # the forecast's risk is the board's collapsed "Sewer-overflow forecast · Beta" line under the tiles (2026-11-08): no facts row for it
     assert b["risk_lead"] == "Sewer-overflow risk today: 4% at most (East Beaches), staying low through Sun Oct 04."
     assert not any(f["label"] == "Overflow risk today" for f in b["facts"])
@@ -120,14 +120,14 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
     assert cso["tone"] == "danger" and cso["headline"] == "Sewage discharge at 1 beach. Posted at 1 beach. 3 have no warning."
     assert cso["headline_html"] == '<em class="discharge">Sewage discharge at 1 beach.</em> <em class="posted">Posted at 1 beach.</em> 3 have no warning.'
     assert cso["lead"] == "Discharging: Crane Cove Park. Posted: Crissy East. SFPUC posts a beach when samples show bacteria above State standards, and sometimes as a precaution."   # facts only, no advice
-    assert cso["facts"] == [{"label": "City samples", "text": "6 days ago (Sep 23)"}]
+    assert cso["facts"] == [{"label": "City samples", "text": "Samples were collected 6 days ago (Sep 23)."}]
     ok = L.today_board([S("4601", "Fort Funston", "safe"), S("4602", "Ocean Beach at Sloat", "safe")], {}, "", now=now)
     assert ok["headline"] == "No warnings posted at any of the 2 monitored beaches." and ok["headline_html"] == '<em class="good">No warnings posted</em> at any of the 2 monitored beaches.'
-    assert ok["lead"] == "" and ok["facts"] == [{"label": "City samples", "text": "6 days ago (Sep 23) · all 2 met the state standard · weekly; a warning is posted when a result fails"}]   # the age is the point: "meet standards today" was a week-old sample's claim
+    assert ok["lead"] == "" and ok["facts"] == [{"label": "City samples", "text": "Samples were collected 6 days ago (Sep 23)."}]
     assert ok["risk_lead"] == "" and L.today_board([], {}, "")["feed_ok"] is False and L.today_board([], {}, "", now=now)["facts"] == []
     import types as _t
     split = L.today_board([S("4601", "Fort Funston", "safe"), _t.SimpleNamespace(station_id="4602", station_name="Ocean Beach at Sloat", status=_t.SimpleNamespace(value="safe"), has_cso=False, sample_date=datetime(2026, 9, 16))], {}, "city 9/23 · 1 over", now=now)
-    assert split["facts"][0]["text"] == "between 6 days ago and 13 days ago (Sep 16 to Sep 23) · 1 station over the state limit"   # a span when the round was split; an over count outranks "all met"
+    assert split["facts"][0]["text"] == "Samples were collected 6–13 days ago (Sep 16–23)."
     one = L.today_board([S("4612", "Crissy Field East", "posted"), S("4613", "Aquatic Park", "safe")], {}, "", now=now)
     assert one["headline"] == "Posted at 1 beach. 1 other has no warning." and one["lead"].startswith("Posted: Crissy East.")
     assert L.today_board([S("4612", "Crissy Field East", "posted")], {}, "", now=now)["headline"] == "Posted at 1 beach."

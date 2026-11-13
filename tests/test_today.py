@@ -35,11 +35,21 @@ def test_sample_facts_start_with_sentence_case_without_changing_embedded_ages():
         for day, age in ((9, "Yesterday"), (10, "Today")):
             board = today_board([station("4601", day)], samples_fact=f"Surfrider 11/{day}", now=datetime(2026, 11, 10))
             h = T.render_page({"board": board, "generated": "Preview"})
-            assert f"<dd>{age} (Nov {day})" in h
+            assert f"<dd>Samples were collected {age.lower()} (Nov {day})." in h
             assert f"sampled {age.lower()}" in h
         board = today_board([station("4601", 9), station("4602", 10)], now=datetime(2026, 11, 10))
         h = T.render_page({"board": board, "generated": "Preview"})
-        assert "<dd>Between today and yesterday (Nov 9 to Nov 10)" in h
+        assert "<dd>Samples were collected between yesterday and today (Nov 9–10)." in h
+
+        first, last = station("4601", 9), station("4602", 10)
+        first.sample_date = datetime(2026, 12, 31)
+        last.sample_date = datetime(2027, 1, 1)
+        now = datetime(2027, 1, 3)
+        board = today_board([first, last], now=now)
+        assert board["facts"][0]["text"] == "Samples were collected 2–3 days ago (Dec 31, 2026–Jan 1, 2027)."
+        first.sample_date = datetime(2027, 1, 4)
+        last.sample_date = None
+        assert today_board([first, last], now=now)["facts"] == []
 
 
 def test_surfrider_layer_grades_each_site_and_maps_it_to_the_city_beach():
