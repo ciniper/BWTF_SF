@@ -225,6 +225,12 @@ The model lives at `/alerts/costs`, the alerts dashboard's Running costs tab (`f
 - [ ] **Batch Brevo sends once a dispatch reaches thousands of recipients.** One API call per recipient from pg_net today; Brevo takes up to 1,000 message versions per call. A scale limit rather than a price.
 - [ ] **Keep the model's prices current.** Re-check `PRICES` and bump `PRICES_CHECKED` when a provider changes pricing, at least yearly.
 
+### B12. SFPUC result timing (recorded 2026-11-10)
+
+On a result day SFPUC moves the posting at about 8:30 AM (`getBeaches` `posted` / `p_color`), the new `sample_date` reaches their map hours later (1:42 and 1:48 PM on 2026-11-10, in two batches by area; 10:30 AM–3 PM since October), and the numbers reach DataSF around 11 PM. `s_color` stayed empty for Ocean Beach at Lincoln even with a failing result, so the posting lives in `posted`, not `s_color`.
+- [x] **Morning gap** (branch `design/sample-result-gap`, `shared/result_gap.py`): from the posting change until the new date reaches the map, the Today row reads "posted 8:32 AM · new result on the way" and the popover shows the "Newest sample not published yet" banner over the previous sample.
+- [ ] **Afternoon gap — use SFPUC's `getStation` numbers (held 2026-11-10).** `POST infrastructure.sfwater.org/lims.asmx/getStation` (`stationId=4605`) is the table behind SFPUC's map popup: about three months of rows per station, with `COLI_TOTAL`, `COLI_FECAL`, `ENTERO`, `COLI_E`. On 2026-11-10 it gained the Nov 9 row at the same check as the map date (1:48 PM) and filled it one indicator at a time: total coliform at 1:48 PM, fecal coliform by 2:55 PM, Enterococcus still empty then. That was true for all 17 routinely sampled stations; the three "not routinely sampled" ones return no rows. That's about 9 hours of numbers SFPUC shows and our popover doesn't. Before building it, watch a few more result days: when Enterococcus fills in, whether it always beats DataSF, and whether early values are ever revised. The popover would then show them marked preliminary, with empty indicators "pending", until DataSF publishes.
+
 ## Open decisions (these shape the sewage-alert work above)
 
 1. **Always-on vs. scheduled?** Real-time texting really wants an unattended 24/7 runner.
