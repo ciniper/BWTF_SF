@@ -1647,7 +1647,7 @@ class LiveData:
         }
 
     def model_stamp(self) -> dict:
-        """Which model made this snapshot — so a forecast_checkpoints row stays
+        """Which model made this snapshot — so a forecast_history row stays
         comparable across a model swap. The served set's name comes from
         candidates.SERVED (the one home), the artifact version and training
         time from the pickles, the rest from the modules that define them.
