@@ -713,7 +713,7 @@ const BUILD = {
         (quiet ? "No discharge reported in the window." : o.n + " discharge" + (o.n > 1 ? "s" : "") + ", " + (o.volume_mg ? o.volume_mg.toFixed(1) + " million gallons" : "volume not reported") + (o.unreported && o.volume_mg ? " (" + o.unreported + " without a volume)" : "") + " · last " + esc(fmtDay(o.last))) +
         "<br>When it fires SFPUC " + esc(posts) + '.<br><span class="mut">' + esc(shortSpan([d.window.from, d.window.to]).replace("–", " → ")) + ' of public reports · <a href="/discharges">Discharge Ledger</a></span></div>', {className: "of-pop", maxWidth: 300});
     }
-    status(d.sites.filter(o => o.n).length + " of " + d.sites.length + " outfalls discharged in the year to " + fmtDay(d.window.to));
+    status("");   // no "N of M outfalls discharged" count under the map: the dots and their popups say it (Chase, 2026-11-13)
     return g;
   },
   bwtf(d) {
