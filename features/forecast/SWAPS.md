@@ -395,7 +395,7 @@ ways:
   challenger's test of the public number then reads post-training and the
   live season as one window.
 - **As served.** For the live forecast only: what the page actually showed,
-  from each day's first forecast stored in Supabase's `forecast_history`,
+  from each day's start-of-day forecast in Supabase's `forecast_checkpoints` (slot 0),
   graded on the same truth (`scores.json` → `t0_as_served`, and "The public
   number" in the stages report). It is never one side of a comparison.
 

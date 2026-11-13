@@ -17,6 +17,11 @@
   .board h1 em{font-style:normal}
   .board h1 em.posted,.board h1 em.warn{color:var(--posted)}.board h1 em.discharge{color:var(--discharge)}.board h1 em.good{color:var(--safe)}
   .board .lead{font-size:16px;color:var(--muted);margin:0 0 16px}
+  .board .facts{display:grid;gap:5px;margin:0 0 16px}
+  .board .facts div{display:flex;gap:12px;align-items:baseline;font-size:14px;line-height:1.4;color:var(--muted)}
+  .board .facts dt{flex:none;width:156px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+  .board .facts dd{margin:0}
+  .board.replaying .facts{display:none}   /* today's samples are not a past day's */
   .zones{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .zone{border:1px solid var(--line);border-radius:var(--r);padding:12px 13px 11px;color:inherit;background:#fff;display:block;width:100%;text-align:left;cursor:pointer;font:inherit}
   .zone:hover{border-color:var(--sky)}
@@ -30,14 +35,15 @@
   .zone .st{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px}
   .zone.posted .st{color:var(--posted)}.zone.discharge .st{color:var(--discharge)}.zone.unknown .st{color:var(--faint)}
   .zone .nm{font-size:16px;font-weight:900;margin:5px 0 1px;line-height:1.2}
-  .zone .risk{font-size:13px;color:var(--muted);display:none}
-  /* the Risk view only reveals: each tile's overflow risk and the forecast's sentence in the subhead; the tiles keep the
-     city's status and colours (Chase, 2026-10-18: "toggling risk will no longer replace all clear") */
-  .board.show-risk .zone .risk{display:block}
-  .board .risk-lead{display:none}.board.show-risk .risk-lead{display:inline}
-  .board:not(.show-risk):not(.replaying) .lead.only-risk{display:none}   /* a replayed day writes its own subhead into it */
-  /* the risk levels (shared/risk_levels.py, Chase, 2026-10-01): the colour of the tile's number */
-  {% for l in RISK_LEVELS.levels %}.zone .risk b.lvl-{{ l.key }}{color:{{ l.color }}}
+  .board .lead:empty{display:none}
+  .forecast-body{margin-top:8px;font-size:13px;color:var(--muted)}
+  .forecast-body[hidden]{display:none}
+  .forecast-body .risk-lead{color:var(--ink);margin:0 0 6px}
+  .forecast-body .by-zone{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;list-style:none;padding:0;margin:0 0 6px}
+  .forecast-body .by-zone li{display:flex;justify-content:space-between;gap:8px}
+  .forecast-body .note{margin:0;font-size:12px}
+  .forecast-body a{color:var(--brand)}
+  {% for l in RISK_LEVELS.levels %}.forecast-body b.lvl-{{ l.key }}{color:{{ l.color }}}
   {% endfor %}
   .zone .stations{display:flex;flex-wrap:wrap;gap:4px;margin:9px 0 5px;min-height:9px}
   .zone .stations .status-dot{width:9px;height:9px}
@@ -55,9 +61,12 @@
   .credits-btn::before{content:"◂ "}.credits.open .credits-btn::before,.credits:hover .credits-btn::before{content:"▾ "}
   .credits-full{display:none;line-height:1.3}.credits-full a{color:var(--brand)}
   .credits.open .credits-full,.credits:hover .credits-full,.credits:focus-within .credits-full{display:inline}
-  .map-legend{position:absolute;left:56px;top:12px;z-index:500;display:flex;flex-wrap:wrap;gap:10px;background:rgba(255,255,255,.92);border-radius:999px;padding:5px 10px;font-size:11.5px;color:var(--muted)}
-  .map-legend span{display:inline-flex;align-items:center;gap:5px}
-  .map-legend span[hidden]{display:none}   /* the Surfrider entry stays out of the legend until its layer is switched on */
+  .map-legend{display:grid;gap:5px;padding:8px 2px 0;font-size:11.5px;color:var(--muted)}
+  .map-legend:empty{display:none}
+  .map-legend .legend-row{display:grid;grid-template-columns:50px minmax(0,1fr);gap:8px;align-items:baseline}
+  .map-legend .legend-items{display:flex;flex-wrap:wrap;gap:3px 12px}
+  .map-legend span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+  .map-legend .src{font-weight:700;color:var(--ink)}
   .st-label{background:rgba(255,255,255,.94);border:1px solid #b9c6cd;border-radius:6px;padding:1px 6px;font:700 11px Roboto,sans-serif;color:var(--ink);white-space:nowrap;box-shadow:none}
   .st-label::before{display:none}
   /* the map's labels (refreshLabels): a posted or discharging beach's, always; with the Labels layer, zone names zoomed out and
@@ -72,10 +81,27 @@
   #today-map .leaflet-pane > svg{pointer-events:none}   /* one pane per status rank (initMap): a pane's empty drawing area must not swallow taps meant for the dots below */
   .bwtf-dot{display:block;width:11px;height:11px;margin:1px;transform:rotate(45deg);border:1px solid rgba(38,39,42,.55);border-radius:2px;background:#fff;box-shadow:0 0 0 1px #fff}   /* Surfrider's diamond: a hairline ring so the grade colour reads true (Chase: the thick ring looked blue) */
   .bwtf-dot.safe{background:var(--safe)}.bwtf-dot.caution{background:var(--caution)}.bwtf-dot.posted{background:var(--posted)}.bwtf-dot.unknown{background:var(--unknown)}
-  .map-legend .bwtf-dot{display:inline-block;width:8px;height:8px;margin:0 2px}
-  .map-legend .shape{display:inline-flex;align-items:center;gap:4px;color:var(--muted)}
-  .map-legend .shape .status-dot,.map-legend .shape .bwtf-dot{background:#8a949b}
-  .map-legend .divider{width:1px;height:12px;background:var(--line);margin:0 2px}
+  .bwtf-dot.stale{background:#fff;border:1.5px dashed var(--faint);box-shadow:0 0 0 1px #fff}   /* older than STALE_AFTER_DAYS: hollow and grey, whatever its grade — it is not the water's state now (2026-11-06) */
+  /* Give diamonds similar visual weight to the circles in the legend and guide. */
+  .map-legend .bwtf-dot,.colour-key .bwtf-dot{width:8.5px;height:8.5px}
+  .map-legend .bwtf-dot{display:inline-block;margin:0 .75px}
+  /* the collapsed key under the board: one paragraph per colour system (2026-11-08) */
+  .colour-key{margin:18px 0 0;font-size:13.5px;color:var(--muted)}
+  .colour-key summary{cursor:pointer;font-weight:700;color:var(--brand);font-size:13px}
+  .colour-key dl{margin:10px 0 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:16px 24px}
+  .colour-key ul{list-style:none;margin:6px 0;padding:0}
+  .colour-key li{display:grid;grid-template-columns:12px minmax(0,1fr);align-items:start;gap:7px}
+  .colour-key li i{margin:5px 0 0;justify-self:center}
+  .colour-key li .bwtf-dot{margin-top:5.75px}
+  .colour-key li+li{margin-top:3px}
+  .colour-key p{margin:6px 0}
+  .colour-key a{color:var(--brand)}
+  .colour-key dt{display:flex;align-items:center;gap:7px;font-weight:700;color:var(--ink);margin-bottom:2px}
+  .colour-key dt small{font-weight:400;color:var(--faint)}
+  .colour-key dt .bwtf-dot{display:inline-block;margin:0 .75px}
+  .colour-key dd{margin:0;line-height:1.5}
+  .colour-key dd b{color:var(--ink);font-weight:600}
+  .board.replaying .colour-key{display:none}   /* a past day's colours are the city's alone; the replay's own sentence says so */
   .map-legend .ring{display:inline-block;width:10px;height:10px;border-radius:50%;border:2px solid var(--brand);background:rgba(0,114,188,.15)}
   .map-legend .of{display:inline-block;width:8px;height:8px;border-radius:50%;background:#7a5a3a}
   /* Above the board: Sources (what the map shows) and Layers (what you add on top) as two boxes (Chase, 2026-10-01);
@@ -97,13 +123,16 @@
   .layers input:focus-visible+.track{outline:3px solid var(--sky);outline-offset:2px}
   .layers input:disabled+.track{opacity:.45}
   .layers .preset:disabled{opacity:.45;cursor:not-allowed}
-  .layers .replay-ctl{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}   /* appears when the Replay chip is on: oldest day · slider · chosen day; today sits at the right */
-  .layers .replay-ctl[hidden]{display:none}
-  .layers .replay-ctl .tick{font-weight:600}
-  .layers .replay-ctl input{width:140px;accent-color:var(--brand)}
-  .layers .replay-ctl output{min-width:88px;color:var(--ink);font-weight:700}
-  .layers .layer-status{flex-basis:100%;color:var(--brand);font-weight:600;font-size:13px;margin:-2px 2px 0}   /* one line under both boxes: Surfrider's count and the layers' facts both land here */
+  .layers .layer-status{flex-basis:100%;color:var(--brand);font-weight:600;font-size:13px;margin:-2px 2px 0}   /* loading, errors, and extra-layer summaries */
   .layers .layer-status:empty{display:none}
+  /* Keep main's shared toolbar; sources use the same compact pills as the optional layers. */
+  .layers .ctl-group{gap:6px 8px;padding:8px 10px}
+  .layers .switch{gap:0;padding:6px 10px;border:2px solid var(--line);border-radius:999px;font-size:13px;color:var(--muted)}
+  .layers .switch .track{display:none}
+  .layers .switch:has(input:checked){background:var(--brand);border-color:var(--brand);color:#fff}
+  .layers .switch:has(input:focus-visible){outline:3px solid var(--sky);outline-offset:2px}
+  .layers .switch:hover{border-color:var(--sky)}
+  .layers .preset,.layers-toggle{padding:6px 10px;font-size:13px;line-height:1.5}
   .zone.wet{background:#eef5fb}
   .zone .rainline{color:var(--brand);font-size:12px;font-weight:600;margin-top:4px}
   .zone .rainline:empty{display:none}
@@ -113,59 +142,160 @@
   .of-pop b{display:block;font-size:14px;margin-bottom:2px}
   .of-pop .mut{color:var(--muted)}
   .board.replaying .eyebrow{color:var(--brand)}
-  .board.replaying .zone .risk,.board.replaying .zone .rainline,.board.replaying .zone .meta,.board.replaying .site small{display:none}   /* today's risk, rain and sample dates are not that day's */
+  .board.replaying .board-forecast,.board.replaying .forecast-body,.board.replaying .zone .rainline,.board.replaying .zone .meta,.board.replaying .site small{display:none}   /* today's risk, rain and sample dates are not that day's */
   @media (max-width:760px){
-    .layers .replay-ctl{flex-basis:100%}.layers .replay-ctl input{flex:1}
     .layers .ctl-group{flex-basis:100%}
     .layers-toggle{display:inline-flex}
     .layers .layer-group{display:none}.layers .layer-group.open{display:flex}
+    .layers .sources{flex-wrap:nowrap;gap:6px}
+    .layers .sources .ctl-label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+    .layers .switch,.layers-toggle{padding:6px 8px;font-size:12px;white-space:nowrap}
+    .layers-toggle{gap:4px}
   }
   @media (max-width:980px){.board .grid{grid-template-columns:1fr}.map-wrap{min-height:300px}}
   @media (max-width:760px){
     .board{padding:18px 16px}
     .board h1{font-size:34px}
     .board .lead{font-size:14px;margin-bottom:12px}
+    .board .facts div{flex-direction:column;gap:1px;font-size:13.5px}
+    .board .facts dt{width:auto}
     .zone{padding:11px}.zone .nm{font-size:15px}
     .map-wrap{min-height:260px}
-    .map-legend{position:static;background:none;border-radius:0;padding:8px 2px 0;gap:6px 12px}   /* under the map: over it, it covered 4 of 20 stations on the north shore (6 with Surfrider on) */
   }
+
+  /* Sources belong to the map; time and forecast belong to the board. */
+  /* Replay: "Past week" under the zone tiles, beside Today's forecast, opens a strip of days, each a dot in that day's worst
+     status on the city's map; tap a day to redraw the board as it stood, Today (at the right) for the live board. Closed by
+     default (Chase, 2026-11-11: always shown at the top, the past days crowded today's headline) */
+  .day-strip{display:flex;justify-content:space-between;gap:2px;max-width:440px;margin:10px auto 0}   /* a compact row centred in the column; each day is as wide as its label, so the outline hugs it */
+  .day-strip[hidden]{display:none}
+  .day-strip .day{flex:0 1 auto;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;padding:5px 6px 7px;border:2px solid transparent;border-radius:10px;background:none;color:var(--muted);font-family:inherit;font-size:11.5px;font-weight:600;line-height:1.2;white-space:nowrap;cursor:pointer}
+  .day-strip .day:hover{border-color:var(--line)}
+  .day-strip .day.active{border-color:var(--brand);background:#fff;color:var(--ink);font-weight:700}
+  .day-strip .day:focus-visible{outline:3px solid var(--sky);outline-offset:1px}
+  @media (max-width:480px){.day-strip{max-width:none;margin-left:-8px;margin-right:-8px}}   /* phones: the full width, outdented so the first and last labels line up with the text */
+  @media (max-width:360px){.day-strip{margin-left:-6px;margin-right:-6px}.day-strip .day{font-size:10.5px;padding-left:4px;padding-right:4px}}   /* eight days across a 320 px phone */
+  .zone-tools{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px 12px;margin-top:6px}
+  .zone-tools .zones-hint{font-size:12px;margin:0}
+  .past-status{margin:8px 0 0;font-size:12px;color:var(--muted)}   /* Past week's loading and error line, under its control (not the map's status line) */
+  .past-status:empty{display:none}
+  @media (min-width:761px){.past-status{text-align:right}}
+  .board-toggles{display:flex;align-items:center;gap:4px 14px;flex-wrap:wrap}
+  .board-forecast,.board-past{margin:0}
+  .board-past .preset,.board-forecast .preset{padding:0;border:0;background:none;font-size:12px;font-weight:600;color:var(--muted)}
+  .board-past .preset::before,.board-forecast .preset::before{content:"▸ ";}.board-past .preset.active::before,.board-forecast .preset.active::before{content:"▾ "}
+  .board-past .preset.active,.board-forecast .preset.active{color:var(--brand);background:none}
+  .map-col .layers{margin:0 0 6px;gap:6px}
+  .map-col .layers .ctl-group{border:0;padding:0;background:none}
+  .map-col .layers .sources{flex:1;min-width:0;flex-wrap:nowrap;gap:4px}
+  .map-col .layers .sources .ctl-label{position:static;width:auto;height:auto;overflow:visible;clip-path:none;font-size:12px;text-transform:none;letter-spacing:0;white-space:nowrap;margin:0;font-weight:500}
+  .map-col .layers .switch,.map-col .layers .preset,.map-col .layers-toggle{padding:4px 5px;font-size:11.5px;white-space:nowrap}
+  .map-col .layers-toggle{display:inline-flex}
+  .map-col .layers .layer-group{display:none;flex-basis:100%}.map-col .layers .layer-group.open{display:flex}
+  .map-stack{position:relative;display:flex;flex-direction:column;flex:1;min-height:0}
+  .map-stack .map-wrap{flex:1}
+  @media (max-width:980px){.board .grid{row-gap:10px}}
+  @media (max-width:360px){.map-col .layers .sources{flex-wrap:wrap}.map-col .layers .sources .ctl-label{flex-basis:100%}}
   @media (max-width:420px){.zones{gap:8px}}
 </style>
 {%- endmacro %}
 
-{% macro board_section(board, sites=false) -%}
+{% macro map_controls() -%}
+  <div class="layers" id="layers">
+    <div class="ctl-group sources" role="group" aria-labelledby="lbl-sources">
+    <span class="ctl-label" id="lbl-sources">Map shows:</span>
+    <label class="switch" title="City Results shows SFPUC's current posting status at twenty monitoring stations"><input type="checkbox" id="tg-city" checked><span class="track"></span><span class="lbl">City Results</span></label>
+    <label class="switch" title="Surfrider's latest Enterococcus result at each site the volunteers sample"><input type="checkbox" id="tg-bwtf"><span class="track"></span><span class="lbl">Surfrider Results</span></label>
+    <button type="button" class="layers-toggle" id="layers-toggle" aria-expanded="false" aria-controls="layer-group">More<span class="n" id="layers-n"></span></button>
+    </div>
+    <div class="ctl-group layer-group" id="layer-group" role="group" aria-label="More map options">
+    <button type="button" class="preset layer" data-layer="rain" aria-pressed="false" title="The last three daily totals at the forecast's two NOAA gauges">Rain</button>
+    <button type="button" class="preset layer" data-layer="outfalls" aria-pressed="false" title="The 34 permitted sewer outfalls; tap one for its past year of reported discharges">Outfalls</button>
+    <button type="button" class="preset layer" data-layer="labels" aria-pressed="false" title="Name the zones on the whole-city map, and each station when you zoom in">Names</button>
+    </div>
+    <span class="layer-status" id="layer-status" role="status" aria-live="polite"></span>
+  </div>
+{%- endmacro %}
+
+{% macro board_section(board, sites=false, controls=false) -%}
   <section class="board tone-{{ board.tone }}" aria-labelledby="today-h">
     <div class="grid">
       <div class="left">
         <div class="eyebrow">Beach status · {{ board.date }} · {% if board.feed_ok %}SFPUC map checked {{ board.checked }}{% else %}SFPUC map unreachable{% endif %}</div>
         <h1 id="today-h">{{ board.headline_html|safe }}</h1>
-        {% if board.lead or board.risk_lead %}<p class="lead{% if not board.lead %} only-risk{% endif %}">{{ board.lead }}{% if board.risk_lead %}{% if board.lead %} {% endif %}<span class="risk-lead">{{ board.risk_lead }}</span>{% endif %}</p>{% endif %}
+        <p class="lead">{{ board.lead }}</p>
+        {% if board.facts %}<dl class="facts">{% for f in board.facts %}<div><dt>{{ f.label }}</dt><dd>{{ f.text[:1]|upper }}{{ f.text[1:] }}</dd></div>{% endfor %}</dl>{% endif %}
         {% if board.zones %}
         <div class="zones" id="zones">
-          {% for z in board.zones %}
+          {# the tiles sit where their zones are on the map (landing.TILE_GRID, Chase, 2026-11-08); board.zones keeps registry order #}
+          {% for z in board.tiles %}
           <button type="button" class="zone {{ z.status }}" data-zone="{{ z.key }}" aria-pressed="false" title="Zoom the map to {{ z.label }}">
             <div class="st"><i class="status-dot {{ z.status }}"></i>{{ z.status_text }}</div>
             <div class="nm">{{ z.label }}</div>
-            <div class="risk">{% if z.risk is not none %}<b class="lvl-{{ z.level }}">{{ z.risk }}%</b> overflow risk today{% else %}overflow risk unavailable{% endif %}</div>
             <div class="stations">{% for s in z.stations %}<i class="status-dot {{ s.status }}" title="{{ s.full_name }} · {{ s.status_text }}"></i>{% endfor %}</div>
             <div class="meta">{{ z.meta }}</div>
           </button>
           {% endfor %}
         </div>
-        <p class="zones-hint">Tap a zone to see its stations{% if sites %} and Surfrider's sites there{% endif %}; tap one for its latest lab results.</p>
+        <div class="zone-tools"><p class="zones-hint">Tap a zone to explore its stations.</p>
+        {% if controls %}<div class="board-toggles">
+          <div class="board-past"><button type="button" class="preset layer" data-layer="replay" aria-expanded="false" aria-controls="day-strip" title="The city's map on each of the past days">Past week</button></div>
+          <div class="board-forecast"><button type="button" class="preset layer" data-layer="risk" aria-expanded="false" aria-controls="forecast-body" title="Experimental sewer-overflow forecast for today">Today’s forecast · Beta</button></div>
+        </div>{% endif %}
+        </div>
+        {% if controls %}<div class="day-strip" id="day-strip" role="group" aria-label="Past week: the city's map on each day" hidden></div>
+        <p class="past-status" id="past-status" role="status" aria-live="polite"></p>{% endif %}
+        {% if controls %}
+        <div class="forecast-body" id="forecast-body" hidden>
+          {% if board.risk_lead %}<p class="risk-lead">{{ board.risk_lead }}</p>{% else %}<p class="risk-lead">Forecast currently unavailable.</p>{% endif %}
+          <ul class="by-zone">{% for z in board.zones if z.risk is not none %}<li><span>{{ z.label }}</span><b class="lvl-{{ z.level }}">{{ z.risk }}%</b></li>{% endfor %}</ul>
+          <p class="note">An experimental estimate of sewer-overflow risk from rainfall, not an official advisory. The cards above show SFPUC’s current posting status. <a href="/forecast">See the forecast and days ahead.</a></p>
+        </div>
+        {% endif %}
         {% endif %}
       </div>
       <div class="map-col">
+      {% if controls %}{{ map_controls() }}{% endif %}
+      <div class="map-stack">
       <div class="map-wrap">
-        <div id="today-map" role="region" aria-label="Map of the city's beach monitoring stations, coloured by today's status"></div>
+        <div id="today-map" role="region" aria-label="Map of the city's beach monitoring stations, colored by the city's posted status"></div>
         <button type="button" class="map-reset" id="map-reset" hidden>Whole city</button>
       </div>
-        <div class="map-legend" id="map-legend"><span><i class="status-dot safe"></i>safe</span><span><i class="status-dot posted"></i>posted</span><span><i class="status-dot discharge"></i>discharge</span><span><i class="status-dot unknown"></i>not sampled</span><span id="lg-bwtf" hidden><i class="bwtf-dot safe"></i>Surfrider latest</span></div>
+        <div class="map-legend" id="map-legend" aria-label="Map legend"><div class="legend-row"><strong class="src">City</strong><div class="legend-items"><span><i class="status-dot safe"></i>No warning</span><span><i class="status-dot posted"></i>Warning posted</span><span><i class="status-dot discharge"></i>Sewage discharge</span><span><i class="status-dot unknown"></i>No data</span></div></div></div>
+      </div>
       </div>
     </div>
+    <details class="colour-key">
+      <summary>What the colors mean</summary>
+      <dl>
+        <div><dt><i class="status-dot safe"></i> City status</dt>
+          <dd>
+            <p>Circles and zone borders summarize the latest status available from SFPUC. Check the station’s sample date for when the water was collected.</p>
+            <ul role="list">
+              <li><i class="status-dot safe" aria-hidden="true"></i><span><b>No warning (green):</b> SFPUC’s green status indicates that the last reported water quality result met California’s bacteria standards for water contact recreation. Since testing is not every day, this does not necessarily mean the water is currently clean.</span></li>
+              <li><i class="status-dot posted" aria-hidden="true"></i><span><b>Warning posted (orange):</b> SFPUC can post a warning after detecting elevated bacteria within the past 24 hours or after a recent combined sewer discharge.</span></li>
+              <li><i class="status-dot discharge" aria-hidden="true"></i><span><b>Sewage discharge (red):</b> SFPUC flags a combined sewer discharge within the previous 24 to 72 hours.</span></li>
+              <li><i class="status-dot unknown" aria-hidden="true"></i><span><b>No data (gray):</b> We have no usable status for the station. SFPUC marks locations without data as not sampled or not routinely sampled.</span></li>
+            </ul>
+            <p><a href="https://webapps.sfpuc.org/sapps/beachesandbay.html">See SFPUC’s official map and legend</a>.</p>
+          </dd></div>
+        <div><dt><i class="bwtf-dot safe"></i> Surfrider samples</dt>
+          <dd>
+            <p>Each diamond shows the latest volunteer Enterococcus result at that site. Counts are in MPN (most probable number) per 100 mL.</p>
+            <ul role="list">
+              <li><i class="bwtf-dot safe" aria-hidden="true"></i><span><b>Low bacteria (green):</b> Below {{ ENTERO_CAUTION }}.</span></li>
+              <li><i class="bwtf-dot caution" aria-hidden="true"></i><span><b>Medium bacteria (yellow):</b> {{ ENTERO_CAUTION }} through {{ ENTERO_LIMIT }}. This is our caution range.</span></li>
+              <li><i class="bwtf-dot posted" aria-hidden="true"></i><span><b>High bacteria (orange):</b> Above {{ ENTERO_LIMIT }}, the single-sample threshold used here.</span></li>
+              <li><i class="bwtf-dot stale" aria-hidden="true"></i><span><b>Over {{ STALE_AFTER_DAYS }} days old (hollow):</b> We hide the grade color after {{ STALE_AFTER_DAYS }} days. Tap the marker for the result and date.</span></li>
+              <li><i class="bwtf-dot unknown" aria-hidden="true"></i><span><b>No result (solid gray):</b> No Enterococcus reading is available for that site.</span></li>
+            </ul>
+            <p>Volunteer results are supplemental. The City and Surfrider may sample different sites or dates, and official warnings come from SFPUC.</p>
+          </dd></div>
+      </dl>
+    </details>
     {% if sites %}
     <div class="site-chips" id="zone-sites" aria-label="The chosen zone's stations, as the city shows them, and Surfrider's sites there" hidden>
-      {% for z in board.zones %}{% for s in z.stations %}<button type="button" class="site" data-zone="{{ z.key }}" data-station="{{ s.source }}" data-sample-station="{{ s.source }}" data-sample-name="{{ s.full_name }}" data-sample-feed-date="{{ s.sampled }}" title="Latest lab results"><i class="status-dot {{ s.status }}"></i>{{ s.full_name }}<small>{{ s.sampled_text }}</small></button>{% endfor %}{% endfor %}
+      {% for z in board.zones %}{% for s in z.stations %}<button type="button" class="site" data-zone="{{ z.key }}" data-station="{{ s.source }}" data-sample-station="{{ s.source }}" data-sample-name="{{ s.full_name }}" data-sample-feed-date="{{ s.sampled }}"{% if s.pending %} data-sample-changed="{{ s.pending.change }}" data-sample-changed-at="{{ s.pending.at }}"{% endif %} title="Latest lab results"><i class="status-dot {{ s.status }}"></i>{{ s.full_name }}<small>{{ s.sampled_text }}</small></button>{% endfor %}{% endfor %}
     </div>
     {% endif %}
   </section>
@@ -203,11 +333,9 @@ const NARROW_MAP_PX = 480;   // a map narrower than this (a phone's) gets the sm
 function zoneView(key) {
   return frame(L.latLngBounds(MARKERS[key].map(m => m.getLatLng())), MAP.getSize().x < NARROW_MAP_PX ? 28 : 44, 15);
 }
-// Fits bounds with a margin of `pad` pixels, the top one below the legend when it sits over the map, no closer than maxZoom
+// Fits bounds with a margin of pad pixels, no closer than maxZoom.
 function frame(b, pad, maxZoom) {
-  const lg = document.getElementById("map-legend");
-  const top = lg && getComputedStyle(lg).position === "absolute" ? Math.max(pad, lg.offsetTop + lg.offsetHeight + 16) : pad;
-  const tl = L.point(pad, top), br = L.point(pad, pad);
+  const tl = L.point(pad, pad), br = L.point(pad, pad);
   // getBoundsZoom clamps to the previous minimum, which can be too close after a resize.
   // Measure without that limit; changing the option directly avoids firing zoom events.
   const minZoom = MAP.options.minZoom;
@@ -297,8 +425,10 @@ function initMap() {
     const bad = s.status === "posted" || s.status === "discharge";
     const m = L.circleMarker([s.lat, s.lon], {pane: "st" + (RANK[s.status] || 0), radius: bad ? 9 : 7, color: "#fff", weight: 2, fillColor: COL[s.status] || COL.unknown, fillOpacity: .95, bubblingMouseEvents: false}).addTo(MAP);
     m.__s = s; m.__z = z; ALL_ORDERED.push(m);   // the layers recolour markers by zone risk or by a replayed day; focusZone re-adds them in this order
-    m.bindTooltip(s.full_name + " · " + s.status_text + (s.sampled ? " · sampled " + s.sampled : ""), {direction: "right", offset: [9, 0], className: "st-label"});   // on hover; a posted beach's label on the map is refreshLabels'
-    m.on("click", () => { if (window.SamplePopover) SamplePopover.open({station: s.source, name: s.full_name, feedDate: s.sampled}); });
+    const sampleDetail = s.pending ? " · new sample not published yet"
+      : !bad && s.sampled ? " · " + s.sampled_text + " (" + s.sampled + ")" : "";
+    m.bindTooltip(s.full_name + " · " + s.status_text + sampleDetail, {direction: "right", offset: [9, 0], className: "st-label"});   // on hover; a posted beach's label on the map is refreshLabels'
+    m.on("click", () => { if (window.SamplePopover) SamplePopover.open({station: s.source, name: s.full_name, feedDate: s.sampled, changed: s.pending ? s.pending.change : "", changedAt: s.pending ? s.pending.at : ""}); });
     (MARKERS[z.key] = MARKERS[z.key] || []).push(m);
   }
   fitAll(false); setCityLimits(); followZoomLimits();   // the first view is placed, not slid to from setView's placeholder
@@ -450,23 +580,34 @@ function fitTooltip(e) {
 }
 
 function renderLegend() {
-  // colours once (both shapes share them), then the shape key when Surfrider is on: ● city · ◆ Surfrider
-  const lg = $("map-legend"); if (!lg) return;
-  const dot = (c, t) => '<span><i class="status-dot ' + c + '"></i>' + t + "</span>";
-  let h = "";
-  {
-    const parts = [];
-    if (CITY_ON || LAYER.bwtf.on) parts.push(dot("safe", REPLAY_OFFSET ? "not posted" : "safe"));
-    if (LAYER.bwtf.on) parts.push(dot("caution", "caution"));
-    if (CITY_ON || LAYER.bwtf.on) parts.push(dot("posted", "posted"));
-    if (CITY_ON) parts.push(dot("discharge", "discharge"), dot("unknown", REPLAY_OFFSET ? "not recorded" : "not sampled"));
-    else if (LAYER.bwtf.on) parts.push(dot("unknown", "no result"));
-    h = parts.join("");
-    if (LAYER.bwtf.on) h += '<i class="divider"></i><span class="shape"><i class="status-dot"></i>city</span><span class="shape"><i class="bwtf-dot"></i>Surfrider</span>';
+  const legend = $("map-legend");
+  if (!legend) return;
+  const item = (shape, grade, label) => '<span><i class="' + shape + ' ' + grade + '"></i>' + label + '</span>';
+  const row = (name, items) => '<div class="legend-row"><strong class="src">' + name
+    + '</strong><div class="legend-items">' + items.join("") + '</div></div>';
+  const rows = [];
+  if (CITY_ON) {
+    rows.push(row("City", [
+      item("status-dot", "safe", REPLAY_OFFSET ? "Not posted" : "No warning"),
+      item("status-dot", "posted", "Warning posted"),
+      item("status-dot", "discharge", "Sewage discharge"),
+      item("status-dot", "unknown", REPLAY_OFFSET ? "Not recorded" : "No data"),
+    ]));
   }
-  if (LAYER.rain.on) h += '<span><i class="ring"></i>rain, 3 days</span>';
-  if (LAYER.outfalls.on) h += '<span><i class="of"></i>outfall</span>';
-  lg.innerHTML = h;
+  const {on, data} = LAYER.bwtf;
+  if (on && data) {
+    rows.push(row("Surfrider", [
+      item("bwtf-dot", "safe", "Low bacteria"),
+      item("bwtf-dot", "caution", "Medium bacteria"),
+      item("bwtf-dot", "posted", "High bacteria"),
+      item("bwtf-dot", "stale", "Over " + data.stale_after_days + " days old"),
+    ]));
+  }
+  const extras = [];
+  if (LAYER.rain.on) extras.push('<span><i class="ring"></i>Rain, 3 days</span>');
+  if (LAYER.outfalls.on) extras.push('<span><i class="of"></i>Outfall</span>');
+  if (extras.length) rows.push(row("Extras", extras));
+  legend.innerHTML = rows.join("");
   refreshLabels();   // the legend's new size, and a new layer's points, move where labels fit
 }
 function tileParts(key) { const b = document.querySelector('.zone[data-zone="' + key + '"]'); return b ? {b, st: b.querySelector(".st"), dots: [...b.querySelectorAll(".stations .status-dot")]} : null; }
@@ -485,8 +626,12 @@ function restoreBoard() {
   for (const m of allMarkers()) { m.setStyle({fillColor: COL[m.__s.status] || COL.unknown, radius: m.__s.status === "posted" || m.__s.status === "discharge" ? 9 : 7}); placeRank(m, m.__s.status); labelFor(m, m.__s.status); }
   for (const [src, cls] of ORIG.sites || []) { const d = document.querySelector('#zone-sites .site[data-station="' + src + '"] .status-dot'); if (d) d.className = cls; }
 }
-// Risk view: reveals each tile's overflow risk today and the forecast's sentence; the city's status stays as it is
-function applyRisk() { document.querySelector(".board").classList.toggle("show-risk", RISK_VIEW); }
+// Forecast details expand below their control, independently of the city status cards.
+function applyRisk() {
+  const panel = $("forecast-body"), button = document.querySelector('.layer[data-layer="risk"]');
+  if (panel) panel.hidden = !RISK_VIEW;
+  if (button) button.setAttribute("aria-expanded", String(RISK_VIEW));
+}
 // Replay: the map as SFPUC showed it at the last check of a past day
 function applyReplay() {
   snapshotBoard(); restoreBoard();
@@ -518,7 +663,7 @@ function applyReplay() {
   board.querySelector(".eyebrow").innerHTML = "Replay · " + esc(fmtDay(day)) + " · SFPUC's map at its last check that day";
   $("today-h").innerHTML = parts.join(" ");
   refreshLabels();   // a replayed day's posted labels replace the plain names they cover
-  const lead = board.querySelector(".lead"); if (lead) lead.innerHTML = "What the city's map showed at its last check on " + esc(fmtDay(day)) + ": posted, discharging, or neither" + (counts.unknown ? " · " + counts.unknown + " station" + (counts.unknown > 1 ? "s" : "") + " not recorded that day" : "") + ". Move the slider back to Today for the live board.";
+  const lead = board.querySelector(".lead"); if (lead) lead.innerHTML = "What the city's map showed at its last check on " + esc(fmtDay(day)) + ": posted, discharging, or neither" + (counts.unknown ? " · " + counts.unknown + " station" + (counts.unknown > 1 ? "s" : "") + " not recorded that day" : "") + ". Tap Today for the live board.";
   renderLegend();
 }
 async function fetchJSON(url) { const r = await fetch(url); const j = await r.json(); if (j.ok === false) throw new Error(j.error || "no data"); return j; }
@@ -532,7 +677,7 @@ const BUILD = {
       L.marker([x.lat, x.lon], {icon: L.divIcon({className: "gauge-pin", html: "", iconSize: [0, 0]}), keyboard: false, interactive: false})
         .bindTooltip(name + " · " + (t == null ? "no report" : fmtIn(t) + " · " + shortSpan(x.window)), {permanent: true, direction: "top", className: "gauge-label", offset: [0, -4]}).addTo(g);
     }
-    for (const z of ZONES) { const t = tileParts(z.key), zr = d.zones[z.key]; if (!t || !zr) continue; let el = t.b.querySelector(".rainline"); if (!el) { el = document.createElement("div"); el.className = "rainline"; t.b.querySelector(".risk").after(el); }
+    for (const z of ZONES) { const t = tileParts(z.key), zr = d.zones[z.key]; if (!t || !zr) continue; let el = t.b.querySelector(".rainline"); if (!el) { el = document.createElement("div"); el.className = "rainline"; t.b.querySelector(".meta").before(el); }
       el.textContent = zr.total_in == null ? "" : fmtIn(zr.total_in) + " of rain in 3 days · " + zr.gauge + " gauge"; t.b.classList.toggle("wet", (zr.total_in || 0) >= d.advisory_in); }
     status(d.wettest_in >= d.advisory_in ? fmtIn(d.wettest_in) + " at the wetter gauge over three days" : "Under " + fmtIn(d.advisory_in) + " at both gauges over three days");
     return g;
@@ -564,9 +709,9 @@ const BUILD = {
     };
     const g = L.layerGroup(d.sites.filter(s => s.lat != null && s.lon != null).map(s => {
       const grade = s.over ? "posted" : s.caution ? "caution" : s.value == null ? "unknown" : "safe", [ox, oy] = nudge(s);
-      const m = L.marker([s.lat, s.lon], {pane: "bw" + (RANK_ST[grade] || 0), keyboard: false,   // the same hierarchy as the city's dots, just under them at a tie
-        icon: L.divIcon({className: "bwtf-pin", html: '<i class="bwtf-dot ' + grade + '"></i>', iconSize: [15, 15], iconAnchor: [7 - ox, 7 - oy], tooltipAnchor: [ox, oy]})});
-      m.bindTooltip("Surfrider · " + s.name + " · " + (s.raw || "no result") + (s.raw ? " MPN/100 mL" : "") + (s.date ? " · " + s.date : ""), {direction: "auto", offset: [9, 0], className: "st-label"});
+      const m = L.marker([s.lat, s.lon], {pane: "bw" + (s.stale ? 0 : RANK_ST[grade] || 0), keyboard: false,   // the same hierarchy as the city's dots, just under them at a tie; a stale result sits at the bottom
+        icon: L.divIcon({className: "bwtf-pin", html: '<i class="bwtf-dot ' + grade + (s.stale ? " stale" : "") + '"></i>', iconSize: [15, 15], iconAnchor: [7 - ox, 7 - oy], tooltipAnchor: [ox, oy]})});
+      m.bindTooltip("Surfrider · " + s.name + " · " + (s.raw || "no result") + (s.raw ? " MPN/100 mL" : "") + (s.date ? " · " + s.age_text + " (" + s.date + ")" : ""), {direction: "auto", offset: [9, 0], className: "st-label"});
       m.on("click", () => { if (window.SamplePopover) SamplePopover.open({bwtf: s.name, name: s.city_name || s.name, date: s.date}); });
       return m;
     }));
@@ -578,12 +723,12 @@ const BUILD = {
       const grade = s.over ? "posted" : s.caution ? "caution" : s.value == null ? "unknown" : "safe";
       const chip = document.createElement("button"); chip.type = "button"; chip.className = "site bwtf"; chip.dataset.zone = s.zone; chip.title = "Surfrider's latest result here";
       chip.dataset.sampleBwtf = s.name; chip.dataset.sampleName = s.city_name || s.name; chip.dataset.sampleDate = s.date || "";
-      chip.innerHTML = '<i class="bwtf-dot ' + grade + '"></i>' + esc(s.name) + "<small>Surfrider · " + (s.raw ? esc(s.raw) + " MPN" : "no result") + (s.date ? " · " + esc(s.date) : "") + "</small>";
+      chip.innerHTML = '<i class="bwtf-dot ' + grade + (s.stale ? " stale" : "") + '"></i>' + esc(s.name) + "<small>Surfrider · " + (s.raw ? esc(s.raw) + " MPN" : "no result") + (s.date ? " · sampled " + esc(s.age_text) : "") + "</small>";
       const last = [...box.querySelectorAll('.site[data-zone="' + s.zone + '"]')].pop();
       if (last) last.after(chip); else box.appendChild(chip);
     }
     filterSites();
-    status(d.sites.length + " Surfrider sites · newest " + (d.newest || "—"));
+    status("");
     return g;
   },
 };
@@ -602,29 +747,50 @@ async function setLayer(key, on, btn) {
   } catch (e) { status("Could not load " + key + ": " + e.message); markOn(btn, false); }
   btn.disabled = false; renderLegend();
 }
+// The day strip: one button per day from the oldest recorded day to Today (offset 0, at the right)
+const dayWorst = day => { let w = "unknown"; for (const z of ZONES) for (const st of z.stations) { const c = day ? (REPLAY.stations[st.source] || {})[day] : st.status; if (c && (w === "unknown" || RANK_ST[c] > RANK_ST[w])) w = c; } return w; };
+const DAY_SAYS = {discharge: "sewage discharge", posted: "a beach posted", safe: "no beach posted", caution: "no beach posted", unknown: "not recorded"};
 function setReplay(offset) {
-  const slider = $("replay"), out = $("replay-out"), riskBtn = document.querySelector('.layer[data-layer="risk"]');
-  const max = slider.max | 0;
-  REPLAY_OFFSET = Math.max(0, Math.min(max, offset | 0)); slider.value = max - REPLAY_OFFSET;   // today at the right end; sliding left goes back
-  const label = REPLAY_OFFSET === 0 ? "Today" : REPLAY_OFFSET === 1 ? "Yesterday" : REPLAY && REPLAY.days ? fmtDay(REPLAY.days[REPLAY.days.length - 1 - REPLAY_OFFSET]) : REPLAY_OFFSET + " days ago";
-  out.textContent = label; slider.setAttribute("aria-valuetext", label);
+  const strip = $("day-strip"), riskBtn = document.querySelector('.layer[data-layer="risk"]');
+  const max = Math.max(0, strip.children.length - 1);
+  REPLAY_OFFSET = Math.max(0, Math.min(max, offset | 0));
+  for (const b of strip.children) { const on = (b.dataset.offset | 0) === REPLAY_OFFSET; b.classList.toggle("active", on); b.setAttribute("aria-pressed", on ? "true" : "false"); }
   if (REPLAY_OFFSET && RISK_VIEW) { RISK_VIEW = false; riskBtn.classList.remove("active"); applyRisk(); }   // today's risk is not a past day's
   riskBtn.disabled = REPLAY_OFFSET > 0;
   applyReplay();
 }
-async function enableReplay(btn) {
-  if (!REPLAY) {
-    status("Loading the map's past week…");
-    try { REPLAY = await fetchJSON("/api/today/replay"); status(""); } catch (e) { status("Replay unavailable: " + e.message); return false; }
+// fetched the first time Past week is opened; false when the record is unreachable or has no earlier day (it began late Sep 2026)
+async function loadReplay() {
+  const strip = $("day-strip"); if (!strip) return false;
+  if (strip.children.length) return true;
+  pastStatus("Loading the map's past week…");
+  try { REPLAY = await fetchJSON("/api/today/replay"); pastStatus(""); } catch (e) { REPLAY = null; pastStatus("Past week unavailable: " + e.message); return false; }
+  const n = REPLAY.days.length, oldest = REPLAY.covered && REPLAY.covered.length ? n - 1 - REPLAY.days.indexOf(REPLAY.covered[0]) : 0;
+  if (!oldest) { pastStatus("The map's record has no earlier days yet."); return false; }
+  let h = "";
+  for (let off = oldest; off >= 0; off--) {
+    const day = REPLAY.days[n - 1 - off], w = dayWorst(off ? day : null);   // Today's dot is the live board, not the record's last check
+    const name = off ? new Date(day + "T12:00:00").toLocaleDateString(undefined, {weekday: "short"}) : "Today";
+    h += '<button type="button" class="day' + (off ? "" : " active") + '" data-offset="' + off + '" aria-pressed="' + (off ? "false" : "true") + '" title="' + esc((off ? fmtDay(day) : "Today") + " · " + DAY_SAYS[w]) + '">' + esc(name) + '<i class="status-dot ' + w + '"></i></button>';
   }
-  // the slider reaches only as far back as the record goes (the record began late Sep 2026)
-  const oldest = REPLAY.covered && REPLAY.covered.length ? REPLAY.days.length - 1 - REPLAY.days.indexOf(REPLAY.covered[0]) : 0;
-  if (!oldest) { status("The map's record has no earlier days yet."); return false; }
-  const slider = $("replay"); slider.max = oldest; $("replay-oldest").textContent = fmtDay(REPLAY.covered[0]);
-  $("replay-ctl").hidden = false; btn.classList.add("active"); setReplay(0);
+  strip.innerHTML = h;
+  strip.addEventListener("click", e => { const b = e.target.closest(".day"); if (b) setReplay(b.dataset.offset | 0); });
+  strip.addEventListener("keydown", e => {   // ← an earlier day, → a later one
+    const step = e.key === "ArrowLeft" ? 1 : e.key === "ArrowRight" ? -1 : 0; if (!step) return;
+    e.preventDefault(); setReplay(REPLAY_OFFSET + step);
+    const b = strip.querySelector('.day[data-offset="' + REPLAY_OFFSET + '"]'); if (b) b.focus();
+  });
   return true;
 }
-function disableReplay(btn) { $("replay-ctl").hidden = true; btn.classList.remove("active"); setReplay(0); }
+// Past week opens the strip; closing it hides the strip and returns the board to Today
+const pastStatus = t => { const el = $("past-status"); if (el) el.textContent = t || ""; };
+async function toggleReplay(btn, on) {
+  if (!on) pastStatus("");
+  if (on && !(await loadReplay())) on = false;
+  if (!on && REPLAY_OFFSET) setReplay(0);
+  $("day-strip").hidden = !on; btn.classList.toggle("active", on); btn.setAttribute("aria-expanded", on ? "true" : "false");
+  return on;
+}
 let CITY_ON = true;
 function setCity(on) {
   CITY_ON = on;
@@ -638,16 +804,14 @@ function initLayers() {
   const city = $("tg-city"), bw = $("tg-bwtf");
   if (city) city.addEventListener("change", () => setCity(city.checked));
   if (bw) bw.addEventListener("change", () => setLayer("bwtf", bw.checked, bw));
-  for (const btn of strip.querySelectorAll(".layer")) {
+  for (const btn of document.querySelectorAll(".layer")) {
     const key = btn.dataset.layer;
     btn.addEventListener("click", async () => {
+      if (key === "replay") { await toggleReplay(btn, !btn.classList.contains("active")); return; }
       if (key === "risk") { RISK_VIEW = !RISK_VIEW; btn.classList.toggle("active", RISK_VIEW); if (RISK_VIEW && REPLAY_OFFSET) setReplay(0); applyRisk(); return; }
-      if (key === "replay") { if (btn.classList.contains("active")) disableReplay(btn); else await enableReplay(btn); return; }
       await setLayer(key, !LAYER[key].on, btn);
     });
   }
-  const slider = $("replay");
-  slider.addEventListener("input", () => setReplay((slider.max | 0) - (slider.value | 0)));
   // phones: the Layers box folds behind a button; the button counts the layers that are on, so a folded layer is never forgotten
   const fold = $("layer-group"), tog = $("layers-toggle"), n = $("layers-n");
   const openLayers = on => { fold.classList.toggle("open", on); tog.setAttribute("aria-expanded", on ? "true" : "false"); };
@@ -657,10 +821,10 @@ function initLayers() {
   const q = new URLSearchParams(location.search), want = new Set((q.get("layers") || "").split(",").filter(Boolean));
   if (q.get("surfrider") === "1") want.add("bwtf");        // Surfrider is off by default (Chase, 2026-09-30); ?layers=bwtf or ?surfrider=1 turns it on
   if (q.get("city") === "0" && city) { city.checked = false; setCity(false); }
-  for (const key of want) { const btn = key === "bwtf" ? bw : strip.querySelector('.layer[data-layer="' + key + '"]'); if (btn && LAYER[key]) setLayer(key, true, btn); }
-  if (q.get("risk") === "1") strip.querySelector('.layer[data-layer="risk"]').click();
-  if (q.get("replay")) { const rb = strip.querySelector('.layer[data-layer="replay"]'); enableReplay(rb).then(ok => { if (ok) setReplay(q.get("replay") | 0); }); }
-  if ([...want].some(k => k !== "bwtf") || q.get("risk") === "1" || q.get("replay")) openLayers(true);   // a link that turns a layer on shows it
+  for (const key of want) { const btn = key === "bwtf" ? bw : document.querySelector('.layer[data-layer="' + key + '"]'); if (btn && LAYER[key]) setLayer(key, true, btn); }
+  if (q.get("risk") === "1") document.querySelector('.layer[data-layer="risk"]').click();
+  if (q.get("replay")) toggleReplay(document.querySelector('.layer[data-layer="replay"]'), true).then(ok => { if (ok) setReplay(q.get("replay") | 0); });
+  if ([...want].some(k => ["rain", "outfalls", "labels"].includes(k))) openLayers(true);   // a link that turns a layer on shows it
 }
 window.addEventListener("DOMContentLoaded", initMap);
 </script>

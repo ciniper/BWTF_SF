@@ -25,6 +25,27 @@
   tr.notes td{background:#f6f9fb;padding:10px 16px 14px;border-bottom:1px solid #d9e4e8}
   .field{font-size:13px;color:#3f474d} .field-grid{display:flex;flex-wrap:wrap;gap:6px 18px;margin:8px 0 4px;color:#54576F} .field-note{font-style:italic;color:#54576F;margin-top:6px}
   .board.tbl{overflow-x:auto}
+  /* Phones: the table ran off the right edge and scrolled sideways inside its card. Under 600 px each sample is a stacked
+     card instead: site and source on the first line, the date under them, then one line per indicator that has a result
+     (the label comes from the cell's data-label, since the header row is hidden). Field notes open under the card as before. */
+  @media (max-width:600px){
+    .board.tbl{overflow-x:visible;padding-top:4px;padding-bottom:4px}
+    table.viewer thead{display:none}
+    table.viewer,table.viewer tbody{display:block}
+    table.viewer tr.v-row{display:grid;grid-template-columns:1fr auto;gap:3px 10px;padding:11px 0;border-bottom:1px solid #e3ebf0}
+    table.viewer tr.v-over{background:#fff7f5;margin:0 -10px;padding-left:10px;padding-right:10px}
+    table.viewer tr.v-row td{display:block;padding:0;border:0;background:none;max-width:none}
+    table.viewer td.c-site{grid-column:1;grid-row:1;font-size:14px}
+    table.viewer td.c-src{grid-column:2;grid-row:1;text-align:right}
+    table.viewer td.c-date{grid-column:1/-1;grid-row:2;color:#54576F;margin-bottom:3px}
+    table.viewer tr.v-row td.num,table.viewer tr.v-row td.fc{grid-column:1/-1;display:flex;justify-content:space-between;align-items:baseline;gap:12px;text-align:right;white-space:normal}
+    table.viewer tr.v-row td.num::before,table.viewer tr.v-row td.fc::before{content:attr(data-label);color:#54576F;text-align:left;flex:none}
+    table.viewer tr.v-row td.empty{display:none}
+    .v-dup{margin-left:0;margin-top:3px}
+    table.viewer tr.notes,table.viewer tr.tbl-more{display:block}
+    table.viewer tr.notes td,table.viewer tr.tbl-more td{display:block}
+    tr.notes td{margin:0 -10px;padding:10px 12px 12px}
+  }
 </style>
 </head>
 <body>
@@ -117,11 +138,11 @@ function vRender() {
     var c = r.cells || {}, isB = r.source === "BWTF", f = r.field || null;
     var caret = VIEW.notes === "expand" && isB ? '<span class="caret" data-i="' + i + '" title="Field notes">▸</span>' : "";
     html += '<tr class="v-row' + (r.over ? " v-over" : "") + '" data-i="' + i + '" title="This day&#39;s results as a graph">' +
-      "<td>" + r.date + (r.time ? '<span class="v-time">' + vEsc(r.time) + "</span>" : "") + caret + "</td>" +
-      "<td><b>" + vEsc(r.site) + "</b>" + (r.n_samples > 1 ? '<span class="v-dup">' + r.n_samples + " samples that day</span>" : "") + "</td>" +
-      '<td><span class="src ' + (isB ? "src--bwtf" : "src--city") + '"' + (r.history ? ' title="SFPUC lab export — before SF Gov Open Data began (Jul 2020)"' : "") + '>' + (isB ? "Surfrider" : "SFPUC") + "</span></td>" +
-      VDATA.analytes.map(function (a) { return '<td class="num">' + vCell(c[a.code]) + "</td>"; }).join("") +
-      cols.map(function (col) { return '<td class="fc">' + (f ? vEsc(f[col.key]) : "") + "</td>"; }).join("") + "</tr>";
+      '<td class="c-date">' + r.date + (r.time ? '<span class="v-time">' + vEsc(r.time) + "</span>" : "") + caret + "</td>" +
+      '<td class="c-site"><b>' + vEsc(r.site) + "</b>" + (r.n_samples > 1 ? ' <span class="v-dup">' + r.n_samples + " samples that day</span>" : "") + "</td>" +
+      '<td class="c-src"><span class="src ' + (isB ? "src--bwtf" : "src--city") + '"' + (r.history ? ' title="SFPUC lab export — before SF Gov Open Data began (Jul 2020)"' : "") + '>' + (isB ? "Surfrider" : "SFPUC") + "</span></td>" +
+      VDATA.analytes.map(function (a) { var has = c[a.code] && c[a.code].length; return '<td class="num' + (has ? "" : " empty") + '" data-label="' + vEsc(a.label) + '">' + vCell(c[a.code]) + "</td>"; }).join("") +
+      cols.map(function (col) { var v = f ? f[col.key] : ""; return '<td class="fc' + (v ? "" : " empty") + '" data-label="' + vEsc(col.label) + '">' + vEsc(v) + "</td>"; }).join("") + "</tr>";
     if (VIEW.notes === "expand" && isB) html += '<tr class="notes" id="notes-' + i + '" style="display:none"><td colspan="' + (3 + VDATA.analytes.length) + '">' + fieldBlock(f) + "</td></tr>";
   });
   ROWS = rows;

@@ -7,13 +7,14 @@ deleted 2026-09-30 (Chase: "wholesale delete the main page"); Today has served `
 2026-10-01 and keeps answering at /today too (``PAGE_ALIASES``).
 Everything is wrapped defensively so a flaky upstream never blanks the board.
 """
-from datetime import datetime
+import re
+from datetime import date, datetime, timedelta
 
 from html import escape as _esc
 from flask import render_template
 
 from shared.zones import ZONES
-from shared.clock import now_pacific
+from shared.clock import days_ago_text, now_pacific
 from shared.risk_levels import LEVELS, level_of, level_of_percent, whole_percent
 
 SURFRIDER_LOGO_URL = "https://f.hubspotusercontent20.net/hubfs/20811975/SF-Horizontal-Logo_RGB_Black_crop_small.png"
@@ -316,6 +317,13 @@ def hubs_with_facts(facts: dict | None, skip: tuple = ()) -> list[dict]:
     return rendered
 
 
+# The zone tiles' 2×2 grid, read like a mini map of the city (Chase, 2026-11-08): Baker & China top left (the northwest
+# corner), North Beaches top right (the north shore), Ocean Beach bottom left (the west coast), East Beaches bottom right
+# (the bay). Display only: board["zones"] keeps registry order, which the map, its labels, the layers and the lead's
+# "Discharging: …" list all read. The DOM follows this order, so a screen reader or Tab meets the tiles row by row.
+TILE_GRID = ("baker_china", "north", "ocean", "east")
+assert set(TILE_GRID) == set(ZONES) and len(TILE_GRID) == len(ZONES), "the tile grid must place every zone once"
+
 _SHORT = (("Ocean Beach at ", "OB "), ("Baker Beach at Lobos Creek", "Baker Lobos"), ("Baker Beach ", "Baker "), ("Crissy Field ", "Crissy "), (" Street Pier", " St Pier"))
 
 
@@ -337,10 +345,23 @@ def _join(names: list[str]) -> str:
     return names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
 
 
-def today_board(stations: list, risks: dict | None = None, samples_fact: str = "", now: datetime | None = None) -> dict:
+def _pending_text(p: dict, now: datetime) -> str:
+    """"posted 8:32 AM · on a new sample, not published yet" — a posting change whose sample is not
+    on SFPUC's map yet: the status is current, only the numbers behind it are not out."""
+    from shared.result_gap import PACIFIC
+    at = datetime.fromisoformat(p["at"].replace("Z", "+00:00")).astimezone(PACIFIC)   # ``now`` is Pacific, aware or not
+    when = f"{at:%-I:%M %p}" if at.date() == now.date() else f"{at:%a %-I:%M %p}"
+    return f"{p['change']} {when} · on a new sample, not published yet"
+
+
+def today_board(stations: list, risks: dict | None = None, samples_fact: str = "", now: datetime | None = None,
+                pending: dict | None = None) -> dict:
     """Pure: the Today board, the home page's first screen. ``stations`` are SFPUC station
     objects (station_id = SFPUC id, station_name, status, has_cso, sample_date);
-    ``risks`` is _forecast_risks(); ``samples_fact`` the samples row's live fact.
+    ``risks`` is _forecast_risks(); ``samples_fact`` the samples row's live fact;
+    ``pending`` is shared.result_gap.pending_results(): stations whose posting changed
+    this morning before the sample behind it reached SFPUC's map — their row reads
+    "posted 8:32 AM · on a new sample, not published yet" in place of last week's sample date.
     Returns the headline (plain + HTML), the lead sentence, a tone, and one tile
     per zone with every registry station's status, coordinates and DataSF id —
     the tiles' dots and the city map's markers (Chase, 2026-09-29: lead with the
@@ -348,7 +369,9 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
     now = now or now_pacific()
     risks = risks or {}
     by_id = {str(getattr(st, "station_id", "")): st for st in stations}   # SFPUC id → live feed row
-    status_text = {"safe": "safe", "posted": "posted", "discharge": "sewage discharge", "unknown": "not sampled"}   # "posted" is SFPUC's status word; the cause is not in the feed
+    # The city's colours say what SFPUC has posted, so the words do too (2026-11-08: "safe" was the one word on the board that
+    # claimed the water, and the feed knows only whether a sign is up). "posted" is SFPUC's status word; the cause is not in the feed.
+    status_text = {"safe": "no warning", "posted": "warning posted", "discharge": "sewage discharge", "unknown": "not sampled"}
     tiles, posted, discharging, n_safe, n_graded = [], [], [], 0, 0
     posted_by_zone: dict[str, list] = {}
     cso_by_zone: dict[str, list] = {}
@@ -358,9 +381,14 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
             st = by_id.get(reg.sfpuc_id)
             status = _station_status(st) if st is not None else "unknown"
             d = getattr(st, "sample_date", None) if st is not None else None
+            p = (pending or {}).get(reg.sfpuc_id)
+            if p and status != {"posted": "posted", "cleared": "safe"}[p["change"]]:
+                p = None   # the feed has moved on since the log row (a discharge flag, or the change undone)
+            age = (now.date() - d.date()).days if d else None   # how old the city's latest result is, in words wherever the date shows (2026-11-06)
             sts.append({"name": _short(reg.name), "full_name": reg.name, "status": status, "status_text": status_text[status],
-                        "source": source, "lat": reg.lat, "lon": reg.lon, "sampled": d.strftime("%Y-%m-%d") if d else "",
-                        "sampled_text": f"sampled {d:%b %-d}" if d else "no sample date"})
+                        "source": source, "lat": reg.lat, "lon": reg.lon, "sampled": d.strftime("%Y-%m-%d") if d else "", "sampled_age_days": age,
+                        "sampled_text": _pending_text(p, now) if p else f"sampled {days_ago_text(d.date(), now.date())}" if d else "no sample date",
+                        "pending": p})
         z_posted = [x["name"] for x in sts if x["status"] == "posted"]
         z_cso = [x["name"] for x in sts if x["status"] == "discharge"]
         z_safe = sum(1 for x in sts if x["status"] == "safe")
@@ -371,9 +399,12 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
             cso_by_zone[zk] = z_cso
         status = "discharge" if z_cso else "posted" if z_posted else "safe" if z_safe else "unknown"
         text = ("Sewage discharge" if status == "discharge" else f"{len(z_posted)} beach{'es' if len(z_posted) > 1 else ''} posted" if status == "posted"
-                else "All clear" if status == "safe" else "Not sampled")
+                else "No warning" if status == "safe" else "Not sampled")   # "All clear" until 2026-11-08: the tile reports the city's posting, not the water
         dates = [x["sampled"] for x in sts if x["sampled"]]
-        sampled = f"sampled {datetime.strptime(max(dates), '%Y-%m-%d'):%b %-d}" if dates else "no sample date"
+        n_pending = sum(1 for x in sts if x["pending"])   # counted, so one waiting station doesn't read as the whole zone
+        published_age = f"sampled {days_ago_text(datetime.strptime(max(dates), '%Y-%m-%d').date(), now.date())}" if dates else "no sample date"
+        sampled = (f"{n_pending} sample{'s' if n_pending > 1 else ''} unpublished" if n_pending
+                   else published_age)
         meta = (" · ".join(z_cso + z_posted) + f" · {sampled}") if (z_cso or z_posted) else f"{len(sts)} stations · {sampled}"
         risk = (risks.get("zones") or {}).get(zk)
         tiles.append({"key": zk, "label": z.label, "status": status, "status_text": text, "risk": risk,
@@ -392,25 +423,27 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
         return _join(items) if len(items) <= 3 else ", ".join(items[:3]) + f" and {len(items) - 3} more"
     n_cso, n_posted = len(discharging), len(posted)
     plural = lambda n, one, many: one if n == 1 else many  # noqa: E731
-    # Colour carries the grade: the discharge sentence red, the posted sentence orange, the standard green
-    # when everyone meets it, the safe count plain (Chase, 2026-09-29).
+    # Colour carries the grade: the discharge sentence red, the posted sentence orange, the all-clear green,
+    # the safe count plain (Chase, 2026-09-29). The headline says what the feed knows today — whether a
+    # warning is posted; what the samples showed, and how old they are, goes in the subhead (2026-11-06: "meet
+    # state standards today" claimed today's water from a sample up to a week old).
     if n_cso:
         tone = "danger"
         parts = [("discharge", f"Sewage discharge at {n_cso} {plural(n_cso, 'beach', 'beaches')}.")]
         if n_posted:
             parts.append(("posted", f"Posted at {n_posted} {plural(n_posted, 'beach', 'beaches')}."))   # parallel to the discharge phrase, so two counts never sit side by side (Chase, 2026-09-30)
         if n_safe:
-            parts.append(("", f"{n_safe} {plural(n_safe, 'meets', 'meet')} state standards." if n_posted
-                          else f"{n_safe} other {plural(n_safe, 'beach meets', 'beaches meet')} state standards."))
+            parts.append(("", f"{n_safe} {plural(n_safe, 'has', 'have')} no warning." if n_posted
+                          else f"{n_safe} other {plural(n_safe, 'beach has', 'beaches have')} no warning."))
     elif n_graded == 0:
         tone, parts = "warn", [("warn", "Beach status is unavailable right now.")]
     elif n_posted:
         tone = "warn"
         parts = [("posted", f"Posted at {n_posted} {plural(n_posted, 'beach', 'beaches')}.")]
         if n_safe:
-            parts.append(("", f"{n_safe} {plural(n_safe, 'other meets', 'others meet')} state standards."))
+            parts.append(("", f"{n_safe} {plural(n_safe, 'other has', 'others have')} no warning."))
     else:
-        tone, parts = "ok", [("", f"All {n_graded} monitored beaches <good>meet state standards</good> today.")]
+        tone, parts = "ok", [("", f"<good>No warnings posted</good> at {'the' if n_graded == 1 else 'any of the'} {n_graded} monitored {plural(n_graded, 'beach', 'beaches')}.")]
     headline = " ".join(t for _, t in parts).replace("<good>", "").replace("</good>", "")
     headline_html = " ".join(f'<em class="{cls}">{_esc(t)}</em>' if cls else _esc(t).replace("&lt;good&gt;", '<em class="good">').replace("&lt;/good&gt;", "</em>")
                              for cls, t in parts)
@@ -421,7 +454,7 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
     if n_posted:   # the status word is SFPUC's; the reason, in their terms, follows — the feed does not say which applies
         lead.append("Posted: " + describe(posted_by_zone) + ". SFPUC posts a beach when samples show bacteria above State standards, and sometimes as a precaution.")
     zr = risks.get("zones") or {}
-    risk_lead = ""   # the forecast's sentence: shown only with the Risk view on (Chase, 2026-10-18)
+    risk_lead = ""   # the forecast's sentence: inside the board's collapsed "Sewer-overflow forecast · Beta" line since 2026-11-08 (in the subhead 2026-11-06; behind the Risk view chip before that, Chase, 2026-10-18)
     if zr:
         worst = max(zr.values())
         where = "in every zone" if len(set(zr.values())) == 1 else f"at most ({ZONES[max(zr, key=zr.get)].label})"
@@ -434,9 +467,41 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
         else:
             trend = ""
         risk_lead = f"Sewer-overflow risk today: {worst}% {where}{trend}."
-    if samples_fact:
-        lead.append("Latest samples: " + samples_fact.replace("city", "city lab").replace("Surfrider", "Surfrider volunteers") + ".")
-    return {"tone": tone, "headline": headline, "headline_html": headline_html, "lead": " ".join(lead), "risk_lead": risk_lead, "zones": tiles, "feed_ok": bool(stations),
+    # Collection dates describe the samples shown by the city feed.
+    facts = []
+    ages = sorted({s["sampled_age_days"] for tile in tiles for s in tile["stations"]
+                   if s["sampled_age_days"] is not None and s["sampled_age_days"] >= 0})
+    newest_d = now.date() - timedelta(days=ages[0]) if ages else None
+    unpublished = sum(s["pending"] is not None for tile in tiles for s in tile["stations"])
+    if unpublished:
+        facts.append({"label": "City samples", "text": f"{unpublished} new {plural(unpublished, 'sample', 'samples')} not published yet"})
+    elif ages and n_graded:
+        oldest_d = now.date() - timedelta(days=ages[-1])
+        if len(ages) == 1:
+            age_text = days_ago_text(newest_d, now.date())
+            date_text = f"{newest_d:%b %-d}"
+        else:
+            if oldest_d.year != newest_d.year:
+                date_text = f"{oldest_d:%b %-d, %Y}–{newest_d:%b %-d, %Y}"
+            elif oldest_d.month != newest_d.month:
+                date_text = f"{oldest_d:%b %-d}–{newest_d:%b %-d}"
+            else:
+                date_text = f"{oldest_d:%b %-d}–{newest_d:%-d}"
+            if ages[0] >= 2:
+                age_text = f"{ages[0]}–{ages[-1]} days ago"
+            else:
+                age_text = f"between {days_ago_text(oldest_d, now.date())} and {days_ago_text(newest_d, now.date())}"
+        facts.append({"label": "City samples", "text": f"Samples were collected {age_text} ({date_text})."})
+    bw = re.search(r"Surfrider (\d{1,2})/(\d{1,2})", samples_fact or "")   # the volunteers' newest sample, by age too
+    if bw:
+        d = date(now.year, int(bw.group(1)), int(bw.group(2)))
+        if d > now.date():
+            d = d.replace(year=now.year - 1)
+        # a fact, not a verdict (Chase, 2026-11-07, on relative staleness): when the city has sampled since, say so and leave both on view
+        since = " · the city has a newer sample" if newest_d and d < newest_d else ""
+        facts.append({"label": "Surfrider samples", "text": f"{days_ago_text(d, now.date())} ({d:%b %-d}){since}"})
+    return {"tone": tone, "headline": headline, "headline_html": headline_html, "lead": " ".join(lead), "risk_lead": risk_lead, "facts": facts, "zones": tiles, "feed_ok": bool(stations),
+            "tiles": sorted(tiles, key=lambda t: TILE_GRID.index(t["key"])),   # the same tiles, in the grid's map order
             "posted": posted, "discharging": discharging, "n_safe": n_safe, "n_graded": n_graded,
             "date": now.strftime("%a %b %-d"), "checked": now.strftime("%-I:%M %p")}
 
@@ -509,6 +574,27 @@ def _stations(sfpuc_api) -> list:
 BOARD_FACTS = ("_forecast", "/samples")
 
 
+def _pending_results(stations: list, f_changes, gap_pool) -> dict:
+    """shared.result_gap.pending_results for the feed just read, inside the facts budget: the
+    change log was fetched alongside the feed; the feed-date ticks are read only when some
+    station changed recently. Any failure or timeout means no station is marked."""
+    from datetime import timezone
+    from shared import result_gap
+    try:
+        changes = f_changes.result(timeout=FACTS_BUDGET_SECONDS)
+        now = datetime.now(timezone.utc)
+        recent = result_gap.candidates(changes, now)
+        if not recent:
+            return {}
+        shown = {str(st.station_id): st.sample_date.strftime("%Y-%m-%d") for st in stations if getattr(st, "sample_date", None)}
+        first_seen = gap_pool.submit(result_gap.fetch_first_seen, list(recent)).result(timeout=FACTS_BUDGET_SECONDS)
+        return result_gap.pending_results(recent, shown, first_seen, now)
+    except Exception:
+        return {}
+    finally:
+        gap_pool.shutdown(wait=False, cancel_futures=True)
+
+
 def board_context(sfpuc_api, env_context=None, live_facts: bool = True, fact_keys: tuple | None = None) -> dict:
     """Everything the Today page needs: the board, the conditions chips, the live facts
     (``fact_keys`` of them, every one when None), a timestamp.
@@ -518,6 +604,9 @@ def board_context(sfpuc_api, env_context=None, live_facts: bool = True, fact_key
     ~2.5 s in a row, ~1 s together). Each job catches its own failures, so one slow or broken
     source still never blanks the page; the facts keep their own 2.5 s budget."""
     from concurrent.futures import ThreadPoolExecutor
+    from shared import result_gap
+    gap_pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="board-gap")   # never waited on past the facts budget
+    f_changes = gap_pool.submit(result_gap.fetch_changes)
     with ThreadPoolExecutor(max_workers=4, thread_name_prefix="board") as pool:
         f_stations = pool.submit(_stations, sfpuc_api)
         sources = None if fact_keys is None else {k: _FACT_SOURCES[k] for k in fact_keys}
@@ -531,7 +620,7 @@ def board_context(sfpuc_api, env_context=None, live_facts: bool = True, fact_key
         summary = sfpuc_api.get_status_summary() if not stations else {}   # the fallback, only when the feed came back empty
     except Exception:
         summary = {}
-    board = today_board(stations, facts.get("_forecast"), facts.get("/samples", ""))
+    board = today_board(stations, facts.get("_forecast"), facts.get("/samples", ""), pending=_pending_results(stations, f_changes, gap_pool))
     if not stations and summary:   # a client that only knows the summary: keep the old banner sentence as the headline
         board["tone"], message = _status_banner(summary)
         board["headline"] = board["headline_html"] = message.split("</svg> ", 1)[-1]

@@ -73,7 +73,7 @@ v̂ only, and citywide_p is a scorecard display. ``sel`` is exclusions.selection
 (X-SEL, by date): holdout_selected 2023-07-01 → 2025-10-31 (T1-holdout, and the T2
 seasons 2023-24 and 2024-25 inside it), post_selected 2025-11-01 → the freeze (T1).
 T1 stops at the freeze: a later day is T0's, the same finals on the same kind of
-inputs (stages_build also grades the served set's T0 as served, from forecast_history).
+inputs (stages_build also grades the served set's T0 as served, from forecast_checkpoints).
 
 Westside's first scored season is 2017-18 (protocol §2: CIWQS Oceanside opens its
 ledger in 2017-12, truth.ledger_start). Its 2016-17 fold is still fit and emitted, so

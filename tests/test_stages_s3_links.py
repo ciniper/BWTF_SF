@@ -56,6 +56,7 @@ import stages_s3_links as S  # noqa: E402
 import train_v4 as T4  # noqa: E402
 import verify as V  # noqa: E402
 from shared import geography as G  # noqa: E402
+from close_enough import SPEC_REL, assert_close  # noqa: E402  (records vs a fresh fit: floats to a tolerance)
 
 AS_OF = pd.Timestamp("2026-08-17")     # the committed data's end: every count below is as of this day
 N_BOOT = 200                           # the tests' bootstrap (the written spec uses the protocol's 2,000)
@@ -577,12 +578,14 @@ def test_seasons_whose_inner_head_is_under_the_floor_are_not_fit_on():
 
 def test_the_candidates_committed_spec_is_current():
     """The candidate's s3_links.json (stages_candidates.assemble) holds what a fresh fit on its own S2 gives, and
-    says so (sources.s2.name: the candidate itself, never the development stand-in)."""
+    says so (sources.s2.name: the candidate itself, never the development stand-in). Every key, outfall, evidence
+    letter and count exactly; the fitted numbers to close_enough.SPEC_REL, since another numeric runtime's solver
+    and bootstrap land on the same fit only up to ~1e-8 relative (2026-11-04)."""
     got = S.for_compose(S._saver().load_set(CANDIDATE).s3_links)
     want = json.loads(json.dumps(_res().spec))
     for k in ("geography", "pipeline", "kind", "links", "union", "cofire"):
-        assert got[k] == want[k], k
-    assert got["fit"]["folds"] == want["fit"]["folds"]
+        assert_close(got[k], want[k], k, rel=SPEC_REL)
+    assert_close(got["fit"]["folds"], want["fit"]["folds"], "fit.folds", rel=SPEC_REL)
     assert got["sources"]["s2"]["name"] == CANDIDATE and not got["sources"]["s2"]["name"].startswith("dev:")
     assert got["fit"]["bootstrap"]["protocol"] is True
 

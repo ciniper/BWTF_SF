@@ -1,5 +1,5 @@
-"""T0 grader input (grade_prospective.py, STAGES_DESIGN.md P10 / Part B 28): a forecast_history first snapshot
-becomes one row per lead × zone, the committed file is checked on read, and the export never runs unconfigured.
+"""T0 grader input (grade_prospective.py, STAGES_DESIGN.md P10 / Part B 28): a start-of-day snapshot (forecast_checkpoints
+slot 0) becomes one row per lead × zone, the committed file is checked on read, and the export never runs unconfigured.
 No test reads Supabase: scripts/check.sh blanks the keys and everything here uses synthetic snapshots.
 Run: venv/bin/python tests/test_grade_prospective.py
 """
@@ -110,6 +110,31 @@ def test_the_export_refuses_without_supabase():
         out = Path(tmp) / "t0.csv"
         raises(lambda: GP.export(out), "not configured")
         assert not out.exists()
+
+
+def test_the_export_reads_the_start_of_day_checkpoint():
+    """forecast_checkpoints (023/024): the export asks for slot 0 only, from T0's first day, and writes each
+    snapshot's rows stamped with its generation time."""
+    from shared import supabase as sb
+    issue = GP.t0_start() + timedelta(days=2)
+    seen = []
+
+    def fake_select(table, params):
+        seen.append((table, params))
+        return [{"forecast_date": issue.isoformat(), "generated_at": "2026-10-05T07:05:00+00:00",
+                 "snapshot": _snapshot(issue)}]
+    orig = sb.is_configured, sb.select
+    sb.is_configured, sb.select = (lambda: True), fake_select
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            df = GP.rows(GP.export(Path(tmp) / "t0.csv"))
+    finally:
+        sb.is_configured, sb.select = orig
+    table, params = seen[0]
+    assert table == "forecast_checkpoints" and params["slot_hour"] == "eq.0"
+    assert params["select"] == "forecast_date,generated_at,snapshot"
+    assert params["forecast_date"] == f"gte.{GP.t0_start().isoformat()}"
+    assert len(df) == 6 * len(ZONES) and set(df["generated_at"]) == {"2026-10-05T07:05:00+00:00"}
 
 
 if __name__ == "__main__":

@@ -82,7 +82,7 @@ STAGE_COLS = ("s1", "s2", "s3", "s4", "s5")                    # a set's full na
 
 # Every name a set has carried before its current id → that id: the names before 2026-10-07 (the overflow model's
 # name plus a stage 2 suffix), and a code changed since. History: never edited, only added to. current_name reads it,
-# so a stamp in forecast_history or an old link still finds its set.
+# so a stamp in forecast_checkpoints or an old link still finds its set.
 RENAMED = {
     "logit_v1_s2v2": "icon-w38-osplit-lt2-bflags",
     "gb_v1": "icon-trees-nosplit-lt1-bflags",
