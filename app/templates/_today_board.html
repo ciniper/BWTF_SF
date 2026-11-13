@@ -434,6 +434,10 @@ function initMap() {
   }
   fitAll(false); setCityLimits(); followZoomLimits();   // the first view is placed, not slid to from setView's placeholder
   MAP.on("resize", setCityLimits);   // a turned phone or a resized window has a different whole-city view
+  // The map's height comes from its column, which can settle after the map is made (and Leaflet only watches the window), so
+  // Leaflet re-measures whenever the map's box changes size; otherwise it frames views and places labels for a map 40-odd
+  // pixels taller than the one shown, and the bottom strip is cut off (Chase, 2026-11-13)
+  if (window.ResizeObserver) { let queued = false; new ResizeObserver(() => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; MAP.invalidateSize(); }); }).observe(MAP.getContainer()); }
   document.getElementById("zones").addEventListener("click", e => { const b = e.target.closest(".zone"); if (b) focusZone(b.dataset.zone); });
   document.getElementById("map-reset").addEventListener("click", () => focusZone(ACTIVE));
   initLayers();
