@@ -215,7 +215,9 @@ def test_labels_layer_is_a_chip_off_by_default_drawn_from_the_stations():
     assert board.count("refreshLabels()") >= 4 and "function besideDot(" in board and "function besideZone(" in board
     assert "permanent: bad" not in board and "function mapControls()" in board                                # posted labels are placed too, not left to Leaflet
     assert 'MAP.on("tooltipopen", fitTooltip)' in board
-    assert "LAYER.outfalls.group.eachLayer(m => { const p = at(m)" in board                                   # labels keep off the outfalls too                                                     # a hover tooltip opens on the side that fits
+    assert "LAYER.outfalls.group.eachLayer(m => { const p = at(m)" in board                                   # labels keep off the outfalls too
+    assert "function openSample(s)" in board and 'm.on("click", () => openSample(s))' in board                # a dot and its label open the same sample
+    assert "tapZone(z)" in board and "tapCluster(c)" in board and ".map-name>span.tap{pointer-events:auto" in board   # labels take taps                                                     # a hover tooltip opens on the side that fits
 
 
 if __name__ == "__main__":
