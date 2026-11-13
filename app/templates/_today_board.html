@@ -698,7 +698,7 @@ const BUILD = {
     }
     for (const z of ZONES) { const t = tileParts(z.key), zr = d.zones[z.key]; if (!t || !zr) continue; let el = t.b.querySelector(".rainline"); if (!el) { el = document.createElement("div"); el.className = "rainline"; t.b.querySelector(".meta").before(el); }
       el.textContent = zr.total_in == null ? "" : fmtIn(zr.total_in) + " of rain in 3 days · " + zr.gauge + " gauge"; t.b.classList.toggle("wet", (zr.total_in || 0) >= d.advisory_in); }
-    status(d.wettest_in >= d.advisory_in ? fmtIn(d.wettest_in) + " at the wetter gauge over three days" : "Under " + fmtIn(d.advisory_in) + " at both gauges over three days");
+    status("");   // no rain summary under the map: the gauge labels and the zone tiles say it (Chase, 2026-11-13)
     return g;
   },
   outfalls(d) {
