@@ -93,6 +93,7 @@
       <button class="range-btn active" data-days="14">14 days</button>
       <button class="range-btn" data-days="30">30 days</button>
       <button class="range-btn" data-days="all">All</button>
+      <a class="range-btn" href="/cso-history/daily-colors">Gray and green history</a>
       <div class="legend">
         <span class="key" style="color:#8a949b">On SFPUC's map:</span>
         <span class="key"><span class="swatch posted"></span>posted — elevated bacteria</span>
@@ -376,9 +377,9 @@
     document.getElementById('status').textContent = 'Could not load event history: ' + e;
   });
 
-  document.querySelectorAll('.range-btn').forEach(function(btn){
+  document.querySelectorAll('.range-btn[data-days]').forEach(function(btn){
     btn.addEventListener('click', function(){
-      document.querySelectorAll('.range-btn').forEach(function(b){ b.classList.remove('active'); });
+      document.querySelectorAll('.range-btn[data-days]').forEach(function(b){ b.classList.remove('active'); });
       btn.classList.add('active');
       RANGE = btn.dataset.days === 'all' ? 'all' : parseInt(btn.dataset.days, 10);
       if (DATA) render();
