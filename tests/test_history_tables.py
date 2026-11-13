@@ -54,11 +54,32 @@ def test_record_history_uses_the_engine_day_and_never_raises(monkeypatch=None):
         assert page._forecast_date({"predictions": {}}, now) == "2026-09-27"
         # a failing rpc is logged, not raised
         def boom(fn, payload):
-            raise RuntimeError("relation forecast_history does not exist")
+            raise RuntimeError("relation forecast_checkpoints does not exist")
         page.sb.rpc = boom
         assert page._record_history(snap, now) is False
     finally:
         page.sb.rpc = orig
+
+
+def test_migration_024_moves_history_into_checkpoints_and_drops_it_only_when_complete():
+    sql = (ROOT / "db/migrations/024_retire_forecast_history.sql").read_text()
+    code = "\n".join(line.split("--")[0] for line in sql.splitlines())   # comments stripped
+    assert code.strip().startswith("begin;") and code.strip().endswith("commit;")
+    # the copy, the completeness check and the drop run in that order, and only while the table exists
+    copy = code.index("insert into public.forecast_checkpoints as fc (forecast_date, slot_hour, generated_at, snapshot)")
+    check = code.index("raise exception 'forecast_history: % first snapshot(s) not in forecast_checkpoints")
+    drop = code.index("drop table public.forecast_history;")
+    assert code.index("if to_regclass('public.forecast_history') is null then") < copy < check < drop
+    assert "h.first_snapshot" in code and "last_snapshot" not in code           # first snapshots only
+    # the writer is 023's checkpoint insert alone: it no longer touches forecast_history
+    fn = re.search(r"create or replace function public\.bwtf_record_forecast\(.*?\n\$\$;", code, re.S).group(0)
+    assert "forecast_history" not in fn and "insert into public.forecast_checkpoints as fc" in fn
+    assert "where excluded.generated_at < fc.generated_at" in fn
+    assert "revoke all on function public.bwtf_record_forecast(date, jsonb, timestamptz) from public, anon, authenticated;" in code
+    assert "grant execute on function public.bwtf_record_forecast(date, jsonb, timestamptz) to service_role;" in code
+    # every slot boundary the writer uses is the one the copy uses
+    for t in ("'18:05'", "'12:05'", "'06:05'"):
+        assert code.count(t) == 2, t
 
 
 def test_samples_mirror_shapes_rows_and_inserts_do_nothing_in_batches():

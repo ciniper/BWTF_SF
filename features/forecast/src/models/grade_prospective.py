@@ -2,9 +2,10 @@
 """T0, the prospective window: what the served forecast actually said (STAGES_PROTOCOL.md §2;
 STAGES_DESIGN.md P10, Part B 20 and 28).
 
-Every production refresh records the day's first snapshot in Supabase's ``forecast_history`` (migration
-012): the start-of-day forecast for today and five days ahead, stamped with the model that made it. Only
-the service role can read that table, so grading never reads Supabase. The owner exports it once a season,
+Every production refresh records the forecast at four fixed times a day in Supabase's ``forecast_checkpoints``
+(migrations 023 and 024, which moved forecast_history's first snapshots there); slot 0, the 00:05 refresh, is
+the start-of-day forecast for today and five days ahead, stamped with the model that made it. Only the service
+role can read that table, so grading never reads Supabase. The owner exports it once a season,
 read-only (GETs), into a committed snapshot:
 
     venv/bin/python features/forecast/src/models/grade_prospective.py --export
@@ -73,7 +74,7 @@ def snapshot_rows(issue_date: str, snapshot: dict, generated_at: str) -> list[di
             continue
         target = str(day.get("date"))[:10]
         if target != (issue + timedelta(days=lead)).isoformat():
-            raise ValueError(f"forecast_history {issue}: the lead-{lead} day is dated {target}")
+            raise ValueError(f"forecast_checkpoints {issue}: the lead-{lead} day is dated {target}")
         for zone, p in sorted((day.get("zones") or {}).items()):
             out.append({"issue_date": issue.isoformat(), "generated_at": generated_at, "model": stamp_set(stamp),
                         "corrections": stamp.get("live_corrections"), "target_date": target, "lead": lead,
@@ -82,17 +83,19 @@ def snapshot_rows(issue_date: str, snapshot: dict, generated_at: str) -> list[di
 
 
 def export(path: Path = SNAPSHOT) -> Path:
-    """Read every first snapshot issued in T0 from forecast_history (GET only) and write the committed file."""
+    """Read every start-of-day snapshot (slot 0) issued in T0 from forecast_checkpoints (GET only) and write the
+    committed file."""
     from shared import supabase as sb
     if not sb.is_configured():
         raise SystemExit("Supabase is not configured (SUPABASE_URL / SUPABASE_SERVICE_KEY): run this from the main checkout")
     rows, offset = [], 0
     while True:
-        batch = sb.select("forecast_history", {"select": "forecast_date,first_generated_at,first_snapshot",
-                                               "forecast_date": f"gte.{t0_start().isoformat()}",
-                                               "order": "forecast_date.asc", "limit": str(PAGE), "offset": str(offset)})
+        batch = sb.select("forecast_checkpoints", {"select": "forecast_date,generated_at,snapshot",
+                                                   "slot_hour": "eq.0",
+                                                   "forecast_date": f"gte.{t0_start().isoformat()}",
+                                                   "order": "forecast_date.asc", "limit": str(PAGE), "offset": str(offset)})
         for r in batch:
-            rows += snapshot_rows(r["forecast_date"], r["first_snapshot"] or {}, r["first_generated_at"])
+            rows += snapshot_rows(r["forecast_date"], r["snapshot"] or {}, r["generated_at"])
         if len(batch) < PAGE:
             break
         offset += PAGE

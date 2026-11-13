@@ -167,16 +167,18 @@ def _forecast_date(snap: dict, now: datetime) -> str:
 
 
 def _record_history(snap: dict, now: datetime) -> bool:
-    """forecast_history (migration 012): the day's first snapshot is the
-    start-of-day forecast the grading uses, the last is kept too — one rpc,
-    never raises (a missing table or a hiccup must not fail the refresh)."""
+    """forecast_checkpoints (migrations 023, 024): the earliest snapshot in
+    each Pacific slot from 00:05, 06:05, 12:05 and 18:05; slot 0 is the
+    start-of-day forecast the grading uses. The rpc keeps a slot's earliest,
+    so every refresh can send. One rpc, never raises (a missing table or a
+    hiccup must not fail the refresh)."""
     try:
         clean = json.loads(json.dumps(snap, default=str))
         sb.rpc("bwtf_record_forecast", {"p_date": _forecast_date(snap, now),
                                         "p_snapshot": clean, "p_generated_at": _iso(now)})
         return True
     except Exception as e:  # noqa: BLE001
-        print(f"forecast_history not recorded: {e}")
+        print(f"forecast checkpoint not recorded: {e}")
         return False
 
 
@@ -288,7 +290,7 @@ def _compute_and_store(row, now: datetime):
     # lives here too.
     if row is not None and _cache_writable():
         if _store_snapshot(snap, now):
-            _record_history(snap, now)   # the production host is the only writer (migration 012)
+            _record_history(snap, now)   # the production host is the only writer (migrations 023, 024)
             _record_change(snap, now)    # capture on change (migration 013)
             _mirror_samples()
             _poll_deliveries()           # alert deliveries level 2: did the mail arrive? (Brevo events)
