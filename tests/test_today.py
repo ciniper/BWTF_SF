@@ -196,7 +196,8 @@ def test_layer_routes_exist_and_answer_json():
 
 def test_labels_layer_is_a_chip_off_by_default_drawn_from_the_stations():
     """Chase, 2026-10-21: a Labels layer, default off — zone names on the whole-city map, station names zoomed in or
-    with a zone chosen, an overlapping name tried on the dot's other side and then hidden; posted labels win."""
+    with a zone chosen; posted labels win. Since 2026-11-08 ("a bit messy") one placer draws every label, posted ones
+    included: each takes the first spot round its dot clear of other labels, the dots and the map's controls, or none."""
     from app.wsgi import app
     with app.test_client() as c:
         h = c.get("/").data.decode()
@@ -210,8 +211,16 @@ def test_labels_layer_is_a_chip_off_by_default_drawn_from_the_stations():
     assert h.index('id="zones"') < h.index('data-layer="risk"') < h.index('id="layers"')
     board = (ROOT / "app/templates/_today_board.html").read_text()
     assert "labels: {}" in board and 'if (key === "labels")' in board and "LABEL_ZOOM = 13" in board        # no fetch; ?layers=labels deep-links like the rest
-    assert 'MAP.createPane("lbl").style.zIndex = 445' in board and 'MAP.on("zoomend moveend", refreshLabels)' in board
-    assert board.count("refreshLabels()") >= 4 and 'classList.add("lft")' in board and 'classList.add("off")' in board
+    assert 'MAP.createPane("lbl").style.zIndex = 445' in board and 'MAP.on("zoomend moveend resize", refreshLabels)' in board
+    assert board.count("refreshLabels()") >= 4 and "function besideDot(" in board and "function besideZone(" in board
+    assert "permanent: bad" not in board and "function mapControls()" in board                                # posted labels are placed too, not left to Leaflet
+    assert 'MAP.on("tooltipopen", fitTooltip)' in board
+    assert "LAYER.outfalls.group.eachLayer(m => { const p = at(m)" in board                                   # labels keep off the outfalls too
+    assert "function openSample(s)" in board and 'm.on("click", () => openSample(s))' in board                # a dot and its label open the same sample
+    assert "at the wetter gauge over three days" not in board and "at both gauges over three days" not in board   # nor the rain layer
+    assert "outfalls discharged in the year" not in board   # the outfalls layer adds no count line under the map
+    assert "new ResizeObserver(" in board and "MAP.invalidateSize()" in board   # the map re-measures when its box changes size
+    assert "tapZone(z)" in board and "tapCluster(c)" in board and ".map-name>span.tap{pointer-events:auto" in board   # labels take taps                                                     # a hover tooltip opens on the side that fits
 
 
 if __name__ == "__main__":
