@@ -15,7 +15,7 @@
  "family": "logit",
  "spec_version": "2e03a1eae7",
  "protocol": "stages_v3@22a2695e2e950188d37b753928932c6f6f2dc83296482a4fddf5a373ce86df3f",
- "built_at": "2026-11-12T21:45:32+00:00",
+ "built_at": "2026-11-13T02:26:54+00:00",
  "windows": {
   "holdout_start": "2023-07-01",
   "post_start": "2025-11-01",
@@ -70,7 +70,7 @@
  },
  "inputs": {
   "features/forecast/STAGES_PROTOCOL.md": "a75d6e6b1779819f66cab2c2d43e64fc753c44530526a2d308225e856751aa23",
-  "features/forecast/live_dashboard.py": "903d40cb7a79f6992ac7c7418a4106b817d101078bf64d8bb09242c80304dc2a",
+  "features/forecast/live_dashboard.py": "0ba83a5c964ed3e8beca71fe198a29c76fad4aaffce3eef92b90ad654c6a06cc",
   "features/forecast/data/models/stages/_s1/s1_scores.json": "52f053df51502ec50dde2cb03addf4450cff877f62c0a3bb2371bc24b7fadfdf",
   "features/forecast/data/models/stages/_s1/ecmwf_ifs025.csv.gz": "0a5fe59e85d01da12cf5ee64415b0fbf8777c4ecdeac6cd90410e779fbc76519",
   "features/forecast/data/raw/historical_rain.csv": "c4742eb23766ee048bd91a035a769270e207e21d0e39adf140c8b4153afdc7ed",
