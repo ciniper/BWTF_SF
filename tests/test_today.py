@@ -218,8 +218,11 @@ def test_labels_layer_is_a_chip_off_by_default_drawn_from_the_stations():
     assert "LAYER.outfalls.group.eachLayer(m => { const p = at(m)" in board                                   # labels keep off the outfalls too
     assert "function openSample(s)" in board and 'm.on("click", () => openSample(s))' in board                # a dot and its label open the same sample
     assert "at the wetter gauge over three days" not in board and "at both gauges over three days" not in board   # nor the rain layer
-    assert "if (missed.length && !tried.has(orderKey(next)))" in board   # a zone left without a label picks its spot first on the next try
+    assert "const first = r.missed.length ? r.missed : r.cornered.length ? r.cornered : r.offSide" in board   # a zone left worse off picks its spot first in the next plan
     assert 'esc(short(z)) + "<br>" + count' in board
+    assert "ZONE_SUMMARY_AT = 2" in board   # two flagged beaches in a zone get the zone's one label
+    assert "const outline = z =>" in board and ".zone-hl>i{" in board   # and that zone is outlined, whole
+    assert "PIN_SPOTS" in board and "MAX_LABEL_PLANS" in board   # the zone labels are placed by a bounded search
     assert 'MAP.zoomControl.setPosition("topright")' in board and 'baker_china: "northwest"' in board   # zoom over the bay; Baker & China labelled in the water   # and a zone label short of room goes on two rows before it drops its name
     assert "outfalls discharged in the year" not in board   # the outfalls layer adds no count line under the map
     assert "new ResizeObserver(" in board and "MAP.invalidateSize()" in board   # the map re-measures when its box changes size
