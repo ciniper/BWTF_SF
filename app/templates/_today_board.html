@@ -471,6 +471,8 @@ function placeRank(m, st) { const p = "st" + (RANK_ST[st] || 0); if (m.options.p
 // beaches, or whose labels don't all fit, gets one label for the lot ("Ocean Beach · 6 posted"), which names the zone too;
 // a label with no room anywhere, even in its shorter wordings, is left to its dot's hover tooltip. A discharge label is in the
 // discharge red, so short of room it can drop its " · discharge" (Chase, 2026-11-08, from the all-outfalls review on #10).
+// A zone's label short of room on one line goes on two, its name over its count, before it drops its name (Chase, 2026-11-13:
+// "I'm ok with label being wrapped 2 rows").
 const LABEL_ZOOM = 13, ZONE_SUMMARY_AT = 3, ZONE_SIDE = {ocean: "left", baker_china: "left", north: "top", east: "right"};
 const LABEL_EDGE = 4, LABEL_GAP = 4, ZONE_GAP = 6;   // px: from the map's edge; from a dot to its label; from a zone's dots to its name
 const CLUSTER_ZOOM_STEP = 2;   // zoom steps closer when a group's label is tapped inside a zone
@@ -546,25 +548,38 @@ function refreshLabels() {
     const bb = zoneBox(ms), own = ZONE_SIDE[z.key] || "right", rest = ["left", "right", "top", "bottom"].filter(k => k !== own);
     const tries = [[own], rest].flatMap(sides => words.map(w => [w, besideZone(bb, sides)]));
     if (last) tries.push([last, besideZone(bb, [own, ...rest])]);
-    return put(L.point((bb.l + bb.r) / 2, (bb.t + bb.b) / 2), cls + " to-zone", tries, tapZone(z));
+    return put(L.point((bb.l + bb.r) / 2, (bb.t + bb.b) / 2), cls + " to-zone zone-" + z.key, tries, tapZone(z));
   };
   const short = z => z.label.replace(/ Beach(es)?$/, "");   // "Baker & China", for a phone's map
   const bad = shown.filter(m => isBad(stAt(m))).sort((a, b) => (stAt(b) === "discharge") - (stAt(a) === "discharge"));
   // posted and discharging beaches. Zoomed out, a zone with several, or one whose labels don't all fit, gets one label for the lot;
   // a zone that didn't fit is placed again that way, until none is left over.
+  // The zone with the most discharges, then the most posted, picks its spot first. But a zone's label can take the only room
+  // another had: on a phone 402px or wider, East's went above its dots, where Baker & China's needed to be, and Baker & China's
+  // was dropped (Chase, 2026-11-13). So a zone left without a label picks first on the next try, and the order that places the
+  // most labels is kept.
   const grouped = new Set(zoomedOut ? ZONES.filter(z => bad.filter(m => m.__z.key === z.key).length >= ZONE_SUMMARY_AT).map(z => z.key) : []);
+  const tally = z => { const ms = bad.filter(m => m.__z.key === z.key); return [ms.filter(m => stAt(m) === "discharge").length, ms.length]; };
+  const byTally = ZONES.slice().sort((a, b) => tally(b)[0] - tally(a)[0] || tally(b)[1] - tally(a)[1]), orderKey = o => o.map(z => z.key).join();
+  let order = byTally, tried = new Set(), best = null, final = false;
   for (;;) {
     LABELS.clearLayers(); taken = blocked.slice();
-    const tally = z => { const ms = bad.filter(m => m.__z.key === z.key); return [ms.filter(m => stAt(m) === "discharge").length, ms.length]; };
-    for (const z of ZONES.slice().sort((a, b) => tally(b)[0] - tally(a)[0] || tally(b)[1] - tally(a)[1])) {   // the most discharges, then the most posted, picks its spot first
+    const missed = [];
+    for (const z of order) {
       const ms = bad.filter(m => m.__z.key === z.key); if (!grouped.has(z.key) || !ms.length) continue;
       const n = st => ms.filter(m => stAt(m) === st).length, count = ["discharge", "posted"].filter(n).map(st => n(st) + " " + st).join(" · ");
-      putZone(z, ms, "bad" + (n("discharge") ? " discharge" : ""), [esc(z.label) + " · " + count, esc(short(z)) + " · " + count], count); }
+      if (!putZone(z, ms, "bad" + (n("discharge") ? " discharge" : ""), [esc(z.label) + " · " + count, esc(short(z)) + " · " + count, esc(short(z)) + "<br>" + count], count)) missed.push(z); }
     const left = new Set();
     // short of room, a label drops its " · discharge" (its colour says it), then names its first beach and how many more
     for (const c of clusters(bad.filter(m => !grouped.has(m.__z.key)))) if (!put(c.p, "bad " + c.st, [c.html, c.names, c.first].filter((w, i, a) => a.indexOf(w) === i).map(w => [w, besideDot(c.p, c.r)]), tapCluster(c)) && zoomedOut) left.add(c.ms[0].__z.key);
-    if (!left.size) break;
-    left.forEach(k => grouped.add(k));
+    if (left.size) { left.forEach(k => grouped.add(k)); order = byTally; tried = new Set(); best = null; final = false; continue; }   // more zones summed up: start the orders over
+    if (final) break;
+    if (!best || missed.length < best.missed) best = {order, missed: missed.length};
+    tried.add(orderKey(order));
+    const next = missed.concat(order.filter(z => !missed.includes(z)));
+    if (missed.length && !tried.has(orderKey(next))) { order = next; continue; }
+    if (best.order === order) break;   // this try is the best: it stays
+    order = best.order; final = true;   // else place the best order again
   }
   if (!LAYER.labels.on) return;
   if (zoomedOut) {   // the zone names, but for a zone its posted label already names
