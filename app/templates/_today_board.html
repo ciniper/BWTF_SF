@@ -78,7 +78,7 @@
   .map-name>span.tap{pointer-events:auto;cursor:pointer}.map-name>span.tap [data-i]:hover,.map-name>span.tap [data-more]:hover,.map-name.to-zone>span.tap:hover{text-decoration:underline}   /* a label is a link: to its beach's sample, or its zone (Chase, 2026-11-13) */
   .zone-hl>i{position:absolute;left:0;top:0;box-sizing:border-box;border-radius:999px;border:1.5px solid color-mix(in srgb,var(--posted) 55%,transparent);background:color-mix(in srgb,var(--posted) 7%,transparent)}
   .zone-hl.discharge>i{border-color:color-mix(in srgb,var(--discharge) 50%,transparent);background:color-mix(in srgb,var(--discharge) 6%,transparent)}
-  .zone-leader{stroke:var(--posted);stroke-opacity:.7}.zone-leader.discharge{stroke:var(--discharge)}   /* a zone with one label for its beaches is outlined, whole, lightly (Chase, 2026-11-14) */
+  .zone-leader{stroke:var(--posted);stroke-opacity:.6}.zone-leader.discharge{stroke:var(--discharge)}   /* a zone with one label for its beaches is outlined, whole, lightly (Chase, 2026-11-14) */
   .map-name.zn>span{font-weight:800;font-size:11px;letter-spacing:.07em;text-transform:uppercase;background:rgba(255,255,255,.78);padding:1px 6px}
   /* Surfrider's latest result per site: a diamond in Surfrider blue, filled with the result's grade */
   .bwtf-pin{background:none;border:0}
@@ -482,11 +482,11 @@ function placeRank(m, st) { const p = "st" + (RANK_ST[st] || 0); if (m.options.p
 // A zone's label short of room on one line goes on two, its name over its count, then three, its name over each count, before
 // it drops its name (Chase, 2026-11-13: "I'm ok with label being wrapped 2 rows").
 // Two flagged beaches in a zone already get the zone's one label, and that zone is outlined, all its beaches, lightly, with the
-// label just outside; a label off a corner of the outline gets a short line to it (Chase, 2026-11-14: "maybe we just highlight
-// the whole zone ... nice and neat").
+// label just outside, with a thin line from it to each of those beaches (Chase, 2026-11-14: "maybe we just highlight the whole
+// zone ... nice and neat"; "put the lines to the spots").
 const LABEL_ZOOM = 13, ZONE_SUMMARY_AT = 2, ZONE_SIDE = {ocean: "left", baker_china: "northwest", north: "top", east: "right"};
 const LABEL_EDGE = 4, LABEL_GAP = 4, ZONE_GAP = 6;   // px: from the map's edge; from a dot to its label; from a zone's dots to its name
-const ZONE_PAD = 5, LEADER_PX = 2;   // px: from a zone's outer dots to its outline; a label further than ZONE_GAP and this from it gets a line
+const ZONE_PAD = 5;   // px: from a zone's outer dots to its outline
 const PIN_SPOTS = 12, MAX_LABEL_PLANS = 80;   // a zone label's straight-edge spots to pin it to (3 a side; Baker & China's 2 northwest); plans tried at most
 const CLUSTER_ZOOM_STEP = 2;   // zoom steps closer when a group's label is tapped inside a zone
 let LABELS = null;
@@ -586,20 +586,19 @@ function refreshLabels() {
     if (last) tries.push([last, besideZone(bb, [own, ...rest])], [last, besideZone(bb, [own, ...rest], true)]);
     return put(p, c, tries, tapZone(z)) ? "corner" : false;
   };
-  // a labelled zone's outline, and a line from its label when the label sits off a corner of it
+  // a labelled zone's outline, and a line from its label to each of its posted and discharging beaches, in that beach's colour,
+  // fanning from the point of the label nearest them; drawn under the dots, so each dot covers its line's end (Chase, 2026-11-14:
+  // "put the lines to the spots")
   const outline = z => {
     const el = MAP.getContainer().querySelector(".map-name.bad.zone-" + z.key + ">span"); if (!el) return;
     const bb = padBox(zoneBox(shown.filter(m => m.__z.key === z.key)), ZONE_PAD), w = bb.r - bb.l, h = bb.b - bb.t, cls = el.parentNode.classList.contains("discharge") ? "discharge" : "posted";
     L.marker(MAP.containerPointToLatLng([bb.l, bb.t]), {pane: "zhl", interactive: false, keyboard: false,
       icon: L.divIcon({className: "zone-hl " + cls, iconSize: [0, 0], html: '<i style="width:' + w + "px;height:" + h + 'px"></i>'})}).addTo(LABELS);
-    const {rr, s0, s1} = pillOf(bb);   // the outline is a pill: the segment between its ends' centres, widened by rr
-    const onSeg = q => { const d = s1.subtract(s0), len2 = d.x * d.x + d.y * d.y, k = len2 ? Math.max(0, Math.min(1, ((q.x - s0.x) * d.x + (q.y - s0.y) * d.y) / len2)) : 0; return s0.add(d.multiplyBy(k)); };
+    const flagged = bad.filter(m => m.__z.key === z.key); if (!flagged.length) return;
     const r = el.getBoundingClientRect(), box = MAP.getContainer().getBoundingClientRect(), lb = {l: r.left - box.left, t: r.top - box.top, r: r.right - box.left, b: r.bottom - box.top};
-    const nearRect = q => L.point(Math.max(lb.l, Math.min(q.x, lb.r)), Math.max(lb.t, Math.min(q.y, lb.b)));
-    const a = nearRect(onSeg(L.point((lb.l + lb.r) / 2, (lb.t + lb.b) / 2))), q = onSeg(a), d = a.distanceTo(q) - rr;
-    if (d <= ZONE_GAP + LEADER_PX) return;
-    const e = q.add(a.subtract(q).multiplyBy(rr / a.distanceTo(q)));   // where the line meets the outline
-    L.polyline([a, e].map(pt => MAP.containerPointToLatLng(pt)), {pane: "zhl", className: "zone-leader " + cls, weight: 1.5, interactive: false}).addTo(LABELS);
+    const mid = flagged.map(at).reduce((q, p) => q.add(p), L.point(0, 0)).divideBy(flagged.length);
+    const a = L.point(Math.max(lb.l, Math.min(mid.x, lb.r)), Math.max(lb.t, Math.min(mid.y, lb.b)));   // where the lines leave the label
+    for (const m of flagged) L.polyline([a, at(m)].map(pt => MAP.containerPointToLatLng(pt)), {pane: "zhl", className: "zone-leader " + stAt(m), weight: 1.25, interactive: false}).addTo(LABELS);
   };
   const short = z => z.label.replace(/ Beach(es)?$/, "");   // "Baker & China", for a phone's map
   const bad = shown.filter(m => isBad(stAt(m))).sort((a, b) => (stAt(b) === "discharge") - (stAt(a) === "discharge"));

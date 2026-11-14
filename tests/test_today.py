@@ -222,6 +222,7 @@ def test_labels_layer_is_a_chip_off_by_default_drawn_from_the_stations():
     assert 'esc(short(z)) + "<br>" + count' in board
     assert "ZONE_SUMMARY_AT = 2" in board   # two flagged beaches in a zone get the zone's one label
     assert "const outline = z =>" in board and ".zone-hl>i{" in board   # and that zone is outlined, whole
+    assert 'className: "zone-leader " + stAt(m)' in board   # with a line from its label to each flagged beach
     assert "PIN_SPOTS" in board and "MAX_LABEL_PLANS" in board   # the zone labels are placed by a bounded search
     assert 'MAP.zoomControl.setPosition("topright")' in board and 'baker_china: "northwest"' in board   # zoom over the bay; Baker & China labelled in the water   # and a zone label short of room goes on two rows before it drops its name
     assert "outfalls discharged in the year" not in board   # the outfalls layer adds no count line under the map
