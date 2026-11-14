@@ -410,6 +410,9 @@ function initMap() {
     return d;
   };
   credits.addTo(MAP);
+  // the zoom buttons top right, over the bay, where the whole city has open water; top left they sat over the Ocean and Baker &
+  // China shore, and Baker & China's label had no room in the water northwest of its beaches (Chase, 2026-11-13)
+  MAP.zoomControl.setPosition("topright");
   L.tileLayer({{ BASEMAP.url|tojson }}, {{ BASEMAP.options|tojson }}).addTo(MAP);
   // Stacking order by status, across both sources: not sampled underneath, then safe, posted, and discharge on top
   // (Chase, 2026-09-29), and an orange city dot over a green Surfrider diamond (2026-10-18). One map pane per rank:
@@ -471,9 +474,9 @@ function placeRank(m, st) { const p = "st" + (RANK_ST[st] || 0); if (m.options.p
 // beaches, or whose labels don't all fit, gets one label for the lot ("Ocean Beach · 6 posted"), which names the zone too;
 // a label with no room anywhere, even in its shorter wordings, is left to its dot's hover tooltip. A discharge label is in the
 // discharge red, so short of room it can drop its " · discharge" (Chase, 2026-11-08, from the all-outfalls review on #10).
-// A zone's label short of room on one line goes on two, its name over its count, before it drops its name (Chase, 2026-11-13:
-// "I'm ok with label being wrapped 2 rows").
-const LABEL_ZOOM = 13, ZONE_SUMMARY_AT = 3, ZONE_SIDE = {ocean: "left", baker_china: "left", north: "top", east: "right"};
+// A zone's label short of room on one line goes on two, its name over its count, then three, its name over each count, before
+// it drops its name (Chase, 2026-11-13: "I'm ok with label being wrapped 2 rows").
+const LABEL_ZOOM = 13, ZONE_SUMMARY_AT = 3, ZONE_SIDE = {ocean: "left", baker_china: "northwest", north: "top", east: "right"};
 const LABEL_EDGE = 4, LABEL_GAP = 4, ZONE_GAP = 6;   // px: from the map's edge; from a dot to its label; from a zone's dots to its name
 const CLUSTER_ZOOM_STEP = 2;   // zoom steps closer when a group's label is tapped inside a zone
 let LABELS = null;
@@ -494,7 +497,8 @@ function besideDot(p, r) {
 // spots round a zone's dots (bb, their box) on the given sides, each centred on that side or flush with either end of it
 function besideZone(bb, sides) {
   return (w, h) => { const cx = (bb.l + bb.r - w) / 2, cy = (bb.t + bb.b - h) / 2, lx = bb.l - ZONE_GAP - w, rx = bb.r + ZONE_GAP, ty = bb.t - ZONE_GAP - h, by = bb.b + ZONE_GAP;
-    const at = {left: [[lx, cy], [lx, bb.t], [lx, bb.b - h]], right: [[rx, cy], [rx, bb.t], [rx, bb.b - h]], top: [[cx, ty], [bb.l, ty], [bb.r - w, ty]], bottom: [[cx, by], [bb.l, by], [bb.r - w, by]]};
+    const at = {left: [[lx, cy], [lx, bb.t], [lx, bb.b - h]], right: [[rx, cy], [rx, bb.t], [rx, bb.b - h]], top: [[cx, ty], [bb.l, ty], [bb.r - w, ty]], bottom: [[cx, by], [bb.l, by], [bb.r - w, by]],
+      northwest: [[lx, ty], [bb.r - w, ty]]};   // off the dots' top-left corner, then above them reaching left: Baker & China's, in the water clear of North's
     return sides.flatMap(k => at[k]).map(([x, y]) => pxBox(x, y, w, h)); };
 }
 function refreshLabels() {
@@ -545,7 +549,7 @@ function refreshLabels() {
     return {l: Math.min(...bs.map(q => q.l)), t: Math.min(...bs.map(q => q.t)), r: Math.max(...bs.map(q => q.r)), b: Math.max(...bs.map(q => q.b))}; };
   // a zone's label: each wording on the zone's own side, then each on the other sides, then the last resort anywhere round it
   const putZone = (z, ms, cls, words, last) => {
-    const bb = zoneBox(ms), own = ZONE_SIDE[z.key] || "right", rest = ["left", "right", "top", "bottom"].filter(k => k !== own);
+    const bb = zoneBox(ms), own = ZONE_SIDE[z.key] || "right", rest = ["left", "right", "top", "bottom"].filter(k => k !== own);   // northwest is only Baker & China's
     const tries = [[own], rest].flatMap(sides => words.map(w => [w, besideZone(bb, sides)]));
     if (last) tries.push([last, besideZone(bb, [own, ...rest])]);
     return put(L.point((bb.l + bb.r) / 2, (bb.t + bb.b) / 2), cls + " to-zone zone-" + z.key, tries, tapZone(z));
@@ -568,7 +572,7 @@ function refreshLabels() {
     for (const z of order) {
       const ms = bad.filter(m => m.__z.key === z.key); if (!grouped.has(z.key) || !ms.length) continue;
       const n = st => ms.filter(m => stAt(m) === st).length, count = ["discharge", "posted"].filter(n).map(st => n(st) + " " + st).join(" · ");
-      if (!putZone(z, ms, "bad" + (n("discharge") ? " discharge" : ""), [esc(z.label) + " · " + count, esc(short(z)) + " · " + count, esc(short(z)) + "<br>" + count], count)) missed.push(z); }
+      if (!putZone(z, ms, "bad" + (n("discharge") ? " discharge" : ""), [esc(z.label) + " · " + count, esc(short(z)) + " · " + count, esc(short(z)) + "<br>" + count, esc(short(z)) + "<br>" + count.replace(" · ", "<br>")].filter((w, i, a) => a.indexOf(w) === i), count)) missed.push(z); }
     const left = new Set();
     // short of room, a label drops its " · discharge" (its colour says it), then names its first beach and how many more
     for (const c of clusters(bad.filter(m => !grouped.has(m.__z.key)))) if (!put(c.p, "bad " + c.st, [c.html, c.names, c.first].filter((w, i, a) => a.indexOf(w) === i).map(w => [w, besideDot(c.p, c.r)]), tapCluster(c)) && zoomedOut) left.add(c.ms[0].__z.key);

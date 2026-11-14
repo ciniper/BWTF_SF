@@ -219,7 +219,8 @@ def test_labels_layer_is_a_chip_off_by_default_drawn_from_the_stations():
     assert "function openSample(s)" in board and 'm.on("click", () => openSample(s))' in board                # a dot and its label open the same sample
     assert "at the wetter gauge over three days" not in board and "at both gauges over three days" not in board   # nor the rain layer
     assert "if (missed.length && !tried.has(orderKey(next)))" in board   # a zone left without a label picks its spot first on the next try
-    assert 'esc(short(z)) + "<br>" + count' in board   # and a zone label short of room goes on two rows before it drops its name
+    assert 'esc(short(z)) + "<br>" + count' in board
+    assert 'MAP.zoomControl.setPosition("topright")' in board and 'baker_china: "northwest"' in board   # zoom over the bay; Baker & China labelled in the water   # and a zone label short of room goes on two rows before it drops its name
     assert "outfalls discharged in the year" not in board   # the outfalls layer adds no count line under the map
     assert "new ResizeObserver(" in board and "MAP.invalidateSize()" in board   # the map re-measures when its box changes size
     assert "tapZone(z)" in board and "tapCluster(c)" in board and ".map-name>span.tap{pointer-events:auto" in board   # labels take taps                                                     # a hover tooltip opens on the side that fits
