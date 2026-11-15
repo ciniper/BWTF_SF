@@ -528,7 +528,7 @@ function besideDot(p, r, gap = LABEL_GAP) {
 // best match the sites rather than vertical or horizontal").
 const PILL_SNAP_DEG = 3, HUG_STEPS = 12;   // degrees off level or upright a pill is squared within; halvings to find where a label touches it
 // the pill round dots centred at ps with radii rs, grown by pad: {s0, s1, rr}, its round ends' centres and their radius, and
-// its box {l, t, r, b}. Its ends are pulled in as far as every dot still fits.
+// its box {l, t, r, b}. Its ends are pulled in as far as every dot still sits pad inside it.
 function pillAround(ps, rs, pad) {
   const n = ps.length, c = ps.reduce((a, q) => a.add(q), L.point(0, 0)).divideBy(n), dot = (a, b) => a.x * b.x + a.y * b.y;
   let sxx = 0, syy = 0, sxy = 0; for (const q of ps) { const dx = q.x - c.x, dy = q.y - c.y; sxx += dx * dx; syy += dy * dy; sxy += dx * dy; }
@@ -536,7 +536,9 @@ function pillAround(ps, rs, pad) {
   if (Math.abs(th - sq) < PILL_SNAP_DEG * Math.PI / 180) th = sq;
   const u = L.point(Math.cos(th), Math.sin(th)), v = L.point(-u.y, u.x), pu = ps.map(q => dot(q.subtract(c), u)), pv = ps.map(q => dot(q.subtract(c), v));
   const v0 = (Math.max(...pv.map((x, i) => x + rs[i])) + Math.min(...pv.map((x, i) => x - rs[i]))) / 2, rr = Math.max(...pv.map((x, i) => Math.abs(x - v0) + rs[i])) + pad;
-  const reach = pv.map((x, i) => Math.sqrt(Math.max(0, (rr - rs[i]) ** 2 - (x - v0) ** 2)));   // how far along the line each dot's own room runs
+  // how far along the line each dot's room runs, pad clear of the outline: the round ends keep pad off the end dots too, as the
+  // sides do (Chase, 2026-11-14: "the rounded part ... still touches the sites")
+  const reach = pv.map((x, i) => Math.sqrt(Math.max(0, (rr - pad - rs[i]) ** 2 - (x - v0) ** 2)));
   let ua = Math.min(...pu.map((x, i) => x + reach[i])), ub = Math.max(...pu.map((x, i) => x - reach[i]));
   if (ua > ub) ua = ub = (ua + ub) / 2;   // dots in a knot: a circle
   const s0 = c.add(u.multiplyBy(ua)).add(v.multiplyBy(v0)), s1 = c.add(u.multiplyBy(ub)).add(v.multiplyBy(v0));
