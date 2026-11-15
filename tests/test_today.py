@@ -224,8 +224,9 @@ def test_labels_layer_is_a_chip_off_by_default_drawn_from_the_stations():
     assert "const outline = z =>" in board and ".zone-hl>i{" in board   # and that zone is outlined, whole
     assert 'className: "zone-leader " + cls' in board and "zone-leader-dot" in board   # with a line from its label to the outline, ending in a dot
     assert "FLAG_GAP" in board and "leader(taken[taken.length - 1], c.p, c.r, c.st)" in board   # a flagged beach's own label has a line to its dot
-    assert "v.zoom -= PHONE_CITY_OUT" in board   # a phone's whole city a step further out, so North's label fits above it
+    assert "PHONE_CITY_SCALE = 0.9" in board and "subtract([0, up])" in board   # a phone's whole city 10% smaller, the room above it
     assert "function pillAround(" in board and "PILL_SNAP_DEG" in board and "transform:rotate(" in board   # the outline tilts with its zone's beaches
+    assert 'document.fonts.addEventListener("loadingdone"' in board   # labels placed again once Roboto is in
     assert "PIN_SPOTS" in board and "MAX_LABEL_PLANS" in board   # the zone labels are placed by a bounded search
     assert 'MAP.zoomControl.setPosition("topright")' in board and 'baker_china: "northwest"' in board   # zoom over the bay; Baker & China labelled in the water   # and a zone label short of room goes on two rows before it drops its name
     assert "outfalls discharged in the year" not in board   # the outfalls layer adds no count line under the map

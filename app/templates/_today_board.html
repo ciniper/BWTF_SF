@@ -311,6 +311,10 @@
 // The city map: every monitoring station coloured by the status SFPUC shows right now
 // (the same colours as the zone tiles). Zone tiles zoom it; a station opens the sample popover.
 const ZONES = {{ board.zones|tojson }};
+// A posted or discharging beach's dot is a little bigger than the rest: 8px, midway between the 7 of the others and the 9 it
+// was (Chase, 2026-11-14: "let's not increase the size of the dots ... by as much")
+const DOT_R = 7, FLAG_DOT_R = 8;
+const dotR = st => st === "posted" || st === "discharge" ? FLAG_DOT_R : DOT_R;
 const COL = {safe: "#237059", caution: "#c99a12", posted: "#d4763a", discharge: "#b5310a", unknown: "#98a3ab"};
 let MAP = null, MARKERS = {}, ALL_ORDERED = [], ACTIVE = null;
 function allMarkers() { return Object.values(MARKERS).flat(); }
@@ -323,12 +327,16 @@ function cityView() {
   for (const k of ["outfalls", "bwtf", "rain"]) { const g = typeof LAYER !== "undefined" && LAYER[k] && LAYER[k].on && LAYER[k].group; if (g) g.eachLayer(l => { if (l.getLatLng) pts.push(l.getLatLng()); }); }
   if (!pts.length) return null;
   const v = frame(L.latLngBounds(pts).pad(0.12), 0, Infinity);
-  if (MAP.getSize().x < NARROW_MAP_PX) v.zoom -= PHONE_CITY_OUT;   // a phone's whole city a step further out, for room round its edges
+  if (MAP.getSize().x < NARROW_MAP_PX) {   // a phone's whole city a little smaller, with all the room that makes above it
+    const z = v.zoom + Math.log2(PHONE_CITY_SCALE), up = MAP.getSize().y * (1 - PHONE_CITY_SCALE) / 2;
+    v.center = MAP.unproject(MAP.project(v.center, z).subtract([0, up]), z); v.zoom = z; }
   return {...v, area: viewArea(v.center, v.zoom)};
 }
-// On a phone the whole city sits a quarter step further out (one zoomSnap): North's beaches were at the map's very top, so
-// their label had no room above them and went below (Chase, 2026-11-14: "Zoom out a step").
-const PHONE_CITY_OUT = 0.25;
+// On a phone the whole city is drawn 10% smaller, and the room that frees goes above it rather than round it: North's beaches
+// were at the map's very top, so their label had no room above them and went below (Chase, 2026-11-14: "let's zoom out 10% not
+// 16%"; "shift the whole map up ... if that give more room for north labels"). It's off the quarter steps the map otherwise
+// snaps to: the map's minimum zoom is set to it, and Leaflet clamps a snapped zoom up to that minimum.
+const PHONE_CITY_SCALE = 0.9;
 function viewArea(center, zoom) {   // what the map shows at a view, edge to edge
   const px = MAP.getPixelBounds(center, zoom);
   return L.latLngBounds(MAP.unproject(px.getBottomLeft(), zoom), MAP.unproject(px.getTopRight(), zoom));
@@ -436,7 +444,7 @@ function initMap() {
   const ordered = ZONES.flatMap(z => z.stations.map(s => [z, s])).sort((a, b) => (RANK[a[1].status] || 0) - (RANK[b[1].status] || 0));
   for (const [z, s] of ordered) {
     const bad = s.status === "posted" || s.status === "discharge";
-    const m = L.circleMarker([s.lat, s.lon], {pane: "st" + (RANK[s.status] || 0), radius: bad ? 9 : 7, color: "#fff", weight: 2, fillColor: COL[s.status] || COL.unknown, fillOpacity: .95, bubblingMouseEvents: false}).addTo(MAP);
+    const m = L.circleMarker([s.lat, s.lon], {pane: "st" + (RANK[s.status] || 0), radius: dotR(s.status), color: "#fff", weight: 2, fillColor: COL[s.status] || COL.unknown, fillOpacity: .95, bubblingMouseEvents: false}).addTo(MAP);
     m.__s = s; m.__z = z; ALL_ORDERED.push(m);   // the layers recolour markers by zone risk or by a replayed day; focusZone re-adds them in this order
     const sampleDetail = s.pending ? " · new sample not published yet"
       : !bad && s.sampled ? " · " + s.sampled_text + " (" + s.sampled + ")" : "";
@@ -450,6 +458,9 @@ function initMap() {
   // Leaflet re-measures whenever the map's box changes size; otherwise it frames views and places labels for a map 40-odd
   // pixels taller than the one shown, and the bottom strip is cut off (Chase, 2026-11-13)
   if (window.ResizeObserver) { let queued = false; new ResizeObserver(() => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; MAP.invalidateSize(); }); }).observe(MAP.getContainer()); }
+  // Roboto arrives after the first labels are placed (the page asks for it with display=swap), and the labels were measured in
+  // the fallback font: placed again once it is in, so the first view matches every later one (Chase, 2026-11-14)
+  if (document.fonts) document.fonts.addEventListener("loadingdone", () => refreshLabels());
   document.getElementById("zones").addEventListener("click", e => { const b = e.target.closest(".zone"); if (b) focusZone(b.dataset.zone); });
   document.getElementById("map-reset").addEventListener("click", () => focusZone(ACTIVE));
   initLayers();
@@ -490,7 +501,7 @@ function placeRank(m, st) { const p = "st" + (RANK_ST[st] || 0); if (m.options.p
 // nice and neat"; "make the line to the zone not necessarily a site").
 const LABEL_ZOOM = 13, ZONE_SUMMARY_AT = 2, ZONE_SIDE = {ocean: "left", baker_china: "northwest", north: "top", east: "right"};
 const LABEL_EDGE = 4, LABEL_GAP = 4, ZONE_GAP = 6;   // px: from the map's edge; from a dot to its label; from a zone's dots to its name
-const ZONE_PAD = 5, LEADER_WEIGHT = 1.5, LEADER_DOT = 2.5;   // px: from a zone's outer dots to its outline; its label's line's width; the dot that line ends in
+const ZONE_PAD = 8, LEADER_WEIGHT = 1.5, LEADER_DOT = 2.5;   // px: from a zone's outer dots to its outline (5 sat on their edges: Chase, 2026-11-14); its label's line's width; the dot that line ends in
 // a posted or discharging beach's own label sits a little further out when it can, with a line to its dot, as a zone's label has
 // to its outline (Chase, 2026-11-14: "can the single site labels draw a line to the site?")
 const FLAG_GAP = 10;   // px: from a flagged beach's dot to its label, room for the line
@@ -783,7 +794,7 @@ function restoreBoard() {
   const lead = document.querySelector(".board .lead"); if (lead && ORIG.lead != null) lead.innerHTML = ORIG.lead;
   document.querySelector(".board").className = ORIG.tone; applyRisk();   // the Risk view outlives a replay's snapshot
   for (const z of ZONES) { const t = tileParts(z.key), o = ORIG.tiles[z.key]; if (!t || !o) continue; t.b.className = o.cls + (t.b.classList.contains("focus") ? " focus" : ""); t.b.style.borderColor = ""; t.st.innerHTML = o.st; t.dots.forEach((d, i) => d.className = o.dots[i]); }
-  for (const m of allMarkers()) { m.setStyle({fillColor: COL[m.__s.status] || COL.unknown, radius: m.__s.status === "posted" || m.__s.status === "discharge" ? 9 : 7}); placeRank(m, m.__s.status); labelFor(m, m.__s.status); }
+  for (const m of allMarkers()) { m.setStyle({fillColor: COL[m.__s.status] || COL.unknown, radius: dotR(m.__s.status)}); placeRank(m, m.__s.status); labelFor(m, m.__s.status); }
   for (const [src, cls] of ORIG.sites || []) { const d = document.querySelector('#zone-sites .site[data-station="' + src + '"] .status-dot'); if (d) d.className = cls; }
 }
 // Forecast details expand below their control, independently of the city status cards.
@@ -803,7 +814,7 @@ function applyReplay() {
     z.stations.forEach((st, i) => {
       const c = ((REPLAY.stations[st.source] || {})[day]) || "unknown"; zc[c]++; counts[c]++;
       if (RANK_ST[c] > RANK_ST[zw] || zw === "unknown") zw = c === "unknown" && zw !== "unknown" ? zw : c;
-      const m = allMarkers().find(m => m.__s === st); if (m) { m.setStyle({fillColor: COL[c], radius: c === "posted" || c === "discharge" ? 9 : 7}); placeRank(m, c); labelFor(m, c); }
+      const m = allMarkers().find(m => m.__s === st); if (m) { m.setStyle({fillColor: COL[c], radius: dotR(c)}); placeRank(m, c); labelFor(m, c); }
       const chip = document.querySelector('#zone-sites .site[data-station="' + st.source + '"] .status-dot'); if (chip) chip.className = "status-dot " + c;
       if (t) t.dots[i].className = "status-dot " + c;
     });
