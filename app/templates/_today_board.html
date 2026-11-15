@@ -511,23 +511,61 @@ function besideDot(p, r, gap = LABEL_GAP) {
   return (w, h) => { const g = r + gap, d = Math.ceil(r) + 2 + gap - LABEL_GAP;   // a corner spot sits just off the dot's box
     return [[g, -h / 2], [-g - w, -h / 2], [d, -d - h], [d, d], [-d - w, -d - h], [-d - w, d], [-w / 2, -g - h], [-w / 2, g]].map(([x, y]) => pxBox(p.x + x, p.y + y, w, h)); };
 }
-// spots round a zone's dots (bb, their box) on the given sides, each centred on that side or flush with either end of it
-// the pill a box makes, as a zone's outline does: its round ends' centres and their radius, half the box's short side
-function pillOf(bb) { const rr = Math.min(bb.r - bb.l, bb.b - bb.t) / 2;
-  return {rr, s0: L.point(bb.l + rr, bb.t + rr), s1: bb.r - bb.l >= bb.b - bb.t ? L.point(bb.r - rr, bb.t + rr) : L.point(bb.l + rr, bb.b - rr)}; }
-// (with corners, the spots flush with the box's corners instead: off the outline's round ends, tried only once every wording has
+// A zone's outline is a pill round its dots, laid along the line that best fits them, so it tilts with a zone that runs on a
+// slant (Ocean Beach and the East beaches lean a few degrees; Baker & China's three run diagonally) rather than standing upright
+// round their box; within PILL_SNAP_DEG of level or upright it is set square (Chase, 2026-11-14: "the pills could be rotated to
+// best match the sites rather than vertical or horizontal").
+const PILL_SNAP_DEG = 3, HUG_STEPS = 12;   // degrees off level or upright a pill is squared within; halvings to find where a label touches it
+// the pill round dots centred at ps with radii rs, grown by pad: {s0, s1, rr}, its round ends' centres and their radius, and
+// its box {l, t, r, b}. Its ends are pulled in as far as every dot still fits.
+function pillAround(ps, rs, pad) {
+  const n = ps.length, c = ps.reduce((a, q) => a.add(q), L.point(0, 0)).divideBy(n), dot = (a, b) => a.x * b.x + a.y * b.y;
+  let sxx = 0, syy = 0, sxy = 0; for (const q of ps) { const dx = q.x - c.x, dy = q.y - c.y; sxx += dx * dx; syy += dy * dy; sxy += dx * dy; }
+  let th = sxx + syy ? Math.atan2(2 * sxy, sxx - syy) / 2 : 0; const sq = Math.round(th / (Math.PI / 2)) * (Math.PI / 2);
+  if (Math.abs(th - sq) < PILL_SNAP_DEG * Math.PI / 180) th = sq;
+  const u = L.point(Math.cos(th), Math.sin(th)), v = L.point(-u.y, u.x), pu = ps.map(q => dot(q.subtract(c), u)), pv = ps.map(q => dot(q.subtract(c), v));
+  const v0 = (Math.max(...pv.map((x, i) => x + rs[i])) + Math.min(...pv.map((x, i) => x - rs[i]))) / 2, rr = Math.max(...pv.map((x, i) => Math.abs(x - v0) + rs[i])) + pad;
+  const reach = pv.map((x, i) => Math.sqrt(Math.max(0, (rr - rs[i]) ** 2 - (x - v0) ** 2)));   // how far along the line each dot's own room runs
+  let ua = Math.min(...pu.map((x, i) => x + reach[i])), ub = Math.max(...pu.map((x, i) => x - reach[i]));
+  if (ua > ub) ua = ub = (ua + ub) / 2;   // dots in a knot: a circle
+  const s0 = c.add(u.multiplyBy(ua)).add(v.multiplyBy(v0)), s1 = c.add(u.multiplyBy(ub)).add(v.multiplyBy(v0));
+  return {s0, s1, rr, l: Math.min(s0.x, s1.x) - rr, t: Math.min(s0.y, s1.y) - rr, r: Math.max(s0.x, s1.x) + rr, b: Math.max(s0.y, s1.y) + rr};
+}
+// the point of segment ab nearest p
+function nearOnSeg(p, a, b) { const d = b.subtract(a), len2 = d.x * d.x + d.y * d.y, k = len2 ? Math.max(0, Math.min(1, ((p.x - a.x) * d.x + (p.y - a.y) * d.y) / len2)) : 0; return a.add(d.multiplyBy(k)); }
+// how far segment ab is from box q: 0 where they meet
+function segBoxDist(a, b, q) {
+  const ptBox = p => Math.hypot(Math.max(0, q.l - p.x, p.x - q.r), Math.max(0, q.t - p.y, p.y - q.b));
+  if (!ptBox(a) || !ptBox(b)) return 0;
+  const cs = [L.point(q.l, q.t), L.point(q.r, q.t), L.point(q.r, q.b), L.point(q.l, q.b)], cross = (o, p, r) => (p.x - o.x) * (r.y - o.y) - (p.y - o.y) * (r.x - o.x);
+  const meets = Math.min(a.x, b.x) <= q.r && Math.max(a.x, b.x) >= q.l && Math.min(a.y, b.y) <= q.b && Math.max(a.y, b.y) >= q.t
+    && cs.some((c, i) => { const d = cs[(i + 1) % 4]; return cross(a, b, c) * cross(a, b, d) < 0 && cross(c, d, a) * cross(c, d, b) < 0; });
+  return meets ? 0 : Math.min(ptBox(a), ptBox(b), ...cs.map(c => c.distanceTo(nearOnSeg(c, a, b))));
+}
+// a w×h label at (x0, y0), clear of the pill, slid toward it along (dx, dy) as far as T px while it stays ZONE_GAP off its outline
+function hug(pl, w, h, x0, y0, dx, dy, T) {
+  const ok = t => segBoxDist(pl.s0, pl.s1, pxBox(x0 + dx * t, y0 + dy * t, w, h)) >= pl.rr + ZONE_GAP;
+  let lo = 0, hi = Math.max(0, T);
+  if (ok(hi)) lo = hi; else for (let i = 0; i < HUG_STEPS; i++) { const m = (lo + hi) / 2; if (ok(m)) lo = m; else hi = m; }
+  return [x0 + dx * lo, y0 + dy * lo];
+}
+// spots round a zone's pill on the given sides, each slid in until it sits ZONE_GAP off the outline: centred on that side, or
+// flush with either end of its straight run, so a label beside a long outline stays by its straight edge
+// (with corners, flush with the pill's box's corners instead: off the outline's round ends, tried only once every wording has
 // failed by the straight edges)
-function besideZone(bb, sides, corners = false) {
-  return (w, h) => { const cx = (bb.l + bb.r - w) / 2, cy = (bb.t + bb.b - h) / 2, lx = bb.l - ZONE_GAP - w, rx = bb.r + ZONE_GAP, ty = bb.t - ZONE_GAP - h, by = bb.b + ZONE_GAP;
-    // flush with either end of a side's straight run, not its box's corner, so a label beside a long outline stays by its straight edge
-    const {rr, s0} = pillOf(bb), yt = Math.min(cy, bb.t + rr), yb = Math.max(cy, bb.b - rr - h), xl = Math.min(cx, bb.l + rr), xr = Math.max(cx, bb.r - rr - w);
+function besideZone(pl, sides, corners = false) {
+  return (w, h) => { const cx = (pl.l + pl.r - w) / 2, cy = (pl.t + pl.b - h) / 2, hw = (pl.r - pl.l) / 2, hh = (pl.b - pl.t) / 2;
+    const sl = Math.min(pl.s0.x, pl.s1.x), sr = Math.max(pl.s0.x, pl.s1.x), st = Math.min(pl.s0.y, pl.s1.y), sb = Math.max(pl.s0.y, pl.s1.y);
+    const xs = corners ? [pl.l, pl.r - w] : [cx, Math.min(cx, sl), Math.max(cx, sr - w)], ys = corners ? [pl.t, pl.b - h] : [cy, Math.min(cy, st), Math.max(cy, sb - h)];
+    const lx = pl.l - ZONE_GAP - w, rx = pl.r + ZONE_GAP, ty = pl.t - ZONE_GAP - h, by = pl.b + ZONE_GAP;
     // Baker & China's, in the water clear of North's (Chase, 2026-11-14: "having baker more left helps"): at the map's left edge,
-    // raised just enough to clear the outline's round top-left end; then off that end diagonally. Never reaching right past it.
-    const D = rr + ZONE_GAP, k = D / Math.SQRT2, ex = Math.max(0, s0.x - LABEL_EDGE - w), ey = ex >= D ? s0.y - h / 2 : s0.y - Math.sqrt(D * D - ex * ex) - h;
-    const at = corners ? {left: [[lx, bb.t], [lx, bb.b - h]], right: [[rx, bb.t], [rx, bb.b - h]], top: [[bb.l, ty], [bb.r - w, ty]], bottom: [[bb.l, by], [bb.r - w, by]], northwest: []} : {
-      left: [[lx, cy], [lx, yt], [lx, yb]], right: [[rx, cy], [rx, yt], [rx, yb]], top: [[cx, ty], [xl, ty], [xr, ty]], bottom: [[cx, by], [xl, by], [xr, by]],
-      northwest: [[LABEL_EDGE, Math.max(LABEL_EDGE, ey)], [s0.x - k - w, Math.max(LABEL_EDGE, s0.y - k - h)]].filter(([x]) => x + w <= bb.r)};
-    return sides.flatMap(k => at[k]).map(([x, y]) => pxBox(x, y, w, h)); };
+    // lowered until it meets the outline or sits level with it; then in from the pill's box's top-left corner. Never reaching
+    // right past it.
+    const nw = () => { const e = pl.s0.x + pl.s0.y <= pl.s1.x + pl.s1.y ? pl.s0 : pl.s1, [ex, ey] = hug(pl, w, h, LABEL_EDGE, ty, 0, 1, e.y - h / 2 - ty);
+      return [[ex, Math.max(LABEL_EDGE, ey)], hug(pl, w, h, lx, ty, Math.SQRT1_2, Math.SQRT1_2, Math.min(hw, hh) * Math.SQRT2)].map(([x, y]) => [x, Math.max(LABEL_EDGE, y)]).filter(([x]) => x + w <= pl.r); };
+    const at = {left: () => ys.map(y => hug(pl, w, h, lx, y, 1, 0, hw)), right: () => ys.map(y => hug(pl, w, h, rx, y, -1, 0, hw)),
+      top: () => xs.map(x => hug(pl, w, h, x, ty, 0, 1, hh)), bottom: () => xs.map(x => hug(pl, w, h, x, by, 0, -1, hh)), northwest: () => corners ? [] : nw()};
+    return sides.flatMap(k => at[k]()).map(([x, y]) => pxBox(x, y, w, h)); };
 }
 function refreshLabels() {
   if (!MAP) return;
@@ -541,8 +579,8 @@ function refreshLabels() {
   if (LAYER.outfalls.on && LAYER.outfalls.group) LAYER.outfalls.group.eachLayer(m => { const p = at(m), r = rad(m); dots.push(pxBox(p.x - r, p.y - r, 2 * r, 2 * r)); });
   const blocked = mapControls().concat(dots);
   let taken;
-  // a zone's outline is kept clear as the pill it is, round ends and all ({the segment between its ends' centres, rr}); the rest as boxes
-  const hits = (q, o) => o.rr != null ? Math.hypot(Math.max(0, o.l - q.r, q.l - o.r), Math.max(0, o.t - q.b, q.t - o.b)) < o.rr + 2
+  // a zone's outline is kept clear as the pill it is, tilt and round ends and all ({s0, s1, rr}); the rest as boxes
+  const hits = (q, o) => o.s0 ? segBoxDist(o.s0, o.s1, q) < o.rr + 2
     : q.l < o.r + 2 && o.l < q.r + 2 && q.t < o.b + 1 && o.t < q.b + 1;
   const free = q => q.l >= LABEL_EDGE && q.t >= LABEL_EDGE && q.r <= size.x - LABEL_EDGE && q.b <= size.y - LABEL_EDGE && !taken.some(o => hits(q, o));
   // draw a label anchored at map pixel p and keep it at the first free spot of its tries, each a wording and its spots; with none it goes
@@ -575,33 +613,31 @@ function refreshLabels() {
     if (!el.closest("[data-more]") && zoomedOut) return focusZone(c.ms[0].__z.key);
     zoomIn(c); };
   const tapZone = z => () => focusZone(z.key);
-  const zoneBox = ms => { const bs = ms.map(m => { const p = at(m), r = rad(m); return pxBox(p.x - r, p.y - r, 2 * r, 2 * r); });   // the dots' edges
-    return {l: Math.min(...bs.map(q => q.l)), t: Math.min(...bs.map(q => q.t)), r: Math.max(...bs.map(q => q.r)), b: Math.max(...bs.map(q => q.b))}; };
-  const padBox = (q, d) => ({l: q.l - d, t: q.t - d, r: q.r + d, b: q.b + d});
-  // a zone's label round its dots' box grown by pad: each wording on the zone's own side, then each on the other sides, then the
+  const zonePill = (ms, pad) => pillAround(ms.map(at), ms.map(rad), pad);
+  // a zone's label round the pill its dots make, grown by pad: each wording on the zone's own side, then each on the other sides, then the
   // last resort anywhere round it. Says "own" or "other" for the side it got, "corner" for a spot off the outline's round end
   // (or the last resort), or false for none. Pinned, it takes only its pin-th straight-edge spot, in its first wording.
   const putZone = (z, ms, cls, words, last, pad = 0, pin = -1) => {
-    const bb = padBox(zoneBox(ms), pad), own = ZONE_SIDE[z.key] || "right", rest = ["left", "right", "top", "bottom"].filter(k => k !== own);   // northwest is only Baker & China's
-    const p = L.point((bb.l + bb.r) / 2, (bb.t + bb.b) / 2), c = cls + " to-zone zone-" + z.key;
+    const pl = zonePill(ms, pad), own = ZONE_SIDE[z.key] || "right", rest = ["left", "right", "top", "bottom"].filter(k => k !== own);   // northwest is only Baker & China's
+    const p = L.point((pl.l + pl.r) / 2, (pl.t + pl.b) / 2), c = cls + " to-zone zone-" + z.key;
     if (pin >= 0) { let side = false;
-      const spot = (w, h) => { const o = besideZone(bb, [own])(w, h), q = o.concat(besideZone(bb, rest)(w, h))[pin]; side = pin < o.length ? "own" : "other"; return q ? [q] : []; };
+      const spot = (w, h) => { const o = besideZone(pl, [own])(w, h), q = o.concat(besideZone(pl, rest)(w, h))[pin]; side = pin < o.length ? "own" : "other"; return q ? [q] : []; };
       return put(p, c, [[words[0], spot]], tapZone(z)) && side; }
-    if (put(p, c, words.map(w => [w, besideZone(bb, [own])]), tapZone(z))) return "own";
-    if (put(p, c, words.map(w => [w, besideZone(bb, rest)]), tapZone(z))) return "other";
-    const tries = words.map(w => [w, besideZone(bb, [own, ...rest], true)]);
-    if (last) tries.push([last, besideZone(bb, [own, ...rest])], [last, besideZone(bb, [own, ...rest], true)]);
+    if (put(p, c, words.map(w => [w, besideZone(pl, [own])]), tapZone(z))) return "own";
+    if (put(p, c, words.map(w => [w, besideZone(pl, rest)]), tapZone(z))) return "other";
+    const tries = words.map(w => [w, besideZone(pl, [own, ...rest], true)]);
+    if (last) tries.push([last, besideZone(pl, [own, ...rest])], [last, besideZone(pl, [own, ...rest], true)]);
     return put(p, c, tries, tapZone(z)) ? "corner" : false;
   };
   // a labelled zone's outline, and a line from its label to the nearest point of that outline, ending in a small dot on it: it
   // ties the label to the zone, not to any one beach (Chase, 2026-11-14: "make the line to the zone not necessarily a site")
   const outline = z => {
     const el = MAP.getContainer().querySelector(".map-name.bad.zone-" + z.key + ">span"); if (!el) return;
-    const bb = padBox(zoneBox(shown.filter(m => m.__z.key === z.key)), ZONE_PAD), w = bb.r - bb.l, h = bb.b - bb.t, cls = el.parentNode.classList.contains("discharge") ? "discharge" : "posted";
-    L.marker(MAP.containerPointToLatLng([bb.l, bb.t]), {pane: "zhl", interactive: false, keyboard: false,
-      icon: L.divIcon({className: "zone-hl " + cls, iconSize: [0, 0], html: '<i style="width:' + w + "px;height:" + h + 'px"></i>'})}).addTo(LABELS);
-    const {rr, s0, s1} = pillOf(bb);   // the outline is a pill: the segment between its ends' centres, widened by rr
-    const onSeg = q => { const d = s1.subtract(s0), len2 = d.x * d.x + d.y * d.y, k = len2 ? Math.max(0, Math.min(1, ((q.x - s0.x) * d.x + (q.y - s0.y) * d.y) / len2)) : 0; return s0.add(d.multiplyBy(k)); };
+    const pl = zonePill(shown.filter(m => m.__z.key === z.key), ZONE_PAD), {rr, s0, s1} = pl, cls = el.parentNode.classList.contains("discharge") ? "discharge" : "posted";
+    const w = s0.distanceTo(s1) + 2 * rr, h = 2 * rr, deg = Math.atan2(s1.y - s0.y, s1.x - s0.x) * 180 / Math.PI;   // drawn level, then turned about its middle
+    L.marker(MAP.containerPointToLatLng(s0.add(s1).divideBy(2)), {pane: "zhl", interactive: false, keyboard: false, icon: L.divIcon({className: "zone-hl " + cls, iconSize: [0, 0],
+      html: '<i style="width:' + w + "px;height:" + h + "px;left:" + (-w / 2) + "px;top:" + (-h / 2) + "px;transform:rotate(" + deg + 'deg)"></i>'})}).addTo(LABELS);
+    const onSeg = q => nearOnSeg(q, s0, s1);
     const r = el.getBoundingClientRect(), box = MAP.getContainer().getBoundingClientRect(), lb = {l: r.left - box.left, t: r.top - box.top, r: r.right - box.left, b: r.bottom - box.top};
     const nearRect = q => L.point(Math.max(lb.l, Math.min(q.x, lb.r)), Math.max(lb.t, Math.min(q.y, lb.b)));
     const a = nearRect(onSeg(L.point((lb.l + lb.r) / 2, (lb.t + lb.b) / 2))), q = onSeg(a), qa = a.distanceTo(q); if (qa <= rr) return;
@@ -633,7 +669,7 @@ function refreshLabels() {
   const pass = plan => {   // places every label by plan {order, compact, pin}; says how it went
     LABELS.clearLayers();
     const summed = ZONES.filter(z => grouped.has(z.key) && bad.some(m => m.__z.key === z.key));
-    taken = blocked.concat(summed.map(z => { const {rr, s0, s1} = pillOf(padBox(zoneBox(zoneMs(z)), ZONE_PAD)); return {l: s0.x, t: s0.y, r: s1.x, b: s1.y, rr}; }));   // no label over a summed-up zone's outline
+    taken = blocked.concat(summed.map(z => zonePill(zoneMs(z), ZONE_PAD)));   // no label over a summed-up zone's outline
     const missed = [], cornered = [], offSide = [];
     for (const z of plan.order) {
       const ms = bad.filter(m => m.__z.key === z.key); if (!grouped.has(z.key) || !ms.length) continue;
