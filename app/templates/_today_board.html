@@ -323,8 +323,12 @@ function cityView() {
   for (const k of ["outfalls", "bwtf", "rain"]) { const g = typeof LAYER !== "undefined" && LAYER[k] && LAYER[k].on && LAYER[k].group; if (g) g.eachLayer(l => { if (l.getLatLng) pts.push(l.getLatLng()); }); }
   if (!pts.length) return null;
   const v = frame(L.latLngBounds(pts).pad(0.12), 0, Infinity);
+  if (MAP.getSize().x < NARROW_MAP_PX) v.zoom -= PHONE_CITY_OUT;   // a phone's whole city a step further out, for room round its edges
   return {...v, area: viewArea(v.center, v.zoom)};
 }
+// On a phone the whole city sits a quarter step further out (one zoomSnap): North's beaches were at the map's very top, so
+// their label had no room above them and went below (Chase, 2026-11-14: "Zoom out a step").
+const PHONE_CITY_OUT = 0.25;
 function viewArea(center, zoom) {   // what the map shows at a view, edge to edge
   const px = MAP.getPixelBounds(center, zoom);
   return L.latLngBounds(MAP.unproject(px.getBottomLeft(), zoom), MAP.unproject(px.getTopRight(), zoom));
