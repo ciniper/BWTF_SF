@@ -501,7 +501,7 @@ function placeRank(m, st) { const p = "st" + (RANK_ST[st] || 0); if (m.options.p
 // nice and neat"; "make the line to the zone not necessarily a site").
 const LABEL_ZOOM = 13, ZONE_SUMMARY_AT = 2, ZONE_SIDE = {ocean: "left", baker_china: "northwest", north: "top", east: "right"};
 const LABEL_EDGE = 4, LABEL_GAP = 4, ZONE_GAP = 6;   // px: from the map's edge; from a dot to its label; from a zone's dots to its name
-const ZONE_PAD = 8, LEADER_WEIGHT = 1.5, LEADER_DOT = 2.5;   // px: from a zone's outer dots to its outline (5 sat on their edges: Chase, 2026-11-14); its label's line's width; the dot that line ends in
+const ZONE_PAD = 6.5, LEADER_WEIGHT = 1.5, LEADER_DOT = 2.5;   // px: from a zone's outer dots to its outline (5 sat on their edges; 8 had Baker & China's and North's overlap: Chase, 2026-11-14); its label's line's width; the dot that line ends in
 // a posted or discharging beach's own label sits a little further out when it can, with a line to its dot, as a zone's label has
 // to its outline (Chase, 2026-11-14: "can the single site labels draw a line to the site?")
 const FLAG_GAP = 10;   // px: from a flagged beach's dot to its label, room for the line
