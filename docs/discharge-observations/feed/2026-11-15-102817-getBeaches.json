@@ -1,0 +1,423 @@
+{
+ "read_at": "2026-11-15T10:28:17-08:00",
+ "feed": [
+  {
+   "stationid": "4601",
+   "stationname": "Fort Funston",
+   "cso": "OCEAN#22_SL",
+   "s_color": "W",
+   "posted": "OCEAN#22_SL",
+   "p_color": "G",
+   "sample_date": null,
+   "lat": "37.71526",
+   "lon": "-122.50476"
+  },
+  {
+   "stationid": "4602",
+   "stationname": "Ocean Beach at Sloat Boulevard",
+   "cso": null,
+   "s_color": null,
+   "posted": null,
+   "p_color": null,
+   "sample_date": "11/13/26",
+   "lat": "37.73567",
+   "lon": "-122.50769"
+  },
+  {
+   "stationid": "4603",
+   "stationname": "Ocean Beach at Vicente Street",
+   "cso": null,
+   "s_color": "W",
+   "posted": null,
+   "p_color": null,
+   "sample_date": "11/13/26",
+   "lat": "37.73782",
+   "lon": "-122.50825"
+  },
+  {
+   "stationid": "4604",
+   "stationname": "Ocean Beach at Balboa Street",
+   "cso": null,
+   "s_color": null,
+   "posted": null,
+   "p_color": null,
+   "sample_date": "11/13/26",
+   "lat": "37.77492",
+   "lon": "-122.51351"
+  },
+  {
+   "stationid": "4605",
+   "stationname": "Ocean Beach at Lincoln Way",
+   "cso": "OCEAN#19_SL",
+   "s_color": null,
+   "posted": "OCEAN#19_SL",
+   "p_color": "G",
+   "sample_date": "11/13/26",
+   "lat": "37.7638",
+   "lon": "-122.511"
+  },
+  {
+   "stationid": "4606",
+   "stationname": "Ocean Beach at Pacheco Street",
+   "cso": null,
+   "s_color": "W",
+   "posted": "OCEAN#20_SL",
+   "p_color": "G",
+   "sample_date": "11/13/26",
+   "lat": "37.74891",
+   "lon": "-122.50996"
+  },
+  {
+   "stationid": "4607",
+   "stationname": "China Beach",
+   "cso": null,
+   "s_color": null,
+   "posted": null,
+   "p_color": null,
+   "sample_date": "11/09/26",
+   "lat": "37.78816",
+   "lon": "-122.49136"
+  },
+  {
+   "stationid": "4608",
+   "stationname": "Baker Beach West",
+   "cso": null,
+   "s_color": null,
+   "posted": null,
+   "p_color": null,
+   "sample_date": "11/13/26",
+   "lat": "37.78977",
+   "lon": "-122.48741"
+  },
+  {
+   "stationid": "4609",
+   "stationname": "Baker Beach East",
+   "cso": null,
+   "s_color": null,
+   "posted": null,
+   "p_color": null,
+   "sample_date": "11/13/26",
+   "lat": "37.79258",
+   "lon": "-122.48465"
+  },
+  {
+   "stationid": "4610",
+   "stationname": "Baker Beach at Lobos Creek",
+   "cso": null,
+   "s_color": null,
+   "posted": null,
+   "p_color": null,
+   "sample_date": "11/13/26",
+   "lat": "37.79088",
+   "lon": "-122.48594"
+  },
+  {
+   "stationid": "4611",
+   "stationname": "Crissy Field Beach West",
+   "cso": null,
+   "s_color": null,
+   "posted": null,
+   "p_color": null,
+   "sample_date": "11/09/26",
+   "lat": "37.8069",
+   "lon": "-122.4683"
+  },
+  {
+   "stationid": "4612",
+   "stationname": "Crissy Field Beach East",
+   "cso": null,
+   "s_color": null,
+   "posted": null,
+   "p_color": null,
+   "sample_date": "11/09/26",
+   "lat": "37.8066",
+   "lon": "-122.4519"
+  },
+  {
+   "stationid": "4613",
+   "stationname": "Aquatic Park",
+   "cso": null,
+   "s_color": null,
+   "posted": null,
+   "p_color": null,
+   "sample_date": "11/09/26",
+   "lat": "37.8076",
+   "lon": "-122.4221"
+  },
+  {
+   "stationid": "4614",
+   "stationname": "Hyde Street Pier",
+   "cso": null,
+   "s_color": null,
+   "posted": null,
+   "p_color": null,
+   "sample_date": "11/09/26",
+   "lat": "37.8089",
+   "lon": "-122.4212"
+  },
+  {
+   "stationid": "4615",
+   "stationname": "Jackrabbit Beach",
+   "cso": null,
+   "s_color": null,
+   "posted": null,
+   "p_color": null,
+   "sample_date": "11/09/26",
+   "lat": "37.7114",
+   "lon": "-122.3801"
+  },
+  {
+   "stationid": "4616",
+   "stationname": "Windsurfer Circle",
+   "cso": null,
+   "s_color": null,
+   "posted": null,
+   "p_color": null,
+   "sample_date": "11/09/26",
+   "lat": "37.7091",
+   "lon": "-122.3823"
+  },
+  {
+   "stationid": "4617",
+   "stationname": "Sunnydale Cove",
+   "cso": null,
+   "s_color": null,
+   "posted": null,
+   "p_color": null,
+   "sample_date": "11/09/26",
+   "lat": "37.7096",
+   "lon": "-122.3899"
+  },
+  {
+   "stationid": "4618",
+   "stationname": "Mission Creek",
+   "cso": "BAY#220_SL",
+   "s_color": null,
+   "posted": "BAY#220_SL",
+   "p_color": "G",
+   "sample_date": "11/13/26",
+   "lat": "37.7716",
+   "lon": "-122.397"
+  },
+  {
+   "stationid": "4619",
+   "stationname": "Islais Creek",
+   "cso": "BAY#320_SL",
+   "s_color": null,
+   "posted": "BAY#320_SL",
+   "p_color": "G",
+   "sample_date": "11/13/26",
+   "lat": "37.74703",
+   "lon": "-122.38793"
+  },
+  {
+   "stationid": "4620",
+   "stationname": "Crane Cove Park",
+   "cso": null,
+   "s_color": null,
+   "posted": null,
+   "p_color": null,
+   "sample_date": "11/13/26",
+   "lat": "37.7634",
+   "lon": "-122.3868"
+  }
+ ],
+ "ours_api_realtime": {
+  "cso_events": [
+   {
+    "station_id": "4601",
+    "station_name": "Fort Funston",
+    "cso_station_id": "OCEAN#22_SL",
+    "latitude": 37.71526,
+    "longitude": -122.50476,
+    "simulated": false
+   },
+   {
+    "station_id": "4605",
+    "station_name": "Ocean Beach at Lincoln Way",
+    "cso_station_id": "OCEAN#19_SL",
+    "latitude": 37.7638,
+    "longitude": -122.511,
+    "simulated": false
+   },
+   {
+    "station_id": "4618",
+    "station_name": "Mission Creek",
+    "cso_station_id": "BAY#220_SL",
+    "latitude": 37.7716,
+    "longitude": -122.397,
+    "simulated": false
+   },
+   {
+    "station_id": "4619",
+    "station_name": "Islais Creek",
+    "cso_station_id": "BAY#320_SL",
+    "latitude": 37.74703,
+    "longitude": -122.38793,
+    "simulated": false
+   }
+  ],
+  "stations": [
+   {
+    "id": "4601",
+    "name": "Fort Funston",
+    "status": "not_routinely_sampled",
+    "has_cso": true,
+    "simulated_cso": false,
+    "sample_date": null
+   },
+   {
+    "id": "4602",
+    "name": "Ocean Beach at Sloat Boulevard",
+    "status": "safe",
+    "has_cso": false,
+    "simulated_cso": false,
+    "sample_date": "2026-11-13T00:00:00"
+   },
+   {
+    "id": "4603",
+    "name": "Ocean Beach at Vicente Street",
+    "status": "not_routinely_sampled",
+    "has_cso": false,
+    "simulated_cso": false,
+    "sample_date": "2026-11-13T00:00:00"
+   },
+   {
+    "id": "4604",
+    "name": "Ocean Beach at Balboa Street",
+    "status": "safe",
+    "has_cso": false,
+    "simulated_cso": false,
+    "sample_date": "2026-11-13T00:00:00"
+   },
+   {
+    "id": "4605",
+    "name": "Ocean Beach at Lincoln Way",
+    "status": "posted",
+    "has_cso": true,
+    "simulated_cso": false,
+    "sample_date": "2026-11-13T00:00:00"
+   },
+   {
+    "id": "4606",
+    "name": "Ocean Beach at Pacheco Street",
+    "status": "not_routinely_sampled",
+    "has_cso": false,
+    "simulated_cso": false,
+    "sample_date": "2026-11-13T00:00:00"
+   },
+   {
+    "id": "4607",
+    "name": "China Beach",
+    "status": "safe",
+    "has_cso": false,
+    "simulated_cso": false,
+    "sample_date": "2026-11-09T00:00:00"
+   },
+   {
+    "id": "4608",
+    "name": "Baker Beach West",
+    "status": "safe",
+    "has_cso": false,
+    "simulated_cso": false,
+    "sample_date": "2026-11-13T00:00:00"
+   },
+   {
+    "id": "4609",
+    "name": "Baker Beach East",
+    "status": "safe",
+    "has_cso": false,
+    "simulated_cso": false,
+    "sample_date": "2026-11-13T00:00:00"
+   },
+   {
+    "id": "4610",
+    "name": "Baker Beach at Lobos Creek",
+    "status": "safe",
+    "has_cso": false,
+    "simulated_cso": false,
+    "sample_date": "2026-11-13T00:00:00"
+   },
+   {
+    "id": "4611",
+    "name": "Crissy Field Beach West",
+    "status": "safe",
+    "has_cso": false,
+    "simulated_cso": false,
+    "sample_date": "2026-11-09T00:00:00"
+   },
+   {
+    "id": "4612",
+    "name": "Crissy Field Beach East",
+    "status": "safe",
+    "has_cso": false,
+    "simulated_cso": false,
+    "sample_date": "2026-11-09T00:00:00"
+   },
+   {
+    "id": "4613",
+    "name": "Aquatic Park",
+    "status": "safe",
+    "has_cso": false,
+    "simulated_cso": false,
+    "sample_date": "2026-11-09T00:00:00"
+   },
+   {
+    "id": "4614",
+    "name": "Hyde Street Pier",
+    "status": "safe",
+    "has_cso": false,
+    "simulated_cso": false,
+    "sample_date": "2026-11-09T00:00:00"
+   },
+   {
+    "id": "4615",
+    "name": "Jackrabbit Beach",
+    "status": "safe",
+    "has_cso": false,
+    "simulated_cso": false,
+    "sample_date": "2026-11-09T00:00:00"
+   },
+   {
+    "id": "4616",
+    "name": "Windsurfer Circle",
+    "status": "safe",
+    "has_cso": false,
+    "simulated_cso": false,
+    "sample_date": "2026-11-09T00:00:00"
+   },
+   {
+    "id": "4617",
+    "name": "Sunnydale Cove",
+    "status": "safe",
+    "has_cso": false,
+    "simulated_cso": false,
+    "sample_date": "2026-11-09T00:00:00"
+   },
+   {
+    "id": "4618",
+    "name": "Mission Creek",
+    "status": "posted",
+    "has_cso": true,
+    "simulated_cso": false,
+    "sample_date": "2026-11-13T00:00:00"
+   },
+   {
+    "id": "4619",
+    "name": "Islais Creek",
+    "status": "posted",
+    "has_cso": true,
+    "simulated_cso": false,
+    "sample_date": "2026-11-13T00:00:00"
+   },
+   {
+    "id": "4620",
+    "name": "Crane Cove Park",
+    "status": "safe",
+    "has_cso": false,
+    "simulated_cso": false,
+    "sample_date": "2026-11-13T00:00:00"
+   }
+  ]
+ }
+}

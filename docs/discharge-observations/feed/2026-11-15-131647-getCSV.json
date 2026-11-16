@@ -1,0 +1,264 @@
+{
+ "read_at": "2026-11-15T13:16:47-08:00",
+ "stations": {
+  "BAY#202.4_SL": [
+   {
+    "sample_date": "11/09/26",
+    "COLI_FECAL": "<5",
+    "COLI_TOTAL": "80",
+    "ENTERO": "52"
+   },
+   {
+    "sample_date": "11/02/26",
+    "COLI_FECAL": "25",
+    "COLI_TOTAL": "270",
+    "ENTERO": "10"
+   }
+  ],
+  "BAY#202.5_SL": [
+   {
+    "sample_date": "11/09/26",
+    "COLI_FECAL": "<5",
+    "COLI_TOTAL": "340",
+    "ENTERO": "<10"
+   },
+   {
+    "sample_date": "11/02/26",
+    "COLI_FECAL": "<5",
+    "COLI_TOTAL": "10",
+    "ENTERO": "<10"
+   }
+  ],
+  "BAY#210.1_SL": [
+   {
+    "sample_date": "11/09/26",
+    "COLI_FECAL": "<5",
+    "COLI_TOTAL": "10",
+    "ENTERO": "<10"
+   },
+   {
+    "sample_date": "11/02/26",
+    "COLI_FECAL": "15",
+    "COLI_TOTAL": "50",
+    "ENTERO": "<10"
+   }
+  ],
+  "BAY#211_SL": [
+   {
+    "sample_date": "11/09/26",
+    "COLI_FECAL": "20",
+    "COLI_TOTAL": "90",
+    "ENTERO": "31"
+   },
+   {
+    "sample_date": "11/02/26",
+    "COLI_FECAL": "55",
+    "COLI_TOTAL": "140",
+    "ENTERO": "<10"
+   }
+  ],
+  "BAY#220_SL": [
+   {
+    "sample_date": "11/14/26",
+    "COLI_FECAL": "3100",
+    "COLI_TOTAL": ">16000"
+   },
+   {
+    "sample_date": "11/13/26",
+    "COLI_FECAL": ">6000",
+    "COLI_TOTAL": ">16000",
+    "ENTERO": ">24196"
+   }
+  ],
+  "BAY#230_SL": [
+   {
+    "sample_date": "11/13/26",
+    "COLI_FECAL": "55",
+    "COLI_TOTAL": "490",
+    "ENTERO": "98"
+   },
+   {
+    "sample_date": "11/09/26",
+    "COLI_FECAL": "<5",
+    "COLI_TOTAL": "140",
+    "ENTERO": "<10"
+   }
+  ],
+  "BAY#300.1_SL": [
+   {
+    "sample_date": "11/09/26",
+    "COLI_FECAL": "45",
+    "COLI_TOTAL": "320",
+    "ENTERO": "10"
+   },
+   {
+    "sample_date": "11/02/26",
+    "COLI_FECAL": "5",
+    "COLI_TOTAL": "1100",
+    "ENTERO": "63"
+   }
+  ],
+  "BAY#301.1_SL": [
+   {
+    "sample_date": "11/09/26",
+    "COLI_FECAL": "10",
+    "COLI_TOTAL": "190",
+    "ENTERO": "<10"
+   },
+   {
+    "sample_date": "11/02/26",
+    "COLI_FECAL": "<5",
+    "COLI_TOTAL": "1300",
+    "ENTERO": "41"
+   }
+  ],
+  "BAY#301.2_SL": [
+   {
+    "sample_date": "11/09/26",
+    "COLI_FECAL": "10",
+    "COLI_TOTAL": "60",
+    "ENTERO": "<10"
+   },
+   {
+    "sample_date": "11/02/26",
+    "COLI_FECAL": "20",
+    "COLI_TOTAL": "700",
+    "ENTERO": "10"
+   }
+  ],
+  "BAY#320_SL": [
+   {
+    "sample_date": "11/14/26",
+    "COLI_FECAL": ">6000",
+    "COLI_TOTAL": ">16000"
+   },
+   {
+    "sample_date": "11/13/26",
+    "COLI_FECAL": ">6000",
+    "COLI_TOTAL": ">16000",
+    "ENTERO": ">24196"
+   }
+  ],
+  "OCEAN#15EAST_SL": [
+   {
+    "sample_date": "11/13/26",
+    "COLI_FECAL": "15",
+    "COLI_TOTAL": "80",
+    "ENTERO": "86"
+   },
+   {
+    "sample_date": "11/09/26",
+    "COLI_FECAL": "5",
+    "COLI_TOTAL": "200",
+    "ENTERO": "20"
+   }
+  ],
+  "OCEAN#15_SL": [
+   {
+    "sample_date": "11/13/26",
+    "COLI_FECAL": "5",
+    "COLI_TOTAL": "550",
+    "ENTERO": "52"
+   },
+   {
+    "sample_date": "11/09/26",
+    "COLI_FECAL": "30",
+    "COLI_TOTAL": "260",
+    "ENTERO": "31"
+   }
+  ],
+  "OCEAN#16_SL": [
+   {
+    "sample_date": "11/13/26",
+    "COLI_FECAL": "15",
+    "COLI_TOTAL": "90",
+    "ENTERO": "10"
+   },
+   {
+    "sample_date": "11/09/26",
+    "COLI_FECAL": "55",
+    "COLI_TOTAL": "340",
+    "ENTERO": "97"
+   }
+  ],
+  "OCEAN#17_SL": [
+   {
+    "sample_date": "11/09/26",
+    "COLI_FECAL": "10",
+    "COLI_TOTAL": "380",
+    "ENTERO": "20"
+   },
+   {
+    "sample_date": "11/02/26",
+    "COLI_FECAL": "<5",
+    "COLI_TOTAL": "20",
+    "ENTERO": "<10"
+   }
+  ],
+  "OCEAN#18_SL": [
+   {
+    "sample_date": "11/14/26",
+    "COLI_FECAL": "40",
+    "COLI_TOTAL": "390"
+   },
+   {
+    "sample_date": "11/13/26",
+    "COLI_FECAL": "4400",
+    "COLI_TOTAL": "14600",
+    "ENTERO": "2143"
+   }
+  ],
+  "OCEAN#19_SL": [
+   {
+    "sample_date": "11/14/26",
+    "COLI_FECAL": "75",
+    "COLI_TOTAL": "2300"
+   },
+   {
+    "sample_date": "11/13/26",
+    "COLI_FECAL": "4000",
+    "COLI_TOTAL": "10400",
+    "ENTERO": "1842"
+   }
+  ],
+  "OCEAN#20_SL": [
+   {
+    "sample_date": "11/14/26",
+    "COLI_FECAL": "40",
+    "COLI_TOTAL": "360"
+   },
+   {
+    "sample_date": "11/13/26",
+    "COLI_FECAL": "2400",
+    "COLI_TOTAL": "7300",
+    "ENTERO": "1187"
+   }
+  ],
+  "OCEAN#21.1_SL": [
+   {
+    "sample_date": "11/14/26",
+    "COLI_FECAL": "40",
+    "COLI_TOTAL": "680"
+   },
+   {
+    "sample_date": "11/13/26",
+    "COLI_FECAL": "2600",
+    "COLI_TOTAL": "6100",
+    "ENTERO": "1169"
+   }
+  ],
+  "OCEAN#21_SL": [
+   {
+    "sample_date": "11/14/26",
+    "COLI_FECAL": "65",
+    "COLI_TOTAL": "390"
+   },
+   {
+    "sample_date": "11/13/26",
+    "COLI_FECAL": "2700",
+    "COLI_TOTAL": "6400",
+    "ENTERO": "594"
+   }
+  ]
+ }
+}

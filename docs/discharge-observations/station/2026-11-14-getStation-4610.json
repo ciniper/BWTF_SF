@@ -1,0 +1,62 @@
+[
+ {
+  "source": "OCEAN#15_SL",
+  "sample_date": "11/13/26",
+  "stationid": "4610",
+  "stationname": "Baker Beach at Lobos Creek",
+  "COLI_E": null,
+  "COLI_TOTAL": "550",
+  "COLI_FECAL": "5",
+  "ENTERO": "52"
+ },
+ {
+  "source": "OCEAN#15_SL",
+  "sample_date": "11/09/26",
+  "stationid": "4610",
+  "stationname": "Baker Beach at Lobos Creek",
+  "COLI_E": null,
+  "COLI_TOTAL": "260",
+  "COLI_FECAL": "30",
+  "ENTERO": "31"
+ },
+ {
+  "source": "OCEAN#15_SL",
+  "sample_date": "11/02/26",
+  "stationid": "4610",
+  "stationname": "Baker Beach at Lobos Creek",
+  "COLI_E": null,
+  "COLI_TOTAL": "368",
+  "COLI_FECAL": "30",
+  "ENTERO": "75"
+ },
+ {
+  "source": "OCEAN#15_SL",
+  "sample_date": "10/26/26",
+  "stationid": "4610",
+  "stationname": "Baker Beach at Lobos Creek",
+  "COLI_E": null,
+  "COLI_TOTAL": "40",
+  "COLI_FECAL": "5",
+  "ENTERO": "<10"
+ },
+ {
+  "source": "OCEAN#15_SL",
+  "sample_date": "10/19/26",
+  "stationid": "4610",
+  "stationname": "Baker Beach at Lobos Creek",
+  "COLI_E": null,
+  "COLI_TOTAL": "200",
+  "COLI_FECAL": "<5",
+  "ENTERO": "10"
+ },
+ {
+  "source": "OCEAN#15_SL",
+  "sample_date": "10/14/26",
+  "stationid": "4610",
+  "stationname": "Baker Beach at Lobos Creek",
+  "COLI_E": null,
+  "COLI_TOTAL": "110",
+  "COLI_FECAL": "<5",
+  "ENTERO": "<10"
+ }
+]

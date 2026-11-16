@@ -1,0 +1,104 @@
+2026-11-14T09:47:37-08:00  2026-11-14-094737-getBeaches.json
+    first snapshot
+2026-11-14T14:03:07-08:00  2026-11-14-140307-getBeaches.json
+    4608 Baker Beach West: sample_date 11/09/26→11/13/26
+    4609 Baker Beach East: sample_date 11/09/26→11/13/26
+    4610 Baker Beach at Lobos Creek: sample_date 11/09/26→11/13/26
+2026-11-14T14:33:18-08:00  2026-11-14-143318-getBeaches.json
+    4602 Ocean Beach at Sloat Boulevard: sample_date 11/09/26→11/13/26
+    4603 Ocean Beach at Vicente Street: sample_date None→11/13/26
+    4604 Ocean Beach at Balboa Street: sample_date 11/09/26→11/13/26
+    4605 Ocean Beach at Lincoln Way: sample_date 11/10/26→11/13/26
+    4606 Ocean Beach at Pacheco Street: sample_date None→11/13/26
+    4618 Mission Creek: sample_date 11/09/26→11/13/26
+    4619 Islais Creek: sample_date 11/09/26→11/13/26
+    4620 Crane Cove Park: sample_date 11/09/26→11/13/26
+2026-11-14T16:48:07-08:00  2026-11-14-164807-getBeaches.json
+    4608 Baker Beach West: cso OCEAN#16_SL→None
+    4609 Baker Beach East: posted OCEAN#15EAST_SL→None, p_color G→None
+    4620 Crane Cove Park: posted BAY#230_SL→None, p_color G→None
+2026-11-14T21:16:13-08:00  [getStation] 2026-11-14-211613-getStation.json
+    first snapshot
+2026-11-14T21:16:42-08:00  [getStation] 2026-11-14-211642-getStation.json
+    4601 Fort Funston None: new row (no values yet)
+    4603 Ocean Beach at Vicente Street 11/13/26: new row (COLI_TOTAL 6400, COLI_FECAL 2700, ENTERO 594)
+    4606 Ocean Beach at Pacheco Street 11/13/26: new row (COLI_TOTAL 7300, COLI_FECAL 2400, ENTERO 1187)
+2026-11-14T21:44:33-08:00  [getCSV] 2026-11-14-214433-getCSV.json
+    first snapshot
+2026-11-15T10:13:08-08:00  [getBeaches] 2026-11-15-101308-getBeaches.json
+    4602 Ocean Beach at Sloat Boulevard: posted OCEAN#21.1_SL→None, p_color G→None
+    4603 Ocean Beach at Vicente Street: posted OCEAN#21_SL→None, p_color G→None
+    4604 Ocean Beach at Balboa Street: posted OCEAN#18_SL→None, p_color G→None
+2026-11-15T10:28:17-08:00  [getBeaches] 2026-11-15-102817-getBeaches.json
+    4603 Ocean Beach at Vicente Street: cso OCEAN#21_SL→None
+2026-11-15T13:14:35-08:00  [getBeaches] 2026-11-15-131435-getBeaches.json
+    4602 Ocean Beach at Sloat Boulevard: sample_date 11/13/26→11/14/26
+    4603 Ocean Beach at Vicente Street: sample_date 11/13/26→11/14/26
+    4604 Ocean Beach at Balboa Street: sample_date 11/13/26→11/14/26
+    4605 Ocean Beach at Lincoln Way: sample_date 11/13/26→11/14/26
+    4606 Ocean Beach at Pacheco Street: sample_date 11/13/26→11/14/26
+    4618 Mission Creek: sample_date 11/13/26→11/14/26
+    4619 Islais Creek: sample_date 11/13/26→11/14/26
+2026-11-15T13:14:37-08:00  [getCSV] 2026-11-15-131437-getCSV.json
+    BAY#220_SL 11/14/26: new row (COLI_TOTAL >16000)
+    BAY#320_SL 11/14/26: new row (COLI_TOTAL >16000)
+    OCEAN#18_SL 11/14/26: new row (COLI_TOTAL 390)
+    OCEAN#19_SL 11/14/26: new row (COLI_TOTAL 2300)
+    OCEAN#20_SL 11/14/26: new row (COLI_TOTAL 360)
+    OCEAN#21.1_SL 11/14/26: new row (COLI_TOTAL 680)
+    OCEAN#21_SL 11/14/26: new row (COLI_TOTAL 390)
+2026-11-15T13:14:38-08:00  [getStation] 2026-11-15-131438-getStation.json
+    4602 Ocean Beach at Sloat Boulevard 11/14/26: new row (COLI_TOTAL 680)
+    4603 Ocean Beach at Vicente Street 11/14/26: new row (COLI_TOTAL 390)
+    4604 Ocean Beach at Balboa Street 11/14/26: new row (COLI_TOTAL 390)
+    4605 Ocean Beach at Lincoln Way 11/14/26: new row (COLI_TOTAL 2300)
+    4606 Ocean Beach at Pacheco Street 11/14/26: new row (COLI_TOTAL 360)
+    4618 Mission Creek 11/14/26: new row (COLI_TOTAL >16000)
+    4619 Islais Creek 11/14/26: new row (COLI_TOTAL >16000)
+2026-11-15T13:16:47-08:00  [getCSV] 2026-11-15-131647-getCSV.json
+    BAY#220_SL 11/14/26: COLI_FECAL None→3100
+    BAY#320_SL 11/14/26: COLI_FECAL None→>6000
+    OCEAN#18_SL 11/14/26: COLI_FECAL None→40
+    OCEAN#19_SL 11/14/26: COLI_FECAL None→75
+    OCEAN#20_SL 11/14/26: COLI_FECAL None→40
+    OCEAN#21.1_SL 11/14/26: COLI_FECAL None→40
+    OCEAN#21_SL 11/14/26: COLI_FECAL None→65
+2026-11-15T13:16:47-08:00  [getStation] 2026-11-15-131647-getStation.json
+    4602 Ocean Beach at Sloat Boulevard 11/14/26: COLI_FECAL None→40
+    4603 Ocean Beach at Vicente Street 11/14/26: COLI_FECAL None→65
+    4604 Ocean Beach at Balboa Street 11/14/26: COLI_FECAL None→40
+    4605 Ocean Beach at Lincoln Way 11/14/26: COLI_FECAL None→75
+    4606 Ocean Beach at Pacheco Street 11/14/26: COLI_FECAL None→40
+    4618 Mission Creek 11/14/26: COLI_FECAL None→3100
+    4619 Islais Creek 11/14/26: COLI_FECAL None→>6000
+2026-11-15T13:40:33-08:00  [getCSV] 2026-11-15-134033-getCSV.json
+    BAY#220_SL 11/14/26: ENTERO None→738
+    BAY#320_SL 11/14/26: ENTERO None→>24196
+    OCEAN#18_SL 11/14/26: ENTERO None→74
+    OCEAN#19_SL 11/14/26: ENTERO None→121
+    OCEAN#20_SL 11/14/26: ENTERO None→98
+    OCEAN#21.1_SL 11/14/26: ENTERO None→97
+    OCEAN#21_SL 11/14/26: ENTERO None→75
+2026-11-15T13:40:33-08:00  [getStation] 2026-11-15-134033-getStation.json
+    4602 Ocean Beach at Sloat Boulevard 11/14/26: ENTERO None→97
+    4603 Ocean Beach at Vicente Street 11/14/26: ENTERO None→75
+    4604 Ocean Beach at Balboa Street 11/14/26: ENTERO None→74
+    4605 Ocean Beach at Lincoln Way 11/14/26: ENTERO None→121
+    4606 Ocean Beach at Pacheco Street 11/14/26: ENTERO None→98
+    4618 Mission Creek 11/14/26: ENTERO None→738
+    4619 Islais Creek 11/14/26: ENTERO None→>24196
+2026-11-15T16:37:27-08:00  [getBeaches] 2026-11-15-163727-getBeaches.json
+    4608 Baker Beach West: cso None→OCEAN#16_SL, posted None→OCEAN#16_SL, p_color None→G
+    4609 Baker Beach East: posted None→OCEAN#15EAST_SL, p_color None→G
+    4610 Baker Beach at Lobos Creek: posted None→OCEAN#15_SL, p_color None→G
+2026-11-15T16:41:47-08:00  [getBeaches] 2026-11-15-164147-getBeaches.json
+    4606 Ocean Beach at Pacheco Street: posted OCEAN#20_SL→None, p_color G→None
+2026-11-15T18:57:47-08:00  [getBeaches] 2026-11-15-185747-getBeaches.json
+    4602 Ocean Beach at Sloat Boulevard: posted None→OCEAN#21.1_SL, p_color None→G
+    4603 Ocean Beach at Vicente Street: posted None→OCEAN#21_SL, p_color None→G
+    4604 Ocean Beach at Balboa Street: posted None→OCEAN#18_SL, p_color None→G
+    4606 Ocean Beach at Pacheco Street: posted None→OCEAN#20_SL, p_color None→G
+2026-11-15T18:59:59-08:00  [getBeaches] 2026-11-15-185959-getBeaches.json
+    4620 Crane Cove Park: posted None→BAY#230_SL, p_color None→G
+2026-11-15T19:02:10-08:00  [getBeaches] 2026-11-15-190210-getBeaches.json
+    4603 Ocean Beach at Vicente Street: cso None→OCEAN#21_SL

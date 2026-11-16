@@ -1,0 +1,192 @@
+# Discharge observations — 2026-11-13
+
+Notes from looking at the live site during a discharge. Nothing investigated or changed yet.
+
+## Forecast: basin-based status disagrees with the map
+- The basin-based system in the forecast says **Ocean Beach is discharging**.
+- The map shows **only Baker West** discharging.
+- To check: which one is right, and why the basin rollup marks Ocean Beach.
+
+## Baker: "2 new samples unpublished"
+- The page says Baker has 2 new unpublished samples.
+- These may just be the overflow (CSO) postings rather than new sampling results.
+- To check: where the count comes from, and whether overflow postings should count as samples.
+- SFPUC email this morning: Baker Beach West, Baker Beach East and Baker Beach at Lobos Creek are **proactively posted** (11/13) because of a combined sewer discharge from the **Sea Cliff II** outfall. No samples had been taken yet; the email says samples "will be collected today". So the "2 new" were most likely the postings, not results.
+- The same email says no other SF beaches are posted, which also points against the forecast's Ocean Beach call.
+- Watcher set for 11:45pm 11/13 to see whether the promised samples show up.
+
+### Watcher check, 11:45pm 11/13
+- **No new Baker result has been published.** In SFPUC's live beach feed (getBeaches), all three Baker stations still show sample date **11/09/26**. On DataSF (loaded 11:03pm tonight), the newest Baker samples are 11/09 (OCEAN#16, #15, #15EAST), and the newest sample citywide is 11/10. If SFPUC took the samples today as the email said, the results aren't out yet. They would normally reach the map tomorrow, 10:30am to 3pm.
+- **The "2 unpublished" are Baker East and Baker at Lobos Creek.** The site shows both as "posted 6:32 AM · on a new sample, not published yet". Baker West isn't counted because the feed has a `cso` flag on it, which shows as a discharge.
+- **Cause:** `shared/result_gap.py` treats every safe → posted change as caused by a lab result. The 6:32am change was the precautionary posting from the email, with no sample behind it, so the site wrongly says a new sample is waiting. Clue: lab-driven postings land around 8:10–8:40am, and this one came well before that.
+- **Same problem later in the day:** Ocean Beach at Sloat, Ocean Beach at Balboa and Crane Cove were posted at about 12:45pm, also with no new samples. The site now says "5 new samples not published yet" (Ocean Beach 2, Baker 2, East Beaches 1), and all five are likely precautionary postings.
+- **Possible fix (not done):** don't count a posting as a waiting sample when the station or its zone has an active discharge. Another option is to use the posting time: lab postings come around 8–9am.
+- **Side note:** by tonight the feed shows `cso` flags at Fort Funston, Ocean Beach at Vicente, Ocean Beach at Lincoln, Mission Creek and Islais Creek. Ocean Beach really is discharging now, so the forecast's call holds by evening. The morning mismatch with the map still stands.
+
+### 11/13 results are out early, through getStation (checked 11/14 ~9:55am)
+SFPUC has a second endpoint, `getStation`, that returns each station's sample history (about three months) with the numbers: `COLI_TOTAL`, `COLI_FECAL`, `ENTERO`, `COLI_E`. Their map page used to call it from a "Bacteria Water Quality" button. That button is now commented out in the page code (comment `CR 250818 Remove button`). Snapshots are in `docs/discharge-observations/station/`.
+
+**Already known:** this is TODO.md item B12, "Afternoon gap — use SFPUC's `getStation` numbers (held 2026-11-10)". It was found on 11/10 and held until a few more result days had been watched. The code doesn't call it yet. Today counts as one of those watched days (timing below).
+
+**Querying it**
+- In a browser (GET works): `https://infrastructure.sfwater.org/lims.asmx/getStation?stationId=4608`
+- The map page's way: `curl -X POST -d "stationId=4608" https://infrastructure.sfwater.org/lims.asmx/getStation`
+- The response is a JSON list wrapped in an XML `<string>` tag, newest sample first. `&lt;` in the numbers means "<".
+- `https://infrastructure.sfwater.org/lims.asmx` lists every operation (getBeaches, getStation, getCSV) with a test form for each.
+- **All stations in one call: `https://infrastructure.sfwater.org/lims.asmx/getCSV`.** Same numbers as getStation (it had the 11/13 storm rows at the same time) but for every station, about three months back (Aug 17 → now, ~750 rows). It's bare JSON with one row per analyte: `{"source": "OCEAN#18_SL", "sample_date": "11/13/26", "analyte": "ENTERO", "data": "2143"}`. It's keyed by the outfall/source code (e.g. `OCEAN#18_SL`), not the station id. getBeaches gives each station's code in its `posted`/`cso` fields, but not for every station (China is blank), so use `shared/outfalls.py` or the getStation `source` to map them. This is the feed the 2016–17 Poo Bot archive snapshotted. Its download button on SFPUC's map page is still wired up in the code.
+
+**"sample_date" in getBeaches vs getStation/getCSV**
+- In both, the value is a **collection date**: the day the water was sampled, not the day the result came in.
+- getStation/getCSV list **every** sample with its numbers, and a new row shows up as soon as the lab enters it.
+- getBeaches's `sample_date` is the one sample the map is **currently showing** for that station. It moves forward only when SFPUC updates the map. On 11/14 that was 2:03pm for Baker, about 4 hours after the 11/13 rows were in getStation.
+- So any time the two disagree, a newer result exists that the map doesn't show yet. That gap is exactly the "not published yet" window, and comparing the two would tell us directly when there's a real waiting sample. It would replace the guess that `shared/result_gap.py` makes from posting changes.
+- Station IDs: 4601 Fort Funston · 4602 OB Sloat · 4603 OB Vicente · 4604 OB Balboa · 4605 OB Lincoln · 4606 OB Pacheco · 4607 China · 4608 Baker West · 4609 Baker East · 4610 Baker Lobos · 4611 Crissy West · 4612 Crissy East · 4613 Aquatic Park · 4614 Hyde St Pier · 4615 Jackrabbit · 4616 Windsurfer Circle · 4617 Sunnydale · 4618 Mission Creek · 4619 Islais Creek · 4620 Crane Cove. The three "not routinely sampled" stations (4601, 4603, 4606) return no rows unless SFPUC storm-samples them (Vicente and Pacheco on 11/13).
+
+**B12 timing data point (this result day)**
+- 11/10, from TODO: getStation gained the Nov 9 row at the same check as the map date (1:48pm), and filled in one indicator at a time.
+- 11/14: the 11/13 rows were in getStation by about 9:55am **with all three indicators filled**. At that point getBeaches still showed 11/09 and DataSF stopped at 11/10. So this time getStation came **before** the map date. The feed recorder will show when getBeaches catches up.
+
+| Station | Sample | Entero | Fecal coliform | Total coliform |
+|---|---|---|---|---|
+| Baker Beach West (4608) | 11/13 | 10 | 15 | 90 |
+| Baker Beach East (4609) | 11/13 | 86 | 15 | 80 |
+| Baker Beach at Lobos Creek (4610) | 11/13 | 52 | 5 | 550 |
+| China Beach (4607) | none; latest is 11/09 | 20 | 10 | 380 |
+
+- So the promised samples **were** taken on 11/13. All three are under the state single-sample limits (Entero 104, fecal 400, total 10,000). Baker East at 86 is the closest.
+- At the same moment, getBeaches still shows sample date 11/09 for all three, and DataSF only goes up to 11/10. **getStation got the results before both.**
+- To consider: reading getStation would let us show results hours before the map updates, and it fixes the "not published yet" gap at its source. Things to check first: how early results show up there compared with getBeaches and DataSF, and whether SFPUC treats these numbers as final when they appear. Taking the button off their map might mean they'd rather the public not see them yet.
+
+## SFPUC shows discharges as a separate symbol (11/14, 9:39am)
+Snapshots in `docs/discharge-observations/`: our Today map, SFPUC's map (west side and Baker close-up), and the raw getBeaches feed.
+
+- **What we see:** our map shows Baker West as "discharge". SFPUC's map shows Baker West as a **green dot**, with a **red CSO triangle** next to it.
+- **How SFPUC draws it** (inline script on beachesandbay.html):
+  - The **dot** comes only from the sample and posting fields: `s_color` Y/R/W, or `posted` + `p_color`. Green when neither applies.
+  - A separate **CSO triangle** (`img/sign-cso.gif`) is added whenever the feed's `cso` field isn't null. It isn't drawn on the station. It goes at a hard-coded point per station (the outfall), e.g. Baker West 4608 → (-122.488506, 37.7938). Its popup says "Combined Sewer Discharge has occurred within the last 24-72 hours."
+  - So one beach can be a green dot (last sample fine, not posted) with a discharge triangle beside it.
+- **Feed right now:** Baker West is `cso=OCEAN#16_SL`, `posted=None`, so SFPUC shows a green dot plus a triangle. Baker East is `posted`, `p_color=G`, so it's an orange diamond. Baker at Lobos Creek's posting has come down since last night.
+- **What we do:** `app/landing.py:338` returns `"discharge"` whenever `has_cso` is set, which overrides the posting/sample status. The two layers get merged into one.
+- **Could we do the same?** Yes, all the data is already in the feed we read. We'd keep the station status (safe / posted / not sampled) on the dot and draw discharge as its own marker. That marker could sit at the outfall, using SFPUC's per-station points or our own outfall coordinates, or be a badge on the dot. The zone tiles and headline would then count "discharging" and "posted" separately. Most of the work would be design: legend, labels, and how a zone summarizes "safe dot + discharge nearby".
+- Related: this might also explain the Ocean Beach confusion. Several Ocean Beach stations have `cso` flags while their dots are green, white or orange.
+
+## Feed recording
+- `scripts/record_sfpuc_feed.py` reads SFPUC's getBeaches every 2 minutes. It writes a snapshot to `docs/discharge-observations/feed/` only when a station's `cso`, `s_color`, `posted`, `p_color` or `sample_date` changes. Each snapshot also stores our `/api/realtime` from the same moment. `feed/changes.log` lists each change in one line (station, field, old → new).
+- Every 2 minutes it also reads **getCSV** (all stations, one call) and then **getStation** (all 20 stations), one right after the other. Each keeps a station's two newest sample dates and writes a snapshot (`*-getCSV.json`, `*-getStation.json`) when a new sample date appears or an indicator fills in. Every change goes into `changes.log`, tagged `[getBeaches]`, `[getCSV]` or `[getStation]`. A result day then reads in order: color flip, numbers in each feed, map sample date. That's the timing B12 is waiting for.
+- **Open questions the log will answer:**
+  - Does getCSV fill in at the same time as getStation, or does one lag?
+  - Are the numbers always complete by the time the map's `sample_date` moves? On 11/10, getStation's row appeared at the same check as the map date and filled in one indicator at a time, with Entero last. On 11/14 the numbers were complete about 4 hours before the map date.
+  - Do early values ever get revised?
+### SFPUC: postings use preliminary counts
+SFPUC's own words (source link to add):
+> "In order to provide as rapid a response as possible the City proactively posts (and de-posts) beaches and makes public notifications based upon preliminary bacteria counts made available before final results are confirmed. The public is better served overall by timely notifications based upon preliminary counts than by the procedural delay needed to act upon confirmed counts."
+
+What this may explain (to be checked against the recording):
+- **Why the posting moves first on a normal result day** (about 8:30am, hours before the sample date or numbers appear). The posting decision uses preliminary counts that aren't in any feed we read.
+- **Why the numbers show up later and sometimes one indicator at a time** (11/10). getStation/getCSV may be showing values as they're confirmed, not the preliminary ones.
+- **Open question:** are the getStation/getCSV values preliminary or confirmed when they first appear? If they're confirmed, a posting can disagree with the numbers we'd show for a few hours, or for good if the final count differs. If they're preliminary, they could change later. The recorder logs any change to a value it has already seen (`ENTERO 86→…`), which would show a revision.
+- For B12 this matters for the wording: show the numbers as "lab results" with their time, and don't claim they're the counts SFPUC acted on.
+
+- Started 11/14 9:47am (getBeaches only). getStation was added at 9:16pm, getCSV at about 9:35pm, and all three run together from about 9:50pm 11/14 for 72 hours. Last night's 11:45pm watcher read is backfilled as the first file.
+
+### Result day 11/14: what the recording shows (11/13 storm samples)
+| Time | Feed | What changed |
+|---|---|---|
+| by ~9:55am | getStation | 11/13 numbers in for Baker (all three indicators); checked by hand, before the recorder read it |
+| 2:03pm | getBeaches | Baker West / East / Lobos sample date 11/09 → 11/13 |
+| 2:33pm | getBeaches | Ocean Beach (all five, including Vicente and Pacheco), Mission Creek, Islais Creek, Crane Cove sample date → 11/13 |
+| 4:48pm | getBeaches | Baker West CSO flag cleared; Baker East and Crane Cove postings came down |
+| (overnight to 9:39am) | getBeaches | Baker Lobos posting came down at some point before the recording started |
+
+- **The order was the reverse of the usual one.** Normally the posting changes around 8–9am, then the sample date updates, then the numbers reach DataSF. This time the numbers came first, then the sample date about 4 hours later, and the postings came down about 2¾ hours after that, at 4:48pm. A precautionary posting probably comes down only after the results are in, not in the morning slot.
+- So for B12: on this storm-sampling day getStation was ahead of the map's sample date by **at least 4 hours**.
+
+### All 11/13 storm results (getCSV, read 11/14 ~9:30pm)
+State single-sample limits: Entero 104, fecal 400, total 10,000. Over-limit values are in bold.
+
+| Station | Source | Entero | Fecal | Total |
+|---|---|---|---|---|
+| Mission Creek | BAY#220 | **>24196** | **>6000** | **>16000** |
+| Islais Creek | BAY#320 | **>24196** | **>6000** | **>16000** |
+| OB Balboa | OCEAN#18 | **2143** | **4400** | **14600** |
+| OB Lincoln | OCEAN#19 | **1842** | **4000** | **10400** |
+| OB Pacheco | OCEAN#20 | **1187** | **2400** | 7300 |
+| OB Sloat | OCEAN#21.1 | **1169** | **2600** | 6100 |
+| OB Vicente | OCEAN#21 | **594** | **2700** | 6400 |
+| Crane Cove | BAY#230 | 98 | 55 | 490 |
+| Baker East | OCEAN#15EAST | 86 | 15 | 80 |
+| Baker Lobos | OCEAN#15 | 52 | 5 | 550 |
+| Baker West | OCEAN#16 | 10 | 15 | 90 |
+
+- **Every Ocean Beach station sampled was far over.** Mission Creek and Islais Creek were off the top of the lab's scale (">" values). Baker, the only place the morning email named, came back clean. (Earlier I wrote that Vicente and Pacheco were "the only real exceedances". That was wrong; I had only looked at a few stations.)
+- So the **forecast's Ocean Beach discharge call was right**. The morning map and email just hadn't caught up with it.
+- **Vicente (4603) and Pacheco (4606)** are "not routinely sampled" stations that SFPUC sampled because of the storm. Normally getStation returns no rows for them. In the map feed they're `s_color=W` with `posted` + `p_color=G`, and SFPUC's code draws those as orange posted diamonds.
+- What our site makes of them is the next thing to check.
+- The recorder reads **getCSV** (all stations, one call) and **getStation** (20 calls), one after the other, every 2 minutes. Log entries are tagged `[getCSV]` and `[getStation]`.
+- Restart after a reboot: `python3 scripts/record_sfpuc_feed.py --out docs/discharge-observations/feed` (it picks up from the last snapshot).
+
+### Result day 11/15: what the recording shows (11/14 samples)
+From `feed/changes.log`, all three feeds running the whole day, no failed reads.
+
+| Time | Feed | What changed |
+|---|---|---|
+| 10:13am | getBeaches | Postings came down at OB Sloat, Vicente, Balboa |
+| 10:28am | getBeaches | Vicente CSO flag cleared |
+| 1:14:35pm | getBeaches | Sample date 11/13 → 11/14 for all five OB stations, Mission Creek, Islais Creek |
+| 1:14:37pm | getCSV + getStation | 11/14 rows appear, **total coliform only** |
+| 1:16:47pm | getCSV + getStation | Fecal coliform filled in |
+| 1:40:33pm | getCSV + getStation | **Enterococcus filled in last** |
+| 4:37pm | getBeaches | **New discharge:** Baker West CSO flag + posted; Baker East and Lobos posted |
+| 4:41pm | getBeaches | Pacheco posting came down |
+| 6:57pm | getBeaches | OB Sloat, Vicente, Balboa, Pacheco posted again |
+| 6:59pm | getBeaches | Crane Cove posted |
+| 7:02pm | getBeaches | Vicente CSO flag back |
+
+11/14 results (state limits: Entero 104, fecal 400, total 10,000; over-limit in bold):
+
+| Station | Entero | Fecal | Total |
+|---|---|---|---|
+| Islais Creek | **>24196** | **>6000** | **>16000** |
+| Mission Creek | **738** | **3100** | **>16000** |
+| OB Lincoln | **121** | 75 | 2300 |
+| OB Pacheco | 98 | 40 | 360 |
+| OB Sloat | 97 | 40 | 680 |
+| OB Vicente | 75 | 65 | 390 |
+| OB Balboa | 74 | 40 | 390 |
+
+**Findings**
+1. **The postings came down about 3 hours before any numbers existed in any feed** (10:13am vs 1:14pm). That fits SFPUC's statement that they act on preliminary counts we can't see.
+2. **No head start this time.** The numbers and the map's sample date moved within 2 seconds of each other. On 11/14 the numbers were at least 4 hours ahead. So reading getStation/getCSV sometimes gains hours and sometimes nothing; it isn't a reliable lead.
+3. **Enterococcus arrives last**, about 26 minutes after total coliform (same order as 11/10). For that window after the map date moves, the number that matters most for ocean beaches is still missing. Anything we build should say "Entero pending" rather than treat the row as complete.
+4. **getCSV and getStation changed on exactly the same reads** every time (11/15 here, and 11/14 storm rows were in both together). One getCSV call is enough; getStation adds nothing.
+5. **No revisions yet.** Every value went from empty to a number and stayed. Only two recorded result days so far.
+6. **OB Lincoln came in at 121, over the Entero limit**, but no posting change for Lincoln shows in the log. Not yet checked what SFPUC's map or our site shows for it.
+7. **A second discharge started the evening of 11/15** (Baker at 4:37pm, Ocean Beach and Crane Cove ~7pm). The recorder runs to ~11/17 9:50pm, so it should catch another full cycle: discharge, storm sampling, results, postings down.
+8. The evening's changes also fed the "too many emails" note below: 7 posting changes in about 9 hours, some minutes apart.
+
+## Surfrider field report, 11/13
+- Full report: Google Doc "Field Report Storm baker-china 11-13-26" (Drive: SF BWTF Data Science / Field Report baker-china 11-13-26).
+- In short: China Beach had three pipes flowing but no City discharge flag, posting or sample; Surfrider measured Entero 6,131. Baker was de-posted on a morning sample (52) while Surfrider's midday sample read 265.
+- **To do:** add the construction observed on site to the report.
+- **To do:** verify the outfall details in the report (which pipes are combined-sewer outfalls vs storm drains, and the Sea Cliff #1 / #2 assignments).
+
+## Discharge alert email
+- On a phone, the discharge email didn't look very red. It should read as urgent at a glance.
+
+## Too many alert emails on a storm day
+- Because our watcher checks so often, a storm day sends tons of emails.
+- SFPUC sends far fewer updates (e.g. one morning posting email covering all three Baker sites), so subscribers aren't spammed.
+- To consider: batching or throttling our alerts (e.g. one email per status change per area, or a daily cap) so a storm day doesn't flood people.
+- **Postings flip on and off quickly, and each flip is an email.** On 11/15 (from `feed/changes.log`): Ocean Beach postings came down at 10:13am, Vicente's CSO cleared at 10:28am, Baker went back up at 4:37pm, Pacheco came down at 4:41pm, Ocean Beach went back up at 6:57pm, Crane Cove at 6:59pm, and Vicente's CSO returned at 7:02pm. That's 7 changes in about 9 hours, several only minutes apart. A short hold before alerting (e.g. wait ~10–15 minutes and send one email for everything that changed) would merge the ones that land close together.
+
+## Getting results sooner (plan, held)
+- **What we found:** getStation/getCSV carry the bacteria numbers, and on 11/14 they had them at least 4 hours before the map's `sample_date` moved (details above; TODO.md B12).
+- **Plan:**
+  1. Let the recorder finish (through ~11/17 9:50pm) to collect more result days.
+  2. Read getCSV (one call for all stations) and show numbers as "lab results, in at <time>" as soon as they appear, ahead of the map.
+  3. Detect "new sample not published yet" by comparing getCSV's newest date with getBeaches's `sample_date`, replacing the posting-based guess in `shared/result_gap.py`.
+- **Before building:** check whether early values get revised (preliminary vs confirmed; see the SFPUC quote) and whether SFPUC minds the numbers being shown before the map (they removed the button).
+
+## Labels
+- The map labels don't look good.
+- The label branch (`claude/today-map-labels-dead75` / `design/today-map-labels`) should help. Re-check after it merges.

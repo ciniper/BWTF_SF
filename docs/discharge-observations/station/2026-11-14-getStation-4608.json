@@ -1,0 +1,62 @@
+[
+ {
+  "source": "OCEAN#16_SL",
+  "sample_date": "11/13/26",
+  "stationid": "4608",
+  "stationname": "Baker Beach West",
+  "COLI_E": null,
+  "COLI_TOTAL": "90",
+  "COLI_FECAL": "15",
+  "ENTERO": "10"
+ },
+ {
+  "source": "OCEAN#16_SL",
+  "sample_date": "11/09/26",
+  "stationid": "4608",
+  "stationname": "Baker Beach West",
+  "COLI_E": null,
+  "COLI_TOTAL": "340",
+  "COLI_FECAL": "55",
+  "ENTERO": "97"
+ },
+ {
+  "source": "OCEAN#16_SL",
+  "sample_date": "11/02/26",
+  "stationid": "4608",
+  "stationname": "Baker Beach West",
+  "COLI_E": null,
+  "COLI_TOTAL": "120",
+  "COLI_FECAL": "45",
+  "ENTERO": "<10"
+ },
+ {
+  "source": "OCEAN#16_SL",
+  "sample_date": "10/26/26",
+  "stationid": "4608",
+  "stationname": "Baker Beach West",
+  "COLI_E": null,
+  "COLI_TOTAL": "110",
+  "COLI_FECAL": "10",
+  "ENTERO": "10"
+ },
+ {
+  "source": "OCEAN#16_SL",
+  "sample_date": "10/19/26",
+  "stationid": "4608",
+  "stationname": "Baker Beach West",
+  "COLI_E": null,
+  "COLI_TOTAL": "630",
+  "COLI_FECAL": "5",
+  "ENTERO": "<10"
+ },
+ {
+  "source": "OCEAN#16_SL",
+  "sample_date": "10/13/26",
+  "stationid": "4608",
+  "stationname": "Baker Beach West",
+  "COLI_E": null,
+  "COLI_TOTAL": "50",
+  "COLI_FECAL": "<5",
+  "ENTERO": "10"
+ }
+]

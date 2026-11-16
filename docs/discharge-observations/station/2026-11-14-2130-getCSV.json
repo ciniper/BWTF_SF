@@ -1,0 +1,4544 @@
+[
+{
+"source": "BAY#202.4_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_TOTAL",
+"data": "80"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "11/09/26",
+"analyte": "ENTERO",
+"data": "52"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_FECAL",
+"data": "25"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_TOTAL",
+"data": "270"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "11/02/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_TOTAL",
+"data": "10"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "10/26/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_FECAL",
+"data": "75"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_TOTAL",
+"data": "50"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "10/19/26",
+"analyte": "ENTERO",
+"data": "31"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_TOTAL",
+"data": "<10"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "10/13/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_TOTAL",
+"data": "20"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "10/05/26",
+"analyte": "ENTERO",
+"data": "20"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_FECAL",
+"data": "25"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_TOTAL",
+"data": "180"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "09/28/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_TOTAL",
+"data": "<10"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "09/21/26",
+"analyte": "ENTERO",
+"data": "31"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_FECAL",
+"data": "245"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_TOTAL",
+"data": "310"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "09/14/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_TOTAL",
+"data": "10"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "09/08/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_FECAL",
+"data": "10"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_TOTAL",
+"data": "90"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "08/31/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_TOTAL",
+"data": "10"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "08/24/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_FECAL",
+"data": "25"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_TOTAL",
+"data": "150"
+},
+{
+"source": "BAY#202.4_SL",
+"sample_date": "08/17/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_TOTAL",
+"data": "340"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "11/09/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_TOTAL",
+"data": "10"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "11/02/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_TOTAL",
+"data": "40"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "10/26/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_TOTAL",
+"data": "<10"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "10/19/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_TOTAL",
+"data": "40"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "10/13/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_TOTAL",
+"data": "<10"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "10/05/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_TOTAL",
+"data": "<10"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "09/28/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_TOTAL",
+"data": "<10"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "09/21/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_FECAL",
+"data": "10"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_TOTAL",
+"data": "20"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "09/14/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_TOTAL",
+"data": "<10"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "09/08/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_FECAL",
+"data": "10"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_TOTAL",
+"data": "<10"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "08/31/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_TOTAL",
+"data": "20"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "08/24/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_TOTAL",
+"data": "100"
+},
+{
+"source": "BAY#202.5_SL",
+"sample_date": "08/17/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_TOTAL",
+"data": "10"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "11/09/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_FECAL",
+"data": "15"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_TOTAL",
+"data": "50"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "11/02/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_TOTAL",
+"data": "40"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "10/26/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_FECAL",
+"data": "15"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_TOTAL",
+"data": "40"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "10/19/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_TOTAL",
+"data": "10"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "10/13/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_FECAL",
+"data": "15"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_TOTAL",
+"data": "140"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "10/05/26",
+"analyte": "ENTERO",
+"data": "30"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_TOTAL",
+"data": "10"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "09/28/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_FECAL",
+"data": "15"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_TOTAL",
+"data": "10"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "09/21/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_TOTAL",
+"data": "30"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "09/14/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_TOTAL",
+"data": "<10"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "09/08/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_TOTAL",
+"data": "30"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "08/31/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_FECAL",
+"data": "20"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_TOTAL",
+"data": "<10"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "08/24/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_TOTAL",
+"data": "<10"
+},
+{
+"source": "BAY#210.1_SL",
+"sample_date": "08/17/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_FECAL",
+"data": "20"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_TOTAL",
+"data": "90"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "11/09/26",
+"analyte": "ENTERO",
+"data": "31"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_FECAL",
+"data": "55"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_TOTAL",
+"data": "140"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "11/02/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_FECAL",
+"data": "200"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_TOTAL",
+"data": "340"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "10/26/26",
+"analyte": "ENTERO",
+"data": "20"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_TOTAL",
+"data": "50"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "10/19/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_FECAL",
+"data": "10"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_TOTAL",
+"data": "30"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "10/13/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_FECAL",
+"data": "35"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_TOTAL",
+"data": "30"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "10/05/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_FECAL",
+"data": "10"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_TOTAL",
+"data": "<10"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "09/28/26",
+"analyte": "ENTERO",
+"data": "20"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_TOTAL",
+"data": "40"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "09/21/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_TOTAL",
+"data": "<10"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "09/14/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_FECAL",
+"data": "10"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_TOTAL",
+"data": "20"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "09/08/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_FECAL",
+"data": "15"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_TOTAL",
+"data": "10"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "08/31/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_FECAL",
+"data": "15"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_TOTAL",
+"data": "10"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "08/24/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_FECAL",
+"data": "15"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_TOTAL",
+"data": "30"
+},
+{
+"source": "BAY#211_SL",
+"sample_date": "08/17/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "11/13/26",
+"analyte": "COLI_FECAL",
+"data": ">6000"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "11/13/26",
+"analyte": "COLI_TOTAL",
+"data": ">16000"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "11/13/26",
+"analyte": "ENTERO",
+"data": ">24196"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_FECAL",
+"data": "10"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_TOTAL",
+"data": "90"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "11/09/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_TOTAL",
+"data": "90"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "11/02/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_TOTAL",
+"data": "20"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "10/26/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_TOTAL",
+"data": "20"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "10/19/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_TOTAL",
+"data": "120"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "10/13/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_TOTAL",
+"data": "30"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "10/05/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "09/29/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_TOTAL",
+"data": "60"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_TOTAL",
+"data": "30"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "09/21/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_TOTAL",
+"data": "30"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "09/14/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_TOTAL",
+"data": "20"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "09/08/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_TOTAL",
+"data": "10"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "08/31/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_TOTAL",
+"data": "30"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "08/24/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_TOTAL",
+"data": "50"
+},
+{
+"source": "BAY#220_SL",
+"sample_date": "08/17/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "11/13/26",
+"analyte": "COLI_FECAL",
+"data": "55"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "11/13/26",
+"analyte": "COLI_TOTAL",
+"data": "490"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "11/13/26",
+"analyte": "ENTERO",
+"data": "98"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_TOTAL",
+"data": "140"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "11/09/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_TOTAL",
+"data": "400"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "11/02/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_TOTAL",
+"data": "260"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "10/26/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_TOTAL",
+"data": "20"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "10/19/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_TOTAL",
+"data": "50"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "10/13/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_TOTAL",
+"data": "1900"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "10/05/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "09/29/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_TOTAL",
+"data": "90"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_TOTAL",
+"data": "10"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "09/21/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_TOTAL",
+"data": "140"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "09/14/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_TOTAL",
+"data": "40"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "09/08/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_TOTAL",
+"data": "70"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "08/31/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_TOTAL",
+"data": "70"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "08/24/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_FECAL",
+"data": "10"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_TOTAL",
+"data": "130"
+},
+{
+"source": "BAY#230_SL",
+"sample_date": "08/17/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_FECAL",
+"data": "45"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_TOTAL",
+"data": "320"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "11/09/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_TOTAL",
+"data": "1100"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "11/02/26",
+"analyte": "ENTERO",
+"data": "63"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_FECAL",
+"data": "30"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_TOTAL",
+"data": "460"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "10/26/26",
+"analyte": "ENTERO",
+"data": "52"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_FECAL",
+"data": "40"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_TOTAL",
+"data": "380"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "10/19/26",
+"analyte": "ENTERO",
+"data": "31"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_FECAL",
+"data": "10"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_TOTAL",
+"data": "110"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "10/13/26",
+"analyte": "ENTERO",
+"data": "63"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "10/06/26",
+"analyte": "COLI_FECAL",
+"data": "35"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "10/06/26",
+"analyte": "COLI_TOTAL",
+"data": "610"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "10/06/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_FECAL",
+"data": "420"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_TOTAL",
+"data": "4200"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "10/05/26",
+"analyte": "ENTERO",
+"data": "30"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_FECAL",
+"data": "35"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_TOTAL",
+"data": "40"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "09/28/26",
+"analyte": "ENTERO",
+"data": "20"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "09/23/26",
+"analyte": "COLI_FECAL",
+"data": "15"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "09/23/26",
+"analyte": "COLI_TOTAL",
+"data": "70"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "09/23/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "09/22/26",
+"analyte": "COLI_FECAL",
+"data": "125"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "09/22/26",
+"analyte": "COLI_TOTAL",
+"data": "550"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "09/22/26",
+"analyte": "ENTERO",
+"data": "148"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_FECAL",
+"data": "135"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_TOTAL",
+"data": "300"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "09/21/26",
+"analyte": "ENTERO",
+"data": "122"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_FECAL",
+"data": "20"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_TOTAL",
+"data": "180"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "09/14/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_FECAL",
+"data": "10"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_TOTAL",
+"data": "490"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "09/08/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_FECAL",
+"data": "15"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_TOTAL",
+"data": "180"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "08/31/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_FECAL",
+"data": "10"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_TOTAL",
+"data": "50"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "08/24/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_TOTAL",
+"data": "40"
+},
+{
+"source": "BAY#300.1_SL",
+"sample_date": "08/17/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_FECAL",
+"data": "10"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_TOTAL",
+"data": "190"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "11/09/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_TOTAL",
+"data": "1300"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "11/02/26",
+"analyte": "ENTERO",
+"data": "41"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "10/27/26",
+"analyte": "COLI_FECAL",
+"data": "15"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "10/27/26",
+"analyte": "COLI_TOTAL",
+"data": "90"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "10/27/26",
+"analyte": "ENTERO",
+"data": "20"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_FECAL",
+"data": "580"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_TOTAL",
+"data": ">16000"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "10/26/26",
+"analyte": "ENTERO",
+"data": "216"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_FECAL",
+"data": "45"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_TOTAL",
+"data": "2900"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "10/19/26",
+"analyte": "ENTERO",
+"data": "52"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_FECAL",
+"data": "25"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_TOTAL",
+"data": "180"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "10/13/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_FECAL",
+"data": "150"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_TOTAL",
+"data": "3300"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "10/05/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "09/29/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_FECAL",
+"data": "10"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_TOTAL",
+"data": "60"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_FECAL",
+"data": "270"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_TOTAL",
+"data": "3700"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "09/21/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_FECAL",
+"data": "10"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_TOTAL",
+"data": "640"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "09/14/26",
+"analyte": "ENTERO",
+"data": "41"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_TOTAL",
+"data": "1800"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "09/08/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "09/01/26",
+"analyte": "COLI_FECAL",
+"data": "135"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "09/01/26",
+"analyte": "COLI_TOTAL",
+"data": "250"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "09/01/26",
+"analyte": "ENTERO",
+"data": "41"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_FECAL",
+"data": "1100"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_TOTAL",
+"data": "900"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "08/31/26",
+"analyte": "ENTERO",
+"data": "228"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_TOTAL",
+"data": "110"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "08/24/26",
+"analyte": "ENTERO",
+"data": "20"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_FECAL",
+"data": "10"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_TOTAL",
+"data": "140"
+},
+{
+"source": "BAY#301.1_SL",
+"sample_date": "08/17/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_FECAL",
+"data": "10"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_TOTAL",
+"data": "60"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "11/09/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_FECAL",
+"data": "20"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_TOTAL",
+"data": "700"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "11/02/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_TOTAL",
+"data": "310"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "10/26/26",
+"analyte": "ENTERO",
+"data": "20"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_FECAL",
+"data": "75"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_TOTAL",
+"data": "240"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "10/19/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_TOTAL",
+"data": "10"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "10/13/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_TOTAL",
+"data": "370"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "10/05/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "09/29/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_FECAL",
+"data": "40"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_TOTAL",
+"data": "280"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_TOTAL",
+"data": "130"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "09/21/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_TOTAL",
+"data": "150"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "09/14/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_FECAL",
+"data": "15"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_TOTAL",
+"data": "220"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "09/08/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_FECAL",
+"data": "35"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_TOTAL",
+"data": "210"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "08/31/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_TOTAL",
+"data": "110"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "08/24/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_TOTAL",
+"data": "150"
+},
+{
+"source": "BAY#301.2_SL",
+"sample_date": "08/17/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "11/13/26",
+"analyte": "COLI_FECAL",
+"data": ">6000"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "11/13/26",
+"analyte": "COLI_TOTAL",
+"data": ">16000"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "11/13/26",
+"analyte": "ENTERO",
+"data": ">24196"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_TOTAL",
+"data": "30"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "11/09/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_FECAL",
+"data": "15"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_TOTAL",
+"data": "140"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "11/02/26",
+"analyte": "ENTERO",
+"data": "41"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_TOTAL",
+"data": "40"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "10/26/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "10/20/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "10/20/26",
+"analyte": "COLI_TOTAL",
+"data": "10"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "10/20/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_FECAL",
+"data": "60"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_TOTAL",
+"data": "670"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "10/19/26",
+"analyte": "ENTERO",
+"data": "2613"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_TOTAL",
+"data": "20"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "10/13/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "10/06/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "10/06/26",
+"analyte": "COLI_TOTAL",
+"data": "150"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "10/06/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_FECAL",
+"data": "225"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_TOTAL",
+"data": "1700"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "10/05/26",
+"analyte": "ENTERO",
+"data": "428"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "10/02/26",
+"analyte": "COLI_FECAL",
+"data": "95"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "10/02/26",
+"analyte": "COLI_TOTAL",
+"data": "5400"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "10/02/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "10/01/26",
+"analyte": "COLI_FECAL",
+"data": "75"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "10/01/26",
+"analyte": "COLI_TOTAL",
+"data": ">16000"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "10/01/26",
+"analyte": "ENTERO",
+"data": "521"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "09/30/26",
+"analyte": "COLI_FECAL",
+"data": "85"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "09/30/26",
+"analyte": "COLI_TOTAL",
+"data": ">16000"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "09/30/26",
+"analyte": "ENTERO",
+"data": "30"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "09/29/26",
+"analyte": "COLI_FECAL",
+"data": "35"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "09/29/26",
+"analyte": "COLI_TOTAL",
+"data": "9200"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "09/29/26",
+"analyte": "ENTERO",
+"data": "275"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_TOTAL",
+"data": "50"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_FECAL",
+"data": "25"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_TOTAL",
+"data": "120"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "09/21/26",
+"analyte": "ENTERO",
+"data": "75"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "09/15/26",
+"analyte": "COLI_FECAL",
+"data": "30"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "09/15/26",
+"analyte": "COLI_TOTAL",
+"data": "90"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "09/15/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_FECAL",
+"data": "800"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_TOTAL",
+"data": "520"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "09/14/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "09/09/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "09/09/26",
+"analyte": "COLI_TOTAL",
+"data": "70"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "09/09/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_TOTAL",
+"data": "370"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "09/08/26",
+"analyte": "ENTERO",
+"data": "156"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_FECAL",
+"data": "45"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_TOTAL",
+"data": "80"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "08/31/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_FECAL",
+"data": "10"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_TOTAL",
+"data": "70"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "08/24/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_FECAL",
+"data": "20"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_TOTAL",
+"data": "<10"
+},
+{
+"source": "BAY#320_SL",
+"sample_date": "08/17/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "11/13/26",
+"analyte": "COLI_FECAL",
+"data": "15"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "11/13/26",
+"analyte": "COLI_TOTAL",
+"data": "80"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "11/13/26",
+"analyte": "ENTERO",
+"data": "86"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_TOTAL",
+"data": "200"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "11/09/26",
+"analyte": "ENTERO",
+"data": "20"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_TOTAL",
+"data": "1100"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "11/02/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_FECAL",
+"data": "35"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_TOTAL",
+"data": "440"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "10/26/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_TOTAL",
+"data": "80"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "10/19/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_TOTAL",
+"data": "120"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "10/13/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_TOTAL",
+"data": "50"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "10/05/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_FECAL",
+"data": "20"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_TOTAL",
+"data": "190"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "09/28/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_TOTAL",
+"data": "40"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "09/21/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_TOTAL",
+"data": "120"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "09/14/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_FECAL",
+"data": "10"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_TOTAL",
+"data": "10"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "09/08/26",
+"analyte": "ENTERO",
+"data": "20"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_TOTAL",
+"data": "150"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "08/31/26",
+"analyte": "ENTERO",
+"data": "20"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_TOTAL",
+"data": "50"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "08/24/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_FECAL",
+"data": "40"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_TOTAL",
+"data": "30"
+},
+{
+"source": "OCEAN#15EAST_SL",
+"sample_date": "08/17/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "11/13/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "11/13/26",
+"analyte": "COLI_TOTAL",
+"data": "550"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "11/13/26",
+"analyte": "ENTERO",
+"data": "52"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_FECAL",
+"data": "30"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_TOTAL",
+"data": "260"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "11/09/26",
+"analyte": "ENTERO",
+"data": "31"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_FECAL",
+"data": "30"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_TOTAL",
+"data": "368"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "11/02/26",
+"analyte": "ENTERO",
+"data": "75"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_TOTAL",
+"data": "40"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "10/26/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_TOTAL",
+"data": "200"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "10/19/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "10/14/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "10/14/26",
+"analyte": "COLI_TOTAL",
+"data": "110"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "10/14/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_FECAL",
+"data": "1000"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_TOTAL",
+"data": "13200"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "10/13/26",
+"analyte": "ENTERO",
+"data": "169"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_TOTAL",
+"data": "270"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "10/05/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_FECAL",
+"data": "50"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_TOTAL",
+"data": "440"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "09/28/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "09/22/26",
+"analyte": "COLI_FECAL",
+"data": "25"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "09/22/26",
+"analyte": "COLI_TOTAL",
+"data": "540"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "09/22/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_FECAL",
+"data": "215"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_TOTAL",
+"data": "3500"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "09/21/26",
+"analyte": "ENTERO",
+"data": "148"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_FECAL",
+"data": "10"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_TOTAL",
+"data": "370"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "09/14/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_FECAL",
+"data": "35"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_TOTAL",
+"data": "610"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "09/08/26",
+"analyte": "ENTERO",
+"data": "31"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_FECAL",
+"data": "10"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_TOTAL",
+"data": "610"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "08/31/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_FECAL",
+"data": "95"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_TOTAL",
+"data": "3200"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "08/24/26",
+"analyte": "ENTERO",
+"data": "63"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_FECAL",
+"data": "100"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_TOTAL",
+"data": "3300"
+},
+{
+"source": "OCEAN#15_SL",
+"sample_date": "08/17/26",
+"analyte": "ENTERO",
+"data": "41"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "11/13/26",
+"analyte": "COLI_FECAL",
+"data": "15"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "11/13/26",
+"analyte": "COLI_TOTAL",
+"data": "90"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "11/13/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_FECAL",
+"data": "55"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_TOTAL",
+"data": "340"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "11/09/26",
+"analyte": "ENTERO",
+"data": "97"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_FECAL",
+"data": "45"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_TOTAL",
+"data": "120"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "11/02/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_FECAL",
+"data": "10"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_TOTAL",
+"data": "110"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "10/26/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_TOTAL",
+"data": "630"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "10/19/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_TOTAL",
+"data": "50"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "10/13/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_TOTAL",
+"data": "350"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "10/05/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_TOTAL",
+"data": "20"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "09/28/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_FECAL",
+"data": "15"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_TOTAL",
+"data": "70"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "09/21/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_FECAL",
+"data": "10"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_TOTAL",
+"data": "160"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "09/14/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_FECAL",
+"data": "20"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_TOTAL",
+"data": "80"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "09/08/26",
+"analyte": "ENTERO",
+"data": "20"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_FECAL",
+"data": "20"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_TOTAL",
+"data": "60"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "08/31/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_FECAL",
+"data": "20"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_TOTAL",
+"data": "50"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "08/24/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_FECAL",
+"data": "35"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_TOTAL",
+"data": "80"
+},
+{
+"source": "OCEAN#16_SL",
+"sample_date": "08/17/26",
+"analyte": "ENTERO",
+"data": "20"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_FECAL",
+"data": "10"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_TOTAL",
+"data": "380"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "11/09/26",
+"analyte": "ENTERO",
+"data": "20"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_TOTAL",
+"data": "20"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "11/02/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_TOTAL",
+"data": "50"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "10/26/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_TOTAL",
+"data": "200"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "10/19/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_TOTAL",
+"data": "20"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "10/13/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_TOTAL",
+"data": "60"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "10/05/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_TOTAL",
+"data": "30"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "09/28/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_FECAL",
+"data": "10"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_TOTAL",
+"data": "30"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "09/21/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_TOTAL",
+"data": "20"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "09/14/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_TOTAL",
+"data": "20"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "09/08/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_TOTAL",
+"data": "70"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "08/31/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_TOTAL",
+"data": "10"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "08/24/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_TOTAL",
+"data": "10"
+},
+{
+"source": "OCEAN#17_SL",
+"sample_date": "08/17/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "11/13/26",
+"analyte": "COLI_FECAL",
+"data": "4400"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "11/13/26",
+"analyte": "COLI_TOTAL",
+"data": "14600"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "11/13/26",
+"analyte": "ENTERO",
+"data": "2143"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_FECAL",
+"data": "10"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_TOTAL",
+"data": "340"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "11/09/26",
+"analyte": "ENTERO",
+"data": "41"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_TOTAL",
+"data": "20"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "11/02/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_FECAL",
+"data": "50"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_TOTAL",
+"data": "150"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "10/26/26",
+"analyte": "ENTERO",
+"data": "31"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_TOTAL",
+"data": "10"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "10/19/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_TOTAL",
+"data": "70"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "10/13/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_TOTAL",
+"data": "10"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "10/05/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_TOTAL",
+"data": "30"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "09/28/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_TOTAL",
+"data": "20"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "09/21/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_TOTAL",
+"data": "<10"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "09/14/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_TOTAL",
+"data": "20"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "09/08/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_TOTAL",
+"data": "30"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "08/31/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_TOTAL",
+"data": "10"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "08/24/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_FECAL",
+"data": "10"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_TOTAL",
+"data": "10"
+},
+{
+"source": "OCEAN#18_SL",
+"sample_date": "08/17/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "11/13/26",
+"analyte": "COLI_FECAL",
+"data": "4000"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "11/13/26",
+"analyte": "COLI_TOTAL",
+"data": "10400"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "11/13/26",
+"analyte": "ENTERO",
+"data": "1842"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "11/10/26",
+"analyte": "COLI_FECAL",
+"data": "20"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "11/10/26",
+"analyte": "COLI_TOTAL",
+"data": "210"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "11/10/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_FECAL",
+"data": "1200"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_TOTAL",
+"data": "12000"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "11/09/26",
+"analyte": "ENTERO",
+"data": "798"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_TOTAL",
+"data": "40"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "11/02/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_TOTAL",
+"data": "30"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "10/26/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_TOTAL",
+"data": "10"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "10/19/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_TOTAL",
+"data": "20"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "10/13/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_TOTAL",
+"data": "<10"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "10/05/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_TOTAL",
+"data": "420"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "09/28/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_TOTAL",
+"data": "20"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "09/21/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_FECAL",
+"data": "10"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_TOTAL",
+"data": "40"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "09/14/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_TOTAL",
+"data": "<10"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "09/08/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_TOTAL",
+"data": "10"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "08/31/26",
+"analyte": "ENTERO",
+"data": "20"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_TOTAL",
+"data": "10"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "08/24/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_TOTAL",
+"data": "<10"
+},
+{
+"source": "OCEAN#19_SL",
+"sample_date": "08/17/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#20_SL",
+"sample_date": "11/13/26",
+"analyte": "COLI_FECAL",
+"data": "2400"
+},
+{
+"source": "OCEAN#20_SL",
+"sample_date": "11/13/26",
+"analyte": "COLI_TOTAL",
+"data": "7300"
+},
+{
+"source": "OCEAN#20_SL",
+"sample_date": "11/13/26",
+"analyte": "ENTERO",
+"data": "1187"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "11/13/26",
+"analyte": "COLI_FECAL",
+"data": "2600"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "11/13/26",
+"analyte": "COLI_TOTAL",
+"data": "6100"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "11/13/26",
+"analyte": "ENTERO",
+"data": "1169"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "11/09/26",
+"analyte": "COLI_TOTAL",
+"data": "330"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "11/09/26",
+"analyte": "ENTERO",
+"data": "75"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "11/02/26",
+"analyte": "COLI_TOTAL",
+"data": "20"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "11/02/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_FECAL",
+"data": "260"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "10/26/26",
+"analyte": "COLI_TOTAL",
+"data": "300"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "10/26/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_FECAL",
+"data": "10"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "10/19/26",
+"analyte": "COLI_TOTAL",
+"data": "10"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "10/19/26",
+"analyte": "ENTERO",
+"data": "10"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_FECAL",
+"data": "10"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "10/13/26",
+"analyte": "COLI_TOTAL",
+"data": "80"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "10/13/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "10/05/26",
+"analyte": "COLI_TOTAL",
+"data": "100"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "10/05/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "09/28/26",
+"analyte": "COLI_TOTAL",
+"data": "3400"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "09/28/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "09/21/26",
+"analyte": "COLI_TOTAL",
+"data": "<10"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "09/21/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "09/14/26",
+"analyte": "COLI_TOTAL",
+"data": "<10"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "09/14/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_FECAL",
+"data": "<5"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "09/08/26",
+"analyte": "COLI_TOTAL",
+"data": "10"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "09/08/26",
+"analyte": "ENTERO",
+"data": "20"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "08/31/26",
+"analyte": "COLI_TOTAL",
+"data": "40"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "08/31/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "08/24/26",
+"analyte": "COLI_TOTAL",
+"data": "40"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "08/24/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_FECAL",
+"data": "5"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "08/17/26",
+"analyte": "COLI_TOTAL",
+"data": "20"
+},
+{
+"source": "OCEAN#21.1_SL",
+"sample_date": "08/17/26",
+"analyte": "ENTERO",
+"data": "<10"
+},
+{
+"source": "OCEAN#21_SL",
+"sample_date": "11/13/26",
+"analyte": "COLI_FECAL",
+"data": "2700"
+},
+{
+"source": "OCEAN#21_SL",
+"sample_date": "11/13/26",
+"analyte": "COLI_TOTAL",
+"data": "6400"
+},
+{
+"source": "OCEAN#21_SL",
+"sample_date": "11/13/26",
+"analyte": "ENTERO",
+"data": "594"
+},
+{
+"source": "OCEAN#22_SL",
+"sample_date": null,
+"analyte": null,
+"data": null
+},
+{
+"source": null,
+"sample_date": null,
+"analyte": null,
+"data": null
+},
+{
+"source": null,
+"sample_date": null,
+"analyte": null,
+"data": null
+},
+{
+"source": null,
+"sample_date": null,
+"analyte": null,
+"data": null
+},
+{
+"source": null,
+"sample_date": null,
+"analyte": null,
+"data": null
+},
+{
+"source": null,
+"sample_date": null,
+"analyte": null,
+"data": null
+},
+{
+"source": null,
+"sample_date": null,
+"analyte": null,
+"data": null
+},
+{
+"source": null,
+"sample_date": null,
+"analyte": null,
+"data": null
+},
+{
+"source": null,
+"sample_date": null,
+"analyte": null,
+"data": null
+},
+{
+"source": null,
+"sample_date": null,
+"analyte": null,
+"data": null
+},
+{
+"source": null,
+"sample_date": null,
+"analyte": null,
+"data": null
+},
+{
+"source": null,
+"sample_date": null,
+"analyte": null,
+"data": null
+},
+{
+"source": null,
+"sample_date": null,
+"analyte": null,
+"data": null
+},
+{
+"source": null,
+"sample_date": null,
+"analyte": null,
+"data": null
+}
+]

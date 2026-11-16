@@ -1,0 +1,62 @@
+[
+ {
+  "source": "OCEAN#17_SL",
+  "sample_date": "11/09/26",
+  "stationid": "4607",
+  "stationname": "China Beach",
+  "COLI_E": null,
+  "COLI_TOTAL": "380",
+  "COLI_FECAL": "10",
+  "ENTERO": "20"
+ },
+ {
+  "source": "OCEAN#17_SL",
+  "sample_date": "11/02/26",
+  "stationid": "4607",
+  "stationname": "China Beach",
+  "COLI_E": null,
+  "COLI_TOTAL": "20",
+  "COLI_FECAL": "<5",
+  "ENTERO": "<10"
+ },
+ {
+  "source": "OCEAN#17_SL",
+  "sample_date": "10/26/26",
+  "stationid": "4607",
+  "stationname": "China Beach",
+  "COLI_E": null,
+  "COLI_TOTAL": "50",
+  "COLI_FECAL": "<5",
+  "ENTERO": "<10"
+ },
+ {
+  "source": "OCEAN#17_SL",
+  "sample_date": "10/19/26",
+  "stationid": "4607",
+  "stationname": "China Beach",
+  "COLI_E": null,
+  "COLI_TOTAL": "200",
+  "COLI_FECAL": "<5",
+  "ENTERO": "<10"
+ },
+ {
+  "source": "OCEAN#17_SL",
+  "sample_date": "10/13/26",
+  "stationid": "4607",
+  "stationname": "China Beach",
+  "COLI_E": null,
+  "COLI_TOTAL": "20",
+  "COLI_FECAL": "<5",
+  "ENTERO": "<10"
+ },
+ {
+  "source": "OCEAN#17_SL",
+  "sample_date": "10/05/26",
+  "stationid": "4607",
+  "stationname": "China Beach",
+  "COLI_E": null,
+  "COLI_TOTAL": "60",
+  "COLI_FECAL": "<5",
+  "ENTERO": "10"
+ }
+]
