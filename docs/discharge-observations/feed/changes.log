@@ -150,3 +150,31 @@
 2026-11-16T20:35:48-08:00  [getBeaches] read failed: unexpected getBeaches body: '<?xml version="1.0" encoding="utf-8"?>\r\n<string xmlns="http://tempuri.org/">Bad</string>'
 2026-11-16T20:35:50-08:00  [getCSV] read failed: unexpected getCSV body: 'Error : Bad'
 2026-11-16T20:35:52-08:00  [getStation] read failed: unexpected getStation body: '<?xml version="1.0" encoding="utf-8"?>\r\n<string xmlns="http://tempuri.org/">Bad</string>'
+2026-11-17T08:21:59-08:00  [getBeaches] 2026-11-17-082159-getBeaches.json
+    4601 Fort Funston: posted OCEAN#22_SL→None, p_color G→None
+    4602 Ocean Beach at Sloat Boulevard: posted OCEAN#21.1_SL→None, p_color G→None
+    4603 Ocean Beach at Vicente Street: posted OCEAN#21_SL→None, p_color G→None
+    4604 Ocean Beach at Balboa Street: posted OCEAN#18_SL→None, p_color G→None
+    4605 Ocean Beach at Lincoln Way: posted OCEAN#19_SL→None, p_color G→None
+    4608 Baker Beach West: posted OCEAN#16_SL→None, p_color G→None
+    4609 Baker Beach East: posted OCEAN#15EAST_SL→None, p_color G→None
+    4610 Baker Beach at Lobos Creek: posted OCEAN#15_SL→None, p_color G→None
+2026-11-17T08:24:12-08:00  [getBeaches] 2026-11-17-082412-getBeaches.json
+    4601 Fort Funston: cso OCEAN#22_SL→None
+    4608 Baker Beach West: cso OCEAN#16_SL→None
+2026-11-17T08:30:43-08:00  [getBeaches] 2026-11-17-083043-getBeaches.json
+    4612 Crissy Field Beach East: posted None→BAY#202.4_SL, p_color None→G
+2026-11-17T08:35:05-08:00  [getBeaches] 2026-11-17-083505-getBeaches.json
+    4605 Ocean Beach at Lincoln Way: cso OCEAN#19_SL→None
+2026-11-17T09:09:43-08:00  [getBeaches] 2026-11-17-090943-getBeaches.json
+    4601 Fort Funston: posted None→OCEAN#22_SL, p_color None→Y
+    4605 Ocean Beach at Lincoln Way: cso None→OCEAN#19_SL
+2026-11-17T09:16:16-08:00  [getBeaches] 2026-11-17-091616-getBeaches.json
+    4601 Fort Funston: p_color Y→G
+2026-11-17T09:24:57-08:00  [getBeaches] 2026-11-17-092457-getBeaches.json
+    4601 Fort Funston: p_color Y→G
+2026-11-17T09:27:09-08:00  [getBeaches] 2026-11-17-092709-getBeaches.json
+    4601 Fort Funston: cso None→OCEAN#22_SL
+    4603 Ocean Beach at Vicente Street: posted None→OCEAN#21_SL, p_color None→G
+2026-11-17T09:29:22-08:00  [getBeaches] 2026-11-17-092922-getBeaches.json
+    4603 Ocean Beach at Vicente Street: posted OCEAN#21_SL→None, p_color G→None

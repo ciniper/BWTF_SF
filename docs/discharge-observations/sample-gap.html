@@ -1,0 +1,189 @@
+<title>The Sample Gap</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column; each timeline is a swimlane chart (feeds on top, what our site shows below) on a shared clock. */
+:root {
+  --bg: #f4f7f8;
+  --surface: #ffffff;
+  --fg: #12232e;
+  --muted: #5b6e79;
+  --line: #d5dfe4;
+  --accent: #0e7c86;        /* getCSV / the plan */
+  --posting: #c26a12;       /* SFPUC posting change */
+  --pending: #e3a21a;       /* waiting / pending */
+  --gap: #c8423b;           /* numbers exist but we don't show them */
+  --ok: #2f8a57;            /* full numbers shown */
+  --prev: #9fb0b9;          /* previous sample shown */
+  --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e171c; --surface: #15222a; --fg: #e3ecef; --muted: #93a6b0; --line: #2a3a43;
+    --accent: #3cb8c2; --posting: #e89a4a; --pending: #f0bd4f; --gap: #ea6a62; --ok: #5cc185; --prev: #5d707a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e171c; --surface: #15222a; --fg: #e3ecef; --muted: #93a6b0; --line: #2a3a43;
+  --accent: #3cb8c2; --posting: #e89a4a; --pending: #f0bd4f; --gap: #ea6a62; --ok: #5cc185; --prev: #5d707a;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 16px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 64px;
+}
+main { max-width: 960px; margin: 0 auto; display: grid; gap: 40px; }
+header { display: grid; gap: 10px; max-width: 68ch; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+h1 { font-family: var(--font-display); font-size: clamp(30px, 5vw, 44px); line-height: 1.1; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--font-display); font-size: 22px; margin: 0; text-wrap: balance; }
+h3 { font-family: var(--font-display); font-size: 17px; margin: 0; }
+p { margin: 0; }
+.lede { font-size: 18px; color: var(--muted); }
+section { display: grid; gap: 14px; min-width: 0; }
+section > p { max-width: 68ch; }
+.chart { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 12px 8px; overflow-x: auto; }
+.chart svg { display: block; width: 100%; min-width: 760px; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 18px; height: 10px; border-radius: 2px; display: inline-block; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.card p { color: var(--muted); font-size: 15px; }
+.steps { margin: 0; padding-left: 22px; display: grid; gap: 8px; max-width: 68ch; }
+.steps li::marker { font-family: var(--font-mono); color: var(--accent); }
+code, .mono { font-family: var(--font-mono); font-size: .9em; }
+.note { font-size: 14px; color: var(--muted); max-width: 68ch; }
+svg text { font-family: var(--font-body); }
+svg .mono { font-family: var(--font-mono); }
+</style>
+
+<main>
+  <header>
+    <div class="eyebrow">BWTF SF · TODO B12 · result day 11/15/26</div>
+    <h1>The Sample Gap</h1>
+    <p class="lede">SFPUC's lab numbers are public by early afternoon, but our site waits for DataSF's nightly load around 11 PM. Merging SFPUC's <code>getCSV</code> feed under DataSF shows them as soon as they exist.</p>
+  </header>
+
+  <section>
+    <h2>A normal result day: the 11/14 samples, read on 11/15</h2>
+    <p>Times are from the feed recorder (<code>docs/discharge-observations/feed/changes.log</code>). The top four rows are SFPUC's feeds; the bottom two are what a visitor to our site sees.</p>
+    <div class="chart" id="chart-normal"></div>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--prev)"></i>previous sample's numbers</span>
+      <span><i class="sw" style="background:var(--pending)"></i>"new result on the way" / Entero pending</span>
+      <span><i class="sw" style="background:var(--gap)"></i>numbers exist, we don't show them</span>
+      <span><i class="sw" style="background:var(--ok)"></i>new numbers shown</span>
+    </div>
+    <p class="note">On 11/16 the gap inside the afternoon was wider: total coliform arrived with the map date at 12:52 PM, but Enterococcus didn't come until 3:32 PM. The "Entero pending" state has to hold for hours, not minutes.</p>
+  </section>
+
+  <section>
+    <h2>A storm-sampling day: the 11/13 samples, read on 11/14</h2>
+    <p>After a discharge, the numbers reached <code>getCSV</code> before SFPUC even moved its map date. Baker's map date moved at 2:03 PM; the numbers were already there when we checked at 9:55 AM.</p>
+    <div class="chart" id="chart-storm"></div>
+  </section>
+
+  <section>
+    <h2>What the plan changes</h2>
+    <ol class="steps">
+      <li>Read <code>getCSV</code> once per watcher run. It's one call for every station, in the same row shape DataSF uses.</li>
+      <li>For each station, day and bacteria type, use DataSF's value when it has one, otherwise the <code>getCSV</code> value marked early. After DataSF's nightly load the early marks disappear on their own. Since 10/1 all 396 overlapping results match exactly.</li>
+      <li>Remember when each early number first appeared, so the popover can say "lab results, in at 1:14 PM", and show missing bacteria types as "pending".</li>
+      <li>Decide "new sample waiting" by comparing dates: <code>getCSV</code> has a newer sample than we show. No more guessing from posting changes.</li>
+    </ol>
+    <div class="cards">
+      <div class="card">
+        <h3>Fixes the false "unpublished" alarm</h3>
+        <p>On 11/13 Baker was posted as a precaution after a discharge. Our site read the posting as a lab result and said "2 new samples unpublished". With the date comparison, a posting alone never claims a waiting sample.</p>
+      </div>
+      <div class="card">
+        <h3>Shows storm-only stations</h3>
+        <p>Vicente, Pacheco and Fort Funston are sampled only after storms. Their results appear in <code>getCSV</code> the same way as the routine stations.</p>
+      </div>
+      <div class="card">
+        <h3>What it can't fix</h3>
+        <p>If SFPUC never samples a discharge, there is no row. On 11/13 China Beach had three pipes flowing, no City sample, and a Surfrider result of 6,131. Only our forecast and field reports catch that.</p>
+      </div>
+    </div>
+    <p class="note">Held until the recorder finishes on Friday 11/20: emailing on early numbers. A published value has already been corrected once (Mission Creek's 11/13 total coliform, three days later), and SFPUC posts on preliminary counts we can't see.</p>
+  </section>
+</main>
+
+<script>
+(function () {
+  const W = 900, L = 170, R = 880;
+  const css = n => `var(--${n})`;
+
+  // lanes: feeds get event markers; site lanes get colored spans
+  function draw(el, cfg) {
+    const t0 = cfg.from, t1 = cfg.to;
+    const x = h => L + (h - t0) / (t1 - t0) * (R - L);
+    const rowH = 44, top = 30;
+    const rows = cfg.lanes.length;
+    const H = top + rows * rowH + 34;
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${cfg.label}">`;
+
+    // hour grid
+    for (let h = Math.ceil(t0); h <= t1; h++) {
+      const X = x(h), lbl = h === 12 ? "noon" : h === 24 ? "midnight" : (h % 12) + (h < 12 ? " am" : " pm");
+      s += `<line x1="${X}" x2="${X}" y1="${top - 6}" y2="${top + rows * rowH}" stroke="${css("line")}" stroke-width="1"/>`;
+      if ((h - Math.ceil(t0)) % 2 === 0) s += `<text x="${X}" y="${top - 12}" font-size="11" text-anchor="middle" fill="${css("muted")}" class="mono">${lbl}</text>`;
+    }
+
+    cfg.lanes.forEach((lane, i) => {
+      const y = top + i * rowH, cy = y + rowH / 2;
+      if (lane.divider) s += `<line x1="8" x2="${R}" y1="${y}" y2="${y}" stroke="${css("fg")}" stroke-opacity=".35" stroke-width="1.5"/>`;
+      s += `<text x="10" y="${cy - 3}" font-size="13" font-weight="600" fill="${css("fg")}">${lane.name}</text>`;
+      if (lane.sub) s += `<text x="10" y="${cy + 13}" font-size="11" fill="${css("muted")}" class="mono">${lane.sub}</text>`;
+      (lane.spans || []).forEach(sp => {
+        const a = x(sp[0]), b = x(sp[1]);
+        s += `<rect x="${a}" y="${cy - 11}" width="${Math.max(2, b - a)}" height="22" rx="3" fill="${css(sp[2])}"/>`;
+        if (sp[3] && b - a > 40) s += `<text x="${a + 6}" y="${cy + 4}" font-size="11.5" fill="#fff" font-weight="500">${sp[3]}</text>`;
+      });
+      (lane.events || []).forEach(ev => {
+        const X = x(ev[0]);
+        s += `<line x1="${X}" x2="${X}" y1="${cy - 12}" y2="${cy + 12}" stroke="${css(ev[2])}" stroke-width="3" stroke-linecap="round"/>`;
+        s += `<text x="${X + (ev[3] || 6)}" y="${cy + (ev[4] || 4)}" font-size="11.5" fill="${css("fg")}" text-anchor="${(ev[3] || 6) < 0 ? "end" : "start"}">${ev[1]}</text>`;
+      });
+    });
+    s += `<text x="${R}" y="${H - 8}" font-size="11" text-anchor="end" fill="${css("muted")}">${cfg.foot}</text>`;
+    el.innerHTML = s + `</svg>`;
+  }
+
+  // 11/15: posting down 10:13; map date + total 1:14:35; fecal 1:16:47; Entero 1:40:33; DataSF nightly load ~11 pm
+  const P = 10 + 13/60, M = 13 + 14.6/60, E = 13 + 40.5/60, D = 23;
+  draw(document.getElementById("chart-normal"), {
+    label: "Result day timeline for 11/15/26", from: 7, to: 24,
+    foot: "11/15/26 · Ocean Beach Sloat, Vicente, Balboa, Lincoln, Pacheco; Mission and Islais Creek",
+    lanes: [
+      { name: "SFPUC posting", sub: "getBeaches posted", events: [[P, "postings come down 10:13", "posting"]] },
+      { name: "SFPUC map date", sub: "getBeaches sample_date", events: [[M, "11/13 → 11/14 at 1:14", "posting"]] },
+      { name: "Lab numbers", sub: "getCSV", events: [[M, "total, fecal 1:14", "accent", -6, -4], [E, "Entero 1:40", "accent", 6, 12]] },
+      { name: "DataSF", sub: "nightly load", events: [[D, "~11 pm", "muted", -6]] },
+      { name: "Our site today", divider: true, spans: [[7, P, "prev", "11/13 numbers"], [P, M, "pending", "new result on the way"], [M, D, "gap", "11/14 date, no numbers · ~10 hours"], [D, 24, "ok"]] },
+      { name: "With the plan", spans: [[7, M, "prev", "11/13 numbers · posting change alone isn't a sample"], [M, E, "pending"], [E, 24, "ok", "11/14 lab results, in at 1:14 PM (Entero 1:40)"]] }
+    ]
+  });
+
+  // 11/14: getCSV had 11/13 numbers by 9:55 (checked by hand; possibly earlier); Baker map date 2:03; OB 2:33; DataSF ~11 pm
+  const C = 9 + 55/60, B = 14 + 3/60, O = 14 + 33/60;
+  draw(document.getElementById("chart-storm"), {
+    label: "Storm-sampling day timeline for 11/14/26", from: 7, to: 24,
+    foot: "11/14/26 · Baker West, East, Lobos; Ocean Beach; Mission and Islais Creek; Crane Cove",
+    lanes: [
+      { name: "Lab numbers", sub: "getCSV", events: [[C, "all three in by 9:55 (first check)", "accent"]] },
+      { name: "SFPUC map date", sub: "getBeaches sample_date", events: [[B, "Baker 2:03", "posting", -6], [O, "Ocean Beach 2:33", "posting"]] },
+      { name: "DataSF", sub: "nightly load", events: [[D, "~11 pm", "muted", -6]] },
+      { name: "Our site today", divider: true, spans: [[7, C, "pending", "on the way"], [C, B, "gap", "numbers exist, map still 11/09"], [B, D, "gap", "11/13 date, no numbers"], [D, 24, "ok"]] },
+      { name: "With the plan", spans: [[7, C, "prev"], [C, 24, "ok", "11/13 lab results from 9:55 AM, 4+ hours before SFPUC's map"]] }
+    ]
+  });
+})();
+</script>

@@ -185,6 +185,30 @@ From `feed/changes.log`, all three feeds running the whole day, no failed reads.
 4. **Entero came 2h40m after the map's sample date moved** (12:52pm → 3:32pm), much longer than 11/15's 26 minutes. For most of the afternoon the map showed a new sample date with no Entero number anywhere. Anything we build must handle "sample date moved, Entero pending" as a normal state for hours.
 5. **Same as 11/15, no head start:** the numbers and the map date moved within 3 seconds. Only the storm-sample day (11/14) had numbers hours ahead.
 
+## Morning of 11/17: map mismatch and a repeat Lincoln email
+Screenshot (phone, ~9:34am): `docs/discharge-observations/2026-11-17-0934-sfpuc-vs-ours-phone.png`.
+
+**What the feed did** (`feed/changes.log`):
+| Time | Change |
+|---|---|
+| 8:21am | Postings came down at all five OB stations, Fort Funston and all three Baker sites |
+| 8:24am | Baker West and Fort Funston CSO flags cleared |
+| 8:30am | Crissy Field East posted |
+| 8:35am | **OB Lincoln CSO flag cleared** |
+| 9:09am | **OB Lincoln CSO flag back on**; Fort Funston posted (yellow) |
+| 9:16am | Fort Funston listed **twice** in getBeaches, once yellow and once orange; one entry (orange) by 9:24am |
+| 9:27am | Fort Funston CSO flag back on; Vicente posted |
+| 9:29am | Vicente posting down again, 2 minutes later |
+
+**Repeat Lincoln email:** confirmed. SFPUC cleared Lincoln's discharge flag at 8:35am and set it again 34 minutes later, and we emailed on the second one. A 10–15 minute hold wouldn't have merged these; a rule like "don't re-alert the same station for the same discharge within N hours" would. Goes with the "too many emails" note below.
+
+**Map mismatch at ~9:34am:**
+- Feed state then: Lincoln and Vicente have a CSO flag but **no posting**; the OB beach dots are green.
+- **SFPUC's map** shows green dots for the beaches plus separate red CSO triangles at the outfalls (and Fort Funston's orange posted diamond).
+- **Our map** shows "OB Lincoln · discharge" and "OB Vicente · discharge" as red beach dots. Same issue as "SFPUC shows discharges as a separate symbol": we turn "discharge in the last 24–72 hours near here" into a beach status.
+- **Our Today card** said "Vicente · OB Lincoln · 2 samples unpublished". getCSV had nothing newer than 11/15 for them at that point (its last change was 11/16 3:48pm), so this is the posting/CSO-flip false alarm again (`shared/result_gap.py`); B12 step 4 would fix it.
+- **Feed quirk:** at 9:16am getBeaches listed Fort Funston twice with different posting colors, probably SFPUC editing it mid-read. Anything reading the feed should handle a duplicate station (we should check which one our code keeps).
+
 ## Surfrider field report, 11/13
 - Full report: Google Doc "Field Report Storm baker-china 11-13-26" (Drive: SF BWTF Data Science / Field Report baker-china 11-13-26).
 - In short: China Beach had three pipes flowing but no City discharge flag, posting or sample; Surfrider measured Entero 6,131. Baker was de-posted on a morning sample (52) while Surfrider's midday sample read 265.
@@ -206,6 +230,7 @@ From `feed/changes.log`, all three feeds running the whole day, no failed reads.
 - **Postings flip on and off quickly, and each flip is an email.** On 11/15 (from `feed/changes.log`): Ocean Beach postings came down at 10:13am, Vicente's CSO cleared at 10:28am, Baker went back up at 4:37pm, Pacheco came down at 4:41pm, Ocean Beach went back up at 6:57pm, Crane Cove at 6:59pm, and Vicente's CSO returned at 7:02pm. That's 7 changes in about 9 hours, several only minutes apart. A short hold before alerting (e.g. wait ~10–15 minutes and send one email for everything that changed) would merge the ones that land close together.
 
 ## Getting results sooner (plan, held)
+- **Full plan now in TODO.md B12** ("Afternoon gap — merge SFPUC's `getCSV` numbers under DataSF"). Diagram of the gap and the fix: `docs/discharge-observations/sample-gap.html` (published at https://claude.ai/artifact/LQtazG1muUA15bw5J4Q237).
 - **What we found:** getStation/getCSV carry the bacteria numbers, and on 11/14 they had them at least 4 hours before the map's `sample_date` moved (details above; TODO.md B12).
 - **Plan:**
   1. Let the recorder finish (through Friday 11/20) to collect more result days.
