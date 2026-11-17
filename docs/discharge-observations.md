@@ -87,7 +87,7 @@ What this may explain (to be checked against the recording):
 - **Open question:** are the getStation/getCSV values preliminary or confirmed when they first appear? If they're confirmed, a posting can disagree with the numbers we'd show for a few hours, or for good if the final count differs. If they're preliminary, they could change later. The recorder logs any change to a value it has already seen (`ENTERO 86→…`), which would show a revision.
 - For B12 this matters for the wording: show the numbers as "lab results" with their time, and don't claim they're the counts SFPUC acted on.
 
-- Started 11/14 9:47am (getBeaches only). getStation was added at 9:16pm, getCSV at about 9:35pm, and all three run together from about 9:50pm 11/14 for 72 hours. Last night's 11:45pm watcher read is backfilled as the first file.
+- Started 11/14 9:47am (getBeaches only). getStation was added at 9:16pm, getCSV at about 9:35pm, and all three run together from about 9:50pm 11/14 for 72 hours. Restarted 11/17 12:47am to run through Friday 11/20 ~11:59pm. Last night's 11:45pm watcher read is backfilled as the first file.
 
 ### Result day 11/14: what the recording shows (11/13 storm samples)
 | Time | Feed | What changed |
@@ -161,8 +161,29 @@ From `feed/changes.log`, all three feeds running the whole day, no failed reads.
 4. **getCSV and getStation changed on exactly the same reads** every time (11/15 here, and 11/14 storm rows were in both together). One getCSV call is enough; getStation adds nothing.
 5. **No revisions yet.** Every value went from empty to a number and stayed. Only two recorded result days so far.
 6. **OB Lincoln came in at 121, over the Entero limit**, but no posting change for Lincoln shows in the log. Not yet checked what SFPUC's map or our site shows for it.
-7. **A second discharge started the evening of 11/15** (Baker at 4:37pm, Ocean Beach and Crane Cove ~7pm). The recorder runs to ~11/17 9:50pm, so it should catch another full cycle: discharge, storm sampling, results, postings down.
+7. **A second discharge started the evening of 11/15** (Baker at 4:37pm, Ocean Beach and Crane Cove ~7pm). The recorder runs through Friday 11/20, so it should catch another full cycle: discharge, storm sampling, results, postings down.
 8. The evening's changes also fed the "too many emails" note below: 7 posting changes in about 9 hours, some minutes apart.
+
+### Result day 11/16: what the recording shows (11/15 samples)
+| Time | Feed | What changed |
+|---|---|---|
+| 11:52am | getCSV only | Mission Creek **11/13** total coliform `>16000` → `16000` |
+| 11:54am | getCSV only | ...and back to `>16000` |
+| 12:52:42pm | getBeaches | Sample date → 11/15 for Fort Funston, OB Lincoln, Mission Creek, Islais Creek |
+| 12:52:45pm | getCSV + getStation | 11/15 rows appear, **total coliform only** |
+| 2:58pm | getBeaches | Mission Creek CSO flag cleared |
+| 3:32pm | getCSV + getStation | **Enterococcus** filled in |
+| 3:45–3:48pm | getStation, then getCSV | Fecal coliform filled in |
+| 8:31pm, 8:35pm | all three | Reads failed: SFPUC answered `Bad` (a short outage; later reads worked) |
+
+11/15 results: Islais Creek Entero **10,462**, Mission Creek **146**, OB Lincoln 41, Fort Funston 10 (storm-sampled; it's `OCEAN#22_SL` in getCSV).
+
+**Findings**
+1. **The getCSV-only change was a revision, the first one recorded.** Mission Creek's 11/13 total coliform lost its `>` qualifier for about 2 minutes, then got it back. getStation never showed it: its read of Mission comes a few seconds after getCSV's, so the value was most likely fixed in between. This looks like someone editing the lab record, not a difference between the two feeds. So **values can change after they're published**, at least the qualifier, three days later.
+2. **The two feeds read the same live data**; they only differ when data is entered mid-read. At 3:45pm getStation caught Mission and Islais fecal (read late in its 20-call loop) while getCSV, read seconds earlier, didn't yet; getCSV caught all four at the next read. One getCSV call is still enough.
+3. **Entero is not always last.** On 11/16 it came before fecal coliform (11/15 and 11/10 had it last). The steady part is that total coliform arrives with the map's sample date, and the other two come later in either order.
+4. **Entero came 2h40m after the map's sample date moved** (12:52pm → 3:32pm), much longer than 11/15's 26 minutes. For most of the afternoon the map showed a new sample date with no Entero number anywhere. Anything we build must handle "sample date moved, Entero pending" as a normal state for hours.
+5. **Same as 11/15, no head start:** the numbers and the map date moved within 3 seconds. Only the storm-sample day (11/14) had numbers hours ahead.
 
 ## Surfrider field report, 11/13
 - Full report: Google Doc "Field Report Storm baker-china 11-13-26" (Drive: SF BWTF Data Science / Field Report baker-china 11-13-26).
@@ -187,7 +208,7 @@ From `feed/changes.log`, all three feeds running the whole day, no failed reads.
 ## Getting results sooner (plan, held)
 - **What we found:** getStation/getCSV carry the bacteria numbers, and on 11/14 they had them at least 4 hours before the map's `sample_date` moved (details above; TODO.md B12).
 - **Plan:**
-  1. Let the recorder finish (through ~11/17 9:50pm) to collect more result days.
+  1. Let the recorder finish (through Friday 11/20) to collect more result days.
   2. Read getCSV (one call for all stations) and show numbers as "lab results, in at <time>" as soon as they appear, ahead of the map.
   3. Detect "new sample not published yet" by comparing getCSV's newest date with getBeaches's `sample_date`, replacing the posting-based guess in `shared/result_gap.py`.
 - **Before building:** check whether early values get revised (preliminary vs confirmed; see the SFPUC quote) and whether SFPUC minds the numbers being shown before the map (they removed the button).
