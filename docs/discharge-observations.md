@@ -173,6 +173,11 @@ From `feed/changes.log`, all three feeds running the whole day, no failed reads.
 ## Discharge alert email
 - On a phone, the discharge email didn't look very red. It should read as urgent at a glance.
 
+## User feedback: yellow vs orange diamonds are hard to tell apart (11/16)
+- A map user wrote in: on the map, it's hard to tell whether a Surfrider diamond is yellow (medium bacteria) or orange (high bacteria). They suggested changing orange to red.
+- **Conflict to consider:** red is already the discharge/sewage color. Making "high bacteria" red too could blur the two. Options to weigh: a darker or more saturated orange, a different shape or icon for high, or giving discharge its own symbol (see "SFPUC shows discharges as a separate symbol") so red can mean high bacteria.
+- Related: the discharge email also didn't look red enough on a phone (below), so check the colors together.
+
 ## Too many alert emails on a storm day
 - Because our watcher checks so often, a storm day sends tons of emails.
 - SFPUC sends far fewer updates (e.g. one morning posting email covering all three Baker sites), so subscribers aren't spammed.

@@ -102,3 +102,51 @@
     4620 Crane Cove Park: posted None→BAY#230_SL, p_color None→G
 2026-11-15T19:02:10-08:00  [getBeaches] 2026-11-15-190210-getBeaches.json
     4603 Ocean Beach at Vicente Street: cso None→OCEAN#21_SL
+2026-11-16T11:52:11-08:00  [getCSV] 2026-11-16-115211-getCSV.json
+    BAY#220_SL 11/13/26: COLI_TOTAL >16000→16000
+2026-11-16T11:54:20-08:00  [getCSV] 2026-11-16-115420-getCSV.json
+    BAY#220_SL 11/13/26: COLI_TOTAL 16000→>16000
+2026-11-16T12:52:42-08:00  [getBeaches] 2026-11-16-125242-getBeaches.json
+    4601 Fort Funston: sample_date None→11/15/26
+    4605 Ocean Beach at Lincoln Way: sample_date 11/14/26→11/15/26
+    4618 Mission Creek: sample_date 11/14/26→11/15/26
+    4619 Islais Creek: sample_date 11/14/26→11/15/26
+2026-11-16T12:52:45-08:00  [getCSV] 2026-11-16-125245-getCSV.json
+    BAY#220_SL 11/15/26: new row (COLI_TOTAL 14400)
+    BAY#320_SL 11/15/26: new row (COLI_TOTAL >16000)
+    OCEAN#19_SL 11/15/26: new row (COLI_TOTAL 90)
+    OCEAN#22_SL 11/15/26: new row (COLI_TOTAL 600)
+2026-11-16T12:52:46-08:00  [getStation] 2026-11-16-125246-getStation.json
+    4601 Fort Funston 11/15/26: new row (COLI_TOTAL 600)
+    4605 Ocean Beach at Lincoln Way 11/15/26: new row (COLI_TOTAL 90)
+    4618 Mission Creek 11/15/26: new row (COLI_TOTAL 14400)
+    4619 Islais Creek 11/15/26: new row (COLI_TOTAL >16000)
+2026-11-16T14:58:10-08:00  [getBeaches] 2026-11-16-145810-getBeaches.json
+    4618 Mission Creek: cso BAY#220_SL→None
+2026-11-16T15:32:53-08:00  [getCSV] 2026-11-16-153253-getCSV.json
+    BAY#220_SL 11/15/26: ENTERO None→146
+    BAY#320_SL 11/15/26: ENTERO None→10462
+    OCEAN#19_SL 11/15/26: ENTERO None→41
+    OCEAN#22_SL 11/15/26: ENTERO None→10
+2026-11-16T15:32:54-08:00  [getStation] 2026-11-16-153254-getStation.json
+    4601 Fort Funston 11/15/26: ENTERO None→10
+    4605 Ocean Beach at Lincoln Way 11/15/26: ENTERO None→41
+    4618 Mission Creek 11/15/26: ENTERO None→146
+    4619 Islais Creek 11/15/26: ENTERO None→10462
+2026-11-16T15:45:53-08:00  [getStation] 2026-11-16-154553-getStation.json
+    4618 Mission Creek 11/15/26: COLI_FECAL None→440
+    4619 Islais Creek 11/15/26: COLI_FECAL None→>6000
+2026-11-16T15:48:02-08:00  [getCSV] 2026-11-16-154802-getCSV.json
+    BAY#220_SL 11/15/26: COLI_FECAL None→440
+    BAY#320_SL 11/15/26: COLI_FECAL None→>6000
+    OCEAN#19_SL 11/15/26: COLI_FECAL None→15
+    OCEAN#22_SL 11/15/26: COLI_FECAL None→45
+2026-11-16T15:48:03-08:00  [getStation] 2026-11-16-154803-getStation.json
+    4601 Fort Funston 11/15/26: COLI_FECAL None→45
+    4605 Ocean Beach at Lincoln Way 11/15/26: COLI_FECAL None→15
+2026-11-16T20:31:26-08:00  [getBeaches] read failed: unexpected getBeaches body: '<?xml version="1.0" encoding="utf-8"?>\r\n<string xmlns="http://tempuri.org/">Bad</string>'
+2026-11-16T20:31:28-08:00  [getCSV] read failed: unexpected getCSV body: 'Error : Bad'
+2026-11-16T20:31:31-08:00  [getStation] read failed: unexpected getStation body: '<?xml version="1.0" encoding="utf-8"?>\r\n<string xmlns="http://tempuri.org/">Bad</string>'
+2026-11-16T20:35:48-08:00  [getBeaches] read failed: unexpected getBeaches body: '<?xml version="1.0" encoding="utf-8"?>\r\n<string xmlns="http://tempuri.org/">Bad</string>'
+2026-11-16T20:35:50-08:00  [getCSV] read failed: unexpected getCSV body: 'Error : Bad'
+2026-11-16T20:35:52-08:00  [getStation] read failed: unexpected getStation body: '<?xml version="1.0" encoding="utf-8"?>\r\n<string xmlns="http://tempuri.org/">Bad</string>'
