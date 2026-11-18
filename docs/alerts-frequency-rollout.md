@@ -29,11 +29,17 @@ Python requires the repository dependencies. Tests also pass using the existing 
 
 ## Deployment plan
 
+For this rollout, staging is intentionally skipped. Verification completed locally with fake HTTP transport; hosted scheduling and provider delivery have not been tested end to end. Monitor these during the production rollout below.
+
 1. Review and merge the PR. Deploying the website makes the simulator available; it does **not** apply the database policy.
 2. Confirm the intended BWTF Supabase project, current migration definitions and live mode. Confirm the Python watcher is observer-only or disabled. Capture the current function definitions for rollback. Clear active targeted simulations (the migration refuses installation while any exist).
 3. Apply `db/migrations/20261118051745_alerts_frequency.sql` once, after the existing migrations through 024. It is transactional and immediately enables the policy for the live PG sender. It does not replay old alerts. The Supabase CLI generated the timestamp; the file follows this repository's `db/migrations` storage convention.
-4. Inspect RLS/grants and run the hosted database security advisors. Verify the existing cron keeps succeeding, new escalations show `queued`, and batches drain after their deadline. In an isolated staging project, run a targeted simulation and controlled real-feed fixtures to confirm pg_net and delivery linking before production rollout.
+4. Inspect RLS/grants and run the hosted database security advisors. Verify the existing cron keeps succeeding, new escalations show `queued`, and batches drain after their deadline.
 5. Monitor `alert_pending.due_at`, `pg_live_batch` logs, and `alert_deliveries` provider outcomes through the first real batch. Confirm zone headings and the subscriber's still-active sites in the delivered email.
+
+## Follow-up: reusable staging environment
+
+Set up a separate Supabase test project for future alert changes, with the required schema, scheduled watcher, and email-provider configuration. Use synthetic beach events and fake subscribers restricted to designated test addresses. Exercise fixed-window batching, repeat suppression, rendering, pg_net delivery and delivery-log linking without contacting real subscribers. Targeted simulations alone bypass batching, so controlled real-feed fixtures are needed to test the full policy. This environment is future work, not a prerequisite for this rollout and not created by this PR.
 
 ## Operational limits and rollback
 
