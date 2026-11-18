@@ -154,3 +154,17 @@ leave open whether to ask SFPUC about featuring the feed after removal of its
 map button, and whether first-published values are preliminary or confirmed.
 No alerting changes are included here. Email frequency, separate discharge map
 symbols, and forecast changes belong to their own workstreams.
+
+## Integration onto main
+
+Rebased onto `9ea8af8` after PR #28 merged. Preserved main's newer Today map
+label and replay handling while removing posting-based sample guesses. Carried
+forward only the 16 original getCSV recording files needed by the importer and
+regression fixtures; the other discharge-observations notes remain on that branch.
+The PR now targets main. No migrations are reapplied during this integration.
+
+Integration validation: 64 focused tests passed, including Today and the updated
+email simulator from main. Desktop/mobile browser checks passed for partial
+arrivals, automatic DataSF handoff, outages, timeline tooltips, and Admin filters.
+Forecast source/artifacts and PR #28's migration and email simulator are unchanged
+relative to main. The long forecast suite was not repeated, per the agreed scope.
