@@ -227,6 +227,9 @@ The model lives at `/alerts/costs`, the alerts dashboard's Running costs tab (`f
 
 ### B12. SFPUC result timing (recorded 2026-11-10)
 
+- [ ] **Longer term: offset DataSF observation polling from the nightly upload (Chase, 2026-11-17).** Evaluate an 11:10 PM Pacific read instead of racing the roughly 11:05 PM upload. On November 17 the scheduled read began at 11:05:00 and DataSF reported its upload at 11:05:47; the archive still lacked those results at 11:13 although live popovers already used DataSF. Check shared forecast-refresh dependencies and daylight saving time before changing the schedule. No schedule change in this PR.
+- **Implemented on `design/sample-aging-getcsv`:** independent Supabase collection, early results per indicator with DataSF precedence, removal of posting-based pending guesses, Admin Sample Gap, and getCSV timeline markers. See `docs/sample-aging-getcsv-plan.md`. The original morning-gap heuristic and watcher-based collection plan below are superseded by this implementation.
+
 - [ ] **Longer term: evaluate getCSV as a forecast input (Chase, 2026-11-17).** Compare earlier indicator availability against the current DataSF-based input, using recorded first-seen times to avoid hindsight leakage. Define partial-result, correction, outage and DataSF-handoff behavior; replay and validate forecast impact before enabling. The sample-aging/getCSV UI work does not change forecast inputs or model training.
 
 
