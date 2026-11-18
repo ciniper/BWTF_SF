@@ -1,0 +1,435 @@
+{
+ "read_at": "2026-11-17T15:48:04-08:00",
+ "stations": {
+  "4601": [
+   {
+    "source": "OCEAN#22_SL",
+    "sample_date": "11/15/26",
+    "stationid": "4601",
+    "stationname": "Fort Funston",
+    "COLI_E": null,
+    "COLI_TOTAL": "600",
+    "COLI_FECAL": "45",
+    "ENTERO": "10"
+   }
+  ],
+  "4602": [
+   {
+    "source": "OCEAN#21.1_SL",
+    "sample_date": "11/16/26",
+    "stationid": "4602",
+    "stationname": "Ocean Beach at Sloat Boulevard",
+    "COLI_E": null,
+    "COLI_TOTAL": "170",
+    "COLI_FECAL": null,
+    "ENTERO": null
+   },
+   {
+    "source": "OCEAN#21.1_SL",
+    "sample_date": "11/14/26",
+    "stationid": "4602",
+    "stationname": "Ocean Beach at Sloat Boulevard",
+    "COLI_E": null,
+    "COLI_TOTAL": "680",
+    "COLI_FECAL": "40",
+    "ENTERO": "97"
+   }
+  ],
+  "4603": [
+   {
+    "source": "OCEAN#21_SL",
+    "sample_date": "11/16/26",
+    "stationid": "4603",
+    "stationname": "Ocean Beach at Vicente Street",
+    "COLI_E": null,
+    "COLI_TOTAL": "1600",
+    "COLI_FECAL": null,
+    "ENTERO": null
+   },
+   {
+    "source": "OCEAN#21_SL",
+    "sample_date": "11/14/26",
+    "stationid": "4603",
+    "stationname": "Ocean Beach at Vicente Street",
+    "COLI_E": null,
+    "COLI_TOTAL": "390",
+    "COLI_FECAL": "65",
+    "ENTERO": "75"
+   }
+  ],
+  "4604": [
+   {
+    "source": "OCEAN#18_SL",
+    "sample_date": "11/16/26",
+    "stationid": "4604",
+    "stationname": "Ocean Beach at Balboa Street",
+    "COLI_E": null,
+    "COLI_TOTAL": "20",
+    "COLI_FECAL": null,
+    "ENTERO": null
+   },
+   {
+    "source": "OCEAN#18_SL",
+    "sample_date": "11/14/26",
+    "stationid": "4604",
+    "stationname": "Ocean Beach at Balboa Street",
+    "COLI_E": null,
+    "COLI_TOTAL": "390",
+    "COLI_FECAL": "40",
+    "ENTERO": "74"
+   }
+  ],
+  "4605": [
+   {
+    "source": "OCEAN#19_SL",
+    "sample_date": "11/16/26",
+    "stationid": "4605",
+    "stationname": "Ocean Beach at Lincoln Way",
+    "COLI_E": null,
+    "COLI_TOTAL": "280",
+    "COLI_FECAL": null,
+    "ENTERO": null
+   },
+   {
+    "source": "OCEAN#19_SL",
+    "sample_date": "11/15/26",
+    "stationid": "4605",
+    "stationname": "Ocean Beach at Lincoln Way",
+    "COLI_E": null,
+    "COLI_TOTAL": "90",
+    "COLI_FECAL": "15",
+    "ENTERO": "41"
+   }
+  ],
+  "4606": [
+   {
+    "source": "OCEAN#20_SL",
+    "sample_date": "11/16/26",
+    "stationid": "4606",
+    "stationname": "Ocean Beach at Pacheco Street",
+    "COLI_E": null,
+    "COLI_TOTAL": "110",
+    "COLI_FECAL": null,
+    "ENTERO": null
+   },
+   {
+    "source": "OCEAN#20_SL",
+    "sample_date": "11/14/26",
+    "stationid": "4606",
+    "stationname": "Ocean Beach at Pacheco Street",
+    "COLI_E": null,
+    "COLI_TOTAL": "360",
+    "COLI_FECAL": "40",
+    "ENTERO": "98"
+   }
+  ],
+  "4607": [
+   {
+    "source": "OCEAN#17_SL",
+    "sample_date": "11/16/26",
+    "stationid": "4607",
+    "stationname": "China Beach",
+    "COLI_E": null,
+    "COLI_TOTAL": "30",
+    "COLI_FECAL": null,
+    "ENTERO": null
+   },
+   {
+    "source": "OCEAN#17_SL",
+    "sample_date": "11/09/26",
+    "stationid": "4607",
+    "stationname": "China Beach",
+    "COLI_E": null,
+    "COLI_TOTAL": "380",
+    "COLI_FECAL": "10",
+    "ENTERO": "20"
+   }
+  ],
+  "4608": [
+   {
+    "source": "OCEAN#16_SL",
+    "sample_date": "11/16/26",
+    "stationid": "4608",
+    "stationname": "Baker Beach West",
+    "COLI_E": null,
+    "COLI_TOTAL": "160",
+    "COLI_FECAL": null,
+    "ENTERO": null
+   },
+   {
+    "source": "OCEAN#16_SL",
+    "sample_date": "11/13/26",
+    "stationid": "4608",
+    "stationname": "Baker Beach West",
+    "COLI_E": null,
+    "COLI_TOTAL": "90",
+    "COLI_FECAL": "15",
+    "ENTERO": "10"
+   }
+  ],
+  "4609": [
+   {
+    "source": "OCEAN#15EAST_SL",
+    "sample_date": "11/16/26",
+    "stationid": "4609",
+    "stationname": "Baker Beach East",
+    "COLI_E": null,
+    "COLI_TOTAL": "70",
+    "COLI_FECAL": null,
+    "ENTERO": null
+   },
+   {
+    "source": "OCEAN#15EAST_SL",
+    "sample_date": "11/13/26",
+    "stationid": "4609",
+    "stationname": "Baker Beach East",
+    "COLI_E": null,
+    "COLI_TOTAL": "80",
+    "COLI_FECAL": "15",
+    "ENTERO": "86"
+   }
+  ],
+  "4610": [
+   {
+    "source": "OCEAN#15_SL",
+    "sample_date": "11/16/26",
+    "stationid": "4610",
+    "stationname": "Baker Beach at Lobos Creek",
+    "COLI_E": null,
+    "COLI_TOTAL": "470",
+    "COLI_FECAL": null,
+    "ENTERO": null
+   },
+   {
+    "source": "OCEAN#15_SL",
+    "sample_date": "11/13/26",
+    "stationid": "4610",
+    "stationname": "Baker Beach at Lobos Creek",
+    "COLI_E": null,
+    "COLI_TOTAL": "550",
+    "COLI_FECAL": "5",
+    "ENTERO": "52"
+   }
+  ],
+  "4611": [
+   {
+    "source": "BAY#202.5_SL",
+    "sample_date": "11/16/26",
+    "stationid": "4611",
+    "stationname": "Crissy Field Beach West",
+    "COLI_E": null,
+    "COLI_TOTAL": "80",
+    "COLI_FECAL": "<5",
+    "ENTERO": null
+   },
+   {
+    "source": "BAY#202.5_SL",
+    "sample_date": "11/09/26",
+    "stationid": "4611",
+    "stationname": "Crissy Field Beach West",
+    "COLI_E": null,
+    "COLI_TOTAL": "340",
+    "COLI_FECAL": "<5",
+    "ENTERO": "<10"
+   }
+  ],
+  "4612": [
+   {
+    "source": "BAY#202.4_SL",
+    "sample_date": "11/16/26",
+    "stationid": "4612",
+    "stationname": "Crissy Field Beach East",
+    "COLI_E": null,
+    "COLI_TOTAL": "2000",
+    "COLI_FECAL": "15",
+    "ENTERO": null
+   },
+   {
+    "source": "BAY#202.4_SL",
+    "sample_date": "11/09/26",
+    "stationid": "4612",
+    "stationname": "Crissy Field Beach East",
+    "COLI_E": null,
+    "COLI_TOTAL": "80",
+    "COLI_FECAL": "<5",
+    "ENTERO": "52"
+   }
+  ],
+  "4613": [
+   {
+    "source": "BAY#211_SL",
+    "sample_date": "11/16/26",
+    "stationid": "4613",
+    "stationname": "Aquatic Park",
+    "COLI_E": null,
+    "COLI_TOTAL": "180",
+    "COLI_FECAL": "25",
+    "ENTERO": null
+   },
+   {
+    "source": "BAY#211_SL",
+    "sample_date": "11/09/26",
+    "stationid": "4613",
+    "stationname": "Aquatic Park",
+    "COLI_E": null,
+    "COLI_TOTAL": "90",
+    "COLI_FECAL": "20",
+    "ENTERO": "31"
+   }
+  ],
+  "4614": [
+   {
+    "source": "BAY#210.1_SL",
+    "sample_date": "11/16/26",
+    "stationid": "4614",
+    "stationname": "Hyde Street Pier",
+    "COLI_E": null,
+    "COLI_TOTAL": "150",
+    "COLI_FECAL": "15",
+    "ENTERO": null
+   },
+   {
+    "source": "BAY#210.1_SL",
+    "sample_date": "11/09/26",
+    "stationid": "4614",
+    "stationname": "Hyde Street Pier",
+    "COLI_E": null,
+    "COLI_TOTAL": "10",
+    "COLI_FECAL": "<5",
+    "ENTERO": "<10"
+   }
+  ],
+  "4615": [
+   {
+    "source": "BAY#301.2_SL",
+    "sample_date": "11/16/26",
+    "stationid": "4615",
+    "stationname": "Jackrabbit Beach",
+    "COLI_E": null,
+    "COLI_TOTAL": "230",
+    "COLI_FECAL": "80",
+    "ENTERO": null
+   },
+   {
+    "source": "BAY#301.2_SL",
+    "sample_date": "11/09/26",
+    "stationid": "4615",
+    "stationname": "Jackrabbit Beach",
+    "COLI_E": null,
+    "COLI_TOTAL": "60",
+    "COLI_FECAL": "10",
+    "ENTERO": "<10"
+   }
+  ],
+  "4616": [
+   {
+    "source": "BAY#301.1_SL",
+    "sample_date": "11/16/26",
+    "stationid": "4616",
+    "stationname": "Windsurfer Circle",
+    "COLI_E": null,
+    "COLI_TOTAL": "1100",
+    "COLI_FECAL": "35",
+    "ENTERO": null
+   },
+   {
+    "source": "BAY#301.1_SL",
+    "sample_date": "11/09/26",
+    "stationid": "4616",
+    "stationname": "Windsurfer Circle",
+    "COLI_E": null,
+    "COLI_TOTAL": "190",
+    "COLI_FECAL": "10",
+    "ENTERO": "<10"
+   }
+  ],
+  "4617": [
+   {
+    "source": "BAY#300.1_SL",
+    "sample_date": "11/16/26",
+    "stationid": "4617",
+    "stationname": "Sunnydale Cove",
+    "COLI_E": null,
+    "COLI_TOTAL": "430",
+    "COLI_FECAL": "20",
+    "ENTERO": null
+   },
+   {
+    "source": "BAY#300.1_SL",
+    "sample_date": "11/09/26",
+    "stationid": "4617",
+    "stationname": "Sunnydale Cove",
+    "COLI_E": null,
+    "COLI_TOTAL": "320",
+    "COLI_FECAL": "45",
+    "ENTERO": "10"
+   }
+  ],
+  "4618": [
+   {
+    "source": "BAY#220_SL",
+    "sample_date": "11/16/26",
+    "stationid": "4618",
+    "stationname": "Mission Creek",
+    "COLI_E": null,
+    "COLI_TOTAL": "8800",
+    "COLI_FECAL": "300",
+    "ENTERO": null
+   },
+   {
+    "source": "BAY#220_SL",
+    "sample_date": "11/15/26",
+    "stationid": "4618",
+    "stationname": "Mission Creek",
+    "COLI_E": null,
+    "COLI_TOTAL": "14400",
+    "COLI_FECAL": "440",
+    "ENTERO": "146"
+   }
+  ],
+  "4619": [
+   {
+    "source": "BAY#320_SL",
+    "sample_date": "11/16/26",
+    "stationid": "4619",
+    "stationname": "Islais Creek",
+    "COLI_E": null,
+    "COLI_TOTAL": ">16000",
+    "COLI_FECAL": ">6000",
+    "ENTERO": null
+   },
+   {
+    "source": "BAY#320_SL",
+    "sample_date": "11/15/26",
+    "stationid": "4619",
+    "stationname": "Islais Creek",
+    "COLI_E": null,
+    "COLI_TOTAL": ">16000",
+    "COLI_FECAL": ">6000",
+    "ENTERO": "10462"
+   }
+  ],
+  "4620": [
+   {
+    "source": "BAY#230_SL",
+    "sample_date": "11/16/26",
+    "stationid": "4620",
+    "stationname": "Crane Cove Park",
+    "COLI_E": null,
+    "COLI_TOTAL": "3800",
+    "COLI_FECAL": "310",
+    "ENTERO": null
+   },
+   {
+    "source": "BAY#230_SL",
+    "sample_date": "11/13/26",
+    "stationid": "4620",
+    "stationname": "Crane Cove Park",
+    "COLI_E": null,
+    "COLI_TOTAL": "490",
+    "COLI_FECAL": "55",
+    "ENTERO": "98"
+   }
+  ]
+ }
+}

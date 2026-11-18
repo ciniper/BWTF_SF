@@ -60,6 +60,14 @@ section > p { max-width: 68ch; }
 .steps li::marker { font-family: var(--font-mono); color: var(--accent); }
 code, .mono { font-family: var(--font-mono); font-size: .9em; }
 .note { font-size: 14px; color: var(--muted); max-width: 68ch; }
+.tbl { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; }
+.tbl table { border-collapse: collapse; width: 100%; font-size: 15px; }
+.tbl th, .tbl td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.tbl th { font-size: 13px; font-weight: 600; color: var(--muted); }
+.tbl tr:last-child td { border-bottom: 0; }
+.tbl td.n { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tbl tr.total td { font-weight: 600; }
+.drop { color: var(--gap); }
 svg text { font-family: var(--font-body); }
 svg .mono { font-family: var(--font-mono); }
 </style>
@@ -113,6 +121,27 @@ svg .mono { font-family: var(--font-mono); }
       </div>
     </div>
     <p class="note">Held until the recorder finishes on Friday 11/20: emailing on early numbers. A published value has already been corrected once (Mission Creek's 11/13 total coliform, three days later), and SFPUC posts on preliminary counts we can't see.</p>
+  </section>
+
+  <section>
+    <h2>Related: repeat discharge emails (rule decided 11/17, held)</h2>
+    <p>On 11/17 SFPUC took Lincoln's discharge flag down at 8:34 AM and put it back at 9:11 AM. Our alert sender only compares each minute with the minute before, so the flag coming back counted as a new discharge and emailed again. Fort Funston did the same thing: off at 8:24 AM, back at 9:27 AM.</p>
+    <p><strong>Rule:</strong> if a station already had a discharge flag earlier the same Pacific calendar day, it doesn't send another discharge email that day. A flag that comes back the next day emails as usual, so a real new discharge after SFPUC clears the flag still reaches people. We still record every flag change. Only the email is skipped.</p>
+    <p>The rule has to look at when the flag was up, not when we last emailed. Lincoln's and Fort Funston's earlier discharge emails went out on Friday 11/13, so "already emailed today" would have caught neither.</p>
+    <h3>Audit: emails for someone subscribed to every station, Fri 11/13 – Tue 11/17</h3>
+    <div class="tbl"><table>
+      <thead><tr><th>Day</th><th>Today</th><th>Same-day rule</th><th>Rule + 15-minute hold</th><th>What the rule drops</th></tr></thead>
+      <tbody>
+        <tr><td>Fri 11/13 (storm)</td><td class="n">6</td><td class="n">6</td><td class="n">2</td><td>nothing: every flag was the first of the day</td></tr>
+        <tr><td>Sat 11/14</td><td class="n">0</td><td class="n">0</td><td class="n">0</td><td>only clears</td></tr>
+        <tr><td>Sun 11/15</td><td class="n">5</td><td class="n">4</td><td class="n">2</td><td class="drop">7:03 PM Vicente discharge (its flag had cleared at 10:28 AM)</td></tr>
+        <tr><td>Mon 11/16</td><td class="n">0</td><td class="n">0</td><td class="n">0</td><td>only clears</td></tr>
+        <tr><td>Tue 11/17</td><td class="n">3</td><td class="n">1</td><td class="n">1</td><td class="drop">9:11 AM Lincoln and 9:27 AM Fort Funston discharges</td></tr>
+        <tr class="total"><td>Total</td><td class="n">14</td><td class="n">11</td><td class="n">5</td><td></td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">Rebuilt from the Online Postings Timeline (<code>/cso-history/api/events</code>, read 11/17 4:38 PM). An all-stations subscriber gets one email per minute that has at least one new posting or discharge. The 15-minute hold column is approximate: the first change starts a 15-minute window, and every change within 15 minutes of that first change goes into one email. The window doesn't restart on later changes, so an alert is never held more than 15 minutes.</p>
+    <p class="note"><strong>Trade-off to check:</strong> Vicente's 7:03 PM flag on 11/15 came back 8½ hours after it cleared, so it may have been a real second discharge. An all-stations subscriber still got the 6:58 PM email for the Ocean Beach postings, but someone subscribed only to Vicente would have heard nothing.</p>
   </section>
 </main>
 

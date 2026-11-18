@@ -178,3 +178,161 @@
     4603 Ocean Beach at Vicente Street: posted None→OCEAN#21_SL, p_color None→G
 2026-11-17T09:29:22-08:00  [getBeaches] 2026-11-17-092922-getBeaches.json
     4603 Ocean Beach at Vicente Street: posted OCEAN#21_SL→None, p_color G→None
+2026-11-17T15:28:30-08:00  [getBeaches] 2026-11-17-152830-getBeaches.json
+    4603 Ocean Beach at Vicente Street: cso OCEAN#21_SL→None
+    4605 Ocean Beach at Lincoln Way: cso OCEAN#19_SL→None
+    4606 Ocean Beach at Pacheco Street: posted OCEAN#20_SL→None, p_color G→None
+    4611 Crissy Field Beach West: sample_date 11/09/26→11/16/26
+    4612 Crissy Field Beach East: sample_date 11/09/26→11/16/26
+    4613 Aquatic Park: sample_date 11/09/26→11/16/26
+    4614 Hyde Street Pier: sample_date 11/09/26→11/16/26
+    4615 Jackrabbit Beach: sample_date 11/09/26→11/16/26
+    4616 Windsurfer Circle: sample_date 11/09/26→11/16/26
+    4617 Sunnydale Cove: sample_date 11/09/26→11/16/26
+    4618 Mission Creek: sample_date 11/15/26→11/16/26
+    4619 Islais Creek: sample_date 11/15/26→11/16/26
+    4620 Crane Cove Park: sample_date 11/13/26→11/16/26
+2026-11-17T15:28:33-08:00  [getCSV] 2026-11-17-152833-getCSV.json
+    BAY#202.4_SL 11/16/26: new row (COLI_TOTAL 2000)
+    BAY#202.5_SL 11/16/26: new row (COLI_TOTAL 80)
+    BAY#210.1_SL 11/16/26: new row (COLI_TOTAL 150)
+    BAY#211_SL 11/16/26: new row (COLI_TOTAL 180)
+    BAY#220_SL 11/16/26: new row (COLI_TOTAL 16000)
+    BAY#230_SL 11/16/26: new row (COLI_TOTAL 10000)
+    BAY#300.1_SL 11/16/26: new row (COLI_TOTAL 430)
+    BAY#301.1_SL 11/16/26: new row (COLI_TOTAL 1100)
+    BAY#301.2_SL 11/16/26: new row (COLI_TOTAL 230)
+    BAY#320_SL 11/16/26: new row (COLI_TOTAL 16000)
+2026-11-17T15:28:33-08:00  [getStation] 2026-11-17-152833-getStation.json
+    4611 Crissy Field Beach West 11/16/26: new row (COLI_TOTAL 80)
+    4612 Crissy Field Beach East 11/16/26: new row (COLI_TOTAL 2000)
+    4613 Aquatic Park 11/16/26: new row (COLI_TOTAL 180)
+    4614 Hyde Street Pier 11/16/26: new row (COLI_TOTAL 150)
+    4615 Jackrabbit Beach 11/16/26: new row (COLI_TOTAL 230)
+    4616 Windsurfer Circle 11/16/26: new row (COLI_TOTAL 1100)
+    4617 Sunnydale Cove 11/16/26: new row (COLI_TOTAL 430)
+    4618 Mission Creek 11/16/26: new row (COLI_TOTAL 16000)
+    4619 Islais Creek 11/16/26: new row (COLI_TOTAL 16000)
+    4620 Crane Cove Park 11/16/26: new row (COLI_TOTAL 10000)
+2026-11-17T15:30:42-08:00  [getCSV] 2026-11-17-153042-getCSV.json
+    BAY#220_SL 11/16/26: COLI_TOTAL 16000→8800
+    BAY#230_SL 11/16/26: COLI_TOTAL 10000→3800
+    BAY#320_SL 11/16/26: COLI_TOTAL 16000→>16000
+2026-11-17T15:30:43-08:00  [getStation] 2026-11-17-153043-getStation.json
+    4618 Mission Creek 11/16/26: COLI_TOTAL 16000→8800
+    4619 Islais Creek 11/16/26: COLI_TOTAL 16000→>16000
+    4620 Crane Cove Park 11/16/26: COLI_TOTAL 10000→3800
+2026-11-17T15:43:41-08:00  [getCSV] 2026-11-17-154341-getCSV.json
+    BAY#202.4_SL 11/16/26: COLI_FECAL None→15
+    BAY#202.5_SL 11/16/26: COLI_FECAL None→<5
+    BAY#210.1_SL 11/16/26: COLI_FECAL None→15
+    BAY#211_SL 11/16/26: COLI_FECAL None→25
+    BAY#220_SL 11/16/26: COLI_FECAL None→300
+    BAY#230_SL 11/16/26: COLI_FECAL None→310
+    BAY#300.1_SL 11/16/26: COLI_FECAL None→20
+    BAY#301.1_SL 11/16/26: COLI_FECAL None→35
+    BAY#301.2_SL 11/16/26: COLI_FECAL None→80
+    BAY#320_SL 11/16/26: COLI_FECAL None→>6000
+2026-11-17T15:43:42-08:00  [getStation] 2026-11-17-154342-getStation.json
+    4611 Crissy Field Beach West 11/16/26: COLI_FECAL None→<5
+    4612 Crissy Field Beach East 11/16/26: COLI_FECAL None→15
+    4613 Aquatic Park 11/16/26: COLI_FECAL None→25
+    4614 Hyde Street Pier 11/16/26: COLI_FECAL None→15
+    4615 Jackrabbit Beach 11/16/26: COLI_FECAL None→80
+    4616 Windsurfer Circle 11/16/26: COLI_FECAL None→35
+    4617 Sunnydale Cove 11/16/26: COLI_FECAL None→20
+    4618 Mission Creek 11/16/26: COLI_FECAL None→300
+    4619 Islais Creek 11/16/26: COLI_FECAL None→>6000
+    4620 Crane Cove Park 11/16/26: COLI_FECAL None→310
+2026-11-17T15:48:00-08:00  [getBeaches] 2026-11-17-154800-getBeaches.json
+    4602 Ocean Beach at Sloat Boulevard: sample_date 11/14/26→11/16/26
+    4603 Ocean Beach at Vicente Street: sample_date 11/14/26→11/16/26
+    4604 Ocean Beach at Balboa Street: sample_date 11/14/26→11/16/26
+    4605 Ocean Beach at Lincoln Way: sample_date 11/15/26→11/16/26
+    4606 Ocean Beach at Pacheco Street: sample_date 11/14/26→11/16/26
+    4607 China Beach: sample_date 11/09/26→11/16/26
+    4608 Baker Beach West: sample_date 11/13/26→11/16/26
+    4609 Baker Beach East: sample_date 11/13/26→11/16/26
+    4610 Baker Beach at Lobos Creek: sample_date 11/13/26→11/16/26
+2026-11-17T15:48:03-08:00  [getCSV] 2026-11-17-154803-getCSV.json
+    OCEAN#15EAST_SL 11/16/26: new row (COLI_TOTAL 70)
+    OCEAN#15_SL 11/16/26: new row (COLI_TOTAL 470)
+    OCEAN#16_SL 11/16/26: new row (COLI_TOTAL 160)
+    OCEAN#17_SL 11/16/26: new row (COLI_TOTAL 30)
+    OCEAN#18_SL 11/16/26: new row (COLI_TOTAL 20)
+    OCEAN#19_SL 11/16/26: new row (COLI_TOTAL 280)
+    OCEAN#20_SL 11/16/26: new row (COLI_TOTAL 110)
+    OCEAN#21.1_SL 11/16/26: new row (COLI_TOTAL 170)
+    OCEAN#21_SL 11/16/26: new row (COLI_TOTAL 1600)
+2026-11-17T15:48:04-08:00  [getStation] 2026-11-17-154804-getStation.json
+    4602 Ocean Beach at Sloat Boulevard 11/16/26: new row (COLI_TOTAL 170)
+    4603 Ocean Beach at Vicente Street 11/16/26: new row (COLI_TOTAL 1600)
+    4604 Ocean Beach at Balboa Street 11/16/26: new row (COLI_TOTAL 20)
+    4605 Ocean Beach at Lincoln Way 11/16/26: new row (COLI_TOTAL 280)
+    4606 Ocean Beach at Pacheco Street 11/16/26: new row (COLI_TOTAL 110)
+    4607 China Beach 11/16/26: new row (COLI_TOTAL 30)
+    4608 Baker Beach West 11/16/26: new row (COLI_TOTAL 160)
+    4609 Baker Beach East 11/16/26: new row (COLI_TOTAL 70)
+    4610 Baker Beach at Lobos Creek 11/16/26: new row (COLI_TOTAL 470)
+2026-11-17T15:50:13-08:00  [getCSV] 2026-11-17-155013-getCSV.json
+    OCEAN#15EAST_SL 11/16/26: COLI_FECAL None→25
+    OCEAN#15_SL 11/16/26: COLI_FECAL None→20
+    OCEAN#16_SL 11/16/26: COLI_FECAL None→15
+    OCEAN#17_SL 11/16/26: COLI_FECAL None→5
+    OCEAN#18_SL 11/16/26: COLI_FECAL None→<5
+    OCEAN#19_SL 11/16/26: COLI_FECAL None→10
+    OCEAN#20_SL 11/16/26: COLI_FECAL None→5
+    OCEAN#21.1_SL 11/16/26: COLI_FECAL None→5
+    OCEAN#21_SL 11/16/26: COLI_FECAL None→25
+2026-11-17T15:50:14-08:00  [getStation] 2026-11-17-155014-getStation.json
+    4602 Ocean Beach at Sloat Boulevard 11/16/26: COLI_FECAL None→5
+    4603 Ocean Beach at Vicente Street 11/16/26: COLI_FECAL None→25
+    4604 Ocean Beach at Balboa Street 11/16/26: COLI_FECAL None→<5
+    4605 Ocean Beach at Lincoln Way 11/16/26: COLI_FECAL None→10
+    4606 Ocean Beach at Pacheco Street 11/16/26: COLI_FECAL None→5
+    4607 China Beach 11/16/26: COLI_FECAL None→5
+    4608 Baker Beach West 11/16/26: COLI_FECAL None→15
+    4609 Baker Beach East 11/16/26: COLI_FECAL None→25
+    4610 Baker Beach at Lobos Creek 11/16/26: COLI_FECAL None→20
+2026-11-17T15:54:32-08:00  [getCSV] 2026-11-17-155432-getCSV.json
+    OCEAN#15EAST_SL 11/16/26: ENTERO None→<10
+    OCEAN#15_SL 11/16/26: ENTERO None→20
+    OCEAN#16_SL 11/16/26: ENTERO None→31
+    OCEAN#17_SL 11/16/26: ENTERO None→<10
+    OCEAN#18_SL 11/16/26: ENTERO None→<10
+    OCEAN#19_SL 11/16/26: ENTERO None→10
+    OCEAN#20_SL 11/16/26: ENTERO None→74
+    OCEAN#21.1_SL 11/16/26: ENTERO None→<10
+    OCEAN#21_SL 11/16/26: ENTERO None→41
+2026-11-17T15:54:33-08:00  [getStation] 2026-11-17-155433-getStation.json
+    4602 Ocean Beach at Sloat Boulevard 11/16/26: ENTERO None→<10
+    4603 Ocean Beach at Vicente Street 11/16/26: ENTERO None→41
+    4604 Ocean Beach at Balboa Street 11/16/26: ENTERO None→<10
+    4605 Ocean Beach at Lincoln Way 11/16/26: ENTERO None→10
+    4606 Ocean Beach at Pacheco Street 11/16/26: ENTERO None→74
+    4607 China Beach 11/16/26: ENTERO None→<10
+    4608 Baker Beach West 11/16/26: ENTERO None→31
+    4609 Baker Beach East 11/16/26: ENTERO None→<10
+    4610 Baker Beach at Lobos Creek 11/16/26: ENTERO None→20
+2026-11-17T16:03:12-08:00  [getCSV] 2026-11-17-160312-getCSV.json
+    BAY#202.4_SL 11/16/26: ENTERO None→355
+    BAY#202.5_SL 11/16/26: ENTERO None→<10
+    BAY#210.1_SL 11/16/26: ENTERO None→<10
+    BAY#211_SL 11/16/26: ENTERO None→<10
+    BAY#220_SL 11/16/26: ENTERO None→754
+    BAY#230_SL 11/16/26: ENTERO None→288
+    BAY#300.1_SL 11/16/26: ENTERO None→63
+    BAY#301.1_SL 11/16/26: ENTERO None→20
+    BAY#301.2_SL 11/16/26: ENTERO None→41
+    BAY#320_SL 11/16/26: ENTERO None→8664
+2026-11-17T16:03:12-08:00  [getStation] 2026-11-17-160312-getStation.json
+    4611 Crissy Field Beach West 11/16/26: ENTERO None→<10
+    4612 Crissy Field Beach East 11/16/26: ENTERO None→355
+    4613 Aquatic Park 11/16/26: ENTERO None→<10
+    4614 Hyde Street Pier 11/16/26: ENTERO None→<10
+    4615 Jackrabbit Beach 11/16/26: ENTERO None→41
+    4616 Windsurfer Circle 11/16/26: ENTERO None→20
+    4617 Sunnydale Cove 11/16/26: ENTERO None→63
+    4618 Mission Creek 11/16/26: ENTERO None→754
+    4619 Islais Creek 11/16/26: ENTERO None→8664
+    4620 Crane Cove Park 11/16/26: ENTERO None→288
