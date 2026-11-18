@@ -12,7 +12,7 @@ db/migrations/004 and later) acted on.
 
 The current sender, as modelled here: each minute's tick sends a subscriber one email listing their stations
 that moved to a worse status in that minute (ok → posted, ok → discharge, posted → discharge). Clears send
-nothing. The proposed knobs (all held, none live):
+nothing. The policy knobs (production activation requires the alert-frequency migration):
 
   hold        wait this many minutes after a change and send one email for everything that changed meanwhile.
   window      "first": the window starts at the first change and doesn't move, so an alert waits at most the hold.
@@ -208,38 +208,13 @@ def preview(email: Email, zone: str | None = None, still: list[tuple[str, str]] 
     emails costs no database calls.
 
     ``still`` (the "running list" idea, held): the subscriber's other stations still posted or discharging,
-    added as a "Still in effect" section after the new alerts. That section is a mock-up added here; the live
-    template doesn't have it."""
+    added as a "Still in effect" section after the new alerts. The same section is added by the SQL dispatcher once the alert-frequency migration is applied."""
     from features.alerts.render import STAMP_FORMAT, _fallback
     transitions = [{"station_id": sid, "station_name": name, "to": to} for sid, (name, to) in email.worst.items()]
     out = _fallback(transitions, False, zone, PREVIEW_UNSUB, email.send_at.astimezone(PACIFIC).strftime(STAMP_FORMAT))
+    from features.alerts.render import with_still_in_effect
     return with_still_in_effect(out, still, zone) if still else out
 
-
-_STILL_ANCHOR = '<p style="margin:14px 0 0;font-size:13.5px;'   # the template's "From SFPUC" paragraph, after the station cards
-_STILL_COLOR = {"cso": "#b5310a", "posted": "#d4763a"}
-
-
-def with_still_in_effect(msg: dict, still: list[tuple[str, str]], zone: str | None = None) -> dict:
-    """The running-list mock-up: a compact "Still in effect" list in the HTML, text and SMS, in the template's colours."""
-    from html import escape
-    heading = f"Still in effect — {zone}" if zone else "Still in effect"
-    rows = "".join(
-        '<tr><td style="padding:6px 0;border-top:1px solid #E3EBF2;font-size:14px;color:#26272a;">'
-        f'{escape(name)}</td><td align="right" style="padding:6px 0;border-top:1px solid #E3EBF2;font-size:12px;'
-        f'font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:{_STILL_COLOR[to]};">'
-        + ("Sewage discharge" if to == "cso" else "Posted") + "</td></tr>"
-        for name, to in still)
-    block = ('<div style="margin:16px 0 0;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;'
-             f'color:#54576F;">{escape(heading)} &middot; {len(still)}</div>'
-             f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 0;">{rows}</table>')
-    html = msg["html_body"]
-    html = html.replace(_STILL_ANCHOR, block + _STILL_ANCHOR, 1) if _STILL_ANCHOR in html else html
-    lines = "\n".join(f"- {name}: " + ("sewage discharge." if to == "cso" else "posted.") for name, to in still)
-    text = msg["text_body"].replace("\n\nFrom SFPUC:", f"\n\n{heading}:\n{lines}\n\nFrom SFPUC:", 1)
-    brief = "; ".join(f"{name} ({'discharge' if to == 'cso' else 'posted'})" for name, to in still)
-    sms = msg["sms_text"].replace(". Live status:", f". {heading}: {brief}. Live status:", 1)[:320]
-    return {**msg, "html_body": html, "text_body": text, "sms_text": sms}
 
 
 def status_at(changes: list[Change], station_ids, when: datetime) -> dict[str, tuple[str, str]]:

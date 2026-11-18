@@ -1,7 +1,7 @@
 # Alert frequency — simulator and reduction plan
 
 Extracted from `discharge-observations` at `a7d0c247cb488110dce7800a5b359eb99842d907` (2026-11-17).
-The simulator and email previews are implemented; the delivery-policy changes below remain held and are not active in the live sender.
+The simulator, email previews and SQL policy are implemented on this branch. Production activation requires applying the migration; see [implementation and rollout](alerts-frequency-rollout.md). The notes below preserve the original proposal and audit.
 
 The original feed recordings and broader discharge observations remain on the source branch. References below to `feed/changes.log` refer to that branch's `docs/discharge-observations/feed/changes.log`.
 
