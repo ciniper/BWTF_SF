@@ -56,10 +56,10 @@
     el.querySelector("#sp-next").addEventListener("click", function () { step(1); });
     return el;
   }
-  function close() { if (!el) return; el.classList.remove("open"); el.querySelector(".sp-box").style.minHeight = ""; charts.forEach(function (c) { c.destroy(); }); charts = []; }
+  function close() { if (!el) return; clearTimeout(REFRESH); REQUEST++; el.classList.remove("open"); el.querySelector(".sp-box").style.minHeight = ""; charts.forEach(function (c) { c.destroy(); }); charts = []; }
   /* ‹ › step through every day the site was sampled (/api/sample-dates, fetched once per site).
      Chase, 2026-09-29: "select a left arrow to go to the previous sample and right arrow to go to the next (if you're not on the latest)". */
-  var CUR = null, DATES = {}, PENDING = {};
+  var CUR = null, DATES = {}, DATES_AT = {}, PENDING = {}, REQUEST = 0, REFRESH = null;
   function navKey(opts) { return opts.bwtf ? "bwtf:" + opts.bwtf : "station:" + opts.station; }
   /* The arrows show at once: older is assumed to exist, newer is off while on the latest. The list of
      sampled days (/api/sample-dates) arrives in the background and only tightens the two ends. */
@@ -76,12 +76,15 @@
   }
   function datesFor(opts) {
     var key = navKey(opts);
-    if (DATES[key]) return Promise.resolve(DATES[key]);
+    if (DATES[key] && Date.now() - (DATES_AT[key] || 0) < 30000) return Promise.resolve(DATES[key]);
     if (!PENDING[key]) {
       var q = new URLSearchParams(opts.bwtf ? { bwtf: opts.bwtf } : { station: opts.station });
       PENDING[key] = fetch("/api/sample-dates?" + q).then(function (r) { return r.json(); }).then(function (j) {
-        DATES[key] = (j && j.ok && Array.isArray(j.dates)) ? j.dates : []; delete PENDING[key];
-        if (CUR && navKey(CUR.opts) === key) updateNav();
+        DATES[key] = (j && j.ok && Array.isArray(j.dates)) ? j.dates : []; DATES_AT[key] = Date.now(); delete PENDING[key];
+        if (CUR && navKey(CUR.opts) === key) {
+          if (CUR.date && DATES[key].indexOf(CUR.date) < 0) { DATES[key].push(CUR.date); DATES[key].sort(); }
+          updateNav();
+        }
         return DATES[key];
       }).catch(function () { delete PENDING[key]; return []; });
     }
@@ -100,8 +103,33 @@
       open(next);
     });
   }
-  function loadNav(d, opts) { CUR = { opts: opts, date: d.date || "" }; updateNav(); datesFor(opts); }
+  function loadNav(d, opts) {
+    var key = navKey(opts);
+    if (d.date && DATES[key] && DATES[key].indexOf(d.date) < 0) { DATES[key].push(d.date); DATES[key].sort(); }
+    CUR = { opts: opts, date: d.date || "" }; updateNav(); datesFor(opts);
+  }
+  function refreshWhileWaiting(d, opts) {
+    clearTimeout(REFRESH);
+    if (opts.bwtf || opts.date || !(d.early || d.pending_sample || (d.pending_codes || []).length)) return;
+    var requestId = REQUEST;
+    REFRESH = setTimeout(function () {
+      if (requestId !== REQUEST || !el.classList.contains("open")) return;
+      var q = new URLSearchParams({station: opts.station});
+      if (opts.feedDate) q.set("feed_date", opts.feedDate);
+      fetch("/api/sample-day?" + q).then(function(r){ return r.json(); }).then(function(next){
+        if (requestId !== REQUEST) return;
+        if (next.ok === false) throw new Error("refresh unavailable");
+        render(next, opts);
+      }).catch(function(){
+        if (requestId !== REQUEST) return;
+        el.querySelector("#sp-note").textContent = "Could not refresh; showing the last loaded results. Retrying shortly.";
+        refreshWhileWaiting(d, opts);
+      });
+    }, 60000);
+  }
   function open(opts) {
+    clearTimeout(REFRESH);
+    var requestId = ++REQUEST;
     var m = modal(), box = m.querySelector(".sp-box");
     if (m.classList.contains("open") && box.offsetHeight) box.style.minHeight = box.offsetHeight + "px";   // the box keeps its size while the next sample loads
     m.querySelector("#sp-title").textContent = opts.name || opts.station || opts.bwtf;
@@ -109,64 +137,64 @@
     m.querySelector("#sp-grid").innerHTML = ""; m.querySelector("#sp-links").innerHTML = ""; m.querySelector("#sp-field").textContent = ""; m.querySelector("#sp-stale").hidden = true;
     CUR = { opts: opts, date: opts.date || "" }; updateNav();
     m.classList.add("open");
-    var q = new URLSearchParams(opts.bwtf ? { bwtf: opts.bwtf } : { station: opts.station }); if (opts.date) q.set("date", opts.date);
+    var q = new URLSearchParams(opts.bwtf ? { bwtf: opts.bwtf } : { station: opts.station }); if (opts.date) q.set("date", opts.date); if (opts.feedDate && !opts.bwtf) q.set("feed_date", opts.feedDate);
     Promise.all([fetch("/api/sample-day?" + q).then(function (r) { return r.json(); }), ensureCharts()])
-      .then(function (res) { render(res[0], opts); })
-      .catch(function (e) { m.querySelector("#sp-note").textContent = "Could not load the results: " + e; });
+      .then(function (res) { if (requestId === REQUEST) render(res[0], opts); })
+      .catch(function (e) { if (requestId === REQUEST) m.querySelector("#sp-note").textContent = "Could not load the results: " + e; });
   }
   function render(d, opts) {
     var m = modal(), note = m.querySelector("#sp-note"), grid = m.querySelector("#sp-grid"), links = m.querySelector("#sp-links"), fieldEl = m.querySelector("#sp-field");
     if (d.ok === false) { note.textContent = d.error || "No data"; return; }
+    refreshWhileWaiting(d, opts);
     var surf = d.source === "bwtf";
     m.querySelector("#sp-title").textContent = d.name || opts.name || opts.station || opts.bwtf;
     charts.forEach(function (c) { c.destroy(); }); charts = [];
     var newest = !surf && !opts.date;   // the banner belongs to the newest view only
-    var stale = m.querySelector("#sp-stale"), newer = newest && opts.feedDate && (!d.found || opts.feedDate > d.date);
-    var changed = newest && opts.changedAt && !newer;   // the posting moved this morning; the sample behind it is not on SFPUC's map yet (shared/result_gap.py)
+    var stale = m.querySelector("#sp-stale"), newer = newest && d.pending_sample;
     loadNav(d, opts);
     var day = function (iso) { return new Date(iso + "T12:00:00").toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" }); };
-    var older = d.found ? "Below is the last <b style=\"display:inline;font-size:inherit\">published</b> sample, " + esc(day(d.date)) + "." : "Nothing older has been published for this station either.";
-    if (newer) {   // Chase, 2026-09-29: "if the sample you click on is not available yet, the fact that it's an old sample should be louder"
-      // The city's lab numbers reach SF Gov Open Data around 11 PM the day after collection (Chase, 2026-10-20: "always by 11:40")
-      stale.innerHTML = "<b>Newest sample not published yet</b>The city's map shows a sample taken " + esc(day(opts.feedDate)) + ". Its lab numbers usually arrive on SF Gov Open Data around 11 PM the day after collection. " + older;
-      stale.hidden = false;
-    } else if (changed) {   // the morning gap: postings move ~8:30 AM, ahead of the sample behind them
-      // The status is current; only its numbers are behind. They reach this popover with DataSF around 11 PM: SFPUC's map
-      // gets the sample date in the afternoon, but nothing a reader sees here changes then (Chase, 2026-11-12).
-      var at = new Date(opts.changedAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles" });
-      stale.innerHTML = "<b>Newest sample not published yet; status is current</b>SFPUC " + (opts.changed === "cleared" ? "lifted this beach's posting" : "posted this beach") + " at " + esc(at) +
-        " based on a newer sample. Its lab numbers usually reach SF Gov Open Data around 11 PM. " + older;
+    var older = d.found ? "Below is the latest sample available in this view, " + esc(day(d.date)) + "." : "No older results are available in this view either.";
+    if (newer) {
+      stale.innerHTML = "<b>Newer sample recorded; results unavailable here</b>A sample was collected " + esc(day(d.pending_sample.sample_date)) + ". Its numbers are not available in this view yet. " + older;
       stale.hidden = false;
     }
-    if (!d.found) { note.textContent = (surf ? "No Surfrider sample at this site" : "No published lab results for this station") + (opts.date ? " on " + opts.date : "") + "."; return; }
+    if (!d.found) { note.textContent = (surf ? "No Surfrider sample at this site" : "No lab results available for this station") + (opts.date ? " on " + opts.date : "") + "."; return; }
     var dt = new Date(d.date + "T12:00:00");
     m.querySelector("#sp-date").innerHTML = "Sampled " + esc(dt.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" })) + (surf && d.times && d.times.length ? " at " + esc(d.times.join(" and ")) : "")
-      + (opts.date || newer || changed ? "" : '<span class="sp-latest">Latest</span>');   // a newer sample exists: this one is not the latest
+      + (opts.date || newer ? "" : '<span class="sp-latest">Latest</span>');   // a newer sample exists: this one is not the latest
     var parts = [];
     if (surf) parts.push("Surfrider Blue Water Task Force volunteer lab");
+    if (d.early) parts.push("Early SFPUC lab results, ahead of DataSF publication");
+    if (d.note) parts.push(d.note);
     if (d.n_samples > 1) parts.push(surf ? d.n_samples + " collections that day" : d.n_samples + " samples that day (the city's dataset carries the date but not the time)");
     parts.push(d.units + " · dashed line = state single-sample limit" + (d.caution ? ", dotted = caution tier (" + d.caution + ")" : ""));
     note.textContent = parts.join(" · ");
     var f = d.field || {};
     fieldEl.textContent = [f.tested_by ? "Tested by " + f.tested_by : "", f.air ? "air " + f.air : "", f.water ? "water " + f.water : "", f.sky ? "sky " + f.sky : "", f.wind ? "wind " + f.wind : "",
                            f.tide ? "tide " + f.tide : "", f.waves ? "waves " + f.waves : "", f.rain ? "rain " + f.rain : ""].filter(Boolean).join(" · ") + (f.comments ? " — " + f.comments : "");
-    var shown = d.analytes.filter(function (a) { return (d.cells[a.code] || []).length; });   // an indicator the lab did not run is left out, not shown as "not reported"
+    var shown = d.analytes.filter(function (a) { return (d.cells[a.code] || []).length || (d.pending_codes || []).indexOf(a.code) >= 0; });   // an indicator the lab did not run is left out, not shown as "not reported"
     if (!shown.length) shown = d.analytes.slice(0, 1);
     grid.className = "sp-grid" + (shown.length === 1 ? " one" : "");
     grid.innerHTML = shown.map(function (a) {
       var vals = d.cells[a.code] || [];
-      var chips = vals.length ? vals.map(function (v) { return '<span class="sp-val' + (v.over ? " over" : v.caution ? " caution" : "") + '">' + esc(v.raw) + "</span>"; }).join("") : '<span class="sp-val none">not reported</span>';
+      var pending = (d.pending_codes || []).indexOf(a.code) >= 0;
+      var chips = vals.length ? vals.map(function (v) { return '<span class="sp-val' + (v.over ? " over" : v.caution ? " caution" : "") + '">' + esc(v.raw) + "</span>"; }).join("") : '<span class="sp-val none">' + (pending ? 'pending' : 'not reported') + '</span>';
+      var seen = (d.indicator_seen || {})[a.code], provenance = "";
+      if ((d.indicator_sources || {})[a.code] === "getcsv") {
+        provenance = "Early SFPUC lab result";
+        if (seen) provenance += (seen.censored ? " · seen by " : " · first seen ") + new Date(seen.at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles" }) + " PT";
+      }
       var why = (a.code === "COLI_TOTAL" && d.ratio_applied) ? ' <span title="' + esc(d.ratio_note) + '">(ratio rule)</span>' : "";
-      return '<div class="sp-cell"><div class="sp-label">' + esc(a.label) + " · limit " + fmt(d.limits[a.code]) + why + '</div><div class="sp-chart"><canvas data-code="' + esc(a.code) + '"></canvas></div><div class="sp-vals">' + chips + "</div></div>";
+      return '<div class="sp-cell"><div class="sp-label">' + esc(a.label) + " · limit " + fmt(d.limits[a.code]) + why + '</div><div class="sp-chart"><canvas data-code="' + esc(a.code) + '"></canvas></div><div class="sp-vals">' + chips + "</div>" + (provenance ? '<p class="sp-note">' + esc(provenance) + "</p>" : "") + "</div>";
     }).join("");
     shown.forEach(function (a) {
       var vals = d.cells[a.code] || [], limit = d.limits[a.code], canvas = grid.querySelector('canvas[data-code="' + a.code + '"]');
-      if (!vals.length) { canvas.parentElement.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:#98a3ab;font-size:12.5px">no result</div>'; return; }
+      if (!vals.length) { canvas.parentElement.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:#98a3ab;font-size:12.5px">' + ((d.pending_codes || []).indexOf(a.code) >= 0 ? 'Result pending' : 'no result') + '</div>'; return; }
       var labels = vals.length > 1 ? vals.map(function (_, i) { return "sample " + (i + 1); }) : ["result"];
       var ys = vals.map(function (v) { return v.value; }), ymax = Math.max(limit * 1.15, Math.max.apply(null, ys.map(function (y) { return y || 0; })) * 1.1);
       charts.push(window.BWTFCharts.miniBars(canvas, { label: a.label, values: vals, limit: limit, caution: a.code === "ENTERO" ? d.caution : 0 }));
     });
-    links.innerHTML = (d.results_url ? '<a href="' + esc(d.results_url) + '" target="_blank" rel="noopener noreferrer">' + (surf ? "Site report on bwtf.surfrider.org" : "Raw results on SF Gov Open Data") + "</a>" : "") +
+    links.innerHTML = (d.early ? '<a href="https://infrastructure.sfwater.org/lims.asmx/getCSV" target="_blank" rel="noopener noreferrer">SFPUC lab feed</a>' : '') + (d.results_url ? '<a href="' + esc(d.results_url) + '" target="_blank" rel="noopener noreferrer">' + (surf ? "Site report on bwtf.surfrider.org" : "Raw results on SF Gov Open Data") + "</a>" : "") +
       '<a href="' + esc(d.viewer_url) + '">All samples for this site</a><a href="' + esc(d.graph_url) + '">Graphs for this site</a>';
   }
   function fromEl(a) { return { station: a.dataset.sampleStation, bwtf: a.dataset.sampleBwtf, name: a.dataset.sampleName, date: a.dataset.sampleDate || "", feedDate: a.dataset.sampleFeedDate || "", changed: a.dataset.sampleChanged || "", changedAt: a.dataset.sampleChangedAt || "" }; }

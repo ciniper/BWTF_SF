@@ -190,7 +190,7 @@ def _map_fields(f: dict | None, day: str) -> dict:
     return {"map_seen": f["seen"], "map_lag_days": lag, "map_approx": f["approx"], "map_censored": f["censored"], "map_note": f.get("note")}
 
 
-def build_sample_days(rows: list[dict], feed: dict | None = None, now: datetime | None = None) -> dict[str, list[dict]]:
+def build_sample_days(rows: list[dict], feed: dict | None = None, now: datetime | None = None, getcsv: list[dict] | None = None) -> dict[str, list[dict]]:
     """{SFPUC station id: [{date, elevated, n, source, first_seen, lag_days,
     map_seen, map_lag_days, map_approx, map_censored, lane}]}, one entry per
     station-day. ``elevated`` = any analyte over its limit that day;
@@ -236,6 +236,24 @@ def build_sample_days(rows: list[dict], feed: dict | None = None, now: datetime 
                  "pending": True, "pending_days": (today - date.fromisoformat(day)).days}
         entry.update(_map_fields(f, day))
         out.setdefault(sfpuc, []).append(entry)
+    # getCSV can lead BOTH the map and DataSF; retain those sample-days too.
+    from shared.sfpuc_live import first_observations
+    csv_days = {}
+    for (source, day, code), observation in first_observations(getcsv or []).items():
+        sid = _SFPUC_OF_SOURCE.get(source)
+        if sid and day <= today.isoformat():
+            csv_days.setdefault((sid, day), []).append({"code": code, **observation})
+    existing = {(sid, e["date"]): e for sid, entries in out.items() for e in entries}
+    for (sid, day), indicators in csv_days.items():
+        entry = existing.get((sid, day))
+        if entry is None:
+            entry = {"date": day, "elevated": None, "n": 0, "source": "getcsv", "first_seen": None,
+                     "lag_days": None, "pending": True, "pending_days": (today - date.fromisoformat(day)).days}
+            entry.update(_map_fields(feed.get((sid, day)), day))
+            out.setdefault(sid, []).append(entry)
+        first = min(indicators, key=lambda i: _parse_ts(i["at"]))
+        entry.update(getcsv_seen=first["at"], getcsv_censored=first["censored"],
+                     getcsv_indicators=sorted(indicators, key=lambda i: _parse_ts(i["at"])))
     for entries in out.values():
         entries.sort(key=lambda e: e["date"])
         assign_lanes(entries, now)
@@ -497,10 +515,18 @@ def handle_events(query, body):
         feed = build_feed_dates(feed_rows)
     except Exception as exc:
         notes.append(f"map sample dates temporarily unavailable ({type(exc).__name__})")
+    csv_rows = []
     try:
-        samples = build_sample_days(_fetch_sample_rows(since_day), feed, now)
-    except Exception as exc:  # the samples row is an addition; its absence must not blank the events
-        notes.append(f"sample dates temporarily unavailable ({type(exc).__name__})")
+        from shared.sfpuc_live import fetch_observations
+        csv_rows = fetch_observations(since_day)
+    except Exception as exc:
+        notes.append(f"getCSV arrival times temporarily unavailable ({type(exc).__name__})")
+    try:
+        sample_rows = _fetch_sample_rows(since_day)
+    except Exception as exc:
+        sample_rows = []
+        notes.append(f"DataSF sample dates temporarily unavailable ({type(exc).__name__})")
+    samples = build_sample_days(sample_rows, feed, now, csv_rows)
     known = {s["station_id"] for s in stations}
     extra = [{"station_id": sid, "station_name": _NAME_OF_SFPUC.get(sid, sid), "current_status": None, "windows": []}
              for sid in samples if sid not in known]
@@ -523,7 +549,7 @@ def handle_events(query, body):
                        # collection → SFPUC's map; map → the numbers online; sample dates on the map with no numbers yet
                        "map": {"n": len(map_lags), "median_days": _median(map_lags),
                                "after_map_n": len(after_map), "after_map_median_days": _median(after_map),
-                               "pending": sum(1 for d in entries if d.get("pending")),
+                               "pending": sum(1 for d in entries if d.get("pending") and d.get("map_seen")),
                                "measured_since": _FEED_HISTORY_SINCE}},
         "sample_note": " ".join(notes) or None,
     })
