@@ -99,6 +99,40 @@ def test_subscriptions_and_the_form_defaults():
     assert (r["now"]["total"], r["plan"]["total"], len(r["days"])) == (3, 2, 5)    # Lincoln: Fri posted, Fri discharge, Tue's repeat
 
 
+def test_each_email_previews_as_the_live_template_writes_it():
+    """Chase, 2026-11-17: "can the simulator also show what the email actually look like too?" — the renderer's Python
+    port (held to the SQL by db/scripts/test_render_parity.py), stamped with the send time; a zone subscriber gets its line."""
+    c = [ch(13, 6, 32, "4608", "ok", "posted", "Baker Beach West"), ch(13, 6, 35, "4608", "posted", "cso", "Baker Beach West"),
+         ch(13, 6, 35, "4609", "ok", "posted", "Baker Beach East")]
+    e = E.simulate(c, ["4608", "4609"], START, END, 15)["emails"][0]
+    p = E.preview(e)
+    assert p["subject"] == "Beach alert: sewage discharge at 1 beach, posted at 1 beach"   # Baker West at its worst, in one email
+    assert "Fri Nov 13, 6:47 AM PST" in p["html_body"] and "Baker Beach West" in p["sms_text"]   # stamped when it would go out
+    r = E.run(storm_week(), {"from": date(2026, 11, 13), "to": date(2026, 11, 17), "hold": 15, "window": "first", "same_day": True, "sub": "zone:baker_china"})
+    first = next(x for x in r["rows"] if x["kind"] == "email")["preview"]
+    assert "Fri Nov 13, 6:47 AM PST &middot; Baker & China Beach zone" in first["html_body"] and r["previews_cut"] == 0   # the template doesn't escape the zone
+
+
+def test_a_running_list_adds_what_is_still_in_effect_and_keeps_the_count():
+    """"running list" vs "only new alerts" (Chase, 2026-11-17): same emails, but each also lists the subscriber's other
+    stations still posted or discharging when it goes out — including a discharge the same-day rule kept quiet."""
+    base = {"from": date(2026, 11, 13), "to": date(2026, 11, 17), "hold": 15, "window": "first", "same_day": True, "sub": "all"}
+    new = E.run(storm_week(), {**base, "content": "new"})
+    run = E.run(storm_week(), {**base, "content": "running"})
+    assert new["plan"]["total"] == run["plan"]["total"] == 5 and all(not r.get("still") for r in new["rows"])
+    tue = [r for r in run["rows"] if r["kind"] == "email"][-1]        # Tue 8:45: Crissy East posted
+    assert tue["email"].stations == [("Crissy Field Beach East", "posted")]
+    assert tue["still"] == [("Islais Creek", "cso"), ("Ocean Beach at Vicente Street", "cso"),   # discharges first; Lincoln and
+                            ("Crane Cove Park", "posted"), ("Mission Creek", "posted")]           # Fort Funston had cleared by 8:34
+    sun = next(r for r in run["rows"] if r["kind"] == "email" and r["at"] == at(15, 19, 13))
+    assert ("Ocean Beach at Vicente Street", "cso") in sun["still"]   # the discharge the same-day rule didn't email still shows here
+    p = tue["preview"]
+    assert "Still in effect &middot; " in p["html_body"] and p["html_body"].index("Still in effect") < p["html_body"].index("From SFPUC:")
+    assert "\n\nStill in effect:\n- " in p["text_body"] and ". Still in effect: " in p["sms_text"] and len(p["sms_text"]) <= 320
+    assert E.parse_settings({"go": ["1"], "content": ["running"]}, date(2026, 11, 17))["content"] == "running"
+    assert E.parse_settings({}, date(2026, 11, 17))["content"] == "new"
+
+
 def test_the_page_renders_and_sits_behind_the_passphrase():
     from app.wsgi import app
     settings = E.parse_settings({}, date(2026, 11, 17))

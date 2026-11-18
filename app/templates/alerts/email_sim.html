@@ -39,11 +39,23 @@
   .scroll{overflow-x:auto}
   .chip{display:inline-block;border-radius:999px;padding:1px 9px;margin:1px 4px 1px 0;font-size:12px;font-weight:700;color:#fff;white-space:nowrap}
   .chip.cso{background:#b5310a}.chip.posted{background:#d4763a}
+  /* the running list's carry-overs: outlined, so the new alerts above them still lead */
+  .chip.line{background:#fff;border:1.5px solid currentColor;padding:0 8px}.chip.line.cso{color:#b5310a}.chip.line.posted{color:#d4763a}
+  .still{margin-top:4px;font-size:12px}.still-k{color:var(--muted);font-weight:700;margin-right:2px}
   .note{color:var(--muted);font-size:13px;margin:10px 0 0}
+  /* an email's preview: its subject opens the message as the sender would write it */
+  .pv{margin-top:6px}
+  .pv summary{cursor:pointer;color:var(--brand);font-weight:700;font-size:13px}
+  .pv iframe{display:block;width:100%;min-width:300px;max-width:640px;height:520px;margin-top:8px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .pv .sms{max-width:640px;margin:8px 0 2px;font-size:13px;color:var(--muted)}
   .warn{background:#fff6e5;border:1px solid #f0c36d;border-radius:8px;padding:10px 14px;margin-top:16px;font-size:14px}
   @media (max-width:760px){.wrap{padding:14px 14px 30px}}
 </style>
 {% from "alerts/_tabs.html" import admin_tab_styles, admin_tabs %}{{ admin_tab_styles() }}
+<script>
+  /* a preview is as tall as its email; a closed one measures 0, so keep the CSS height until it opens */
+  function fitPreview(f){try{var h=f.contentDocument.documentElement.scrollHeight;if(h)f.style.height=h+'px'}catch(e){}}
+</script>
 </head>
 <body>
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
@@ -52,6 +64,7 @@
   {% call page_head("Email simulator", "How many alert emails one subscriber would have got over a past stretch: from the sender as it works today, and with a hold, a window rule and the same-day rule. Nothing here changes what is sent.") %}
     <p><b>Today's sender</b> sends a subscriber one email for each minute in which any of their stations got worse: clear → posted, clear → discharge, or posted → discharge. Clears send nothing.</p>
     <p><b>Hold</b> waits that many minutes after a change and sends one email for everything that changed meanwhile. <b>From the first change</b> keeps the window fixed, so an alert waits at most the hold. <b>Restart on each change</b> sends once things have been quiet for the hold, which can wait longer.</p>
+    <p><b>Each email lists</b>: today's email names only the stations that just got worse. A <b>running list</b> (an idea, held) adds a "Still in effect" section with the subscriber's other stations that are still posted or discharging when it goes out.</p>
     <p><b>Same-day rule</b>: a station that already had a discharge flag earlier the same Pacific day doesn't email a discharge again that day. A flag that comes back the next day emails as usual.</p>
     <p>History is the <a href="/cso-history">Online Postings Timeline</a>'s: the alert log's real (not simulated) changes, with duplicate detections merged.</p>
   {% endcall %}
@@ -75,6 +88,10 @@
     <fieldset><legend>Window</legend>
       <label class="opt"><input type="radio" name="window" value="first"{% if s.window == 'first' %} checked{% endif %}> From the first change</label>
       <label class="opt"><input type="radio" name="window" value="restart"{% if s.window == 'restart' %} checked{% endif %}> Restart on each change</label>
+    </fieldset>
+    <fieldset><legend>Each email lists</legend>
+      <label class="opt"><input type="radio" name="content" value="new"{% if s.content == 'new' %} checked{% endif %}> Only new alerts <small>(today)</small></label>
+      <label class="opt"><input type="radio" name="content" value="running"{% if s.content == 'running' %} checked{% endif %}> Running list <small>(+ still in effect)</small></label>
     </fieldset>
     <fieldset><legend>Rules</legend>
       <label class="opt"><input type="checkbox" name="same_day" value="on"{% if s.same_day %} checked{% endif %}> Same-day rule <small>(no repeat discharge email)</small></label>
@@ -118,7 +135,16 @@
         {%- for row in r.rows %}
         {%- if row.kind == 'email' %}{% set e = row.email %}
         <tr><td class="n">{{ fmt_time(e.send_at) }}</td><td class="n">{{ fmt_time(e.first_at) if e.waited_minutes else '—' }}</td>
-          <td>{% for name, to in e.stations %}<span class="chip {{ to }}">{{ name }} · {{ labels[to] }}</span>{% endfor %}</td></tr>
+          <td>{% for name, to in e.stations %}<span class="chip {{ to }}">{{ name }} · {{ labels[to] }}</span>{% endfor %}
+            {%- if row.still %}
+            <div class="still"><span class="still-k">Still in effect:</span> {% for name, to in row.still %}<span class="chip line {{ to }}">{{ name }} · {{ labels[to] }}</span>{% endfor %}</div>
+            {%- endif %}
+            {%- if row.preview %}
+            <details class="pv" ontoggle="if(this.open)fitPreview(this.querySelector('iframe'))"><summary>{{ row.preview.subject }}</summary>
+              <iframe title="Email preview: {{ row.preview.subject }}" sandbox="allow-same-origin" loading="lazy" srcdoc="{{ row.preview.html_body }}" onload="fitPreview(this)"></iframe>
+              <p class="sms"><b>Text message:</b> {{ row.preview.sms_text }}</p>
+            </details>
+            {%- endif %}</td></tr>
         {%- else %}{% set c = row.change %}
         <tr class="skipped"><td class="n">{{ fmt_time(c.at) }}</td><td>skipped</td><td>{{ c.station_name }} · {{ labels[c.to] }}: its discharge flag was already up earlier that day</td></tr>
         {%- endif %}
@@ -129,6 +155,7 @@
     <p class="note">No emails for {{ r.label }} in this range.</p>
     {% endif %}
     <p class="note">Each row is one email. When a hold is set, it goes out when the window closes, and "First change" is the change that opened it.{% if history_since %} History starts {{ history_since }}.{% endif %}</p>
+    <p class="note">Open a subject line to see the email as the live sender would write it today: the same template, stamped with the send time{% if s.sub.startswith('zone:') %}, with the zone line a {{ r.label }} subscriber gets{% endif %}. The unsubscribe link is a placeholder.{% if s.content == 'running' %} The "Still in effect" section is a mock-up added on top of today's template: the subscriber's other stations still posted or discharging when the email goes out. A running list changes what's in each email, not how many go out.{% endif %}{% if r.previews_cut %} Previews stop after the first 100 emails; {{ r.previews_cut }} more aren't shown.{% endif %}</p>
   </section>
 </div>
 {{ footer() }}
