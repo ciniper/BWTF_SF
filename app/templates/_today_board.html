@@ -299,7 +299,7 @@
     </details>
     {% if sites %}
     <div class="site-chips" id="zone-sites" aria-label="The chosen zone's stations, as the city shows them, and Surfrider's sites there" hidden>
-      {% for z in board.zones %}{% for s in z.stations %}<button type="button" class="site" data-zone="{{ z.key }}" data-station="{{ s.source }}" data-sample-station="{{ s.source }}" data-sample-name="{{ s.full_name }}" data-sample-feed-date="{{ s.sampled }}"{% if s.pending %} data-sample-changed="{{ s.pending.change }}" data-sample-changed-at="{{ s.pending.at }}"{% endif %} title="Latest lab results"><i class="status-dot {{ s.status }}"></i>{{ s.full_name }}<small>{{ s.sampled_text }}</small></button>{% endfor %}{% endfor %}
+      {% for z in board.zones %}{% for s in z.stations %}<button type="button" class="site" data-zone="{{ z.key }}" data-station="{{ s.source }}" data-sample-station="{{ s.source }}" data-sample-name="{{ s.full_name }}" data-sample-feed-date="{{ s.sampled }}" title="Latest lab results"><i class="status-dot {{ s.status }}"></i>{{ s.full_name }}<small>{{ s.sampled_text }}</small></button>{% endfor %}{% endfor %}
     </div>
     {% endif %}
   </section>
@@ -446,9 +446,8 @@ function initMap() {
     const bad = s.status === "posted" || s.status === "discharge";
     const m = L.circleMarker([s.lat, s.lon], {pane: "st" + (RANK[s.status] || 0), radius: dotR(s.status), color: "#fff", weight: 2, fillColor: COL[s.status] || COL.unknown, fillOpacity: .95, bubblingMouseEvents: false}).addTo(MAP);
     m.__s = s; m.__z = z; ALL_ORDERED.push(m);   // the layers recolour markers by zone risk or by a replayed day; focusZone re-adds them in this order
-    const sampleDetail = s.pending ? " · new sample not published yet"
-      : !bad && s.sampled ? " · " + s.sampled_text + " (" + s.sampled + ")" : "";
-    m.bindTooltip(s.full_name + " · " + s.status_text + sampleDetail, {direction: "right", offset: [9, 0], className: "st-label"});   // on hover; a posted beach's label on the map is refreshLabels'
+    const sampleDetail = !bad && s.sampled ? " · " + s.sampled_text + " (" + s.sampled + ")" : "";
+    m.bindTooltip(s.full_name + " · " + s.status_text + sampleDetail, {direction: "right", offset: [9, 0], className: "st-label"});   // on hover; posted labels use refreshLabels
     m.on("click", () => openSample(s));
     (MARKERS[z.key] = MARKERS[z.key] || []).push(m);
   }
@@ -481,7 +480,7 @@ const RANK_ST = {unknown: 0, safe: 1, caution: 1, posted: 2, discharge: 3};
 // a dot's "posted" / "discharge" label follows a replayed day's status (and Today's again); refreshLabels draws it
 function labelFor(m, st) { m.__st = st; }
 // a city station's latest sample result, from its dot or its label on the map
-function openSample(s) { if (window.SamplePopover) SamplePopover.open({station: s.source, name: s.full_name, feedDate: s.sampled, changed: s.pending ? s.pending.change : "", changedAt: s.pending ? s.pending.at : ""}); }
+function openSample(s) { if (window.SamplePopover) SamplePopover.open({station: s.source, name: s.full_name, feedDate: s.sampled}); }
 // a city dot moves to its rank's pane when a replayed day changes its status (and back when Today returns)
 function placeRank(m, st) { const p = "st" + (RANK_ST[st] || 0); if (m.options.pane === p) return; const on = MAP.hasLayer(m); if (on) MAP.removeLayer(m); m.options.pane = p; if (on) m.addTo(MAP); }
 
