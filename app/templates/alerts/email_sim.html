@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link rel="icon" href="{{ asset('brand/favicon.ico') }}"><link rel="apple-touch-icon" sizes="144x144" href="{{ asset('brand/bwtf_144x144.png') }}">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Email simulator — Admin · Surfrider SF Blue Water Task Force</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ asset('brand.css') }}">
+<style>
+  body{margin:0;background:var(--sand);color:var(--ink);font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:15px;line-height:1.5}
+  .wrap{max-width:var(--page-w);margin:0 auto;padding:20px 24px 40px}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;margin-top:16px}
+  .panel h2{font-size:17px;font-weight:900;margin:0 0 10px}
+  /* the form: one row of fields that wraps on a phone */
+  .sim-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px 18px;align-items:end}
+  .sim-form label,.sim-form fieldset{display:grid;gap:4px;font-size:13px;font-weight:700;color:var(--muted);margin:0}
+  .sim-form fieldset{border:0;padding:0}
+  .sim-form legend{padding:0;margin-bottom:4px}
+  .sim-form select,.sim-form input[type=date],.sim-form input[type=number]{font:inherit;font-weight:400;color:var(--ink);padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;min-width:0}
+  .sim-form .opt{display:flex;align-items:center;gap:8px;font-weight:400;color:var(--ink)}
+  .sim-form .opt small{color:var(--muted)}
+  .sim-form button{font:inherit;font-weight:700;background:var(--brand);color:#fff;border:0;border-radius:999px;padding:10px 18px;cursor:pointer}
+  .sim-form button:hover{background:var(--brand-deep)}
+  /* the two totals side by side */
+  .totals{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:16px}
+  .total{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:14px 18px}
+  .total .n{font-size:34px;font-weight:900;line-height:1.1;font-variant-numeric:tabular-nums}
+  .total .k{color:var(--muted);font-size:13px}
+  .total.plan{border-color:var(--brand)}
+  .total .delta{font-weight:700;color:var(--brand)}
+  table.t{border-collapse:collapse;width:100%;font-size:14px}
+  .t th,.t td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--sand2);vertical-align:top}
+  .t th{font-size:12px;color:var(--muted);font-weight:700}
+  .t td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .t tr.quiet td{color:var(--faint)}
+  .t tr.skipped td{color:var(--muted);background:var(--sand)}
+  .scroll{overflow-x:auto}
+  .chip{display:inline-block;border-radius:999px;padding:1px 9px;margin:1px 4px 1px 0;font-size:12px;font-weight:700;color:#fff;white-space:nowrap}
+  .chip.cso{background:#b5310a}.chip.posted{background:#d4763a}
+  .note{color:var(--muted);font-size:13px;margin:10px 0 0}
+  .warn{background:#fff6e5;border:1px solid #f0c36d;border-radius:8px;padding:10px 14px;margin-top:16px;font-size:14px}
+  @media (max-width:760px){.wrap{padding:14px 14px 30px}}
+</style>
+{% from "alerts/_tabs.html" import admin_tab_styles, admin_tabs %}{{ admin_tab_styles() }}
+</head>
+<body>
+{% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
+{{ topbar() }}
+<div class="wrap">
+  {% call page_head("Email simulator", "How many alert emails one subscriber would have got over a past stretch: from the sender as it works today, and with a hold, a window rule and the same-day rule. Nothing here changes what is sent.") %}
+    <p><b>Today's sender</b> sends a subscriber one email for each minute in which any of their stations got worse: clear → posted, clear → discharge, or posted → discharge. Clears send nothing.</p>
+    <p><b>Hold</b> waits that many minutes after a change and sends one email for everything that changed meanwhile. <b>From the first change</b> keeps the window fixed, so an alert waits at most the hold. <b>Restart on each change</b> sends once things have been quiet for the hold, which can wait longer.</p>
+    <p><b>Same-day rule</b>: a station that already had a discharge flag earlier the same Pacific day doesn't email a discharge again that day. A flag that comes back the next day emails as usual.</p>
+    <p>History is the <a href="/cso-history">Online Postings Timeline</a>'s: the alert log's real (not simulated) changes, with duplicate detections merged.</p>
+  {% endcall %}
+
+  {{ admin_tabs("email-sim") }}
+
+  <form class="panel sim-form" method="get" action="/alerts/email-sim">
+    <input type="hidden" name="go" value="1">
+    <label>Subscribed to
+      <select name="sub">
+        {%- set ns = namespace(group=None) %}
+        {%- for o in options %}
+          {%- if o.group != ns.group %}{% if ns.group %}</optgroup>{% endif %}{% if o.group %}<optgroup label="{{ o.group }}">{% endif %}{% set ns.group = o.group %}{% endif %}
+          <option value="{{ o.value }}"{% if o.value == s.sub %} selected{% endif %}>{{ o.label }}</option>
+        {%- endfor %}{% if ns.group %}</optgroup>{% endif %}
+      </select>
+    </label>
+    <label>From <input type="date" name="from" value="{{ s['from'].isoformat() }}"></label>
+    <label>To <input type="date" name="to" value="{{ s['to'].isoformat() }}"></label>
+    <label>Hold (minutes) <input type="number" name="hold" min="0" max="1440" step="1" value="{{ s.hold }}"></label>
+    <fieldset><legend>Window</legend>
+      <label class="opt"><input type="radio" name="window" value="first"{% if s.window == 'first' %} checked{% endif %}> From the first change</label>
+      <label class="opt"><input type="radio" name="window" value="restart"{% if s.window == 'restart' %} checked{% endif %}> Restart on each change</label>
+    </fieldset>
+    <fieldset><legend>Rules</legend>
+      <label class="opt"><input type="checkbox" name="same_day" value="on"{% if s.same_day %} checked{% endif %}> Same-day rule <small>(no repeat discharge email)</small></label>
+    </fieldset>
+    <div><button type="submit">Count emails</button></div>
+  </form>
+
+  {% if note %}<p class="warn">{{ note }}</p>{% endif %}
+
+  <div class="totals">
+    <div class="total"><div class="n">{{ r.now.total }}</div><div class="k">emails from today's sender</div></div>
+    <div class="total plan">
+      <div class="n">{{ r.plan.total }}</div>
+      <div class="k">with {% if s.hold %}a {{ s.hold }}-minute hold ({{ 'from the first change' if s.window == 'first' else 'restarting on each change' }}){% else %}no hold{% endif %}{% if s.same_day %} and the same-day rule{% endif %}</div>
+      {%- set diff = r.plan.total - r.now.total %}
+      {% if diff %}<div class="delta">{{ "%+d" % diff }} ({{ "%+d" % ((diff * 100 / r.now.total) | round | int) if r.now.total else "" }}%)</div>{% endif %}
+    </div>
+    <div class="total"><div class="n">{{ r.plan.longest_wait }} min</div><div class="k">longest an alert waits</div></div>
+    <div class="total"><div class="n">{{ r.plan.skipped | length }}</div><div class="k">discharges the same-day rule skips</div></div>
+  </div>
+
+  <section class="panel">
+    <h2>By day · {{ r.label }}</h2>
+    <div class="scroll"><table class="t">
+      <thead><tr><th>Day</th><th>Today's sender</th><th>With these settings</th></tr></thead>
+      <tbody>
+        {%- for d in r.days %}
+        <tr{% if not d.now and not d.plan %} class="quiet"{% endif %}><td>{{ d.day.strftime('%a %-m/%-d') }}</td><td class="n">{{ d.now }}</td><td class="n">{{ d.plan }}</td></tr>
+        {%- endfor %}
+        <tr><td><b>Total</b></td><td class="n"><b>{{ r.now.total }}</b></td><td class="n"><b>{{ r.plan.total }}</b></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="panel">
+    <h2>Emails with these settings</h2>
+    {% if r.rows %}
+    <div class="scroll"><table class="t">
+      <thead><tr><th>Sent (Pacific)</th><th>First change</th><th>Stations</th></tr></thead>
+      <tbody>
+        {%- for row in r.rows %}
+        {%- if row.kind == 'email' %}{% set e = row.email %}
+        <tr><td class="n">{{ fmt_time(e.send_at) }}</td><td class="n">{{ fmt_time(e.first_at) if e.waited_minutes else '—' }}</td>
+          <td>{% for name, to in e.stations %}<span class="chip {{ to }}">{{ name }} · {{ labels[to] }}</span>{% endfor %}</td></tr>
+        {%- else %}{% set c = row.change %}
+        <tr class="skipped"><td class="n">{{ fmt_time(c.at) }}</td><td>skipped</td><td>{{ c.station_name }} · {{ labels[c.to] }}: its discharge flag was already up earlier that day</td></tr>
+        {%- endif %}
+        {%- endfor %}
+      </tbody>
+    </table></div>
+    {% else %}
+    <p class="note">No emails for {{ r.label }} in this range.</p>
+    {% endif %}
+    <p class="note">Each row is one email. When a hold is set, it goes out when the window closes, and "First change" is the change that opened it.{% if history_since %} History starts {{ history_since }}.{% endif %}</p>
+  </section>
+</div>
+{{ footer() }}
+{{ tabbar() }}
+<script src="{{ asset('tables.js') }}" defer></script>   {# every table on the site carries it: 50 rows, then "Show all" #}
+</body></html>
