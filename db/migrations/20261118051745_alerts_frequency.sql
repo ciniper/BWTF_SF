@@ -1,4 +1,4 @@
--- Alert frequency: durable per-subscriber windows, Pacific-day CSO memory,
+-- Alert frequency: durable per-subscriber windows, Pacific-day status memory,
 -- and running-list email context. Apply after 024, with no simulation active.
 -- Real delivery is held; targeted simulations retain immediate dispatch.
 begin;
@@ -13,22 +13,25 @@ create table public.alert_pending (
   due_at timestamptz not null,
   transitions jsonb not null
 );
-create table public.alert_discharge_day (
-  station_id text primary key,
-  day date not null
+create table public.alert_status_day (
+  station_id text not null,
+  status text not null check (status in ('posted','cso')),
+  day date not null,
+  primary key (station_id, status)
 );
 alter table public.alert_pending enable row level security;
-alter table public.alert_discharge_day enable row level security;
-revoke all on public.alert_pending, public.alert_discharge_day from public, anon, authenticated;
-grant all on public.alert_pending, public.alert_discharge_day to service_role;
--- Seed today's memory from real PG history, including clears from an old CSO.
-insert into public.alert_discharge_day
-select t->>'station_id', max((l.created_at at time zone 'America/Los_Angeles')::date)
+alter table public.alert_status_day enable row level security;
+revoke all on public.alert_pending, public.alert_status_day from public, anon, authenticated;
+grant all on public.alert_pending, public.alert_status_day to service_role;
+-- Seed today's memory from real PG history, including clears from an old posting or discharge.
+insert into public.alert_status_day
+select t->>'station_id', st.status, max((l.created_at at time zone 'America/Los_Angeles')::date)
 from public.alert_log l cross join lateral jsonb_array_elements(l.results->'transitions') t
+cross join lateral (select distinct unnest(array[t->>'from',t->>'to']) as status) st
 where l.source in ('pg_live','pg_shadow') and not l.simulated
-  and (t->>'from' = 'cso' or t->>'to' = 'cso')
+  and st.status in ('posted','cso')
   and l.created_at >= ((now() at time zone 'America/Los_Angeles')::date::timestamp at time zone 'America/Los_Angeles')
-group by t->>'station_id';
+group by t->>'station_id', st.status;
 
 create or replace function public.bwtf_queue_alerts(p_transitions jsonb, p_recipients jsonb)
 returns jsonb language plpgsql security definer set search_path = public as $$
@@ -41,8 +44,8 @@ begin
     select coalesce(jsonb_agg(t), '[]') into eligible
     from jsonb_array_elements(p_transitions) t
     where t->>'station_id'=any(s.station_ids) and not (
-      t->>'to'='cso' and exists(select 1 from alert_discharge_day d
-        where d.station_id=t->>'station_id' and d.day=(now() at time zone 'America/Los_Angeles')::date));
+      exists(select 1 from alert_status_day d
+        where d.station_id=t->>'station_id' and d.status=t->>'to' and d.day=(now() at time zone 'America/Los_Angeles')::date));
     if jsonb_array_length(eligible)=0 then continue; end if;
     select coalesce(transitions,'[]') into merged from alert_pending where subscriber_id=s.id;
     select jsonb_agg(t order by t->>'station_id') into merged from (
@@ -178,11 +181,11 @@ declare
   log_source     text;
 begin
   perform pg_advisory_xact_lock(61720415);
-  -- A discharge carried overnight counts as already up today, even on its clear tick.
-  insert into alert_discharge_day
-    select station_id,(now() at time zone 'America/Los_Angeles')::date
-    from watcher_state_shadow where status='cso'
-    on conflict(station_id) do update set day=excluded.day;
+  -- A status carried overnight counts as already up today, even on its clear tick.
+  insert into alert_status_day
+    select station_id,status,(now() at time zone 'America/Los_Angeles')::date
+    from watcher_state_shadow where status in ('posted','cso')
+    on conflict(station_id,status) do update set day=excluded.day;
   select not exists (select 1 from watcher_state_shadow) into is_baseline;
   log_source := case when p_mode = 'live' then 'pg_live' else 'pg_shadow' end;
 
@@ -268,10 +271,10 @@ begin
     perform bwtf_log_downgrades(sim_down, true, log_source);
   end if;
 
-  insert into alert_discharge_day
-    select station_id,(now() at time zone 'America/Los_Angeles')::date
-    from watcher_state_shadow where status='cso'
-    on conflict(station_id) do update set day=excluded.day;
+  insert into alert_status_day
+    select station_id,status,(now() at time zone 'America/Los_Angeles')::date
+    from watcher_state_shadow where status in ('posted','cso')
+    on conflict(station_id,status) do update set day=excluded.day;
   if p_mode='live' then perform bwtf_flush_alerts(now()); end if;
   return jsonb_build_object(
     'stations' , n_stations, 'baselined', is_baseline, 'mode', p_mode,

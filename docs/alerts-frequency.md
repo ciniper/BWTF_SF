@@ -5,7 +5,11 @@ The simulator, email previews and SQL policy are implemented on this branch. Pro
 
 The original feed recordings and broader discharge observations remain on the source branch. References below to `feed/changes.log` refer to that branch's `docs/discharge-observations/feed/changes.log`.
 
-## Too many alert emails on a storm day
+## Current policy update
+
+Same-day suppression now covers **both postings and discharges**, tracked separately. A first posted → discharge escalation still alerts. A return to either status on the next Pacific day is eligible again. The Nov 13–17 replay is now **14 original / 10 with same-day suppression / 5 with suppression plus the 15-minute hold**. Two additional repeats are suppressed: Sloat and Balboa postings at 6:58pm on Nov 15. The evening batch starts with Crane Cove at 7:01pm and sends at 7:16pm; the suppressed sites appear in “Still in effect.”
+
+## Original proposal: too many alert emails on a storm day
 - Because our watcher checks so often, a storm day sends tons of emails.
 - SFPUC sends far fewer updates (e.g. one morning posting email covering all three Baker sites), so subscribers aren't spammed.
 - To consider: batching or throttling our alerts (e.g. one email per status change per area, or a daily cap) so a storm day doesn't flood people.

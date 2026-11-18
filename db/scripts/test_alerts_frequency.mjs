@@ -53,7 +53,7 @@ assert.equal(await scalar('select count(*) from alert_pending'),0); // repeat st
 assert.equal(await scalar("select count(*) from alert_log where event_type='cso' and source='pg_live'"),2);
 // Mimic a discharge last seen yesterday, then a fresh event today.
 await tick(['ok','posted','ok']);
-await db.exec("update alert_discharge_day set day=day-1");
+await db.exec("update alert_status_day set day=day-1");
 await tick(['cso','posted','ok']);
 assert.equal(await scalar('select count(*) from alert_pending'),1);
 // Unsubscribe during hold: no send. Resume subscription for subsequent cases.
@@ -69,15 +69,28 @@ assert.equal(await scalar('select count(*) from alert_pending'),1);
 await db.exec("insert into watcher_config values('brevo_api_key','fake',now())");
 await tick(['cso','posted','posted']); await tick(['cso','posted','posted']);
 assert.equal(await scalar('select count(*) from net.requests'),2); // no duplicate retry
+// Posting flicker after delivery is suppressed, with no new batch; escalation still alerts.
+await tick(['cso','posted','ok']); await tick(['cso','posted','posted']);
+assert.equal(await scalar('select count(*) from alert_pending'),0);
+await tick(['cso','posted','cso']);
+assert.equal(await scalar("select transitions->0->>'to' from alert_pending"),'cso');
+await db.exec('delete from alert_pending');
+// A posting that returns on the next Pacific day is eligible again.
+await tick(['cso','posted','ok']);
+await db.exec("update alert_status_day set day=day-1 where station_id='4610'");
+await tick(['cso','posted','posted']);
+assert.equal(await scalar('select count(*) from alert_pending'),1);
+await db.exec('delete from alert_pending');
 // A change exactly at the deadline joins; a later change opens a fresh batch.
 await tick(['ok','ok','ok']);
+await db.exec('delete from alert_status_day'); // independent window case
 await tick(['posted','ok','ok']);
 await db.exec('begin; update alert_pending set due_at=now();');
 await tick(['posted','posted','ok']);
 await db.exec('commit');
 assert.equal(await scalar('select count(*) from net.requests'),3);
 assert.match(await scalar("select body->>'subject' from net.requests order by id desc limit 1"),/2 beaches/);
-await tick(['ok','ok','ok']); await tick(['posted','ok','ok']);
+await tick(['ok','ok','ok']); await db.exec('delete from alert_status_day'); await tick(['posted','ok','ok']);
 await db.exec("update alert_pending set due_at=now()-interval '1 second'");
 await tick(['posted','posted','ok']);
 assert.equal(await scalar('select count(*) from net.requests'),4);
@@ -99,11 +112,11 @@ assert.match(await scalar("select body->>'subject' from net.requests order by id
 assert.equal(await scalar('select count(*) from alert_pending'),0);
 await db.exec('delete from simulated_cso');
 // Carryover CSO is remembered on its first clear tick today (not last email time).
-await db.exec("update watcher_state_shadow set status='cso' where station_id='4608'; update alert_discharge_day set day=day-1");
+await db.exec("update watcher_state_shadow set status='cso' where station_id='4608'; update alert_status_day set day=day-1");
 await tick(['ok','posted','ok']); await tick(['cso','posted','ok']);
 assert.equal(await scalar('select count(*) from alert_pending'),0);
 // Off mode does not flush queued alerts, and shadow processing never queues.
-await tick(['ok','ok','ok']); await tick(['posted','ok','ok']);
+await tick(['ok','ok','ok']); await db.exec('delete from alert_status_day'); await tick(['posted','ok','ok']);
 await db.exec("update watcher_config set value='off' where key='mode'; update alert_pending set due_at=now()-interval '1 second'");
 await db.exec('select bwtf_flush_alerts(now())');
 assert.equal(await scalar('select count(*) from net.requests'),5);
@@ -122,7 +135,7 @@ assert.equal(await scalar("select has_function_privilege('anon','bwtf_flush_aler
 assert.equal(await scalar("select has_table_privilege('authenticated','alert_pending','select')"),false);
 // Replay the same real storm fixture as the Python simulator through SQL.
 const changes=JSON.parse(execFileSync(process.env.PYTHON || 'python3',['-c',`import json; from features.alerts.email_sim import changes_from_windows; from pathlib import Path; c=changes_from_windows(json.loads(Path('tests/fixtures/email_sim_windows_2026-11-17.json').read_text())['stations']); print(json.dumps([{'at':x.at.isoformat(),'sid':x.station_id,'to':x.to} for x in c]))`],{encoding:'utf8'}));
-await db.exec("truncate alert_pending, alert_discharge_day, watcher_state_shadow, net.requests; delete from subscribers; update watcher_config set value='live' where key='mode'");
+await db.exec("truncate alert_pending, alert_status_day, watcher_state_shadow, net.requests; delete from subscribers; update watcher_config set value='live' where key='mode'");
 await db.exec("insert into subscribers(email,station_ids) values('all@example.test',array(select generate_series(4601,4620)::text))");
 const state=Object.fromEntries(Array.from({length:20},(_,i)=>[String(4601+i),'ok']));
 const feed=()=>Object.entries(state).map(([sid,status])=>({stationid:sid,stationname:sid,cso:status==='cso'?'yes':null,s_color:status==='posted'?'R':'G'}));

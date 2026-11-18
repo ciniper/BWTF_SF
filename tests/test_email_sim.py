@@ -29,17 +29,17 @@ def storm_week():
     return E.changes_from_windows(json.loads(FIXTURE.read_text())["stations"])
 
 
-def test_the_storm_week_audit_14_today_11_with_the_same_day_rule_5_with_a_15_minute_hold():
+def test_the_storm_week_audit_14_today_10_with_the_same_day_rule_5_with_a_15_minute_hold():
     """docs/alerts-frequency.md, "Too many alert emails": someone subscribed to every station, 11/13–11/17."""
     c, every = storm_week(), sorted(E.NAME_OF)
     now = E.simulate(c, every, START, END)
     rule = E.simulate(c, every, START, END, same_day=True)
     held = E.simulate(c, every, START, END, 15, "first", same_day=True)
-    assert (now["total"], rule["total"], held["total"]) == (14, 11, 5)
+    assert (now["total"], rule["total"], held["total"]) == (14, 10, 5)
     assert {d.isoformat(): n for d, n in now["by_day"].items()} == {"2026-11-13": 6, "2026-11-15": 5, "2026-11-17": 3}
-    assert {d.isoformat(): n for d, n in rule["by_day"].items()} == {"2026-11-13": 6, "2026-11-15": 4, "2026-11-17": 1}
+    assert {d.isoformat(): n for d, n in rule["by_day"].items()} == {"2026-11-13": 6, "2026-11-15": 3, "2026-11-17": 1}
     skipped = [(x.station_id, x.at.astimezone(PT).strftime("%m/%d %H:%M")) for x in rule["skipped"]]
-    assert skipped == [("4603", "11/15 19:03"), ("4605", "11/17 09:11"), ("4601", "11/17 09:27")]   # Vicente, Lincoln, Fort Funston
+    assert skipped == [("4602", "11/15 18:58"), ("4604", "11/15 18:58"), ("4603", "11/15 19:03"), ("4605", "11/17 09:11"), ("4601", "11/17 09:27")]   # Vicente, Lincoln, Fort Funston
     assert held["longest_wait"] == 15
 
 
@@ -76,7 +76,19 @@ def test_the_same_day_rule_skips_an_on_off_on_but_not_a_flag_back_the_next_day()
     next_day = [ch(14, 7, 0, "v", "ok", "cso"), ch(14, 18, 0, "v", "cso", "ok"), ch(15, 9, 0, "v", "ok", "cso")]
     assert E.simulate(next_day, ["v"], START, END, same_day=True)["total"] == 2 and not E.simulate(next_day, ["v"], START, END, same_day=True)["skipped"]
     posted_only = [ch(14, 7, 0, "p", "ok", "posted"), ch(14, 8, 0, "p", "posted", "ok"), ch(14, 9, 0, "p", "ok", "posted")]
-    assert E.simulate(posted_only, ["p"], START, END, same_day=True)["total"] == 2   # the rule is for discharges only
+    assert E.simulate(posted_only, ["p"], START, END, same_day=True)["total"] == 1   # repeated postings are suppressed too
+
+
+def test_posting_memory_is_separate_from_discharge_and_resets_next_day():
+    c = [ch(13, 8, 0, "p", "ok", "posted"), ch(13, 9, 0, "p", "posted", "ok"),
+         ch(13, 10, 0, "p", "ok", "posted"), ch(13, 11, 0, "p", "posted", "cso"),
+         ch(13, 12, 0, "p", "cso", "ok"), ch(14, 0, 1, "p", "ok", "posted")]
+    r = E.simulate(c, ["p"], START, END, same_day=True)
+    assert [e.stations for e in r["emails"]] == [[("p", "posted")], [("p", "cso")], [("p", "posted")]]
+    assert len(r["skipped"]) == 1 and r["skipped"][0].to == "posted"
+    carry = [ch(13, 8, 0, "p", "ok", "posted"), ch(14, 8, 0, "p", "posted", "ok"),
+             ch(14, 9, 0, "p", "ok", "posted")]
+    assert E.simulate(carry, ["p"], START, END, same_day=True)["total"] == 1
 
 
 def test_a_flag_up_before_the_range_still_counts_for_the_same_day_rule():
@@ -124,7 +136,7 @@ def test_a_running_list_adds_what_is_still_in_effect_and_keeps_the_count():
     assert tue["email"].stations == [("Crissy Field Beach East", "posted")]
     assert tue["still"] == [("Islais Creek", "cso"), ("Ocean Beach at Vicente Street", "cso"),   # discharges first; Lincoln and
                             ("Crane Cove Park", "posted"), ("Mission Creek", "posted")]           # Fort Funston had cleared by 8:34
-    sun = next(r for r in run["rows"] if r["kind"] == "email" and r["at"] == at(15, 19, 13))
+    sun = next(r for r in run["rows"] if r["kind"] == "email" and r["at"] == at(15, 19, 16))
     assert ("Ocean Beach at Vicente Street", "cso") in sun["still"]   # the discharge the same-day rule didn't email still shows here
     p = tue["preview"]
     assert "Still in effect &middot; " in p["html_body"] and p["html_body"].index("Still in effect") < p["html_body"].index("From SFPUC:")
@@ -140,8 +152,8 @@ def test_the_page_renders_and_sits_behind_the_passphrase():
     with app.test_request_context("/alerts/email-sim"):
         html = E.render_page(storm_week(), settings)
     assert "<h1>Email simulator</h1>" in html and 'href="/alerts/email-sim" class="on" aria-current="page"' in html
-    assert '<div class="n">14</div>' in html and '<div class="n">5</div>' in html and html.count('class="skipped"') == 3
-    assert "Ocean Beach at Lincoln Way · sewage discharge: its discharge flag was already up earlier that day" in html
+    assert '<div class="n">14</div>' in html and '<div class="n">5</div>' in html and html.count('class="skipped"') == 5
+    assert "Ocean Beach at Lincoln Way · sewage discharge: this sewage discharge status was already present earlier that day" in html
     with app.test_client() as c:
         locked = c.get("/alerts/email-sim").data.decode()
         assert 'name="next" value="/alerts/email-sim"' in locked and "<h1>Admin</h1>" in locked

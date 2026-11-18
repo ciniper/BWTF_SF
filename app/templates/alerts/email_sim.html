@@ -94,7 +94,7 @@
       <label class="opt"><input type="radio" name="content" value="running"{% if s.content == 'running' %} checked{% endif %}> Running list <small>(+ still in effect)</small></label>
     </fieldset>
     <fieldset><legend>Rules</legend>
-      <label class="opt"><input type="checkbox" name="same_day" value="on"{% if s.same_day %} checked{% endif %}> Same-day rule <small>(no repeat discharge email)</small></label>
+      <label class="opt"><input type="checkbox" name="same_day" value="on"{% if s.same_day %} checked{% endif %}> Same-day rule <small>(no repeat posting or discharge email)</small></label>
     </fieldset>
     <div><button type="submit">Count emails</button></div>
   </form>
@@ -110,7 +110,7 @@
       {% if diff %}<div class="delta">{{ "%+d" % diff }} ({{ "%+d" % ((diff * 100 / r.now.total) | round | int) if r.now.total else "" }}%)</div>{% endif %}
     </div>
     <div class="total"><div class="n">{{ r.plan.longest_wait }} min</div><div class="k">longest an alert waits</div></div>
-    <div class="total"><div class="n">{{ r.plan.skipped | length }}</div><div class="k">discharges the same-day rule skips</div></div>
+    <div class="total"><div class="n">{{ r.plan.skipped | length }}</div><div class="k">status repeats the same-day rule skips</div></div>
   </div>
 
   <section class="panel">
@@ -146,7 +146,7 @@
             </details>
             {%- endif %}</td></tr>
         {%- else %}{% set c = row.change %}
-        <tr class="skipped"><td class="n">{{ fmt_time(c.at) }}</td><td>skipped</td><td>{{ c.station_name }} · {{ labels[c.to] }}: its discharge flag was already up earlier that day</td></tr>
+        <tr class="skipped"><td class="n">{{ fmt_time(c.at) }}</td><td>skipped</td><td>{{ c.station_name }} · {{ labels[c.to] }}: this {{ labels[c.to] }} status was already present earlier that day</td></tr>
         {%- endif %}
         {%- endfor %}
       </tbody>

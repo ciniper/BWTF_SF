@@ -17,8 +17,8 @@ nothing. The policy knobs (production activation requires the alert-frequency mi
   hold        wait this many minutes after a change and send one email for everything that changed meanwhile.
   window      "first": the window starts at the first change and doesn't move, so an alert waits at most the hold.
               "restart": every new change restarts the clock; the email goes once things are quiet for the hold.
-  same-day    a station that already had a discharge flag earlier the same Pacific day doesn't email a discharge
-              again that day. A flag that comes back the next day emails as usual.
+  same-day    suppress a return to the same status (posted or discharge) within a Pacific day.
+              Each status is tracked separately, so a first posted → discharge escalation still alerts.
 """
 from __future__ import annotations
 
@@ -110,16 +110,16 @@ def simulate(changes: list[Change], station_ids, start: datetime, end: datetime,
     Changes before ``start`` still count for the same-day rule (a flag that was up that morning)."""
     wanted = set(station_ids)
     hold = timedelta(minutes=max(0, int(hold_minutes)))
-    discharge_days: dict[str, set] = {}
+    status_days: dict[tuple[str, str], set] = {}
     triggers, skipped = [], []
     for c in changes:
         if c.station_id in wanted and start <= c.at < end and c.worse:
-            if same_day and c.to == "cso" and c.day in discharge_days.get(c.station_id, ()):
+            if same_day and c.day in status_days.get((c.station_id, c.to), ()):
                 skipped.append(c)
             else:
                 triggers.append(c)
-        if "cso" in (c.frm, c.to):
-            discharge_days.setdefault(c.station_id, set()).add(c.day)
+        for status in {c.frm, c.to} & {"posted", "cso"}:
+            status_days.setdefault((c.station_id, status), set()).add(c.day)
 
     emails: list[Email] = []
     for c in triggers:
@@ -249,7 +249,7 @@ def run(changes: list[Change], settings: dict) -> dict:
     while d <= settings["to"]:
         days.append({"day": d, "now": now["by_day"].get(d, 0), "plan": plan["by_day"].get(d, 0)})
         d += timedelta(days=1)
-    # one list in time order: the proposal's emails, and the discharges the same-day rule skipped
+    # one list in time order: the proposal's emails, and the status repeats the same-day rule skipped
     running = settings.get("content") == "running"
     rows = []
     for i, e in enumerate(plan["emails"]):
