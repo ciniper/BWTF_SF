@@ -467,7 +467,7 @@ def build_daily_color_tracks(rows: list[dict], days: list[date]) -> list[dict]:
                 runs[-1]["days"] += 1
             else:
                 runs.append({"color": color, "start": day, "end": day, "days": 1})
-        tracks.append({"name": name, "runs": runs})
+        tracks.append({"station_id": station_id, "name": name, "runs": runs})
     return tracks
 
 
@@ -502,6 +502,27 @@ def handle_daily_colors(query, body):
     return _html(render_template("cso_history/daily_colors.html", tracks=tracks, days=days,
                                  count=count, ranges=ranges, unavailable=unavailable, range_error=error,
                                  datasf_api=BEACH_SAMPLES_URL, datasf_page=DATASET_PAGE_URL))
+
+
+def handle_daily_colors_api(query, body):
+    """Read only the saved daily summaries; never poll an upstream source."""
+    today = datetime.now(_PACIFIC).date()
+    try:
+        first = date.fromisoformat(query.get("start", [(today - timedelta(days=13)).isoformat()])[0])
+        last = date.fromisoformat(query.get("end", [today.isoformat()])[0])
+        if first > last or last > today or (last - first).days >= 366:
+            raise ValueError
+    except (ValueError, IndexError):
+        return _json({"error": "Choose up to 366 days in order, ending no later than today."}, 400)
+    if not sb.is_configured():
+        return _json({"error": "Daily color history is unavailable in this environment."}, 503)
+    try:
+        rows = _fetch_daily_colors(first, last)
+    except (sb.SupabaseError, RequestException):
+        return _json({"error": "Daily color history is temporarily unavailable."}, 503)
+    days = [first + timedelta(days=i) for i in range((last - first).days + 1)]
+    return _json({"start": first.isoformat(), "end": last.isoformat(),
+                  "tracks": build_daily_color_tracks(rows, days)})
 
 
 def handle_events(query, body):
@@ -573,4 +594,5 @@ GET_ROUTES = {
     "/cso-history": handle_page,
     "/cso-history/daily-colors": handle_daily_colors,
     "/cso-history/api/events": handle_events,
+    "/cso-history/api/daily-colors": handle_daily_colors_api,
 }

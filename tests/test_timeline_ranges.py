@@ -38,3 +38,38 @@ def test_sources_available_even_when_history_is_unavailable():
             for endpoint in ("getBeaches", "getCSV", "/cso-history/api/events"):
                 assert endpoint in html
             assert 'A posting change alone does not establish a new sample.' in html
+
+
+def test_daily_api_joins_by_station_id_and_preserves_gaps():
+    import json
+    rows = [
+        {"station_id": "4613", "station_name": "Aquatic Park", "day": "2026-10-31", "status_last": "ok", "sample_color": "W"},
+        {"station_id": "4613", "station_name": "Aquatic Park", "day": "2026-11-01", "status_last": "ok", "sample_color": "G"},
+        {"station_id": "4613", "station_name": "Aquatic Park", "day": "2026-11-02", "status_last": "posted", "sample_color": "R"},
+    ]
+    with patch.object(P.sb, "is_configured", return_value=True), patch.object(P, "_fetch_daily_colors", return_value=rows) as fetch:
+        with app.test_client() as client:
+            response = client.get('/cso-history/api/daily-colors?start=2026-10-31&end=2026-11-03')
+    assert response.status_code == 200
+    fetch.assert_called_once_with(date(2026, 10, 31), date(2026, 11, 3))
+    payload = response.get_json()
+    track = next(t for t in payload['tracks'] if t['station_id'] == '4613')
+    assert [(r['color'], r['days']) for r in track['runs']] == [('gray', 1), ('green', 1), (None, 2)]
+    assert track['runs'][-1]['end'] == '2026-11-03'
+
+
+def test_daily_api_rejects_bad_ranges_before_any_read():
+    with patch.object(P, "_fetch_daily_colors") as fetch:
+        for query in ({'start': ['bad']}, {'start': ['2026-11-03'], 'end': ['2026-11-01']},
+                      {'start': ['2024-01-01'], 'end': ['2026-11-01']},
+                      {'end': ['2999-01-01']}):
+            assert P.handle_daily_colors_api(query, b'')[0] == 400
+    fetch.assert_not_called()
+
+
+def test_daily_api_unavailable_is_explicit_and_does_not_affect_events():
+    with patch.object(P.sb, 'is_configured', return_value=False):
+        assert P.handle_daily_colors_api({}, b'')[0] == 503
+        assert P.handle_events({}, b'')[0] == 200
+    with patch.object(P.sb, 'is_configured', return_value=True), patch.object(P, '_fetch_daily_colors', side_effect=P.RequestException('offline')):
+        assert P.handle_daily_colors_api({}, b'')[0] == 503

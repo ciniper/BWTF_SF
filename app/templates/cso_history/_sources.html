@@ -11,7 +11,7 @@
     <li><a href="https://infrastructure.sfwater.org/lims.asmx/getBeaches">SFPUC map status API — getBeaches</a>: stations, <code>sample_date</code>, posting and discharge flags. Checked about once a minute; also supplies the daily gray/green history.</li>
     <li><a href="https://infrastructure.sfwater.org/lims.asmx/getCSV">SFPUC early lab results API — getCSV</a>: lab indicator results by station and collection date, which can appear before DataSF. Checked about every two minutes.</li>
     <li><a href="{{ datasf_api }}">DataSF lab results API — JSON</a>: published water-quality measurements, mirrored about every half hour. <a href="{{ datasf_page }}">Dataset documentation</a>.</li>
-    <li><a href="/cso-history/api/events">This site's timeline API — saved observations</a>: posting events and sample arrival history used by the main timeline. Daily colors use saved station-day observations.</li>
+    <li><a href="/cso-history/api/events">This site's timeline API — saved observations</a>: posting events and sample arrival history used by the main timeline. <a href="/cso-history/api/daily-colors">Daily colors API — saved station-day summaries</a> (defaults to 14 days; accepts start and end dates).</li>
     <li><a href="https://webapps.sfpuc.org/sapps/beachesandbay.html">SFPUC public beach map</a>: the public-facing map, rather than a raw API response.</li>
   </ul>
   <p><strong>Collection date:</strong> <code>sample_date</code> is when water was collected. <strong>Publication time:</strong> when the source made a result public. <strong>First observed:</strong> when our watcher first saw it; periodic checks do not establish the exact publication time. “Seen by” means it was already present when recording began.</p>
