@@ -36,6 +36,7 @@ from requests.exceptions import RequestException
 
 from shared import supabase as sb
 from shared.stations import STATIONS
+from shared.datasf import BEACH_SAMPLES_URL, DATASET_PAGE_URL
 from zoneinfo import ZoneInfo
 
 from shared.alert_log import REALTIME_SOURCES as _SOURCES  # our real-time detections only
@@ -428,7 +429,7 @@ def _json(obj, status: int = 200):
 # ─── route handlers ──────────────────────────────────────────────────────────
 
 def handle_page(query, body):
-    return _html(render_template("cso_history/page.html"))
+    return _html(render_template("cso_history/page.html", datasf_api=BEACH_SAMPLES_URL, datasf_page=DATASET_PAGE_URL))
 
 
 def _fetch_daily_colors(first_day: date, last_day: date) -> list[dict]:
@@ -475,7 +476,19 @@ def handle_daily_colors(query, body):
     selected = query.get("days", ["30"])[0]
     count = next((days for days in ranges if str(days) == selected), 30)
     today = datetime.now(_PACIFIC).date()
-    days = [today - timedelta(days=offset) for offset in range(count - 1, -1, -1)]
+    end = today
+    error = None
+    if query.get("start") or query.get("end"):
+        try:
+            start = date.fromisoformat(query.get("start", [""])[0])
+            end = date.fromisoformat(query.get("end", [""])[0])
+            if start > end or end > today or (end - start).days >= 366:
+                raise ValueError
+            count = (end - start).days + 1
+        except ValueError:
+            error = "Choose dates in order, ending no later than today, with at most 366 days."
+            end = today
+    days = [end - timedelta(days=offset) for offset in range(count - 1, -1, -1)]
     tracks = []
     unavailable = not sb.is_configured()
     if not unavailable:
@@ -487,7 +500,8 @@ def handle_daily_colors(query, body):
             if rows:
                 tracks = build_daily_color_tracks(rows, days)
     return _html(render_template("cso_history/daily_colors.html", tracks=tracks, days=days,
-                                 count=count, ranges=ranges, unavailable=unavailable))
+                                 count=count, ranges=ranges, unavailable=unavailable, range_error=error,
+                                 datasf_api=BEACH_SAMPLES_URL, datasf_page=DATASET_PAGE_URL))
 
 
 def handle_events(query, body):

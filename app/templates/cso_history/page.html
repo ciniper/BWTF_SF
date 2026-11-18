@@ -8,8 +8,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{{ asset('brand.css') }}">
 <style>
-  .legend{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;margin-left:auto;font-size:13px;font-weight:600;color:#54576F}
-  .legend .key{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;margin:0 0 14px;font-size:13px;font-weight:600;color:#54576F}
+  .legend .key{display:inline-flex;align-items:center;gap:6px;max-width:100%}
+  .legend .swatch{flex-shrink:0}
   .swatch{display:inline-block;width:22px;height:12px;border-radius:4px}
   .swatch.posted{background:#d4763a}
   .swatch.cso{background:repeating-linear-gradient(135deg,#b5310a 0 5px,#992a09 5px 8px)}
@@ -74,6 +75,16 @@
   details.tableview th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#54576F;background:#f7fafb}
 
   .foot{color:#54576F;font-size:13px;line-height:1.6;margin-top:16px}
+  .timeline-tools{background:white;border:1px solid #d9e4e8;border-radius:16px;padding:16px;margin-bottom:16px}
+  .timeline-tools label{font-size:13px;font-weight:700;color:#54576F;display:inline-flex;align-items:center;gap:8px}
+  .timeline-tools input,.timeline-tools select{font:inherit;min-height:36px;max-width:100%;border:1px solid #bdcbd2;border-radius:6px;padding:4px 8px;background:#fff;color:#26272a}
+  .view-nav{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+  .view-nav a{padding:8px 12px;border:1px solid #d9e4e8;border-radius:8px;color:#0072BC;font-size:14px}
+  .view-nav [aria-current]{background:#e9f4fa;font-weight:700}
+  .chart-hint{font-size:13px;color:#54576F;margin:10px 0}
+  #range-error{color:#992a09;font-size:14px}
+  .legend-group[hidden]{display:none}
+  .legend-group{display:flex;flex-wrap:wrap;gap:8px 16px;width:100%}
   .loading{padding:48px;text-align:center;color:#8a949b}
 </style>
 </head>
@@ -83,32 +94,55 @@
 <div class="wrap">
   {% call page_head("Online Postings Timeline", "What the public could see on SFPUC's beach map, minute by minute, station by station.", "record", link=("/records#timeline", "How we get these records")) %}
     
-    <p>What the public could see, minute by minute. For each station: when its sign went up on SFPUC's beach map — a bacteria posting or a CSO discharge flag — how it changed, and when it came down; and beneath it, each sample's collection date and when results were first observed in getCSV and DataSF. Our watchers read the map once a minute, getCSV about every two minutes, and DataSF every half hour, so this is an independent record of what was shown and when, not the city's own history. What was actually discharged is on the <a href="/discharges">Discharge Ledger</a>; the State's filed advisories are on <a href="/postings">Beach Postings</a>.</p>
+    <p>Follow bacteria postings and combined sewer overflow (CSO) flags on SFPUC’s map. Add sample and result-arrival details when you want to compare them.</p>
+    <p>This is our independent observation history. Reported discharges are on the <a href="/discharges">Discharge Ledger</a>; State-filed advisories are on <a href="/postings">Beach Postings</a>.</p>
   {% endcall %}
 
+  {% include "cso_history/_sources.html" %}
+  <nav class="view-nav" aria-label="Timeline views">
+    <a href="/cso-history" aria-current="page">Postings &amp; samples</a>
+    <a href="/cso-history/daily-colors">Gray &amp; green daily history</a>
+  </nav>
   <div id="status" class="loading">Loading event history…</div>
 
   <div id="content" style="display:none">
     <div id="banner" class="banner" style="display:none"></div>
+    <div class="timeline-tools">
     <div class="controls">
       <button class="range-btn active" data-days="14">14 days</button>
       <button class="range-btn" data-days="30">30 days</button>
       <button class="range-btn" data-days="all">All</button>
-      <a class="range-btn" href="/cso-history/daily-colors">Gray and green history</a>
-      <div class="legend">
+    </div>
+    <form id="date-range" class="controls">
+      <label>From <input type="date" id="range-start" required></label>
+      <label>Through <input type="date" id="range-end" required></label>
+      <button class="range-btn" type="submit">Apply dates</button>
+    </form>
+    <p id="range-error" role="alert" hidden></p>
+    <div class="controls">
+      <label>Zoom <select id="zoom"><option value="3">3 days across</option><option value="7" selected>7 days across</option><option value="14">14 days across</option><option value="fit">Fit selected range</option></select></label>
+      <label>Show <select id="detail"><option value="postings">Postings only</option><option value="samples">Postings + samples</option><option value="all">All arrival details</option></select></label>
+    </div>
+    <p class="chart-hint" id="range-caption" aria-live="polite"></p>
+    </div>
+      <div class="legend" aria-label="Timeline legend">
+        <div class="legend-group">
         <span class="key" style="color:#8a949b">On SFPUC's map:</span>
         <span class="key"><span class="swatch posted"></span>posted — elevated bacteria</span>
         <span class="key"><span class="swatch cso"></span>CSO discharge flag</span>
-        <span class="key" style="color:#8a949b;margin-left:6px">Lab samples:</span>
+        </div><div class="legend-group" id="sample-legend" hidden>
+        <span class="key">Lab samples:</span>
         <span class="key"><span class="swatch clean"></span>collected — clean</span>
         <span class="key"><span class="swatch elevated"></span>over standard</span>
-        <span class="key"><span class="swatch pending"></span>awaiting DataSF publication</span>
+        <span class="key"><span class="swatch pending"></span>DataSF not yet observed</span>
+        </div><div class="legend-group" id="arrival-legend" hidden>
         <span class="key"><span class="swatch mapmark"></span>sample date shown on the map</span>
         <span class="key"><span class="swatch csv"></span>first getCSV indicator (hollow = seen by)</span>
-        <span class="key"><span class="swatch lag"></span>days until the numbers appeared online</span>
+        <span class="key"><span class="swatch lag"></span>collection to DataSF observation</span>
       </div>
     </div>
-    <div class="board">
+    <p class="chart-hint">Right-edge dots show current status, even for a historical range. Scroll sideways for earlier dates. Use “View as table” for the selected range. Dates and times are Pacific.</p>
+    <div class="board" tabindex="0" role="region" aria-label="Scrollable postings timeline">
       <div class="chart" id="chart"></div>
       <div class="axis" id="axis"></div>
     </div>
@@ -116,14 +150,14 @@
       <summary>View as table</summary>
       <div id="tablebox"></div>
     </details>
-    <p class="foot" id="foot"></p>
+    <details class="tableview"><summary>Observation coverage &amp; timing details</summary><p class="foot" id="foot"></p></details>
   </div>
 
   <div class="tooltip" id="tooltip"></div>
 </div>
 <script>
 (function(){
-  var DATA = null, RANGE = 14;
+  var DATA = null, RANGE = 14, CUSTOM = null, DETAIL = 'postings', ZOOM = 7, bounds = null;
   var WINDOW_DAYS = 7;          // the board shows a week; the 14- and 30-day ranges scroll through it (Chase, 2026-10-06)
   var scrollFrac = 1;            // where the user left the window, 1 = at now; kept across re-renders
   var userScrolling = false;     // set by wheel/touch/pointer on the board; a scroll event then records scrollFrac — clamps and our own sets don't
@@ -155,9 +189,21 @@
     } else {
       t0 = now - RANGE*864e5;
     }
-    var span = now - t0;
-    var scale = Math.max(1, span / (WINDOW_DAYS * 864e5));   // before the pad: a 7-day range is exactly one window wide
-    t0 -= span * 0.02; span = now - t0;  // small left pad so day-one bars aren't flush
+    if (RANGE === 'all') {
+      Object.values(DATA.samples || {}).forEach(function(days){ days.forEach(function(d){ t0 = Math.min(t0, new Date(d.date + 'T20:00:00Z').getTime()); }); });
+    }
+    var end = now;
+    if (CUSTOM) { t0 = CUSTOM.start; end = Math.min(CUSTOM.end, now); }
+    bounds = {start:t0, end:end};
+    var span = Math.max(1, end - t0);
+    if (!CUSTOM) {
+      document.getElementById('range-start').value=pacificDay(t0);
+      document.getElementById('range-end').value=pacificDay(end);
+    }
+    var scale = ZOOM === 'fit' ? 1 : Math.max(1, span / (ZOOM * 864e5));
+    document.getElementById('range-caption').textContent = fmt(t0) + ' – ' + fmt(end) + ' · ' + (ZOOM === 'fit' ? 'Full range' : ZOOM + ' days across');
+    document.getElementById('sample-legend').hidden = DETAIL === 'postings';
+    document.getElementById('arrival-legend').hidden = DETAIL !== 'all';
     function pos(ms){ return Math.max(0, Math.min(100, (ms - t0)/span*100)); }
 
     // the window: the board shows WINDOW_DAYS; a longer range makes the chart that many times wider and scrolls
@@ -172,9 +218,10 @@
 
     // grid: one tick a day — the window is always about a week wide
     var grid = document.createElement('div'); grid.className = 'grid';
-    var stepDays = 1;
-    var d = new Date(t0); d.setHours(0,0,0,0); d = d.getTime() + 864e5;
-    for (; d < now; d += stepDays*864e5) {
+    var stepDays = Math.max(1, Math.ceil((ZOOM === 'fit' ? span / 864e5 : ZOOM) / 7));
+    var tickDay = new Date(pacificDay(t0) + 'T00:00:00Z');
+    tickDay.setUTCDate(tickDay.getUTCDate()+1);
+    for (var d = pacificMidnight(tickDay.toISOString().slice(0,10)); d < end; tickDay.setUTCDate(tickDay.getUTCDate()+stepDays), d=pacificMidnight(tickDay.toISOString().slice(0,10))) {
       var gl = document.createElement('div'); gl.className = 'gridline'; gl.style.left = 'calc(200px + (100% - 219px) * ' + (pos(d)/100) + ')';
       grid.appendChild(gl);
       var tk = document.createElement('span'); tk.className = 'tick'; tk.style.left = 'calc((100% ) * ' + (pos(d)/100) + ')';
@@ -182,7 +229,7 @@
     }
     var nl = document.createElement('div'); nl.className = 'gridline now'; nl.style.left = 'calc(200px + (100% - 219px))';
     grid.appendChild(nl);
-    var nt = document.createElement('span'); nt.className = 'tick now-label'; nt.style.left = '100%'; nt.textContent = 'now';
+    var nt = document.createElement('span'); nt.className = 'tick now-label'; nt.style.left = '100%'; nt.textContent = end === now ? 'now' : fmtDay(end - 1);
     axis.appendChild(nt);
     chart.appendChild(grid);
 
@@ -199,9 +246,9 @@
           return {status: sg.status, start: sgStart, end: sgEnd, last: i+1 === w.segments.length};
         });
         var wEnd = segs[segs.length-1].end;
-        if (wEnd < t0) return;                    // outside the selected range
+        if (wEnd < t0 || wStart >= end) return;                    // outside the selected range
         segs.forEach(function(sg){
-          if (sg.end < t0) return;
+          if (sg.end < t0 || sg.start >= end) return;
           var el = document.createElement('div');
           el.className = 'seg ' + sg.status + (sg.last && w.ongoing ? ' ongoing' : '') +
                          (sg.last && !w.ongoing && !w.end_recorded ? ' stub' : '');
@@ -212,6 +259,7 @@
           if (sg.last && w.ongoing) { var p = document.createElement('span'); p.className = 'pulse'; el.appendChild(p); }
           el.addEventListener('mousemove', function(ev){ showTip(ev, s, w, wStart); });
           el.addEventListener('mouseleave', hideTip);
+          accessibleTip(el, function(ev){showTip(ev,s,w,wStart);}, s.station_name + ': ' + SEV_LABEL[sg.status] + ', ' + fmt(sg.start));
           track.appendChild(el);
         });
       });
@@ -223,7 +271,7 @@
 
       // the samples row: collection day (dot) and, when we watched it arrive, the bar until it appeared online — every wait, even a day's
       var sd = (DATA.samples || {})[s.station_id] || [];
-      if (!sd.length) return;
+      if (!sd.length || DETAIL === 'postings') return;
       var srow = document.createElement('div'); srow.className = 'row srow';
       var sname = document.createElement('div'); sname.className = 'name'; sname.textContent = 'lab samples';
       var strack = document.createElement('div'); strack.className = 'track';
@@ -231,27 +279,27 @@
       // lane 0 at LANE_TOP, each further lane LANE_STEP lower; a row with no bars keeps its 20px
       var LANE_TOP = 17, LANE_STEP = 6, BAR_H = 4;
       var lanes = 0; sd.forEach(function(d){ if (d.lane != null) lanes = Math.max(lanes, d.lane + 1); });
-      srow.style.height = (lanes ? LANE_TOP + BAR_H + (lanes - 1) * LANE_STEP + 3 : 20) + 'px';
+      srow.style.height = (lanes && DETAIL === 'all' ? LANE_TOP + BAR_H + (lanes - 1) * LANE_STEP + 3 : 20) + 'px';
       var ticks = {}, nowMs = Date.now();
       sd.forEach(function(d){
         var dayMs = new Date(d.date + 'T20:00:00Z').getTime();          // ~noon Pacific on the collection day
         var fsMs = d.first_seen ? new Date(d.first_seen).getTime() : null;
         var endMs = fsMs || (d.pending ? nowMs : null);                   // a pending sample's bar runs to now
-        if (Math.max(dayMs, endMs || 0, d.getcsv_seen ? new Date(d.getcsv_seen).getTime() : 0) < t0) return;                     // outside the selected range
-        if (endMs && d.lane != null && endMs > dayMs) {
+        if (dayMs >= end || Math.max(dayMs, endMs || 0, d.getcsv_seen ? new Date(d.getcsv_seen).getTime() : 0) < t0) return;                     // outside the selected range
+        if (DETAIL === 'all' && endMs && d.lane != null && endMs > dayMs) {
           var lag = document.createElement('div'); lag.className = 'lagbar' + (d.pending ? ' pending' : '');
           lag.style.left = pos(dayMs) + '%'; lag.style.width = Math.max(0.3, pos(endMs) - pos(dayMs)) + '%';
           lag.style.top = (LANE_TOP + d.lane * LANE_STEP) + 'px';
           lag.addEventListener('mousemove', function(ev){ showSampleTip(ev, s, d); }); lag.addEventListener('mouseleave', hideTip);
           strack.appendChild(lag);
-          if (fsMs) ticks[fsMs] = true;                                   // one publish tick per moment, however many bars end there
-          if (d.map_seen && !d.map_censored) {                            // where SFPUC's map first showed this sample date
+          if (fsMs && fsMs >= t0 && fsMs < end) ticks[fsMs] = true;                                   // one publish tick per moment, however many bars end there
+          if (d.map_seen && !d.map_censored && new Date(d.map_seen).getTime() >= t0 && new Date(d.map_seen).getTime() < end) {                            // where SFPUC's map first showed this sample date
             var mm = document.createElement('span'); mm.className = 'mapmark';
             mm.style.left = pos(new Date(d.map_seen).getTime()) + '%'; mm.style.top = (LANE_TOP + d.lane * LANE_STEP - 2) + 'px';
             strack.appendChild(mm);
           }
         }
-        if (d.getcsv_seen) {
+        if (DETAIL === 'all' && d.getcsv_seen && new Date(d.getcsv_seen).getTime() >= t0 && new Date(d.getcsv_seen).getTime() < end) {
           var cm = document.createElement('span'); cm.className = 'csvmark' + (d.getcsv_censored ? ' censored' : '');
           cm.style.left = pos(new Date(d.getcsv_seen).getTime()) + '%';
           cm.style.top = (d.lane != null ? LANE_TOP + d.lane * LANE_STEP - 2 : 9) + 'px';
@@ -265,10 +313,12 @@
           cm.addEventListener('blur', hideTip);
           strack.appendChild(cm);
         }
+        if (dayMs < t0) return;
         var m = document.createElement('span');
         m.className = 'smark ' + (d.pending ? 'pending' : d.elevated ? 'elevated' : 'clean') + (d.source === 'backfill' ? ' hist' : '');
         m.style.left = pos(dayMs) + '%';
         m.addEventListener('mousemove', function(ev){ showSampleTip(ev, s, d); }); m.addEventListener('mouseleave', hideTip);
+        accessibleTip(m,function(ev){showSampleTip(ev,s,d);},s.station_name + ': sample collected ' + d.date);
         strack.appendChild(m);
       });
       Object.keys(ticks).forEach(function(ms){
@@ -314,8 +364,8 @@
     (d.getcsv_indicators || []).forEach(function(i){ csv += '<br>&nbsp; ' + esc(names[i.code] || i.code) + ': ' + (i.censored ? 'by ' : '') + fmt(i.at); });
     tip.innerHTML = '<b>' + s.station_name + '</b><br>Lab sample collected ' + when + ' · ' + result + '<br>' + map + postLine + '<br>' + csv + '<br>' + pub;
     tip.style.display = 'block';
-    var x = Math.min(ev.clientX + 14, window.innerWidth - 300);
-    tip.style.left = x + 'px'; tip.style.top = (ev.clientY + 14) + 'px';
+    var x = Math.max(8, Math.min(ev.clientX + 14, window.innerWidth - tip.offsetWidth - 8));
+    tip.style.left = x + 'px'; tip.style.top = Math.max(8,Math.min(ev.clientY + 14,window.innerHeight-tip.offsetHeight-8)) + 'px';
   }
 
   function showTip(ev, s, w, wStart){
@@ -326,16 +376,18 @@
     else if (w.ongoing) endBit = '<b>Still up</b> (' + dur(wStart, new Date(DATA.generated_at).getTime()) + ' so far)';
     else endBit = 'Came down: not recorded (before we logged sign-downs)';
     var path = w.segments.map(function(sg){ return sg.status; }).join(' → ');
-    var csv = d.getcsv_seen ? 'getCSV first indicator ' + (d.getcsv_censored ? 'seen by ' : 'first seen ') + fmt(d.getcsv_seen)
-      : 'getCSV arrival: not observed';
-    var names = {ENTERO:'Enterococcus',COLI_TOTAL:'Total coliform',COLI_FECAL:'Fecal coliform',COLI_E:'E. coli'};
-    (d.getcsv_indicators || []).forEach(function(i){ csv += '<br>&nbsp; ' + esc(names[i.code] || i.code) + ': ' + (i.censored ? 'by ' : '') + fmt(i.at); });
     tip.innerHTML = '<b>' + s.station_name + '</b><br>' + SEV_LABEL[worst] +
       (w.segments.length > 1 ? '<br><span style="opacity:.8">path: ' + path + '</span>' : '') +
       '<br>Went up on the map: ' + fmt(w.start) + '<br>' + endBit;
     tip.style.display = 'block';
-    var x = Math.min(ev.clientX + 14, window.innerWidth - 300);
-    tip.style.left = x + 'px'; tip.style.top = (ev.clientY + 14) + 'px';
+    var x = Math.max(8, Math.min(ev.clientX + 14, window.innerWidth - tip.offsetWidth - 8));
+    tip.style.left = x + 'px'; tip.style.top = Math.max(8,Math.min(ev.clientY + 14,window.innerHeight-tip.offsetHeight-8)) + 'px';
+  }
+  function accessibleTip(el, show, label){
+    el.tabIndex=0; el.setAttribute('role','img'); el.setAttribute('aria-label',label);
+    el.addEventListener('focus',function(){var r=el.getBoundingClientRect();show({clientX:r.left,clientY:r.top});});
+    el.addEventListener('click',show); el.addEventListener('blur',hideTip);
+    el.addEventListener('keydown',function(ev){if(ev.key==='Escape')hideTip();});
   }
   function hideTip(){ document.getElementById('tooltip').style.display = 'none'; }
 
@@ -343,6 +395,7 @@
     var rows = [];
     DATA.stations.forEach(function(s){
       s.windows.forEach(function(w){
+        if (bounds && (new Date(w.start).getTime() >= bounds.end || (w.end && new Date(w.end).getTime() < bounds.start))) return;
         var worst = w.segments.some(function(sg){ return sg.status === 'cso'; }) ? 'CSO' : 'Posted';
         rows.push([s.station_name, worst, fmt(w.start),
                    w.end ? fmt(w.end) : (w.ongoing ? 'still up' : 'not recorded'),
@@ -351,15 +404,15 @@
     });
     var html = '<table><thead><tr><th>Station</th><th>Sign</th><th>Went up</th><th>Came down</th><th>Up for</th></tr></thead><tbody>';
     if (rows.length) rows.forEach(function(r){ html += '<tr><td>' + r.map(function(c){ return String(c); }).join('</td><td>') + '</td></tr>'; });
-    else html += '<tr><td colspan="5" class="muted">No sign has gone up since we started watching.</td></tr>';
+    else html += '<tr><td colspan="5" class="muted">No postings in the selected range.</td></tr>';
     html += '</tbody></table>';
     // the sample publication log: newest collection first
     var srows = [];
     var byId = {}; DATA.stations.forEach(function(s){ byId[s.station_id] = s.station_name; });
-    Object.keys(DATA.samples || {}).forEach(function(sid){ (DATA.samples[sid] || []).forEach(function(d){ srows.push([byId[sid] || sid, d]); }); });
+    Object.keys(DATA.samples || {}).forEach(function(sid){ (DATA.samples[sid] || []).forEach(function(d){ var ms = new Date(d.date + 'T20:00:00Z').getTime(); if (!bounds || (ms >= bounds.start && ms < bounds.end)) srows.push([byId[sid] || sid, d]); }); });
     srows.sort(function(a, b){ return a[1].date < b[1].date ? 1 : a[1].date > b[1].date ? -1 : 0; });
     html += '<h3 style="font-size:14px;margin:18px 0 6px">Lab samples — collected, shown on SFPUC\'s map, and the numbers in the city\'s dataset</h3>' +
-      '<table><thead><tr><th>Station</th><th>Collected</th><th>Result</th><th>Sample date on the map</th><th>First getCSV indicator</th><th>DataSF observed</th><th>Days until online</th></tr></thead><tbody>';
+      '<table><thead><tr><th>Station</th><th>Collected</th><th>Result</th><th>Sample date on the map</th><th>First getCSV indicator</th><th>DataSF observed</th><th>Days until DataSF observed</th></tr></thead><tbody>';
     if (srows.length) srows.forEach(function(r){ var d = r[1];
       var dayStr = function(n){ return n + (n === 1 ? ' day' : ' days'); };
       html += '<tr><td>' + r[0] + '</td><td>' + d.date + '</td><td>' +
@@ -383,13 +436,13 @@
       banner.style.display = ''; banner.className = 'banner clean';
       banner.innerHTML = '<svg class="ic" style="color:#237059"><use href="#i-circle-check"/></svg> <b>No sign has gone up on SFPUC\'s map</b>' +
         (data.monitoring_since ? ' since we started watching on <b>' + fmt(data.monitoring_since) + '</b>' : ' yet') +
-        ' — a clean-water stretch. The watcher reads every station once a minute; the first sign will appear here automatically.';
+        '. The watcher reads every station once a minute; the first sign will appear here automatically.';
     }
     document.getElementById('foot').innerHTML =
       (data.monitoring_since ? 'We have read SFPUC\'s beach map since ' + fmt(data.monitoring_since) + ' (Pacific time). ' : '') +
       'Times are the minute our watcher first saw a change: once a minute via the in-database watcher since Aug 16, 2026 (every 2 minutes before that). ' +
       'Signs that went up before we logged sign-downs show “not recorded”. Simulated test events are excluded. ' +
-      'The board shows a week; drag or scroll it sideways to go back through the range you picked. Lab-sample dots are the collection day from the city\'s dataset; the bar to the right runs until a result was first observed in DataSF' +
+      'Use Zoom to change the visible time span; drag or scroll it sideways to go back through the range you picked. Lab-sample dots are the collection day from the city\'s dataset; the bar to the right runs until a result was first observed in DataSF' +
       (data.sample_lag && data.sample_lag.n ? ' (median so far <b>' + data.sample_lag.median_days + (data.sample_lag.median_days === 1 ? ' day' : ' days') + '</b> over ' + data.sample_lag.n + ' sample-days, measured since ' + data.sample_lag.measured_since + ')' : ' (measured from ' + ((data.sample_lag || {}).measured_since || '2026-09-27') + ' on; nothing published yet since then)') +
       '. The blue tick on a bar is when SFPUC\'s map first showed that sample date — posting and discharge flags above are tracked separately; the bar ends when our DataSF mirror first sees a result. A teal diamond marks the first indicator seen in getCSV, which can arrive earlier; hover for each indicator’s time. Hollow diamonds mean the result was already present when recording began' +
       (function(m){ if (!m) return ''; var dd = function(n){ return '<b>' + n + (n === 1 ? ' day' : ' days') + '</b>'; };
@@ -397,6 +450,8 @@
         (m.pending ? '. <b>' + m.pending + '</b> sample-day' + (m.pending === 1 ? ' is' : 's are') + ' on the map with no DataSF results yet observed — the hollow dots, dashed to today' : ''); })((data.sample_lag || {}).map) +
       '. Faded dots are the city\'s history loaded in one go — collection day only. ' + (data.sample_note ? data.sample_note + ' ' : '') +
       'Live station status: <a href="https://webapps.sfpuc.org/sapps/beachesandbay.html" target="_blank" rel="noopener">SFPUC beach map</a>.';
+    var today = new Intl.DateTimeFormat('en-CA',{timeZone:'America/Los_Angeles',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(data.generated_at));
+    document.getElementById('range-end').value=today; document.getElementById('range-start').value=new Date(Date.parse(today+'T00:00:00Z')-13*864e5).toISOString().slice(0,10);
     render(); renderTable();
   }).catch(function(e){
     document.getElementById('status').textContent = 'Could not load event history: ' + e;
@@ -406,11 +461,36 @@
     btn.addEventListener('click', function(){
       document.querySelectorAll('.range-btn[data-days]').forEach(function(b){ b.classList.remove('active'); });
       btn.classList.add('active');
+      CUSTOM = null; scrollFrac = 1; document.getElementById('range-error').hidden=true;
       RANGE = btn.dataset.days === 'all' ? 'all' : parseInt(btn.dataset.days, 10);
-      if (DATA) render();
+      if (DATA) { render(); renderTable(); }
     });
   });
-  window.addEventListener('resize', function(){ if (DATA) render(); });
+  function pacificDay(ms){ return new Intl.DateTimeFormat('en-CA',{timeZone:'America/Los_Angeles',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(ms)); }
+  // Resolve Pacific midnight without depending on the visitor's time zone, including DST.
+  function pacificMidnight(day){
+    var base = Date.parse(day + 'T00:00:00Z'), guess = base;
+    for (var i=0;i<3;i++) {
+      var parts = new Intl.DateTimeFormat('en-CA', {timeZone:'America/Los_Angeles',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(new Date(guess));
+      var p = {}; parts.forEach(function(x){p[x.type]=x.value;});
+      guess += base - Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute,+p.second);
+    }
+    return guess;
+  }
+  document.getElementById('date-range').addEventListener('submit', function(ev){
+    ev.preventDefault();
+    var a = document.getElementById('range-start').value, b = document.getElementById('range-end').value;
+    var error = document.getElementById('range-error');
+    var next = new Date(b + 'T00:00:00Z'); next.setUTCDate(next.getUTCDate()+1);
+    var start = pacificMidnight(a), end = pacificMidnight(next.toISOString().slice(0,10));
+    if (a > b || !DATA || start >= Date.parse(DATA.generated_at)) { error.hidden=false; error.textContent='Choose a start on or before the end, within the observed history.'; return; }
+    error.hidden=true; CUSTOM={start:start,end:end}; scrollFrac=0;
+    document.querySelectorAll('.range-btn[data-days]').forEach(function(btn){btn.classList.remove('active');});
+    render(); renderTable();
+  });
+  document.getElementById('zoom').addEventListener('change',function(){ZOOM=this.value === 'fit' ? 'fit' : +this.value; if(DATA) render();});
+  document.getElementById('detail').addEventListener('change',function(){DETAIL=this.value; if(DATA) render();});
+  window.addEventListener('resize' , function(){ if (DATA) render(); });
   (function(){ var board = document.querySelector('.board'); if (!board) return;
     ['wheel', 'touchstart', 'pointerdown', 'keydown'].forEach(function(t){ board.addEventListener(t, function(){ userScrolling = true; }, {passive: true}); });
     board.addEventListener('scroll', function(){ if (userScrolling && board.scrollWidth > board.clientWidth) scrollFrac = board.scrollLeft / (board.scrollWidth - board.clientWidth); }, {passive: true});

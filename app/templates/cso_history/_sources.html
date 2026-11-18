@@ -1,0 +1,19 @@
+<style>
+.timeline-sources{background:#fff;border:1px solid #d9e4e8;border-radius:12px;padding:14px 16px;margin:14px 0;color:#54576F;font-size:14px;line-height:1.6}
+.timeline-sources summary{cursor:pointer;font-weight:700;color:#0072BC}
+.timeline-sources a{color:#0072BC;text-underline-offset:3px;overflow-wrap:anywhere}
+.timeline-sources li{margin:10px 0}.timeline-sources ul{padding-left:20px}
+.timeline-sources p{margin:10px 0 0}
+</style>
+<details class="timeline-sources" id="sources">
+  <summary>Sources &amp; API links · How to read the dates</summary>
+  <ul>
+    <li><a href="https://infrastructure.sfwater.org/lims.asmx/getBeaches">SFPUC map status API — getBeaches</a>: stations, <code>sample_date</code>, posting and discharge flags. Checked about once a minute; also supplies the daily gray/green history.</li>
+    <li><a href="https://infrastructure.sfwater.org/lims.asmx/getCSV">SFPUC early lab results API — getCSV</a>: lab indicator results by station and collection date, which can appear before DataSF. Checked about every two minutes.</li>
+    <li><a href="{{ datasf_api }}">DataSF lab results API — JSON</a>: published water-quality measurements, mirrored about every half hour. <a href="{{ datasf_page }}">Dataset documentation</a>.</li>
+    <li><a href="/cso-history/api/events">This site's timeline API — saved observations</a>: posting events and sample arrival history used by the main timeline. Daily colors use saved station-day observations.</li>
+    <li><a href="https://webapps.sfpuc.org/sapps/beachesandbay.html">SFPUC public beach map</a>: the public-facing map, rather than a raw API response.</li>
+  </ul>
+  <p><strong>Collection date:</strong> <code>sample_date</code> is when water was collected. <strong>Publication time:</strong> when the source made a result public. <strong>First observed:</strong> when our watcher first saw it; periodic checks do not establish the exact publication time. “Seen by” means it was already present when recording began.</p>
+  <p><strong>A posting change alone does not establish a new sample.</strong> Flags, sample dates and results can update independently. Source links show current responses; these timelines use saved observations.</p>
+</details>
