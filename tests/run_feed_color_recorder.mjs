@@ -1,68 +1,85 @@
-// Local-only PostgreSQL regression harness. No credentials or network clients.
-// Usage: PGLITE_MODULE=/absolute/path/to/@electric-sql/pglite/dist/index.js node tests/run_feed_color_recorder.mjs
+// Disposable PostgreSQL only. HTTP and cron are stubs; never connects to hosted services.
 import fs from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
 import assert from 'node:assert/strict';
-const moduleName=process.env.PGLITE_MODULE;
-if(!moduleName) throw new Error('Set PGLITE_MODULE to a local @electric-sql/pglite module. Never run these fixtures on a hosted database.');
-const {PGlite}=await import(pathToFileURL(moduleName).href);
+if(!process.env.PGLITE_MODULE)throw Error('Set PGLITE_MODULE to a local @electric-sql/pglite/dist/index.js');
+const {PGlite}=await import(pathToFileURL(process.env.PGLITE_MODULE).href);
 const db=new PGlite();
-const original=(await fs.readFile('db/migrations/013_forecast_cadence_and_error_log.sql','utf8')).match(/create or replace function public\.bwtf_shadow_tick\(\)[\s\S]*?end \$\$;/)[0];
+const query=async sql=>(await db.query(sql)).rows;
 await db.exec(`
 create role anon;create role authenticated;create role service_role;
-create schema net;
+create schema net;create schema cron;
 create table net._http_response(id bigint,status_code integer,content text,timed_out boolean,error_msg text,created timestamptz);
-create table public.watcher_config(key text primary key,value text);
-insert into watcher_config values('mode','live'),('sfpuc_url','fixture://feed'),('healthchecks_ping_url','fixture://health');
-create table public.watcher_runtime(id integer primary key,last_request_id bigint,requested_at timestamptz,last_processed_at timestamptz,last_fetch_status integer,last_summary jsonb,last_error text,last_error_at timestamptz);
-insert into watcher_runtime(id,last_request_id) values(1,42);
-create table public.test_effects(kind text,payload jsonb);
-create table public.watcher_errors(kind text,message text);
-create function public.bwtf_process_payload(p jsonb,m text) returns jsonb language plpgsql as $$ begin insert into test_effects values('alerts',p);return '{"transitions":1}'::jsonb;end $$;
-create function public.bwtf_record_feed_day(p jsonb) returns integer language plpgsql as $$ begin insert into test_effects values('daily',p);return 1;end $$;
-create function public.bwtf_forecast_refresh() returns void language plpgsql as $$ begin insert into test_effects(kind) values('forecast');end $$;
-create function public.bwtf_log_error(k text,m text,s integer) returns void language plpgsql as $$ begin insert into watcher_errors values(k,m);end $$;
-create function net.http_get(url text,timeout_milliseconds integer) returns bigint language plpgsql as $$ begin insert into test_effects values('http',jsonb_build_object('url',url));return 43;end $$;
-insert into net._http_response values(42,200,'[{"stationid":"a","stationname":"A","s_color":"W","p_color":null,"posted":null,"cso":null}]',false,null,clock_timestamp()-interval '1 minute');
+create table public.test_requests(id bigint generated always as identity,url text,timeout_ms integer);
+create table cron.job(jobid bigint generated always as identity,jobname text,schedule text,command text,active boolean default true);
+create function cron.schedule(n text,s text,c text) returns bigint language plpgsql as $$declare j bigint;begin insert into cron.job(jobname,schedule,command)values(n,s,c)returning jobid into j;return j;end $$;
+create function cron.alter_job(j bigint,active boolean) returns void language sql as $$update cron.job set active=$2 where jobid=$1$$;
+create function net.http_get(url text,timeout_milliseconds integer) returns bigint language plpgsql as $$declare r bigint;begin insert into public.test_requests(url,timeout_ms)values(url,timeout_milliseconds)returning id into r;return r;end $$;
+-- Sentinel existing watcher and job: migration/collector/rollback must not touch either.
+create function public.bwtf_shadow_tick() returns void language plpgsql as $$begin null;end $$;
+insert into cron.job(jobname,schedule,command)values('existing-alert-watcher','* * * * *','select public.bwtf_shadow_tick()');
+create table public.watcher_runtime(id integer,status text);
+insert into public.watcher_runtime values(1,'unchanged');
+create function public.test_capture_feed_colors(p jsonb,r bigint,t timestamptz) returns jsonb language plpgsql as $$begin
+ perform public.bwtf_record_feed_colors(p,r,t);return '{}';
+ exception when others then update public.feed_color_runtime set last_error=sqlerrm,consecutive_failures=consecutive_failures+1 where id=1;return jsonb_build_object('error',sqlerrm);end $$;
 `);
-await db.exec(original);
-const originalHash=(await db.query(`select md5(prosrc) h from pg_proc where oid='public.bwtf_shadow_tick()'::regprocedure`)).rows[0].h;
-assert.equal(originalHash,'96497e15a283c0a6ec3c9686cf0feb5e');
-await db.exec('begin;select public.bwtf_shadow_tick();');
-const baseline=(await db.query('select * from public.test_effects')).rows;
-await db.exec('rollback;');
+const watcherBefore=await query(`select pg_get_functiondef('public.bwtf_shadow_tick()'::regprocedure) as definition`);
+const jobBefore=await query(`select * from cron.job where jobname='existing-alert-watcher'`);
 const migration=await fs.readFile('db/migrations/20261119080653_feed_color_transitions.sql','utf8');
+assert.ok(!/bwtf_shadow_tick|bwtf_process_payload|bwtf_log_error|watcher_runtime|watcher_config/.test(migration),'no watcher coupling');
 await db.exec(migration);
+assert.equal((await query(`select active from cron.job where jobname='bwtf-feed-color-collector'`))[0].active,false);
+await db.exec('select public.bwtf_feed_color_tick();');
+assert.equal((await query('select count(*)::int n from test_requests'))[0].n,0,'disabled collector sends nothing');
 await db.exec(await fs.readFile('tests/sql/feed_color_recorder.sql','utf8'));
-// Run the actual patched tick against stubs. A disabled, healthy, or failed
-// recorder must leave alert/daily/forecast/HTTP effects identical to baseline.
-for(const fault of ['disabled','healthy','storage','logger','missing-function']) {
+const payload=JSON.stringify([{stationid:'a',stationname:'A',s_color:'W',p_color:null,posted:null,cso:null}]);
+await db.exec('update feed_color_runtime set enabled=true where id=1;select public.bwtf_feed_color_tick();');
+assert.equal((await query('select count(*)::int n from test_requests'))[0].n,1);
+assert.equal((await query('select url from test_requests'))[0].url,'https://infrastructure.sfwater.org/lims.asmx/getBeaches');
+await db.exec('select public.bwtf_feed_color_tick();');
+assert.equal((await query('select count(*)::int n from test_requests'))[0].n,1,'pending request is not duplicated');
+await db.query('insert into net._http_response values(1,200,$1,false,null,clock_timestamp())',[`<string>${payload}</string>`]);
+await db.exec('select public.bwtf_feed_color_tick();');
+assert.equal((await query('select count(*)::int n from feed_color_reads'))[0].n,1,'exact successful read retained');
+assert.equal((await query('select count(*)::int n from feed_color_runs'))[0].n,1);
+assert.equal((await query('select request_id from feed_color_runtime'))[0].request_id,null);
+await db.exec("update feed_color_runtime set last_attempt_at=clock_timestamp()-interval '29 minutes';select public.bwtf_feed_color_tick();");
+assert.equal((await query('select count(*)::int n from test_requests'))[0].n,1,'29 minutes is too soon');
+await db.exec("update feed_color_runtime set last_attempt_at=clock_timestamp()-interval '30 minutes';select public.bwtf_feed_color_tick();");
+assert.equal((await query('select count(*)::int n from test_requests'))[0].n,2,'30 minutes queues next poll');
+await db.exec("insert into net._http_response values(2,503,'offline',false,null,clock_timestamp());select public.bwtf_feed_color_tick();select public.bwtf_feed_color_tick();");
+assert.equal((await query('select count(*)::int n from test_requests'))[0].n,2,'HTTP failure does not retry early');
+assert.ok((await query('select last_error from feed_color_runtime'))[0].last_error);
+// Missing response times out, without a replacement request before the next half-hour.
+await db.exec("update feed_color_runtime set request_id=999,requested_at=clock_timestamp()-interval '6 minutes';select public.bwtf_feed_color_tick();");
+assert.equal((await query('select request_id from feed_color_runtime'))[0].request_id,null);
+assert.equal((await query('select count(*)::int n from test_requests'))[0].n,2);
+for(const fault of ['malformed','stale','storage']){
  await db.exec('begin;');
- if(fault!=='disabled') await db.exec('update public.feed_color_runtime set enabled=true where id=1;');
- if(fault==='storage'||fault==='logger') await db.exec('alter table public.feed_color_runs add constraint injected_failure check(false) not valid;');
- if(fault==='logger') await db.exec(`create or replace function public.bwtf_log_error(k text,m text,s integer) returns void language plpgsql as $$ begin raise exception 'injected logging failure';end $$;`);
- if(fault==='missing-function') await db.exec('drop function public.bwtf_capture_feed_colors(jsonb,bigint,timestamptz);');
- await db.exec('select public.bwtf_shadow_tick();');
- assert.deepEqual((await db.query('select * from public.test_effects')).rows,baseline,`${fault}: existing watcher effects unchanged`);
- assert.equal((await db.query('select last_error from watcher_runtime')).rows[0].last_error,null,`${fault}: watcher health unaffected`);
- if(fault==='healthy') {
-  assert.equal((await db.query('select count(*)::int n from feed_color_runs')).rows[0].n,1);
-  assert.equal((await db.query('select first_observed_at=(select created from net._http_response where id=42) as correct from feed_color_runs')).rows[0].correct,true,'uses response timestamp, not callback processing time');
- }
- if(fault==='storage'||fault==='logger') {
-  assert.equal((await db.query('select count(*)::int n from feed_color_runs')).rows[0].n,0,'history write rollback');
-  assert.ok((await db.query('select last_error from feed_color_runtime')).rows[0].last_error,'recorder error retained');
- }
+ await db.exec("update feed_color_runtime set request_id=50,requested_at=clock_timestamp(),last_attempt_at=clock_timestamp();");
+ if(fault==='storage') await db.exec('alter table feed_color_runs add constraint injected_failure check(false) not valid;');
+ await db.query("insert into net._http_response values(50,200,$1,false,null,clock_timestamp()-$2::interval)",[fault==='malformed'?'not-json':payload,fault==='stale'?'20 minutes':'0 seconds']);
+ await db.exec('select public.bwtf_feed_color_tick();');
+ assert.ok((await query('select last_error from feed_color_runtime'))[0].last_error,`${fault} error reported`);
+ assert.equal((await query('select count(*)::int n from feed_color_reads'))[0].n,1,`${fault}: no partial read persisted`);
+ assert.equal((await query('select request_id from feed_color_runtime'))[0].request_id,null);
  await db.exec('rollback;');
 }
+// Queue failure is also throttled, rather than retried every harvest tick.
+await db.exec(`begin;create or replace function net.http_get(url text,timeout_milliseconds integer) returns bigint language plpgsql as $$begin raise exception 'queue unavailable';end $$;
+update feed_color_runtime set last_attempt_at=null;select public.bwtf_feed_color_tick();`);
+assert.ok((await query('select last_attempt_at from feed_color_runtime'))[0].last_attempt_at);
+const failures=(await query('select consecutive_failures from feed_color_runtime'))[0].consecutive_failures;
+await db.exec('select public.bwtf_feed_color_tick();');
+assert.equal((await query('select consecutive_failures from feed_color_runtime'))[0].consecutive_failures,failures);
+await db.exec('rollback;');
 await db.exec(await fs.readFile('db/scripts/disable_feed_color_recorder.sql','utf8'));
-assert.equal((await db.query(`select md5(prosrc) h from pg_proc where oid='public.bwtf_shadow_tick()'::regprocedure`)).rows[0].h,originalHash,'rollback restores original tick exactly');
+assert.equal((await query('select enabled from feed_color_runtime'))[0].enabled,false);
+assert.equal((await query(`select active from cron.job where jobname='bwtf-feed-color-collector'`))[0].active,false);
+assert.equal((await query('select count(*)::int n from feed_color_reads'))[0].n,1,'rollback preserves data');
+assert.deepEqual(await query(`select pg_get_functiondef('public.bwtf_shadow_tick()'::regprocedure) as definition`),watcherBefore);
+assert.deepEqual(await query(`select * from cron.job where jobname='existing-alert-watcher'`),jobBefore);
+assert.deepEqual(await query('select * from watcher_runtime'),[{id:1,status:'unchanged'}]);
 await db.close();
-// A changed tick must abort installation instead of replacing newer behavior.
-const drift=new PGlite();
-await drift.exec(`create role anon;create role authenticated;create role service_role;create function public.bwtf_shadow_tick() returns void language plpgsql as $$begin null;end $$;`);
-await drift.exec('begin;');
-let refused=false;
-try{await drift.exec(migration);}catch(e){refused=String(e.message).includes('changed since');}
-await drift.exec('rollback;');assert.equal(refused,true,'drift guard rejects unrelated watcher');await drift.close();
-console.log('PASS: raw transitions, nulls, duplicates, missing/returning stations, gaps, malformed inputs, kill switch, privileges, actual tick failure isolation, exact rollback, migration drift guard');
+console.log('PASS: independent collector; 30-minute request throttle; local harvest; raw transitions and checkpoints; failures/timeouts; permissions; disabled installation; preserving rollback; original watcher and schedule untouched');

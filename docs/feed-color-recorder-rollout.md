@@ -1,131 +1,126 @@
-# Raw map-color transition recorder — prepared, not deployed
+# Independent 30-minute map-color collector — prepared, not deployed
 
-Use the existing once-a-minute SFPUC watcher, with a separate recorder attached
-to the real response it already fetched. A second watcher would duplicate
-requests and can disagree about observation times. The recorder does not change
-alert classification, subscribers, dispatch, the getCSV collector, or schedules.
+This replaces the earlier, unapplied watcher-hook draft. It does **not** modify
+or call the alert watcher, its runtime/configuration, alert classification,
+dispatch, forecast refresh, or existing schedules. No production changes have
+been made. The prepared migration is still unapplied and can be revised in place.
 
-This change has **not been applied to production**. Production inspection was
-read-only. Local tests use an in-memory PostgreSQL engine and no-network stubs.
-The migration installs the recorder **disabled**; recording requires a separately
-authorized enable step. Deploying the website alone does not install it.
+## How it runs
+
+The collector owns its own `getBeaches` request and response cursor. It attempts
+one HTTP request at most every 30 minutes, with a 15-second network timeout.
+Failures, including failure to queue a request, do not trigger early retries.
+
+Because pg_net completes HTTP requests asynchronously after commit, a lightweight
+cron task runs every minute to harvest the pending response. That task does not
+poll SFPUC every minute: the database's `last_attempt_at` enforces the 30-minute
+HTTP cadence. A missing response is marked failed after five minutes. Response
+bodies are bounded and validated before any history is written.
+
+The migration registers this new cron task **inactive**, and the runtime switch
+also defaults **off**. Installation makes no HTTP request. Both switches require
+a separately approved activation. Deploying the website alone installs nothing.
 
 ## What gets retained
 
-- Exact `s_color`, `p_color`, `posted`, and `cso` values, including JSON null,
-  empty strings, W/Y/G/R, and future unrecognized codes. They are not collapsed
-  to the alert watcher's `ok` classification.
-- A baseline per station on its first successful read; never a fabricated
-  historical transition. Unchanged reads extend a run's last-confirmed time.
-- Each different raw state starts a run with the previous state and its last
-  confirmation. A gray-to-green change is recorded even if both classify `ok`.
-- Response IDs prevent duplicate confirmations and replayed/out-of-order data.
-  Observation timestamps come from the saved HTTP response, not the later
-  processing time. These are observation times, not SFPUC publication times.
-- An absent station is explicitly missing, not green. Its return starts a new
-  run. A poll gap over 90 seconds also starts a resume run, even if colors agree.
-- Sample date is provenance, stored separately as the run's first/last date.
-  A sample-date change alone is not a color transition.
+- Exact `s_color`, `p_color`, `posted`, and `cso` values, including null, empty
+  strings, gray W/Y codes, and unknown future codes. No collapse to alert `ok`.
+- `feed_color_reads`: each successful read's timestamp and station-state set,
+  so the timeline can show the real observation checkpoints and gaps.
+- `feed_color_runs`: baselines, changed states, explicit missing stations, and
+  returns. Unchanged reads extend last-confirmed times and confirmation counts.
+- `feed_color_state`: pointers to current runs; `feed_color_runtime`: enable
+  switch, pending request, attempt/observation times, and collector health.
+- Response IDs protect against duplicates/replays. A sample-date change alone
+  is not a color transition. Empty/malformed responses do not clear the roster.
+- Gaps over 45 minutes break a run even when its color returns unchanged. This
+  distinguishes missed half-hour observations from regular collection jitter.
 
-`feed_color_runs` is the retained history. `feed_color_state` points to current
-runs. `feed_color_runtime` holds the enable switch, response cursor, last new-run
-count, and recorder errors. No pruning or retrospective backfill is installed.
+A change is bounded by the previous confirmation and first new observation.
+These are response-observation times, **not** SFPUC publication times. Short-lived
+changes between half-hour checks can be missed. Solid runs do not establish
+continuous monitoring; use saved checkpoints to display that uncertainty.
 
-The current timeline still uses archived forecast snapshots; this change
-prepares the new high-frequency source. Connecting the new source to the UI
-should preserve the raw fields and observation uncertainty, and fall back to
-forecast snapshots before collection begins. Do not relabel old snapshots as
-minute-level recordings.
+No retroactive backfill or deletion/pruning of retained observations is installed.
+The existing preview still uses archived forecast snapshots. A later reader
+update should prefer the new checkpointed history after collection begins and
+retain snapshot fallback before that date, without inventing observations.
 
-## Isolation from alerts
+## Separation and permissions
 
-The hook is after the existing alert-processing call and receives the untouched
-real payload. It does not read simulated overrides. Existing alert calls,
-daily-summary calls, forecast refreshes, health pings, and next-request behavior
-are preserved. The installation refuses to modify a watcher body that differs
-from the version inspected during preparation (MD5
-`96497e15a283c0a6ec3c9686cf0feb5e`).
+The collector uses its own advisory lock, runtime row, tables, cron name, and
+error reporting. It does not call the alert watcher's error logger. Error and
+health updates stay in `feed_color_runtime`; malformed or failed reads roll back
+their history writes and preserve the last good state. Lock waits are bounded.
 
-Recorder functions are invoker-only and not callable by public, anon,
-authenticated, or service-role API clients. The existing owner-run watcher can
-call them. RLS is enabled; the application service role receives only read
-access to history and health, not ingestion or enable privileges.
+Functions are invoker-only and unavailable to public, anon, authenticated, or
+service-role API clients. The scheduled owner can run them. RLS is enabled;
+the application service role has read-only access to history and health.
 
-The recorder validates a bounded payload before writing, uses a non-waiting
-advisory lock and runtime row lock, and limits lock waits to 100 milliseconds.
-History failures roll back their own subtransaction. Error reporting is guarded
-too, and the outer hook survives a missing recorder function. Ordinary recorder
-failures therefore do not roll back alert processing. This is not protection
-against database-wide outages, resource exhaustion, or cancellation of the
-whole watcher transaction. A separate polling job would share those database
-risks while adding another upstream request stream.
+This is stronger operational separation than attaching a recorder to the alert
+transaction. It still shares the database and SFPUC service, so database-wide
+outages/resource exhaustion can affect both collectors and the alert watcher.
 
-## Validation performed locally
+## Local validation
 
-The local harness executes the actual patched `bwtf_shadow_tick` against stubs
-and compares its alert/daily/forecast/HTTP effects with the unmodified tick.
-Disabled, healthy, storage-failure, logging-failure, and missing-function cases
-must all preserve those effects. SQL checks cover raw transitions, unknown/null
-colors, malformed payloads, duplicates, stale reads, station loss/return, missed
-polls, the kill switch, permissions, exact rollback, and watcher drift refusal.
-
-Run with a local installation of `@electric-sql/pglite` (tested with 0.5.16):
+No-network pg_net and cron stubs run in an in-memory PostgreSQL engine. Tests
+cover the 30-minute request gate (including failures), waiting/harvest behavior,
+missing responses, malformed/stale responses, atomic history rollback, raw
+transitions, station absence/return, duplicates, gaps, permissions, inactive
+installation, and preserving shutdown. Sentinel assertions verify the original
+watcher function, runtime, and existing cron job are unchanged.
 
 ```sh
 PGLITE_MODULE=/absolute/path/to/@electric-sql/pglite/dist/index.js \
   node tests/run_feed_color_recorder.mjs
 ```
 
-This verifies PostgreSQL logic, not real pg_net scheduling or concurrent backend
-contention. Do not run the fixture SQL on production: it deliberately injects
-failures and replaces functions inside rolled-back local test transactions.
+Tested with PGlite 0.5.16. This verifies SQL logic, not real pg_net/pg_cron
+execution or concurrent backend contention. Never run the fixture SQL on a
+hosted database: it deliberately replaces local stubs and injects failures.
 
-## Proposed rollout, only after approval
+## Proposed rollout — only after approval
 
-1. Recheck the live tick definition and project. If the guard differs, rebase
-   and rerun tests instead of bypassing it. Capture the current definition for
-   rollback. Review the migration and ensure it runs as one transaction.
-2. Apply `db/migrations/20261119080653_feed_color_transitions.sql` using the
-   established migration process. It stays disabled. Confirm existing watcher
-   health, schedules, and alert behavior are unchanged.
-3. Separately enable the recorder when authorized:
+1. Review `db/migrations/20261119080653_feed_color_transitions.sql`. Confirm the
+   old watcher-hook draft was never applied; do not apply this as a replacement
+   over an already-installed older draft. Use the established migration process.
+2. Apply the migration as its single transaction. The new job and runtime remain
+   off. Confirm no existing watcher functions or schedules changed.
+3. When activation is separately authorized, enable both switches atomically:
 
    ```sql
-   update public.feed_color_runtime set enabled = true where id = 1;
+   begin;
+   update public.feed_color_runtime set enabled=true where id=1;
+   select cron.alter_job(jobid, active := true)
+   from cron.job where jobname='bwtf-feed-color-collector';
+   commit;
    ```
 
-4. After a few successful watcher cycles, use read-only checks:
+4. After the first read and a later half-hour read, inspect using SELECT only:
 
    ```sql
-   select enabled, last_response_id, last_observed_at, last_processed_at,
-          last_new_runs, last_error, consecutive_failures
-   from public.feed_color_runtime where id = 1;
+   select enabled, request_id, requested_at, last_attempt_at,
+          last_observed_at, last_new_runs, last_http_status,
+          last_error, consecutive_failures
+   from public.feed_color_runtime where id=1;
 
-   select kind, count(*) from public.feed_color_runs group by kind;
+   select response_id, observed_at from public.feed_color_reads
+   order by observed_at desc limit 10;
 
-   select station_id, kind, first_observed_at, last_confirmed_at,
-          confirmations, state, previous_state, previous_last_confirmed_at
+   select kind,count(*) from public.feed_color_runs group by kind;
+
+   select station_id,state,previous_state,previous_last_confirmed_at,
+          first_observed_at,last_confirmed_at,confirmations
    from public.feed_color_runs order by first_observed_at desc limit 30;
-
-   select last_processed_at, last_fetch_status, last_error,
-          last_summary->'feed_colors' as color_recorder
-   from public.watcher_runtime where id = 1;
    ```
 
-   Expect baselines first, then confirmations and real changes; no synthetic
-   events should be injected to validate production. Compare observed raw
-   states with the existing successful feed, without issuing another poll.
+   Expect initial baselines and approximately half-hour-spaced observations.
+   Do not inject simulated changes into production to test collection.
 
-## Stop or roll back
+## Stop / operational rollback
 
-When authorized, disabling is a single operation that preserves all history:
-
-```sql
-update public.feed_color_runtime set enabled = false where id = 1;
-```
-
-`db/scripts/disable_feed_color_recorder.sql` disables it and restores the exact
-original tick **only if** its body still matches this installation. If later
-changes exist, it leaves them intact, disables recording, and warns for manual
-review. The script retains tables and observations; it never deletes history or
-changes cron schedules.
+When authorized, run `db/scripts/disable_feed_color_recorder.sql`. It disables
+only this collector's runtime and cron job, clears its pending cursor, and
+preserves all observations. An already-queued HTTP request may finish, but its
+response will not be ingested. No alert watcher function, runtime, schedule,
+subscriber, or history is modified or removed.
