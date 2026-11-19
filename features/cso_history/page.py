@@ -525,6 +525,12 @@ def handle_daily_colors_api(query, body):
                   "tracks": build_daily_color_tracks(rows, days)})
 
 
+def handle_color_history(query, body):
+    from .color_history import payload
+    data, status = payload(query)
+    return _json(data, status)
+
+
 def handle_events(query, body):
     now = datetime.now(timezone.utc)
     if not sb.is_configured():
@@ -594,5 +600,6 @@ GET_ROUTES = {
     "/cso-history": handle_page,
     "/cso-history/daily-colors": handle_daily_colors,
     "/cso-history/api/events": handle_events,
+    "/cso-history/api/color-history": handle_color_history,
     "/cso-history/api/daily-colors": handle_daily_colors_api,
 }

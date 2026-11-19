@@ -89,11 +89,16 @@
   .layer-controls legend{font-size:13px;font-weight:700;color:#54576F;margin-bottom:8px}
   .layer-controls label{min-height:32px;cursor:pointer}
   .layer-controls input{min-height:0;width:18px;height:18px;accent-color:#0072BC}
-  .daily-green{background:#25814d}.daily-gray{background:#8a949b}
+  .daily-green,.state-safe{background:#25814d}.daily-gray,.state-not_sampled{background:#8a949b}
+  .state-posted{background:#d4763a}.state-cso{background:repeating-linear-gradient(135deg,#b5310a 0 5px,#992a09 5px 8px)}
+  .state-unknown{background:#eceff1;border:1px dotted #54576F}
+  .state-uncertain{background:repeating-linear-gradient(135deg,#edf0f2 0 4px,#aab4bf 4px 5px);opacity:.75}
+  .color-mark.state-uncertain{height:8px;top:8px;border-radius:0}
+  .color-mark:not(.state-uncertain){z-index:1}
   .row.drow{height:24px;border-top:0}
   .row.drow .name{font-size:11px;color:#54576F;justify-content:flex-end;padding-right:10px}
-  .daily-mark{position:absolute;top:6px;height:12px;border-radius:3px;cursor:help}
-  .daily-mark:focus-visible,.smark:focus-visible,.seg:focus-visible{outline:2px solid #0072BC;outline-offset:3px}
+  .color-mark{position:absolute;top:6px;height:12px;border-radius:3px;cursor:help}
+  .color-mark:focus-visible,.smark:focus-visible,.seg:focus-visible{outline:2px solid #0072BC;outline-offset:3px}
   .loading{padding:48px;text-align:center;color:#8a949b}
 </style>
 </head>
@@ -103,7 +108,7 @@
 <div class="wrap">
   {% call page_head("Online Postings Timeline", "What the public could see on SFPUC's beach map, minute by minute, station by station.", "record", link=("/records#timeline", "How we get these records")) %}
     
-    <p>Follow bacteria postings and combined sewer overflow (CSO) flags on SFPUC’s map. Compare daily gray/green history, sample dates and result arrivals on the same time axis. Toggle each layer below.</p>
+    <p>Follow bacteria postings and combined sewer overflow (CSO) flags on SFPUC’s map. Compare timestamped map states, sample dates and result arrivals on the same time axis. Toggle each layer below.</p>
     <p>This is our independent observation history. Reported discharges are on the <a href="/discharges">Discharge Ledger</a>; State-filed advisories are on <a href="/postings">Beach Postings</a>.</p>
   {% endcall %}
 
@@ -130,11 +135,11 @@
     <fieldset class="layer-controls">
       <legend>Show on the timeline</legend>
       <label><input type="checkbox" id="show-postings" checked> Postings &amp; discharge flags</label>
-      <label><input type="checkbox" id="show-daily" checked> Gray / green daily history</label>
+      <label><input type="checkbox" id="show-colors" checked> Full map-state history</label>
       <label><input type="checkbox" id="show-samples"> Sample dates</label>
       <label><input type="checkbox" id="show-arrivals"> Result arrivals</label>
     </fieldset>
-    <p id="daily-status" class="chart-hint" role="status" hidden></p>
+    <p id="color-status" class="chart-hint" role="status" hidden></p>
     <p class="chart-hint" id="range-caption" aria-live="polite"></p>
     </div>
       <div class="legend" aria-label="Timeline legend">
@@ -142,10 +147,13 @@
         <span class="key" style="color:#8a949b">On SFPUC's map:</span>
         <span class="key"><span class="swatch posted"></span>posted — elevated bacteria</span>
         <span class="key"><span class="swatch cso"></span>CSO discharge flag</span>
-        </div><div class="legend-group" id="daily-legend">
+        </div><div class="legend-group" id="color-legend">
         <span class="key"><span class="swatch daily-gray"></span>Gray — no data on the map</span>
-        <span class="key"><span class="swatch daily-green"></span>Green — no warning at last daily observation</span>
-        <span class="key">Gaps — warning, discharge or no recorded color</span>
+        <span class="key"><span class="swatch daily-green"></span>Green — no warning observed</span>
+        <span class="key"><span class="swatch state-posted"></span>Bacteria posting</span>
+        <span class="key"><span class="swatch state-cso"></span>CSO warning</span>
+        <span class="key"><span class="swatch state-uncertain"></span>Hatched — uncertain between observations</span>
+        <span class="key"><span class="swatch state-unknown"></span>Unknown recorded state</span>
         </div><div class="legend-group" id="sample-legend" hidden>
         <span class="key">Lab samples:</span>
         <span class="key"><span class="swatch clean"></span>collected — clean</span>
@@ -157,7 +165,7 @@
         <span class="key"><span class="swatch lag"></span>collection to DataSF observation</span>
       </div>
     </div>
-    <p class="chart-hint" id="daily-explanation">Daily colors summarize the last observation each day, not every change within that day. Compare them with the posting bars above; green is not an all-day guarantee. <a href="/cso-history/daily-colors">Daily-only table</a>.</p>
+    <p class="chart-hint" id="color-explanation">Solid colors show a state recorded in a snapshot, from first observation through last confirmation. Hatched intervals are unobserved: a change may have happened anywhere inside them. Even repeated observations do not rule out brief changes between checks. <a href="/cso-history/daily-colors">Older daily-summary view</a>.</p>
     <p class="chart-hint">Right-edge dots show current status, even for a historical range. Scroll sideways for earlier dates. Use “View as table” for the selected range. Dates and times are Pacific.</p>
     <div class="board" tabindex="0" role="region" aria-label="Scrollable postings timeline">
       <div class="axis" id="axis-top" aria-hidden="true"></div>
@@ -175,8 +183,8 @@
 </div>
 <script>
 (function(){
-  var DATA = null, RANGE = 14, CUSTOM = null, SHOW_POSTINGS = true, SHOW_DAILY = true, SHOW_SAMPLES = false, SHOW_ARRIVALS = false, ZOOM = 7, bounds = null;
-  var DAILY = null, dailyKey = '', dailyCache = new Map(), dailyRequest = null;
+  var DATA = null, RANGE = 14, CUSTOM = null, SHOW_POSTINGS = true, SHOW_COLORS = true, SHOW_SAMPLES = false, SHOW_ARRIVALS = false, ZOOM = 7, bounds = null;
+  var COLORS = null, colorKey = '', colorCache = new Map(), colorRequest = null;
   var WINDOW_DAYS = 7;          // the board shows a week; the 14- and 30-day ranges scroll through it (Chase, 2026-10-06)
   var scrollFrac = 1;            // where the user left the window, 1 = at now; kept across re-renders
   var userScrolling = false;     // set by wheel/touch/pointer on the board; a scroll event then records scrollFrac — clamps and our own sets don't
@@ -223,9 +231,9 @@
     document.getElementById('range-caption').textContent = fmt(t0) + ' – ' + fmt(end) + ' · ' + (ZOOM === 'fit' ? 'Full range' : ZOOM + (ZOOM === 1 ? ' day across' : ' days across'));
     document.getElementById('sample-legend').hidden = !SHOW_SAMPLES;
     document.getElementById('posting-legend').hidden = !SHOW_POSTINGS;
-    document.getElementById('daily-legend').hidden = !SHOW_DAILY;
-    document.getElementById('daily-explanation').hidden = !SHOW_DAILY;
-    loadDaily();
+    document.getElementById('color-legend').hidden = !SHOW_COLORS;
+    document.getElementById('color-explanation').hidden = !SHOW_COLORS;
+    loadColors();
     document.getElementById('arrival-legend').hidden = !SHOW_ARRIVALS;
     function pos(ms){ return Math.max(0, Math.min(100, (ms - t0)/span*100)); }
 
@@ -297,20 +305,20 @@
       row.appendChild(name); row.appendChild(track); row.appendChild(dot);
       chart.appendChild(row);
 
-      if (SHOW_DAILY && DAILY) {
-        var daily = (DAILY.tracks || []).find(function(t){return t.station_id === s.station_id;});
+      if (SHOW_COLORS && COLORS) {
+        var history = (COLORS.tracks || []).find(function(t){return t.station_id === s.station_id;});
         var drow = document.createElement('div'); drow.className='row drow';
-        var dname = document.createElement('div'); dname.className='name'; dname.textContent='daily map';
+        var dname = document.createElement('div'); dname.className='name'; dname.textContent='map states';
         var dtrack = document.createElement('div'); dtrack.className='track';
-        ((daily || {}).runs || []).forEach(function(run){
-          if (!run.color) return;
-          var left = pacificMidnight(run.start), right = pacificMidnight(nextDay(run.end));
-          if (right <= t0 || left >= end) return;
-          var mark=document.createElement('span');mark.className='daily-mark daily-'+run.color;
-          mark.style.left=pos(left)+'%';mark.style.width=(pos(right)-pos(left))+'%';
-          var label=s.station_name + ': ' + (run.color === 'gray' ? 'Gray — no data on the map' : 'Green — no warning at last daily observation') + ', ' + run.start + ' through ' + run.end + '. Daily summary, not continuous status.';
+        ((history || {}).spans || []).forEach(function(segment){
+          var left=Date.parse(segment.start),right=Date.parse(segment.end);
+          if(right<t0 || left>=end)return;
+          var mark=document.createElement('span');
+          mark.className='color-mark state-'+(segment.kind==='uncertain'?'uncertain':segment.state);
+          mark.style.left=pos(left)+'%';mark.style.width=(right===left?'2px':(pos(right)-pos(left))+'%');
+          var label=colorLabel(s.station_name,segment);
           mark.title=label;
-          var show=function(ev){var tip=document.getElementById('tooltip');tip.textContent=label;tip.style.display='block';tip.style.left=Math.max(8,Math.min(ev.clientX+14,window.innerWidth-tip.offsetWidth-8))+'px';tip.style.top=Math.max(8,Math.min(ev.clientY+14,window.innerHeight-tip.offsetHeight-8))+'px';};
+          var show=function(ev){showColorTip(ev,label);};
           accessibleTip(mark,show,label);mark.addEventListener('mousemove',show);mark.addEventListener('mouseleave',hideTip);
           dtrack.appendChild(mark);
         });
@@ -471,7 +479,16 @@
         (d.first_seen ? fmt(d.first_seen) : '<span class="muted">' + (d.pending ? 'not yet' : 'not observed') + '</span>') + '</td><td>' +
         (d.lag_days != null ? dayStr(d.lag_days) : d.pending ? dayStr(d.pending_days) + ' so far' : '—') + '</td></tr>'; });
     else html += '<tr><td colspan="7" class="muted">No samples in the record window.</td></tr>';
-    document.getElementById('tablebox').innerHTML = html + '</tbody></table>';
+    html += '</tbody></table>';
+    if (SHOW_COLORS && COLORS) {
+      html += '<h3>Map-state observations and uncertainty</h3><table><thead><tr><th>Station</th><th>From (Pacific)</th><th>Through (Pacific)</th><th>Observation</th></tr></thead><tbody>';
+      COLORS.tracks.forEach(function(track){track.spans.forEach(function(segment){
+        if(bounds && (Date.parse(segment.end)<bounds.start || Date.parse(segment.start)>=bounds.end))return;
+        html += '<tr><td>'+esc(track.name)+'</td><td>'+fmt(segment.start)+'</td><td>'+fmt(segment.end)+'</td><td>'+esc(colorLabel(track.name,segment))+'</td></tr>';
+      });});
+      html += '</tbody></table>';
+    }
+    document.getElementById('tablebox').innerHTML = html;
   }
 
   fetch('/cso-history/api/events').then(function(r){ return r.json(); }).then(function(data){
@@ -515,21 +532,30 @@
       if (DATA) { render(); renderTable(); }
     });
   });
-  function nextDay(day){var d=new Date(day+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+1);return d.toISOString().slice(0,10);}
-  function loadDaily(){
-    var status=document.getElementById('daily-status');status.hidden=!SHOW_DAILY;
-    if (!SHOW_DAILY) return;
+  var COLOR_LABELS={safe:'Green — no warning',not_sampled:'Gray — not sampled / not routinely sampled',posted:'Bacteria posting',cso:'CSO warning',unknown:'Unknown state'};
+  function colorLabel(name,segment){
+    var period=fmt(segment.start)+' to '+fmt(segment.end);
+    if(segment.kind==='uncertain'){
+      var from=COLOR_LABELS[segment.from_state],to=COLOR_LABELS[segment.to_state];
+      return name+' · '+period+' · '+(from&&to ? (from===to ? 'Same state observed on either side ('+from+'); intervening changes cannot be ruled out.' : from+' → '+to+'. Change occurred somewhere between these observations; exact time unknown.') : 'No observation coverage for this interval.') ;
+    }
+    return name+' · '+COLOR_LABELS[segment.state]+' · First observed '+fmt(segment.first_observed)+'; last confirmed '+fmt(segment.last_confirmed)+'. Snapshot confirmed '+segment.refreshes+' time(s). Intermediate observation times are not individually retained.';
+  }
+  function showColorTip(ev,label){var tip=document.getElementById('tooltip');tip.textContent=label;tip.style.display='block';tip.style.left=Math.max(8,Math.min(ev.clientX+14,window.innerWidth-tip.offsetWidth-8))+'px';tip.style.top=Math.max(8,Math.min(ev.clientY+14,window.innerHeight-tip.offsetHeight-8))+'px';}
+  function loadColors(){
+    var status=document.getElementById('color-status');status.hidden=!SHOW_COLORS;
+    if (!SHOW_COLORS) return;
     var start=pacificDay(bounds.start), end=pacificDay(bounds.end-1), key=start+'/'+end;
-    if (dailyKey === key) { status.hidden=!!DAILY; return; }
-    dailyKey=key; DAILY=null;
-    if(dailyRequest) dailyRequest.abort();
-    if(dailyCache.has(key)){DAILY=dailyCache.get(key);status.hidden=true;return;}
-    status.textContent='Loading saved daily color history…';
-    dailyRequest=new AbortController();
-    fetch('/cso-history/api/daily-colors?'+new URLSearchParams({start:start,end:end}),{signal:dailyRequest.signal})
-      .then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error(d.error || 'Daily history unavailable');return d;});})
-      .then(function(d){if(dailyKey!==key)return;dailyCache.set(key,d);if(dailyCache.size>10)dailyCache.delete(dailyCache.keys().next().value);DAILY=d;status.hidden=true;render();})
-      .catch(function(e){if(e.name==='AbortError'||dailyKey!==key)return;status.textContent=e.message+' Postings and samples remain available.';});
+    if (colorKey === key) { status.hidden=!!COLORS; return; }
+    colorKey=key; COLORS=null;
+    if(colorRequest) colorRequest.abort();
+    if(colorCache.has(key)){COLORS=colorCache.get(key);status.hidden=true;return;}
+    status.textContent='Loading timestamped map history…';
+    colorRequest=new AbortController();
+    fetch('/cso-history/api/color-history?'+new URLSearchParams({start:start,end:end}),{signal:colorRequest.signal})
+      .then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error(d.error || 'Map-state history unavailable');return d;});})
+      .then(function(d){if(colorKey!==key)return;colorCache.set(key,d);if(colorCache.size>10)colorCache.delete(colorCache.keys().next().value);COLORS=d;status.hidden=true;render();renderTable();})
+      .catch(function(e){if(e.name==='AbortError'||colorKey!==key)return;status.textContent=e.message+' Postings and samples remain available.';});
   }
   function pacificDay(ms){ return new Intl.DateTimeFormat('en-CA',{timeZone:'America/Los_Angeles',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(ms)); }
   // Resolve Pacific midnight without depending on the visitor's time zone, including DST.
@@ -554,14 +580,14 @@
     render(); renderTable();
   });
   document.getElementById('zoom').addEventListener('change',function(){ZOOM=this.value === 'fit' ? 'fit' : +this.value; if(DATA) render();});
-  ['postings','daily','samples','arrivals'].forEach(function(layer){
+  ['postings','colors','samples','arrivals'].forEach(function(layer){
     document.getElementById('show-'+layer).addEventListener('change',function(){
       SHOW_POSTINGS=document.getElementById('show-postings').checked;
-      SHOW_DAILY=document.getElementById('show-daily').checked;
+      SHOW_COLORS=document.getElementById('show-colors').checked;
       SHOW_SAMPLES=document.getElementById('show-samples').checked;
       SHOW_ARRIVALS=document.getElementById('show-arrivals').checked;
-      if(layer==='daily' && SHOW_DAILY && !DAILY) dailyKey='';
-      if(DATA) render();
+      if(layer==='colors' && SHOW_COLORS && !COLORS) colorKey='';
+      if(DATA) {render();renderTable();}
     });
   });
   window.addEventListener('resize' , function(){ if (DATA) render(); });
