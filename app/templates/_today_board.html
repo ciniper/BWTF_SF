@@ -244,7 +244,7 @@
         <div class="zone-tools"><p class="zones-hint">Tap a zone to explore its stations.</p>
         {% if controls %}<div class="board-toggles">
           <div class="board-past"><button type="button" class="preset layer" data-layer="replay" aria-expanded="false" aria-controls="day-strip" title="The city's map on each of the past days">Past week</button></div>
-          <div class="board-forecast"><button type="button" class="preset layer" data-layer="risk" aria-expanded="false" aria-controls="forecast-body" title="Experimental sewer-overflow forecast for today">Today’s forecast · Beta</button></div>
+          <div class="board-forecast"><button type="button" class="preset layer" data-layer="risk" aria-expanded="false" aria-controls="forecast-body" title="Experimental Water Quality Forecast: modeled beach risk from combined sewer discharges and lingering effects">Today’s forecast · Beta</button></div>
         </div>{% endif %}
         </div>
         {% if controls %}<div class="day-strip" id="day-strip" role="group" aria-label="Past week: the city's map on each day" hidden></div>
@@ -253,7 +253,7 @@
         <div class="forecast-body" id="forecast-body" hidden>
           {% if board.risk_lead %}<p class="risk-lead">{{ board.risk_lead }}</p>{% else %}<p class="risk-lead">Forecast currently unavailable.</p>{% endif %}
           <ul class="by-zone">{% for z in board.zones if z.risk is not none %}<li><span>{{ z.label }}</span><b class="lvl-{{ z.level }}">{{ z.risk }}%</b></li>{% endfor %}</ul>
-          <p class="note">An experimental estimate of sewer-overflow risk from rainfall, not an official advisory. The cards above show SFPUC’s current posting status. <a href="/forecast">See the forecast and days ahead.</a></p>
+          <p class="note">Experimental beach risk scores from <a href="/forecast">combined sewer discharges and lingering effects</a>. Other bacteria sources are out of scope.</p>
         </div>
         {% endif %}
         {% endif %}

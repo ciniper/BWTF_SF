@@ -447,7 +447,7 @@ class LiveData:
         return observed
 
     def _compose_impact(self, day_probs: list, day_volumes: list, idx: int,
-                        day_dates: list = None, observed: dict = None) -> dict:
+                        day_dates: list = None, observed: dict = None, stage3_zones: dict | None = None) -> dict:
         """Composed beach-impact risk for daily-table row `idx`, per basin
         (worst group, plus "citywide") and per-group values under "_groups".
         Where the watcher OBSERVED a CSO onset that day's discharge probability
@@ -456,12 +456,20 @@ class LiveData:
         if day_dates is None or len(day_dates) != len(day_probs):
             raise ValueError("the composition needs one date per row of the daily table")
         comp = self._compose_run(day_probs, day_volumes, day_dates, observed)
+        if stage3_zones is not None:
+            stage3_zones.update(self._stage3_zones(comp, day_dates[idx]))
         block = _C.payload_blocks(_GEO, self.specs["s4"], comp, day_dates[idx])
         # NOTE: keep `composed` flat floats only — the frontend takes
         # Math.max(Object.values(predictions)) and renders a card per key.
         composed = dict(block["predictions"])
         composed["_groups"] = block["impact_groups"]
         return composed
+
+    @staticmethod
+    def _stage3_zones(comp, day) -> dict:
+        """Existing same-day mapped discharge risk; no Stage 4 persistence or sample adjustments."""
+        row = comp.s3.zone_p.loc[pd.Timestamp(day)]
+        return {key: float(row[key]) for key in ZONES if key in row and pd.notna(row[key])}
 
     def _compose_run(self, day_probs: list, day_volumes: list, day_dates: list, observed: dict = None,
                      stations: dict = None):
@@ -989,11 +997,13 @@ class LiveData:
                      dates: list, observed: dict, live: dict | None = None) -> dict:
         # the plain two-stage composition — the models alone, no observation of any kind (the observed-CSO
         # override is now the cso_onset rule of live_v1) — always computed so the page can show it instead
-        plain_predictions = self._compose_impact(probs, vols, idx, dates, {})
+        plain_stage3 = {}
+        plain_predictions = self._compose_impact(probs, vols, idx, dates, {}, stage3_zones=plain_stage3)
         plain_groups = plain_predictions.pop("_groups", {})
-        plain_block = {"predictions": plain_predictions, "impact_groups": plain_groups, "zones": zone_risks(plain_groups), "discharge_probs": probs[idx]}
+        plain_block = {"predictions": plain_predictions, "impact_groups": plain_groups, "zones": zone_risks(plain_groups), "discharge_probs": probs[idx], "stage3_zones": plain_stage3}
         if live is None or not live.get("enabled"):
             day_predictions, impact_groups = dict(plain_predictions), dict(plain_groups)
+            stage3_zones = dict(plain_stage3)
             rules_block = None if live is None else {"version": _lr.VERSION, "enabled": False, "source": live.get("source")}
             probs_live = None
         elif live.get("rule") == LINK_ZONE:
@@ -1001,6 +1011,7 @@ class LiveData:
             # flagged station's link = 1 on the flag day, its basin's other links at least their co-firing share,
             # the days after through the lingering table. No live_v2 rule runs; a lab result moves no percent (A1).
             comp = self._compose_run(probs, vols, dates, stations=live["stations"])
+            stage3_zones = self._stage3_zones(comp, dates[idx])
             block = _C.payload_blocks(_GEO, self.specs["s4"], comp, dates[idx])
             day_predictions, impact_groups = dict(block["predictions"]), dict(block["impact_groups"])
             seen = {s for d, ss in live["stations"].items() if 0 <= (dates[idx] - d).days <= 7 for s in ss}
@@ -1014,7 +1025,8 @@ class LiveData:
             probs_live = None
         else:
             p2, v2 = live["probs"], live["vols"]
-            day_predictions = self._compose_impact(p2, v2, idx, dates, observed)
+            stage3_zones = {}
+            day_predictions = self._compose_impact(p2, v2, idx, dates, observed, stage3_zones=stage3_zones)
             impact_groups = day_predictions.pop("_groups", {})
             # the persistence-only composition (the day's own discharge term removed) — what a clean sample caps
             p_only = [dict(p) for p in p2]
@@ -1047,6 +1059,7 @@ class LiveData:
             "predictions": day_predictions,
             "impact_groups": impact_groups,
             "zones": zone_risks(impact_groups),
+            "stage3_zones": stage3_zones,
             "discharge_probs": probs[idx],
             "discharge_probs_live": probs_live,
             "observed_cso": sorted(observed.get(dates[idx], ())),

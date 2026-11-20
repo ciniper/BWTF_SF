@@ -113,7 +113,7 @@ def test_today_board_tiles_and_risk_view_use_the_levels():
         assert f".forecast-body b.lvl-{lv.key}{{color:{lv.color}}}" in h                     # the number's colour, from the one table
     # the Risk view only reveals the numbers and the forecast's sentence; it no longer recolours (Chase, 2026-10-18)
     assert 'id="forecast-body" hidden' in h and 'aria-controls="forecast-body"' in h and 'class="risk"' not in h
-    assert '<p class="risk-lead">Sewer-overflow risk today: 81% at most (East Beaches)' in h and "const RISK_LEVELS" not in h
+    assert '<p class="risk-lead">Modeled beach-risk score today: 81% at most (East Beaches)' in h and "const RISK_LEVELS" not in h
     assert 'class="hi"' not in h and "under 10%" not in h and "50% or more" not in h
     assert "{{" not in h and "{%" not in h
 
