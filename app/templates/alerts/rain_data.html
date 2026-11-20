@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">
+<title>Rain data — Admin · SF Beach Water</title>
+<link rel="icon" href="{{ asset('brand/favicon.ico') }}">
+<link rel="stylesheet" href="{{ asset('brand.css') }}">
+<link rel="stylesheet" href="{{ asset('rain_data.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+{% from 'alerts/_tabs.html' import admin_tab_styles, admin_tabs %}{{ admin_tab_styles() }}
+</head><body>
+{% include '_icons.html' %}{% from '_frame.html' import topbar, footer, tabbar with context %}
+{{ topbar() }}
+<main class="rain-wrap">
+<header class="rain-heading"><div><p class="rain-kicker">Admin / Data notebook</p><h1>What rain data do we have?</h1><p class="rain-intro">A field guide to the gauges, radar and forecasts behind our research.</p></div><span class="rain-stamp">Research snapshot<br><b>{{ rain.snapshot_label }}</b></span></header>
+{{ admin_tabs('rain-data') }}
+<section class="rain-takeaway"><svg class="ic" aria-hidden="true"><use href="#i-cloud-rain"/></svg><div><h2>We found rainfall over the whole city.</h2><p>AQPI gives us recent <strong>radar estimates</strong> across SF. Access to SFPUC’s actual city sewer-system rain gauges is still unconfirmed.</p></div></section>
+
+<section aria-labelledby="sources-title"><div class="rain-section-head"><h2 id="sources-title">Four different pieces of the picture</h2><span class="rain-small">Available data ≠ deployed model input</span></div>
+<div class="rain-source-grid">
+<article class="rain-source"><span class="rain-tag">Training inputs</span><h3>Rain measured at a point</h3><div class="rain-source-mark">2 <span>NOAA gauges</span></div><p>Downtown + Oceanside daily totals anchor training. ERA5 supplies historical hourly patterns.</p><div class="rain-source-foot">Long history · limited spatial detail</div></article>
+<article class="rain-source radar"><span class="rain-tag">Feed verified</span><h3>Rain estimated across SF</h3><div class="rain-source-mark">24 h <span>at 15-minute intervals</span></div><p>Surfrider’s AQPI feed has recent radar estimates. SFPUC’s AQPI area feed extends to seven days, hourly.</p><div class="rain-source-foot">Many grid points · research only</div></article>
+<article class="rain-source forecast"><span class="rain-tag">Future rainfall</span><h3>Rain that might fall</h3><div class="rain-source-mark">~4 d <span>of NBM forecasts</span></div><p>The same CSV includes forecast columns. Those are predictions, separate from the rain already observed by radar.</p><div class="rain-source-foot">Forecast model · not observations</div></article>
+<article class="rain-source pending"><span class="rain-tag">Access unconfirmed</span><h3>SFPUC’s city rain gauges</h3><div class="rain-source-mark">~21 <span>locations in historical reports</span></div><p>The Telog sewer-system network is documented. Our gauge folder contains a request draft, not a data delivery.</p><div class="rain-source-foot">Public regional API ≠ this city network</div></article>
+</div></section>
+
+<section class="rain-panel" aria-labelledby="explore-title">
+<div class="rain-section-head"><div><p class="rain-kicker">Explore the downloaded feeds</p><h2 id="explore-title">Where and when did it rain?</h2></div><a id="rain-source-link" href="{{ rain.feeds.surfrider.url }}" target="_blank" rel="noopener">Open current source CSV</a></div>
+<p class="rain-muted">The charts below stay on the {{ rain.snapshot_label }} snapshot. The source link opens the provider’s current file.</p>
+<div class="rain-controls"><label>Observation window<select id="rain-feed"><option value="surfrider">Surfrider · 24 hours / 15-minute steps</option><option value="wastewater">SFPUC area · 7 days / hourly steps</option></select></label><label>Area<select id="rain-region">{% for key,region in rain.regions.items() %}<option value="{{ key }}">{{ region.label }}</option>{% endfor %}</select></label><label class="rain-checkbox"><input id="rain-forecast" type="checkbox"> Include forecast in chart</label></div>
+<div class="rain-metrics" aria-live="polite"><div><span id="rain-total" class="rain-value">—</span><span>inches · area mean</span></div><div><b id="rain-count">—</b><span>unique radar grid points</span></div><div><b id="rain-complete">—</b><span>complete observed intervals</span></div></div>
+<p id="rain-window" class="rain-window"></p>
+<div class="rain-explorer-grid"><div><div id="rain-map" aria-label="Map of rainfall estimates in San Francisco"></div><div class="rain-map-legend" id="rain-map-legend" aria-label="Map rainfall scale"></div><p class="rain-small">Each dot is one radar grid point. The outline is a rough research area, not an official sewershed. Select a dot to inspect its total.</p></div>
+<div class="rain-chart-side"><div class="rain-chart-head"><h3 id="rain-chart-title">Rain per interval</h3><div class="rain-legend"><span><i class="observed"></i>Radar estimate</span><span id="rain-forecast-key" hidden><i class="forecast"></i>NBM forecast</span></div></div><div id="rain-chart" class="rain-chart"></div><p id="rain-chart-readout" class="rain-readout" aria-live="polite">Select or focus a bar for its amount and time.</p><p class="rain-small">All display times are Pacific. Each timestamp marks the interval’s end. Amounts are not rain rates.</p><details><summary>Exact chart values</summary><div class="rain-table-scroll rain-values"><table><thead><tr><th>Interval ending (Pacific)</th><th>Type / interval</th><th>Rain (in)</th></tr></thead><tbody id="rain-values"></tbody></table></div></details></div></div>
+<div class="rain-caveat"><strong>Freshness matters.</strong> Both downloads ended at 8 a.m. PST on Nov 20. The Surfrider download was checked at 10:45 a.m., about 2¾ hours later. A complete window can still be behind the weather.</div>
+<noscript><p>Interactive map and chart require JavaScript. The snapshot’s SF city-area mean was {{ '%.2f'|format(rain.feeds.surfrider.regions.city.total) }} inches over 24 hours and {{ '%.2f'|format(rain.feeds.wastewater.regions.city.total) }} inches over seven days, both ending Nov 20 at 8 a.m. PST.</p></noscript>
+</section>
+
+<div class="rain-two-col">
+<section class="rain-panel" aria-labelledby="archive-title"><p class="rain-kicker">What is saved locally?</p><h2 id="archive-title">306 days of AQPI files</h2><p class="rain-muted">Oct 1, 2025 – Aug 29, 2026 (UTC observation days). A file is named for midnight after its day.</p><div class="rain-legend"><span><i class="observed"></i>File archived</span><span><i class="missing"></i>No file in this archive</span></div>
+<div class="rain-calendar" aria-label="Monthly archive coverage"><div class="rain-calendar-head"><span>Month</span><span>Each square = one day, left to right</span><span>Files</span></div>
+{% for month in rain.archive.months %}<div class="rain-calendar-row"><span>{{ month.label }}</span><div class="rain-days">{% for day in month.days %}<span class="rain-day{% if day.present %} present{% endif %}" title="{{ day.date }} · {{ 'File archived' if day.present else 'No file in this archive' }}"></span>{% endfor %}</div><b>{{ month.count }}/{{ month.days|length }}</b></div>{% endfor %}</div>
+<p class="rain-small">A saved file may still have missing intervals. Grey squares mean absent files here; they do not prove no rain fell. The remote archive still listed the same 306 files when checked.</p><a href="https://cw3e-datashare.ucsd.edu/AQPI/tmp_archive/qpe15min/" target="_blank" rel="noopener">Browse historical source files</a>
+</section>
+<section class="rain-panel" aria-labelledby="bias-title"><p class="rain-kicker">What did the earlier research find?</p><h2 id="bias-title">Radar totals can read wetter</h2><p class="rain-muted">Rain total relative to each NOAA gauge during the AQPI season, Oct 2025–Aug 2026. Gauge total = 1.00×.</p>
+<div class="rain-bias-axis"><span>0</span><span>Gauge = 1.00×</span><span>1.5×</span></div>
+{% for label,ratio,width,days,kind in [('Downtown · AQPI',1.17,78,272,'aqpi'),('Downtown · MRMS',1.03,68.667,327,'mrms'),('Oceanside · AQPI',1.21,80.667,239,'aqpi'),('Oceanside · MRMS',0.92,61.333,290,'mrms')] %}
+<div class="rain-bias-row"><div><b>{{ label }}</b><span>{{ days }} paired days</span></div><div class="rain-bias-track"><span class="{{ kind }}" style="width:{{ width }}%"></span><i></i></div><strong>{{ '%.2f'|format(ratio) }}×</strong></div>
+{% endfor %}
+<p class="rain-small">These comparisons use different available-day counts, excluding identified gauge outages. MRMS is gauge-adjusted, so its agreement is partly built in. Neither source is an independent ground truth.</p><div class="rain-caveat">AQPI’s 17–21% excess here is a historical finding, not a correction factor applied to the map above.</div></section>
+</div>
+
+<section class="rain-panel" aria-labelledby="inventory-title"><p class="rain-kicker">The training archive in context</p><h2 id="inventory-title">What each source contributes</h2><div class="rain-table-scroll"><table class="rain-inventory"><thead><tr><th>Source</th><th>What it tells us</th><th>What we have</th><th>Role / limitation</th></tr></thead><tbody>
+<tr><th>NOAA / ACIS gauges</th><td>Observed rain at Downtown and Oceanside</td><td>Daily history from 2011 in the repo</td><td>Training rainfall totals; gauge outages need handling</td></tr>
+<tr><th>ERA5 reanalysis</th><td>Historical hourly weather patterns</td><td>Hourly history from 2011</td><td>Training intensity features; coarse spatial detail</td></tr>
+<tr><th>AORC</th><td>Historical rain on a finer grid</td><td>SF cutouts for 2010–2025</td><td>Research comparison; can inherit a dead gauge’s dry bias</td></tr>
+<tr><th>MRMS</th><td>Radar combined with gauges</td><td>Research daily data from Oct 2020; selected wet hours</td><td>Comparison and opt-in gauge-outage work; not raw gauge data</td></tr>
+<tr><th>AQPI</th><td>Rain’s spatial pattern and short bursts</td><td>306 archived daily files, Kyle’s six-beach rollup, these feed snapshots</td><td>Research; a live feed exists but this page does not poll it</td></tr>
+<tr><th>SFPUC city gauges</th><td>Rain measured near sewer-system facilities</td><td>Daily figures in report PDFs; request draft for raw Telog data</td><td>Raw delivery / partner endpoint still unconfirmed</td></tr>
+<tr><th>Discharge + bacteria records</th><td>What happened after the rain</td><td>CIWQS reports, parsed discharges, SFPUC lab results and postings</td><td>Model outcomes and evaluation evidence, not rain inputs</td></tr>
+<tr><th>Weather-model forecast runs</th><td>What models predicted ahead of time</td><td>Archived runs in the repo; forecast history stored separately</td><td>Forecast evaluation; not all training evidence is in the Downloads archive</td></tr>
+</tbody></table></div></section>
+
+<section class="rain-panel" aria-labelledby="gauge-title"><div class="rain-section-head"><div><p class="rain-kicker">The remaining gap</p><h2 id="gauge-title">An API exists. Are these the gauges we need?</h2></div><a href="https://webapps.sfpuc.org/kiwidgets/wiski/" target="_blank" rel="noopener">SFPUC regional data viewer</a></div>
+<p>The regional KiWIS API responds, but its catalog covers water-supply stations. We have not verified access to the city wastewater network’s RG gauges.</p>
+<div class="rain-gauge-grid"><div><span class="rain-tag">SF Downtown hourly</span><h3>No recent values returned</h3><p>Nov 1–21 query: empty series. A listed station is not proof of usable measurements.</p></div><div><span class="rain-tag">San Andreas daily</span><h3>Data, then missing days</h3><p>Values through Nov 18; Nov 19–20 were null. Daily totals are not automatically a rolling 24-hour feed.</p></div><div><span class="rain-tag">Question for Kyle</span><h3>Radar feed or Telog gauges?</h3><p>If actual gauges: get the endpoint, access method and station list. If AQPI: confirm polling cadence, grid changes and archive support.</p></div></div>
+<details class="rain-provenance"><summary>Sources and how these views were made</summary><p>Checked Nov 20, 2026. Radar values come from one download of each linked CW3E feed. Coordinates are deduplicated; means use the existing research rectangles. An interval with a missing grid value remains unavailable, and incomplete totals are not treated as zero. Map totals sum observations only.</p><p>The archive calendar comes from the local download manifest. Historical bias values come from the repository’s <code>features/forecast/RAIN_SOURCES.md</code>; full API findings are in <code>docs/aqpi-sfpuc-rain-api-investigation.md</code>.</p><ul><li><a href="{{ rain.feeds.surfrider.url }}">Surfrider 15-minute QPE + forecast CSV</a></li><li><a href="{{ rain.feeds.wastewater.url }}">SFPUC-area hourly QPE + forecast CSV</a></li><li><a href="https://cw3e-datashare.ucsd.edu/AQPI/CW3E-AQPI_data-feed_quick-guide.pdf">CW3E feed guide: inches, UTC interval endings, radar versus NBM</a></li><li><a href="https://webserv.sfwater.org:8080/KiWIS/KiWIS?service=kisters&amp;type=queryServices&amp;request=getStationList&amp;datasource=0&amp;format=json">SFPUC KiWIS station catalog</a></li></ul></details>
+</section>
+</main>{{ footer() }}{{ tabbar() }}
+<script id="rain-snapshot" type="application/json">{{ rain|tojson }}</script>
+<script id="rain-basemap" type="application/json">{{ BASEMAP|tojson }}</script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+<script src="{{ asset('rain_data.js') }}" defer></script>
+<script src="{{ asset('tables.js') }}" defer></script>
+</body></html>
