@@ -57,6 +57,26 @@ def test_stage3_paths_and_no_lingering():
     assert linked['plain']['stage3_zones']==expected
     assert linked['stage3_zones']['ocean']==1.
 
+def test_legacy_snapshot_is_served_read_only_without_stage3():
+    import json
+    from datetime import datetime, timezone
+    from unittest.mock import patch
+    from features.forecast import page
+    now = datetime.now(timezone.utc)
+    snapshot = {"predictions": {"fixture": {"zones": {"ocean": .8}, "plain": {"zones": {"ocean": .7}}}}}
+    row = {"generated_at": now.isoformat(), "snapshot": snapshot}
+    with patch.object(page, "_read_row", return_value=row), \
+         patch.object(page, "_load_engine", side_effect=AssertionError("must not compute")), \
+         patch.object(page.sb, "update", side_effect=AssertionError("must not write")), \
+         patch.object(page.sb, "rpc", side_effect=AssertionError("must not mutate")):
+        status, _, body = page.handle_data({}, b"")
+    assert status == 200
+    day = json.loads(body)["predictions"]["fixture"]
+    assert day == snapshot["predictions"]["fixture"]
+    assert "stage3_zones" not in day
+
+
 if __name__=='__main__':
     test_stage3_paths_and_no_lingering()
+    test_legacy_snapshot_is_served_read_only_without_stage3()
     print('PASS Stage 3 plain, disabled, live_v2, sample-only, observed onset, link_zone; canonical zones, valid zero and Stage 4 independence')

@@ -1,6 +1,6 @@
 # Forecast terminology and SewerCast review evidence
 
-All screenshots are **real local Chromium renders with synthetic fixture data**, not current beach conditions or production forecasts. Earlier iterations are retained for review; only **05-final-stage3** represents the final UI. No account pages, credentials, or private user data are included. `docs/**` is excluded from the Vercel function bundle.
+All screenshots are **real local Chromium renders with synthetic fixture data**, not current beach conditions or production forecasts. Earlier iterations are retained for review; **05-final-stage3** is the first Stage 3 iteration; **06-combined-sewer-copy** is the current UI. No account pages, credentials, or private user data are included. `docs/**` is excluded from the Vercel function bundle.
 
 ## Current behavior
 
@@ -128,3 +128,31 @@ The initial diagnostics are cropped viewports and may begin mid-page; they are h
 [Final-Today-expanded-before.png](05-final-stage3/Final-Today-expanded-before.png) (1280 × 722)
 
 ![05-final-stage3: Final-Today-expanded-before](05-final-stage3/Final-Today-expanded-before.png)
+
+## Follow-up: combined sewer wording and unavailable preview
+
+Current intro: “Which beach zones could be affected by a combined sewer discharge today?” Nearby copy uses combined sewer discharge consistently.
+
+Read-only snapshot inspection on 2026-11-20 found the shared snapshot generated at 06:35 UTC (about 11 minutes old) contained six Stage 4 forecast days and zero Stage 3 fields in either corrected or plain payloads. The handler serves shared snapshots younger than three hours before loading the preview engine. Production's older code cannot emit the new field, so its routine refresh will not fix this preview mismatch. No refresh jobs, cache writes, database mutations or production changes were performed.
+
+The cached day keys also lack expected event-volume inputs used by Stage 3's size-dependent mapping. Basin probabilities and Stage 4 results do not provide an exact fallback. The UI therefore retains unavailable rather than inventing scores. Review Stage 3 using the synthetic fixtures below; live review needs an isolated preview data source or a separately authorized production release.
+
+The previous text said “Same-day zone forecast incomplete.” It was not a “complete” status. Missing scores now say “Same-day impact scores are unavailable.” and explain that the supplied snapshot lacks usable Stage 3 scores; reloading the page cannot add them. Partial coverage says “Some beach-zone scores are unavailable.” and gives the available zone count.
+
+A regression fixture verifies the legacy snapshot path returns unchanged data without loading the engine or issuing update/RPC writes. Existing Stage 3 tests and desktop/mobile browser checks pass. All captures below are synthetic fixtures, including missing/partial states.
+
+![Current synthetic fixture: Final-Stage3-SewerCast-desktop](06-combined-sewer-copy/Final-Stage3-SewerCast-desktop.png)
+
+![Current synthetic fixture: Final-Stage3-SewerCast-mobile](06-combined-sewer-copy/Final-Stage3-SewerCast-mobile.png)
+
+![Current synthetic fixture: Final-Stage3-missing-mobile](06-combined-sewer-copy/Final-Stage3-missing-mobile.png)
+
+![Current synthetic fixture: Final-Stage3-model-check-desktop](06-combined-sewer-copy/Final-Stage3-model-check-desktop.png)
+
+![Current synthetic fixture: Final-Stage3-model-check-mobile](06-combined-sewer-copy/Final-Stage3-model-check-mobile.png)
+
+![Current synthetic fixture: Final-Stage3-partial-mobile](06-combined-sewer-copy/Final-Stage3-partial-mobile.png)
+
+![Current synthetic fixture: Final-Stage3-water-quality-desktop](06-combined-sewer-copy/Final-Stage3-water-quality-desktop.png)
+
+![Current synthetic fixture: Final-Stage3-water-quality-mobile](06-combined-sewer-copy/Final-Stage3-water-quality-mobile.png)

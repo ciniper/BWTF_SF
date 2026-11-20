@@ -431,7 +431,7 @@ function toggleLiveCorrections() { showLiveCorrections = !showLiveCorrections; i
 function renderPageIntro(view) {
     const copy = {
         live: ['Water Quality Forecast', 'Could a sewer discharge affect beach water quality today?', 'Effects from earlier discharges can linger. Other bacteria sources are outside scope. Risk levels summarize a model score, not measured bacteria or a calibrated chance of contamination.'],
-        cso: ['SewerCast', 'Which beach zones could a sewer discharge affect today?', 'Same-day discharge impact risk by beach zone · Stage 3 mapping, without lingering effects. Scores are not calibrated probabilities of contamination.'],
+        cso: ['SewerCast', 'Which beach zones could be affected by a combined sewer discharge today?', 'Same-day combined sewer discharge impact risk by beach zone · Stage 3 mapping, without lingering effects. Scores are not calibrated probabilities of contamination.'],
         check: ['Model Check', 'Learn how the model works and see how its predictions compare with what happened.', 'Choose model parts below to explore their scores. Open Day by day to compare predictions or browse discharge records and measured bacteria.']
     }[view];
     document.querySelector('#forecastHead h1').textContent = copy[0];
@@ -570,7 +570,7 @@ function stage3Zones(day) {
 }
 function stage3Note(day) {
     const count = Object.keys(stage3Zones(day)).length;
-    return (count === 4 ? '' : count ? 'Partial data: ' + count + ' of 4 beach zones available. ' : 'Same-day zone impact scores are unavailable. ') + 'Stage 3 maps the selected day’s discharge risk to beach zones using historical outfall patterns. No lingering effects or lab measurements. Model scores, not calibrated contamination probabilities.';
+    return (count === 4 ? '' : count ? 'Partial data: ' + count + ' of 4 beach zones available. ' : 'This snapshot has no usable Stage 3 beach-zone scores. SewerCast needs a snapshot produced with those scores; reloading this page cannot add them. ') + 'Stage 3 maps the selected day’s combined sewer discharge risk to beach zones using historical outfall patterns. No lingering effects or lab measurements. Model scores, not calibrated contamination probabilities.';
 }
 function forecastRisk(day) {
     if (currentView !== 'basins') return worstZone(day);
@@ -665,7 +665,8 @@ function renderBanner(day) {
     if (currentView === 'basins' && m == null) {
         const banner = document.getElementById('riskBanner');
         banner.className = 'risk-banner';
-        banner.innerHTML = '<div class="eyebrow">' + esc(forecastTitle()) + ' · ' + esc(dayTitle(day)) + '</div><h2>Same-day zone forecast incomplete.</h2><p class="sub">' + stage3Note(day) + '</p>';
+        const headline = Object.keys(stage3Zones(day)).length ? 'Some beach-zone scores are unavailable.' : 'Same-day impact scores are unavailable.';
+        banner.innerHTML = '<div class="eyebrow">' + esc(forecastTitle()) + ' · ' + esc(dayTitle(day)) + '</div><h2>' + headline + '</h2><p class="sub">' + stage3Note(day) + '</p>';
         return;
     }
     setBanner(m, { when: whenWord(day), eyebrow: forecastTitle() + ' · ' + dayTitle(day), sub: currentView === 'basins' ? stage3Note(day) : liveFacts(day, m) });
