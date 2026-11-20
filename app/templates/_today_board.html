@@ -85,7 +85,7 @@
   #today-map .leaflet-pane > svg{pointer-events:none}   /* one pane per status rank (initMap): a pane's empty drawing area must not swallow taps meant for the dots below */
   .bwtf-dot{display:block;width:11px;height:11px;margin:1px;transform:rotate(45deg);border:1px solid rgba(38,39,42,.55);border-radius:2px;background:#fff;box-shadow:0 0 0 1px #fff}   /* Surfrider's diamond: a hairline ring so the grade colour reads true (Chase: the thick ring looked blue) */
   /* Brighter yellow and saturated orange separate sample grades; city status colours stay independent. */
-  .bwtf-dot{--bwtf-medium:#f2d43d;--bwtf-high:#df7100}
+  .bwtf-dot{--bwtf-medium:#f7df68;--bwtf-high:#df7100}
   .bwtf-dot.safe{background:var(--safe)}.bwtf-dot.caution{background:var(--bwtf-medium)}.bwtf-dot.posted{background:var(--bwtf-high)}.bwtf-dot.unknown{background:var(--unknown)}
   .bwtf-dot.stale{background:#fff;border:1.5px dashed var(--faint);box-shadow:0 0 0 1px #fff}   /* older than STALE_AFTER_DAYS: hollow and grey, whatever its grade — it is not the water's state now (2026-11-06) */
   /* Give diamonds similar visual weight to the circles in the legend and guide. */
