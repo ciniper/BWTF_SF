@@ -262,7 +262,7 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
     </div></div>
 </nav>
 <div id="forecastHead">
-{% call page_head("Water Quality Forecast", "Could a sewer discharge affect beach water quality today?<span class='forecast-intro-note'>Effects from earlier discharges can linger. Other bacteria sources are outside scope. Risk levels summarize a model score, not measured bacteria or a calibrated chance of contamination.</span>", "today", "How this forecast works") %}
+{% call page_head("Water Quality Forecast", "What’s the risk of high bacteria at the beach from current or recent combined sewer discharges?<span class='forecast-intro-note'>Effects from earlier discharges can linger. Other bacteria sources are outside scope. Risk levels summarize a model score, not measured bacteria or a calibrated chance of contamination.</span>", "today", "How this forecast works") %}
 <p><b>Two forecasts, different questions.</b> SewerCast shows same-day discharge impact risk by beach zone, using the model’s historical outfall mapping. Water Quality Forecast assigns a modeled risk level to each beach zone using same-day discharge likelihood and lingering effects from earlier discharges. Both update every 30 minutes. Its percentage is a model score used to assign a risk level, not a calibrated probability of contamination, a bacteria concentration or a measurement of the water.</p>
 <p><b>Stage 1: how much rain?</b> Daily rainfall comes from NOAA's Downtown and Oceanside gauges; recent hourly observations and ICON weather forecasts supply the live forecast's inputs.</p>
 <p><b>Stage 2: will the combined sewer system discharge?</b> The current model uses daily rain, recent rain totals, the three-hour rain peak and south wind during rain to estimate discharge likelihood by basin. It was trained on the city's filed discharge records, including older reports from 2011. These basin probabilities feed the Stage 3 mapping shown in SewerCast.</p>
@@ -430,8 +430,8 @@ function toggleLiveCorrections() { showLiveCorrections = !showLiveCorrections; i
 
 function renderPageIntro(view) {
     const copy = {
-        live: ['Water Quality Forecast', 'Could a sewer discharge affect beach water quality today?', 'Effects from earlier discharges can linger. Other bacteria sources are outside scope. Risk levels summarize a model score, not measured bacteria or a calibrated chance of contamination.'],
-        cso: ['SewerCast', 'Which beach zones could be affected by a combined sewer discharge today?', 'Same-day combined sewer discharge impact risk by beach zone · Stage 3 mapping, without lingering effects. Scores are not calibrated probabilities of contamination.'],
+        live: ['Water Quality Forecast', 'What’s the risk of high bacteria at the beach from current or recent combined sewer discharges?', 'Effects from earlier discharges can linger. Other bacteria sources are outside scope. Risk levels summarize a model score, not measured bacteria or a calibrated chance of contamination.'],
+        cso: ['SewerCast', 'What is the chance of a combined sewer discharge today?', 'Shown by beach zone using historical outfall patterns. Same-day discharges only, without lingering effects. Scores are not calibrated probabilities of contamination.'],
         check: ['Model Check', 'Learn how the model works and see how its predictions compare with what happened.', 'Choose model parts below to explore their scores. Open Day by day to compare predictions or browse discharge records and measured bacteria.']
     }[view];
     document.querySelector('#forecastHead h1').textContent = copy[0];
