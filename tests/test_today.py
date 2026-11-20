@@ -196,7 +196,8 @@ def test_layer_routes_exist_and_answer_json():
 
 def test_labels_layer_is_a_chip_off_by_default_drawn_from_the_stations():
     """Chase, 2026-10-21: a Labels layer, default off — zone names on the whole-city map, station names zoomed in or
-    with a zone chosen, an overlapping name tried on the dot's other side and then hidden; posted labels win."""
+    with a zone chosen; posted labels win. Since 2026-11-08 ("a bit messy") one placer draws every label, posted ones
+    included: each takes the first spot round its dot clear of other labels, the dots and the map's controls, or none."""
     from app.wsgi import app
     with app.test_client() as c:
         h = c.get("/").data.decode()
@@ -210,8 +211,27 @@ def test_labels_layer_is_a_chip_off_by_default_drawn_from_the_stations():
     assert h.index('id="zones"') < h.index('data-layer="risk"') < h.index('id="layers"')
     board = (ROOT / "app/templates/_today_board.html").read_text()
     assert "labels: {}" in board and 'if (key === "labels")' in board and "LABEL_ZOOM = 13" in board        # no fetch; ?layers=labels deep-links like the rest
-    assert 'MAP.createPane("lbl").style.zIndex = 445' in board and 'MAP.on("zoomend moveend", refreshLabels)' in board
-    assert board.count("refreshLabels()") >= 4 and 'classList.add("lft")' in board and 'classList.add("off")' in board
+    assert 'MAP.createPane("lbl").style.zIndex = 445' in board and 'MAP.on("zoomend moveend resize", refreshLabels)' in board
+    assert board.count("refreshLabels()") >= 4 and "function besideDot(" in board and "function besideZone(" in board
+    assert "permanent: bad" not in board and "function mapControls()" in board                                # posted labels are placed too, not left to Leaflet
+    assert 'MAP.on("tooltipopen", fitTooltip)' in board
+    assert "LAYER.outfalls.group.eachLayer(m => { const p = at(m)" in board                                   # labels keep off the outfalls too
+    assert "function openSample(s)" in board and 'm.on("click", () => openSample(s))' in board                # a dot and its label open the same sample
+    assert "at the wetter gauge over three days" not in board and "at both gauges over three days" not in board   # nor the rain layer
+    assert "const first = r.missed.length ? r.missed : r.cornered.length ? r.cornered : r.offSide" in board   # a zone left worse off picks its spot first in the next plan
+    assert 'esc(short(z)) + "<br>" + count' in board
+    assert "ZONE_SUMMARY_AT = 2" in board   # two flagged beaches in a zone get the zone's one label
+    assert "const outline = z =>" in board and ".zone-hl>i{" in board   # and that zone is outlined, whole
+    assert 'className: "zone-leader " + cls' in board and "zone-leader-dot" in board   # with a line from its label to the outline, ending in a dot
+    assert "FLAG_GAP" in board and "leader(taken[taken.length - 1], c.p, c.r, c.st)" in board   # a flagged beach's own label has a line to its dot
+    assert "PHONE_CITY_SCALE = 0.9" in board and "subtract([0, up])" in board   # a phone's whole city 10% smaller, the room above it
+    assert "function pillAround(" in board and "PILL_SNAP_DEG" in board and "transform:rotate(" in board   # the outline tilts with its zone's beaches
+    assert 'document.fonts.addEventListener("loadingdone"' in board   # labels placed again once Roboto is in
+    assert "PIN_SPOTS" in board and "MAX_LABEL_PLANS" in board   # the zone labels are placed by a bounded search
+    assert 'MAP.zoomControl.setPosition("topright")' in board and 'baker_china: "northwest"' in board   # zoom over the bay; Baker & China labelled in the water   # and a zone label short of room goes on two rows before it drops its name
+    assert "outfalls discharged in the year" not in board   # the outfalls layer adds no count line under the map
+    assert "new ResizeObserver(" in board and "MAP.invalidateSize()" in board   # the map re-measures when its box changes size
+    assert "tapZone(z)" in board and "tapCluster(c)" in board and ".map-name>span.tap{pointer-events:auto" in board   # labels take taps                                                     # a hover tooltip opens on the side that fits
 
 
 if __name__ == "__main__":

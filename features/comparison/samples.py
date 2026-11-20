@@ -22,7 +22,7 @@ both), each BWTF row is one volunteer collection with its time. The
     (which value pairs with which is not recoverable from the dataset).
     Enterococcus between ENTERO_CAUTION and the limit is marked caution.
 
-Stateless: fetch on demand, no background threads, no Supabase.
+Historical tables fetch on demand. Sample popovers also read the validated getCSV snapshot from Supabase.
 """
 from __future__ import annotations
 
@@ -210,7 +210,7 @@ def results_url(station: str, date: str) -> str:
     return f"{BEACH_SAMPLES_URL}?{urlencode(params)}"
 
 
-def sample_day_payload(city_records: list[dict], station: str, date: str = "") -> dict:
+def sample_day_payload(city_records: list[dict], station: str, date: str = "", live: bool = False) -> dict:
     """Pure: DataSF rows -> one station's results on one day, every value the
     city published per indicator (a double-sampled day has two), each graded by
     the shared rule, with the limits the graphs draw. No ``date`` = the newest
@@ -232,6 +232,10 @@ def sample_day_payload(city_records: list[dict], station: str, date: str = "") -
     total_max = max((c["value"] for c in cells.get("COLI_TOTAL", []) if c["value"] is not None), default=None)
     return {
         "station": station, "name": st.name, "group": st.group, "date": date or None, "found": bool(day),
+        "early": any(r.get("early") for r in day),
+        "indicator_sources": {a: ("getcsv" if any(r.get("early") for r in day if r["analyte"] == a)
+                                  else "datasf") for a in cells},
+        "pending_codes": [a for a in ("ENTERO", "COLI_FECAL", "COLI_TOTAL") if not cells.get(a)] if live else [],
         "cells": row["cells"] if row else {c: [] for c in ANALYTES},
         "over": row["over"] if row else False, "n_samples": row["n_samples"] if row else 0,
         "limits": {c: single_sample_max(c, fecal_max, total_max) for c in ANALYTES},   # total coliform's is the ratio-adjusted one
@@ -240,7 +244,7 @@ def sample_day_payload(city_records: list[dict], station: str, date: str = "") -
         "ratio_note": f"fecal over {STANDARDS['COLI_TOTAL']['ratio_threshold']:.0%} of total, so the limit drops to {STANDARDS['COLI_TOTAL']['single_sample_max_ratio']:,}",
         "caution": ENTERO_CAUTION, "units": "MPN/100mL",
         "analytes": [{"code": c, "label": m["label"]} for c, m in ANALYTES.items()],
-        "results_url": results_url(station, date) if date and date >= DATASET_FLOOR else None,   # the export's days have no DataSF page
+        "results_url": results_url(station, date) if date and date >= DATASET_FLOOR and any(not r.get("early") for r in day) else None,   # the export's days have no DataSF page
         "history": bool(date) and date < DATASET_FLOOR,
         "viewer_url": f"/samples?site={quote(station, safe='')}",
         "graph_url": f"/graphs?site={quote(station, safe='')}",
@@ -298,22 +302,50 @@ def build_bwtf_sample_day(bwtf_name: str, date: str = "", bwtf_client: Optional[
     return bwtf_sample_day_payload(events, bwtf_name, date)
 
 
-def build_sample_day(station: str, date: str = "", sf_gov_monitor=None) -> dict:
-    """Fetch one station's rows (that day, or the last 60 then 400 days for the
-    newest published day) and build the payload."""
-    from features.alerts.monitoring import SFWaterQualityMonitor  # local: avoids the import cycle at module load
+def build_sample_day(station: str, date: str = "", sf_gov_monitor=None, feed_date: str = "") -> dict:
+    """Newest available lab values: DataSF first, getCSV per missing indicator."""
+    from features.alerts.monitoring import SFWaterQualityMonitor
+    from shared import sfpuc_live, result_gap
     if station not in STATIONS:
         raise ValueError(f"unknown station {station!r}")
-    sf_gov_monitor = sf_gov_monitor or SFWaterQualityMonitor()
+    if feed_date:
+        datetime.strptime(feed_date, "%Y-%m-%d")
     if date:
-        d = datetime.strptime(date, "%Y-%m-%d")
-        records = fetch_city_records(sf_gov_monitor, [station], d, d)
-    else:
-        today = now_pacific_naive()
-        records = fetch_city_records(sf_gov_monitor, [station], today - timedelta(days=60), today)
-        if not records:
-            records = fetch_city_records(sf_gov_monitor, [station], today - timedelta(days=400), today)
-    return sample_day_payload(records, station, date)
+        datetime.strptime(date, "%Y-%m-%d")
+    sf_gov_monitor = sf_gov_monitor or SFWaterQualityMonitor()
+    early, state = sfpuc_live.read_snapshot()
+    early = [r for r in early if r["source"] == station and (not date or r["sample_date"] == date)]
+    note = None
+    try:
+        if date:
+            d = datetime.strptime(date, "%Y-%m-%d")
+            records = fetch_city_records(sf_gov_monitor, [station], d, d)
+        else:
+            today = now_pacific_naive()
+            records = fetch_city_records(sf_gov_monitor, [station], today - timedelta(days=60), today)
+            if not records and not early:
+                records = fetch_city_records(sf_gov_monitor, [station], today - timedelta(days=400), today)
+    except Exception:
+        if not early:
+            raise
+        records = []
+        note = "DataSF is temporarily unavailable. Showing recorded SFPUC lab results."
+    merged = sfpuc_live.merge_records(records, early)
+    chosen = date or max((r["sample_date"][:10] for r in merged), default="")
+    newest_live = max((r["sample_date"] for r in early), default="")
+    out = sample_day_payload(merged, station, chosen, live=bool(chosen and chosen == newest_live))
+    out["early_status"] = state
+    out["note"] = note or ("Early lab feed is temporarily unavailable; showing DataSF results." if state != "current" and not date else None)
+    out["pending_sample"] = result_gap.pending_results({station: feed_date}, {station: chosen}).get(station) if feed_date and not date else None
+    out["indicator_seen"] = {}
+    if out["early"]:
+        try:
+            seen = sfpuc_live.first_observations(sfpuc_live.fetch_observations(chosen, station, chosen))
+            out["indicator_seen"] = {a: seen[(station, chosen, a)] for a in out["indicator_sources"]
+                                     if out["indicator_sources"][a] == "getcsv" and (station, chosen, a) in seen}
+        except Exception:
+            pass  # values are usable without an arrival timestamp
+    return out
 
 
 # ── every day a site was sampled: the popover's ‹ › arrows step through these ──────────
@@ -350,7 +382,7 @@ def build_sample_dates(station: str = "", bwtf: str = "", sf_gov_monitor=None, b
     cache_key = f"bwtf:{bwtf}" if bwtf else f"city:{station}"
     hit = _DATES_CACHE.get(cache_key)
     if hit and hit[0] > time.time():
-        return hit[1]
+        return _with_live_dates(hit[1], station) if not bwtf else hit[1]
     site = resolve_site(bwtf or station)
     if bwtf:
         if not site["bwtf_name"]:
@@ -366,4 +398,11 @@ def build_sample_dates(station: str = "", bwtf: str = "", sf_gov_monitor=None, b
         dates = city_sample_dates(list(site["sources"]), monitor)
         out = {"ok": True, "source": "city", "site": site["name"], "key": site["key"], "dates": dates, "latest": dates[-1] if dates else None}
     _DATES_CACHE[cache_key] = (time.time() + _DATES_TTL_S, out)
-    return out
+    return _with_live_dates(out, station) if not bwtf else out
+
+
+def _with_live_dates(payload, station):
+    from shared import sfpuc_live
+    rows, _ = sfpuc_live.read_snapshot()
+    dates = sorted(set(payload["dates"]) | {r["sample_date"] for r in rows if r["source"] == station})
+    return {**payload, "dates": dates, "latest": dates[-1] if dates else None}

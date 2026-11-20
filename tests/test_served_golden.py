@@ -77,6 +77,12 @@ def _diff(got, want, path="", out=None, limit=12) -> list:
     return out
 
 
+def _without_stage3(day):
+    # The only additive API field in this change. Keep every old nested pin strict.
+    return {k: ({pk: pv for pk, pv in v.items() if pk != "stage3_zones"} if k == "plain" else v)
+            for k, v in day.items() if k != "stage3_zones"}
+
+
 def _inputs_moved() -> list:
     now = G.input_hashes()
     return [f for f, h in HASHES["inputs_at_pin"].items() if now.get(f) != h]
@@ -115,7 +121,7 @@ def test_live_payload_without_corrections_matches_the_golden():
     assert list(got["plain"]) == list(PAYLOAD["plain"]) and len(PAYLOAD["plain"]) == 6, (list(got["plain"]), list(PAYLOAD["plain"]))
     problems = []
     for d, want in PAYLOAD["plain"].items():
-        _diff({k: got["plain"][d].get(k) for k in want}, want, d, problems)   # every pinned key; a new additive key is not a change
+        _diff({k: _without_stage3(got["plain"][d]).get(k) for k in want}, want, d, problems)   # every pinned key; a new additive key is not a change
     assert not problems, "plain payload moved:\n  " + "\n  ".join(problems)
     for key in ("outage_days", "discharge_probs_by_day", "volumes_by_day"):
         p = _diff(got[key], PAYLOAD[key], key)
@@ -129,7 +135,7 @@ def test_live_payload_with_corrections_matches_the_golden():
     assert list(got) == list(PAYLOAD["live"]), (list(got), list(PAYLOAD["live"]))
     problems = []
     for d, want in PAYLOAD["live"].items():
-        _diff({k: got[d].get(k) for k in want}, want, d, problems)
+        _diff({k: _without_stage3(got[d]).get(k) for k in want}, want, d, problems)
     assert not problems, "payload with live corrections moved:\n  " + "\n  ".join(problems)
 
 
@@ -139,7 +145,7 @@ def test_the_two_cases_pin_different_things():
     p = _fresh_payloads()
     for d, live in p["live"].items():
         plain = p["plain"][d]
-        assert live["plain"] == {k: plain[k] for k in ("predictions", "impact_groups", "zones", "discharge_probs")}, d
+        assert live["plain"] == {k: plain[k] for k in ("predictions", "impact_groups", "zones", "discharge_probs", "stage3_zones")}, d
         assert live["live_corrections"]["enabled"] is True and plain["live_corrections"] is None, d
     moved = [(d, z) for d, day in p["live"].items() for z in day["zones"] if day["zones"][z] != day["plain"]["zones"][z]]
     assert len(moved) >= 6, moved

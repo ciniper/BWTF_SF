@@ -164,3 +164,29 @@ def _fallback(transitions: list[dict], simulated: bool, zone: str | None = None,
         "</td></tr></table></td></tr></table></body></html>"
     )
     return {"subject": subject, "sms_text": sms_text, "text_body": text_body, "html_body": html_body}
+
+
+_STILL_ANCHOR = '<p style="margin:14px 0 0;font-size:13.5px;'   # the template's "From SFPUC" paragraph, after the station cards
+_STILL_COLOR = {"cso": "#b5310a", "posted": "#d4763a"}
+
+
+def with_still_in_effect(msg: dict, still: list[tuple[str, str]], zone: str | None = None) -> dict:
+    """The running-list section: a compact "Still in effect" list in the HTML, text and SMS, in the template's colours."""
+    from html import escape
+    heading = f"Still in effect — {zone}" if zone else "Still in effect"
+    rows = "".join(
+        '<tr><td style="padding:6px 0;border-top:1px solid #E3EBF2;font-size:14px;color:#26272a;">'
+        f'{escape(name)}</td><td align="right" style="padding:6px 0;border-top:1px solid #E3EBF2;font-size:12px;'
+        f'font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:{_STILL_COLOR[to]};">'
+        + ("Sewage discharge" if to == "cso" else "Posted") + "</td></tr>"
+        for name, to in still)
+    block = ('<div style="margin:16px 0 0;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;'
+             f'color:#54576F;">{escape(heading)} &middot; {len(still)}</div>'
+             f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 0;">{rows}</table>')
+    html = msg["html_body"]
+    html = html.replace(_STILL_ANCHOR, block + _STILL_ANCHOR, 1) if _STILL_ANCHOR in html else html
+    lines = "\n".join(f"- {name}: " + ("sewage discharge." if to == "cso" else "posted.") for name, to in still)
+    text = msg["text_body"].replace("\n\nFrom SFPUC:", f"\n\n{heading}:\n{lines}\n\nFrom SFPUC:", 1)
+    brief = "; ".join(f"{name} ({'discharge' if to == 'cso' else 'posted'})" for name, to in still)
+    sms = msg["sms_text"].replace(". Live status:", f". {heading}: {brief}. Live status:", 1)[:320]
+    return {**msg, "html_body": html, "text_body": text, "sms_text": sms}

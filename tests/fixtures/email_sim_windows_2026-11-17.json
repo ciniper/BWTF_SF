@@ -1,0 +1,321 @@
+{
+ "source": "/cso-history/api/events, read 2026-11-18T00:38:16Z; windows that ended after 2026-11-10",
+ "stations": [
+  {
+   "station_id": "4601",
+   "station_name": "Fort Funston",
+   "windows": [
+    {
+     "start": "2026-11-13T20:48:00Z",
+     "end": "2026-11-17T16:24:00Z",
+     "segments": [
+      {
+       "start": "2026-11-13T20:48:00Z",
+       "status": "cso"
+      }
+     ]
+    },
+    {
+     "start": "2026-11-17T17:27:00Z",
+     "end": null,
+     "segments": [
+      {
+       "start": "2026-11-17T17:27:00Z",
+       "status": "cso"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "station_id": "4605",
+   "station_name": "Ocean Beach at Lincoln Way",
+   "windows": [
+    {
+     "start": "2026-11-10T16:32:00Z",
+     "end": "2026-11-11T17:08:00Z",
+     "segments": [
+      {
+       "start": "2026-11-10T16:32:00Z",
+       "status": "posted"
+      }
+     ]
+    },
+    {
+     "start": "2026-11-13T20:45:00Z",
+     "end": "2026-11-17T16:34:00Z",
+     "segments": [
+      {
+       "start": "2026-11-13T20:45:00Z",
+       "status": "posted"
+      },
+      {
+       "start": "2026-11-13T20:48:00Z",
+       "status": "cso"
+      }
+     ]
+    },
+    {
+     "start": "2026-11-17T17:11:00Z",
+     "end": "2026-11-17T23:29:00Z",
+     "segments": [
+      {
+       "start": "2026-11-17T17:11:00Z",
+       "status": "cso"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "station_id": "4612",
+   "station_name": "Crissy Field Beach East",
+   "windows": [
+    {
+     "start": "2026-11-17T16:30:00Z",
+     "end": null,
+     "segments": [
+      {
+       "start": "2026-11-17T16:30:00Z",
+       "status": "posted"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "station_id": "4603",
+   "station_name": "Ocean Beach at Vicente Street",
+   "windows": [
+    {
+     "start": "2026-11-13T20:49:00Z",
+     "end": "2026-11-15T18:28:00Z",
+     "segments": [
+      {
+       "start": "2026-11-13T20:49:00Z",
+       "status": "cso"
+      }
+     ]
+    },
+    {
+     "start": "2026-11-16T03:03:00Z",
+     "end": "2026-11-17T23:28:00Z",
+     "segments": [
+      {
+       "start": "2026-11-16T03:03:00Z",
+       "status": "cso"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "station_id": "4620",
+   "station_name": "Crane Cove Park",
+   "windows": [
+    {
+     "start": "2026-11-13T20:47:00Z",
+     "end": "2026-11-15T00:48:00Z",
+     "segments": [
+      {
+       "start": "2026-11-13T20:47:00Z",
+       "status": "posted"
+      }
+     ]
+    },
+    {
+     "start": "2026-11-16T03:01:00Z",
+     "end": null,
+     "segments": [
+      {
+       "start": "2026-11-16T03:01:00Z",
+       "status": "posted"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "station_id": "4602",
+   "station_name": "Ocean Beach at Sloat Boulevard",
+   "windows": [
+    {
+     "start": "2026-11-13T20:45:00Z",
+     "end": "2026-11-15T18:13:00Z",
+     "segments": [
+      {
+       "start": "2026-11-13T20:45:00Z",
+       "status": "posted"
+      }
+     ]
+    },
+    {
+     "start": "2026-11-16T02:58:00Z",
+     "end": "2026-11-17T16:23:00Z",
+     "segments": [
+      {
+       "start": "2026-11-16T02:58:00Z",
+       "status": "posted"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "station_id": "4604",
+   "station_name": "Ocean Beach at Balboa Street",
+   "windows": [
+    {
+     "start": "2026-11-13T20:45:00Z",
+     "end": "2026-11-15T18:13:00Z",
+     "segments": [
+      {
+       "start": "2026-11-13T20:45:00Z",
+       "status": "posted"
+      }
+     ]
+    },
+    {
+     "start": "2026-11-16T02:58:00Z",
+     "end": "2026-11-17T16:23:00Z",
+     "segments": [
+      {
+       "start": "2026-11-16T02:58:00Z",
+       "status": "posted"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "station_id": "4610",
+   "station_name": "Baker Beach at Lobos Creek",
+   "windows": [
+    {
+     "start": "2026-11-13T14:32:00Z",
+     "end": "2026-11-14T17:01:00Z",
+     "segments": [
+      {
+       "start": "2026-11-13T14:32:00Z",
+       "status": "posted"
+      }
+     ]
+    },
+    {
+     "start": "2026-11-16T00:37:00Z",
+     "end": "2026-11-17T16:23:00Z",
+     "segments": [
+      {
+       "start": "2026-11-16T00:37:00Z",
+       "status": "posted"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "station_id": "4608",
+   "station_name": "Baker Beach West",
+   "windows": [
+    {
+     "start": "2026-11-13T14:32:00Z",
+     "end": "2026-11-15T00:49:00Z",
+     "segments": [
+      {
+       "start": "2026-11-13T14:32:00Z",
+       "status": "posted"
+      },
+      {
+       "start": "2026-11-13T14:35:00Z",
+       "status": "cso"
+      }
+     ]
+    },
+    {
+     "start": "2026-11-16T00:37:00Z",
+     "end": "2026-11-17T16:25:00Z",
+     "segments": [
+      {
+       "start": "2026-11-16T00:37:00Z",
+       "status": "posted"
+      },
+      {
+       "start": "2026-11-16T00:38:00Z",
+       "status": "cso"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "station_id": "4609",
+   "station_name": "Baker Beach East",
+   "windows": [
+    {
+     "start": "2026-11-13T14:32:00Z",
+     "end": "2026-11-15T00:48:00Z",
+     "segments": [
+      {
+       "start": "2026-11-13T14:32:00Z",
+       "status": "posted"
+      }
+     ]
+    },
+    {
+     "start": "2026-11-16T00:37:00Z",
+     "end": "2026-11-17T16:23:00Z",
+     "segments": [
+      {
+       "start": "2026-11-16T00:37:00Z",
+       "status": "posted"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "station_id": "4619",
+   "station_name": "Islais Creek",
+   "windows": [
+    {
+     "start": "2026-11-13T20:47:00Z",
+     "end": null,
+     "segments": [
+      {
+       "start": "2026-11-13T20:47:00Z",
+       "status": "posted"
+      },
+      {
+       "start": "2026-11-13T20:48:00Z",
+       "status": "cso"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "station_id": "4618",
+   "station_name": "Mission Creek",
+   "windows": [
+    {
+     "start": "2026-11-13T20:47:00Z",
+     "end": null,
+     "segments": [
+      {
+       "start": "2026-11-13T20:47:00Z",
+       "status": "posted"
+      },
+      {
+       "start": "2026-11-13T20:49:00Z",
+       "status": "cso"
+      },
+      {
+       "start": "2026-11-16T22:58:00Z",
+       "status": "posted"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

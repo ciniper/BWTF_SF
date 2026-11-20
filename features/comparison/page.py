@@ -95,7 +95,7 @@ class ComparisonRoutes:
             if one("bwtf"):
                 self._send_json(build_bwtf_sample_day(one("bwtf"), one("date")))
             else:
-                self._send_json(build_sample_day(one("station"), one("date"), sf_gov_monitor=self.combined_monitor.sf_gov_monitor))
+                self._send_json(build_sample_day(one("station"), one("date"), sf_gov_monitor=self.combined_monitor.sf_gov_monitor, feed_date=one("feed_date")))
         except ValueError as e:
             self._send_json({"ok": False, "error": str(e)}, status=404)
         except Exception as e:
