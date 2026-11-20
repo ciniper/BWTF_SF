@@ -99,7 +99,7 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
     assert b["lead"] == "Posted: Crissy East. SFPUC posts a beach when samples show bacteria above State standards, and sometimes as a precaution."   # the news only: no "no discharge", no forecast (2026-10-18)
     assert b["facts"] == [{"label": "City samples", "text": "Samples were collected 6 days ago (Sep 23)."}, {"label": "Surfrider samples", "text": "5 days ago (Sep 24)"}]   # one labelled row per fact, ages not bare dates (2026-11-06); the city's and Surfrider's only
     # the forecast's risk is the board's collapsed "Sewer-overflow forecast · Beta" line under the tiles (2026-11-08): no facts row for it
-    assert b["risk_lead"] == "Sewer-overflow risk today: 4% at most (East Beaches), staying low through Sun Oct 04."
+    assert b["risk_lead"] == "Modeled beach-risk score today: 4% at most (East Beaches), staying low through Sun Oct 04."
     assert not any(f["label"] == "Overflow risk today" for f in b["facts"])
     z = {t["key"]: t for t in b["zones"]}
     assert [t["key"] for t in b["zones"]] == ["ocean", "baker_china", "north", "east"]           # registry order, every zone even when empty
@@ -188,7 +188,8 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
         assert ">Main</a>" not in g and "Main</a>" not in g and 'class="mark" href="/"' in g          # no Main tab in either bar; the logo goes home
         f = c.get("/forecast").data.decode()
         bar = f[f.index('class="topbar"'):f.index("</header>")]
-        assert 'href="/alerts"' not in bar and 'class="secnav"' not in f and 'class="subtabs"' not in f     # no Admin tab (the footer, 2026-11-04); Forecast stands alone, so no switcher
+        assert 'href="/alerts"' not in bar and 'class="secnav"' in f and 'class="subtabs"' not in f  # Forecast's three views use the Data-style navigation
+        assert all(label in f for label in ('Water Quality Forecast', 'SewerCast', 'Model Check'))
         assert '<a href="/forecast" class="on" aria-current="page">Forecast</a>' in bar
         foot = f[f.index('class="site-footer"'):]
         assert '<a href="/alerts" title="Coordinators only — needs the passphrase">Admin</a>' in foot       # the coordinators' way in

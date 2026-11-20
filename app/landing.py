@@ -35,8 +35,8 @@ HUBS = [
              "Every beach's status on the city map, by zone, with layers for rain, outfalls, overflow risk, Surfrider's results and a replay of past days.",
              "the board · layers"),
             ("/forecast", "Water Quality Forecast",
-             "Estimated beach water-quality risk from sewer overflows, including lingering effects, plus same-day CSO probabilities by basin.",
-             "risk from overflows · next 5 days"),
+             "Modeled beach risk from combined sewer discharges and lingering effects, plus SewerCast same-day discharge impact risk by beach zone. Not a lab measurement or an all-causes forecast.",
+             "discharge-linked beach risk · next 5 days"),
             # Admin (/alerts, the Sewage Alert System until 2026-11-04) left this row for a footer link the same day
             # (app/templates/_frame.html), so beta testers never meet a passphrase page in the tabs
         ],
@@ -458,7 +458,7 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
             lbl, pk = max(ahead, key=lambda t: t[1]); trend = f", rising to {pk}% by {lbl}"
         else:
             trend = ""
-        risk_lead = f"Sewer-overflow risk today: {worst}% {where}{trend}."
+        risk_lead = f"Modeled beach-risk score today: {worst}% {where}{trend}."
     # Collection dates describe the samples shown by the city feed.
     facts = []
     ages = sorted({s["sampled_age_days"] for tile in tiles for s in tile["stations"]
