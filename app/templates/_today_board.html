@@ -253,7 +253,7 @@
         <div class="forecast-body" id="forecast-body" hidden>
           {% if board.risk_lead %}<p class="risk-lead">{{ board.risk_lead }}</p>{% else %}<p class="risk-lead">Forecast currently unavailable.</p>{% endif %}
           <ul class="by-zone">{% for z in board.zones if z.risk is not none %}<li><span>{{ z.label }}</span><b class="lvl-{{ z.level }}">{{ z.risk }}%</b></li>{% endfor %}</ul>
-          <p class="note">Experimental beach-risk scores from combined sewer discharges and lingering effects, not measured bacteria or calibrated probabilities of contamination. Other bacteria sources are outside scope. The cards above show SFPUC’s current posting status. <a href="/forecast">See Water Quality Forecast and the days ahead.</a> <a href="/forecast#cso">SewerCast shows same-day discharge impact risk by beach zone.</a></p>
+          <p class="note">Experimental beach risk scores from <a href="/forecast">combined sewer discharges and lingering effects</a>. Other bacteria sources are out of scope.</p>
         </div>
         {% endif %}
         {% endif %}
