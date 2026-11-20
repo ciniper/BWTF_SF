@@ -726,7 +726,7 @@ function renderPredictionCards(day, actual) {
                 <div class="basin-prob" style="color:${r.color}">${p == null ? 'Unavailable' : pct(p) + '%'}</div>
                 <div class="basin-bar"><div class="basin-bar-fill" style="width:${pct(p)}%;background:${r.color}"></div></div>
                 <div class="basin-detail">${esc(meta.desc)}${current.mode === 'live' ? ' · same-day discharge probability' : ' · modeled beach risk' + (key !== 'citywide' && dp[key] != null ? ' · same-day discharge ' + pct(dp[key]) + '%' : '')}${observed ? ' · ' + badge('danger', 'octagon-alert', 'discharge observed') : ''}${s1 ? ' · ' + ruleBadge(s1.rule, s1) : ''}</div>
-                ${groups.length ? '<div class="status-line"><span class="mute">Lingering beach impact:</span>' + groups.map(([g, v]) => `<span class="badge muted">${esc(g)} ${pct(v)}%</span>` + ((live.groups || {})[g] ? ruleBadge(live.groups[g].rule, live.groups[g]) : '')).join('') + '</div>' : ''}`;
+                ${groups.length ? '<div class="status-line"><span class="mute">Beach impact scores:</span>' + groups.map(([g, v]) => `<span class="badge muted">${esc(g)} ${pct(v)}%</span>` + ((live.groups || {})[g] ? ruleBadge(live.groups[g].rule, live.groups[g]) : '')).join('') + '</div>' : ''}`;
             el.appendChild(card);
         }
     }
@@ -1087,7 +1087,7 @@ function sbChainCard(win) {
         || SB.chains.find(same), lineup = match ? null : SB.lineups.find(same);
     const words = match ? match.name : ['s2', 's3', 's4'].map(st => (sbPart(st, sbPick[st]) || {}).name || '—').join(' · ');
     const rainOf = (sbPart('s1', (match || SB.chains[0]).parts.s1) || {}).name;
-    const tip = `Modeled beach risk from combined sewer discharges and lingering effects, not a lab measurement or an all-causes forecast. Graded on affected beach days (an discharge day, or a sample over the standard in the week after one). It is scored for whole lineups: basins, S2, S3 and S4, with ${rainOf}'s rain one day ahead. S5 is scored on its own and does not enter this number.`;
+    const tip = `Modeled beach risk from combined sewer discharges and lingering effects, not a lab measurement or an all-causes forecast. Graded on affected beach days (a discharge day, or a sample over the standard in the week after one). It is scored for whole lineups: basins, S2, S3 and S4, with ${rainOf}'s rain one day ahead. S5 is scored on its own and does not enter this number.`;
     const pending = win.key === 'T0' && !win.graded, s = match ? (match.scores[win.key] || {}) : {};
     const has = !!(s.L1 || s.rain);
     const status = pending ? '<span class="sb-scored no">○ not graded yet</span>' : match ? `<span class="sb-scored${has ? '' : ' no'}">${has ? '● scored' : '○ not scored on this window'}</span>` : '<span class="sb-scored no">○ not scored yet</span>';
