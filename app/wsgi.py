@@ -336,6 +336,8 @@ def create_app():
     for path, handler in {**sop_page.GET_ROUTES, **ui_overflow_page.GET_ROUTES, **email_sim_page.GET_ROUTES, **sample_gap_page.GET_ROUTES, **rain_data_page.GET_ROUTES}.items():
         app.add_url_rule(path, f"admin-get:{path}", _gated_page(_forecast_view(handler), path), methods=["GET"])
     app.add_url_rule("/alerts/lab-sop/photos/<name>", "sop-photo", _sop_photo, methods=["GET"])
+    for path, handler in rain_data_page.API_ROUTES.items():
+        app.add_url_rule(path, f"rain-api:{path}", _gated_api(_forecast_view(handler)), methods=["GET"])
     for path, to in sop_page.REDIRECTS.items():
         app.add_url_rule(path, f"moved:{path}", lambda to=to: redirect(to, 302), methods=["GET"])   # 302, as About's moves
 
