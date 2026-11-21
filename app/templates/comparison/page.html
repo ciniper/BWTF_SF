@@ -30,6 +30,10 @@
           .pill--bad{background:#d15c5c;color:#fff}
           .pill--warn{background:#b97e00;color:#fff}
           .pill--na{background:#eef2f4;color:#8a949b}
+          .early-label{display:block;color:#087e83;font-size:12px;font-weight:700;margin-top:6px}
+          .view-options{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+          .view-options a{padding:9px 12px;border:1px solid #a5bdcc;border-radius:10px;color:#0072BC;background:white;font-size:14px}
+          .view-options a[aria-current=page]{background:#0072BC;color:white}
           .date{display:block;color:#8a949b;font-size:11px;margin-top:5px}
           .agree{font-weight:700;font-size:13px}
           .agree--yes{color:#146b37}.agree--no{color:#b5310a}.agree--na{color:#8a949b}
@@ -80,12 +84,22 @@
     <div class="card"><div class="n">{{ same_day.pairs }}</div><div class="l">{{ same_day.label }}</div></div>
     <div class="card"><div class="n">{{ same_day.agree }}</div><div class="l">Agree on the standard</div></div>
     <div class="card"><div class="n">{{ same_day.differ }}</div><div class="l">Differ on the standard</div></div>
-    <div class="card"><div class="n">{{ s.comparable_count }}/{{ s.site_count }}</div><div class="l">Sites with a result from both</div></div>
-    <div class="card"><div class="n">{{ s.bwtf_exceed_count }} / {{ s.city_exceed_count }}</div><div class="l">BWTF / SFPUC latest exceed</div></div>
+    <div class="card"><div class="n">{{ s.comparable_count }}/{{ s.site_count }}</div><div class="l">{{ "Sites with a shared date" if comparison_view == "shared" else "Sites with a result from both" }}</div></div>
+    <div class="card"><div class="n">{{ s.bwtf_exceed_count }} / {{ s.city_exceed_count }}</div><div class="l">BWTF / SFPUC {{ "shared-date" if comparison_view == "shared" else "latest" }} exceed</div></div>
   </div>
-  <p class="hint">{% if same_day.sites %}The two programs are judged only on days both sampled the same site: {{ same_day.sites }} site{{ "" if same_day.sites == 1 else "s" }} had such a day in the last year{% if same_day.latest %}, most recently {{ same_day.latest }}{% endif %}. A site's latest results below are from different days unless marked "same day".{% else %}The two programs are judged only on days both sampled the same site; the last year has none on record, so no agreement is scored.{% endif %}</p>
+  <p class="hint">{% if same_day.sites %}The two programs are judged only on days both sampled the same site: {{ same_day.sites }} site{{ "" if same_day.sites == 1 else "s" }} had such a day in the last year{% if same_day.latest %}, most recently {{ same_day.latest }}{% endif %}. {% if comparison_view == "latest" %}A site's latest results below are from different days unless marked "same day".{% endif %}{% else %}The two programs are judged only on days both sampled the same site; the last year has none on record, so no agreement is scored.{% endif %}</p>
 
   <p class="hint"><svg class="ic"><use href="#i-chart-line"/></svg> Click any site below for its {{ analyte_label }} history — BWTF vs. SFPUC over time, and the days both sampled, head to head.</p>
+
+  <nav class="view-options" aria-label="Comparison view">
+    <a href="/compare?analyte={{ analyte_code }}&amp;view=latest"{% if comparison_view == 'latest' %} aria-current="page"{% endif %}>Latest results</a>
+    <a href="/compare?analyte=ENTERO&amp;view=shared"{% if comparison_view == 'shared' %} aria-current="page"{% endif %}>Latest shared collection date · Experiment</a>
+  </nav>
+  {% if comparison_view == 'shared' %}
+  <p class="note-info">Experiment: each site uses its most recent collection date with Enterococcus results from both programs within the last year. Dates can differ between sites. This may show older results, not current conditions. If a program sampled twice that day, we compare its highest reading.</p>
+  {% endif %}
+  {% for note in source_notes %}<p class="note-info" role="status">{{ note }}</p>{% endfor %}
+  <p class="hint">City results include available early SFPUC getCSV readings. DataSF replaces each matching indicator when published. Early readings and comparisons may change after corrections. Shared dates mean the same calendar day, not necessarily the same time or sampling point.</p>
 
   <div class="bacteria-select">
     <label for="bacteria-type">Bacteria type</label>
@@ -125,7 +139,8 @@
     differ. Latest results from different days are shown side by side but not judged against each other.
     When the city's latest day carries two samples (a routine sample and a storm resample share a date in the
     city's dataset), both are shown and the worse one is graded.<br>
-    Sources: <a href="https://bwtf.surfrider.org/explore/76" target="_blank" rel="noopener">Surfrider BWTF (SF)</a> ·
+    Sources: <a href="https://infrastructure.sfwater.org/lims.asmx/getCSV" target="_blank" rel="noopener">SFPUC getCSV (early lab results)</a> ·
+    <a href="https://bwtf.surfrider.org/explore/76" target="_blank" rel="noopener">Surfrider BWTF (SF)</a> ·
     <a href="{{ DATASF_DATASET_URL }}" target="_blank" rel="noopener">SF Gov Open Data</a> ·
     <a href="https://webapps.sfpuc.org/sapps/beachesandbay.html" target="_blank" rel="noopener">SFPUC Beach Map</a>
   </p>
@@ -142,7 +157,7 @@
     <h3 class="modal__h3">Same-day samples — head to head</h3>
     <p class="modal__note" id="bar-note"></p>
     <div class="chart-wrap"><canvas id="hist-bar"></canvas></div>
-    <p class="modal__note">BWTF = Surfrider volunteer lab · SFPUC = monitoring lab results, published via SF Gov Open Data. The real-time posting feed is status-only, so it has no historical numbers to plot. Dashed line = CA single-sample max; the same-day chart uses the worst (max) reading when a source sampled more than once that day. Click a city point for that day's results.</p>
+    <p class="modal__note">BWTF = Surfrider volunteer lab · SFPUC = monitoring lab results from DataSF or early getCSV readings. Early points use hollow circles; paired bars mark early dates with *. The real-time posting feed is status-only, so it has no historical numbers to plot. Dashed line = CA single-sample max; the same-day chart uses the worst (max) reading when a source sampled more than once that day. Click a city point for that day's results.</p>
     <p class="modal__links" id="hist-links"></p>
   </div>
 </div>
@@ -150,8 +165,10 @@
 <script src="{{ asset('sample_popover.js') }}" defer></script>
 <script>
 var FLOOR = "{{ dataset_floor }}", ANALYTE = "{{ analyte_code }}";
-var isoDaysAgo = function (days, end) { var e = end ? new Date(end) : new Date(); return new Date(e - days * 864e5).toISOString().slice(0, 10); };
-var HIST = { start: isoDaysAgo(91), end: new Date().toISOString().slice(0, 10) };
+var TODAY = {{ as_of_date|tojson }};
+var isoDaysAgo = function (days, end) { var e = new Date((end || TODAY) + "T12:00:00Z"); return new Date(e - days * 864e5).toISOString().slice(0, 10); };
+var HIST = { start: isoDaysAgo(91), end: TODAY };
+{% if comparison_view == "shared" %}HIST.start = isoDaysAgo(365);{% endif %}
 (function () {
   var hs = document.getElementById("h-start"), he = document.getElementById("h-end");
   hs.value = HIST.start; he.value = HIST.end; he.max = HIST.end;
@@ -164,9 +181,12 @@ var HIST = { start: isoDaysAgo(91), end: new Date().toISOString().slice(0, 10) }
   hs.addEventListener("change", function (e) { HIST.start = e.target.value; markPreset(); });
   he.addEventListener("change", function (e) { HIST.end = e.target.value; markPreset(); });
   document.querySelectorAll(".h-preset").forEach(function (btn) { btn.addEventListener("click", function () {
-    HIST.end = new Date().toISOString().slice(0, 10); HIST.start = btn.dataset.days ? isoDaysAgo(+btn.dataset.days, HIST.end) : FLOOR; hs.value = HIST.start; he.value = HIST.end; markPreset(); }); });
+    HIST.end = TODAY; HIST.start = btn.dataset.days ? isoDaysAgo(+btn.dataset.days, HIST.end) : FLOOR; hs.value = HIST.start; he.value = HIST.end; markPreset(); }); });
 })();
-function changeAnalyte(v) { location.href = "/compare?analyte=" + encodeURIComponent(v); }
+function changeAnalyte(v) {
+  var q = new URLSearchParams({analyte: v, view: v === "ENTERO" ? "{{ comparison_view }}" : "latest"});
+  location.href = "/compare?" + q;
+}
 var histChart = null, histBar = null, HIST_DATA = null;
 function closeSite() {
   document.getElementById("hist-modal").classList.remove("open");
@@ -177,7 +197,7 @@ function openSite(key, name, start, end) {
   document.getElementById("hist-title").textContent = name || key;
   document.getElementById("hist-note").textContent = "Loading…"; document.getElementById("hist-links").innerHTML = "";
   modal.classList.add("open");
-  var q = new URLSearchParams({ site: key }); if (start) q.set("start", start); if (end) q.set("end", end);
+  var q = new URLSearchParams({ site: key, early: "1" }); if (start) q.set("start", start); if (end) q.set("end", end);
   Promise.all([fetch("/api/site-series?" + q).then(function (r) { return r.json(); }), window.BWTFCharts.ensureChart()])
     .then(function (res) { renderHist(res[0]); })
     .catch(function (e) { document.getElementById("hist-note").textContent = "Could not load history: " + e; });
@@ -186,21 +206,25 @@ function renderHist(d) {
   if (d.ok === false) { document.getElementById("hist-note").textContent = d.error || "No data available"; return; }
   HIST_DATA = d;
   var CH = window.BWTFCharts, C = CH.COLORS, a = ANALYTE, meta = d.analytes.filter(function (x) { return x.code === a; })[0] || { label: a }, limit = d.limits[a];
-  var pts = function (arr) { return (arr || []).map(function (p) { return { x: p.ts, y: p.value, raw: p.raw, over: p.over, ratio: p.ratio, date: p.date, station: p.station, name: p.name }; }); };
+  var pts = function (arr) { return (arr || []).map(function (p) { return { x: p.ts, y: p.value, raw: p.raw, over: p.over, ratio: p.ratio, date: p.date, station: p.station, name: p.name, early: !!p.early }; }); };
   var city = pts(d.city[a]), bwtf = a === "ENTERO" ? pts(d.bwtf) : [];
   document.getElementById("hist-title").textContent = d.site;
   var parts = [bwtf.length + " BWTF samples", city.length + " city samples", d.start + " → " + d.end];
+  (d.notes || []).forEach(function(n) { parts.push(n); });
   if (a !== "ENTERO") parts.push("BWTF measures Enterococcus only");
   if (d.bwtf_sampled === false) parts.push("BWTF does not sample this site");
   document.getElementById("hist-note").textContent = parts.join(" · ");
   if (histChart) histChart.destroy();
   var series = [];
   if (bwtf.length) series.push({ label: "BWTF (Surfrider)", color: C.BWTF, width: 2, pointRadius: 3.4, points: bwtf });
-  series.push({ label: "SFPUC", color: C.CITY, width: 2, points: city });
+  series.push({ label: "SFPUC · DataSF", color: C.CITY, width: 2, points: city.filter(function(p) { return !p.early; }) });
+  if (city.some(function(p) { return p.early; })) series.push({ label: "SFPUC · early getCSV", color: "#087e83", width: 1, pointRadius: 5, points: city.filter(function(p) { return p.early; }) });
   var lines = [CH.limitLine(limit, C.LIMIT, "CA limit " + CH.fmt(limit))];
   if (a === "ENTERO") lines.push(CH.limitLine(d.caution, C.CAUTION_LINE, "caution " + d.caution, "dotted"));
   histChart = CH.seriesChart(document.getElementById("hist-canvas"), { series: series, lines: lines, yTitle: meta.label + " (MPN/100mL), log scale",
     onPoint: function (p) { if (!window.SamplePopover) return; if (p.station) SamplePopover.open({ station: p.station, name: p.name, date: p.date }); else if (d.bwtf_name) SamplePopover.open({ bwtf: d.bwtf_name, name: d.site, date: p.date }); } });
+  histChart.data.datasets.forEach(function(ds) { if (ds.label === "SFPUC · early getCSV") { ds.pointBackgroundColor = "#fff"; ds.pointBorderColor = "#087e83"; ds.pointBorderWidth = 2; } });
+  histChart.update();
   var P = a === "ENTERO" ? (d.paired || []) : [], barNote = document.getElementById("bar-note");
   if (histBar) { histBar.destroy(); histBar = null; }
   if (!P.length) {
@@ -208,8 +232,8 @@ function renderHist(d) {
       : d.bwtf_sampled === false ? "BWTF does not sample this site, so there is nothing to put head to head."
       : "No same-day samples in this window — the two programs sampled on different days.";
   } else {
-    barNote.textContent = P.length + " day(s) when both programs sampled this site (worst reading per day).";
-    histBar = CH.pairedBars(document.getElementById("hist-bar"), { labels: P.map(function (p) { return p.date; }),
+    barNote.textContent = P.length + " day(s) when both programs sampled this site (worst reading per day)." + (P.some(function(p) { return p.city_early; }) ? " * Includes early getCSV City results." : "");
+    histBar = CH.pairedBars(document.getElementById("hist-bar"), { labels: P.map(function (p) { return p.date + (p.city_early ? " *" : ""); }),
       a: { label: "BWTF (Surfrider)", color: C.BWTF, data: P.map(function (p) { return p.bwtf; }), raws: P.map(function (p) { return p.bwtf_raw; }) },
       b: { label: "SFPUC", color: C.CITY, data: P.map(function (p) { return p.city; }), raws: P.map(function (p) { return p.city_raw; }) },
       lines: [CH.limitLine(limit, C.LIMIT, "CA limit " + CH.fmt(limit))] });

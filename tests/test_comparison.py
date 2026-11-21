@@ -216,7 +216,7 @@ def test_site_series_grades_every_indicator_per_day_and_pairs_same_day_samples()
     tot = d["city"]["COLI_TOTAL"]
     assert [(p["date"], p["over"], p["ratio"]) for p in tot] == [("2024-02-13", False, False), ("2024-02-20", True, True)]   # 200/1500 → limit 1,000
     assert [p["raw"] for p in d["bwtf"]] == ["41"] and d["bwtf"][0]["over"] is False        # the other lab site is filtered out
-    assert d["paired"] == [{"date": "2024-02-20", "bwtf": 41.0, "bwtf_raw": "41", "city": 399.0, "city_raw": "399"}]
+    assert d["paired"] == [{"date": "2024-02-20", "bwtf": 41.0, "bwtf_raw": "41", "city": 399.0, "city_raw": "399", "city_early": False}]
     assert d["counts"] == {"city_days": 2, "bwtf": 1, "paired": 1} and d["limits"]["ENTERO"] == standards.STANDARDS["ENTERO"]["single_sample_max"]
     only = C.site_series_payload(C.resolve_site("BAY#320_SL"), recs, hist, start, end)
     assert only["bwtf_sampled"] is False and only["bwtf"] == [] and only["paired"] == [] and only["city"]["ENTERO"][0]["over"] is True

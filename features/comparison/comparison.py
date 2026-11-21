@@ -30,7 +30,7 @@ from features.comparison.bwtf_api import SFBWTFClient, parse_datetime, parse_res
 from features.alerts.monitoring import STANDARDS, SFPUC_TO_SFGOV_SOURCES, SFWaterQualityMonitor
 from shared.sfpuc_api import SFPUCRealTimeAPI
 from shared.standards import ENTERO_CAUTION, exceeds, parse_result as std_parse, single_sample_max
-from shared import city_history
+from shared import city_history, sfpuc_live
 from shared.datasf import DATASET_FLOOR
 from shared.stations import STATIONS
 from shared.zones import ZONES, ZONE_OF_SOURCE
@@ -155,6 +155,9 @@ class ComparisonRow:
     site_key: str = ""
     dual: bool = False
     bwtf_site: bool = False
+    city_early: bool = False
+    city_pending_date: Optional[str] = None
+    shared_missing: bool = False
     same_day: bool = False         # both latest results are from one day, so the row is comparable
 
     def to_dict(self) -> dict:
@@ -175,7 +178,7 @@ def _bwtf_sample_for(site, substance: str):
     return None, None, None
 
 
-def _fetch_city_latest(monitor: SFWaterQualityMonitor, sources: list[str], days: int, analyte: str) -> dict:
+def _fetch_city_latest(monitor: SFWaterQualityMonitor, sources: list[str], days: int, analyte: str, early_rows=(), notes=None) -> dict:
     """Latest city result for `analyte` per SF Gov source id (raw + parsed)."""
     if not sources:
         return {}
@@ -196,9 +199,22 @@ def _fetch_city_latest(monitor: SFWaterQualityMonitor, sources: list[str], days:
         records = response.json()
     except requests.RequestException as exc:
         print(f"Error fetching city {analyte} data: {exc}")
-        return {}
+        records = []
+        if notes is not None:
+            notes.append("DataSF is unavailable; City results may be incomplete. Available early SFPUC results are labeled.")
 
+    records = _merge_early(records, early_rows, sources, start, now_pacific_naive(), analyte)
     return _latest_by_source(records)
+
+
+def _merge_early(records, early_rows, sources, start, end, analyte=None):
+    """Merge before selecting a day, preserving all DataSF duplicates and qualifiers."""
+    early = [r for r in early_rows if r['source'] in sources
+             and start.date().isoformat() <= r['sample_date'][:10] <= end.date().isoformat()
+             and (analyte is None or r['analyte'] == analyte)]
+    records = [dict(r, analyte=r.get('analyte', analyte)) for r in records]
+    return sorted(sfpuc_live.merge_records(records, early),
+                  key=lambda r: str(r.get('sample_date', ''))[:10], reverse=True)
 
 
 def _latest_by_source(records: list[dict]) -> dict:
@@ -213,13 +229,16 @@ def _latest_by_source(records: list[dict]) -> dict:
         if not source or when is None:
             continue
         raw, value = parse_result(record.get("data"))
+        if value is None:
+            continue
         cur = latest.get(source)
         if cur is None:
-            latest[source] = {"date": when, "raw": raw, "value": value, "raws": [raw], "values": [value], "n": 1}
+            latest[source] = {"date": when, "raw": raw, "value": value, "raws": [raw], "values": [value], "n": 1, "early": bool(record.get("early"))}
         elif when.date() == cur["date"].date():   # same latest day: a second sample
             cur["raws"].append(raw)
             cur["values"].append(value)
             cur["n"] += 1
+            cur["early"] = cur["early"] or bool(record.get("early"))
             cur["raw"] = " / ".join(cur["raws"])
             vals = [v for v in cur["values"] if v is not None]
             cur["value"] = max(vals) if vals else None
@@ -227,7 +246,7 @@ def _latest_by_source(records: list[dict]) -> dict:
 
 
 def _fetch_city_series(monitor: SFWaterQualityMonitor, sources: list[str], start: datetime, end: datetime,
-                       analyte: str) -> dict:
+                       analyte: str, early_rows=(), notes=None) -> dict:
     """All city results for `analyte` per source in [start, end], ascending by date."""
     if not sources:
         return {}
@@ -235,7 +254,7 @@ def _fetch_city_series(monitor: SFWaterQualityMonitor, sources: list[str], start
     api_start = max(start, _datasf_floor())
     source_filter = " OR ".join(f"source='{s}'" for s in sources)
     params = {
-        "$select": "source,sample_date,data",
+        "$select": "source,sample_date,analyte,data",
         "$where": (
             f"analyte='{analyte}' AND sample_date >= '{api_start.strftime('%Y-%m-%dT00:00:00')}' "
             f"AND sample_date <= '{end.strftime('%Y-%m-%dT23:59:59')}' AND ({source_filter})"
@@ -250,9 +269,10 @@ def _fetch_city_series(monitor: SFWaterQualityMonitor, sources: list[str], start
             records = records + response.json()
         except requests.RequestException as exc:
             print(f"Error fetching city {analyte} series: {exc}")
-            if not records:
-                return {}
+            if notes is not None:
+                notes.append("DataSF history is unavailable; shared-date matches and summary counts may be incomplete.")
 
+    records = _merge_early(records, early_rows, sources, start, end, analyte)
     by_source: dict[str, list] = {}
     for record in records:
         source = record.get("source")
@@ -267,7 +287,10 @@ def _fetch_city_series(monitor: SFWaterQualityMonitor, sources: list[str], start
             "ts": int(when.timestamp() * 1000),
             "value": value,
             "raw": raw,
+            "early": bool(record.get("early")),
         })
+    for points in by_source.values():
+        points.sort(key=lambda p: p["date"])
     return by_source
 
 
@@ -323,6 +346,7 @@ def site_series_payload(site: dict, city_records: list[dict], bwtf_history: list
     and source, the one indicator with the highest ``pct`` (city: across the
     three indicators; Surfrider: its Enterococcus)."""
     by_day: dict = defaultdict(lambda: defaultdict(list))
+    early_keys = set()
     for r in city_records:
         if r.get("source") not in site["sources"] or r.get("analyte") not in ANALYTES or not r.get("sample_date"):
             continue
@@ -330,6 +354,8 @@ def site_series_payload(site: dict, city_records: list[dict], bwtf_history: list
         v = std_parse(raw)
         if v is not None:
             by_day[r["sample_date"][:10]][r["analyte"]].append((v, raw))
+            if r.get("early"):
+                early_keys.add((r["sample_date"][:10], r["analyte"]))
     city = {code: [] for code in ANALYTES}
     worst_city = []   # per day, the indicator furthest over (or nearest to) its own limit — the "All % threshold" view
     for day in sorted(by_day):
@@ -345,7 +371,7 @@ def site_series_payload(site: dict, city_records: list[dict], bwtf_history: list
             v, raw = max(pairs)
             limit = single_sample_max(code, fecal, total)
             point = {"date": day, "ts": ts, "value": v, "raw": raw, "n": len(pairs), "limit": limit, "pct": _pct_of_limit(v, limit),
-                     "over": exceeds(code, v, fecal, total),
+                     "over": exceeds(code, v, fecal, total), "early": (day, code) in early_keys,
                      "ratio": code == "COLI_TOTAL" and limit != STANDARDS["COLI_TOTAL"]["single_sample_max"],
                      "station": site["sources"][0] if site["sources"] else None, "name": site["name"]}
             city[code].append(point)
@@ -366,7 +392,7 @@ def site_series_payload(site: dict, city_records: list[dict], bwtf_history: list
     c_by_day = {p["date"]: p for p in city["ENTERO"]}
     b_by_day = _by_day_max(bwtf)
     worst_bwtf = [dict(b_by_day[d], code="ENTERO", label=ANALYTES["ENTERO"]["label"]) for d in sorted(b_by_day)]
-    paired = [{"date": d, "bwtf": b_by_day[d]["value"], "bwtf_raw": b_by_day[d]["raw"], "city": c_by_day[d]["value"], "city_raw": c_by_day[d]["raw"]}
+    paired = [{"date": d, "bwtf": b_by_day[d]["value"], "bwtf_raw": b_by_day[d]["raw"], "city": c_by_day[d]["value"], "city_raw": c_by_day[d]["raw"], "city_early": c_by_day[d].get("early", False)}
               for d in sorted(set(c_by_day) & set(b_by_day))]
     return {
         "site": site["name"], "site_key": site["key"], "bwtf_name": site["bwtf_name"], "bwtf_sampled": site["bwtf_name"] is not None,
@@ -380,15 +406,29 @@ def site_series_payload(site: dict, city_records: list[dict], bwtf_history: list
 
 
 def build_site_series(site_name: str, bwtf_client: Optional[SFBWTFClient] = None,
-                      sf_gov_monitor: Optional[SFWaterQualityMonitor] = None, start: str = "", end: str = "") -> dict:
+                      sf_gov_monitor: Optional[SFWaterQualityMonitor] = None, start: str = "", end: str = "", include_early: bool = False) -> dict:
     """Fetch both programs for one site and window and build the graphs payload."""
     bwtf_client = bwtf_client or SFBWTFClient()
     sf_gov_monitor = sf_gov_monitor or SFWaterQualityMonitor()
     site = resolve_site(site_name)
     since, until = parse_range(start, end)
-    records = fetch_city_records(sf_gov_monitor, site["sources"], since, until) if site["sources"] else []
+    notes = []
+    early, state = sfpuc_live.read_snapshot() if include_early else ([], "unused")
+    try:
+        records = fetch_city_records(sf_gov_monitor, site["sources"], since, until) if site["sources"] else []
+    except requests.RequestException:
+        if not include_early:
+            raise
+        records = []
+        notes.append("DataSF history is unavailable; showing only available early SFPUC results.")
+    if include_early:
+        records = _merge_early(records, early, site["sources"], since, until)
+        if state != 'current':
+            notes.append("Early SFPUC feed is unavailable; showing DataSF results.")
     history = bwtf_client.fetch_history(since=since, max_pages=40) if site["bwtf_name"] else []
-    return site_series_payload(site, records, history, since, until)
+    result = site_series_payload(site, records, history, since, until)
+    result["notes"] = notes
+    return result
 
 
 def _sfpuc_status_by_name(sfpuc_api: SFPUCRealTimeAPI) -> dict:
@@ -437,12 +477,31 @@ def same_day_pairs(bwtf_history: list[dict], city_by_source: dict, dual_sites: l
             "latest": latest, "per_site": per_site}
 
 
+def latest_shared_sample(name, sources, history, by_source, since, until):
+    """Latest shared Enterococcus collection day per site; grade worst BWTF reading."""
+    bwtf = [r for r in history if r.get('site_name') == name and r.get('substance') == 'Enterococcus'
+            and r.get('result_value') is not None and r.get('collection_time') is not None
+            and since.date() <= r['collection_time'].date() <= until.date()]
+    city = [dict(p, source=src) for src in sources for p in by_source.get(src, [])]
+    days = {r['collection_time'].date().isoformat() for r in bwtf} & {p['date'] for p in city}
+    if not days:
+        return None, (None, None, None)
+    day = max(days)
+    bw = max((r for r in bwtf if r['collection_time'].date().isoformat() == day), key=lambda r: r['result_value'])
+    records = [dict(source=p['source'], sample_date=p['date'], data=p['raw'], early=p.get('early', False))
+               for p in city if p['date'] == day]
+    latest = _latest_by_source(records)
+    src = max(latest, key=lambda src: latest[src]['value'])
+    return dict(latest[src], source=src), (bw['result_raw'], bw['result_value'], bw['collection_time'])
+
+
 def build_comparison(
     bwtf_client: Optional[SFBWTFClient] = None,
     sf_gov_monitor: Optional[SFWaterQualityMonitor] = None,
     sfpuc_api: Optional[SFPUCRealTimeAPI] = None,
     city_days: int = 60,
     analyte: str = DEFAULT_ANALYTE,
+    view: str = "latest",
 ) -> dict:
     """Build the BWTF-vs-city comparison payload for one analyte (JSON-serializable)."""
     bwtf_client = bwtf_client or SFBWTFClient()
@@ -453,12 +512,33 @@ def build_comparison(
     cfg = ANALYTES[analyte]
     limit = cfg["limit"]
 
+    view = "shared" if view == "shared" and analyte == "ENTERO" else "latest"
+    early, early_state = sfpuc_live.read_snapshot()
+    notes = []
+    if early_state != "current":
+        notes.append("Early SFPUC feed is unavailable; showing DataSF results.")
     lab = bwtf_client.fetch_lab()
 
     # Every city station takes part (one query); the ones BWTF also samples
     # are "dual" and lead the table, the rest sit behind the All sites toggle.
-    city_latest = _fetch_city_latest(sf_gov_monitor, sorted(STATIONS), city_days, analyte)
+    city_latest = _fetch_city_latest(sf_gov_monitor, sorted(STATIONS), city_days, analyte, early, notes)
     sfpuc_status = _sfpuc_status_by_name(sfpuc_api)
+
+    bwtf_sites = lab.sites if lab else []
+    dual_sites = [(site.name, SFPUC_TO_SFGOV_SOURCES.get(BWTF_TO_SFPUC_NAME.get(site.name), [])) for site in bwtf_sites]
+    dual_sites = [(name, srcs) for name, srcs in dual_sites if srcs]
+    until = now_pacific_naive()
+    since = (until - timedelta(days=SAME_DAY_WINDOW_DAYS)).replace(hour=0, minute=0, second=0, microsecond=0)
+    history, by_source, paired_summary = [], {}, None
+    if analyte == "ENTERO" and dual_sites:
+        try:
+            history = bwtf_client.fetch_history(since=since, max_pages=40)
+            by_source = _fetch_city_series(sf_gov_monitor, sorted({src for _, srcs in dual_sites for src in srcs}), since, until, analyte, early, notes)
+            paired_summary = same_day_pairs(history, by_source, dual_sites, limit, cfg['bwtf_substance'], since, until)
+        except Exception:
+            notes.append("Shared-date history could not be loaded. Shared-date matches are unavailable.")
+            history, by_source = [], {}
+    newest_observed = sfpuc_live.latest_dates(early)
 
     def row_for(site_name, lat, lon, sources, sfpuc_name, bwtf_sample, site_key, dual, bwtf_site) -> ComparisonRow:
         # Freshest city result among the candidate sources for this site.
@@ -470,6 +550,8 @@ def build_comparison(
             if city is None or candidate["date"] > city["date"]:
                 city = {**candidate, "source": src}
 
+        if view == "shared":
+            city, bwtf_sample = latest_shared_sample(site_name, sources, history, by_source, since, until)
         bwtf_raw, bwtf_value, bwtf_time = bwtf_sample
         bwtf_exceeds = _exceeds(bwtf_value, limit)
         city_value = city["value"] if city else None
@@ -509,6 +591,10 @@ def build_comparison(
             dual=dual,
             bwtf_site=bwtf_site,
             same_day=same_day,
+            city_early=bool(city and city.get('early')),
+            city_pending_date=(max((newest_observed.get(src, '') for src in sources), default='') or None)
+                if view == 'latest' and analyte != 'COLI_E' and max((newest_observed.get(src, '') for src in sources), default='') > (city['date'].strftime('%Y-%m-%d') if city else '') else None,
+            shared_missing=view == 'shared' and city is None,
         )
 
     rows: list[ComparisonRow] = []
@@ -545,20 +631,12 @@ def build_comparison(
         "max_day_gap": max((r.day_gap for r in comparable if r.day_gap is not None), default=None),
         "same_day": None,
     }
-    dual_sites = [(site.name, SFPUC_TO_SFGOV_SOURCES.get(BWTF_TO_SFPUC_NAME.get(site.name), [])) for site in bwtf_sites]
-    dual_sites = [(name, srcs) for name, srcs in dual_sites if srcs]
-    if analyte == "ENTERO" and dual_sites:   # BWTF measures Enterococcus only: the other standards have no pairs
-        try:
-            until = now_pacific_naive()
-            since = until - timedelta(days=SAME_DAY_WINDOW_DAYS)
-            history = bwtf_client.fetch_history(since=since, max_pages=40)
-            by_source = _fetch_city_series(sf_gov_monitor, sorted({src for _, srcs in dual_sites for src in srcs}), since, until, analyte)
-            summary["same_day"] = same_day_pairs(history, by_source, dual_sites, limit, cfg["bwtf_substance"], since, until)
-        except Exception as exc:   # noqa: BLE001 — the cards show a dash; the table stands
-            print(f"Same-day pairs unavailable: {exc}")
+    summary["same_day"] = paired_summary
 
     return {
         "generated_at": utc_iso(),
+        "view": view, "as_of_date": until.date().isoformat(), "shared_window_days": SAME_DAY_WINDOW_DAYS,
+        "notes": list(dict.fromkeys(notes)),
         "standard": {"analyte": cfg["label"], "code": analyte, "single_sample_max": limit, "units": "MPN/100mL"},
         "analytes": [{"code": code, "label": meta["label"]} for code, meta in ANALYTES.items()],
         "bwtf_measures": analyte == "ENTERO",   # whether BWTF has data for this analyte
