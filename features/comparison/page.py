@@ -47,6 +47,7 @@ class ComparisonRoutes:
             sfpuc_api=self.sfpuc_api,
             analyte=analyte,
             view=(parse_qs(urlparse(self.path).query).get("view") or ["latest"])[0],
+            as_of=(parse_qs(urlparse(self.path).query).get("as_of") or [""])[0],
         )
 
     def send_api_compare(self):
@@ -249,7 +250,7 @@ class ComparisonRoutes:
             if False:
                 bwtf_html = '<span class="pill pill--na">BWTF doesn\'t sample here</span>'
             elif r['bwtf_raw'] is None:
-                bwtf_html = '<span class="pill pill--na">not measured</span>'
+                bwtf_html = '<span class="pill pill--na">no data</span>' if bwtf_measures else '<span class="pill pill--na">not measured</span>'
             else:
                 bwtf_html = (f"{pill(r['bwtf_exceeds'], r['bwtf_raw'])}"
                              f"<small class=\"date\">{r['bwtf_date'] or '—'}{(' · ' + r['bwtf_time']) if r['bwtf_time'] else ''}</small>")
@@ -263,7 +264,7 @@ class ComparisonRoutes:
                 <td class="site"><strong>{r['site_name']}</strong><span class="go"><svg class="ic"><use href="#i-chart-line"/></svg> view history →</span></td>
                 <td>{bwtf_html}</td>
                 <td>{pill(r['city_exceeds'], r['city_raw'])}{provenance}<small class="date">{r['city_date'] or '—'}{(' · ' + r['city_source']) if r['city_source'] else ''}{(f" · {r['city_n']} samples that day, graded on the worse") if r.get('city_n', 0) > 1 else ''}</small></td>
-                <td>{sfpuc_pill(r['sfpuc_status'])}</td>
+                <td>{'<small class="date">Not shown historically</small>' if data.get('historical') else sfpuc_pill(r['sfpuc_status'])}</td>
                 <td>{agreement_cell(r)}</td>
               </tr>"""
 
@@ -288,6 +289,8 @@ class ComparisonRoutes:
             rows_html=rows_html,
             generated=generated,
             comparison_view=view, source_notes=data.get("notes", []), as_of_date=data.get("as_of_date", ""),
+            today=data.get("today", data.get("as_of_date", "")), historical=data.get("historical", False),
+            city_window_days=data.get("city_window_days", 60),
             analyte_code=analyte_code,
             dataset_floor=city_history.city_record_floor(),
         )

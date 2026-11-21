@@ -80,6 +80,19 @@
     bacteria counts move with the rain. Every site, and all three indicators at once, are on <a href="/graphs">Graphs</a>; every sample is on <a href="/samples">Samples</a>.</p>
   {% endcall %}
 
+  <form class="bacteria-select" action="/compare" method="get">
+    <input type="hidden" name="analyte" value="{{ analyte_code }}">
+    <input type="hidden" name="view" value="{{ comparison_view }}">
+    <label for="comparison-date">Compare through</label>
+    <input type="date" id="comparison-date" name="as_of" value="{{ as_of_date }}" min="{{ dataset_floor }}" max="{{ today }}" required>
+    <button class="v-preset" type="submit">View date</button>
+    <a href="/compare?analyte={{ analyte_code }}&amp;view={{ comparison_view }}">Today</a>
+  </form>
+  <p class="hint">Overview through <strong>{{ as_of_date }}</strong>{{ " · Today" if not historical else "" }}. Agreement totals cover the year ending on this date. Table rows show the latest results or latest shared collection date on or before it.</p>
+  {% if historical %}
+  <p class="note-info">Historical collection-date view, using results available now. This does not recreate what was published that day. Latest results look back {{ city_window_days }} days for City and one year for BWTF; shared dates look back one year. Current beach postings are not shown.</p>
+  {% endif %}
+
   <div class="cards">
     <div class="card"><div class="n">{{ same_day.pairs }}</div><div class="l">{{ same_day.label }}</div></div>
     <div class="card"><div class="n">{{ same_day.agree }}</div><div class="l">Agree on the standard</div></div>
@@ -92,8 +105,8 @@
   <p class="hint"><svg class="ic"><use href="#i-chart-line"/></svg> Click any site below for its {{ analyte_label }} history — BWTF vs. SFPUC over time, and the days both sampled, head to head.</p>
 
   <nav class="view-options" aria-label="Comparison view">
-    <a href="/compare?analyte={{ analyte_code }}&amp;view=latest"{% if comparison_view == 'latest' %} aria-current="page"{% endif %}>Latest results</a>
-    <a href="/compare?analyte=ENTERO&amp;view=shared"{% if comparison_view == 'shared' %} aria-current="page"{% endif %}>Latest shared collection date · Experiment</a>
+    <a href="/compare?analyte={{ analyte_code }}&amp;view=latest{% if historical %}&amp;as_of={{ as_of_date }}{% endif %}"{% if comparison_view == 'latest' %} aria-current="page"{% endif %}>Latest results</a>
+    <a href="/compare?analyte=ENTERO&amp;view=shared{% if historical %}&amp;as_of={{ as_of_date }}{% endif %}"{% if comparison_view == 'shared' %} aria-current="page"{% endif %}>Latest shared collection date · Experiment</a>
   </nav>
   {% if comparison_view == 'shared' %}
   <p class="note-info">Experiment: each site uses its most recent collection date with Enterococcus results from both programs within the last year. Dates can differ between sites. This may show older results, not current conditions. If a program sampled twice that day, we compare its highest reading.</p>
@@ -185,6 +198,7 @@ var HIST = { start: isoDaysAgo(91), end: TODAY };
 })();
 function changeAnalyte(v) {
   var q = new URLSearchParams({analyte: v, view: v === "ENTERO" ? "{{ comparison_view }}" : "latest"});
+  {% if historical %}q.set("as_of", {{ as_of_date|tojson }});{% endif %}
   location.href = "/compare?" + q;
 }
 var histChart = null, histBar = null, HIST_DATA = null;

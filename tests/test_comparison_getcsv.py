@@ -35,7 +35,7 @@ class Monitor:
         return SimpleNamespace(raise_for_status=lambda: None, json=lambda: [r for r in self.rows if r['analyte'] == code])
 
 
-def build(city=(), early=(), hist=None, view='latest', state='current', fail=False, analyte='ENTERO'):
+def build(city=(), early=(), hist=None, view='latest', state='current', fail=False, analyte='ENTERO', as_of=''):
     hist = hist if hist is not None else [history('2026-11-20', '20')]
     latest = max(hist, key=lambda r: r['collection_time'])
     sample = BWTFSample(latest['collection_time'], 'Enterococcus', latest['result_raw'], latest['result_value'])
@@ -43,7 +43,7 @@ def build(city=(), early=(), hist=None, view='latest', state='current', fail=Fal
     lab = BWTFLab(76, 'SF', 'San Francisco', 36, 104, [site])
     client = SimpleNamespace(fetch_lab=lambda: lab, fetch_history=lambda **kw: hist)
     with patch.object(C.sfpuc_live, 'read_snapshot', return_value=(list(early), state)), patch.object(C, 'now_pacific_naive', return_value=NOW):
-        return C.build_comparison(client, Monitor(city, fail), SimpleNamespace(fetch_stations=lambda: []), view=view, analyte=analyte)
+        return C.build_comparison(client, Monitor(city, fail), SimpleNamespace(fetch_stations=lambda: []), view=view, analyte=analyte, as_of=as_of)
 
 
 def test_early_result_then_datasf_handoff_keeps_qualifier_and_duplicates():
@@ -128,7 +128,7 @@ def test_shared_route_and_html_explain_experiment_and_provenance():
     calls = []
     def fixture(**kw):
         calls.append(kw)
-        return build(early=[row('2026-11-20', '>200', early=True)], view=kw.get('view', 'latest'), analyte=kw.get('analyte','ENTERO'))
+        return build(early=[row('2026-11-20', '>200', early=True)], view=kw.get('view', 'latest'), analyte=kw.get('analyte','ENTERO'), as_of=kw.get('as_of', ''))
     with patch.object(page, 'build_comparison', side_effect=fixture), app.test_client() as client:
         response = client.get('/compare?view=shared')
         html = response.get_data(as_text=True)
@@ -136,6 +136,43 @@ def test_shared_route_and_html_explain_experiment_and_provenance():
         assert 'Latest shared collection date · Experiment' in html and 'Early SFPUC · getCSV' in html
         assert 'older results, not current conditions' in html and 'shared-date exceed' in html
         assert client.get('/api/compare?view=shared').json['view'] == 'shared'
+        response = client.get('/compare?view=shared&as_of=2026-11-13')
+        html = response.get_data(as_text=True)
+        assert calls[-1]['as_of'] == '2026-11-13' and 'value="2026-11-13"' in html
+        assert 'view=latest&amp;as_of=2026-11-13' in html
+        assert 'This does not recreate what was published that day' in html
+        assert client.get('/api/compare?as_of=2026-11-13').json['historical']
+
+
+def test_historical_overview_excludes_future_samples_and_rolls_summary_back():
+    hist = [history('2026-11-20', '200'), history('2026-11-13', '20')]
+    city = [row('2026-11-20', '200'), row('2026-11-13', '200')]
+    d = build(city=city, hist=hist, early=[row('2026-11-20', '500', 'COLI_TOTAL', True)], as_of='2026-11-13')
+    r = d['rows'][0]
+    assert d['historical'] and d['as_of_date'] == '2026-11-13' and d['today'] == '2026-11-20'
+    assert r['city_date'] == r['bwtf_date'] == '2026-11-13'
+    assert r['agree'] is False and r['city_pending_date'] is None and r['sfpuc_status'] is None
+    assert d['summary']['agree_count'] == 0 and d['summary']['disagree_count'] == 1
+    assert d['summary']['same_day']['pairs'] == 1 and d['summary']['same_day']['until'] == '2026-11-13'
+    shared = build(city=city, hist=hist, view='shared', as_of='2026-11-19')
+    assert shared['rows'][0]['city_date'] == shared['rows'][0]['bwtf_date'] == '2026-11-13'
+
+
+def test_historical_empty_date_never_falls_back_to_current_lab_values():
+    d = build(city=[row('2026-11-20', '200')], as_of='2026-11-01')
+    r = d['rows'][0]
+    assert r['bwtf_date'] is None and r['city_date'] is None and r['agree'] is None
+    assert d['summary']['same_day']['pairs'] == 0
+
+
+def test_historical_date_bounds_and_coliform_selection():
+    for date in ('', 'bad-date', '2099-01-01'):
+        d = build(as_of=date)
+        assert d['as_of_date'] == '2026-11-20' and not d['historical']
+    d = build(city=[row('2026-11-13', '500', 'COLI_TOTAL'), row('2026-11-20', '10000', 'COLI_TOTAL')],
+              as_of='2026-11-13', analyte='COLI_TOTAL')
+    assert d['rows'][0]['city_raw'] == '500' and d['rows'][0]['bwtf_raw'] is None
+    assert d['summary']['same_day'] is None
 
 
 if __name__ == '__main__':

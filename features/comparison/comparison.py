@@ -212,7 +212,8 @@ def _merge_early(records, early_rows, sources, start, end, analyte=None):
     early = [r for r in early_rows if r['source'] in sources
              and start.date().isoformat() <= r['sample_date'][:10] <= end.date().isoformat()
              and (analyte is None or r['analyte'] == analyte)]
-    records = [dict(r, analyte=r.get('analyte', analyte)) for r in records]
+    records = [dict(r, analyte=r.get('analyte', analyte)) for r in records
+               if start.date().isoformat() <= str(r.get('sample_date', ''))[:10] <= end.date().isoformat()]
     return sorted(sfpuc_live.merge_records(records, early),
                   key=lambda r: str(r.get('sample_date', ''))[:10], reverse=True)
 
@@ -502,6 +503,7 @@ def build_comparison(
     city_days: int = 60,
     analyte: str = DEFAULT_ANALYTE,
     view: str = "latest",
+    as_of: str = "",
 ) -> dict:
     """Build the BWTF-vs-city comparison payload for one analyte (JSON-serializable)."""
     bwtf_client = bwtf_client or SFBWTFClient()
@@ -512,8 +514,16 @@ def build_comparison(
     cfg = ANALYTES[analyte]
     limit = cfg["limit"]
 
+    today = now_pacific_naive().replace(hour=0, minute=0, second=0, microsecond=0)
+    try:
+        until = min(datetime.strptime(as_of, "%Y-%m-%d"), today) if as_of else today
+    except ValueError:
+        until = today
+    until = max(until, datetime.fromisoformat(city_history.city_record_floor()))
+    historical = until < today
     view = "shared" if view == "shared" and analyte == "ENTERO" else "latest"
     early, early_state = sfpuc_live.read_snapshot()
+    early = [r for r in early if r['sample_date'][:10] <= until.date().isoformat()]
     notes = []
     if early_state != "current":
         notes.append("Early SFPUC feed is unavailable; showing DataSF results.")
@@ -521,23 +531,33 @@ def build_comparison(
 
     # Every city station takes part (one query); the ones BWTF also samples
     # are "dual" and lead the table, the rest sit behind the All sites toggle.
-    city_latest = _fetch_city_latest(sf_gov_monitor, sorted(STATIONS), city_days, analyte, early, notes)
-    sfpuc_status = _sfpuc_status_by_name(sfpuc_api)
+    city_latest = {} if historical else _fetch_city_latest(sf_gov_monitor, sorted(STATIONS), city_days, analyte, early, notes)
+    sfpuc_status = {} if historical else _sfpuc_status_by_name(sfpuc_api)
 
     bwtf_sites = lab.sites if lab else []
     dual_sites = [(site.name, SFPUC_TO_SFGOV_SOURCES.get(BWTF_TO_SFPUC_NAME.get(site.name), [])) for site in bwtf_sites]
     dual_sites = [(name, srcs) for name, srcs in dual_sites if srcs]
-    until = now_pacific_naive()
     since = (until - timedelta(days=SAME_DAY_WINDOW_DAYS)).replace(hour=0, minute=0, second=0, microsecond=0)
     history, by_source, paired_summary = [], {}, None
-    if analyte == "ENTERO" and dual_sites:
+    if historical or (analyte == "ENTERO" and dual_sites):
         try:
-            history = bwtf_client.fetch_history(since=since, max_pages=40)
-            by_source = _fetch_city_series(sf_gov_monitor, sorted({src for _, srcs in dual_sites for src in srcs}), since, until, analyte, early, notes)
-            paired_summary = same_day_pairs(history, by_source, dual_sites, limit, cfg['bwtf_substance'], since, until)
+            if analyte == "ENTERO":
+                history = bwtf_client.fetch_history(since=since, max_pages=40)
+                history = [r for r in history if r.get('collection_time') is not None
+                           and since.date() <= r['collection_time'].date() <= until.date()]
+            sources = sorted(STATIONS) if historical else sorted({src for _, srcs in dual_sites for src in srcs})
+            by_source = _fetch_city_series(sf_gov_monitor, sources, since, until, analyte, early, notes)
+            if analyte == "ENTERO":
+                paired_summary = same_day_pairs(history, by_source, dual_sites, limit, cfg['bwtf_substance'], since, until)
         except Exception:
-            notes.append("Shared-date history could not be loaded. Shared-date matches are unavailable.")
+            notes.append("Comparison history could not be loaded. Historical results and shared-date matches may be unavailable.")
             history, by_source = [], {}
+    if historical:
+        city_start = (until - timedelta(days=city_days)).date().isoformat()
+        city_latest = _latest_by_source(sorted([
+            dict(source=src, sample_date=p['date'], data=p['raw'], early=p.get('early', False))
+            for src, points in by_source.items() for p in points if p['date'] >= city_start
+        ], key=lambda r: r['sample_date'], reverse=True))
     newest_observed = sfpuc_live.latest_dates(early)
 
     def row_for(site_name, lat, lon, sources, sfpuc_name, bwtf_sample, site_key, dual, bwtf_site) -> ComparisonRow:
@@ -550,6 +570,11 @@ def build_comparison(
             if city is None or candidate["date"] > city["date"]:
                 city = {**candidate, "source": src}
 
+        if historical:
+            samples = [r for r in history if r['site_name'] == site_name
+                       and r['substance'] == cfg['bwtf_substance'] and r.get('result_value') is not None]
+            sample = max(samples, key=lambda r: (r['collection_time'].date(), r['result_value']), default=None)
+            bwtf_sample = (sample['result_raw'], sample['result_value'], sample['collection_time']) if sample else (None, None, None)
         if view == "shared":
             city, bwtf_sample = latest_shared_sample(site_name, sources, history, by_source, since, until)
         bwtf_raw, bwtf_value, bwtf_time = bwtf_sample
@@ -593,7 +618,7 @@ def build_comparison(
             same_day=same_day,
             city_early=bool(city and city.get('early')),
             city_pending_date=(max((newest_observed.get(src, '') for src in sources), default='') or None)
-                if view == 'latest' and analyte != 'COLI_E' and max((newest_observed.get(src, '') for src in sources), default='') > (city['date'].strftime('%Y-%m-%d') if city else '') else None,
+                if not historical and view == 'latest' and analyte != 'COLI_E' and max((newest_observed.get(src, '') for src in sources), default='') > (city['date'].strftime('%Y-%m-%d') if city else '') else None,
             shared_missing=view == 'shared' and city is None,
         )
 
@@ -636,6 +661,7 @@ def build_comparison(
     return {
         "generated_at": utc_iso(),
         "view": view, "as_of_date": until.date().isoformat(), "shared_window_days": SAME_DAY_WINDOW_DAYS,
+        "today": today.date().isoformat(), "historical": historical, "city_window_days": city_days,
         "notes": list(dict.fromkeys(notes)),
         "standard": {"analyte": cfg["label"], "code": analyte, "single_sample_max": limit, "units": "MPN/100mL"},
         "analytes": [{"code": code, "label": meta["label"]} for code, meta in ANALYTES.items()],

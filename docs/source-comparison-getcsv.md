@@ -28,6 +28,20 @@ The comparison modal opts into early results through `/api/site-series?early=1`.
 Standalone Graphs and Samples keep their existing data selection. No migration,
 collector schedule, or forecast changes are needed.
 
+## Historical overview date
+
+The “Compare through” date defaults to today in Pacific time. `as_of=YYYY-MM-DD`
+on `/compare` or `/api/compare` moves the overview table and the rolling yearly
+agreement totals to that collection-date cutoff. Switching view or indicator
+retains the date; “Today” resets it. The history modal initially ends on the
+selected date. Invalid dates and future dates resolve to today.
+
+Historical views use the currently available results for collections on or
+before the selected date, not a replay of what had been published by then.
+They hide current beach postings. Latest mode retains the City's 60-day lookup
+and searches one year of BWTF history; shared mode searches one year for both
+programs. Missing historical data never falls back to today's lab result.
+
 ## Validation
 
 Regression coverage includes partial indicators, qualified values, DataSF
