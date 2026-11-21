@@ -15,7 +15,8 @@ Data Source:
 Status logic mirrors the SFPUC public map:
 - `s_color == R` means posted
 - `s_color == Y` means not sampled
-- `s_color == W` means not routinely sampled
+- otherwise `posted` with `p_color` R/G means posted, including `s_color == W`
+- `s_color == W` without that posting means not routinely sampled
 - otherwise the station defaults to safe/green
 - a populated `cso` field indicates the map should show the CSO icon
 """
@@ -90,7 +91,7 @@ class StationStatus(Enum):
     SAFE = "safe"                    # G - Green - meets CA standards
     POSTED = "posted"                # R - Red/Orange - elevated bacteria or recent CSO  
     NOT_SAMPLED = "not_sampled"      # Y - Yellow - not sampled
-    NOT_ROUTINELY_SAMPLED = "not_routinely_sampled"  # null - gray circle
+    NOT_ROUTINELY_SAMPLED = "not_routinely_sampled"  # W without a posting - gray circle
     UNKNOWN = "unknown"
 
 
@@ -161,8 +162,9 @@ class SFPUCRealTimeAPI:
         """
         Mirror the SFPUC beach map logic for current station status.
 
-        The public map primarily keys off `s_color`, with a fallback that marks
-        stations as posted when `posted` is present and `p_color` is R/G.
+        The public map handles R/Y sample colors first, then the posted flag,
+        then W (not routinely sampled). A W station can still be posted:
+        Vicente on 2026-11-21 had s_color=W, posted=OCEAN#21_SL, p_color=R.
         Everything else defaults to green/safe.
         """
         sample_color = item.get("s_color")
@@ -173,12 +175,14 @@ class SFPUCRealTimeAPI:
         if sample_status in {
             StationStatus.NOT_SAMPLED,
             StationStatus.POSTED,
-            StationStatus.NOT_ROUTINELY_SAMPLED,
         }:
             return sample_status
 
         if posted_station_id and posted_color and posted_color.upper() in {"R", "G"}:
             return StationStatus.POSTED
+
+        if sample_status == StationStatus.NOT_ROUTINELY_SAMPLED:
+            return sample_status
 
         return StationStatus.SAFE
     
