@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Parity test: the watcher's Postgres classifier (bwtf_classify, migration
-002) must agree with the Python one every page renders from
+002, corrected by 20261121171413) must agree with the Python one every page renders from
 (shared.sfpuc_api → features.alerts.watcher.classify) for every shape an
 SFPUC feed row can take.
 
@@ -27,9 +27,9 @@ from shared.sfpuc_api import SFPUCRealTimeAPI  # noqa: E402
 # Every value each field has been seen to take (plus a lower-case colour and
 # an empty string, which the feed does emit for `cso`).
 CSO = [None, "", "Islais Creek CSD"]
-S_COLOR = [None, "G", "R", "Y", "W", "g"]
-POSTED = [None, "BAY#320_SL"]
-P_COLOR = [None, "G", "R", "Y"]
+S_COLOR = [None, "", "G", "R", "Y", "W", "g", "w", "y"]
+POSTED = [None, "", "BAY#320_SL"]
+P_COLOR = [None, "", "G", "R", "Y", "g", "r"]
 
 
 def python_classification(api: SFPUCRealTimeAPI, row: dict) -> str:

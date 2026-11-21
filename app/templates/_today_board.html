@@ -243,7 +243,7 @@
           </button>
           {% endfor %}
         </div>
-        <div class="zone-tools"><p class="zones-hint">Tap a zone to explore its stations.</p>
+        <div class="zone-tools"><p class="zones-hint">Tap a zone to explore. Tap a map dot for samples and history.</p>
         {% if controls %}<div class="board-toggles">
           <div class="board-past"><button type="button" class="preset layer" data-layer="replay" aria-expanded="false" aria-controls="day-strip" title="The city's map on each of the past days">Past week</button></div>
           <div class="board-forecast"><button type="button" class="preset layer" data-layer="risk" aria-expanded="false" aria-controls="forecast-body" title="Experimental Water Quality Forecast: modeled beach risk from combined sewer discharges and lingering effects">Today’s forecast · Beta</button></div>
@@ -281,7 +281,7 @@
               <li><i class="status-dot safe" aria-hidden="true"></i><span><b>No warning (green):</b> SFPUC’s green status indicates that the last reported water quality result met California’s bacteria standards for water contact recreation. Since testing is not every day, this does not necessarily mean the water is currently clean.</span></li>
               <li><i class="status-dot posted" aria-hidden="true"></i><span><b>Warning posted (orange):</b> SFPUC can post a warning after detecting elevated bacteria within the past 24 hours or after a recent combined sewer discharge.</span></li>
               <li><i class="status-dot discharge" aria-hidden="true"></i><span><b>Sewage discharge (red):</b> SFPUC flags a combined sewer discharge within the previous 24 to 72 hours.</span></li>
-              <li><i class="status-dot unknown" aria-hidden="true"></i><span><b>No data (gray):</b> We have no usable status for the station. SFPUC marks locations without data as not sampled or not routinely sampled.</span></li>
+              <li><i class="status-dot unknown" aria-hidden="true"></i><span><b>No data (gray):</b> We have no usable current status for the station. SFPUC marks locations without data as not sampled or not routinely sampled. Tap a gray dot to see the latest available lab results and their collection date; use the arrows to browse older samples. An older result does not change today’s map color.</span></li>
             </ul>
             <p><a href="https://webapps.sfpuc.org/sapps/beachesandbay.html">See SFPUC’s official map and legend</a>.</p>
           </dd></div>
