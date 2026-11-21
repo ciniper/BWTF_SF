@@ -10,6 +10,7 @@ self.sfpuc_api).
 from urllib.parse import parse_qs, urlencode, urlparse
 
 from flask import render_template
+from markupsafe import escape
 
 from features.comparison.comparison import ANALYTES, build_comparison, build_site_history, build_site_series, graph_sites
 from features.comparison.samples import build_bwtf_sample_day, build_sample_dates, build_sample_day, build_sample_viewer
@@ -45,6 +46,8 @@ class ComparisonRoutes:
             sf_gov_monitor=self.combined_monitor.sf_gov_monitor,
             sfpuc_api=self.sfpuc_api,
             analyte=analyte,
+            view=(parse_qs(urlparse(self.path).query).get("view") or ["latest"])[0],
+            as_of=(parse_qs(urlparse(self.path).query).get("as_of") or [""])[0],
         )
 
     def send_api_compare(self):
@@ -156,7 +159,7 @@ class ComparisonRoutes:
             self._send_json({"ok": False, "error": "missing 'site' parameter"}, status=400)
             return
         try:
-            self._send_json(build_site_series(one("site"), sf_gov_monitor=self.combined_monitor.sf_gov_monitor, start=one("start"), end=one("end")))
+            self._send_json(build_site_series(one("site"), sf_gov_monitor=self.combined_monitor.sf_gov_monitor, start=one("start"), end=one("end"), include_early=one("early") == "1"))
         except Exception as e:
             self._send_json({"ok": False, "error": str(e)}, status=500)
 
@@ -220,6 +223,8 @@ class ComparisonRoutes:
             return f'<span class="pill {cls}">{label}</span>'
 
         def agreement_cell(r):
+            if r.get("shared_missing"):
+                return '<span class="agree agree--na">No shared result date<small>Within the last year.</small></span>'
             if not r["both_have"]:
                 if r["city_value"] is not None and r["bwtf_value"] is None:
                     return '<span class="agree agree--na">SFPUC only</span>'
@@ -238,22 +243,28 @@ class ComparisonRoutes:
             return f'<span class="agree agree--no"><svg class="ic"><use href="#i-triangle-alert"/></svg> Sources differ{subline}</span>'
 
         rows_html = ""
+        view = data.get("view", "latest")
         for r in data["rows"]:
             if not r.get("bwtf_site", True):
                 continue   # city-only stations belong to /graphs and /samples
             if False:
                 bwtf_html = '<span class="pill pill--na">BWTF doesn\'t sample here</span>'
             elif r['bwtf_raw'] is None:
-                bwtf_html = '<span class="pill pill--na">not measured</span>'
+                bwtf_html = '<span class="pill pill--na">no data</span>' if bwtf_measures else '<span class="pill pill--na">not measured</span>'
             else:
                 bwtf_html = (f"{pill(r['bwtf_exceeds'], r['bwtf_raw'])}"
                              f"<small class=\"date\">{r['bwtf_date'] or '—'}{(' · ' + r['bwtf_time']) if r['bwtf_time'] else ''}</small>")
+            provenance = '<small class="early-label">Early SFPUC · getCSV</small>' if r.get('city_early') else ''
+            if r.get('city_pending_date'):
+                provenance += f'<small class="date">{escape(analyte_label)} pending for {escape(r["city_pending_date"])}; showing last available result.</small>'
+            if view == 'shared' and r.get('shared_missing'):
+                bwtf_html = '<span class="pill pill--na">—</span>'
             rows_html += f"""
               <tr class="row-click" data-site="{r.get('site_key') or r['site_name']}" data-name="{r['site_name']}" tabindex="0" role="button" aria-label="Show history for {r['site_name']}">
                 <td class="site"><strong>{r['site_name']}</strong><span class="go"><svg class="ic"><use href="#i-chart-line"/></svg> view history →</span></td>
                 <td>{bwtf_html}</td>
-                <td>{pill(r['city_exceeds'], r['city_raw'])}<small class="date">{r['city_date'] or '—'}{(' · ' + r['city_source']) if r['city_source'] else ''}{(f" · {r['city_n']} samples that day, graded on the worse") if r.get('city_n', 0) > 1 else ''}</small></td>
-                <td>{sfpuc_pill(r['sfpuc_status'])}</td>
+                <td>{pill(r['city_exceeds'], r['city_raw'])}{provenance}<small class="date">{r['city_date'] or '—'}{(' · ' + r['city_source']) if r['city_source'] else ''}{(f" · {r['city_n']} samples that day, graded on the worse") if r.get('city_n', 0) > 1 else ''}</small></td>
+                <td>{'<small class="date">Not shown historically</small>' if data.get('historical') else sfpuc_pill(r['sfpuc_status'])}</td>
                 <td>{agreement_cell(r)}</td>
               </tr>"""
 
@@ -277,6 +288,9 @@ class ComparisonRoutes:
             bwtf_note=bwtf_note,
             rows_html=rows_html,
             generated=generated,
+            comparison_view=view, source_notes=data.get("notes", []), as_of_date=data.get("as_of_date", ""),
+            today=data.get("today", data.get("as_of_date", "")), historical=data.get("historical", False),
+            city_window_days=data.get("city_window_days", 60),
             analyte_code=analyte_code,
             dataset_floor=city_history.city_record_floor(),
         )
