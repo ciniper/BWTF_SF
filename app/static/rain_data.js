@@ -1,7 +1,7 @@
-/* A dated research snapshot. No feed polling or forecast/model mutation. */
+/* Live, read-only AQPI monitoring. Historical research context remains dated. */
 (() => {
   'use strict';
-  const data = JSON.parse(document.getElementById('rain-snapshot').textContent);
+  const data = JSON.parse(document.getElementById('rain-context').textContent);
   const byId = id => document.getElementById(id);
   const feedInput = byId('rain-feed'), regionInput = byId('rain-region');
   const forecastInput = byId('rain-forecast');
@@ -9,10 +9,13 @@
   const shortTime = new Intl.DateTimeFormat('en-US', {timeZone:'America/Los_Angeles',hour:'numeric',minute:'2-digit'});
   const fullTime = new Intl.DateTimeFormat('en-US', {timeZone:'America/Los_Angeles',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'});
   const format = value => value === null ? 'Unavailable' : value.toFixed(3);
-  let map, pointsLayer, outline;
+  let map, pointsLayer, outline, requestId = 0, controller;
+  const feeds = {}, metadata = {};
+  let serverOffset = 0;
+  const hasFeed = () => Boolean(feeds[feedInput.value]);
   const colors = ['#d5e9f3','#80bad8','#318bb8','#176c9e','#13466e','#082a48'];
   function selected() {
-    const feed = data.feeds[feedInput.value];
+    const feed = feeds[feedInput.value];
     return {feed, region:feed.regions[regionInput.value], spec:data.regions[regionInput.value]};
   }
   function chartRows() {
@@ -22,6 +25,7 @@
     return rows;
   }
   function drawChart() {
+    if (!hasFeed()) return;
     const rows = chartRows(), {spec,feed} = selected();
     const holder = byId('rain-chart');
     const width = Math.max(270,holder.clientWidth), height = 260;
@@ -124,6 +128,19 @@
     map.invalidateSize();
   }
   function update() {
+    byId('rain-source-link').href=data.feeds[feedInput.value].url;
+    if (!hasFeed()) {
+      ['rain-total','rain-count','rain-complete'].forEach(id => {byId(id).textContent='—';});
+      byId('rain-window').textContent='No current observations loaded for this feed.';
+      byId('rain-chart').textContent='Current rainfall will appear here once AQPI data is available.';
+      byId('rain-forecast-key').hidden=true;
+      byId('rain-values').replaceChildren();
+      byId('rain-map-legend').replaceChildren();
+      byId('rain-chart-readout').textContent='';
+      if (pointsLayer) pointsLayer.clearLayers();
+      if (outline) {outline.remove(); outline=null;}
+      return;
+    }
     const {feed,region,spec}=selected();
     byId('rain-total').textContent=region.total===null?'Unavailable':region.total.toFixed(2);
     byId('rain-count').textContent=region.count.toLocaleString();
@@ -132,9 +149,66 @@
     byId('rain-source-link').href=feed.url;
     drawChart();drawMap();
   }
+  function showStatus(message) {
+    const meta=metadata[feedInput.value], status=byId('rain-live-status');
+    if (message) {status.textContent=message;status.dataset.warning='true';return;}
+    if (!meta) return;
+    const parts=[];
+    if (meta.feed) {
+      const age=Math.max(0,Math.round((Date.now()+serverOffset-Date.parse(meta.feed.end))/60000));
+      const lag=`${Math.floor(age/60)}h ${age%60}m`;
+      parts.push(meta.error?'Refresh failed — showing last successful download.':age>180?'Provider data delayed.':'Latest available AQPI data.');
+      parts.push(`Observations end ${fullTime.format(new Date(meta.feed.end))} (${lag} behind now).`);
+      parts.push(`Downloaded ${fullTime.format(new Date(meta.fetched_at))}.`);
+    } else {parts.push('AQPI data is unavailable. No snapshot has been substituted.');}
+    if(meta.checked_at) parts.push(`Provider checked ${fullTime.format(new Date(meta.checked_at))}.`);
+    if(meta.error) parts.push(meta.error);
+    status.textContent=parts.join(' ');
+    status.dataset.warning=String(Boolean(meta.error) || (meta.feed && Date.now()+serverOffset-Date.parse(meta.feed.end)>10800000));
+  }
+  async function refresh() {
+    const id=++requestId, key=feedInput.value;
+    if(controller) controller.abort();
+    controller=new AbortController();
+    const currentController=controller;
+    const timeout=setTimeout(()=>currentController.abort(),55000);
+    byId('rain-refresh').disabled=true;
+    byId('rain-refresh').textContent='Checking…';
+    showStatus(hasFeed()?'Checking AQPI… Previous download remains visible.':'Loading latest AQPI observations…');
+    try {
+      const response=await fetch(`/alerts/api/rain-data?feed=${encodeURIComponent(key)}`,{cache:'no-store',signal:currentController.signal});
+      if(response.status===401) throw new Error('Admin session expired. Reload this page to unlock it.');
+      const result=await response.json();
+      if(id!==requestId) return;
+      if(!response.ok && response.status!==503) throw new Error('The rainfall service could not respond. Please retry.');
+      serverOffset=Date.parse(result.server_time)-Date.now();
+      // A different server instance may have no cache after a failed fetch. Keep
+      // this browser's last good values, with the error and original fetch time.
+      if(!result.feed && feeds[key]) {
+        result.feed=feeds[key];result.fetched_at=metadata[key].fetched_at;
+      }
+      metadata[key]=result;
+      if(result.feed) feeds[key]=result.feed;
+      update();showStatus();
+    } catch(error) {
+      if(id!==requestId) return;
+      const message=error.name==='AbortError'?'AQPI request timed out. Please retry.':error.message;
+      if(metadata[key]) {metadata[key].error=message;showStatus();}
+      else showStatus(`${message} No current rainfall data is available.`);
+    } finally {
+      clearTimeout(timeout);
+      if(id===requestId) {byId('rain-refresh').disabled=false;byId('rain-refresh').textContent='Check for updates';}
+    }
+  }
   initMap();
-  feedInput.addEventListener('change',update);regionInput.addEventListener('change',update);
+  if(map) map.setView([37.757,-122.445],12);
+  feedInput.addEventListener('change',()=>{update();refresh();});
+  regionInput.addEventListener('change',update);
   forecastInput.addEventListener('change',drawChart);
-  update();
+  byId('rain-refresh').addEventListener('click',refresh);
+  update();refresh();
+  setInterval(()=>{if(!document.hidden && !byId('rain-refresh').disabled) refresh();},300000);
+  setInterval(()=>{if(!document.hidden && !byId('rain-refresh').disabled) showStatus();},60000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden && !byId('rain-refresh').disabled) refresh();});
   if(window.ResizeObserver) new ResizeObserver(drawChart).observe(byId('rain-chart'));
 })();
