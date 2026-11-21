@@ -5,3 +5,4 @@ body{margin:0;background:#f1f5f7;color:var(--ink);font:16px/1.5 'Roboto',Arial,s
 @media(prefers-reduced-motion:no-preference){.rain-bias-track>span{transition:width .2s ease}}
 
 @media(max-width:430px){.rain-source-grid{grid-template-columns:1fr}.rain-takeaway{display:block}.rain-takeaway>.ic{margin-bottom:10px}.rain-controls select{font-size:13px}}
+.rain-live-status{padding:14px 16px;border:1px solid #a9cfdf;border-radius:8px;background:#eef7fb;font-size:15px;line-height:1.6}.rain-live-status[data-warning="true"]{background:#fff6e9;border-color:#d7b581}.rain-controls button{font:inherit;font-size:14px;font-weight:700;padding:10px 16px;min-height:44px;border:1px solid var(--brand);border-radius:8px;background:var(--brand);color:#fff;cursor:pointer}.rain-controls button:disabled{opacity:.65;cursor:wait}.rain-controls button:focus-visible{outline:3px solid #b56c12;outline-offset:3px}

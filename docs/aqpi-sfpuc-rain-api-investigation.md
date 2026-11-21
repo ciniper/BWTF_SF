@@ -7,12 +7,14 @@ no production collector or model changed.
 ## Admin visualization
 
 Open **Admin → Rain data** (`/alerts/rain-data`), behind the existing passphrase.
-The page embeds a compact, dated snapshot, so it does not query CW3E or KiWIS on
-page load. It includes a selectable area/window map, observation and forecast
+The map and chart now fetch CW3E's latest available observations through the
+gated `/alerts/api/rain-data` endpoint. It includes a selectable area/window map, observation and forecast
 chart, archive calendar, historical source comparison, and training inventory.
 
 The map and chart aggregate the actual downloaded CSV values. Source URLs and
-SHA-256 hashes are retained in `features/alerts/data/rain_snapshot.json`.
+SHA-256 hashes are returned in the live JSON. The original November 20 snapshot
+is retained as a reproducible research artifact and source for the archive
+calendar, but its rainfall values are never used as a live fallback.
 The research regions reproduce `rain_grids.py`'s rough rectangles; they are not
 official sewer drainage boundaries. Missing cell values make the corresponding
 regional interval unavailable. Forecast values never enter observation totals.
@@ -28,19 +30,70 @@ python scripts/build_rain_snapshot.py \
   --output features/alerts/data/rain_snapshot.json
 ```
 
-This is a November 20 research notebook, not a general live dashboard. Updating
-it to a different date also requires reviewing its dated explanatory text and
-the KiWIS findings, not just replacing the radar snapshot.
+### Live behavior and limits
+
+- The default is the Surfrider feed: 96 contiguous 15-minute observations.
+  The alternate SFPUC-area feed loads 168 hourly observations on selection.
+- “24 hours” ends at the provider's newest observation, not at fetch time.
+  The UI shows observation end, current lag, download time and provider check
+  time. Lag over three hours is flagged; that threshold is a display heuristic,
+  not a provider SLA. Forecast columns remain separate throughout.
+- Visible tabs check every five minutes and on return to the tab. Manual checks
+  obey the same 15-minute server cache. Downloads are serialized per feed per
+  worker; failed checks have a one-minute cooldown. A cold server instance may
+  download again. This deliberately avoids database writes or new infrastructure.
+- Download timeout/size bounds, schema checks, contiguous windows, duplicate
+  consistency and nonregressing observation times protect the displayed data.
+  Missing cell values stay missing. The parser is shared with the offline builder.
+- Failures retain a worker's or browser's last successful download with a visible
+  error and its original timestamp. With no last-good result the page shows
+  unavailable, never the bundled snapshot. Reloading or redeploying can lose
+  this temporary cache. Raw observations are **not durably archived** by this page.
+- Archive coverage, historical bias comparisons and KiWIS findings remain dated
+  research context. No model, alert rules or public forecast inputs changed.
+
+### Recommended next work
+
+1. **Monitor storms now.** Use the live map to compare spatial rainfall and
+   short bursts, paying attention to lag and missing intervals. Keep the existing
+   prediction model as the baseline while accumulating evidence.
+2. **Preserve new data next.** Confirm the provider's update cadence and allowed
+   polling with Kyle/CW3E, then schedule durable capture independent of page visits.
+   Save changed source files (hash + retrieval time + run time), and deduplicate
+   observations by coordinate, interval end and product rather than CSV row.
+   Keep forecasts indexed by issue time as well as valid time. This prevents
+   losing the rolling 24-hour history and enables honest retrospective evaluation.
+3. **Validate by storm and area.** Align time zones and interval definitions,
+   compare AQPI against healthy NOAA gauges and any SFPUC city gauges obtained,
+   then relate rain to discharge events and bacteria results with their actual
+   reporting lags. Hold out complete storms/time periods. Compare incremental
+   performance against the current model before promotion; do not apply the
+   historical 17–21% difference as a universal correction.
+4. **Resolve the gauge gap.** Ask Kyle whether he means the AQPI area CSV or
+   raw Telog/RG measurements. For gauges, request the endpoint/access method,
+   station coordinates, units, interval semantics, quality flags and history.
+   Use verified drainage boundaries for basin features instead of the current
+   rough research rectangles when available.
 
 ### Validation of the Admin page
 
-- Nine targeted pytest tests pass (rain explorer plus existing sample-gap page).
+- Thirteen targeted pytest tests pass (rain explorer plus existing sample-gap page),
+  including invalid/truncated live windows, cache reuse, refresh failure and retry,
+  backward provider updates, download size limits and API access protection.
+- Live HTTP checks returned 96 Surfrider intervals and 168 SFPUC-area intervals,
+  ending Nov 21 00:00 UTC (Nov 20 16:00 Pacific). The city-area totals were
+  0.26501 inches / 24 hours and 4.31248 inches / seven days respectively.
+  Each fetch and reduction took about 1.2 seconds on the development host.
 - Browser checked at narrow and desktop widths: admin unlock, map point popup,
   source/area switching, forecast toggle, exact chart values, calendar and bias
   bars. No browser console errors observed; mobile document overflow corrected.
+  The live follow-up verified both feeds, manual refresh/cache reuse, and recovery
+  after deliberately stopping the development server. Existing values stayed
+  visible with a refresh-failed warning and original fetch time during the outage.
 - JavaScript syntax and Git whitespace checks pass.
-- Full `scripts/check.sh`: 79 test files. After fixing the shared-table helper
-  integration and rerunning three files with pytest available, 77 files pass.
+- Full `scripts/check.sh` rerun for the live follow-up: 79 test files,
+  77 pass and two retain the known baseline failures (pytest available in the
+  check environment). The targeted tests were rerun after the final parser edit.
   `test_stages_build.py` and `test_stages_s1.py` still fail their existing
   artifact-freshness checks for `features/forecast/live_dashboard.py`.
   The actual hash is `1a7dd7f5bc28660482e71bf4f6daec13a18b3f142dd210608e602122e6c547bc`;
