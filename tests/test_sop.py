@@ -36,7 +36,7 @@ def test_page_and_photos_sit_behind_the_passphrase():
     """Chase, 2026-10-20: the SOP goes behind the alerts passphrase; unlocking returns you to it. 2026-11-04: an Admin
     tab at /alerts/lab-sop, its Learn address redirecting there."""
     from app.landing import GATED, nav_model
-    from app.wsgi import ALERTS_PASSPHRASE as PASS, app
+    from app.wsgi import ADMIN_DASHBOARD_PASSPHRASE as PASS, app
     name = S.steps()[0]["photos"][0]["src"]
     assert GATED == {"/alerts"} and not any("/learn/lab-sop" in h["paths"] or "/alerts/lab-sop" in h["paths"] for h in nav_model())   # a tab of Admin, not a hub row
     with app.test_client() as c:

@@ -59,7 +59,11 @@ env vars below → Deploy. Pushes to `main` then auto-deploy (same as Railway).
 | `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` | Everything stateful lives in Supabase |
 | `FLASK_SECRET_KEY` | **Required here** (any long random string): serverless instances each generate a random key otherwise, so the alerts passphrase cookie would bounce between instances |
 | `BREVO_API_KEY`, `ALERT_FROM_EMAIL` | Only for manual sends from the /alerts simulator — automatic alerts are dispatched by Postgres, not the web app |
-| `ALERTS_PASSPHRASE`, `ALERT_FROM_NAME` | Optional overrides, same as Railway |
+| `ADMIN_DASHBOARD_PASSPHRASE`, `ALERT_FROM_NAME` | Optional overrides, same as Railway |
+
+`ADMIN_DASHBOARD_PASSPHRASE` replaces `ALERTS_PASSPHRASE`; the old variable is no
+longer read. If a deployment or local `.env` sets it, rename the key and keep
+the same value. The default passphrase and existing session behavior are unchanged.
 
 What deliberately does **not** run on Vercel:
 
@@ -205,7 +209,7 @@ Verify: `venv/bin/python db/scripts/test_forecast_cache.py` (needs 005 applied).
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` | SMS via Twilio (paid, more reliable than carrier gateways) |
 | `ALERT_WATCHER_INTERVAL` | Auto-alert poll interval in seconds (default `120`; `off` disables the watcher) |
 | `ALERT_FROM_NAME` | Display name on alert emails (default "SF BWTF Alerts") |
-| `ALERTS_PASSPHRASE` | Passphrase gating the /alerts page + its write APIs (default `snowy plover` — override it if the repo is public, since the default is in source) |
+| `ADMIN_DASHBOARD_PASSPHRASE` | Passphrase gating the Admin dashboard (/alerts), its tabs, and protected APIs (default `snowy plover` — override it if the repo is public, since the default is in source) |
 | `FLASK_SECRET_KEY` | Signs the "alerts unlocked" session cookie. Optional: without it a random key is generated per boot, so everyone re-enters the passphrase after each deploy. |
 
 Without the SMTP/Twilio creds the app runs fine — dispatches (manual *and* the

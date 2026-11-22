@@ -46,7 +46,7 @@ def main() -> int:
     try:
         s = requests.Session()
         s.post("https://bwtf-sf.up.railway.app/alerts/unlock",
-               data={"passphrase": os.environ.get("ALERTS_PASSPHRASE", "snowy plover")},
+               data={"passphrase": os.environ.get("ADMIN_DASHBOARD_PASSPHRASE", "snowy plover")},
                timeout=15, allow_redirects=False)
         w = s.get("https://bwtf-sf.up.railway.app/api/watcher", timeout=15).json()
         print(f"  thread mode: {w.get('mode', 'send (pre-observer build)')} | poll #{w.get('poll_count')}")

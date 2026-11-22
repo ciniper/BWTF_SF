@@ -8,8 +8,8 @@
   the watcher itself writes), so the first Supabase-mode poll sees continuous
   state instead of re-baselining.
 
-Needs ``.env`` (SUPABASE_URL/SUPABASE_SERVICE_KEY) and the alerts passphrase
-(ALERTS_PASSPHRASE env, defaulting to the app's default).
+Needs ``.env`` (SUPABASE_URL/SUPABASE_SERVICE_KEY) and the Admin dashboard passphrase
+(ADMIN_DASHBOARD_PASSPHRASE env, defaulting to the app's default).
 
 Run from the repo root:  venv/bin/python db/scripts/import_phase1.py
 """
@@ -28,7 +28,7 @@ from features.alerts.subscriptions import SubscriptionStore
 from features.alerts import watcher
 
 PROD = os.environ.get("BWTF_PROD_URL", "https://bwtf-sf.up.railway.app")
-PASSPHRASE = os.environ.get("ALERTS_PASSPHRASE", "snowy plover")
+PASSPHRASE = os.environ.get("ADMIN_DASHBOARD_PASSPHRASE", "snowy plover")
 
 
 def main() -> int:
