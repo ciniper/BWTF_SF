@@ -306,6 +306,10 @@ def create_app():
     # works, but everyone re-enters the passphrase after each deploy/restart.
     app.secret_key = os.environ.get("FLASK_SECRET_KEY") or secrets.token_hex(32)
 
+    # Isolated, opt-in inbound email archive; no watcher or dispatch integration.
+    from features.sfpuc_updates.routes import register as register_sfpuc_emails
+    register_sfpuc_emails(app, _gated_page, _gated_api)
+
     # Home: the root IS the Today page (2026-10-01) — served directly, no redirect; /today and
     # /index.html serve the same page (alert emails link /today), and its canonical tag names /
     app.add_url_rule("/", "home", _forecast_view(today_page.handle_page), methods=["GET"])

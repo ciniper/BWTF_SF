@@ -237,6 +237,34 @@ On a result day SFPUC moves the posting at about 8:30 AM (`getBeaches` `posted` 
 - [x] **Morning gap** (branch `design/sample-result-gap`, `shared/result_gap.py`): from the posting change until the new date reaches the map, the Today row reads "posted 8:32 AM · new result on the way" and the popover shows the "Newest sample not published yet" banner over the previous sample.
 - [ ] **Afternoon gap — use SFPUC's `getStation` numbers (held 2026-11-10).** `POST infrastructure.sfwater.org/lims.asmx/getStation` (`stationId=4605`) is the table behind SFPUC's map popup: about three months of rows per station, with `COLI_TOTAL`, `COLI_FECAL`, `ENTERO`, `COLI_E`. On 2026-11-10 it gained the Nov 9 row at the same check as the map date (1:48 PM) and filled it one indicator at a time: total coliform at 1:48 PM, fecal coliform by 2:55 PM, Enterococcus still empty then. That was true for all 17 routinely sampled stations; the three "not routinely sampled" ones return no rows. That's about 9 hours of numbers SFPUC shows and our popover doesn't. Before building it, watch a few more result days: when Enterococcus fills in, whether it always beats DataSF, and whether early values are ever revised. The popover would then show them marked preliminary, with empty indicators "pending", until DataSF publishes.
 
+### B13. SFPUC email capture in Admin; Today and hotline later (2026-11-21)
+
+- [x] **Built locally on `design/sfpuc-monitoring-updates`:** isolated email
+  capture, private archive, Admin review, and a collapsed reviewed-updates
+  preview inside Admin. No public email endpoint or Today changes. Disabled by default; no existing alert/status logic changed.
+  [Implementation and setup](docs/sfpuc-email-capture.md).
+- [x] **Receiving domain authenticated (2026-11-21):**
+  `sfpuc@inbound.surftober.com`; GoDaddy MX records and Brevo verification/DKIM
+  records published, with Brevo reporting verified and authenticated.
+- [x] **Brevo inbound setup accepted on Free (2026-11-21):** webhook `2692827`
+  created with HTTP 201 and verified with HTTP 200; correct domain, event,
+  receiver URL, and independent bearer authentication. No upgrade performed.
+- [x] **Isolated Supabase migration applied (2026-11-21):** `20261122020135`;
+  three private tables, two server-only views, and two restricted RPCs. Live
+  transactional smoke tests passed and rolled back. Existing objects, four
+  scheduled jobs, and watcher configuration verified unchanged.
+- [ ] Activate capture: obtain explicit approval for app deployment,
+  configure the receiver to match webhook `2692827`, and set up
+  selective Gmail forwarding.
+  Verify a real SFPUC message in the Admin preview before routine capture.
+  Pre-push checks currently fail on inherited forecast manifest hashes in
+  `test_stages_build.py` and `test_stages_s1.py`; 77 other files pass.
+- [ ] Evaluate capturing and transcribing SFPUC's public recorded beach hotline
+  after comparing its information with the emails.
+- [x] **Saved the help hotline email contact note:** `BeachWaterQuality@sfwater.org`,
+  supplied by Chase on 2026-11-21 as the notification sender. Whether it accepts
+  help enquiries is unverified. Phone contacts: 415-242-2214 and 1-877-732-3224.
+
 ## Open decisions (these shape the sewage-alert work above)
 
 1. **Always-on vs. scheduled?** Real-time texting really wants an unattended 24/7 runner.

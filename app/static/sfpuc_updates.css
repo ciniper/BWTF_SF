@@ -1,0 +1,28 @@
+.sfpuc-updates{margin:20px 0;border:1px solid var(--line);border-radius:var(--r,12px);background:#fff;overflow:hidden}
+.sfpuc-updates>summary{padding:16px 20px;cursor:pointer;color:var(--brand);font-weight:700}
+.sfpuc-updates>summary:focus-visible,.email-actions button:focus-visible{outline:3px solid var(--brand);outline-offset:-3px}
+.sfpuc-updates-body{padding:0 20px 12px}
+.sfpuc-update{border-top:1px solid var(--line);padding:18px 0}
+.sfpuc-update h3{font-size:17px;margin:0 0 6px;overflow-wrap:anywhere}
+.sfpuc-update-text{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.65}
+.sfpuc-updates .email-muted,.sfpuc-email-admin .email-muted{font-size:13px;color:var(--muted);line-height:1.6}
+.sfpuc-updates .email-actions,.sfpuc-email-admin .email-actions{display:flex;flex-wrap:wrap;gap:12px;margin:16px 0}
+.sfpuc-updates button,.sfpuc-email-admin button{font:inherit;font-weight:700;cursor:pointer;border:1px solid var(--brand);border-radius:8px;background:var(--brand);color:#fff;padding:10px 16px;min-height:44px}
+.sfpuc-updates [hidden]{display:none!important}
+.sfpuc-email-admin{margin:0;background:var(--sand);color:var(--ink);font:15px/1.5 'Roboto',Arial,sans-serif}
+.sfpuc-email-admin .email-wrap{max-width:var(--page-w,1100px);margin:auto;padding:20px 24px 40px}
+.sfpuc-email-admin .email-panel{background:#fff;border:1px solid var(--line);border-radius:var(--r,12px);padding:20px;margin:20px 0}
+.sfpuc-email-admin h1{margin-bottom:4px}.sfpuc-email-admin h2{font-size:20px;margin:0 0 12px;overflow-wrap:anywhere}
+.sfpuc-email-admin .email-notice{background:#fff4dc;padding:12px 16px;border-radius:8px;color:#674610;overflow-wrap:anywhere}
+.sfpuc-email-admin pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:400px;overflow:auto;background:var(--sand);padding:12px;border-radius:8px;font:13px/1.6 monospace}
+.sfpuc-email-admin summary{cursor:pointer;color:var(--brand);font-weight:700;padding:12px 0}
+.sfpuc-email-admin .email-review-form{display:grid;gap:14px;margin:20px 0}
+.sfpuc-email-admin label{display:grid;gap:6px;font-weight:700}
+.sfpuc-email-admin input:not([type=checkbox]),.sfpuc-email-admin textarea{box-sizing:border-box;width:100%;padding:10px 12px;font:inherit;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:8px;min-height:44px}
+.sfpuc-email-admin .email-confirm{display:flex;align-items:flex-start;font-size:14px;font-weight:400;gap:10px}
+.sfpuc-email-admin .email-confirm input{margin-top:4px;width:18px;height:18px;flex-shrink:0}
+.sfpuc-email-admin button.secondary{background:#fff;color:var(--brand)}
+.sfpuc-email-admin .email-inbox-row{display:flex;justify-content:space-between;gap:16px;border-top:1px solid var(--line);padding:14px 0;overflow-wrap:anywhere}
+.sfpuc-email-admin .email-inbox-row a{color:var(--brand);font-weight:700}.sfpuc-email-admin .email-inbox-row p{margin:4px 0;font-size:13px;color:var(--muted)}
+.sfpuc-email-admin .email-state{font-size:12px;font-weight:700;flex-shrink:0}
+@media(max-width:650px){.sfpuc-email-admin .email-wrap{padding:14px}.sfpuc-email-admin .email-panel{padding:16px}.sfpuc-email-admin .email-inbox-row{display:block}.sfpuc-updates>summary{padding:16px}.sfpuc-updates-body{padding:0 16px 8px}}

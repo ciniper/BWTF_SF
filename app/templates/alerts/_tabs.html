@@ -13,6 +13,9 @@
   ("email-sim", "/alerts/email-sim", "mail", "Email simulator", ""),
   ("sample-gap", "/alerts/sample-gap", "microscope", "Sample gap", ""),
 ] %}
+{% if sfpuc_email_enabled is defined and sfpuc_email_enabled() %}
+{% set ADMIN_TABS = ADMIN_TABS + [('sfpuc-emails', '/alerts/sfpuc-emails', 'mail', 'SFPUC emails', '')] %}
+{% endif %}
 
 {% macro admin_tab_styles() -%}
 <style>
