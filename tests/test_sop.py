@@ -2,6 +2,7 @@
 wall pages as a page — four phases, steps 1 to 25 in order, every photo on disk, the empty frames shown as slots."""
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -36,10 +37,11 @@ def test_page_and_photos_sit_behind_the_passphrase():
     """Chase, 2026-10-20: the SOP goes behind the alerts passphrase; unlocking returns you to it. 2026-11-04: an Admin
     tab at /alerts/lab-sop, its Learn address redirecting there."""
     from app.landing import GATED, nav_model
-    from app.wsgi import ADMIN_DASHBOARD_PASSPHRASE as PASS, app
+    from app.wsgi import app
+    PASS = "sop-only-test-passphrase"
     name = S.steps()[0]["photos"][0]["src"]
     assert GATED == {"/alerts"} and not any("/learn/lab-sop" in h["paths"] or "/alerts/lab-sop" in h["paths"] for h in nav_model())   # a tab of Admin, not a hub row
-    with app.test_client() as c:
+    with patch("app.wsgi.ADMIN_DASHBOARD_PASSPHRASE", PASS), app.test_client() as c:
         old = c.get("/learn/lab-sop")
         assert old.status_code == 302 and old.headers["Location"].endswith("/alerts/lab-sop")      # old links still land
         assert "lab-sop" not in c.get("/learn/collect").data.decode()                                 # the public Collect page no longer points at a locked page (2026-11-04)

@@ -9,7 +9,7 @@
   state instead of re-baselining.
 
 Needs ``.env`` (SUPABASE_URL/SUPABASE_SERVICE_KEY) and the Admin dashboard passphrase
-(ADMIN_DASHBOARD_PASSPHRASE env, defaulting to the app's default).
+(ADMIN_DASHBOARD_PASSPHRASE env; no default).
 
 Run from the repo root:  venv/bin/python db/scripts/import_phase1.py
 """
@@ -28,10 +28,12 @@ from features.alerts.subscriptions import SubscriptionStore
 from features.alerts import watcher
 
 PROD = os.environ.get("BWTF_PROD_URL", "https://bwtf-sf.up.railway.app")
-PASSPHRASE = os.environ.get("ADMIN_DASHBOARD_PASSPHRASE", "snowy plover")
+PASSPHRASE = os.environ.get("ADMIN_DASHBOARD_PASSPHRASE", "")
 
 
 def main() -> int:
+    if not PASSPHRASE.strip():
+        print("ADMIN_DASHBOARD_PASSPHRASE missing — aborting."); return 1
     if not sb.is_configured():
         print("Supabase env missing — aborting."); return 1
 
