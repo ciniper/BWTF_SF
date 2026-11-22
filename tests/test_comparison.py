@@ -5,6 +5,7 @@ functions on synthetic records."""
 import pathlib
 import sys
 from datetime import datetime, timedelta
+from unittest.mock import patch
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -128,7 +129,11 @@ def test_comparison_lists_every_station_with_the_lab_sites_first():
     ]
     mon = _Monitor(records)
     history = [{"site_name": "Aquatic Park", "collection_time": datetime(2026, 9, 22, 7, 0), "substance": "Enterococcus", "result_value": 20.0, "result_raw": "20"}]
-    data = C.build_comparison(bwtf_client=_Bwtf(lab, history), sf_gov_monitor=mon, sfpuc_api=_Sfpuc())
+    # Keep the September samples within the lookback and ignore local early-feed snapshots.
+    with patch.object(C, "now_pacific_naive", return_value=datetime(2026, 9, 24, 12)), \
+         patch.object(C.sfpuc_live, "read_snapshot", return_value=([], "current")):
+        data = C.build_comparison(bwtf_client=_Bwtf(lab, history), sf_gov_monitor=mon, sfpuc_api=_Sfpuc())
+        other = C.build_comparison(bwtf_client=_Bwtf(lab, history), sf_gov_monitor=_Monitor(records), sfpuc_api=_Sfpuc(), analyte="COLI_TOTAL")
     rows = data["rows"]
     assert len(rows) == 21 and [r["site_name"] for r in rows[:2]] == ["Aquatic Park", "Bayview Hunters Point"]
     aq = rows[0]
@@ -146,7 +151,6 @@ def test_comparison_lists_every_station_with_the_lab_sites_first():
     sd = s["same_day"]   # the stub answers every city query with the same three rows, so the one same-day pair is Aquatic Park on 2026-09-22: BWTF 20 within, city 399 over
     assert (sd["pairs"], sd["agree"], sd["differ"], sd["sites"], sd["latest"], sd["window_days"]) == (1, 0, 1, 1, "2026-09-22", 365)
     assert sd["per_site"] == {"Aquatic Park": {"pairs": 1, "agree": 0, "latest": "2026-09-22"}}
-    other = C.build_comparison(bwtf_client=_Bwtf(lab, history), sf_gov_monitor=_Monitor(records), sfpuc_api=_Sfpuc(), analyte="COLI_TOTAL")
     assert other["summary"]["same_day"] is None and not other["bwtf_measures"]                     # BWTF measures Enterococcus only: no pairs for the other standards
 
 
