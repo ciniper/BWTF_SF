@@ -21,6 +21,9 @@ from shared import supabase as sb
 
 
 def main() -> int:
+    passphrase = os.environ.get("ADMIN_DASHBOARD_PASSPHRASE", "")
+    if not passphrase.strip():
+        print("ADMIN_DASHBOARD_PASSPHRASE missing — aborting."); return 1
     if not sb.is_configured():
         print("Supabase env missing — aborting."); return 1
 
@@ -46,7 +49,7 @@ def main() -> int:
     try:
         s = requests.Session()
         s.post("https://bwtf-sf.up.railway.app/alerts/unlock",
-               data={"passphrase": os.environ.get("ALERTS_PASSPHRASE", "snowy plover")},
+               data={"passphrase": passphrase},
                timeout=15, allow_redirects=False)
         w = s.get("https://bwtf-sf.up.railway.app/api/watcher", timeout=15).json()
         print(f"  thread mode: {w.get('mode', 'send (pre-observer build)')} | poll #{w.get('poll_count')}")

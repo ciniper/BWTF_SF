@@ -72,7 +72,8 @@ extension, without changing watcher configuration, application tables, or jobs.
 | `SFPUC_EMAIL_SENDERS` | Optional comma-separated expected senders; defaults to `beachwaterquality@sfwater.org` |
 | `SFPUC_EMAIL_WEBHOOK_TOKEN` | An independently generated random bearer secret, at least 32 characters; configure the same value in Brevo |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` | Existing server-only storage configuration |
-| `ALERTS_PASSPHRASE`, `FLASK_SECRET_KEY` | Existing Admin session configuration; use configured production values |
+| `ADMIN_DASHBOARD_PASSPHRASE` | Required for new Admin logins; set as a server-only Secret in Vercel; no default |
+| `FLASK_SECRET_KEY` | Existing Admin session signing key; keep the configured production value |
 
 Keep the webhook secret in deployment/provider secret settings. It is unrelated
 to the Brevo API credential and the Admin passphrase. Nothing needs a Gmail

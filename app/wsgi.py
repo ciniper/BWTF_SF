@@ -114,13 +114,13 @@ _COMPARE_GET = {
     "/api/sample-dates": "send_api_sample_dates",
 }
 
-# ── Alerts access gate ────────────────────────────────────────────────────────
-# The alerts page manages live subscriptions and its simulator can send real
+# ── Admin dashboard access gate ───────────────────────────────────────────────
+# The Admin dashboard manages live subscriptions and its simulator can send real
 # email, so it sits behind a shared passphrase. Besides the page itself, every
 # state-changing action and the endpoints that expose subscriber contact info
 # are gated; public-data reads (/api/status, /api/debug/sfpuc, …) stay open so
 # other pages and the landing footer keep working.
-ALERTS_PASSPHRASE = os.environ.get("ALERTS_PASSPHRASE", "snowy plover")
+ADMIN_DASHBOARD_PASSPHRASE = os.environ.get("ADMIN_DASHBOARD_PASSPHRASE", "")
 _GATED_API_GET = {"/api/subscriptions", "/api/watcher"}
 
 
@@ -169,9 +169,10 @@ def _gated_api(inner_view):
 
 def _unlock_submit():
     supplied = _normalize_passphrase(request.form.get("passphrase", ""))
+    expected = _normalize_passphrase(ADMIN_DASHBOARD_PASSPHRASE)
     nxt = request.form.get("next", "")
     nxt = nxt if nxt in _GATED_PAGES else "/alerts"   # back to the page that asked, never anywhere else
-    if hmac.compare_digest(supplied, _normalize_passphrase(ALERTS_PASSPHRASE)):
+    if expected and hmac.compare_digest(supplied, expected):
         session["alerts_unlocked"] = True
         return redirect(nxt)
     return _unlock_page(nxt, error="That's not it — check with the coordinator and try again.", status=401)

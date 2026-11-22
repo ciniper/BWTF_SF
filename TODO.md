@@ -1,6 +1,7 @@
 # Project TODO & Roadmap
 
 - [ ] Today: combine "not sampled", "no result", and "stale result" into one display category; preserve each reason in the details.
+- [ ] Admin access: replace the shared passphrase with individual accounts and MFA in a future change (deferred by Chase, 2026-11-22).
 
 This roadmap has four parts:
 
