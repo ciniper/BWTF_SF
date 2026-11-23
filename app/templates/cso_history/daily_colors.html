@@ -33,7 +33,7 @@
   {% endcall %}
   <nav class="daily-controls" aria-label="Date range">
     {% for option in ranges %}
-      <a href="?days={{ option }}"{% if option == count %} aria-current="page"{% endif %}>{{ option }} days</a>
+      <a href="?days={{ option }}"{% if option == count %} aria-current="page"{% endif %}>{{ option }} Days</a>
     {% endfor %}
   </nav>
   {% if unavailable %}

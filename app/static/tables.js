@@ -27,7 +27,7 @@
     rows.slice(rows.indexOf(primary[n])).forEach(function (r) { r.setAttribute(ATTR, ""); });
     var cols = 0; [].forEach.call(rows[0].children, function (c) { cols += c.colSpan || 1; });
     var tr = document.createElement("tr"); tr.className = MORE;
-    tr.innerHTML = '<td colspan="' + (cols || 1) + '"><button type="button">Show all ' + primary.length.toLocaleString() + ' rows</button><span>showing the first ' + n + '</span></td>';
+    tr.innerHTML = '<td colspan="' + (cols || 1) + '"><button type="button">Show All ' + primary.length.toLocaleString() + ' Rows</button><span>Showing the First ' + n + '</span></td>';
     tr.querySelector("button").addEventListener("click", function () { rows.forEach(function (r) { r.removeAttribute(ATTR); }); tr.remove(); });
     tbody.appendChild(tr);
   }

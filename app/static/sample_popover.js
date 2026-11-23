@@ -144,7 +144,7 @@
   }
   function render(d, opts) {
     var m = modal(), note = m.querySelector("#sp-note"), grid = m.querySelector("#sp-grid"), links = m.querySelector("#sp-links"), fieldEl = m.querySelector("#sp-field");
-    if (d.ok === false) { note.textContent = d.error || "No data"; return; }
+    if (d.ok === false) { note.textContent = d.error || "No Data"; return; }
     refreshWhileWaiting(d, opts);
     var surf = d.source === "bwtf";
     m.querySelector("#sp-title").textContent = d.name || opts.name || opts.station || opts.bwtf;
@@ -195,7 +195,7 @@
       charts.push(window.BWTFCharts.miniBars(canvas, { label: a.label, values: vals, limit: limit, caution: a.code === "ENTERO" ? d.caution : 0 }));
     });
     links.innerHTML = (d.early ? '<a href="https://infrastructure.sfwater.org/lims.asmx/getCSV" target="_blank" rel="noopener noreferrer">SFPUC lab feed</a>' : '') + (d.results_url ? '<a href="' + esc(d.results_url) + '" target="_blank" rel="noopener noreferrer">' + (surf ? "Site report on bwtf.surfrider.org" : "Raw results on SF Gov Open Data") + "</a>" : "") +
-      '<a href="' + esc(d.viewer_url) + '">All samples for this site</a><a href="' + esc(d.graph_url) + '">Graphs for this site</a>';
+      '<a href="' + esc(d.viewer_url) + '">All Samples for This Site</a><a href="' + esc(d.graph_url) + '">Graphs for This Site</a>';
   }
   function fromEl(a) { return { station: a.dataset.sampleStation, bwtf: a.dataset.sampleBwtf, name: a.dataset.sampleName, date: a.dataset.sampleDate || "", feedDate: a.dataset.sampleFeedDate || "", changed: a.dataset.sampleChanged || "", changedAt: a.dataset.sampleChangedAt || "" }; }
   document.addEventListener("click", function (e) {

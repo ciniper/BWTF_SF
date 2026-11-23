@@ -1,7 +1,7 @@
 /* site_picker.js — the one site picker Graphs and Samples share (markup: app/templates/_site_picker.html).
  * The chosen site is the board's title; the name (with its chevron) opens the zone-grouped tiles beneath
  * it, a tap on a tile picks it and closes them. A page hands in the tiles' Source rule with filter()
- * — tiles that source never sampled hide, and a hidden current site falls back: to "All sites" when the
+ * — tiles that source never sampled hide, and a hidden current site falls back: to "All Sites" when the
  * page offers it (Samples), else to the page's first site (data-first, Graphs), else to a beach both programs sample.
  *   SitePicker.init({ key, onPick })   // onPick(key) fires on a tap, never on filter()/set()
  *   SitePicker.filter(fits) -> key      // fits(tile) true keeps the tile; returns the (possibly changed) key

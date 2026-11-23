@@ -68,7 +68,7 @@ class SFPUCStatusTests(unittest.TestCase):
                 self.assertEqual(site["sampled"], "2026-11-19")
                 self.assertEqual(site["sampled_age_days"], 2)
                 if expected == "posted":
-                    self.assertEqual(ocean["status_text"], "1 beach posted")
+                    self.assertEqual(ocean["status_text"], "1 Beach Posted")
                     self.assertIn("OB Vicente", board["lead"])
 
 

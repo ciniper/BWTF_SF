@@ -68,7 +68,7 @@
   <section class="rec" id="short">
     <h2>The Short Version</h2>
     <div class="tblwrap"><table>
-      <thead><tr><th>When</th><th>What changed</th></tr></thead>
+      <thead><tr><th>When</th><th>What Changed</th></tr></thead>
       <tbody>
         <tr><td class="when">Jan 2000</td><td>The record starts. The lab measures only total coliform, with membrane filtration. The city visits each beach approximately three times each week.</td></tr>
         <tr><td class="when">{{ mon(d.first_enterococcus.bay) }}</td><td>Enterococcus and E. coli tests start at the bay beaches, with a new method (Quanti-Tray). The unit changes from CFU to MPN.</td></tr>
@@ -86,8 +86,8 @@
     <p class="rec-sub">This data comes from the method and units on each result in the SFPUC export, and from the indicators in DataSF.</p>
     <h3>The SFPUC Lab Export, 2000 – Jul 2020</h3>
     <div class="tblwrap"><table>
-      <thead><tr><th>Method, as printed</th><th>Bacteria</th><th>Units</th><th>Used</th><th class="num">results</th></tr></thead>
-      <tbody>{% for m in d.lab_methods %}<tr><td>{{ m.method }}</td><td>{{ m.analytes|join(", ") }}</td><td>{{ m.units }}</td>
+      <thead><tr><th>Method, as Printed</th><th>Bacteria</th><th>Units</th><th>Used</th><th class="num">Results</th></tr></thead>
+      <tbody>{% for m in d.lab_methods %}<tr><td>{{ m.method }}</td><td>{{ m.analytes|map("title_case")|join(", ") }}</td><td>{{ m.units }}</td>
         <td class="when">{{ mon(m.first) }} – {{ mon(m.last) }}</td><td class="num">{{ "{:,}".format(m.n) }}</td></tr>{% endfor %}</tbody>
     </table></div>
     <p>CFU counts the colonies that grow on a filter. MPN is a statistical estimate from a tray of wells. The two units are per 100 mL. We
@@ -95,8 +95,8 @@
 
     <h3>DataSF, Jul 2020 On</h3>
     <div class="tblwrap"><table>
-      <thead><tr><th>Bacteria</th><th>Reported</th><th>Lowest and highest printed values</th></tr></thead>
-      <tbody>{% for name, s in d.datasf_indicators.items() %}<tr><td class="when">{{ name }}</td><td>{{ mon(s.first) }} – {{ mon(s.last) }}</td>
+      <thead><tr><th>Bacteria</th><th>Reported</th><th>Lowest and Highest Printed Values</th></tr></thead>
+      <tbody>{% for name, s in d.datasf_indicators.items() %}<tr><td class="when">{{ name|title_case }}</td><td>{{ mon(s.first) }} – {{ mon(s.last) }}</td>
         <td>{% for l in d.limits_datasf.get(name, []) %}{{ l.printed }} ({{ mon(l.first) }} – {{ mon(l.last) }}){% if not loop.last %} · {% endif %}{% endfor %}</td></tr>{% endfor %}</tbody>
     </table></div>
     <p>A value of “&lt;10” means less than the test can find. A value of “&gt;24196” means more than the test can count. The
@@ -113,7 +113,7 @@
       {% macro cells(s) %}{% for n in s.days %}<td class="{{ 'c0' if n == 0 else 'c1' if n < 20 else 'c2' if n < 60 else 'c3' if n < 120 else 'c4' }}">{{ n if n else "" }}</td>{% endfor %}{% endmacro %}
       {% for z in d.zones %}<tr class="zone"><td colspan="{{ d.years|length + 1 }}">{{ z.label }}</td></tr>
         {% for s in z.stations %}<tr><td class="st">{{ s.name }}{% if s.discharge_only %} *{% endif %}</td>{{ cells(s) }}</tr>{% endfor %}{% endfor %}
-      <tr class="zone"><td colspan="{{ d.years|length + 1 }}">Stations that stopped or had only one sample</td></tr>
+      <tr class="zone"><td colspan="{{ d.years|length + 1 }}">Stations That Stopped or Had Only One Sample</td></tr>
       {% for s in d.retired %}<tr><td class="st">{{ s.name }}</td>{{ cells(s) }}</tr>{% endfor %}
       </tbody>
     </table></div>
@@ -126,7 +126,7 @@
     The table compares the sampling frequency at each station in the 3 days after a discharge with the frequency on all other days,
     {{ mon(d.after_discharge_window[0]) }} to {{ mon(d.after_discharge_window[1]) }}. It uses the Discharge Ledger.</p>
     <div class="tblwrap"><table style="max-width:560px">
-      <thead><tr><th>Station</th><th class="num">3 days after a discharge</th><th class="num">other days</th></tr></thead>
+      <thead><tr><th>Station</th><th class="num">3 Days After a Discharge</th><th class="num">Other Days</th></tr></thead>
       <tbody>{% for r in d.after_discharge %}<tr><td>{{ r.name }}{% if r.discharge_only %} *{% endif %}</td><td class="num">{{ r.after_pct }}%</td><td class="num">{{ r.other_pct }}%</td></tr>{% endfor %}</tbody>
     </table></div>
   </section>
@@ -136,7 +136,7 @@
     <ul class="plain">
       {% for z in d.zones %}{% for s in z.stations if s.first > "2000-03-01" %}<li><b>{{ s.name }}</b> starts {{ mon(s.first) }}{% if s.name == "Islais Creek" %}. Routine sampling starts in Oct 2015{% elif s.name == "Mission Creek" %}. Routine sampling starts in Oct 2017{% endif %}.</li>{% endfor %}{% endfor %}
       <li><b>Fort Funston:</b> until 2002, the city sampled it only some days each year. In 2002–2003, the city sampled it regularly. From 2004, the city sampled it only after discharges.</li>
-      <li><b>Retired points:</b> {% for s in d.retired %}{{ s.name }} ({{ mon(s.first) }} – {{ mon(s.last) }}){% if not loop.last %}, {% endif %}{% endfor %}.</li>
+      <li><b>Retired Points:</b> {% for s in d.retired %}{{ s.name }} ({{ mon(s.first) }} – {{ mon(s.last) }}){% if not loop.last %}, {% endif %}{% endfor %}.</li>
       <li><b>Aquatic Park:</b> the city did not sample it in Oct 2013, Dec 2018 – Jan 2019 (federal shutdowns), or 23 Mar – 27 Jul 2020 (Covid). This data comes from the SFPUC notes in the export.</li>
     </ul>
   </section>

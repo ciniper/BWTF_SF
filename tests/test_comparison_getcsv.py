@@ -133,8 +133,8 @@ def test_shared_route_and_html_explain_experiment_and_provenance():
         response = client.get('/compare?view=shared')
         html = response.get_data(as_text=True)
         assert response.status_code == 200 and calls[-1]['view'] == 'shared'
-        assert 'Latest shared collection date · Experiment' in html and 'Early SFPUC · getCSV' in html
-        assert 'older results, not current conditions' in html and 'shared-date exceed' in html
+        assert 'Latest Shared Collection Date · Experiment' in html and 'Early SFPUC · getCSV' in html
+        assert 'older results, not current conditions' in html and 'Shared-Date Exceed' in html
         assert client.get('/api/compare?view=shared').json['view'] == 'shared'
         response = client.get('/compare?view=shared&as_of=2026-11-13')
         html = response.get_data(as_text=True)

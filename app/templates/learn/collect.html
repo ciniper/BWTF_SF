@@ -209,7 +209,7 @@
       <label>Date<input type="date" name="date" id="cx-date" value="{{ today }}" min="{{ earliest }}" max="{{ latest }}" required></label>
       <label>Time<input type="time" name="time" id="cx-time" value="{{ now }}" required></label>
       <button type="button" class="btn ghost" id="cx-now" title="Set the date and time to now">Now</button>
-      <button class="btn" type="submit" id="cx-go">Get conditions</button>
+      <button class="btn" type="submit" id="cx-go">Get Conditions</button>
     </form>
     <div id="cx-out" hidden>
       <p class="cx-when" id="cx-when"></p>
@@ -218,7 +218,7 @@
     <p class="cx-err" id="cx-err" hidden></p>
     <label class="obs" for="cx-obs"><span>Observations</span>
       <textarea id="cx-obs" rows="3" placeholder="Birds, swimmers, surfers, debris, odor, water color, and other unusual conditions"></textarea></label>
-    <div class="cx-actions"><button type="button" class="btn ghost" id="cx-copy" disabled>Copy for the sheet</button><button type="button" class="btn" id="cx-save" disabled>Save as image</button><small id="cx-copied" aria-live="polite"></small></div>
+    <div class="cx-actions"><button type="button" class="btn ghost" id="cx-copy" disabled>Copy for the Sheet</button><button type="button" class="btn" id="cx-save" disabled>Save as Image</button><small id="cx-copied" aria-live="polite"></small></div>
     <p class="more">Tide: NOAA predictions for the beach, in feet above mean lower low water (MLLW). Air, sky, and wind: Open-Meteo at the site location. Waves and water temperature: the Open-Meteo ocean model. Rain: the Open-Meteo model hours, added for the 72 hours before the time that you selected. Times are Pacific. The sheet includes the last 90 days and the next week. Your observations stay on this device, with the site and date, until you save the image.</p>
   </section>
 </div>
@@ -326,7 +326,7 @@
       render();
       $("cx-out").hidden = false; $("cx-copy").disabled = $("cx-save").disabled = false;
     } catch (e) { $("cx-err").textContent = "Could not get the conditions: " + e.message; $("cx-err").hidden = false; $("cx-out").hidden = true; }
-    finally { $("cx-go").disabled = false; $("cx-go").textContent = "Get conditions"; }
+    finally { $("cx-go").disabled = false; $("cx-go").textContent = "Get Conditions"; }
   }
   $("cx-form").addEventListener("submit", e => { e.preventDefault(); load(); });
   $("cx-now").addEventListener("click", () => {   // this device's clock, as the date and time inputs read it

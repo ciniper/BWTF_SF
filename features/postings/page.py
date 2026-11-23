@@ -39,7 +39,7 @@ _MANIFEST = _DIR / "manifest.json"
 MAX_DURATION_DAYS = 60   # src/collectors/beachwatch.MAX_DURATION_DAYS — longer = a filing left open
 
 COLUMNS = ["posted_on", "reopened_on", "duration_days", "station", "zone", "cause_class", "advisory_type", "cause", "source"]
-CAUSE_LABELS = {"cso": "Sewage discharge", "rain": "Rain advisory", "other": "Other / unknown"}
+CAUSE_LABELS = {"cso": "Sewage Discharge", "rain": "Rain Advisory", "other": "Other / Unknown"}   # title case (2026-11-22)
 
 _payload_cache: dict | None = None
 

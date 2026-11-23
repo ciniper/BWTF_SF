@@ -56,35 +56,35 @@
   {% endcall %}
 
   <div class="controls" id="zoneBtns">
-    <button class="group-btn active" data-zone="">All beaches</button>
+    <button class="group-btn active" data-zone="">All Beaches</button>
   </div>
   <div class="controls">
     <span class="ctl-label">Cause:</span>
     <div class="seg-toggle" id="causeToggle">
       <button class="seg-btn active" data-cause="">All</button>
-      <button class="seg-btn" data-cause="cso">Sewage discharge</button>
-      <button class="seg-btn" data-cause="rain">Rain advisory</button>
+      <button class="seg-btn" data-cause="cso">Sewage Discharge</button>
+      <button class="seg-btn" data-cause="rain">Rain Advisory</button>
       <button class="seg-btn" data-cause="other">Other</button>
     </div>
     <span class="ctl-label">Years:</span>
     <input type="number" id="yearFrom" min="1999" step="1"> <span style="color:#54576F">→</span>
     <input type="number" id="yearTo" min="1999" step="1">
-    <button class="group-btn preset" data-years="1">1 year</button>
-    <button class="group-btn preset" data-years="3">3 years</button>
-    <button class="group-btn preset" data-years="5">5 years</button>
-    <button class="group-btn preset" data-years="">Full record</button>
+    <button class="group-btn preset" data-years="1">1 Year</button>
+    <button class="group-btn preset" data-years="3">3 Years</button>
+    <button class="group-btn preset" data-years="5">5 Years</button>
+    <button class="group-btn preset" data-years="">Full Record</button>
   </div>
 
   <div class="fresh-note" id="freshNote" style="display:none"></div>
-  <div class="loading" id="loading">Loading the State posting record…</div>
+  <div class="loading" id="loading">Loading the State Posting Record…</div>
   <div id="content" style="display:none">
     <div class="cards">
-      <div class="card"><b id="cAdv">–</b><span>postings (station-advisories)</span></div>
+      <div class="card"><b id="cAdv">–</b><span>Postings (Station-Advisories)</span></div>
       <div class="card"><b id="cUDays">–</b><span>days with one or more postings · <span id="cUPct">–</span> of days</span></div>
-      <div class="card"><b id="cDays">–</b><span>posted station-days</span></div>
-      <div class="card"><b id="cMed">–</b><span>median posting length, days</span></div>
+      <div class="card"><b id="cDays">–</b><span>Posted Station-Days</span></div>
+      <div class="card"><b id="cMed">–</b><span>Median Posting Length, Days</span></div>
       <div class="card"><b id="cCso">–</b><span>of posted days have a sewage discharge as the cause</span></div>
-      <div class="card"><b id="cPerYr">–</b><span>posted station-days per year</span></div>
+      <div class="card"><b id="cPerYr">–</b><span>Posted Station-Days per Year</span></div>
     </div>
 
     <div class="board">
@@ -92,28 +92,28 @@
       <div class="controls" style="margin:0 0 8px">
         <span class="ctl-label">Show:</span>
         <div class="seg-toggle" id="metricToggle">
-          <button class="seg-btn active" data-metric="days" title="Calendar days on which one or more beaches in the view had a posting. Each day counts one time.">Days posted</button>
-          <button class="seg-btn" data-metric="pct" title="These days as a percentage of the days in the record for each year">% of days</button>
+          <button class="seg-btn active" data-metric="days" title="Calendar days on which one or more beaches in the view had a posting. Each day counts one time.">Days Posted</button>
+          <button class="seg-btn" data-metric="pct" title="These days as a percentage of the days in the record for each year">% of Days</button>
           <button class="seg-btn" data-metric="stationdays" title="The total of the posted days for all stations. A station with a posting for 3 days = 3.">Station-days</button>
         </div>
       </div>
       <svg class="chart" id="chart" viewBox="0 0 1000 240" preserveAspectRatio="none"></svg>
-      <div class="legend"><span><i style="background:#b5310a"></i>Sewage discharge</span><span><i style="background:#0072BC"></i>Rain advisory</span><span><i style="background:#98a3ab"></i>Other / unknown</span><span id="legendPartial"></span></div>
+      <div class="legend"><span><i style="background:#b5310a"></i>Sewage Discharge</span><span><i style="background:#0072BC"></i>Rain Advisory</span><span><i style="background:#98a3ab"></i>Other / Unknown</span><span id="legendPartial"></span></div>
     </div>
 
     <div class="board">
       <h2>By Station <span>— in the selected view · click a column header to sort</span></h2>
       <table id="tbl"><thead><tr>
         <th data-k="name">Station</th><th data-k="zone">Zone</th>
-        <th class="num" data-k="adv">postings</th><th class="num" data-k="days">posted days</th>
-        <th class="num" data-k="pct" style="min-width:170px">share of days posted</th>
-        <th class="num" data-k="med">median length</th><th class="num" data-k="cso">sewage share</th><th data-k="last">last posted</th>
+        <th class="num" data-k="adv">Postings</th><th class="num" data-k="days">Posted Days</th>
+        <th class="num" data-k="pct" style="min-width:170px">Share of Days Posted</th>
+        <th class="num" data-k="med">Median Length</th><th class="num" data-k="cso">Sewage Share</th><th data-k="last">Last Posted</th>
       </tr></thead><tbody id="rows"></tbody></table>
     </div>
 
     <div class="board">
       <h2>Most Recent Postings <span>— newest first, in the selected view · <a class="dl" href="/postings/api/csv" download="sf_beach_advisories.csv">download the full record (CSV)</a></span></h2>
-      <table><thead><tr><th>Posted</th><th>Reopened</th><th class="num">days</th><th>Station</th><th>Cause</th><th>Type</th><th>Record says</th></tr></thead><tbody id="recent"></tbody></table>
+      <table><thead><tr><th>Posted</th><th>Reopened</th><th class="num">Days</th><th>Station</th><th>Cause</th><th>Type</th><th>Record Says</th></tr></thead><tbody id="recent"></tbody></table>
     </div>
   </div>
 
@@ -124,8 +124,8 @@
     the two dates. Thus, if the city posts and reopens a station on the same day, it is one posted day. <b>Days with one or more postings</b> counts each calendar day one time
     if one or more beaches in the view had a posting. The number of stations does not change the count. The percentage divides this count by the days in the record for each year. Each day
     gets the worst cause posted on it (sewage, then rain, then other). <b>Cause</b> is the cause that the record gives:
-    <span class="chip cso">sewage discharge</span> when the record names a combined-sewer discharge as the source,
-    <span class="chip rain">rain advisory</span> for the standard wet-weather warning, and <span class="chip other">other</span>
+    <span class="chip cso">Sewage Discharge</span> when the record names a combined-sewer discharge as the source,
+    <span class="chip rain">Rain Advisory</span> for the standard wet-weather warning, and <span class="chip other">other</span>
     when the record names neither (usually dry-weather bacteria). Postings are a precaution. On sampled days with a sewage posting, the water
     was more than the standard approximately one half to four fifths of the time. Thus, this record shows what the city told the public. It does not show the water quality.
     The Site Report Card shows the water quality. <span id="longNote"></span>

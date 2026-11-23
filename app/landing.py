@@ -15,6 +15,7 @@ from flask import render_template
 
 from shared.zones import ZONES
 from shared.clock import days_ago_text, now_pacific
+from shared.text import title_case
 from shared.risk_levels import LEVELS, level_of, level_of_percent, whole_percent
 
 SURFRIDER_LOGO_URL = "https://f.hubspotusercontent20.net/hubfs/20811975/SF-Horizontal-Logo_RGB_Black_crop_small.png"
@@ -362,7 +363,7 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
     by_id = {str(getattr(st, "station_id", "")): st for st in stations}   # SFPUC id → live feed row
     # The city's colours say what SFPUC has posted, so the words do too (2026-11-08: "safe" was the one word on the board that
     # claimed the water, and the feed knows only whether a sign is up). "posted" is SFPUC's status word; the cause is not in the feed.
-    status_text = {"safe": "no warning", "posted": "warning posted", "discharge": "sewage discharge", "unknown": "not sampled"}
+    status_text = {"safe": "No Warning", "posted": "Warning Posted", "discharge": "Sewage Discharge", "unknown": "Not Sampled"}   # title case, like every label (2026-11-22)
     tiles, posted, discharging, n_safe, n_graded = [], [], [], 0, 0
     posted_by_zone: dict[str, list] = {}
     cso_by_zone: dict[str, list] = {}
@@ -379,7 +380,7 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
             age = (now.date() - d.date()).days if d else None   # how old the city's latest result is, in words wherever the date shows (2026-11-06)
             sts.append({"name": _short(reg.name), "full_name": reg.name, "status": status, "status_text": status_text[status],
                         "source": source, "lat": reg.lat, "lon": reg.lon, "sampled": d.strftime("%Y-%m-%d") if d else "", "sampled_age_days": age,
-                        "sampled_text": f"sampled {days_ago_text(d.date(), now.date())}" if d else "no sample date",
+                        "sampled_text": title_case(f"sampled {days_ago_text(d.date(), now.date())}") if d else "No Sample Date",
                         "map_sampled": feed_date, "pending": None})
         z_posted = [x["name"] for x in sts if x["status"] == "posted"]
         z_cso = [x["name"] for x in sts if x["status"] == "discharge"]
@@ -390,14 +391,14 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
         if z_cso:
             cso_by_zone[zk] = z_cso
         status = "discharge" if z_cso else "posted" if z_posted else "safe" if z_safe else "unknown"
-        text = ("Sewage discharge" if status == "discharge" else f"{len(z_posted)} beach{'es' if len(z_posted) > 1 else ''} posted" if status == "posted"
-                else "No warning" if status == "safe" else "Not sampled")   # "All clear" until 2026-11-08: the tile reports the city's posting, not the water
+        text = ("Sewage Discharge" if status == "discharge" else f"{len(z_posted)} Beach{'es' if len(z_posted) > 1 else ''} Posted" if status == "posted"
+                else "No Warning" if status == "safe" else "Not Sampled")   # "All clear" until 2026-11-08: the tile reports the city's posting, not the water
         dates = [x["sampled"] for x in sts if x["sampled"]]
         n_pending = sum(1 for x in sts if x["pending"])   # counted, so one waiting station doesn't read as the whole zone
         published_age = f"sampled {days_ago_text(datetime.strptime(max(dates), '%Y-%m-%d').date(), now.date())}" if dates else "no sample date"
         sampled = (f"{n_pending} sample{'s' if n_pending > 1 else ''} unpublished" if n_pending
                    else published_age)
-        meta = (" · ".join(z_cso + z_posted) + f" · {sampled}") if (z_cso or z_posted) else f"{len(sts)} stations · {sampled}"
+        meta = title_case((" · ".join(z_cso + z_posted) + f" · {sampled}") if (z_cso or z_posted) else f"{len(sts)} stations · {sampled}")
         risk = (risks.get("zones") or {}).get(zk)
         tiles.append({"key": zk, "label": z.label, "status": status, "status_text": text, "risk": risk,
                       "level": level_of_percent(risk).key if risk is not None else None,   # the tile's number colour (shared/risk_levels.py)
@@ -466,7 +467,7 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
     newest_d = now.date() - timedelta(days=ages[0]) if ages else None
     unpublished = sum(s["pending"] is not None for tile in tiles for s in tile["stations"])
     if unpublished:
-        facts.append({"label": "City samples", "text": f"{unpublished} new {plural(unpublished, 'sample', 'samples')} not published yet"})
+        facts.append({"label": "City Samples", "text": f"{unpublished} new {plural(unpublished, 'sample', 'samples')} not published yet"})
     elif ages and n_graded:
         oldest_d = now.date() - timedelta(days=ages[-1])
         if len(ages) == 1:
@@ -483,7 +484,7 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
                 age_text = f"{ages[0]}–{ages[-1]} days ago"
             else:
                 age_text = f"between {days_ago_text(oldest_d, now.date())} and {days_ago_text(newest_d, now.date())}"
-        facts.append({"label": "City samples", "text": f"The city collected samples {age_text} ({date_text})."})
+        facts.append({"label": "City Samples", "text": f"The city collected samples {age_text} ({date_text})."})
     bw = re.search(r"Surfrider (\d{1,2})/(\d{1,2})", samples_fact or "")   # the volunteers' newest sample, by age too
     if bw:
         d = date(now.year, int(bw.group(1)), int(bw.group(2)))
@@ -491,7 +492,7 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
             d = d.replace(year=now.year - 1)
         # a fact, not a verdict (Chase, 2026-11-07, on relative staleness): when the city has sampled since, say so and leave both on view
         since = " · the city has a newer sample" if newest_d and d < newest_d else ""
-        facts.append({"label": "Surfrider samples", "text": f"{days_ago_text(d, now.date())} ({d:%b %-d}){since}"})
+        facts.append({"label": "Surfrider Samples", "text": f"{days_ago_text(d, now.date())} ({d:%b %-d}){since}"})
     return {"tone": tone, "headline": headline, "headline_html": headline_html, "lead": " ".join(lead), "risk_lead": risk_lead, "facts": facts, "zones": tiles, "feed_ok": bool(stations),
             "tiles": sorted(tiles, key=lambda t: TILE_GRID.index(t["key"])),   # the same tiles, in the grid's map order
             "posted": posted, "discharging": discharging, "n_safe": n_safe, "n_graded": n_graded,

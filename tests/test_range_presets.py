@@ -1,4 +1,4 @@
-"""One date range on every page (Chase, 2026-09-30): the presets read 3 mo → 12 mo → 3 yrs → Full record,
+"""One date range on every page (Chase, 2026-09-30): the presets read 3 mo → 12 mo → 3 yrs → Full Record,
 smallest on the left, nothing opens on the full record, and a preset always fills both date boxes.
 Postings counts by year, so its presets are years in the same order. Graphs and Samples share one
 site picker (_site_picker.html + site_picker.js) and link to each other over the same site and range."""
@@ -10,11 +10,11 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 T = lambda rel: (ROOT / rel).read_text()  # noqa: E731
-DAY_PRESETS = [("91", "Last 3 mo"), ("365", "Last 12 mo"), ("1096", "Last 3 yrs"), ("", "Full record")]
-YEAR_PRESETS = [("365", "1 year"), ("1096", "3 years"), ("1826", "5 years"), ("", "Full record")]   # pages whose record spans decades (Chase, 2026-10-01)
+DAY_PRESETS = [("91", "Last 3 Mo"), ("365", "Last 12 Mo"), ("1096", "Last 3 Yrs"), ("", "Full Record")]
+YEAR_PRESETS = [("365", "1 Year"), ("1096", "3 Years"), ("1826", "5 Years"), ("", "Full Record")]   # pages whose record spans decades (Chase, 2026-10-01)
 RANGE_PAGES = ("graphs", "samples", "comparison")
 YEAR_PAGES = ("site_analysis",)
-CALENDAR_PRESETS = [("1", "1 year"), ("3", "3 years"), ("5", "5 years"), ("", "Full record")]   # whole calendar years: Beach Postings, the Discharge Ledger (Chase, 2026-10-01)
+CALENDAR_PRESETS = [("1", "1 Year"), ("3", "3 Years"), ("5", "5 Years"), ("", "Full Record")]   # whole calendar years: Beach Postings, the Discharge Ledger (Chase, 2026-10-01)
 
 
 def presets(html, attr="data-days"):
@@ -26,7 +26,7 @@ def test_every_range_page_offers_the_same_four_presets_smallest_first():
         html = T(f"app/templates/{page}/page.html")
         assert presets(html) == DAY_PRESETS, page
         assert 'preset active" data-days=""' not in html and 'preset active" data-days' not in html, page   # nothing is lit before the dates are known
-    for page in YEAR_PAGES:   # the Site Report Card grades 2000 → today: 1 year / 3 / 5 / Full record, smallest first
+    for page in YEAR_PAGES:   # the Site Report Card grades 2000 → today: 1 Year / 3 / 5 / Full Record, smallest first
         html = T(f"app/templates/{page}/page.html")
         assert presets(html) == YEAR_PRESETS, page
         assert 'preset active" data-days' not in html, page
@@ -66,7 +66,7 @@ def test_graphs_and_samples_share_the_site_picker_and_link_to_each_other():
     assert ".site-head{" in kit and ".site-title .site-now b{font-size:24px;font-weight:900" in kit and ".zone-chip{" in kit and ".site-nav" not in kit and ".tile.active{" in kit and "a.preset.cross" in kit
     g, s = T("app/templates/graphs/page.html"), T("app/templates/samples/page.html")
     assert 'site_picker(site_groups, cross=("Samples →", "toSamples", "/samples"), first_site=first_site)' in g and '$("toSamples").href = "/samples?" + q' in g
-    assert 'site_picker(site_groups, all_label="All sites", cross=("Graph this site →", "v-graph", "/graphs"))' in s and '$("v-graph").href = graphHref()' in s
+    assert 'site_picker(site_groups, all_label="All Sites", cross=("Graph This Site →", "v-graph", "/graphs"))' in s and '$("v-graph").href = graphHref()' in s
     for page in (g, s):
         assert "asset('site_picker.js')" in page and "SitePicker.init({" in page and "SitePicker.filter(tileFits)" in page
         assert ".tile{" not in page and ".site-head{" not in page and 'class="subpage"' not in page   # styles live in the kit; the hero is one line
@@ -82,8 +82,8 @@ def test_pages_render_with_the_picker():
     with app.test_client() as c:
         g = c.get("/graphs").data.decode(); s = c.get("/samples").data.decode()
     for html in (g, s):
-        assert 'id="siteNow"' in html and html.count('class="tile"') >= 20 and 'data-days="91">Last 3 mo</button>' in html
-    assert 'data-key="" data-name="All sites"' in s and 'data-key="" data-name=' not in g
+        assert 'id="siteNow"' in html and html.count('class="tile"') >= 20 and 'data-days="91">Last 3 Mo</button>' in html
+    assert 'data-key="" data-name="All Sites"' in s and 'data-key="" data-name=' not in g
     assert g.count('data-first="1"') == 1 and 'data-name="Ocean Beach at Lincoln" data-city="1" data-bwtf="1" data-first="1"' in g and 'data-first' not in s   # a fresh Graphs visit opens on Lincoln: dual, city year-round
     assert 'id="toSamples" href="/samples"' in g and 'id="v-graph" href="/graphs"' in s
 

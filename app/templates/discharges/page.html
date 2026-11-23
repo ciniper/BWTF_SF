@@ -84,7 +84,7 @@
   <div class="tiles" id="tiles"></div>
 
   <div class="controls" id="waterBtns">
-    <button class="group-btn active" data-water="">All waters</button>
+    <button class="group-btn active" data-water="">All Waters</button>
     <span class="legend" id="metaLine"></span>
   </div>
 
@@ -93,10 +93,10 @@
     <input type="date" id="startDate" min="2011-03-01">
     <span style="color:#54576F">→</span>
     <input type="date" id="endDate" min="2011-03-01">
-    <button class="group-btn preset" data-years="1">1 year</button>
-    <button class="group-btn preset" data-years="3">3 years</button>
-    <button class="group-btn preset" data-years="5">5 years</button>
-    <button class="group-btn preset" data-years="">Full record</button>
+    <button class="group-btn preset" data-years="1">1 Year</button>
+    <button class="group-btn preset" data-years="3">3 Years</button>
+    <button class="group-btn preset" data-years="5">5 Years</button>
+    <button class="group-btn preset" data-years="">Full Record</button>
   </div>
 
   <div class="note" id="covNote"></div>
@@ -113,18 +113,18 @@
 
   <div class="board">
     <h2>Volume Discharged per Year <span style="font-weight:600;color:#54576F;font-size:12.5px">(million gallons — hatched years are missing months or Bay volumes)</span></h2>
-    <div id="years" class="loading">Loading the discharge record…</div>
+    <div id="years" class="loading">Loading the Discharge Record…</div>
   </div>
 
   <div class="board">
     <h2>By Receiving Water</h2>
-    <table><thead><tr><th>Receiving water</th><th class="num">discharges</th><th class="num">total volume</th><th class="num">share</th><th class="num">largest single event</th><th class="num">median duration</th></tr></thead>
+    <table><thead><tr><th>Receiving Water</th><th class="num">Discharges</th><th class="num">Total Volume</th><th class="num">Share</th><th class="num">Largest Single Event</th><th class="num">Median Duration</th></tr></thead>
     <tbody id="waters"></tbody></table>
   </div>
 
   <div class="board">
     <h2>All Outfalls <span style="font-weight:600;color:#54576F;font-size:12.5px">— click one for its year-by-year trend</span></h2>
-    <table><thead><tr><th>Outfall</th><th>Receiving water</th><th class="num">discharges</th><th class="num">total volume</th><th class="num">largest event</th></tr></thead>
+    <table><thead><tr><th>Outfall</th><th>Receiving Water</th><th class="num">Discharges</th><th class="num">Total Volume</th><th class="num">Largest Event</th></tr></thead>
     <tbody id="outfalls"></tbody></table>
   </div>
 
@@ -148,7 +148,7 @@
 
   <div class="board">
     <h2>Largest Single Discharges</h2>
-    <table><thead><tr><th>Date</th><th>Outfall</th><th>Receiving water</th><th class="num">volume</th><th class="num">duration</th></tr></thead>
+    <table><thead><tr><th>Date</th><th>Outfall</th><th>Receiving Water</th><th class="num">Volume</th><th class="num">Duration</th></tr></thead>
     <tbody id="biggest"></tbody></table>
     <p style="font-size:12px;color:#8a949b;margin:8px 0 0">Before 2018, the volume for a Pacific outfall is its total for the day. The table marks it “day total”.</p>
   </div>
@@ -157,9 +157,9 @@
     <h2>Raw Records <span style="font-weight:600;color:#54576F;font-size:12.5px">— the dataset itself, every column · click headers to sort</span></h2>
     <div class="controls" style="margin-bottom:10px">
       <div class="seg-toggle" id="rawSet">
-        <button class="seg-btn active" data-set="events" data-file="sf_csd_events.csv">Events, 2016 on</button>
-        <button class="seg-btn" data-set="westside" data-file="westside_daily_2011-03_2017-12.csv">Pacific daily, 2011–2017</button>
-        <button class="seg-btn" data-set="bayside" data-file="bayside_legacy_2011-03_2016-09.csv">Bay daily, 2011–2016</button>
+        <button class="seg-btn active" data-set="events" data-file="sf_csd_events.csv">Events, 2016 On</button>
+        <button class="seg-btn" data-set="westside" data-file="westside_daily_2011-03_2017-12.csv">Pacific Daily, 2011–2017</button>
+        <button class="seg-btn" data-set="bayside" data-file="bayside_legacy_2011-03_2016-09.csv">Bay Daily, 2011–2016</button>
       </div>
       <input type="search" id="rawSearch" placeholder="Filter (outfall, water, date, document…)">
       <span class="legend" id="rawMeta"></span>
@@ -189,7 +189,7 @@ function dateRows() { return EV.filter(inRange); }                     // date f
 function rows() { return dateRows().filter(e => !STATE.water || e.water === STATE.water); }
 
 const hasMG = list => list.some(e => e.mg != null);         // Bay group rows before Oct 2016 carry hours, no volume
-const VOL = (list, mg) => hasMG(list) ? MGshort(mg) : "not reported";
+const VOL = (list, mg) => hasMG(list) ? MGshort(mg) : "Not Reported";
 
 function yearCards(list) {
   const ys = {};
@@ -210,10 +210,10 @@ function render() {
   const biggest = R.reduce((a,e) => (e.mg||0) > (a.mg||0) ? e : a, {});
   const wettest = Object.entries(years).sort((a,b)=>b[1].mg-a[1].mg)[0];
   document.getElementById("tiles").innerHTML = `
-    <div class="tile"><b>${MG(totMG)}</b><span>total reported volume${STATE.water?" — "+STATE.water:""}${groupRows?" (no Bay volumes before Oct 2016)":""}</span></div>
-    <div class="tile"><b>${R.length.toLocaleString()}</b><span>discharges logged${R.some(e => e.kind !== "E")?" (daily totals before 2016–2018)":""}</span></div>
-    <div class="tile"><b>${MGshort(biggest.mg)}</b><span>largest single discharge (${biggest.date||"—"}${biggest.kind === "D" ? ", a day's total" : ""})</span></div>
-    <div class="tile"><b>${wettest?wettest[0]:"—"}</b><span>biggest year in range (${wettest?MGshort(wettest[1].mg):"—"})</span></div>`;
+    <div class="tile"><b>${MG(totMG)}</b><span>Total Reported Volume${STATE.water?" — "+STATE.water:""}${groupRows?" (No Bay Volumes Before Oct 2016)":""}</span></div>
+    <div class="tile"><b>${R.length.toLocaleString()}</b><span>Discharges Logged${R.some(e => e.kind !== "E")?" (Daily Totals Before 2016–2018)":""}</span></div>
+    <div class="tile"><b>${MGshort(biggest.mg)}</b><span>Largest Single Discharge (${biggest.date||"—"}${biggest.kind === "D" ? ", a Day's Total" : ""})</span></div>
+    <div class="tile"><b>${wettest?wettest[0]:"—"}</b><span>Biggest Year in Range (${wettest?MGshort(wettest[1].mg):"—"})</span></div>`;
 
   // yearly bars
   const maxMG = Math.max(...Object.values(years).map(y=>y.mg), 1);
@@ -223,7 +223,7 @@ function render() {
     const partial = partialYear(y, STATE.water);
     return `<div class="yrrow"><span class="yl">${y}</span>
       <span class="track"><span class="vol${partial?" partial":""}" style="width:${Math.max(1,100*years[y].mg/maxMG)}%"></span></span>
-      <span class="val">${years[y].g === years[y].n ? "no volumes" : MGshort(years[y].mg)} · ${years[y].n}${years[y].g && years[y].g < years[y].n ? (years[y].be ? " · Bay volumes partial" : " · Bay volumes not reported") : ""}</span></div>`;
+      <span class="val">${years[y].g === years[y].n ? "No Volumes" : MGshort(years[y].mg)} · ${years[y].n}${years[y].g && years[y].g < years[y].n ? (years[y].be ? " · Bay Volumes Partial" : " · Bay Volumes Not Reported") : ""}</span></div>`;
   }).join("") || '<div class="loading">There are no discharges in the selected range.</div>';
 
   // by receiving water — date-filtered, all waters shown, active filter highlighted
@@ -332,11 +332,11 @@ function buildPicker() {
     o.mg += e.mg||0;
   }
   const panel = document.getElementById("pickerPanel");
-  let html = '<div class="grp">Whole receiving waters</div>';
+  let html = '<div class="grp">Whole Receiving Waters</div>';
   for (const w of Object.keys(byWater))
     html += `<label><input type="checkbox" value="W:${w}"> ${w}</label>`;
   for (const [w, outs] of Object.entries(byWater)) {
-    html += `<div class="grp">${w} outfalls</div>`;
+    html += `<div class="grp">${w} Outfalls</div>`;
     for (const [oid, o] of Object.entries(outs).sort((a,b)=>b[1].mg-a[1].mg))
       html += `<label><input type="checkbox" value="O:${oid}"> ${oid} — ${o.name}</label>`;
   }
@@ -369,7 +369,7 @@ function buildPicker() {
 function updateChart() {
   if (!document.getElementById("chart") || !window.Chart) return;
   document.getElementById("pickerSummary").textContent =
-    SELECTED.size ? `${SELECTED.size} series selected` : "Choose series…";
+    SELECTED.size ? `${SELECTED.size} Series Selected` : "Choose Series…";
   const D = dateRows();
   const series = [...SELECTED].map(key => {
     const isW = key.startsWith("W:");

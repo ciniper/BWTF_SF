@@ -207,40 +207,40 @@ class ComparisonRoutes:
 
         def pill(exceeds, raw):
             if raw is None:
-                return '<span class="pill pill--na">no data</span>'
-            cls, label = ("pill--bad", "exceeds") if exceeds else ("pill--ok", "within")
+                return '<span class="pill pill--na">No Data</span>'
+            cls, label = ("pill--bad", "Exceeds") if exceeds else ("pill--ok", "Within")
             return f'<span class="pill {cls}">{raw}<small>{label}</small></span>'
 
         def sfpuc_pill(status):
             mapping = {
                 "cso": ("pill--bad", "CSO"),
-                "posted": ("pill--warn", "posted"),
-                "safe": ("pill--ok", "safe"),
-                "not_sampled": ("pill--na", "not sampled"),
-                "not_routinely_sampled": ("pill--na", "not routine"),
+                "posted": ("pill--warn", "Posted"),
+                "safe": ("pill--ok", "Safe"),
+                "not_sampled": ("pill--na", "Not Sampled"),
+                "not_routinely_sampled": ("pill--na", "Not Routine"),
             }
             cls, label = mapping.get(status, ("pill--na", "—"))
             return f'<span class="pill {cls}">{label}</span>'
 
         def agreement_cell(r):
             if r.get("shared_missing"):
-                return '<span class="agree agree--na">No shared result date<small>Within the last year.</small></span>'
+                return '<span class="agree agree--na">No Shared Result Date<small>Within the last year.</small></span>'
             if not r["both_have"]:
                 if r["city_value"] is not None and r["bwtf_value"] is None:
                     return '<span class="agree agree--na">SFPUC only</span>'
-                return '<span class="agree agree--na">— incomplete</span>'
+                return '<span class="agree agree--na">— Incomplete</span>'
             if not r.get("same_day"):   # results from different days answer different questions: no verdict (2026-11-06)
                 gap = r["day_gap"]
-                apart = "sampled on different days" if gap is None else f"sampled {gap} day{'' if gap == 1 else 's'} apart"
-                return f'<span class="agree agree--na">Not comparable<small>{apart}</small></span>'
-            sub = ["same day"]
+                apart = "Sampled on Different Days" if gap is None else f"Sampled {gap} Day{'' if gap == 1 else 's'} Apart"
+                return f'<span class="agree agree--na">Not Comparable<small>{apart}</small></span>'
+            sub = ["Same Day"]
             if r["value_delta"] is not None:
                 sub.append(f"Δ {r['value_delta']:g}")
             subline = f"<small>{' · '.join(sub)}</small>"
             if r["agree"]:
-                txt = "Both exceed" if r["bwtf_exceeds"] else "Both within standard"
+                txt = "Both Exceed" if r["bwtf_exceeds"] else "Both Within Standard"
                 return f'<span class="agree agree--yes"><svg class="ic"><use href="#i-circle-check"/></svg> {txt}{subline}</span>'
-            return f'<span class="agree agree--no"><svg class="ic"><use href="#i-triangle-alert"/></svg> Sources differ{subline}</span>'
+            return f'<span class="agree agree--no"><svg class="ic"><use href="#i-triangle-alert"/></svg> Sources Differ{subline}</span>'
 
         rows_html = ""
         view = data.get("view", "latest")
@@ -250,7 +250,7 @@ class ComparisonRoutes:
             if False:
                 bwtf_html = '<span class="pill pill--na">BWTF doesn\'t sample here</span>'
             elif r['bwtf_raw'] is None:
-                bwtf_html = '<span class="pill pill--na">no data</span>' if bwtf_measures else '<span class="pill pill--na">not measured</span>'
+                bwtf_html = '<span class="pill pill--na">No Data</span>' if bwtf_measures else '<span class="pill pill--na">Not Measured</span>'
             else:
                 bwtf_html = (f"{pill(r['bwtf_exceeds'], r['bwtf_raw'])}"
                              f"<small class=\"date\">{r['bwtf_date'] or '—'}{(' · ' + r['bwtf_time']) if r['bwtf_time'] else ''}</small>")
@@ -261,10 +261,10 @@ class ComparisonRoutes:
                 bwtf_html = '<span class="pill pill--na">—</span>'
             rows_html += f"""
               <tr class="row-click" data-site="{r.get('site_key') or r['site_name']}" data-name="{r['site_name']}" tabindex="0" role="button" aria-label="Show history for {r['site_name']}">
-                <td class="site"><strong>{r['site_name']}</strong><span class="go"><svg class="ic"><use href="#i-chart-line"/></svg> view history →</span></td>
+                <td class="site"><strong>{r['site_name']}</strong><span class="go"><svg class="ic"><use href="#i-chart-line"/></svg> View History →</span></td>
                 <td>{bwtf_html}</td>
                 <td>{pill(r['city_exceeds'], r['city_raw'])}{provenance}<small class="date">{r['city_date'] or '—'}{(' · ' + r['city_source']) if r['city_source'] else ''}{(f" · {r['city_n']} samples that day, graded on the worse") if r.get('city_n', 0) > 1 else ''}</small></td>
-                <td>{'<small class="date">Not shown historically</small>' if data.get('historical') else sfpuc_pill(r['sfpuc_status'])}</td>
+                <td>{'<small class="date">Not Shown Historically</small>' if data.get('historical') else sfpuc_pill(r['sfpuc_status'])}</td>
                 <td>{agreement_cell(r)}</td>
               </tr>"""
 
@@ -274,7 +274,7 @@ class ComparisonRoutes:
             "pairs": str(sd["pairs"]) if sd else "—",
             "agree": str(sd["agree"]) if sd else "—",
             "differ": str(sd["differ"]) if sd else "—",
-            "label": f"Same-day samples, last {round(sd['window_days'] / 30.44)} months" if sd else "Same-day samples",
+            "label": f"Same-Day Samples, Last {round(sd['window_days'] / 30.44)} Months" if sd else "Same-Day Samples",
             "sites": sd["sites"] if sd else 0,
             "latest": sd["latest"] if sd else None,
         }

@@ -43,10 +43,10 @@
       </form>
     {% elif state == 'done' %}
       <p>Done. <span class="email">{{ email }}</span> will not get more beach alerts.</p>
-      <p class="mute">Do you want the alerts again? <a class="link" href="/signup">Sign up again</a> at any time.</p>
+      <p class="mute">Do you want the alerts again? <a class="link" href="/signup">Sign Up again</a> at any time.</p>
     {% elif state == 'already' %}
       <p><span class="email">{{ email }}</span> is already unsubscribed.</p>
-      <p class="mute">Do you want the alerts again? <a class="link" href="/signup">Sign up again</a>.</p>
+      <p class="mute">Do you want the alerts again? <a class="link" href="/signup">Sign Up again</a>.</p>
     {% elif state == 'missing' %}
       <p>This link does not have its code.</p>
       <p class="mute">Open the Unsubscribe link in one of your alert emails. Or, <a class="link" href="/signup">change your signup</a>.</p>
@@ -59,7 +59,7 @@
     {% endif %}
   </div>
 </div>
-<p class="mute" style="text-align:center;margin-top:16px"><a class="link" href="/">SF Beach Water Quality dashboard</a></p>
+<p class="mute" style="text-align:center;margin-top:16px"><a class="link" href="/">SF Beach Water Quality Dashboard</a></p>
 </div>{{ footer() }}
 {{ tabbar(insights=false) }}   {# the address carries the subscriber's private token #}
 </body></html>

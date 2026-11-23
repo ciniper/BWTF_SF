@@ -285,7 +285,7 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
         <button id="viewBasins" onclick="setView('basins')"><svg class="ic"><use href="#i-building-2"/></svg> Basins</button>
     </span>
     <span class="view-toggle" id="liveToggle" style="display:none" title="Live corrections use SFPUC discharge flags and sample results to change the model discharge risk and the beach risk that continues. They apply only where a rule applies. Off shows the model without these corrections. Neither view is a lab measurement.">
-        <button id="liveBtn" class="active" onclick="toggleLiveCorrections()"><svg class="ic"><use href="#i-satellite-dish"/></svg> Live corrections: on</button>
+        <button id="liveBtn" class="active" onclick="toggleLiveCorrections()"><svg class="ic"><use href="#i-satellite-dish"/></svg> Live Corrections: On</button>
     </span>
     <span class="historical-label" id="histLabel"></span>
 </div>
@@ -299,8 +299,8 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 <div id="dayView">
 <div class="mode-bar day-controls" id="dayControls">
     <span class="view-toggle" id="historyToggle" style="display:none" aria-label="Day by day view">
-        <button id="historyCompare" class="active" onclick="setHistoryView('check')">Predictions vs observations</button>
-        <button id="historyActual" onclick="setHistoryView('actual')">What happened · observed records</button>
+        <button id="historyCompare" class="active" onclick="setHistoryView('check')">Predictions vs Observations</button>
+        <button id="historyActual" onclick="setHistoryView('actual')">What Happened · Observed Records</button>
     </span>
 </div>
 <div class="risk-banner risk-{{ RISK_LEVELS.levels[0].key }}" id="riskBanner"><svg class="ic"><use href="#i-hourglass"/></svg> Loading…</div>

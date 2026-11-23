@@ -71,7 +71,7 @@ def test_both_pages_include_the_shared_script_and_the_route_exists():
     smp = (ROOT / "app/templates/samples/page.html").read_text()
     assert "{ bwtf: r.site_key, name: r.site, date: r.date }" in smp and "{ station: r.site_key, name: r.site, date: r.date }" in smp   # a Samples row opens that day (Chase, 2026-09-30)
     for tpl in ("app/templates/graphs/page.html", "app/templates/samples/page.html", "app/templates/comparison/page.html"):
-        assert 'data-days="91">Last 3 mo<' in (ROOT / tpl).read_text(), tpl            # the three-month preset on every graph window
+        assert 'data-days="91">Last 3 Mo<' in (ROOT / tpl).read_text(), tpl            # the three-month preset on every graph window
     forecast_tpl = (ROOT / "app/templates/forecast/page.html").read_text()
     assert "item.dataset.sampleStation = b.source" in forecast_tpl and 'data-sample-date="${esc(s.date)}"' in forecast_tpl
     beaches = forecast_tpl.split("function renderBeaches")[1].split("// ─── WHAT HAPPENED")[0]

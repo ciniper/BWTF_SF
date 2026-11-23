@@ -95,7 +95,7 @@
   {% endcall %}
 
   <div class="controls" id="groupBtns">
-    <button class="group-btn active" data-zone="">All sites</button>
+    <button class="group-btn active" data-zone="">All Sites</button>
     {% for z in zones %}<button class="group-btn" data-zone="{{ z.key }}">{{ z.label }}</button>{% endfor %}
     <span class="legend" id="metaLine"></span>
   </div>
@@ -103,8 +103,8 @@
   <div class="controls">
     <span class="ctl-label">Sampling:</span>
     <div class="seg-toggle" id="modeToggle">
-      <button class="seg-btn active" data-mode="weekly" title="The first sample of each site-week. This is the scheduled frequency of the city. It does not include the follow-up resamples that the city takes after contamination events.">Weekly regime</button>
-      <button class="seg-btn" data-mode="all" title="All published samples. This includes the resamples after a result is more than the limit.">All samples</button>
+      <button class="seg-btn active" data-mode="weekly" title="The first sample of each site-week. This is the scheduled frequency of the city. It does not include the follow-up resamples that the city takes after contamination events.">Weekly Regime</button>
+      <button class="seg-btn" data-mode="all" title="All published samples. This includes the resamples after a result is more than the limit.">All Samples</button>
     </div>
     <span class="ctl-label">Standard:</span>
     <div class="seg-toggle" id="stdToggle">
@@ -114,10 +114,10 @@
     <input type="date" id="startDate" min="{{ floor }}">
     <span style="color:#54576F">→</span>
     <input type="date" id="endDate" min="{{ floor }}">
-    <button class="group-btn preset" data-days="365">1 year</button>
-    <button class="group-btn preset" data-days="1096">3 years</button>
-    <button class="group-btn preset" data-days="1826">5 years</button>
-    <button class="group-btn preset" data-days="">Full record</button>
+    <button class="group-btn preset" data-days="365">1 Year</button>
+    <button class="group-btn preset" data-days="1096">3 Years</button>
+    <button class="group-btn preset" data-days="1826">5 Years</button>
+    <button class="group-btn preset" data-days="">Full Record</button>
   </div>
 
   <div class="map-board">
@@ -126,15 +126,15 @@
   </div>
 
   <div class="board">
-    <div class="loading" id="loading">Loading the city lab data…</div>
+    <div class="loading" id="loading">Loading the City Lab Data…</div>
     <table id="tbl" style="display:none">
       <thead><tr>
         <th>Site</th>
-        <th class="barcell" id="mainCol">% bad — selected range</th>
-        <th class="num sec cautioncol">caution (≥{{ caution }})</th>
-        <th class="num sec">wet season</th>
-        <th class="num sec">dry season</th>
-        <th class="num sec">samples</th>
+        <th class="barcell" id="mainCol">% Bad — Selected Range</th>
+        <th class="num sec cautioncol">Caution (≥{{ caution }})</th>
+        <th class="num sec">Wet Season</th>
+        <th class="num sec">Dry Season</th>
+        <th class="num sec">Samples</th>
       </tr></thead>
       <tbody id="rows"></tbody>
     </table>
@@ -147,15 +147,15 @@
     The wet season is November–April. City results start at {{ floor }}. Until DataSF starts on {{ datasf_from }}, the results come from the SFPUC lab database (STARDB export, Jan 2000 – Jul 2020). After that date, they come from DataSF. The city started to measure Enterococcus and E. coli on {{ history.entero_from }} at the bay stations and on {{ history.entero_from_ocean }} at the ocean beaches. Before these dates, it measured only total coliform. Before April 2021, the city measured E. coli. Now it measures fecal coliform. Thus, the fecal-coliform and ratio views have no data for the earlier years.
     <a href="/analysis/testing">How testing changed</a> shows all the changes in what the city measured, how it measured, and how frequently.
     <br><br>
-    <b>Weekly regime</b> uses only the first sample of each site-week (the scheduled Monday
+    <b>Weekly Regime</b> uses only the first sample of each site-week (the scheduled Monday
     frequency of the city). This gives the true weekly rate. It is also more similar to the routine sampling of Surfrider
-    (each two weeks, with more samples during storms). <b>All samples</b> adds the follow-up resamples that the city takes on later days. These resamples occur
+    (each two weeks, with more samples during storms). <b>All Samples</b> adds the follow-up resamples that the city takes on later days. These resamples occur
     after contamination events. They can make the rate of a site approximately two times higher (Islais Creek: approximately 16% weekly, approximately 30%
     all samples, for the full record). This view tells you how frequently tests failed. It does not tell you how frequently
     weeks were bad. In the two views, the samples from a site on one calendar day count one time, at the worst value for that day.
     The city dataset has the date but not the time. Thus, we cannot tell the difference between a routine sample and a storm-day resample
     on the same date. We grade the day on its worst sample.
-    Sites with the mark <span class="chip sporadic">sporadic</span> get samples only sometimes, or
+    Sites with the mark <span class="chip sporadic">Sporadic</span> get samples only sometimes, or
     only after an event (frequently during storms). Thus, you cannot compare their rates with the
     sites that get samples each week. The list shows them separately at the bottom, with no rank.
     Also: <b>the city does not sample a station at India Basin</b>. This is the largest
@@ -167,13 +167,13 @@
     These are the California limits for recreational water (AB 411 / Ocean Plan), in MPN per 100 mL. By default, this page grades on
     <b>{{ graded_on_name }}</b>. BWTF measures this indicator. The newer federal criteria also use it
     for marine water. A result of <b>&ge;{{ caution }}</b> is in the caution range, below the limit. Use the <b>Standard</b> toggle
-    to grade on fecal coliform, total coliform, or <b>All (any over)</b>. All (any over) is the state posting rule. With this rule, a
+    to grade on fecal coliform, total coliform, or <b>All (Any Over)</b>. All (any over) is the state posting rule. With this rule, a
     sample is more than the standard when one or more of the three indicators is at or more than its limit. The city posts beaches for each of the three.
     <table class="std">
       <thead><tr>
         <th>Indicator</th>
-        <th class="num">Single-sample max</th>
-        <th class="num">{{ gm_window_days }}-day geometric mean</th>
+        <th class="num">Single-Sample Max</th>
+        <th class="num">{{ gm_window_days }}-Day Geometric Mean</th>
         <th>Notes</th>
       </tr></thead>
       <tbody>
@@ -197,7 +197,7 @@
     A geometric mean must have {{ gm_min_samples }} or more samples in {{ gm_window_days }} days. The weekly city frequency usually does not give this number of samples.
     Thus, each "bad" on this page is a single-sample exceedance.
     The alerts page and the forecast sample labels flag a sample when <b>one or more</b> indicators are more than their single-sample
-    max (this includes the ratio rule). This is the same as the <b>All (any over)</b> setting on this page. With the default Enterococcus
+    max (this includes the ratio rule). This is the same as the <b>All (Any Over)</b> setting on this page. With the default Enterococcus
     setting, a day with only a coliform exceedance is a clean day on this page.
     All numbers in this panel come from <code>shared/standards.py</code>. This file is the only source for these limits.
   </div>
@@ -266,14 +266,14 @@ function render() {
     const tr = document.createElement("tr");
     tr.className = "site" + (s.routine ? "" : " sporadic");
     tr.innerHTML = `
-      <td class="name"><span class="nm">${s.name}</span>${zoneChip(s)}${s.routine ? "" : '<span class="chip sporadic">sporadic</span>'}</td>
+      <td class="name"><span class="nm">${s.name}</span>${zoneChip(s)}${s.routine ? "" : '<span class="chip sporadic">Sporadic</span>'}</td>
       <td class="barcell">${barCell(s.exceed_pct, !s.routine)}<span class="more" aria-hidden="true">›</span></td>
       <td class="num sec cautioncol">${pctTxt(s.caution_pct)}</td>
       <td class="num sec">${pctTxt(s.wet.pct)}</td>
       <td class="num sec">${pctTxt(s.dry.pct)}</td>
       <td class="num sec">${s.samples}</td>`;
     // phones hide those four columns; the same numbers lead the row's detail there
-    const secStats = `<div class="sec-stats">${DATA.indicator === "ENTERO" ? `<div><span>Caution</span><b>${pctTxt(s.caution_pct)}</b></div>` : ""}<div><span>Wet season</span><b>${pctTxt(s.wet.pct)}</b></div><div><span>Dry season</span><b>${pctTxt(s.dry.pct)}</b></div><div><span>Samples</span><b>${s.samples}</b></div></div>`;
+    const secStats = `<div class="sec-stats">${DATA.indicator === "ENTERO" ? `<div><span>Caution</span><b>${pctTxt(s.caution_pct)}</b></div>` : ""}<div><span>Wet Season</span><b>${pctTxt(s.wet.pct)}</b></div><div><span>Dry Season</span><b>${pctTxt(s.dry.pct)}</b></div><div><span>Samples</span><b>${s.samples}</b></div></div>`;
     const detail = document.createElement("tr");
     detail.className = "detail";
     detail.style.display = "none";
@@ -283,7 +283,7 @@ function render() {
       <p class="detail-meta">${s.name} — ${s.first} → ${s.last}${s.median === null ? "" :
         ` · median ${s.median} MPN · worst reading ${Math.round(s.max).toLocaleString()} MPN`}</p>
       <div class="years">${s.yearly.map(y =>
-        `<div class="yr"><b>${pctTxt(y.pct)}</b><span>${y.year} · ${y.n} samples</span></div>`).join("")}
+        `<div class="yr"><b>${pctTxt(y.pct)}</b><span>${y.year} · ${y.n} Sample${y.n === 1 ? "" : "s"}</span></div>`).join("")}
       </div></td>`;
     tr.addEventListener("click", () => {
       const open = detail.style.display === "none";
@@ -312,7 +312,7 @@ async function load() {
   document.getElementById("tbl").style.display = "";
   const rangeTxt = (DATA.start || DATA.dataset_floor) + " → " + (DATA.end || DATA.newest_sample);
   document.getElementById("mainCol").textContent =
-    "% bad — " + (STATE.mode === "weekly" ? "weekly regime" : "all samples") + " · " + DATA.indicator_label;
+    "% Bad — " + (STATE.mode === "weekly" ? "Weekly Regime" : "All Samples") + " · " + DATA.indicator_label;
   document.getElementById("badDef").textContent = DATA.bad_text;
   document.getElementById("metaLine").textContent =
     `${DATA.total_samples.toLocaleString()} samples · ${rangeTxt}` +

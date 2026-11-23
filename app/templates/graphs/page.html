@@ -30,10 +30,10 @@
   {{ site_picker(site_groups, cross=("Samples →", "toSamples", "/samples"), first_site=first_site) }}
   <div class="controls">
     <span class="ctl-label">Bacteria</span>
-    <select id="analyte" aria-label="Bacteria type">
+    <select id="analyte" aria-label="Bacteria Type">
       {% for a in analytes %}<option value="{{ a.code }}"{% if a.code == 'ENTERO' %} selected{% endif %}>{{ a.label }}</option>{% endfor %}
-      <option value="ALL">All indicators</option>
-      <option value="PCT">All % threshold</option>
+      <option value="ALL">All Indicators</option>
+      <option value="PCT">All % Threshold</option>
     </select>
     <span class="ctl-label">Source</span>
     <div class="seg-toggle" id="src">
@@ -51,7 +51,7 @@
   <div class="controls">
     <span class="ctl-label">Range</span>
     <input type="date" id="start" min="{{ dataset_floor }}" aria-label="Start date"> <span style="color:#54576F">→</span> <input type="date" id="end" aria-label="End date">
-    <button class="preset" data-days="91">Last 3 mo</button><button class="preset" data-days="365">Last 12 mo</button><button class="preset" data-days="1096">Last 3 yrs</button><button class="preset" data-days="">Full record</button>
+    <button class="preset" data-days="91">Last 3 Mo</button><button class="preset" data-days="365">Last 12 Mo</button><button class="preset" data-days="1096">Last 3 Yrs</button><button class="preset" data-days="">Full Record</button>
   </div>
     <h2 id="title" class="view-title">Loading…</h2>
     <p class="sub" id="sub"></p>

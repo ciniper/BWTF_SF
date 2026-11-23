@@ -63,6 +63,7 @@ import features.postings.page as postings_page
 import features.alerts.costs as costs_page
 from features.alerts.page import AlertsRoutes
 from features.comparison.page import ComparisonRoutes
+from shared.text import title_case
 from shared.datasf import DATASET_PAGE_URL
 from shared.basemap import basemap
 from shared import lineup, risk_levels
@@ -301,6 +302,7 @@ def create_app():
     app.jinja_env.globals["NAV"] = nav_model()   # app/landing.py: the four sections of the shared top bar (_frame.html)
     app.jinja_env.globals["canonical_path"] = canonical_path   # /today and /index.html light the home page's tabs
     app.jinja_env.globals["asset"] = asset                     # app/assets.py: /static links stamped with their contents
+    app.jinja_env.filters["title_case"] = title_case          # shared/text.py: labels, statuses and map text in title case
     app.after_request(cache_stamped_static)                    # …and a year-long cache only for a current stamp
     # Signs the session cookie that remembers an unlocked alerts gate. Without
     # FLASK_SECRET_KEY set, a random key is generated per boot — everything

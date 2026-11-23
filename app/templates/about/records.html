@@ -65,12 +65,12 @@
     <div class="rec-head"><span class="ictile"><svg class="ic"><use href="#i-receipt"/></svg></span><h2>Discharge Ledger</h2></div>
     <p class="rec-sub">All combined-sewer discharges that SFPUC reported to state regulators. <a href="/discharges">Open the ledger →</a></p>
     <div class="facts">
-      <div class="fact"><span>Published by</span><b>SFPUC, sent to the SF Bay Regional Water Board</b></div>
-      <div class="fact"><span>Where</span><b>CIWQS (state water-quality database)</b></div>
-      <div class="fact"><span>Format</span><b>Monthly PDF reports</b></div>
+      <div class="fact"><span>Published By</span><b>SFPUC, sent to the SF Bay Regional Water Board</b></div>
+      <div class="fact"><span>Where</span><b>CIWQS (State Water-Quality Database)</b></div>
+      <div class="fact"><span>Format</span><b>Monthly PDF Reports</b></div>
       <div class="fact"><span>Covers</span><b>Mar 2011 → {{ d.through or "today" }}<br><span class="fine">single events from Oct 2016 (Bayside) and Jan 2018 (Westside). Daily totals before these dates.</span></b></div>
-      {% if d.refreshed_at %}<div class="fact"><span>Last refreshed</span><b>{{ d.refreshed_at }}</b></div>{% endif %}
-      {% if d.next_due %}<div class="fact{% if d.overdue %} due{% endif %}"><span>{% if d.overdue %}Refresh is late since{% else %}Next refresh due{% endif %}</span><b>{{ d.next_due }}</b></div>{% endif %}
+      {% if d.refreshed_at %}<div class="fact"><span>Last Refreshed</span><b>{{ d.refreshed_at }}</b></div>{% endif %}
+      {% if d.next_due %}<div class="fact{% if d.overdue %} due{% endif %}"><span>{% if d.overdue %}Refresh Is Late Since{% else %}Next Refresh Due{% endif %}</span><b>{{ d.next_due }}</b></div>{% endif %}
     </div>
 
     <h3>By Hand</h3>
@@ -90,7 +90,7 @@
       <i>Oceanside Basin CSD Summary</i> (its name is <i>Westside CSD Summary</i> from May 2026). Before 2018, the Westside
       table is the <i>Wet Weather Discharge Summary</i> in the monthly report. For 2013–2017, it is a scanned page. Before Oct 2016,
       the Bayside table is the <i>Discharge Summary</i> in the monthly <i>Wet Weather Report</i>. Sometimes the name of this report is <i>WW Report</i>.</li>
-      <li><b>Copy one row for each event:</b> date, outfall, start time, duration and volume in million gallons. A second
+      <li><b>Copy One Row for Each Event:</b> date, outfall, start time, duration and volume in million gallons. A second
       discharge on the same day is a separate row. If the volume is <code>&lt;0.01</code>, record it as “less than”.</li>
       <li><b>Use the daily rows, not the TOTAL row.</b> Sometimes the SFPUC spreadsheet template shows an incorrect monthly
       total from an earlier month.</li>
@@ -130,27 +130,27 @@ python aggregate.py                   # 5. clean, check totals, build the CSVs</
     <div class="rec-head"><span class="ictile"><svg class="ic"><use href="#i-triangle-alert"/></svg></span><h2>Beach Postings</h2></div>
     <p class="rec-sub">All the advisories that San Francisco sent to the State: when the city posted each beach, for how long, and why. <a href="/postings">Open Beach Postings →</a></p>
     <div class="facts">
-      <div class="fact"><span>Published by</span><b>State Water Resources Control Board (BeachWatch)</b></div>
-      <div class="fact"><span>Filed by</span><b>San Francisco, for each SFPUC station</b></div>
-      <div class="fact"><span>Format</span><b>One statewide CSV (~30 MB)</b></div>
+      <div class="fact"><span>Published By</span><b>State Water Resources Control Board (BeachWatch)</b></div>
+      <div class="fact"><span>Filed By</span><b>San Francisco, for Each SFPUC Station</b></div>
+      <div class="fact"><span>Format</span><b>One Statewide CSV (~30 MB)</b></div>
       <div class="fact"><span>Covers</span><b>{{ (p.first or '1999')[:4] }} → {{ p.through or "today" }}<br><span class="fine">SF sends the data some months late</span></b></div>
-      {% if p.refreshed_at %}<div class="fact"><span>Last refreshed</span><b>{{ p.refreshed_at }}</b></div>{% endif %}
-      {% if p.next_due %}<div class="fact{% if p.overdue %} due{% endif %}"><span>{% if p.overdue %}Refresh is late since{% else %}Next refresh due{% endif %}</span><b>{{ p.next_due }}</b></div>{% endif %}
+      {% if p.refreshed_at %}<div class="fact"><span>Last Refreshed</span><b>{{ p.refreshed_at }}</b></div>{% endif %}
+      {% if p.next_due %}<div class="fact{% if p.overdue %} due{% endif %}"><span>{% if p.overdue %}Refresh Is Late Since{% else %}Next Refresh Due{% endif %}</span><b>{{ p.next_due }}</b></div>{% endif %}
     </div>
 
     <h3>By Hand</h3>
     <ol class="steps">
-      <li><b>Open the dataset on data.ca.gov:</b>
+      <li><b>Open the Dataset on data.ca.gov:</b>
         <a href="https://data.ca.gov/dataset/beach-water-quality-postings-and-closures" target="_blank" rel="noopener">Beach Water Quality Postings and Closures</a>.</li>
       <li><b>Download the resource</b> <i>Beach Posting and Closures – Advisories</i>. It is one CSV for the full state.</li>
-      <li><b>Keep the San Francisco rows:</b> <code>County</code> = San Francisco and <code>CountyCode</code> = SF.
+      <li><b>Keep the San Francisco Rows:</b> <code>County</code> = San Francisco and <code>CountyCode</code> = SF.
       Station names, for example <code>OCEAN#15_SL</code>, are the same IDs that the SFPUC beach map uses.</li>
       <li><b>Each row is one sign at one station:</b> it goes up on <code>DateofAdvisory</code> and comes down on
       <code>DateOpened</code>. Count the two days. <code>AdvisoryType</code> is Posting, Rain or Closure.
       <code>AdvisoryCause</code> and <code>Source</code> give the reason.</li>
-      <li><b>Sort the cause:</b> sewage, when the cause is Combined Sewer Overflow or the source is Combined Sewer
+      <li><b>Sort the Cause:</b> sewage, when the cause is Combined Sewer Overflow or the source is Combined Sewer
       Discharge. Rain, for the 72-hour rain rule. All other causes are "other" (usually dry-weather bacteria).</li>
-      <li><b>Look for bad rows:</b> dates that are not possible (one row gives the year 1014), and advisories that stay open for one year or
+      <li><b>Look for Bad Rows:</b> dates that are not possible (one row gives the year 1014), and advisories that stay open for one year or
       more. Keep these advisories, but do not count them as posted days.</li>
     </ol>
 
@@ -174,10 +174,10 @@ python tests/test_beachwatch.py</code></pre>
     <div class="rec-head"><span class="ictile"><svg class="ic"><use href="#i-satellite-dish"/></svg></span><h2>Online Postings Timeline</h2></div>
     <p class="rec-sub">We do not request this record. We record it ourselves when we monitor what SFPUC shows the public. <a href="/cso-history">Open the timeline →</a></p>
     <div class="facts">
-      <div class="fact"><span>Monitors</span><b>The SFPUC beach map feed</b></div>
-      <div class="fact"><span>How often</span><b>Every minute</b></div>
-      <div class="fact"><span>Stored in</span><b>Supabase (our database)</b></div>
-      <div class="fact"><span>Covers</span><b>Aug 16 2026 → now</b></div>
+      <div class="fact"><span>Monitors</span><b>The SFPUC Beach Map Feed</b></div>
+      <div class="fact"><span>How Often</span><b>Every Minute</b></div>
+      <div class="fact"><span>Stored In</span><b>Supabase (Our Database)</b></div>
+      <div class="fact"><span>Covers</span><b>Aug 16 2026 → Now</b></div>
     </div>
 
     <h3>How We Record It</h3>
@@ -188,7 +188,7 @@ python tests/test_beachwatch.py</code></pre>
       <li><b>It compares each station with the minute before.</b> A station can change from open to posted, to a sewage
       discharge flag, or back to open. When this occurs, the job writes the change and the time to <code>alert_log</code>.</li>
       <li><b>Each 30 minutes,</b> it copies the city lab results from
-      <a href="{{ DATASF_DATASET_URL }}" target="_blank" rel="noopener">DataSF</a> into a <code>samples</code>
+      <a href="{{ DATASF_DATASET_URL }}" target="_blank" rel="noopener">DataSF</a> into a <code>Samples</code>
       table. It records when each result first came online. The page uses this to show the publishing delay.</li>
       <li><b>The page</b> changes these records into a window for each station: sign up, sign down.</li>
     </ol>
@@ -207,7 +207,7 @@ python tests/test_beachwatch.py</code></pre>
     <ol class="steps">
       <li><b>Ask the agency that has the record.</b> For discharge start times before 2018 (Westside), discharge volumes
       before Oct 2016 (Bayside), and all data before Mar 2011, this agency is SFPUC.</li>
-      <li><b>Give specific data:</b> permit numbers, outfall IDs, date range, and the format that you want. (It is easiest to ask for the modern monthly
+      <li><b>Give Specific Data:</b> permit numbers, outfall IDs, date range, and the format that you want. (It is easiest to ask for the modern monthly
       summary tables, because SFPUC already made them for older months one time.)</li>
       <li><b>Send the request through the San Francisco <a href="https://sanfrancisco.nextrequest.com" target="_blank" rel="noopener">records portal</a></b>
       (department “PUC - Public Utilities Commission”). Ask for electronic copies. For reports from before March 2011, also ask

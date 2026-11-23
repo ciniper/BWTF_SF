@@ -56,12 +56,12 @@
     <p class="rec-sub">San Francisco has two sewer systems. Each system has its own permit and sends its own monthly reports to the
     Regional Water Board. The Pacific side has 7 outfalls, from Lake Merced to Sea Cliff. The Bay side has 27.</p>
     <div class="tblwrap"><table>
-      <thead><tr><th>Period</th><th>Pacific outfalls</th><th>Bay outfalls</th></tr></thead>
+      <thead><tr><th>Period</th><th>Pacific Outfalls</th><th>Bay Outfalls</th></tr></thead>
       <tbody>
-        <tr><td class="when">Before Mar 2011</td><td>No reports online</td><td>No reports online</td></tr>
-        <tr><td class="when">Mar 2011 – Sep 2016</td><td>Each outfall, each day: hours and volume</td><td>Groups of outfalls, each day: hours and number of discharges. No volumes.</td></tr>
-        <tr><td class="when">Oct 2016 – Dec 2017</td><td>Each outfall, each day: hours and volume</td><td>Each outfall, each discharge: start time, duration and volume</td></tr>
-        <tr><td class="when">Jan 2018 and after</td><td>Each outfall, each discharge: start time, duration and volume</td><td>Each outfall, each discharge: start time, duration and volume</td></tr>
+        <tr><td class="when">Before Mar 2011</td><td>No Reports Online</td><td>No Reports Online</td></tr>
+        <tr><td class="when">Mar 2011 – Sep 2016</td><td>Each Outfall, Each Day: Hours and Volume</td><td>Groups of outfalls, each day: hours and number of discharges. No volumes.</td></tr>
+        <tr><td class="when">Oct 2016 – Dec 2017</td><td>Each Outfall, Each Day: Hours and Volume</td><td>Each outfall, each discharge: start time, duration and volume</td></tr>
+        <tr><td class="when">Jan 2018 and After</td><td>Each outfall, each discharge: start time, duration and volume</td><td>Each outfall, each discharge: start time, duration and volume</td></tr>
       </tbody>
     </table></div>
     <h3>How the Ledger Counts</h3>
@@ -115,14 +115,14 @@
     <p><b>State beach postings.</b> We examined the State BeachWatch record. We looked for a sewage posting at the nearby beaches
     in the two days after each Pacific discharge. Before 2015, most Pacific discharges have no posting there.</p>
     <div class="tblwrap"><table style="max-width:420px">
-      <thead><tr><th>Year</th><th class="num">Pacific discharge days</th><th class="num">posted within 2 days</th></tr></thead>
+      <thead><tr><th>Year</th><th class="num">Pacific Discharge Days</th><th class="num">Posted Within 2 Days</th></tr></thead>
       <tbody>{% for y, v in q.postings.by_year.items() %}<tr><td class="when">{{ y }}</td><td class="num">{{ v.discharge_days }}</td><td class="num">{{ v.posted }}</td></tr>{% endfor %}</tbody>
     </table></div>
     <p><b>The tabular data from the state.</b> The state also publishes the numbers that SFPUC entered. This includes a daily flow at one
     Pacific monitoring point. Its days agree with the discharge days. Its values agree with the reported volumes in 2011–2013 and
     after 2017. Most values in 2014–2016 do not agree. Thus, use this data to find discharge days. Do not use it for volumes.</p>
     <div class="tblwrap"><table style="max-width:420px">
-      <thead><tr><th>Year</th><th class="num">days in both</th><th class="num">volume within 10%</th></tr></thead>
+      <thead><tr><th>Year</th><th class="num">Days in Both</th><th class="num">Volume Within 10%</th></tr></thead>
       <tbody>{% for y, v in q.esmr.by_year.items() %}<tr><td class="when">{{ y }}</td><td class="num">{{ v.days_in_both }}</td><td class="num">{{ v.volumes_within_10pct }}</td></tr>{% endfor %}</tbody>
     </table></div>
   </section>
@@ -155,19 +155,19 @@
       <tbody>
         <tr><td class="when">Totals</td><td>{{ q.totals.months_checked }} Pacific months have a printed total. The rows match it in
           {{ q.totals.months_checked - q.totals.mismatches|length }}.{% for m in q.totals.mismatches %} {{ m.month }}: {{ q.totals.explained.get(m.month, "unexplained") }}.{% endfor %}</td></tr>
-        <tr><td class="when">SFPUC's counts, Pacific</td><td>{{ q.counts.westside.agree }} of {{ q.counts.westside.months }} months match exactly,
+        <tr><td class="when">SFPUC's Counts, Pacific</td><td>{{ q.counts.westside.agree }} of {{ q.counts.westside.months }} months match exactly,
           {{ q.counts.westside.within_one }} differ by one{% if q.counts.westside.differences %} ({% for d in q.counts.westside.differences %}{{ d.month }}{% if not loop.last %}, {% endif %}{% endfor %}){% endif %},
           {{ q.counts.westside.off_by_more }} by more. Each month that SFPUC reported as zero is zero.</td></tr>
-        <tr><td class="when">SFPUC's counts, Bay</td><td>{{ q.counts.bayside.agree }} of {{ q.counts.bayside.months }} months agree with the count in the annual report for each basin.
+        <tr><td class="when">SFPUC's Counts, Bay</td><td>{{ q.counts.bayside.agree }} of {{ q.counts.bayside.months }} months agree with the count in the annual report for each basin.
           {% for d in q.counts.bayside.differences %}{{ d.month }}: {{ d.parsed }} against {{ d.stated }}. {% endfor %}</td></tr>
         <tr><td class="when">Rain</td><td>Pacific: {{ q.rain.westside.with_rain }} of {{ q.rain.westside.discharge_days }} discharge days had
         {{ q.rain.threshold_in }} in or more of rain on the day before, the same day, or the day after.{% for x in q.rain.westside.dry %} The exception is {{ x.date }}, {{ x.rows|join(", ") }} MG, with {{ x.rain_window_in }} in.{% endfor %}
           Bay: {{ q.rain.bayside.with_rain }} of {{ q.rain.bayside.discharge_days }}.</td></tr>
-        <tr><td class="when">Follow-up sampling</td><td>{{ q.sampling.started_within_3_days_after_an_ocean_beach_discharge }} of {{ q.sampling.episodes }} sampling trips at
+        <tr><td class="when">Follow-Up Sampling</td><td>{{ q.sampling.started_within_3_days_after_an_ocean_beach_discharge }} of {{ q.sampling.episodes }} sampling trips at
           Pacheco, Vicente and Fort Funston started in the 3 days after an Ocean Beach discharge.{% for e in q.sampling.unexplained %} The exception is {{ e.first }}. The city took that sample during the storm, three days before its discharge.{% endfor %}</td></tr>
-        <tr><td class="when">Live feed archive</td><td>{{ q.poobot.within_2_days_of_a_table_day }} of {{ q.poobot.onsets }} Pacific discharge starts in the volunteer
+        <tr><td class="when">Live Feed Archive</td><td>{{ q.poobot.within_2_days_of_a_table_day }} of {{ q.poobot.onsets }} Pacific discharge starts in the volunteer
           archive of the SFPUC feed ({{ q.poobot.span[0] }} to {{ q.poobot.span[1] }}) are in the 2 days around a discharge day.</td></tr>
-        <tr><td class="when">State postings</td><td>{{ q.postings.posted_within_2_days }} of {{ q.postings.discharge_days_checked }} Pacific discharge days had a sewage
+        <tr><td class="when">State Postings</td><td>{{ q.postings.posted_within_2_days }} of {{ q.postings.discharge_days_checked }} Pacific discharge days had a sewage
         posting after them. Almost all the gaps are before 2015 (see above). This shows a problem in the posting record, not in the discharge record.</td></tr>
       </tbody>
     </table></div>
@@ -177,9 +177,9 @@
 
     <h3>Get the Data</h3>
     <ul class="plain">
-      <li><a href="/discharges/api/csv?set=events" download="sf_csd_events.csv">Events, Oct 2016 on</a></li>
-      <li><a href="/discharges/api/csv?set=westside" download="westside_daily_2011-03_2017-12.csv">Pacific daily totals, Mar 2011 – Dec 2017</a></li>
-      <li><a href="/discharges/api/csv?set=bayside" download="bayside_legacy_2011-03_2016-09.csv">Bay daily totals, Mar 2011 – Sep 2016</a></li>
+      <li><a href="/discharges/api/csv?set=events" download="sf_csd_events.csv">Events, Oct 2016 On</a></li>
+      <li><a href="/discharges/api/csv?set=westside" download="westside_daily_2011-03_2017-12.csv">Pacific Daily Totals, Mar 2011 – Dec 2017</a></li>
+      <li><a href="/discharges/api/csv?set=bayside" download="bayside_legacy_2011-03_2016-09.csv">Bay Daily Totals, Mar 2011 – Sep 2016</a></li>
       <li>All transcriptions, page references and checks are in <code>features/forecast/data/csd/pre2018/</code>. The scripts are
       <code>build_pre2018.py</code> and <code>qc_pre2018.py</code>, in the same folder as the CIWQS scraper.</li>
     </ul>

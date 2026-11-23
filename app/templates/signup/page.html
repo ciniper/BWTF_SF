@@ -67,7 +67,7 @@
     </div>
     <div class="right">
       <form id="f" autocomplete="off">
-        <p class="flabel">Your email</p>
+        <p class="flabel">Your Email</p>
         <input type="email" id="email" placeholder="you@example.com" required>
         <!-- Honeypot. Deliberately NOT named "website"/"url"/etc: Chrome
              autofill fills offscreen fields with those names from the user's
@@ -81,7 +81,7 @@
 
         <p class="note">You only get an alert for a problem that the city reports: a new bacteria posting or an active sewage discharge
         at a station in your areas. We use your email address only for these alerts.</p>
-        <button class="go" id="go" type="submit">Sign up</button>
+        <button class="go" id="go" type="submit">Sign Up</button>
         <div class="msg" id="msg"></div>
       </form>
     </div>
@@ -152,11 +152,11 @@ document.getElementById("f").addEventListener("submit", async e => {
       go.innerHTML = 'Signed up <svg class="ic"><use href="#i-check"/></svg>';
     } else {
       msg.className = "msg err"; msg.textContent = d.error || "Something went wrong.";
-      go.disabled = false; go.textContent = "Sign up";
+      go.disabled = false; go.textContent = "Sign Up";
     }
   } catch {
     msg.className = "msg err"; msg.textContent = "Network problem. Try again.";
-    go.disabled = false; go.textContent = "Sign up";
+    go.disabled = false; go.textContent = "Sign Up";
   }
 });
 refresh();

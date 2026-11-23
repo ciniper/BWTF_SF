@@ -183,7 +183,7 @@
     <h2 id="rain-h">Where the Rain Goes</h2>
     <p class="sub">San Francisco has combined sewers. The water from your home drains and the rain from the street go into the same pipes. Move the slider, or play a storm.</p>
     <div class="rainctl">
-      <div class="rain-top"><label for="rain-r">Rain</label><output id="rain-out" for="rain-r">None</output><button type="button" class="btn" id="storm">Play a storm</button></div>
+      <div class="rain-top"><label for="rain-r">Rain</label><output id="rain-out" for="rain-r">None</output><button type="button" class="btn" id="storm">Play a Storm</button></div>
       <input type="range" id="rain-r" min="0" max="100" value="0" aria-describedby="rain-cap">
       <div class="ticks" aria-hidden="true"><span style="left:0">None</span><span style="left:16%">Light</span><span style="left:50%">Heavy</span><span style="left:85%">Storm</span></div>
     </div>
@@ -293,11 +293,11 @@
       <output id="sys-clock" for="sys-t">—</output>
       <span id="sys-count" aria-live="polite"></span>
     </div>
-    <div class="sys-map" id="sys-map"><button type="button" class="btn ghost" id="sys-load">Load the map</button></div>
+    <div class="sys-map" id="sys-map"><button type="button" class="btn ghost" id="sys-load">Load the Map</button></div>
     <div class="strip">
       <svg id="sys-strip" viewBox="0 0 1000 60" preserveAspectRatio="none" aria-hidden="true"><path id="strip-area" fill="#e8c9bd" stroke="#b5310a" stroke-width="1.5" vector-effect="non-scaling-stroke"/><line id="strip-head" y1="0" y2="60" stroke="#26272a" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>
       <input type="range" id="sys-t" min="0" max="1000" value="0" aria-label="Time in the storm">
-      <div class="strip-ends"><span id="sys-t0"></span><span>outfalls that discharge during the storm</span><span id="sys-t1"></span></div>
+      <div class="strip-ends"><span id="sys-t0"></span><span>Outfalls That Discharge During the Storm</span><span id="sys-t1"></span></div>
     </div>
     <div class="swatches map-key"><span><i class="k-art"></i>main sewers (schematic)</span><span><i class="k-ring"></i>storage ring (schematic)</span><span><i class="k-main"></i>sewage to a plant</span><span><i class="k-out"></i>treated water out</span><span><i class="k-pl"></i>treatment plant (tap for a photo)</span><span><i class="k-of"></i>outfall</span><span><i class="k-on"></i>discharging</span></div>
     <p class="more">The plant locations and offshore pipes are approximate. They are based on Figures 2-1 and 2-5 of the SFPUC master plan. The ring is a schematic. It connects the outfalls in shoreline order. It does not show the real structures. The thin brown lines show the direction in which each neighborhood drains to the shore. They do not show the locations of the pipes. Tap a line to see its name. The start times, durations, and volumes come from the SFPUC reports to the State. We divide the volume of each discharge equally across its duration. All discharges are in the <a href="/discharges">Discharge Ledger</a>. MG = million gallons (approximately 1.5 Olympic pools).</p>
@@ -315,7 +315,7 @@
         <h3>{{ b.name }}</h3>
         <p>{{ b.what }}</p>
         <p>{{ b.why }}</p>
-        <div class="limit">State limit, one sample: <b>{{ b.limit }}</b> per 100 mL{% if b.limit_note %}<small>{{ b.limit_note }}</small>{% endif %}</div>
+        <div class="limit">State Limit, One Sample: <b>{{ b.limit }}</b> per 100 mL{% if b.limit_note %}<small>{{ b.limit_note }}</small>{% endif %}</div>
         <div class="who">{{ b.who }}</div>
       </article>
       {% endfor %}
@@ -348,7 +348,7 @@
           <button type="button" class="btn ghost" id="qt-prev" aria-label="Previous step">←</button>
           <div class="qt-dots" id="qt-dots">{% for st in qt_steps %}<button type="button" data-i="{{ loop.index }}" aria-label="Step {{ loop.index }}: {{ st.title }}"></button>{% endfor %}</div>
           <button type="button" class="btn ghost" id="qt-next" aria-label="Next step">→</button>
-          <a class="qt-skip" id="qt-skip" href="#qt-after">Skip the steps ↓</a>
+          <a class="qt-skip" id="qt-skip" href="#qt-after">Skip the Steps ↓</a>
         </div>
       </div>
     </div>
@@ -357,10 +357,10 @@
         <h3>Try It Yourself</h3>
         <p>Set the quantity of Enterococcus in the water. Then look at the wells that glow, and at the result from the table. Two samples of the same water usually give different results. To see this, push New sample.</p>
         <div class="ctl">
-          <label for="conc"><b>Enterococcus in the water</b></label>
+          <label for="conc"><b>Enterococcus in the Water</b></label>
           <input type="range" id="conc" min="0" max="1000" value="380" aria-describedby="lab-read">
           <output id="conc-out" for="conc"></output>
-          <button type="button" class="btn ghost" id="resample">New sample</button>
+          <button type="button" class="btn ghost" id="resample">New Sample</button>
         </div>
         <div class="reading" id="lab-read" aria-live="polite"></div>
       </div>
@@ -382,7 +382,7 @@
         <h3>Beach Advisories That San Francisco Sent to the State</h3>
         <p class="note">For each year, {{ postings.years[0].year }} to {{ postings.years[-1].year }}. The State record is some months late. It stops at {{ postings.through }}.</p>
         <svg id="ch-post" viewBox="0 0 520 240" role="img" aria-label="Bar chart of beach advisories per year"></svg>
-        <div class="swatches"><span><i style="background:#b5310a"></i>sewage discharge</span><span><i style="background:#0072BC"></i>rain advisory</span><span><i style="background:#8a949b"></i>other or unknown</span></div>
+        <div class="swatches"><span><i style="background:#b5310a"></i>Sewage Discharge</span><span><i style="background:#0072BC"></i>Rain Advisory</span><span><i style="background:#8a949b"></i>Other or Unknown</span></div>
         <p class="readout" id="rd-post" aria-live="polite"></p>
       </div>
       {% endif %}
@@ -391,7 +391,7 @@
         <h3>Days with a Combined Sewer Discharge</h3>
         <p class="note">For each wet season (October to September), {{ discharges.first }} to {{ discharges.through }}. The data comes from the SFPUC reports to regulators.</p>
         <svg id="ch-csd" viewBox="0 0 520 240" role="img" aria-label="Bar chart of discharge days per wet season"></svg>
-        <div class="swatches"><span><i style="background:#7a5a3a"></i>days on which one or more outfalls discharged</span></div>
+        <div class="swatches"><span><i style="background:#7a5a3a"></i>Days on Which One or More Outfalls Discharged</span></div>
         <p class="readout" id="rd-csd" aria-live="polite"></p>
       </div>
       {% endif %}
@@ -469,7 +469,7 @@
   const slider = $("rain-r");
   slider.addEventListener("input", () => { if (playing) stopStorm(); setRain(slider.value / 100, false, 0); });
   let playing = false;
-  function stopStorm() { playing = false; $("storm").textContent = "Play a storm"; $("storm").classList.remove("ghost"); }
+  function stopStorm() { playing = false; $("storm").textContent = "Play a Storm"; $("storm").classList.remove("ghost"); }
   $("storm").addEventListener("click", () => {
     if (playing) { stopStorm(); setRain(0, false, 0); slider.value = 0; return; }
     playing = true; $("storm").textContent = "Stop"; $("storm").classList.add("ghost");
@@ -500,7 +500,7 @@
   const clock = (s, m, short) => { const [y, mo, d] = s.date.split("-").map(Number), t = new Date(Date.UTC(y, mo - 1, d, 0, Math.round(m)));   // as reported, Pacific time
     return t.toLocaleString("en-US", short ? {timeZone: "UTC", weekday: "short", hour: "numeric", minute: "2-digit"} : {timeZone: "UTC", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit"}); };
   function loadMap() {
-    if (ASKED) return; ASKED = true; $("sys-load").textContent = "Loading the map…";
+    if (ASKED) return; ASKED = true; $("sys-load").textContent = "Loading the Map…";
     const css = document.createElement("link"); css.rel = "stylesheet"; css.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"; document.head.appendChild(css);
     const js = document.createElement("script"); js.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
     js.onload = drawMap; js.onerror = () => { ASKED = false; js.remove(); $("sys-load").textContent = "The map did not load: tap to try again"; };

@@ -53,9 +53,9 @@ DEFAULT_DAYS = 91   # the last three months: every range on the site opens there
 # (shared/city_history.py) and in a few hundred rows since.
 ANALYTES = {
     "ENTERO":     {"label": "Enterococcus",   "bwtf_substance": "Enterococcus",   "limit": STANDARDS["ENTERO"]["single_sample_max"]},
-    "COLI_FECAL": {"label": "Fecal coliform", "bwtf_substance": "Fecal Coliform", "limit": STANDARDS["COLI_FECAL"]["single_sample_max"]},
+    "COLI_FECAL": {"label": "Fecal Coliform", "bwtf_substance": "Fecal Coliform", "limit": STANDARDS["COLI_FECAL"]["single_sample_max"]},
     "COLI_E":     {"label": "E. coli",        "bwtf_substance": "E. coli",        "limit": STANDARDS["COLI_E"]["single_sample_max"]},
-    "COLI_TOTAL": {"label": "Total coliform", "bwtf_substance": "Total Coliform", "limit": STANDARDS["COLI_TOTAL"]["single_sample_max"]},
+    "COLI_TOTAL": {"label": "Total Coliform", "bwtf_substance": "Total Coliform", "limit": STANDARDS["COLI_TOTAL"]["single_sample_max"]},
 }
 DEFAULT_ANALYTE = "ENTERO"
 

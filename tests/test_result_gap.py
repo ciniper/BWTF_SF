@@ -32,7 +32,7 @@ def test_precautionary_posting_and_discharge_never_claim_a_pending_sample():
     for status,cso in [('posted',False),('safe',False),('posted',True)]:
         board=L.today_board([station(status,cso)],now=datetime(2026,11,13),pending=old_guess)
         assert row(board)['pending'] is None
-        assert row(board)['sampled_text']=='sampled 4 days ago'
+        assert row(board)['sampled_text']=='Sampled 4 Days Ago'
         assert all('unpublished' not in z['meta'] for z in board['zones'])
         assert all('not published' not in f['text'] for f in board['facts'])
 

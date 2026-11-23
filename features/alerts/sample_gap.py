@@ -16,7 +16,7 @@ from shared import supabase as sb
 from shared.stations import STATIONS
 
 PACIFIC = ZoneInfo('America/Los_Angeles')
-INDICATORS = [('ENTERO', 'Enterococcus'), ('COLI_FECAL', 'Fecal coliform'), ('COLI_TOTAL', 'Total coliform')]
+INDICATORS = [('ENTERO', 'Enterococcus'), ('COLI_FECAL', 'Fecal Coliform'), ('COLI_TOTAL', 'Total Coliform')]
 PAGE_SIZE, MAX_ROWS = 500, 10000
 LOG = logging.getLogger(__name__)
 

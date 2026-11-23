@@ -10,6 +10,7 @@ sys.path.insert(0, str(ROOT))
 
 from features.today import page as T  # noqa: E402
 from shared import standards  # noqa: E402
+from shared.text import title_case  # noqa: E402
 
 
 def _site(name, value, raw, when, lat=37.8, lon=-122.4):
@@ -36,7 +37,7 @@ def test_sample_facts_start_with_sentence_case_without_changing_embedded_ages():
             board = today_board([station("4601", day)], samples_fact=f"Surfrider 11/{day}", now=datetime(2026, 11, 10))
             h = T.render_page({"board": board, "generated": "Preview"})
             assert f"<dd>The city collected samples {age.lower()} (Nov {day})." in h
-            assert f"sampled {age.lower()}" in h
+            assert title_case(f"sampled {age.lower()}") in h   # the station chips' ages are title case (2026-11-22)
         board = today_board([station("4601", 9), station("4602", 10)], now=datetime(2026, 11, 10))
         h = T.render_page({"board": board, "generated": "Preview"})
         assert "<dd>The city collected samples between yesterday and today (Nov 9–10)." in h
@@ -70,8 +71,8 @@ def test_surfrider_layer_grades_each_site_and_maps_it_to_the_city_beach():
     edge = T.surfrider_layer(types.SimpleNamespace(sites=[_site("Aquatic Park", 20.0, "20", datetime(2026, 9, 24, 18, 30))]), today=date(2026, 10, 1))["sites"][0]
     assert (edge["age_days"], edge["stale"]) == (7, False)   # exactly the threshold is still fresh
     board = (ROOT / "app/templates/_today_board.html").read_text()
-    assert ".bwtf-dot.stale{background:#fff;border:1.5px dashed var(--faint)" in board and '(s.stale ? " stale" : "")' in board and 'item("bwtf-dot", "stale", "Over " + data.stale_after_days + " days old")' in board
-    assert '" · " + s.age_text + " (" + s.date + ")"' in board and '" · " + s.sampled_text + " ("' in board   # ages remain on the markers
+    assert ".bwtf-dot.stale{background:#fff;border:1.5px dashed var(--faint)" in board and '(s.stale ? " stale" : "")' in board and 'item("bwtf-dot", "stale", "Over " + data.stale_after_days + " Days Old")' in board
+    assert '" · " + titleCase(s.age_text) + " (" + s.date + ")"' in board and '" · " + s.sampled_text + " ("' in board   # ages remain on the markers
     assert [s["name"] for s in d["sites"]] == sorted(by)                                                      # stable order
     v = by["Ocean Beach at Vicente St"]
     assert (v["city_name"], v["key"], v["over"], v["caution"], v["date"], v["time"]) == ("Ocean Beach at Vicente Street", "OCEAN#21_SL", False, False, "2026-09-24", "16:45")
@@ -101,7 +102,7 @@ def test_today_page_is_the_board_plus_the_experimental_row_and_the_api_route_exi
     assert 'id="today-map"' in h and 'id="zones"' in h and 'id="layers"' in h and 'id="tg-bwtf"' in h and 'data-layer="replay"' in h and 'id="day-strip"' in h and 'type="range"' not in h and "/api/today/" in h
     assert h.index('class="board') < h.index('id="zones"') < h.index('id="layers"') < h.index('id="today-map"') and 'class="extras"' not in h                                            # map sources sit after zones and immediately before the map
     # Sources and map extras stay separate; forecast and time controls belong to the board.
-    assert '<span class="ctl-label" id="lbl-sources">Map shows:</span>' in h and '>Show<' not in h and 'class="layer-note"' not in h
+    assert '<span class="ctl-label" id="lbl-sources">Map Shows:</span>' in h and '>Show<' not in h and 'class="layer-note"' not in h
     assert h.index('id="tg-bwtf"') < h.index('id="layers-toggle"') < h.index('id="layer-group"') < h.index('data-layer="rain"') < h.index('id="layer-status"')
     assert 'aria-controls="layer-group"' in h and 'aria-expanded="false"' in h.split('id="layers-toggle"')[0][-80:] + h.split('id="layers-toggle"')[1][:120]
     board = (ROOT / "app/templates/_today_board.html").read_text()
@@ -112,13 +113,13 @@ def test_today_page_is_the_board_plus_the_experimental_row_and_the_api_route_exi
     assert h.index('id="today-map"') < h.index('id="map-legend"') < h.index('<details class="colour-key">')
     assert "bwtfline" not in board
     legend = h.split('id="map-legend"')[1].split("</div>")[0]
-    assert [t.split("</span>")[0] for t in legend.split("</i>")[1:]] == ["No warning", "Warning posted", "Sewage discharge", "No data"]
+    assert [t.split("</span>")[0] for t in legend.split("</i>")[1:]] == ["No Warning", "Warning Posted", "Sewage Discharge", "No Data"]
     key = h.split('<details class="colour-key">')[1].split("</details>")[0]
     assert "<summary>What the Colors Mean</summary>" in key and key.count("<dt>") == 2
     assert "See SFPUC’s official map and legend" in key and "recent combined sewer discharge" in key
     assert "Less than 36" in key and "36 to 104" in key and "More than 104" in key
-    assert "Over 7 days old (hollow)" in key and "No result (solid gray)" in key
-    assert ".board.replaying .colour-key{display:none}" in board and "All clear" not in h and '"No warning" if status == "safe"' in (ROOT / "app/landing.py").read_text()   # the tiles read "No warning", not "All clear"
+    assert "Over 7 Days Old (Hollow)" in key and "No Result (Solid Gray)" in key
+    assert ".board.replaying .colour-key{display:none}" in board and "All clear" not in h and '"No Warning" if status == "safe"' in (ROOT / "app/landing.py").read_text()   # the tiles read "No Warning", not "All clear"
     assert h.count('class="site" data-zone=') == 20 and 'id="zone-sites"' in h and 'data-sample-station=' in h and "{{" not in h        # a chip per station under the zone tiles, each opening the popover
     assert ' hidden>' in h.split('id="zone-sites"')[1][:200] and ".site-chips[hidden]{display:none}" in (ROOT / "app/static/brand.css").read_text()   # chips wait for a zone tap — and the attribute must win over the strip's display:flex
     assert 'id="tg-city" checked' in h and 'id="tg-bwtf">' in h and 'data-layer="bwtf"' not in h and h.index('id="tg-bwtf"') < h.index('data-layer="rain"')   # two source switches: city on, Surfrider off (Chase, 2026-09-30)
@@ -206,8 +207,8 @@ def test_labels_layer_is_a_chip_off_by_default_drawn_from_the_stations():
     group = h.split('id="layer-group"')[1].split('id="layer-status"')[0]
     assert group.index('data-layer="outfalls"') < group.index('data-layer="labels"')
     assert 'data-layer="risk"' not in group and 'data-layer="replay"' not in group
-    assert h.index('id="today-h"') < h.index('id="zones"') < h.index('data-layer="replay"') < h.index('data-layer="risk"') < h.index('id="day-strip"')   # Past week sits under the tiles, beside the forecast
-    assert h.split('id="day-strip"')[1].split(">")[0].rstrip().endswith("hidden")   # closed until Past week is pressed
+    assert h.index('id="today-h"') < h.index('id="zones"') < h.index('data-layer="replay"') < h.index('data-layer="risk"') < h.index('id="day-strip"')   # Past Week sits under the tiles, beside the forecast
+    assert h.split('id="day-strip"')[1].split(">")[0].rstrip().endswith("hidden")   # closed until Past Week is pressed
     assert h.index('id="zones"') < h.index('data-layer="risk"') < h.index('id="layers"')
     board = (ROOT / "app/templates/_today_board.html").read_text()
     assert "labels: {}" in board and 'if (key === "labels")' in board and "LABEL_ZOOM = 13" in board        # no fetch; ?layers=labels deep-links like the rest

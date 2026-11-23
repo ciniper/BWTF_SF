@@ -61,12 +61,12 @@
       {%- endif %}
       <span class="go">Open the ledger →</span>
       {% else %}
-      <p class="stat pending" id="rc-stat"><b id="rc-pct"></b><span id="rc-text">Calculating the samples for the last year…</span></p>   {#- filled from /analysis/api/summary once the page has drawn #}
+      <p class="stat pending" id="rc-stat"><b id="rc-pct"></b><span id="rc-text">Calculating the Samples for the Last Year…</span></p>   {#- filled from /analysis/api/summary once the page has drawn #}
       <span class="go">Open the report card →</span>
       {% endif %}
     </section>
     <nav class="rest" aria-label="More {{ g.label | lower }}">
-      <h3>More {{ g.label | lower }}</h3>
+      <h3>More {{ g.label }}</h3>
       <ul class="pages">
         {% for p in g.more %}
         <li><a href="{{ p.href }}"><span class="name">{{ p.title }}</span><span class="blurb">{{ p.blurb }}</span></a></li>

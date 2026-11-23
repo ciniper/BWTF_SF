@@ -158,7 +158,7 @@ def test_same_day_pairs_count_the_days_both_programs_sampled_a_site_and_grade_ea
     history = [rec("Aquatic Park", (2, 19), 10.0), rec("Aquatic Park", (2, 19), 200.0, 15), rec("Aquatic Park", (3, 1), 10.0),   # two bottles one day: the worse grades it
                rec("Ocean Beach at Lincoln Way", (2, 19), 10.0), rec("Ocean Beach at Lincoln Way", (4, 12), 500.0),
                rec("China Beach", (2, 17), 10.0), {"site_name": "Aquatic Park", "collection_time": datetime(2024, 2, 19, 7), "substance": "Enterococcus", "result_value": 999.0, "result_raw": "999"},
-               {"site_name": "Aquatic Park", "collection_time": datetime(2026, 2, 19, 7), "substance": "Total coliform", "result_value": 9999.0, "result_raw": "9999"}]   # another standard: ignored
+               {"site_name": "Aquatic Park", "collection_time": datetime(2026, 2, 19, 7), "substance": "Total Coliform", "result_value": 9999.0, "result_raw": "9999"}]   # another standard: ignored
     city = {"BAY#211_SL": [pt((2, 19), 10.0), pt((3, 1), 150.0)], "OCEAN#19_SL": [pt((2, 19), 10.0), pt((4, 12), 20.0)], "OCEAN#19B_SL": [pt((4, 12), 300.0)], "OCEAN#17_SL": [pt((2, 18), 10.0)]}
     dual = [("Aquatic Park", ["BAY#211_SL"]), ("Ocean Beach at Lincoln Way", ["OCEAN#19_SL", "OCEAN#19B_SL"]), ("China Beach", ["OCEAN#17_SL"])]
     sd = C.same_day_pairs(history, city, dual, 104, "Enterococcus", since, until)
@@ -228,7 +228,7 @@ def test_site_series_grades_every_indicator_per_day_and_pairs_same_day_samples()
 
 
 def test_site_series_scores_each_day_against_its_own_limits_and_keeps_the_worst_indicator():
-    """All % threshold: every point carries the limit that applied and its % of it; ``worst`` keeps one
+    """All % Threshold: every point carries the limit that applied and its % of it; ``worst`` keeps one
     indicator per day — the highest %, with the ratio rule's 1,000 total-coliform limit when it applies."""
     site = C.resolve_site("OCEAN#15_SL")
     start, end = datetime(2024, 1, 1), datetime(2024, 3, 1)
@@ -297,7 +297,7 @@ def test_source_comparison_page_renders_the_lab_sites_only_with_the_bacteria_sel
         city_source=key, city_date="2026-09-22", city_raw="20 / 399", city_value=399.0, city_exceeds=True, city_raws=["20", "399"], city_n=2, sfpuc_status="posted",
         both_have=True, agree=None, value_delta=None, day_gap=2, same_day=False, site_key=key, dual=dual, bwtf_site=bwtf_site, **kw)
     data = {"generated_at": "2026-09-28T20:00:00", "standard": {"analyte": "Enterococcus", "code": "ENTERO", "single_sample_max": 104, "units": "MPN/100mL"},
-            "analytes": [{"code": "ENTERO", "label": "Enterococcus"}, {"code": "COLI_TOTAL", "label": "Total coliform"}], "bwtf_measures": True, "bwtf_available": True, "lab_name": "SF",
+            "analytes": [{"code": "ENTERO", "label": "Enterococcus"}, {"code": "COLI_TOTAL", "label": "Total Coliform"}], "bwtf_measures": True, "bwtf_available": True, "lab_name": "SF",
             "summary": {"site_count": 1, "all_site_count": 2, "comparable_count": 1, "agree_count": 0, "disagree_count": 0, "bwtf_exceed_count": 0, "city_exceed_count": 1, "max_day_gap": 2,
                         "same_day": {"window_days": 365, "since": "2025-09-28", "until": "2026-09-28", "pairs": 14, "agree": 8, "differ": 6, "sites": 6, "latest": "2026-04-12", "per_site": {}}},
             "rows": [row("Aquatic Park", "BAY#211_SL", True, True), row("Islais Creek", "BAY#320_SL", False, False)]}
@@ -305,13 +305,13 @@ def test_source_comparison_page_renders_the_lab_sites_only_with_the_bacteria_sel
         h = ComparisonRoutes.generate_comparison_html(None, data)
     assert h.count('class="row-click"') == 1 and "Aquatic Park" in h and "Islais Creek" not in h     # city-only stations stay on /graphs and /samples
     assert '<option value="ENTERO" selected>' in h and "20 / 399" in h and "2 samples that day, graded on the worse" in h
-    assert '<span class="agree agree--na">Not comparable<small>sampled 2 days apart</small></span>' in h and "Sources differ" not in h   # two days apart: no verdict
-    assert '<div class="n">14</div><div class="l">Same-day samples, last 12 months</div>' in h and '<div class="n">8</div><div class="l">Agree on the standard</div>' in h and "Max sampling gap" not in h
+    assert '<span class="agree agree--na">Not Comparable<small>Sampled 2 Days Apart</small></span>' in h and "Sources differ" not in h   # two days apart: no verdict
+    assert '<div class="n">14</div><div class="l">Same-Day Samples, Last 12 Months</div>' in h and '<div class="n">8</div><div class="l">Agree on the Standard</div>' in h and "Max sampling gap" not in h
     assert "6 sites had such a day in the last year. The most recent day was 2026-04-12" in h
     same = {**data, "rows": [{**data["rows"][0], "bwtf_date": "2026-09-22", "day_gap": 0, "same_day": True, "agree": False, "value_delta": 379.0}], "summary": {**data["summary"], "same_day": None}}
     with app.test_request_context("/compare"):
         h2 = ComparisonRoutes.generate_comparison_html(None, same)
-    assert 'Sources differ<small>same day · Δ 379</small></span>' in h2 and '<div class="n">—</div><div class="l">Same-day samples</div>' in h2 and "Thus, there is no agreement score." in h2
+    assert 'Sources Differ<small>Same Day · Δ 379</small></span>' in h2 and '<div class="n">—</div><div class="l">Same-Day Samples</div>' in h2 and "Thus, there is no agreement score." in h2
     assert "/static/charts.js" in h and 'id="hist-modal"' in h and "/api/site-series?" in h and "chart.umd.js" not in h
 
 

@@ -86,13 +86,13 @@
     <p>What the public saw, minute by minute. For each station, this page shows when its sign went up on the SFPUC beach map, how it changed, and when it came down. The sign is a bacteria posting or a CSO discharge flag. Below the sign, the page shows the collection date of each sample. It also shows when the results first came into getCSV and DataSF. Our monitors read the map one time each minute, getCSV approximately each two minutes, and DataSF each 30 minutes. Thus, this is an independent record of what the city showed and when. It is not the history from the city. The <a href="/discharges">Discharge Ledger</a> shows the discharges. <a href="/postings">Beach Postings</a> shows the advisories that the city sent to the State.</p>
   {% endcall %}
 
-  <div id="status" class="loading">Loading the event history…</div>
+  <div id="status" class="loading">Loading the Event History…</div>
 
   <div id="content" style="display:none">
     <div id="banner" class="banner" style="display:none"></div>
     <div class="controls">
-      <button class="range-btn active" data-days="14">14 days</button>
-      <button class="range-btn" data-days="30">30 days</button>
+      <button class="range-btn active" data-days="14">14 Days</button>
+      <button class="range-btn" data-days="30">30 Days</button>
       <button class="range-btn" data-days="all">All</button>
       <a class="range-btn" href="/cso-history/daily-colors">Gray and green history</a>
       <div class="legend">
@@ -310,7 +310,7 @@
       : 'DataSF observed: we did not see it (loaded from the city history — collection day only)';
     var csv = d.getcsv_seen ? 'getCSV first indicator ' + (d.getcsv_censored ? 'seen by ' : 'first seen ') + fmt(d.getcsv_seen)
       : 'getCSV arrival: not observed';
-    var names = {ENTERO:'Enterococcus',COLI_TOTAL:'Total coliform',COLI_FECAL:'Fecal coliform',COLI_E:'E. coli'};
+    var names = {ENTERO:'Enterococcus',COLI_TOTAL:'Total Coliform',COLI_FECAL:'Fecal Coliform',COLI_E:'E. coli'};
     (d.getcsv_indicators || []).forEach(function(i){ csv += '<br>&nbsp; ' + esc(names[i.code] || i.code) + ': ' + (i.censored ? 'by ' : '') + fmt(i.at); });
     tip.innerHTML = '<b>' + s.station_name + '</b><br>Lab sample collected ' + when + ' · ' + result + '<br>' + map + postLine + '<br>' + csv + '<br>' + pub;
     tip.style.display = 'block';
@@ -328,7 +328,7 @@
     var path = w.segments.map(function(sg){ return sg.status; }).join(' → ');
     var csv = d.getcsv_seen ? 'getCSV first indicator ' + (d.getcsv_censored ? 'seen by ' : 'first seen ') + fmt(d.getcsv_seen)
       : 'getCSV arrival: not observed';
-    var names = {ENTERO:'Enterococcus',COLI_TOTAL:'Total coliform',COLI_FECAL:'Fecal coliform',COLI_E:'E. coli'};
+    var names = {ENTERO:'Enterococcus',COLI_TOTAL:'Total Coliform',COLI_FECAL:'Fecal Coliform',COLI_E:'E. coli'};
     (d.getcsv_indicators || []).forEach(function(i){ csv += '<br>&nbsp; ' + esc(names[i.code] || i.code) + ': ' + (i.censored ? 'by ' : '') + fmt(i.at); });
     tip.innerHTML = '<b>' + s.station_name + '</b><br>' + SEV_LABEL[worst] +
       (w.segments.length > 1 ? '<br><span style="opacity:.8">path: ' + path + '</span>' : '') +
@@ -349,7 +349,7 @@
                    w.end ? dur(new Date(w.start).getTime(), new Date(w.end).getTime()) : '—']);
       });
     });
-    var html = '<table><thead><tr><th>Station</th><th>Sign</th><th>Went up</th><th>Came down</th><th>Up for</th></tr></thead><tbody>';
+    var html = '<table><thead><tr><th>Station</th><th>Sign</th><th>Went Up</th><th>Came Down</th><th>Up For</th></tr></thead><tbody>';
     if (rows.length) rows.forEach(function(r){ html += '<tr><td>' + r.map(function(c){ return String(c); }).join('</td><td>') + '</td></tr>'; });
     else html += '<tr><td colspan="5" class="muted">No sign went up after we started to monitor.</td></tr>';
     html += '</tbody></table>';
@@ -359,7 +359,7 @@
     Object.keys(DATA.samples || {}).forEach(function(sid){ (DATA.samples[sid] || []).forEach(function(d){ srows.push([byId[sid] || sid, d]); }); });
     srows.sort(function(a, b){ return a[1].date < b[1].date ? 1 : a[1].date > b[1].date ? -1 : 0; });
     html += '<h3 style="font-size:14px;margin:18px 0 6px">Lab Samples — Collection, the SFPUC Map, and the Numbers in the City Dataset</h3>' +
-      '<table><thead><tr><th>Station</th><th>Collected</th><th>Result</th><th>Sample date on the map</th><th>First getCSV indicator</th><th>DataSF observed</th><th>Days until online</th></tr></thead><tbody>';
+      '<table><thead><tr><th>Station</th><th>Collected</th><th>Result</th><th>Sample Date on the Map</th><th>First getCSV Indicator</th><th>DataSF Observed</th><th>Days Until Online</th></tr></thead><tbody>';
     if (srows.length) srows.forEach(function(r){ var d = r[1];
       var dayStr = function(n){ return n + (n === 1 ? ' day' : ' days'); };
       html += '<tr><td>' + r[0] + '</td><td>' + d.date + '</td><td>' +

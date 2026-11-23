@@ -39,7 +39,7 @@ def test_page_and_csv_routes():
     assert 'id="metricToggle"' in html and 'data-metric="days"' in html and 'data-metric="pct"' in html and 'data-metric="stationdays"' in html and "function uniqueDays" in html
     assert 'id="legendPartial"' in html and 'pattern id="hatch"' in html and "partialYear = y => yearDays(y) < fullDays(y)" in html   # the latest, partly filed year is hatched and labelled
     assert "postings/sfpuc_posted_sign.jpg" in html and 'href="https://www.sfpuc.gov/programs/ocean-and-beach-monitoring"' in html and (ROOT / "app/static/postings/sfpuc_posted_sign.jpg").exists()   # the sign photo, credited to SFPUC
-    assert [m for m in ("1", "3", "5", "") if f'data-years="{m}">' in html] == ["1", "3", "5", ""] and 'data-years="1">1 year<' in html and 'data-years="5">5 years<' in html and "Last 10 yrs" not in html
+    assert [m for m in ("1", "3", "5", "") if f'data-years="{m}">' in html] == ["1", "3", "5", ""] and 'data-years="1">1 Year<' in html and 'data-years="5">5 Years<' in html and "Last 10 yrs" not in html
     status, ctype, body = P.handle_csv({}, b"")
     assert status == 200 and ctype.startswith("text/csv") and body.startswith(b"advisory_id,")
     assert set(P.GET_ROUTES) == {"/postings", "/postings/api/advisories", "/postings/api/csv"}

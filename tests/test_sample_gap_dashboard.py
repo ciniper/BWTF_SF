@@ -18,7 +18,7 @@ def test_corrections_partial_results_and_baseline_times():
     d = data()
     m = G.build_model(d)
     card = next(c for c in m['cards'] if c['source'] == 'BAY#220_SL' and c['day'] == '2026-11-13')
-    cell = next(c for c in card['cells'] if c['label'] == 'Total coliform')
+    cell = next(c for c in card['cells'] if c['label'] == 'Total Coliform')
     assert cell['value'] == '>16000'
     assert cell['revisions'] == 2
     assert cell['first']['observation_kind'] == 'baseline'

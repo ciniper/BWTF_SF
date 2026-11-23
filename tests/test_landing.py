@@ -54,7 +54,7 @@ def test_every_feature_page_sits_in_exactly_one_hub_and_every_link_resolves():
         assert "Field notes" in smp and 'data-notes="columns"' in smp
         assert 'id="v-scope"' not in smp and "Dual sites" not in smp and [m for m in ("city", "bwtf", "both", "all") if 'data-source="%s"' % m in smp] == ["city", "bwtf", "both", "all"]   # Source as on Graphs, no Sites toggle
         g = c.get("/graphs").data.decode()
-        assert g.count('class="tile"') >= 20 and 'id="analyte"' in g and '<option value="ENTERO" selected>' in g and '<option value="ALL">All indicators</option>' in g and '<option value="PCT">All % threshold</option>' in g and 'href="/compare"' in g
+        assert g.count('class="tile"') >= 20 and 'id="analyte"' in g and '<option value="ENTERO" selected>' in g and '<option value="ALL">All Indicators</option>' in g and '<option value="PCT">All % Threshold</option>' in g and 'href="/compare"' in g
         assert ".preset.active" in (ROOT / "app/static/brand.css").read_text() and "function markPreset" in g            # a chosen date-range preset lights up (kit CSS lives in brand.css)
         assert 'id="kind"' in g and 'data-k="line"' in g and 'data-k="bar"' in g and "CH.barSeries : CH.seriesChart" in g   # the Chart choice: lines or bars
         assert 'querySelectorAll(".preset[data-days]")' in g and 'querySelectorAll(".preset")' not in g   # the Change site pill must not act as a range preset
@@ -97,7 +97,7 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
     assert b["tone"] == "warn" and b["headline"] == "Posted at 1 beach. 3 others have no warning."
     assert b["headline_html"] == '<em class="posted">Posted at 1 beach.</em> 3 others have no warning.' and b["date"] == "Tue Sep 29" and b["checked"] == "6:12 AM" and b["feed_ok"]
     assert b["lead"] == "Posted: Crissy East. SFPUC posts a beach when samples show bacteria more than the State standards. Sometimes SFPUC posts a beach as a precaution."   # the news only: no "no discharge", no forecast (2026-10-18)
-    assert b["facts"] == [{"label": "City samples", "text": "The city collected samples 6 days ago (Sep 23)."}, {"label": "Surfrider samples", "text": "5 days ago (Sep 24)"}]   # one labelled row per fact, ages not bare dates (2026-11-06); the city's and Surfrider's only
+    assert b["facts"] == [{"label": "City Samples", "text": "The city collected samples 6 days ago (Sep 23)."}, {"label": "Surfrider Samples", "text": "5 days ago (Sep 24)"}]   # one labelled row per fact, ages not bare dates (2026-11-06); the city's and Surfrider's only
     # the forecast's risk is the board's collapsed "Sewer-overflow forecast · Beta" line under the tiles (2026-11-08): no facts row for it
     assert b["risk_lead"] == "Modeled beach-risk score today: 4% at most (East Beaches), staying low through Sun Oct 04."
     assert not any(f["label"] == "Overflow risk today" for f in b["facts"])
@@ -105,14 +105,14 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
     assert [t["key"] for t in b["zones"]] == ["ocean", "baker_china", "north", "east"]           # registry order, every zone even when empty
     assert [t["key"] for t in b["tiles"]] == ["baker_china", "north", "ocean", "east"]           # the tiles' 2×2 grid reads like the map: NW, N shore / W coast, bay (2026-11-08)
     assert [id(t) for t in b["tiles"]] == [id(z[k]) for k in ("baker_china", "north", "ocean", "east")]   # the same tiles, only reordered
-    assert (z["north"]["status"], z["north"]["status_text"], z["north"]["meta"]) == ("posted", "1 beach posted", "Crissy East · sampled 6 days ago")   # the age in words, never a bare date (2026-11-06)
-    assert (z["ocean"]["status"], z["ocean"]["status_text"], z["ocean"]["risk"], z["ocean"]["meta"]) == ("safe", "No warning", 0, "6 stations · sampled 6 days ago")     # every registry station, fed or not
-    assert z["baker_china"]["status"] == "unknown" and z["baker_china"]["status_text"] == "Not sampled" and z["baker_china"]["meta"] == "4 stations · no sample date"
+    assert (z["north"]["status"], z["north"]["status_text"], z["north"]["meta"]) == ("posted", "1 Beach Posted", "Crissy East · Sampled 6 Days Ago")   # the age in words, never a bare date (2026-11-06)
+    assert (z["ocean"]["status"], z["ocean"]["status_text"], z["ocean"]["risk"], z["ocean"]["meta"]) == ("safe", "No Warning", 0, "6 Stations · Sampled 6 Days Ago")     # every registry station, fed or not
+    assert z["baker_china"]["status"] == "unknown" and z["baker_china"]["status_text"] == "Not Sampled" and z["baker_china"]["meta"] == "4 Stations · No Sample Date"
     assert z["east"]["risk"] == 4 and [s["status"] for s in z["east"]["stations"]] == ["unknown"] * 6
     ff = z["ocean"]["stations"][0]
-    assert (ff["full_name"], ff["source"], ff["status"], ff["sampled"], ff["sampled_text"], ff["sampled_age_days"]) == ("Fort Funston", "OCEAN#22_SL", "safe", "2026-09-23", "sampled 6 days ago", 6) and 37 < ff["lat"] < 38 and -123 < ff["lon"] < -122
+    assert (ff["full_name"], ff["source"], ff["status"], ff["sampled"], ff["sampled_text"], ff["sampled_age_days"]) == ("Fort Funston", "OCEAN#22_SL", "safe", "2026-09-23", "Sampled 6 Days Ago", 6) and 37 < ff["lat"] < 38 and -123 < ff["lon"] < -122
     # the words say what the colours report — the city's posting, not the water (2026-11-08: "safe" and "All clear" retired from the board)
-    assert ff["status_text"] == "no warning" and {s["status_text"] for t in b["zones"] for s in t["stations"]} == {"no warning", "warning posted", "not sampled"}
+    assert ff["status_text"] == "No Warning" and {s["status_text"] for t in b["zones"] for s in t["stations"]} == {"No Warning", "Warning Posted", "Not Sampled"}
     assert "safe" not in {s["status_text"] for t in b["zones"] for s in t["stations"]} and not any(t["status_text"] == "All clear" for t in b["zones"])
     assert sum(len(t["stations"]) for t in b["zones"]) == 20                                                          # the map draws all twenty
     now = datetime(2026, 9, 29, 6, 12)
@@ -120,10 +120,10 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
     assert cso["tone"] == "danger" and cso["headline"] == "Sewage discharge at 1 beach. Posted at 1 beach. 3 have no warning."
     assert cso["headline_html"] == '<em class="discharge">Sewage discharge at 1 beach.</em> <em class="posted">Posted at 1 beach.</em> 3 have no warning.'
     assert cso["lead"] == "Discharging: Crane Cove Park. Posted: Crissy East. SFPUC posts a beach when samples show bacteria more than the State standards. Sometimes SFPUC posts a beach as a precaution."   # facts only, no advice
-    assert cso["facts"] == [{"label": "City samples", "text": "The city collected samples 6 days ago (Sep 23)."}]
+    assert cso["facts"] == [{"label": "City Samples", "text": "The city collected samples 6 days ago (Sep 23)."}]
     ok = L.today_board([S("4601", "Fort Funston", "safe"), S("4602", "Ocean Beach at Sloat", "safe")], {}, "", now=now)
     assert ok["headline"] == "No warnings posted at any of the 2 monitored beaches." and ok["headline_html"] == '<em class="good">No warnings posted</em> at any of the 2 monitored beaches.'
-    assert ok["lead"] == "" and ok["facts"] == [{"label": "City samples", "text": "The city collected samples 6 days ago (Sep 23)."}]
+    assert ok["lead"] == "" and ok["facts"] == [{"label": "City Samples", "text": "The city collected samples 6 days ago (Sep 23)."}]
     assert ok["risk_lead"] == "" and L.today_board([], {}, "")["feed_ok"] is False and L.today_board([], {}, "", now=now)["facts"] == []
     import types as _t
     split = L.today_board([S("4601", "Fort Funston", "safe"), _t.SimpleNamespace(station_id="4602", station_name="Ocean Beach at Sloat", status=_t.SimpleNamespace(value="safe"), has_cso=False, sample_date=datetime(2026, 9, 16))], {}, "city 9/23 · 1 over", now=now)
@@ -132,10 +132,10 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
     assert one["headline"] == "Posted at 1 beach. 1 other has no warning." and one["lead"].startswith("Posted: Crissy East.")
     assert L.today_board([S("4612", "Crissy Field East", "posted")], {}, "", now=now)["headline"] == "Posted at 1 beach."
     solo = L.today_board([S("4601", "Fort Funston", "safe")], {}, "Surfrider 12/28", now=datetime(2027, 1, 3))
-    assert solo["headline"] == "No warnings posted at the 1 monitored beach." and solo["facts"][-1] == {"label": "Surfrider samples", "text": "6 days ago (Dec 28)"}   # a December date read in January is last year's
+    assert solo["headline"] == "No warnings posted at the 1 monitored beach." and solo["facts"][-1] == {"label": "Surfrider Samples", "text": "6 days ago (Dec 28)"}   # a December date read in January is last year's
     # Surfrider older than the city's newest sample: the row says the city has sampled since — a fact, no verdict on either (Chase, 2026-11-07)
     older = L.today_board([S("4601", "Fort Funston", "safe")], {}, "city 9/23 · Surfrider 9/14", now=now)
-    assert older["facts"][-1] == {"label": "Surfrider samples", "text": "15 days ago (Sep 14) · the city has a newer sample"}
+    assert older["facts"][-1] == {"label": "Surfrider Samples", "text": "15 days ago (Sep 14) · the city has a newer sample"}
     assert L.today_board(sts, {}, "Surfrider 9/23", now=now)["facts"][-1]["text"] == "6 days ago (Sep 23)"   # the same day is not older
     from shared.zones import ZONES as Z
     storm = [S(sid, st.name, "posted", cso=True) for sid, st in zip(Z["ocean"].station_ids, Z["ocean"].stations)] + [S("4619", "Islais Creek", "posted", cso=True), S("4620", "Crane Cove Park", "posted", cso=True),
