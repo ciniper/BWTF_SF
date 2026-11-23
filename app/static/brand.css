@@ -89,7 +89,7 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
 .topbar .mark{display:flex;align-items:center;gap:9px;color:var(--ink);text-decoration:none;white-space:nowrap}
 .topbar .mark img{width:34px;height:34px;border-radius:0}
 .topbar .mark span{display:flex;flex-direction:column;line-height:1}
-.topbar .mark b{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:26px;letter-spacing:.04em}
+.topbar .mark b{font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:-.01em}   /* the wordmark in Roboto bold, as written (2026-11-22) */
 .topbar .mark small{font:600 10px 'Roboto','Segoe UI',Arial,sans-serif;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-top:2px}
 .topbar .about{margin-left:auto;display:inline-flex;align-items:center;gap:5px;color:var(--muted);font-weight:600;font-size:13px;text-decoration:none;padding:6px 8px;border-radius:0}
 .topbar .about:hover{color:var(--brand);background:var(--sand2)}
@@ -204,7 +204,7 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
 @media (max-width:359px){
   .topbar .in{padding:8px 10px}
   .topbar .mark{gap:7px}
-  .topbar .mark b{font-size:18px}
+  .topbar .mark b{font-size:17px}
   .topbar .cta{padding:9px 9px 7px;font-size:14px;letter-spacing:.02em}
 }
 
