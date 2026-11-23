@@ -26,11 +26,11 @@
   .chip.z-north{background:#e8f4ea;color:#2f7d4c} .chip.z-east{background:#fdeee2;color:#b25b1e}
   .chip.sporadic{background:#eef1f3;color:#98a3ab}
   .barcell{min-width:190px}
-  .bar{display:inline-block;height:13px;border-radius:0;background:#0072BC;vertical-align:middle;margin-right:8px}
+  .bar{display:inline-block;height:22px;border-radius:0;background:#0072BC;vertical-align:middle;margin-right:10px}   /* thick Dark Blue bars, like the brand guide's charts (2026-11-23) */
   .bar.bad{background:#b5310a}
   .bar.warn{background:#d4763a}
   tr.sporadic .bar{background:#c4ccd2}
-  .pct{font-weight:700;font-variant-numeric:tabular-nums}
+  .pct{font-family:var(--display);font-weight:900;font-size:16px;color:#26272A;font-variant-numeric:tabular-nums}
   tr.detail td{background:#f6f9fb;padding:12px 16px 14px;border-bottom:1px solid #d9e4e8}
   .years{display:flex;gap:8px;flex-wrap:wrap}
   .yr{background:#fff;border:1px solid #d9e4e8;border-radius:0;padding:7px 11px;text-align:center;min-width:74px}
@@ -41,6 +41,36 @@
   .map-board{background:#fff;border:1px solid #d9e4e8;border-radius:0;padding:16px 18px;margin:0 0 16px}
   .map-board h2{font-size:16px;margin:2px 0 12px;color:#26272a}
   #map{height:480px;border-radius:0}
+  .an-top{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:stretch;margin:0 0 16px}
+  .an-top .map-board{margin:0;display:flex;flex-direction:column}
+  .an-top #map{flex:1;min-height:420px;height:auto}   /* the map fills its card, as tall as the filters beside it */
+  .an-controls{background:#fff;color:#26272A;padding:16px 18px;display:flex;flex-direction:column;gap:14px}   /* Surfrider Sky Blue card, black text, Light Blue selections (2026-11-23) */
+  .an-controls .ctl-label,.an-controls .legend,.an-controls .group-btn,.an-controls .seg-btn,.an-controls span{color:#26272A}
+  .an-controls .group-btn{border-color:#B4CDDE}
+  .an-controls .seg-toggle{border-color:#85BFDF}
+  .an-controls .group-btn.active,.an-controls .seg-btn.active{background:#85BFDF;border-color:#85BFDF;color:#26272A}
+  .an-controls .group-btn:hover{border-color:#85BFDF}
+  .an-controls .group-btn,.an-controls .seg-btn{transition:transform .15s ease,box-shadow .15s ease;position:relative}
+  .an-controls .group-btn:hover,.an-controls .seg-btn:hover,.an-controls .group-btn:focus-visible,.an-controls .seg-btn:focus-visible{transform:scale(1.03);box-shadow:0 4px 12px rgba(38,39,42,.15);z-index:1}   /* the same hover lift as the site's other boxes (2026-11-23) */
+  .an-controls .seg-btn:hover{background:#fff} .an-controls .seg-btn.active:hover{background:#85BFDF}
+  @media (prefers-reduced-motion:reduce){.an-controls .group-btn,.an-controls .seg-btn{transition:none}.an-controls .group-btn:hover,.an-controls .seg-btn:hover{transform:none}}
+  .an-controls{align-content:start}   /* one column: the sites, then Sampling and Standard (2026-11-23) */
+  .an-controls #groupBtns{gap:8px}
+  .an-controls #groupBtns .group-btn{padding:12px 14px;font-size:16px;min-height:48px;border-left:5px solid #85BFDF}   /* the sites as cards, about 2/3 the size of Today's posted-beach boxes */
+  .an-controls #groupBtns .group-btn.active{border-left-color:#0072BC}
+  .an-controls .group-btn,.an-controls .seg-btn{font-size:15px;padding-top:8px;padding-bottom:8px}
+  .an-controls .ctl-label{font-size:15px}
+  .an-controls .legend{font-size:14px}
+  .an-controls input[type=date]{font-size:14px}
+  .an-range{display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px 10px;margin:12px 0 0}
+  .an-range .group-btn{font-size:14px}
+  .an-controls .controls{flex-direction:column;align-items:stretch;flex-wrap:nowrap;gap:6px;margin:0}
+  .an-controls .group-btn,.an-controls .seg-btn{text-align:left}
+  .an-controls .seg-toggle{flex-direction:column;overflow:visible}
+  .an-controls .ctl-label{margin-top:6px}
+  .an-controls .legend{margin:4px 0 0}
+  .an-dates{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  @media (max-width:860px){.an-top{grid-template-columns:1fr}}
   .st-label{background:rgba(255,255,255,.92);border:1px solid #b9c6cd;border-radius:0;
     padding:1px 5px;font:700 10.5px 'Roboto','Segoe UI',Arial,sans-serif;color:#26272a;
     box-shadow:none;white-space:nowrap}
@@ -94,6 +124,8 @@
     <a href="/postings">Beach Postings</a> shows the signs that the public saw. The <a href="/discharges">Discharge Ledger</a> shows the discharges.</p>
   {% endcall %}
 
+  <div class="an-top">   {#- the filters in their own card at left, the map at right (2026-11-23) #}
+  <div class="an-controls">
   <div class="controls" id="groupBtns">
     <button class="group-btn active" data-zone="">All Sites</button>
     {% for z in zones %}<button class="group-btn" data-zone="{{ z.key }}">{{ z.label }}</button>{% endfor %}
@@ -110,19 +142,23 @@
     <div class="seg-toggle" id="stdToggle">
       {% for i in indicators %}<button class="seg-btn{% if i.code == graded_on %} active{% endif %}" data-indicator="{{ i.code }}" title="{{ i.title }}">{{ i.label }}</button>{% endfor %}
     </div>
+  </div>
+
+  </div>
+  <div class="map-board">
+    <h2>Site Map <span style="font-weight:600;color:#54576F;font-size:12.5px">— circle size &amp; color = % of samples that do not meet the standard in the current view · click a marker for details</span></h2>
+    <div id="map"></div>
+    <div class="controls an-range">   {#- the date range along the bottom of the map card (2026-11-23) #}
     <span class="ctl-label">Range:</span>
-    <input type="date" id="startDate" min="{{ floor }}">
+    <span class="an-dates"><input type="date" id="startDate" min="{{ floor }}">
     <span style="color:#54576F">→</span>
-    <input type="date" id="endDate" min="{{ floor }}">
+    <input type="date" id="endDate" min="{{ floor }}"></span>
     <button class="group-btn preset" data-days="365">1 Year</button>
     <button class="group-btn preset" data-days="1096">3 Years</button>
     <button class="group-btn preset" data-days="1826">5 Years</button>
     <button class="group-btn preset" data-days="">Full Record</button>
+    </div>
   </div>
-
-  <div class="map-board">
-    <h2>Site Map <span style="font-weight:600;color:#54576F;font-size:12.5px">— circle size &amp; color = % of samples that do not meet the standard in the current view · click a marker for details</span></h2>
-    <div id="map"></div>
   </div>
 
   <div class="board">

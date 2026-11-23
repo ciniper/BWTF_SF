@@ -10,9 +10,9 @@
 <style>
   input[type=number]{width:86px;padding:7px 10px;border:2px solid #d9e4e8;border-radius:0;font-family:inherit;font-size:13px;color:#26272a;background:#fff}
   .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:0 0 16px}
-  .card{background:#fff;border:1px solid #d9e4e8;border-radius:0;padding:14px 16px}
-  .card b{display:block;font-size:26px;font-variant-numeric:tabular-nums;color:#26272a}
-  .card span{font-size:13px;color:#54576F;font-weight:600}
+  .card{background:#fff;border:0;border-radius:0;padding:20px 22px}   /* Surfrider metric tiles, white on the light gray page (2026-11-23) */
+  .card b{display:block;font-family:var(--display);font-weight:900;letter-spacing:-.02em;color:#26272A;line-height:1;font-size:44px;font-variant-numeric:tabular-nums;margin:0 0 8px}
+  .card span{font-family:var(--display);font-weight:400;color:#26272A;line-height:1.35;font-size:15px}
   .board{background:#fff;border:1px solid #d9e4e8;border-radius:0;padding:14px 18px;margin:0 0 16px;overflow-x:auto}
   .board h2{font-size:16px;margin:2px 0 10px;color:#26272a}
   .board h2 span{font-weight:600;color:#54576F;font-size:13px}
@@ -79,12 +79,12 @@
   <div class="loading" id="loading">Loading the State Posting Record…</div>
   <div id="content" style="display:none">
     <div class="cards">
-      <div class="card"><b id="cAdv">–</b><span>Postings (Station-Advisories)</span></div>
-      <div class="card"><b id="cUDays">–</b><span>days with one or more postings · <span id="cUPct">–</span> of days</span></div>
-      <div class="card"><b id="cDays">–</b><span>Posted Station-Days</span></div>
-      <div class="card"><b id="cMed">–</b><span>Median Posting Length, Days</span></div>
-      <div class="card"><b id="cCso">–</b><span>of posted days have a sewage discharge as the cause</span></div>
-      <div class="card"><b id="cPerYr">–</b><span>Posted Station-Days per Year</span></div>
+      <div class="card"><img class="m-ic" src="{{ asset('icons/beach_closed.svg') }}" alt=""><b id="cAdv">–</b><span>Postings (Station-Advisories)</span></div>
+      <div class="card"><img class="m-ic" src="{{ asset('icons/event.svg') }}" alt=""><b id="cUDays">–</b><span>days with one or more postings · <span id="cUPct">–</span> of days</span></div>
+      <div class="card"><img class="m-ic" src="{{ asset('icons/location_pin.svg') }}" alt=""><b id="cDays">–</b><span>Posted Station-Days</span></div>
+      <div class="card"><img class="m-ic" src="{{ asset('icons/scale.svg') }}" alt=""><b id="cMed">–</b><span>Median Posting Length, Days</span></div>
+      <div class="card"><img class="m-ic" src="{{ asset('icons/sewage_spill.svg') }}" alt=""><b id="cCso">–</b><span>of posted days have a sewage discharge as the cause</span></div>
+      <div class="card"><img class="m-ic" src="{{ asset('icons/graph.svg') }}" alt=""><b id="cPerYr">–</b><span>Posted Station-Days per Year</span></div>
     </div>
 
     <div class="board">

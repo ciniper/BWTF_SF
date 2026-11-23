@@ -53,9 +53,10 @@
 {%- endfor %}
 {%- endmacro %}
 
-{% macro page_head(title, lead="", hub_key=None, how_label="How to Read This", link=None) -%}
+{% macro page_head(title, lead="", hub_key=None, how_label="How to Read This", link=None, icon=None) -%}
 {{ section_nav() }}
-<div class="page-head">
+<div class="page-head{% if icon %} has-icon{% endif %}">
+  {%- if icon %}<img class="ph-icon" src="{{ asset('icons/' ~ icon ~ '.svg') }}" alt="">{% endif %}
   <div class="ph-main">
     <h1>{{ title }}</h1>
     {%- if lead %}<p class="lead">{{ lead | safe }}</p>{% endif %}

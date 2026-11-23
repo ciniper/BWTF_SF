@@ -17,6 +17,18 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 
 
 .mode-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.fc-top { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "head nav" "head bar" "head how" "head ."; column-gap: 28px; align-items: start; }
+#riskBanner { background: #fff url("{{ asset('icons/bacteria.svg') }}") no-repeat right 22px center / auto calc(100% - 24px); padding-right: 150px; }   /* a Surfrider icon at the banner's right (2026-11-23): bacteria for the Water Quality Forecast, the sewage spill for SewerCast; a background, since the banner's contents are rewritten by script */
+body[data-fcview="cso"] #riskBanner { background-image: url("{{ asset('icons/sewage_spill.svg') }}"); }
+.fc-top > .secnav { grid-area: nav; justify-self: end; margin: 6px 0 10px; }
+.fc-top > #forecastHead { grid-area: head; min-width: 0; }
+.fc-top > .fc-how { grid-area: how; justify-self: end; color: var(--brand); font-weight: 700; font-size: 13px; text-decoration: none; margin: 0 0 10px; }
+.fc-top > .fc-how::after { content: " ▸"; } .fc-top > .fc-how.open::after { content: " ▾"; }
+.fc-top > .mode-bar { grid-area: bar; justify-content: flex-end; margin-bottom: 10px; }
+#forecastHead details.how > summary { display: none; }
+#forecastHead .page-head .lead { max-width: none; }
+#forecastHead .page-head .ph-main { padding-right: 0; }   /* no action link here: the text uses the full column */   /* the intro runs up to the switcher column, so the header is shorter (2026-11-23) */   /* opened from the link at right; the explanation still opens under the title */
+@media (max-width: 760px) { .fc-top { grid-template-columns: 1fr; grid-template-areas: "nav" "head" "bar" "how"; } #riskBanner { background-size: auto 56px; background-position: right 12px top 12px; padding-right: 76px; } .fc-top > .secnav, .fc-top > .fc-how { justify-self: start; } .fc-top > .mode-bar { justify-content: flex-start; } }
 .mode-btn { display: inline-flex; align-items: center; gap: 6px; font-family: inherit; padding: 7px 13px; border-radius: 0; border: 2px solid var(--line); background: #fff; color: var(--muted); cursor: pointer; font-size: 13px; font-weight: 700; }
 .mode-btn.active { border-color: var(--brand); color: #fff; background: var(--brand); }
 .mode-btn:hover { border-color: var(--sky); }
@@ -51,7 +63,7 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 .day-rain .amount { color: #0072BC; font-weight: 600; }
 .day-rain .ic { color: #0072BC; }
 .day-prob { font-size: 2em; font-weight: 700; }
-.day-risk { font-size: 0.7em; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+.day-risk { font-family: 'Roboto', sans-serif; font-size: 0.7em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
 .day-bar { height: 4px; border-radius: 2px; background: #d9e4e8; margin-top: 8px; overflow: hidden; }
 .day-bar-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
 .day-source { font-size: 0.82em; color: #8a93a3; margin-top: 6px; }
@@ -60,7 +72,9 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 .basins { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
 @media (max-width: 700px) { .basins { grid-template-columns: 1fr; } }
 .basin-card { background: #fff; border-radius: var(--r); padding: 16px; border: 2px solid var(--line); }
-.basin-name { font-size: 0.9em; color: #54576F; margin-bottom: 6px; }
+.basin-name { font-family: 'Roboto', sans-serif; font-weight: 700; font-size: 0.9em; color: #54576F; margin-bottom: 6px; }
+.basin-prob span { font-family: 'Roboto', sans-serif; font-weight: 700 !important; }
+.day-rain .ic, .basin-detail .ic { width: 1.6em; height: 1.6em; vertical-align: -.45em; }   /* the Surfrider rain icon, large enough to read (2026-11-23) */   /* the level word beside the score, bold; its colour stays the level's (2026-11-23) */
 .basin-prob { font-size: 1.8em; font-weight: 700; }
 .basin-bar { height: 6px; border-radius: 0; background: #d9e4e8; margin-top: 8px; overflow: hidden; }
 .basin-bar-fill { height: 100%; border-radius: 0; transition: width 0.5s; }
@@ -254,6 +268,7 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
 {{ topbar() }}
 <div class="container">
+<div class="fc-top">   {#- the page switcher, "How This Forecast Works" and the live toggle at right, beside the title (2026-11-23) #}
 <nav class="secnav" aria-label="Forecast pages">
     <div class="grp"><div class="pills">
         <a id="btnLive" class="on" aria-current="page" href="/forecast" onclick="setMode('live'); return false">Water Quality Forecast</a>
@@ -276,6 +291,7 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 {% endcall %}
 </div>
 
+<a class="fc-how" href="#" onclick="var d=document.querySelector('#forecastHead details.how'); d.open=!d.open; this.classList.toggle('open', d.open); return false">How This Forecast Works</a>
 <div class="mode-bar">
     <span id="datePickerWrap" style="display:none; align-items:center; gap:8px;">
         <input type="date" class="date-picker" id="datePicker" min="{{ min_date }}" max="{{ max_date }}" value="{{ default_date }}">
@@ -288,6 +304,7 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
         <button id="liveBtn" class="active" onclick="toggleLiveCorrections()"><svg class="ic"><use href="#i-satellite-dish"/></svg> Live Corrections: On</button>
     </span>
     <span class="historical-label" id="histLabel"></span>
+</div>
 </div>
 
 {# Model check: the stage builder on top; everything below it (date, timeline, zones, scorecard) folds under "Day by day" #}
@@ -454,6 +471,7 @@ function setHistoryView(mode) {
 }
 function setMode(mode) {
     const isCso = mode === 'cso';
+    document.body.dataset.fcview = isCso ? 'cso' : mode;   // the banner's icon follows the view (2026-11-23)
     if (isCso) mode = 'live';
     if (mode === 'live') currentView = isCso ? 'basins' : 'zones';
     const reviewing = mode !== 'live';

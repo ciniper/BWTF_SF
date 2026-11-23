@@ -10,9 +10,9 @@
 <style>
 
   .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:0 0 16px}
-  .tile{background:#fff;border:1px solid #d9e4e8;border-radius:0;padding:14px 18px}
-  .tile b{display:block;font-size:24px;font-variant-numeric:tabular-nums}
-  .tile span{font-size:13px;color:#54576F;font-weight:600}
+  .tile{background:#fff;border:0;border-radius:0;padding:20px 22px}   /* Surfrider metric tiles, white on the light gray page (2026-11-23) */
+  .tile b{display:block;font-family:var(--display);font-weight:900;letter-spacing:-.02em;color:#26272A;line-height:1;font-size:44px;font-variant-numeric:tabular-nums;margin:0 0 8px}
+  .tile span{font-family:var(--display);font-weight:400;color:#26272A;line-height:1.35;font-size:15px}
   .legend{margin-left:auto;font-size:13px;font-weight:600;color:#54576F}
   input[type=date]{padding:7px 10px;border:2px solid #d9e4e8;border-radius:0;font-family:inherit;font-size:13px;color:#26272a;background:#fff}
 
@@ -32,8 +32,8 @@
 
   .yrrow{display:flex;align-items:center;gap:10px;min-height:32px;font-size:13px}
   .yrrow .yl{width:44px;font-weight:700}
-  .yrrow .track{flex:1;position:relative;height:16px}
-  .yrrow .vol{position:absolute;top:1px;height:14px;border-radius:0;background:#0072BC}
+  .yrrow .track{flex:1;position:relative;height:24px}
+  .yrrow .vol{position:absolute;top:1px;height:22px;border-radius:0;background:#0072BC}   /* thick Dark Blue bars (2026-11-23) */
   .yrrow .vol.partial{background:repeating-linear-gradient(135deg,#7fa8c9 0 6px,#9dbdd8 6px 12px)}
   .yrrow .val{min-width:170px;max-width:52%;text-align:right;font-variant-numeric:tabular-nums;color:#3f474d;line-height:1.25}
   .bar{display:inline-block;height:13px;border-radius:0;background:#0072BC;vertical-align:middle;margin-right:8px}
@@ -210,10 +210,10 @@ function render() {
   const biggest = R.reduce((a,e) => (e.mg||0) > (a.mg||0) ? e : a, {});
   const wettest = Object.entries(years).sort((a,b)=>b[1].mg-a[1].mg)[0];
   document.getElementById("tiles").innerHTML = `
-    <div class="tile"><b>${MG(totMG)}</b><span>Total Reported Volume${STATE.water?" — "+STATE.water:""}${groupRows?" (No Bay Volumes Before Oct 2016)":""}</span></div>
-    <div class="tile"><b>${R.length.toLocaleString()}</b><span>Discharges Logged${R.some(e => e.kind !== "E")?" (Daily Totals Before 2016–2018)":""}</span></div>
-    <div class="tile"><b>${MGshort(biggest.mg)}</b><span>Largest Single Discharge (${biggest.date||"—"}${biggest.kind === "D" ? ", a Day's Total" : ""})</span></div>
-    <div class="tile"><b>${wettest?wettest[0]:"—"}</b><span>Biggest Year in Range (${wettest?MGshort(wettest[1].mg):"—"})</span></div>`;
+    <div class="tile"><img class="m-ic" src="{{ asset('icons/water_drop.svg') }}" alt=""><b>${MG(totMG)}</b><span>Total Reported Volume${STATE.water?" — "+STATE.water:""}${groupRows?" (No Bay Volumes Before Oct 2016)":""}</span></div>
+    <div class="tile"><img class="m-ic" src="{{ asset('icons/sewage_spill.svg') }}" alt=""><b>${R.length.toLocaleString()}</b><span>Discharges Logged${R.some(e => e.kind !== "E")?" (Daily Totals Before 2016–2018)":""}</span></div>
+    <div class="tile"><img class="m-ic" src="{{ asset('icons/wave.svg') }}" alt=""><b>${MGshort(biggest.mg)}</b><span>Largest Single Discharge (${biggest.date||"—"}${biggest.kind === "D" ? ", a Day's Total" : ""})</span></div>
+    <div class="tile"><img class="m-ic" src="{{ asset('icons/graph.svg') }}" alt=""><b>${wettest?wettest[0]:"—"}</b><span>Biggest Year in Range (${wettest?MGshort(wettest[1].mg):"—"})</span></div>`;
 
   // yearly bars
   const maxMG = Math.max(...Object.values(years).map(y=>y.mg), 1);
@@ -313,7 +313,7 @@ function updateMap() {
 // ─── Plot-it-yourself chart ──────────────────────────────────────────────────
 let CHART = null, chartKind = "scatter";
 const SELECTED = new Set();          // "W:<water>" or "O:<outfall id>"
-const PALETTE = ["#0072BC","#b5310a","#d4763a","#237059","#7b5cb8","#0e8a8a","#c23d80","#54576F","#8a6d3b","#356a9e"];
+const PALETTE = ["#0072BC","#26272A","#85BFDF","#54576F","#4fa7b5","#9ACDC1","#D15C5C","#B4CDDE","#005a96","#d4763a"];   // the Surfrider palette (2026-11-23)
 const OFAC = {};                     // outfall id -> facility
 
 function coveredYears(fac) {         // years with reported volumes for a system (from the server's coverage block)

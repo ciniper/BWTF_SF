@@ -11,6 +11,14 @@
 <style>
   section.board{display:grid;gap:20px;margin:0;padding:0;background:none}
   @media (min-width:981px){section.board{grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);align-items:start}}   /* status at left, the map and its notes at right: the page weighted evenly (2026-11-23) */
+  .status-card{position:relative}
+  .status-ic{position:absolute;top:18px;right:20px;width:76px;height:76px}
+  .status-card .eyebrow,.status-card h1{padding-right:84px}
+  .status-card .eyebrow{margin:0 0 14px}
+  .zones .zone{position:relative;padding-right:108px;min-height:96px}
+  @media (min-width:981px){.status-card .zones{grid-template-columns:1fr}}   /* one tile per row beside the map: wide, short tiles leave room for a large icon with even gaps (2026-11-23) */
+  .zone-ic{position:absolute;top:12px;bottom:12px;right:12px;height:calc(100% - 24px);width:auto;max-height:72px;aspect-ratio:1;margin:auto 0}   /* as tall as the tile allows, the same 12px from the top, bottom and right edges (2026-11-23) */
+  @media (max-width:760px){.status-ic{width:52px;height:52px;top:12px;right:12px}.zones .zone{padding-right:62px}.zone-ic{max-height:46px;right:8px}}
   .flagged{flex-direction:column;align-items:stretch} .flagged .flag{width:100%}   /* the warned beaches in one vertical list, each box the card's width */
   .info-card .left,.info-card{min-width:0}
   .map-card .info-card{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}   /* two cards, the gap the same as the page's space above the first (.wrap top padding) */
@@ -18,7 +26,7 @@
   .status-card .zones{margin-top:4px}   /* the accent bar: Surfrider Dark Blue (2026-11-23); the grade is in the headline, boxes and tiles */   /* the card's top rule carries the day's grade (Surfrider look, 2026-11-22: flat, square, no box outline) */
     .board .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(420px,44%);gap:22px;align-items:stretch}   /* the map takes its share of the wider frame */
   .eyebrow{font-family:var(--display);font-size:15px;font-weight:700;letter-spacing:0;text-transform:none;color:var(--ink)}   /* Roboto, as written (2026-11-22) */
-  .board h1{font-family:var(--display);font-weight:700;font-size:40px;line-height:1.08;margin:10px 0 10px;letter-spacing:-.02em;color:#000}
+  .board h1{font-family:var(--display);font-weight:700;font-size:40px;line-height:1.08;margin:0 0 8px;letter-spacing:-.02em;color:#000}
   .board h1 em{font-style:normal}
   .flagged{list-style:none;margin:0 0 18px;padding:0;display:flex;flex-wrap:wrap;gap:10px}
   .flagged .flag{display:flex;flex-direction:column;align-items:flex-start;gap:3px;margin:0;padding:10px 16px 11px;border:0;border-left:6px solid var(--posted);border-radius:0;background:#fbe9d9;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
@@ -104,9 +112,9 @@
   .map-legend .bwtf-dot,.colour-key .bwtf-dot{width:8.5px;height:8.5px}
   .map-legend .bwtf-dot{display:inline-block;margin:0 .75px}
   /* the collapsed key under the board: one paragraph per colour system (2026-11-08) */
-  .colour-key{margin:18px 0 0;font-size:13.5px;color:var(--muted)}
+  .colour-key{margin:18px 0 0;font-size:13.5px;color:var(--muted);grid-column:1 / -1}   /* the full width under both cards (2026-11-23) */
   .colour-key summary{cursor:pointer;font-weight:700;color:var(--brand);font-size:13px}
-  .colour-key dl{margin:10px 0 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:16px 24px}
+  .colour-key dl{margin:10px 0 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:16px 40px}
   .colour-key ul{list-style:none;margin:6px 0;padding:0}
   .colour-key li{display:grid;grid-template-columns:12px minmax(0,1fr);align-items:start;gap:7px}
   .colour-key li i{margin:5px 0 0;justify-self:center}
@@ -238,9 +246,10 @@
 
 {% macro board_section(board, sites=false, controls=false) -%}
   <section class="board tone-{{ board.tone }}" aria-labelledby="today-h">
-    <div class="card status-card">   {#- two cards (2026-11-23): the answer, the warned beaches and the four zones; then the explanation, the tools and the map #}
-        <div class="eyebrow">Beach Status · {{ board.date }} · {% if board.feed_ok %}SFPUC Map Checked {{ board.checked }}{% else %}SFPUC Map Unreachable{% endif %}</div>
+    <div class="card status-card">
+        <img class="status-ic" src="{{ asset('icons/sewage_spill.svg') }}" alt="">   {#- the Surfrider sewage-spill icon, top right (2026-11-23) #}   {#- two cards (2026-11-23): the answer, the warned beaches and the four zones; then the explanation, the tools and the map #}
         <h1 id="today-h">{{ board.headline_html|safe }}</h1>
+        <div class="eyebrow">{{ board.date }} · {% if board.feed_ok %}SFPUC Map Checked {{ board.checked }}{% else %}SFPUC Map Unreachable{% endif %}</div>   {#- under the headline, the date first (2026-11-23) #}
         {%- set flagged = [] %}{% for st in ("discharge", "posted") %}{% for z in board.zones %}{% for s in z.stations if s.status == st %}{% set _ = flagged.append(s) %}{% endfor %}{% endfor %}{% endfor %}
         {%- if flagged %}
         <ul class="flagged" aria-label="Beaches with a warning now">   {#- the posted and discharging beaches, each in its own box, first thing under the count (2026-11-23) #}
@@ -258,6 +267,7 @@
             <div class="nm">{{ z.label }}</div>
             <div class="stations">{% for s in z.stations %}<i class="status-dot {{ s.status }}" title="{{ s.full_name }} · {{ s.status_text }}"></i>{% endfor %}</div>
             <div class="meta">{{ z.meta }}</div>
+            <img class="zone-ic" src="{% if z.status == 'safe' %}{{ asset('icons/clean_water.svg') }}{% elif z.status in ('posted', 'discharge') %}{{ asset('icons/beach_closed.svg') }}{% endif %}" alt=""{% if z.status not in ('safe', 'posted', 'discharge') %} hidden{% endif %}>
           </button>
           {% endfor %}
         </div>
@@ -1037,5 +1047,18 @@ function initLayers() {
   if ([...want].some(k => ["rain", "outfalls", "labels"].includes(k))) openLayers(true);   // a link that turns a layer on shows it
 }
 window.addEventListener("DOMContentLoaded", initMap);
+// Zone tile icons (2026-11-23): the same gap from the right edge as from the top and bottom
+function fitZoneIcons() {   // one pass, no layout change: the tile's reserved right space is fixed in CSS
+  document.querySelectorAll(".zones .zone").forEach(z => {
+    const ic = z.querySelector(".zone-ic"); if (!ic || ic.hidden) return;
+    const h = z.clientHeight, room = parseFloat(getComputedStyle(z).paddingRight) - 4;   // the reserved column
+    const size = Math.max(28, Math.min(84, h - 24, 2 * room - h));   // equal gaps: size + 2·gap = h, and gap + size within the column
+    const gap = (h - size) / 2;
+    ic.style.height = ic.style.width = size + "px"; ic.style.maxHeight = "none"; ic.style.top = ic.style.bottom = "auto";
+    ic.style.top = gap + "px"; ic.style.right = Math.min(gap, room - size) + "px";
+  });
+}
+window.addEventListener("DOMContentLoaded", fitZoneIcons);
+window.addEventListener("resize", fitZoneIcons);
 </script>
 {%- endmacro %}

@@ -12,9 +12,9 @@
           .legend div{background:#fff;border:1px solid #d9e4e8;border-radius:0;padding:10px 14px;font-size:13px;color:#54576F}
           .legend b{color:#26272a}
           .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
-          .card{background:#fff;border:1px solid #d9e4e8;border-radius:0;padding:16px}
-          .card .n{font-size:28px;font-weight:800;color:#26272a}
-          .card .l{font-family:var(--display);font-weight:700;font-size:13px;color:#54576F;text-transform:none;letter-spacing:0;margin-top:4px}
+          .card{background:#fff;border:0;border-radius:0;padding:20px 22px}   /* Surfrider metric tiles, white on the light gray page (2026-11-23) */
+          .card .n{font-family:var(--display);font-weight:900;letter-spacing:-.02em;color:#26272A;line-height:1;font-size:52px}
+          .card .l{font-family:var(--display);font-weight:400;color:#26272A;line-height:1.35;font-size:15px;text-transform:none;letter-spacing:0;margin-top:8px}
           .banner{border-radius:0;padding:12px 16px;margin-bottom:18px;font-weight:600;font-size:14px}
           .banner--ok{background:rgba(37,214,112,.12);color:#146b37}
           .banner--warn{background:rgba(255,65,0,.10);color:#b5310a}
@@ -94,11 +94,11 @@
   {% endif %}
 
   <div class="cards">
-    <div class="card"><div class="n">{{ same_day.pairs }}</div><div class="l">{{ same_day.label }}</div></div>
-    <div class="card"><div class="n">{{ same_day.agree }}</div><div class="l">Agree on the Standard</div></div>
-    <div class="card"><div class="n">{{ same_day.differ }}</div><div class="l">Differ on the Standard</div></div>
-    <div class="card"><div class="n">{{ s.comparable_count }}/{{ s.site_count }}</div><div class="l">{{ "Sites with a Shared Date" if comparison_view == "shared" else "Sites with a Result from Both" }}</div></div>
-    <div class="card"><div class="n">{{ s.bwtf_exceed_count }} / {{ s.city_exceed_count }}</div><div class="l">BWTF / SFPUC {{ "Shared-Date" if comparison_view == "shared" else "Latest" }} Exceed</div></div>
+    <div class="card"><img class="m-ic" src="{{ asset('icons/blue_water_task_force.svg') }}" alt=""><div class="n">{{ same_day.pairs }}</div><div class="l">{{ same_day.label }}</div></div>
+    <div class="card"><img class="m-ic" src="{{ asset('icons/checklist.svg') }}" alt=""><div class="n">{{ same_day.agree }}</div><div class="l">Agree on the Standard</div></div>
+    <div class="card"><img class="m-ic" src="{{ asset('icons/scale.svg') }}" alt=""><div class="n">{{ same_day.differ }}</div><div class="l">Differ on the Standard</div></div>
+    <div class="card"><img class="m-ic" src="{{ asset('icons/location_pin.svg') }}" alt=""><div class="n">{{ s.comparable_count }}/{{ s.site_count }}</div><div class="l">{{ "Sites with a Shared Date" if comparison_view == "shared" else "Sites with a Result from Both" }}</div></div>
+    <div class="card"><img class="m-ic" src="{{ asset('icons/bacteria.svg') }}" alt=""><div class="n">{{ s.bwtf_exceed_count }} / {{ s.city_exceed_count }}</div><div class="l">BWTF / SFPUC {{ "Shared-Date" if comparison_view == "shared" else "Latest" }} Exceed</div></div>
   </div>
   <p class="hint">{% if same_day.sites %}We compare the two programs only on days when they sampled the same site: {{ same_day.sites }} site{{ "" if same_day.sites == 1 else "s" }} had such a day in the last year{% if same_day.latest %}. The most recent day was {{ same_day.latest }}{% endif %}. {% if comparison_view == "latest" %}The latest results for a site below are from different days, unless they have the mark "same day".{% endif %}{% else %}We compare the two programs only on days when they sampled the same site. The last year has no such days. Thus, there is no agreement score.{% endif %}</p>
 

@@ -29,7 +29,7 @@
     ".sp-date{margin:4px 0 0;font-size:16px;font-weight:700;color:#0072BC}.sp-date:empty{display:none}" +
     ".sp-note{color:#54576F;font-size:12.5px;margin:6px 0 12px;line-height:1.5}.sp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}.sp-grid.one{grid-template-columns:minmax(200px,340px)}" +
     ".sp-field{color:#54576F;font-size:12.5px;margin:12px 0 0;line-height:1.5}.sp-field:empty{display:none}" +
-    ".sp-cell{border:1px solid #d9e4e8;border-radius:0;padding:10px 12px}.sp-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#54576F;font-weight:700;margin:0 0 4px}" +
+    ".sp-cell{border:1px solid #d9e4e8;border-radius:0;padding:10px 12px}.sp-label{font-family:'Roboto Condensed','Roboto',sans-serif;font-size:14px;text-transform:none;letter-spacing:0;color:#26272A;font-weight:700;margin:0 0 4px}" +
     ".sp-chart{position:relative;height:170px}.sp-vals{margin-top:6px;font-size:13px;font-weight:700}.sp-val{display:inline-block;padding:1px 7px;border-radius:0;background:#eef2f4;margin-right:4px}" +
     ".sp-val.over{background:#d15c5c;color:#fff}.sp-val.caution{background:#fbeccd;color:#7a5200}.sp-val.none{background:transparent;color:#98a3ab;font-weight:600}" +
     ".sp-links{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0;font-size:12.5px}" +
@@ -40,6 +40,7 @@
   function modal() {
     if (el) return el;
     var st = document.createElement("style"); st.textContent = CSS; document.head.appendChild(st);
+    if (!document.getElementById("sp-font")) { var f = document.createElement("link"); f.id = "sp-font"; f.rel = "stylesheet"; f.href = "https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@700&display=swap"; document.head.appendChild(f); }   // the chart labels in Roboto Condensed Bold (2026-11-23)
     el = document.createElement("div"); el.className = "sp-modal"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true");
     el.innerHTML = '<div class="sp-box"><button type="button" class="sp-arrow prev" id="sp-prev" title="Older sample (←)" aria-label="Older sample">&lsaquo;</button><button type="button" class="sp-arrow next" id="sp-next" title="Newer sample (→)" aria-label="Newer sample">&rsaquo;</button><div class="sp-head"><h2 id="sp-title"></h2><button class="sp-close" type="button">Close &times;</button></div>' +
       '<p class="sp-date" id="sp-date"></p><div class="sp-stale" id="sp-stale" role="status" hidden></div><p class="sp-note" id="sp-note"></p><div class="sp-grid" id="sp-grid"></div><p class="sp-field" id="sp-field"></p><p class="sp-links" id="sp-links"></p></div>';
@@ -185,7 +186,7 @@
         if (seen) provenance += (seen.censored ? " · seen by " : " · first seen ") + new Date(seen.at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles" }) + " PT";
       }
       var why = (a.code === "COLI_TOTAL" && d.ratio_applied) ? ' <span title="' + esc(d.ratio_note) + '">(ratio rule)</span>' : "";
-      return '<div class="sp-cell"><div class="sp-label">' + esc(a.label) + " · limit " + fmt(d.limits[a.code]) + why + '</div><div class="sp-chart"><canvas data-code="' + esc(a.code) + '"></canvas></div><div class="sp-vals">' + chips + "</div>" + (provenance ? '<p class="sp-note">' + esc(provenance) + "</p>" : "") + "</div>";
+      return '<div class="sp-cell"><div class="sp-label">' + esc(String(a.label).replace(/\bcoliform\b/g, "Coliform")) + " · Limit " + fmt(d.limits[a.code]) + why.replace("(ratio rule)", "(Ratio Rule)") + '</div><div class="sp-chart"><canvas data-code="' + esc(a.code) + '"></canvas></div><div class="sp-vals">' + chips + "</div>" + (provenance ? '<p class="sp-note">' + esc(provenance) + "</p>" : "") + "</div>";
     }).join("");
     shown.forEach(function (a) {
       var vals = d.cells[a.code] || [], limit = d.limits[a.code], canvas = grid.querySelector('canvas[data-code="' + a.code + '"]');

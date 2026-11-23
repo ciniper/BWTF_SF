@@ -22,10 +22,10 @@
   .feature h2 a{color:var(--ink);text-decoration:none}
   .feature h2 a::after{content:"";position:absolute;inset:0;border-radius:var(--r)}   /* the whole card is the link */
   .feature .blurb{margin:6px 0 16px;color:var(--muted);max-width:60ch}
-  .stat{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px;margin:0 0 16px;padding-top:14px;border-top:1px solid var(--sand2);min-height:76px}
-  .stat b{font-family:var(--display);font-weight:700;font-size:40px;line-height:1.05;letter-spacing:-.02em;color:#000;white-space:nowrap}
+  .stat{display:flex;flex-direction:column;align-items:flex-start;gap:8px;margin:0 0 16px;padding:22px 24px;background:#E9EEF1;min-height:76px}   /* the Surfrider impact-metric tile: light gray, a big Roboto Black number, the label under it (2026-11-23) */
+  .stat b{font-family:var(--display);font-weight:900;letter-spacing:-.02em;color:#26272A;line-height:1;font-size:64px;white-space:nowrap}
   .stat b:empty{display:none}
-  .stat span{flex:1 1 220px;color:var(--muted);font-size:14px;line-height:1.45}
+  .stat span{font-family:var(--display);font-weight:400;color:#26272A;line-height:1.35;font-size:16px}
   .stat span strong{color:var(--ink);font-weight:700}
   .stat.pending span{color:var(--faint)}   /* while the number loads (DataSF can take seconds): its room is kept, so nothing under it jumps */
   .stat[hidden]{display:none}
@@ -40,14 +40,14 @@
   .pages a:hover .name{color:var(--brand)}
   .pages .blurb{display:block;color:var(--muted);font-size:13.5px;margin-top:2px;max-width:62ch}
   @media (max-width:900px){.groups{grid-template-columns:1fr;grid-template-rows:none;grid-auto-flow:row}}
-  @media (max-width:760px){.wrap{padding:14px 14px 30px}.feature{padding:16px 16px 18px}.rest{padding:12px 16px 4px}.stat b{font-size:40px}}
+  @media (max-width:760px){.wrap{padding:14px 14px 30px}.feature{padding:16px 16px 18px}.rest{padding:12px 16px 4px}.stat b{font-size:48px}}
 </style>
 </head>
 <body>
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
 {{ topbar() }}
 <div class="wrap">
-  {{ page_head("Data", "The records for the board: what the labs found in the water, and what the city reported about its sewers and beaches.") }}
+  {{ page_head("Data", "The records for the board: what the labs found in the water, and what the city reported about its sewers and beaches.", icon="graph") }}
   <div class="groups">
     {% for g in groups %}
     {%- set f = g.featured %}
@@ -57,11 +57,11 @@
       <p class="blurb">{{ f.blurb }}</p>
       {% if f.href == "/discharges" %}
       {%- if ledger %}
-      <p class="stat"><b>{{ "{:,}".format(ledger.count) }} Discharge{{ "" if ledger.count == 1 else "s" }}</b><span>reported in {{ ledger.year }}. Total volume: <strong>{{ ledger.volume }}</strong>. The reports include data to {{ ledger.through }}.</span></p>
+      <p class="stat"><img class="m-ic" src="{{ asset('icons/sewage_spill.svg') }}" alt=""><b>{{ "{:,}".format(ledger.count) }} Discharge{{ "" if ledger.count == 1 else "s" }}</b><span>reported in {{ ledger.year }}. Total volume: <strong>{{ ledger.volume }}</strong>. The reports include data to {{ ledger.through }}.</span></p>
       {%- endif %}
       <span class="go">Open the Ledger →</span>
       {% else %}
-      <p class="stat pending" id="rc-stat"><b id="rc-pct"></b><span id="rc-text">Calculating the Samples for the Last Year…</span></p>   {#- filled from /analysis/api/summary once the page has drawn #}
+      <p class="stat pending" id="rc-stat"><img class="m-ic" src="{{ asset('icons/bacteria.svg') }}" alt=""><b id="rc-pct"></b><span id="rc-text">Calculating the Samples for the Last Year…</span></p>   {#- filled from /analysis/api/summary once the page has drawn #}
       <span class="go">Open the Report Card →</span>
       {% endif %}
     </section>

@@ -128,6 +128,12 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
 
 /* ── Frame: page head (replaces the blue hero on tool pages) ─────────────── */
 .page-head{position:relative;margin:4px 0 22px}
+:has(> .m-ic){position:relative;padding-right:76px!important}
+.m-ic{position:absolute;top:16px;right:16px;display:block;width:52px;height:52px;margin:0}   /* a Surfrider icon in the top right of a metric tile, the number at top left (2026-11-23) */
+.page-head .ph-icon{position:absolute;top:0;right:0;width:104px;height:104px}   /* a Surfrider icon for the page, top right (2026-11-23) */
+.page-head.has-icon .ph-main{padding-right:130px}
+.page-head .ph-icon[src*="/storm"]{width:184px;height:184px}   /* the Forecast's storm: as tall as its title and lead (2026-11-23) */
+.page-head.has-icon:has(.ph-icon[src*="/storm"]) .ph-main{padding-right:210px}
 .page-head .ph-main{padding-right:250px}   /* room for the action pill, pinned top right */
 .page-head .crumbs{font:700 13px/1.2 var(--display);letter-spacing:0;text-transform:none;color:var(--muted);margin:0 0 8px}
 .page-head .crumbs a{color:var(--brand);text-decoration:none;font-weight:600}
@@ -194,6 +200,9 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
   .topbar .about{padding:6px}
   .topbar .cta{margin-left:0;padding:9px 10px 7px;font-size:15px;letter-spacing:.05em}
   .page-head .ph-main{padding-right:0}
+  .page-head .ph-icon,.page-head .ph-icon[src*="/storm"]{width:60px;height:60px}
+  .page-head.has-icon:has(.ph-icon[src*="/storm"]) .ph-main{padding-right:70px}
+  .page-head.has-icon .ph-main{padding-right:70px}
   .page-head h1{font-size:34px}
   .page-head .ph-link{position:static;margin-top:10px}
   .tabbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:40;background:#fff;border-top:1px solid var(--line);justify-content:space-around;padding:8px 6px calc(8px + env(safe-area-inset-bottom));font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:11px;line-height:1.2}
