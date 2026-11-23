@@ -1,13 +1,13 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">
-<title>Sample Gap — Admin · SF Beach Water</title>
+<title>Sample Gap — Admin · San Francisco Beach Water Quality</title>
 <link rel="icon" href="{{ asset('brand/favicon.ico') }}">
 <link rel="stylesheet" href="{{ asset('brand.css') }}">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
 body{margin:0;background:var(--sand);color:var(--ink);font:15px/1.5 'Roboto',Arial,sans-serif}.wrap{max-width:var(--page-w);margin:auto;padding:20px 24px 48px}
-.panel,.metric,.sample{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:20px;margin:16px 0}.panel h2,.sample h2{font-size:19px;margin:0}.muted,.note{color:var(--muted)}.note{font-size:13px}.eyebrow{font-family:var(--label);font-size:14px;text-transform:uppercase;letter-spacing:.12em;font-weight:400;color:var(--muted)}
+.panel,.metric,.sample{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:20px;margin:16px 0}.panel h2,.sample h2{font-size:19px;margin:0}.muted,.note{color:var(--muted)}.note{font-size:13px}.eyebrow{font-family:var(--display);font-size:13px;text-transform:none;letter-spacing:0;font-weight:700;color:var(--muted)}
 .health{display:flex;gap:12px;justify-content:space-between;align-items:center;flex-wrap:wrap}.badge{border-radius:0;padding:4px 12px;background:#fff0d7;color:#784500;font-weight:700;font-size:13px}.badge.good{background:#e3f4ed;color:#17604b}.health p{margin:5px 0 0}.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.metric{margin:0}.number{display:block;font-size:30px;font-weight:900;color:var(--brand)}.metric small{display:block;color:var(--muted)}
 .filters{display:flex;gap:16px;align-items:end;flex-wrap:wrap}.filters label{display:grid;gap:4px;font-size:13px;font-weight:700}.filters select,.filters input{box-sizing:border-box;min-height:42px;padding:8px 12px;border:1px solid var(--line);border-radius:0;background:#fff;color:var(--ink);font:inherit;max-width:100%}.filters button{min-height:42px;border:0;border-radius:0;padding:9px 22px;background:var(--brand);color:#fff;font:inherit;font-weight:700;cursor:pointer}.station-filter{flex:1;min-width:220px}.warn{background:#fff4dc;border:1px solid #e3c48e;padding:12px 16px;border-radius:0;margin:12px 0}
 .sample-head{display:flex;justify-content:space-between;align-items:start;gap:16px}.sample-head p{margin:3px 0}.sample-day{white-space:nowrap;font-size:13px;color:var(--muted)}.indicators{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:18px 0;gap:12px}.indicator{padding:12px;background:var(--sand);border-radius:0}.indicator h3{font-size:13px;margin:0 0 5px}.value{font-size:24px;font-weight:700;line-height:1.3}.indicator p{font-size:12px;margin:5px 0}.pending{font-size:16px;color:#85551c}.indicator small{font-size:12px;color:var(--muted)}
@@ -26,24 +26,24 @@ details{border-top:1px solid var(--line);padding-top:12px}summary{cursor:pointer
 {% endcall %}
 {{ admin_tabs('sample-gap') }}
 <section class="panel health" aria-label="Collector status">
-<div><span class="eyebrow">getCSV collector · every two minutes</span><p><b>Last successful read:</b> {{ fmt_time(m.runtime.get('last_success_at')) }} PT{% if m.runtime.get('last_row_count') is not none %} · {{ m.runtime.last_row_count }} feed rows{% endif %}</p></div>
+<div><span class="eyebrow">getCSV collector · every two minutes</span><p><b>Last Successful Read:</b> {{ fmt_time(m.runtime.get('last_success_at')) }} PT{% if m.runtime.get('last_row_count') is not none %} · {{ m.runtime.last_row_count }} feed rows{% endif %}</p></div>
 <span class="badge{% if m.health == 'Recording' %} good{% endif %}">{{ m.health }}</span>
 {% if m.runtime.get('last_error') %}<p class="warn" role="status">{{ m.runtime.last_error }} · {{ fmt_time(m.runtime.get('last_error_at')) }} PT. We keep the results that we recorded before.</p>{% endif %}
 </section>
 <form class="panel filters" method="get" action="/alerts/sample-gap">
-<label class="station-filter">Station<select name="station"><option value="">All stations</option>{% for code, station in stations.items() %}<option value="{{ code }}"{% if s.station == code %} selected{% endif %}>{{ station.name }}</option>{% endfor %}</select></label>
-<label>Collected from<input type="date" name="from" value="{{ s['from'] }}"></label>
-<label>Through<input type="date" name="to" value="{{ s['to'] }}"></label><button type="submit">View observations</button>
+<label class="station-filter">Station<select name="station"><option value="">All Stations</option>{% for code, station in stations.items() %}<option value="{{ code }}"{% if s.station == code %} selected{% endif %}>{{ station.name }}</option>{% endfor %}</select></label>
+<label>Collected From<input type="date" name="from" value="{{ s['from'] }}"></label>
+<label>Through<input type="date" name="to" value="{{ s['to'] }}"></label><button type="submit">View Observations</button>
 </form>
 <p class="note">Collection dates {{ s['from'] }}–{{ s['to'] }}. Each view shows a maximum of 31 days. Times are Pacific. To see the latest collection status, refresh this page.</p>
 {% for note in m.notes %}<p class="warn" role="status">{{ note }}</p>{% endfor %}
-<div class="metrics"><div class="metric"><span class="number">{{ m.cards|length }}</span><small>Station sample-days recorded</small></div><div class="metric"><span class="number">{{ m.early }}</span><small>Values without a DataSF archive row</small></div><div class="metric"><span class="number">{{ m.revisions }}</span><small>Indicator changes / removals observed</small></div></div>
+<div class="metrics"><div class="metric"><span class="number">{{ m.cards|length }}</span><small>Station Sample-Days Recorded</small></div><div class="metric"><span class="number">{{ m.early }}</span><small>Values Without a DataSF Archive Row</small></div><div class="metric"><span class="number">{{ m.revisions }}</span><small>Indicator Changes / Removals Observed</small></div></div>
 {% for card in m.cards %}
 <article class="sample">
 <header class="sample-head"><div><h2>{{ card.name }}</h2><span class="source">{{ card.source }}</span></div><div class="sample-day">Collected <b>{{ card.day }}</b></div></header>
 <div class="indicators">
 {% for cell in card.cells %}<section class="indicator"><h3>{{ cell.label }}</h3>
-<div class="value{% if cell.value is none %} pending{% endif %}">{{ cell.value if cell.value is not none else ('Removed from feed' if cell.removed else 'Not observed') }}</div>
+<div class="value{% if cell.value is none %} pending{% endif %}">{{ cell.value if cell.value is not none else ('Removed From Feed' if cell.removed else 'Not Observed') }}</div>
 <p>{% if cell.first %}{{ 'Present by' if cell.first.observation_kind == 'baseline' else 'First seen' }} {{ fmt_time(cell.first.observed_at) }} PT{% else %}No number recorded for this indicator.{% endif %}</p>
 <small>DataSF archive: {{ cell.datasf if cell.datasf is not none else 'not observed' }}{% if cell.revisions %} · {{ cell.revisions }} change{{ '' if cell.revisions == 1 else 's' }}{% endif %}</small>
 </section>{% endfor %}</div>

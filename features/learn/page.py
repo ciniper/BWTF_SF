@@ -38,6 +38,7 @@ from features.learn.collect import GET_ROUTES as COLLECT_ROUTES
 from features.postings.page import _CSV as POSTINGS_CSV
 from shared.outfalls import OUTFALLS
 from shared.standards import ENTERO_CAUTION, STANDARDS
+from shared.text import title_case
 
 
 def _plants() -> dict:
@@ -279,16 +280,16 @@ PHOTO_CREDIT = ("Photos: SFPUC, from its Sewer System Master Plan (2010); photog
 
 
 def _ph(file: str, cap: str, small: bool = False) -> dict:
-    return {"file": "learn/" + file, "cap": cap, "small": small}   # small: the original is under 400 px, shown near its size
+    return {"file": "learn/" + file, "cap": title_case(cap), "small": small}   # captions are title case (2026-11-22)   # small: the original is under 400 px, shown near its size
 
 TIMELINE = [
     {"when": "1850s", "title": "The First Sewers", "src": _SSMP,
      "text": "During the Gold Rush, San Francisco starts to install sewers. They carry sewage and rain in the same pipe, down to the shoreline. One tenth of the smaller city sewers (36 inches or less) that are still in use are from before 1900."},
     {"when": "1899", "title": "The First Master Plan", "src": _SSMP, "todo": "A brick sewer under construction",
      "text": "The city already has more than 300 miles of combined sewers. Its first coordinated sewer plan gives 700 miles of sewers and four pump stations. Sewage no longer spills onto land."},
-    {"when": "1901–1940", "title": "Half of Today's Pipes", "src": _SSMP, "photos": [_ph("brick_sewer.jpg", "Inside one of the old brick sewers", small=True)],
+    {"when": "1901–1940", "title": "Half of Today's Pipes", "src": _SSMP, "photos": [_ph("brick_sewer.jpg", "Inside One of the Old Brick Sewers", small=True)],
      "text": "The city installs almost half of the smaller sewers that are in use today (49%) in these four decades."},
-    {"when": "1932", "title": "The McQueen Plant", "src": _SSMP, "photos": [_ph("plant_mcqueen_1932.jpg", "The McQueen plant", small=True)],
+    {"when": "1932", "title": "The McQueen Plant", "src": _SSMP, "photos": [_ph("plant_mcqueen_1932.jpg", "The McQueen Plant", small=True)],
      "text": "The first treatment plant on the SFPUC timeline of the system. It is three years before the second master plan."},
     {"when": "1935", "title": "A Plan for Treatment", "src": _SSMP,
      "text": "The second master plan gives the city its first treatment plants and deep-water outfalls, and a total of 900 miles of sewers. Sewage spills in dry weather stop."},
@@ -299,7 +300,7 @@ TIMELINE = [
      "text": "Congress passes the Clean Water Act. Two years later, the city makes its next master plan as a reply."},
     {"when": "1974", "title": "The Plan That Built the Moat", "src": _SSMP, "todo": "Building a transport/storage structure",
      "text": "The city builds these in approximately 25 years: secondary treatment for all dry-weather flow, the Southwest Ocean Outfall, and 17 miles of transport/storage structures around the shore. The structures hold 197 million gallons. Discharges decrease to an average of 4.4% of the flow for the year."},
-    {"when": "Early 1980s", "title": "Southeast Goes Secondary", "src": _SSMP, "photos": [_ph("southeast_aerial.jpg", "The Southeast plant and its Bayview neighbors")],
+    {"when": "Early 1980s", "title": "Southeast Goes Secondary", "src": _SSMP, "photos": [_ph("southeast_aerial.jpg", "The Southeast Plant and its Bayview neighbors")],
      "text": "In 1982, the city upgrades the Southeast plant to secondary treatment. The plant treats all the dry-weather flow of the Bayside. North Point becomes a wet-weather facility. It operates only during storms."},
     {"when": "1986", "title": "Four Miles Out", "src": _SSMP, "todo": "Laying the ocean outfall",
      "text": "The Southwest Ocean Outfall opens. It is a 12-foot pipe under the seabed. It goes approximately four miles offshore to 85 diffusers, approximately 80 feet deep."},

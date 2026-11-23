@@ -30,7 +30,7 @@ def timestamp(value):
 
 def fmt_time(value):
     dt = timestamp(value) if not isinstance(value, datetime) else value
-    return dt.astimezone(PACIFIC).strftime('%b %-d, %-I:%M %p') if dt else 'Not observed'
+    return dt.astimezone(PACIFIC).strftime('%b %-d, %-I:%M %p') if dt else 'Not Observed'
 
 
 def settings(query, today):

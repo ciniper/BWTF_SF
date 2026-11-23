@@ -62,10 +62,10 @@
 {{ topbar() }}
 <div class="wrap">
   {% call page_head("Email Simulator", "The number of alert emails that one subscriber would get in a past period. It shows the current sender, and the sender with a hold, a window rule and the same-day rule. This page does not change the emails that the site sends.") %}
-    <p><b>Today's sender</b> sends one email to a subscriber for each minute in which one or more of their stations became worse: clear → posted, clear → discharge, or posted → discharge. It does not send an email when a station becomes clear.</p>
-    <p><b>Hold</b> waits for the set number of minutes after a change. It then sends one email for all the changes in that time. <b>From the first change</b> keeps the window fixed. Thus, an alert waits for the hold time or less. <b>Restart on each change</b> sends when there are no changes for the hold time. This can make the wait longer.</p>
+    <p><b>Today's Sender</b> sends one email to a subscriber for each minute in which one or more of their stations became worse: clear → posted, clear → discharge, or posted → discharge. It does not send an email when a station becomes clear.</p>
+    <p><b>Hold</b> waits for the set number of minutes after a change. It then sends one email for all the changes in that time. <b>From the First Change</b> keeps the window fixed. Thus, an alert waits for the hold time or less. <b>Restart on Each Change</b> sends when there are no changes for the hold time. This can make the wait longer.</p>
     <p><b>Each email lists</b>: the email today shows only the stations that just became worse. A <b>running list</b> (an idea that we did not use yet) adds a "Still in effect" section. This section shows the other stations of the subscriber that are still posted or discharging when the email goes out.</p>
-    <p><b>Same-day rule</b>: if a station had a discharge flag earlier on the same Pacific day, it does not send a second discharge email that day. If a flag comes back the next day, it sends an email as usual.</p>
+    <p><b>Same-Day Rule</b>: if a station had a discharge flag earlier on the same Pacific day, it does not send a second discharge email that day. If a flag comes back the next day, it sends an email as usual.</p>
     <p>The history comes from the <a href="/cso-history">Online Postings Timeline</a>. It uses the real (not simulated) changes in the alert log. It merges duplicate detections.</p>
   {% endcall %}
 
@@ -84,39 +84,39 @@
     </label>
     <label>From <input type="date" name="from" value="{{ s['from'].isoformat() }}"></label>
     <label>To <input type="date" name="to" value="{{ s['to'].isoformat() }}"></label>
-    <label>Hold (minutes) <input type="number" name="hold" min="0" max="1440" step="1" value="{{ s.hold }}"></label>
+    <label>Hold (Minutes) <input type="number" name="hold" min="0" max="1440" step="1" value="{{ s.hold }}"></label>
     <fieldset><legend>Window</legend>
-      <label class="opt"><input type="radio" name="window" value="first"{% if s.window == 'first' %} checked{% endif %}> From the first change</label>
-      <label class="opt"><input type="radio" name="window" value="restart"{% if s.window == 'restart' %} checked{% endif %}> Restart on each change</label>
+      <label class="opt"><input type="radio" name="window" value="first"{% if s.window == 'first' %} checked{% endif %}> From the First Change</label>
+      <label class="opt"><input type="radio" name="window" value="restart"{% if s.window == 'restart' %} checked{% endif %}> Restart on Each Change</label>
     </fieldset>
     <fieldset><legend>Each Email Lists</legend>
-      <label class="opt"><input type="radio" name="content" value="new"{% if s.content == 'new' %} checked{% endif %}> Only new alerts <small>(today)</small></label>
-      <label class="opt"><input type="radio" name="content" value="running"{% if s.content == 'running' %} checked{% endif %}> Running list <small>(+ still in effect)</small></label>
+      <label class="opt"><input type="radio" name="content" value="new"{% if s.content == 'new' %} checked{% endif %}> Only New Alerts <small>(Today)</small></label>
+      <label class="opt"><input type="radio" name="content" value="running"{% if s.content == 'running' %} checked{% endif %}> Running List <small>(+ Still in Effect)</small></label>
     </fieldset>
     <fieldset><legend>Rules</legend>
-      <label class="opt"><input type="checkbox" name="same_day" value="on"{% if s.same_day %} checked{% endif %}> Same-day rule <small>(no repeat posting or discharge email)</small></label>
+      <label class="opt"><input type="checkbox" name="same_day" value="on"{% if s.same_day %} checked{% endif %}> Same-Day Rule <small>(No Repeat Posting or Discharge Email)</small></label>
     </fieldset>
-    <div><button type="submit">Count emails</button></div>
+    <div><button type="submit">Count Emails</button></div>
   </form>
 
   {% if note %}<p class="warn">{{ note }}</p>{% endif %}
 
   <div class="totals">
-    <div class="total"><div class="n">{{ r.now.total }}</div><div class="k">emails from today's sender</div></div>
+    <div class="total"><div class="n">{{ r.now.total }}</div><div class="k">Emails from Today's Sender</div></div>
     <div class="total plan">
       <div class="n">{{ r.plan.total }}</div>
       <div class="k">with {% if s.hold %}a {{ s.hold }}-minute hold ({{ 'from the first change' if s.window == 'first' else 'restarting on each change' }}){% else %}no hold{% endif %}{% if s.same_day %} and the same-day rule{% endif %}</div>
       {%- set diff = r.plan.total - r.now.total %}
       {% if diff %}<div class="delta">{{ "%+d" % diff }} ({{ "%+d" % ((diff * 100 / r.now.total) | round | int) if r.now.total else "" }}%)</div>{% endif %}
     </div>
-    <div class="total"><div class="n">{{ r.plan.longest_wait }} min</div><div class="k">longest wait for an alert</div></div>
-    <div class="total"><div class="n">{{ r.plan.skipped | length }}</div><div class="k">repeated statuses that the same-day rule skips</div></div>
+    <div class="total"><div class="n">{{ r.plan.longest_wait }} min</div><div class="k">Longest Wait for an Alert</div></div>
+    <div class="total"><div class="n">{{ r.plan.skipped | length }}</div><div class="k">Repeated Statuses That the Same-Day Rule Skips</div></div>
   </div>
 
   <section class="panel">
     <h2>By Day · {{ r.label }}</h2>
     <div class="scroll"><table class="t">
-      <thead><tr><th>Day</th><th>Today's sender</th><th>With these settings</th></tr></thead>
+      <thead><tr><th>Day</th><th>Today's Sender</th><th>With These Settings</th></tr></thead>
       <tbody>
         {%- for d in r.days %}
         <tr{% if not d.now and not d.plan %} class="quiet"{% endif %}><td>{{ d.day.strftime('%a %-m/%-d') }}</td><td class="n">{{ d.now }}</td><td class="n">{{ d.plan }}</td></tr>

@@ -44,18 +44,18 @@ HUBS = [
     },
     {
         "key": "water", "icon": "flask", "title": "The Water Record",
-        "sub": "What the labs found",
+        "sub": "What the Labs Found",
         "primary": None,
         "rows": [
             ("/analysis", "Site Report Card",
              "How frequently each shoreline site does not meet the state bacteria standard. It shows rankings, the effect of the storm season, and trends for each year from the city lab data.",
-             "rankings · trends"),
+             "Rankings · Trends"),
             ("/samples", "Samples",
              "All published results from the city lab and the Surfrider volunteers, one row for each sample, with the field notes from the volunteers.",
              "every result · both programs"),
             ("/graphs", "Graphs",
              "A site over time. The graph shows the three indicators and the state limits, or it compares the city and Surfrider.",
-             "any site · all indicators"),
+             "Any Site · All Indicators"),
             ("/compare", "Source Comparison",
              "The six beaches that the two programs sample. It compares the Surfrider volunteer lab with the city lab, with the latest result and the agreement for each site.",
              "six dual beaches · head to head"),   # a row like the others, not a sub-row under Graphs (Chase, 2026-09-29)
@@ -63,7 +63,7 @@ HUBS = [
     },
     {
         "key": "record", "icon": "clipboard", "title": "Discharges & Postings",   # discharges first (Chase, 2026-11-04)
-        "sub": "What the city reported, and when",
+        "sub": "What the City Reported, and When",
         "primary": None,
         "rows": [
             ("/discharges", "Discharge Ledger",
@@ -99,13 +99,13 @@ NAV_SECTIONS = [
     {"key": "today", "title": "Today", "icon": "waves", "href": "/", "groups": []},
     {"key": "forecast", "title": "Forecast", "icon": "cloud-rain", "href": "/forecast", "groups": []},
     {"key": "data", "title": "Data", "icon": "chart", "href": "/data", "groups": [
-        {"key": "water", "label": "Lab Results", "sub": "What the labs found", "icon": "flask", "pages": [
+        {"key": "water", "label": "Lab Results", "sub": "What the Labs Found", "icon": "flask", "pages": [
             ("/analysis", "Report Card", ("/analysis/testing",)),
             ("/samples", "Samples", ()),
             ("/graphs", "Graphs", ()),
             ("/compare", "Compare", ()),
         ]},
-        {"key": "record", "label": "City Records", "sub": "What the city reported, and when", "icon": "clipboard", "pages": [
+        {"key": "record", "label": "City Records", "sub": "What the City Reported, and When", "icon": "clipboard", "pages": [
             ("/discharges", "Discharges", ("/discharges/reporting",)),
             ("/postings", "Postings", ()),
             ("/cso-history", "Online Timeline", ()),
@@ -403,17 +403,8 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
         tiles.append({"key": zk, "label": z.label, "status": status, "status_text": text, "risk": risk,
                       "level": level_of_percent(risk).key if risk is not None else None,   # the tile's number colour (shared/risk_levels.py)
                       "stations": sts, "meta": meta})
-    # The headline reads like a public notice and keeps one shape at any severity: counts only
-    # (Chase, 2026-09-29: "beaches" and "posted"). The names go first in the subhead, where a whole
-    # zone collapses to "all of <Zone>" and the list stops at three items ("… and N more").
-    def describe(names_by_zone: dict) -> str:
-        items = []
-        for zk, names in names_by_zone.items():
-            if len(names) > 1 and len(names) == len(ZONES[zk].stations):
-                items.append(f"all of {ZONES[zk].label}")
-            else:
-                items.extend(names)
-        return _join(items) if len(items) <= 3 else ", ".join(items[:3]) + f" and {len(items) - 3} more"
+    # The headline reads like a public notice: counts only (Chase, 2026-09-29). The posted and discharging
+    # beaches follow it as bold boxes, each its own name (2026-11-23), so the first thing on the page is which ones.
     n_cso, n_posted = len(discharging), len(posted)
     plural = lambda n, one, many: one if n == 1 else many  # noqa: E731
     # Colour carries the grade: the discharge sentence red, the posted sentence orange, the all-clear green,
@@ -425,16 +416,11 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
         parts = [("discharge", f"Sewage discharge at {n_cso} {plural(n_cso, 'beach', 'beaches')}.")]
         if n_posted:
             parts.append(("posted", f"Posted at {n_posted} {plural(n_posted, 'beach', 'beaches')}."))   # parallel to the discharge phrase, so two counts never sit side by side (Chase, 2026-09-30)
-        if n_safe:
-            parts.append(("", f"{n_safe} {plural(n_safe, 'has', 'have')} no warning." if n_posted
-                          else f"{n_safe} other {plural(n_safe, 'beach has', 'beaches have')} no warning."))
     elif n_graded == 0:
         tone, parts = "warn", [("warn", "Beach status is not available now.")]
     elif n_posted:
         tone = "warn"
-        parts = [("posted", f"Posted at {n_posted} {plural(n_posted, 'beach', 'beaches')}.")]
-        if n_safe:
-            parts.append(("", f"{n_safe} {plural(n_safe, 'other has', 'others have')} no warning."))
+        parts = [("posted", f"Posted at {n_posted} {plural(n_posted, 'beach', 'beaches')}.")]   # the count only; the beaches themselves are the boxes under the headline (2026-11-23)
     else:
         tone, parts = "ok", [("", f"<good>No warnings posted</good> at {'the' if n_graded == 1 else 'any of the'} {n_graded} monitored {plural(n_graded, 'beach', 'beaches')}.")]
     headline = " ".join(t for _, t in parts).replace("<good>", "").replace("</good>", "")
@@ -443,9 +429,9 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
     # The subhead stays low: facts only, no advice (Chase, 2026-09-29).
     lead = []
     if n_cso:
-        lead.append("Discharging: " + describe(cso_by_zone) + ".")
+        lead.append("SFPUC shows a combined sewer discharge at the boxed beaches in the last 24 to 72 hours.")
     if n_posted:   # the status word is SFPUC's; the reason, in their terms, follows — the feed does not say which applies
-        lead.append("Posted: " + describe(posted_by_zone) + ". SFPUC posts a beach when samples show bacteria more than the State standards. Sometimes SFPUC posts a beach as a precaution.")
+        lead.append("SFPUC posts a beach when samples show bacteria more than the State standards. Sometimes SFPUC posts a beach as a precaution.")   # the names are the boxes above (2026-11-23)
     zr = risks.get("zones") or {}
     risk_lead = ""   # the forecast's sentence: inside the board's collapsed "Sewer-overflow forecast · Beta" line since 2026-11-08 (in the subhead 2026-11-06; behind the Risk view chip before that, Chase, 2026-10-18)
     if zr:

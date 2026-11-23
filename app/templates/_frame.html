@@ -17,7 +17,7 @@
 <aside class="beta" aria-label="Beta notice"><div class="in"><b>Beta</b><p>This site is in a test phase. It is not an official beach advisory. <span class="more">Its data can be late or incorrect. </span>Always obey the posted signs and <a href="https://webapps.sfpuc.org/sapps/beachesandbay.html" target="_blank" rel="noopener">SFPUC's beach map</a>. <span class="fb">Send Beta <a href="mailto:ciniper@gmail.com?subject=BWTF-SF%20BETA%20FEEDBACK">Feedback</a>.</span></p></div></aside>
 <header class="topbar">
   <div class="in">
-    <a class="mark" href="/"><img src="{{ asset('brand/bwtf_144x144.png') }}" alt=""><span><b>SF Beach Water</b><small>Surfrider SF · Blue Water Task Force</small></span></a>
+    <a class="mark" href="/"><img class="logo" src="{{ asset('brand/bwtf_program_logo.svg') }}" alt="Surfrider Blue Water Task Force" width="82" height="46"><span><b>San Francisco Beach Water Quality</b><small>Surfrider SF · Blue Water Task Force</small></span></a>
     <nav class="tabs" aria-label="Sections">
       {%- for h in NAV %}
       <a href="{{ h.href }}"{% if p in h.paths %} class="on"{% endif %}{% if p == h.href %} aria-current="page"{% endif %}>{{ h.title }}</a>

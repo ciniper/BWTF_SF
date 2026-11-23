@@ -22,7 +22,7 @@
     return toks.join("");
   }
   var CHART_SRC = "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js";
-  var COLORS = { ENTERO: "#0072BC", COLI_FECAL: "#d4763a", COLI_E: "#8f5cc7", COLI_TOTAL: "#26272a", BWTF: "#317fb2", BWTF_LIGHT: "#7ab8e0",
+  var COLORS = { ENTERO: "#0072BC", COLI_FECAL: "#4fa7b5", COLI_E: "#54576F", COLI_TOTAL: "#26272a", BWTF: "#0072BC", BWTF_LIGHT: "#85BFDF",
                  CITY: "#26272a", OVER: "#d15c5c", CAUTION: "#d4a017", LIMIT: "#ff4100", CAUTION_LINE: "#b97e00" };
   var LABELS = { ENTERO: "Enterococcus", COLI_FECAL: "Fecal Coliform", COLI_E: "E. coli", COLI_TOTAL: "Total Coliform" };
   var fmt = function (n) { return n == null ? "—" : Number(n).toLocaleString(); };

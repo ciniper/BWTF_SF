@@ -5,7 +5,7 @@
       {{ admin_tab_styles() }} in the head, {{ admin_tabs("costs") }} where the row goes -#}
 
 {%- set ADMIN_TABS = [
-  ("real", "/alerts", "waves", "Real", "SFPUC feed as published"),
+  ("real", "/alerts", "waves", "Real", "SFPUC Feed as Published"),
   ("sim", "/alerts#sim", "flask", "Simulation", ""),
   ("costs", "/alerts/costs", "receipt", "Running costs", ""),
   ("lab-sop", "/alerts/lab-sop", "microscope", "Lab SOP", ""),
@@ -23,7 +23,7 @@
   .admin-tabs a{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:0;border:2px solid var(--line);background:#fff;color:var(--muted);font-weight:700;text-decoration:none}
   .admin-tabs a small{font-weight:500;color:var(--faint)}
   .admin-tabs a:hover{border-color:var(--sky)}
-  .admin-tabs a.on{background:var(--char);border-color:var(--char);color:#fff}.admin-tabs a.on small{color:rgba(255,255,255,.8)}
+  .admin-tabs a.on{background:var(--brand);border-color:var(--brand);color:#fff}.admin-tabs a.on small{color:rgba(255,255,255,.8)}
 </style>
 {%- endmacro %}
 

@@ -30,7 +30,7 @@ def test_layout_pairs_steps_as_the_wall_pages_do():
     items = {it.get("n"): it for ph in S.PHASES for it in S.layout(ph["items"]) if "n" in it}
     assert [n for n, it in items.items() if not it["wide"]] == [3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 21, 22, 23, 24]
     assert items[1]["pics"][0]["inset"]["src"].endswith("s01_rinse_pole.jpg") and len(items[1]["pics"]) == 2   # the pole rides on the waders photo
-    assert items[18]["checks"][2] == ("discard", "Discard", "Bad seal or 3+ empty wells")
+    assert items[18]["checks"][2] == ("discard", "Discard", "Bad Seal or 3+ Empty Wells")
 
 
 def test_page_and_photos_sit_behind_the_passphrase():
@@ -63,7 +63,7 @@ def test_page_and_photos_sit_behind_the_passphrase():
     assert 'class="secnav"' not in h and 'class="subtabs"' not in h and "coming soon" not in h   # Admin and its tabs sit in no hub (2026-11-04)
     assert 'href="/alerts/lab-sop" class="on" aria-current="page"' in h and f"/alerts/lab-sop/photos/{name}?v=" in h     # its own Admin tab, and its photos
     assert h.count('class="step') == 25 and h.count('<img class="main"') == 19 and h.count('<img class="inset"') == 2 and h.count('class="pic slot"') == 9
-    assert "Begin aseptic protocol" in h and h.count("Contamination risk") == 2 and "Examine the control first" in h and "bwtf.surfrider.org" in h
+    assert "Begin Aseptic Protocol" in h and h.count("Contamination risk") == 2 and "Examine the control first" in h and "bwtf.surfrider.org" in h
     for ph in S.PHASES:
         assert f'id="{ph["key"]}"' in h and f'href="#{ph["key"]}"' in h
 

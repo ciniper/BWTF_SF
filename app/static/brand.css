@@ -23,7 +23,7 @@
 /* ── Design tokens (redesign, 2026-09-29) ─────────────────────────────────────
    One palette, one radius scale, one set of status colours. Pages should read
    these instead of re-declaring hex values. */
-:root{--brand:#0072BC;--brand-deep:#005a96;--sky:#85BFDF;--ink:#26272A;--muted:#54576F;--faint:#8a949b;--line:#dcdfe2;--sand:#f3f3f3;--sand2:#ebebeb;--pale:#b4cdde;--pale2:#a8c5d8;--char:#26272A;
+:root{--brand:#0072BC;--brand-deep:#005a96;--sky:#85BFDF;--ink:#26272A;--muted:#54576F;--faint:#8a949b;--line:#d3dce1;--sand:#E9EEF1;--sand2:#dde5ea;--pale:#B4CDDE;--pale2:#88C8D2;--char:#26272A;--aqua:#88C8D2;--seafoam:#9ACDC1;--red:#D15C5C;
       --safe:#237059;--caution:#c99a12;--posted:#d4763a;--discharge:#b5310a;--unknown:#98a3ab;--r:0;--r-lg:0;--page-w:1280px;
       --display:'Roboto','Segoe UI',Arial,sans-serif;--label:'Bebas Neue','Roboto',sans-serif}   /* Surfrider look (2026-11-22): square corners, big bold Roboto headlines, Bebas only for small spaced labels and buttons */
    /* one frame width on every page — header, content and footer (Chase, 2026-09-29: no jumping between pages) */
@@ -38,15 +38,15 @@ a{color:var(--brand)}
 body>.wrap,body>.container{width:100%}   /* body is a flex column and auto margins switch off stretch: without an explicit width the column shrink-wraps its widest child (a table, a card row) and grows past a phone's screen, so the phone zooms out */
 .controls{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:center;margin:0 0 12px}
 .ctl-label{font-family:var(--display);font-size:13px;font-weight:700;text-transform:none;letter-spacing:0;color:var(--ink);line-height:1.2}   /* Roboto, as written (2026-11-22) */
-.seg-toggle{display:inline-flex;max-width:100%;border:2px solid var(--char);border-radius:0;overflow:auto hidden;scrollbar-width:none;background:#fff}   /* wider than a phone (the Report Card's five standards): it scrolls sideways inside its pill; it used to squeeze its labels onto two lines and clip the last one */
+.seg-toggle{display:inline-flex;max-width:100%;border:2px solid var(--brand);border-radius:0;overflow:auto hidden;scrollbar-width:none;background:#fff}   /* wider than a phone (the Report Card's five standards): it scrolls sideways inside its pill; it used to squeeze its labels onto two lines and clip the last one */
 .seg-toggle::-webkit-scrollbar{display:none}
 .seg-btn{flex:none;white-space:nowrap;padding:7px 14px;border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
 .seg-btn:hover{color:var(--ink)}
-.seg-btn.active{background:var(--char);color:#fff}
+.seg-btn.active{background:var(--brand);color:#fff}   /* selected: Surfrider Dark Blue (brand colors, 2026-11-23) */
 .seg-btn:disabled{color:#b4b2a9;cursor:default}
 .preset,.v-preset,.group-btn,.range-btn{padding:7px 13px;border-radius:0;border:2px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
-.preset:hover,.v-preset:hover,.group-btn:hover,.range-btn:hover{border-color:var(--char);color:var(--ink)}
-.preset.active,.v-preset.active,.group-btn.active,.range-btn.active{border-color:var(--char);background:var(--char);color:#fff}
+.preset:hover,.v-preset:hover,.group-btn:hover,.range-btn:hover{border-color:var(--brand);color:var(--ink)}
+.preset.active,.v-preset.active,.group-btn.active,.range-btn.active{border-color:var(--brand);background:var(--brand);color:#fff}
 a.preset{display:inline-block;text-decoration:none;line-height:normal} a.preset.cross{color:var(--ink);border-color:var(--char)} a.preset.cross:hover{background:var(--char);color:#fff}
 /* the site picker Graphs and Samples share (_site_picker.html + site_picker.js): the site is the board's title;
    the name + chevron opens the zone tiles beneath (Chase, 2026-10-20) */
@@ -62,7 +62,7 @@ a.preset{display:inline-block;text-decoration:none;line-height:normal} a.preset.
 .tile-group-name{font-family:var(--display);font-size:13px;text-transform:none;letter-spacing:0;color:var(--ink);font-weight:700;margin:0 0 6px}
 .tile-row{display:flex;flex-wrap:wrap;gap:8px}
 .tile{padding:8px 12px;border-radius:0;border:2px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;font:700 13px 'Roboto','Segoe UI',Arial,sans-serif;text-align:left;line-height:1.25}
-.tile:hover{border-color:var(--char)} .tile.active{border-color:var(--char);background:var(--char);color:#fff}
+.tile:hover{border-color:var(--brand)} .tile.active{border-color:var(--brand);background:var(--brand);color:#fff}
 .tile[hidden],.tile-group[hidden]{display:none}
 select,input[type=date]{font-size:13px;padding:7px 10px;border:2px solid var(--line);border-radius:0;background:#fff;color:var(--ink);font-family:inherit;font-weight:600}
 .board{background:#fff;border-radius:var(--r);padding:22px 24px;margin:0 0 20px}
@@ -77,31 +77,35 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
 .seg-btn:focus-visible{outline-offset:-3px}
 
 /* ── Frame: top bar ───────────────────────────────────────────────────────── */
-.beta{background:var(--pale);color:var(--ink);font:400 12.5px/1.35 'Roboto','Segoe UI',Arial,sans-serif}   /* the site-wide Beta notice (_frame.html topbar), above the bar on every page */
+.beta{background:#fff;color:var(--ink);border-bottom:1px solid var(--line);font:400 12.5px/1.35 'Roboto','Segoe UI',Arial,sans-serif}   /* the site-wide Beta notice (_frame.html topbar), above the bar on every page */
 .beta .in{max-width:var(--page-w);margin:0 auto;padding:6px 24px;display:flex;align-items:baseline;gap:10px}
 .beta b{flex:none;font:400 14px/1 var(--label);letter-spacing:.14em;text-transform:uppercase;color:#fff;background:var(--char);border-radius:0;padding:4px 8px 3px;position:relative;top:-1px}
 .beta p{margin:0;flex:1}
 .beta a{color:var(--ink);font-weight:700;text-decoration:underline;text-underline-offset:2px}
 .beta .fb{float:right;margin-left:12px;white-space:nowrap}   /* the testers' feedback email (2026-11-04): the banner's right end where the notice fits one line */
 @media (max-width:1180px){.beta .fb{float:none;margin-left:0;white-space:normal}}   /* narrower: right after the beach map link, flowing with the sentence */
-.topbar{background:#fff;border-bottom:1px solid var(--line);position:relative;z-index:30;font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:14px;line-height:1.2}   /* the frame sets its own type: a page's body rule (Today's line-height:1.5) would otherwise resize the bar between pages (Chase, 2026-09-30: no jumping) */
+.topbar{background:var(--aqua);color:var(--ink);border-bottom:0;position:relative;z-index:30;font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:14px;line-height:1.2}   /* the frame sets its own type: a page's body rule (Today's line-height:1.5) would otherwise resize the bar between pages (Chase, 2026-09-30: no jumping) */
 .topbar .in{max-width:var(--page-w);margin:0 auto;padding:12px 24px;display:flex;align-items:center;gap:14px}
 .topbar .mark{display:flex;align-items:center;gap:9px;color:var(--ink);text-decoration:none;white-space:nowrap}
-.topbar .mark img{width:34px;height:34px;border-radius:0}
+.topbar .mark img{width:82px;height:46px;border-radius:0;margin:-6px 0}   /* the BWTF program logo (Surfrider brand assets, 2026-11-23); its own margins are in the SVG */
 .topbar .mark span{display:flex;flex-direction:column;line-height:1}
 .topbar .mark b{font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:-.01em}   /* the wordmark in Roboto bold, as written (2026-11-22) */
-.topbar .mark small{font:600 10px 'Roboto','Segoe UI',Arial,sans-serif;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-top:2px}
-.topbar .about{margin-left:auto;display:inline-flex;align-items:center;gap:5px;color:var(--muted);font-weight:600;font-size:13px;text-decoration:none;padding:6px 8px;border-radius:0}
-.topbar .about:hover{color:var(--brand);background:var(--sand2)}
+.topbar .mark small{font:600 10px 'Roboto','Segoe UI',Arial,sans-serif;letter-spacing:.07em;text-transform:uppercase;color:var(--ink);margin-top:2px}
+.topbar .about{margin-left:auto;display:inline-flex;align-items:center;gap:5px;color:var(--ink);font-weight:600;font-size:13px;text-decoration:none;padding:6px 8px;border-radius:0}
+.topbar .about:hover{background:rgba(255,255,255,.35)}
 .topbar .about .ic{width:16px;height:16px}
 .topbar .tabs{display:flex;gap:2px;margin-left:6px}
 .topbar .tabs a{display:block;color:var(--ink);text-decoration:none;font-weight:700;font-size:16px;padding:12px 12px 9px;border-bottom:3px solid transparent;white-space:nowrap}
-.topbar .tabs a:hover{color:var(--brand)}
-.topbar .tabs a.on{color:var(--ink);border-color:var(--char)}
+.topbar .tabs a:hover{border-color:rgba(38,39,42,.35)}
+.topbar .tabs a.on{color:var(--ink);border-color:var(--ink)}
 .topbar .cta{margin:0 0 0 6px;background:var(--char);color:#fff;border-radius:0;padding:11px 20px 9px;font:400 17px/1 var(--label);letter-spacing:.14em;text-transform:uppercase;text-decoration:none;white-space:nowrap}   /* margin in full: a page's own .cta margin (the old Main page's hub cards) used to push it down */
 .topbar .cta:hover{background:var(--brand)}
 /* Between the phone layout and full width the bar tightens in two steps instead of scrolling every page sideways:
    at full size it needs ~982px (it was 957px wide in a 768px iPad, 2026-10-02). The hub tabs keep their full labels. */
+@media (min-width:761px) and (max-width:1180px){
+  .topbar .mark{white-space:normal}
+  .topbar .mark b{font-size:17px;line-height:1.1;max-width:10em}   /* the long name on two lines between tablet and wide desktop */
+}
 @media (max-width:1023px){
   .topbar .mark small{display:none}
   .topbar .about span{display:none}   /* the icon stays; the link's title names it */
@@ -163,15 +167,18 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
 .secnav{display:flex;flex-wrap:wrap;align-items:center;gap:8px 22px;margin:0 0 16px;font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:13px;line-height:1.2}
 .secnav .grp{display:flex;align-items:center;gap:8px;min-width:0}
 .secnav .lbl{font-family:var(--display);font-size:12px;font-weight:700;letter-spacing:0;text-transform:none;color:var(--muted);white-space:nowrap}
-.secnav .pills{display:flex;gap:2px;padding:3px;border-radius:0;background:#e2e2e2;min-width:0;overflow-x:auto;scrollbar-width:none}
+.secnav .pills{display:flex;gap:2px;padding:3px;border-radius:0;background:#fff;min-width:0;overflow-x:auto;scrollbar-width:none}
 .secnav .pills::-webkit-scrollbar{display:none}
 .secnav a{display:block;padding:6px 13px;border-radius:0;color:var(--muted);font-weight:600;text-decoration:none;white-space:nowrap}
 .secnav a:hover{color:var(--ink)}
-.secnav a.on{background:var(--char);color:#fff;font-weight:700}
+.secnav a.on{background:var(--brand);color:#fff;font-weight:700}
 
 /* ── Frame: phone tab bar (hidden on wide screens) ────────────────────────── */
 .tabbar{display:none}
 @media (max-width:760px){
+  .topbar .mark{gap:6px;white-space:normal}
+  .topbar .mark img{width:50px;height:28px;margin:-3px 0}   /* the program logo, smaller on a phone so the bar fits */
+  .topbar .mark b{font-size:13px;line-height:1.1;max-width:7.6em}   /* the long name wraps onto stacked lines */
   .beta .in{padding:6px 14px;gap:8px;font-size:12px}
   .beta .more{display:none}   /* shorter on a phone: three lines, not five */
   .topbar .tabs{display:none}
@@ -204,7 +211,7 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
 @media (max-width:359px){
   .topbar .in{padding:8px 10px}
   .topbar .mark{gap:7px}
-  .topbar .mark b{font-size:17px}
+  .topbar .mark span{display:none}   /* the narrowest phones: the logo alone */
   .topbar .cta{padding:9px 9px 7px;font-size:14px;letter-spacing:.02em}
 }
 

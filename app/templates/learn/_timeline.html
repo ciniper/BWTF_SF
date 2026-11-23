@@ -62,14 +62,14 @@
             <h3>{{ s.title }}</h3>
             <p>{{ s.text }}</p>
             {% if s.photos %}<div class="photos n{{ s.photos|length }}">{% for ph in s.photos %}<figure{% if ph.small %} class="small"{% endif %}><img src="{{ asset(ph.file) }}" alt="{{ ph.cap }}" loading="lazy" decoding="async"><figcaption>{{ ph.cap }}</figcaption></figure>{% endfor %}</div>{% endif %}
-            {% if s.todo %}<div class="ph-frame">Photo to come · {{ s.todo }}</div>{% endif %}
+            {% if s.todo %}<div class="ph-frame">Photo to Come · {{ s.todo | title_case }}</div>{% endif %}
             <small class="src">{{ s.src }}</small>
           </div>
         </li>
         {% endfor %}
       </ol>
     </div>
-    <p class="tl-toggle"><button type="button" class="btn ghost" id="tl-more" aria-controls="tl" aria-expanded="true" hidden>Collapse the timeline ↑</button></p>
+    <p class="tl-toggle"><button type="button" class="btn ghost" id="tl-more" aria-controls="tl" aria-expanded="true" hidden>Collapse the Timeline ↑</button></p>
     <div class="swatches"><span><i style="background:var(--brand);border-radius:50%"></i>from SFPUC's master plan</span><span><i style="background:var(--safe);border-radius:50%"></i>from the records this site keeps</span></div>
     <p class="more">{{ photo_credit }}</p>
   </section>
@@ -94,7 +94,7 @@
     addEventListener("scroll", step, {passive: true}); addEventListener("resize", step);
     const more = $("tl-more"), fold = on => {
       tl.classList.toggle("collapsed", on); more.setAttribute("aria-expanded", String(!on));
-      more.textContent = on ? `Show all ${stops.length} stops, to ${stops[stops.length - 1].querySelector(".when").textContent} ↓` : "Collapse the timeline ↑";
+      more.textContent = on ? `Show all ${stops.length} stops, to ${stops[stops.length - 1].querySelector(".when").textContent} ↓` : "Collapse the Timeline ↑";
       step();
     };
     more.hidden = false; fold(true);

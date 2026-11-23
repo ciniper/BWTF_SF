@@ -9,12 +9,20 @@
 
 {% macro board_styles() -%}
 <style>
-  .board{background:#fff;border-radius:var(--r-lg);padding:28px 30px;margin:0;border:0;border-top:6px solid var(--line)}   /* the card's top rule carries the day's grade (Surfrider look, 2026-11-22: flat, square, no box outline) */
-  .board.tone-ok{border-color:var(--safe)}.board.tone-warn{border-color:var(--posted)}.board.tone-danger{border-color:var(--discharge)}
-  .board .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(420px,44%);gap:22px;align-items:stretch}   /* the map takes its share of the wider frame */
+  section.board{display:grid;gap:20px;margin:0;padding:0;background:none}   /* two cards, the gap the same as the page's space above the first (.wrap top padding) */
+  .board .card{background:#fff;border-radius:var(--r-lg);padding:28px 30px;border-top:6px solid var(--brand)}   /* the accent bar: Surfrider Dark Blue (2026-11-23) */
+  .status-card .zones{margin-top:4px}   /* the accent bar: Surfrider Dark Blue (2026-11-23); the grade is in the headline, boxes and tiles */   /* the card's top rule carries the day's grade (Surfrider look, 2026-11-22: flat, square, no box outline) */
+    .board .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(420px,44%);gap:22px;align-items:stretch}   /* the map takes its share of the wider frame */
   .eyebrow{font-family:var(--display);font-size:15px;font-weight:700;letter-spacing:0;text-transform:none;color:var(--ink)}   /* Roboto, as written (2026-11-22) */
   .board h1{font-family:var(--display);font-weight:700;font-size:40px;line-height:1.08;margin:10px 0 10px;letter-spacing:-.02em;color:#000}
   .board h1 em{font-style:normal}
+  .flagged{list-style:none;margin:0 0 18px;padding:0;display:flex;flex-wrap:wrap;gap:10px}
+  .flagged .flag{display:flex;flex-direction:column;align-items:flex-start;gap:3px;margin:0;padding:10px 16px 11px;border:0;border-left:6px solid var(--posted);border-radius:0;background:#fbe9d9;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+  .flagged .flag b{font-size:19px;font-weight:700;line-height:1.2;letter-spacing:-.01em}
+  .flagged .flag-st{font-size:12px;font-weight:700;color:#9a5313}
+  .flagged .flag.discharge{border-left-color:var(--discharge);background:#f8dcd6} .flagged .flag.discharge .flag-st{color:var(--discharge)}
+  .flagged .flag:hover{filter:brightness(.96)}
+  .board.replaying .flagged{display:none}   /* a replayed day's beaches are its own; the boxes are today's */
   .board h1 em.posted,.board h1 em.warn{color:var(--posted)}.board h1 em.discharge{color:var(--discharge)}.board h1 em.good{color:var(--safe)}
   .board .lead{font-size:16px;line-height:1.7;color:var(--ink);margin:0 0 18px}
   .board .facts{display:grid;gap:5px;margin:0 0 16px}
@@ -25,7 +33,7 @@
   .zones{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .zone{border:0;border-left:5px solid var(--line);border-radius:var(--r);padding:12px 13px 11px 14px;color:inherit;background:var(--sand);display:block;width:100%;text-align:left;cursor:pointer;font:inherit}
   .zone:hover{background:var(--sand2)}
-  .zone.safe{border-color:var(--safe)}.zone.posted{border-color:var(--posted)}.zone.discharge{border-color:var(--discharge)}   /* same grade colours as the card, thin */
+  .zone.safe{border-color:var(--safe);background:var(--pale)} .zone.safe .meta{color:var(--ink)} .zone.safe:hover{background:#a6c2d6}   /* No Warning tiles: Surfrider Sky Blue #B4CDDE (2026-11-23) */.zone.posted{border-color:var(--posted)}.zone.discharge{border-color:var(--discharge)}   /* same grade colours as the card, thin */
   /* the chosen zone (Chase, 2026-10-01: "more obvious"): a brand ring outside the grade border, which keeps its colour,
      and the other zones dimmed, as their stations are off the map; tap it again, or Whole city, for all */
   .zone{transition:opacity .15s,box-shadow .15s}
@@ -135,9 +143,9 @@
   .layers .ctl-group{gap:6px 8px;padding:8px 10px}
   .layers .switch{gap:0;padding:6px 10px;border:2px solid var(--line);border-radius:0;font-size:13px;color:var(--muted)}
   .layers .switch .track{display:none}
-  .layers .switch:has(input:checked){background:var(--char);border-color:var(--char);color:#fff}
+  .layers .switch:has(input:checked){background:var(--brand);border-color:var(--brand);color:#fff}
   .layers .switch:has(input:focus-visible){outline:3px solid var(--sky);outline-offset:2px}
-  .layers .switch:hover{border-color:var(--char)}
+  .layers .switch:hover{border-color:var(--brand)}
   .layers .preset,.layers-toggle{padding:6px 10px;font-size:13px;line-height:1.5}
   .zone.wet{background:#eef5fb}
   .zone .rainline{color:var(--brand);font-size:12px;font-weight:600;margin-top:4px}
@@ -160,7 +168,8 @@
   }
   @media (max-width:980px){.board .grid{grid-template-columns:1fr}.map-wrap{min-height:300px}}
   @media (max-width:760px){
-    .board{padding:18px 16px}
+    section.board{gap:14px}
+    .board .card{padding:18px 16px}
     .board h1{font-size:28px}
     .board .lead{font-size:14px;margin-bottom:12px}
     .board .facts div{flex-direction:column;gap:1px;font-size:13.5px}
@@ -225,12 +234,17 @@
 
 {% macro board_section(board, sites=false, controls=false) -%}
   <section class="board tone-{{ board.tone }}" aria-labelledby="today-h">
-    <div class="grid">
-      <div class="left">
+    <div class="card status-card">   {#- two cards (2026-11-23): the answer, the warned beaches and the four zones; then the explanation, the tools and the map #}
         <div class="eyebrow">Beach Status · {{ board.date }} · {% if board.feed_ok %}SFPUC Map Checked {{ board.checked }}{% else %}SFPUC Map Unreachable{% endif %}</div>
         <h1 id="today-h">{{ board.headline_html|safe }}</h1>
-        <p class="lead">{{ board.lead }}</p>
-        {% if board.facts %}<dl class="facts">{% for f in board.facts %}<div><dt>{{ f.label }}</dt><dd>{{ f.text[:1]|upper }}{{ f.text[1:] }}</dd></div>{% endfor %}</dl>{% endif %}
+        {%- set flagged = [] %}{% for st in ("discharge", "posted") %}{% for z in board.zones %}{% for s in z.stations if s.status == st %}{% set _ = flagged.append(s) %}{% endfor %}{% endfor %}{% endfor %}
+        {%- if flagged %}
+        <ul class="flagged" aria-label="Beaches with a warning now">   {#- the posted and discharging beaches, each in its own box, first thing under the count (2026-11-23) #}
+          {%- for s in flagged %}
+          <li><button type="button" class="flag {{ s.status }}" role="button" data-sample-station="{{ s.source }}" data-sample-name="{{ s.full_name }}" data-sample-feed-date="{{ s.sampled }}" title="Latest lab results for {{ s.full_name }}"><span class="flag-st">{{ "Sewage Discharge" if s.status == "discharge" else "Posted" }}</span><b>{{ s.full_name }}</b></button></li>
+          {%- endfor %}
+        </ul>
+        {%- endif %}
         {% if board.zones %}
         <div class="zones" id="zones">
           {# the tiles sit where their zones are on the map (landing.TILE_GRID, Chase, 2026-11-08); board.zones keeps registry order #}
@@ -243,6 +257,13 @@
           </button>
           {% endfor %}
         </div>
+        {% endif %}
+    </div>
+    <div class="card grid">
+      <div class="left">
+        <p class="lead">{{ board.lead }}</p>
+        {% if board.facts %}<dl class="facts">{% for f in board.facts %}<div><dt>{{ f.label }}</dt><dd>{{ f.text[:1]|upper }}{{ f.text[1:] }}</dd></div>{% endfor %}</dl>{% endif %}
+        {% if board.zones %}
         <div class="zone-tools"><p class="zones-hint">Tap a zone to see it. Tap a map dot to see samples and history.</p>
         {% if controls %}<div class="board-toggles">
           <div class="board-past"><button type="button" class="preset layer" data-layer="replay" aria-expanded="false" aria-controls="day-strip" title="The city map for each of the last seven days">Past Week</button></div>
@@ -841,7 +862,6 @@ function applyReplay() {
   if (counts.discharge) parts.push('<em class="discharge">Sewage discharge at ' + n(counts.discharge) + ".</em>");
   if (counts.posted) parts.push('<em class="posted">' + n(counts.posted) + (counts.posted > 1 ? " were" : " was") + " posted for bacteria.</em>");
   if (!counts.discharge && !counts.posted) parts.push(counts.safe ? '<em class="good">No beach was posted</em> on the city map.' : "There is no record for this day.");
-  else if (counts.safe) parts.push(counts.safe + " other" + (counts.safe > 1 ? "s were" : " was") + " not posted.");
   const board = document.querySelector(".board");
   board.className = "board replaying tone-" + (worst === "discharge" ? "danger" : worst === "posted" ? "warn" : counts.safe ? "ok" : "warn");
   board.querySelector(".eyebrow").innerHTML = "Replay · " + esc(fmtDay(day)) + " · The SFPUC Map at Its Last Check That Day";

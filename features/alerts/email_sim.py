@@ -150,7 +150,7 @@ def simulate(changes: list[Change], station_ids, start: datetime, end: datetime,
 
 def subscription_options() -> list[dict]:
     """What a subscriber can pick, grouped as the signup page does: everything, a zone, one station."""
-    opts = [{"value": "all", "label": "Every station", "group": "", "ids": sorted(NAME_OF)}]
+    opts = [{"value": "all", "label": "Every Station", "group": "", "ids": sorted(NAME_OF)}]
     for z in ZONES.values():
         opts.append({"value": f"zone:{z.key}", "label": z.label, "group": "Zone", "ids": list(z.station_ids)})
     for z in ZONES.values():

@@ -476,7 +476,7 @@ class AlertsRoutes:
             f"""
             <label class="checkbox-option">
                 <input type="checkbox" name="station_ids" value="{station.station_id}" {'checked' if station.station_id in simulated_station_id_set else ''}>
-                <span>{station.station_name}{'' if station.station_id in observed_cso_stations else ' <small class="mute">(never seen posted for a discharge)</small>'}</span>
+                <span>{station.station_name}{'' if station.station_id in observed_cso_stations else ' <small class="mute">(Never Seen Posted for a Discharge)</small>'}</span>
             </label>
             """
             for station in eligible_cso_stations
@@ -598,7 +598,7 @@ class AlertsRoutes:
                 """
             lab_details_html = f"""
                 <div class="station-meta">
-                    <span>Latest sample data: <a class="lab-link" href="{lab_result['results_url']}" target="_blank" rel="noopener noreferrer" title="The lab results as mini graphs (the raw rows are linked inside)" data-sample-station="{lab_result['source_id']}" data-sample-name="{station.station_name}" data-sample-date="{lab_result['sample_date'].strftime('%Y-%m-%d')}" data-sample-feed-date="{station.sample_date.strftime('%Y-%m-%d') if station.sample_date else ''}">{lab_sample_date}</a></span>
+                    <span>Latest Sample Data: <a class="lab-link" href="{lab_result['results_url']}" target="_blank" rel="noopener noreferrer" title="The lab results as mini graphs (the raw rows are linked inside)" data-sample-station="{lab_result['source_id']}" data-sample-name="{station.station_name}" data-sample-date="{lab_result['sample_date'].strftime('%Y-%m-%d')}" data-sample-feed-date="{station.sample_date.strftime('%Y-%m-%d') if station.sample_date else ''}">{lab_sample_date}</a></span>
                     <span>ID: {station.station_id}</span>
                 </div>
                 {pending_html}
@@ -606,7 +606,7 @@ class AlertsRoutes:
         else:
             lab_details_html = f"""
                 <div class="station-meta">
-                    <span>Latest sample data: N/A</span>
+                    <span>Latest Sample Data: N/A</span>
                     <span>ID: {station.station_id}</span>
                 </div>
             """

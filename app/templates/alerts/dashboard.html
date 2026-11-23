@@ -5,7 +5,7 @@
 <link rel="icon" href="{{ asset('brand/favicon.ico') }}"><link rel="apple-touch-icon" sizes="144x144" href="{{ asset('brand/bwtf_144x144.png') }}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="refresh" content="120">
-    <title>Admin — SF Beach Water · Surfrider SF Blue Water Task Force</title>
+    <title>Admin — San Francisco Beach Water Quality · Surfrider SF Blue Water Task Force</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -66,8 +66,8 @@
             paint-order: stroke fill;
             font-size: clamp(2rem, 4vw, 3.3rem);
             line-height: 0.95;
-            letter-spacing: 0.02em;
-            text-transform: uppercase;
+            letter-spacing:0;
+            text-transform:none;
             max-width: 10ch;
         }
         
@@ -105,8 +105,8 @@
             color: white;
             font-size: 0.78rem;
             font-weight: 700;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
+            letter-spacing:0;
+            text-transform:none;
         }
 
         /* Logo sits directly on the hero blue, as on the landing page; the
@@ -251,8 +251,8 @@
         .summary-label { display: flex; justify-content: center; align-items: center; gap: 6px; color: var(--surf-muted);
             margin-top: 5px;
             font-size: 0.9em;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
+            text-transform:none;
+            letter-spacing:0;
         }
         .summary-label .ic { width: 18px; height: 18px; }
         
@@ -273,8 +273,8 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.1em; display: flex; align-items: center; gap: 10px; }
+            text-transform:none;
+            letter-spacing:0; display: flex; align-items: center; gap: 10px; }
         
         .alert {
             display: flex;
@@ -330,7 +330,7 @@
         .view-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 18px; }   /* five tabs wrap on a phone */
         .view-tab { font-family: inherit; display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 0; border: 2px solid #d9e4e8; background: #fff; color: #54576F; font-weight: 700; cursor: pointer; }
         .view-tab small { font-weight: 500; color: #8a93a3; }
-        .view-tab.active { background: #26272A; border-color: #26272A; color: #fff; }
+        .view-tab.active { background: #0072BC; border-color: #0072BC; color: #fff; }
         .view-tab.active small { color: rgba(255,255,255,.8); }
         .view-badge { background: #b5310a; color: #fff; border-radius: 0; padding: 2px 9px; font-size: .78em; }
         .view-note { margin: 0 0 14px; }
@@ -354,8 +354,8 @@
         .panel h3 {
             color: var(--surf-ink);
             margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
+            text-transform:none;
+            letter-spacing:0;
             font-size: 0.98rem;
         }
 
@@ -513,7 +513,7 @@
             color: #856404;
             font-size: 0.75em;
             font-weight: 700;
-            text-transform: uppercase;
+            text-transform:none;
         }
         
         /* Stations Section */
@@ -525,8 +525,8 @@
             color: var(--surf-ink);
             margin-bottom: 15px;
             font-size: 1.1em;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
+            text-transform:none;
+            letter-spacing:0;
         }
         
         .stations-section h2 .feed-date {
@@ -597,7 +597,7 @@
             border-radius: 0;
             font-size: 0.68em;
             font-weight: 600;
-            text-transform: uppercase;
+            text-transform:none;
         }
         
         .status-badge.safe { background: #e0f0ea; color: #237059; }
@@ -762,7 +762,7 @@
         {{ error_html|safe }}
         {{ rain_html|safe }}
         <div class="view-tabs" role="tablist">
-            <button class="view-tab active" data-view="real" onclick="showView('real')"><svg class="ic"><use href="#i-waves"/></svg> Real <small>SFPUC feed as published</small></button>
+            <button class="view-tab active" data-view="real" onclick="showView('real')"><svg class="ic"><use href="#i-waves"/></svg> Real <small>SFPUC Feed as Published</small></button>
             <button class="view-tab" data-view="sim" onclick="showView('sim')"><svg class="ic"><use href="#i-flask"/></svg> Simulation {% if simulation_count %}<span class="view-badge">{{ simulation_count }} active</span>{% endif %}</button>
             <a class="view-tab" href="/alerts/costs" style="text-decoration:none"><svg class="ic"><use href="#i-receipt"/></svg> Running costs <small>by subscriber count</small></a>
             {#- the Lab SOP and UI overflow joined Admin on 2026-11-04: the same row as alerts/_tabs.html's ADMIN_TABS #}
@@ -839,14 +839,14 @@
                 <p>Add a simulated event at the selected sites. The automatic sender processes it the same as a real event, with the prefix TEST.</p>
                 <form id="simulation-form" class="stack">
                     <div class="radio-row">
-                        <label class="checkbox-option"><input type="radio" name="kind" value="cso" {% if active_kind == 'cso' %}checked{% endif %}><span><svg class="ic danger"><use href="#i-octagon-alert"/></svg> CSO discharge</span></label>
-                        <label class="checkbox-option"><input type="radio" name="kind" value="posted" {% if active_kind == 'posted' %}checked{% endif %}><span><svg class="ic warn"><use href="#i-triangle-alert"/></svg> Bacteria posting</span></label>
+                        <label class="checkbox-option"><input type="radio" name="kind" value="cso" {% if active_kind == 'cso' %}checked{% endif %}><span><svg class="ic danger"><use href="#i-octagon-alert"/></svg> CSO Discharge</span></label>
+                        <label class="checkbox-option"><input type="radio" name="kind" value="posted" {% if active_kind == 'posted' %}checked{% endif %}><span><svg class="ic warn"><use href="#i-triangle-alert"/></svg> Bacteria Posting</span></label>
                     </div>
                     <div class="checkbox-grid">
                         {{ simulation_site_options|safe }}
                     </div>
                     <div class="recipients-block">
-                        <p class="recipients-title"><svg class="ic brand"><use href="#i-mail"/></svg> Send TEST alerts to</p>
+                        <p class="recipients-title"><svg class="ic brand"><use href="#i-mail"/></svg> Send TEST Alerts To</p>
                         <div class="checkbox-grid">
                             {{ recipient_options_html|safe }}
                         </div>
@@ -857,7 +857,7 @@
                         <button class="action-btn danger" type="button" onclick="clearSimulation()">Clear Simulation</button>
                     </div>
                 </form>
-                <div class="helper-note">Sites with a simulation now: {{ simulated_sites_html }}</div>
+                <div class="helper-note">Sites with a Simulation Now: {{ simulated_sites_html }}</div>
                 <div class="helper-note" style="margin-top: 12px;"><svg class="ic brand"><use href="#i-info"/></svg> When you save a simulation, the test starts.
                 The <b>automatic sender (Postgres) finds it and sends an email to the applicable subscribers in
                 one minute</b>. This is the same path that a real event uses. We removed the old manual send buttons,
@@ -886,7 +886,7 @@
                     <input class="form-input" type="email" name="email" placeholder="Email address" required>
                     <input class="form-input" type="tel" name="phone_number" placeholder="Phone number for optional SMS (e.g. 4155551234)">
                     <select class="form-input" name="carrier">
-                        <option value="">Skip SMS / email only</option>
+                        <option value="">Skip SMS / Email Only</option>
                         {{ carrier_options_html|safe }}
                     </select>
                     <div class="checkbox-grid">
