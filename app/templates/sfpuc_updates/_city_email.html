@@ -4,14 +4,19 @@
     <button type="button" class="city-email-close" data-city-email-close autofocus aria-label="Close latest City email">Close <span aria-hidden="true">×</span></button>
   </header>
   <div class="city-email-content" tabindex="0" aria-label="City email content">
-    <p class="city-email-context" id="city-email-context">Latest email approved for Admin preview. The email date is separate from the sample dates and live map status.</p>
+    <p class="city-email-context" id="city-email-context">Captured SFPUC bulletins, newest first. Each email reflects its own date; check the map for current beach status.</p>
+    <nav class="city-email-history" aria-label="Email history">
+      <button type="button" data-city-email-newer disabled>← Newer</button>
+      <span data-city-email-position>Latest email</span>
+      <button type="button" data-city-email-older disabled>Older →</button>
+    </nav>
     <p data-city-email-status role="status" aria-live="polite"></p>
     <button type="button" class="city-email-retry" data-city-email-retry hidden>Try again</button>
     <article data-city-email-message hidden>
       <p class="city-email-date" data-city-email-date></p>
       <h3 data-city-email-title></h3>
       <div class="city-email-text" data-city-email-text></div>
-      <div class="city-email-images" data-city-email-images aria-label="Email images"></div>
+      <iframe class="city-email-layout" data-city-email-layout title="SFPUC email bulletin" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" hidden></iframe>
     </article>
   </div>
   <footer class="city-email-footer">

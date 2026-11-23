@@ -12,9 +12,10 @@
 {{ topbar() }}
 <main class="email-wrap">
 <h1>SFPUC emails</h1>
-<p>Capture, review, and preview SFPUC emails privately. Approved messages stay in Admin.</p>
+<p>SFPUC bulletins appear automatically in the Today email viewer. Forwarding headers and subscription details are removed; verification and unrelated emails stay private.</p>
 {{ admin_tabs('sfpuc-emails') }}
-<p><a href="{{ url_for('sfpuc-email-today-preview') }}">Preview “Latest City email” on Today →</a></p>
+<p><a href="{{ url_for('sfpuc-email-today-preview') }}">Preview the Today email viewer →</a></p>
+<p class="email-muted">Approval is not required for Today. The review tools below edit a separate private text preview; they do not rewrite the original-layout bulletin. Rejecting a message also hides it from Today.</p>
 {% if error %}<p class="email-notice" role="alert">{{ error }}</p>{% endif %}
 {% if not ready %}<p class="email-notice">Receiving address or webhook authentication still needs configuration. Existing messages can be reviewed.</p>{% endif %}
 <section class="email-panel">
@@ -58,7 +59,7 @@
 <p class="email-muted">Keep the bulletin's wording and dates. Remove personal addresses, quoted conversations, signatures, tracking links, and unsubscribe information. The reviewed text and email images appear in the private preview.</p>
 <label>Reviewed by<input name="reviewer" maxlength="100" required autocomplete="name" value=""></label>
 <label class="email-confirm"><input type="checkbox" name="verified" value="yes"> I verified this is an SFPUC beach bulletin and checked the reviewed text and images for private information.</label>
-<div class="email-actions"><button name="action" value="approved">Approve for preview</button><button name="action" value="rejected" class="secondary">{{ 'Remove from preview' if latest and latest.status == 'approved' else 'Reject' }}</button></div>
+<div class="email-actions"><button name="action" value="approved">Approve for preview</button><button name="action" value="rejected" class="secondary">Reject / hide from Today</button></div>
 </form>
 {% if revisions %}<details><summary>Review history · {{ revisions|length }}</summary>
 {% for revision in revisions %}<article><h3>{{ revision.status|capitalize }} · revision {{ revision.revision }}</h3>

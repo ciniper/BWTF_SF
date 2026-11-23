@@ -1,4 +1,4 @@
-"""Opt-in Flask routes for capture, coordinator review, and a private preview."""
+"""Opt-in capture, private coordinator review, and public bulletin projections."""
 from __future__ import annotations
 
 import hmac
@@ -14,7 +14,7 @@ from flask import Response, abort, jsonify, redirect, render_template, request, 
 import requests
 from werkzeug.exceptions import BadRequest, RequestEntityTooLarge
 
-from features.sfpuc_updates import parser, presentation, store
+from features.sfpuc_updates import layout, parser, presentation, store
 from shared import supabase as sb
 
 LOG = logging.getLogger(__name__)
@@ -123,21 +123,72 @@ def reviewed_item(row, payload):
             "source": "SFPUC email", "images": image_descriptors(row["id"], payload)}
 
 
-def latest_update():
+def captured_update():
     if not enabled():
         abort(404)
     if not sb.is_configured():
         return _failure()
+    cursor = None
+    if request.args.get("before"):
+        try:
+            date, mid = request.args["before"].split("|", 1)
+            date = datetime.fromisoformat(date.replace("Z", "+00:00"))
+            if date.tzinfo is None:
+                raise ValueError()
+            cursor = (date.isoformat(), str(UUID(mid)))
+        except ValueError:
+            abort(400)
     try:
-        rows = store.reviewed(0, limit=1)
-        item = None
-        if rows:
-            row = rows[0]
-            payloads = store.image_payloads([str(UUID(row["id"]))])
-            item = reviewed_item(row, payloads.get(row["id"]))
+        candidates, rows = [], []
+        for _ in range(4):
+            rows = store.captured(cursor)
+            candidates.extend(row for row in rows if layout.eligible(row))
+            if len(candidates) >= 2 or len(rows) < 25:
+                break
+            cursor = (rows[-1]["received_at"], rows[-1]["id"])
+        item, next_cursor = None, None
+        if candidates:
+            row = candidates[0]
+            mid = str(UUID(row["id"]))
+            clean = layout.clean_text(row["subject"], row["body_text"])
+            item = {"id": mid, "title": clean["title"], "text": clean["body"],
+                    "date": fmt_time(row.get("sent_at") or row["received_at"]),
+                    "date_label": "Email dated" if row.get("sent_at") else "Captured",
+                    "html": layout.document(row, lambda index: url_for("city-email-image", message_id=mid, index=index))}
+            if len(candidates) > 1 or len(rows) == 25:
+                next_cursor = row["received_at"] + "|" + mid
+        elif len(rows) == 25:
+            next_cursor = rows[-1]["received_at"] + "|" + rows[-1]["id"]
     except Exception:
         return _failure()
-    return jsonify(ok=True, update=item), 200, {"Cache-Control": "private, no-store"}
+    return jsonify(ok=True, update=item, next_cursor=next_cursor), 200, {"Cache-Control": "no-store"}
+
+
+def captured_image(message_id, index):
+    if not enabled() or index >= presentation.MAX_IMAGES:
+        abort(404)
+    try:
+        rows = store.captured(message_id=str(message_id))
+        row = rows[0] if rows and layout.eligible(rows[0]) else None
+        # Reapply public eligibility on every image request, including rejection.
+        images = presentation.images(row["raw_payload"]) if row else []
+        if index >= len(images):
+            abort(404)
+        image_path = lambda i: url_for("city-email-image", message_id=message_id, index=i)
+        html = layout.document(row, image_path)
+        if not html or f'src="{image_path(index)}"' not in html:
+            abort(404)  # Never serve an image removed with a private wrapper/footer.
+        data, mime = presentation.fetch_image(images[index]["url"])
+    except (ValueError, requests.RequestException):
+        return "Image unavailable.", 502, {"Cache-Control": "no-store"}
+    except Exception as exc:
+        from werkzeug.exceptions import HTTPException
+        if isinstance(exc, HTTPException):
+            raise
+        return _failure()
+    return Response(data, content_type=mime, headers={"Cache-Control": "no-store",
+                    "X-Content-Type-Options": "nosniff", "Content-Security-Policy": "default-src 'none'; sandbox",
+                    "Referrer-Policy": "no-referrer"})
 
 
 def today_preview():
@@ -266,7 +317,8 @@ def register(app, gated_page, gated_api):
     app.jinja_env.globals["sfpuc_email_enabled"] = enabled
     app.add_url_rule("/api/ingest/sfpuc-email", "sfpuc-email-webhook", webhook, methods=["POST"])
     app.add_url_rule("/alerts/api/sfpuc-updates", "sfpuc-email-preview", gated_api(reviewed_updates), methods=["GET"])
-    app.add_url_rule("/alerts/api/sfpuc-updates/latest", "sfpuc-email-latest", gated_api(latest_update), methods=["GET"])
+    app.add_url_rule("/api/city-emails", "city-emails", captured_update, methods=["GET"])
+    app.add_url_rule("/api/city-emails/<uuid:message_id>/images/<int:index>", "city-email-image", captured_image, methods=["GET"])
     app.add_url_rule("/alerts/sfpuc-emails", "sfpuc-email-admin", gated_page(admin, "/alerts/sfpuc-emails"), methods=["GET"])
     app.add_url_rule("/alerts/sfpuc-emails/today-preview", "sfpuc-email-today-preview",
                      gated_page(today_preview, "/alerts/sfpuc-emails/today-preview"), methods=["GET"])

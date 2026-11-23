@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 <script src="{{ asset('sample_popover.js') }}" defer></script>
-{% if city_email_preview %}
+{% if sfpuc_email_enabled() %}
 <link rel="stylesheet" href="{{ asset('city_email.css') }}">
 <script src="{{ asset('city_email.js') }}" defer></script>
 {% endif %}
@@ -34,15 +34,15 @@
 {{ topbar() }}
 <div class="wrap">
   {% if city_email_preview %}<aside class="city-email-preview" aria-label="Admin preview">
-    <div><strong>Admin preview</strong><span>Click “City samples” to open the latest reviewed City email.</span></div>
+    <div><strong>Admin preview</strong><span>Click “City samples” to open the latest captured City email.</span></div>
     <a href="{{ url_for('sfpuc-email-admin') }}">Back to SFPUC emails</a>
   </aside>{% endif %}
-  {{ board_section(board, sites=true, controls=true, city_email_preview=city_email_preview) }}
+  {{ board_section(board, sites=true, controls=true, city_emails=sfpuc_email_enabled()) }}
   <p class="foot-note">Statuses from SFPUC's beach map, checked every minute; modeled discharge-linked beach risk from the <a href="/forecast">Water Quality Forecast</a>; rain from NOAA's two city gauges; outfalls from SFPUC's reports to regulators; Surfrider's results from the volunteers' lab. Updated {{ generated }}.</p>
 
   {#- the hub cards, the Learn bar and the rain and tide pills moved to Admin's UI overflow tab (2026-11-04) #}
 </div>
-{% if city_email_preview %}{% include 'sfpuc_updates/_city_email.html' %}{% endif %}
+{% if sfpuc_email_enabled() %}{% include 'sfpuc_updates/_city_email.html' %}{% endif %}
 {{ footer() }}
 {{ tabbar(insights=not city_email_preview) }}
 {{ board_script(board) }}

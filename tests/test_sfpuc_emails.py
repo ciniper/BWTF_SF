@@ -131,7 +131,7 @@ def test_admin_authentication_csrf_approval_confirmation_and_stale_reviews(clien
     unlock(client)
     page = client.get("/alerts/sfpuc-emails")
     assert page.status_code == 200 and b'id="sfpuc-updates"' in page.data
-    assert b"sfpuc_updates.js?v=" in page.data and b"Approved messages stay in Admin" in page.data
+    assert b"sfpuc_updates.js?v=" in page.data and b"Approval is not required for Today" in page.data
     form = {"message_id": MID, "revision": "0", "action": "approved", "title": "Notice", "body": "Official text", "reviewer": "Coordinator"}
     assert client.post("/alerts/sfpuc-emails/review", data=form).status_code == 403
     form["csrf"] = "offline-csrf"

@@ -1,9 +1,10 @@
 # SFPUC email capture
 
-The implementation captures Brevo inbound messages privately and lets a
-coordinator review text and images in an Admin-only dropdown preview.
-Public Today has no email panel or public email-read endpoint. App capture is disabled
-by default until deployment configuration is explicitly approved.
+Brevo captures inbound emails in a private archive. When enabled, Today’s
+**City samples** button opens the latest captured SFPUC bulletin and lets visitors
+browse older messages. No manual approval is required. The server exposes a
+sanitized bulletin projection, not the inbox or original payload. The Admin
+reviewed-text preview remains separate. Capture is disabled by default.
 
 **Database applied November 21, 2026:** migration `20261122020135`
 (`sfpuc_email_capture`) is applied to BWTF Supabase project
@@ -149,8 +150,8 @@ Cleanup is a CSRF-protected, read-only operation: nothing is saved until the
 review is submitted. Unrecognized headers, signatures, subscription footers,
 and other quoted conversations can be removed manually in the text field.
 
-Original HTML is never rendered. Text is escaped, and image references are
-extracted separately. Visible PNG/JPEG/GIF/WebP images from the exact SFPUC
+The legacy Admin reviewed-text preview escapes text and extracts images
+separately; the Today viewer uses the sanitized layout described below. Visible PNG/JPEG/GIF/WebP images from the exact SFPUC
 email CDN `d31hzlhk6di2h5.cloudfront.net` load automatically in the selected
 message and when opening the reviewed preview. Each request goes through an
 Admin-authenticated image route; the API exposes only those private route URLs,
@@ -172,30 +173,48 @@ private details. Review approval remains private to Admin.
 
 ## Limits and recovery
 
-### Today overlay design preview
+### Today email viewer
 
-From **Admin → SFPUC emails**, choose **Preview “Latest City email” on Today**.
-The private route `/alerts/sfpuc-emails/today-preview` reuses the Today board.
-Its **City samples** header label opens a centered, scrollable **Latest City
-email** dialog styled like the map's sample-results window. It shows the newest
-approved bulletin by email date (capture date is the fallback), its reviewed
-text, and automatically loaded private images. The label remains available
-when sample dates are missing, without inventing a collection date.
+Click **City samples** on `/` or `/today` to open **Latest City email**. The same
+viewer appears in the private `/alerts/sfpuc-emails/today-preview` route linked
+from Admin. A branch deployment therefore previews the public behavior that
+would go live after an approved merge/deployment; no separate publish step or
+new configuration is needed. Existing `SFPUC_EMAIL_ENABLED` controls both capture
+and the viewer. This PR does not itself authorize merging or deploying.
 
-The dialog fetches `/alerts/api/sfpuc-updates/latest` only on opening, and reads
-again on every reopen so edits and withdrawals take effect. Both routes and all
-images require the Admin session. HTML and JSON responses are private/no-store;
-the preview page is noindex and omits analytics and timed page refresh. Loading,
-no-approved-email, expired-session, unavailable, and retry states keep the
-SFPUC links available. Close, Escape, and clicking the backdrop dismiss the
-window; focus returns to City samples.
+The viewer fetches `/api/city-emails` only when opened, and starts at the newest
+capture on every reopen. Older/Newer controls use capture-time + ID cursors so a
+new arrival does not shift an older page. Each email displays its own email date
+(or explicitly labeled capture date when absent), independent of the map.
 
-This is a design preview, not public publication. `/` and `/today` keep their
-existing header and make no email requests, including for logged-in Admins.
-Existing approvals still mean Admin preview only. Public release would need
-an explicit publishing decision and separate publication behavior. No new
-migration, environment variable, live email review, or deployment is required
-to develop this preview.
+Candidates must have an `SF BEACH` subject and either the expected sender or a
+recognized forwarded envelope naming the expected sender. This is a feed filter,
+not cryptographic sender authentication. Gmail verification and unrelated mail
+are excluded. Explicitly rejected messages are excluded on the next read,
+including image reads. Approval and edited review text affect only the legacy
+private reviewed-text preview; Today shows the captured bulletin's layout.
+
+The HTML projection preserves table layout, inline images and clickable links.
+Recognized Gmail forwarding blocks and the provider's recipient/subscription
+footer paragraphs are removed. `nh3==0.3.8` sanitizes an allowlist of HTML and
+bounded layout styles. Scripts, forms, embedded content, event handlers, remote
+CSS, hidden content and unsupported images are removed. The result is displayed
+in an iframe with no script/form/top-navigation permissions and a restrictive
+CSP. Links open a new tab with no referrer. Provider click links are retained;
+this is not a promise to eliminate click tracking. Unsupported forwarding HTML
+falls back to cleaned text rather than exposing the forwarding envelope.
+
+Public images use `/api/city-emails/<id>/images/<index>`; every request rechecks
+eligibility and uses the existing exact-origin, bounded raster-only proxy.
+Original payloads, recipients, sender envelopes and reviewer identities are not
+returned. The underlying Supabase grants/RLS remain private; there are no schema
+changes or database writes in the viewer. Original emails and review history
+are unchanged. Existing private Admin endpoints still require authentication.
+
+Responses use `no-store`. Loading, empty, unavailable and retry states retain
+SFPUC’s official links. Close, Escape and backdrop clicks dismiss the dialog;
+focus returns to City samples. The private preview is noindex, omits analytics
+and timed refresh, and uses the same viewer as Today.
 
 ### Capture limits
 

@@ -1,4 +1,4 @@
-/* Latest reviewed City email, fetched only when its private Today preview opens. */
+/* City bulletin viewer: newest captured message, then cursor-based history. */
 (() => {
   "use strict";
   const dialog = document.getElementById("city-email-dialog");
@@ -6,69 +6,103 @@
   const status = dialog.querySelector("[data-city-email-status]");
   const retry = dialog.querySelector("[data-city-email-retry]");
   const message = dialog.querySelector("[data-city-email-message]");
-  const gallery = dialog.querySelector("[data-city-email-images]");
-  let controller = null, opener = null, overflow = "";
+  const frame = dialog.querySelector("[data-city-email-layout]");
+  const body = dialog.querySelector("[data-city-email-text]");
+  const newer = dialog.querySelector("[data-city-email-newer]");
+  const older = dialog.querySelector("[data-city-email-older]");
+  const position = dialog.querySelector("[data-city-email-position]");
+  const content = dialog.querySelector(".city-email-content");
+  let controller = null, opener = null, overflow = "", observer = null;
+  let cursors = [null], page = 0, nextCursor = null, requestedPage = 0;
 
-  function renderImages(images) {
-    for (const item of images || []) {
-      if (!/^\/alerts\/sfpuc-emails\/images\/[0-9a-f-]{36}\/\d+$/.test(item.src)) continue;
-      const figure = document.createElement("figure");
-      figure.className = "city-email-image" + (item.small ? " small" : "");
-      const image = document.createElement("img");
-      image.alt = item.alt || "Email image";
-      image.loading = "eager";
-      image.decoding = "async";
-      image.referrerPolicy = "no-referrer";
-      const caption = document.createElement("figcaption");
-      caption.hidden = true;
-      caption.textContent = `Image unavailable — ${image.alt}`;
-      image.addEventListener("error", () => { image.hidden = true; caption.hidden = false; }, {once:true});
-      figure.append(image, caption);
-      gallery.append(figure);
-      image.src = item.src;
-    }
+  function clearLayout() {
+    if (observer) observer.disconnect();
+    observer = null;
+    frame.hidden = true;
+    frame.removeAttribute("srcdoc");
   }
+  frame.addEventListener("load", () => {
+    if (frame.hidden || !frame.hasAttribute("srcdoc") || !frame.contentDocument) return;
+    const doc = frame.contentDocument;
+    const resize = () => {
+      if (frame.hidden || frame.contentDocument !== doc) return;
+      frame.style.height = `${Math.ceil(doc.body.getBoundingClientRect().height) + 4}px`;
+    };
+    observer = new ResizeObserver(resize);
+    observer.observe(doc.body);
+    doc.querySelectorAll("img").forEach(img => {
+      img.addEventListener("load", resize, {once:true});
+      const failed = () => {
+        const fallback = doc.createElement("span");
+        fallback.textContent = `Image unavailable — ${img.alt || "Email image"}`;
+        img.replaceWith(fallback); resize();
+      };
+      img.addEventListener("error", failed, {once:true});
+      if (img.complete && !img.naturalWidth) failed();
+    });
+    // Sender scripts cannot run. These listeners belong to our parent page.
+    doc.addEventListener("keydown", event => {
+      if (event.key === "Escape") { event.preventDefault(); dialog.close(); }
+      if (event.key !== "Tab") return;
+      const links = [...doc.querySelectorAll("a[href]")];
+      if (event.shiftKey && doc.activeElement === links[0]) {
+        event.preventDefault(); content.focus();
+      } else if (!event.shiftKey && doc.activeElement === links[links.length - 1]) {
+        event.preventDefault(); dialog.querySelector(".city-email-footer a").focus();
+      }
+    });
+    resize();
+  });
 
-  async function load() {
+  async function load(target = 0) {
     if (controller) controller.abort();
     const request = new AbortController();
     controller = request;
+    requestedPage = target;
     const timer = setTimeout(() => request.abort(), 15000);
-    const retryHadFocus = document.activeElement === retry;
+    if ([retry, newer, older].includes(document.activeElement)) content.focus();
     message.hidden = true;
-    message.querySelector("[data-city-email-title]").textContent = "";
-    message.querySelector("[data-city-email-date]").textContent = "";
-    message.querySelector("[data-city-email-text]").textContent = "";
-    gallery.replaceChildren();
+    body.textContent = "";
+    clearLayout();
     retry.hidden = true;
-    if (retryHadFocus) dialog.querySelector(".city-email-content").focus();
-    status.textContent = "Loading the latest City email…";
+    newer.disabled = older.disabled = true;
+    status.textContent = "Loading City email…";
+    content.scrollTop = 0;
     try {
-      const response = await fetch("/alerts/api/sfpuc-updates/latest", {signal:request.signal, cache:"no-store"});
+      const query = cursors[target] ? `?before=${encodeURIComponent(cursors[target])}` : "";
+      const response = await fetch(`/api/city-emails${query}`, {signal:request.signal, cache:"no-store"});
       if (controller !== request || !dialog.open) return;
-      if (response.status === 401) {
-        status.textContent = "Your Admin session has ended. Close this window and reopen the preview from SFPUC emails.";
-        return;
-      }
       if (!response.ok) throw new Error("Unavailable");
       const data = await response.json();
       if (controller !== request || !dialog.open) return;
       if (!data.ok) throw new Error("Unavailable");
+      page = target;
+      nextCursor = data.next_cursor;
+      newer.disabled = page === 0;
+      older.disabled = !nextCursor;
+      position.textContent = page === 0 ? "Latest email" : "Earlier email";
+      dialog.querySelector("#city-email-heading").textContent = page === 0 ? "Latest City email" : "Earlier City email";
       const update = data.update;
       if (!update) {
-        status.textContent = "No City email has been approved for preview yet. Review a bulletin in Admin → SFPUC emails, then reopen this window.";
+        status.textContent = page === 0 ? "No City bulletins have been captured yet. Check SFPUC’s current information below." : "No bulletin on this page. Use Newer or Older to continue.";
         return;
       }
       message.querySelector("[data-city-email-title]").textContent = update.title;
       message.querySelector("[data-city-email-date]").textContent = `${update.date_label} ${update.date}`;
-      message.querySelector("[data-city-email-text]").textContent = update.text;
-      renderImages(update.images);
+      body.hidden = !!update.html;
       message.hidden = false;
+      if (update.html) {
+        frame.hidden = false;
+        frame.srcdoc = update.html;
+      } else {
+        body.textContent = update.text;
+      }
       status.textContent = "";
     } catch (_) {
       if (controller !== request || !dialog.open) return;
-      status.textContent = "The latest City email is unavailable right now. Try again or use the SFPUC links below.";
+      status.textContent = "City emails are unavailable right now. Try again or use the SFPUC links below.";
       retry.hidden = false;
+      newer.disabled = page === 0;
     } finally {
       clearTimeout(timer);
       if (controller === request) controller = null;
@@ -82,14 +116,18 @@
       overflow = document.body.style.overflow;
       dialog.showModal();
       document.body.style.overflow = "hidden";
-      dialog.querySelector(".city-email-content").scrollTop = 0;
-      load();
+      cursors = [null]; page = 0; nextCursor = null;
+      load(0);
     });
   });
-  retry.addEventListener("click", load);
+  newer.addEventListener("click", () => load(page - 1));
+  older.addEventListener("click", () => {
+    cursors = cursors.slice(0, page + 1);
+    cursors.push(nextCursor);
+    load(page + 1);
+  });
+  retry.addEventListener("click", () => load(requestedPage));
   dialog.querySelector("[data-city-email-close]").addEventListener("click", () => dialog.close());
-  // Native dialog supplies Escape and an inert background. Keep Tab cycling
-  // within the window, including its keyboard-scrollable message region.
   dialog.addEventListener("keydown", event => {
     if (event.key !== "Tab") return;
     const stops = [...dialog.querySelectorAll("button, a[href], [tabindex='0']")]
@@ -112,7 +150,7 @@
     if (controller) controller.abort();
     controller = null;
     message.hidden = true;
-    gallery.replaceChildren();
+    clearLayout();
     document.body.style.overflow = overflow;
     if (opener && opener.isConnected) opener.focus();
   });
