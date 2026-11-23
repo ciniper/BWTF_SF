@@ -102,11 +102,11 @@ def _discharges() -> dict:
 # 2-5) at approximate positions; the storage ring is schematic: it runs through the registry's outfalls in
 # the shoreline order the master plan's map shows, each run toward the plant it drains to.
 PLANTS = {
-    "oceanside": {"name": "Oceanside plant", "short": "Oceanside plant", "lat": 37.7297, "lon": -122.5047, "note": "Westside: secondary treatment; opened 1993",
+    "oceanside": {"name": "Oceanside Plant", "short": "Oceanside Plant", "lat": 37.7297, "lon": -122.5047, "note": "Westside: secondary treatment; opened 1993",
                   "photo": "learn/oceanside_aerial.jpg"},
-    "southeast": {"name": "Southeast plant", "short": "Southeast plant", "lat": 37.7426, "lon": -122.3884, "note": "Bayside: secondary treatment; opened 1952",
+    "southeast": {"name": "Southeast Plant", "short": "Southeast Plant", "lat": 37.7426, "lon": -122.3884, "note": "Bayside: secondary treatment; opened 1952",
                   "photo": "learn/southeast_aerial.jpg"},
-    "northpoint": {"name": "North Point wet-weather facility", "short": "North Point · storms only", "lat": 37.8063, "lon": -122.4057, "note": "Bayside, storms only: primary treatment; built 1951",
+    "northpoint": {"name": "North Point Wet-Weather Facility", "short": "North Point · Storms Only", "lat": 37.8063, "lon": -122.4057, "note": "Bayside, storms only: primary treatment; built 1951",
                    "photo": "learn/plant_north_point_1951.jpg"},
 }
 DEEP_OUTFALLS = [   # treated water: approximate routes

@@ -7,6 +7,20 @@
  * Chart.js loads on first use (ensureChart). Limits come from the API payloads,
  * which read shared/standards.py — never typed here. */
 (function () {
+  // Title case for every label drawn in a chart (2026-11-22): the same rule as shared/text.py title_case
+  var SMALL_WORDS = {}; "a an the and or nor but for of to in on at by as with from into per via vs off onto over".split(" ").forEach(function (w) { SMALL_WORDS[w] = 1; });
+  function titleCase(t) {
+    var toks = String(t == null ? "" : t).split(/(\s+|[–—·\/(),:|]+)/), idx = [];
+    toks.forEach(function (w, i) { if (/[A-Za-z]/.test(w)) idx.push(i); });
+    idx.forEach(function (i, n) {
+      var w = toks[i]; if (!/^[a-z][a-z'’-]*$/.test(w)) return;
+      var first = n === 0 ? !toks.slice(0, i).join("").trim() : /[:–—·|(]/.test(toks.slice(idx[n - 1] + 1, i).join(""));
+      var last = n === idx.length - 1 || /[:–—·|)]/.test(toks.slice(i + 1, idx[n + 1]).join(""));
+      if (SMALL_WORDS[w] && !first && !last) return;
+      toks[i] = w.split("-").map(function (p) { return p.charAt(0).toUpperCase() + p.slice(1); }).join("-");
+    });
+    return toks.join("");
+  }
   var CHART_SRC = "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js";
   var COLORS = { ENTERO: "#0072BC", COLI_FECAL: "#d4763a", COLI_E: "#8f5cc7", COLI_TOTAL: "#26272a", BWTF: "#317fb2", BWTF_LIGHT: "#7ab8e0",
                  CITY: "#26272a", OVER: "#d15c5c", CAUTION: "#d4a017", LIMIT: "#ff4100", CAUTION_LINE: "#b97e00" };
@@ -36,7 +50,7 @@
       if (yy < area.top || yy > area.bottom) return;
       ctx.save(); ctx.strokeStyle = l.color; ctx.lineWidth = l.width || 1.5; ctx.setLineDash(l.dash || [6, 5]);
       ctx.beginPath(); ctx.moveTo(area.left, yy); ctx.lineTo(area.right, yy); ctx.stroke();
-      if (l.label) { ctx.fillStyle = l.color; ctx.font = "11px Roboto, 'Segoe UI', Arial, sans-serif"; ctx.fillText(l.label, area.left + 4, yy - 4); }
+      if (l.label) { ctx.fillStyle = l.color; ctx.font = "11px Roboto, 'Segoe UI', Arial, sans-serif"; ctx.fillText(titleCase(l.label), area.left + 4, yy - 4); }
       ctx.restore();
     });
   } };
@@ -47,8 +61,8 @@
      tooltip(point, seriesLabel) replaces the default line. */
   function yScale(o, series) {   // the shared y axis: log by default (yMin / yTicks / yFormat reshape it; the floor drops for below-detection values), linear on request
     var yTicks = o.yTicks || LOG_TICKS, yFmt = o.yFormat || fmt;
-    return o.log === false ? { beginAtZero: true, title: { display: true, text: o.yTitle || "MPN/100 mL" } }
-      : { type: "logarithmic", min: logFloor(series, o.yMin), title: { display: true, text: o.yTitle || "MPN/100 mL, log scale" },
+    return o.log === false ? { beginAtZero: true, title: { display: true, text: titleCase(o.yTitle || "MPN/100 mL") } }
+      : { type: "logarithmic", min: logFloor(series, o.yMin), title: { display: true, text: titleCase(o.yTitle || "MPN/100 mL, log scale") },
           afterBuildTicks: o.yTicks ? function (ax) { ax.ticks = o.yTicks.filter(function (v) { return v >= ax.min && v <= ax.max; }).map(function (v) { return { value: v }; }); } : undefined,
           ticks: { callback: function (v) { return yTicks.indexOf(v) >= 0 ? yFmt(v) : ""; } } };
   }
@@ -62,7 +76,7 @@
   function seriesChart(canvas, o) {
     var datasets = (o.series || []).map(function (s) {
       var pts = s.points || [];
-      return { label: s.label, data: pts, parsing: false, borderColor: s.color, backgroundColor: s.color, borderDash: s.dash || [],
+      return { label: titleCase(s.label), data: pts, parsing: false, borderColor: s.color, backgroundColor: s.color, borderDash: s.dash || [],
         borderWidth: s.width || 1.6, tension: 0, spanGaps: true,
         pointBackgroundColor: s.pointColors || s.color, pointBorderColor: s.pointColors || s.color,
         pointRadius: s.pointRadius || 2.6, pointHoverRadius: 6 };
@@ -91,7 +105,7 @@
       (s.points || []).forEach(function (p, i) { var d = dayOf(p); if (!best[d] || p.y > best[d].p.y) best[d] = { p: p, i: i }; });
       var meta = labels.map(function (d) { return best[d] ? best[d].p : null; });
       var colors = labels.map(function (d) { return best[d] && s.pointColors ? s.pointColors[best[d].i] : s.color; });
-      return { label: s.label, data: meta.map(function (p) { return p ? p.y : null; }), meta: meta, backgroundColor: colors, borderColor: colors,
+      return { label: titleCase(s.label), data: meta.map(function (p) { return p ? p.y : null; }), meta: meta, backgroundColor: colors, borderColor: colors,
                borderWidth: 0, maxBarThickness: 28, minBarLength: 2, skipNull: true };
     });
     return new Chart(canvas, { type: "bar", plugins: [limitLines], data: { labels: labels, datasets: datasets }, options: {
@@ -111,20 +125,20 @@
     var top = Math.max.apply(null, ys.concat([0]));
     var lineMax = Math.max.apply(null, (o.lines || []).map(function (l) { return l.value; }).concat([0]));
     return new Chart(canvas, { type: "bar", plugins: [limitLines], data: { labels: o.labels, datasets: [
-      { label: o.a.label, data: o.a.data, backgroundColor: o.a.color }, { label: o.b.label, data: o.b.data, backgroundColor: o.b.color } ] },
+      { label: titleCase(o.a.label), data: o.a.data, backgroundColor: o.a.color }, { label: titleCase(o.b.label), data: o.b.data, backgroundColor: o.b.color } ] },
       options: { responsive: true, maintainAspectRatio: false, animation: false,
-        scales: { y: { beginAtZero: true, suggestedMax: Math.max(lineMax * 1.2, top * 1.1), title: { display: true, text: o.yTitle || "MPN/100 mL" } } },
+        scales: { y: { beginAtZero: true, suggestedMax: Math.max(lineMax * 1.2, top * 1.1), title: { display: true, text: titleCase(o.yTitle || "MPN/100 mL") } } },
         plugins: { legend: { position: "top" }, limitLines: { lines: o.lines || [] },
                    tooltip: { callbacks: { label: function (it) { var raws = it.datasetIndex === 0 ? o.a.raws : o.b.raws; return it.dataset.label + ": " + ((raws && raws[it.dataIndex]) || it.parsed.y); } } } } } });
   }
 
   /* One sample's results for one indicator: a bar per value, the limit and (Enterococcus) caution drawn across. */
   function miniBars(canvas, o) {
-    var vals = o.values || [], labels = vals.length > 1 ? vals.map(function (_, i) { return "sample " + (i + 1); }) : ["result"];
+    var vals = o.values || [], labels = vals.length > 1 ? vals.map(function (_, i) { return "Sample " + (i + 1); }) : ["Result"];
     var ys = vals.map(function (v) { return v.value; }), ymax = Math.max(o.limit * 1.15, Math.max.apply(null, ys.map(function (y) { return y || 0; })) * 1.1);
     var lines = [limitLine(o.limit, COLORS.LIMIT)]; if (o.caution) lines.push(limitLine(o.caution, COLORS.CAUTION_LINE, "", "dotted"));
     return new Chart(canvas, { type: "bar", plugins: [limitLines], data: { labels: labels, datasets: [
-      { label: o.label, data: ys, backgroundColor: vals.map(function (v) { return v.over ? COLORS.OVER : v.caution ? COLORS.CAUTION : COLORS.CITY; }), maxBarThickness: 46 } ] },
+      { label: titleCase(o.label), data: ys, backgroundColor: vals.map(function (v) { return v.over ? COLORS.OVER : v.caution ? COLORS.CAUTION : COLORS.CITY; }), maxBarThickness: 46 } ] },
       options: { responsive: true, maintainAspectRatio: false, animation: false,
         scales: { y: { beginAtZero: true, suggestedMax: ymax, ticks: { maxTicksLimit: 5 } }, x: { grid: { display: false } } },
         plugins: { legend: { display: false }, limitLines: { lines: lines },

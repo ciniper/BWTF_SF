@@ -143,7 +143,7 @@ def test_routes_render_and_refuse_bad_input():
     assert shown(h) == [] and '<section class="sec" id="sheet" hidden>' in h and 'id="pick-hint">' in h
     assert shown(china) == ["china"] and '<section class="sec" id="sheet">' in china and pressed(china) == ["china"]
     assert '<details class="howto" id="how">' in h and "<details open" not in h                     # Taking a sample, folded
-    assert h.count('<li>') >= 6 and "about 2 ft" in h and "6 in" in h and "wave coming in" in h and 'id="cx-form"' in h and 'id="cx-site"' not in h
+    assert h.count('<li>') >= 6 and "About 2 ft" in h and "6 in" in h and "Wave Coming In" in h and 'id="cx-form"' in h and 'id="cx-site"' not in h
     assert 'id="cx-obs"' in h and 'id="cx-save"' in h and 'id="cx-tide"' not in h and 'class="tide"' in h and "localStorage" in h and "toBlob" in h   # observations, the image; the tide curve lives in its tile
     assert 'class="on" aria-current="page">Collect' in h and "coming soon" not in h.replace("We will add a photo of the sampling location soon", "")
     assert bad.status_code == 400 and json.loads(bad.data)["error"] == "unknown site"

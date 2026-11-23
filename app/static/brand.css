@@ -37,7 +37,7 @@ a{color:var(--brand)}
 .wrap{max-width:var(--page-w);margin:0 auto;padding:24px}
 body>.wrap,body>.container{width:100%}   /* body is a flex column and auto margins switch off stretch: without an explicit width the column shrink-wraps its widest child (a table, a card row) and grows past a phone's screen, so the phone zooms out */
 .controls{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:center;margin:0 0 12px}
-.ctl-label{font-family:var(--label);font-size:15px;font-weight:400;text-transform:uppercase;letter-spacing:.12em;color:var(--ink);line-height:1}
+.ctl-label{font-family:var(--display);font-size:13px;font-weight:700;text-transform:none;letter-spacing:0;color:var(--ink);line-height:1.2}   /* Roboto, as written (2026-11-22) */
 .seg-toggle{display:inline-flex;max-width:100%;border:2px solid var(--char);border-radius:0;overflow:auto hidden;scrollbar-width:none;background:#fff}   /* wider than a phone (the Report Card's five standards): it scrolls sideways inside its pill; it used to squeeze its labels onto two lines and clip the last one */
 .seg-toggle::-webkit-scrollbar{display:none}
 .seg-btn{flex:none;white-space:nowrap;padding:7px 14px;border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
@@ -55,11 +55,11 @@ a.preset{display:inline-block;text-decoration:none;line-height:normal} a.preset.
 .site-title .site-now b{font-size:24px;font-weight:900;line-height:1.15;letter-spacing:.005em}
 .site-title .chev{color:var(--brand);flex:none;transition:transform .15s} .site-title.open .chev{transform:rotate(180deg)}
 .site-title:hover .site-now b{color:var(--brand)}
-.zone-chip{font-family:var(--label);font-size:14px;font-weight:400;text-transform:uppercase;letter-spacing:.12em;padding:4px 10px 2px;border-radius:0;background:var(--pale);color:var(--ink)} .zone-chip:empty{display:none}
+.zone-chip{font-family:var(--display);font-size:12px;font-weight:700;text-transform:none;letter-spacing:0;padding:4px 10px;border-radius:0;background:var(--pale);color:var(--ink)} .zone-chip:empty{display:none}
 .site-head a.preset.cross{margin-left:auto}
 .tiles{display:none;flex-direction:column;gap:10px;margin:0 0 14px;padding:12px 14px;border:0;border-radius:0;background:var(--sand)} .tiles.open{display:flex}
 .board .controls{margin:0 0 10px} .board .controls+.controls{margin-top:-2px}
-.tile-group-name{font-family:var(--label);font-size:14px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink);font-weight:400;margin:0 0 6px}
+.tile-group-name{font-family:var(--display);font-size:13px;text-transform:none;letter-spacing:0;color:var(--ink);font-weight:700;margin:0 0 6px}
 .tile-row{display:flex;flex-wrap:wrap;gap:8px}
 .tile{padding:8px 12px;border-radius:0;border:2px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;font:700 13px 'Roboto','Segoe UI',Arial,sans-serif;text-align:left;line-height:1.25}
 .tile:hover{border-color:var(--char)} .tile.active{border-color:var(--char);background:var(--char);color:#fff}
@@ -124,12 +124,12 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
 /* ── Frame: page head (replaces the blue hero on tool pages) ─────────────── */
 .page-head{position:relative;margin:4px 0 22px}
 .page-head .ph-main{padding-right:250px}   /* room for the action pill, pinned top right */
-.page-head .crumbs{font:400 15px/1 var(--label);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+.page-head .crumbs{font:700 13px/1.2 var(--display);letter-spacing:0;text-transform:none;color:var(--muted);margin:0 0 8px}
 .page-head .crumbs a{color:var(--brand);text-decoration:none;font-weight:600}
 .page-head h1{font-family:var(--display);font-weight:700;font-size:44px;line-height:1.05;margin:0;letter-spacing:-.02em;color:#000;text-transform:none}
 .page-head .lead{margin:12px 0 0;color:var(--ink);max-width:70ch;font-size:16px;line-height:1.7}
 .page-head .lead a{color:var(--brand)}
-.page-head .ph-link{position:absolute;top:0;right:0;display:inline-block;padding:10px 18px 8px;border:2px solid var(--char);border-radius:0;background:#fff;color:var(--ink);font:400 16px/1 var(--label);letter-spacing:.14em;text-transform:uppercase;text-decoration:none;white-space:nowrap}
+.page-head .ph-link{position:absolute;top:0;right:0;display:inline-block;padding:8px 16px;border:2px solid var(--char);border-radius:0;background:#fff;color:var(--ink);font:700 14px/1.2 var(--display);letter-spacing:0;text-transform:none;text-decoration:none;white-space:nowrap}
 .page-head .ph-link:hover{background:var(--char);color:#fff}
 .page-head details.how{font-size:13px;color:var(--muted)}
 .page-head details.how summary{display:inline-block;margin-top:8px;color:var(--brand);font-weight:700;cursor:pointer;list-style:none;padding:2px 0;white-space:nowrap}
@@ -162,7 +162,7 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
    track, grouped and labelled, so it reads as "pages in this section" and not as a second top bar. */
 .secnav{display:flex;flex-wrap:wrap;align-items:center;gap:8px 22px;margin:0 0 16px;font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:13px;line-height:1.2}
 .secnav .grp{display:flex;align-items:center;gap:8px;min-width:0}
-.secnav .lbl{font-family:var(--label);font-size:14px;font-weight:400;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.secnav .lbl{font-family:var(--display);font-size:12px;font-weight:700;letter-spacing:0;text-transform:none;color:var(--muted);white-space:nowrap}
 .secnav .pills{display:flex;gap:2px;padding:3px;border-radius:0;background:#e2e2e2;min-width:0;overflow-x:auto;scrollbar-width:none}
 .secnav .pills::-webkit-scrollbar{display:none}
 .secnav a{display:block;padding:6px 13px;border-radius:0;color:var(--muted);font-weight:600;text-decoration:none;white-space:nowrap}

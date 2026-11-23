@@ -194,7 +194,7 @@ function renderChart(counted, ud) {   // the headline chart: days with any posti
     if (part) {   // hatch the bar and say so: a short year is not a quiet one
       const top = base < H - padB ? base : H - padB - 2;
       s += `<rect x="${x}" y="${top}" width="${w}" height="${H - padB - top}" fill="url(#hatch)" pointer-events="none"/>`;
-      if (bw >= 40) s += `<text x="${x + w / 2}" y="${Math.max(padT + 9, top - 4)}" font-size="10" text-anchor="middle" fill="#54576F">partial</text>`;
+      if (bw >= 40) s += `<text x="${x + w / 2}" y="${Math.max(padT + 9, top - 4)}" font-size="10" text-anchor="middle" fill="#54576F">Partial</text>`;
     }
     if (ys.length <= 14 || i % Math.ceil(ys.length / 14) === 0) s += `<text x="${x + w / 2}" y="${H - 8}" font-size="11" text-anchor="middle" fill="#54576F">${y}</text>`; });
   document.getElementById("chart").innerHTML = s;

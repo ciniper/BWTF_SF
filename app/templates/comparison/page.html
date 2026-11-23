@@ -14,18 +14,18 @@
           .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
           .card{background:#fff;border:1px solid #d9e4e8;border-radius:0;padding:16px}
           .card .n{font-size:28px;font-weight:800;color:#26272a}
-          .card .l{font-family:var(--label);font-weight:400;font-size:16px;color:#54576F;text-transform:uppercase;letter-spacing:.12em;margin-top:4px}
+          .card .l{font-family:var(--display);font-weight:700;font-size:13px;color:#54576F;text-transform:none;letter-spacing:0;margin-top:4px}
           .banner{border-radius:0;padding:12px 16px;margin-bottom:18px;font-weight:600;font-size:14px}
           .banner--ok{background:rgba(37,214,112,.12);color:#146b37}
           .banner--warn{background:rgba(255,65,0,.10);color:#b5310a}
           .note-info{background:#e3eefb;color:#1f5e8f;border-radius:0;padding:12px 16px;margin:0 0 16px;font-weight:600;font-size:14px}
           table{width:100%;border-collapse:separate;border-spacing:0;background:#fff;border:1px solid #d9e4e8;border-radius:0;overflow:hidden}
           th,td{padding:13px 14px;text-align:left;border-bottom:1px solid #eef2f4;vertical-align:top}
-          th{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#54576F;background:#f7fafb}
+          th{font-size:13px;text-transform:none;letter-spacing:0;color:#54576F;background:#f7fafb}
           tr:last-child td{border-bottom:none}
           td.site{min-width:180px}
           .pill{display:inline-flex;align-items:baseline;gap:6px;padding:5px 10px;border-radius:0;font-weight:700;font-size:14px}
-          .pill small{font-weight:600;font-size:11px;opacity:.8;text-transform:uppercase;letter-spacing:.04em}
+          .pill small{font-weight:600;font-size:11.5px;opacity:.8;text-transform:none;letter-spacing:0}
           .pill--ok{background:#237059;color:#fff}
           .pill--bad{background:#d15c5c;color:#fff}
           .pill--warn{background:#b97e00;color:#fff}
@@ -42,7 +42,7 @@
           .hint{display:flex;align-items:center;gap:6px;color:#54576F;font-size:13px;margin:0 0 10px}
           .bacteria-select{display:flex;align-items:center;gap:10px;margin:0 0 12px;flex-wrap:wrap;row-gap:10px}
           .tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}   /* the head-to-head table scrolls sideways on phones instead of pushing the page wider */
-          .bacteria-select label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#54576F;font-weight:700}
+          .bacteria-select label{font-size:13px;text-transform:none;letter-spacing:0;color:#54576F;font-weight:700}
           .bacteria-select select{font-size:14px;padding:8px 12px;border:1px solid #d9e4e8;border-radius:0;background:#fff;color:#26272a;font-weight:600;cursor:pointer}
           tr.row-click{cursor:pointer}
           tr.row-click:hover{background:#f3f8fb}
@@ -119,7 +119,7 @@
     <select id="bacteria-type" aria-label="Bacteria Type" onchange="changeAnalyte(this.value)">
       {{ analyte_options|safe }}
     </select>
-    <span class="ctl-label" style="margin-left:10px">Graph window</span>
+    <span class="ctl-label" style="margin-left:10px">Graph Window</span>
     <input type="date" id="h-start" aria-label="Graph start date" min="{{ dataset_floor }}">
     <span style="color:#54576F">→</span>
     <input type="date" id="h-end" aria-label="Graph end date">

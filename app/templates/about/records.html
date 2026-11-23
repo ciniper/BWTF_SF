@@ -21,7 +21,7 @@
   .rec-sub{margin:0 0 14px;color:#54576F;font-size:14px}
   .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin:0 0 16px}
   .fact{background:#f3f7fa;border-radius:0;padding:10px 13px}
-  .fact span{display:block;font-family:var(--label);font-size:15px;font-weight:400;letter-spacing:.12em;text-transform:uppercase;color:#54576F}
+  .fact span{display:block;font-family:var(--display);font-size:13px;font-weight:700;letter-spacing:0;text-transform:none;color:#54576F}
   .fact b{font-size:14px;font-weight:700;color:#26272a}
   .fact.due{background:#fdeee2}
   .fact.due b{color:#b25b1e}
@@ -90,7 +90,7 @@
       <i>Oceanside Basin CSD Summary</i> (its name is <i>Westside CSD Summary</i> from May 2026). Before 2018, the Westside
       table is the <i>Wet Weather Discharge Summary</i> in the monthly report. For 2013–2017, it is a scanned page. Before Oct 2016,
       the Bayside table is the <i>Discharge Summary</i> in the monthly <i>Wet Weather Report</i>. Sometimes the name of this report is <i>WW Report</i>.</li>
-      <li><b>Copy One Row for Each Event:</b> date, outfall, start time, duration and volume in million gallons. A second
+      <li><b>Copy one row for each event:</b> date, outfall, start time, duration and volume in million gallons. A second
       discharge on the same day is a separate row. If the volume is <code>&lt;0.01</code>, record it as “less than”.</li>
       <li><b>Use the daily rows, not the TOTAL row.</b> Sometimes the SFPUC spreadsheet template shows an incorrect monthly
       total from an earlier month.</li>
@@ -140,17 +140,17 @@ python aggregate.py                   # 5. clean, check totals, build the CSVs</
 
     <h3>By Hand</h3>
     <ol class="steps">
-      <li><b>Open the Dataset on data.ca.gov:</b>
+      <li><b>Open the dataset on data.ca.gov:</b>
         <a href="https://data.ca.gov/dataset/beach-water-quality-postings-and-closures" target="_blank" rel="noopener">Beach Water Quality Postings and Closures</a>.</li>
       <li><b>Download the resource</b> <i>Beach Posting and Closures – Advisories</i>. It is one CSV for the full state.</li>
-      <li><b>Keep the San Francisco Rows:</b> <code>County</code> = San Francisco and <code>CountyCode</code> = SF.
+      <li><b>Keep the San Francisco rows:</b> <code>County</code> = San Francisco and <code>CountyCode</code> = SF.
       Station names, for example <code>OCEAN#15_SL</code>, are the same IDs that the SFPUC beach map uses.</li>
       <li><b>Each row is one sign at one station:</b> it goes up on <code>DateofAdvisory</code> and comes down on
       <code>DateOpened</code>. Count the two days. <code>AdvisoryType</code> is Posting, Rain or Closure.
       <code>AdvisoryCause</code> and <code>Source</code> give the reason.</li>
-      <li><b>Sort the Cause:</b> sewage, when the cause is Combined Sewer Overflow or the source is Combined Sewer
+      <li><b>Sort the cause:</b> sewage, when the cause is Combined Sewer Overflow or the source is Combined Sewer
       Discharge. Rain, for the 72-hour rain rule. All other causes are "other" (usually dry-weather bacteria).</li>
-      <li><b>Look for Bad Rows:</b> dates that are not possible (one row gives the year 1014), and advisories that stay open for one year or
+      <li><b>Look for bad rows:</b> dates that are not possible (one row gives the year 1014), and advisories that stay open for one year or
       more. Keep these advisories, but do not count them as posted days.</li>
     </ol>
 
@@ -207,7 +207,7 @@ python tests/test_beachwatch.py</code></pre>
     <ol class="steps">
       <li><b>Ask the agency that has the record.</b> For discharge start times before 2018 (Westside), discharge volumes
       before Oct 2016 (Bayside), and all data before Mar 2011, this agency is SFPUC.</li>
-      <li><b>Give Specific Data:</b> permit numbers, outfall IDs, date range, and the format that you want. (It is easiest to ask for the modern monthly
+      <li><b>Give specific data:</b> permit numbers, outfall IDs, date range, and the format that you want. (It is easiest to ask for the modern monthly
       summary tables, because SFPUC already made them for older months one time.)</li>
       <li><b>Send the request through the San Francisco <a href="https://sanfrancisco.nextrequest.com" target="_blank" rel="noopener">records portal</a></b>
       (department “PUC - Public Utilities Commission”). Ask for electronic copies. For reports from before March 2011, also ask

@@ -71,7 +71,7 @@
     <span class="ctl-label">Range</span>
     <input type="date" id="v-start" aria-label="Start date" min="{{ dataset_floor }}"> <span style="color:#54576F">→</span> <input type="date" id="v-end" aria-label="End date">
     <button class="preset v-preset" data-days="91">Last 3 Mo</button><button class="preset v-preset" data-days="365">Last 12 Mo</button><button class="preset v-preset" data-days="1096">Last 3 Yrs</button><button class="preset v-preset" data-days="">Full Record</button>
-    <span class="ctl-label" style="margin-left:8px">Field notes</span>
+    <span class="ctl-label" style="margin-left:8px">Field Notes</span>
     <div class="seg-toggle" id="v-notes"><button class="seg-btn" data-notes="hidden">Hidden</button><button class="seg-btn active" data-notes="expand">Expandable</button><button class="seg-btn" data-notes="columns">Columns</button></div>
   </div>
   <p class="status" id="v-status" style="margin:0">Loading samples…</p>
@@ -124,7 +124,7 @@ function vCell(vals) {
 function fieldBlock(f) {
   if (!f) return "";
   var parts = [["Air", f.air], ["Water", f.water], ["Sky", f.sky], ["Wind", f.wind], ["Tide", f.tide], ["Waves", f.waves], ["Rain", f.rain]].filter(function (p) { return p[1]; });
-  return '<div class="field"><b>Field notes</b>' + (f.tested_by ? " · tested by " + vEsc(f.tested_by) : "") +
+  return '<div class="field"><b>Field Notes</b>' + (f.tested_by ? " · tested by " + vEsc(f.tested_by) : "") +
     (parts.length ? '<div class="field-grid">' + parts.map(function (p) { return "<span>" + p[0] + " " + vEsc(p[1]) + "</span>"; }).join("") + "</div>" : "") +
     (f.comments ? '<div class="field-note">“' + vEsc(f.comments) + '”</div>' : "") + (parts.length || f.comments || f.tested_by ? "" : '<div class="field-note">nothing recorded</div>') + "</div>";
 }

@@ -46,11 +46,11 @@
   .picker[open] summary{border-color:#0072BC;color:#0072BC}
   .picker .panel{position:absolute;z-index:30;top:110%;left:0;background:#fff;border:1px solid #d9e4e8;border-radius:0;box-shadow:0 8px 24px rgba(38,39,42,.15);padding:10px 14px;max-height:300px;overflow-y:auto;min-width:320px}
   .picker label{display:block;font-size:13px;padding:3px 0;white-space:nowrap;cursor:pointer}
-  .picker .grp{font-weight:700;color:#0072BC;margin:8px 0 2px;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+  .picker .grp{font-weight:700;color:#0072BC;margin:8px 0 2px;font-size:13px;text-transform:none;letter-spacing:0}
   input[type=search]{padding:8px 12px;border:2px solid #d9e4e8;border-radius:0;font-family:inherit;font-size:13px;min-width:220px}
   #rawTbl th{cursor:pointer;user-select:none}
   #rawTbl th .dir{color:#0072BC}
-  .dl{padding:8px 16px;border-radius:0;background:var(--char);color:#fff;text-decoration:none;font-family:var(--label);font-weight:400;letter-spacing:.12em;text-transform:uppercase;font-size:16px}
+  .dl{padding:8px 16px;border-radius:0;background:var(--char);color:#fff;text-decoration:none;font-family:var(--display);font-weight:700;letter-spacing:0;text-transform:none;font-size:14px}
   .note.overdue{background:#fdeee2;color:#8a3d10;border-color:#f0c9ad}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
@@ -400,7 +400,7 @@ function updateChart() {
     data: { labels: years.map(String), datasets },
     options: {
       responsive: true, maintainAspectRatio: false,
-      scales: { y: { beginAtZero: true, title: {display:true, text:"million gallons discharged"} } },
+      scales: { y: { beginAtZero: true, title: {display:true, text:"Million Gallons Discharged"} } },
       plugins: { legend: { position: "bottom" } },
     },
   });

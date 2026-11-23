@@ -9,8 +9,8 @@
   <image href="{{ asset(icon[5:]) }}" x="18" y="{{ (h - 28) / 2 }}" width="28" height="28" preserveAspectRatio="xMidYMid meet"/>
   {% else %}<rect class="tile" x="12" y="{{ (h - 40) / 2 }}" width="40" height="40" rx="11"/>
   <use class="icn" href="#i-{{ icon }}" x="20" y="{{ (h - 24) / 2 }}" width="24" height="24"/>{% endif %}
-  <text class="t" x="64" y="{{ h / 2 - 3 }}">{{ title }}</text>
-  <text class="s" x="64" y="{{ h / 2 + 15 }}">{{ sub }}</text>
+  <text class="t" x="64" y="{{ h / 2 - 3 }}">{{ title | title_case }}</text>
+  <text class="s" x="64" y="{{ h / 2 + 15 }}">{{ sub | title_case }}</text>
 </g>
 {%- endmacro -%}
 {%- macro mnode(x, y, icon, title, tip, w=156, tile="") -%}
@@ -20,23 +20,23 @@
   <image href="{{ asset(icon[5:]) }}" x="12" y="12" width="22" height="22" preserveAspectRatio="xMidYMid meet"/>
   {% else %}<rect class="tile" x="7" y="7" width="32" height="32" rx="9"/>
   <use class="icn" href="#i-{{ icon }}" x="13" y="13" width="20" height="20"/>{% endif %}
-  <text class="t m" x="47" y="28">{{ title }}</text>
+  <text class="t m" x="47" y="28">{{ title | title_case }}</text>
 </g>
 {%- endmacro -%}
 {%- macro mchip(y, label, right) -%}
 <g transform="translate(8,{{ y }})">
   <rect class="chip" width="140" height="30" rx="8"/>
   <use class="icn" href="#i-clock" x="8" y="8" width="14" height="14"/>
-  <text class="c m" x="28" y="19.5">{{ label }}</text>
-  <text class="cr" x="132" y="19.5" text-anchor="end">{{ right }}</text>
+  <text class="c m" x="28" y="19.5">{{ label | title_case }}</text>
+  <text class="cr" x="132" y="19.5" text-anchor="end">{{ right | title_case }}</text>
 </g>
 {%- endmacro -%}
 {%- macro chip(y, icon, label, right) -%}
 <g transform="translate(16,{{ y }})">
   <rect class="chip" width="228" height="34" rx="9"/>
   <use class="icn" href="#i-{{ icon }}" x="10" y="9" width="16" height="16"/>
-  <text class="c" x="34" y="22">{{ label }}</text>
-  {% if right %}<text class="cr" x="216" y="22" text-anchor="end">{{ right }}</text>{% endif %}
+  <text class="c" x="34" y="22">{{ label | title_case }}</text>
+  {% if right %}<text class="cr" x="216" y="22" text-anchor="end">{{ right | title_case }}</text>{% endif %}
 </g>
 {%- endmacro -%}
 
@@ -107,10 +107,10 @@
     <path class="live" d="M490 256V326" marker-start="url(#arr)" marker-end="url(#arr)"/>
     <path class="sched" d="M540 254V326" marker-end="url(#arr)"/>
     <path class="live" d="M510 452V410" marker-end="url(#arr)"/>
-    <text class="lbl" x="520" y="436">deploy</text>
+    <text class="lbl" x="520" y="436">Deploy</text>
 
     <path class="hand" d="M240 484H376" marker-end="url(#arrG)"/>
-    <text class="lbl" x="276" y="474">quarterly</text>
+    <text class="lbl" x="276" y="474">Quarterly</text>
 
     <path class="live" d="M640 72H756" marker-end="url(#arr)"/>
     <path class="live" d="M870 104V136" marker-end="url(#arr)"/>
@@ -130,7 +130,7 @@
       <rect class="tile logo" x="12" y="12" width="40" height="40" rx="11"/>
       <image href="{{ asset('logos/supabase.svg') }}" x="19" y="19" width="26" height="26"/>
       <text class="t" x="64" y="29">Supabase</text>
-      <text class="s" x="64" y="46">database + scheduler</text>
+      <text class="s" x="64" y="46">Database + Scheduler</text>
       {{ chip(72, "clock", "Alert watcher", "1 min") }}
       {{ chip(114, "clock", "Forecast", "30 min") }}
       {{ chip(156, "inbox", "Subscribers & history", "") }}
@@ -140,7 +140,7 @@
       <rect class="tile logo" x="12" y="18" width="40" height="40" rx="11"/>
       <image href="{{ asset('logos/vercel.svg') }}" x="21" y="27" width="22" height="22"/>
       <text class="t" x="64" y="35">Vercel</text>
-      <text class="s" x="64" y="53">the website (Flask)</text>
+      <text class="s" x="64" y="53">The Website (Flask)</text>
     </g>
     {{ node(380, 452, 260, 64, "logo:logos/github.svg", "GitHub", "code + records", "ciniper/BWTF_SF: the code and the committed record CSVs. A push to main deploys the site.", tile="github") }}
 
@@ -152,9 +152,9 @@
 
     <!-- legend -->
     <g transform="translate(300,560)">
-      <path class="live" d="M0 0H36"/><text class="lbl" x="44" y="4">live</text>
-      <path class="sched" d="M120 0H156"/><text class="lbl" x="164" y="4">on a schedule</text>
-      <path class="hand" d="M290 0H326"/><text class="lbl" x="334" y="4">by hand</text>
+      <path class="live" d="M0 0H36"/><text class="lbl" x="44" y="4">Live</text>
+      <path class="sched" d="M120 0H156"/><text class="lbl" x="164" y="4">On a Schedule</text>
+      <path class="hand" d="M290 0H326"/><text class="lbl" x="334" y="4">By Hand</text>
     </g>
   </svg>
   <!-- phone layout: the same system stacked; titles only, details on tap/hover -->
@@ -173,7 +173,7 @@
     <path class="live" d="M88 386V408" marker-end="url(#arrM)"/>
     <path class="sched" d="M166 300H272V336" marker-end="url(#arrM)"/>
     <path class="hand" d="M166 523H190" marker-end="url(#arrGM)"/>
-    <text class="lbl" x="180" y="490" text-anchor="middle">quarterly</text>
+    <text class="lbl" x="180" y="490" text-anchor="middle">Quarterly</text>
     <path class="live" d="M350 523H362V203H354" marker-end="url(#arrM)"/>
 
     {{ mnode(10, 26, "logo:logos/sfpuc.png", "SFPUC map", "The SFPUC live beach feed. The watcher reads it each minute. The site reads it at each visit.", tile="sfpuc") }}
@@ -203,9 +203,9 @@
     {{ mnode(194, 500, "logo:logos/github.svg", "GitHub", "The code and the committed record CSVs. A push to main deploys the site.", tile="github") }}
 
     <g transform="translate(22,600)">
-      <path class="live" d="M0 0H28"/><text class="lbl" x="34" y="4">live</text>
-      <path class="sched" d="M86 0H114"/><text class="lbl" x="120" y="4">on a schedule</text>
-      <path class="hand" d="M226 0H254"/><text class="lbl" x="260" y="4">by hand</text>
+      <path class="live" d="M0 0H28"/><text class="lbl" x="34" y="4">Live</text>
+      <path class="sched" d="M86 0H114"/><text class="lbl" x="120" y="4">On a Schedule</text>
+      <path class="hand" d="M226 0H254"/><text class="lbl" x="260" y="4">By Hand</text>
     </g>
   </svg>
   </div>

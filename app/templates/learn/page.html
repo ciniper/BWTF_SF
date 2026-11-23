@@ -220,12 +220,12 @@
         <path d="M172 128 H178 V170" fill="none" stroke="#26272a" stroke-width="3"/>
         <rect x="216" y="166" width="30" height="6" fill="#26272a"/><rect x="345" y="166" width="30" height="6" fill="#26272a"/>
         {# the beach sign #}
-        <g id="sign"><rect x="712" y="150" width="4" height="40" fill="#26272a"/><rect id="sign-b" x="684" y="124" width="62" height="28" rx="5" fill="#237059"/><text id="sign-t" x="715" y="143" text-anchor="middle" font-size="12" font-weight="900" fill="#fff">OPEN</text></g>
+        <g id="sign"><rect x="712" y="150" width="4" height="40" fill="#26272a"/><rect id="sign-b" x="684" y="124" width="62" height="28" rx="5" fill="#237059"/><text id="sign-t" x="715" y="143" text-anchor="middle" font-size="12" font-weight="900" fill="#fff">Open</text></g>
         {# the treatment plant, miles away: off the scene in life, so it sits in a dashed inset, the way SFPUC draws it #}
         <rect x="120" y="318" width="214" height="82" rx="10" fill="#f8fafb" stroke="#8a949b" stroke-width="1.5" stroke-dasharray="6 5"/>
         <g stroke="#26272a" stroke-width="2"><rect x="150" y="352" width="108" height="34" fill="#f3f6f9"/><ellipse cx="178" cy="352" rx="18" ry="6" fill="#cfe3ee"/><ellipse cx="230" cy="352" rx="18" ry="6" fill="#cfe3ee"/></g>
-        <text x="227" y="337" text-anchor="middle" font-size="12.5" font-weight="700" fill="#26272a">Treatment plant · miles away</text>
-        <text id="plant-cap" x="296" y="374" text-anchor="middle" font-size="11.5" font-weight="700" fill="#b5310a" opacity="0">at capacity</text>
+        <text x="227" y="337" text-anchor="middle" font-size="12.5" font-weight="700" fill="#26272a">Treatment Plant · Miles Away</text>
+        <text id="plant-cap" x="296" y="374" text-anchor="middle" font-size="11.5" font-weight="700" fill="#b5310a" opacity="0">At Capacity</text>
         {# pipe casings #}
         <g fill="none" stroke="#8a949b" stroke-linecap="round" stroke-linejoin="round">
           <path d="M59 170 V233 M136 170 V239" stroke-width="12"/>
@@ -245,9 +245,9 @@
         <rect x="604" y="227" width="6" height="52" fill="#f3f6f9" stroke="#26272a" stroke-width="1.6"/>{# the baffle, hanging from the ceiling #}
         <rect x="641" y="236" width="6" height="14" fill="#8a949b"/>{# the outlet: an opening near the top of the wall #}
         <path d="M630 251 H644" stroke="#26272a" stroke-width="2.5"/>{# its lip: the weir #}
-        <text x="534" y="300" text-anchor="middle" font-size="12" font-weight="700" fill="#26272a">storage</text>
-        <text x="607" y="221" text-anchor="middle" font-size="10" font-weight="700" fill="#54576F">baffle</text>
-        <text x="652" y="266" font-size="10" font-weight="700" fill="#54576F">weir</text>
+        <text x="534" y="300" text-anchor="middle" font-size="12" font-weight="700" fill="#26272a">Storage</text>
+        <text x="607" y="221" text-anchor="middle" font-size="10" font-weight="700" fill="#54576F">Baffle</text>
+        <text x="652" y="266" font-size="10" font-weight="700" fill="#54576F">Weir</text>
         {# flows #}
         <path id="f-home" class="flow" d="M59 172 V233 M136 172 V239" stroke="#8b6a4a" stroke-width="5"/>
         <path id="f-roof" class="flow" d="M178 130 V242" stroke="#3b8fc4" stroke-width="0"/>
@@ -331,7 +331,7 @@
         <div class="qt-view" id="qt-view">
           <div class="qt-track" id="qt-track">
             <div class="qt-intro">
-              <h3>One Bottle, Eight Steps</h3>
+              <h3>Enterolert Testing Process Explained</h3>
               <p>Follow one sample through the test for Enterococcus: IDEXX Enterolert in a Quanti-Tray.</p>
               <ol class="qt-route">{% for st in qt_steps %}<li><b>{{ loop.index }}</b>{{ st.title }}</li>{% endfor %}</ol>
               <p class="qt-hint" id="qt-hint">Swipe to the side, or use the arrows below</p>
@@ -410,6 +410,15 @@
   const $ = id => document.getElementById(id);
   const REDUCE = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
   const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+  // Title case for the drawings' labels (2026-11-22): the same rule as shared/text.py title_case
+  const SMALL_WORDS = new Set("a an the and or nor but for of to in on at by as with from into per via vs off onto over".split(" "));
+  const titleCase = t => { const toks = String(t == null ? "" : t).split(/(\s+|[–—·\/(),:|]+)/), idx = toks.map((w, i) => /[A-Za-z]/.test(w) ? i : -1).filter(i => i >= 0);
+    idx.forEach((i, n) => { const w = toks[i]; if (!/^[a-z][a-z'’-]*$/.test(w)) return;
+      const first = n === 0 ? !toks.slice(0, i).join("").trim() : /[:–—·|(]/.test(toks.slice(idx[n - 1] + 1, i).join(""));
+      const last = n === idx.length - 1 || /[:–—·|)]/.test(toks.slice(i + 1, idx[n + 1]).join(""));
+      if (SMALL_WORDS.has(w) && !first && !last) return;
+      toks[i] = w.split("-").map(p => p.charAt(0).toUpperCase() + p.slice(1)).join("-"); });
+    return toks.join(""); };
 
   // ── 1. Where the rain goes: one number, r from 0 to 1, drives every pipe ──
   const SVGNS = "http://www.w3.org/2000/svg";
@@ -461,7 +470,7 @@
     $("plume").setAttribute("opacity", E.toFixed(2));
     const live = Math.round(flowing * puffs.length); puffs.forEach((c, i) => { c.style.display = i < live ? "" : "none"; });
     const posted = r >= 0.7 || aftermath;
-    $("sign-b").setAttribute("fill", posted ? "#d4763a" : "#237059"); $("sign-t").textContent = posted ? "POSTED" : "OPEN";
+    $("sign-b").setAttribute("fill", posted ? "#d4763a" : "#237059"); $("sign-t").textContent = posted ? "Posted" : "Open";
     let st = STATES.find(s => r < s[0]) || STATES[3];
     if (aftermath && r < 0.7) st = [0, "After the storm", "The overflow stopped. The plume moves away and becomes thinner. But the beach stays posted while SFPUC samples it, until the results show that it is clear."];
     $("cap-step").textContent = st[1]; $("cap-text").textContent = st[2]; $("rain-cap").classList.toggle("overflow", st[1] === "Overflow");
@@ -588,7 +597,7 @@
     document.querySelectorAll("#storms .preset").forEach(b => { const a = +b.dataset.i === i; b.classList.toggle("active", a); b.setAttribute("aria-pressed", String(a)); });
     if (MAP) MAP.closePopup(); strip(); paint();
   }
-  function stop() { PLAY = false; $("sys-play").textContent = T >= W[1] ? "Play again" : T > W[0] ? "Resume" : "Play"; }
+  function stop() { PLAY = false; $("sys-play").textContent = T >= W[1] ? "Play Again" : T > W[0] ? "Resume" : "Play"; }
   $("sys-play").addEventListener("click", () => {
     if (PLAY) return stop();
     if (T >= W[1]) T = W[0];
@@ -600,7 +609,7 @@
       if (T >= W[1]) stop(); else requestAnimationFrame(tick);
     })(last);
   });
-  $("sys-t").addEventListener("input", e => { if (PLAY) stop(); T = W[0] + (W[1] - W[0]) * e.target.value / 1000; paint(); $("sys-play").textContent = T >= W[1] ? "Play again" : "Resume"; });
+  $("sys-t").addEventListener("input", e => { if (PLAY) stop(); T = W[0] + (W[1] - W[0]) * e.target.value / 1000; paint(); $("sys-play").textContent = T >= W[1] ? "Play Again" : "Resume"; });
   $("storms").addEventListener("click", e => { const b = e.target.closest(".preset"); if (b) pick(+b.dataset.i); });
   $("sys-load").addEventListener("click", loadMap);
   if ("IntersectionObserver" in window) { const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { loadMap(); io.disconnect(); } }, {rootMargin: "400px 0px"}); io.observe(mapBox); }
@@ -665,7 +674,7 @@
     const at = (g, x, y, more) => g.setAttribute("transform", `translate(${x.toFixed(1)} ${y.toFixed(1)})${more || ""}`);
     const show = (e, on) => { e.style.display = on ? "" : "none"; };
     const add = (p, tag, attrs, text) => {
-      const e = el(tag, attrs); if (text != null) e.textContent = text; p.appendChild(e);
+      const e = el(tag, attrs); if (text != null) e.textContent = tag === "text" ? titleCase(text) : text; p.appendChild(e);   // every label in the drawings is title case (2026-11-22)
       if (attrs.fixed) e.removeAttribute("fixed");
       else if (tag === "text" && attrs["font-size"] <= 15) { e.classList.add("lbl"); e.style.setProperty("--fs", attrs["font-size"] + "px"); }   // small labels grow on phones
       return e;
@@ -755,7 +764,7 @@
       return a => {
         const [x, y] = kf(a, F); at(pip, x, y);
         src.set(lerp(.86, .79, seg(a, .12, .18))); dst.set(lerp(.72, .8, seg(a, .66, .8)));
-        dst.label.textContent = a < .8 ? "90 mL sterile water" : "now 100 mL: 1 part in 10";
+        dst.label.textContent = titleCase(a < .8 ? "90 mL sterile water" : "now 100 mL: 1 part in 10");
         taken.forEach((t, k) => {
           show(scs[k], a < .12); show(t.g, a >= .12);
           const tip = [x + t.tube[0], y + t.tube[1]];
@@ -879,7 +888,7 @@
         occupied.forEach(w => T.wells[w].setAttribute("fill", mix("#cde8f6", "#8fdccf", p)));
         const n = Math.min(128, Math.pow(2, d)); zc.forEach((e, i) => show(e, i < n));
         zf.setAttribute("fill", mix("#eef6fa", "#b9ece3", p));
-        zl.textContent = "one well: " + (d === 0 ? "1 cell" : d < 11 ? Math.pow(2, d).toLocaleString() + " cells" : "millions of cells");
+        zl.textContent = "One Well: " + (d === 0 ? "1 Cell" : d < 11 ? Math.pow(2, d).toLocaleString() + " Cells" : "Millions of Cells");
       };
     }
     // ─ 7. under the UV lamp the wells with growth glow ─
