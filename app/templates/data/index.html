@@ -16,14 +16,14 @@
   .feature,.rest{background:#fff;border:1px solid var(--line);border-radius:var(--r)}
   .feature{position:relative;display:flex;flex-direction:column;padding:20px 22px 20px;scroll-margin-top:16px}
   .feature:hover{border-color:var(--sky)}
-  .eyebrow{display:flex;align-items:center;gap:7px;margin:0;font-family:var(--label);font-size:14px;font-weight:400;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+  .eyebrow{display:flex;align-items:center;gap:7px;margin:0;font-family:var(--display);font-size:14px;font-weight:700;letter-spacing:0;text-transform:none;color:var(--muted)}   /* Roboto, as written (2026-11-22) */
   .eyebrow .ic{width:15px;height:15px;color:var(--brand)}
   .feature h2{margin:6px 0 0;font-size:22px;font-weight:900;line-height:1.2}
   .feature h2 a{color:var(--ink);text-decoration:none}
   .feature h2 a::after{content:"";position:absolute;inset:0;border-radius:var(--r)}   /* the whole card is the link */
   .feature .blurb{margin:6px 0 16px;color:var(--muted);max-width:60ch}
   .stat{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px;margin:0 0 16px;padding-top:14px;border-top:1px solid var(--sand2);min-height:76px}
-  .stat b{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:46px;line-height:1;letter-spacing:.02em;color:var(--ink);white-space:nowrap}
+  .stat b{font-family:var(--display);font-weight:700;font-size:40px;line-height:1.05;letter-spacing:-.02em;color:#000;white-space:nowrap}
   .stat b:empty{display:none}
   .stat span{flex:1 1 220px;color:var(--muted);font-size:14px;line-height:1.45}
   .stat span strong{color:var(--ink);font-weight:700}
@@ -32,7 +32,7 @@
   .go{align-self:flex-start;margin-top:auto;padding:8px 15px;border:2px solid var(--line);border-radius:0;color:var(--brand);font-weight:700;font-size:13.5px;white-space:nowrap}
   .feature:hover .go{border-color:var(--brand)}
   .rest{padding:14px 22px 6px}
-  .rest h3{margin:0 0 8px;font-family:var(--label);font-size:14px;font-weight:400;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+  .rest h3{margin:0 0 8px;font-family:var(--display);font-size:14px;font-weight:700;letter-spacing:0;text-transform:none;color:var(--muted)}
   .pages{margin:0;padding:0;list-style:none}
   .pages a{display:block;padding:10px 0 11px;border-top:1px solid var(--sand2);text-decoration:none;color:var(--ink)}
   .pages .name{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-weight:700;font-size:15px}
@@ -57,12 +57,12 @@
       <p class="blurb">{{ f.blurb }}</p>
       {% if f.href == "/discharges" %}
       {%- if ledger %}
-      <p class="stat"><b>{{ "{:,}".format(ledger.count) }} discharge{{ "" if ledger.count == 1 else "s" }}</b><span>reported in {{ ledger.year }}. Total volume: <strong>{{ ledger.volume }}</strong>. The reports include data to {{ ledger.through }}.</span></p>
+      <p class="stat"><b>{{ "{:,}".format(ledger.count) }} Discharge{{ "" if ledger.count == 1 else "s" }}</b><span>reported in {{ ledger.year }}. Total volume: <strong>{{ ledger.volume }}</strong>. The reports include data to {{ ledger.through }}.</span></p>
       {%- endif %}
-      <span class="go">Open the ledger →</span>
+      <span class="go">Open the Ledger →</span>
       {% else %}
       <p class="stat pending" id="rc-stat"><b id="rc-pct"></b><span id="rc-text">Calculating the Samples for the Last Year…</span></p>   {#- filled from /analysis/api/summary once the page has drawn #}
-      <span class="go">Open the report card →</span>
+      <span class="go">Open the Report Card →</span>
       {% endif %}
     </section>
     <nav class="rest" aria-label="More {{ g.label | lower }}">

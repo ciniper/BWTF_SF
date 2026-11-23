@@ -175,7 +175,7 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
         assert dh.count('class="feature"') == 2 and '<h2 id="feature-water"><a href="/analysis">Site Report Card</a></h2>' in dh and '<h2 id="feature-record"><a href="/discharges">Discharge Ledger</a></h2>' in dh   # the two the index leads with
         assert dh.index('id="water"') < dh.index("Site Report Card") < dh.index("Source Comparison") < dh.index('id="record"') < dh.index("Discharge Ledger") < dh.index("Online Postings Timeline")   # group by group, so a phone reads lab results then city records
         assert 'id="rc-stat"' in dh and 'fetch("/analysis/api/summary?start="' in dh and "All combined-sewer discharges" in dh   # the Report Card's number arrives after the page has drawn
-        assert re.search(r'<p class="stat"><b>[\d,]+ discharges?</b><span>reported in 20\d\d\. Total volume: <strong>[\d.,]+ (million|billion) gallons</strong>\. The reports include data to [A-Z][a-z]{2} 20\d\d\.</span></p>', dh)   # the Ledger's, from the committed record
+        assert re.search(r'<p class="stat"><b>[\d,]+ Discharges?</b><span>reported in 20\d\d\. Total volume: <strong>[\d.,]+ (million|billion) gallons</strong>\. The reports include data to [A-Z][a-z]{2} 20\d\d\.</span></p>', dh)   # the Ledger's, from the committed record
         beta = dh[dh.index('class="beta"'):dh.index('class="topbar"')]
         assert '<span class="more">' in beta and ".more" not in dh.split("</style>")[0]   # the page must not restyle the Beta notice's "more" span (it did: a white box over the sentence)
         for u in ("/", "/today"):   # Today IS the home page: served at the root, and at /today for the alert emails — never a redirect (2026-10-01)
