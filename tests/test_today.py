@@ -209,7 +209,7 @@ def test_labels_layer_is_a_chip_off_by_default_drawn_from_the_stations():
     assert 'data-layer="risk"' not in group and 'data-layer="replay"' not in group
     assert h.index('id="today-h"') < h.index('id="zones"') < h.index('data-layer="replay"') < h.index('data-layer="risk"') < h.index('id="day-strip"')   # Past Week sits under the tiles, beside the forecast
     assert h.split('id="day-strip"')[1].split(">")[0].rstrip().endswith("hidden")   # closed until Past Week is pressed
-    assert h.index('id="zones"') < h.index('data-layer="risk"') < h.index('id="layers"')
+    assert h.index('id="zones"') < h.index('id="layers"') < h.index('data-layer="risk"')   # the map card comes before the notes card (2026-11-23)
     board = (ROOT / "app/templates/_today_board.html").read_text()
     assert "labels: {}" in board and 'if (key === "labels")' in board and "LABEL_ZOOM = 13" in board        # no fetch; ?layers=labels deep-links like the rest
     assert 'MAP.createPane("lbl").style.zIndex = 445' in board and 'MAP.on("zoomend moveend resize", refreshLabels)' in board
