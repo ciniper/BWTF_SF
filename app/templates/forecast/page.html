@@ -25,7 +25,7 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 .historical-label { color: var(--caution); font-size: 0.85em; font-weight: 600; }
 
 .risk-banner { background: #fff; border: 2px solid var(--line); border-radius: var(--r-lg); padding: 16px 22px 18px; margin-bottom: 16px; color: var(--ink); }   /* the board's card: border by grade, headline in Bebas, facts underneath */
-.risk-banner .eyebrow { font-family:var(--label);font-size:16px; letter-spacing:.12em; text-transform: uppercase; color: var(--muted); font-weight:400; margin: 0 0 4px; }
+.risk-banner .eyebrow { font-family:var(--display); font-size:15px; letter-spacing:0; text-transform:none; color: var(--ink); font-weight:700; margin: 0 0 6px; }   /* Roboto, as written, like the Today board (2026-11-22) */
 .risk-banner h2 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 32px; line-height: 1.1; letter-spacing: -.02em; color: #000; }
 .risk-banner h2 em { font-style: normal; }
 .risk-banner .sub { margin: 6px 0 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
@@ -342,7 +342,16 @@ let SERVED_NAME = {{ served_name | tojson }};   // the served set's stored name 
 
 const ic = name => `<svg class="ic"><use href="#i-${name}"/></svg>`;
 const esc = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const badge = (kind, icon, label) => `<span class="badge ${kind}">${ic(icon)}${esc(label)}</span>`;
+// Title case for badges and short labels (2026-11-22): the same rule as shared/text.py title_case
+const SMALL_WORDS = new Set('a an the and or nor but for of to in on at by as with from into per via vs off onto over'.split(' '));
+const titleCase = t => { const toks = String(t == null ? '' : t).split(/(\s+|[–—·\/(),:|]+)/), idx = toks.map((w, i) => /[A-Za-z]/.test(w) ? i : -1).filter(i => i >= 0);
+    idx.forEach((i, n) => { const w = toks[i]; if (!/^[a-z][a-z'’-]*$/.test(w)) return;
+        const first = n === 0 ? !toks.slice(0, i).join('').trim() : /[:–—·|(]/.test(toks.slice(idx[n - 1] + 1, i).join(''));
+        const last = n === idx.length - 1 || /[:–—·|)]/.test(toks.slice(i + 1, idx[n + 1]).join(''));
+        if (SMALL_WORDS.has(w) && !first && !last) return;
+        toks[i] = w.split('-').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join('-'); });
+    return toks.join(''); };
+const badge = (kind, icon, label) => `<span class="badge ${kind}">${ic(icon)}${esc(titleCase(label))}</span>`;
 // Live corrections (live_v2, src/models/live_rules.py): how a number moved and why.
 const RULE_BADGE = {
     cso_onset:             a => ['danger', 'octagon-alert', 'discharge observed'],
@@ -401,9 +410,9 @@ const zoneRain = (day, zk) => {
 };
 function rainSourceLabel(day) {
     const src = day.rain_source || (day.is_forecast ? 'forecast' : 'model');
-    return { gauges: ic('gauge') + ' NOAA gauges', observed: ic('gauge') + ' KSFO gauge',
-             mixed: ic('gauge') + ' gauge + ' + ic('satellite-dish') + ' ICON',
-             model: ic('satellite-dish') + ' model hindcast', forecast: ic('satellite-dish') + ' ICON forecast' }[src] || esc(src);
+    return { gauges: ic('gauge') + ' NOAA Gauges', observed: ic('gauge') + ' KSFO Gauge',
+             mixed: ic('gauge') + ' Gauge + ' + ic('satellite-dish') + ' ICON',
+             model: ic('satellite-dish') + ' Model Hindcast', forecast: ic('satellite-dish') + ' ICON Forecast' }[src] || esc(titleCase(src));
 }
 
 // ─── state / mode / view ────────────────────────────────────────────────────
@@ -422,9 +431,9 @@ function renderLiveToggle(info) {
     if (!info || currentMode !== 'live') { wrap.style.display = 'none'; return; }
     wrap.style.display = 'inline-flex';
     const v = (info.version || 'live_v2').replace(/^live_/, '');   // live_v1 → v1
-    if (info.enabled === false) { btn.className = ''; btn.disabled = true; btn.innerHTML = `${ic('satellite-dish')} Live corrections ${esc(v)}: off (${esc(info.source || 'server')})`; return; }
+    if (info.enabled === false) { btn.className = ''; btn.disabled = true; btn.innerHTML = `${ic('satellite-dish')} Live Corrections ${esc(v)}: Off (${esc(titleCase(info.source || 'server'))})`; return; }
     btn.disabled = false; btn.className = showLiveCorrections ? 'active' : '';
-    btn.innerHTML = `${ic('satellite-dish')} Live corrections ${esc(v)}: ${showLiveCorrections ? 'on' : 'off — model alone'}`;
+    btn.innerHTML = `${ic('satellite-dish')} Live Corrections ${esc(v)}: ${showLiveCorrections ? 'On' : 'Off — Model Alone'}`;
 }
 function toggleLiveCorrections() { showLiveCorrections = !showLiveCorrections; if (lastLiveData && currentMode === 'live') renderLive(lastLiveData); }
 
@@ -608,7 +617,7 @@ function renderLive(data) {
             <div class="day-prob" style="color:${r.color}">${m == null ? '—' : pct(m) + '%'}</div>
             <div class="day-risk" style="color:${r.color}">${m == null ? 'Unavailable' : r.label}</div>
             <div class="day-bar"><div class="day-bar-fill" style="width:${pct(m)}%;background:${r.color}"></div></div>
-            <div class="day-source">${currentView === 'basins' ? 'Same-day impact score' : 'Model risk score'}</div>
+            <div class="day-source">${currentView === 'basins' ? 'Same-Day Impact Score' : 'Model Risk Score'}</div>
             <div class="day-source">${rainSourceLabel(day)}</div>`;
         card.onclick = () => selectDay(day);
         timeline.appendChild(card);
@@ -644,7 +653,7 @@ function renderBanner(day) {
         const bad = Object.entries(zones).filter(([, z]) => z.bad).map(([zk]) => (ZONES.find(z => z.key === zk) || {}).label);
         const allKnown = Object.values(zones).length && Object.values(zones).every(z => z.bad != null);
         banner.className = 'risk-banner ' + (bad.length ? 'st-discharge' : allKnown ? 'st-safe' : 'st-caution');
-        banner.innerHTML = '<div class="eyebrow">What happened · ' + dayTitle(day) + '</div><h2>' + (bad.length
+        banner.innerHTML = '<div class="eyebrow">What Happened · ' + dayTitle(day) + '</div><h2>' + (bad.length
             ? '<em>' + bad.map(esc).join(', ') + '</em> Had a Bad Day.'
             : allKnown ? '<em>No Discharges</em> and No High Samples in All Zones.'
             : 'The Records for This Day Are Not Complete.') + '</h2><p class="sub">' + (bad.length ? 'A discharge, a posting or a high sample in the zone. The zones below show which.' : allKnown ? '' : 'Refer to the zones below for the known data.') + '</p>';
@@ -703,7 +712,7 @@ function renderPredictionCards(day, actual) {
                 <div class="basin-name">${ic(ZONE_ICON[zk])} ${esc(z.label)}</div>
                 <div class="basin-prob" style="color:${r.color}">${pct(p)}% <span style="font-size:.45em;font-weight:600;letter-spacing:.05em;text-transform:uppercase">${r.label}</span></div>
                 <div class="basin-bar"><div class="basin-bar-fill" style="width:${pct(p)}%;background:${r.color}"></div></div>
-                <div class="basin-detail">Model risk score · ${ic('droplets')} ${fmtIn(zoneRain(day, zk))} today · 3d ${fmtIn(day.rain_3d_cum)} · ${esc(z.gauge)} gauge</div>
+                <div class="basin-detail">Model Risk Score · ${ic('droplets')} ${fmtIn(zoneRain(day, zk))} Today · 3d ${fmtIn(day.rain_3d_cum)} · ${esc(z.gauge)} Gauge</div>
                 <div class="zone-stations">${z.stations.map(esc).join(' · ')}</div>
                 ${liveBadgesZone(day, zk) ? '<div class="status-line">' + liveBadgesZone(day, zk) + '</div>' : ''}
                 ${actual ? verdictLine(p, actual.zones && actual.zones[zk]) : ''}`;
@@ -747,7 +756,7 @@ function renderBeaches(beaches) {
         const item = document.createElement(b.source ? 'button' : 'span');
         if (b.source) { item.type = 'button'; item.dataset.sampleStation = b.source; item.dataset.sampleName = b.name; item.dataset.sampleFeedDate = b.sample_date_iso || ''; item.title = 'Latest lab results'; }
         item.className = 'site';
-        item.innerHTML = `<i class="status-dot ${DOT[b.status] || 'unknown'}"></i>${esc(b.name)}<small>${b.sample_date ? 'sampled ' + esc(b.sample_date) : 'no sample date'}</small>`;
+        item.innerHTML = `<i class="status-dot ${DOT[b.status] || 'unknown'}"></i>${esc(b.name)}<small>${b.sample_date ? 'Sampled ' + esc(b.sample_date) : 'No Sample Date'}</small>`;
         grid.appendChild(item);
     });
 }
@@ -895,7 +904,7 @@ async function showBuilder() { await loadBuilder(); renderBuilder(); }
 
 // A module opened to its basins (S2) or zones (S3, S4, the public number); it stays open while parts are swapped.
 const sbOpen = { s2: false, s3: false, s4: false, out: false };
-const SB_BY = { s2: 'By basin', s3: 'By zone', s4: 'By zone', out: 'By zone' };
+const SB_BY = { s2: 'By Basin', s3: 'By Zone', s4: 'By Zone', out: 'By Zone' };
 function sbToggle(k) {
     sbOpen[k] = !sbOpen[k]; renderBuilder();
     const el = document.querySelector(`#builder [data-open="${k}"]`); if (el) el.focus();
@@ -974,7 +983,7 @@ function sbSkillCell(c, units, extra) {
                  `${c.n.toLocaleString()} ${units[0]} · ${c.n_pos.toLocaleString()} ${units[1]}${c.storms != null ? ' · ' + c.storms + ' storms' : ''}`,
                  sbSpan(c.span)].concat(c.low_power ? ['Too few storms to decide'] : [], extra ? [extra] : []).join('\n');
     return `<div class="sb-cell${c.low_power ? ' lp' : ''}" title="${esc(tip)}">
-        <div class="sb-val">skill <b>${sbNum(c.bss, 2)}</b> <span class="ci">${sbRange(c.lo, c.hi, v => sbNum(v, 2))}</span> <span class="sb-pr">PR ${sbNum(c.pr, 2)}</span></div>
+        <div class="sb-val">Skill <b>${sbNum(c.bss, 2)}</b> <span class="ci">${sbRange(c.lo, c.hi, v => sbNum(v, 2))}</span> <span class="sb-pr">PR ${sbNum(c.pr, 2)}</span></div>
         ${sbBar(c.bss, c.lo, c.hi)}${c.bss < 0 ? '<div class="sb-worse">worse than the usual rate</div>' : ''}${c.low_power ? '<div class="sb-sub">few storms</div>' : ''}</div>`;
 }
 // S2's own score is fed rain known, the rain the S1 pick reads: an S1 part that fills a dead gauge's days another way
@@ -1000,7 +1009,7 @@ function sbS1Slot(st, p, win) {
                  `Floor ${sbIn(f.mae)}: ${f.name.replace(' as ', ' as a forecast of ')}, approximately the best result that a forecast for one point can get.`]
                  .concat(p.vs_live ? [`Against ${live.name}: ${p.vs_live}`] : []).join('\n');
     return `<div class="sb-cell" title="${esc(tip)}">
-        <div class="sb-val">miss <b>${sbIn(c.mae)}</b> <span class="ci">${sbRange(c.lo, c.hi, sbIn)}</span></div>
+        <div class="sb-val">Miss <b>${sbIn(c.mae)}</b> <span class="ci">${sbRange(c.lo, c.hi, sbIn)}</span></div>
         ${sbBar(c.mae / top, c.lo / top, c.hi / top, [f.mae / top])}
         <div class="sb-sub">floor ${sbIn(f.mae)} · lower is better · ${esc(sbSpan(st.window))}</div>${p.vs_live ? `<div class="sb-sub">vs ${esc(live.name)}: ${esc(p.vs_live)}</div>` : ''}${p.note ? `<div class="sb-sub">${esc(p.note)}</div>` : ''}</div>`;
 }
@@ -1027,12 +1036,12 @@ function sbS5Slot(st, p, win) {
     const x = ((p.scores || {})[sbPick.basins] || {})[sw];
     if (!x || !x.perfect) return sbNone('not scored on this window');
     const pf = x.perfect, r = x.realistic, home = sbChainOf(st.home[sbPick.basins]);
-    if (p.note) return `<div class="sb-cell" title="${esc(p.note.long)}"><div class="sb-val">change <b>${sbSgn(pf.delta, 3)}</b></div><div class="sb-sub">${esc(p.note.short)}</div></div>`;
+    if (p.note) return `<div class="sb-cell" title="${esc(p.note.long)}"><div class="sb-val">Change <b>${sbSgn(pf.delta, 3)}</b></div><div class="sb-sub">${esc(p.note.short)}</div></div>`;
     const vcls = v => v === 'better' ? 'good' : v === 'worse' ? 'bad' : 'even', top = sbS5Top(sw);
     const scored = home ? `\nScored on ${home.name} · ${sbBasinsName(sbPick.basins)}` : '';
     let html = `<div class="sb-cell${pf.low_power ? ' lp' : ''}" title="${esc(`Perfect feed: every filed discharge, on time. Change in error with this rule against no correction, on ${pf.n.toLocaleString()} zone-days after an observation, ${sbSpan(pf.span)}; 90% range ${sbSgn(pf.lo, 3)} to ${sbSgn(pf.hi, 3)}.${scored}`)}">
-        <div class="sb-feed">perfect feed</div>
-        <div class="sb-val"><b>${sbSgn(pf.delta, 3)}</b> <span class="ci">${sbRange(pf.lo, pf.hi, v => sbSgn(v, 3), ' to ')}</span> <span class="sb-verdict ${esc(pf.verdict)}">${esc(pf.verdict)}</span></div>
+        <div class="sb-feed">Perfect Feed</div>
+        <div class="sb-val"><b>${sbSgn(pf.delta, 3)}</b> <span class="ci">${sbRange(pf.lo, pf.hi, v => sbSgn(v, 3), ' to ')}</span> <span class="sb-verdict ${esc(pf.verdict)}">${esc(titleCase(pf.verdict))}</span></div>
         ${sbDiv(pf, top, vcls(pf.verdict))}${pf.low_power ? '<div class="sb-sub">few storms</div>' : ''}</div>`;
     if (r && r.draws.length) {
         const ds = r.draws, m = r.mean, lowest = Math.min(...ds.map(d => d.delta)), highest = Math.max(...ds.map(d => d.delta));
@@ -1040,9 +1049,9 @@ function sbS5Slot(st, p, win) {
         const tip = m ? `The mean of ${m.seeds} realistic feeds (they miss some flags and show others a day late); the range runs from the lowest draw's 90% bound to the highest's. ${m.n.toLocaleString()} zone-days, ${sbSpan(m.span)}.`
                       : `${ds.length} realistic feeds (they miss some flags and show others a day late), one change each; no mean is stored for this rule.`;
         html += `<div class="sb-cell${m && m.low_power ? ' lp' : ''}" title="${esc(tip + scored)}">
-            <div class="sb-feed">realistic feeds</div>
+            <div class="sb-feed">Realistic Feeds</div>
             <div class="sb-val">${m ? `<b>${sbSgn(m.delta, 3)}</b> <span class="ci">${sbRange(m.lo, m.hi, v => sbSgn(v, 3), ' to ')}</span>` : `${ds.length} draws <b>${sbSgn(lowest, 3)}</b> to <b>${sbSgn(highest, 3)}</b>`}</div>
-            ${sbDiv(m, top, cls, ds)}<div class="sb-verdict ${cls === 'bad' ? 'worse' : cls === 'good' ? 'better' : ''}">${esc(sbDrawWords(ds))}</div></div>`;
+            ${sbDiv(m, top, cls, ds)}<div class="sb-verdict ${cls === 'bad' ? 'worse' : cls === 'good' ? 'better' : ''}">${esc(titleCase(sbDrawWords(ds)))}</div></div>`;
     }
     return html + `<div class="sb-sub">lower is better · ${esc(sbSpan(pf.span))}</div>`;
 }
@@ -1051,13 +1060,13 @@ function sbSlot(st, win) {
     const stage = sbStage(st), p = sbPart(st, sbPick[st]), [code, ...rest] = stage.title.split(' · ');
     const body = !p ? sbNone('no part for these basins') : st === 's1' ? sbS1Slot(stage, p, win) : st === 's5' ? sbS5Slot(stage, p, win) : sbSkillSlot(st, sbRainPart(st, p), win);
     return `<div class="sb-slot${p && p.live ? ' live' : ''}" data-stage="${st}">
-        <div class="sb-head" title="${esc(sbStageTip(stage))}"><b>${esc(code)}</b>${esc(rest.join(' · '))}${p && p.live ? '<span class="sb-live" title="The part the live forecast runs">LIVE</span>' : ''}</div>
+        <div class="sb-head" title="${esc(sbStageTip(stage))}"><b>${esc(code)}</b>${esc(titleCase(rest.join(' · ')))}${p && p.live ? '<span class="sb-live" title="The part the live forecast runs">LIVE</span>' : ''}</div>
         <div class="sb-body"><select aria-label="${esc(stage.title)}" onchange="sbSet('${st}', this.value)">${sbParts(st).map(q => `<option value="${esc(q.id)}"${q.id === sbPick[st] ? ' selected' : ''}>${esc(q.name)}</option>`).join('')}</select>
         <div class="sb-score">${body}</div></div></div>`;
 }
 
 function sbControls(win) {
-    const seg = (items, cur, fn) => `<span class="seg-toggle">${items.map(([k, label]) => `<button type="button" class="seg-btn${k === cur ? ' active' : ''}" onclick="${fn}('${esc(k)}')">${esc(label)}</button>`).join('')}</span>`;
+    const seg = (items, cur, fn) => `<span class="seg-toggle">${items.map(([k, label]) => `<button type="button" class="seg-btn${k === cur ? ' active' : ''}" onclick="${fn}('${esc(k)}')">${esc(titleCase(label))}</button>`).join('')}</span>`;
     let note;
     if (win.key === 'T0') note = win.graded ? `Every day after the rules froze on ${sbDay(win.after)}.`
         : `No grades yet. The data stops on ${sbDay(win.data_end)}, before the live season (each day after the rules were frozen on ${sbDay(win.after)}). We will grade it after the next data refresh.`;
@@ -1073,7 +1082,7 @@ function sbClosest() {
     const same = c => (c.basins === sbPick.basins) + (c.parts.s1 === sbPick.s1) + (c.parts.s2 === sbPick.s2) + (c.parts.s3 === sbPick.s3) + (c.parts.s4 === sbPick.s4);
     return SB.chains.map((c, i) => ({ c, k: same(c), i })).sort((a, b) => b.k - a.k || a.i - b.i).slice(0, 3).map(x => x.c);
 }
-const sbDayLink = key => `<button type="button" class="sb-link" onclick="sbDayByDay('${esc(key)}')" title="Grade this lineup day by day: the scorecard below, on its own stored hindcast">Day by day ▸</button>`;
+const sbDayLink = key => `<button type="button" class="sb-link" onclick="sbDayByDay('${esc(key)}')" title="Grade this lineup day by day: the scorecard below, on its own stored hindcast">Day by Day ▸</button>`;
 function sbDayByDay(key) {
     if (current && current.mode === 'check') setScoreModel(key); else scoreModel = key;
     if (currentMode === 'actual') setHistoryView('check');
@@ -1091,7 +1100,7 @@ function sbChainCard(win) {
     const pending = win.key === 'T0' && !win.graded, s = match ? (match.scores[win.key] || {}) : {};
     const has = !!(s.L1 || s.rain);
     const status = pending ? '<span class="sb-scored no">○ not graded yet</span>' : match ? `<span class="sb-scored${has ? '' : ' no'}">${has ? '● scored' : '○ not scored on this window'}</span>` : '<span class="sb-scored no">○ not scored yet</span>';
-    const head = `<div class="sb-out-head"><b title="${esc(tip)}">Modeled beach risk</b>${match && match.live ? '<span class="sb-live">LIVE</span>' : ''}${status}<span>${esc(words)} · ${esc(sbBasinsName(sbPick.basins))}</span></div>`;
+    const head = `<div class="sb-out-head"><b title="${esc(tip)}">Modeled Beach Risk</b>${match && match.live ? '<span class="sb-live">LIVE</span>' : ''}${status}<span>${esc(words)} · ${esc(sbBasinsName(sbPick.basins))}</span></div>`;
     if (!match) {
         return `<div class="sb-out">${head}<div class="sb-out-foot">This lineup has no stage scores yet.${lineup ? ` It has a day-by-day scorecard: ${sbDayLink(lineup.set)}` : ''}</div>
             <div class="sb-out-foot"><span>Closest scored:</span>${sbClosest().map(c => `<button type="button" class="sb-chip" onclick="sbUse('${esc(c.set)}')">${esc(c.name)}${c.basins !== sbPick.basins ? ' · ' + esc(sbBasinsName(c.basins)) : ''}${c.live ? ' <span class="sb-live">LIVE</span>' : ''}</button>`).join('')}</div></div>`;
@@ -1105,7 +1114,7 @@ function sbChainCard(win) {
     const elsewhere = pending || has ? [] : SB.windows.filter(w => (match.scores[w.key] || {}).L1 || (match.scores[w.key] || {}).rain);
     const where = elsewhere.length ? `<div class="sb-out-foot"><span>Scored on:</span>${elsewhere.map(w => `<button type="button" class="sb-chip" onclick="sbSetWin('${esc(w.key)}')">${esc(w.name)}</button>`).join('')}</div>` : '';
     return `<div class="sb-out${match.live ? ' live' : ''}">${head}
-        <div><div class="sb-feed">one day ahead</div>${ahead}</div><div><div class="sb-feed">with rain known</div>${rain}</div>${where}
+        <div><div class="sb-feed">One Day Ahead</div>${ahead}</div><div><div class="sb-feed">With Rain Known</div>${rain}</div>${where}
         ${match.scorecard ? `<div class="sb-out-foot">${sbDayLink(match.live ? '' : match.set)}</div>` : ''}</div>`;
 }
 
@@ -1118,8 +1127,8 @@ function sbHow() {
         <li><b>Windows:</b> nine seasons (${esc(sbSpan(t2.span))}), each season scored by a fit that never saw it; post-training (${esc(sbSpan(t1.span))}), days after the training data ended; the holdout (${esc(sbSpan(th.span))}) is development only, because it was used to pick the model; the live season, every day after the rules froze on ${esc(sbDay(t0.after))}, is graded after the next data refresh.</li>
         <li><b>S1 and S5 are lower-is-better.</b> S1 is the weather model's average miss on wet days one day ahead; the floor is one city gauge as a forecast of the other. S5 is the change in error on the days after an observation, against no correction. Neither is refit season by season, so each keeps its own window.</li>
         <li><b>Modeled beach risk</b> is scored for whole lineups only; pick one with stage scores to see it.</li>
-        <li><b>S3 and S4 come in pairs:</b> each lingering table was fit on its split's beach groups, so picking one moves the other to a pair that exists.</li>
-        <li><b>By basin, by zone:</b> click a score in S2, S3 or S4, or modeled beach risk, to see it for each basin (S2) or zone. A zone has fewer storms than the city, so its range is wider.</li></ul></details>`;
+        <li><b>S3 and S4 Come in Pairs:</b> each lingering table was fit on its split's beach groups, so picking one moves the other to a pair that exists.</li>
+        <li><b>By Basin, by Zone:</b> click a score in S2, S3 or S4, or modeled beach risk, to see it for each basin (S2) or zone. A zone has fewer storms than the city, so its range is wider.</li></ul></details>`;
 }
 
 function renderBuilder() {
@@ -1434,7 +1443,7 @@ function renderScoreWindow(sc) {
             ${(sc.input_rules_post || []).length && w.n_post ? `<span class="mute" title="Days after the training data ended are scored on rain treated by the serving-side input rules (${esc((sc.input_rules_post || []).join(', '))}): a NOAA gauge stuck at exactly 0.00 for 2+ days while the other gauge recorded real rain is treated as missing and the other gauge stands in.">${w.n_post} post-training day${w.n_post === 1 ? '' : 's'} with the dead-gauge rule</span>` : ''}
         </div>
         <div class="zone-tabs seg-toggle" role="tablist">
-            <button class="seg-btn${scoreZone === 'all' ? ' active' : ''}" role="tab" aria-selected="${scoreZone === 'all'}" onclick="setScoreZone('all')">All zones</button>
+            <button class="seg-btn${scoreZone === 'all' ? ' active' : ''}" role="tab" aria-selected="${scoreZone === 'all'}" onclick="setScoreZone('all')">All Zones</button>
             ${zones.map(zk => `<button class="seg-btn${scoreZone === zk ? ' active' : ''}" role="tab" aria-selected="${scoreZone === zk}" onclick="setScoreZone('${zk}')">${esc(zoneLabel(zk))}</button>`).join('')}
         </div>`;
 
@@ -1451,9 +1460,9 @@ function renderScoreWindow(sc) {
             const split = s.tailN != null ? ` <span class="mute">(${s.tailN} ${useCombined ? 'clean-sample' : usePosted ? 'after a discharge' : 'in the tail'} · ${s.cleanN} ${useCombined ? 'quiet' : usePosted ? 'elsewhere' : 'clean'})</span>` : '';
             html += `<tr class="zone-row" onclick="setScoreZone('${zk}')" title="Open ${esc(zoneLabel(zk))}"><td class="zone">${esc(zoneLabel(zk))}</td><td class="num">${s.posted}</td><td class="num">${s.d.tp} <span class="mute">${fmtShare(s.rec)}</span></td><td class="num">${s.d.fn}</td><td class="num">${s.d.fp}${split}</td><td class="num">${fmtShare(s.far)}</td><td class="num">${s.b.tp} of ${s.b.tp + s.b.fn}</td></tr>`;
         }
-        html += `<tr class="total"><td class="zone">All zones</td><td class="num">${tBad}</td><td class="num">${tTp} <span class="mute">${fmtShare(tBad ? tTp / tBad : null)}</span></td><td class="num">${tFn}</td><td class="num">${tFp}</td><td class="num">${fmtShare(tTp + tFp ? tFp / (tTp + tFp) : null)}</td><td class="num">${tBtp} of ${tBn}</td></tr></table>`;
+        html += `<tr class="total"><td class="zone">All Zones</td><td class="num">${tBad}</td><td class="num">${tTp} <span class="mute">${fmtShare(tBad ? tTp / tBad : null)}</span></td><td class="num">${tFn}</td><td class="num">${tFp}</td><td class="num">${fmtShare(tTp + tFp ? tFp / (tTp + tFp) : null)}</td><td class="num">${tBtp} of ${tBn}</td></tr></table>`;
         html += `<details class="sb-how"><summary>How These Days Are Graded</summary><ul><li>${rulerNote}</li><li>Open a zone for its full analysis, with every line from 5% to 81%.</li></ul></details>`;
-        html += `<div class="subhead">${ic('gauge')} S2 · discharge model by basin, ${fmtRange(w.start, w.end)}</div>` + basinTable(w, sc, ['westside', 'north_shore', 'central', 'southeast']);
+        html += `<div class="subhead">${ic('gauge')} S2 · Discharge Model by Basin, ${fmtRange(w.start, w.end)}</div>` + basinTable(w, sc, ['westside', 'north_shore', 'central', 'southeast']);
     } else {
         const s = stats[scoreZone];
         html += `<div class="zone-analysis">${zoneCard(s, w, thr)}
