@@ -37,10 +37,10 @@
       }
       next = data.next_offset;
       loaded = true;
-      status.textContent = list.children.length ? "" : "No approved updates yet. Check SFPUC’s current information below.";
+      status.textContent = list.children.length ? "" : "There are no approved updates yet. Refer to the current SFPUC information below.";
       more.hidden = next === null;
     } catch (_) {
-      status.textContent = "Updates are temporarily unavailable. Please try again or check SFPUC below.";
+      status.textContent = "Updates are not available now. Try again, or refer to SFPUC below.";
       retry.hidden = false;
     } finally {
       clearTimeout(timer);

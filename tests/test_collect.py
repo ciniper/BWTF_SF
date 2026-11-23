@@ -85,7 +85,7 @@ def test_the_sheet_assembles_in_its_order_and_falls_back_between_gauges():
     # a sheltered site leaves the waves to the eye; a source that failed leaves its fields blank, never the sheet
     aq = C.assemble(C.SITE["aquatic"], at, None, _marine(), None)
     va = {r["key"]: r for r in aq["rows"]}
-    assert va["wave_height"]["value"] is None and va["wave_height"]["blank"] == "Check by eye" and "breakwater" in va["wave_height"]["detail"]
+    assert va["wave_height"]["value"] is None and va["wave_height"]["blank"] == "Look and estimate" and "breakwater" in va["wave_height"]["detail"]
     assert va["air_temp"]["value"] is None and va["tide"]["value"] is None and va["precipitation"]["value"] is None and va["water_temp"]["value"] == "62°F"
 
 
@@ -137,7 +137,7 @@ def test_routes_render_and_refuse_bad_input():
     assert "{{" not in h and "{%" not in h and "<h1>Collect</h1>" in h and '<meta name="robots" content="noindex">' in h
     assert h.count('class="pick"') == 4 and h.count('class="sec site-card"') == 4 and h.count("https://www.google.com/maps/search/?api=1&amp;query=") == 4
     pressed = lambda page: re.findall(r'class="pick" data-site="([\w-]+)" aria-pressed="true"', page)
-    assert h.count("Photo of the sampling spot coming soon") == 1 and h.count("learn/sites/") == 6 and pressed(h) == []   # China Beach's placeholder; six photos
+    assert h.count("We will add a photo of the sampling location soon") == 1 and h.count("learn/sites/") == 6 and pressed(h) == []   # China Beach's placeholder; six photos
     # pick a site first (2026-10-18): no site shows until one is picked; ?site= opens on one, the others stay hidden
     shown = lambda page: re.findall(r'<section class="sec site-card" data-site="([\w-]+)">', page)
     assert shown(h) == [] and '<section class="sec" id="sheet" hidden>' in h and 'id="pick-hint">' in h
@@ -145,7 +145,7 @@ def test_routes_render_and_refuse_bad_input():
     assert '<details class="howto" id="how">' in h and "<details open" not in h                     # Taking a sample, folded
     assert h.count('<li>') >= 6 and "about 2 ft" in h and "6 in" in h and "wave coming in" in h and 'id="cx-form"' in h and 'id="cx-site"' not in h
     assert 'id="cx-obs"' in h and 'id="cx-save"' in h and 'id="cx-tide"' not in h and 'class="tide"' in h and "localStorage" in h and "toBlob" in h   # observations, the image; the tide curve lives in its tile
-    assert 'class="on" aria-current="page">Collect' in h and "coming soon" not in h.replace("Photo of the sampling spot coming soon", "")
+    assert 'class="on" aria-current="page">Collect' in h and "coming soon" not in h.replace("We will add a photo of the sampling location soon", "")
     assert bad.status_code == 400 and json.loads(bad.data)["error"] == "unknown site"
     assert far.status_code == 400 and "last 90 days" in json.loads(far.data)["error"]
 

@@ -3,7 +3,7 @@
 <link rel="icon" href="{{ asset('brand/favicon.ico') }}"><link rel="apple-touch-icon" sizes="144x144" href="{{ asset('brand/bwtf_144x144.png') }}">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>UI overflow — Admin · Surfrider SF Blue Water Task Force</title>
+<title>UI Overflow — Admin · Surfrider SF Blue Water Task Force</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -47,7 +47,7 @@
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
 {{ topbar() }}
 <div class="wrap">
-  {{ page_head("UI overflow", "What came off the site for the beta, kept as it was drawn until it finds a home: Today's page directory, its Learn bar and its rain and tide pills, and the Learn page's timeline. Updated " ~ generated ~ ".") }}
+  {{ page_head("UI Overflow", "The parts that we removed from the site for the beta. We keep them here, with no changes, until we find a new location for them: the page directory, Learn bar, and rain and tide pills from Today, and the timeline from Learn. Updated " ~ generated ~ ".") }}
 
   {{ admin_tabs("ui-overflow") }}
 
@@ -70,12 +70,12 @@
 
   <a class="learn" href="/learn">
     <span class="hub-icon"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-microscope"/></svg></span>
-    <span class="learn-text"><b>Learn</b><small>How the city's sewers meet the shore, how the lab counts bacteria, and a century and a half of the system</small></span>
+    <span class="learn-text"><b>Learn</b><small>How the city sewers go to the shore, how the lab counts bacteria, and 150 years of the system</small></span>
     <span class="learn-go">Open →</span>
   </a>
 
   {% if conditions %}
-  <div class="conds">{% for c in conditions %}<span class="with-ic">{{ c|safe }}</span>{% endfor %}<span>Status as the city reports it, checked every minute</span></div>
+  <div class="conds">{% for c in conditions %}<span class="with-ic">{{ c|safe }}</span>{% endfor %}<span>The status from the city. We examine it each minute.</span></div>
   {% endif %}
 
   {{ timeline_section(timeline, photo_credit) }}   {# from the Learn page (2026-11-04) #}

@@ -307,11 +307,11 @@ def test_source_comparison_page_renders_the_lab_sites_only_with_the_bacteria_sel
     assert '<option value="ENTERO" selected>' in h and "20 / 399" in h and "2 samples that day, graded on the worse" in h
     assert '<span class="agree agree--na">Not comparable<small>sampled 2 days apart</small></span>' in h and "Sources differ" not in h   # two days apart: no verdict
     assert '<div class="n">14</div><div class="l">Same-day samples, last 12 months</div>' in h and '<div class="n">8</div><div class="l">Agree on the standard</div>' in h and "Max sampling gap" not in h
-    assert "6 sites had such a day in the last year, most recently 2026-04-12" in h
+    assert "6 sites had such a day in the last year. The most recent day was 2026-04-12" in h
     same = {**data, "rows": [{**data["rows"][0], "bwtf_date": "2026-09-22", "day_gap": 0, "same_day": True, "agree": False, "value_delta": 379.0}], "summary": {**data["summary"], "same_day": None}}
     with app.test_request_context("/compare"):
         h2 = ComparisonRoutes.generate_comparison_html(None, same)
-    assert 'Sources differ<small>same day · Δ 379</small></span>' in h2 and '<div class="n">—</div><div class="l">Same-day samples</div>' in h2 and "no agreement is scored" in h2
+    assert 'Sources differ<small>same day · Δ 379</small></span>' in h2 and '<div class="n">—</div><div class="l">Same-day samples</div>' in h2 and "Thus, there is no agreement score." in h2
     assert "/static/charts.js" in h and 'id="hist-modal"' in h and "/api/site-series?" in h and "chart.umd.js" not in h
 
 

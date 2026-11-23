@@ -68,16 +68,16 @@
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
 {{ topbar() }}
 <div class="wrap">
-  {% call page_head("Source Comparison", "" ~ "The beaches both programs sample, head to head on <b>" ~ analyte_label ~ "</b>." ~ "", "water") %}
+  {% call page_head("Source Comparison", "" ~ "A comparison of <b>" ~ analyte_label ~ "</b> at the beaches that the two programs sample." ~ "", "water") %}
     
-    <p>Independent <b>{{ analyte_label }}</b> results for the beaches both programs sample, measured by:</p>
+    <p>Independent <b>{{ analyte_label }}</b> results for the beaches that the two programs sample. These organizations measure them:</p>
     <ul class="sources">
       <li><b>Surfrider SF Blue Water Task Force (BWTF)</b></li>
       <li><b>San Francisco Public Utilities Commission (SFPUC)</b></li>
     </ul>
-    <p>Both are graded against the California single-sample maximum of <b>{{ limit }} MPN/100mL</b>. The two are
-    compared only on days both sampled the same site: a result from one day says little about another day's, because
-    bacteria counts move with the rain. Every site, and all three indicators at once, are on <a href="/graphs">Graphs</a>; every sample is on <a href="/samples">Samples</a>.</p>
+    <p>We compare the two with the California single-sample maximum of <b>{{ limit }} MPN/100mL</b>. We compare the two
+    only on days when they sampled the same site on the same day. A result from one day does not tell you much about a different day, because
+    bacteria counts change with the rain. <a href="/graphs">Graphs</a> shows all sites and all three indicators. <a href="/samples">Samples</a> shows all samples.</p>
   {% endcall %}
 
   <form class="bacteria-select" action="/compare" method="get">
@@ -88,9 +88,9 @@
     <button class="v-preset" type="submit">View date</button>
     <a href="/compare?analyte={{ analyte_code }}&amp;view={{ comparison_view }}">Today</a>
   </form>
-  <p class="hint">Overview through <strong>{{ as_of_date }}</strong>{{ " · Today" if not historical else "" }}. Agreement totals cover the year ending on this date. Table rows show the latest results or latest shared collection date on or before it.</p>
+  <p class="hint">Overview to <strong>{{ as_of_date }}</strong>{{ " · Today" if not historical else "" }}. The agreement totals are for the year that ends on this date. The table rows show the latest results, or the latest shared collection date, on or before this date.</p>
   {% if historical %}
-  <p class="note-info">Historical collection-date view, using results available now. This does not recreate what was published that day. Latest results look back {{ city_window_days }} days for City and one year for BWTF; shared dates look back one year. Current beach postings are not shown.</p>
+  <p class="note-info">Historical collection-date view. It uses the results that are available now. It does not show the data that the site published on that day. For latest results, the view uses the last {{ city_window_days }} days for City and the last year for BWTF. For shared dates, it uses the last year. It does not show current beach postings.</p>
   {% endif %}
 
   <div class="cards">
@@ -100,19 +100,19 @@
     <div class="card"><div class="n">{{ s.comparable_count }}/{{ s.site_count }}</div><div class="l">{{ "Sites with a shared date" if comparison_view == "shared" else "Sites with a result from both" }}</div></div>
     <div class="card"><div class="n">{{ s.bwtf_exceed_count }} / {{ s.city_exceed_count }}</div><div class="l">BWTF / SFPUC {{ "shared-date" if comparison_view == "shared" else "latest" }} exceed</div></div>
   </div>
-  <p class="hint">{% if same_day.sites %}The two programs are judged only on days both sampled the same site: {{ same_day.sites }} site{{ "" if same_day.sites == 1 else "s" }} had such a day in the last year{% if same_day.latest %}, most recently {{ same_day.latest }}{% endif %}. {% if comparison_view == "latest" %}A site's latest results below are from different days unless marked "same day".{% endif %}{% else %}The two programs are judged only on days both sampled the same site; the last year has none on record, so no agreement is scored.{% endif %}</p>
+  <p class="hint">{% if same_day.sites %}We compare the two programs only on days when they sampled the same site: {{ same_day.sites }} site{{ "" if same_day.sites == 1 else "s" }} had such a day in the last year{% if same_day.latest %}. The most recent day was {{ same_day.latest }}{% endif %}. {% if comparison_view == "latest" %}The latest results for a site below are from different days, unless they have the mark "same day".{% endif %}{% else %}We compare the two programs only on days when they sampled the same site. The last year has no such days. Thus, there is no agreement score.{% endif %}</p>
 
-  <p class="hint"><svg class="ic"><use href="#i-chart-line"/></svg> Click any site below for its {{ analyte_label }} history — BWTF vs. SFPUC over time, and the days both sampled, head to head.</p>
+  <p class="hint"><svg class="ic"><use href="#i-chart-line"/></svg> Click a site below to see its {{ analyte_label }} history. It shows BWTF and SFPUC over time, and compares the days when the two programs sampled.</p>
 
   <nav class="view-options" aria-label="Comparison view">
     <a href="/compare?analyte={{ analyte_code }}&amp;view=latest{% if historical %}&amp;as_of={{ as_of_date }}{% endif %}"{% if comparison_view == 'latest' %} aria-current="page"{% endif %}>Latest results</a>
     <a href="/compare?analyte=ENTERO&amp;view=shared{% if historical %}&amp;as_of={{ as_of_date }}{% endif %}"{% if comparison_view == 'shared' %} aria-current="page"{% endif %}>Latest shared collection date · Experiment</a>
   </nav>
   {% if comparison_view == 'shared' %}
-  <p class="note-info">Experiment: each site uses its most recent collection date with Enterococcus results from both programs within the last year. Dates can differ between sites. This may show older results, not current conditions. If a program sampled twice that day, we compare its highest reading.</p>
+  <p class="note-info">Experiment: each site uses its most recent collection date that has Enterococcus results from the two programs in the last year. The dates can be different for each site. This view can show older results, not current conditions. If a program sampled two times on that day, we use its highest result.</p>
   {% endif %}
   {% for note in source_notes %}<p class="note-info" role="status">{{ note }}</p>{% endfor %}
-  <p class="hint">City results include available early SFPUC getCSV readings. DataSF replaces each matching indicator when published. Early readings and comparisons may change after corrections. Shared dates mean the same calendar day, not necessarily the same time or sampling point.</p>
+  <p class="hint">City results include the early SFPUC getCSV results. When DataSF publishes a result, it replaces the early result for that indicator. Early results and comparisons can change after corrections. A shared date is the same calendar day. The time and the sampling point can be different.</p>
 
   <div class="bacteria-select">
     <label for="bacteria-type">Bacteria type</label>
@@ -146,12 +146,12 @@
   </div>
 
   <p class="foot">
-    Generated {{ generated }}. Both sources grade {{ analyte_label }} against the CA single-sample max ({{ limit }} MPN/100mL);
-    "&lt;10" means below the lab's detection limit. Agreement is scored only when both programs sampled a site on the
-    same day — whether each result meets the standard, not the exact numbers, which differ because the sample points
-    differ. Latest results from different days are shown side by side but not judged against each other.
-    When the city's latest day carries two samples (a routine sample and a storm resample share a date in the
-    city's dataset), both are shown and the worse one is graded.<br>
+    Generated {{ generated }}. The two sources compare {{ analyte_label }} with the CA single-sample max ({{ limit }} MPN/100mL).
+    "&lt;10" means less than the detection limit of the lab. We calculate agreement only when the two programs sampled a site on the
+    same day. We compare if each result meets the standard. We do not compare the exact numbers, because the sample points
+    are different. The table shows the latest results from different days next to each other, but we do not compare them.
+    If the latest city day has two samples (a routine sample and a storm resample can have the same date in the
+    city dataset), the table shows the two samples. We use the worse sample for the grade.<br>
     Sources: <a href="https://infrastructure.sfwater.org/lims.asmx/getCSV" target="_blank" rel="noopener">SFPUC getCSV (early lab results)</a> ·
     <a href="https://bwtf.surfrider.org/explore/76" target="_blank" rel="noopener">Surfrider BWTF (SF)</a> ·
     <a href="{{ DATASF_DATASET_URL }}" target="_blank" rel="noopener">SF Gov Open Data</a> ·
@@ -162,15 +162,15 @@
 <div id="hist-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="hist-title">
   <div class="modal__box">
     <div class="modal__head">
-      <h2 id="hist-title">Site history</h2>
+      <h2 id="hist-title">Site History</h2>
       <button class="modal__close" type="button" onclick="closeSite()">Close &times;</button>
     </div>
     <p class="modal__note" id="hist-note">Loading…</p>
     <div class="chart-wrap"><canvas id="hist-canvas"></canvas></div>
-    <h3 class="modal__h3">Same-day samples — head to head</h3>
+    <h3 class="modal__h3">Same-Day Samples — Head to Head</h3>
     <p class="modal__note" id="bar-note"></p>
     <div class="chart-wrap"><canvas id="hist-bar"></canvas></div>
-    <p class="modal__note">BWTF = Surfrider volunteer lab · SFPUC = monitoring lab results from DataSF or early getCSV readings. Early points use hollow circles; paired bars mark early dates with *. The real-time posting feed is status-only, so it has no historical numbers to plot. Dashed line = CA single-sample max; the same-day chart uses the worst (max) reading when a source sampled more than once that day. Click a city point for that day's results.</p>
+    <p class="modal__note">BWTF = Surfrider volunteer lab · SFPUC = monitoring lab results from DataSF or early getCSV results. Early points have hollow circles. Bars for early dates have the mark *. The real-time posting feed shows only status. Thus, it has no historical numbers for the graph. Dashed line = CA single-sample max. If a source sampled more than one time on a day, the same-day graph uses the worst (max) result. Click a city point to see the results for that day.</p>
     <p class="modal__links" id="hist-links"></p>
   </div>
 </div>
@@ -242,11 +242,11 @@ function renderHist(d) {
   var P = a === "ENTERO" ? (d.paired || []) : [], barNote = document.getElementById("bar-note");
   if (histBar) { histBar.destroy(); histBar = null; }
   if (!P.length) {
-    barNote.textContent = a !== "ENTERO" ? "Head to head needs Enterococcus — the only indicator both programs measure."
-      : d.bwtf_sampled === false ? "BWTF does not sample this site, so there is nothing to put head to head."
-      : "No same-day samples in this window — the two programs sampled on different days.";
+    barNote.textContent = a !== "ENTERO" ? "The comparison needs Enterococcus. It is the only indicator that the two programs measure."
+      : d.bwtf_sampled === false ? "BWTF does not sample this site. Thus, there is no data to compare."
+      : "There are no same-day samples in this period. The two programs sampled on different days.";
   } else {
-    barNote.textContent = P.length + " day(s) when both programs sampled this site (worst reading per day)." + (P.some(function(p) { return p.city_early; }) ? " * Includes early getCSV City results." : "");
+    barNote.textContent = P.length + " day(s) on which the two programs sampled this site (worst result for each day)." + (P.some(function(p) { return p.city_early; }) ? " * Includes early getCSV City results." : "");
     histBar = CH.pairedBars(document.getElementById("hist-bar"), { labels: P.map(function (p) { return p.date + (p.city_early ? " *" : ""); }),
       a: { label: "BWTF (Surfrider)", color: C.BWTF, data: P.map(function (p) { return p.bwtf; }), raws: P.map(function (p) { return p.bwtf_raw; }) },
       b: { label: "SFPUC", color: C.CITY, data: P.map(function (p) { return p.city; }), raws: P.map(function (p) { return p.city_raw; }) },

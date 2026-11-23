@@ -14,7 +14,7 @@
 
 {% macro topbar() -%}
 {%- set p = canonical_path(request.path) %}
-<aside class="beta" aria-label="Beta notice"><div class="in"><b>Beta</b><p>This site is still being tested and is not an official beach advisory. <span class="more">Its data can be late or wrong. </span>Always follow posted signs and <a href="https://webapps.sfpuc.org/sapps/beachesandbay.html" target="_blank" rel="noopener">SFPUC's beach map</a>. <span class="fb">Send Beta <a href="mailto:ciniper@gmail.com?subject=BWTF-SF%20BETA%20FEEDBACK">Feedback</a>.</span></p></div></aside>
+<aside class="beta" aria-label="Beta notice"><div class="in"><b>Beta</b><p>This site is in a test phase. It is not an official beach advisory. <span class="more">Its data can be late or incorrect. </span>Always obey the posted signs and <a href="https://webapps.sfpuc.org/sapps/beachesandbay.html" target="_blank" rel="noopener">SFPUC's beach map</a>. <span class="fb">Send Beta <a href="mailto:ciniper@gmail.com?subject=BWTF-SF%20BETA%20FEEDBACK">Feedback</a>.</span></p></div></aside>
 <header class="topbar">
   <div class="in">
     <a class="mark" href="/"><img src="{{ asset('brand/bwtf_144x144.png') }}" alt=""><span><b>SF Beach Water</b><small>Surfrider SF · Blue Water Task Force</small></span></a>
@@ -23,8 +23,8 @@
       <a href="{{ h.href }}"{% if p in h.paths %} class="on"{% endif %}{% if p == h.href %} aria-current="page"{% endif %}>{{ h.title }}</a>
       {%- endfor %}
     </nav>
-    <a class="about" href="/about" title="About this site: who runs it, where the numbers come from"><svg class="ic"><use href="#i-info"/></svg><span>About</span></a>
-    <a class="cta" href="/signup">Get beach alerts</a>
+    <a class="about" href="/about" title="About this site: the people who operate it and the sources of the data"><svg class="ic"><use href="#i-info"/></svg><span>About</span></a>
+    <a class="cta" href="/signup">Get Beach Alerts</a>
   </div>
 </header>
 {%- endmacro %}
@@ -53,7 +53,7 @@
 {%- endfor %}
 {%- endmacro %}
 
-{% macro page_head(title, lead="", hub_key=None, how_label="How to read this", link=None) -%}
+{% macro page_head(title, lead="", hub_key=None, how_label="How to Read This", link=None) -%}
 {{ section_nav() }}
 <div class="page-head">
   <div class="ph-main">
@@ -71,7 +71,7 @@
     <div class="who">
       <a class="footer-logo" href="https://sf.surfrider.org/" target="_blank" rel="noopener" aria-label="Surfrider Foundation San Francisco"><img src="{{ asset('brand/surfrider_sf.png') }}" alt="Surfrider Foundation San Francisco" width="146" height="52"></a>
       <p class="org">Surfrider Foundation San Francisco · Blue Water Task Force</p>
-      <p class="footer-note">Community science, not an official advisory.</p>
+      <p class="footer-note">This is community science. It is not an official advisory.</p>
     </div>
     <div class="reach">
       <p class="footer-hotline"><span class="with-ic"><svg class="ic"><use href="#i-phone"/></svg> Beach Hotline: 1-877-SFBEACH (1-877-732-3224) or 415-242-2214</span></p>
@@ -81,7 +81,7 @@
         <a href="https://sf.surfrider.org/programs/blue-water-task-force" target="_blank" rel="noopener">Surfrider BWTF</a> ·
         <a href="/about">About this site</a> ·
         <a href="/about#built">How it's built</a> ·
-        <a href="/alerts" title="Coordinators only — needs the passphrase">Admin</a>   {#- out of the tabs, 2026-11-04 #}
+        <a href="/alerts" title="For coordinators only. You must have the passphrase.">Admin</a>   {#- out of the tabs, 2026-11-04 #}
       </p>
     </div>
   </div>

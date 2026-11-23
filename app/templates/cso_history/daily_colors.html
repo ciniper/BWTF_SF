@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Gray and green history — Online Postings Timeline</title>
+  <title>Gray and Green History — Online Postings Timeline</title>
   <link rel="stylesheet" href="{{ asset('brand.css') }}">
   <script defer src="{{ asset('tables.js') }}"></script>
   <style>
@@ -28,8 +28,8 @@
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
 {{ topbar() }}
 <main class="daily-wrap">
-  {% call page_head("Gray and green history", "The last color observed each day on SFPUC’s beach map.", "record", link=("/cso-history", "Online Postings Timeline")) %}
-    <p>Bars join consecutive days with the same color. Gaps indicate a warning, discharge, or no recorded color. Today updates as new observations arrive.</p>
+  {% call page_head("Gray and Green History", "The last color that we saw each day on the SFPUC beach map.", "record", link=("/cso-history", "Online Postings Timeline")) %}
+    <p>A bar connects consecutive days that have the same color. A gap shows a warning, a discharge, or no recorded color. Today changes when new observations come in.</p>
   {% endcall %}
   <nav class="daily-controls" aria-label="Date range">
     {% for option in ranges %}
@@ -37,12 +37,12 @@
     {% endfor %}
   </nav>
   {% if unavailable %}
-    <p>Daily history is unavailable right now.</p>
+    <p>The daily history is not available now.</p>
   {% elif not tracks %}
-    <p>No daily observations in this date range.</p>
+    <p>There are no daily observations in this date range.</p>
   {% else %}
     <div class="daily-legend">
-      <span><i class="daily-swatch gray" aria-hidden="true"></i>Gray · No data on SFPUC’s map</span>
+      <span><i class="daily-swatch gray" aria-hidden="true"></i>Gray · No data on the SFPUC map</span>
       <span><i class="daily-swatch green" aria-hidden="true"></i>Green · No warning</span>
     </div>
     <div class="daily-scroll" tabindex="0" role="region" aria-label="Daily station colors">

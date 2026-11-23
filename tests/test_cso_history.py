@@ -129,7 +129,7 @@ def test_migration_018_adds_only_marked_blocks_to_the_feed_day_function():
 
 def test_page_carries_the_samples_row_and_the_events_payload_has_the_keys():
     html = (ROOT / "app/templates/cso_history/page.html").read_text()
-    for needle in ("className = 'row srow'", "showSampleTip", "smark", "swatch lag", "DATA.samples", "sample_lag", "DataSF observed", "getcsv_seen", "csvmark", "d.lane", "window.__timeline", "minute not recorded",
+    for needle in ("className = 'row srow'", "showSampleTip", "smark", "swatch lag", "DATA.samples", "sample_lag", "DataSF observed", "getcsv_seen", "csvmark", "d.lane", "window.__timeline", "we did not record the minute",
                    "swatch pending", "swatch mapmark", "className = 'mapmark'", "d.pending ? 'pending'", "lagbar.pending", "d.map_censored", "sample_lag || {}).map",
                    "d.map_note ? fmt(d.map_seen) + ' (' + esc(d.map_note)", "function esc(s)", "(not confirmed)",
                    "sample date shown on the map", "Map shows this sample date", "Beach posted after this sample", "WINDOW_DAYS = 7", "RANGE = 14", "board.scrollLeft", "position:sticky"):

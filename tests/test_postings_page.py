@@ -60,7 +60,7 @@ def test_ledger_carries_the_refresh_stamp_and_next_due():
     status, ctype, body = L.handle_events({}, b"")
     d = json.loads(body); assert d["refresh"]["refreshed_at"] == "2026-09-24"
     html = (ROOT / "app/templates/discharges/page.html").read_text()
-    assert 'id="refreshNote"' in html and "Record last refreshed from CIWQS" in html and "Compiled 2026-08" not in html
+    assert 'id="refreshNote"' in html and "We last refreshed the record from CIWQS" in html and "Compiled 2026-08" not in html
 
 
 if __name__ == "__main__":

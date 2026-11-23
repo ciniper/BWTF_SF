@@ -67,7 +67,7 @@ def test_the_lab_story_adds_up():
     assert P._quanti_story()["wells"] == q["wells"]                                                         # the same story on every visit
     assert [round(P.mpn_per_100ml(b, s), 1) for b, s in ((1, 0), (10, 0), (0, 1))] == [1.0, 11.1, 1.0] and P.mpn_per_100ml(49, 48) is None
     steps = P._quanti_steps(q)
-    assert len(steps) == 8 and f"{q['big']} big and {q['small']} small" in steps[-1]["text"] and f"{q['result']:,}" in steps[-1]["text"]
+    assert len(steps) == 8 and f"{q['big']} large and {q['small']} small" in steps[-1]["text"] and f"{q['result']:,}" in steps[-1]["text"]
 
 
 def test_timeline_photos_are_on_disk_and_credited():

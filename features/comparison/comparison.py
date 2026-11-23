@@ -201,7 +201,7 @@ def _fetch_city_latest(monitor: SFWaterQualityMonitor, sources: list[str], days:
         print(f"Error fetching city {analyte} data: {exc}")
         records = []
         if notes is not None:
-            notes.append("DataSF is unavailable; City results may be incomplete. Available early SFPUC results are labeled.")
+            notes.append("DataSF is not available. City results can be incomplete. The page labels the early SFPUC results that are available.")
 
     records = _merge_early(records, early_rows, sources, start, now_pacific_naive(), analyte)
     return _latest_by_source(records)
@@ -271,7 +271,7 @@ def _fetch_city_series(monitor: SFWaterQualityMonitor, sources: list[str], start
         except requests.RequestException as exc:
             print(f"Error fetching city {analyte} series: {exc}")
             if notes is not None:
-                notes.append("DataSF history is unavailable; shared-date matches and summary counts may be incomplete.")
+                notes.append("DataSF history is not available. Shared-date matches and summary counts can be incomplete.")
 
     records = _merge_early(records, early_rows, sources, start, end, analyte)
     by_source: dict[str, list] = {}
@@ -421,11 +421,11 @@ def build_site_series(site_name: str, bwtf_client: Optional[SFBWTFClient] = None
         if not include_early:
             raise
         records = []
-        notes.append("DataSF history is unavailable; showing only available early SFPUC results.")
+        notes.append("DataSF history is not available. The page shows only the early SFPUC results that are available.")
     if include_early:
         records = _merge_early(records, early, site["sources"], since, until)
         if state != 'current':
-            notes.append("Early SFPUC feed is unavailable; showing DataSF results.")
+            notes.append("The early SFPUC feed is not available. The page shows DataSF results.")
     history = bwtf_client.fetch_history(since=since, max_pages=40) if site["bwtf_name"] else []
     result = site_series_payload(site, records, history, since, until)
     result["notes"] = notes
@@ -526,7 +526,7 @@ def build_comparison(
     early = [r for r in early if r['sample_date'][:10] <= until.date().isoformat()]
     notes = []
     if early_state != "current":
-        notes.append("Early SFPUC feed is unavailable; showing DataSF results.")
+        notes.append("The early SFPUC feed is not available. The page shows DataSF results.")
     lab = bwtf_client.fetch_lab()
 
     # Every city station takes part (one query); the ones BWTF also samples
@@ -550,7 +550,7 @@ def build_comparison(
             if analyte == "ENTERO":
                 paired_summary = same_day_pairs(history, by_source, dual_sites, limit, cfg['bwtf_substance'], since, until)
         except Exception:
-            notes.append("Comparison history could not be loaded. Historical results and shared-date matches may be unavailable.")
+            notes.append("Could not load the comparison history. Historical results and shared-date matches can be missing.")
             history, by_source = [], {}
     if historical:
         city_start = (until - timedelta(days=city_days)).date().isoformat()

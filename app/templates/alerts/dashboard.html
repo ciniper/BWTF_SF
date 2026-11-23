@@ -743,7 +743,7 @@
                     <div class="hero-kicker">Blue Water Task Force • Surfrider SF</div>
                     <h1>Admin</h1>
                     <div class="subtitle">
-                        Live SFPUC status, SF Gov lab results, and subscriber alert testing for the Surfrider San Francisco Blue Water Task Force.
+                        Live SFPUC status, SF Gov lab results, and subscriber alert tests for the Surfrider San Francisco Blue Water Task Force.
                     </div>
                     <div class="hero-meta">
                         <span class="data-source live">Real-time SFPUC Data</span>
@@ -806,13 +806,13 @@
             </div>
 
             <details class="panel deliveries-panel">
-                <summary><h3>Deliveries <small class="mute">what each subscriber was sent, and whether Brevo took it</small></h3></summary>
+                <summary><h3>Deliveries <small class="mute">the messages that each subscriber got, and if Brevo accepted them</small></h3></summary>
                 {{ deliveries_html|safe }}
             </details>
         </div>
 
         <div id="view-sim" class="view" hidden>
-            <div class="helper-note view-note"><svg class="ic brand"><use href="#i-info"/></svg> This view overlays the active simulations on the live feed — it is what subscribers' TEST alerts describe. Since migration 009 the watcher records simulated and real events separately, so nothing here can leak into the real record.</div>
+            <div class="helper-note view-note"><svg class="ic brand"><use href="#i-info"/></svg> This view shows the active simulations on top of the live feed. The TEST alerts to subscribers describe this view. Since migration 009, the watcher records simulated events and real events separately. Thus, no data from this view can go into the real record.</div>
             {{ sim.cso_banner|safe }}
             <div class="summary">
                 <div class="summary-card cso">
@@ -836,7 +836,7 @@
             <div class="control-panels">
             <section class="panel">
                 <h3>Simulator</h3>
-                <p>Inject a simulated event at the chosen sites. The automatic sender treats it exactly like the real thing, prefixed TEST.</p>
+                <p>Add a simulated event at the selected sites. The automatic sender processes it the same as a real event, with the prefix TEST.</p>
                 <form id="simulation-form" class="stack">
                     <div class="radio-row">
                         <label class="checkbox-option"><input type="radio" name="kind" value="cso" {% if active_kind == 'cso' %}checked{% endif %}><span><svg class="ic danger"><use href="#i-octagon-alert"/></svg> CSO discharge</span></label>
@@ -850,28 +850,28 @@
                         <div class="checkbox-grid">
                             {{ recipient_options_html|safe }}
                         </div>
-                        <div class="helper-note" style="margin-top:8px">Nothing ticked = every subscriber of the selected sites, exactly like a real event. Tick names to limit the test to them — they still have to be subscribed to a selected site to receive it.</div>
+                        <div class="helper-note" style="margin-top:8px">If you select no names, all subscribers of the selected sites get the alert, the same as a real event. Select names to send the test only to them. They must have a subscription to a selected site to get it.</div>
                     </div>
                     <div class="button-row">
                         <button class="action-btn secondary" type="submit">Save Simulation</button>
                         <button class="action-btn danger" type="button" onclick="clearSimulation()">Clear Simulation</button>
                     </div>
                 </form>
-                <div class="helper-note">Currently simulated sites: {{ simulated_sites_html }}</div>
-                <div class="helper-note" style="margin-top: 12px;"><svg class="ic brand"><use href="#i-info"/></svg> Saving a simulation is the whole test:
-                the <b>automatic sender (Postgres) detects it and emails matching subscribers within
-                a minute</b> — the same path a real event takes. The old manual send buttons were
-                removed because they used the legacy in-app sender and produced a duplicate,
-                differently-styled email alongside the automatic one. (The gated
-                <code>POST /api/dispatch-cso-alerts</code> endpoint still exists for deliberately
-                testing that legacy path.) Remember to clear the simulation — it shows as a real
-                CSO on the public pages until cleared.</div>
+                <div class="helper-note">Sites with a simulation now: {{ simulated_sites_html }}</div>
+                <div class="helper-note" style="margin-top: 12px;"><svg class="ic brand"><use href="#i-info"/></svg> When you save a simulation, the test starts.
+                The <b>automatic sender (Postgres) finds it and sends an email to the applicable subscribers in
+                one minute</b>. This is the same path that a real event uses. We removed the old manual send buttons,
+                because they used the legacy in-app sender. They sent a second email with a different style
+                in addition to the automatic email. (The gated
+                <code>POST /api/dispatch-cso-alerts</code> endpoint is still available if you must
+                test that legacy path.) Remember to clear the simulation. Until you clear it, the public pages show it as a real
+                CSO.</div>
                 <div class="action-result" id="simulation-result"></div>
             </section>
 
             </div>
             <div class="stations-section">
-                <h2><span class="ictile"><svg class="ic"><use href="#i-flask"/></svg></span> Beach Stations — with simulations <span class="feed-date">{{ feed_date_html|safe }}</span></h2>
+                <h2><span class="ictile"><svg class="ic"><use href="#i-flask"/></svg></span> Beach Stations — With Simulations <span class="feed-date">{{ feed_date_html|safe }}</span></h2>
                 <div class="stations-grid">
                     {{ sim.station_cards|safe }}
                 </div>
@@ -881,7 +881,7 @@
         <div class="control-panels">
             <section class="panel">
                 <h3>Email + Optional SMS Alerts</h3>
-                <p>Choose the sites you care about. Alerts are sent automatically within ~2 minutes when a site is posted for elevated bacteria or a CSO discharge is detected. Email is the primary free alert path; SMS via carrier gateway is optional.</p>
+                <p>Select the sites that you want. When the city posts a site for high bacteria, or a CSO discharge occurs, the system sends alerts automatically in approximately 2 minutes. Email is the primary alert method, and it is free. SMS through the carrier gateway is optional.</p>
                 <form id="subscription-form" class="stack">
                     <input class="form-input" type="email" name="email" placeholder="Email address" required>
                     <input class="form-input" type="tel" name="phone_number" placeholder="Phone number for optional SMS (e.g. 4155551234)">
@@ -896,13 +896,13 @@
                         <button class="action-btn primary" type="submit">Save Subscription</button>
                     </div>
                 </form>
-                <div class="helper-note">All monitored sites are available — you'll be alerted on both bacteria postings and CSO discharges, once per event. Leave carrier blank if you only want email alerts.</div>
+                <div class="helper-note">All monitored sites are available. You get alerts for bacteria postings and for CSO discharges, one time for each event. If you want only email alerts, do not select a carrier.</div>
                 <div class="action-result" id="subscription-result"></div>
             </section>
 
             <section class="panel">
                 <h3>Saved Subscribers <small class="mute">({{ subscriber_count }})</small></h3>
-                <p>Active email/SMS subscriptions. Scrolls after a handful.</p>
+                <p>Active email/SMS subscriptions. The list scrolls when it has more than a few entries.</p>
                 <div class="subscription-list">
                     {{ current_subscription_html|safe }}
                 </div>
@@ -960,7 +960,7 @@
         async function deleteSubscription(email, phoneNumber) {
             const target = email || phoneNumber;
             if (!target) {
-                setResult('subscription-result', 'This subscriber record is missing both email and phone.', true);
+                setResult('subscription-result', 'This subscriber record does not have an email address or a phone number.', true);
                 return;
             }
             if (!window.confirm(`Clear subscriber ${target}?`)) {
@@ -989,7 +989,7 @@
             };
             try {
                 const data = await postJson('/api/simulations/cso', payload);
-                const who = data.recipients && data.recipients.length ? `TEST alerts limited to ${data.recipients.join(', ')}.` : 'TEST alerts go to every subscriber of those sites.';
+                const who = data.recipients && data.recipients.length ? `TEST alerts limited to ${data.recipients.join(', ')}.` : 'TEST alerts go to all subscribers of those sites.';
                 setResult('simulation-result', `Saved ${data.station_ids.length} simulated ${data.kind === 'posted' ? 'bacteria posting' : 'CSO'} site(s). ${who}`);
                 window.location.hash = 'sim';
                 window.setTimeout(() => window.location.reload(), 700);

@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">
-<title>Sample gap — Admin · SF Beach Water</title>
+<title>Sample Gap — Admin · SF Beach Water</title>
 <link rel="icon" href="{{ asset('brand/favicon.ico') }}">
 <link rel="stylesheet" href="{{ asset('brand.css') }}">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -19,23 +19,23 @@ details{border-top:1px solid var(--line);padding-top:12px}summary{cursor:pointer
 {% include '_icons.html' %}{% from '_frame.html' import topbar, page_head, footer, tabbar with context %}
 {{ topbar() }}
 <main class="wrap">
-{% call page_head('The sample gap', 'Follow a sample from early lab numbers to the City map and DataSF. Arrival times below are when our recorders observed each feed.') %}
-<p>The collection date is when water was sampled. It is separate from when a result appeared online. A posting change alone does not establish that a new sample exists.</p>
-<p>“By” means a value was already present at the first recording, or a map timestamp is approximate. Its actual arrival could be earlier. All times are Pacific.</p>
-<p>DataSF values here come from our observation archive, not a live query. That archive keeps the first sighting of each distinct value, so later reversions may not be represented. Missing archive rows do not prove that DataSF has not published a result.</p>
+{% call page_head('The Sample Gap', 'Follow a sample from the early lab numbers to the City map and DataSF. The arrival times below show when our recorders saw each feed.') %}
+<p>The collection date is the date when the city sampled the water. It is different from the date when a result came online. A posting change does not prove that there is a new sample.</p>
+<p>“By” means that a value was already there at the first recording, or that a map timestamp is approximate. The value possibly came earlier. All times are Pacific.</p>
+<p>The DataSF values on this page come from our observation archive, not from a live query. The archive keeps the first observation of each different value. Thus, it possibly does not show later changes back to an earlier value. If an archive row is missing, this does not prove that DataSF did not publish a result.</p>
 {% endcall %}
 {{ admin_tabs('sample-gap') }}
 <section class="panel health" aria-label="Collector status">
 <div><span class="eyebrow">getCSV collector · every two minutes</span><p><b>Last successful read:</b> {{ fmt_time(m.runtime.get('last_success_at')) }} PT{% if m.runtime.get('last_row_count') is not none %} · {{ m.runtime.last_row_count }} feed rows{% endif %}</p></div>
 <span class="badge{% if m.health == 'Recording' %} good{% endif %}">{{ m.health }}</span>
-{% if m.runtime.get('last_error') %}<p class="warn" role="status">{{ m.runtime.last_error }} · {{ fmt_time(m.runtime.get('last_error_at')) }} PT. Previously recorded results are retained.</p>{% endif %}
+{% if m.runtime.get('last_error') %}<p class="warn" role="status">{{ m.runtime.last_error }} · {{ fmt_time(m.runtime.get('last_error_at')) }} PT. We keep the results that we recorded before.</p>{% endif %}
 </section>
 <form class="panel filters" method="get" action="/alerts/sample-gap">
 <label class="station-filter">Station<select name="station"><option value="">All stations</option>{% for code, station in stations.items() %}<option value="{{ code }}"{% if s.station == code %} selected{% endif %}>{{ station.name }}</option>{% endfor %}</select></label>
 <label>Collected from<input type="date" name="from" value="{{ s['from'] }}"></label>
 <label>Through<input type="date" name="to" value="{{ s['to'] }}"></label><button type="submit">View observations</button>
 </form>
-<p class="note">Showing collection dates {{ s['from'] }}–{{ s['to'] }}. Up to 31 days per view. Times are Pacific; refresh this page for the latest collection status.</p>
+<p class="note">Collection dates {{ s['from'] }}–{{ s['to'] }}. Each view shows a maximum of 31 days. Times are Pacific. To see the latest collection status, refresh this page.</p>
 {% for note in m.notes %}<p class="warn" role="status">{{ note }}</p>{% endfor %}
 <div class="metrics"><div class="metric"><span class="number">{{ m.cards|length }}</span><small>Station sample-days recorded</small></div><div class="metric"><span class="number">{{ m.early }}</span><small>Values without a DataSF archive row</small></div><div class="metric"><span class="number">{{ m.revisions }}</span><small>Indicator changes / removals observed</small></div></div>
 {% for card in m.cards %}
@@ -47,15 +47,15 @@ details{border-top:1px solid var(--line);padding-top:12px}summary{cursor:pointer
 <p>{% if cell.first %}{{ 'Present by' if cell.first.observation_kind == 'baseline' else 'First seen' }} {{ fmt_time(cell.first.observed_at) }} PT{% else %}No number recorded for this indicator.{% endif %}</p>
 <small>DataSF archive: {{ cell.datasf if cell.datasf is not none else 'not observed' }}{% if cell.revisions %} · {{ cell.revisions }} change{{ '' if cell.revisions == 1 else 's' }}{% endif %}</small>
 </section>{% endfor %}</div>
-<details{% if s.station and loop.first %} open{% endif %}><summary>Arrival timeline &amp; corrections{% if card.revisions %} · {{ card.revisions }} change{{ '' if card.revisions == 1 else 's' }}{% endif %}</summary>
+<details{% if s.station and loop.first %} open{% endif %}><summary>Arrival Timeline &amp; Corrections{% if card.revisions %} · {{ card.revisions }} Change{{ '' if card.revisions == 1 else 's' }}{% endif %}</summary>
 <div class="timeline" aria-label="Arrival times on a shared clock">
 {% for lane, cls in [('getCSV','csv'),('City map','map'),('DataSF','datasf')] %}<div class="lane"><b>{{ lane }}</b><div class="track">{% for event in card.events if event.lane == lane %}<span class="dot {{ cls }}{% if event.approx %} approx{% endif %}" style="left:{{ event.position }}%" title="{{ event.label }}: {{ 'by ' if event.approx else '' }}{{ fmt_time(event.at) }} PT"></span>{% else %}<span class="missing">Not observed</span>{% endfor %}</div></div>{% endfor %}
 </div>
-<p class="note">All three lanes share a clock for this sample. Filled dots are observed arrivals; hollow dots mean “present by.” Exact times are listed below.</p>
+<p class="note">The three lanes use the same clock for this sample. Filled dots show observed arrivals. Hollow dots mean “present by.” The exact times are in the list below.</p>
 <div class="scroll"><table><caption class="eyebrow">Observed arrival times</caption><thead><tr><th>Feed</th><th>What appeared</th><th>When observed (Pacific)</th></tr></thead><tbody>{% for event in card.events|sort(attribute='at') %}<tr><td>{{ event.lane }}</td><td>{{ event.label }}</td><td class="timestamp">{{ 'By ' if event.approx else '' }}{{ fmt_time(event.at) }}</td></tr>{% endfor %}</tbody></table></div>
 <div class="scroll"><table><caption class="eyebrow">getCSV observation history</caption><thead><tr><th>Indicator</th><th>Value</th><th>Observation</th><th>When (Pacific)</th><th>Recorded by</th></tr></thead><tbody>{% for cell in card.cells %}{% for event in cell.history %}<tr><td>{{ cell.label }}</td><td>{{ event.value_raw if event.value_raw is not none else 'Unavailable' }}</td><td>{{ event.observation_kind }}</td><td class="timestamp">{{ fmt_time(event.observed_at) }}</td><td>{{ 'Historical recorder' if event.recording_source == 'recorder_import' else 'Supabase collector' }}</td></tr>{% endfor %}{% endfor %}</tbody></table></div>
 </details></article>
-{% else %}<section class="panel"><h2>No getCSV observations in this range</h2><p class="muted">Try another collection date or station. An empty view does not mean the beach was not sampled.</p></section>{% endfor %}
+{% else %}<section class="panel"><h2>No getCSV Observations in This Range</h2><p class="muted">Try a different collection date or station. An empty view does not mean that the city did not sample the beach.</p></section>{% endfor %}
 </main>{{ footer() }}{{ tabbar() }}
 <script src="{{ asset('tables.js') }}" defer></script>
 </body></html>

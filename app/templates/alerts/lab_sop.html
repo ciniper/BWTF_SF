@@ -92,12 +92,12 @@
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}{% from "alerts/_tabs.html" import admin_tabs %}
 {{ topbar() }}
 <div class="wrap">
-  {{ page_head("Lab SOP", "How the Blue Water Task Force lab tests a water sample for Enterococcus with Enterolert and a Quanti-Tray: " ~ phases|length ~ " phases, " ~ n_steps ~ " steps, from bringing the samples in to entering the results.") }}
+  {{ page_head("Lab SOP", "How the Blue Water Task Force lab tests a water sample for Enterococcus with Enterolert and a Quanti-Tray: " ~ phases|length ~ " phases, " ~ n_steps ~ " steps, from when the samples come in to when you enter the results.") }}
   {{ admin_tabs("lab-sop") }}
   <nav class="phases" aria-label="Phases">
     {%- for ph in phases %}<a href="#{{ ph.key }}" style="--a:{{ ph.accent }}"><b>Phase {{ ph.n }}</b>{{ ph.title }}</a>{% endfor %}
   </nav>
-  <p class="draft">From the lab's wall pages, still a draft: the striped frames are photos still to be taken. To learn why the tray works, see <a href="/learn#count">how the lab counts</a> on the Learn page.</p>
+  <p class="draft">This content comes from the wall pages in the lab. It is a draft. The striped frames show photos that we must take. To learn how the tray works, see <a href="/learn#count">how the lab counts</a> on the Learn page.</p>
 
   {%- for ph in phases %}
   <section class="phase" id="{{ ph.key }}" style="--a:{{ ph.accent }};--t:{{ ph.tint }}">
@@ -118,7 +118,7 @@
           <div class="txt"><h3>{{ it.title }}</h3><p>{{ it.text|safe }}</p>{% if it.see %}<a class="see" href="{{ it.see[0] }}">{{ it.see[1] }} →</a>{% endif %}</div>
           {%- if it.badge %}<div class="sbadge"><b>{{ it.badge.big }}</b><small>{{ it.badge.small }}</small></div>{% endif %}
           {%- if it.flag == "contamination" %}<span class="flag contamination"><svg class="ic" aria-hidden="true"><use href="#i-circle-alert"/></svg>Contamination risk</span>
-          {%- elif it.flag == "control" %}<span class="flag control"><svg class="ic" aria-hidden="true"><use href="#i-circle-alert"/></svg>Check control first</span>{% endif %}
+          {%- elif it.flag == "control" %}<span class="flag control"><svg class="ic" aria-hidden="true"><use href="#i-circle-alert"/></svg>Examine the control first</span>{% endif %}
         </div>
         {%- if it.checks %}<div class="checks">{% for k, label, what in it.checks %}<div class="{{ k }}">{{ what }}<span>{{ label }}</span></div>{% endfor %}</div>{% endif %}
         {%- set count = (it.pics|length) + (it.slots|default([])|length) %}

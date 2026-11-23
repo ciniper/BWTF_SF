@@ -140,7 +140,7 @@ def test_shared_route_and_html_explain_experiment_and_provenance():
         html = response.get_data(as_text=True)
         assert calls[-1]['as_of'] == '2026-11-13' and 'value="2026-11-13"' in html
         assert 'view=latest&amp;as_of=2026-11-13' in html
-        assert 'This does not recreate what was published that day' in html
+        assert 'It does not show the data that the site published on that day' in html
         assert client.get('/api/compare?as_of=2026-11-13').json['historical']
 
 

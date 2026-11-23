@@ -110,7 +110,7 @@ def test_ledger_and_reporting_pages_render_and_link():
     assert 'href="/discharges/reporting"' in ledger and 'min="2011-03-01"' in ledger and 'id="rawSet"' in ledger
     rep = c.get("/discharges/reporting").data.decode()
     q = json.load(open(PRE / "qc_summary.json"))
-    assert "How discharge reporting changed" in rep and 'href="/discharges"' in rep
+    assert "How Discharge Reporting Changed" in rep and 'href="/discharges"' in rep
     assert f"{q['counts']['westside']['agree']} of {q['counts']['westside']['months']} months" in rep
     assert f"{q['rain']['westside']['with_rain']} of {q['rain']['westside']['discharge_days']}" in rep
     for gap in ("Sep 2011", "Feb 2012", "Dec 2012", "Aug 2015", "Sep 2016"):
@@ -128,7 +128,7 @@ def test_testing_page_renders_from_the_lab_data():
     only = {r["id"]: r for r in d["after_discharge"] if r["discharge_only"]}
     assert set(only) == {"OCEAN#20_SL", "OCEAN#21_SL", "OCEAN#22_SL"} and all(r["other_pct"] <= 2 for r in only.values())
     html = app.test_client().get("/analysis/testing").data.decode()
-    assert "How testing changed" in html and 'href="/analysis"' in html and "Fort Point" in html
+    assert "How Testing Changed" in html and 'href="/analysis"' in html and "Fort Point" in html
     assert 'href="/analysis/testing"' in app.test_client().get("/analysis").data.decode()
 
 

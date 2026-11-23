@@ -84,14 +84,14 @@
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
 {{ topbar() }}
 <div class="wrap">
-  {% call page_head("Site Report Card", "How often each shoreline site fails the state bacteria standard, from the city's published lab results.", "water", link=("/analysis/testing", "How testing changed")) %}
+  {% call page_head("Site Report Card", "How frequently each shoreline site does not meet the state bacteria standard. The data comes from the lab results that the city published.", "water", link=("/analysis/testing", "How Testing Changed")) %}
     
-    <p>How often each shoreline monitoring site fails the state bacteria standard, from the city's
-    published lab results. By default that is the {{ graded_on_name }} single-sample max,
-    {{ ssm }}&nbsp;MPN/100mL — the indicator BWTF measures; the <b>Standard</b> toggle regrades the same
-    samples on fecal or total coliform, or on all three the way the city posts (bad when any is over).
-    Click a site for its year-by-year trend. <a href="#standards">The limits are listed below.</a>
-    The signs the public saw are on <a href="/postings">Beach Postings</a>; what was discharged is on the <a href="/discharges">Discharge Ledger</a>.</p>
+    <p>This page shows how frequently each shoreline monitoring site does not meet the state bacteria standard. The data comes from the lab results that the city
+    published. The default standard is the {{ graded_on_name }} single-sample max,
+    {{ ssm }}&nbsp;MPN/100mL. BWTF measures this indicator. Use the <b>Standard</b> toggle to grade the same
+    samples on fecal coliform or total coliform. You can also grade them on all three, as the city does for postings (bad when one or more is more than the limit).
+    Click a site to see its trend for each year. <a href="#standards">The limits are in the list below.</a>
+    <a href="/postings">Beach Postings</a> shows the signs that the public saw. The <a href="/discharges">Discharge Ledger</a> shows the discharges.</p>
   {% endcall %}
 
   <div class="controls" id="groupBtns">
@@ -103,8 +103,8 @@
   <div class="controls">
     <span class="ctl-label">Sampling:</span>
     <div class="seg-toggle" id="modeToggle">
-      <button class="seg-btn active" data-mode="weekly" title="First sample of each site-week — the city's scheduled cadence, excluding follow-up resamples that cluster around contamination events">Weekly regime</button>
-      <button class="seg-btn" data-mode="all" title="Every published sample, including post-exceedance resamples">All samples</button>
+      <button class="seg-btn active" data-mode="weekly" title="The first sample of each site-week. This is the scheduled frequency of the city. It does not include the follow-up resamples that the city takes after contamination events.">Weekly regime</button>
+      <button class="seg-btn" data-mode="all" title="All published samples. This includes the resamples after a result is more than the limit.">All samples</button>
     </div>
     <span class="ctl-label">Standard:</span>
     <div class="seg-toggle" id="stdToggle">
@@ -121,12 +121,12 @@
   </div>
 
   <div class="map-board">
-    <h2>Site map <span style="font-weight:600;color:#54576F;font-size:12.5px">— circle size &amp; color = % of samples failing the standard in the current view · click a marker for details</span></h2>
+    <h2>Site Map <span style="font-weight:600;color:#54576F;font-size:12.5px">— circle size &amp; color = % of samples that do not meet the standard in the current view · click a marker for details</span></h2>
     <div id="map"></div>
   </div>
 
   <div class="board">
-    <div class="loading" id="loading">Loading the city's lab data…</div>
+    <div class="loading" id="loading">Loading the city lab data…</div>
     <table id="tbl" style="display:none">
       <thead><tr>
         <th>Site</th>
@@ -141,34 +141,34 @@
   </div>
 
   <div class="notes">
-    <h2>Reading these numbers</h2>
-    <b>"Bad" = <span id="badDef">{{ graded_on_name }} at or over the state single-sample limit, {{ ssm }} MPN/100mL</span></b>
-    (<a href="#standards">the standards</a>; the <b>Standard</b> toggle switches it);
-    the wet season is November–April. City results run from {{ floor }}: SFPUC's own lab database (STARDB export, Jan 2000 – Jul 2020) until DataSF begins on {{ datasf_from }}, DataSF from then on. Enterococcus and E. coli were first measured on {{ history.entero_from }} at the bay stations and {{ history.entero_from_ocean }} on the ocean beaches (only total coliform before); before April 2021 the city ran E. coli where it now runs fecal coliform, so the fecal-coliform and ratio views have no data for the earlier years.
-    <a href="/analysis/testing">How testing changed</a> lists every change in what was measured, how and how often.
+    <h2>How to Read These Numbers</h2>
+    <b>"Bad" = <span id="badDef">{{ graded_on_name }} at or more than the state single-sample limit, {{ ssm }} MPN/100mL</span></b>
+    (<a href="#standards">the standards</a>. The <b>Standard</b> toggle changes it.)
+    The wet season is November–April. City results start at {{ floor }}. Until DataSF starts on {{ datasf_from }}, the results come from the SFPUC lab database (STARDB export, Jan 2000 – Jul 2020). After that date, they come from DataSF. The city started to measure Enterococcus and E. coli on {{ history.entero_from }} at the bay stations and on {{ history.entero_from_ocean }} at the ocean beaches. Before these dates, it measured only total coliform. Before April 2021, the city measured E. coli. Now it measures fecal coliform. Thus, the fecal-coliform and ratio views have no data for the earlier years.
+    <a href="/analysis/testing">How testing changed</a> shows all the changes in what the city measured, how it measured, and how frequently.
     <br><br>
-    <b>Weekly regime</b> keeps only the first sample of each site-week (the city's scheduled Monday
-    cadence) — the true week-by-week base rate, and the closer match to Surfrider's routine sampling
-    (every two weeks, with extra rounds during storms). <b>All samples</b> adds the city's follow-up resamples on later days, which cluster
-    around contamination events and can roughly double a site's rate (Islais Creek: ~16% weekly vs ~30%
-    all-samples over the full record) — it answers "how often did tests fail", not "how often were
-    weeks bad". In both views a site's samples on one calendar day count once, at the day's worse value:
-    the city's dataset carries the date but not the time, so a routine sample and a storm-day resample
-    on the same date cannot be told apart, and the day is graded on its worst bottle.
-    Sites marked <span class="chip sporadic">sporadic</span> are sampled only occasionally or
-    reactively (often during storm events), so their rates aren't comparable to the
-    weekly-sampled sites and they're listed separately at the bottom, unranked.
-    Also worth knowing: <b>the city samples no station at India Basin</b> — the largest
-    unsampled gap on the east shoreline, between Islais Creek and Sunnydale Cove.
+    <b>Weekly regime</b> uses only the first sample of each site-week (the scheduled Monday
+    frequency of the city). This gives the true weekly rate. It is also more similar to the routine sampling of Surfrider
+    (each two weeks, with more samples during storms). <b>All samples</b> adds the follow-up resamples that the city takes on later days. These resamples occur
+    after contamination events. They can make the rate of a site approximately two times higher (Islais Creek: approximately 16% weekly, approximately 30%
+    all samples, for the full record). This view tells you how frequently tests failed. It does not tell you how frequently
+    weeks were bad. In the two views, the samples from a site on one calendar day count one time, at the worst value for that day.
+    The city dataset has the date but not the time. Thus, we cannot tell the difference between a routine sample and a storm-day resample
+    on the same date. We grade the day on its worst sample.
+    Sites with the mark <span class="chip sporadic">sporadic</span> get samples only sometimes, or
+    only after an event (frequently during storms). Thus, you cannot compare their rates with the
+    sites that get samples each week. The list shows them separately at the bottom, with no rank.
+    Also: <b>the city does not sample a station at India Basin</b>. This is the largest
+    area with no samples on the east shoreline, between Islais Creek and Sunnydale Cove.
   </div>
 
   <div class="notes" id="standards">
-    <h2>The bacteria standards</h2>
-    California's recreational-water limits (AB 411 / Ocean Plan), in MPN per 100 mL. This page grades on
-    <b>{{ graded_on_name }} by default</b> — the indicator BWTF measures, and the one the newer federal criteria
-    use for marine water — with <b>&ge;{{ caution }}</b> as a caution tier below the limit. The <b>Standard</b> toggle
-    regrades on fecal coliform, total coliform, or <b>All (any over)</b>: the state posting rule, under which a
-    sample is over standard when any of the three is at or over its limit. The city posts beaches on any of the three.
+    <h2>The Bacteria Standards</h2>
+    These are the California limits for recreational water (AB 411 / Ocean Plan), in MPN per 100 mL. By default, this page grades on
+    <b>{{ graded_on_name }}</b>. BWTF measures this indicator. The newer federal criteria also use it
+    for marine water. A result of <b>&ge;{{ caution }}</b> is in the caution range, below the limit. Use the <b>Standard</b> toggle
+    to grade on fecal coliform, total coliform, or <b>All (any over)</b>. All (any over) is the state posting rule. With this rule, a
+    sample is more than the standard when one or more of the three indicators is at or more than its limit. The city posts beaches for each of the three.
     <table class="std">
       <thead><tr>
         <th>Indicator</th>
@@ -183,26 +183,26 @@
         <td class="num">{{ "{:,}".format(s.ssm) }}</td>
         <td class="num">{{ "{:,}".format(s.gm) }}</td>
         <td class="note">
-          {%- if s.code == graded_on %}The default standard here; &ge;{{ caution }} is the caution tier.
-          {%- elif s.ratio_ssm %}Drops to {{ "{:,}".format(s.ratio_ssm) }} when fecal coliform is more than {{ s.ratio_pct }}% of total coliform in the same sample.
-          {%- elif s.code == "COLI_E" %}The indicator the city ran in place of fecal coliform from July 2002 to July 2020; only a small share of shoreline rows since.
-          {%- else %}Reported with nearly every sample; also sets the total-coliform ratio rule.
+          {%- if s.code == graded_on %}The default standard on this page. &ge;{{ caution }} is the caution range.
+          {%- elif s.ratio_ssm %}Decreases to {{ "{:,}".format(s.ratio_ssm) }} when fecal coliform is more than {{ s.ratio_pct }}% of total coliform in the same sample.
+          {%- elif s.code == "COLI_E" %}The city measured this indicator, not fecal coliform, from July 2002 to July 2020. After that, only a small number of shoreline rows have it.
+          {%- else %}The city reports it with almost all samples. It is also part of the total-coliform ratio rule.
           {%- endif %}
         </td>
       </tr>
       {% endfor %}
       </tbody>
     </table>
-    A result the lab reports as "&lt;10" counts as {{ below_detection }} (half the detection limit) and "&gt;24196" as {{ "{:,}".format(over_range) }}.
-    A geometric mean needs at least {{ gm_min_samples }} samples in {{ gm_window_days }} days, which the city's weekly cadence rarely gives,
-    so every "bad" on this page is a single-sample exceedance.
-    The alerts page and the forecast's sample labels flag a sample when <b>any</b> indicator is over its single-sample
-    max (ratio rule included) — the same as this page's <b>All (any over)</b> setting; on the default Enterococcus
-    setting a coliform-only day counts as clean here.
-    Every number in this panel is read from <code>shared/standards.py</code>, the one home for these limits.
+    If the lab reports a result as "&lt;10", we use {{ below_detection }} (half the detection limit). If the lab reports "&gt;24196", we use {{ "{:,}".format(over_range) }}.
+    A geometric mean must have {{ gm_min_samples }} or more samples in {{ gm_window_days }} days. The weekly city frequency usually does not give this number of samples.
+    Thus, each "bad" on this page is a single-sample exceedance.
+    The alerts page and the forecast sample labels flag a sample when <b>one or more</b> indicators are more than their single-sample
+    max (this includes the ratio rule). This is the same as the <b>All (any over)</b> setting on this page. With the default Enterococcus
+    setting, a day with only a coliform exceedance is a clean day on this page.
+    All numbers in this panel come from <code>shared/standards.py</code>. This file is the only source for these limits.
   </div>
   <div class="foot" id="foot">Source: DataSF “Beach Water Quality” lab results (SFPUC shoreline
-  monitoring program), fetched live.</div>
+  monitoring program). We get the data live.</div>
 </div>
 
 <script>
@@ -242,8 +242,8 @@ function updateMap() {
     m.bindPopup(`<b>${s.name}</b> (${s.zone_label})<br>` +
       (s.samples ? `${pctTxt(p)} of ${s.samples} samples bad in this view (${DATA.indicator_label})<br>` +
                    `wet ${pctTxt(s.wet.pct)} · dry ${pctTxt(s.dry.pct)}` +
-                   (s.routine ? "" : "<br><i>sporadically sampled — not rankable</i>")
-                 : "no samples in the selected range/mode"));
+                   (s.routine ? "" : "<br><i>sampled sometimes only — no rank</i>")
+                 : "there are no samples in the selected range/mode"));
     markerLayer.addLayer(m);
   }
 }
@@ -305,7 +305,7 @@ async function load() {
   const resp = await fetch("/analysis/api/summary?" + q);
   DATA = await resp.json();
   if (DATA.error) {
-    document.getElementById("loading").textContent = "Couldn't load the city dataset: " + DATA.error;
+    document.getElementById("loading").textContent = "Could not load the city dataset: " + DATA.error;
     return;
   }
   document.getElementById("loading").style.display = "none";

@@ -26,53 +26,53 @@ SURFRIDER_LOGO_URL = "https://f.hubspotusercontent20.net/hubfs/20811975/SF-Horiz
 # Icon keys map to the inline SVG sprite in _icons.html.
 HUBS = [
     {
-        "key": "today", "icon": "bell", "title": "Today & alerts",
-        "sub": "Is the water safe, and tell me when it isn't",
-        "primary": ("/signup", "Get beach alerts",
-                    "Pick your beach areas and get an email when the city posts one for bacteria or a sewage discharge. No digest, no marketing."),
+        "key": "today", "icon": "bell", "title": "Today & Alerts",
+        "sub": "Is the water safe? Tell me when it is not safe.",
+        "primary": ("/signup", "Get Beach Alerts",
+                    "Select your beach areas. You get an email when the city posts one of them for bacteria or a sewage discharge. We do not send summaries or marketing."),
         "rows": [
             ("/", "Today",
-             "Every beach's status on the city map, by zone, with layers for rain, outfalls, overflow risk, Surfrider's results and a replay of past days.",
+             "The status of each beach on the city map, for each zone. Layers show rain, outfalls, overflow risk, Surfrider results, and a replay of past days.",
              "the board · layers"),
             ("/forecast", "Water Quality Forecast",
-             "Modeled beach risk from combined sewer discharges and lingering effects, plus SewerCast same-day discharge impact risk by beach zone. Not a lab measurement or an all-causes forecast.",
+             "The model estimate of beach risk from combined sewer discharges and their effects that continue. SewerCast also shows the risk of a discharge effect today for each beach zone. This is not a lab measurement. It does not include all causes.",
              "discharge-linked beach risk · next 5 days"),
             # Admin (/alerts, the Sewage Alert System until 2026-11-04) left this row for a footer link the same day
             # (app/templates/_frame.html), so beta testers never meet a passphrase page in the tabs
         ],
     },
     {
-        "key": "water", "icon": "flask", "title": "The water record",
+        "key": "water", "icon": "flask", "title": "The Water Record",
         "sub": "What the labs found",
         "primary": None,
         "rows": [
             ("/analysis", "Site Report Card",
-             "How often each shoreline site fails the state bacteria standard — rankings, storm-season effect, and year-by-year trends from the city's lab data.",
+             "How frequently each shoreline site does not meet the state bacteria standard. It shows rankings, the effect of the storm season, and trends for each year from the city lab data.",
              "rankings · trends"),
             ("/samples", "Samples",
-             "Every published result from the city's lab and Surfrider's volunteers, one row per sample, with the volunteers' field notes.",
+             "All published results from the city lab and the Surfrider volunteers, one row for each sample, with the field notes from the volunteers.",
              "every result · both programs"),
             ("/graphs", "Graphs",
-             "Any site over time: all three indicators on one plot with the state limits drawn in, or the city against Surfrider head to head.",
+             "A site over time. The graph shows the three indicators and the state limits, or it compares the city and Surfrider.",
              "any site · all indicators"),
             ("/compare", "Source Comparison",
-             "The six beaches both programs sample, head to head: Surfrider's volunteer lab against the city's, latest result and agreement per site.",
+             "The six beaches that the two programs sample. It compares the Surfrider volunteer lab with the city lab, with the latest result and the agreement for each site.",
              "six dual beaches · head to head"),   # a row like the others, not a sub-row under Graphs (Chase, 2026-09-29)
         ],
     },
     {
-        "key": "record", "icon": "clipboard", "title": "Discharges & postings",   # discharges first (Chase, 2026-11-04)
+        "key": "record", "icon": "clipboard", "title": "Discharges & Postings",   # discharges first (Chase, 2026-11-04)
         "sub": "What the city reported, and when",
         "primary": None,
         "rows": [
             ("/discharges", "Discharge Ledger",
-             "Every combined-sewer discharge SFPUC reported to regulators since 2011 — outfall, duration, and gallons — by location and year.",
+             "All combined-sewer discharges that SFPUC reported to regulators since 2011: outfall, duration, and gallons, for each location and year.",
              "filed with regulators · since 2011"),
             ("/postings", "Beach Postings",
-             "Every beach advisory San Francisco filed with the State since 1999 — when each beach was posted, for how long, and why — from the State Water Board's BeachWatch record.",
+             "All the beach advisories that San Francisco sent to the State since 1999: when the city posted each beach, for how long, and why. The data comes from the State Water Board BeachWatch record.",
              "filed with the State · since 1999"),
             ("/cso-history", "Online Postings Timeline",
-             "Every posting and sewage-overflow flag the city's online map showed, as our real-time watcher saw it, plotted per station.",
+             "All the postings and sewage-overflow flags that the online city map showed, as our real-time monitor recorded them, for each station.",
              "as the feed showed them · since Aug 2026"),
         ],
     },
@@ -82,9 +82,9 @@ HUBS = [
         "primary": None, "card": False,   # its own top tab (Chase, 2026-10-18); Today links it with the Learn bar, not a hub card
         "rows": [
             ("/learn", "Learn",
-             "How San Francisco's sewers meet the shore, how the lab counts bacteria, and a century and a half of the system.",
+             "How the San Francisco sewers go to the shore, how the lab counts bacteria, and 150 years of the system.",
              "the system · the lab · the record"),
-            ("/learn/collect", "Collect", "Where we sample, how to take a sample, and the sheet's conditions.", "four sites · the sheet"),
+            ("/learn/collect", "Collect", "Where we sample, how to take a sample, and the conditions for the sheet.", "four sites · the sheet"),
         ],
     },
 ]
@@ -98,22 +98,22 @@ NAV_SECTIONS = [
     {"key": "today", "title": "Today", "icon": "waves", "href": "/", "groups": []},
     {"key": "forecast", "title": "Forecast", "icon": "cloud-rain", "href": "/forecast", "groups": []},
     {"key": "data", "title": "Data", "icon": "chart", "href": "/data", "groups": [
-        {"key": "water", "label": "Lab results", "sub": "What the labs found", "icon": "flask", "pages": [
-            ("/analysis", "Report card", ("/analysis/testing",)),
+        {"key": "water", "label": "Lab Results", "sub": "What the labs found", "icon": "flask", "pages": [
+            ("/analysis", "Report Card", ("/analysis/testing",)),
             ("/samples", "Samples", ()),
             ("/graphs", "Graphs", ()),
             ("/compare", "Compare", ()),
         ]},
-        {"key": "record", "label": "City records", "sub": "What the city reported, and when", "icon": "clipboard", "pages": [
+        {"key": "record", "label": "City Records", "sub": "What the city reported, and when", "icon": "clipboard", "pages": [
             ("/discharges", "Discharges", ("/discharges/reporting",)),
             ("/postings", "Postings", ()),
-            ("/cso-history", "Online timeline", ()),
+            ("/cso-history", "Online Timeline", ()),
         ]},
     ]},
     {"key": "learn", "title": "Learn", "icon": "microscope", "href": "/learn", "groups": [
         {"key": "learn", "label": "", "sub": "", "icon": "microscope", "pages": [
-            ("/learn", "How it works", ()),
-            ("/learn/collect", "Collect a sample", ()),
+            ("/learn", "How It Works", ()),
+            ("/learn/collect", "Collect a Sample", ()),
         ]},
     ]},
 ]
@@ -428,7 +428,7 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
             parts.append(("", f"{n_safe} {plural(n_safe, 'has', 'have')} no warning." if n_posted
                           else f"{n_safe} other {plural(n_safe, 'beach has', 'beaches have')} no warning."))
     elif n_graded == 0:
-        tone, parts = "warn", [("warn", "Beach status is unavailable right now.")]
+        tone, parts = "warn", [("warn", "Beach status is not available now.")]
     elif n_posted:
         tone = "warn"
         parts = [("posted", f"Posted at {n_posted} {plural(n_posted, 'beach', 'beaches')}.")]
@@ -444,7 +444,7 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
     if n_cso:
         lead.append("Discharging: " + describe(cso_by_zone) + ".")
     if n_posted:   # the status word is SFPUC's; the reason, in their terms, follows — the feed does not say which applies
-        lead.append("Posted: " + describe(posted_by_zone) + ". SFPUC posts a beach when samples show bacteria above State standards, and sometimes as a precaution.")
+        lead.append("Posted: " + describe(posted_by_zone) + ". SFPUC posts a beach when samples show bacteria more than the State standards. Sometimes SFPUC posts a beach as a precaution.")
     zr = risks.get("zones") or {}
     risk_lead = ""   # the forecast's sentence: inside the board's collapsed "Sewer-overflow forecast · Beta" line since 2026-11-08 (in the subhead 2026-11-06; behind the Risk view chip before that, Chase, 2026-10-18)
     if zr:
@@ -483,7 +483,7 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
                 age_text = f"{ages[0]}–{ages[-1]} days ago"
             else:
                 age_text = f"between {days_ago_text(oldest_d, now.date())} and {days_ago_text(newest_d, now.date())}"
-        facts.append({"label": "City samples", "text": f"Samples were collected {age_text} ({date_text})."})
+        facts.append({"label": "City samples", "text": f"The city collected samples {age_text} ({date_text})."})
     bw = re.search(r"Surfrider (\d{1,2})/(\d{1,2})", samples_fact or "")   # the volunteers' newest sample, by age too
     if bw:
         d = date(now.year, int(bw.group(1)), int(bw.group(2)))
@@ -507,10 +507,10 @@ def _status_banner(summary: dict) -> tuple[str, str]:
         sites = _esc(", ".join(cso_locs)) if cso_locs else f"{cso} site(s)"
         return ("danger", f'<svg class="ic"><use href="#i-octagon-alert"/></svg> Active combined-sewer-overflow discharge at: {sites}. Avoid water contact.')
     if posted:
-        return ("warn", f'<svg class="ic"><use href="#i-triangle-alert"/></svg> {posted} site(s) posted for elevated bacteria. {safe} site(s) currently meeting standards.')
+        return ("warn", f'<svg class="ic"><use href="#i-triangle-alert"/></svg> {posted} site(s) posted for high bacteria. {safe} site(s) meet the standards now.')
     if safe:
         return ("ok", f'<svg class="ic"><use href="#i-circle-check"/></svg> No active CSO discharge. {safe} site(s) meeting California water-quality standards.')
-    return ("warn", "Status is loading or temporarily unavailable — open the alert page for details.")
+    return ("warn", "The status is loading or is not available now. For more data, open the alert page.")
 
 
 def _rain_line(env_context) -> list[str]:

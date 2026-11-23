@@ -36,26 +36,26 @@
   <div class="body">
     {% if state == 'ask' %}
       <p>Stop beach alerts for <span class="email">{{ email }}</span>?</p>
-      <p class="mute">You are subscribed to {{ sites }} site{{ '' if sites == 1 else 's' }}. One click and no more emails; you can sign up again any time. Rather <a class="link" href="/manage?t={{ token }}">change your sites</a> instead?</p>
+      <p class="mute">You get alerts for {{ sites }} site{{ '' if sites == 1 else 's' }}. Click one time to stop all emails. You can sign up again at any time. Or, you can <a class="link" href="/manage?t={{ token }}">change your sites</a>.</p>
       <form method="post" action="/unsubscribe?t={{ token }}" class="row">
         <button type="submit">Unsubscribe</button>
         <a class="btn plain" href="/">Keep my alerts</a>
       </form>
     {% elif state == 'done' %}
-      <p>Done. <span class="email">{{ email }}</span> will get no more beach alerts.</p>
-      <p class="mute">Changed your mind? <a class="link" href="/signup">Sign up again</a> whenever you like.</p>
+      <p>Done. <span class="email">{{ email }}</span> will not get more beach alerts.</p>
+      <p class="mute">Do you want the alerts again? <a class="link" href="/signup">Sign up again</a> at any time.</p>
     {% elif state == 'already' %}
       <p><span class="email">{{ email }}</span> is already unsubscribed.</p>
-      <p class="mute">Want alerts back? <a class="link" href="/signup">Sign up again</a>.</p>
+      <p class="mute">Do you want the alerts again? <a class="link" href="/signup">Sign up again</a>.</p>
     {% elif state == 'missing' %}
-      <p>This link is missing its code.</p>
-      <p class="mute">Open the Unsubscribe link from one of your alert emails, or <a class="link" href="/signup">manage your signup</a>.</p>
+      <p>This link does not have its code.</p>
+      <p class="mute">Open the Unsubscribe link in one of your alert emails. Or, <a class="link" href="/signup">change your signup</a>.</p>
     {% elif state == 'unknown' %}
-      <p>We don't recognise this link.</p>
-      <p class="mute">Use the Unsubscribe link from a recent alert email. If it keeps failing, reply to any alert and we'll remove you by hand.</p>
+      <p>We do not know this link.</p>
+      <p class="mute">Use the Unsubscribe link in a recent alert email. If the link continues to fail, reply to an alert. We will then remove you manually.</p>
     {% else %}
-      <p>We couldn't reach the subscriber list just now.</p>
-      <p class="mute">Please try again in a minute, or reply to any alert email and we'll remove you by hand.</p>
+      <p>We cannot connect to the subscriber list now.</p>
+      <p class="mute">Try again after one minute. Or, reply to an alert email. We will then remove you manually.</p>
     {% endif %}
   </div>
 </div>

@@ -35,18 +35,18 @@ def test_sample_facts_start_with_sentence_case_without_changing_embedded_ages():
         for day, age in ((9, "Yesterday"), (10, "Today")):
             board = today_board([station("4601", day)], samples_fact=f"Surfrider 11/{day}", now=datetime(2026, 11, 10))
             h = T.render_page({"board": board, "generated": "Preview"})
-            assert f"<dd>Samples were collected {age.lower()} (Nov {day})." in h
+            assert f"<dd>The city collected samples {age.lower()} (Nov {day})." in h
             assert f"sampled {age.lower()}" in h
         board = today_board([station("4601", 9), station("4602", 10)], now=datetime(2026, 11, 10))
         h = T.render_page({"board": board, "generated": "Preview"})
-        assert "<dd>Samples were collected between yesterday and today (Nov 9–10)." in h
+        assert "<dd>The city collected samples between yesterday and today (Nov 9–10)." in h
 
         first, last = station("4601", 9), station("4602", 10)
         first.sample_date = datetime(2026, 12, 31)
         last.sample_date = datetime(2027, 1, 1)
         now = datetime(2027, 1, 3)
         board = today_board([first, last], now=now)
-        assert board["facts"][0]["text"] == "Samples were collected 2–3 days ago (Dec 31, 2026–Jan 1, 2027)."
+        assert board["facts"][0]["text"] == "The city collected samples 2–3 days ago (Dec 31, 2026–Jan 1, 2027)."
         first.sample_date = datetime(2027, 1, 4)
         last.sample_date = None
         assert today_board([first, last], now=now)["facts"] == []
@@ -114,9 +114,9 @@ def test_today_page_is_the_board_plus_the_experimental_row_and_the_api_route_exi
     legend = h.split('id="map-legend"')[1].split("</div>")[0]
     assert [t.split("</span>")[0] for t in legend.split("</i>")[1:]] == ["No warning", "Warning posted", "Sewage discharge", "No data"]
     key = h.split('<details class="colour-key">')[1].split("</details>")[0]
-    assert "<summary>What the colors mean</summary>" in key and key.count("<dt>") == 2
+    assert "<summary>What the Colors Mean</summary>" in key and key.count("<dt>") == 2
     assert "See SFPUC’s official map and legend" in key and "recent combined sewer discharge" in key
-    assert "Below 36" in key and "36 through 104" in key and "Above 104" in key
+    assert "Less than 36" in key and "36 to 104" in key and "More than 104" in key
     assert "Over 7 days old (hollow)" in key and "No result (solid gray)" in key
     assert ".board.replaying .colour-key{display:none}" in board and "All clear" not in h and '"No warning" if status == "safe"' in (ROOT / "app/landing.py").read_text()   # the tiles read "No warning", not "All clear"
     assert h.count('class="site" data-zone=') == 20 and 'id="zone-sites"' in h and 'data-sample-station=' in h and "{{" not in h        # a chip per station under the zone tiles, each opening the popover

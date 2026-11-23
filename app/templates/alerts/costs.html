@@ -3,7 +3,7 @@
 <link rel="icon" href="{{ asset('brand/favicon.ico') }}"><link rel="apple-touch-icon" sizes="144x144" href="{{ asset('brand/bwtf_144x144.png') }}">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Running costs — Admin · Surfrider SF Blue Water Task Force</title>
+<title>Running Costs — Admin · Surfrider SF Blue Water Task Force</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -45,65 +45,65 @@
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
 {{ topbar() }}
 <div class="wrap">
-  {% call page_head("Running costs", "What the site would cost each month at any number of subscribers: published prices, the alert record, and what the site uses today.", None, "How this is counted") %}
-    <p>One alert per station posting in the State's record and one per station a reported discharge flags, per zone, averaged over {{ data.rates.years[0] }}–{{ data.rates.years[1] }}.
-    The site merges changes it sees in the same minute into one message, so these counts are the high end. Email plans are sized for the busiest month, which runs {{ data.rates.busiest_month_factor }} times an average month;
-    texts are billed per segment. Text segments and stored email sizes are measured from the alert renderer itself, so they follow the wording.
-    Brevo turns paid at {{ data.thresholds.brevo_paid_from }} subscribers; Vercel Pro, Supabase Pro and a domain start at {{ data.thresholds.pro_from }}. Prices were checked on {{ data.prices_checked }}.</p>
+  {% call page_head("Running Costs", "The monthly cost of the site for different numbers of subscribers. It uses published prices, the alert record, and the current use of the site.", None, "How This Is Counted") %}
+    <p>The model uses one alert for each station posting in the State record, and one alert for each station that a reported discharge flags. It counts these for each zone and calculates the average for {{ data.rates.years[0] }}–{{ data.rates.years[1] }}.
+    The site puts the changes that occur in the same minute into one message. Thus, these counts are the maximum values. We select email plans for the busiest month. That month has {{ data.rates.busiest_month_factor }} times the messages of an average month.
+    Text messages cost a fee for each segment. We measure text segments and stored email sizes from the alert renderer. Thus, they change when the words change.
+    Brevo costs money from {{ data.thresholds.brevo_paid_from }} subscribers. Vercel Pro, Supabase Pro and a domain start at {{ data.thresholds.pro_from }}. We examined the prices on {{ data.prices_checked }}.</p>
   {% endcall %}
 
   {{ admin_tabs("costs") }}
 
-  {% if data.today %}<p class="today">Today: <b>{{ data.today.subscribers }}</b> subscriber{{ '' if data.today.subscribers == 1 else 's' }}, <b>{{ data.today.texting }}</b> by text, averaging <b>{{ data.today.alerts_per_year }}</b> alerts a year from the zones they chose.</p>{% endif %}
+  {% if data.today %}<p class="today">Today: <b>{{ data.today.subscribers }}</b> subscriber{{ '' if data.today.subscribers == 1 else 's' }}, <b>{{ data.today.texting }}</b> by text. They get an average of <b>{{ data.today.alerts_per_year }}</b> alerts each year from the zones that they selected.</p>{% endif %}
 
   <div class="card">
     <div class="ctl" id="controls">
       <span class="ctl-label">Subscribers</span>
       <div class="slider"><input type="range" id="subs" min="0" max="{{ data.curve.steps|length - 1 }}" step="1" aria-label="Subscribers"><b id="subsv"></b></div>
-      <span class="ctl-label">Share choosing texts</span>
+      <span class="ctl-label">Percentage that selects texts</span>
       <div class="seg-toggle" data-k="sms_share"><button class="seg-btn" data-v="0">None</button><button class="seg-btn" data-v="0.1">10%</button><button class="seg-btn" data-v="0.25">25%</button><button class="seg-btn" data-v="0.5">50%</button></div>
-      <span class="ctl-label">Alerts per subscriber a year</span>
+      <span class="ctl-label">Alerts for each subscriber each year</span>
       <div class="seg-toggle" data-k="alerts"><button class="seg-btn" data-v="one">{{ data.alert_choices.one }}, one zone</button><button class="seg-btn" data-v="mix">{{ data.alert_choices.mix }}, today's mix</button><button class="seg-btn" data-v="busiest">{{ data.alert_choices.busiest }}, every zone in {{ data.rates.busiest_year.year }}</button></div>
       <span class="ctl-label">Text wording</span>
       <div class="seg-toggle" data-k="hyphen"><button class="seg-btn" data-v="0">Em dash, as now</button><button class="seg-btn" data-v="1">Plain hyphen</button></div>
       <span class="ctl-label">Email service</span>
       <div class="seg-toggle" data-k="email"><button class="seg-btn" data-v="brevo">Brevo, as now</button><button class="seg-btn" data-v="ses">Amazon SES</button></div>
       <span class="ctl-label">Sent emails kept</span>
-      <div class="seg-toggle" data-k="prune"><button class="seg-btn" data-v="0">A year of copies, as now</button><button class="seg-btn" data-v="1">Pruned after 90 days</button></div>
+      <div class="seg-toggle" data-k="prune"><button class="seg-btn" data-v="0">Copies for one year, as now</button><button class="seg-btn" data-v="1">Deleted after 90 days</button></div>
     </div>
     <p class="status" id="status" role="status" aria-live="polite"></p>
   </div>
 
   <div class="kpis">
-    <div class="kpi"><div class="k">Per month</div><div class="v" id="k-total"></div><div class="s">averaged over the year</div></div>
-    <div class="kpi"><div class="k">Per subscriber a year</div><div class="v" id="k-per"></div><div class="s" id="k-per-s"></div></div>
+    <div class="kpi"><div class="k">Per month</div><div class="v" id="k-total"></div><div class="s">average for the year</div></div>
+    <div class="kpi"><div class="k">For each subscriber each year</div><div class="v" id="k-per"></div><div class="s" id="k-per-s"></div></div>
     <div class="kpi"><div class="k">Busiest month</div><div class="v" id="k-busy"></div><div class="s" id="k-busy-s">messages sent</div></div>
   </div>
 
   <div class="card">
-    <h2>Monthly cost by subscribers</h2>
+    <h2>Monthly Cost by Subscribers</h2>
     <div class="legend"><span><i style="border-top-color:#2a78d6"></i>Email only</span><span><i style="border-top:2px dashed #eb6834"></i><span id="lg-texts"></span></span></div>
-    <div class="chart"><canvas id="curve" role="img" aria-label="Monthly cost against subscribers on log scales, for email only and for email with texts."></canvas></div>
+    <div class="chart"><canvas id="curve" role="img" aria-label="Monthly cost and number of subscribers on log scales, for email only and for email with texts."></canvas></div>
   </div>
 
   <div class="card">
-    <h2>The month at <span id="t-subs"></span> subscribers</h2>
+    <h2>The Month at <span id="t-subs"></span> Subscribers</h2>
     <div class="tblwrap"><table class="lines"><thead><tr><th>Service</th><th>Plan at this size</th><th class="n">Per month</th><th class="n">Free up to</th><th>Price</th></tr></thead><tbody id="lines"></tbody></table></div>
   </div>
 
   <div class="cols">
-    <div class="card"><h2>Alerts a year, by zone</h2><ul>
+    <div class="card"><h2>Alerts Each Year, for Each Zone</h2><ul>
       {% for z, n in data.rates.per_zone.items() %}<li><b>{{ data.rates.zone_labels[z] }}</b>: {{ n }}</li>{% endfor %}
-      <li><b>Every zone</b>: {{ data.rates.all_zones }} on average, {{ data.rates.busiest_year.alerts }} in {{ data.rates.busiest_year.year }}</li>
-      <li>The worst storm day put {{ data.rates.worst_day_per_zone }} in one zone.</li></ul></div>
-    <div class="card"><h2>Per message</h2><ul>
-      <li><b>Texts as worded now</b>: {{ data.messages.segments_now }} segments on average; {% for e in data.messages.examples %}{{ e.beaches }} beach{{ '' if e.beaches == 1 else 'es' }} {{ e.segments }}{{ ', ' if not loop.last else '' }}{% endfor %}.</li>
-      <li><b>With a plain hyphen</b>: {{ data.messages.segments_plain }}. The em dash switches a text to the encoding that fits 70 characters a segment, not 160.</li>
-      <li><b>Stored per email</b>: {{ data.messages.email_kb }} KB, kept for every recipient.</li></ul></div>
-    <div class="card"><h2>Guesses in the model</h2><ul>
-      <li>{{ data.measured.visits_per_subscriber_month }} site visits per subscriber a month, plus {{ "{:,}".format(data.measured.public_visits_month) }} public visits.</li>
-      <li>{{ data.measured.tiles_per_visit }} map tiles a visit.</li>
-      <li>{{ data.measured.view_cpu_seconds }} s of compute a page view; {{ data.measured.refresh_cpu_seconds }} s for each of the {{ "{:,}".format(data.measured.forecast_refreshes_month) }} forecast refreshes a month. Vercel's Usage page has the real numbers.</li></ul></div>
+      <li><b>All zones</b>: an average of {{ data.rates.all_zones }}, and {{ data.rates.busiest_year.alerts }} in {{ data.rates.busiest_year.year }}</li>
+      <li>On the worst storm day, one zone had {{ data.rates.worst_day_per_zone }}.</li></ul></div>
+    <div class="card"><h2>For Each Message</h2><ul>
+      <li><b>Texts with the current words</b>: an average of {{ data.messages.segments_now }} segments. {% for e in data.messages.examples %}{{ e.beaches }} beach{{ '' if e.beaches == 1 else 'es' }} {{ e.segments }}{{ ', ' if not loop.last else '' }}{% endfor %}.</li>
+      <li><b>With a plain hyphen</b>: {{ data.messages.segments_plain }}. The em dash changes a text to the encoding that has 70 characters for each segment, not 160.</li>
+      <li><b>Stored for each email</b>: {{ data.messages.email_kb }} KB. We keep it for each recipient.</li></ul></div>
+    <div class="card"><h2>Estimates in the Model</h2><ul>
+      <li>{{ data.measured.visits_per_subscriber_month }} site visits for each subscriber each month, plus {{ "{:,}".format(data.measured.public_visits_month) }} public visits.</li>
+      <li>{{ data.measured.tiles_per_visit }} map tiles for each visit.</li>
+      <li>{{ data.measured.view_cpu_seconds }} s of compute for each page view. {{ data.measured.refresh_cpu_seconds }} s for each of the {{ "{:,}".format(data.measured.forecast_refreshes_month) }} forecast refreshes each month. The Vercel Usage page has the real numbers.</li></ul></div>
   </div>
 </div>
 <script src="{{ asset('charts.js') }}"></script>
@@ -147,7 +147,7 @@
           scales: { x: { title: { display: true, text: "Subscribers", color: "#54576F" }, ticks: { color: "#54576F", autoSkip: false, maxRotation: 45 }, grid: { color: "#eef3f7" } },
                     y: { type: "logarithmic", min: 1, title: { display: true, text: "Per month", color: "#54576F" }, grid: { color: "#eef3f7" },
                          ticks: { color: "#54576F", callback: function (v) { return [1, 3, 10, 30, 100, 300, 1000, 3000, 10000].indexOf(v) >= 0 ? "$" + v.toLocaleString() : ""; } } } } } });
-    }).catch(function () { $("status").textContent = "The chart library did not load; the table still has every number."; });
+    }).catch(function () { $("status").textContent = "The chart library did not load. The table still has all the numbers."; });
   }
   var ctl = null, timer = null;
   function update() {

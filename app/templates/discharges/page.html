@@ -70,15 +70,15 @@
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
 {{ topbar() }}
 <div class="wrap">
-  {% call page_head("Discharge Ledger", "Every combined-sewer discharge SFPUC reported to state regulators since 2011: outfall, duration and volume.", "record", link=("/records#discharges", "How we get these records")) %}
+  {% call page_head("Discharge Ledger", "All the combined-sewer discharges that SFPUC reported to state regulators since 2011: outfall, duration and volume.", "record", link=("/records#discharges", "How We Get These Records")) %}
     
-    <p>Every combined-sewer discharge into San Francisco waters that SFPUC reported to state
-    regulators — outfall, start, duration, and volume — extracted from monthly self-monitoring
-    reports filed under the city's two sewer permits. This is the official record of what was
-    actually discharged, alongside our real-time detections (<a href="/cso-history">SFPUC Alerts Timeline</a>)
-    the bacteria outcomes (<a href="/analysis">Site Report Card</a>) and the signs the public saw (<a href="/postings">Beach Postings</a>).</p>
-    <p>The record goes back to March 2011. Until 2016–2018 the city filed daily totals instead of single events, and the
-    Bay side reported no volumes, so older years count differently. <a href="/discharges/reporting">How reporting changed, and how we check it</a></p>
+    <p>All the combined-sewer discharges into San Francisco waters that SFPUC reported to state
+    regulators. For each discharge, the record shows the outfall, start, duration, and volume. We got this data from the monthly self-monitoring
+    reports that the city sends under its two sewer permits. This is the official record of the discharges.
+    Compare it with our real-time detections (<a href="/cso-history">SFPUC Alerts Timeline</a>),
+    the bacteria results (<a href="/analysis">Site Report Card</a>), and the signs that the public saw (<a href="/postings">Beach Postings</a>).</p>
+    <p>The record starts in March 2011. Until 2016–2018, the city reported daily totals, not single events. The
+    Bay side did not report volumes. Thus, the counts for older years are different. <a href="/discharges/reporting">How reporting changed, and how we examine it</a></p>
   {% endcall %}
 
   <div class="tiles" id="tiles"></div>
@@ -103,58 +103,58 @@
   <div class="note" id="refreshNote" style="display:none"></div>
 
   <div class="board">
-    <h2>Outfall map <span style="font-weight:600;color:#54576F;font-size:12.5px">— circle size = volume in the selected range · click a marker for details</span></h2>
+    <h2>Outfall Map <span style="font-weight:600;color:#54576F;font-size:12.5px">— circle size = volume in the selected range · click a marker for details</span></h2>
     <div id="map"></div>
-    <p style="font-size:12px;color:#8a949b;margin:8px 0 0">Locations from the NPDES permits' discharge-point tables
-    (Oceanside R2-2019, Bayside R2-2013-0029). CSD-043 (Sunnydale) is approximate — the permit table misprints its
-    coordinates — and CSD-119 is plotted with CSD-009 (Baker Street), whose id it duplicates in some monthly reports.
-    Bay records before Oct 2016 have no volume, and those filed for a group of outfalls aren't placed on the map.</p>
+    <p style="font-size:12px;color:#8a949b;margin:8px 0 0">The locations come from the discharge-point tables in the NPDES permits
+    (Oceanside R2-2019, Bayside R2-2013-0029). The location of CSD-043 (Sunnydale) is approximate, because the permit table has incorrect
+    coordinates. CSD-119 is at the same location as CSD-009 (Baker Street), because some monthly reports use the same ID for the two outfalls.
+    Bay records before Oct 2016 do not have a volume. Records for a group of outfalls are not on the map.</p>
   </div>
 
   <div class="board">
-    <h2>Volume discharged per year <span style="font-weight:600;color:#54576F;font-size:12.5px">(million gallons — hatched years are missing months or Bay volumes)</span></h2>
+    <h2>Volume Discharged per Year <span style="font-weight:600;color:#54576F;font-size:12.5px">(million gallons — hatched years are missing months or Bay volumes)</span></h2>
     <div id="years" class="loading">Loading the discharge record…</div>
   </div>
 
   <div class="board">
-    <h2>By receiving water</h2>
+    <h2>By Receiving Water</h2>
     <table><thead><tr><th>Receiving water</th><th class="num">discharges</th><th class="num">total volume</th><th class="num">share</th><th class="num">largest single event</th><th class="num">median duration</th></tr></thead>
     <tbody id="waters"></tbody></table>
   </div>
 
   <div class="board">
-    <h2>All outfalls <span style="font-weight:600;color:#54576F;font-size:12.5px">— click one for its year-by-year trend</span></h2>
+    <h2>All Outfalls <span style="font-weight:600;color:#54576F;font-size:12.5px">— click one for its year-by-year trend</span></h2>
     <table><thead><tr><th>Outfall</th><th>Receiving water</th><th class="num">discharges</th><th class="num">total volume</th><th class="num">largest event</th></tr></thead>
     <tbody id="outfalls"></tbody></table>
   </div>
 
   <div class="board">
-    <h2>Plot it yourself <span style="font-weight:600;color:#54576F;font-size:12.5px">— volume per year for any outfalls or waters (respects the date range above)</span></h2>
+    <h2>Make Your Own Graph <span style="font-weight:600;color:#54576F;font-size:12.5px">— volume for each year for the outfalls or waters that you select (uses the date range above)</span></h2>
     <div class="controls" style="margin-bottom:10px">
       <div class="seg-toggle" id="chartType">
         <button class="seg-btn active" data-type="scatter">Scatter</button>
         <button class="seg-btn" data-type="bar">Bar</button>
       </div>
       <details class="picker" id="seriesPicker">
-        <summary id="pickerSummary">Choose series…</summary>
+        <summary id="pickerSummary">Choose Series…</summary>
         <div class="panel" id="pickerPanel"></div>
       </details>
       <button class="group-btn" id="clearSeries">Clear</button>
     </div>
     <div class="chart-wrap"><canvas id="chart"></canvas></div>
-    <p style="font-size:12px;color:#8a949b;margin:8px 0 0">Years without volumes are left out, not drawn as zero: Bay outfalls
-    have no volumes before Oct 2016, and 2016 itself is partial. Records start March 2011.</p>
+    <p style="font-size:12px;color:#8a949b;margin:8px 0 0">The graph does not show years with no volume data. It does not show them as zero. Bay outfalls
+    do not have volumes before Oct 2016, and the 2016 data is not complete. The records start in March 2011.</p>
   </div>
 
   <div class="board">
-    <h2>Largest single discharges</h2>
+    <h2>Largest Single Discharges</h2>
     <table><thead><tr><th>Date</th><th>Outfall</th><th>Receiving water</th><th class="num">volume</th><th class="num">duration</th></tr></thead>
     <tbody id="biggest"></tbody></table>
-    <p style="font-size:12px;color:#8a949b;margin:8px 0 0">Before 2018 a Pacific outfall's volume is its total for the day, marked “day total”.</p>
+    <p style="font-size:12px;color:#8a949b;margin:8px 0 0">Before 2018, the volume for a Pacific outfall is its total for the day. The table marks it “day total”.</p>
   </div>
 
   <div class="board">
-    <h2>Raw records <span style="font-weight:600;color:#54576F;font-size:12.5px">— the dataset itself, every column · click headers to sort</span></h2>
+    <h2>Raw Records <span style="font-weight:600;color:#54576F;font-size:12.5px">— the dataset itself, every column · click headers to sort</span></h2>
     <div class="controls" style="margin-bottom:10px">
       <div class="seg-toggle" id="rawSet">
         <button class="seg-btn active" data-set="events" data-file="sf_csd_events.csv">Events, 2016 on</button>
@@ -210,7 +210,7 @@ function render() {
   const biggest = R.reduce((a,e) => (e.mg||0) > (a.mg||0) ? e : a, {});
   const wettest = Object.entries(years).sort((a,b)=>b[1].mg-a[1].mg)[0];
   document.getElementById("tiles").innerHTML = `
-    <div class="tile"><b>${MG(totMG)}</b><span>total reported volume${STATE.water?" — "+STATE.water:""}${groupRows?" (Bay volumes before Oct 2016 not reported)":""}</span></div>
+    <div class="tile"><b>${MG(totMG)}</b><span>total reported volume${STATE.water?" — "+STATE.water:""}${groupRows?" (no Bay volumes before Oct 2016)":""}</span></div>
     <div class="tile"><b>${R.length.toLocaleString()}</b><span>discharges logged${R.some(e => e.kind !== "E")?" (daily totals before 2016–2018)":""}</span></div>
     <div class="tile"><b>${MGshort(biggest.mg)}</b><span>largest single discharge (${biggest.date||"—"}${biggest.kind === "D" ? ", a day's total" : ""})</span></div>
     <div class="tile"><b>${wettest?wettest[0]:"—"}</b><span>biggest year in range (${wettest?MGshort(wettest[1].mg):"—"})</span></div>`;
@@ -224,7 +224,7 @@ function render() {
     return `<div class="yrrow"><span class="yl">${y}</span>
       <span class="track"><span class="vol${partial?" partial":""}" style="width:${Math.max(1,100*years[y].mg/maxMG)}%"></span></span>
       <span class="val">${years[y].g === years[y].n ? "no volumes" : MGshort(years[y].mg)} · ${years[y].n}${years[y].g && years[y].g < years[y].n ? (years[y].be ? " · Bay volumes partial" : " · Bay volumes not reported") : ""}</span></div>`;
-  }).join("") || '<div class="loading">No discharges in the selected range.</div>';
+  }).join("") || '<div class="loading">There are no discharges in the selected range.</div>';
 
   // by receiving water — date-filtered, all waters shown, active filter highlighted
   const D = dateRows();
@@ -303,7 +303,7 @@ function updateMap() {
     m.bindPopup(`<b>${oid} — ${ONAMES[oid] || loc.name || ""}</b><br>` +
       `Discharges to: ${loc.water}<br>` +
       (loc.stations && loc.stations.length ? `Beaches SFPUC posts: ${loc.stations.join(", ")}<br>` : "") +
-      (loc.feed_name ? `Feed name when active: <code>${loc.feed_name}</code><br>` : "") +
+      (loc.feed_name ? `Feed name when it is active: <code>${loc.feed_name}</code><br>` : "") +
       `In selected range: <b>${t.n} discharges · ${MGshort(t.mg)}</b>` +
       (loc.note ? `<br><i>${loc.note}</i>` : ""));
     markerLayer.addLayer(m);
@@ -503,11 +503,11 @@ async function load() {
     const el = document.getElementById("refreshNote");
     el.style.display = "";
     el.className = "note" + (overdue ? " overdue" : "");
-    el.innerHTML = '<svg class="ic ' + (overdue ? 'warn' : '') + '"><use href="#i-' + (overdue ? 'triangle-alert' : 'refresh-cw') + '"/></svg> Record last refreshed from CIWQS on <b>' + R.refreshed_at + '</b> (' + age + (age === 1 ? ' day ago' : ' days ago') + (R.documents ? ', ' + R.documents + ' reports, ' + (R.events_added ?? 0) + ' events added' : '') + ')' +
-      (R.next_due ? ' · next quarterly run due <b>' + R.next_due + '</b>' : '') + (overdue ? ' — <b>overdue</b>' : '') + '.';
+    el.innerHTML = '<svg class="ic ' + (overdue ? 'warn' : '') + '"><use href="#i-' + (overdue ? 'triangle-alert' : 'refresh-cw') + '"/></svg> We last refreshed the record from CIWQS on <b>' + R.refreshed_at + '</b> (' + age + (age === 1 ? ' day ago' : ' days ago') + (R.documents ? ', ' + R.documents + ' reports, ' + (R.events_added ?? 0) + ' events added' : '') + ')' +
+      (R.next_due ? ' · next quarterly run due on <b>' + R.next_due + '</b>' : '') + (overdue ? ' — <b>late</b>' : '') + '.';
   }
   document.getElementById("foot").textContent = "Source: " + d.source +
-    (R.refreshed_at ? " · Refreshed " + R.refreshed_at : "") + " · Full provenance, schema, and gaps: features/forecast/data/csd/NOTES.md · MG = million gallons (≈1.5 Olympic pools).";
+    (R.refreshed_at ? " · Refreshed " + R.refreshed_at : "") + " · For all sources, the schema, and the gaps, refer to features/forecast/data/csd/NOTES.md · MG = million gallons (approximately 1.5 Olympic pools).";
 
   const newest = EV.reduce((a,e) => e.date > a ? e.date : a, "");
   const sd = document.getElementById("startDate"), ed = document.getElementById("endDate");

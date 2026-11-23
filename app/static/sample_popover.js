@@ -122,7 +122,7 @@
         render(next, opts);
       }).catch(function(){
         if (requestId !== REQUEST) return;
-        el.querySelector("#sp-note").textContent = "Could not refresh; showing the last loaded results. Retrying shortly.";
+        el.querySelector("#sp-note").textContent = "Could not refresh. This shows the last loaded results. We will try again soon.";
         refreshWhileWaiting(d, opts);
       });
     }, 60000);
@@ -153,21 +153,21 @@
     var stale = m.querySelector("#sp-stale"), newer = newest && d.pending_sample;
     loadNav(d, opts);
     var day = function (iso) { return new Date(iso + "T12:00:00").toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" }); };
-    var older = d.found ? "Below is the latest sample available in this view, " + esc(day(d.date)) + "." : "No older results are available in this view either.";
+    var older = d.found ? "The sample below is the latest sample in this view, " + esc(day(d.date)) + "." : "This view also has no older results.";
     if (newer) {
-      stale.innerHTML = "<b>Newer sample recorded; results unavailable here</b>A sample was collected " + esc(day(d.pending_sample.sample_date)) + ". Its numbers are not available in this view yet. " + older;
+      stale.innerHTML = "<b>There is a newer sample, but its results are not available here</b>The city collected a sample " + esc(day(d.pending_sample.sample_date)) + ". Its numbers are not available in this view yet. " + older;
       stale.hidden = false;
     }
-    if (!d.found) { note.textContent = (surf ? "No Surfrider sample at this site" : "No lab results available for this station") + (opts.date ? " on " + opts.date : "") + "."; return; }
+    if (!d.found) { note.textContent = (surf ? "No Surfrider sample at this site" : "This station has no lab results") + (opts.date ? " on " + opts.date : "") + "."; return; }
     var dt = new Date(d.date + "T12:00:00");
     m.querySelector("#sp-date").innerHTML = "Sampled " + esc(dt.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" })) + (surf && d.times && d.times.length ? " at " + esc(d.times.join(" and ")) : "")
       + (opts.date || newer ? "" : '<span class="sp-latest">Latest</span>');   // a newer sample exists: this one is not the latest
     var parts = [];
     if (surf) parts.push("Surfrider Blue Water Task Force volunteer lab");
-    if (d.early) parts.push("Early SFPUC lab results, ahead of DataSF publication");
+    if (d.early) parts.push("Early SFPUC lab results, before DataSF publishes them");
     if (d.note) parts.push(d.note);
-    if (d.n_samples > 1) parts.push(surf ? d.n_samples + " collections that day" : d.n_samples + " samples that day (the city's dataset carries the date but not the time)");
-    parts.push(d.units + " · dashed line = state single-sample limit" + (d.caution ? ", dotted = caution tier (" + d.caution + ")" : ""));
+    if (d.n_samples > 1) parts.push(surf ? d.n_samples + " collections that day" : d.n_samples + " samples that day (the city dataset has the date but not the time)");
+    parts.push(d.units + " · dashed line = state single-sample limit" + (d.caution ? ", dotted = caution range (" + d.caution + ")" : ""));
     note.textContent = parts.join(" · ");
     var f = d.field || {};
     fieldEl.textContent = [f.tested_by ? "Tested by " + f.tested_by : "", f.air ? "air " + f.air : "", f.water ? "water " + f.water : "", f.sky ? "sky " + f.sky : "", f.wind ? "wind " + f.wind : "",

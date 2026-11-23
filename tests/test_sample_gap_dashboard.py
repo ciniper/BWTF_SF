@@ -83,7 +83,7 @@ def test_admin_gate_render_filters_and_escaping(monkeypatch):
         response = client.get('/alerts/sample-gap?station=BAY%23220_SL&from=2026-11-13&to=2026-11-17')
         html = response.get_data(as_text=True)
         assert response.status_code == 200
-        assert '<h1>The sample gap</h1>' in html
+        assert '<h1>The Sample Gap</h1>' in html
         assert 'href="/alerts/sample-gap" class="on" aria-current="page"' in html
         assert '&gt;16000' in html and '&lt;script&gt;alert(1)&lt;/script&gt;' in html
         assert seen[0]['station'] == 'BAY#220_SL'

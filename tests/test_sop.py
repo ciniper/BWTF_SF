@@ -63,7 +63,7 @@ def test_page_and_photos_sit_behind_the_passphrase():
     assert 'class="secnav"' not in h and 'class="subtabs"' not in h and "coming soon" not in h   # Admin and its tabs sit in no hub (2026-11-04)
     assert 'href="/alerts/lab-sop" class="on" aria-current="page"' in h and f"/alerts/lab-sop/photos/{name}?v=" in h     # its own Admin tab, and its photos
     assert h.count('class="step') == 25 and h.count('<img class="main"') == 19 and h.count('<img class="inset"') == 2 and h.count('class="pic slot"') == 9
-    assert "Begin aseptic protocol" in h and h.count("Contamination risk") == 2 and "Check control first" in h and "bwtf.surfrider.org" in h
+    assert "Begin aseptic protocol" in h and h.count("Contamination risk") == 2 and "Examine the control first" in h and "bwtf.surfrider.org" in h
     for ph in S.PHASES:
         assert f'id="{ph["key"]}"' in h and f'href="#{ph["key"]}"' in h
 

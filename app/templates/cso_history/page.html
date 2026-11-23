@@ -81,12 +81,12 @@
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
 {{ topbar() }}
 <div class="wrap">
-  {% call page_head("Online Postings Timeline", "What the public could see on SFPUC's beach map, minute by minute, station by station.", "record", link=("/records#timeline", "How we get these records")) %}
+  {% call page_head("Online Postings Timeline", "What the public saw on the SFPUC beach map, minute by minute, station by station.", "record", link=("/records#timeline", "How We Get These Records")) %}
     
-    <p>What the public could see, minute by minute. For each station: when its sign went up on SFPUC's beach map — a bacteria posting or a CSO discharge flag — how it changed, and when it came down; and beneath it, each sample's collection date and when results were first observed in getCSV and DataSF. Our watchers read the map once a minute, getCSV about every two minutes, and DataSF every half hour, so this is an independent record of what was shown and when, not the city's own history. What was actually discharged is on the <a href="/discharges">Discharge Ledger</a>; the State's filed advisories are on <a href="/postings">Beach Postings</a>.</p>
+    <p>What the public saw, minute by minute. For each station, this page shows when its sign went up on the SFPUC beach map, how it changed, and when it came down. The sign is a bacteria posting or a CSO discharge flag. Below the sign, the page shows the collection date of each sample. It also shows when the results first came into getCSV and DataSF. Our monitors read the map one time each minute, getCSV approximately each two minutes, and DataSF each 30 minutes. Thus, this is an independent record of what the city showed and when. It is not the history from the city. The <a href="/discharges">Discharge Ledger</a> shows the discharges. <a href="/postings">Beach Postings</a> shows the advisories that the city sent to the State.</p>
   {% endcall %}
 
-  <div id="status" class="loading">Loading event history…</div>
+  <div id="status" class="loading">Loading the event history…</div>
 
   <div id="content" style="display:none">
     <div id="banner" class="banner" style="display:none"></div>
@@ -97,15 +97,15 @@
       <a class="range-btn" href="/cso-history/daily-colors">Gray and green history</a>
       <div class="legend">
         <span class="key" style="color:#8a949b">On SFPUC's map:</span>
-        <span class="key"><span class="swatch posted"></span>posted — elevated bacteria</span>
+        <span class="key"><span class="swatch posted"></span>posted — high bacteria</span>
         <span class="key"><span class="swatch cso"></span>CSO discharge flag</span>
         <span class="key" style="color:#8a949b;margin-left:6px">Lab samples:</span>
         <span class="key"><span class="swatch clean"></span>collected — clean</span>
         <span class="key"><span class="swatch elevated"></span>over standard</span>
-        <span class="key"><span class="swatch pending"></span>awaiting DataSF publication</span>
+        <span class="key"><span class="swatch pending"></span>not yet published in DataSF</span>
         <span class="key"><span class="swatch mapmark"></span>sample date shown on the map</span>
-        <span class="key"><span class="swatch csv"></span>first getCSV indicator (hollow = seen by)</span>
-        <span class="key"><span class="swatch lag"></span>days until the numbers appeared online</span>
+        <span class="key"><span class="swatch csv"></span>first getCSV indicator (hollow = time when we saw it)</span>
+        <span class="key"><span class="swatch lag"></span>days before the numbers came online</span>
       </div>
     </div>
     <div class="board">
@@ -113,7 +113,7 @@
       <div class="axis" id="axis"></div>
     </div>
     <details class="tableview">
-      <summary>View as table</summary>
+      <summary>View as Table</summary>
       <div id="tablebox"></div>
     </details>
     <p class="foot" id="foot"></p>
@@ -288,11 +288,11 @@
     var tip = document.getElementById('tooltip');
     var when = new Date(d.date + 'T20:00:00Z').toLocaleDateString('en-US', {timeZone:'America/Los_Angeles', month:'short', day:'numeric', year:'numeric'});
     var days = function(n){ return '<b>' + n + (n === 1 ? ' day' : ' days') + '</b>'; };
-    var result = d.pending ? '<b>DataSF results not yet observed</b>'
+    var result = d.pending ? '<b>We did not see DataSF results yet</b>'
       : (d.elevated ? '<b style="color:#f3b7a5">over standard</b>' : 'clean') + (d.n > 1 ? ' (' + d.n + ' results)' : '');
-    var map = !d.map_seen ? 'Map shows this sample date: not observed'
-      : d.map_censored ? 'Map showed this sample date by ' + fmtDay(d.map_seen) + ' (already there when we began reading the feed)'
-      : 'Map shows this sample date: ' + (d.map_note ? fmt(d.map_seen) + ' (' + esc(d.map_note) + ')' : d.map_approx ? fmtDay(d.map_seen) + ' (day known, minute not recorded)' : fmt(d.map_seen)) + ' — ' + days(d.map_lag_days) + ' after collection';
+    var map = !d.map_seen ? 'Map shows this sample date: we did not see it'
+      : d.map_censored ? 'Map showed this sample date by ' + fmtDay(d.map_seen) + ' (it was already there when we started to read the feed)'
+      : 'Map shows this sample date: ' + (d.map_note ? fmt(d.map_seen) + ' (' + esc(d.map_note) + ')' : d.map_approx ? fmtDay(d.map_seen) + ' (we know the day, but we did not record the minute)' : fmt(d.map_seen)) + ' — ' + days(d.map_lag_days) + ' after collection';
     // 2. the posting that followed this reading, if the station went up within three days of collection — the city acts on the
     //    reading hours before the displayed sample date changes (Islais Creek, 2026-10-06: posted 8:26 AM, date shown 2:12 PM)
     var dayStart = new Date(d.date + 'T08:00:00Z').getTime(), posting = null;   // ~midnight Pacific on the collection day
@@ -307,7 +307,7 @@
       ? 'DataSF observed: ' + fmt(d.first_seen) + ' — ' + days(d.lag_days) + ' after collection' +
         (d.map_lag_days != null ? ' (' + (d.lag_days - d.map_lag_days) + ' after the map)' : '')
       : d.pending ? 'DataSF observed: not yet — ' + days(d.pending_days) + ' since collection'
-      : 'DataSF observed: not observed (loaded from the city\'s history — collection day only)';
+      : 'DataSF observed: we did not see it (loaded from the city history — collection day only)';
     var csv = d.getcsv_seen ? 'getCSV first indicator ' + (d.getcsv_censored ? 'seen by ' : 'first seen ') + fmt(d.getcsv_seen)
       : 'getCSV arrival: not observed';
     var names = {ENTERO:'Enterococcus',COLI_TOTAL:'Total coliform',COLI_FECAL:'Fecal coliform',COLI_E:'E. coli'};
@@ -324,7 +324,7 @@
     var endBit;
     if (w.end) endBit = 'Came down: ' + fmt(w.end) + ' · up for ' + dur(wStart, new Date(w.end).getTime());
     else if (w.ongoing) endBit = '<b>Still up</b> (' + dur(wStart, new Date(DATA.generated_at).getTime()) + ' so far)';
-    else endBit = 'Came down: not recorded (before we logged sign-downs)';
+    else endBit = 'Came down: not recorded (before we started to record sign-downs)';
     var path = w.segments.map(function(sg){ return sg.status; }).join(' → ');
     var csv = d.getcsv_seen ? 'getCSV first indicator ' + (d.getcsv_censored ? 'seen by ' : 'first seen ') + fmt(d.getcsv_seen)
       : 'getCSV arrival: not observed';
@@ -351,14 +351,14 @@
     });
     var html = '<table><thead><tr><th>Station</th><th>Sign</th><th>Went up</th><th>Came down</th><th>Up for</th></tr></thead><tbody>';
     if (rows.length) rows.forEach(function(r){ html += '<tr><td>' + r.map(function(c){ return String(c); }).join('</td><td>') + '</td></tr>'; });
-    else html += '<tr><td colspan="5" class="muted">No sign has gone up since we started watching.</td></tr>';
+    else html += '<tr><td colspan="5" class="muted">No sign went up after we started to monitor.</td></tr>';
     html += '</tbody></table>';
     // the sample publication log: newest collection first
     var srows = [];
     var byId = {}; DATA.stations.forEach(function(s){ byId[s.station_id] = s.station_name; });
     Object.keys(DATA.samples || {}).forEach(function(sid){ (DATA.samples[sid] || []).forEach(function(d){ srows.push([byId[sid] || sid, d]); }); });
     srows.sort(function(a, b){ return a[1].date < b[1].date ? 1 : a[1].date > b[1].date ? -1 : 0; });
-    html += '<h3 style="font-size:14px;margin:18px 0 6px">Lab samples — collected, shown on SFPUC\'s map, and the numbers in the city\'s dataset</h3>' +
+    html += '<h3 style="font-size:14px;margin:18px 0 6px">Lab Samples — Collection, the SFPUC Map, and the Numbers in the City Dataset</h3>' +
       '<table><thead><tr><th>Station</th><th>Collected</th><th>Result</th><th>Sample date on the map</th><th>First getCSV indicator</th><th>DataSF observed</th><th>Days until online</th></tr></thead><tbody>';
     if (srows.length) srows.forEach(function(r){ var d = r[1];
       var dayStr = function(n){ return n + (n === 1 ? ' day' : ' days'); };
@@ -368,7 +368,7 @@
         (d.getcsv_seen ? (d.getcsv_censored ? 'by ' : '') + fmt(d.getcsv_seen) : '<span class="muted">not observed</span>') + '</td><td>' +
         (d.first_seen ? fmt(d.first_seen) : '<span class="muted">' + (d.pending ? 'not yet' : 'not observed') + '</span>') + '</td><td>' +
         (d.lag_days != null ? dayStr(d.lag_days) : d.pending ? dayStr(d.pending_days) + ' so far' : '—') + '</td></tr>'; });
-    else html += '<tr><td colspan="7" class="muted">No samples in the record window.</td></tr>';
+    else html += '<tr><td colspan="7" class="muted">There are no samples in the record period.</td></tr>';
     document.getElementById('tablebox').innerHTML = html + '</tbody></table>';
   }
 
@@ -381,25 +381,25 @@
       banner.style.display = ''; banner.textContent = data.note;
     } else if (data.event_count === 0) {
       banner.style.display = ''; banner.className = 'banner clean';
-      banner.innerHTML = '<svg class="ic" style="color:#237059"><use href="#i-circle-check"/></svg> <b>No sign has gone up on SFPUC\'s map</b>' +
-        (data.monitoring_since ? ' since we started watching on <b>' + fmt(data.monitoring_since) + '</b>' : ' yet') +
-        ' — a clean-water stretch. The watcher reads every station once a minute; the first sign will appear here automatically.';
+      banner.innerHTML = '<svg class="ic" style="color:#237059"><use href="#i-circle-check"/></svg> <b>No sign went up on the SFPUC map</b>' +
+        (data.monitoring_since ? ' after we started to monitor it on <b>' + fmt(data.monitoring_since) + '</b>' : ' yet') +
+        ' — a period of clean water. The watcher reads each station one time each minute. The first sign will show here automatically.';
     }
     document.getElementById('foot').innerHTML =
-      (data.monitoring_since ? 'We have read SFPUC\'s beach map since ' + fmt(data.monitoring_since) + ' (Pacific time). ' : '') +
-      'Times are the minute our watcher first saw a change: once a minute via the in-database watcher since Aug 16, 2026 (every 2 minutes before that). ' +
-      'Signs that went up before we logged sign-downs show “not recorded”. Simulated test events are excluded. ' +
-      'The board shows a week; drag or scroll it sideways to go back through the range you picked. Lab-sample dots are the collection day from the city\'s dataset; the bar to the right runs until a result was first observed in DataSF' +
-      (data.sample_lag && data.sample_lag.n ? ' (median so far <b>' + data.sample_lag.median_days + (data.sample_lag.median_days === 1 ? ' day' : ' days') + '</b> over ' + data.sample_lag.n + ' sample-days, measured since ' + data.sample_lag.measured_since + ')' : ' (measured from ' + ((data.sample_lag || {}).measured_since || '2026-09-27') + ' on; nothing published yet since then)') +
-      '. The blue tick on a bar is when SFPUC\'s map first showed that sample date — posting and discharge flags above are tracked separately; the bar ends when our DataSF mirror first sees a result. A teal diamond marks the first indicator seen in getCSV, which can arrive earlier; hover for each indicator’s time. Hollow diamonds mean the result was already present when recording began' +
+      (data.monitoring_since ? 'We started to read the SFPUC beach map on ' + fmt(data.monitoring_since) + ' (Pacific time). ' : '') +
+      'Each time is the minute when our watcher first saw a change. Since Aug 16, 2026, the in-database watcher reads the map one time each minute. Before that date, it read the map each 2 minutes. ' +
+      'If a sign went up before we started to record sign-downs, it shows “not recorded”. The page does not include simulated test events. ' +
+      'The board shows one week. To see earlier dates in your range, drag or scroll it to the side. Lab-sample dots show the collection day from the city dataset. The bar to the right continues until we first saw a result in DataSF' +
+      (data.sample_lag && data.sample_lag.n ? ' (median so far <b>' + data.sample_lag.median_days + (data.sample_lag.median_days === 1 ? ' day' : ' days') + '</b> over ' + data.sample_lag.n + ' sample-days, measured since ' + data.sample_lag.measured_since + ')' : ' (measured from ' + ((data.sample_lag || {}).measured_since || '2026-09-27') + '. Nothing is published yet after that date.)') +
+      '. The blue mark on a bar shows when the SFPUC map first showed that sample date. We record the posting and discharge flags above separately. The bar stops when our DataSF copy first sees a result. A teal diamond shows the first indicator that we saw in getCSV. This can come earlier. Hover to see the time of each indicator. A hollow diamond means that the result was already there when we started to record' +
       (function(m){ if (!m) return ''; var dd = function(n){ return '<b>' + n + (n === 1 ? ' day' : ' days') + '</b>'; };
         return (m.n ? ' (median ' + dd(m.median_days) + ' after collection over ' + m.n + ' sample-days' + (m.after_map_n ? '; the numbers followed a median ' + dd(m.after_map_median_days) + ' later' : '') + ', read since ' + m.measured_since + ')' : ' (read since ' + m.measured_since + ')') +
-        (m.pending ? '. <b>' + m.pending + '</b> sample-day' + (m.pending === 1 ? ' is' : 's are') + ' on the map with no DataSF results yet observed — the hollow dots, dashed to today' : ''); })((data.sample_lag || {}).map) +
-      '. Faded dots are the city\'s history loaded in one go — collection day only. ' + (data.sample_note ? data.sample_note + ' ' : '') +
+        (m.pending ? '. <b>' + m.pending + '</b> sample-day' + (m.pending === 1 ? ' is' : 's are') + ' on the map, but we did not see DataSF results yet — the hollow dots, with a dashed line to today' : ''); })((data.sample_lag || {}).map) +
+      '. Faded dots are the city history that we loaded at one time — collection day only. ' + (data.sample_note ? data.sample_note + ' ' : '') +
       'Live station status: <a href="https://webapps.sfpuc.org/sapps/beachesandbay.html" target="_blank" rel="noopener">SFPUC beach map</a>.';
     render(); renderTable();
   }).catch(function(e){
-    document.getElementById('status').textContent = 'Could not load event history: ' + e;
+    document.getElementById('status').textContent = 'Could not load the event history: ' + e;
   });
 
   document.querySelectorAll('.range-btn[data-days]').forEach(function(btn){

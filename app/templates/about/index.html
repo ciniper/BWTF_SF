@@ -3,7 +3,7 @@
 <html lang="en"><head><meta charset="utf-8">
 <link rel="icon" href="{{ asset('brand/favicon.ico') }}"><link rel="apple-touch-icon" sizes="144x144" href="{{ asset('brand/bwtf_144x144.png') }}">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>About this site — Surfrider SF Blue Water Task Force</title>
+<title>About This Site — Surfrider SF Blue Water Task Force</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -39,73 +39,75 @@
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
 {{ topbar() }}
 <div class="wrap">
-  {{ page_head("About this site", "Community science for San Francisco's beaches and the people who use them, from the volunteers of Surfrider San Francisco's Blue Water Task Force.") }}
+  {{ page_head("About This Site", "Community science for the beaches of San Francisco and the people who use them. The volunteers of the Surfrider San Francisco Blue Water Task Force operate this site.") }}
   <div class="cards">
     <section class="card">
-      <h2>What it is</h2>
-      <p>This site brings San Francisco's beach water quality into one place:</p>
+      <h2>What It Is</h2>
+      <p>This site shows all San Francisco beach water quality data in one location:</p>
       <ul>
-        <li><b>Today's water quality status, as the city reports it.</b> Can I swim, surf, or play in the water today?</li>
-        <li><b>A forecast of rain-driven sewage overflows.</b> Has it rained enough that a sewage overflow is likely?</li>
-        <li><b>Lab results from the city and our volunteers.</b> What did the city's lab find, and what did the Blue Water Task Force find?</li>
-        <li><b>The official history of beach postings and discharges.</b> How often has each beach been posted or affected by sewage, and when?</li>
+        <li><b>The water quality status for today, from the city.</b> Can I swim, surf, or play in the water today?</li>
+        <li><b>A forecast of sewage overflows that rain causes.</b> Was there sufficient rain to cause a sewage overflow?</li>
+        <li><b>Lab results from the city and from our volunteers.</b> What did the city lab find? What did the Blue Water Task Force find?</li>
+        <li><b>The official history of beach postings and discharges.</b> When did the city post each beach? When did sewage go into the water near each beach?</li>
       </ul>
-      <p>The Blue Water Task Force is Surfrider's volunteer-led water testing program. In San Francisco, our volunteers sample six locations across Ocean Beach, China Beach, Baker Beach, Crissy Field, and Aquatic Park every two weeks, add extra rounds during storms, and run the samples in our own lab. This site puts those results side by side with the city's, and watches the city's beach map so you hear about a posting (a warning sign for high bacteria) or a sewage discharge within minutes.</p>
+      <p>The Blue Water Task Force is the Surfrider water test program. Volunteers operate it. In San Francisco, our volunteers take samples at six locations every two weeks. The locations are at Ocean Beach, China Beach, Baker Beach, Crissy Field, and Aquatic Park. During storms, they take more samples. They test the samples in our own lab.</p>
+      <p>This site shows our results next to the results from the city. It also monitors the city beach map. When the city posts a beach or reports a sewage discharge, you get an alert in minutes. (A posting is a warning sign for high bacteria.)</p>
     </section>
     <section class="card">
-      <h2>What we test for</h2>
-      <p>Beach water is tested for "indicator" bacteria, or bacteria that indicate whether water is contaminated and potentially unsafe to enter. While these bacteria aren't usually harmful on their own—and many are actually naturally occurring within our bodies—they do signal fecal contamination, which can carry viruses and bacteria that cause stomach illness, rashes, and ear or eye infections.</p>
+      <h2>What We Test For</h2>
+      <p>We test beach water for "indicator" bacteria. These bacteria show if the water is contaminated. Contaminated water can be unsafe.</p>
+      <p>Usually, these bacteria do not cause illness. Many of them live in the human body. But they show that feces are in the water. Feces can carry viruses and bacteria that cause stomach illness, rashes, and ear or eye infections.</p>
       <ul>
-        <li><b><em>Enterococcus</em> spp.</b>—a group of bacterial species that live in the intestines of humans and other warm-blooded animals. They survive well in salt water, which makes them the main indicator California uses for ocean beaches. For brevity, the rest of the site refers to them as <em>Enterococcus</em>.</li>
-        <li><b>Coliforms</b>—a large group of bacteria that have long been used to check water quality, especially in fresh water. They die off faster in salt water than <em>Enterococcus</em>, but California still sets beach limits for two measures:
+        <li><b><em>Enterococcus</em> spp.</b>—a group of bacteria that live in the intestines of humans and other warm-blooded animals. They stay alive for a long time in salt water. Thus, California uses them as the primary indicator for ocean beaches. On the other pages of this site, we use the short name <em>Enterococcus</em>.</li>
+        <li><b>Coliforms</b>—a large group of bacteria. For many years, labs used them to examine water quality, especially in fresh water. In salt water, they die faster than <em>Enterococcus</em>. California sets beach limits for two types:
           <ul>
-            <li><b>Fecal coliforms</b>—a subset of coliforms that come specifically from the intestines of warm-blooded animals, pointing more directly to fecal contamination.</li>
-            <li><b>Total coliforms</b>—all coliforms, spanning those found in soil, plants, and water as well as in animal intestines.</li>
+            <li><b>Fecal coliforms</b>—the coliforms that come from the intestines of warm-blooded animals. They are a more direct sign of feces in the water.</li>
+            <li><b>Total coliforms</b>—all coliforms. This includes the coliforms in soil, plants, and water, and the coliforms in animal intestines.</li>
           </ul>
         </li>
       </ul>
     </section>
     <section class="card">
-      <h2>Where the numbers come from</h2>
-      <p>This site pulls together data from city (San Francisco), state (California), federal, and volunteer sources:</p>
+      <h2>Where the Numbers Come From</h2>
+      <p>This site uses data from city (San Francisco), state (California), federal, and volunteer sources:</p>
       <ul>
-        <li><b>SFPUC's live beach map</b> — the warning signs and sewage discharge flags that the San Francisco Public Utilities Commission is showing right now. We check it every minute, and that data powers the Today page and the alerts.</li>
-        <li><b>SF Open Data</b> — the city lab's bacteria results (<em>Enterococcus</em>, fecal coliforms, and total coliforms) for 20 shoreline stations, going back to July 2020.</li>
-        <li><b>Surfrider's Blue Water Task Force lab</b> — our volunteers' <em>Enterococcus</em> results and field notes, going back to September 2023.</li>
-        <li><b>State Water Board BeachWatch</b> — every beach advisory San Francisco has filed with the state since 1999.</li>
-        <li><b>CIWQS self-monitoring reports</b> — every combined sewer discharge SFPUC has reported to state regulators since 2016, from the California Integrated Water Quality System.</li>
-        <li><b>NOAA and the National Weather Service</b> — rain gauges, rain forecasts, and tides, which feed the sewage overflow forecast and the rain and tide readings on the Today page.</li>
+        <li><b>SFPUC's live beach map</b> — the warning signs and sewage discharge flags that the San Francisco Public Utilities Commission shows now. We examine it each minute. The Today page and the alerts use this data.</li>
+        <li><b>SF Open Data</b> — the bacteria results from the city lab for 20 shoreline stations. The results include <em>Enterococcus</em>, fecal coliforms, and total coliforms. They start in July 2020.</li>
+        <li><b>The Surfrider Blue Water Task Force lab</b> — the <em>Enterococcus</em> results and field notes from our volunteers. They start in September 2023.</li>
+        <li><b>State Water Board BeachWatch</b> — all the beach advisories that San Francisco sent to the state since 1999.</li>
+        <li><b>CIWQS self-monitoring reports</b> — all the combined sewer discharges that SFPUC reported to state regulators since 2016. CIWQS is the California Integrated Water Quality System.</li>
+        <li><b>NOAA and the National Weather Service</b> — rain gauges, rain forecasts, and tides. The sewage overflow forecast uses this data. The Today page also shows the rain and tide data.</li>
       </ul>
-      <p class="more">How these feeds move from the city's map to your inbox, minute by minute, is drawn out <a href="#built">below</a>. The steps behind the records pages are on <a href="/records">How we get the records</a>.</p>
+      <p class="more">The diagram <a href="#built">below</a> shows how this data goes from the city map to your inbox. For the steps that we use to get the records, refer to <a href="/records">How we get the records</a>.</p>
     </section>
     <section class="card">
-      <h2>What the colors mean</h2>
-      <p>Each dot on the map shows the latest status for that sampling station. Here's how to read them:</p>
+      <h2>What the Colors Mean</h2>
+      <p>Each dot on the map shows the latest status of that sampling station:</p>
       <ul class="legend">
-        <li><i class="status-dot safe"></i><span><b>Safe</b> — the city's map shows this station meeting California's water quality standards.</span></li>
-        <li><i class="status-dot caution"></i><div><b>Caution</b> — bacteria levels are elevated but still within the state limit.<ul class="sub-note"><li>Specifically, an <em>Enterococcus</em> result of at least 36 MPN per 100 mL but below the 104 single-sample limit. (MPN, or "most probable number," is the standard estimate of how many bacteria are in a sample.)</li></ul></div></li>
-        <li><i class="status-dot posted"></i><div><b>Posted</b> — the city (SFPUC) has put up a warning sign at the beach.<ul class="sub-note"><li>This usually means bacteria levels are above state standards, though sometimes it's a precaution. The city will keep resampling that beach until the water tests safe.</li></ul></div></li>
-        <li><i class="status-dot discharge"></i><span><b>Discharge</b> — the city's combined sewer system has overflowed into the water nearby, usually after heavy rain. The beach is posted as a precaution and sampled until it clears.</span></li>
-        <li><i class="status-dot unknown"></i><span><b>Not sampled</b> — there's no current result for this station, meaning water safety is unknown.</span></li>
+        <li><i class="status-dot safe"></i><span><b>Safe</b> — the city map shows that this station meets California water quality standards.</span></li>
+        <li><i class="status-dot caution"></i><div><b>Caution</b> — bacteria levels are high, but they are in the state limit.<ul class="sub-note"><li>The <em>Enterococcus</em> result is 36 MPN per 100 mL or more, but less than the 104 single-sample limit. (MPN is "most probable number." It is the standard estimate of the number of bacteria in a sample.)</li></ul></div></li>
+        <li><i class="status-dot posted"></i><div><b>Posted</b> — the city (SFPUC) put a warning sign at the beach.<ul class="sub-note"><li>Usually, this means that bacteria levels are more than the state standards. Sometimes it is a precaution. The city takes more samples at that beach until the water is safe.</li></ul></div></li>
+        <li><i class="status-dot discharge"></i><span><b>Discharge</b> — the city combined sewer system overflowed into the water near this station. This usually occurs after heavy rain. The city posts the beach as a precaution. It takes samples until the water is clean.</span></li>
+        <li><i class="status-dot unknown"></i><span><b>Not sampled</b> — this station has no current result. We do not know if the water is safe.</span></li>
       </ul>
     </section>
     <section class="card wide">
-      <h2>Not an official advisory</h2>
-      <p>This is a community-science tool; posted signs and notices from SFPUC or the health department take precedence. SFPUC's own advice: during and immediately after rainfall, nearshore bacteria concentrations may be elevated, even when there has not been a combined sewer discharge.</p>
-      <p>Beach Hotline: 1-877-SFBEACH (1-877-732-3224) or 415-242-2214. The city's own map is at <a href="https://webapps.sfpuc.org/sapps/beachesandbay.html" target="_blank" rel="noopener">webapps.sfpuc.org</a>.</p>
+      <h2>Not an Official Advisory</h2>
+      <p>This is a community-science tool. Signs and notices from SFPUC or the health department are more important than this site. SFPUC gives this advice: during rain and immediately after rain, bacteria levels near the shore can be high. This can occur when there is no combined sewer discharge.</p>
+      <p>Beach Hotline: 1-877-SFBEACH (1-877-732-3224) or 415-242-2214. The city map is at <a href="https://webapps.sfpuc.org/sapps/beachesandbay.html" target="_blank" rel="noopener">webapps.sfpuc.org</a>.</p>
     </section>
     <section class="card wide">
-      <h2>Go deeper</h2>
+      <h2>Go Deeper</h2>
       <div class="links">
-        <a href="#built">How it's built</a><a href="/records">How we get the records</a><a href="/forecast#check">Model check</a><a href="/signup">Get beach alerts</a>
+        <a href="#built">How It's Built</a><a href="/records">How We Get the Records</a><a href="/forecast#check">Model Check</a><a href="/signup">Get Beach Alerts</a>
         <a href="https://sf.surfrider.org/programs/blue-water-task-force" target="_blank" rel="noopener">Surfrider SF Blue Water Task Force</a>
-        <a href="https://github.com/ciniper/BWTF_SF" target="_blank" rel="noopener">Source code on GitHub</a>
+        <a href="https://github.com/ciniper/BWTF_SF" target="_blank" rel="noopener">Source Code on GitHub</a>
       </div>
     </section>
   </div>
   <section class="built" id="built">   {# its own page, /architecture, until 2026-10-20 #}
-    <h2>How it's built</h2>
-    <p class="lead">Where the data comes from, where it lives, and who it reaches.</p>
+    <h2>How It's Built</h2>
+    <p class="lead">The sources of the data, the location where we keep it, and the people who get it.</p>
     {{ built_section() }}
   </section>
 </div>

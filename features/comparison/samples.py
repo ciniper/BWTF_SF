@@ -241,7 +241,7 @@ def sample_day_payload(city_records: list[dict], station: str, date: str = "", l
         "limits": {c: single_sample_max(c, fecal_max, total_max) for c in ANALYTES},   # total coliform's is the ratio-adjusted one
         "ratio_applied": (fecal_max is not None and total_max is not None and total_max > 0
                           and fecal_max / total_max > STANDARDS["COLI_TOTAL"]["ratio_threshold"]),
-        "ratio_note": f"fecal over {STANDARDS['COLI_TOTAL']['ratio_threshold']:.0%} of total, so the limit drops to {STANDARDS['COLI_TOTAL']['single_sample_max_ratio']:,}",
+        "ratio_note": f"fecal is more than {STANDARDS['COLI_TOTAL']['ratio_threshold']:.0%} of total. Thus, the limit decreases to {STANDARDS['COLI_TOTAL']['single_sample_max_ratio']:,}",
         "caution": ENTERO_CAUTION, "units": "MPN/100mL",
         "analytes": [{"code": c, "label": m["label"]} for c, m in ANALYTES.items()],
         "results_url": results_url(station, date) if date and date >= DATASET_FLOOR and any(not r.get("early") for r in day) else None,   # the export's days have no DataSF page
@@ -329,13 +329,13 @@ def build_sample_day(station: str, date: str = "", sf_gov_monitor=None, feed_dat
         if not early:
             raise
         records = []
-        note = "DataSF is temporarily unavailable. Showing recorded SFPUC lab results."
+        note = "DataSF is not available now. The page shows the recorded SFPUC lab results."
     merged = sfpuc_live.merge_records(records, early)
     chosen = date or max((r["sample_date"][:10] for r in merged), default="")
     newest_live = max((r["sample_date"] for r in early), default="")
     out = sample_day_payload(merged, station, chosen, live=bool(chosen and chosen == newest_live))
     out["early_status"] = state
-    out["note"] = note or ("Early lab feed is temporarily unavailable; showing DataSF results." if state != "current" and not date else None)
+    out["note"] = note or ("The early lab feed is not available now. The page shows DataSF results." if state != "current" and not date else None)
     out["pending_sample"] = result_gap.pending_results({station: feed_date}, {station: chosen}).get(station) if feed_date and not date else None
     out["indicator_seen"] = {}
     if out["early"]:

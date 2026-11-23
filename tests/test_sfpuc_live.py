@@ -69,7 +69,7 @@ def test_datasf_failure_can_still_show_available_lab_values(monkeypatch):
     def unavailable(*args):raise RuntimeError('offline')
     monkeypatch.setattr(S,'fetch_city_records',unavailable)
     p=S.build_sample_day(SOURCE,sf_gov_monitor=object())
-    assert p['found'] and p['early'] and 'temporarily unavailable' in p['note']
+    assert p['found'] and p['early'] and 'not available now' in p['note']
 
 
 def test_stale_feed_falls_back_without_inventing_new_sample(monkeypatch):

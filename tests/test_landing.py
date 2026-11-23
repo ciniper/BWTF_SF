@@ -20,7 +20,7 @@ def test_every_feature_page_sits_in_exactly_one_hub_and_every_link_resolves():
     subs = [r[4][0] for h in L.HUBS for r in h["rows"] if len(r) > 4]
     assert subs == []             # Source Comparison is a row like the others (Chase, 2026-09-29)
     assert sorted(hrefs) == sorted(FEATURE_PAGES) and len(hrefs) == len(set(hrefs)) == 12   # Admin is a footer link (2026-11-04)
-    assert [h["title"] for h in L.HUBS] == ["Today & alerts", "The water record", "Discharges & postings", "Learn"]   # discharges first (2026-11-04)
+    assert [h["title"] for h in L.HUBS] == ["Today & Alerts", "The Water Record", "Discharges & Postings", "Learn"]   # discharges first (2026-11-04)
     assert [h["key"] for h in L.hubs_with_facts({})] == ["today", "water", "record"]   # Learn has its tab and Today's Learn bar, not a hub card
     assert L.HUBS[2]["sub"] == "What the city reported, and when"
     assert {href for href, *_ in L.PAGES} == FEATURE_PAGES            # the flat view still lists them all
@@ -96,8 +96,8 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
     # the headline says what the feed knows today — a warning is posted or not; what the samples showed and how old they are is the subhead's (2026-11-06)
     assert b["tone"] == "warn" and b["headline"] == "Posted at 1 beach. 3 others have no warning."
     assert b["headline_html"] == '<em class="posted">Posted at 1 beach.</em> 3 others have no warning.' and b["date"] == "Tue Sep 29" and b["checked"] == "6:12 AM" and b["feed_ok"]
-    assert b["lead"] == "Posted: Crissy East. SFPUC posts a beach when samples show bacteria above State standards, and sometimes as a precaution."   # the news only: no "no discharge", no forecast (2026-10-18)
-    assert b["facts"] == [{"label": "City samples", "text": "Samples were collected 6 days ago (Sep 23)."}, {"label": "Surfrider samples", "text": "5 days ago (Sep 24)"}]   # one labelled row per fact, ages not bare dates (2026-11-06); the city's and Surfrider's only
+    assert b["lead"] == "Posted: Crissy East. SFPUC posts a beach when samples show bacteria more than the State standards. Sometimes SFPUC posts a beach as a precaution."   # the news only: no "no discharge", no forecast (2026-10-18)
+    assert b["facts"] == [{"label": "City samples", "text": "The city collected samples 6 days ago (Sep 23)."}, {"label": "Surfrider samples", "text": "5 days ago (Sep 24)"}]   # one labelled row per fact, ages not bare dates (2026-11-06); the city's and Surfrider's only
     # the forecast's risk is the board's collapsed "Sewer-overflow forecast · Beta" line under the tiles (2026-11-08): no facts row for it
     assert b["risk_lead"] == "Modeled beach-risk score today: 4% at most (East Beaches), staying low through Sun Oct 04."
     assert not any(f["label"] == "Overflow risk today" for f in b["facts"])
@@ -119,15 +119,15 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
     cso = L.today_board(sts + [S("4620", "Crane Cove Park", "posted", cso=True)], {}, "", now=now)
     assert cso["tone"] == "danger" and cso["headline"] == "Sewage discharge at 1 beach. Posted at 1 beach. 3 have no warning."
     assert cso["headline_html"] == '<em class="discharge">Sewage discharge at 1 beach.</em> <em class="posted">Posted at 1 beach.</em> 3 have no warning.'
-    assert cso["lead"] == "Discharging: Crane Cove Park. Posted: Crissy East. SFPUC posts a beach when samples show bacteria above State standards, and sometimes as a precaution."   # facts only, no advice
-    assert cso["facts"] == [{"label": "City samples", "text": "Samples were collected 6 days ago (Sep 23)."}]
+    assert cso["lead"] == "Discharging: Crane Cove Park. Posted: Crissy East. SFPUC posts a beach when samples show bacteria more than the State standards. Sometimes SFPUC posts a beach as a precaution."   # facts only, no advice
+    assert cso["facts"] == [{"label": "City samples", "text": "The city collected samples 6 days ago (Sep 23)."}]
     ok = L.today_board([S("4601", "Fort Funston", "safe"), S("4602", "Ocean Beach at Sloat", "safe")], {}, "", now=now)
     assert ok["headline"] == "No warnings posted at any of the 2 monitored beaches." and ok["headline_html"] == '<em class="good">No warnings posted</em> at any of the 2 monitored beaches.'
-    assert ok["lead"] == "" and ok["facts"] == [{"label": "City samples", "text": "Samples were collected 6 days ago (Sep 23)."}]
+    assert ok["lead"] == "" and ok["facts"] == [{"label": "City samples", "text": "The city collected samples 6 days ago (Sep 23)."}]
     assert ok["risk_lead"] == "" and L.today_board([], {}, "")["feed_ok"] is False and L.today_board([], {}, "", now=now)["facts"] == []
     import types as _t
     split = L.today_board([S("4601", "Fort Funston", "safe"), _t.SimpleNamespace(station_id="4602", station_name="Ocean Beach at Sloat", status=_t.SimpleNamespace(value="safe"), has_cso=False, sample_date=datetime(2026, 9, 16))], {}, "city 9/23 · 1 over", now=now)
-    assert split["facts"][0]["text"] == "Samples were collected 6–13 days ago (Sep 16–23)."
+    assert split["facts"][0]["text"] == "The city collected samples 6–13 days ago (Sep 16–23)."
     one = L.today_board([S("4612", "Crissy Field East", "posted"), S("4613", "Aquatic Park", "safe")], {}, "", now=now)
     assert one["headline"] == "Posted at 1 beach. 1 other has no warning." and one["lead"].startswith("Posted: Crissy East.")
     assert L.today_board([S("4612", "Crissy Field East", "posted")], {}, "", now=now)["headline"] == "Posted at 1 beach."
@@ -142,19 +142,19 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
              S("4612", "Crissy Field East", "posted"), S("4613", "Aquatic Park", "posted"), S("4611", "Crissy Field West", "safe")]
     st = L.today_board(storm, {}, "", now=now)
     assert st["headline"] == "Sewage discharge at 8 beaches. Posted at 2 beaches. 1 has no warning."
-    assert st["lead"] == "Discharging: all of Ocean Beach, Islais Creek and Crane Cove Park. Posted: Crissy East and Aquatic Park. SFPUC posts a beach when samples show bacteria above State standards, and sometimes as a precaution."   # a whole zone collapses; no advice
+    assert st["lead"] == "Discharging: all of Ocean Beach, Islais Creek and Crane Cove Park. Posted: Crissy East and Aquatic Park. SFPUC posts a beach when samples show bacteria more than the State standards. Sometimes SFPUC posts a beach as a precaution."   # a whole zone collapses; no advice
     many = L.today_board([S(sid, st.name, "posted") for sid, st in zip(Z["east"].station_ids[:5], Z["east"].stations[:5])], {}, "")
     assert many["lead"].startswith("Posted: Jackrabbit Beach, Windsurfer Circle, Sunnydale Cove and 2 more.")                                       # the list stops at three
     down = L.today_board([], {}, "")
-    assert down["tone"] == "warn" and down["headline_html"] == '<em class="warn">Beach status is unavailable right now.</em>'    # orange, like a posting
+    assert down["tone"] == "warn" and down["headline_html"] == '<em class="warn">Beach status is not available now.</em>'    # orange, like a posting
     nav = L.nav_model()
     assert [h["key"] for h in nav] == ["today", "forecast", "data", "learn"] and [h["href"] for h in nav] == ["/", "/forecast", "/data", "/learn"]   # one row, each tab a real page (design/nav, 2026-11-06)
     assert [h["title"] for h in nav] == ["Today", "Forecast", "Data", "Learn"] and [h["switcher"] for h in nav] == [False, False, True, True]   # only a section with several pages gets the switcher
-    assert [p["title"] for g in nav[3]["groups"] for p in g["pages"]] == ["How it works", "Collect a sample"]
+    assert [p["title"] for g in nav[3]["groups"] for p in g["pages"]] == ["How It Works", "Collect a Sample"]
     assert not any("/alerts" in h["paths"] for h in nav) and L.GATED == {"/alerts"}   # Admin (the Sewage Alert System, renamed) is in no hub: a footer link (2026-11-04)
     assert {L.canonical_path(u) for u in ("/alerts", "/alerts/costs", "/alerts/lab-sop", "/alerts/ui-overflow")} == {"/alerts", "/alerts/costs", "/alerts/lab-sop", "/alerts/ui-overflow"}
     assert [(g["label"], [p["title"] for p in g["pages"]]) for g in nav[2]["groups"]] == [
-        ("Lab results", ["Report card", "Samples", "Graphs", "Compare"]), ("City records", ["Discharges", "Postings", "Online timeline"])]
+        ("Lab Results", ["Report Card", "Samples", "Graphs", "Compare"]), ("City Records", ["Discharges", "Postings", "Online Timeline"])]
     assert nav[0]["paths"] == ["/"] and nav[1]["paths"] == ["/forecast"] and not any("/signup" in h["paths"] or "/about" in h["paths"] for h in nav)   # signup is the bar's button, About its link
     assert {"/analysis/testing", "/discharges/reporting", "/compare"} <= set(nav[2]["paths"])              # a page's subpage lights Data too
     paged = [p["href"] for h in nav for g in h["groups"] for p in g["pages"]]
@@ -165,17 +165,17 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
         g = c.get("/graphs").data.decode()
         assert 'class="subtabs"' not in g and g.count('aria-current="page"') == 1 and '<a href="/samples">Samples</a>' in g and 'href="/graphs" class="on" aria-current="page">Graphs' in g
         assert g.index('class="topbar"') < g.index("</header>") < g.index('class="secnav"') < g.index('class="page-head"')   # the switcher opens the page head, outside the top bar
-        assert '<a href="/data" class="on">Data</a>' in g and '<span class="lbl">Lab results</span>' in g and '<span class="lbl">City records</span>' in g
-        assert "The water record</a>" not in g and 'class="crumbs"' not in g and "navhub" not in g
+        assert '<a href="/data" class="on">Data</a>' in g and '<span class="lbl">Lab Results</span>' in g and '<span class="lbl">City Records</span>' in g
+        assert "The Water Record</a>" not in g and 'class="crumbs"' not in g and "navhub" not in g
         t = c.get("/analysis/testing").data.decode()
-        assert '<a href="/analysis" class="on">Report card</a>' in t and '<a href="/data" class="on">Data</a>' in t   # a subpage lights its parent, without claiming to be it
+        assert '<a href="/analysis" class="on">Report Card</a>' in t and '<a href="/data" class="on">Data</a>' in t   # a subpage lights its parent, without claiming to be it
         d = c.get("/data"); dh = d.data.decode()
         assert d.status_code == 200 and "{{" not in dh and 'class="secnav"' not in dh and '<a href="/data" class="on" aria-current="page">Data</a>' in dh   # the index: its cards are the list
         assert [dh.count('<li><a href="%s">' % u) for u in ("/samples", "/graphs", "/compare", "/postings", "/cso-history")] == [1] * 5   # the rest of each group, listed under its large card
         assert dh.count('class="feature"') == 2 and '<h2 id="feature-water"><a href="/analysis">Site Report Card</a></h2>' in dh and '<h2 id="feature-record"><a href="/discharges">Discharge Ledger</a></h2>' in dh   # the two the index leads with
         assert dh.index('id="water"') < dh.index("Site Report Card") < dh.index("Source Comparison") < dh.index('id="record"') < dh.index("Discharge Ledger") < dh.index("Online Postings Timeline")   # group by group, so a phone reads lab results then city records
-        assert 'id="rc-stat"' in dh and 'fetch("/analysis/api/summary?start="' in dh and "Every combined-sewer discharge" in dh   # the Report Card's number arrives after the page has drawn
-        assert re.search(r'<p class="stat"><b>[\d,]+ discharges?</b><span>reported in 20\d\d, totalling <strong>[\d.,]+ (million|billion) gallons</strong>\. Reports filed through [A-Z][a-z]{2} 20\d\d\.</span></p>', dh)   # the Ledger's, from the committed record
+        assert 'id="rc-stat"' in dh and 'fetch("/analysis/api/summary?start="' in dh and "All combined-sewer discharges" in dh   # the Report Card's number arrives after the page has drawn
+        assert re.search(r'<p class="stat"><b>[\d,]+ discharges?</b><span>reported in 20\d\d\. Total volume: <strong>[\d.,]+ (million|billion) gallons</strong>\. The reports include data to [A-Z][a-z]{2} 20\d\d\.</span></p>', dh)   # the Ledger's, from the committed record
         beta = dh[dh.index('class="beta"'):dh.index('class="topbar"')]
         assert '<span class="more">' in beta and ".more" not in dh.split("</style>")[0]   # the page must not restyle the Beta notice's "more" span (it did: a white box over the sentence)
         for u in ("/", "/today"):   # Today IS the home page: served at the root, and at /today for the alert emails — never a redirect (2026-10-01)
@@ -192,7 +192,7 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
         assert all(label in f for label in ('Water Quality Forecast', 'SewerCast', 'Model Check'))
         assert '<a href="/forecast" class="on" aria-current="page">Forecast</a>' in bar
         foot = f[f.index('class="site-footer"'):]
-        assert '<a href="/alerts" title="Coordinators only — needs the passphrase">Admin</a>' in foot       # the coordinators' way in
+        assert '<a href="/alerts" title="For coordinators only. You must have the passphrase.">Admin</a>' in foot       # the coordinators' way in
         a = c.get("/about").data.decode()
         assert "About this site" in a and "Blue Water Task Force" in a and 'class="topbar"' in a and "SFPUC's live beach map" in a and 'class="status-dot discharge"' in a
         assert 'class="topbar"' in c.get("/records").data.decode() and "back-to-dash\" href" not in c.get("/records").data.decode()
@@ -204,8 +204,8 @@ def test_the_data_index_leads_with_the_report_card_and_the_ledger():
     from features.data_index import page as DI
     groups = L.data_index()
     assert [(g["key"], g["label"], g["featured"]["href"], [p["href"] for p in g["more"]]) for g in groups] == [
-        ("water", "Lab results", "/analysis", ["/samples", "/graphs", "/compare"]),
-        ("record", "City records", "/discharges", ["/postings", "/cso-history"])]
+        ("water", "Lab Results", "/analysis", ["/samples", "/graphs", "/compare"]),
+        ("record", "City Records", "/discharges", ["/postings", "/cso-history"])]
     assert all(p["title"] and p["blurb"] for g in groups for p in g["pages"]) and set(L.DATA_FEATURED) == {"/analysis", "/discharges"}
     ev = [["2025-12-26", "Bayside", "CSD-031", "x", "Bay", 30.0, 400.0], ["2026-01-04", "Oceanside", "CSD-001", "x", "Pacific", 60.0, 150.25],
           ["2026-02-11", "Oceanside", "CSD-002", "x", "Pacific", 20.0, None], ["2026-04-22", "Oceanside", "CSD-007", "x", "Pacific", 9.0, 46.95]]
@@ -230,7 +230,7 @@ def test_today_page_offline_shows_the_board_and_admin_keeps_the_directory():
     with app.test_request_context("/today"):
         html = T.render_page(L.board_context(Sfpuc(), None, live_facts=False))
     for needle in ('<a href="/forecast">Forecast</a>', '<a href="/data">Data</a>', '<a href="/learn">Learn</a>', 'href="/about"',  'href="/about#built"',  # the tabs and the ⓘ About link in the frame
-                   "1 site(s) posted for elevated bacteria", "is the water safe today?", 'class="foot-note">Statuses from SFPUC'):   # the board's sources line stays
+                   "1 site(s) posted for high bacteria", "Is the Water Safe Today?", 'class="foot-note">Statuses: the SFPUC'):   # the board's sources line stays
         assert needle in html, needle
     assert 'class="topbar"' in html and 'class="tabbar"' in html and 'class="site-footer"' in html and 'class="board tone-warn"' in html   # the shared frame + the Today board
     assert html.index('class="beta"') < html.index('class="topbar"') and "not an official beach advisory" in html   # the Beta notice, a banner above the bar (2026-10-18)
@@ -244,7 +244,7 @@ def test_today_page_offline_shows_the_board_and_admin_keeps_the_directory():
         ui = UO.render_page(ctx)
     assert ui.count('class="hub ') + ui.count('class="hub"') >= 3 and 'id="today"' in ui and 'id="water"' in ui and 'id="record"' in ui   # the hub cards and their anchors
     assert ui.index('class="hubs"') < ui.index('class="learn"') < ui.index('class="conds"') < ui.index('class="site-footer"')   # cards, the Learn bar, the pills
-    assert 'class="cta" href="/signup" title=' in ui and "Online Postings Timeline" in ui and "Tide rising" in ui and "<h1>UI overflow</h1>" in ui
+    assert 'class="cta" href="/signup" title=' in ui and "Online Postings Timeline" in ui and "Tide rising" in ui and "<h1>UI Overflow</h1>" in ui
     cards = ui[ui.index('class="hubs"'):ui.index('class="learn"')]
     assert '<li><a href="/"' not in cards and '<li><a href="/forecast"' in cards and '<li><a href="/postings"' in cards        # as Today drew them: no row for Today itself
     assert 'href="/alerts/ui-overflow" class="on" aria-current="page"' in ui and 'class="secnav"' not in ui and 'class="subtabs"' not in ui      # its own tab lit; no hub in the top bar

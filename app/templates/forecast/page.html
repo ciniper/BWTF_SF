@@ -262,17 +262,17 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
     </div></div>
 </nav>
 <div id="forecastHead">
-{% call page_head("Water Quality Forecast", "What’s the risk of high bacteria at the beach from current or recent combined sewer discharges?<span class='forecast-intro-note'>Effects from earlier discharges can linger. Other bacteria sources are outside scope. Risk levels summarize a model score, not measured bacteria or a calibrated chance of contamination.</span>", "today", "How this forecast works") %}
-<p><b>Two forecasts, different questions.</b> SewerCast shows same-day discharge impact risk by beach zone, using the model’s historical outfall mapping. Water Quality Forecast assigns a modeled risk level to each beach zone using same-day discharge likelihood and lingering effects from earlier discharges. Both update every 30 minutes. Its percentage is a model score used to assign a risk level, not a calibrated probability of contamination, a bacteria concentration or a measurement of the water.</p>
-<p><b>Stage 1: how much rain?</b> Daily rainfall comes from NOAA's Downtown and Oceanside gauges; recent hourly observations and ICON weather forecasts supply the live forecast's inputs.</p>
-<p><b>Stage 2: will the combined sewer system discharge?</b> The current model uses daily rain, recent rain totals, the three-hour rain peak and south wind during rain to estimate discharge likelihood by basin. It was trained on the city's filed discharge records, including older reports from 2011. These basin probabilities feed the Stage 3 mapping shown in SewerCast.</p>
-<p><b>Stage 3: which beaches?</b> The model maps a basin's discharge chance to beach groups using the outfalls that post those beaches and the historical share of discharge days on which those outfalls discharged, grouped by estimated event size. This is a statistical mapping, not a simulation of currents or a direct observation at the beach.</p>
-<p><b>Stage 4: for how long?</b> Bacteria samples after past discharges inform how risk may linger, by beach group, event size and days since discharge. The beach forecast combines the same-day mapped discharge chance with lingering effects from the previous seven days. A discharge day counts as affected in this forecast; the percentage is not the probability of a particular lab result.</p>
-<p><b>Stage 5: live corrections.</b> Available SFPUC discharge flags and sample results can adjust the model's numbers. A discharge flag can confirm an event; a flag still up can hold risk up; clean or elevated samples can lower or raise lingering risk where a correction rule applies. The toggle shows the model with or without these corrections.</p>
-<p><b>What is outside its scope?</b> The public beach-risk calculation has no separate background or runoff contribution. It does not independently predict other pollution sources or explain why an individual sample is elevated. Current default rules do not raise risk for elevated dry-weather samples without a recent discharge. Actual lab measurements and SFPUC postings remain separate observations; posted signs and official advisories take precedence.</p>
-<p><b>Reading the number.</b> SewerCast shows same-day mapped discharge impact scores; Water Quality Forecast also includes lingering effects. Both use a model risk scale, not a calibrated probability of contamination. The word with each percentage is a fixed risk level, the same on every page: {% for l in RISK_LEVELS.levels %}{{ l.label }} {{ l.lo }}–{{ l.hi }}%{{ ', ' if not loop.last else '.' }}{% endfor %} No alert reads this number: alerts follow what the city's beach map shows.</p>
-<p><b>Observed records.</b> Model check → Day by day → What happened keeps gauge rainfall, reported discharge volumes and sources, watcher postings and station sample links together, including days without model predictions.</p>
-<p><b>Is it any good?</b> The Model check tab builds a forecast from its five stages: pick a part for each and see how good it is on its own, and what the parts make together. Day by day, it grades every past day against the city's filed discharges and its samples, zone by zone, at each risk level. Two plain reports go deeper: <a href="/reports/2026-10_forecast_stages.html">the forecast, stage by stage</a> (how good each part is) and <a href="/reports/2026-09_forecast_how_it_works.html">how the forecast works</a> (what each part does). <a href="/reports/">Every report</a>, current and archived, is listed in one place.</p>
+{% call page_head("Water Quality Forecast", "What is the risk of high bacteria at the beach from current or recent combined sewer discharges?<span class='forecast-intro-note'>The effects of earlier discharges can continue. The forecast does not include other sources of bacteria. Risk levels show a model score. They do not show measured bacteria or a calibrated probability of contamination.</span>", "today", "How This Forecast Works") %}
+<p><b>Two forecasts for two different questions.</b> SewerCast shows the risk of a discharge effect today for each beach zone. It uses the historical outfall map of the model. Water Quality Forecast gives a risk level to each beach zone. It uses the probability of a discharge today and the effects of earlier discharges that continue. The two forecasts update every 30 minutes. The percentage is a model score. The model uses it to set a risk level. It is not a calibrated probability of contamination. It is not a bacteria concentration or a measurement of the water.</p>
+<p><b>Stage 1: How much rain?</b> The daily rain data comes from the NOAA Downtown and Oceanside gauges. The live forecast uses recent hourly observations and ICON weather forecasts as its inputs.</p>
+<p><b>Stage 2: Will the combined sewer system discharge?</b> The current model uses these inputs to estimate the probability of a discharge in each basin: daily rain, recent rain totals, the highest three-hour rain total, and south wind during rain. We trained the model on the discharge records from the city. These records include older reports from 2011. Stage 3 uses these basin probabilities. SewerCast shows the Stage 3 result.</p>
+<p><b>Stage 3: Which beaches?</b> The model connects the discharge probability of a basin to beach groups. It uses the outfalls that cause postings at those beaches. It also uses the historical percentage of discharge days on which those outfalls discharged. The model sorts these days by the estimated size of the event. This is a statistical calculation. It is not a simulation of currents. It is not a direct observation at the beach.</p>
+<p><b>Stage 4: For how long?</b> Bacteria samples after past discharges show how long the risk can continue. The model uses the beach group, the event size, and the number of days after the discharge. The beach forecast adds the discharge probability for today to the effects that continue from the last seven days. In this forecast, a discharge day is an affected day. The percentage is not the probability of a specific lab result.</p>
+<p><b>Stage 5: Live corrections.</b> SFPUC discharge flags and sample results can change the numbers of the model. A discharge flag can confirm an event. If the flag stays on, the risk stays high. When a correction rule applies, clean samples can decrease the risk that continues. High samples can increase it. The toggle shows the model with these corrections or without them.</p>
+<p><b>What does the model not include?</b> The public beach-risk calculation does not include a separate value for background bacteria or runoff. It does not predict other sources of pollution. It does not tell why a sample is high. If there is no recent discharge, the current default rules do not increase the risk for high samples in dry weather. Lab measurements and SFPUC postings are separate observations. Posted signs and official advisories are more important than this forecast.</p>
+<p><b>How to read the number.</b> SewerCast shows the discharge effect scores for today. Water Quality Forecast also includes the effects that continue after a discharge. The two forecasts use a model risk scale. This scale is not a calibrated probability of contamination. The word with each percentage is a fixed risk level. It is the same on all pages: {% for l in RISK_LEVELS.levels %}{{ l.label }} {{ l.lo }}–{{ l.hi }}%{{ ', ' if not loop.last else '.' }}{% endfor %} The alerts do not use this number. The alerts use only the data on the city beach map.</p>
+<p><b>Observed records.</b> Go to Model check → Day by day → What happened. This view shows gauge rain data, reported discharge volumes and sources, postings, and links to station samples. It also shows the days that have no model prediction.</p>
+<p><b>How accurate is it?</b> The Model check tab makes a forecast from its five stages. Select a part for each stage. Then see how accurate each part is alone, and how accurate the parts are together. The Day by day view compares each past day with the discharges and samples that the city reported. It does this for each zone and each risk level. Two reports give more information: <a href="/reports/2026-10_forecast_stages.html">the forecast, stage by stage</a> (the accuracy of each part) and <a href="/reports/2026-09_forecast_how_it_works.html">how the forecast works</a> (the function of each part). <a href="/reports/">All reports</a>, current and old, are on one page.</p>
 {% endcall %}
 </div>
 
@@ -284,7 +284,7 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
         <button id="viewZones" class="active" onclick="setView('zones')"><svg class="ic"><use href="#i-map-pin"/></svg> Zones</button>
         <button id="viewBasins" onclick="setView('basins')"><svg class="ic"><use href="#i-building-2"/></svg> Basins</button>
     </span>
-    <span class="view-toggle" id="liveToggle" style="display:none" title="Live corrections use SFPUC discharge flags and available sample results to adjust modeled discharge and lingering beach risk where a rule applies. Off shows the model without these observation-based corrections; neither view is a lab measurement.">
+    <span class="view-toggle" id="liveToggle" style="display:none" title="Live corrections use SFPUC discharge flags and sample results to change the model discharge risk and the beach risk that continues. They apply only where a rule applies. Off shows the model without these corrections. Neither view is a lab measurement.">
         <button id="liveBtn" class="active" onclick="toggleLiveCorrections()"><svg class="ic"><use href="#i-satellite-dish"/></svg> Live corrections: on</button>
     </span>
     <span class="historical-label" id="histLabel"></span>
@@ -293,7 +293,7 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 {# Model check: the stage builder on top; everything below it (date, timeline, zones, scorecard) folds under "Day by day" #}
 <section class="sb" id="builder" hidden aria-label="Stage builder"></section>
 <div class="day-fold" id="dayFold" hidden>
-    <button type="button" class="day-fold-btn" id="dayFoldBtn" aria-expanded="false" aria-controls="dayView" onclick="toggleDayFold()">Day by day <small>compare predictions or browse observed records</small></button>
+    <button type="button" class="day-fold-btn" id="dayFoldBtn" aria-expanded="false" aria-controls="dayView" onclick="toggleDayFold()">Day by day <small>compare predictions or see observed records</small></button>
 </div>
 
 <div id="dayView">
@@ -320,7 +320,7 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 
 <div class="foot">   {# the page's own source note; the site footer is the frame's #}
     <p><svg class="ic"><use href="#i-info"/></svg> Rain: NOAA gauges (Downtown 047772, Oceanside 047767), KSFO hourly, ICON forecast (Open-Meteo) · Discharges: SFPUC CIWQS reports · Beach status: SFPUC · Bacteria: DataSF</p>
-    <p>Community-science tool, not an official advisory — posted signs and SFPUC or health-department notices take precedence. <a href="/">Back to Today</a> · <a href="/api/build" title="{{ build.message or '' }}">{{ build.label }}</a></p>
+    <p>This is a community-science tool. It is not an official advisory. Posted signs and notices from SFPUC or the health department are more important. <a href="/">Back to Today</a> · <a href="/api/build" title="{{ build.message or '' }}">{{ build.label }}</a></p>
 </div>
 </div>
 
@@ -430,9 +430,9 @@ function toggleLiveCorrections() { showLiveCorrections = !showLiveCorrections; i
 
 function renderPageIntro(view) {
     const copy = {
-        live: ['Water Quality Forecast', 'What’s the risk of high bacteria at the beach from current or recent combined sewer discharges?', 'Effects from earlier discharges can linger. Other bacteria sources are outside scope. Risk levels summarize a model score, not measured bacteria or a calibrated chance of contamination.'],
-        cso: ['SewerCast', 'What is the chance of a combined sewer discharge today?', 'Shown by beach zone using historical outfall patterns. Same-day discharges only, without lingering effects. Scores are not calibrated probabilities of contamination.'],
-        check: ['Model Check', 'Learn how the model works and see how its predictions compare with what happened.', 'Choose model parts below to explore their scores. Open Day by day to compare predictions or browse discharge records and measured bacteria.']
+        live: ['Water Quality Forecast', 'What is the risk of high bacteria at the beach from current or recent combined sewer discharges?', 'The effects of earlier discharges can continue. The forecast does not include other sources of bacteria. Risk levels show a model score. They do not show measured bacteria or a calibrated probability of contamination.'],
+        cso: ['SewerCast', 'What is the probability of a combined sewer discharge today?', 'For each beach zone, from historical outfall patterns. Only discharges on the same day. It does not include effects that continue. The scores are not calibrated probabilities of contamination.'],
+        check: ['Model Check', 'Learn how the model works. Compare its predictions with what occurred.', 'Select model parts below to see their scores. Open Day by day to compare predictions, or to see discharge records and measured bacteria.']
     }[view];
     document.querySelector('#forecastHead h1').textContent = copy[0];
     document.querySelector('#forecastHead .lead').innerHTML = esc(copy[1]) + '<span class="forecast-intro-note">' + esc(copy[2]) + '</span>';
@@ -516,7 +516,7 @@ async function loadData() {
         }
     } catch (e) {
         const section = currentMode === 'actual' ? 'Observed records' : currentMode === 'check' ? 'Model check' : forecastTitle();
-        banner.className = 'risk-banner'; banner.innerHTML = '<div class="eyebrow">' + section + '</div><h2>' + (currentMode === 'live' ? 'Forecast' : section) + ' unavailable.</h2><p class="sub">' + esc(e.message || e) + '</p>';
+        banner.className = 'risk-banner'; banner.innerHTML = '<div class="eyebrow">' + section + '</div><h2>' + (currentMode === 'live' ? 'Forecast' : section) + ' Unavailable.</h2><p class="sub">' + esc(e.message || e) + '</p>';
         document.getElementById('histLabel').innerHTML = ic('circle-x') + ' ' + esc(e.message || e);
     }
 }
@@ -531,11 +531,11 @@ function showPanels({ check = false, actual = false, beaches = false }) {
 // and a facts line — no advice (Chase, 2026-09-29: "the subtext stays low, no advice about what to do").
 function setBanner(maxRisk, { when = 'today', eyebrow = '', sub = '' } = {}) {
     const banner = document.getElementById('riskBanner');
-    if (maxRisk == null) { banner.className = 'risk-banner'; banner.innerHTML = (eyebrow ? '<div class="eyebrow">' + eyebrow + '</div>' : '') + '<h2>' + (sub || 'Forecast is being computed.') + '</h2>'; return; }
+    if (maxRisk == null) { banner.className = 'risk-banner'; banner.innerHTML = (eyebrow ? '<div class="eyebrow">' + eyebrow + '</div>' : '') + '<h2>' + (sub || 'Forecast Is Being Computed.') + '</h2>'; return; }
     const r = riskInfo(maxRisk);
     banner.className = 'risk-banner risk-' + r.cls;
     banner.innerHTML = (eyebrow ? '<div class="eyebrow">' + eyebrow + '</div>' : '') +
-        '<h2><em>' + esc(r.label) + '</em> ' + (current.mode === 'live' && currentView === 'basins' ? 'same-day discharge impact risk ' : 'modeled beach risk from discharges ') + when + '.</h2><p class="sub" id="bannerSub">' + sub + '</p>';
+        '<h2><em>' + esc(r.label) + '</em> ' + (current.mode === 'live' && currentView === 'basins' ? 'Same-Day Discharge Impact Risk ' : 'Modeled Beach Risk from Discharges ') + when + '.</h2><p class="sub" id="bannerSub">' + sub + '</p>';
 }
 // "today" / "tomorrow" / "on Thu Oct 01"
 function whenWord(day) {
@@ -570,7 +570,7 @@ function stage3Zones(day) {
 }
 function stage3Note(day) {
     const count = Object.keys(stage3Zones(day)).length;
-    return (count === 4 ? '' : count ? 'Partial data: ' + count + ' of 4 beach zones available. ' : 'This snapshot has no usable Stage 3 beach-zone scores. SewerCast needs a snapshot produced with those scores; reloading this page cannot add them. ') + 'Stage 3 maps the selected day’s combined sewer discharge risk to beach zones using historical outfall patterns. No lingering effects or lab measurements. Model scores, not calibrated contamination probabilities.';
+    return (count === 4 ? '' : count ? 'Partial data: ' + count + ' of 4 beach zones available. ' : 'This snapshot has no usable Stage 3 beach-zone scores. SewerCast needs a snapshot that has these scores. If you reload this page, it cannot add them. ') + 'Stage 3 connects the combined sewer discharge risk of the selected day to beach zones. It uses historical outfall patterns. It does not include effects that continue or lab measurements. These are model scores, not calibrated contamination probabilities.';
 }
 function forecastRisk(day) {
     if (currentView !== 'basins') return worstZone(day);
@@ -581,7 +581,7 @@ function renderLive(data) {
     const preds = data.predictions || {};
     // forecast only: a cached snapshot from before 2026-09-06 may still carry yesterday
     const days = Object.values(preds).filter(d => d.day_offset >= 0).sort((a, b) => a.day_offset - b.day_offset);
-    if (!days.length) { setBanner(null, { eyebrow: forecastTitle(), sub: 'Forecast is being computed.' }); return; }
+    if (!days.length) { setBanner(null, { eyebrow: forecastTitle(), sub: 'Forecast Is Being Computed.' }); return; }
     const today = days.find(d => d.is_today) || days[0];
     lastLiveData = data;
     if (data.model) SERVED_NAME = data.model.name || SERVED_NAME;   // the served set's descriptor (model stamp): its name for the copy
@@ -645,9 +645,9 @@ function renderBanner(day) {
         const allKnown = Object.values(zones).length && Object.values(zones).every(z => z.bad != null);
         banner.className = 'risk-banner ' + (bad.length ? 'st-discharge' : allKnown ? 'st-safe' : 'st-caution');
         banner.innerHTML = '<div class="eyebrow">What happened · ' + dayTitle(day) + '</div><h2>' + (bad.length
-            ? '<em>' + bad.map(esc).join(', ') + '</em> had a bad day.'
-            : allKnown ? '<em>No discharges</em>, no elevated samples, at any zone.'
-            : 'Partial records for this day.') + '</h2><p class="sub">' + (bad.length ? 'A discharge, a posting or an elevated sample in the zone; the zones below say which.' : allKnown ? '' : 'See the zones below for what is known.') + '</p>';
+            ? '<em>' + bad.map(esc).join(', ') + '</em> Had a Bad Day.'
+            : allKnown ? '<em>No Discharges</em> and No High Samples in All Zones.'
+            : 'The Records for This Day Are Not Complete.') + '</h2><p class="sub">' + (bad.length ? 'A discharge, a posting or a high sample in the zone. The zones below show which.' : allKnown ? '' : 'Refer to the zones below for the known data.') + '</p>';
         return;
     }
     const m = current.mode === 'live' ? forecastRisk(day) : worstZone(day);
@@ -665,7 +665,7 @@ function renderBanner(day) {
     if (currentView === 'basins' && m == null) {
         const banner = document.getElementById('riskBanner');
         banner.className = 'risk-banner';
-        const headline = Object.keys(stage3Zones(day)).length ? 'Some beach-zone scores are unavailable.' : 'Same-day impact scores are unavailable.';
+        const headline = Object.keys(stage3Zones(day)).length ? 'Some Beach-Zone Scores Are Not Available.' : 'Same-Day Effect Scores Are Not Available.';
         banner.innerHTML = '<div class="eyebrow">' + esc(forecastTitle()) + ' · ' + esc(dayTitle(day)) + '</div><h2>' + headline + '</h2><p class="sub">' + stage3Note(day) + '</p>';
         return;
     }
@@ -683,7 +683,7 @@ function renderStage3Cards(day) {
             <div class="basin-name">${ic(ZONE_ICON[key])} ${esc(z.label)}</div>
             <div class="basin-prob" style="color:${r.color}">${p == null ? '—' : pct(p) + '%'} <span style="font-size:.45em;font-weight:600;letter-spacing:.05em;text-transform:uppercase">${r.label}</span></div>
             <div class="basin-bar"><div class="basin-bar-fill" style="width:${p == null ? 0 : pct(p)}%;background:${r.color}"></div></div>
-            <div class="basin-detail">${p == null ? 'No Stage 3 score available for this zone.' : 'Same-day discharge impact score · No lingering effects'}</div>
+            <div class="basin-detail">${p == null ? 'This zone has no Stage 3 score.' : 'Same-day discharge effect score · Does not include effects that continue'}</div>
             <div class="zone-stations">${z.stations.map(esc).join(' · ')}</div></div>`;
     }).join('');
 }
@@ -739,7 +739,7 @@ function renderBeaches(beaches) {
     // the kit's site chips (brand.css .site-chips/.site), the same as the Today board's: status dot, name, sample date; the whole chip opens the sample popover
     const grid = document.getElementById('beachGrid');
     grid.className = 'site-chips'; grid.innerHTML = '';
-    if (!beaches.length) { grid.innerHTML = '<div class="mute">Unable to fetch beach status</div>'; return; }
+    if (!beaches.length) { grid.innerHTML = '<div class="mute">Could not get the beach status</div>'; return; }
     const order = { cso: 0, posted: 1, safe: 2, not_sampled: 3, unknown: 4 };
     beaches.sort((a, b) => (order[a.status] || 9) - (order[b.status] || 9));
     const DOT = { cso: 'discharge', posted: 'posted', safe: 'safe', not_sampled: 'unknown', unknown: 'unknown' };
@@ -821,7 +821,7 @@ function renderActualDetail(day) {
         card.innerHTML = `
             <div class="basin-name">${ic(ZONE_ICON[zk])} ${esc(z.label)}</div>
             <div class="status-line">${st.badges.join('')}</div>
-            <div class="basin-detail">${lines.length ? lines.join('<br>') : '<span class="mute">Nothing recorded for this zone on this day.</span>'}</div>
+            <div class="basin-detail">${lines.length ? lines.join('<br>') : '<span class="mute">There is no record for this zone on this day.</span>'}</div>
             <div class="zone-stations">${z.stations.map(esc).join(' · ')}</div>`;
         el.appendChild(card);
     }
@@ -847,7 +847,7 @@ function renderActualDetail(day) {
         html += '<table class="tbl"><tr><th>Station</th><th>Zone</th><th>Analyte</th><th class="num">Result</th><th></th></tr>' +
             rows.map(s => `<tr><td><a class="sample-link" href="#" data-sample-station="${esc(s.station)}" data-sample-name="${esc(s.station_name)}" data-sample-date="${esc(s.date)}" title="This day's lab results as mini graphs">${esc(s.station_name)}</a></td><td class="mute">${esc((ZONES.find(z => z.key === s.zone) || {}).label || '')}</td><td class="mute">${esc(s.analyte)}</td><td class="num" style="${s.exceeds ? 'color:#b5310a;font-weight:700' : ''}">${esc(s.value_raw)}</td><td>${s.exceeds ? badge('danger', 'triangle-alert', 'over standard') : ''}</td></tr>`).join('') + '</table>';
     } else {
-        html += '<div class="mute" style="font-size:.85em">No samples this day (SFPUC samples weekly).</div>';
+        html += '<div class="mute" style="font-size:.85em">No samples on this day (SFPUC takes samples each week).</div>';
     }
     html += `<div class="sources">${esc(current.actual.sources.rain)} · ${esc(current.actual.sources.discharges)} · ${esc(current.actual.sources.bacteria)}</div>`;
     panel.innerHTML = html;
@@ -913,7 +913,7 @@ function sbUnits(cells, units, note) {
     }).join('')}${note ? `<div class="sb-sub">${esc(note)}</div>` : ''}</div>`;
 }
 // S3 splits a basin's discharge between zones; a zone fed by one basin whole has nothing for S3 to score.
-const SB_S3_NOTE = 'A zone not listed takes its basin’s discharge whole, so S3 has nothing to score there.';
+const SB_S3_NOTE = 'A zone that is not in the list gets all the discharge of its basin. Thus, S3 has no score there.';
 
 // Pick a scored chain: its basins and S1–S4; S5 stays when those basins have it (it is scored on its own).
 function sbUse(set, all) {
@@ -997,7 +997,7 @@ function sbS1Slot(st, p, win) {
     const c = p.score, f = st.floor, top = Math.max(f.hi, ...st.parts.map(q => q.score.hi)), live = st.parts.find(q => q.live);
     const tip = [`Average miss on wet days, one day ahead: ${sbIn(c.mae)}, 90% range ${sbIn(c.lo)} to ${sbIn(c.hi)}. Lower is better.`,
                  `${c.n} wet days · ${sbSpan(c.span)}`,
-                 `Floor ${sbIn(f.mae)}: ${f.name.replace(' as ', ' as a forecast of ')}, about the best a forecast for one point can do.`]
+                 `Floor ${sbIn(f.mae)}: ${f.name.replace(' as ', ' as a forecast of ')}, approximately the best result that a forecast for one point can get.`]
                  .concat(p.vs_live ? [`Against ${live.name}: ${p.vs_live}`] : []).join('\n');
     return `<div class="sb-cell" title="${esc(tip)}">
         <div class="sb-val">miss <b>${sbIn(c.mae)}</b> <span class="ci">${sbRange(c.lo, c.hi, sbIn)}</span></div>
@@ -1060,7 +1060,7 @@ function sbControls(win) {
     const seg = (items, cur, fn) => `<span class="seg-toggle">${items.map(([k, label]) => `<button type="button" class="seg-btn${k === cur ? ' active' : ''}" onclick="${fn}('${esc(k)}')">${esc(label)}</button>`).join('')}</span>`;
     let note;
     if (win.key === 'T0') note = win.graded ? `Every day after the rules froze on ${sbDay(win.after)}.`
-        : `Nothing graded yet: the data end ${sbDay(win.data_end)}, before the live season (every day after the rules froze on ${sbDay(win.after)}). It is graded after the next data refresh.`;
+        : `No grades yet. The data stops on ${sbDay(win.data_end)}, before the live season (each day after the rules were frozen on ${sbDay(win.after)}). We will grade it after the next data refresh.`;
     else note = sbSpan(win.span) + ' · ' + ({ T2: `${win.seasons} seasons, each scored by a fit that never saw it`, T1: 'days after every fit’s training data ended',
                                               'T1-holdout': 'development only: this window was used to pick the model' }[win.key] || '');
     return `<div class="sb-top"><div class="sb-ctl"><span class="ctl-label">Basins</span>${seg(SB.basins.map(b => [b.id, b.name]), sbPick.basins, 'sbSetBasins')}</div>
@@ -1087,7 +1087,7 @@ function sbChainCard(win) {
         || SB.chains.find(same), lineup = match ? null : SB.lineups.find(same);
     const words = match ? match.name : ['s2', 's3', 's4'].map(st => (sbPart(st, sbPick[st]) || {}).name || '—').join(' · ');
     const rainOf = (sbPart('s1', (match || SB.chains[0]).parts.s1) || {}).name;
-    const tip = `Modeled beach risk from combined sewer discharges and lingering effects, not a lab measurement or an all-causes forecast. Graded on affected beach days (a discharge day, or a sample over the standard in the week after one). It is scored for whole lineups: basins, S2, S3 and S4, with ${rainOf}'s rain one day ahead. S5 is scored on its own and does not enter this number.`;
+    const tip = `The model estimate of beach risk from combined sewer discharges and their effects that continue. It is not a lab measurement. It does not include all causes. Graded on affected beach days (a discharge day, or a sample over the standard in the week after one). It is scored for whole lineups: basins, S2, S3 and S4, with ${rainOf}'s rain one day ahead. S5 is scored on its own and does not enter this number.`;
     const pending = win.key === 'T0' && !win.graded, s = match ? (match.scores[win.key] || {}) : {};
     const has = !!(s.L1 || s.rain);
     const status = pending ? '<span class="sb-scored no">○ not graded yet</span>' : match ? `<span class="sb-scored${has ? '' : ' no'}">${has ? '● scored' : '○ not scored on this window'}</span>` : '<span class="sb-scored no">○ not scored yet</span>';
@@ -1111,7 +1111,7 @@ function sbChainCard(win) {
 
 function sbHow() {
     const w = k => SB.windows.find(x => x.key === k) || {}, t2 = w('T2'), t1 = w('T1'), th = w('T1-holdout'), t0 = w('T0');
-    return `<details class="sb-how"${sbHowOpen ? ' open' : ''} ontoggle="sbHowOpen = this.open"><summary>How to read this</summary><ul>
+    return `<details class="sb-how"${sbHowOpen ? ' open' : ''} ontoggle="sbHowOpen = this.open"><summary>How to Read This</summary><ul>
         <li><b>Skill:</b> 1 is perfect; 0 is no better than the usual rate for that place and month; below 0 is worse than that usual rate.</li>
         <li><b>Why skill leads and PR-AUC sits beside it:</b> skill compares model scores with the observed target; PR-AUC measures how well the scores rank affected days above other days. These evaluation metrics do not establish that a displayed beach-risk score is a calibrated probability of contamination.</li>
         <li><b>Ranges</b> hold the middle ${Math.round(SB.bootstrap.level * 100)}% of ${SB.bootstrap.n.toLocaleString()} resamples of whole storms. A faded score rests on too few storms to decide anything.</li>
@@ -1168,7 +1168,7 @@ function renderCheck(h, a, sc, target) {
     if (!tday) { setBanner(null, { eyebrow: 'Model check · ' + esc(target), sub: 'No hindcast for this day.' }); return; }
     const info = document.getElementById('refreshInfo');
     info.textContent = 'Hindcast: the live models on the rain that fell · alerted at ' + lineName(RISK_THRESHOLD);
-    info.title = 'The live set’s models run now on the rain that actually fell: NOAA gauges for the day totals, the Open-Meteo archive for the hourly peaks.';
+    info.title = 'The models of the live set use the actual rain: NOAA gauges for the day totals, and the Open-Meteo archive for the hourly maximums.';
     showPanels({ check: true });
 
     const timeline = document.getElementById('timeline');
@@ -1200,7 +1200,7 @@ function renderCheckDetail(day) {
     const sc = current.scorecard || {};
     const scDay = (sc.days || {})[day.date];
     const panel = document.getElementById('checkPanel');
-    let html = `<h2>${ic('scales')} Model vs what happened — ${esc(fmtDate(day.date))}</h2>`;
+    let html = `<h2>${ic('scales')} Model vs What Happened — ${esc(fmtDate(day.date))}</h2>`;
     html += '<table class="tbl"><tr><th>Zone</th><th class="num" title="The live set’s models run now on the rain that fell">Live models</th>'
         + '<th class="num" title="The model score kept in the scorecard: holdout = a model that never saw that season; in-sample = days the models trained on (optimistic); post-training = days after their training data ended">Stored hindcast</th>'
         + '<th>Discharge</th><th>Bacteria</th><th title="A discharge that posts a zone’s beach, an SFPUC posting or a sample over the standard makes a bad day">Verdict</th></tr>';
@@ -1220,7 +1220,7 @@ function renderCheckDetail(day) {
         const ce = current.actual.coverage_end || {};
         const through = !ce.bayside && !ce.oceanside ? '?' : ce.bayside === ce.oceanside ? esc(fmtMonth(ce.bayside + '-01'))
             : `${ce.oceanside ? esc(fmtMonth(ce.oceanside + '-01')) : '?'} (Oceanside) / ${ce.bayside ? esc(fmtMonth(ce.bayside + '-01')) : '?'} (Bayside)`;
-        html += `<div class="mute" style="font-size:.8em;margin:-4px 0 8px">No discharge report covers this day for at least one zone: SFPUC's CIWQS filings run through ${through}; the BWTF watcher covers ${esc(new Date((current.actual.watcher_since || '2026-08-20') + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }))} onward.</div>`;
+        html += `<div class="mute" style="font-size:.8em;margin:-4px 0 8px">For one or more zones, no discharge report includes this day. The SFPUC CIWQS reports go to ${through}. The BWTF watcher starts on ${esc(new Date((current.actual.watcher_since || '2026-08-20') + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }))} onward.</div>`;
     }
     if (scDay && scDay.basins) {
         html += `<div class="subhead" title="The training-time hindcast against what was reported">${ic('chart')} S2 · discharge chance by basin</div><table class="tbl"><tr><th>Basin</th><th class="num">P(discharge)</th><th>Reported</th><th class="num">Volume (MG)</th><th>Label source</th></tr>`;
@@ -1232,7 +1232,7 @@ function renderCheckDetail(day) {
         html += '</table>';
     }
     if (sc.in_span === false) {
-        html += `<div class="mute" style="font-size:.85em;margin-top:10px">Outside the scorecard (${esc((sc.span || []).join(' → '))}): the hindcast above is the live models on archived rain.</div>`;
+        html += `<div class="mute" style="font-size:.85em;margin-top:10px">Outside the scorecard (${esc((sc.span || []).join(' → '))}): the hindcast above shows the live models with archived rain.</div>`;
     }
     html += renderScoreWindow(sc);
     panel.innerHTML = html;
@@ -1381,7 +1381,7 @@ function basinTable(w, sc, keys) {
         html += `<tr><td>${esc(BASIN_META[key].name)}</td><td class="mute">${esc(rs === 'avg' ? 'Downtown + Oceanside mean' : rs)}</td><td class="num">${b.n_days}</td><td class="num">${b.n_events}</td><td class="num">${f3(b.pr_auc)}</td><td class="num">${f3(b.roc_auc)}</td><td class="num">${f3(b.brier)}</td></tr>`;
     }
     html += '</table>';
-    if (keys.some(k => w.basins[k] && w.basins[k].n_days && w.basins[k].pr_auc == null)) html += `<div class="mute" style="font-size:.8em;margin-top:6px">PR-AUC and ROC-AUC need at least one discharge day and one quiet day in the window.</div>`;
+    if (keys.some(k => w.basins[k] && w.basins[k].n_days && w.basins[k].pr_auc == null)) html += `<div class="mute" style="font-size:.8em;margin-top:6px">PR-AUC and ROC-AUC need one or more discharge days and one or more quiet days in the period.</div>`;
     return any ? html : '';
 }
 
@@ -1405,7 +1405,7 @@ function renderScoreWindow(sc) {
             ${models.length > 1 ? `<select class="date-picker" onchange="setScoreModel(this.value)" title="Which lineup's stored hindcast to grade (on measured rain with no live corrections, so S2 · S3 · S4 are what it grades). Only the LIVE one drives the forecast; the others are scored here on the same days and labels.">
                 ${models.map(m => `<option value="${esc(m.key)}"${m.key === (sc.model || '') ? ' selected' : ''}>${esc(lineupWords(m) || m.label)}${m.served ? ' · LIVE' : ''}</option>`).join('')}
             </select>` : ''}
-            <select class="date-picker" onchange="setRiskLine(this.value)" title="A day counts as alerted when its risk reaches this level; hits, misses and false alarms everywhere on this view follow it">
+            <select class="date-picker" onchange="setRiskLine(this.value)" title="A day is an alerted day when its risk gets to this level. All hits, misses and false alarms in this view use this level">
                 ${RISK_LEVELS.edges.map(e => `<option value="${e}"${e === RISK_THRESHOLD ? ' selected' : ''}>alerts at ${esc(lineName(e))}</option>`).join('')}
             </select>
             <select class="date-picker" onchange="setScoreLabel(this.value)" title="What counts as a bad day. Discharge days + samples (primary): a discharge day is bad, a sampled day is what the sample says, an unsampled day in the week after a discharge is not graded. Discharge days only: every day after a discharge is quiet. Beach postings: the State BeachWatch record of signs up for a sewage or rain cause.">
@@ -1440,7 +1440,7 @@ function renderScoreWindow(sc) {
 
     const rulerNote = useCombined ? `Graded against discharge days + samples: a discharge day is bad, and so is an elevated sample in the week after one (persistence, confirmed); a clean sample is good; an unsampled day in the week after a discharge is not graded (nobody measured the water); an unsampled day with no recent discharge is quiet; an elevated sample with no recent discharge is outside the discharge-linked target — listed, not scored.`
         : usePosted ? `Graded against the signs: a bad day is one SFPUC had a beach in the zone posted for a sewage or rain cause (State BeachWatch record, through ${esc(plab.known_through || '?')}${plab.unknown_days ? `; ${plab.unknown_days} of this window's days fall after it and are not graded` : ''}). Postings for other causes are listed but not scored.`
-        : `"Within ${w.tail_days || 7} days after a real discharge" is the model carrying lingering risk forward, which is not a measurement of the water; "on clean days" are the false alarms the model adds on its own.`;
+        : `"Within ${w.tail_days || 7} days after a real discharge" shows the model risk that continues after a discharge. This is not a measurement of the water. "On clean days" shows the false alarms that the model adds itself.`;
 
     if (scoreZone === 'all') {
         html += `<table class="tbl summary"><tr><th>Zone</th><th class="num">Bad days</th><th class="num">Caught</th><th class="num">Missed</th><th class="num">False alarms</th><th class="num" title="FAR: false alarms ÷ every day alerted">Alerts that were false</th><th class="num">Bacteria: elevated days caught</th></tr>`;
@@ -1452,13 +1452,13 @@ function renderScoreWindow(sc) {
             html += `<tr class="zone-row" onclick="setScoreZone('${zk}')" title="Open ${esc(zoneLabel(zk))}"><td class="zone">${esc(zoneLabel(zk))}</td><td class="num">${s.posted}</td><td class="num">${s.d.tp} <span class="mute">${fmtShare(s.rec)}</span></td><td class="num">${s.d.fn}</td><td class="num">${s.d.fp}${split}</td><td class="num">${fmtShare(s.far)}</td><td class="num">${s.b.tp} of ${s.b.tp + s.b.fn}</td></tr>`;
         }
         html += `<tr class="total"><td class="zone">All zones</td><td class="num">${tBad}</td><td class="num">${tTp} <span class="mute">${fmtShare(tBad ? tTp / tBad : null)}</span></td><td class="num">${tFn}</td><td class="num">${tFp}</td><td class="num">${fmtShare(tTp + tFp ? tFp / (tTp + tFp) : null)}</td><td class="num">${tBtp} of ${tBn}</td></tr></table>`;
-        html += `<details class="sb-how"><summary>How these days are graded</summary><ul><li>${rulerNote}</li><li>Open a zone for its full analysis, with every line from 5% to 81%.</li></ul></details>`;
+        html += `<details class="sb-how"><summary>How These Days Are Graded</summary><ul><li>${rulerNote}</li><li>Open a zone for its full analysis, with every line from 5% to 81%.</li></ul></details>`;
         html += `<div class="subhead">${ic('gauge')} S2 · discharge model by basin, ${fmtRange(w.start, w.end)}</div>` + basinTable(w, sc, ['westside', 'north_shore', 'central', 'southeast']);
     } else {
         const s = stats[scoreZone];
         html += `<div class="zone-analysis">${zoneCard(s, w, thr)}
             <div class="score"><b>Every line, same window</b><div class="grp">${esc(zoneLabel(scoreZone))} · a day alerted from this risk on · ◂ current</div>${linesTable(s, thr, true)}</div></div>`;
-        html += `<details class="sb-how"><summary>How these days are graded</summary><ul><li>${rulerNote}</li></ul></details>`;
+        html += `<details class="sb-how"><summary>How These Days Are Graded</summary><ul><li>${rulerNote}</li></ul></details>`;
         const basinsHtml = basinTable(w, sc, ZONE_BASINS[scoreZone] || []);
         if (basinsHtml) html += `<div class="subhead">${ic('gauge')} S2 · the basin${(ZONE_BASINS[scoreZone] || []).length === 1 ? '' : 's'} behind ${esc(zoneLabel(scoreZone))}, ${fmtRange(w.start, w.end)}</div>` + basinsHtml;
     }
@@ -1468,7 +1468,7 @@ function renderScoreWindow(sc) {
         <a href="/reports/2026-09_forecast_how_it_works.html" title="What each stage does: rain, discharge, which beaches, for how long, live corrections, the number">how it works</a>
         <a href="${scoreModel ? '/reports/2026-09_forecast_' + esc(scoreModel) + '_model_explorer.html' : '/reports/2026-09_forecast_' + esc(SERVED_NAME) + '_model_explorer.html'}" title="The selected set's discharge model opened up: inputs, weights or trees, a what-if editor">inside this model (S2)</a>
         <a href="/reports/2026-09_forecast_stage2_explorer.html" title="How a basin's discharge chance becomes beach risk: which beaches (S3) and for how long (S4), shared by every model set">S3–S4</a>
-        <a href="/reports/" title="Every report in one list, current and archived">all reports</a>
+        <a href="/reports/" title="All reports in one list, current and old">all reports</a>
     </div></div>`;
     return html;
 }

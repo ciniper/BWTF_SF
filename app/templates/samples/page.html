@@ -52,8 +52,8 @@
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}{% from "_site_picker.html" import site_picker %}
 {{ topbar() }}
 <div class="wrap">
-  {% call page_head("Samples", "Every published result from both programs, one row per sample, with the volunteers' field notes.", "water") %}
-    <p>Click a row for that day's results as a graph. The same samples plotted over time are on <a href="/graphs">Graphs</a>.</p>
+  {% call page_head("Samples", "All published results from the two programs, one row for each sample, with the field notes from the volunteers.", "water") %}
+    <p>Click a row to see the results for that day as a graph. The <a href="/graphs">Graphs</a> page shows the same samples over time.</p>
   {% endcall %}
 
   <div class="board">
@@ -61,10 +61,10 @@
   <div class="controls">
     <span class="ctl-label">Source</span>
     <div class="seg-toggle" id="v-source">
-      <button class="seg-btn" data-source="city" title="The city's lab: the 20 monitoring stations">City</button>
-      <button class="seg-btn" data-source="bwtf" title="Surfrider's volunteer lab: the beaches it samples">Surfrider</button>
-      <button class="seg-btn" data-source="both" title="Only the beaches both programs sample, both labs' rows">Both</button>
-      <button class="seg-btn active" data-source="all" title="Every site, whichever lab has results">All</button>
+      <button class="seg-btn" data-source="city" title="The city lab: the 20 monitoring stations">City</button>
+      <button class="seg-btn" data-source="bwtf" title="The Surfrider volunteer lab: the beaches that it samples">Surfrider</button>
+      <button class="seg-btn" data-source="both" title="Only the beaches that the two programs sample, with the rows from the two labs">Both</button>
+      <button class="seg-btn active" data-source="all" title="All sites with results from one or the two labs">All</button>
     </div>
   </div>
   <div class="controls">
@@ -76,15 +76,15 @@
   </div>
   <p class="status" id="v-status" style="margin:0">Loading samples…</p>
   </div>
-  <p class="foot">City rows are SF Gov Open Data from {{ datasf_from }} and, before that, SFPUC's own lab export (Jan 2000 → Jul 2020). Enterococcus and E. coli were first measured in Jul 2002 at the bay stations and Oct 2003 on the ocean beaches (only total coliform before); until Mar 2021 the city ran E. coli where it now runs fecal coliform, so one of those two columns is empty depending on the year.</p>
+  <p class="foot">City rows come from SF Gov Open Data from {{ datasf_from }}. Before that date, they come from the SFPUC lab export (Jan 2000 → Jul 2020). The city started to measure Enterococcus and E. coli in Jul 2002 at the bay stations and in Oct 2003 at the ocean beaches. Before these dates, it measured only total coliform. Until Mar 2021, the city measured E. coli. Now it measures fecal coliform. Thus, one of these two columns is empty for each year.</p>
   <div class="board tbl">
   <table class="viewer" id="v-table" style="display:none">
     <thead><tr id="v-head"></tr></thead>
     <tbody id="v-rows"></tbody>
   </table>
   </div>
-  <p class="foot">Each indicator is graded against its own state single-sample limit (total coliform's falls to 1,000 when fecal is over 10% of total); <span class="v-val caution">amber</span> is Enterococcus in the caution tier, <span class="v-val over">red</span> is over the limit.
-  The city's dataset carries the date but not the time, so a routine sample and a storm-day resample share a date and both are shown. Surfrider times are local. Sources: <a href="{{ DATASF_DATASET_URL }}" target="_blank" rel="noopener">SF Gov Open Data</a> · <a href="https://bwtf.surfrider.org/explore/76" target="_blank" rel="noopener">Surfrider BWTF (SF)</a>.</p>
+  <p class="foot">We compare each indicator with its state single-sample limit. (The total coliform limit decreases to 1,000 when fecal coliform is more than 10% of total coliform.) <span class="v-val caution">Amber</span> shows Enterococcus in the caution range. <span class="v-val over">Red</span> shows a result more than the limit.
+  The city dataset has the date but not the time. Thus, a routine sample and a storm-day resample can have the same date. The table shows the two samples. Surfrider times are local. Sources: <a href="{{ DATASF_DATASET_URL }}" target="_blank" rel="noopener">SF Gov Open Data</a> · <a href="https://bwtf.surfrider.org/explore/76" target="_blank" rel="noopener">Surfrider BWTF (SF)</a>.</p>
 
 </div>
 <script src="{{ asset('charts.js') }}"></script>

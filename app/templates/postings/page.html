@@ -46,12 +46,12 @@
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
 {{ topbar() }}
 <div class="wrap">
-  {% call page_head("Beach Postings", "Every advisory San Francisco filed with the State since 1999: when each beach was posted, for how long, and why.", "record", link=("/records#postings", "How we get these records")) %}
+  {% call page_head("Beach Postings", "All the advisories that San Francisco sent to the State since 1999: when the city posted each beach, for how long, and why.", "record", link=("/records#postings", "How We Get These Records")) %}
     
-    <p>Every advisory San Francisco filed with the State since 1999 — when each beach was posted,
-    for how long, and why — from the State Water Board's BeachWatch record. This is what the public was
-    <i>told</i>, alongside what was actually discharged (<a href="/discharges">Discharge Ledger</a>),
-    what the water measured (<a href="/analysis">Site Report Card</a>) and what our own watcher saw
+    <p>All the advisories that San Francisco sent to the State since 1999. For each beach, the record shows when the city posted it,
+    for how long, and why. The data comes from the State Water Board BeachWatch record. This is what the city
+    <i>told</i> the public. Compare it with what the city discharged (<a href="/discharges">Discharge Ledger</a>),
+    what the water tests showed (<a href="/analysis">Site Report Card</a>), and what our monitor recorded
     (<a href="/cso-history">Online Postings Timeline</a>).</p>
   {% endcall %}
 
@@ -76,25 +76,25 @@
   </div>
 
   <div class="fresh-note" id="freshNote" style="display:none"></div>
-  <div class="loading" id="loading">Loading the State's posting record…</div>
+  <div class="loading" id="loading">Loading the State posting record…</div>
   <div id="content" style="display:none">
     <div class="cards">
       <div class="card"><b id="cAdv">–</b><span>postings (station-advisories)</span></div>
-      <div class="card"><b id="cUDays">–</b><span>days with any posting · <span id="cUPct">–</span> of days</span></div>
+      <div class="card"><b id="cUDays">–</b><span>days with one or more postings · <span id="cUPct">–</span> of days</span></div>
       <div class="card"><b id="cDays">–</b><span>posted station-days</span></div>
       <div class="card"><b id="cMed">–</b><span>median posting length, days</span></div>
-      <div class="card"><b id="cCso">–</b><span>of posted days name a sewage discharge</span></div>
+      <div class="card"><b id="cCso">–</b><span>of posted days have a sewage discharge as the cause</span></div>
       <div class="card"><b id="cPerYr">–</b><span>posted station-days per year</span></div>
     </div>
 
     <div class="board">
-      <h2 id="chartTitle">Days with any posting, by year</h2>
+      <h2 id="chartTitle">Days with One or More Postings, for Each Year</h2>
       <div class="controls" style="margin:0 0 8px">
         <span class="ctl-label">Show:</span>
         <div class="seg-toggle" id="metricToggle">
-          <button class="seg-btn active" data-metric="days" title="Calendar days on which any beach in view was posted — a day counts once">Days posted</button>
-          <button class="seg-btn" data-metric="pct" title="Those days as a share of the days the record covers in each year">% of days</button>
-          <button class="seg-btn" data-metric="stationdays" title="Each station's posted days added up — a station posted 3 days = 3">Station-days</button>
+          <button class="seg-btn active" data-metric="days" title="Calendar days on which one or more beaches in the view had a posting. Each day counts one time.">Days posted</button>
+          <button class="seg-btn" data-metric="pct" title="These days as a percentage of the days in the record for each year">% of days</button>
+          <button class="seg-btn" data-metric="stationdays" title="The total of the posted days for all stations. A station with a posting for 3 days = 3.">Station-days</button>
         </div>
       </div>
       <svg class="chart" id="chart" viewBox="0 0 1000 240" preserveAspectRatio="none"></svg>
@@ -102,7 +102,7 @@
     </div>
 
     <div class="board">
-      <h2>By station <span>— in the selected view · click a column header to sort</span></h2>
+      <h2>By Station <span>— in the selected view · click a column header to sort</span></h2>
       <table id="tbl"><thead><tr>
         <th data-k="name">Station</th><th data-k="zone">Zone</th>
         <th class="num" data-k="adv">postings</th><th class="num" data-k="days">posted days</th>
@@ -112,23 +112,23 @@
     </div>
 
     <div class="board">
-      <h2>Most recent postings <span>— newest first, in the selected view · <a class="dl" href="/postings/api/csv" download="sf_beach_advisories.csv">download the full record (CSV)</a></span></h2>
+      <h2>Most Recent Postings <span>— newest first, in the selected view · <a class="dl" href="/postings/api/csv" download="sf_beach_advisories.csv">download the full record (CSV)</a></span></h2>
       <table><thead><tr><th>Posted</th><th>Reopened</th><th class="num">days</th><th>Station</th><th>Cause</th><th>Type</th><th>Record says</th></tr></thead><tbody id="recent"></tbody></table>
     </div>
   </div>
 
   <div class="notes" id="notes">
-    <figure class="sign"><img src="{{ asset('postings/sfpuc_posted_sign.jpg') }}" alt="A worker hangs a yellow notice sign with a no-swimming symbol at the shore" width="300" height="225" loading="lazy"><figcaption>A beach posting going up. Photo: <a href="https://www.sfpuc.gov/programs/ocean-and-beach-monitoring" target="_blank" rel="noopener">SFPUC, Ocean and Beach Monitoring</a></figcaption></figure>
-    <h2>Reading these numbers</h2>
-    <b>A posting</b> is one station-advisory: a sign up at one station from the posted date through the reopened date, both
-    inclusive, so a same-day post-and-reopen counts as one posted day. <b>Days with any posting</b> counts a calendar day once
-    if any beach in view was posted, however many stations; its share divides by the days the record covers in each year, and a day
-    takes the worst cause posted on it (sewage over rain over other). <b>Cause</b> is the record's own attribution:
-    <span class="chip cso">sewage discharge</span> when a combined-sewer discharge is named as the source,
-    <span class="chip rain">rain advisory</span> for the standing wet-weather warning, <span class="chip other">other</span>
-    when neither is named (mostly dry-weather bacteria). Postings are precautionary — on sampled sewage-posted days the water
-    was over standard roughly half to four-fifths of the time — so this record grades what people were told, not what the water
-    was; the Site Report Card grades the water. <span id="longNote"></span>
+    <figure class="sign"><img src="{{ asset('postings/sfpuc_posted_sign.jpg') }}" alt="A worker attaches a yellow notice sign with a no-swimming symbol at the shore" width="300" height="225" loading="lazy"><figcaption>A worker puts up a beach posting. Photo: <a href="https://www.sfpuc.gov/programs/ocean-and-beach-monitoring" target="_blank" rel="noopener">SFPUC, Ocean and Beach Monitoring</a></figcaption></figure>
+    <h2>How to Read These Numbers</h2>
+    <b>A posting</b> is one station-advisory. It is a sign at one station from the posted date to the reopened date. The count includes
+    the two dates. Thus, if the city posts and reopens a station on the same day, it is one posted day. <b>Days with one or more postings</b> counts each calendar day one time
+    if one or more beaches in the view had a posting. The number of stations does not change the count. The percentage divides this count by the days in the record for each year. Each day
+    gets the worst cause posted on it (sewage, then rain, then other). <b>Cause</b> is the cause that the record gives:
+    <span class="chip cso">sewage discharge</span> when the record names a combined-sewer discharge as the source,
+    <span class="chip rain">rain advisory</span> for the standard wet-weather warning, and <span class="chip other">other</span>
+    when the record names neither (usually dry-weather bacteria). Postings are a precaution. On sampled days with a sewage posting, the water
+    was more than the standard approximately one half to four fifths of the time. Thus, this record shows what the city told the public. It does not show the water quality.
+    The Site Report Card shows the water quality. <span id="longNote"></span>
     <span id="lagNote"></span>
   </div>
   <div class="foot" id="foot"></div>
@@ -146,9 +146,9 @@ function uniqueDays(counted) {   // calendar day → the worst cause posted anyw
 const yearDays = y => { const s = Math.max(Date.UTC(y, 0, 1), utc(D.first)), e = Math.min(Date.UTC(y, 11, 31), utc(D.known_through)); return e >= s ? Math.round((e - s) / DAY) + 1 : 0; };   // the days of a year the record covers
 const fullDays = y => (y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0)) ? 366 : 365, partialYear = y => yearDays(y) < fullDays(y);   // a year the record only partly covers (the latest one, until SF files the rest)
 const TITLES = {
-  days: ["Days with any posting, by year", "— a day counts once however many beaches in view were posted · coloured by its worst cause"],
-  pct: ["Share of days with any posting, by year", "— of the days the record covers in each year · coloured by the day's worst cause"],
-  stationdays: ["Posted station-days by year", "— stacked by cause · a station posted 3 days = 3"],
+  days: ["Days with One or More Postings, for Each Year", "— each day counts one time, for all beaches in the view · the color shows the worst cause"],
+  pct: ["Percentage of Days with One or More Postings, for Each Year", "— of the days in the record for each year · the color shows the worst cause of the day"],
+  stationdays: ["Posted Station-Days for Each Year", "— stacked by cause · a station with a posting for 3 days = 3"],
 };
 const C = {cso: "#b5310a", rain: "#0072BC", other: "#98a3ab"};
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -189,7 +189,7 @@ function renderChart(counted, ud) {   // the headline chart: days with any posti
   for (let g = 0; g <= 4; g++) { const val = max * g / 4, yy = padT + (H - padT - padB) * (1 - g / 4);
     s += `<line x1="${padL}" x2="${W}" y1="${yy}" y2="${yy}" stroke="#eef2f4"/><text x="${padL - 6}" y="${yy + 4}" font-size="11" text-anchor="end" fill="#54576F">${tick(val)}</text>`; }
   const partials = ys.filter(partialYear);
-  ys.forEach((y, i) => { let base = H - padB; const x = padL + i * bw + bw * 0.12, w = bw * 0.76, part = partialYear(y), note = part ? ` · partial year: the record covers ${yearDays(y)} of ${fullDays(y)} days` : "";
+  ys.forEach((y, i) => { let base = H - padB; const x = padL + i * bw + bw * 0.12, w = bw * 0.76, part = partialYear(y), note = part ? ` · partial year: the record has ${yearDays(y)} of ${fullDays(y)} days` : "";
     for (const c of ["other", "rain", "cso"]) { const h = (H - padT - padB) * by[y][c] / max; if (h > 0) { s += `<rect x="${x}" y="${base - h}" width="${w}" height="${h}" fill="${C[c]}"><title>${y} · ${esc(D.cause_labels[c] || c)}: ${label(y, c)}${note}</title></rect>`; base -= h; } }
     if (part) {   // hatch the bar and say so: a short year is not a quiet one
       const top = base < H - padB ? base : H - padB - 2;
@@ -198,7 +198,7 @@ function renderChart(counted, ud) {   // the headline chart: days with any posti
     }
     if (ys.length <= 14 || i % Math.ceil(ys.length / 14) === 0) s += `<text x="${x + w / 2}" y="${H - 8}" font-size="11" text-anchor="middle" fill="#54576F">${y}</text>`; });
   document.getElementById("chart").innerHTML = s;
-  document.getElementById("legendPartial").innerHTML = partials.length ? '<i class="hatch"></i>hatched = partial year — ' + esc(partials.map(y => `${y}: the record covers ${yearDays(y)} of ${fullDays(y)} days`).join("; ")) + (partials.includes(D.lastYear) ? " · SF files with the State months late" : "") : "";
+  document.getElementById("legendPartial").innerHTML = partials.length ? '<i class="hatch"></i>hatched = partial year — ' + esc(partials.map(y => `${y}: the record has ${yearDays(y)} of ${fullDays(y)} days`).join("; ")) + (partials.includes(D.lastYear) ? " · SF sends the data to the State some months late" : "") : "";
 }
 function renderStations(v) {
   const per = {};
@@ -213,7 +213,7 @@ function renderStations(v) {
     <td class="num">${r.med}</td><td class="num">${Math.round(r.csoPct)}%</td><td>${esc(r.last)}</td></tr>`).join("");
 }
 function renderRecent(v) {
-  document.getElementById("recent").innerHTML = v.map(a => `<tr><td>${a.posted}</td><td>${a.reopened}</td><td class="num">${a.days}${a.long ? ' <span class="chip long" title="left open over ' + D.max_duration_days + ' days — excluded from day totals">left open</span>' : ''}</td>
+  document.getElementById("recent").innerHTML = v.map(a => `<tr><td>${a.posted}</td><td>${a.reopened}</td><td class="num">${a.days}${a.long ? ' <span class="chip long" title="open for more than ' + D.max_duration_days + ' days — not included in day totals">left open</span>' : ''}</td>
     <td class="name">${esc(ST[a.station]?.name || a.station)}</td><td><span class="chip ${a.cause}">${esc(D.cause_labels[a.cause] || a.cause)}</span></td><td>${esc(a.type)}</td><td style="color:#54576F">${esc(a.rawCause)}${a.src ? ' · ' + esc(a.src) : ''}</td></tr>`).join("");
 }
 function wire() {
@@ -241,8 +241,8 @@ fetch("/postings/api/advisories").then(r => r.json()).then(d => {
   ADV = d.advisories.map(r => ({posted: r[I.posted_on], reopened: r[I.reopened_on], days: r[I.duration_days] + 1, year: +r[I.posted_on].slice(0, 4),
     station: r[I.station], zone: r[I.zone], cause: r[I.cause_class], type: r[I.advisory_type], rawCause: r[I.cause], src: r[I.source], long: r[I.duration_days] > d.max_duration_days}));
   D.firstYear = +d.first.slice(0, 4); D.lastYear = +d.known_through.slice(0, 4);
-  document.getElementById("longNote").textContent = d.excluded_long ? `${d.excluded_long} filings left open for over ${d.max_duration_days} days are listed but excluded from day totals.` : "";
-  document.getElementById("lagNote").innerHTML = `The record runs <b>${d.first}</b> → <b>${d.known_through}</b>; San Francisco files with the State months late, so recent months are incomplete until the next refresh, not sign-free.`;
+  document.getElementById("longNote").textContent = d.excluded_long ? `${d.excluded_long} advisories stayed open for more than ${d.max_duration_days} days. They are in the list, but not in the day totals.` : "";
+  document.getElementById("lagNote").innerHTML = `The record goes from <b>${d.first}</b> → <b>${d.known_through}</b>. San Francisco sends its data to the State some months late. Thus, recent months are not complete until the next refresh. This does not mean that there were no signs.`;
   const R = d.refresh || {};
   if (R.refreshed_at) {   // our fetch date vs the State's record end — two different kinds of stale
     const age = Math.floor((Date.now() - new Date(R.refreshed_at + "T12:00:00")) / 86400000);
@@ -250,11 +250,11 @@ fetch("/postings/api/advisories").then(r => r.json()).then(d => {
     const gapDays = Math.floor((new Date(R.refreshed_at + "T12:00:00") - new Date(d.known_through + "T12:00:00")) / 86400000);
     const el = document.getElementById("freshNote");
     el.style.display = ""; el.className = "fresh-note" + (overdue ? " overdue" : "");
-    el.innerHTML = '<svg class="ic"><use href="#i-' + (overdue ? 'triangle-alert' : 'refresh-cw') + '"/></svg><span>Record fetched from the State on <b>' + R.refreshed_at + '</b> (' + age + (age === 1 ? ' day ago' : ' days ago') + (R.sf_rows ? ', ' + fmt(R.sf_rows) + ' SF postings of ' + fmt(R.statewide_rows) + ' statewide' : '') + ')'
-      + ' · the State\'s record then ran through <b>' + d.known_through + '</b>' + (gapDays > 45 ? ' — SF had filed nothing newer for ' + Math.round(gapDays / 30) + ' months' : '')
-      + (R.next_due ? ' · next refresh due <b>' + R.next_due + '</b>' : '') + (overdue ? ' — <b>overdue</b>' : '') + '.</span>';
+    el.innerHTML = '<svg class="ic"><use href="#i-' + (overdue ? 'triangle-alert' : 'refresh-cw') + '"/></svg><span>We got the record from the State on <b>' + R.refreshed_at + '</b> (' + age + (age === 1 ? ' day ago' : ' days ago') + (R.sf_rows ? ', ' + fmt(R.sf_rows) + ' SF postings of ' + fmt(R.statewide_rows) + ' statewide' : '') + ')'
+      + ' · at that time, the State record went to <b>' + d.known_through + '</b>' + (gapDays > 45 ? ' — SF had sent no newer data for ' + Math.round(gapDays / 30) + ' months' : '')
+      + (R.next_due ? ' · next refresh due <b>' + R.next_due + '</b>' : '') + (overdue ? ' — <b>late</b>' : '') + '.</span>';
   }
-  document.getElementById("foot").textContent = "Source: " + d.source + (d.fetched_at ? " · fetched " + d.fetched_at.slice(0, 10) : "") + " · stored at features/forecast/data/beachwatch/ (collector: src/collectors/beachwatch.py --refresh) · the same record is the forecast's third grading ruler (Model check → graded against beach postings).";
+  document.getElementById("foot").textContent = "Source: " + d.source + (d.fetched_at ? " · fetched " + d.fetched_at.slice(0, 10) : "") + " · stored at features/forecast/data/beachwatch/ (collector: src/collectors/beachwatch.py --refresh) · the forecast also uses this record as its third grading reference (Model check → graded against beach postings).";
   wire();
   document.getElementById("loading").style.display = "none"; document.getElementById("content").style.display = "";
 }).catch(e => { document.getElementById("loading").textContent = "Could not load the posting record: " + e; });

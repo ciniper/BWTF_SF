@@ -47,7 +47,7 @@
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
 {{ topbar() }}
 <div class="wrap">
-  {{ page_head("Data", "The records behind the board: what the labs found in the water, and what the city reported about its sewers and beaches.") }}
+  {{ page_head("Data", "The records for the board: what the labs found in the water, and what the city reported about its sewers and beaches.") }}
   <div class="groups">
     {% for g in groups %}
     {%- set f = g.featured %}
@@ -57,11 +57,11 @@
       <p class="blurb">{{ f.blurb }}</p>
       {% if f.href == "/discharges" %}
       {%- if ledger %}
-      <p class="stat"><b>{{ "{:,}".format(ledger.count) }} discharge{{ "" if ledger.count == 1 else "s" }}</b><span>reported in {{ ledger.year }}, totalling <strong>{{ ledger.volume }}</strong>. Reports filed through {{ ledger.through }}.</span></p>
+      <p class="stat"><b>{{ "{:,}".format(ledger.count) }} discharge{{ "" if ledger.count == 1 else "s" }}</b><span>reported in {{ ledger.year }}. Total volume: <strong>{{ ledger.volume }}</strong>. The reports include data to {{ ledger.through }}.</span></p>
       {%- endif %}
       <span class="go">Open the ledger →</span>
       {% else %}
-      <p class="stat pending" id="rc-stat"><b id="rc-pct"></b><span id="rc-text">Counting the last year of samples…</span></p>   {#- filled from /analysis/api/summary once the page has drawn #}
+      <p class="stat pending" id="rc-stat"><b id="rc-pct"></b><span id="rc-text">Calculating the samples for the last year…</span></p>   {#- filled from /analysis/api/summary once the page has drawn #}
       <span class="go">Open the report card →</span>
       {% endif %}
     </section>
@@ -92,7 +92,7 @@
     name.textContent = worst.name;
     document.getElementById("rc-pct").textContent = worst.exceed_pct.toFixed(1) + "%";
     text.textContent = "";
-    text.append("of weekly samples at ", name, " were over the state " + d.indicator_label + " limit in the last year, the most of the " + ranked.length + " ranked sites.");
+    text.append("of weekly samples at ", name, " were more than the state " + d.indicator_label + " limit in the last year. This is the highest of the " + ranked.length + " ranked sites.");
     document.getElementById("rc-stat").classList.remove("pending");
   } catch (e) { document.getElementById("rc-stat").hidden = true; }   // the card stands without its number
 })();

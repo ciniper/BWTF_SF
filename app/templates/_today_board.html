@@ -210,14 +210,14 @@
   <div class="layers" id="layers">
     <div class="ctl-group sources" role="group" aria-labelledby="lbl-sources">
     <span class="ctl-label" id="lbl-sources">Map shows:</span>
-    <label class="switch" title="City Results shows SFPUC's current posting status at twenty monitoring stations"><input type="checkbox" id="tg-city" checked><span class="track"></span><span class="lbl">City Results</span></label>
-    <label class="switch" title="Surfrider's latest Enterococcus result at each site the volunteers sample"><input type="checkbox" id="tg-bwtf"><span class="track"></span><span class="lbl">Surfrider Results</span></label>
+    <label class="switch" title="City Results shows the current SFPUC posting status at twenty monitoring stations"><input type="checkbox" id="tg-city" checked><span class="track"></span><span class="lbl">City Results</span></label>
+    <label class="switch" title="The latest Surfrider Enterococcus result at each volunteer sampling site"><input type="checkbox" id="tg-bwtf"><span class="track"></span><span class="lbl">Surfrider Results</span></label>
     <button type="button" class="layers-toggle" id="layers-toggle" aria-expanded="false" aria-controls="layer-group">More<span class="n" id="layers-n"></span></button>
     </div>
     <div class="ctl-group layer-group" id="layer-group" role="group" aria-label="More map options">
-    <button type="button" class="preset layer" data-layer="rain" aria-pressed="false" title="The last three daily totals at the forecast's two NOAA gauges">Rain</button>
-    <button type="button" class="preset layer" data-layer="outfalls" aria-pressed="false" title="The 34 permitted sewer outfalls; tap one for its past year of reported discharges">Outfalls</button>
-    <button type="button" class="preset layer" data-layer="labels" aria-pressed="false" title="Name the zones on the whole-city map, and each station when you zoom in">Names</button>
+    <button type="button" class="preset layer" data-layer="rain" aria-pressed="false" title="The daily rain totals for the last three days at the two NOAA gauges that the forecast uses">Rain</button>
+    <button type="button" class="preset layer" data-layer="outfalls" aria-pressed="false" title="The 34 permitted sewer outfalls. Tap an outfall to see its reported discharges for the last year.">Outfalls</button>
+    <button type="button" class="preset layer" data-layer="labels" aria-pressed="false" title="Show the zone names on the city map. Zoom in to show the station names.">Names</button>
     </div>
     <span class="layer-status" id="layer-status" role="status" aria-live="polite"></span>
   </div>
@@ -243,19 +243,19 @@
           </button>
           {% endfor %}
         </div>
-        <div class="zone-tools"><p class="zones-hint">Tap a zone to explore. Tap a map dot for samples and history.</p>
+        <div class="zone-tools"><p class="zones-hint">Tap a zone to see it. Tap a map dot to see samples and history.</p>
         {% if controls %}<div class="board-toggles">
-          <div class="board-past"><button type="button" class="preset layer" data-layer="replay" aria-expanded="false" aria-controls="day-strip" title="The city's map on each of the past days">Past week</button></div>
-          <div class="board-forecast"><button type="button" class="preset layer" data-layer="risk" aria-expanded="false" aria-controls="forecast-body" title="Experimental Water Quality Forecast: modeled beach risk from combined sewer discharges and lingering effects">Today’s forecast · Beta</button></div>
+          <div class="board-past"><button type="button" class="preset layer" data-layer="replay" aria-expanded="false" aria-controls="day-strip" title="The city map for each of the last seven days">Past week</button></div>
+          <div class="board-forecast"><button type="button" class="preset layer" data-layer="risk" aria-expanded="false" aria-controls="forecast-body" title="Experimental Water Quality Forecast: the model estimate of beach risk from combined sewer discharges and their effects after the discharge stops">Today’s forecast · Beta</button></div>
         </div>{% endif %}
         </div>
-        {% if controls %}<div class="day-strip" id="day-strip" role="group" aria-label="Past week: the city's map on each day" hidden></div>
+        {% if controls %}<div class="day-strip" id="day-strip" role="group" aria-label="Past week: the city map for each day" hidden></div>
         <p class="past-status" id="past-status" role="status" aria-live="polite"></p>{% endif %}
         {% if controls %}
         <div class="forecast-body" id="forecast-body" hidden>
-          {% if board.risk_lead %}<p class="risk-lead">{{ board.risk_lead }}</p>{% else %}<p class="risk-lead">Forecast currently unavailable.</p>{% endif %}
+          {% if board.risk_lead %}<p class="risk-lead">{{ board.risk_lead }}</p>{% else %}<p class="risk-lead">The forecast is not available now.</p>{% endif %}
           <ul class="by-zone">{% for z in board.zones if z.risk is not none %}<li><span>{{ z.label }}</span><b class="lvl-{{ z.level }}">{{ z.risk }}%</b></li>{% endfor %}</ul>
-          <p class="note">Experimental beach risk scores from <a href="/forecast">combined sewer discharges and lingering effects</a>. Other bacteria sources are out of scope.</p>
+          <p class="note">Experimental beach risk scores from <a href="/forecast">combined sewer discharges and their effects after the discharge stops</a>. The scores do not include other sources of bacteria.</p>
         </div>
         {% endif %}
         {% endif %}
@@ -264,7 +264,7 @@
       {% if controls %}{{ map_controls() }}{% endif %}
       <div class="map-stack">
       <div class="map-wrap">
-        <div id="today-map" role="region" aria-label="Map of the city's beach monitoring stations, colored by the city's posted status"></div>
+        <div id="today-map" role="region" aria-label="Map of the city beach monitoring stations. The color of each station shows its city posting status."></div>
         <button type="button" class="map-reset" id="map-reset" hidden>Whole city</button>
       </div>
         <div class="map-legend" id="map-legend" aria-label="Map legend"><div class="legend-row"><strong class="src">City</strong><div class="legend-items"><span><i class="status-dot safe"></i>No warning</span><span><i class="status-dot posted"></i>Warning posted</span><span><i class="status-dot discharge"></i>Sewage discharge</span><span><i class="status-dot unknown"></i>No data</span></div></div></div>
@@ -272,35 +272,35 @@
       </div>
     </div>
     <details class="colour-key">
-      <summary>What the colors mean</summary>
+      <summary>What the Colors Mean</summary>
       <dl>
         <div><dt><i class="status-dot safe"></i> City status</dt>
           <dd>
-            <p>Circles and zone borders summarize the latest status available from SFPUC. Check the station’s sample date for when the water was collected.</p>
+            <p>The circles and zone borders show the latest status from SFPUC. To find the date when SFPUC collected the water, look at the sample date of the station.</p>
             <ul role="list">
-              <li><i class="status-dot safe" aria-hidden="true"></i><span><b>No warning (green):</b> SFPUC’s green status indicates that the last reported water quality result met California’s bacteria standards for water contact recreation. Since testing is not every day, this does not necessarily mean the water is currently clean.</span></li>
-              <li><i class="status-dot posted" aria-hidden="true"></i><span><b>Warning posted (orange):</b> SFPUC can post a warning after detecting elevated bacteria within the past 24 hours or after a recent combined sewer discharge.</span></li>
-              <li><i class="status-dot discharge" aria-hidden="true"></i><span><b>Sewage discharge (red):</b> SFPUC flags a combined sewer discharge within the previous 24 to 72 hours.</span></li>
-              <li><i class="status-dot unknown" aria-hidden="true"></i><span><b>No data (gray):</b> We have no usable current status for the station. SFPUC marks locations without data as not sampled or not routinely sampled. Tap a gray dot to see the latest available lab results and their collection date; use the arrows to browse older samples. An older result does not change today’s map color.</span></li>
+              <li><i class="status-dot safe" aria-hidden="true"></i><span><b>No warning (green):</b> The SFPUC green status shows that the last water quality result met the California bacteria standards for water contact recreation. SFPUC does not test each day. Thus, the water is possibly not clean now.</span></li>
+              <li><i class="status-dot posted" aria-hidden="true"></i><span><b>Warning posted (orange):</b> SFPUC can post a warning when it finds high bacteria in the last 24 hours. It can also post a warning after a recent combined sewer discharge.</span></li>
+              <li><i class="status-dot discharge" aria-hidden="true"></i><span><b>Sewage discharge (red):</b> SFPUC shows a combined sewer discharge in the last 24 to 72 hours.</span></li>
+              <li><i class="status-dot unknown" aria-hidden="true"></i><span><b>No data (gray):</b> We do not have a current status for the station. SFPUC marks locations with no data as "not sampled" or "not routinely sampled." Tap a gray dot to see the latest lab results and their collection date. Use the arrows to see older samples. An older result does not change the map color for today.</span></li>
             </ul>
             <p><a href="https://webapps.sfpuc.org/sapps/beachesandbay.html">See SFPUC’s official map and legend</a>.</p>
           </dd></div>
         <div><dt><i class="bwtf-dot safe"></i> Surfrider samples</dt>
           <dd>
-            <p>Each diamond shows the latest volunteer Enterococcus result at that site. Counts are in MPN (most probable number) per 100 mL.</p>
+            <p>Each diamond shows the latest volunteer Enterococcus result at that site. The unit is MPN (most probable number) per 100 mL.</p>
             <ul role="list">
-              <li><i class="bwtf-dot safe" aria-hidden="true"></i><span><b>Low bacteria (green):</b> Below {{ ENTERO_CAUTION }}.</span></li>
-              <li><i class="bwtf-dot caution" aria-hidden="true"></i><span><b>Medium bacteria (yellow):</b> {{ ENTERO_CAUTION }} through {{ ENTERO_LIMIT }}. This is our caution range.</span></li>
-              <li><i class="bwtf-dot posted" aria-hidden="true"></i><span><b>High bacteria (orange):</b> Above {{ ENTERO_LIMIT }}, the single-sample threshold used here.</span></li>
-              <li><i class="bwtf-dot stale" aria-hidden="true"></i><span><b>Over {{ STALE_AFTER_DAYS }} days old (hollow):</b> We hide the grade color after {{ STALE_AFTER_DAYS }} days. Tap the marker for the result and date.</span></li>
-              <li><i class="bwtf-dot unknown" aria-hidden="true"></i><span><b>No result (solid gray):</b> No Enterococcus reading is available for that site.</span></li>
+              <li><i class="bwtf-dot safe" aria-hidden="true"></i><span><b>Low bacteria (green):</b> Less than {{ ENTERO_CAUTION }}.</span></li>
+              <li><i class="bwtf-dot caution" aria-hidden="true"></i><span><b>Medium bacteria (yellow):</b> {{ ENTERO_CAUTION }} to {{ ENTERO_LIMIT }}. This is our caution range.</span></li>
+              <li><i class="bwtf-dot posted" aria-hidden="true"></i><span><b>High bacteria (orange):</b> More than {{ ENTERO_LIMIT }}. This is the single-sample limit that this site uses.</span></li>
+              <li><i class="bwtf-dot stale" aria-hidden="true"></i><span><b>Over {{ STALE_AFTER_DAYS }} days old (hollow):</b> After {{ STALE_AFTER_DAYS }} days, we remove the grade color. Tap the marker to see the result and date.</span></li>
+              <li><i class="bwtf-dot unknown" aria-hidden="true"></i><span><b>No result (solid gray):</b> That site has no Enterococcus result.</span></li>
             </ul>
-            <p>Volunteer results are supplemental. The City and Surfrider may sample different sites or dates, and official warnings come from SFPUC.</p>
+            <p>Volunteer results are supplemental data. The City and Surfrider can take samples at different sites or on different dates. Only SFPUC gives official warnings.</p>
           </dd></div>
       </dl>
     </details>
     {% if sites %}
-    <div class="site-chips" id="zone-sites" aria-label="The chosen zone's stations, as the city shows them, and Surfrider's sites there" hidden>
+    <div class="site-chips" id="zone-sites" aria-label="The city stations and the Surfrider sites in the selected zone" hidden>
       {% for z in board.zones %}{% for s in z.stations %}<button type="button" class="site" data-zone="{{ z.key }}" data-station="{{ s.source }}" data-sample-station="{{ s.source }}" data-sample-name="{{ s.full_name }}" data-sample-feed-date="{{ s.sampled }}" title="Latest lab results"><i class="status-dot {{ s.status }}"></i>{{ s.full_name }}<small>{{ s.sampled_text }}</small></button>{% endfor %}{% endfor %}
     </div>
     {% endif %}
@@ -830,14 +830,14 @@ function applyReplay() {
   const parts = [];
   if (counts.discharge) parts.push('<em class="discharge">Sewage discharge at ' + n(counts.discharge) + ".</em>");
   if (counts.posted) parts.push('<em class="posted">' + n(counts.posted) + (counts.posted > 1 ? " were" : " was") + " posted for bacteria.</em>");
-  if (!counts.discharge && !counts.posted) parts.push(counts.safe ? '<em class="good">No beach was posted</em> on the city\'s map.' : "Nothing recorded for this day.");
+  if (!counts.discharge && !counts.posted) parts.push(counts.safe ? '<em class="good">No beach was posted</em> on the city map.' : "There is no record for this day.");
   else if (counts.safe) parts.push(counts.safe + " other" + (counts.safe > 1 ? "s were" : " was") + " not posted.");
   const board = document.querySelector(".board");
   board.className = "board replaying tone-" + (worst === "discharge" ? "danger" : worst === "posted" ? "warn" : counts.safe ? "ok" : "warn");
-  board.querySelector(".eyebrow").innerHTML = "Replay · " + esc(fmtDay(day)) + " · SFPUC's map at its last check that day";
+  board.querySelector(".eyebrow").innerHTML = "Replay · " + esc(fmtDay(day)) + " · the SFPUC map at its last check that day";
   $("today-h").innerHTML = parts.join(" ");
   refreshLabels();   // a replayed day's posted labels replace the plain names they cover
-  const lead = board.querySelector(".lead"); if (lead) lead.innerHTML = "What the city's map showed at its last check on " + esc(fmtDay(day)) + ": posted, discharging, or neither" + (counts.unknown ? " · " + counts.unknown + " station" + (counts.unknown > 1 ? "s" : "") + " not recorded that day" : "") + ". Tap Today for the live board.";
+  const lead = board.querySelector(".lead"); if (lead) lead.innerHTML = "What the city map showed at its last check on " + esc(fmtDay(day)) + ": posted, discharging, or neither" + (counts.unknown ? " · " + counts.unknown + " station" + (counts.unknown > 1 ? "s" : "") + " with no record that day" : "") + ". Tap Today to see the live board.";
   renderLegend();
 }
 async function fetchJSON(url) { const r = await fetch(url); const j = await r.json(); if (j.ok === false) throw new Error(j.error || "no data"); return j; }
@@ -862,11 +862,11 @@ const BUILD = {
       if (o.lat == null) continue;
       const quiet = !o.n;
       const m = L.circleMarker([o.lat, o.lon], {pane: "of", radius: 3.5, color: "#7a5a3a", weight: 1.5, fillColor: "#7a5a3a", fillOpacity: 1, bubblingMouseEvents: false}).addTo(g);
-      const posts = o.stations.length ? "posts " + o.stations.join(", ") : "posts no monitored beach";
+      const posts = o.stations.length ? "posts " + o.stations.join(", ") : "does not post a monitored beach";
       m.bindTooltip(o.name + " · " + (quiet ? "no discharge reported" : o.n + " discharge" + (o.n > 1 ? "s" : "") + " · " + (o.volume_mg ? o.volume_mg.toFixed(1) + " MG" : "volume not reported")), {direction: "auto", offset: [8, 0], className: "st-label"});
       m.bindPopup('<div><b>' + esc(o.name) + '</b><span class="mut">' + esc(o.basin) + " basin · " + esc(o.water) + "</span><br>" +
-        (quiet ? "No discharge reported in the window." : o.n + " discharge" + (o.n > 1 ? "s" : "") + ", " + (o.volume_mg ? o.volume_mg.toFixed(1) + " million gallons" : "volume not reported") + (o.unreported && o.volume_mg ? " (" + o.unreported + " without a volume)" : "") + " · last " + esc(fmtDay(o.last))) +
-        "<br>When it fires SFPUC " + esc(posts) + '.<br><span class="mut">' + esc(shortSpan([d.window.from, d.window.to]).replace("–", " → ")) + ' of public reports · <a href="/discharges">Discharge Ledger</a></span></div>', {className: "of-pop", maxWidth: 300});
+        (quiet ? "No discharges were reported in this period." : o.n + " discharge" + (o.n > 1 ? "s" : "") + ", " + (o.volume_mg ? o.volume_mg.toFixed(1) + " million gallons" : "volume not reported") + (o.unreported && o.volume_mg ? " (" + o.unreported + " without a volume)" : "") + " · last " + esc(fmtDay(o.last))) +
+        "<br>When it discharges, SFPUC " + esc(posts) + '.<br><span class="mut">' + esc(shortSpan([d.window.from, d.window.to]).replace("–", " → ")) + ' of public reports · <a href="/discharges">Discharge Ledger</a></span></div>', {className: "of-pop", maxWidth: 300});
     }
     status("");   // no "N of M outfalls discharged" count under the map: the dots and their popups say it (Chase, 2026-11-13)
     return g;
@@ -895,7 +895,7 @@ const BUILD = {
     if (box) for (const s of d.sites) {
       if (!s.zone) continue;
       const grade = s.over ? "posted" : s.caution ? "caution" : s.value == null ? "unknown" : "safe";
-      const chip = document.createElement("button"); chip.type = "button"; chip.className = "site bwtf"; chip.dataset.zone = s.zone; chip.title = "Surfrider's latest result here";
+      const chip = document.createElement("button"); chip.type = "button"; chip.className = "site bwtf"; chip.dataset.zone = s.zone; chip.title = "The latest Surfrider result at this site";
       chip.dataset.sampleBwtf = s.name; chip.dataset.sampleName = s.city_name || s.name; chip.dataset.sampleDate = s.date || "";
       chip.innerHTML = '<i class="bwtf-dot ' + grade + (s.stale ? " stale" : "") + '"></i>' + esc(s.name) + "<small>Surfrider · " + (s.raw ? esc(s.raw) + " MPN" : "no result") + (s.date ? " · sampled " + esc(s.age_text) : "") + "</small>";
       const last = [...box.querySelectorAll('.site[data-zone="' + s.zone + '"]')].pop();
@@ -937,10 +937,10 @@ function setReplay(offset) {
 async function loadReplay() {
   const strip = $("day-strip"); if (!strip) return false;
   if (strip.children.length) return true;
-  pastStatus("Loading the map's past week…");
-  try { REPLAY = await fetchJSON("/api/today/replay"); pastStatus(""); } catch (e) { REPLAY = null; pastStatus("Past week unavailable: " + e.message); return false; }
+  pastStatus("Loading the map for the past week…");
+  try { REPLAY = await fetchJSON("/api/today/replay"); pastStatus(""); } catch (e) { REPLAY = null; pastStatus("The past week is not available: " + e.message); return false; }
   const n = REPLAY.days.length, oldest = REPLAY.covered && REPLAY.covered.length ? n - 1 - REPLAY.days.indexOf(REPLAY.covered[0]) : 0;
-  if (!oldest) { pastStatus("The map's record has no earlier days yet."); return false; }
+  if (!oldest) { pastStatus("The map record has no earlier days yet."); return false; }
   let h = "";
   for (let off = oldest; off >= 0; off--) {
     const day = REPLAY.days[n - 1 - off], w = dayWorst(off ? day : null);   // Today's dot is the live board, not the record's last check

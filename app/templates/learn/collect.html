@@ -109,33 +109,33 @@
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
 {{ topbar() }}
 <div class="wrap">
-  {{ page_head("Collect", "Pick the site you're at for where to park, the conditions for the field sheet, and a place for your notes.") }}
+  {{ page_head("Collect", "Select your site. This page shows where to park, the conditions for the field sheet, and a space for your notes.") }}
 
   <section class="sec" id="pick">
-    <h2>Your site</h2>
+    <h2>Your Site</h2>
     <div class="picks" role="group" aria-label="Your site">
       {%- for s in sites %}
       <button type="button" class="pick" data-site="{{ s.key }}" aria-pressed="{{ 'true' if s.key == picked else 'false' }}"><span class="n">{{ s.n }}</span><span>{{ s.name }}</span></button>
       {%- endfor %}
     </div>
-    <p class="hint" id="pick-hint"{% if picked %} hidden{% endif %}>Pick your site to see it here.</p>
+    <p class="hint" id="pick-hint"{% if picked %} hidden{% endif %}>Select your site to see it here.</p>
   </section>
 
-  <details class="howto" id="how"><summary class="preset">Taking a sample</summary>
+  <details class="howto" id="how"><summary class="preset">Taking a Sample</summary>
   <section class="sec">
     <p class="sub">The short version.</p>   {#- no Lab SOP link: it is an Admin tab behind the passphrase (Chase, 2026-11-04) #}
     <div class="how">
       <ol class="steps">
         <li>Write the site, date and time on the sample jar.</li>
-        <li>Wade out until the water is about 2 feet deep, around your knees.</li>
-        <li>Face the waves. If it's wavy, sample as a wave comes in.</li>
-        <li>Uncap the jar without touching its rim or the inside of the lid.</li>
-        <li>Push it mouth-down to about 6 inches under the surface, then tip it up to fill, away from your body.</li>
-        <li>Cap it, keep it cold in the cooler, and note the conditions for the sheet.</li>
+        <li>Walk into the water until it is approximately 2 feet deep (to your knees).</li>
+        <li>Face the waves. If there are waves, take the sample when a wave comes in.</li>
+        <li>Remove the cap from the jar. Do not touch the rim of the jar or the inner surface of the cap.</li>
+        <li>Push the jar, open end down, to approximately 6 inches below the surface. Then turn it up to fill it. Point the open end away from your body.</li>
+        <li>Put the cap on the jar. Keep the jar cold in the cooler. Write the conditions on the sheet.</li>
       </ol>
       <figure class="diagram" style="margin:0">
         <svg viewBox="0 20 640 290" role="img" aria-labelledby="dg-t">
-          <title id="dg-t">A volunteer standing in about 2 feet of water, knee-deep, facing an incoming wave, holding the sample jar about 6 inches under the surface; a close-up shows the jar 6 inches down</title>
+          <title id="dg-t">A volunteer stands in water approximately 2 feet deep (to the knees). The volunteer faces an incoming wave and holds the sample jar approximately 6 inches below the surface. A close-up shows the jar 6 inches down.</title>
           <defs>
             <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#26272a"/></marker>
             <marker id="ahb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#005a96"/></marker>
@@ -191,7 +191,7 @@
   <section class="sec site-card" data-site="{{ s.key }}"{% if s.key != picked %} hidden{% endif %}>
     <div class="site-top">
       {%- if s.photos %}<div class="photos n{{ s.photos|length }}">{% for file, caption in s.photos %}<figure><button type="button" class="zoom" aria-label="Larger view: {{ caption }}"><img class="photo" src="{{ asset('learn/sites/' ~ file) }}" alt="{{ caption }}" loading="lazy"></button><figcaption>{{ caption }}</figcaption></figure>{% endfor %}</div>
-      {%- else %}<div class="photo slot">Photo of the sampling spot coming soon</div>{% endif %}
+      {%- else %}<div class="photo slot">We will add a photo of the sampling location soon</div>{% endif %}
       <div>
         <h2><span class="n">{{ s.n }}</span>{{ s.name }}</h2>
         <a class="btn ghost maps" href="{{ s.maps }}" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-map-pin"/></svg>Open in Google Maps</a>
@@ -203,12 +203,12 @@
   {%- endfor %}
 
   <section class="sec" id="sheet"{% if not picked %} hidden{% endif %}>
-    <h2>Conditions for the sheet</h2>
-    <p class="sub">The sheet's weather at the time you sampled, from public sources, in the sheet's own choices. Tap Edit on any of them to put in your own reading: your eyes and thermometer win.</p>
+    <h2>Conditions for the Sheet</h2>
+    <p class="sub">The weather at the time of your sample, from public sources. The values use the choices on the sheet. To use your own value, tap Edit. Your own observations and thermometer are more important than these values.</p>
     <form class="cx-form" id="cx-form">
       <label>Date<input type="date" name="date" id="cx-date" value="{{ today }}" min="{{ earliest }}" max="{{ latest }}" required></label>
       <label>Time<input type="time" name="time" id="cx-time" value="{{ now }}" required></label>
-      <button type="button" class="btn ghost" id="cx-now" title="Set the date and time to right now">Now</button>
+      <button type="button" class="btn ghost" id="cx-now" title="Set the date and time to now">Now</button>
       <button class="btn" type="submit" id="cx-go">Get conditions</button>
     </form>
     <div id="cx-out" hidden>
@@ -217,9 +217,9 @@
     </div>
     <p class="cx-err" id="cx-err" hidden></p>
     <label class="obs" for="cx-obs"><span>Observations</span>
-      <textarea id="cx-obs" rows="3" placeholder="Birds, swimmers, surfers, debris, odor, water color, anything unusual"></textarea></label>
+      <textarea id="cx-obs" rows="3" placeholder="Birds, swimmers, surfers, debris, odor, water color, and other unusual conditions"></textarea></label>
     <div class="cx-actions"><button type="button" class="btn ghost" id="cx-copy" disabled>Copy for the sheet</button><button type="button" class="btn" id="cx-save" disabled>Save as image</button><small id="cx-copied" aria-live="polite"></small></div>
-    <p class="more">Tide from NOAA's predictions for the beach, its level in feet above the average lowest low (MLLW); air, sky and wind from Open-Meteo at the site's pin; waves and water temperature from Open-Meteo's ocean model; rain from Open-Meteo's model hours, summed over the 72 hours before the time you picked. Times are Pacific; the sheet covers the last 90 days and the next week. Observations stay on this device, saved with the site and date, until you save the image.</p>
+    <p class="more">Tide: NOAA predictions for the beach, in feet above mean lower low water (MLLW). Air, sky, and wind: Open-Meteo at the site location. Waves and water temperature: the Open-Meteo ocean model. Rain: the Open-Meteo model hours, added for the 72 hours before the time that you selected. Times are Pacific. The sheet includes the last 90 days and the next week. Your observations stay on this device, with the site and date, until you save the image.</p>
   </section>
 </div>
 {{ footer() }}
@@ -325,7 +325,7 @@
       $("cx-when").textContent = j.when;
       render();
       $("cx-out").hidden = false; $("cx-copy").disabled = $("cx-save").disabled = false;
-    } catch (e) { $("cx-err").textContent = "Couldn't get the conditions: " + e.message; $("cx-err").hidden = false; $("cx-out").hidden = true; }
+    } catch (e) { $("cx-err").textContent = "Could not get the conditions: " + e.message; $("cx-err").hidden = false; $("cx-out").hidden = true; }
     finally { $("cx-go").disabled = false; $("cx-go").textContent = "Get conditions"; }
   }
   $("cx-form").addEventListener("submit", e => { e.preventDefault(); load(); });
@@ -343,7 +343,7 @@
     const obs = $("cx-obs").value.trim();
     const text = last.name + ", " + last.when + "\n" + sheetRows().map(x => x.label + ": " + valueText(x)).join("\n") + (obs ? "\nObservations: " + obs : "");
     try { await navigator.clipboard.writeText(text); $("cx-copied").textContent = "Copied."; }
-    catch (e) { $("cx-copied").textContent = "Couldn't copy: select the values above instead."; }
+    catch (e) { $("cx-copied").textContent = "Could not copy. Select the values above."; }
   });
   if (site) { restore(); load(); }
 
@@ -366,7 +366,7 @@
     const rowsH = []; for (let i = 0; i < cells.length; i += 2) rowsH.push(Math.max(cells[i].h, (cells[i + 1] || cells[i]).h));
     const tide = j.rows.find(x => x.key === "tide"), curve = tide && tide.curve;
     font(400, 22); const obsLines = obs ? wrap(m, obs, W - 2 * P - 36) : ["—"];
-    font(400, 15); const srcLines = wrap(m, "Sources: " + [...new Set(j.rows.map(x => x.source).filter(x => x && x !== "Your entry"))].join(" · ") + (j.rows.some(x => x.source === "Your entry") ? ". Values marked Your entry are the volunteer's own." : ""), W - 2 * P);
+    font(400, 15); const srcLines = wrap(m, "Sources: " + [...new Set(j.rows.map(x => x.source).filter(x => x && x !== "Your entry"))].join(" · ") + (j.rows.some(x => x.source === "Your entry") ? ". Values with the mark Your entry come from the volunteer." : ""), W - 2 * P);
     const H = 112 + 132 + rowsH.reduce((a, b) => a + b + G, 0) + (curve ? 230 + G : 0) + (66 + obsLines.length * 30) + G + srcLines.length * 21 + 70;
     const cv = document.createElement("canvas"); cv.width = W * S; cv.height = H * S;
     const ctx = cv.getContext("2d"); ctx.scale(S, S); ctx.textBaseline = "alphabetic";
@@ -430,7 +430,7 @@
         setTimeout(() => URL.revokeObjectURL(a.href), 4000);
       }
       $("cx-copied").textContent = "Saved.";
-    } catch (e) { $("cx-copied").textContent = "Couldn't save the image: " + e.message; }
+    } catch (e) { $("cx-copied").textContent = "Could not save the image: " + e.message; }
     finally { $("cx-save").disabled = false; }
   });
 })();

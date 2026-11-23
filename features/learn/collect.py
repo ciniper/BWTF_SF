@@ -45,25 +45,25 @@ from shared.zones import ZONES
 SITES = [
     {"key": "ob-lincoln", "n": 1, "name": "Ocean Beach at Lincoln Way", "pin": "37°45'50.1\"N 122°30'42.0\"W", "station": "4605",
      "tide": ("9414275", "Ocean Beach"), "sheltered": False,
-     "photos": [("ob-lincoln-1.jpg", "The way in: the path over the dune at Lincoln Way, the beach sign on the right"),
-                ("ob-lincoln-2.jpg", "The Lincoln outfall and its pool; the sampling spot is the surf straight out from it")],
-     "parking": "Street parking on Lincoln Way and the avenues just inland. The Great Highway south of Lincoln is now "
-                "Sunset Dunes park, closed to cars."},
+     "photos": [("ob-lincoln-1.jpg", "The entrance: the path over the dune at Lincoln Way, with the beach sign on the right"),
+                ("ob-lincoln-2.jpg", "The Lincoln outfall and its pool, with the sampling location in the surf directly in front of it")],
+     "parking": "Street parking on Lincoln Way and on the avenues near the beach. The Great Highway south of Lincoln is now "
+                "Sunset Dunes park. Cars cannot go there."},
     {"key": "ob-vicente", "n": 2, "name": "Ocean Beach at Vicente St", "pin": "37°44'16.5\"N 122°30'29.6\"W", "station": "4603",
      "tide": ("9414275", "Ocean Beach"), "sheltered": False,
-     "photos": [("ob-vicente-1.jpg", "The way in: the Vicente St sign at the old Great Highway"),
-                ("ob-vicente-2.jpg", "The Vicente outfall, the concrete platform; the sampling spot is the surf straight out from it")],
-     "parking": "Street parking on Vicente St and the nearby avenues, then walk across Sunset Dunes (the old Great Highway) "
+     "photos": [("ob-vicente-1.jpg", "The entrance: the Vicente St sign at the old Great Highway"),
+                ("ob-vicente-2.jpg", "The Vicente outfall (the concrete platform), with the sampling location in the surf directly in front of it")],
+     "parking": "Street parking on Vicente St and the nearby avenues. Then walk across Sunset Dunes (the old Great Highway) "
                 "to the sand."},
     {"key": "china", "n": 3, "name": "China Beach", "pin": "37°47'17.4\"N 122°29'30.3\"W", "station": "4607",
      "tide": ("9414290", "the Golden Gate"), "sheltered": False, "photos": [],
-     "parking": "A small free lot at the end of Sea Cliff Ave, above the beach; a path and stairs lead down."},
+     "parking": "A small free parking lot at the end of Sea Cliff Ave, above the beach. A path and stairs go down to the beach."},
     {"key": "aquatic", "n": 4, "name": "Aquatic Park", "pin": "37°48'25.9\"N 122°25'22.3\"W", "station": "4613",
      "tide": ("9414305", "North Point"), "sheltered": True,
-     "photos": [("aquatic-1.jpg", "The way in: the ramp beside the bleachers, below Ghirardelli Square"),
-                ("aquatic-2.jpg", "The sampling spot: the cove's beach, Municipal Pier beyond")],
-     "parking": "Metered street parking on Beach St, Van Ness Ave and around Ghirardelli Square; the Fort Mason lots "
-                "are a short walk west."},
+     "photos": [("aquatic-1.jpg", "The entrance: the ramp next to the bleachers, below Ghirardelli Square"),
+                ("aquatic-2.jpg", "The sampling location: the beach in the cove, with Municipal Pier behind it")],
+     "parking": "Metered street parking on Beach St, Van Ness Ave and around Ghirardelli Square. The Fort Mason parking lots "
+                "are a short walk to the west."},
 ]
 SITE = {s["key"]: s for s in SITES}
 
@@ -208,7 +208,7 @@ def assemble(site: dict, at: datetime, weather: Optional[dict], marine: Optional
     mi = _nearest_hour(mh, at)
     sst = _pick(mh, "sea_surface_temperature", mi)
     row("water_temp", "Water temperature", None if sst is None else f"{round(sst * 9 / 5 + 32)}°F",
-        "An estimate for the open water nearby: use your thermometer's reading if you have one.", "Open-Meteo marine model")
+        "An estimate for the open water near the site. If you have a thermometer, use its value.", "Open-Meteo marine model")
 
     row("current_weather", "Current weather", sky_label(_pick(wh, "weather_code", wi)),
         "" if _pick(wh, "cloud_cover", wi) is None else f"{_pick(wh, 'cloud_cover', wi)}% cloud cover", om)
@@ -243,8 +243,8 @@ def assemble(site: dict, at: datetime, weather: Optional[dict], marine: Optional
     wv = _pick(mh, "wave_height", mi)
     if site["sheltered"]:
         row("wave_height", "Wave height", None,
-            "Check by eye: the wave model can't see inside the breakwater. Volunteers here usually log <1 ft."
-            + ("" if wv is None else f" Outside, in the Gate: {wave_bin(wv * 3.28084)}."), "Open-Meteo marine model", blank="Check by eye")
+            "Look at the waves and estimate. The wave model cannot see inside the breakwater. Volunteers here usually record <1 ft."
+            + ("" if wv is None else f" Outside the breakwater, in the Gate: {wave_bin(wv * 3.28084)}."), "Open-Meteo marine model", blank="Look and estimate")
     else:
         row("wave_height", "Wave height", None if wv is None else wave_bin(wv * 3.28084),
             "" if wv is None else f"{wv * 3.28084:.1f} ft significant wave height", "Open-Meteo marine model")
@@ -320,7 +320,7 @@ def parse_when(day: str, hm: str, now: Optional[datetime] = None) -> datetime:
     now = (now or now_pacific()).replace(tzinfo=None)
     at = datetime.strptime(f"{day} {hm}", "%Y-%m-%d %H:%M")
     if not (now - timedelta(days=EARLIEST_DAYS) <= at <= now + timedelta(days=LATEST_DAYS)):
-        raise ValueError(f"pick a time within the last {EARLIEST_DAYS} days or the next {LATEST_DAYS}")
+        raise ValueError(f"select a time in the last {EARLIEST_DAYS} days or the next {LATEST_DAYS}")
     return at
 
 

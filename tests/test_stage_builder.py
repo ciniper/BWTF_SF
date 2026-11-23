@@ -341,7 +341,7 @@ def test_the_json_is_bundled_and_the_stage_artifacts_are_not():
 def test_the_page_reads_the_builder_and_names_no_set_todays():
     html = PAGE.read_text(encoding="utf-8")
     assert "/forecast/api/stage-builder" in html and 'id="builder"' in html and 'id="dayFoldBtn"' in html
-    assert "How to read this" in html and "Day by day" in html and "sb-live" in html
+    assert "How to Read This" in html and "Day by day" in html and "sb-live" in html
     assert not re.search(r"today['’]s", html, re.I), re.findall(r".{40}today['’]s.{40}", html, re.I)[:3]
     assert "S5 is scored on its own and does not enter this number" in html
     # a module opens to its basins or zones: S2–S4's cells and the public number's two

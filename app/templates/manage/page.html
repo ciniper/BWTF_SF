@@ -3,7 +3,7 @@
 <link rel="icon" href="{{ asset('brand/favicon.ico') }}">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Your beach alerts — Surfrider SF Blue Water Task Force</title>
+<title>Your Beach Alerts — Surfrider SF Blue Water Task Force</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
@@ -42,12 +42,12 @@
 <div class="wrap"><div class="card">
   <div class="head">
     <div class="kicker">Surfrider SF · Blue Water Task Force</div>
-    <h1>Your beach alerts</h1>
+    <h1>Your Beach Alerts</h1>
   </div>
   <div class="body">
     {% if state == 'edit' %}
-      <p>Alerts for <span class="email">{{ email }}</span>. Pick the areas you want to hear about.</p>
-      {% if not active %}<div class="note">Your alerts are currently off. Saving turns them back on for the areas you pick.</div>{% endif %}
+      <p>Alerts for <span class="email">{{ email }}</span>. Select the areas that you want alerts for.</p>
+      {% if not active %}<div class="note">Your alerts are off now. When you save, the alerts start again for the areas that you select.</div>{% endif %}
       <form id="f">
         <div class="zones" id="zones">
           {% for z in zones %}
@@ -63,16 +63,16 @@
         </div>
         <div class="msg" id="msg"></div>
       </form>
-      <p class="mute foot">Done with alerts altogether? <a class="danger" href="/unsubscribe?t={{ token }}">Unsubscribe</a>.</p>
+      <p class="mute foot">Do you want to stop all alerts? <a class="danger" href="/unsubscribe?t={{ token }}">Unsubscribe</a>.</p>
     {% elif state == 'missing' %}
-      <p>This link is missing its code.</p>
-      <p class="mute">Open the "Change your sites" link from one of your alert emails, or <a class="link" href="/signup">sign up</a>.</p>
+      <p>This link does not have its code.</p>
+      <p class="mute">Open the "Change your sites" link in one of your alert emails. Or, <a class="link" href="/signup">sign up</a>.</p>
     {% elif state == 'unknown' %}
-      <p>We don't recognise this link.</p>
-      <p class="mute">Use the link from a recent alert email. If it keeps failing, reply to any alert and we'll sort it out by hand.</p>
+      <p>We do not know this link.</p>
+      <p class="mute">Use the link in a recent alert email. If the link continues to fail, reply to an alert. We will then repair the problem manually.</p>
     {% else %}
-      <p>We couldn't reach the subscriber list just now.</p>
-      <p class="mute">Please try again in a minute, or reply to any alert email.</p>
+      <p>We cannot connect to the subscriber list now.</p>
+      <p class="mute">Try again after one minute. Or, reply to an alert email.</p>
     {% endif %}
   </div>
 </div>
@@ -95,7 +95,7 @@ document.getElementById("f").addEventListener("submit", async e => {
   const go = document.getElementById("go"), msg = document.getElementById("msg");
   const zones = Array.from(zonesEl.querySelectorAll("input:checked")).map(cb => cb.value);
   msg.className = "msg";
-  if (!zones.length) { msg.className = "msg err"; msg.textContent = "Pick at least one area, or use Unsubscribe below to stop all alerts."; return; }
+  if (!zones.length) { msg.className = "msg err"; msg.textContent = "Select one or more areas. To stop all alerts, use Unsubscribe below."; return; }
   go.disabled = true; go.textContent = "Saving…";
   try {
     const resp = await fetch("/manage/api/update", {method: "POST", headers: {"Content-Type": "application/json"},
@@ -103,7 +103,7 @@ document.getElementById("f").addEventListener("submit", async e => {
     const data = await resp.json();
     if (!resp.ok || !data.ok) throw new Error(data.error || "Could not save.");
     msg.className = "msg ok";
-    msg.textContent = (data.reactivated ? "Alerts are back on. " : "Saved. ") + "You'll hear about " + data.zones + " (" + data.station_count + " sites).";
+    msg.textContent = (data.reactivated ? "Alerts are back on. " : "Saved. ") + "You will get alerts for " + data.zones + " (" + data.station_count + " sites).";
     document.querySelector(".note")?.remove();
   } catch (err) {
     msg.className = "msg err"; msg.textContent = err.message;

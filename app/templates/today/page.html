@@ -3,7 +3,7 @@
 <link rel="icon" href="{{ asset('brand/favicon.ico') }}"><link rel="apple-touch-icon" sizes="144x144" href="{{ asset('brand/bwtf_144x144.png') }}">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="refresh" content="300">
-<title>SF Beach Water — is the water safe today? · Surfrider SF Blue Water Task Force</title>
+<title>SF Beach Water — Is the Water Safe Today? · Surfrider SF Blue Water Task Force</title>
 {% if canonical %}<link rel="canonical" href="{{ canonical }}">{% endif %}   {# one page at / and /today: search engines index / #}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -28,7 +28,7 @@
 {{ topbar() }}
 <div class="wrap">
   {{ board_section(board, sites=true, controls=true) }}
-  <p class="foot-note">Statuses from SFPUC's beach map, checked every minute; modeled discharge-linked beach risk from the <a href="/forecast">Water Quality Forecast</a>; rain from NOAA's two city gauges; outfalls from SFPUC's reports to regulators; Surfrider's results from the volunteers' lab. Updated {{ generated }}.</p>
+  <p class="foot-note">Statuses: the SFPUC beach map. We examine it each minute. Beach risk from discharges: the model in the <a href="/forecast">Water Quality Forecast</a>. Rain: the two NOAA gauges in the city. Outfalls: the SFPUC reports to regulators. Surfrider results: the volunteer lab. Updated {{ generated }}.</p>
 
   {#- the hub cards, the Learn bar and the rain and tide pills moved to Admin's UI overflow tab (2026-11-04) #}
 </div>

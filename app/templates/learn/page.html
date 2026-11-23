@@ -173,22 +173,22 @@
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
 {{ topbar() }}
 <div class="wrap">
-  {{ page_head("Learn", "How San Francisco's sewers meet the shore, the bacteria the labs count, and the record so far.") }}
+  {{ page_head("Learn", "How the San Francisco sewers go to the shore, the bacteria that the labs count, and the record to this day.") }}
   <nav class="jump" aria-label="Sections">
     <a class="preset" href="#rain">Where the rain goes</a>{% if system %}<a class="preset" href="#above">The system from above</a>{% endif %}<a class="preset" href="#bugs">Meet the indicators</a><a class="preset" href="#count">How the lab counts</a><a class="preset" href="#record">The record, in motion</a>
   </nav>
 
   {# ── 1 ── #}
   <section class="sec" id="rain" aria-labelledby="rain-h">
-    <h2 id="rain-h">Where the rain goes</h2>
-    <p class="sub">San Francisco's sewers are combined: what goes down the drain at home and the rain off the street share the same pipes. Move the slider, or play a storm.</p>
+    <h2 id="rain-h">Where the Rain Goes</h2>
+    <p class="sub">San Francisco has combined sewers. The water from your home drains and the rain from the street go into the same pipes. Move the slider, or play a storm.</p>
     <div class="rainctl">
       <div class="rain-top"><label for="rain-r">Rain</label><output id="rain-out" for="rain-r">None</output><button type="button" class="btn" id="storm">Play a storm</button></div>
       <input type="range" id="rain-r" min="0" max="100" value="0" aria-describedby="rain-cap">
       <div class="ticks" aria-hidden="true"><span style="left:0">None</span><span style="left:16%">Light</span><span style="left:50%">Heavy</span><span style="left:85%">Storm</span></div>
     </div>
     <div class="scene-wrap">
-      <svg class="scene" id="scene" viewBox="0 0 960 440" role="img" aria-label="Cross-section: homes, a roof drain and two storm drains feed one combined sewer, which slopes down to a storage structure under the shore; it is pumped from the bottom to a treatment plant, and when full the settled water passes under a baffle and over the outlet's weir to an outfall at the beach">
+      <svg class="scene" id="scene" viewBox="0 0 960 440" role="img" aria-label="Cross-section: homes, a roof drain, and two storm drains go into one combined sewer. The sewer goes down to a storage structure under the shore. Pumps move the water from the bottom of the structure to a treatment plant. When the structure is full, the settled water goes under a baffle, over the weir of the outlet, and out through an outfall at the beach.">
         <defs>
           <linearGradient id="soil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e7dccb"/><stop offset="1" stop-color="#d3c4ab"/></linearGradient>
           <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fd0ec"/><stop offset="1" stop-color="#5aa5d3"/></linearGradient>
@@ -265,26 +265,26 @@
         </g>
       </svg>
     </div>
-    <p class="swipe">Swipe the diagram sideways to see the shore.</p>
+    <p class="swipe">Swipe the diagram to the side to see the shore.</p>
     <div class="caption" id="rain-cap" aria-live="polite"><span class="step" id="cap-step">Dry</span><span id="cap-text"></span></div>
     <ol class="key">
-      <li><b>1</b>Homes and businesses: everything down the drain, and the rain off the roofs.</li>
-      <li><b>2</b>Storm drains: rain off the street.</li>
-      <li><b>3</b>One combined sewer carries both, downhill to the shore. Over 90% of the city is served this way.</li>
-      <li><b>4</b>Transport/storage structures ring the shoreline and hold what the plant cannot take yet.</li>
-      <li><b>5</b>Pumped from the storage's floor to a treatment plant.</li>
-      <li><b>6</b>When storage is full, the settled water passes under a baffle that holds back floating trash, over the outlet's weir and out an outfall at the shore: a combined sewer discharge.</li>
-      <li><b>7</b>Treated water leaves through the plant's deep-water outfall: about four miles offshore for the Oceanside plant, into the bay for the Southeast plant.</li>
+      <li><b>1</b>Homes and businesses: all the water from the drains, and the rain from the roofs.</li>
+      <li><b>2</b>Storm drains: the rain from the street.</li>
+      <li><b>3</b>One combined sewer moves the two types of water down to the shore. More than 90% of the city uses this type of sewer.</li>
+      <li><b>4</b>Transport/storage structures go around the shoreline. They hold the water that the plant cannot treat yet.</li>
+      <li><b>5</b>Pumps move the water from the bottom of the storage structure to a treatment plant.</li>
+      <li><b>6</b>When the storage structure is full, the settled water goes under a baffle. The baffle stops floating trash. The water goes over the weir of the outlet and out through an outfall at the shore. This is a combined sewer discharge.</li>
+      <li><b>7</b>Treated water goes out through the deep-water outfall of the plant. For the Oceanside plant, this outfall is approximately four miles offshore. For the Southeast plant, it goes into the bay.</li>
     </ol>
     <div class="plants"><span>Westside: the Oceanside plant · {{ plants.oceanside }} overflow outfalls on the Pacific</span><span>Bayside: the Southeast plant · {{ plants.bayside }} overflow outfalls on the bay</span></div>
-    <p class="more">Drawn after Figure 2-4 of SFPUC's Sewer System Master Plan (2010), the source of the facts in the key. All {{ plants.total }} outfalls are on the <a href="/?layers=outfalls">Today map's Outfalls layer</a>; every discharge since 2016 is in the <a href="/discharges">Discharge Ledger</a>; <a href="/forecast#cso">SewerCast</a> maps same-day discharge impact risk to beach zones; <a href="/forecast">Water Quality Forecast</a> also includes lingering effects from earlier discharges.</p>
+    <p class="more">This diagram is based on Figure 2-4 of the SFPUC Sewer System Master Plan (2010). The facts in the key also come from that plan. All {{ plants.total }} outfalls are on the <a href="/?layers=outfalls">Outfalls layer of the Today map</a>. All discharges since 2016 are in the <a href="/discharges">Discharge Ledger</a>. <a href="/forecast#cso">SewerCast</a> shows the risk of a discharge effect today for each beach zone. <a href="/forecast">Water Quality Forecast</a> also includes the effects of earlier discharges that continue.</p>
   </section>
 
   {# ── 2. The system from above ── #}
   {% if system %}
   <section class="sec" id="above" aria-labelledby="above-h">
-    <h2 id="above-h">The system from above</h2>
-    <p class="sub">The diagram's storage, on the map: a brown ring of storage under the shore holds what the plants cannot take yet, and teal lines carry treated water out. Pick one of the six biggest storm days in the record and play it. Each outfall lights up when SFPUC reported it started discharging and goes dark when it stopped.</p>
+    <h2 id="above-h">The System from Above</h2>
+    <p class="sub">This map shows the storage from the diagram. A brown ring of storage under the shore holds the water that the plants cannot treat yet. Teal lines move treated water out. Select one of the six largest storm days in the record and play it. Each outfall comes on when its discharge started, as SFPUC reported. It goes off when the discharge stopped.</p>
     <div class="storms" id="storms" role="group" aria-label="Storm day">
       {% for s in system.storms %}<button type="button" class="preset{% if loop.first %} active{% endif %}" data-i="{{ loop.index0 }}" aria-pressed="{{ 'true' if loop.first else 'false' }}">{{ s.label }}</button>{% endfor %}
     </div>
@@ -297,17 +297,17 @@
     <div class="strip">
       <svg id="sys-strip" viewBox="0 0 1000 60" preserveAspectRatio="none" aria-hidden="true"><path id="strip-area" fill="#e8c9bd" stroke="#b5310a" stroke-width="1.5" vector-effect="non-scaling-stroke"/><line id="strip-head" y1="0" y2="60" stroke="#26272a" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>
       <input type="range" id="sys-t" min="0" max="1000" value="0" aria-label="Time in the storm">
-      <div class="strip-ends"><span id="sys-t0"></span><span>outfalls discharging, through the storm</span><span id="sys-t1"></span></div>
+      <div class="strip-ends"><span id="sys-t0"></span><span>outfalls that discharge during the storm</span><span id="sys-t1"></span></div>
     </div>
     <div class="swatches map-key"><span><i class="k-art"></i>main sewers (schematic)</span><span><i class="k-ring"></i>storage ring (schematic)</span><span><i class="k-main"></i>sewage to a plant</span><span><i class="k-out"></i>treated water out</span><span><i class="k-pl"></i>treatment plant (tap for a photo)</span><span><i class="k-of"></i>outfall</span><span><i class="k-on"></i>discharging</span></div>
-    <p class="more">Plant sites and offshore pipes are approximate, after Figures 2-1 and 2-5 of SFPUC's master plan; the ring is schematic, joining the outfalls in shoreline order rather than tracing the real structures, and the thin brown arteries show which way each neighborhood drains, downhill to the shore, not where its pipes run. Tap any line for its name. Start times, durations and volumes are SFPUC's reports to the State, with each discharge's volume spread evenly over its duration; all of them are in the <a href="/discharges">Discharge Ledger</a>. MG = million gallons (≈1.5 Olympic pools).</p>
+    <p class="more">The plant locations and offshore pipes are approximate. They are based on Figures 2-1 and 2-5 of the SFPUC master plan. The ring is a schematic. It connects the outfalls in shoreline order. It does not show the real structures. The thin brown lines show the direction in which each neighborhood drains to the shore. They do not show the locations of the pipes. Tap a line to see its name. The start times, durations, and volumes come from the SFPUC reports to the State. We divide the volume of each discharge equally across its duration. All discharges are in the <a href="/discharges">Discharge Ledger</a>. MG = million gallons (approximately 1.5 Olympic pools).</p>
   </section>
   {% endif %}
 
   {# ── 3 ── #}
   <section class="sec" id="bugs" aria-labelledby="bugs-h">
-    <h2 id="bugs-h">Meet the indicators</h2>
-    <p class="sub">Labs do not look for every germ in sewage. They count a few easy-to-grow gut bacteria that travel with it: when these are high, sewage or runoff is likely in the water.</p>
+    <h2 id="bugs-h">Meet the Indicators</h2>
+    <p class="sub">Labs do not test for all the germs in sewage. They count some gut bacteria that are easy to grow. These bacteria move with sewage. When their levels are high, sewage or runoff is probably in the water.</p>
     <div class="bugs">
       {% for b in indicators %}
       <article class="bug">
@@ -324,17 +324,17 @@
 
   {# ── 4. How the lab counts ── #}
   <section class="sec" id="count" aria-labelledby="count-h">
-    <h2 id="count-h">How the lab counts</h2>
-    <p class="sub">From a bottle of seawater to the number on this site, one bacterium at a time.</p>
+    <h2 id="count-h">How the Lab Counts</h2>
+    <p class="sub">From a bottle of seawater to the number on this site.</p>
     <div class="qt" id="qt">
       <div class="qt-pin" id="qt-pin">
         <div class="qt-view" id="qt-view">
           <div class="qt-track" id="qt-track">
             <div class="qt-intro">
-              <h3>One bottle, eight steps</h3>
-              <p>Follow one sample through the test behind an Enterococcus number: IDEXX's Enterolert in a Quanti-Tray.</p>
+              <h3>One Bottle, Eight Steps</h3>
+              <p>Follow one sample through the test for Enterococcus: IDEXX Enterolert in a Quanti-Tray.</p>
               <ol class="qt-route">{% for st in qt_steps %}<li><b>{{ loop.index }}</b>{{ st.title }}</li>{% endfor %}</ol>
-              <p class="qt-hint" id="qt-hint">Swipe sideways, or use the arrows below</p>
+              <p class="qt-hint" id="qt-hint">Swipe to the side, or use the arrows below</p>
             </div>
             {% for st in qt_steps %}
             <article class="qt-step" aria-label="Step {{ loop.index }}: {{ st.title }}">
@@ -354,8 +354,8 @@
     </div>
     <div class="lab" id="qt-after">
       <div>
-        <h3>Try it yourself</h3>
-        <p>Set how much Enterococcus is in the water and watch which wells glow, with the reading the table gives. Two samples of the same water rarely read the same: press New sample.</p>
+        <h3>Try It Yourself</h3>
+        <p>Set the quantity of Enterococcus in the water. Then look at the wells that glow, and at the result from the table. Two samples of the same water usually give different results. To see this, push New sample.</p>
         <div class="ctl">
           <label for="conc"><b>Enterococcus in the water</b></label>
           <input type="range" id="conc" min="0" max="1000" value="380" aria-describedby="lab-read">
@@ -364,7 +364,7 @@
         </div>
         <div class="reading" id="lab-read" aria-live="polite"></div>
       </div>
-      <svg class="tray" id="tray" viewBox="0 0 400 230" role="img" aria-label="A 97-well tray; glowing wells hold Enterococcus">
+      <svg class="tray" id="tray" viewBox="0 0 400 230" role="img" aria-label="A 97-well tray. The wells that glow contain Enterococcus.">
         <defs><filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
         <rect x="4" y="4" width="392" height="222" rx="14" fill="#14212f" stroke="#33495f"/>
         <g id="wells"></g>
@@ -374,13 +374,13 @@
 
   {# ── 5 ── #}
   <section class="sec" id="record" aria-labelledby="record-h">
-    <h2 id="record-h">The record, in motion</h2>
-    <p class="sub">Two records this site already keeps, drawn from the files behind the Beach Postings and Discharge Ledger pages. Tap a bar for its numbers.</p>
+    <h2 id="record-h">The Record, in Motion</h2>
+    <p class="sub">Two records that this site keeps. The data comes from the files for the Beach Postings and Discharge Ledger pages. Tap a bar to see its numbers.</p>
     <div class="charts">
       {% if postings %}
       <div class="chart">
-        <h3>Beach advisories San Francisco filed with the State</h3>
-        <p class="note">Per year, {{ postings.years[0].year }} to {{ postings.years[-1].year }}. The State's record runs months behind; it ends {{ postings.through }}.</p>
+        <h3>Beach Advisories That San Francisco Sent to the State</h3>
+        <p class="note">For each year, {{ postings.years[0].year }} to {{ postings.years[-1].year }}. The State record is some months late. It stops at {{ postings.through }}.</p>
         <svg id="ch-post" viewBox="0 0 520 240" role="img" aria-label="Bar chart of beach advisories per year"></svg>
         <div class="swatches"><span><i style="background:#b5310a"></i>sewage discharge</span><span><i style="background:#0072BC"></i>rain advisory</span><span><i style="background:#8a949b"></i>other or unknown</span></div>
         <p class="readout" id="rd-post" aria-live="polite"></p>
@@ -388,10 +388,10 @@
       {% endif %}
       {% if discharges %}
       <div class="chart">
-        <h3>Days with a combined sewer discharge</h3>
-        <p class="note">Per wet season, October to September, from SFPUC's reports to regulators, {{ discharges.first }} to {{ discharges.through }}.</p>
+        <h3>Days with a Combined Sewer Discharge</h3>
+        <p class="note">For each wet season (October to September), {{ discharges.first }} to {{ discharges.through }}. The data comes from the SFPUC reports to regulators.</p>
         <svg id="ch-csd" viewBox="0 0 520 240" role="img" aria-label="Bar chart of discharge days per wet season"></svg>
-        <div class="swatches"><span><i style="background:#7a5a3a"></i>days with at least one outfall discharging</span></div>
+        <div class="swatches"><span><i style="background:#7a5a3a"></i>days on which one or more outfalls discharged</span></div>
         <p class="readout" id="rd-csd" aria-live="polite"></p>
       </div>
       {% endif %}
@@ -434,10 +434,10 @@
     c.style.animationDelay = (-Math.random() * 6).toFixed(1) + "s"; c.style.display = "none"; $("puffs").appendChild(c); puffs.push(c);
   }
   const STATES = [
-    [0.03, "Dry", "Everything from homes and businesses runs downhill to the shoreline storage and is pumped from its floor to the treatment plant."],
-    [0.3, "Rain", "Rain off roofs and streets joins the sewage in the same pipes. The plant still takes it all."],
-    [0.7, "Heavy rain", "The plant takes all it can; the rest waits in the storage, where solids settle out and floating trash is trapped."],
-    [1.01, "Overflow", "Storage is full. The settled water passes under the baffle, which holds back floating trash, then over the weir and out a permitted outfall at the shore: a combined sewer discharge. Being fresh water, it rises and spreads across the surface. Settling in the storage counts as the equivalent of primary treatment, which is why SFPUC calls it a discharge rather than an overflow. SFPUC posts the nearby beaches and samples them until they clear."],
+    [0.03, "Dry", "All the water from homes and businesses goes down to the shoreline storage. Pumps move it from the bottom of the storage to the treatment plant."],
+    [0.3, "Rain", "Rain from roofs and streets goes into the same pipes as the sewage. The plant can still treat all of it."],
+    [0.7, "Heavy rain", "The plant treats as much as it can. The remaining water stays in the storage. There, solids settle and the storage holds floating trash."],
+    [1.01, "Overflow", "The storage is full. The settled water goes under the baffle, which stops floating trash. Then it goes over the weir and out through a permitted outfall at the shore. This is a combined sewer discharge. The water is fresh water. Thus, it goes up and spreads across the surface. Settling in the storage is equal to primary treatment. Thus, SFPUC calls it a discharge, not an overflow. SFPUC posts the nearby beaches and samples them until they are clear."],
   ];
   function width(id, w) { const el = $(id); el.setAttribute("stroke-width", w.toFixed(1)); el.style.opacity = w > 0.5 ? 1 : 0; }
   function speed(id, s) { $(id).style.setProperty("--dur", (1.8 - 1.3 * s).toFixed(2) + "s"); }
@@ -463,7 +463,7 @@
     const posted = r >= 0.7 || aftermath;
     $("sign-b").setAttribute("fill", posted ? "#d4763a" : "#237059"); $("sign-t").textContent = posted ? "POSTED" : "OPEN";
     let st = STATES.find(s => r < s[0]) || STATES[3];
-    if (aftermath && r < 0.7) st = [0, "After the storm", "The overflow has stopped and the plume is drifting off and thinning, but the beach stays posted while SFPUC samples it, until results show it is clear."];
+    if (aftermath && r < 0.7) st = [0, "After the storm", "The overflow stopped. The plume moves away and becomes thinner. But the beach stays posted while SFPUC samples it, until the results show that it is clear."];
     $("cap-step").textContent = st[1]; $("cap-text").textContent = st[2]; $("rain-cap").classList.toggle("overflow", st[1] === "Overflow");
   }
   const slider = $("rain-r");
@@ -508,7 +508,7 @@
   }
   function ofPopup(o) {
     const s = SYS.storms[SI], ev = s.events.filter(e => e.id === o.id);
-    const storm = ev.length ? ev.map(e => "from " + clock(s, e.start, true) + " for " + hm(e.dur) + ", " + num(e.mg) + " MG").join("; then ") : "no discharge reported";
+    const storm = ev.length ? ev.map(e => "from " + clock(s, e.start, true) + " for " + hm(e.dur) + ", " + num(e.mg) + " MG").join("; then ") : "no discharge was reported";
     return "<b>" + esc(o.name) + "</b><br>" + esc(o.water) + "<br>" + (o.plant === "oceanside" ? "Westside" : "Bayside") + " system · discharged on " + o.days + " days since October 2016"
          + "<br><b>" + esc(s.label) + ":</b> " + storm;
   }
@@ -648,7 +648,7 @@
     small.forEach((w, i) => { const on = SEEDS[49 + i] < 1 - Math.exp(-inTray * VS); w.classList.toggle("on", on); pS += on; });
     $("conc-out").textContent = c.toLocaleString() + " per 100 mL";
     const read = mpn(pL, pS), num = parseFloat(String(read).replace(/[^0-9.]/g, "")) || 0;
-    const g = read.startsWith(">") || num >= LIMIT ? ["over", "over the state limit of " + LIMIT] : num >= CAUTION ? ["caution", "caution, Surfrider's tier from " + CAUTION] : ["safe", "meets the standard"];
+    const g = read.startsWith(">") || num >= LIMIT ? ["over", "more than the state limit of " + LIMIT] : num >= CAUTION ? ["caution", "caution, the Surfrider range from " + CAUTION] : ["safe", "meets the standard"];
     $("lab-read").innerHTML = "<span>" + pL + " big and " + pS + " small wells glow · the lab reads <b>" + read + "</b></span><span class='grade " + g[0] + "'>" + g[1] + "</span>";
   }
   reseed(); drawTray();
@@ -776,7 +776,7 @@
       add(pack, "text", {x: 0, y: 5, "text-anchor": "middle", "font-size": 11, "font-weight": 900, fill: "#26272a", fixed: 1}, "Enterolert");
       const grains = [];
       for (let i = 0; i < 46; i++) grains.push({c: add(svg, "circle", {r: rnd(1.3, 2.5).toFixed(1), fill: "#f7f2e8", stroke: "#c8bea9", "stroke-width": .7}), t0: rnd(.14, .4), dx: rnd(-6, 6), sx: rnd(-40, 40), sink: rnd(8, 80)});
-      const note = add(svg, "text", {x: 300, y: 44, "text-anchor": "middle", "font-size": 15, "font-weight": 900, fill: "#26272a"}, "Food only enterococci can unlock");
+      const note = add(svg, "text", {x: 300, y: 44, "text-anchor": "middle", "font-size": 15, "font-weight": 900, fill: "#26272a"}, "Food that only enterococci can use");
       return a => {
         const [x, y] = kf(a, [[0, 480, 60], [.12, 340, 86], [.44, 340, 86], [.56, 480, 60]]);
         at(pack, x, y, ` rotate(${(70 * seg(a, .04, .12) - 70 * seg(a, .44, .54)).toFixed(1)})`); fade(pack, 1 - seg(a, .5, .58));
@@ -939,7 +939,7 @@
       const total = W + panels.length * pw + (W - pw) / 2;
       track.style.width = total + "px"; track.style.paddingRight = ((W - pw) / 2) + "px";
       qtBox.classList.toggle("pinned", on);
-      $("qt-hint").textContent = on ? "Keep scrolling down: the bench slides sideways" : "Swipe sideways, or use the arrows below";
+      $("qt-hint").textContent = on ? "Continue to scroll down. The bench moves to the side." : "Swipe to the side, or use the arrows below";
       centers = [0].concat(panels.map((p, i) => W + i * pw + pw / 2 - W / 2));
       const hold = Math.max(300, Math.min(480, innerHeight * .5));   // scroll spent on each step's animation
       SEG = []; ENDS = [0]; S = 0;

@@ -23,7 +23,7 @@
     if (window.Chart) return Promise.resolve();
     if (!pending) pending = new Promise(function (res, rej) {
       var s = document.createElement("script"); s.src = CHART_SRC; s.onload = res;
-      s.onerror = function () { pending = null; rej(new Error("chart library did not load")); }; document.head.appendChild(s); });
+      s.onerror = function () { pending = null; rej(new Error("the chart library did not load")); }; document.head.appendChild(s); });
     return pending;
   }
   // Horizontal lines across the plot area. A line *dataset* needs two points and
@@ -54,7 +54,7 @@
   }
   function pointText(o, p, label, y) {   // one tooltip line for a point: custom, or "label: raw · over its limit (ratio rule)"
     if (o.tooltip) return o.tooltip(p, label);
-    return label + ": " + (p.raw != null ? p.raw : y) + (p.over ? " · over its limit" : "") + (p.ratio ? " (ratio rule)" : "");
+    return label + ": " + (p.raw != null ? p.raw : y) + (p.over ? " · more than its limit" : "") + (p.ratio ? " (ratio rule)" : "");
   }
   var dayOf = function (p) { return p.date || new Date(p.x).toISOString().slice(0, 10); };
   var dayText = function (d) { return new Date(d + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "2-digit" }); };
