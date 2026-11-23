@@ -1,7 +1,7 @@
 # SFPUC email capture
 
 The implementation captures Brevo inbound messages privately and lets a
-coordinator review and approve plain text in an Admin-only dropdown preview.
+coordinator review text and images in an Admin-only dropdown preview.
 There is no Today panel or public email-read endpoint. App capture is disabled
 by default until deployment configuration is explicitly approved.
 
@@ -140,10 +140,35 @@ An old browser form cannot overwrite a newer decision. The reviewer name is an
 entered audit label under the shared coordinator session, not a verified user
 identity. Review POSTs also require a session-bound CSRF token.
 
-Original HTML is never rendered. Readable text is extracted without fetching
-images or URLs. Preview rendering uses escaped text only; headers, recipients,
-reviewer names, and raw payloads are excluded by the API field allowlist.
-Reviewers must remove personal details within the message text itself.
+Use **Remove forwarding text** to remove a recognized Gmail, Outlook, or Apple
+forwarding envelope and the sender's preface from the current draft. Matching
+requires a forwarding marker, From and Subject headers, and a nonempty bulletin.
+Nested envelopes are handled; the bulletin and its footer remain intact. Use
+**Undo cleanup** to restore the previous draft before making further edits.
+Cleanup is a CSRF-protected, read-only operation: nothing is saved until the
+review is submitted. Unrecognized headers, signatures, subscription footers,
+and other quoted conversations can be removed manually in the text field.
+
+Original HTML is never rendered. Text is escaped, and image references are
+extracted separately. Visible PNG/JPEG/GIF/WebP images from the exact SFPUC
+email CDN `d31hzlhk6di2h5.cloudfront.net` load automatically in the selected
+message and when opening the reviewed preview. Each request goes through an
+Admin-authenticated image route; the API exposes only those private route URLs,
+never source URLs or raw payloads. Known hidden/1×1 images and other origins
+(including the observed tracking-pixel hosts) are excluded. New image origins
+require an explicit code change. Remote hosts still see the server's image
+request; this does not promise to remove every form of sender tracking.
+
+Downloads use HTTPS, no redirects, no inherited credentials, raster MIME and
+signature checks, timeouts, a 3 MiB per-image limit, and at most 12 images per
+message. Private image responses are not cached; unavailable images show a
+caption without blocking the text. No image is downloaded during capture and
+no image bytes are stored in Supabase. Attachments and `cid:` images are not
+supported. The image/cleanup feature requires no new migration or configuration.
+
+Headers, recipients, reviewer names, and raw payloads remain excluded by the
+preview API field allowlist. Reviewers must check both text and images for
+private details. Review approval remains private to Admin.
 
 ## Limits and recovery
 
@@ -208,7 +233,9 @@ skipping the checks or rewriting provenance merely to make them pass.
   authentication, request limits, atomic validation, retryable outages, Admin
   gate/CSRF, review confirmation/conflicts, HTML escaping, private-field exclusion,
   dates/DST, feature-off behavior, public-route absence, unchanged Today,
-  and `.eml` import.
+  `.eml` import, image origin/authentication/size/type limits, tracking-pixel
+  exclusion, private image projections, and conservative forwarding cleanup
+  (including nested forwards and greater-than thresholds in bulletin text).
 - `db/scripts/test_sfpuc_emails.mjs`: actual PostgreSQL semantics using local
   PGlite, including batch rollback, duplicates, conflicting content, append-only
   review history, withdrawal, RLS/grants, and existing-table isolation.

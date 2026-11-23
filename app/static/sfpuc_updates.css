@@ -25,4 +25,13 @@
 .sfpuc-email-admin .email-inbox-row{display:flex;justify-content:space-between;gap:16px;border-top:1px solid var(--line);padding:14px 0;overflow-wrap:anywhere}
 .sfpuc-email-admin .email-inbox-row a{color:var(--brand);font-weight:700}.sfpuc-email-admin .email-inbox-row p{margin:4px 0;font-size:13px;color:var(--muted)}
 .sfpuc-email-admin .email-state{font-size:12px;font-weight:700;flex-shrink:0}
+.email-images{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px;margin:16px 0}
+.email-image{margin:0;flex-basis:100%;min-width:0}
+.email-image img{display:block;max-width:100%;max-height:720px;width:auto;height:auto;border-radius:6px}
+.email-image-small{flex:0 0 auto;max-width:80px}.email-image-small img{max-width:48px;max-height:48px}
+.email-image figcaption{font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.email-image [hidden],.email-cleanup [hidden]{display:none!important}
+.email-cleanup{padding:0 14px;background:var(--sand);border-radius:8px}
+.email-cleanup p{margin:8px 0 12px}.email-cleanup [role=status]:empty{display:none}
+.email-cleanup button:disabled{opacity:.65;cursor:wait}
 @media(max-width:650px){.sfpuc-email-admin .email-wrap{padding:14px}.sfpuc-email-admin .email-panel{padding:16px}.sfpuc-email-admin .email-inbox-row{display:block}.sfpuc-updates>summary{padding:16px}.sfpuc-updates-body{padding:0 16px 8px}}

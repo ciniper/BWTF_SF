@@ -38,3 +38,11 @@ def reviewed(offset=0):
 def recent_runs():
     return sb.select("sfpuc_email_ingest_runs", {"select": "received_at,inserted_count,duplicate_count,ignored_count",
                                                "order": "received_at.desc", "limit": "1"})
+
+
+def image_payloads(message_ids):
+    if not message_ids:
+        return {}
+    rows = sb.select("sfpuc_email_messages", {"select": "id,raw_payload",
+                     "id": "in.(" + ",".join(message_ids) + ")"})
+    return {row["id"]: row["raw_payload"] for row in rows}

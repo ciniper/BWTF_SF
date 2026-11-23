@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import pytest
 
 from features.sfpuc_updates import parser as P, routes as R, store as S
+from features.sfpuc_updates import presentation as V
 
 RECIPIENT = "capture@inbound.example.test"
 NOW = datetime(2026, 11, 21, 16, tzinfo=timezone.utc)
@@ -37,6 +38,7 @@ def client(monkeypatch):
     from app.wsgi import app
     app.config["TESTING"] = True
     monkeypatch.setattr(R.sb, "is_configured", lambda: True)
+    monkeypatch.setattr(S, "image_payloads", lambda ids: {})
     with app.test_client() as c:
         yield c
 
@@ -204,6 +206,171 @@ def test_eml_import_keeps_original_private():
     row = P.parse_payload(from_eml(original, RECIPIENT), RECIPIENT, {P.EXPECTED_SENDER}, now=NOW, provider="eml_import")[0][0]
     assert row["provider"] == "eml_import" and row["body_text"] == "Warning remains posted."
     assert row["raw_payload"]["OriginalEMLBase64"]
+
+
+IMAGE = "https://d31hzlhk6di2h5.cloudfront.net/email/banner.png"
+FORWARDED = ("My note to the coordinator\n\n---------- Forwarded message ---------\n"
+             "From: Beach Water Quality <source@example.test>\n"
+             "Date: Sat, Nov 21, 2026 at 1:05 PM\nSubject: Beach update\n"
+             "To: reader@example.test\n\nBEACH MONITORING UPDATE\n"
+             "STATUS: DE-POSTED (11/21/2026)\nOther beaches remain posted.\n\n"
+             "About the monitoring program\nPlease check the official bulletin.")
+
+
+def test_images_only_use_reviewed_origins_and_skip_pixels_and_sender_markup():
+    html = (f'<img src="{IMAGE}" width="640" alt="Beach &amp; ocean">'
+            f'<img src="{IMAGE}#duplicate">'
+            f'<img src="{IMAGE}?pixel" width="1" height="1">'
+            f'<img src="{IMAGE}?hidden" style="height: 1px !important">'
+            f'<img src="{IMAGE}?none" style="display:none">'
+            f'<script><img src="{IMAGE}?script"></script>'
+            f'<img src="{IMAGE}?icon" width="32" height="32" alt="Social icon">'
+            '<img src="https://tracker.example.test/pixel"><img src="cid:photo">'
+            '<img src="data:image/png;base64,example"><svg><img src="bad"></svg>')
+    result = V.images({"RawHtmlBody": html})
+    assert result == [{"url": IMAGE, "alt": "Beach & ocean", "small": False},
+                      {"url": IMAGE + "?icon", "alt": "Social icon", "small": True}]
+    assert V.images(None) == [] and V.images({"RawHtmlBody": "x" * 100_001}) == []
+    assert len(V.images({"RawHtmlBody": "".join(f'<img src="{IMAGE}?{i}">' for i in range(30))})) == V.MAX_IMAGES
+
+
+@pytest.mark.parametrize("url", ["http://d31hzlhk6di2h5.cloudfront.net/a.png", "https://127.0.0.1/a",
+    "https://169.254.169.254/metadata", "https://d31hzlhk6di2h5.cloudfront.net.evil.test/a",
+    "https://user@d31hzlhk6di2h5.cloudfront.net/a", "https://d31hzlhk6di2h5.cloudfront.net:8080/a",
+    "//d31hzlhk6di2h5.cloudfront.net/a", "javascript:alert(1)", IMAGE + "\n", IMAGE + "\\extra"])
+def test_untrusted_image_destinations_are_rejected(url):
+    assert V.image_url(url) is None
+
+
+class ImageResponse:
+    def __init__(self, data=b"\x89PNG\r\n\x1a\nexample", status=200, mime="image/png", length=None):
+        self.data, self.status_code = data, status
+        self.headers = {"Content-Type": mime}
+        if length is not None:
+            self.headers["Content-Length"] = str(length)
+    def __enter__(self):
+        return self
+    def __exit__(self, *args):
+        pass
+    def iter_content(self, size):
+        yield self.data
+
+
+def install_image_response(monkeypatch, response):
+    calls = []
+    class Session:
+        trust_env = True
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
+        def get(self, url, **kwargs):
+            calls.append((url, kwargs, self.trust_env))
+            return response
+    monkeypatch.setattr(V.requests, "Session", Session)
+    return calls
+
+
+def test_image_download_is_bounded_raster_only_and_does_not_follow_redirects(monkeypatch):
+    calls = install_image_response(monkeypatch, ImageResponse())
+    assert V.fetch_image(IMAGE)[1] == "image/png"
+    assert calls[0][1]["allow_redirects"] is False and calls[0][1]["stream"] is True
+    assert calls[0][2] is False and "Authorization" not in calls[0][1]["headers"]
+    for response in [ImageResponse(status=302), ImageResponse(mime="image/svg+xml"),
+                     ImageResponse(data=b"<html>not a PNG</html>"),
+                     ImageResponse(length=V.MAX_IMAGE_BYTES + 1),
+                     ImageResponse(data=b"x" * (V.MAX_IMAGE_BYTES + 1))]:
+        calls = install_image_response(monkeypatch, response)
+        with pytest.raises(ValueError):
+            V.fetch_image(IMAGE)
+        assert len(calls) == 1
+    calls = install_image_response(monkeypatch, ImageResponse())
+    with pytest.raises(ValueError):
+        V.fetch_image("https://127.0.0.1/private")
+    assert not calls
+
+
+def test_image_download_stops_a_slow_stream(monkeypatch):
+    install_image_response(monkeypatch, ImageResponse())
+    ticks = iter([0, 11])
+    monkeypatch.setattr(V.time, "monotonic", lambda: next(ticks))
+    with pytest.raises(ValueError, match="limit"):
+        V.fetch_image(IMAGE)
+
+
+def test_private_images_are_gated_eager_and_never_render_source_html(client, monkeypatch):
+    row = parse(payload(RawHtmlBody=f'<img src="{IMAGE}" width="640" alt="&lt;script&gt;bad&lt;/script&gt;" onerror="evil()">'))[0][0]
+    row["id"] = MID
+    monkeypatch.setattr(S, "image_payloads", lambda ids: {MID: row["raw_payload"]})
+    monkeypatch.setattr(S, "detail", lambda mid: (row, []))
+    monkeypatch.setattr(S, "inbox", lambda offset: [])
+    monkeypatch.setattr(S, "recent_runs", lambda: [])
+    path = f"/alerts/sfpuc-emails/images/{MID}/0"
+    assert client.get(path).status_code == 401
+    unlock(client)
+    page = client.get(f"/alerts/sfpuc-emails?message={MID}").data
+    assert f'src="{path}"'.encode() in page and b'loading="eager"' in page
+    assert b'onerror="evil()"' not in page and b'<script>bad</script>' not in page
+    assert b"Remove forwarding text" in page and b"Undo cleanup" in page
+    monkeypatch.setattr(V, "fetch_image", lambda url: (b"image-bytes", "image/png"))
+    response = client.get(path)
+    assert response.status_code == 200 and response.data == b"image-bytes"
+    assert response.headers["Cache-Control"] == "private, no-store"
+    assert response.headers["X-Content-Type-Options"] == "nosniff"
+    assert "sandbox" in response.headers["Content-Security-Policy"]
+    assert client.get(path[:-1] + "12").status_code == 404
+    monkeypatch.setenv("SFPUC_EMAIL_ENABLED", "false")
+    assert client.get(path).status_code == 404
+
+
+def test_preview_includes_only_private_image_routes(client, monkeypatch):
+    unlock(client)
+    row = {"id": MID, "title": "Notice", "body_text": "Reviewed text", "sent_at": None, "received_at": NOW.isoformat()}
+    monkeypatch.setattr(S, "reviewed", lambda offset: [row])
+    monkeypatch.setattr(S, "image_payloads", lambda ids: {MID: {"RawHtmlBody": f'<img src="{IMAGE}" alt="Beach">'}})
+    response = client.get("/alerts/api/sfpuc-updates")
+    assert response.status_code == 200
+    assert response.json["updates"][0]["images"][0]["src"] == f"/alerts/sfpuc-emails/images/{MID}/0"
+    assert b"cloudfront" not in response.data and b"RawHtmlBody" not in response.data
+
+
+def test_forwarding_cleanup_preserves_the_full_bulletin_and_handles_nested_quotes():
+    result = V.clean_forward("Fwd: Beach update", FORWARDED)
+    assert result["removed"] == 1 and result["title"] == "Beach update"
+    assert result["body"] == FORWARDED[FORWARDED.index("BEACH MONITORING UPDATE"):]
+    assert "STATUS: DE-POSTED (11/21/2026)" in result["body"]
+    assert "Other beaches remain posted." in result["body"] and "About the monitoring program" in result["body"]
+    nested = "---------- Forwarded message ---------\nFrom: second@example.test\nSubject: Fwd: Notice\n\n" + "\n".join("> " + line for line in FORWARDED.splitlines())
+    result = V.clean_forward("Fw: Fwd: Beach update", nested)
+    assert result["removed"] == 2 and result["title"] == "Beach update"
+    assert "reader@example.test" not in result["body"] and "second@example.test" not in result["body"]
+
+
+def test_cleanup_preserves_greater_than_thresholds_inside_the_bulletin():
+    body = FORWARDED + "\n> 104 CFU/100mL\n> Quoted official guidance"
+    assert V.clean_forward("Fwd: Notice", body)["body"].endswith("> 104 CFU/100mL\n> Quoted official guidance")
+    quoted = "\n".join("> " + line for line in body.splitlines())
+    assert V.clean_forward("Fwd: Notice", quoted)["body"].endswith("> 104 CFU/100mL\n> Quoted official guidance")
+
+
+@pytest.mark.parametrize("body", ["Unforwarded bulletin\nFrom: an official source", "Gmail verification code: 123456",
+    "---------- Forwarded message ---------\nSubject: A note\n\nKeep this text.",
+    "---------- Forwarded message ---------\nFrom: source@example.test\nSubject: Empty\n\n"])
+def test_cleanup_does_not_guess_or_erase_unrecognized_and_empty_messages(body):
+    assert V.clean_forward("Original title", body) == {"title": "Original title", "body": body, "removed": 0}
+
+
+def test_cleanup_requires_auth_and_csrf_and_does_not_save_a_review(client, monkeypatch):
+    monkeypatch.setattr(S, "review", lambda *args: pytest.fail("Cleanup must not save"))
+    path = "/alerts/sfpuc-emails/clean-forward"
+    draft = {"title": "Fwd: Notice", "body": FORWARDED}
+    assert client.post(path, json=draft).status_code == 401
+    unlock(client)
+    assert client.post(path, json=draft).status_code == 403
+    response = client.post(path, json=draft, headers={"X-CSRF-Token": "offline-csrf"})
+    assert response.status_code == 200 and response.json["removed"] == 1
+    assert response.json["title"] == "Notice" and "no-store" in response.headers["Cache-Control"]
+    assert client.post(path, json={"title": "x", "body": "x" * 30_001}, headers={"X-CSRF-Token": "offline-csrf"}).status_code == 400
 
 
 if __name__ == "__main__":
