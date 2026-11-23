@@ -30,6 +30,14 @@
 <p>From {{ message.sender }} · {{ 'Email dated' if message.sent_at else 'Received' }} {{ fmt_time(message.sent_at or message.received_at) }}</p>
 {% for warning in message.warnings %}<p class="email-notice">{{ warning }}</p>{% endfor %}
 {% if message.has_conflict %}<p class="email-notice">Another captured message has the same Message-ID with different content. Compare originals before approving.</p>{% endif %}
+{% if email_images %}
+<div class="email-images" aria-label="Email images">
+{% for image in email_images %}<figure class="email-image{% if image.small %} email-image-small{% endif %}">
+<img src="{{ image.src }}" alt="{{ image.alt }}" loading="eager" decoding="async" referrerpolicy="no-referrer">
+<figcaption hidden>Image unavailable — {{ image.alt }}</figcaption>
+</figure>{% endfor %}
+</div>
+{% endif %}
 <details><summary>Original email text and headers (private)</summary>
 <pre>{{ message.body_text }}</pre>
 <details><summary>Original payload</summary><pre>{{ message.raw_payload | tojson(indent=2) }}</pre></details>
@@ -41,9 +49,14 @@
 <input type="hidden" name="revision" value="{{ latest.revision if latest else 0 }}">
 <label>Reviewed title<input name="title" maxlength="300" required value="{{ latest.title if latest else message.subject[:300] }}"></label>
 <label>Reviewed message<textarea name="body" rows="12" maxlength="30000">{{ latest.body_text if latest else message.body_text[:30000] }}</textarea></label>
-<p class="email-muted">Keep the bulletin's wording and dates. Remove personal addresses, quoted conversations, signatures, tracking links, and unsubscribe information. Only the text above appears in the private preview.</p>
+<div class="email-cleanup">
+<div class="email-actions"><button type="button" class="secondary" data-clean-forward>Remove forwarding text</button><button type="button" class="secondary" data-undo-cleanup hidden>Undo cleanup</button></div>
+<p class="email-muted">Remove the forwarding header and anything you wrote above it. The bulletin and original email stay intact. Review any remaining signatures and subscription footer before approving.</p>
+<p data-cleanup-status role="status" aria-live="polite"></p>
+</div>
+<p class="email-muted">Keep the bulletin's wording and dates. Remove personal addresses, quoted conversations, signatures, tracking links, and unsubscribe information. The reviewed text and email images appear in the private preview.</p>
 <label>Reviewed by<input name="reviewer" maxlength="100" required autocomplete="name" value=""></label>
-<label class="email-confirm"><input type="checkbox" name="verified" value="yes"> I verified this is an SFPUC beach bulletin and checked the reviewed text for private information.</label>
+<label class="email-confirm"><input type="checkbox" name="verified" value="yes"> I verified this is an SFPUC beach bulletin and checked the reviewed text and images for private information.</label>
 <div class="email-actions"><button name="action" value="approved">Approve for preview</button><button name="action" value="rejected" class="secondary">{{ 'Remove from preview' if latest and latest.status == 'approved' else 'Reject' }}</button></div>
 </form>
 {% if revisions %}<details><summary>Review history · {{ revisions|length }}</summary>

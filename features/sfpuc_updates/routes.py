@@ -10,10 +10,11 @@ from datetime import datetime
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
-from flask import abort, jsonify, redirect, render_template, request, session, url_for
+from flask import Response, abort, jsonify, redirect, render_template, request, session, url_for
+import requests
 from werkzeug.exceptions import BadRequest, RequestEntityTooLarge
 
-from features.sfpuc_updates import parser, store
+from features.sfpuc_updates import parser, presentation, store
 from shared import supabase as sb
 
 LOG = logging.getLogger(__name__)
@@ -104,10 +105,11 @@ def reviewed_updates():
     offset = offset_arg()
     try:
         rows = store.reviewed(offset)
+        payloads = store.image_payloads([str(UUID(row["id"])) for row in rows[:5]])
         items = [{"id": row["id"], "title": row["title"], "text": row["body_text"],
                   "date": fmt_time(row.get("sent_at") or row["received_at"]),
                   "date_label": "Email dated" if row.get("sent_at") else "Captured",
-                  "source": "SFPUC email"} for row in rows[:5]]
+                  "source": "SFPUC email", "images": image_descriptors(row["id"], payloads.get(row["id"]))} for row in rows[:5]]
     except Exception:
         return _failure()
     response = jsonify(ok=True, updates=items, next_offset=offset + 5 if len(rows) > 5 and offset < 1000 else None)
@@ -143,8 +145,57 @@ def admin():
             error = "Email storage is unavailable. Check the feature's migration and connection."
     response = render_template("sfpuc_updates/admin.html", rows=rows, message=message, revisions=revisions,
                                runs=runs, offset=offset, error=error, ready=bool(configuration()),
-                               csrf=csrf_token(), fmt_time=fmt_time, expected_sender=parser.EXPECTED_SENDER)
+                               csrf=csrf_token(), fmt_time=fmt_time, expected_sender=parser.EXPECTED_SENDER,
+                               email_images=image_descriptors(message["id"], message.get("raw_payload")) if message else [])
     return response, 503 if error else 200, {"Cache-Control": "private, no-store"}
+
+
+def image_descriptors(message_id, payload):
+    return [{"src": url_for("sfpuc-email-image", message_id=message_id, index=index),
+             "alt": image["alt"], "small": image["small"]}
+            for index, image in enumerate(presentation.images(payload))]
+
+
+def email_image(message_id, index):
+    if not enabled():
+        abort(404)
+    if index >= presentation.MAX_IMAGES:
+        abort(404)
+    message_id = str(message_id)
+    try:
+        payload = store.image_payloads([message_id]).get(message_id)
+    except Exception:
+        return _failure()
+    images = presentation.images(payload)
+    if index >= len(images):
+        abort(404)
+    try:
+        data, mime = presentation.fetch_image(images[index]["url"])
+    except (ValueError, requests.RequestException):
+        return "Image unavailable.", 502, {"Cache-Control": "private, no-store"}
+    return Response(data, content_type=mime, headers={
+        "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff",
+        "Content-Security-Policy": "default-src 'none'; sandbox", "Referrer-Policy": "no-referrer"})
+
+
+def clean_forward():
+    if not enabled():
+        abort(404)
+    if request.content_length is None or request.content_length > 128 * 1024:
+        abort(413)
+    expected = session.get("sfpuc_email_csrf", "")
+    supplied = request.headers.get("X-CSRF-Token", "")
+    if not expected or not hmac.compare_digest(expected.encode(), supplied.encode()):
+        abort(403)
+    try:
+        data = request.get_json()
+        if not isinstance(data, dict):
+            raise ValueError()
+        title = parser.string(data.get("title"), "title", 300)
+        body = parser.string(data.get("body"), "body", 30_000)
+    except (ValueError, BadRequest):
+        return jsonify(ok=False, error="Invalid draft."), 400
+    return jsonify(ok=True, **presentation.clean_forward(title, body)), 200, {"Cache-Control": "private, no-store"}
 
 
 def save_review():
@@ -185,3 +236,5 @@ def register(app, gated_page, gated_api):
     app.add_url_rule("/alerts/api/sfpuc-updates", "sfpuc-email-preview", gated_api(reviewed_updates), methods=["GET"])
     app.add_url_rule("/alerts/sfpuc-emails", "sfpuc-email-admin", gated_page(admin, "/alerts/sfpuc-emails"), methods=["GET"])
     app.add_url_rule("/alerts/sfpuc-emails/review", "sfpuc-email-review", gated_api(save_review), methods=["POST"])
+    app.add_url_rule("/alerts/sfpuc-emails/clean-forward", "sfpuc-email-clean-forward", gated_api(clean_forward), methods=["POST"])
+    app.add_url_rule("/alerts/sfpuc-emails/images/<uuid:message_id>/<int:index>", "sfpuc-email-image", gated_api(email_image), methods=["GET"])
