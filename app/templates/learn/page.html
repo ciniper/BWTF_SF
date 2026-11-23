@@ -20,7 +20,7 @@
   .ctl{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin:0 0 12px}
   .ctl input[type=range]{flex:1;min-width:180px;max-width:420px;accent-color:var(--brand)}
   .ctl output{font-weight:700;min-width:92px}
-  .btn{padding:8px 14px;border-radius:0;border:2px solid var(--char);background:var(--char);color:#fff;font:400 16px/1.1 var(--label);letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
+  .btn{padding:8px 14px;border-radius:0;border:2px solid var(--char);background:var(--char);color:#fff;font:700 14px/1.2 var(--display);letter-spacing:0;text-transform:none;cursor:pointer}   /* Roboto, as written (2026-11-22) */
   .btn.ghost{background:#fff;color:var(--brand)}
   .btn:disabled{opacity:.5;cursor:default}
 
@@ -37,7 +37,7 @@
   .swipe{display:none;font-size:12.5px;color:var(--faint);margin:6px 0 0}
   .scene{display:block;width:100%;height:auto}
   .caption{display:flex;gap:12px;align-items:flex-start;margin:12px 0 0;padding:12px 14px;border-radius:var(--r);background:var(--sand2);min-height:48px}
-  .caption .step{flex:none;font:700 11px Roboto,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:var(--brand);border-radius:0;padding:4px 10px;margin-top:1px}
+  .caption .step{flex:none;font:700 12px Roboto,sans-serif;letter-spacing:0;text-transform:none;color:#fff;background:var(--brand);border-radius:0;padding:4px 10px;margin-top:1px}
   .caption.overflow .step{background:var(--discharge,#b5310a)}
   .key{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr));gap:6px 18px;margin:12px 0 0;padding:0;list-style:none;font-size:13.5px;color:var(--muted)}
   .key li{display:flex;gap:8px;align-items:baseline} .key b{flex:none;display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--ink);color:#fff;font-size:11px}
@@ -175,7 +175,7 @@
 <div class="wrap">
   {{ page_head("Learn", "How the San Francisco sewers go to the shore, the bacteria that the labs count, and the record to this day.") }}
   <nav class="jump" aria-label="Sections">
-    <a class="preset" href="#rain">Where the rain goes</a>{% if system %}<a class="preset" href="#above">The system from above</a>{% endif %}<a class="preset" href="#bugs">Meet the indicators</a><a class="preset" href="#count">How the lab counts</a><a class="preset" href="#record">The record, in motion</a>
+    <a class="preset" href="#rain">Where the Rain Goes</a>{% if system %}<a class="preset" href="#above">The System from Above</a>{% endif %}<a class="preset" href="#bugs">Meet the Indicators</a><a class="preset" href="#count">How the Lab Counts</a><a class="preset" href="#record">The Record, in Motion</a>
   </nav>
 
   {# ── 1 ── #}

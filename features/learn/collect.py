@@ -35,6 +35,7 @@ import requests
 from flask import render_template
 
 from shared.clock import now_pacific
+from shared.text import title_case
 from shared.zones import ZONES
 
 # ── The sites ───────────────────────────────────────────────────────────────────────────
@@ -196,7 +197,7 @@ def assemble(site: dict, at: datetime, weather: Optional[dict], marine: Optional
     rows = []
 
     def row(key, label, value, detail="", source="", blank=None, **extra):   # blank: what to show in place of a value left to the volunteer
-        rows.append({"key": key, "label": label, "value": value, "detail": detail, "source": source, "blank": blank, "edit": EDIT[key], **extra})
+        rows.append({"key": key, "label": title_case(label), "value": value, "detail": detail, "source": source, "blank": blank, "edit": EDIT[key], **extra})
 
     wh = (weather or {}).get("hourly") or {}
     wi = _nearest_hour(wh, at)
