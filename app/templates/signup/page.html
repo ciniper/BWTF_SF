@@ -14,7 +14,7 @@
   .panel{display:grid;grid-template-columns:5fr 6fr;background:#fff;border-radius:0;overflow:hidden}
   @media (max-width:840px){.panel{grid-template-columns:1fr}}
   .left{background:var(--brand);color:#fff;padding:34px 30px;display:flex;flex-direction:column}
-  .kicker{font-family:var(--label);font-size:16px;font-weight:400;letter-spacing:.12em;text-transform:uppercase;color:#85BFDF}
+  .kicker{font-family:var(--display);font-size:14px;font-weight:700;letter-spacing:0;text-transform:none;color:rgba(255,255,255,.85)}   /* Roboto, as written (2026-11-22) */
   .left h1{margin:10px 0 14px;font-family:var(--display);font-weight:700;font-size:48px;line-height:1.05;letter-spacing:-.02em}
   .left p{margin:0 0 8px;font-size:15.5px;line-height:1.55;color:rgba(255,255,255,.9)}
   .disclaimer{margin-top:auto;padding-top:24px;font-size:13px;color:#85BFDF;line-height:1.5;border-top:1px solid rgba(255,255,255,.18);display:flex;gap:12px;align-items:flex-start}
@@ -22,7 +22,7 @@
   .left img{height:56px;width:auto;align-self:flex-start;margin-bottom:18px;opacity:.95}
 
   .right{padding:30px}
-  .flabel{font-family:var(--label);font-size:16px;font-weight:400;letter-spacing:.12em;text-transform:uppercase;color:#54576F;margin:0 0 8px}
+  .flabel{font-family:var(--display);font-size:14px;font-weight:700;letter-spacing:0;text-transform:none;color:#54576F;margin:0 0 8px}
   .flabel .count{float:right;font-weight:600;text-transform:none;letter-spacing:0}
   input[type=email]{width:100%;padding:13px 14px;border:2px solid #d9e4e8;border-radius:0;font-family:inherit;font-size:15px;margin-bottom:20px}
   input[type=email]:focus{outline:none;border-color:#0072BC}
@@ -40,7 +40,7 @@
   .maphint{font-size:13px;color:#8a949b;margin:-10px 0 16px}
 
   .note{font-size:13px;color:#54576F;line-height:1.5;margin:0 0 16px}
-  button.go{width:100%;padding:15px;border:0;border-radius:0;background:var(--char);color:#fff;font-family:var(--label);font-weight:400;letter-spacing:.12em;text-transform:uppercase;font-size:21px;cursor:pointer}
+  button.go{width:100%;padding:15px;border:0;border-radius:0;background:var(--char);color:#fff;font-family:var(--display);font-weight:700;letter-spacing:0;text-transform:none;font-size:17px;cursor:pointer}
   button.go:hover{background:#005a96}
   button.go:disabled{background:#9db8c9;cursor:default}
   .msg{margin-top:12px;padding:12px 14px;border-radius:0;font-size:14px;display:none}
@@ -74,7 +74,7 @@
              saved profile, silently bot-flagging real signups (hit 2026-09-02). -->
         <input class="hp" type="text" id="hp-extra" name="hp-extra" tabindex="-1" aria-hidden="true" autocomplete="off">
 
-        <p class="flabel">Which areas? <span class="count" id="selCount">0 selected</span></p>
+        <p class="flabel">Which Areas? <span class="count" id="selCount">0 Selected</span></p>
         <div class="zones" id="zones"></div>
         <div id="map"></div>
         <p class="maphint">Each dot is a city monitoring station. Select areas. The map then highlights the stations that your alerts include.</p>
@@ -111,7 +111,7 @@ for (const z of ZONES) for (const s of z.stations) {
 }
 
 function refresh() {
-  document.getElementById("selCount").textContent = selected.size + " selected";
+  document.getElementById("selCount").textContent = selected.size + " Selected";
   document.querySelectorAll(".zone").forEach(el =>
     el.classList.toggle("on", selected.has(el.querySelector("input").value)));
   const bounds = [];

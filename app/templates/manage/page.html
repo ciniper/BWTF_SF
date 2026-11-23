@@ -13,7 +13,7 @@
   .wrap{max-width:560px;margin:0 auto;padding:40px 20px}
   .card{background:#fff;border-radius:0;overflow:hidden;box-shadow:0 10px 30px rgba(38,39,42,.08)}
   .head{background:var(--brand);color:#fff;padding:26px 28px}
-  .kicker{font-family:var(--label);font-size:16px;font-weight:400;letter-spacing:.12em;text-transform:uppercase;color:#85BFDF}
+  .kicker{font-family:var(--display);font-size:14px;font-weight:700;letter-spacing:0;text-transform:none;color:rgba(255,255,255,.85)}   /* Roboto, as written (2026-11-22) */
   .head h1{margin:8px 0 0;font-family:var(--display);font-weight:700;font-size:36px;line-height:1.1;letter-spacing:-.02em}
   .body{padding:26px 28px}
   .body p{margin:0 0 14px;font-size:16px;line-height:1.55}
@@ -26,7 +26,7 @@
   .zname{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px}
   .zname input{width:18px;height:18px;accent-color:#0072BC}
   .zsites{margin:6px 0 0 28px;color:#54576F;font-size:13px;line-height:1.5}
-  button,.btn{display:inline-block;border:0;cursor:pointer;background:var(--char);color:#fff;font-family:var(--label);font-weight:400;letter-spacing:.12em;text-transform:uppercase;font-size:18px;padding:12px 22px;border-radius:0;text-decoration:none}
+  button,.btn{display:inline-block;border:0;cursor:pointer;background:var(--char);color:#fff;font-family:var(--display);font-weight:700;letter-spacing:0;text-transform:none;font-size:15px;padding:12px 22px;border-radius:0;text-decoration:none}
   button:hover{background:#005a96}
   button[disabled]{opacity:.6;cursor:default}
   .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
@@ -86,7 +86,7 @@ function refresh() {
   const boxes = Array.from(zonesEl.querySelectorAll("input"));
   boxes.forEach(cb => cb.closest(".zone").classList.toggle("on", cb.checked));
   const n = boxes.filter(cb => cb.checked).length;
-  document.getElementById("selCount").textContent = n ? n + " area" + (n === 1 ? "" : "s") + " selected" : "nothing selected";
+  document.getElementById("selCount").textContent = n ? n + " Area" + (n === 1 ? "" : "s") + " Selected" : "Nothing Selected";
 }
 zonesEl.addEventListener("change", refresh);
 refresh();
