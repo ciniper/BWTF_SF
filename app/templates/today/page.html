@@ -2,8 +2,10 @@
 <html lang="en"><head><meta charset="utf-8">
 <link rel="icon" href="{{ asset('brand/favicon.ico') }}"><link rel="apple-touch-icon" sizes="144x144" href="{{ asset('brand/bwtf_144x144.png') }}">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="refresh" content="300">
-<title>SF Beach Water — is the water safe today? · Surfrider SF Blue Water Task Force</title>
+{% if city_email_preview %}<meta name="robots" content="noindex, nofollow">
+<title>Latest City email — Today preview · Admin</title>
+{% else %}<meta http-equiv="refresh" content="300">
+<title>SF Beach Water — is the water safe today? · Surfrider SF Blue Water Task Force</title>{% endif %}
 {% if canonical %}<link rel="canonical" href="{{ canonical }}">{% endif %}   {# one page at / and /today: search engines index / #}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,6 +13,10 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 <script src="{{ asset('sample_popover.js') }}" defer></script>
+{% if city_email_preview %}
+<link rel="stylesheet" href="{{ asset('city_email.css') }}">
+<script src="{{ asset('city_email.js') }}" defer></script>
+{% endif %}
 
 {% from "_today_board.html" import board_styles, board_section, board_script with context %}
 {{ board_styles() }}
@@ -27,12 +33,17 @@
 {% include "_icons.html" %}{% from "_frame.html" import topbar, footer, tabbar with context %}
 {{ topbar() }}
 <div class="wrap">
-  {{ board_section(board, sites=true, controls=true) }}
+  {% if city_email_preview %}<aside class="city-email-preview" aria-label="Admin preview">
+    <div><strong>Admin preview</strong><span>Click “City samples” to open the latest reviewed City email.</span></div>
+    <a href="{{ url_for('sfpuc-email-admin') }}">Back to SFPUC emails</a>
+  </aside>{% endif %}
+  {{ board_section(board, sites=true, controls=true, city_email_preview=city_email_preview) }}
   <p class="foot-note">Statuses from SFPUC's beach map, checked every minute; modeled discharge-linked beach risk from the <a href="/forecast">Water Quality Forecast</a>; rain from NOAA's two city gauges; outfalls from SFPUC's reports to regulators; Surfrider's results from the volunteers' lab. Updated {{ generated }}.</p>
 
   {#- the hub cards, the Learn bar and the rain and tide pills moved to Admin's UI overflow tab (2026-11-04) #}
 </div>
+{% if city_email_preview %}{% include 'sfpuc_updates/_city_email.html' %}{% endif %}
 {{ footer() }}
-{{ tabbar() }}
+{{ tabbar(insights=not city_email_preview) }}
 {{ board_script(board) }}
 </body></html>

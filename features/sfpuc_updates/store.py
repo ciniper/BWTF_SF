@@ -28,11 +28,11 @@ def review(message_id, expected_revision, action, title, body, reviewer):
                   "decision": action, "reviewed_title": title, "reviewed_text": body, "reviewer": reviewer})
 
 
-def reviewed(offset=0):
+def reviewed(offset=0, *, limit=6):
     # View already restricts to the newest review being approved. No raw fields
     # are selected or serialized, even though the server role can read originals.
     return sb.select("sfpuc_email_reviewed", {"select": "id,title,body_text,sent_at,received_at,reviewed_at",
-                    "order": "sort_at.desc,id.desc", "limit": "6", "offset": str(offset)})
+                    "order": "sort_at.desc,id.desc", "limit": str(limit), "offset": str(offset)})
 
 
 def recent_runs():

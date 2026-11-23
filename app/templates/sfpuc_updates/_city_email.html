@@ -1,0 +1,21 @@
+<dialog class="city-email-dialog" id="city-email-dialog" aria-labelledby="city-email-heading" aria-describedby="city-email-context">
+  <header class="city-email-head">
+    <div><p class="city-email-source">SFPUC · Beach Water Quality</p><h2 id="city-email-heading">Latest City email</h2></div>
+    <button type="button" class="city-email-close" data-city-email-close autofocus aria-label="Close latest City email">Close <span aria-hidden="true">×</span></button>
+  </header>
+  <div class="city-email-content" tabindex="0" aria-label="City email content">
+    <p class="city-email-context" id="city-email-context">Latest email approved for Admin preview. The email date is separate from the sample dates and live map status.</p>
+    <p data-city-email-status role="status" aria-live="polite"></p>
+    <button type="button" class="city-email-retry" data-city-email-retry hidden>Try again</button>
+    <article data-city-email-message hidden>
+      <p class="city-email-date" data-city-email-date></p>
+      <h3 data-city-email-title></h3>
+      <div class="city-email-text" data-city-email-text></div>
+      <div class="city-email-images" data-city-email-images aria-label="Email images"></div>
+    </article>
+  </div>
+  <footer class="city-email-footer">
+    <a href="https://www.sfpuc.gov/programs/ocean-and-beach-monitoring" target="_blank" rel="noopener noreferrer">SFPUC beach monitoring</a>
+    <a href="tel:+14152422214">Beach hotline: 415-242-2214</a>
+  </footer>
+</dialog>

@@ -14,6 +14,7 @@
 <h1>SFPUC emails</h1>
 <p>Capture, review, and preview SFPUC emails privately. Approved messages stay in Admin.</p>
 {{ admin_tabs('sfpuc-emails') }}
+<p><a href="{{ url_for('sfpuc-email-today-preview') }}">Preview “Latest City email” on Today →</a></p>
 {% if error %}<p class="email-notice" role="alert">{{ error }}</p>{% endif %}
 {% if not ready %}<p class="email-notice">Receiving address or webhook authentication still needs configuration. Existing messages can be reviewed.</p>{% endif %}
 <section class="email-panel">

@@ -223,14 +223,22 @@
   </div>
 {%- endmacro %}
 
-{% macro board_section(board, sites=false, controls=false) -%}
+{% macro city_email_trigger() -%}
+<button type="button" class="city-email-trigger" data-city-email aria-haspopup="dialog" aria-controls="city-email-dialog" title="Open latest City email">City samples <svg class="ic" aria-hidden="true"><use href="#i-mail"/></svg></button>
+{%- endmacro %}
+
+{% macro board_section(board, sites=false, controls=false, city_email_preview=false) -%}
   <section class="board tone-{{ board.tone }}" aria-labelledby="today-h">
     <div class="grid">
       <div class="left">
         <div class="eyebrow">Beach status · {{ board.date }} · {% if board.feed_ok %}SFPUC map checked {{ board.checked }}{% else %}SFPUC map unreachable{% endif %}</div>
         <h1 id="today-h">{{ board.headline_html|safe }}</h1>
         <p class="lead">{{ board.lead }}</p>
-        {% if board.facts %}<dl class="facts">{% for f in board.facts %}<div><dt>{{ f.label }}</dt><dd>{{ f.text[:1]|upper }}{{ f.text[1:] }}</dd></div>{% endfor %}</dl>{% endif %}
+        {% if board.facts or city_email_preview %}<dl class="facts">
+        {% set ns = namespace(has_city=false) %}
+        {% for f in board.facts %}<div><dt>{% if city_email_preview and f.label == 'City samples' %}{% set ns.has_city = true %}{{ city_email_trigger() }}{% else %}{{ f.label }}{% endif %}</dt><dd>{{ f.text[:1]|upper }}{{ f.text[1:] }}</dd></div>{% endfor %}
+        {% if city_email_preview and not ns.has_city %}<div><dt>{{ city_email_trigger() }}</dt><dd>Sample dates unavailable.</dd></div>{% endif %}
+        </dl>{% endif %}
         {% if board.zones %}
         <div class="zones" id="zones">
           {# the tiles sit where their zones are on the map (landing.TILE_GRID, Chase, 2026-11-08); board.zones keeps registry order #}

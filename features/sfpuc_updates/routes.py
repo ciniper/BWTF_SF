@@ -106,16 +106,48 @@ def reviewed_updates():
     try:
         rows = store.reviewed(offset)
         payloads = store.image_payloads([str(UUID(row["id"])) for row in rows[:5]])
-        items = [{"id": row["id"], "title": row["title"], "text": row["body_text"],
-                  "date": fmt_time(row.get("sent_at") or row["received_at"]),
-                  "date_label": "Email dated" if row.get("sent_at") else "Captured",
-                  "source": "SFPUC email", "images": image_descriptors(row["id"], payloads.get(row["id"]))} for row in rows[:5]]
+        items = [reviewed_item(row, payloads.get(row["id"])) for row in rows[:5]]
     except Exception:
         return _failure()
     response = jsonify(ok=True, updates=items, next_offset=offset + 5 if len(rows) > 5 and offset < 1000 else None)
     # Withdrawal should be reflected on the next read, not retained in shared caches.
     response.headers["Cache-Control"] = "private, no-store"
     return response
+
+
+def reviewed_item(row, payload):
+    """Only reviewed fields and private image routes leave the server."""
+    return {"id": row["id"], "title": row["title"], "text": row["body_text"],
+            "date": fmt_time(row.get("sent_at") or row["received_at"]),
+            "date_label": "Email dated" if row.get("sent_at") else "Captured",
+            "source": "SFPUC email", "images": image_descriptors(row["id"], payload)}
+
+
+def latest_update():
+    if not enabled():
+        abort(404)
+    if not sb.is_configured():
+        return _failure()
+    try:
+        rows = store.reviewed(0, limit=1)
+        item = None
+        if rows:
+            row = rows[0]
+            payloads = store.image_payloads([str(UUID(row["id"]))])
+            item = reviewed_item(row, payloads.get(row["id"]))
+    except Exception:
+        return _failure()
+    return jsonify(ok=True, update=item), 200, {"Cache-Control": "private, no-store"}
+
+
+def today_preview():
+    if not enabled():
+        abort(404)
+    # Reuse the actual Today board; only this authenticated route opts into the UI.
+    from features.today import page as today
+    status, content_type, body = today.handle_page({}, b"", city_email_preview=True)
+    return Response(body, status=status, content_type=content_type,
+                    headers={"Cache-Control": "private, no-store", "X-Robots-Tag": "noindex, nofollow"})
 
 
 def admin():
@@ -234,7 +266,10 @@ def register(app, gated_page, gated_api):
     app.jinja_env.globals["sfpuc_email_enabled"] = enabled
     app.add_url_rule("/api/ingest/sfpuc-email", "sfpuc-email-webhook", webhook, methods=["POST"])
     app.add_url_rule("/alerts/api/sfpuc-updates", "sfpuc-email-preview", gated_api(reviewed_updates), methods=["GET"])
+    app.add_url_rule("/alerts/api/sfpuc-updates/latest", "sfpuc-email-latest", gated_api(latest_update), methods=["GET"])
     app.add_url_rule("/alerts/sfpuc-emails", "sfpuc-email-admin", gated_page(admin, "/alerts/sfpuc-emails"), methods=["GET"])
+    app.add_url_rule("/alerts/sfpuc-emails/today-preview", "sfpuc-email-today-preview",
+                     gated_page(today_preview, "/alerts/sfpuc-emails/today-preview"), methods=["GET"])
     app.add_url_rule("/alerts/sfpuc-emails/review", "sfpuc-email-review", gated_api(save_review), methods=["POST"])
     app.add_url_rule("/alerts/sfpuc-emails/clean-forward", "sfpuc-email-clean-forward", gated_api(clean_forward), methods=["POST"])
     app.add_url_rule("/alerts/sfpuc-emails/images/<uuid:message_id>/<int:index>", "sfpuc-email-image", gated_api(email_image), methods=["GET"])

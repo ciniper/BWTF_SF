@@ -2,7 +2,7 @@
 
 The implementation captures Brevo inbound messages privately and lets a
 coordinator review text and images in an Admin-only dropdown preview.
-There is no Today panel or public email-read endpoint. App capture is disabled
+Public Today has no email panel or public email-read endpoint. App capture is disabled
 by default until deployment configuration is explicitly approved.
 
 **Database applied November 21, 2026:** migration `20261122020135`
@@ -171,6 +171,33 @@ preview API field allowlist. Reviewers must check both text and images for
 private details. Review approval remains private to Admin.
 
 ## Limits and recovery
+
+### Today overlay design preview
+
+From **Admin → SFPUC emails**, choose **Preview “Latest City email” on Today**.
+The private route `/alerts/sfpuc-emails/today-preview` reuses the Today board.
+Its **City samples** header label opens a centered, scrollable **Latest City
+email** dialog styled like the map's sample-results window. It shows the newest
+approved bulletin by email date (capture date is the fallback), its reviewed
+text, and automatically loaded private images. The label remains available
+when sample dates are missing, without inventing a collection date.
+
+The dialog fetches `/alerts/api/sfpuc-updates/latest` only on opening, and reads
+again on every reopen so edits and withdrawals take effect. Both routes and all
+images require the Admin session. HTML and JSON responses are private/no-store;
+the preview page is noindex and omits analytics and timed page refresh. Loading,
+no-approved-email, expired-session, unavailable, and retry states keep the
+SFPUC links available. Close, Escape, and clicking the backdrop dismiss the
+window; focus returns to City samples.
+
+This is a design preview, not public publication. `/` and `/today` keep their
+existing header and make no email requests, including for logged-in Admins.
+Existing approvals still mean Admin preview only. Public release would need
+an explicit publishing decision and separate publication behavior. No new
+migration, environment variable, live email review, or deployment is required
+to develop this preview.
+
+### Capture limits
 
 - Inbound requests: authenticated JSON, at most 512 KB and 20 items; body text
   and HTML each at most 100,000 characters. Exact envelope recipients are used
