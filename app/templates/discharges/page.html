@@ -10,13 +10,13 @@
 <style>
 
   .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:0 0 16px}
-  .tile{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:14px 18px}
+  .tile{background:#fff;border:1px solid #d9e4e8;border-radius:0;padding:14px 18px}
   .tile b{display:block;font-size:24px;font-variant-numeric:tabular-nums}
   .tile span{font-size:13px;color:#54576F;font-weight:600}
   .legend{margin-left:auto;font-size:13px;font-weight:600;color:#54576F}
-  input[type=date]{padding:7px 10px;border:2px solid #d9e4e8;border-radius:10px;font-family:inherit;font-size:13px;color:#26272a;background:#fff}
+  input[type=date]{padding:7px 10px;border:2px solid #d9e4e8;border-radius:0;font-family:inherit;font-size:13px;color:#26272a;background:#fff}
 
-  .board{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:16px 18px;margin-bottom:16px;overflow-x:auto}
+  .board{background:#fff;border:1px solid #d9e4e8;border-radius:0;padding:16px 18px;margin-bottom:16px;overflow-x:auto}
   .board h2{font-size:16px;margin:2px 0 12px;color:#26272a}
   table{border-collapse:collapse;width:100%;font-size:13.5px}
   th{text-align:left;color:#54576F;font-weight:700;padding:8px 10px;border-bottom:2px solid #d9e4e8;white-space:nowrap}
@@ -26,39 +26,39 @@
   tr.outfall:hover td{background:#f6f9fb}
   tr.detail td{background:#f6f9fb;padding:12px 16px 14px;border-bottom:1px solid #d9e4e8}
   .years-cards{display:flex;gap:8px;flex-wrap:wrap}
-  .yc{background:#fff;border:1px solid #d9e4e8;border-radius:10px;padding:7px 11px;text-align:center;min-width:86px}
+  .yc{background:#fff;border:1px solid #d9e4e8;border-radius:0;padding:7px 11px;text-align:center;min-width:86px}
   .yc b{display:block;font-size:14px;font-variant-numeric:tabular-nums}
   .yc span{font-size:11px;color:#54576F}
 
   .yrrow{display:flex;align-items:center;gap:10px;min-height:32px;font-size:13px}
   .yrrow .yl{width:44px;font-weight:700}
   .yrrow .track{flex:1;position:relative;height:16px}
-  .yrrow .vol{position:absolute;top:1px;height:14px;border-radius:4px;background:#0072BC}
+  .yrrow .vol{position:absolute;top:1px;height:14px;border-radius:0;background:#0072BC}
   .yrrow .vol.partial{background:repeating-linear-gradient(135deg,#7fa8c9 0 6px,#9dbdd8 6px 12px)}
   .yrrow .val{min-width:170px;max-width:52%;text-align:right;font-variant-numeric:tabular-nums;color:#3f474d;line-height:1.25}
-  .bar{display:inline-block;height:13px;border-radius:4px;background:#0072BC;vertical-align:middle;margin-right:8px}
-  .note{background:#fdf6ec;border:1px solid #ecd9b8;border-radius:12px;padding:12px 16px;font-size:13px;margin:0 0 16px;color:#5a4f3d}
+  .bar{display:inline-block;height:13px;border-radius:0;background:#0072BC;vertical-align:middle;margin-right:8px}
+  .note{background:#fdf6ec;border:1px solid #ecd9b8;border-radius:0;padding:12px 16px;font-size:13px;margin:0 0 16px;color:#5a4f3d}
   .foot{color:#8a949b;font-size:13px;margin-top:8px}
 
   .chart-wrap{position:relative;height:380px}
   .picker{position:relative}
-  .picker summary{list-style:none;cursor:pointer;padding:8px 16px;border-radius:999px;border:2px solid #d9e4e8;background:#fff;color:#54576F;font-size:13px;font-weight:700}
+  .picker summary{list-style:none;cursor:pointer;padding:8px 16px;border-radius:0;border:2px solid #d9e4e8;background:#fff;color:#54576F;font-size:13px;font-weight:700}
   .picker[open] summary{border-color:#0072BC;color:#0072BC}
-  .picker .panel{position:absolute;z-index:30;top:110%;left:0;background:#fff;border:1px solid #d9e4e8;border-radius:12px;box-shadow:0 8px 24px rgba(38,39,42,.15);padding:10px 14px;max-height:300px;overflow-y:auto;min-width:320px}
+  .picker .panel{position:absolute;z-index:30;top:110%;left:0;background:#fff;border:1px solid #d9e4e8;border-radius:0;box-shadow:0 8px 24px rgba(38,39,42,.15);padding:10px 14px;max-height:300px;overflow-y:auto;min-width:320px}
   .picker label{display:block;font-size:13px;padding:3px 0;white-space:nowrap;cursor:pointer}
   .picker .grp{font-weight:700;color:#0072BC;margin:8px 0 2px;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
-  input[type=search]{padding:8px 12px;border:2px solid #d9e4e8;border-radius:10px;font-family:inherit;font-size:13px;min-width:220px}
+  input[type=search]{padding:8px 12px;border:2px solid #d9e4e8;border-radius:0;font-family:inherit;font-size:13px;min-width:220px}
   #rawTbl th{cursor:pointer;user-select:none}
   #rawTbl th .dir{color:#0072BC}
-  .dl{padding:8px 16px;border-radius:999px;background:#0072BC;color:#fff;text-decoration:none;font-size:13px;font-weight:700}
+  .dl{padding:8px 16px;border-radius:0;background:var(--char);color:#fff;text-decoration:none;font-family:var(--label);font-weight:400;letter-spacing:.12em;text-transform:uppercase;font-size:16px}
   .note.overdue{background:#fdeee2;color:#8a3d10;border-color:#f0c9ad}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-  #map{height:520px;border-radius:12px}
-  .of-label{background:rgba(255,255,255,.92);border:1px solid #b9c6cd;border-radius:6px;
+  #map{height:520px;border-radius:0}
+  .of-label{background:rgba(255,255,255,.92);border:1px solid #b9c6cd;border-radius:0;
     padding:1px 5px;font:700 10.5px 'Roboto','Segoe UI',Arial,sans-serif;color:#26272a;
     box-shadow:none;white-space:nowrap}
   .of-label::before{display:none}

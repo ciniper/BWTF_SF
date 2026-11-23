@@ -9,22 +9,22 @@
 <link rel="stylesheet" href="{{ asset('brand.css') }}">
 <style>
           .legend{display:flex;flex-wrap:wrap;gap:14px;margin:0 0 18px}
-          .legend div{background:#fff;border:1px solid #d9e4e8;border-radius:14px;padding:10px 14px;font-size:13px;color:#54576F}
+          .legend div{background:#fff;border:1px solid #d9e4e8;border-radius:0;padding:10px 14px;font-size:13px;color:#54576F}
           .legend b{color:#26272a}
           .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
-          .card{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:16px}
+          .card{background:#fff;border:1px solid #d9e4e8;border-radius:0;padding:16px}
           .card .n{font-size:28px;font-weight:800;color:#26272a}
-          .card .l{font-size:12px;color:#54576F;text-transform:uppercase;letter-spacing:.08em;margin-top:4px}
-          .banner{border-radius:14px;padding:12px 16px;margin-bottom:18px;font-weight:600;font-size:14px}
+          .card .l{font-family:var(--label);font-weight:400;font-size:16px;color:#54576F;text-transform:uppercase;letter-spacing:.12em;margin-top:4px}
+          .banner{border-radius:0;padding:12px 16px;margin-bottom:18px;font-weight:600;font-size:14px}
           .banner--ok{background:rgba(37,214,112,.12);color:#146b37}
           .banner--warn{background:rgba(255,65,0,.10);color:#b5310a}
-          .note-info{background:#e3eefb;color:#1f5e8f;border-radius:14px;padding:12px 16px;margin:0 0 16px;font-weight:600;font-size:14px}
-          table{width:100%;border-collapse:separate;border-spacing:0;background:#fff;border:1px solid #d9e4e8;border-radius:18px;overflow:hidden}
+          .note-info{background:#e3eefb;color:#1f5e8f;border-radius:0;padding:12px 16px;margin:0 0 16px;font-weight:600;font-size:14px}
+          table{width:100%;border-collapse:separate;border-spacing:0;background:#fff;border:1px solid #d9e4e8;border-radius:0;overflow:hidden}
           th,td{padding:13px 14px;text-align:left;border-bottom:1px solid #eef2f4;vertical-align:top}
           th{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#54576F;background:#f7fafb}
           tr:last-child td{border-bottom:none}
           td.site{min-width:180px}
-          .pill{display:inline-flex;align-items:baseline;gap:6px;padding:5px 10px;border-radius:999px;font-weight:700;font-size:14px}
+          .pill{display:inline-flex;align-items:baseline;gap:6px;padding:5px 10px;border-radius:0;font-weight:700;font-size:14px}
           .pill small{font-weight:600;font-size:11px;opacity:.8;text-transform:uppercase;letter-spacing:.04em}
           .pill--ok{background:#237059;color:#fff}
           .pill--bad{background:#d15c5c;color:#fff}
@@ -32,7 +32,7 @@
           .pill--na{background:#eef2f4;color:#8a949b}
           .early-label{display:block;color:#087e83;font-size:12px;font-weight:700;margin-top:6px}
           .view-options{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
-          .view-options a{padding:9px 12px;border:1px solid #a5bdcc;border-radius:10px;color:#0072BC;background:white;font-size:14px}
+          .view-options a{padding:9px 12px;border:1px solid #a5bdcc;border-radius:0;color:#0072BC;background:white;font-size:14px}
           .view-options a[aria-current=page]{background:#0072BC;color:white}
           .date{display:block;color:#8a949b;font-size:11px;margin-top:5px}
           .agree{font-weight:700;font-size:13px}
@@ -43,23 +43,23 @@
           .bacteria-select{display:flex;align-items:center;gap:10px;margin:0 0 12px;flex-wrap:wrap;row-gap:10px}
           .tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}   /* the head-to-head table scrolls sideways on phones instead of pushing the page wider */
           .bacteria-select label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#54576F;font-weight:700}
-          .bacteria-select select{font-size:14px;padding:8px 12px;border:1px solid #d9e4e8;border-radius:10px;background:#fff;color:#26272a;font-weight:600;cursor:pointer}
+          .bacteria-select select{font-size:14px;padding:8px 12px;border:1px solid #d9e4e8;border-radius:0;background:#fff;color:#26272a;font-weight:600;cursor:pointer}
           tr.row-click{cursor:pointer}
           tr.row-click:hover{background:#f3f8fb}
           tr.row-click:focus{outline:2px solid #0072BC;outline-offset:-2px}
           td.site .go{display:block;color:#0072BC;font-size:11px;font-weight:700;margin-top:5px}
           .modal{position:fixed;inset:0;background:rgba(38,39,42,.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:50}
           .modal.open{display:flex}
-          .modal__box{background:#fff;border-radius:20px;max-width:780px;width:100%;padding:22px 24px;box-shadow:0 24px 60px rgba(0,0,0,.3);max-height:90vh;overflow:auto}
+          .modal__box{background:#fff;border-radius:0;max-width:780px;width:100%;padding:22px 24px;box-shadow:0 24px 60px rgba(0,0,0,.3);max-height:90vh;overflow:auto}
           .modal__h3{margin:20px 0 2px;font-size:15px;color:#26272a}
           .modal__head{display:flex;justify-content:space-between;align-items:center;gap:12px}
           .modal__head h2{margin:0;font-size:20px;color:#26272a}
-          .modal__close{border:none;background:#eef2f4;border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:700;color:#26272a;font-size:14px}
+          .modal__close{border:none;background:#eef2f4;border-radius:0;padding:8px 12px;cursor:pointer;font-weight:700;color:#26272a;font-size:14px}
           .modal__note{color:#8a949b;font-size:13px;margin:6px 0 12px;line-height:1.5}
           .chart-wrap{position:relative;height:360px}
           /* sample viewer */
           .v-controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 10px}
-          .v-controls select,.v-controls input[type=date]{font-size:13px;padding:7px 10px;border:2px solid #d9e4e8;border-radius:10px;background:#fff;color:#26272a;font-family:inherit;font-weight:600}
+          .v-controls select,.v-controls input[type=date]{font-size:13px;padding:7px 10px;border:2px solid #d9e4e8;border-radius:0;background:#fff;color:#26272a;font-family:inherit;font-weight:600}
           .tile-link{display:inline-block;margin:0 0 14px;color:#0072BC;font-weight:700;font-size:13px}
           .modal__links{color:#54576F;font-size:13px;margin:10px 0 0}.modal__links a{color:#0072BC;font-weight:700;margin-right:14px}
         </style>

@@ -20,10 +20,10 @@
 {% macro admin_tab_styles() -%}
 <style>
   .admin-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 18px}   /* five tabs wrap on a phone */
-  .admin-tabs a{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:999px;border:2px solid var(--line);background:#fff;color:var(--muted);font-weight:700;text-decoration:none}
+  .admin-tabs a{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:0;border:2px solid var(--line);background:#fff;color:var(--muted);font-weight:700;text-decoration:none}
   .admin-tabs a small{font-weight:500;color:var(--faint)}
   .admin-tabs a:hover{border-color:var(--sky)}
-  .admin-tabs a.on{background:var(--brand);border-color:var(--brand);color:#fff}.admin-tabs a.on small{color:rgba(255,255,255,.8)}
+  .admin-tabs a.on{background:var(--char);border-color:var(--char);color:#fff}.admin-tabs a.on small{color:rgba(255,255,255,.8)}
 </style>
 {%- endmacro %}
 

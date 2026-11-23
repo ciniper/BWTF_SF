@@ -33,7 +33,7 @@
   .swatch.mapmark{position:static;margin-left:0;width:2px;height:12px;border-radius:0;background:#0072BC}   /* the lane mark is absolute; the legend's copy must stay in the row */
 
   #tablebox{overflow-x:auto}   /* the table's last columns were clipped on phones */
-  .board{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:18px 18px 10px;overflow-x:auto;scroll-behavior:auto}   /* the window: 7 days wide, scrolls back through the range */
+  .board{background:#fff;border:1px solid #d9e4e8;border-radius:0;padding:18px 18px 10px;overflow-x:auto;scroll-behavior:auto}   /* the window: 7 days wide, scrolls back through the range */
   .chart{position:relative;min-width:640px}
   .grid{position:absolute;inset:0;pointer-events:none}
   .gridline{position:absolute;top:0;bottom:26px;width:1px;background:#eef2f4}
@@ -48,7 +48,7 @@
   .nowdot.cso{background:#b5310a;animation:blink 1.5s infinite}
   @keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
 
-  .seg{position:absolute;top:9px;height:14px;border-radius:4px;box-shadow:0 0 0 2px #fff;cursor:pointer}
+  .seg{position:absolute;top:9px;height:14px;border-radius:0;box-shadow:0 0 0 2px #fff;cursor:pointer}
   .seg.posted{background:#d4763a}
   .seg.cso{background:repeating-linear-gradient(135deg,#b5310a 0 5px,#992a09 5px 8px)}
   .seg.stub{opacity:.6;border-right:2px dashed #8a949b;border-radius:4px 0 0 4px}
@@ -59,17 +59,17 @@
   .tick{position:absolute;top:6px;transform:translateX(-50%);white-space:nowrap}
   .tick.now-label{color:#54576F;font-weight:700;transform:translateX(-100%)}
 
-  .banner{border-radius:16px;padding:18px 20px;margin:0 0 14px;font-size:14px;line-height:1.55;background:#fff;border:1px solid #d9e4e8}
+  .banner{border-radius:0;padding:18px 20px;margin:0 0 14px;font-size:14px;line-height:1.55;background:#fff;border:1px solid #d9e4e8}
   .banner.clean{background:rgba(60,145,96,.10);border-color:rgba(60,145,96,.35)}
   .banner b{color:#26272a}
   .muted{color:#54576F}
 
-  .tooltip{position:fixed;z-index:10;pointer-events:none;background:#26272a;color:#fff;border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.5;max-width:280px;box-shadow:0 6px 18px rgba(0,0,0,.25);display:none}
+  .tooltip{position:fixed;z-index:10;pointer-events:none;background:#26272a;color:#fff;border-radius:0;padding:10px 12px;font-size:13px;line-height:1.5;max-width:280px;box-shadow:0 6px 18px rgba(0,0,0,.25);display:none}
   .tooltip b{font-size:13px}
 
   details.tableview{margin-top:16px}
   details.tableview summary{cursor:pointer;font-size:13px;font-weight:700;color:#54576F}
-  details.tableview table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px;background:#fff;border:1px solid #d9e4e8;border-radius:12px;overflow:hidden}
+  details.tableview table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px;background:#fff;border:1px solid #d9e4e8;border-radius:0;overflow:hidden}
   details.tableview th,details.tableview td{text-align:left;padding:8px 12px;border-bottom:1px solid #eef2f4}
   details.tableview th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#54576F;background:#f7fafb}
 

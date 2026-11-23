@@ -9,7 +9,7 @@
   var st = document.createElement("style");
   st.textContent = "[" + ATTR + "]{display:none!important}" +
     "tr." + MORE + " td{text-align:center;padding:10px 8px;background:#f7fafb;border-top:1px solid #e3ebf2}" +
-    "tr." + MORE + " button{padding:6px 14px;border-radius:999px;border:2px solid #d9e4e8;background:#fff;color:#0072BC;cursor:pointer;font:700 12.5px 'Roboto','Segoe UI',Arial,sans-serif}" +
+    "tr." + MORE + " button{padding:6px 14px;border-radius:0;border:2px solid #d9e4e8;background:#fff;color:#0072BC;cursor:pointer;font:700 12.5px 'Roboto','Segoe UI',Arial,sans-serif}" +
     "tr." + MORE + " button:hover{border-color:#0072BC}tr." + MORE + " span{color:#8a949b;font-size:12px;margin-left:8px}";
   document.head.appendChild(st);
   var isAux = function (tr) { return tr.classList.contains("notes") || tr.hasAttribute("data-child-row"); };

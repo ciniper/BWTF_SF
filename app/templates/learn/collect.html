@@ -12,10 +12,10 @@
   body{margin:0;background:var(--sand);color:var(--ink);font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:15px;line-height:1.55;min-height:100vh;display:flex;flex-direction:column}
   .wrap{width:100%;max-width:var(--page-w);margin:0 auto;padding:20px 24px 40px;box-sizing:border-box;flex:1}
   .sec{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg,16px);padding:22px 24px;margin:0 0 16px;scroll-margin-top:20px}
-  .sec h2{font-family:'Bebas Neue',Impact,sans-serif;font-weight:400;font-size:34px;letter-spacing:.02em;line-height:1;margin:0 0 6px}
+  .sec h2{font-family:var(--display);font-weight:700;font-size:32px;letter-spacing:-.02em;line-height:1.1;margin:0 0 8px;color:#000}
   .sec .sub{color:var(--muted);margin:0 0 16px;max-width:90ch}
   .sec .more{margin:14px 0 0;font-size:13.5px;color:var(--muted)} .sec .more a{color:var(--brand);font-weight:700;text-decoration:none}
-  .btn{padding:8px 16px;border-radius:999px;border:2px solid var(--brand);background:var(--brand);color:#fff;font:700 13.5px Roboto,sans-serif;cursor:pointer;text-decoration:none;display:inline-block}
+  .btn{padding:8px 16px;border-radius:0;border:2px solid var(--char);background:var(--char);color:#fff;font:400 16px/1.1 var(--label);letter-spacing:.12em;text-transform:uppercase;cursor:pointer;text-decoration:none;display:inline-block}
   .btn.ghost{background:#fff;color:var(--brand)}
   .btn:disabled{opacity:.5;cursor:default}
 
@@ -41,8 +41,8 @@
   .site-card .photos figure{margin:0} .site-card .photos figcaption{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.35}
   .site-card .zoom{display:block;width:100%;padding:0;border:0;background:none;cursor:zoom-in;border-radius:var(--r)} .site-card .zoom:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
   .lightbox{position:fixed;inset:0;z-index:80;background:rgba(20,24,28,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px;cursor:zoom-out}
-  .lightbox[hidden]{display:none} .lightbox img{max-width:min(1200px,100%);max-height:82vh;border-radius:12px;display:block}
-  .lightbox p{color:#fff;font-size:14px;margin:12px 0 0;text-align:center;max-width:720px} .lightbox .close{position:absolute;top:14px;right:16px;border:0;background:rgba(255,255,255,.14);color:#fff;border-radius:999px;padding:8px 14px;font:700 14px Roboto,sans-serif;cursor:pointer}
+  .lightbox[hidden]{display:none} .lightbox img{max-width:min(1200px,100%);max-height:82vh;border-radius:0;display:block}
+  .lightbox p{color:#fff;font-size:14px;margin:12px 0 0;text-align:center;max-width:720px} .lightbox .close{position:absolute;top:14px;right:16px;border:0;background:rgba(255,255,255,.14);color:#fff;border-radius:0;padding:8px 14px;font:700 14px Roboto,sans-serif;cursor:pointer}
   .site-card h2{display:flex;gap:10px;align-items:center}
   .site-card .maps{display:inline-flex;align-items:center;gap:6px;margin:8px 0 2px}
   .site-card .maps .ic{width:15px;height:15px}
@@ -65,7 +65,7 @@
   /* ── 3. Conditions for the sheet ── */
   .cx-form{display:flex;flex-wrap:wrap;gap:12px 14px;align-items:flex-end;margin:0 0 16px}
   .cx-form label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
-  .cx-form select,.cx-form input{font:500 15px Roboto,sans-serif;color:var(--ink);padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;min-height:40px}
+  .cx-form select,.cx-form input{font:500 15px Roboto,sans-serif;color:var(--ink);padding:8px 10px;border:1px solid var(--line);border-radius:0;background:#fff;min-height:40px}
   .cx-form .btn{min-height:40px;font-size:14px}
   .cx-form #cx-now{margin-left:-6px}
   .cx-when{margin:0 0 10px;font-weight:700}
@@ -85,14 +85,14 @@
   .cx .ed:hover,.cx .lnk:hover{text-decoration:underline}
   .cx.edited{border-color:var(--brand);box-shadow:inset 3px 0 0 var(--brand)}
   .cx .ctl{display:flex;gap:6px;align-items:center;margin:4px 0 2px;flex-wrap:wrap}
-  .cx .ctl select,.cx .ctl input{font:700 16px Roboto,sans-serif;color:var(--ink);padding:6px 8px;border:1px solid var(--brand);border-radius:8px;background:#fff;min-height:36px;min-width:0}
+  .cx .ctl select,.cx .ctl input{font:700 16px Roboto,sans-serif;color:var(--ink);padding:6px 8px;border:1px solid var(--brand);border-radius:0;background:#fff;min-height:36px;min-width:0}
   .cx .ctl input{width:84px}
   .cx .ctl .unit{font-weight:700;color:var(--muted)}
   .cx .ctl .btn{padding:6px 12px;font-size:12.5px}
   .cx[data-k="tide"]{grid-column:span 2} .cx svg.tide{display:block;width:100%;height:auto;margin:6px 0 2px} .cx svg.tide text{font-family:Roboto,sans-serif}   /* the tide tile is two wide: its curve needs the room */
   .obs{display:flex;flex-direction:column;gap:6px;margin:16px 0 0}
   .obs span{font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
-  .obs textarea{font:400 15px/1.45 Roboto,sans-serif;color:var(--ink);padding:10px 12px;border:1px solid var(--line);border-radius:10px;resize:vertical;min-height:84px}
+  .obs textarea{font:400 15px/1.45 Roboto,sans-serif;color:var(--ink);padding:10px 12px;border:1px solid var(--line);border-radius:0;resize:vertical;min-height:84px}
 
   @media (max-width:1023px){.how{grid-template-columns:1fr}.diagram{max-width:600px}.picks{grid-template-columns:repeat(2,minmax(0,1fr))}.cx-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
   @media (max-width:760px){

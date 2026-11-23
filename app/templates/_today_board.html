@@ -9,22 +9,22 @@
 
 {% macro board_styles() -%}
 <style>
-  .board{background:#fff;border-radius:var(--r-lg);padding:24px 26px;margin:0;border:2px solid var(--line)}   /* the card's border carries the day's grade */
+  .board{background:#fff;border-radius:var(--r-lg);padding:28px 30px;margin:0;border:0;border-top:6px solid var(--line)}   /* the card's top rule carries the day's grade (Surfrider look, 2026-11-22: flat, square, no box outline) */
   .board.tone-ok{border-color:var(--safe)}.board.tone-warn{border-color:var(--posted)}.board.tone-danger{border-color:var(--discharge)}
   .board .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(420px,44%);gap:22px;align-items:stretch}   /* the map takes its share of the wider frame */
-  .eyebrow{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
-  .board h1{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:42px;line-height:1;margin:8px 0 6px;letter-spacing:.02em;color:var(--ink)}
+  .eyebrow{font-family:var(--label);font-size:16px;font-weight:400;letter-spacing:.14em;text-transform:uppercase;color:var(--ink)}
+  .board h1{font-family:var(--display);font-weight:700;font-size:40px;line-height:1.08;margin:10px 0 10px;letter-spacing:-.02em;color:#000}
   .board h1 em{font-style:normal}
   .board h1 em.posted,.board h1 em.warn{color:var(--posted)}.board h1 em.discharge{color:var(--discharge)}.board h1 em.good{color:var(--safe)}
-  .board .lead{font-size:16px;color:var(--muted);margin:0 0 16px}
+  .board .lead{font-size:16px;line-height:1.7;color:var(--ink);margin:0 0 18px}
   .board .facts{display:grid;gap:5px;margin:0 0 16px}
   .board .facts div{display:flex;gap:12px;align-items:baseline;font-size:14px;line-height:1.4;color:var(--muted)}
-  .board .facts dt{flex:none;width:156px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+  .board .facts dt{flex:none;width:156px;font-family:var(--label);font-size:14px;font-weight:400;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
   .board .facts dd{margin:0}
   .board.replaying .facts{display:none}   /* today's samples are not a past day's */
   .zones{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .zone{border:1px solid var(--line);border-radius:var(--r);padding:12px 13px 11px;color:inherit;background:#fff;display:block;width:100%;text-align:left;cursor:pointer;font:inherit}
-  .zone:hover{border-color:var(--sky)}
+  .zone{border:0;border-left:5px solid var(--line);border-radius:var(--r);padding:12px 13px 11px 14px;color:inherit;background:var(--sand);display:block;width:100%;text-align:left;cursor:pointer;font:inherit}
+  .zone:hover{background:var(--sand2)}
   .zone.safe{border-color:var(--safe)}.zone.posted{border-color:var(--posted)}.zone.discharge{border-color:var(--discharge)}   /* same grade colours as the card, thin */
   /* the chosen zone (Chase, 2026-10-01: "more obvious"): a brand ring outside the grade border, which keeps its colour,
      and the other zones dimmed, as their stations are off the map; tap it again, or Whole city, for all */
@@ -53,10 +53,10 @@
   .map-col .map-wrap{flex:1}
   .map-wrap{position:relative;isolation:isolate;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;min-height:400px;background:var(--sand2)}   /* isolate: Leaflet's z-indexes stay inside the map */
   #today-map{position:absolute;inset:0}
-  .map-reset{position:absolute;bottom:12px;left:12px;z-index:500;background:#fff;border:2px solid var(--line);border-radius:999px;padding:6px 12px;font:700 12.5px Roboto,sans-serif;color:var(--brand);cursor:pointer}
+  .map-reset{position:absolute;bottom:12px;left:12px;z-index:500;background:#fff;border:2px solid var(--line);border-radius:0;padding:6px 12px;font:700 12.5px Roboto,sans-serif;color:var(--brand);cursor:pointer}
   .map-reset:hover{border-color:var(--brand)}
   /* Map credits: collapsed to "© Esri", the full line on hover, focus or tap (Esri asks for the credit, not the space) */
-  .credits{background:rgba(255,255,255,.92);border-radius:8px 0 0 0;flex-direction:row-reverse;font:11px Roboto,sans-serif;color:var(--muted);padding:3px 7px;display:flex;align-items:center;gap:6px;max-width:75%;margin:0!important}
+  .credits{background:rgba(255,255,255,.92);border-radius:0;flex-direction:row-reverse;font:11px Roboto,sans-serif;color:var(--muted);padding:3px 7px;display:flex;align-items:center;gap:6px;max-width:75%;margin:0!important}
   .credits-btn{border:0;background:none;font:inherit;color:var(--muted);cursor:pointer;padding:0;white-space:nowrap}
   .credits-btn::before{content:"◂ "}.credits.open .credits-btn::before,.credits:hover .credits-btn::before{content:"▾ "}
   .credits-full{display:none;line-height:1.3}.credits-full a{color:var(--brand)}
@@ -67,13 +67,13 @@
   .map-legend .legend-items{display:flex;flex-wrap:wrap;gap:3px 12px}
   .map-legend span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
   .map-legend .src{font-weight:700;color:var(--ink)}
-  .st-label{background:rgba(255,255,255,.94);border:1px solid #b9c6cd;border-radius:6px;padding:1px 6px;font:700 11px Roboto,sans-serif;color:var(--ink);white-space:nowrap;box-shadow:none}
+  .st-label{background:rgba(255,255,255,.94);border:1px solid #b9c6cd;border-radius:0;padding:1px 6px;font:700 11px Roboto,sans-serif;color:var(--ink);white-space:nowrap;box-shadow:none}
   .st-label::before{display:none}
   /* the map's labels (refreshLabels): a posted or discharging beach's, always; with the Labels layer, zone names zoomed out and
      station names zoomed in. Each is placed in map pixels at the first spot round its dot that is clear (2026-11-08). */
   .map-name{width:0;height:0;pointer-events:none}
-  .map-name>span{position:absolute;left:0;top:0;white-space:nowrap;font:600 11px/1.3 Roboto,sans-serif;color:var(--ink);background:rgba(255,255,255,.86);border-radius:4px;padding:0 4px}
-  .map-name.bad>span{background:rgba(255,255,255,.94);border:1px solid var(--posted);border-radius:6px;padding:1px 6px;font-weight:700;color:var(--posted)}
+  .map-name>span{position:absolute;left:0;top:0;white-space:nowrap;font:600 11px/1.3 Roboto,sans-serif;color:var(--ink);background:rgba(255,255,255,.86);border-radius:0;padding:0 4px}
+  .map-name.bad>span{background:rgba(255,255,255,.94);border:1px solid var(--posted);border-radius:0;padding:1px 6px;font-weight:700;color:var(--posted)}
   .map-name.bad.discharge>span{border-color:var(--discharge);color:var(--discharge)}   /* a discharge label in the discharge red, not posted's orange (Chase, 2026-11-08) */
   .map-name>span.tap{pointer-events:auto;cursor:pointer}.map-name>span.tap [data-i]:hover,.map-name>span.tap [data-more]:hover,.map-name.to-zone>span.tap:hover{text-decoration:underline}   /* a label is a link: to its beach's sample, or its zone (Chase, 2026-11-13) */
   .zone-hl>i{position:absolute;left:0;top:0;box-sizing:border-box;border-radius:999px;border:1.5px solid color-mix(in srgb,var(--posted) 55%,transparent);background:color-mix(in srgb,var(--posted) 7%,transparent)}
@@ -116,10 +116,10 @@
   .layers .ctl-group{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:10px 14px;background:#fff;border:1px solid var(--line);border-radius:var(--r)}
   .layers .layer-group{flex:1}
   .layers .ctl-label{margin-right:2px}
-  .layers-toggle{display:none;align-items:center;gap:6px;margin-left:auto;padding:7px 13px;border-radius:999px;border:2px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;font-weight:700;font-size:13px;font-family:inherit}
+  .layers-toggle{display:none;align-items:center;gap:6px;margin-left:auto;padding:7px 13px;border-radius:0;border:2px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;font-weight:700;font-size:13px;font-family:inherit}
   .layers-toggle::after{content:"▸";font-size:11px}.layers-toggle[aria-expanded="true"]::after{content:"▾"}
   .layers-toggle[aria-expanded="true"]{border-color:var(--brand);color:var(--brand)}
-  .layers-toggle .n{background:var(--brand);color:#fff;border-radius:999px;padding:0 7px;font-size:11.5px;line-height:18px}
+  .layers-toggle .n{background:var(--brand);color:#fff;border-radius:0;padding:0 7px;font-size:11.5px;line-height:18px}
   .layers-toggle .n:empty{display:none}
   .layers .switch{display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-weight:700;font-size:13px;color:var(--ink);position:relative}
   .layers .switch input{position:absolute;opacity:0;width:0;height:0}
@@ -133,16 +133,16 @@
   .layers .layer-status:empty{display:none}
   /* Keep main's shared toolbar; sources use the same compact pills as the optional layers. */
   .layers .ctl-group{gap:6px 8px;padding:8px 10px}
-  .layers .switch{gap:0;padding:6px 10px;border:2px solid var(--line);border-radius:999px;font-size:13px;color:var(--muted)}
+  .layers .switch{gap:0;padding:6px 10px;border:2px solid var(--line);border-radius:0;font-size:13px;color:var(--muted)}
   .layers .switch .track{display:none}
-  .layers .switch:has(input:checked){background:var(--brand);border-color:var(--brand);color:#fff}
+  .layers .switch:has(input:checked){background:var(--char);border-color:var(--char);color:#fff}
   .layers .switch:has(input:focus-visible){outline:3px solid var(--sky);outline-offset:2px}
-  .layers .switch:hover{border-color:var(--sky)}
+  .layers .switch:hover{border-color:var(--char)}
   .layers .preset,.layers-toggle{padding:6px 10px;font-size:13px;line-height:1.5}
   .zone.wet{background:#eef5fb}
   .zone .rainline{color:var(--brand);font-size:12px;font-weight:600;margin-top:4px}
   .zone .rainline:empty{display:none}
-  .gauge-label{background:rgba(255,255,255,.92);border:1px solid var(--brand);color:var(--brand);font-weight:700;font-size:12px;border-radius:999px;padding:2px 8px;box-shadow:none}
+  .gauge-label{background:rgba(255,255,255,.92);border:1px solid var(--brand);color:var(--brand);font-weight:700;font-size:12px;border-radius:0;padding:2px 8px;box-shadow:none}
   .gauge-label::before{display:none}
   .of-pop .leaflet-popup-content{margin:12px 14px;font-size:13px;line-height:1.5}
   .of-pop b{display:block;font-size:14px;margin-bottom:2px}
@@ -161,7 +161,7 @@
   @media (max-width:980px){.board .grid{grid-template-columns:1fr}.map-wrap{min-height:300px}}
   @media (max-width:760px){
     .board{padding:18px 16px}
-    .board h1{font-size:34px}
+    .board h1{font-size:28px}
     .board .lead{font-size:14px;margin-bottom:12px}
     .board .facts div{flex-direction:column;gap:1px;font-size:13.5px}
     .board .facts dt{width:auto}
@@ -175,7 +175,7 @@
      default (Chase, 2026-11-11: always shown at the top, the past days crowded today's headline) */
   .day-strip{display:flex;justify-content:space-between;gap:2px;max-width:440px;margin:10px auto 0}   /* a compact row centred in the column; each day is as wide as its label, so the outline hugs it */
   .day-strip[hidden]{display:none}
-  .day-strip .day{flex:0 1 auto;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;padding:5px 6px 7px;border:2px solid transparent;border-radius:10px;background:none;color:var(--muted);font-family:inherit;font-size:11.5px;font-weight:600;line-height:1.2;white-space:nowrap;cursor:pointer}
+  .day-strip .day{flex:0 1 auto;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;padding:5px 6px 7px;border:2px solid transparent;border-radius:0;background:none;color:var(--muted);font-family:inherit;font-size:11.5px;font-weight:600;line-height:1.2;white-space:nowrap;cursor:pointer}
   .day-strip .day:hover{border-color:var(--line)}
   .day-strip .day.active{border-color:var(--brand);background:#fff;color:var(--ink);font-weight:700}
   .day-strip .day:focus-visible{outline:3px solid var(--sky);outline-offset:1px}

@@ -8,34 +8,34 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{{ asset('brand.css') }}">
 <style>
-  input[type=number]{width:86px;padding:7px 10px;border:2px solid #d9e4e8;border-radius:10px;font-family:inherit;font-size:13px;color:#26272a;background:#fff}
+  input[type=number]{width:86px;padding:7px 10px;border:2px solid #d9e4e8;border-radius:0;font-family:inherit;font-size:13px;color:#26272a;background:#fff}
   .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:0 0 16px}
-  .card{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:14px 16px}
+  .card{background:#fff;border:1px solid #d9e4e8;border-radius:0;padding:14px 16px}
   .card b{display:block;font-size:26px;font-variant-numeric:tabular-nums;color:#26272a}
   .card span{font-size:13px;color:#54576F;font-weight:600}
-  .board{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:14px 18px;margin:0 0 16px;overflow-x:auto}
+  .board{background:#fff;border:1px solid #d9e4e8;border-radius:0;padding:14px 18px;margin:0 0 16px;overflow-x:auto}
   .board h2{font-size:16px;margin:2px 0 10px;color:#26272a}
   .board h2 span{font-weight:600;color:#54576F;font-size:13px}
-  figure.sign{float:right;width:min(300px,42%);margin:0 0 10px 18px} figure.sign img{display:block;width:100%;height:auto;border-radius:10px} figure.sign figcaption{font-size:12px;color:#54576F;margin-top:5px;line-height:1.4} figure.sign a{color:#0072BC;font-weight:700}
+  figure.sign{float:right;width:min(300px,42%);margin:0 0 10px 18px} figure.sign img{display:block;width:100%;height:auto;border-radius:0} figure.sign figcaption{font-size:12px;color:#54576F;margin-top:5px;line-height:1.4} figure.sign a{color:#0072BC;font-weight:700}
   @media (max-width:640px){figure.sign{float:none;width:100%;margin:0 0 12px}}
   table{border-collapse:collapse;width:100%;font-size:13.5px}
   th{text-align:left;color:#54576F;font-weight:700;padding:9px 10px 7px;border-bottom:2px solid #d9e4e8;white-space:nowrap}
   td{padding:8px 10px;border-bottom:1px solid #eef2f4;vertical-align:middle}
   .name{font-weight:700;white-space:nowrap}
-  .chip{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap}
+  .chip{display:inline-block;padding:2px 9px;border-radius:0;font-size:11px;font-weight:700;white-space:nowrap}
   .chip.cso{background:#fbe3dc;color:#b5310a}
   .chip.rain{background:#e3f1fa;color:#0072BC}
   .chip.other{background:#eef1f3;color:#54576F}
   .chip.long{background:#fdeee2;color:#b25b1e}
-  .bar{display:inline-block;height:12px;border-radius:4px;background:#0072BC;vertical-align:middle;margin-right:8px}
+  .bar{display:inline-block;height:12px;border-radius:0;background:#0072BC;vertical-align:middle;margin-right:8px}
   .bar.cso{background:#b5310a}
   svg.chart{width:100%;height:240px;display:block}
   .legend{display:flex;gap:16px;font-size:12.5px;color:#54576F;font-weight:600;margin:6px 0 0}
   .legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:5px}
   .legend i.hatch{background:repeating-linear-gradient(45deg,#98a3ab 0 2px,#fff 2px 5px);border:1px solid #98a3ab;box-sizing:border-box}
-  .notes{background:#fff;border:1px solid #d9e4e8;border-radius:16px;padding:16px 20px;margin-top:18px;font-size:13.5px;color:#3f474d;line-height:1.55}
+  .notes{background:#fff;border:1px solid #d9e4e8;border-radius:0;padding:16px 20px;margin-top:18px;font-size:13.5px;color:#3f474d;line-height:1.55}
   .notes h2{font-size:15px;margin:0 0 8px;color:#26272a}
-  .fresh-note{display:flex;gap:8px;align-items:center;background:#fff;border:1px solid #d9e4e8;border-radius:12px;padding:10px 14px;margin:0 0 14px;font-size:13px;color:#3f474d}
+  .fresh-note{display:flex;gap:8px;align-items:center;background:#fff;border:1px solid #d9e4e8;border-radius:0;padding:10px 14px;margin:0 0 14px;font-size:13px;color:#3f474d}
   .fresh-note .ic{width:16px;height:16px;flex:none;color:#0072BC}
   .fresh-note.overdue{background:#fdeee2;color:#8a3d10;border-color:#f0c9ad}
   .fresh-note.overdue .ic{color:#b25b1e}

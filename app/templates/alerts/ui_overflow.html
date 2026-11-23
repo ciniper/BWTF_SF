@@ -15,7 +15,7 @@
   .hubs{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
   .hub{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:16px 18px 8px;scroll-margin-top:70px}
   .hub-head{display:flex;align-items:center;gap:10px}
-  .hub-icon{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;background:var(--sand);color:var(--brand);flex-shrink:0}
+  .hub-icon{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:0;background:var(--sand);color:var(--brand);flex-shrink:0}
   .hub-icon svg{width:20px;height:20px}
   .hub-title{font-size:17px;font-weight:900;margin:0}
   .hub-q{color:var(--muted);font-size:13px;margin:0}
@@ -26,15 +26,15 @@
   .rows .ic.lock{width:12px;height:12px;color:var(--faint);vertical-align:-1px}
   .rows .fact{color:var(--muted);font-size:13px;text-align:right;max-width:55%}   /* one grey for every fact, live or static (Chase, 2026-09-29) */
   .rows .sub{display:block;padding:0 2px 8px 16px;margin-top:-4px;border-top:0;font-size:13px;color:var(--muted);font-weight:600}
-  .hub .cta{display:block;margin:10px 0 6px;background:var(--brand);color:#fff;text-align:center;border-radius:999px;padding:10px 14px;font-weight:700;font-size:14px;text-decoration:none}
+  .hub .cta{display:block;margin:10px 0 6px;background:var(--brand);color:#fff;text-align:center;border-radius:0;padding:10px 14px;font-weight:700;font-size:14px;text-decoration:none}
   .hub .cta:hover{background:var(--brand-deep)}   /* scoped: a bare .cta also restyled the top bar's Get beach alerts button */
   .learn{display:flex;align-items:center;gap:12px;margin-top:14px;padding:14px 18px;background:#fff;border:1px solid var(--line);border-radius:var(--r);text-decoration:none;color:var(--ink)}   /* the whole bar is the link */
   .learn:hover{border-color:var(--sky)} .learn:hover .learn-go{background:var(--brand-deep)}
   .learn-text{display:flex;flex-direction:column;min-width:0} .learn-text b{font-size:17px;font-weight:900} .learn-text small{color:var(--muted);font-size:13px}
-  .learn-go{margin-left:auto;flex:none;background:var(--brand);color:#fff;border-radius:999px;padding:8px 16px;font-weight:700;font-size:14px}
+  .learn-go{margin-left:auto;flex:none;background:var(--brand);color:#fff;border-radius:0;padding:8px 16px;font-weight:700;font-size:14px}
   /* the rain and tide pills and the feed's cadence, from the bottom of Today */
   .conds{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 0}
-  .conds span{background:var(--sand2);border-radius:999px;padding:6px 12px;font-size:13px;color:var(--muted)}
+  .conds span{background:var(--sand2);border-radius:0;padding:6px 12px;font-size:13px;color:var(--muted)}
   .conds .ic{color:var(--brand)}
   @media (max-width:560px){.learn-go{display:none}.learn-text b::after{content:" →";color:var(--brand)}}   /* a phone gives the words the room */
   @media (max-width:980px){.hubs{grid-template-columns:1fr}}

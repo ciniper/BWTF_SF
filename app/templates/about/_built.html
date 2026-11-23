@@ -42,7 +42,7 @@
 
 {% macro built_styles() -%}
 <style>
-  .panel{background:#fff;border:1px solid #d9e4e8;border-radius:24px;padding:18px 14px;overflow-x:auto}
+  .panel{background:#fff;border:1px solid #d9e4e8;border-radius:0;padding:18px 14px;overflow-x:auto}
   svg.arch{display:block;width:100%;min-width:760px;height:auto;font-family:'Roboto','Segoe UI',Arial,sans-serif}
   .box{fill:#fff;stroke:#d9e4e8;stroke-width:1.5}
   .box.hub{stroke:#0072BC;stroke-width:2}
@@ -71,10 +71,10 @@
   .node.src{cursor:pointer}
   .node.src:focus{outline:none}
   .node.src:focus .box,.node.src.on .box{stroke:#0072BC;stroke-width:2.5}
-  .srcpanel{background:#fff;border:1px solid #d9e4e8;border-radius:24px;padding:18px 22px;margin-top:14px}
+  .srcpanel{background:#fff;border:1px solid #d9e4e8;border-radius:0;padding:18px 22px;margin-top:14px}
   .srchead{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
   .srchead h2{margin:0 0 4px;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:26px;letter-spacing:.05em;text-transform:uppercase;color:#26272a}
-  .srcclose{background:#343b44;color:#fff;border:0;border-radius:999px;padding:6px 12px;font-weight:700;font-size:12px;cursor:pointer}
+  .srcclose{background:#343b44;color:#fff;border:0;border-radius:0;padding:6px 12px;font-weight:700;font-size:12px;cursor:pointer}
   .srcitem{padding:12px 0;border-top:1px solid #edf2f5}.srcitem:first-of-type{border-top:0}
   .srcitem .n{font-weight:700;font-size:15px}.srcitem .kind{font-weight:500;color:#8a949b;font-size:12px;margin-left:6px}
   .srcitem .w{color:#54576F;font-size:13.5px;margin:2px 0 8px}

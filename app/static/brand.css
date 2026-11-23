@@ -3,7 +3,7 @@
    .badge — the one status/severity badge: colour + word + small glyph (Kyle's mockup uses
            word + colour; the glyph is added for colour-blind readers). */
 .ic{display:inline-block;width:1em;height:1em;vertical-align:-.15em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
-.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 7px;border-radius:999px;font-weight:700;font-size:12px;line-height:1.4;white-space:nowrap}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 7px;border-radius:0;font-weight:700;font-size:12px;line-height:1.4;white-space:nowrap}
 .badge .ic{width:14px;height:14px}
 .badge.danger{background:#f8dcd6;color:#b5310a}
 .badge.warn{background:#fbe9d9;color:#9a5313}
@@ -15,7 +15,7 @@
 .ic.ok{color:#237059}
 .ic.brand{color:#0072BC}
 .ic.muted{color:#8a93a3}
-.ictile{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:11px;background:#E3EBF2;color:#0072BC;flex:none}
+.ictile{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:0;background:var(--pale);color:#0072BC;flex:none}
 .ictile .ic{width:20px;height:20px}
 .illus{width:38px;height:38px;flex:none;display:inline-block;vertical-align:middle}
 .with-ic{display:inline-flex;align-items:center;gap:7px}
@@ -23,8 +23,10 @@
 /* ── Design tokens (redesign, 2026-09-29) ─────────────────────────────────────
    One palette, one radius scale, one set of status colours. Pages should read
    these instead of re-declaring hex values. */
-:root{--brand:#0072BC;--brand-deep:#005a96;--sky:#85BFDF;--ink:#26272A;--muted:#54576F;--faint:#8a949b;--line:#d9e4e8;--sand:#E3EBF2;--sand2:#eef3f7;
-      --safe:#237059;--caution:#c99a12;--posted:#d4763a;--discharge:#b5310a;--unknown:#98a3ab;--r:14px;--r-lg:20px;--page-w:1280px}   /* one frame width on every page — header, content and footer (Chase, 2026-09-29: no jumping between pages) */
+:root{--brand:#0072BC;--brand-deep:#005a96;--sky:#85BFDF;--ink:#26272A;--muted:#54576F;--faint:#8a949b;--line:#dcdfe2;--sand:#f3f3f3;--sand2:#ebebeb;--pale:#b4cdde;--pale2:#a8c5d8;--char:#26272A;
+      --safe:#237059;--caution:#c99a12;--posted:#d4763a;--discharge:#b5310a;--unknown:#98a3ab;--r:0;--r-lg:0;--page-w:1280px;
+      --display:'Roboto','Segoe UI',Arial,sans-serif;--label:'Bebas Neue','Roboto',sans-serif}   /* Surfrider look (2026-11-22): square corners, big bold Roboto headlines, Bebas only for small spaced labels and buttons */
+   /* one frame width on every page — header, content and footer (Chase, 2026-09-29: no jumping between pages) */
 
 /* ── Kit: page basics and the shared controls (redesign, 2026-09-29) ─────────────
    brand.css loads BEFORE each page's own <style>, so a page may still specialise a
@@ -35,17 +37,17 @@ a{color:var(--brand)}
 .wrap{max-width:var(--page-w);margin:0 auto;padding:24px}
 body>.wrap,body>.container{width:100%}   /* body is a flex column and auto margins switch off stretch: without an explicit width the column shrink-wraps its widest child (a table, a card row) and grows past a phone's screen, so the phone zooms out */
 .controls{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:center;margin:0 0 12px}
-.ctl-label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
-.seg-toggle{display:inline-flex;max-width:100%;border:2px solid var(--line);border-radius:999px;overflow:auto hidden;scrollbar-width:none;background:#fff}   /* wider than a phone (the Report Card's five standards): it scrolls sideways inside its pill; it used to squeeze its labels onto two lines and clip the last one */
+.ctl-label{font-family:var(--label);font-size:15px;font-weight:400;text-transform:uppercase;letter-spacing:.12em;color:var(--ink);line-height:1}
+.seg-toggle{display:inline-flex;max-width:100%;border:2px solid var(--char);border-radius:0;overflow:auto hidden;scrollbar-width:none;background:#fff}   /* wider than a phone (the Report Card's five standards): it scrolls sideways inside its pill; it used to squeeze its labels onto two lines and clip the last one */
 .seg-toggle::-webkit-scrollbar{display:none}
 .seg-btn{flex:none;white-space:nowrap;padding:7px 14px;border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
 .seg-btn:hover{color:var(--ink)}
-.seg-btn.active{background:var(--brand);color:#fff}
+.seg-btn.active{background:var(--char);color:#fff}
 .seg-btn:disabled{color:#b4b2a9;cursor:default}
-.preset,.v-preset,.group-btn,.range-btn{padding:7px 13px;border-radius:999px;border:2px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
-.preset:hover,.v-preset:hover,.group-btn:hover,.range-btn:hover{border-color:var(--sky)}
-.preset.active,.v-preset.active,.group-btn.active,.range-btn.active{border-color:var(--brand);background:var(--brand);color:#fff}
-a.preset{display:inline-block;text-decoration:none;line-height:normal} a.preset.cross{color:var(--brand);border-color:#c9dcea} a.preset.cross:hover{border-color:var(--brand)}
+.preset,.v-preset,.group-btn,.range-btn{padding:7px 13px;border-radius:0;border:2px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
+.preset:hover,.v-preset:hover,.group-btn:hover,.range-btn:hover{border-color:var(--char);color:var(--ink)}
+.preset.active,.v-preset.active,.group-btn.active,.range-btn.active{border-color:var(--char);background:var(--char);color:#fff}
+a.preset{display:inline-block;text-decoration:none;line-height:normal} a.preset.cross{color:var(--ink);border-color:var(--char)} a.preset.cross:hover{background:var(--char);color:#fff}
 /* the site picker Graphs and Samples share (_site_picker.html + site_picker.js): the site is the board's title;
    the name + chevron opens the zone tiles beneath (Chase, 2026-10-20) */
 .site-head{display:flex;align-items:center;gap:10px 12px;margin:0 0 10px;flex-wrap:wrap}
@@ -53,51 +55,51 @@ a.preset{display:inline-block;text-decoration:none;line-height:normal} a.preset.
 .site-title .site-now b{font-size:24px;font-weight:900;line-height:1.15;letter-spacing:.005em}
 .site-title .chev{color:var(--brand);flex:none;transition:transform .15s} .site-title.open .chev{transform:rotate(180deg)}
 .site-title:hover .site-now b{color:var(--brand)}
-.zone-chip{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:4px 10px;border-radius:999px;background:#e3f1fa;color:var(--brand)} .zone-chip:empty{display:none}
+.zone-chip{font-family:var(--label);font-size:14px;font-weight:400;text-transform:uppercase;letter-spacing:.12em;padding:4px 10px 2px;border-radius:0;background:var(--pale);color:var(--ink)} .zone-chip:empty{display:none}
 .site-head a.preset.cross{margin-left:auto}
-.tiles{display:none;flex-direction:column;gap:10px;margin:0 0 14px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:#f7fafb} .tiles.open{display:flex}
+.tiles{display:none;flex-direction:column;gap:10px;margin:0 0 14px;padding:12px 14px;border:0;border-radius:0;background:var(--sand)} .tiles.open{display:flex}
 .board .controls{margin:0 0 10px} .board .controls+.controls{margin-top:-2px}
-.tile-group-name{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;margin:0 0 6px}
+.tile-group-name{font-family:var(--label);font-size:14px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink);font-weight:400;margin:0 0 6px}
 .tile-row{display:flex;flex-wrap:wrap;gap:8px}
-.tile{padding:8px 12px;border-radius:12px;border:2px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;font:700 13px 'Roboto','Segoe UI',Arial,sans-serif;text-align:left;line-height:1.25}
-.tile:hover{border-color:var(--sky)} .tile.active{border-color:var(--brand);background:var(--brand);color:#fff}
+.tile{padding:8px 12px;border-radius:0;border:2px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;font:700 13px 'Roboto','Segoe UI',Arial,sans-serif;text-align:left;line-height:1.25}
+.tile:hover{border-color:var(--char)} .tile.active{border-color:var(--char);background:var(--char);color:#fff}
 .tile[hidden],.tile-group[hidden]{display:none}
-select,input[type=date]{font-size:13px;padding:7px 10px;border:2px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);font-family:inherit;font-weight:600}
-.board{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;margin:0 0 16px}
-.board h2{font-size:16px;margin:0 0 4px}
+select,input[type=date]{font-size:13px;padding:7px 10px;border:2px solid var(--line);border-radius:0;background:#fff;color:var(--ink);font-family:inherit;font-weight:600}
+.board{background:#fff;border-radius:var(--r);padding:22px 24px;margin:0 0 20px}
+.board h2{font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:-.01em;line-height:1.15;margin:0 0 6px}
 .sub{color:var(--muted);font-size:13px;margin:0 0 10px}
 .status{color:var(--muted);font-size:13px;font-weight:600;margin:0 0 8px}
 .loading{padding:40px;text-align:center;color:var(--muted);font-weight:600}
 th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
 .foot{color:var(--faint);font-size:13px;margin-top:16px;line-height:1.6}
 /* keyboard users see where they are; toggles announce their state via kit.js (aria-pressed) */
-:focus-visible{outline:3px solid var(--sky);outline-offset:2px}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
 .seg-btn:focus-visible{outline-offset:-3px}
 
 /* ── Frame: top bar ───────────────────────────────────────────────────────── */
-.beta{background:var(--brand-deep);color:#fff;font:400 12.5px/1.35 'Roboto','Segoe UI',Arial,sans-serif}   /* the site-wide Beta notice (_frame.html topbar), above the bar on every page */
+.beta{background:var(--pale);color:var(--ink);font:400 12.5px/1.35 'Roboto','Segoe UI',Arial,sans-serif}   /* the site-wide Beta notice (_frame.html topbar), above the bar on every page */
 .beta .in{max-width:var(--page-w);margin:0 auto;padding:6px 24px;display:flex;align-items:baseline;gap:10px}
-.beta b{flex:none;font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--brand-deep);background:#fff;border-radius:999px;padding:2px 8px;position:relative;top:-1px}
+.beta b{flex:none;font:400 14px/1 var(--label);letter-spacing:.14em;text-transform:uppercase;color:#fff;background:var(--char);border-radius:0;padding:4px 8px 3px;position:relative;top:-1px}
 .beta p{margin:0;flex:1}
-.beta a{color:#fff;font-weight:700;text-decoration:underline;text-underline-offset:2px}
+.beta a{color:var(--ink);font-weight:700;text-decoration:underline;text-underline-offset:2px}
 .beta .fb{float:right;margin-left:12px;white-space:nowrap}   /* the testers' feedback email (2026-11-04): the banner's right end where the notice fits one line */
 @media (max-width:1180px){.beta .fb{float:none;margin-left:0;white-space:normal}}   /* narrower: right after the beach map link, flowing with the sentence */
 .topbar{background:#fff;border-bottom:1px solid var(--line);position:relative;z-index:30;font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:14px;line-height:1.2}   /* the frame sets its own type: a page's body rule (Today's line-height:1.5) would otherwise resize the bar between pages (Chase, 2026-09-30: no jumping) */
-.topbar .in{max-width:var(--page-w);margin:0 auto;padding:8px 24px;display:flex;align-items:center;gap:14px}
+.topbar .in{max-width:var(--page-w);margin:0 auto;padding:12px 24px;display:flex;align-items:center;gap:14px}
 .topbar .mark{display:flex;align-items:center;gap:9px;color:var(--ink);text-decoration:none;white-space:nowrap}
-.topbar .mark img{width:30px;height:30px;border-radius:8px}
+.topbar .mark img{width:34px;height:34px;border-radius:0}
 .topbar .mark span{display:flex;flex-direction:column;line-height:1}
-.topbar .mark b{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:22px;letter-spacing:.05em}
+.topbar .mark b{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:26px;letter-spacing:.04em}
 .topbar .mark small{font:600 10px 'Roboto','Segoe UI',Arial,sans-serif;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-top:2px}
-.topbar .about{margin-left:auto;display:inline-flex;align-items:center;gap:5px;color:var(--muted);font-weight:600;font-size:13px;text-decoration:none;padding:6px 8px;border-radius:8px}
+.topbar .about{margin-left:auto;display:inline-flex;align-items:center;gap:5px;color:var(--muted);font-weight:600;font-size:13px;text-decoration:none;padding:6px 8px;border-radius:0}
 .topbar .about:hover{color:var(--brand);background:var(--sand2)}
 .topbar .about .ic{width:16px;height:16px}
 .topbar .tabs{display:flex;gap:2px;margin-left:6px}
-.topbar .tabs a{display:block;color:var(--muted);text-decoration:none;font-weight:600;font-size:14px;padding:12px 12px 10px;border-bottom:2px solid transparent;white-space:nowrap}
-.topbar .tabs a:hover{color:var(--ink)}
-.topbar .tabs a.on{color:var(--ink);border-color:var(--brand)}
-.topbar .cta{margin:0 0 0 6px;background:var(--brand);color:#fff;border-radius:999px;padding:9px 16px;font-weight:700;font-size:14px;text-decoration:none;white-space:nowrap}   /* margin in full: a page's own .cta margin (the old Main page's hub cards) used to push it down */
-.topbar .cta:hover{background:var(--brand-deep)}
+.topbar .tabs a{display:block;color:var(--ink);text-decoration:none;font-weight:700;font-size:16px;padding:12px 12px 9px;border-bottom:3px solid transparent;white-space:nowrap}
+.topbar .tabs a:hover{color:var(--brand)}
+.topbar .tabs a.on{color:var(--ink);border-color:var(--char)}
+.topbar .cta{margin:0 0 0 6px;background:var(--char);color:#fff;border-radius:0;padding:11px 20px 9px;font:400 17px/1 var(--label);letter-spacing:.14em;text-transform:uppercase;text-decoration:none;white-space:nowrap}   /* margin in full: a page's own .cta margin (the old Main page's hub cards) used to push it down */
+.topbar .cta:hover{background:var(--brand)}
 /* Between the phone layout and full width the bar tightens in two steps instead of scrolling every page sideways:
    at full size it needs ~982px (it was 957px wide in a 768px iPad, 2026-10-02). The hub tabs keep their full labels. */
 @media (max-width:1023px){
@@ -108,10 +110,10 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
   .topbar .in{gap:10px}
   .topbar .tabs{margin-left:0;min-width:0;overflow-x:auto;scrollbar-width:none}   /* if a fallback font runs wide, the tabs scroll inside the bar rather than the page */
   .topbar .tabs::-webkit-scrollbar{display:none}
-  .topbar .tabs a{font-size:13px;padding:12px 7px 10px}
+  .topbar .tabs a{font-size:14px;padding:12px 7px 9px}
   .topbar .tabs a:focus-visible{outline-offset:-3px}   /* inside the scroller an outside outline would be clipped */
   .topbar .about{padding:6px}
-  .topbar .cta{margin-left:0;padding:8px 12px;font-size:13px}
+  .topbar .cta{margin-left:0;padding:9px 12px 7px;font-size:15px}
 }
 /* With Learn the fourth hub (2026-10-18) the tabs need ~410px; under 861px the logo keeps its mark but drops the wordmark,
    so all four tabs show on a 768px iPad instead of the last one scrolling out of the bar. */
@@ -120,30 +122,30 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
 }
 
 /* ── Frame: page head (replaces the blue hero on tool pages) ─────────────── */
-.page-head{position:relative;margin:0 0 14px}
+.page-head{position:relative;margin:4px 0 22px}
 .page-head .ph-main{padding-right:250px}   /* room for the action pill, pinned top right */
-.page-head .crumbs{font-size:13px;color:var(--faint);margin:0 0 4px}
+.page-head .crumbs{font:400 15px/1 var(--label);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
 .page-head .crumbs a{color:var(--brand);text-decoration:none;font-weight:600}
-.page-head h1{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:34px;line-height:1;margin:0;letter-spacing:.03em;color:var(--ink);text-transform:none}
-.page-head .lead{margin:6px 0 0;color:var(--muted);max-width:70ch;font-size:15px;line-height:1.5}
+.page-head h1{font-family:var(--display);font-weight:700;font-size:44px;line-height:1.05;margin:0;letter-spacing:-.02em;color:#000;text-transform:none}
+.page-head .lead{margin:12px 0 0;color:var(--ink);max-width:70ch;font-size:16px;line-height:1.7}
 .page-head .lead a{color:var(--brand)}
-.page-head .ph-link{position:absolute;top:0;right:0;display:inline-block;padding:7px 13px;border:2px solid var(--line);border-radius:999px;background:#fff;color:var(--brand);font-weight:700;font-size:13px;text-decoration:none;white-space:nowrap}
-.page-head .ph-link:hover{border-color:var(--brand)}
+.page-head .ph-link{position:absolute;top:0;right:0;display:inline-block;padding:10px 18px 8px;border:2px solid var(--char);border-radius:0;background:#fff;color:var(--ink);font:400 16px/1 var(--label);letter-spacing:.14em;text-transform:uppercase;text-decoration:none;white-space:nowrap}
+.page-head .ph-link:hover{background:var(--char);color:#fff}
 .page-head details.how{font-size:13px;color:var(--muted)}
 .page-head details.how summary{display:inline-block;margin-top:8px;color:var(--brand);font-weight:700;cursor:pointer;list-style:none;padding:2px 0;white-space:nowrap}
 .page-head details.how summary::-webkit-details-marker{display:none}
 .page-head details.how summary::after{content:" ▸"}
 .page-head details.how[open] summary::after{content:" ▾"}
-.page-head .how-body{margin-top:12px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 16px;line-height:1.55;max-width:90ch}   /* opens below the title, full width */
+.page-head .how-body{margin-top:12px;background:#fff;border:0;border-left:4px solid var(--pale2);border-radius:0;padding:12px 16px;line-height:1.55;max-width:90ch}   /* opens below the title, full width */
 .page-head .how-body a{color:var(--brand)}
 .page-head .how-body p{margin:0 0 8px}.page-head .how-body p:last-child{margin:0}
 
 /* ── Frame: footer (every page) ───────────────────────────────────────────── */
-.site-footer{background:#343b44;padding:26px 0 24px;margin:auto 0 0;color:rgba(255,255,255,.78);font-size:14px;line-height:1.6;text-align:left;font-family:'Roboto','Segoe UI',Arial,sans-serif}   /* full-bleed band, left-aligned like the header; margin-top:auto pins it to the bottom */
+.site-footer{background:var(--char);padding:26px 0 24px;margin:auto 0 0;color:rgba(255,255,255,.78);font-size:14px;line-height:1.6;text-align:left;font-family:'Roboto','Segoe UI',Arial,sans-serif}   /* full-bleed band, left-aligned like the header; margin-top:auto pins it to the bottom */
 .site-footer .in{max-width:var(--page-w);margin:0 auto;padding:0 24px}
 .site-footer .cols{display:flex;justify-content:space-between;align-items:flex-start;gap:20px 40px;flex-wrap:wrap}
 .site-footer .who p,.site-footer .reach p{margin:0}
-.site-footer .footer-logo{display:inline-block;background:#fff;border-radius:8px;padding:7px 10px;margin:0 0 10px}   /* the chapter's black logo (brand/surfrider_sf.png, transparent, 3x) on a small white tile */
+.site-footer .footer-logo{display:inline-block;background:#fff;border-radius:0;padding:7px 10px;margin:0 0 10px}   /* the chapter's black logo (brand/surfrider_sf.png, transparent, 3x) on a small white tile */
 .site-footer .footer-logo img{display:block;height:52px;width:auto}   /* SAN FRANCISCO stays readable */
 .site-footer .org{color:#fff;font-weight:700}
 .site-footer .footer-note{color:rgba(255,255,255,.7)}   /* footer- prefix on note, hotline, links, sources: pages have their own .note/.links/.sources/.hotline rules, and those restyled the footer on About, Discharges, Signup, Forecast, Manage and Alerts (2026-09-30) */
@@ -151,7 +153,7 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
 .site-footer .footer-hotline{color:#fff;font-weight:700;margin:0 0 4px}
 .site-footer .footer-hotline .with-ic{align-items:flex-start}
 .site-footer .footer-hotline .ic{margin-top:4px;flex-shrink:0}   /* the phone icon stays on the first line when the number wraps on phones */
-.site-footer a{color:#7ab8e0;text-decoration:none}
+.site-footer a{color:var(--pale);text-decoration:none}
 .site-footer a:hover{text-decoration:underline}
 .site-footer .footer-sources{display:flex;justify-content:space-between;gap:8px 20px;flex-wrap:wrap;margin:18px 0 0;padding-top:12px;border-top:1px solid rgba(255,255,255,.14);font-size:13px;color:#8a949b}
 
@@ -160,12 +162,12 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
    track, grouped and labelled, so it reads as "pages in this section" and not as a second top bar. */
 .secnav{display:flex;flex-wrap:wrap;align-items:center;gap:8px 22px;margin:0 0 16px;font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:13px;line-height:1.2}
 .secnav .grp{display:flex;align-items:center;gap:8px;min-width:0}
-.secnav .lbl{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);white-space:nowrap}
-.secnav .pills{display:flex;gap:2px;padding:3px;border-radius:999px;background:#d3dfe9;min-width:0;overflow-x:auto;scrollbar-width:none}
+.secnav .lbl{font-family:var(--label);font-size:14px;font-weight:400;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.secnav .pills{display:flex;gap:2px;padding:3px;border-radius:0;background:#e2e2e2;min-width:0;overflow-x:auto;scrollbar-width:none}
 .secnav .pills::-webkit-scrollbar{display:none}
-.secnav a{display:block;padding:6px 13px;border-radius:999px;color:var(--muted);font-weight:600;text-decoration:none;white-space:nowrap}
+.secnav a{display:block;padding:6px 13px;border-radius:0;color:var(--muted);font-weight:600;text-decoration:none;white-space:nowrap}
 .secnav a:hover{color:var(--ink)}
-.secnav a.on{background:#fff;color:var(--brand);font-weight:700;box-shadow:0 1px 2px rgba(38,39,42,.14)}
+.secnav a.on{background:var(--char);color:#fff;font-weight:700}
 
 /* ── Frame: phone tab bar (hidden on wide screens) ────────────────────────── */
 .tabbar{display:none}
@@ -179,14 +181,15 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
   .secnav a{padding:6px 11px}
   .topbar .in{padding:8px 14px;gap:10px}
   .topbar .about{padding:6px}
-  .topbar .cta{margin-left:0;padding:8px 13px;font-size:13px}
+  .topbar .cta{margin-left:0;padding:9px 10px 7px;font-size:15px;letter-spacing:.05em}
   .page-head .ph-main{padding-right:0}
-  .page-head h1{font-size:30px}
+  .page-head h1{font-size:34px}
   .page-head .ph-link{position:static;margin-top:10px}
   .tabbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:40;background:#fff;border-top:1px solid var(--line);justify-content:space-around;padding:8px 6px calc(8px + env(safe-area-inset-bottom));font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:11px;line-height:1.2}
   .tabbar a{font-size:11px;font-weight:700;color:var(--muted);text-decoration:none;text-align:center;line-height:1.2;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:56px}
   .tabbar a .ic{width:20px;height:20px}
-  .tabbar a.on{color:var(--brand)}
+  .tabbar a.on{color:var(--ink)}
+  .tabbar a.on .ic{color:var(--brand)}
   body{padding-bottom:72px}
   .site-footer .cols{flex-direction:column;gap:16px}
   .site-footer .reach{text-align:left}
@@ -196,21 +199,21 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
    the type only shrinks below 360. The labels stay as they are. */
 @media (max-width:374px){
   .topbar .in{padding:8px 12px;gap:8px}
-  .topbar .cta{padding:8px 11px}
+  .topbar .cta{padding:9px 9px 7px;letter-spacing:.03em}
 }
 @media (max-width:359px){
   .topbar .in{padding:8px 10px}
   .topbar .mark{gap:7px}
   .topbar .mark b{font-size:18px}
-  .topbar .cta{padding:8px 10px;font-size:12px}
+  .topbar .cta{padding:9px 9px 7px;font-size:14px;letter-spacing:.02em}
 }
 
 /* ── Kit: small shared pieces ─────────────────────────────────────────────── */
 /* Site chips — one monitoring station as a pill: status dot, name, sample date. The Today board (under the zone tiles) and the CSO Forecast's beach status. */
 .site-chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0}
 .site-chips[hidden]{display:none}   /* the strip's own display:flex would otherwise beat the hidden attribute (Chase saw every chip, 2026-09-30) */
-.site-chips .site{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:#fff;font:inherit;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer}
-.site-chips .site:hover{border-color:var(--sky)}
+.site-chips .site{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:0;border:1px solid var(--line);background:#fff;font:inherit;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer}
+.site-chips .site:hover{border-color:var(--char)}
 .site-chips .site[hidden]{display:none}
 .site-chips .site small{color:var(--faint);font-weight:500;font-size:12px}
 .site-chips .site.bwtf{background:#f3f7fb;border-color:#c9d9e6}   /* Surfrider's site: a diamond and a pale tint */
@@ -219,5 +222,5 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
 .status-dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none;vertical-align:middle}
 .status-dot.safe{background:var(--safe)}.status-dot.caution{background:var(--caution)}.status-dot.posted{background:var(--posted)}
 .status-dot.discharge{background:var(--discharge)}.status-dot.unknown{background:var(--unknown)}
-.skel{height:12px;border-radius:6px;background:linear-gradient(90deg,#e6ecf0,#f5f8fa,#e6ecf0);background-size:200% 100%;animation:skel-shimmer 1.2s infinite;margin:6px 0}
+.skel{height:12px;border-radius:0;background:linear-gradient(90deg,#e6ecf0,#f5f8fa,#e6ecf0);background-size:200% 100%;animation:skel-shimmer 1.2s infinite;margin:6px 0}
 @keyframes skel-shimmer{to{background-position:-200% 0}}
