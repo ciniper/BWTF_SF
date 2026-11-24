@@ -71,6 +71,7 @@ FRESH_SECONDS = 30 * 60   # a snapshot younger than this is served as-is
 # stored snapshot whatever its age — up to this ceiling, past which the cron
 # has clearly stopped and the old compute-on-visit path takes over.
 SERVE_STORED_SECONDS = 3 * 3600
+MAX_FORECAST_AGE_SECONDS = 4 * 3600  # hard ceiling, including failed-refresh fallbacks
 STALE_NOTE_SECONDS = 45 * 60   # older than a missed half-hour: say so on the page
 GUARD_SECONDS = 3 * 60    # a refresh claim older than this is abandoned (crashed worker)
 _COLD_WAIT_SECONDS = 24   # how long a guard-losing visitor waits when there's NO snapshot yet
@@ -257,6 +258,16 @@ def _with_meta(snap: dict | None, generated_at: datetime | None,
     out["refreshing"] = refreshing
     if stale_note:
         out["stale_note"] = stale_note
+    # Every live response (stored, memory, guard-held, or engine-less) passes
+    # here. Never extend a forecast's useful life just because refresh failed.
+    if out.get("predictions") and (
+        generated_at is None
+        or (_utcnow() - generated_at).total_seconds() >= MAX_FORECAST_AGE_SECONDS
+    ):
+        out["predictions"] = {}
+        out["forecast_expired"] = True
+        out["error"] = "No forecast updated within the last four hours is available. Please try again shortly."
+        out.pop("stale_note", None)
     return out
 
 

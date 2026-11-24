@@ -35,3 +35,11 @@ await ctx.loadData();
 assert.equal(rendered, payload);
 assert.equal(rendered.stale_note, undefined);
 console.log('PASS cold outage, retained predictions, and recovery UI');
+
+payload = {error: 'expired', forecast_expired: true, predictions: {}, beach_status: [{status: 'posted'}]};
+await ctx.loadData();
+assert.match(elements.riskBanner.innerHTML, /last four hours/);
+assert.equal(beaches[0].status, 'posted');
+assert.equal(ctx.current, null);
+assert.equal(elements.timeline.innerHTML, '');
+console.log('PASS expired forecast notice and cleared predictions');

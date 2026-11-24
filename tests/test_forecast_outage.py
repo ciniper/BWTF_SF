@@ -1,7 +1,7 @@
 """Offline regression coverage for weather outages; no shared cache writes."""
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from threading import Lock
 from types import SimpleNamespace
@@ -77,6 +77,27 @@ def test_failed_refresh_never_stores_or_restamps_old_predictions():
         store.assert_not_called()
         history.assert_not_called()
     assert row['snapshot'] == {'predictions': {'stored': {}}}
+
+
+def test_four_hour_limit_applies_to_all_live_responses():
+    now = datetime(2026, 11, 24, 12, tzinfo=timezone.utc)
+    snap = {'predictions': {'today': {'date': '2026-11-24'}},
+            'beach_status': [{'status': 'posted'}], 'error': None}
+    with patch.object(page, '_utcnow', return_value=now):
+        for age, expired in [(0, False), (14399, False), (14400, True), (14401, True)]:
+            stamp = now - timedelta(seconds=age)
+            for refreshing in [False, True]:
+                result = page._with_meta(snap, stamp, refreshing=refreshing,
+                                         stale_note='showing the last stored forecast')
+                assert bool(result['predictions']) is not expired
+                assert result.get('forecast_expired', False) is expired
+                assert result['generated_at'] == page._iso(stamp)
+                assert result['beach_status'] == snap['beach_status']
+                if expired:
+                    assert 'four hours' in result['error']
+                    assert 'stale_note' not in result
+        assert page._with_meta(snap, None)['forecast_expired']
+    assert snap['predictions'] and snap['error'] is None
 
 
 if __name__ == '__main__':

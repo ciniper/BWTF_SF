@@ -494,7 +494,9 @@ async function loadData() {
             if (data.error && !Object.keys(data.predictions || {}).length) {
                 showPanels({ beaches: true });
                 renderBeaches(data.beach_status || []);
-                throw new Error('Forecast data is temporarily unavailable. Please try again shortly.');
+                const error = new Error('Forecast data is temporarily unavailable. Please try again shortly.');
+                error.forecastExpired = data.forecast_expired === true;
+                throw error;
             }
             if (data.error) data.stale_note = 'The refresh failed; showing the last available forecast.';
             renderLive(data);
@@ -525,7 +527,9 @@ async function loadData() {
         lastLiveData = null;
         for (const id of ['timeline', 'detail', 'refreshInfo']) document.getElementById(id).innerHTML = '';
         const section = currentMode === 'actual' ? 'Observed records' : currentMode === 'check' ? 'Model check' : forecastTitle();
-        const message = currentMode === 'live' ? 'Forecast data is temporarily unavailable. Please try again shortly.' : (e.message || e);
+        const message = currentMode === 'live'
+            ? (e.forecastExpired ? 'No forecast updated within the last four hours is available. Please try again shortly.' : 'Forecast data is temporarily unavailable. Please try again shortly.')
+            : (e.message || e);
         banner.className = 'risk-banner'; banner.innerHTML = '<div class="eyebrow">' + section + '</div><h2>' + (currentMode === 'live' ? 'Forecast' : section) + ' unavailable.</h2><p class="sub">' + esc(message) + '</p><button type="button" onclick="loadData()">Try again</button>';
         document.getElementById('histLabel').innerHTML = '';
     }
