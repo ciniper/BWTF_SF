@@ -491,7 +491,12 @@ async function loadData() {
         if (currentMode === 'live') {
             const data = await getJSON('/forecast/api/data');
             if (seq !== loadSeq) return;
-            if (data.error) throw new Error(data.error);
+            if (data.error && !Object.keys(data.predictions || {}).length) {
+                showPanels({ beaches: true });
+                renderBeaches(data.beach_status || []);
+                throw new Error('Forecast data is temporarily unavailable. Please try again shortly.');
+            }
+            if (data.error) data.stale_note = 'The refresh failed; showing the last available forecast.';
             renderLive(data);
         } else {
             showBuilder(); if (!dayOpen) return;   // the day-by-day data loads when its fold opens
@@ -515,9 +520,14 @@ async function loadData() {
             document.getElementById('histLabel').innerHTML = ic('calendar') + ' ' + esc(date);
         }
     } catch (e) {
+        if (seq !== loadSeq) return;
+        current = null;
+        lastLiveData = null;
+        for (const id of ['timeline', 'detail', 'refreshInfo']) document.getElementById(id).innerHTML = '';
         const section = currentMode === 'actual' ? 'Observed records' : currentMode === 'check' ? 'Model check' : forecastTitle();
-        banner.className = 'risk-banner'; banner.innerHTML = '<div class="eyebrow">' + section + '</div><h2>' + (currentMode === 'live' ? 'Forecast' : section) + ' unavailable.</h2><p class="sub">' + esc(e.message || e) + '</p>';
-        document.getElementById('histLabel').innerHTML = ic('circle-x') + ' ' + esc(e.message || e);
+        const message = currentMode === 'live' ? 'Forecast data is temporarily unavailable. Please try again shortly.' : (e.message || e);
+        banner.className = 'risk-banner'; banner.innerHTML = '<div class="eyebrow">' + section + '</div><h2>' + (currentMode === 'live' ? 'Forecast' : section) + ' unavailable.</h2><p class="sub">' + esc(message) + '</p><button type="button" onclick="loadData()">Try again</button>';
+        document.getElementById('histLabel').innerHTML = '';
     }
 }
 

@@ -274,14 +274,15 @@ def _compute_and_store(row, now: datetime):
     stored_snap = row.get("snapshot") if row else None
     stored_at = _parse_ts(row.get("generated_at")) if row else None
 
-    if snap.get("error") and not snap.get("predictions"):
+    if snap.get("error"):
         # Failed refresh: keep the stored snapshot, free the claim for a retry.
         if row is not None:
             _release_claim()
         if stored_snap:
-            return _json(_with_meta(stored_snap, stored_at,
-                                    stale_note=f"refresh failed: {snap['error']}"))
-        return _json(_with_meta(snap, None))
+            fallback = dict(stored_snap, beach_status=snap.get("beach_status") or [])
+            return _json(_with_meta(fallback, stored_at,
+                                    stale_note="The refresh failed; showing the last stored forecast."))
+        return _json(_with_meta(snap, _engine.LIVE.last_refresh))
 
     # The production host is the only writer — of the cache row AND of every
     # side job below. The request handlers already keep other hosts out, but a
