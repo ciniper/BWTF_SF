@@ -4,7 +4,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 {% if city_email_preview %}<meta name="robots" content="noindex, nofollow">
 <title>Latest City email — Today preview · Admin</title>
-{% else %}<meta http-equiv="refresh" content="300">
+{% else %}{% if sfpuc_email_enabled() %}<noscript><meta http-equiv="refresh" content="300"></noscript>
+{% else %}<meta http-equiv="refresh" content="300">{% endif %}
 <title>SF Beach Water — is the water safe today? · Surfrider SF Blue Water Task Force</title>{% endif %}
 {% if canonical %}<link rel="canonical" href="{{ canonical }}">{% endif %}   {# one page at / and /today: search engines index / #}
 <link rel="preconnect" href="https://fonts.googleapis.com">

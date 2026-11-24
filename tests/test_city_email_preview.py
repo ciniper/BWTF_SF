@@ -51,19 +51,25 @@ def test_today_and_admin_use_same_viewer_without_fetching_email(client):
         assert 'city_email.js?v=' in html and 'data-city-email-older' in html
         assert 'sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"' in html
         assert "allow-scripts" not in html
+        assert 'data-page-refresh' in html
+        assert '<noscript><meta http-equiv="refresh" content="300"></noscript>' in html
     unlock(client)
     response = client.get(PAGE)
     assert response.headers["Cache-Control"] == "private, no-store"
     assert response.headers["X-Robots-Tag"] == "noindex, nofollow"
     assert b'id="city-email-dialog"' in response.data
     assert b'/_vercel/insights/script.js' not in response.data
+    assert b'data-page-refresh' not in response.data and b'http-equiv="refresh"' not in response.data
 
 
 def test_missing_sample_dates_keep_trigger_and_disabled_feature_hides_it(client, monkeypatch):
     monkeypatch.setattr(T, "board_context", lambda *a, **k: {"board": today_board([], now=datetime(2026, 11, 23)), "generated": "Offline"})
     assert b"Sample dates unavailable." in client.get("/").data
     monkeypatch.setenv("SFPUC_EMAIL_ENABLED", "false")
-    assert b'data-city-email' not in client.get("/").data
+    html = client.get("/").data
+    assert b'data-city-email' not in html
+    assert b'<meta http-equiv="refresh" content="300">' in html
+    assert b'<noscript><meta http-equiv="refresh"' not in html
     assert client.get(API).status_code == 404
     assert client.get(f"{API}/{MID}/images/0").status_code == 404
 

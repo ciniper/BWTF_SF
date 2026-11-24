@@ -198,7 +198,14 @@ def document(row, image_path):
             '<meta name="viewport" content="width=device-width,initial-scale=1">'
             '<meta name="referrer" content="no-referrer">'
             '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src \'self\'; style-src \'unsafe-inline\'; base-uri \'none\'; form-action \'none\'">'
-            '<style>html,body{margin:0;padding:0;background:white;font:15px/1.6 Arial,sans-serif;overflow-wrap:anywhere}'
-            'body{max-width:100%;overflow-x:hidden}table{table-layout:fixed;max-width:100%!important}td{box-sizing:border-box}'
+            '<style>html,body{box-sizing:border-box;margin:0;padding:0;width:100%;min-width:0;max-width:100%;'
+            'background:white;font:15px/1.6 Arial,sans-serif;overflow-wrap:anywhere;overscroll-behavior:none}'
+            'html{height:100%;overflow-y:auto;overflow-x:hidden;scrollbar-gutter:stable}body{padding:0 0 20px;min-height:100%;touch-action:pan-y pinch-zoom}'
+            '*,*::before,*::after{box-sizing:border-box}table{table-layout:fixed;max-width:100%!important}'
+            'div,td,th,p,span,a{overflow-wrap:anywhere}div{max-width:100%!important}td,th{min-width:0}'
             'img{max-width:100%!important;height:auto!important}a{color:#0068a5}a:focus-visible{outline:3px solid #0068a5}'
-            '</style></head><body>' + content + '</body></html>')
+            '.city-email-meta{padding:0 0 16px}.city-email-meta p{margin:0 0 6px;color:#0068a5;font-size:12px;font-weight:700}'
+            '.city-email-meta h1{margin:0;font-size:20px;line-height:1.35;overflow-wrap:anywhere}'
+            '@media(max-width:600px){table{width:100%!important}td,th{width:auto!important}'
+            '.city-email-meta h1{font-size:18px}}'
+            '</style></head><body data-city-email-document>' + content + '</body></html>')

@@ -8,34 +8,71 @@
   const message = dialog.querySelector("[data-city-email-message]");
   const frame = dialog.querySelector("[data-city-email-layout]");
   const body = dialog.querySelector("[data-city-email-text]");
+  const plain = dialog.querySelector("[data-city-email-plain]");
   const newer = dialog.querySelector("[data-city-email-newer]");
   const older = dialog.querySelector("[data-city-email-older]");
   const position = dialog.querySelector("[data-city-email-position]");
-  const content = dialog.querySelector(".city-email-content");
-  let controller = null, opener = null, overflow = "", observer = null;
+  const close = dialog.querySelector("[data-city-email-close]");
+  let controller = null, opener = null, currentUpdate = null, scrollLock = null, refreshTimer = null;
   let cursors = [null], page = 0, nextCursor = null, requestedPage = 0;
 
+  function schedulePageRefresh() {
+    if (!dialog.hasAttribute("data-page-refresh")) return;
+    clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(() => { if (!dialog.open) window.location.reload(); }, 300000);
+  }
+  schedulePageRefresh();
+
+  function lockPage() {
+    const root = document.documentElement, pageBody = document.body;
+    const properties = ["position", "top", "left", "width", "overflow", "padding-right", "box-sizing"];
+    scrollLock = {x:window.scrollX, y:window.scrollY,
+      body:properties.map(key => [key, pageBody.style.getPropertyValue(key), pageBody.style.getPropertyPriority(key)]),
+      root:["overflow", "overscroll-behavior", "scroll-behavior"].map(key => [key, root.style.getPropertyValue(key), root.style.getPropertyPriority(key)])};
+    const gutter = window.innerWidth - root.clientWidth;
+    pageBody.style.paddingRight = `${parseFloat(getComputedStyle(pageBody).paddingRight) + gutter}px`;
+    Object.assign(pageBody.style, {position:"fixed", top:`-${scrollLock.y}px`, left:`-${scrollLock.x}px`,
+      width:"100%", overflow:"hidden", boxSizing:"border-box"});
+    root.style.overflow = "hidden";
+    root.style.overscrollBehavior = "none";
+  }
+  function unlockPage() {
+    if (!scrollLock) return;
+    const root = document.documentElement;
+    const restore = (style, entries) => entries.forEach(([key, value, priority]) => {
+      if (value) style.setProperty(key, value, priority); else style.removeProperty(key);
+    });
+    restore(document.body.style, scrollLock.body);
+    restore(root.style, scrollLock.root);
+    // Restore the exact reading position even if the site uses smooth scrolling.
+    root.style.scrollBehavior = "auto";
+    window.scrollTo(scrollLock.x, scrollLock.y);
+    restore(root.style, scrollLock.root);
+    scrollLock = null;
+  }
   function clearLayout() {
-    if (observer) observer.disconnect();
-    observer = null;
     frame.hidden = true;
+    frame.removeAttribute("data-ready");
     frame.removeAttribute("srcdoc");
+    currentUpdate = null;
   }
   frame.addEventListener("load", () => {
-    if (frame.hidden || !frame.hasAttribute("srcdoc") || !frame.contentDocument) return;
+    if (frame.hidden || !currentUpdate || !frame.contentDocument?.querySelector("[data-city-email-document]")) return;
     const doc = frame.contentDocument;
-    const resize = () => {
-      if (frame.hidden || frame.contentDocument !== doc) return;
-      frame.style.height = `${Math.ceil(doc.body.getBoundingClientRect().height) + 4}px`;
-    };
-    observer = new ResizeObserver(resize);
-    observer.observe(doc.body);
+    // Metadata scrolls with the bulletin, leaving room to read on small phones.
+    const header = doc.createElement("header");
+    header.className = "city-email-meta";
+    const date = doc.createElement("p"), title = doc.createElement("h1");
+    date.textContent = `${currentUpdate.date_label} ${currentUpdate.date}`;
+    title.textContent = currentUpdate.title;
+    header.append(date, title);
+    doc.body.prepend(header);
+    doc.body.tabIndex = 0;
     doc.querySelectorAll("img").forEach(img => {
-      img.addEventListener("load", resize, {once:true});
       const failed = () => {
         const fallback = doc.createElement("span");
         fallback.textContent = `Image unavailable — ${img.alt || "Email image"}`;
-        img.replaceWith(fallback); resize();
+        img.replaceWith(fallback);
       };
       img.addEventListener("error", failed, {once:true});
       if (img.complete && !img.naturalWidth) failed();
@@ -45,13 +82,16 @@
       if (event.key === "Escape") { event.preventDefault(); dialog.close(); }
       if (event.key !== "Tab") return;
       const links = [...doc.querySelectorAll("a[href]")];
-      if (event.shiftKey && doc.activeElement === links[0]) {
-        event.preventDefault(); content.focus();
-      } else if (!event.shiftKey && doc.activeElement === links[links.length - 1]) {
+      if (event.shiftKey && doc.activeElement === doc.body) {
+        event.preventDefault(); (older.disabled ? (newer.disabled ? close : newer) : older).focus();
+      } else if (event.shiftKey && doc.activeElement === links[0]) {
+        event.preventDefault(); doc.body.focus({preventScroll:true});
+      } else if (!event.shiftKey && (doc.activeElement === links[links.length - 1] || (!links.length && doc.activeElement === doc.body))) {
         event.preventDefault(); dialog.querySelector(".city-email-footer a").focus();
       }
     });
-    resize();
+    frame.setAttribute("data-ready", "");
+    status.textContent = "";
   });
 
   async function load(target = 0) {
@@ -60,14 +100,14 @@
     controller = request;
     requestedPage = target;
     const timer = setTimeout(() => request.abort(), 15000);
-    if ([retry, newer, older].includes(document.activeElement)) content.focus();
+    if ([retry, newer, older].includes(document.activeElement)) close.focus({preventScroll:true});
     message.hidden = true;
     body.textContent = "";
+    plain.hidden = true;
     clearLayout();
     retry.hidden = true;
     newer.disabled = older.disabled = true;
     status.textContent = "Loading City email…";
-    content.scrollTop = 0;
     try {
       const query = cursors[target] ? `?before=${encodeURIComponent(cursors[target])}` : "";
       const response = await fetch(`/api/city-emails${query}`, {signal:request.signal, cache:"no-store"});
@@ -89,15 +129,18 @@
       }
       message.querySelector("[data-city-email-title]").textContent = update.title;
       message.querySelector("[data-city-email-date]").textContent = `${update.date_label} ${update.date}`;
-      body.hidden = !!update.html;
       message.hidden = false;
       if (update.html) {
+        currentUpdate = update;
         frame.hidden = false;
         frame.srcdoc = update.html;
+        status.textContent = "Loading email layout…";
       } else {
         body.textContent = update.text;
+        plain.hidden = false;
+        plain.scrollTop = 0;
+        status.textContent = "";
       }
-      status.textContent = "";
     } catch (_) {
       if (controller !== request || !dialog.open) return;
       status.textContent = "City emails are unavailable right now. Try again or use the SFPUC links below.";
@@ -113,9 +156,10 @@
     trigger.addEventListener("click", () => {
       if (dialog.open) return;
       opener = trigger;
-      overflow = document.body.style.overflow;
+      // Today's automatic refresh must not dismiss an email being read.
+      clearTimeout(refreshTimer);
+      lockPage();
       dialog.showModal();
-      document.body.style.overflow = "hidden";
       cursors = [null]; page = 0; nextCursor = null;
       load(0);
     });
@@ -127,7 +171,7 @@
     load(page + 1);
   });
   retry.addEventListener("click", () => load(requestedPage));
-  dialog.querySelector("[data-city-email-close]").addEventListener("click", () => dialog.close());
+  close.addEventListener("click", () => dialog.close());
   dialog.addEventListener("keydown", event => {
     if (event.key !== "Tab") return;
     const stops = [...dialog.querySelectorAll("button, a[href], [tabindex='0']")]
@@ -143,15 +187,23 @@
     const box = dialog.getBoundingClientRect();
     return event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom;
   };
-  let backdropDown = false;
-  dialog.addEventListener("pointerdown", event => { backdropDown = event.target === dialog && outside(event); });
-  dialog.addEventListener("click", event => { if (backdropDown && event.target === dialog && outside(event)) dialog.close(); });
+  let backdropDown = null;
+  dialog.addEventListener("pointerdown", event => {
+    backdropDown = event.target === dialog && outside(event) ? {x:event.clientX,y:event.clientY} : null;
+  });
+  dialog.addEventListener("pointercancel", () => { backdropDown = null; });
+  dialog.addEventListener("click", event => {
+    if (backdropDown && event.target === dialog && outside(event) &&
+        Math.hypot(event.clientX - backdropDown.x, event.clientY - backdropDown.y) < 8) dialog.close();
+    backdropDown = null;
+  });
   dialog.addEventListener("close", () => {
     if (controller) controller.abort();
     controller = null;
     message.hidden = true;
     clearLayout();
-    document.body.style.overflow = overflow;
-    if (opener && opener.isConnected) opener.focus();
+    unlockPage();
+    schedulePageRefresh();
+    if (opener && opener.isConnected) opener.focus({preventScroll:true});
   });
 })();

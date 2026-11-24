@@ -216,6 +216,17 @@ SFPUC’s official links. Close, Escape and backdrop clicks dismiss the dialog;
 focus returns to City samples. The private preview is noindex, omits analytics
 and timed refresh, and uses the same viewer as Today.
 
+The dialog stays within the viewport, with Close and Older/Newer always visible.
+The email frame is the only scrolling pane; its date and title scroll with the
+bulletin. On phones, tables, images and long links fit the available width. A
+fixed-body lock preserves the underlying page's position until the dialog closes,
+and overscroll containment applies inside the email and on the backdrop. The
+plain-text fallback uses the same single-pane behavior. No frame-height observer
+runs while images load, avoiding layout jumps during reading.
+Today's five-minute page refresh pauses while the reader is open and restarts
+with a full five-minute interval after closing. The private Admin preview does
+not auto-refresh; Today retains its meta-refresh fallback when JavaScript is off.
+
 ### Capture limits
 
 - Inbound requests: authenticated JSON, at most 512 KB and 20 items; body text
