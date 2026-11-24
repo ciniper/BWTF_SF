@@ -71,6 +71,7 @@ FRESH_SECONDS = 30 * 60   # a snapshot younger than this is served as-is
 # stored snapshot whatever its age — up to this ceiling, past which the cron
 # has clearly stopped and the old compute-on-visit path takes over.
 SERVE_STORED_SECONDS = 3 * 3600
+MAX_FORECAST_AGE_SECONDS = 4 * 3600  # hard ceiling, including failed-refresh fallbacks
 STALE_NOTE_SECONDS = 45 * 60   # older than a missed half-hour: say so on the page
 GUARD_SECONDS = 3 * 60    # a refresh claim older than this is abandoned (crashed worker)
 _COLD_WAIT_SECONDS = 24   # how long a guard-losing visitor waits when there's NO snapshot yet
@@ -257,6 +258,16 @@ def _with_meta(snap: dict | None, generated_at: datetime | None,
     out["refreshing"] = refreshing
     if stale_note:
         out["stale_note"] = stale_note
+    # Every live response (stored, memory, guard-held, or engine-less) passes
+    # here. Never extend a forecast's useful life just because refresh failed.
+    if out.get("predictions") and (
+        generated_at is None
+        or (_utcnow() - generated_at).total_seconds() >= MAX_FORECAST_AGE_SECONDS
+    ):
+        out["predictions"] = {}
+        out["forecast_expired"] = True
+        out["error"] = "No forecast updated within the last four hours is available. Please try again shortly."
+        out.pop("stale_note", None)
     return out
 
 
@@ -274,14 +285,15 @@ def _compute_and_store(row, now: datetime):
     stored_snap = row.get("snapshot") if row else None
     stored_at = _parse_ts(row.get("generated_at")) if row else None
 
-    if snap.get("error") and not snap.get("predictions"):
+    if snap.get("error"):
         # Failed refresh: keep the stored snapshot, free the claim for a retry.
         if row is not None:
             _release_claim()
         if stored_snap:
-            return _json(_with_meta(stored_snap, stored_at,
-                                    stale_note=f"refresh failed: {snap['error']}"))
-        return _json(_with_meta(snap, None))
+            fallback = dict(stored_snap, beach_status=snap.get("beach_status") or [])
+            return _json(_with_meta(fallback, stored_at,
+                                    stale_note="The refresh failed; showing the last stored forecast."))
+        return _json(_with_meta(snap, _engine.LIVE.last_refresh))
 
     # The production host is the only writer — of the cache row AND of every
     # side job below. The request handlers already keep other hosts out, but a

@@ -523,12 +523,13 @@ class LiveData:
     def refresh(self):
         """Fetch all live data and run predictions"""
         try:
+            # Beach status is independent of the weather provider.
+            beach_status = self._fetch_sfpuc()
+            with self.lock:
+                self.beach_status = beach_status
             # 1. Fetch hourly rain (past 7 days + next 6 days) from Open-Meteo,
             #    then replace past hours with SFO gauge observations
             rain_df = self._overlay_observed_rain(self._fetch_open_meteo())
-
-            # 2. Fetch SFPUC beach status
-            beach_status = self._fetch_sfpuc()
 
             # 3. Compute features and run model for each day
             predictions = self._compute_predictions(rain_df)
@@ -544,13 +545,26 @@ class LiveData:
 
         except Exception as e:
             with self.lock:
-                self.error = str(e)
+                self.error = ("Weather data is temporarily unavailable. Please try again shortly."
+                              if isinstance(e, requests.RequestException) else
+                              "The forecast could not be updated. Please try again shortly.")
             traceback.print_exc()
 
     def _fetch_open_meteo(self) -> pd.DataFrame:
         """Fetch hourly precipitation from Open-Meteo (past 7 days + next 6 days)"""
-        r = requests.get(OPEN_METEO_URL, params=METEO_PARAMS, timeout=30)
-        r.raise_for_status()
+        # One bounded retry for transient provider failures; keep the served
+        # weather model unchanged rather than silently changing model inputs.
+        for attempt in range(2):
+            try:
+                r = requests.get(OPEN_METEO_URL, params=METEO_PARAMS, timeout=15)
+                r.raise_for_status()
+                break
+            except requests.RequestException as exc:
+                status = exc.response.status_code if exc.response is not None else None
+                transient = isinstance(exc, (requests.ConnectionError, requests.Timeout)) or status in (502, 503, 504)
+                if attempt or not transient:
+                    raise
+                time.sleep(0.5)
         data = r.json()
 
         hourly = data.get("hourly", {})
