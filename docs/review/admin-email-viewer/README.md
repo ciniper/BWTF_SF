@@ -3,9 +3,10 @@
 This change is stacked on PR #39 (`codex/latest-city-email-overlay`). It should
 be retargeted to main after that PR merges; it does not change PR #39's preview.
 
-Admin → Emails has SFPUC (received bulletins) and Surfrider (the app's sent beach
-alerts) subtabs. The email simulator is linked from Surfrider. Existing SFPUC
-URLs and the dashboard's delivery diagnostics remain available.
+Admin → Email history has SFPUC (received bulletins) and Surfrider (the app's sent
+beach alerts) subtabs. BWTF email analysis remains its own top-level admin button
+and opens the existing email simulator. The dashboard tabs are labeled Live and
+Alerts simulation. Existing URLs and delivery diagnostics remain available.
 
 SFPUC opens the newest captured message, with a paginated history below. Matching
 bulletins show the same sanitized layout as Today. Setup/other mail stays private
@@ -59,13 +60,21 @@ Browser verification used desktop Chrome at 1280×900, SFPUC at 390×844 and 360
 and Surfrider at 390×844. No horizontal overflow was measured in the page or
 email frame. Both outgoing images loaded; the rendered archive contained no
 active links. Hide/Restore, private Gmail confirmation text, and sent-email empty
-and unavailable states were checked using local fixtures only. The screenshots
+and unavailable states were checked using local fixtures only. The initial archive screenshots
 reflect the user's enabled Chrome dark-mode extension; no site theme was changed.
 Responsive emulation does not replace a physical iPhone Chrome check.
 
-The full suite completed with 79 test files passing and five failing in 551s.
-One failure was the simulator's old top-level navigation assertion: updated for
-Emails and rechecked successfully. All six relevant test files pass after the
-final changes. The four remaining known unrelated failures are `test_comparison`,
-`test_single_source`, `test_stages_build`, and `test_stages_s1` (date fixture,
-standards literal, and two forecast artifact-hash checks).
+The full suite after the naming update completed with 80 test files passing and
+four failing in 563s. All six relevant email/admin test files pass. The four known
+unrelated failures remain `test_comparison`, `test_single_source`,
+`test_stages_build`, and `test_stages_s1` (date fixture, standards literal, and two
+forecast artifact-hash checks).
+
+Navigation naming update: verified the desktop dashboard and shared admin tab row
+show Live, Alerts simulation, BWTF email analysis, and Email history. Analysis has
+its own active tab and matching page heading; Email history has its own active
+tab and the two email-source subtabs. Clicking Alerts simulation still switches
+the existing dashboard panel. A 390px check found no horizontal page overflow.
+Updated screenshots: `navigation-desktop.jpg`, `analysis-desktop.jpg`,
+`dashboard-navigation-desktop.jpg`, and `navigation-mobile.jpg`. These show the
+browser without its earlier dark-mode extension effect.

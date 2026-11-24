@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">
-<title>{% block title %}Emails{% endblock %} — Admin · SF Beach Water</title>
+<title>{% block title %}Email history{% endblock %} — Admin · SF Beach Water</title>
 <link rel="icon" href="{{ asset('brand/favicon.ico') }}">
 <link rel="stylesheet" href="{{ asset('brand.css') }}">
 <link rel="stylesheet" href="{{ asset('sfpuc_updates.css') }}">
@@ -11,7 +11,7 @@
 {% include '_icons.html' %}{% from '_frame.html' import topbar, footer, tabbar with context %}
 {{ topbar() }}
 <main class="email-wrap">
-<h1>Emails</h1>
+<h1>Email history</h1>
 <p class="email-muted">Incoming City bulletins and the beach alerts sent by this app.</p>
 {{ admin_tabs('emails') }}
 <nav class="email-subtabs" aria-label="Email sources">
