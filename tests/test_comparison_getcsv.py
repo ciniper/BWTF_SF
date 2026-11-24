@@ -169,7 +169,7 @@ def test_historical_date_bounds_and_coliform_selection():
     for date in ('', 'bad-date', '2099-01-01'):
         d = build(as_of=date)
         assert d['as_of_date'] == '2026-11-20' and not d['historical']
-    d = build(city=[row('2026-11-13', '500', 'COLI_TOTAL'), row('2026-11-20', '10000', 'COLI_TOTAL')],
+    d = build(city=[row('2026-11-13', '500', 'COLI_TOTAL'), row('2026-11-20', '1500', 'COLI_TOTAL')],
               as_of='2026-11-13', analyte='COLI_TOTAL')
     assert d['rows'][0]['city_raw'] == '500' and d['rows'][0]['bwtf_raw'] is None
     assert d['summary']['same_day'] is None
