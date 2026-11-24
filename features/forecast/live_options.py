@@ -11,7 +11,6 @@ ECMWF_LINEUP = {
     "s2": "logit_wind8_max3h_older11", "s3": "split_v2",
     "s4": "impact_v2_d10", "s5": "live_v2",
 }
-STAGE_LABELS = ("Rain", "Discharge model", "Beach mapping", "Lingering effects", "Live corrections")
 
 
 def options():
@@ -23,6 +22,4 @@ def options():
 
 
 def describe(model_id, label, parts):
-    return {"id": model_id, "label": label, "weather": lineup.words("s1", parts["s1"]),
-            "stages": [{"label": f"S{i} · {title}", "name": lineup.words(f"s{i}", parts[f"s{i}"])}
-                       for i, title in enumerate(STAGE_LABELS, 1)]}
+    return {"id": model_id, "label": label, "weather": lineup.words("s1", parts["s1"])}

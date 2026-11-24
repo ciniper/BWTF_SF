@@ -26,11 +26,7 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 .live-models { margin: 18px 0; }
 .live-model-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .live-model-controls select { max-width: 100%; }
-.live-model-stages { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
-.live-model-stage { border: 1px solid var(--line); border-radius: var(--r); padding: 12px; background: #fff; font-size: 13px; }
-.live-model-stage b { display: block; margin-bottom: 6px; }
 .live-model-note { color: var(--muted); font-size: 13px; margin: 8px 0; }
-@media (max-width: 700px) { .live-model-stages { grid-template-columns: 1fr; } }
 
 .risk-banner { background: #fff; border: 2px solid var(--line); border-radius: var(--r-lg); padding: 16px 22px 18px; margin-bottom: 16px; color: var(--ink); }   /* the board's card: border by grade, headline in Bebas, facts underneath */
 .risk-banner .eyebrow { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin: 0 0 4px; }
@@ -308,7 +304,6 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
         <button class="date-picker" id="runAlternative" type="button" hidden onclick="loadData()">Recompute ECMWF</button>
     </div>
     <p class="live-model-note" id="liveModelNote" role="status" aria-live="polite"></p>
-    <div class="live-model-stages" id="liveModelStages"></div>
 </section>
 <section class="sb" id="builder" hidden aria-label="Stage builder"></section>
 <div class="day-fold" id="dayFold" hidden>
@@ -434,7 +429,6 @@ function renderLiveModel() {
     document.getElementById('liveModels').hidden = currentMode !== 'live';
     document.getElementById('liveModel').value = liveModel;
     document.getElementById('runAlternative').hidden = !liveModel;
-    document.getElementById('liveModelStages').innerHTML = model.stages.map(s => `<div class="live-model-stage"><b>${esc(s.label)}</b>${esc(s.name)}</div>`).join('');
     document.getElementById('liveModelNote').textContent = liveModel
         ? 'Experimental alternative. Computed when selected; results are not saved. Use Recompute for a fresh run.'
         : 'The promoted forecast follows its regular refresh schedule.';
