@@ -34,6 +34,7 @@ from flask import render_template
 
 from shared import supabase as sb
 from shared.clock import now_utc, today_pacific
+from .live_options import ECMWF_ID, options as live_model_options
 
 # Treat this directory as the forecaster's project root (preserves its
 # `from src.models...` imports and __file__-relative data/config paths).
@@ -356,6 +357,7 @@ def _render_page() -> str:
     return render_template(
         "forecast/page.html",
         served_name=_served_name(),
+        live_models=live_model_options(),
         min_date="2016-03-19",   # Poo Bot archive floor (discharges + samples); DataSF bacteria from 2020-07-27
         max_date=today,
         default_date=today,
@@ -463,6 +465,22 @@ def handle_data(query, body):
 
     # 5. We own the refresh: compute once, store, serve.
     return _compute_and_store(row, now)
+
+
+def handle_alternative(query, body):
+    """Compute one allowlisted candidate; never enter the promoted cache/history path."""
+    if query.get("model") != [ECMWF_ID]:
+        return _json({"error": "Unknown alternative forecast model"}, status=400)
+    err = _require_engine()
+    if err:
+        return err
+    try:
+        from .alternative_forecast import compute
+        return _json(compute())
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception("On-demand ECMWF forecast failed")
+        return _json({"error": "ECMWF forecast is temporarily unavailable. Try again or select the promoted forecast."}, status=503)
 
 
 def handle_refresh(query, body):
@@ -583,6 +601,7 @@ def handle_stage_builder(query, body):
 
 
 GET_ROUTES = {
+    "/forecast/api/alternative": handle_alternative,
     "/forecast": handle_page,
     "/forecast/api/data": handle_data,
     "/forecast/api/refresh": handle_refresh,
