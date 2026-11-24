@@ -224,7 +224,7 @@
 {%- endmacro %}
 
 {% macro city_email_trigger() -%}
-<button type="button" class="city-email-trigger" data-city-email aria-haspopup="dialog" aria-controls="city-email-dialog" title="Open latest City email">City samples <svg class="ic" aria-hidden="true"><use href="#i-mail"/></svg></button>
+<a href="#city-email-dialog" class="city-email-trigger" data-city-email aria-haspopup="dialog" aria-controls="city-email-dialog">See Latest SFPUC update.</a>
 {%- endmacro %}
 
 {% macro board_section(board, sites=false, controls=false, city_emails=false) -%}
@@ -233,11 +233,11 @@
       <div class="left">
         <div class="eyebrow">Beach status · {{ board.date }} · {% if board.feed_ok %}SFPUC map checked {{ board.checked }}{% else %}SFPUC map unreachable{% endif %}</div>
         <h1 id="today-h">{{ board.headline_html|safe }}</h1>
-        <p class="lead">{{ board.lead }}</p>
+        <p class="lead">{% if city_emails %}<span class="lead-text">{{ board.lead }}</span> {{ city_email_trigger() }}{% else %}{{ board.lead }}{% endif %}</p>
         {% if board.facts or city_emails %}<dl class="facts">
         {% set ns = namespace(has_city=false) %}
-        {% for f in board.facts %}<div><dt>{% if city_emails and f.label == 'City samples' %}{% set ns.has_city = true %}{{ city_email_trigger() }}{% else %}{{ f.label }}{% endif %}</dt><dd>{{ f.text[:1]|upper }}{{ f.text[1:] }}</dd></div>{% endfor %}
-        {% if city_emails and not ns.has_city %}<div><dt>{{ city_email_trigger() }}</dt><dd>Sample dates unavailable.</dd></div>{% endif %}
+        {% for f in board.facts %}<div><dt>{% if f.label == 'City samples' %}{% set ns.has_city = true %}{% endif %}{{ f.label }}</dt><dd>{{ f.text[:1]|upper }}{{ f.text[1:] }}</dd></div>{% endfor %}
+        {% if city_emails and not ns.has_city %}<div><dt>City samples</dt><dd>Sample dates unavailable.</dd></div>{% endif %}
         </dl>{% endif %}
         {% if board.zones %}
         <div class="zones" id="zones">
@@ -793,16 +793,18 @@ function renderLegend() {
   refreshLabels();   // the legend's new size, and a new layer's points, move where labels fit
 }
 function tileParts(key) { const b = document.querySelector('.zone[data-zone="' + key + '"]'); return b ? {b, st: b.querySelector(".st"), dots: [...b.querySelectorAll(".stations .status-dot")]} : null; }
+// Replay changes the status sentence without replacing the email link or its listener.
+function boardLead() { return document.querySelector(".board .lead-text") || document.querySelector(".board .lead"); }
 function snapshotBoard() {
   if (ORIG) return;
-  ORIG = {eyebrow: document.querySelector(".board .eyebrow").innerHTML, h1: $("today-h").innerHTML, lead: (document.querySelector(".board .lead") || {}).innerHTML, tone: document.querySelector(".board").className.replace(" show-risk", ""),
+  ORIG = {eyebrow: document.querySelector(".board .eyebrow").innerHTML, h1: $("today-h").innerHTML, lead: (boardLead() || {}).innerHTML, tone: document.querySelector(".board").className.replace(" show-risk", ""),
           tiles: Object.fromEntries(ZONES.map(z => { const t = tileParts(z.key); return [z.key, t ? {cls: t.b.className.replace(" focus", ""), st: t.st.innerHTML, dots: t.dots.map(d => d.className)} : null]; })),
           sites: [...document.querySelectorAll("#zone-sites .site .status-dot")].map(d => [d.parentElement.dataset.station, d.className])};
 }
 function restoreBoard() {
   if (!ORIG) return;
   document.querySelector(".board .eyebrow").innerHTML = ORIG.eyebrow; $("today-h").innerHTML = ORIG.h1;
-  const lead = document.querySelector(".board .lead"); if (lead && ORIG.lead != null) lead.innerHTML = ORIG.lead;
+  const lead = boardLead(); if (lead && ORIG.lead != null) lead.innerHTML = ORIG.lead;
   document.querySelector(".board").className = ORIG.tone; applyRisk();   // the Risk view outlives a replay's snapshot
   for (const z of ZONES) { const t = tileParts(z.key), o = ORIG.tiles[z.key]; if (!t || !o) continue; t.b.className = o.cls + (t.b.classList.contains("focus") ? " focus" : ""); t.b.style.borderColor = ""; t.st.innerHTML = o.st; t.dots.forEach((d, i) => d.className = o.dots[i]); }
   for (const m of allMarkers()) { m.setStyle({fillColor: COL[m.__s.status] || COL.unknown, radius: dotR(m.__s.status)}); placeRank(m, m.__s.status); labelFor(m, m.__s.status); }
@@ -845,7 +847,7 @@ function applyReplay() {
   board.querySelector(".eyebrow").innerHTML = "Replay · " + esc(fmtDay(day)) + " · SFPUC's map at its last check that day";
   $("today-h").innerHTML = parts.join(" ");
   refreshLabels();   // a replayed day's posted labels replace the plain names they cover
-  const lead = board.querySelector(".lead"); if (lead) lead.innerHTML = "What the city's map showed at its last check on " + esc(fmtDay(day)) + ": posted, discharging, or neither" + (counts.unknown ? " · " + counts.unknown + " station" + (counts.unknown > 1 ? "s" : "") + " not recorded that day" : "") + ". Tap Today for the live board.";
+  const lead = boardLead(); if (lead) lead.innerHTML = "What the city's map showed at its last check on " + esc(fmtDay(day)) + ": posted, discharging, or neither" + (counts.unknown ? " · " + counts.unknown + " station" + (counts.unknown > 1 ? "s" : "") + " not recorded that day" : "") + ". Tap Today for the live board.";
   renderLegend();
 }
 async function fetchJSON(url) { const r = await fetch(url); const j = await r.json(); if (j.ok === false) throw new Error(j.error || "no data"); return j; }

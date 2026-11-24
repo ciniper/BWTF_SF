@@ -1,7 +1,7 @@
 # SFPUC email capture
 
 Brevo captures inbound emails in a private archive. When enabled, Today’s
-**City samples** button opens the latest captured SFPUC bulletin and lets visitors
+**See Latest SFPUC update** link below the headline opens the latest captured SFPUC bulletin and lets visitors
 browse older messages. No manual approval is required. The server exposes a
 sanitized bulletin projection, not the inbox or original payload. The Admin
 reviewed-text preview remains separate. Capture is disabled by default.
@@ -175,7 +175,7 @@ private details. Review approval remains private to Admin.
 
 ### Today email viewer
 
-Click **City samples** on `/` or `/today` to open **Latest City email**. The same
+Click **See Latest SFPUC update** in the subheader on `/` or `/today` to open **Latest City email**. The same
 viewer appears in the private `/alerts/sfpuc-emails/today-preview` route linked
 from Admin. A branch deployment therefore previews the public behavior that
 would go live after an approved merge/deployment; no separate publish step or
@@ -183,7 +183,7 @@ new configuration is needed. Existing `SFPUC_EMAIL_ENABLED` controls both captur
 and the viewer. This PR does not itself authorize merging or deploying.
 
 The viewer fetches `/api/city-emails` only when opened, and starts at the newest
-capture on every reopen. Older/Newer controls use capture-time + ID cursors so a
+capture on every reopen. Older (left) and Newer (right) controls use capture-time + ID cursors so a
 new arrival does not shift an older page. Each email displays its own email date
 (or explicitly labeled capture date when absent), independent of the map.
 
@@ -213,7 +213,7 @@ are unchanged. Existing private Admin endpoints still require authentication.
 
 Responses use `no-store`. Loading, empty, unavailable and retry states retain
 SFPUC’s official links. Close, Escape and backdrop clicks dismiss the dialog;
-focus returns to City samples. The private preview is noindex, omits analytics
+focus returns to the update link. The private preview is noindex, omits analytics
 and timed refresh, and uses the same viewer as Today.
 
 The dialog stays within the viewport, with Close and Older/Newer always visible.

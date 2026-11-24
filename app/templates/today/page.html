@@ -35,7 +35,7 @@
 {{ topbar() }}
 <div class="wrap">
   {% if city_email_preview %}<aside class="city-email-preview" aria-label="Admin preview">
-    <div><strong>Admin preview</strong><span>Click “City samples” to open the latest captured City email.</span></div>
+    <div><strong>Admin preview</strong><span>Click “See Latest SFPUC update” below the headline to open the latest captured City email.</span></div>
     <a href="{{ url_for('sfpuc-email-admin') }}">Back to SFPUC emails</a>
   </aside>{% endif %}
   {{ board_section(board, sites=true, controls=true, city_emails=sfpuc_email_enabled()) }}

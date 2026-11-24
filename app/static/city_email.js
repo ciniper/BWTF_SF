@@ -83,7 +83,7 @@
       if (event.key !== "Tab") return;
       const links = [...doc.querySelectorAll("a[href]")];
       if (event.shiftKey && doc.activeElement === doc.body) {
-        event.preventDefault(); (older.disabled ? (newer.disabled ? close : newer) : older).focus();
+        event.preventDefault(); (newer.disabled ? (older.disabled ? close : older) : newer).focus();
       } else if (event.shiftKey && doc.activeElement === links[0]) {
         event.preventDefault(); doc.body.focus({preventScroll:true});
       } else if (!event.shiftKey && (doc.activeElement === links[links.length - 1] || (!links.length && doc.activeElement === doc.body))) {
@@ -153,7 +153,8 @@
   }
 
   document.querySelectorAll("[data-city-email]").forEach(trigger => {
-    trigger.addEventListener("click", () => {
+    trigger.addEventListener("click", event => {
+      event.preventDefault();
       if (dialog.open) return;
       opener = trigger;
       // Today's automatic refresh must not dismiss an email being read.

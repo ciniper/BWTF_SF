@@ -7,6 +7,18 @@ page position with a fixed-body lock. Close and history controls remain visible.
 The five-minute Today page refresh also pauses while reading and restarts after
 closing, so it cannot silently dismiss the popup.
 
+The follow-up navigation change makes the opener an inline linked sentence,
+**See Latest SFPUC update.**, within the beach-status subheader. City samples
+remains a plain sample-date label. **Older is on the left; Newer is on the right**,
+with matching arrow directions and keyboard order. Local checks confirmed the
+link at 320px with no status description and at 390px with a posted-beach
+description, Older/Newer navigation, and focus returning to the update link.
+The inline sentence uses the existing paragraph's typography and spacing. Enter
+opens the popup without changing the URL hash. Past-day replay hides the latest
+update link; returning to Today preserves its click handler and opens the popup.
+Screenshots: `city-email-subheader-mobile.jpg`,
+`city-email-subheader-desktop.jpg`, and `city-email-older-left-mobile.jpg`.
+
 ## Local browser verification
 
 Desktop Chrome responsive view, using read-only copies of three captured City
@@ -21,7 +33,7 @@ This is not a physical iPhone or an iOS browser-engine test.
 | Repeated scrolling at email bottom and on backdrop | Dialog stays open and in place; underlying page does not scroll |
 | Open from a page offset of 84px; Escape inside email | Original 84px page position and inline styles restored |
 | Older/Newer, newest pending bulletin | History works and newly selected email starts at its top |
-| Keyboard through iframe and footer | Focus remains in dialog; Escape closes; focus returns to City samples |
+| Keyboard through iframe and footer | Focus remains in dialog; Escape closes; focus returns to the update link |
 | API failure then retry | Recovers to bulletin without reopening |
 | Empty inbox and plain-text fallback | Official links remain available; fallback has one contained scrolling pane |
 | All six image requests fail | Readable alt-text replacements; links remain usable |

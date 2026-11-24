@@ -2,8 +2,8 @@
 .city-email-preview{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 16px;padding:14px 18px;background:#e8f3fa;border:1px solid #c9dcea;border-radius:14px;font-size:13px}
 .city-email-preview div{display:grid;gap:2px}.city-email-preview strong{color:var(--brand)}
 .city-email-preview a{color:var(--brand);font-weight:700;flex-shrink:0}
-.board .city-email-trigger{display:inline-flex;align-items:center;gap:6px;min-height:32px;margin:-6px 0;padding:6px 0;border:0;background:none;color:var(--brand);font:inherit;letter-spacing:inherit;text-transform:inherit;text-align:left;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
-.board .city-email-trigger .ic{width:14px;height:14px;flex-shrink:0}
+.board.replaying .city-email-trigger{display:none}
+.board .city-email-trigger{color:var(--brand);font:inherit;text-decoration:underline;text-underline-offset:3px}
 .city-email-trigger:focus-visible,.city-email-dialog button:focus-visible,.city-email-dialog a:focus-visible{outline:3px solid var(--brand);outline-offset:3px}
 .city-email-dialog{box-sizing:border-box;position:fixed;inset:0;width:calc(100% - 40px);max-width:860px;height:92vh;height:92dvh;max-height:92dvh;margin:auto;padding:0;border:0;border-radius:20px;background:#fff;color:var(--ink);box-shadow:0 24px 60px rgba(0,0,0,.3);font:15px/1.5 'Roboto','Segoe UI',Arial,sans-serif;overflow:hidden;overscroll-behavior:none}
 .city-email-dialog[open]{display:flex;flex-direction:column}
