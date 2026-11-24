@@ -3,10 +3,36 @@
 This change is stacked on PR #39 (`codex/latest-city-email-overlay`). It should
 be retargeted to main after that PR merges; it does not change PR #39's preview.
 
-Admin → Email history has SFPUC (received bulletins) and Surfrider (the app's sent
-beach alerts) subtabs. BWTF email analysis remains its own top-level admin button
-and opens the existing email simulator. The dashboard tabs are labeled Live and
-Alerts simulation. Existing URLs and delivery diagnostics remain available.
+Admin (`/alerts`) now opens Email history, with SFPUC (received bulletins) and
+Surfrider (the app's sent beach alerts) subtabs. BWTF email analysis remains its
+own top-level admin button and opens the existing email simulator.
+
+**Alert controls** (`/alerts/controls`) contains Live and Alerts simulation behind
+the existing Admin login and an additional, case-sensitive passphrase configured
+as `ADMIN_ALERT_CONTROLS_PASSPHRASE`. Missing/blank configuration keeps controls
+locked, without blocking history or analysis. Existing Admin sessions must still
+unlock the second gate. Lock controls clears that grant in the current browser
+session and returns to history. Changing the secret invalidates existing second
+grants on deployments using the changed configuration. The cookie contains a
+grant bound to the configured secret through the app's signing key, not a password.
+
+The same second gate protects subscription reads/writes, simulation reads/writes,
+watcher status, and manual dispatch before handlers are entered. Control POSTs
+also require the session CSRF token. Subscription management appears only in
+Live. Existing sending and subscriber handlers remain unchanged; no migrations.
+
+Before a newly approved preview deployment, the user will configure the new
+Vercel Secret for Preview branch `codex/admin-email-viewer`. Production needs its
+own configured value before merging/deploying. See `DEPLOY.md`.
+
+## Current validation limit
+
+At the user's explicit instruction, the subscriber-panel move and subsequent
+second-gate change received **source diff review only**. No tests, app/server
+runs, browser checks, subscriber reads, or subscriber actions were performed for
+these changes. The second gate has not been exercised at runtime. Existing
+screenshots and the checks below describe the preceding archive/navigation work,
+not the current gate or default landing page. Keep this PR draft for review.
 
 SFPUC opens the newest captured message, with a paginated history below. Matching
 bulletins show the same sanitized layout as Today. Setup/other mail stays private
@@ -30,7 +56,7 @@ not rewritten. Responsive constraints stack the alert thumbnail on narrow screen
 This page cannot send, resend, unsubscribe, or poll Brevo. It is admin-only and
 returns `Cache-Control: private, no-store`.
 
-## Checks
+## Earlier checks (before the subscriber-panel move and second gate)
 
 - Route tests cover authentication, disabled SFPUC capture with working sent-email
   archive, empty/error states, input validation, selection/pagination, escaped

@@ -1,23 +1,21 @@
-{#- Admin's tabs (/alerts; the Sewage Alert System until 2026-11-04): Live and Alerts simulation are views of /alerts itself,
-    Running costs, the Lab SOP and UI overflow are their own pages behind the same passphrase (app/wsgi.py). One list,
-    ADMIN_TABS; the /alerts dashboard draws the same list as its own view-switching buttons (alerts/dashboard.html).
+{#- Admin opens Email history. Live and Alerts simulation live under Alert controls,
+    protected by an additional passphrase (app/wsgi.py). All admin pages use this list.
       {% from "alerts/_tabs.html" import admin_tab_styles, admin_tabs %}
       {{ admin_tab_styles() }} in the head, {{ admin_tabs("costs") }} where the row goes -#}
 
 {%- set ADMIN_TABS = [
-  ("real", "/alerts", "waves", "Live", "SFPUC feed as published"),
-  ("sim", "/alerts#sim", "flask", "Alerts simulation", ""),
+  ("emails", "/alerts", "mail", "Email history", ""),
+  ("email-sim", "/alerts/email-sim", "mail", "BWTF email analysis", ""),
+  ("controls", "/alerts/controls", "waves", "Alert controls", ""),
   ("costs", "/alerts/costs", "receipt", "Running costs", ""),
   ("lab-sop", "/alerts/lab-sop", "microscope", "Lab SOP", ""),
   ("ui-overflow", "/alerts/ui-overflow", "clipboard", "UI overflow", ""),
   ("sample-gap", "/alerts/sample-gap", "microscope", "Sample gap", ""),
-  ("email-sim", "/alerts/email-sim", "mail", "BWTF email analysis", ""),
-  ("emails", "/alerts/emails", "mail", "Email history", ""),
 ] %}
 
 {% macro admin_tab_styles() -%}
 <style>
-  .admin-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 18px}   /* five tabs wrap on a phone */
+  .admin-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 18px}
   .admin-tabs a{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:999px;border:2px solid var(--line);background:#fff;color:var(--muted);font-weight:700;text-decoration:none}
   .admin-tabs a small{font-weight:500;color:var(--faint)}
   .admin-tabs a:hover{border-color:var(--sky)}

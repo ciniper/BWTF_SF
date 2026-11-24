@@ -26,13 +26,19 @@
   {{ page_head(heading or "Alerts access", lead or "The coordinators' board: live subscriptions and real email — task-force members only.") }}
   <div class="card">
     {% if error %}<p class="error">{{ error }}</p>{% endif %}
-    <form method="post" action="/alerts/unlock">
+    {% if configured is not defined or configured %}
+    <form method="post" action="{{ form_action or '/alerts/unlock' }}">
       <input type="hidden" name="next" value="{{ next or '/alerts' }}">
-      <label for="passphrase">Passphrase</label>
+      {% if csrf %}<input type="hidden" name="csrf" value="{{ csrf }}">{% endif %}
+      <label for="passphrase">{{ passphrase_label or 'Passphrase' }}</label>
       <input id="passphrase" name="passphrase" type="password" autocomplete="off" autofocus required>
       <button type="submit">Enter</button>
     </form>
     <p class="note">Ask the BWTF coordinator if you need access.</p>
+    {% else %}
+    <p>Alert controls are locked until the additional passphrase is configured. Email history and BWTF email analysis remain available.</p>
+    {% endif %}
+    {% if back_to_history %}<p class="note"><a href="/alerts">Back to Email history</a></p>{% endif %}
   </div>
 </div>{{ footer() }}
 {{ tabbar() }}
