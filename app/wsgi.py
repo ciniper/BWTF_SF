@@ -310,6 +310,8 @@ def create_app():
     # Isolated, opt-in inbound email archive; no watcher or dispatch integration.
     from features.sfpuc_updates.routes import register as register_sfpuc_emails
     register_sfpuc_emails(app, _gated_page, _gated_api)
+    from features.alerts.email_archive import register as register_email_archive
+    register_email_archive(app, _gated_page)
 
     # Home: the root IS the Today page (2026-10-01) — served directly, no redirect; /today and
     # /index.html serve the same page (alert emails link /today), and its canonical tag names /

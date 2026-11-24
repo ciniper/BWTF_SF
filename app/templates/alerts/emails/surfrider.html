@@ -1,0 +1,32 @@
+{% extends 'alerts/emails/base.html' %}
+{% set source = 'surfrider' %}
+{% block title %}Surfrider sent emails{% endblock %}
+{% block content %}
+<div class="email-source-heading"><div><h2>Surfrider beach alerts</h2><p class="email-muted">The actual messages saved when this app sent an email. Each recipient has a separate delivery record.</p></div><a href="/alerts/email-sim">Email simulator →</a></div>
+{% if message %}
+<section class="email-panel" aria-labelledby="sent-subject">
+{% set state, detail = status_of(message) %}
+<div class="email-reader-heading"><span class="email-badge">{{ state|capitalize }}</span>{% if message.simulated %}<span class="email-badge">Test alert</span>{% endif %}</div>
+<h2 id="sent-subject">{{ message.subject or 'Beach alert' }}</h2>
+<p class="email-muted">To {{ message.recipient }} · Sent {{ fmt_time(message.sent_at) }}</p>
+{% if archived_html %}
+{% set email_document %}<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data: https://bwtf-sf.vercel.app/static/ https://surftober.com/static/; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'"></head><body>{{ archived_html|safe }}<style>html,body{margin:0!important;max-width:100%!important;overflow-x:hidden!important;overflow-wrap:anywhere;background:#fff;font:15px/1.5 Roboto,Arial,sans-serif;color:#26272a}body{padding:16px}*{box-sizing:border-box}table{max-width:100%!important;table-layout:fixed}img{max-width:100%!important;height:auto!important}td,div,p,a{overflow-wrap:anywhere}@media(max-width:480px){td[width="112"],td[width="112"]+td{display:block;width:100%!important}td[width="112"] img{width:100%!important;max-height:180px;object-fit:cover}}</style></body></html>{% endset %}
+<iframe class="email-document" sandbox="" referrerpolicy="no-referrer" title="Sent beach-alert email" srcdoc="{{ email_document|forceescape }}"></iframe>
+<p class="email-muted">Archived copy. Links are inactive and third-party images are blocked to avoid recording a subscriber open or unsubscribe.</p>
+{% elif message.text_body %}<pre class="email-body-text">{{ message.text_body }}</pre>
+{% else %}<p>No message body was saved for this delivery.</p>{% endif %}
+<details><summary>Delivery details{% if message.text_body %} and plain text{% endif %}</summary>
+<p>{{ detail }}{% if message.opened_at %} · Open recorded {{ fmt_time(message.opened_at) }}{% endif %}</p>
+<p class="email-muted">Accepted means Brevo queued the email; delivered means the receiving server accepted it. Open tracking is not proof that someone read it. Status is updated by the existing delivery monitor.</p>
+{% if message.text_body %}<pre>{{ message.text_body }}</pre>{% endif %}</details>
+</section>
+{% endif %}
+<section class="email-panel" aria-labelledby="sent-history"><h2 id="sent-history">Sent emails</h2>
+{% for row in rows %}{% set state, detail = status_of(row) %}
+<article class="email-inbox-row{% if message and row.id == message.id %} is-selected{% endif %}">
+<div><a href="{{ url_for('sent-email-admin', message=row.id, offset=offset) }}"{% if message and row.id == message.id %} aria-current="true"{% endif %}>{{ row.subject or 'Beach alert' }}</a><p>{{ fmt_time(row.sent_at) }} · {{ row.recipient }}</p></div>
+<span class="email-state">{{ state|capitalize }}{% if row.simulated %} · Test{% endif %}</span></article>
+{% else %}{% if not error %}<p>No beach-alert emails have been archived yet.</p>{% endif %}{% endfor %}
+<nav class="email-history-nav" aria-label="Sent email pages">{% if rows|length == 25 and offset < 1000 %}<a href="{{ url_for('sent-email-admin', offset=offset+25) }}">← Older emails</a>{% else %}<span></span>{% endif %}{% if offset %}<a href="{{ url_for('sent-email-admin', offset=[0,offset-25]|max) }}">Newer emails →</a>{% endif %}</nav>
+</section>
+{% endblock %}

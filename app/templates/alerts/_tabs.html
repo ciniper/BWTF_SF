@@ -10,12 +10,9 @@
   ("costs", "/alerts/costs", "receipt", "Running costs", ""),
   ("lab-sop", "/alerts/lab-sop", "microscope", "Lab SOP", ""),
   ("ui-overflow", "/alerts/ui-overflow", "clipboard", "UI overflow", ""),
-  ("email-sim", "/alerts/email-sim", "mail", "Email simulator", ""),
   ("sample-gap", "/alerts/sample-gap", "microscope", "Sample gap", ""),
+  ("emails", "/alerts/emails", "mail", "Emails", ""),
 ] %}
-{% if sfpuc_email_enabled is defined and sfpuc_email_enabled() %}
-{% set ADMIN_TABS = ADMIN_TABS + [('sfpuc-emails', '/alerts/sfpuc-emails', 'mail', 'SFPUC emails', '')] %}
-{% endif %}
 
 {% macro admin_tab_styles() -%}
 <style>
@@ -30,7 +27,7 @@
 {% macro admin_tabs(on) -%}
 <nav class="admin-tabs" aria-label="Admin">
   {%- for key, href, icon, label, note in ADMIN_TABS %}
-  <a href="{{ href }}"{% if key == on %} class="on" aria-current="page"{% endif %}><svg class="ic"><use href="#i-{{ icon }}"/></svg> {{ label }}{% if note %} <small>{{ note }}</small>{% endif %}</a>
+  <a href="{{ href }}"{% if key == on or (key == 'emails' and on == 'email-sim') %} class="on" aria-current="page"{% endif %}><svg class="ic"><use href="#i-{{ icon }}"/></svg> {{ label }}{% if note %} <small>{{ note }}</small>{% endif %}</a>
   {%- endfor %}
 </nav>
 {%- endmacro %}

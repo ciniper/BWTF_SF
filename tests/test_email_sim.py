@@ -151,7 +151,7 @@ def test_the_page_renders_and_sits_behind_the_passphrase():
     settings["from"] = date(2026, 11, 13)
     with app.test_request_context("/alerts/email-sim"):
         html = E.render_page(storm_week(), settings)
-    assert "<h1>Email simulator</h1>" in html and 'href="/alerts/email-sim" class="on" aria-current="page"' in html
+    assert "<h1>Email simulator</h1>" in html and 'href="/alerts/emails" class="on" aria-current="page"' in html
     assert '<div class="n">14</div>' in html and '<div class="n">5</div>' in html and html.count('class="skipped"') == 5
     assert "Ocean Beach at Lincoln Way · sewage discharge: this sewage discharge status was already present earlier that day" in html
     with app.test_client() as c:

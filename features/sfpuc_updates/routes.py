@@ -216,21 +216,69 @@ def admin():
         error = "Email storage is not configured in this environment."
     else:
         try:
+            rows, runs = store.inbox(offset), store.recent_runs()
+            selected = selected or (rows[0]["id"] if rows else None)
             if selected:
                 message, revisions = store.detail(selected)
                 if message is None:
                     abort(404)
-            rows, runs = store.inbox(offset), store.recent_runs()
         except Exception as exc:
             from werkzeug.exceptions import HTTPException
             if isinstance(exc, HTTPException):
                 raise
             error = "Email storage is unavailable. Check the feature's migration and connection."
+    bulletin = bool(message and layout.eligible(dict(message, status=None)))
+    hidden = bool(revisions and revisions[0]["status"] == "rejected")
+    document = (layout.document(message, lambda index: url_for("sfpuc-email-image", message_id=message["id"], index=index))
+                if bulletin else None)
+    clean = layout.clean_text(message["subject"], message["body_text"]) if bulletin else None
     response = render_template("sfpuc_updates/admin.html", rows=rows, message=message, revisions=revisions,
                                runs=runs, offset=offset, error=error, ready=bool(configuration()),
                                csrf=csrf_token(), fmt_time=fmt_time, expected_sender=parser.EXPECTED_SENDER,
-                               email_images=image_descriptors(message["id"], message.get("raw_payload")) if message else [])
-    return response, 503 if error else 200, {"Cache-Control": "private, no-store"}
+                               bulletin=bulletin, hidden=hidden, document=document, clean=clean)
+    return response, 503 if error else 200, {"Cache-Control": "private, no-store", "X-Robots-Tag": "noindex, nofollow"}
+
+
+def set_visibility():
+    """Append a Hide/Restore decision; never edit the archived bulletin."""
+    if not enabled():
+        abort(404)
+    if request.content_length is None or request.content_length > 4096:
+        abort(413)
+    expected = session.get("sfpuc_email_csrf", "")
+    supplied = request.form.get("csrf", "")
+    if not expected or not hmac.compare_digest(expected.encode(), supplied.encode()):
+        abort(403)
+    try:
+        mid = str(UUID(request.form.get("message_id", "")))
+        revision = int(request.form.get("revision", "-1"))
+        action = request.form.get("action")
+        if revision < 0 or action not in {"hide", "restore"}:
+            raise ValueError()
+    except ValueError:
+        abort(400)
+    try:
+        message, revisions = store.detail(mid)
+        if message is None:
+            abort(404)
+        # Restore is not an override for the public feed's eligibility rules.
+        if not layout.eligible(dict(message, status=None)):
+            return "Only matching SFPUC beach bulletins can be shown on Today.", 400
+        latest = revisions[0] if revisions else None
+        clean = layout.clean_text(message["subject"], message["body_text"])
+        # Keep legacy edited text where present. Today always reads the original.
+        title = (latest.get("title") if latest else None) or clean["title"]
+        body = (latest.get("body_text") if latest else None) or clean["body"] or title
+        result = store.review(mid, revision, "rejected" if action == "hide" else "approved",
+                              title[:300], body[:30000], "Admin dashboard · " + action)
+    except Exception as exc:
+        from werkzeug.exceptions import HTTPException
+        if isinstance(exc, HTTPException):
+            raise
+        return _failure()
+    if not result.get("ok"):
+        return "This message changed. Reload the email and try again.", 409
+    return redirect(url_for("sfpuc-email-admin", message=mid), 303)
 
 
 def image_descriptors(message_id, payload):
@@ -320,6 +368,7 @@ def register(app, gated_page, gated_api):
     app.add_url_rule("/api/city-emails", "city-emails", captured_update, methods=["GET"])
     app.add_url_rule("/api/city-emails/<uuid:message_id>/images/<int:index>", "city-email-image", captured_image, methods=["GET"])
     app.add_url_rule("/alerts/sfpuc-emails", "sfpuc-email-admin", gated_page(admin, "/alerts/sfpuc-emails"), methods=["GET"])
+    app.add_url_rule("/alerts/sfpuc-emails/visibility", "sfpuc-email-visibility", gated_api(set_visibility), methods=["POST"])
     app.add_url_rule("/alerts/sfpuc-emails/today-preview", "sfpuc-email-today-preview",
                      gated_page(today_preview, "/alerts/sfpuc-emails/today-preview"), methods=["GET"])
     app.add_url_rule("/alerts/sfpuc-emails/review", "sfpuc-email-review", gated_api(save_review), methods=["POST"])
