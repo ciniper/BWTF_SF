@@ -283,3 +283,17 @@ Supabase bucket, database migration, archive credentials, or scheduled job.
 Its in-memory cache is temporary; viewing does not preserve a permanent history.
 Automatic preservation is a separate proposal in PR #48 and is not a dependency
 of this viewer. Neither proposal has provisioned storage or activated archiving.
+
+## Viewer-only verification (2026-11-25)
+
+All 8 rainfall tests pass with the archive module absent. JavaScript syntax and
+Git whitespace checks pass. The only shared file with the independent archive
+proposal is `shared/aqpi.py`; Git's merge-tree simulation combines the branches
+without conflicts.
+
+Full `scripts/check.sh` against main `ff73636`: **84 passed, 3 failed**, 87 test
+files, 593 seconds. The same inherited failures remain: `test_city_email_preview.py`
+expects 401 for the retired `/alerts/api/sfpuc-updates` route (actual 404), and
+`test_stages_build.py` / `test_stages_s1.py` report the existing
+`features/forecast/live_dashboard.py` source/artifact hash mismatch. Forecast files
+match main and `test_served_golden.py` passes. This is not a fully green suite.
