@@ -6,21 +6,27 @@ One model, three kinds of input, each named where it comes from:
   rates()   alerts per subscriber a year, counted from the records: one alert per station
             posting (State Water Board BeachWatch) and one per station discharge flag (SFPUC's
             CIWQS reports, through the outfall registry), per zone, over the complete years
-            both records cover. The site merges changes it sees in the same minute into one
-            message, so this is the high end; a count of alert DAYS is the low end.
+            both records cover. The site collects changes in a fixed 15-minute window and
+            suppresses same-day repeats, so these unbatched counts are a conservative
+            monthly-volume estimate, not a replay of the current delivery policy.
   MEASURED  what the site uses per message and per visit (2026-10-01), plus the planning
             assumptions that are guesses and are labelled as such.
 
 Text-message segments and stored email sizes are measured from the live renderer
 (features/alerts/render._fallback), so the model follows the alert wording when it changes.
 
-Plan decisions are Chase's (2026-10-01): Brevo goes paid from 50 subscribers; Vercel Pro,
-Supabase Pro and a domain from 100. Everything is free below that.
+Brevo goes paid when projected peak daily emails exceed its daily free allowance.
+Chase's post-batching planning assumption is 2.5 emails per email subscriber on a heavy
+storm day, averaged across recipients, not an enforced per-person cap. Other account
+sends and safety headroom are not included. Vercel uses the existing Pro subscription
+and its usage credit/CDN capacities; Supabase upgrades on projected database or
+egress usage. A domain from 100 subscribers remains an optional purchase assumption.
 """
 from __future__ import annotations
 
 import csv
 import json
+import math
 import statistics
 from collections import Counter, defaultdict
 from functools import lru_cache
@@ -32,9 +38,11 @@ from shared.outfalls import OUTFALLS
 from shared.zones import ZONE_OF_STATION, ZONES
 
 PRICES_CHECKED = "2026-10-01"
-BREVO_PAID_FROM = 50      # subscribers (Chase, 2026-10-01)
-PRO_FROM = 100            # subscribers: Vercel Pro, Supabase Pro and a domain (Chase, 2026-10-01)
-STEPS = [10, 25, 50, 100, 250, 500, 1_000, 2_500, 5_000, 10_000, 25_000, 50_000, 100_000]
+PEAK_EMAILS_PER_SUBSCRIBER = 2.5  # heavy storm day, after batching (Chase, 2026-11-20)
+BATCH_WINDOW_MINUTES = 15
+INFRA_PRICES_CHECKED = "2026-11-20"
+DOMAIN_FROM = 100         # optional domain purchase, not a service limit
+STEPS = [10, 25, 50, 100, 120, 121, 250, 500, 1_000, 2_500, 5_000, 10_000, 25_000, 50_000, 100_000]
 
 PRICES = {
     "brevo": {"tiers": [(5_000, 9), (10_000, 17), (20_000, 32), (50_000, 56), (100_000, 82), (250_000, 249), (500_000, 429)],
@@ -43,10 +51,14 @@ PRICES = {
     "ses": {"per_1000": 0.10, "source": "https://aws.amazon.com/ses/pricing/", "note": "à la carte plan; new accounts default to Essentials at $0.16"},
     "twilio": {"per_segment": 0.0083, "carrier_fee": statistics.mean([0.0035, 0.0045, 0.0050]), "toll_free_number": 2.15,
                "source": "https://www.twilio.com/en-us/sms/pricing/us", "note": "toll-free number; carrier fees AT&T $0.0035, T-Mobile $0.0045, Verizon $0.005 a segment"},
-    "vercel": {"pro": 20.0, "credit": 20.0, "per_m_invocations": 0.60, "cpu_hour": 0.128, "gb_hour": 0.0106, "per_gb_transfer": 0.15,
-               "source": "https://vercel.com/docs/plans/pro-plan", "note": "$20 a month with $20 of usage included"},
-    "supabase": {"pro": 25.0, "included_gb": 8, "per_gb_month": 0.125, "included_egress_gb": 250, "per_gb_egress": 0.09,
-                 "source": "https://supabase.com/pricing", "note": "Pro includes 8 GB of disk and 250 GB of egress"},
+    "vercel": {"pro": 20.0, "credit": 20.0, "per_m_invocations": 0.60, "cpu_hour": 0.128, "gb_hour": 0.0106,
+               "cdn_tiers": [(1_000_000, 1_000, 0), (10_000_000, 50_000, 20), (50_000_000, 50_000, 100), (150_000_000, 50_000, 300)],
+               "per_m_cdn_requests": 2.0, "per_gb_transfer": 0.15,
+               "source": "https://vercel.com/docs/plans/pro-plan", "note": "Existing Pro: $20/month + usage beyond $20 credit; Flat Rate CDN capacity tiers. Compute/on-demand rates assume iad1."},
+    "supabase": {"pro": 25.0, "free_database_gb": 0.5, "free_egress_gb": 5,
+                 "included_gb": 8, "per_gb_month": 0.125, "included_egress_gb": 250, "per_gb_egress": 0.09,
+                 "micro_project": 10.0, "compute_credit": 10.0,
+                 "source": "https://supabase.com/pricing", "note": "Free: 500 MB database/project, 5 GB uncached egress/organization. Pro: $25 + project compute less $10 compute credit; 8 GB disk/project and 250 GB egress/organization."},
     "arcgis": {"free_tiles": 2_000_000, "per_1000_tiles": 0.15, "source": "https://location.arcgis.com/pricing/",
                "note": "ArcGIS Location Platform; needs a free API key"},
     "domain": {"per_year": 19.18, "source": "https://www.namecheap.com/domains/registration/gtld/org/", "note": ".org renewal plus the ICANN fee"},
@@ -61,11 +73,13 @@ MEASURED = {   # 2026-10-01; the guesses say so
     "view_wall_seconds": 1.5,
     "function_gb": 2,
     "invocations_per_visit": 2,        # the page, plus the odd asset now that static files cache for a year
+    "cdn_requests_per_visit": 2,      # planning estimate, separate from function invocations
     "transfer_mb_per_visit": 0.2,
     "tiles_per_visit": 20,             # guess: a map screen plus a zone tap or two
     "visits_per_subscriber_month": 3,  # guess
     "public_visits_month": 2_000,      # guess
-    "database_base_gb": 0.05,
+    "database_base_gb": 0.07605,       # dashboard snapshot Nov 20; additional retained copies modeled conservatively
+    "supabase_paid_projects": 2,      # two active projects observed Nov 20; assume both Micro after upgrade
 }
 
 
@@ -180,6 +194,49 @@ def subscriber_mix(r: Optional[dict] = None) -> dict:
 
 # ── the model ───────────────────────────────────────────────────────────────
 
+def vercel_usage_cost(invocations: float, cpu_hours: float, memory_gb_hours: float,
+                      cdn_requests: float, transfer_gb: float) -> dict:
+    """Existing Pro plan; forecast a sustained month's CDN tier, not a spike surcharge.
+
+    CDN tier fees sit outside the usage credit. Beyond the largest CDN tier,
+    on-demand pricing applies to all CDN usage, not just the excess.
+    """
+    v = PRICES["vercel"]
+    compute = invocations / 1e6 * v["per_m_invocations"] + cpu_hours * v["cpu_hour"] + memory_gb_hours * v["gb_hour"]
+    tier = next((t for t in v["cdn_tiers"] if cdn_requests <= t[0] and transfer_gb <= t[1]), None)
+    cdn_fee = tier[2] if tier else 0.0
+    usage = compute + (0 if tier else cdn_requests / 1e6 * v["per_m_cdn_requests"] + transfer_gb * v["per_gb_transfer"])
+    overage = max(0.0, usage - v["credit"])
+    return {"monthly": v["pro"] + cdn_fee + overage, "usage_dollars": usage,
+            "credit_dollars": v["credit"], "overage_dollars": overage,
+            "cdn_monthly": cdn_fee, "cdn_requests": cdn_requests, "transfer_gb": transfer_gb,
+            "cdn_request_capacity": tier[0] if tier else None,
+            "cdn_transfer_capacity_gb": tier[1] if tier else None,
+            "cdn_on_demand": tier is None}
+
+
+def supabase_usage_cost(database_gb: float, egress_gb: float) -> dict:
+    """Storage projection and uncached monthly egress; no subscriber/Auth-MAU equivalence.
+
+    Pro disk is provisioned in whole GB; this is a minimum allocation estimate,
+    excluding future WAL/system overhead and any larger manually provisioned disk.
+    """
+    d = PRICES["supabase"]
+    reasons = []
+    if database_gb > d["free_database_gb"]:
+        reasons.append("database exceeds 500 MB")
+    if egress_gb > d["free_egress_gb"]:
+        reasons.append("monthly uncached egress exceeds 5 GB")
+    disk_gb = max(d["included_gb"], math.ceil(database_gb))
+    compute = max(0, MEASURED["supabase_paid_projects"] * d["micro_project"] - d["compute_credit"])
+    monthly = (d["pro"] + compute + max(0.0, disk_gb - d["included_gb"]) * d["per_gb_month"]
+               + max(0.0, egress_gb - d["included_egress_gb"]) * d["per_gb_egress"]) if reasons else 0.0
+    return {"monthly": monthly, "paid": bool(reasons), "reasons": reasons,
+            "database_gb": database_gb, "egress_gb": egress_gb,
+            "free_database_gb": d["free_database_gb"], "free_egress_gb": d["free_egress_gb"],
+            "pro_disk_gb": disk_gb if reasons else None}
+
+
 def monthly_cost(subscribers: int, sms_share: float = 0.0, alerts_per_year: float = 115, *, plain_hyphen: bool = False,
                  email: str = "brevo", prune: bool = False, busiest_month_factor: Optional[float] = None) -> dict:
     """Pure: the month's bill, averaged over the year, line by line. Email plans are sized for the
@@ -189,18 +246,19 @@ def monthly_cost(subscribers: int, sms_share: float = 0.0, alerts_per_year: floa
     S = max(0, int(subscribers))
     texting = round(S * sms_share); mailing = S - texting
     avg_month = mailing * alerts_per_year / 12; peak_month = avg_month * busy
+    peak_daily_emails = math.ceil(mailing * PEAK_EMAILS_PER_SUBSCRIBER)
     lines = []
 
     B = PRICES["brevo"]
     if email == "ses":
         lines.append(("email", "Email", PRICES["ses"]["per_1000"] * avg_month / 1000, "Amazon SES, $0.10 per 1,000", PRICES["ses"]["source"]))
-    elif S < BREVO_PAID_FROM:
-        lines.append(("email", "Email", 0.0, f"Brevo free, below {BREVO_PAID_FROM} subscribers", B["source"]))
+    elif peak_daily_emails <= B["free_per_day"]:
+        lines.append(("email", "Email", 0.0, f"Brevo Free, {peak_daily_emails:,} projected emails on a peak day / {B['free_per_day']:,} daily allowance", B["source"]))
     else:
         tier = next(((v, p) for v, p in B["tiers"] if v >= peak_month), None)
         if tier:
             name = "Starter" if tier[0] <= B["starter_max"] else "Standard"
-            lines.append(("email", "Email", tier[1] * (1 - B["nonprofit_discount"]), f"Brevo {name}, {tier[0]:,} a month for the busiest month, 20% nonprofit discount", B["source"]))
+            lines.append(("email", "Email", tier[1] * (1 - B["nonprofit_discount"]), f"Brevo {name}, {peak_daily_emails:,} projected emails on a peak day exceeds {B['free_per_day']:,} free; {tier[0]:,} a month for the busiest month, 20% nonprofit discount", B["source"]))
         else:
             v, p = B["tiers"][-1]
             lines.append(("email", "Email", p * peak_month / v * (1 - B["nonprofit_discount"]), "Brevo past its largest published plan, extrapolated", B["source"]))
@@ -213,22 +271,24 @@ def monthly_cost(subscribers: int, sms_share: float = 0.0, alerts_per_year: floa
 
     M = MEASURED
     visits = M["public_visits_month"] + M["visits_per_subscriber_month"] * S
-    pro = S >= PRO_FROM
     V = PRICES["vercel"]
-    usage = (visits * M["invocations_per_visit"] / 1e6 * V["per_m_invocations"]
-             + (M["forecast_refreshes_month"] * M["refresh_cpu_seconds"] + visits * M["view_cpu_seconds"]) / 3600 * V["cpu_hour"]
-             + (M["forecast_refreshes_month"] * M["refresh_seconds"] + visits * M["view_wall_seconds"]) * M["function_gb"] / 3600 * V["gb_hour"]
-             + visits * M["transfer_mb_per_visit"] / 1024 * V["per_gb_transfer"])
-    lines.append(("vercel", "Web app, Vercel", V["pro"] + max(0.0, usage - V["credit"]) if pro else 0.0,
-                  f"Pro, from {PRO_FROM} subscribers" + (", plus usage past its credit" if pro and usage > V["credit"] else "") if pro else "Hobby", V["source"]))
+    vercel = vercel_usage_cost(
+        visits * M["invocations_per_visit"] + M["forecast_refreshes_month"],
+        (M["forecast_refreshes_month"] * M["refresh_cpu_seconds"] + visits * M["view_cpu_seconds"]) / 3600,
+        (M["forecast_refreshes_month"] * M["refresh_seconds"] + visits * M["view_wall_seconds"]) * M["function_gb"] / 3600,
+        visits * M["cdn_requests_per_visit"] + M["forecast_refreshes_month"],
+        visits * M["transfer_mb_per_visit"] / 1000)
+    cdn_plan = "CDN on demand" if vercel["cdn_on_demand"] else f"${vercel['cdn_monthly']:g}/month CDN tier"
+    lines.append(("vercel", "Web app, Vercel", vercel["monthly"],
+                  f"Existing Pro, $20 base; ${vercel['usage_dollars']:.2f} modeled usage / $20 credit; {cdn_plan}", V["source"]))
 
     D = PRICES["supabase"]
     kept_months = 3 if prune else 12
-    storage_gb = M["database_base_gb"] + S * alerts_per_year * kept_months / 12 * prof["email_kb"] / 1024 / 1024
-    egress_gb = visits * M["home_db_read_kb"] / 1024 / 1024
-    lines.append(("supabase", "Database, Supabase",
-                  D["pro"] + max(0.0, storage_gb - D["included_gb"]) * D["per_gb_month"] + max(0.0, egress_gb - D["included_egress_gb"]) * D["per_gb_egress"] if pro else 0.0,
-                  (f"Pro, from {PRO_FROM} subscribers" + (", plus storage past 8 GB" if storage_gb > D["included_gb"] else "")) if pro else "Free", D["source"]))
+    storage_gb = M["database_base_gb"] + S * alerts_per_year * kept_months / 12 * prof["email_kb"] * 1024 / 1e9
+    egress_gb = visits * M["home_db_read_kb"] * 1024 / 1e9
+    database = supabase_usage_cost(storage_gb, egress_gb)
+    db_plan = ("Pro modeled: " + "; ".join(database["reasons"]) + f"; assumes {M['supabase_paid_projects']} Micro projects") if database["paid"] else "Free: within modeled database and egress allowances"
+    lines.append(("supabase", "Database, Supabase", database["monthly"], db_plan, D["source"]))
 
     A = PRICES["arcgis"]
     tiles = visits * M["tiles_per_visit"]
@@ -236,12 +296,16 @@ def monthly_cost(subscribers: int, sms_share: float = 0.0, alerts_per_year: floa
                   "ArcGIS free tier" if tiles <= A["free_tiles"] else f"ArcGIS, {tiles / 1e6:.1f}M tiles a month", A["source"]))
 
     N = PRICES["domain"]
-    lines.append(("domain", "Domain", N["per_year"] / 12 if pro else 0.0, "One .org domain, about $19 a year" if pro else "None yet", N["source"]))
+    domain = S >= DOMAIN_FROM
+    lines.append(("domain", "Domain", N["per_year"] / 12 if domain else 0.0, "Optional .org domain, about $19 a year" if domain else "None yet", N["source"]))
 
     total = sum(x[2] for x in lines)
     return {"subscribers": S, "total": total, "per_subscriber_year": total * 12 / S if S else 0.0,
+            "email_subscribers": mailing, "peak_daily_emails": peak_daily_emails,
+            "brevo_daily_remaining": B["free_per_day"] - peak_daily_emails,
             "busiest_month_messages": round((mailing + texting) * alerts_per_year / 12 * busy), "texts_month": round(texts),
             "storage_gb": round(storage_gb, 2), "visits_month": visits,
+            "infrastructure": {"vercel": vercel, "supabase": database},
             "lines": [{"key": k, "service": n, "monthly": round(v, 2), "plan": p, "source": src} for k, n, v, p, src in lines]}
 
 
@@ -251,7 +315,18 @@ def free_until(key: str, **params) -> Optional[int]:
     for S in list(range(1, 151)) + [int(150 * 1.03 ** i) for i in range(1, 260)]:
         line = next(x for x in monthly_cost(S, **params)["lines"] if x["key"] == key)
         if line["monthly"] >= 0.005:    # a cent or more on the bill
-            return last
+            if last is None:
+                return None
+            # The coarse scan brackets a boundary; resolve it exactly for mixed channels.
+            lo, hi = last, S
+            while hi - lo > 1:
+                mid = (lo + hi) // 2
+                cost = next(x["monthly"] for x in monthly_cost(mid, **params)["lines"] if x["key"] == key)
+                if cost >= 0.005:
+                    hi = mid
+                else:
+                    lo = mid
+            return lo
         last = S
     return last
 
@@ -277,7 +352,12 @@ def report(subscribers: int = 1_000, sms_share: float = 0.25, alerts: str = "mix
                   "with_texts": [round(monthly_cost(s, share_for_curve, **kw)["total"], 2) for s in STEPS]},
         "alert_choices": choices, "rates": r, "today": mix, "messages": message_profile(),
         "measured": MEASURED, "prices": {k: {"source": v["source"], "note": v["note"]} for k, v in PRICES.items()},
-        "prices_checked": PRICES_CHECKED, "thresholds": {"brevo_paid_from": BREVO_PAID_FROM, "pro_from": PRO_FROM},
+        "email_planning": {"peak_emails_per_subscriber": PEAK_EMAILS_PER_SUBSCRIBER,
+                           "batch_window_minutes": BATCH_WINDOW_MINUTES,
+                           "brevo_free_per_day": PRICES["brevo"]["free_per_day"],
+                           "free_email_subscribers": math.floor(PRICES["brevo"]["free_per_day"] / PEAK_EMAILS_PER_SUBSCRIBER)},
+        "prices_checked": PRICES_CHECKED, "infrastructure_prices_checked": INFRA_PRICES_CHECKED,
+        "thresholds": {"domain_from": DOMAIN_FROM},
         "as_of": today_pacific().isoformat(),
     }
 

@@ -47,9 +47,12 @@
 <div class="wrap">
   {% call page_head("Running costs", "What the site would cost each month at any number of subscribers: published prices, the alert record, and what the site uses today.", None, "How this is counted") %}
     <p>One alert per station posting in the State's record and one per station a reported discharge flags, per zone, averaged over {{ data.rates.years[0] }}–{{ data.rates.years[1] }}.
-    The site merges changes it sees in the same minute into one message, so these counts are the high end. Email plans are sized for the busiest month, which runs {{ data.rates.busiest_month_factor }} times an average month;
+    The site collects changes in a fixed {{ data.email_planning.batch_window_minutes }}-minute window and suppresses same-day repeats. These historical station counts are a conservative monthly-volume estimate, not a replay of that batching policy. Paid email plans are sized for the busiest month, which runs {{ data.rates.busiest_month_factor }} times an average month;
     texts are billed per segment. Text segments and stored email sizes are measured from the alert renderer itself, so they follow the wording.
-    Brevo turns paid at {{ data.thresholds.brevo_paid_from }} subscribers; Vercel Pro, Supabase Pro and a domain start at {{ data.thresholds.pro_from }}. Prices were checked on {{ data.prices_checked }}.</p>
+    Brevo turns paid only when projected peak daily emails exceed {{ data.email_planning.brevo_free_per_day }}. We assume {{ data.email_planning.peak_emails_per_subscriber }} emails per email subscriber on a heavy storm day after batching, averaged across recipients. This is a planning estimate, not an enforced cap.
+    At {{ data.email_planning.free_email_subscribers }} email subscribers, the full daily allowance is used, with no room for other account emails or a safety buffer.
+    Vercel uses the existing $20/month Pro plan, its $20 usage credit, and Flat Rate CDN capacity tiers. Supabase stays free while the projection is within 500 MB of database space and 5 GB/month of uncached egress; exceeding either models Pro.
+    The optional domain purchase remains at {{ data.thresholds.domain_from }} subscribers, independently of hosting plans. Infrastructure prices were checked on {{ data.infrastructure_prices_checked }}; other prices on {{ data.prices_checked }}.</p>
   {% endcall %}
 
   {{ admin_tabs("costs") }}
@@ -81,6 +84,25 @@
   </div>
 
   <div class="card">
+    <h2>Heavy-storm email day</h2>
+    <p id="peak-day" role="status" aria-live="polite"></p>
+    <p class="status">Assumes {{ data.email_planning.peak_emails_per_subscriber }} emails per email subscriber after {{ data.email_planning.batch_window_minutes }}-minute batching. Other account sends and a safety buffer are not included. Text-only subscribers do not consume email allowance.</p>
+  </div>
+
+  <div class="card">
+    <h2>Hosting usage and allowances</h2>
+    <div class="tblwrap"><table class="lines"><thead><tr><th>Resource</th><th class="n">Projected usage</th><th>Allowance</th></tr></thead><tbody>
+      <tr><td>Vercel billable usage</td><td class="n" id="infra-credit"></td><td>$20 monthly credit; $20 Pro base fee always applies</td></tr>
+      <tr><td>Vercel CDN requests</td><td class="n" id="infra-requests"></td><td>1 million/month included with Pro</td></tr>
+      <tr><td>Vercel CDN transfer</td><td class="n" id="infra-transfer"></td><td>1,000 GB/month included with Pro</td></tr>
+      <tr><td>Supabase database</td><td class="n" id="infra-database"></td><td>500 MB/project on Free; persistent, not a monthly reset</td></tr>
+      <tr><td>Supabase uncached egress</td><td class="n" id="infra-egress"></td><td>5 GB/month per organization on Free</td></tr>
+    </tbody></table></div>
+    <p class="status">Forecasts, not live billing. Vercel charges the team base fee once; credit and CDN capacity are shared. Sustained CDN growth selects a future capacity tier, not a same-day spike surcharge. The forecast excludes builds, email-image traffic, other projects, and unmodeled services; compute/on-demand rates assume the US East region.</p>
+    <p class="status">Supabase starts with the Nov 20 database snapshot (76.05 MB), plus projected retained message copies. Page-read egress is modeled; other egress and future cron-history growth are not. Pro assumes the organization's two projects run on Micro compute ($35/month before overages). Disk overage is a minimum allocation estimate. Email subscribers are not Supabase Auth users.</p>
+  </div>
+
+  <div class="card">
     <h2>Monthly cost by subscribers</h2>
     <div class="legend"><span><i style="border-top-color:#2a78d6"></i>Email only</span><span><i style="border-top:2px dashed #eb6834"></i><span id="lg-texts"></span></span></div>
     <div class="chart"><canvas id="curve" role="img" aria-label="Monthly cost against subscribers on log scales, for email only and for email with texts."></canvas></div>
@@ -88,19 +110,20 @@
 
   <div class="card">
     <h2>The month at <span id="t-subs"></span> subscribers</h2>
-    <div class="tblwrap"><table class="lines"><thead><tr><th>Service</th><th>Plan at this size</th><th class="n">Per month</th><th class="n">Free up to</th><th>Price</th></tr></thead><tbody id="lines"></tbody></table></div>
+    <div class="tblwrap"><table class="lines"><thead><tr><th>Service</th><th>Plan at this size</th><th class="n">Per month</th><th class="n">Free up to (modeled subscribers)</th><th>Price</th></tr></thead><tbody id="lines"></tbody></table></div>
   </div>
 
   <div class="cols">
     <div class="card"><h2>Alerts a year, by zone</h2><ul>
       {% for z, n in data.rates.per_zone.items() %}<li><b>{{ data.rates.zone_labels[z] }}</b>: {{ n }}</li>{% endfor %}
       <li><b>Every zone</b>: {{ data.rates.all_zones }} on average, {{ data.rates.busiest_year.alerts }} in {{ data.rates.busiest_year.year }}</li>
-      <li>The worst storm day put {{ data.rates.worst_day_per_zone }} in one zone.</li></ul></div>
+      <li>The worst storm day recorded {{ data.rates.worst_day_per_zone }} station events in one zone, before batching.</li></ul></div>
     <div class="card"><h2>Per message</h2><ul>
       <li><b>Texts as worded now</b>: {{ data.messages.segments_now }} segments on average; {% for e in data.messages.examples %}{{ e.beaches }} beach{{ '' if e.beaches == 1 else 'es' }} {{ e.segments }}{{ ', ' if not loop.last else '' }}{% endfor %}.</li>
       <li><b>With a plain hyphen</b>: {{ data.messages.segments_plain }}. The em dash switches a text to the encoding that fits 70 characters a segment, not 160.</li>
       <li><b>Stored per email</b>: {{ data.messages.email_kb }} KB, kept for every recipient.</li></ul></div>
     <div class="card"><h2>Guesses in the model</h2><ul>
+      <li>{{ data.email_planning.peak_emails_per_subscriber }} emails per email subscriber on a heavy storm day after {{ data.email_planning.batch_window_minutes }}-minute batching and same-day repeat suppression; not a guaranteed maximum.</li>
       <li>{{ data.measured.visits_per_subscriber_month }} site visits per subscriber a month, plus {{ "{:,}".format(data.measured.public_visits_month) }} public visits.</li>
       <li>{{ data.measured.tiles_per_visit }} map tiles a visit.</li>
       <li>{{ data.measured.view_cpu_seconds }} s of compute a page view; {{ data.measured.refresh_cpu_seconds }} s for each of the {{ "{:,}".format(data.measured.forecast_refreshes_month) }} forecast refreshes a month. Vercel's Usage page has the real numbers.</li></ul></div>
@@ -128,6 +151,18 @@
     $("k-total").textContent = usd(m.total); $("k-per").textContent = usd(m.per_subscriber_year);
     $("k-per-s").textContent = m.texts_month ? Math.round(m.texts_month).toLocaleString() + " texts a month" : "email only";
     $("k-busy").textContent = m.busiest_month_messages.toLocaleString();
+    var v = m.infrastructure.vercel, db = m.infrastructure.supabase;
+    $("infra-credit").textContent = usd(v.usage_dollars) + "/month";
+    $("infra-requests").textContent = Math.ceil(v.cdn_requests).toLocaleString() + "/month";
+    $("infra-transfer").textContent = v.transfer_gb.toFixed(2) + " GB/month";
+    $("infra-database").textContent = (db.database_gb * 1000).toFixed(2) + " MB";
+    $("infra-egress").textContent = db.egress_gb.toFixed(3) + " GB/month";
+    var daily = d.email_planning.brevo_free_per_day;
+    $("peak-day").textContent = m.email_subscribers.toLocaleString() + " email subscribers × " + d.email_planning.peak_emails_per_subscriber +
+      " = " + m.peak_daily_emails.toLocaleString() + " projected emails (rounded up). " +
+      (d.params.email === "ses" ? "Amazon SES selected; Brevo's daily allowance does not apply." :
+       m.brevo_daily_remaining >= 0 ? m.brevo_daily_remaining.toLocaleString() + " of Brevo's " + daily + " free daily sends remain." :
+       Math.abs(m.brevo_daily_remaining).toLocaleString() + " above Brevo's " + daily + " free daily sends; paid email plan modeled.");
     $("t-subs").textContent = m.subscribers.toLocaleString();
     $("lg-texts").textContent = "Email and texts, " + Math.round(d.curve.texts_share * 100) + "% choose texts";
     $("lines").innerHTML = m.lines.map(function (l) {
