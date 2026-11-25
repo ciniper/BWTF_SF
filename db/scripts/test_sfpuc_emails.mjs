@@ -32,7 +32,7 @@ const originals = (await db.query('select * from public.sfpuc_email_messages ord
 assert.equal(originals.length, 3);
 const runsBeforeMigration = await scalar('select count(*) from public.sfpuc_email_ingest_runs');
 await db.exec('reset role');
-await db.exec(readFileSync(new URL('../migrations/20261125052538_sfpuc_email_visibility.sql', import.meta.url), 'utf8'));
+await db.exec(readFileSync(new URL('../migrations/20261125074617_sfpuc_email_visibility.sql', import.meta.url), 'utf8'));
 await db.exec('set role service_role');
 const after = (await db.query('select * from public.sfpuc_email_messages order by id')).rows;
 assert.deepEqual(after.map(({visibility_hidden,visibility_revision,...original}) => original), originals);

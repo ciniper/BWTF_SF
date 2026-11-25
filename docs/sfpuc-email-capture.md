@@ -17,8 +17,22 @@ mail remain private in Admin.
 The original `20261122020135_sfpuc_email_capture.sql` migration is already
 applied to BWTF project `fqujpgxgilzgpkleehvg`. Do not rerun or rewrite it.
 
-The new `20261125052538_sfpuc_email_visibility.sql` migration is **prepared,
-not applied**. After application, the feature has two tables and one view:
+The `20261125074617_sfpuc_email_visibility.sql` migration was **applied on
+November 24, 2026 (Pacific)** after production deployment
+`dpl_9WCFfkfv2zgsUMumYNKLARN2nwDL` reached READY on merged commit `c3aa2e1`.
+The filename matches Supabase’s recorded version; it supersedes the prepared
+filename `20261125052538_sfpuc_email_visibility.sql` without changing its SQL.
+Do not apply it again.
+
+Read-only before/after checks confirmed identical original-content fingerprints
+for all six archived messages, identical visibility states/revision counters,
+and an unchanged fingerprint for all six capture-log records. The legacy table,
+view, and review RPC were removed. Both remaining tables have RLS enabled;
+browser roles cannot read originals or execute the visibility RPC. The service
+role can update visibility but cannot update original body text. No tests,
+subscriber access, email sends, or Hide/Restore actions were performed.
+
+The feature now has two tables and one view:
 
 | Object | Purpose |
 | --- | --- |
@@ -35,7 +49,7 @@ no prior review remains automatically eligible. Previously hidden mail stays
 hidden. The view retains `status = 'rejected'` as its internal compatibility
 label for Hidden; it no longer represents an approval workflow.
 
-**Order matters because production and previews share this database:**
+**Completed rollout order (retain for future releases sharing this database):**
 
 1. Obtain approval for the new app deployment/merge, with required reviews and
    checks satisfied without bypass. Deploy the new app before applying cleanup.
@@ -62,9 +76,9 @@ old production still depends on it. After cleanup, roll back only to an app
 version that uses current visibility. Restoring the old review editor requires
 schema/data restoration; do not deploy an older incompatible build blindly.
 
-No migration or deployment occurs merely by editing or pushing this branch.
-Both require separate explicit approval. No tests or live database writes were
-performed for this cleanup, per the user’s instruction.
+No migration or deployment occurs merely by editing or pushing a branch.
+Both require explicit approval. The user approved this cleanup after merging
+PR #39; only the email migration was applied. No tests were run.
 
 ## Configuration and receiving setup
 
@@ -162,4 +176,5 @@ Hide/Restore concurrency, and the pre-migration state. The offline PGlite
 script now covers preservation of three originals, latest-state transfer,
 legacy-object removal, stale writes, capture retries/atomicity, grants, and RLS.
 **These updated tests have not been run.** No subscriber reads, sends, browser
-checks, app startup, or live migration were performed for this cleanup.
+checks, or local app startup were performed. The authorized live migration was
+verified through read-only data fingerprints and schema/privilege metadata.
