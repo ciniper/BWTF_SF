@@ -90,6 +90,8 @@ def _cache_writable() -> bool:
     the deployed site; FORECAST_CACHE_WRITE=1 forces it (the cache tests).
     Everyone else computes in memory and serves that, leaving the row alone.
     """
+    if os.environ.get("VERCEL_ENV") == "preview":
+        return False
     return os.environ.get("FORECAST_CACHE_WRITE") == "1" or os.environ.get("VERCEL_ENV") == "production"
 
 
@@ -411,6 +413,11 @@ def _require_engine():
 
 
 def handle_data(query, body):
+    # Review-only branch: demonstrate this build's forecast rules, never the
+    # production snapshot computed by different code. No shared cache writes.
+    if os.environ.get("VERCEL_ENV") == "preview":
+        err = _require_engine()
+        return err if err else _serve_from_memory()
     now = _utcnow()
     row = _read_row()
     stored_snap = row.get("snapshot") if row else None
