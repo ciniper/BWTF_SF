@@ -47,9 +47,8 @@
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
 {{ topbar() }}
 <div class="wrap">
-  {{ page_head("UI overflow", "What came off the site for the beta, kept as it was drawn until it finds a home: Today's page directory, its Learn bar and its rain and tide pills, and the Learn page's timeline. Updated " ~ generated ~ ".") }}
-
   {{ admin_tabs("ui-overflow") }}
+  {{ page_head("UI overflow", "What came off the site for the beta, kept as it was drawn until it finds a home: Today's page directory, its Learn bar and its rain and tide pills, and the Learn page's timeline. Updated " ~ generated ~ ".") }}
 
   <div class="hubs">
     {% for hub in hubs %}

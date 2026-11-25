@@ -1,5 +1,6 @@
 {#- Admin opens Email history. Live and Alerts simulation live under Alert controls,
-    protected by an additional passphrase (app/wsgi.py). All admin pages use this list.
+    protected by an additional passphrase (app/wsgi.py). Every admin page places this
+    shared heading and navigation before its own page title.
       {% from "alerts/_tabs.html" import admin_tab_styles, admin_tabs %}
       {{ admin_tab_styles() }} in the head, {{ admin_tabs("costs") }} where the row goes -#}
 
@@ -15,6 +16,10 @@
 
 {% macro admin_tab_styles() -%}
 <style>
+  .admin-heading{margin:0 0 14px;font:900 clamp(1.25rem,3vw,1.5rem)/1.2 'Roboto','Segoe UI',Arial,sans-serif;color:var(--ink)}
+  .admin-heading a{display:inline-block;border-radius:4px;color:inherit;text-decoration:none}
+  .admin-heading a:hover{color:var(--brand)}
+  .admin-heading a:focus-visible{outline:2px solid var(--brand);outline-offset:4px}
   .admin-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 18px}
   .admin-tabs a{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:999px;border:2px solid var(--line);background:#fff;color:var(--muted);font-weight:700;text-decoration:none}
   .admin-tabs a small{font-weight:500;color:var(--faint)}
@@ -23,7 +28,12 @@
 </style>
 {%- endmacro %}
 
+{% macro admin_header() -%}
+<div class="admin-heading"><a href="/alerts">Admin Dashboard</a></div>
+{%- endmacro %}
+
 {% macro admin_tabs(on) -%}
+{{ admin_header() }}
 <nav class="admin-tabs" aria-label="Admin">
   {%- for key, href, icon, label, note in ADMIN_TABS %}
   <a href="{{ href }}"{% if key == on %} class="on" aria-current="page"{% endif %}><svg class="ic"><use href="#i-{{ icon }}"/></svg> {{ label }}{% if note %} <small>{{ note }}</small>{% endif %}</a>

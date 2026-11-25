@@ -739,6 +739,7 @@
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
 {{ topbar() }}
     <div class="container">
+        {{ admin_tabs('controls') }}
         <header>
             <div class="header-row">
                 <div class="hero-copy">
@@ -765,7 +766,6 @@
             </div>
         </header>
         
-        {{ admin_tabs('controls') }}
         {{ error_html|safe }}
         {{ rain_html|safe }}
         <div class="view-tabs" role="group" aria-label="Alert control views">

@@ -7,6 +7,11 @@ Admin (`/alerts`) now opens Email history, with SFPUC (received bulletins) and
 Surfrider (the app's sent beach alerts) subtabs. BWTF email analysis remains its
 own top-level admin button and opens the existing email simulator.
 
+A shared **Admin Dashboard** heading sits above the navigation on every admin
+subpage and links back to Email history. Each page's specific title and content
+follow the navigation. The same heading appears on the unlock screens. This is
+a template-only addition; it scrolls normally with the page.
+
 **Alert controls** (`/alerts/controls`) contains Live and Alerts simulation behind
 the existing Admin login and an additional, case-sensitive passphrase configured
 as `ADMIN_ALERT_CONTROLS_PASSPHRASE`. Missing/blank configuration keeps controls
@@ -27,12 +32,12 @@ own configured value before merging/deploying. See `DEPLOY.md`.
 
 ## Current validation limit
 
-At the user's explicit instruction, the subscriber-panel move and subsequent
-second-gate change received **source diff review only**. No tests, app/server
+At the user's explicit instruction, the subscriber-panel move, subsequent
+second-gate change, and shared-header addition received **source diff review only**. No tests, app/server
 runs, browser checks, subscriber reads, or subscriber actions were performed for
 these changes. The second gate has not been exercised at runtime. Existing
 screenshots and the checks below describe the preceding archive/navigation work,
-not the current gate or default landing page. Keep this PR draft for review.
+not the current gate, default landing page, or shared header. Keep this PR draft for review.
 
 SFPUC opens the newest captured message, with a paginated history below. Matching
 bulletins show the same sanitized layout as Today. Setup/other mail stays private

@@ -18,11 +18,13 @@
   .error{margin:0 0 12px;background:rgba(209,92,92,.12);color:#a93226;border-radius:12px;padding:10px 14px;font-weight:600;font-size:14px}
   .note{color:#8a949b;font-size:13px;line-height:1.6;margin-top:14px}
 </style>
+{% from "alerts/_tabs.html" import admin_tab_styles, admin_header %}{{ admin_tab_styles() }}
 </head>
 <body>
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
 {{ topbar() }}
 <div class="wrap">
+  {{ admin_header() }}
   {{ page_head(heading or "Alerts access", lead or "The coordinators' board: live subscriptions and real email — task-force members only.") }}
   <div class="card">
     {% if error %}<p class="error">{{ error }}</p>{% endif %}

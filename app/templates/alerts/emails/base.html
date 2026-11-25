@@ -11,9 +11,9 @@
 {% include '_icons.html' %}{% from '_frame.html' import topbar, footer, tabbar with context %}
 {{ topbar() }}
 <main class="email-wrap">
+{{ admin_tabs('emails') }}
 <h1>Email history</h1>
 <p class="email-muted">Incoming City bulletins and the beach alerts sent by this app.</p>
-{{ admin_tabs('emails') }}
 <nav class="email-subtabs" aria-label="Email sources">
 {% if sfpuc_email_enabled() %}<a href="{{ url_for('sfpuc-email-admin') }}"{% if source == 'sfpuc' %} aria-current="page"{% endif %}>SFPUC <small>Received</small></a>{% endif %}
 <a href="{{ url_for('sent-email-admin') }}"{% if source == 'surfrider' %} aria-current="page"{% endif %}>Surfrider <small>Sent alerts</small></a>
