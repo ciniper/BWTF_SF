@@ -13,7 +13,7 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from scripts.build_rain_snapshot import build_feed, complete_sum, archive_months
 from features.alerts.rain_data import snapshot
 from features.alerts import rain_data
-from features.alerts.aqpi import parse_feed
+from shared.aqpi import parse_feed
 
 
 def test_snapshot_windows_and_region_totals():

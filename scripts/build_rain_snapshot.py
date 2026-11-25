@@ -17,7 +17,7 @@ import re
 # Keep the standalone builder usable when called by file path.
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from features.alerts.aqpi import REGIONS, SOURCES, build_feed, complete_sum
+from shared.aqpi import REGIONS, SOURCES, build_feed, complete_sum
 
 
 def archive_months(manifest):

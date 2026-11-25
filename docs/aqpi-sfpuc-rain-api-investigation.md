@@ -275,3 +275,11 @@ endpoint, access method and station list?”** Also confirm intended polling
 cadence, current grid resolution, latency, gauge adjustment and archive support.
 The provider guide lists Ricardo Vilela and Jon Rutz as feed contacts. No message
 or records request was sent as part of this investigation.
+
+## Viewer scope
+
+The Admin viewer reads the public CW3E feeds directly. It requires no new
+Supabase bucket, database migration, archive credentials, or scheduled job.
+Its in-memory cache is temporary; viewing does not preserve a permanent history.
+Automatic preservation is a separate proposal in PR #48 and is not a dependency
+of this viewer. Neither proposal has provisioned storage or activated archiving.

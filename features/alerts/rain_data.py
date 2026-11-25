@@ -11,7 +11,7 @@ from pathlib import Path
 import requests
 from flask import after_this_request, render_template
 
-from features.alerts.aqpi import REGIONS, SOURCES, parse_feed
+from shared.aqpi import REGIONS, SOURCES, parse_feed
 
 CACHE_SECONDS = 15 * 60
 RETRY_SECONDS = 60
