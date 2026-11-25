@@ -468,14 +468,17 @@ def check_live_inputs_bite(live: dict) -> None:
     """Each fixed observation source must move a zone or group risk, or the live
     case pins nothing about it (a count in sample_sources is not a risk)."""
     base, g = _risks(live), globals()
-    for name in ("LIVE_ONSETS", "LIVE_FLAGS", "LIVE_DATASF", "LIVE_FEED"):
+    # Feed-only clean reductions were retired. These fixture postings occur
+    # in groups with no elevated floor, so feed need not move a risk; the
+    # positive-evidence merge is tested directly in test_forecast_evidence_guard.
+    for name in ("LIVE_ONSETS", "LIVE_FLAGS", "LIVE_DATASF"):
         saved, g[name] = g[name], {}
         try:
             assert _risks(live_payloads()["live"]) != base, f"{name} moves no zone or group risk, so it pins nothing"
         finally:
             g[name] = saved
     assert any(LIVE_FEED.get(k, v) != v for k, v in LIVE_DATASF.items()), \
-        "a DataSF result must contradict the feed's on the same group-day, or live_v2's order is unpinned"
+        "the fixture must exercise conflicting source evidence"
 
 
 def build_payload_golden() -> dict:

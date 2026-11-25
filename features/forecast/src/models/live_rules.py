@@ -198,7 +198,7 @@ def in_tail(basin: str, day: date, probs_by_date: dict, onsets: dict, rules: dic
 
 def adjust_groups(group_risks: dict, persist_risks: dict, today_terms: dict, day: date, samples: dict,
                   probs_by_date: dict, onsets: dict, flags_active: dict, zone_of_group: dict, basin_of_group: dict,
-                  large_curve, rules: dict = RULES):
+                  large_curve, rules: dict = RULES, *, flag_groups: dict | None = None):
     """(risks', notes) for one day. ``group_risks`` = the composed risk per group;
     ``persist_risks`` = the same with the day's own discharge term removed;
     ``today_terms`` = {group: that day's own discharge term as the composition
@@ -238,7 +238,8 @@ def adjust_groups(group_risks: dict, persist_risks: dict, today_terms: dict, day
                 today_p = float(today_terms.get(g, 0.0) or 0.0)
                 apply(g, "sample_clean_cap", min(out[g], 1.0 - (1.0 - persist) * (1.0 - today_p)))
         # the feed's flag still up after the onset: hold at the large-event curve
-        if cso["hold_while_flagged"] and basin in flags_active.get(day, ()) and basin not in onsets.get(day, ()):
+        if (cso["hold_while_flagged"] and basin in flags_active.get(day, ()) and basin not in onsets.get(day, ())
+                and (flag_groups is None or g in flag_groups.get(day, ()))):
             k = next((k for k in range(1, cso["hold_max_days"] + 1) if basin in onsets.get(day - timedelta(days=k), ())), None)
             if k is not None:
                 apply(g, "flag_hold", max(out[g], float(large_curve(g, k))))

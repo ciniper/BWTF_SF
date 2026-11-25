@@ -486,8 +486,8 @@
     "Aquatic Park": 0.117,
     "Baker-China": 0.524,
     "Crissy Field": 0.182,
-    "Mission Creek": 0.822,
-    "Ocean Beach": 0.692,
+    "Mission Creek": 0.831,
+    "Ocean Beach": 0.793,
     "Southeast": 0.989
    },
    "input_rules": [
@@ -501,18 +501,7 @@
     "flags_active": [
      "westside"
     ],
-    "groups": {
-     "Mission Creek": {
-      "from": 0.831,
-      "rule": "sample_clean_cap",
-      "to": 0.822
-     },
-     "Ocean Beach": {
-      "from": 0.56,
-      "rule": "flag_hold",
-      "to": 0.692
-     }
-    },
+    "groups": {},
     "sample_sources": {
      "datasf": 3,
      "feed": 3
@@ -554,11 +543,11 @@
     }
    },
    "predictions": {
-    "central": 0.822,
+    "central": 0.831,
     "citywide": 0.989,
     "north_shore": 0.182,
     "southeast": 0.989,
-    "westside": 0.692
+    "westside": 0.793
    },
    "rain_2d_cum": 1.818,
    "rain_3d_cum": 2.198,
@@ -572,7 +561,7 @@
     "baker_china": 0.524,
     "east": 0.989,
     "north": 0.182,
-    "ocean": 0.692
+    "ocean": 0.793
    }
   },
   "2026-02-18": {
@@ -621,7 +610,7 @@
     "Baker-China": 0.338,
     "Crissy Field": 0.084,
     "Mission Creek": 0.8,
-    "Ocean Beach": 0.433,
+    "Ocean Beach": 0.548,
     "Southeast": 0.933
    },
    "input_rules": [
@@ -638,11 +627,6 @@
       "from": 0.757,
       "rule": "sample_elevated_floor",
       "to": 0.8
-     },
-     "Ocean Beach": {
-      "from": 0.548,
-      "rule": "sample_clean_cap",
-      "to": 0.433
      }
     },
     "sample_sources": {
@@ -690,7 +674,7 @@
     "citywide": 0.933,
     "north_shore": 0.084,
     "southeast": 0.933,
-    "westside": 0.433
+    "westside": 0.548
    },
    "rain_2d_cum": 0.976,
    "rain_3d_cum": 2.046,
@@ -704,7 +688,7 @@
     "baker_china": 0.338,
     "east": 0.933,
     "north": 0.084,
-    "ocean": 0.433
+    "ocean": 0.548
    }
   },
   "2026-02-19": {
@@ -753,7 +737,7 @@
     "Baker-China": 0.141,
     "Crissy Field": 0.06,
     "Mission Creek": 0.8,
-    "Ocean Beach": 0.459,
+    "Ocean Beach": 0.505,
     "Southeast": 0.894
    },
    "input_rules": [
@@ -770,11 +754,6 @@
       "from": 0.677,
       "rule": "sample_elevated_floor",
       "to": 0.8
-     },
-     "Ocean Beach": {
-      "from": 0.505,
-      "rule": "sample_clean_cap",
-      "to": 0.459
      }
     },
     "sample_sources": {
@@ -822,7 +801,7 @@
     "citywide": 0.894,
     "north_shore": 0.06,
     "southeast": 0.894,
-    "westside": 0.459
+    "westside": 0.505
    },
    "rain_2d_cum": 0.654,
    "rain_3d_cum": 1.402,
@@ -836,7 +815,7 @@
     "baker_china": 0.141,
     "east": 0.894,
     "north": 0.06,
-    "ocean": 0.459
+    "ocean": 0.505
    }
   },
   "2026-02-20": {

@@ -87,7 +87,7 @@ def test_feed_sample_flags_reads_the_map_as_results():
         out = eng._feed_sample_flags(date(2026, 9, 20), date(2026, 9, 29))
     finally:
         ld._supabase = real
-    assert out == {(se, date(2026, 9, 21)): True, (se, date(2026, 9, 23)): True, (ap, date(2026, 9, 21)): False}, out
+    assert out == {(se, date(2026, 9, 21)): True, (se, date(2026, 9, 23)): True}, out
     assert all(k[0] != _group_of(lobos) for k in out)
     assert fake.calls and fake.calls[0][0] == "feed_station_days" and fake.calls[0][1]["day"] == "gte.2026-09-20"
 

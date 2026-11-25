@@ -203,6 +203,9 @@ def test_westside_clean_sample_under_the_outfall_split():
     eng._sample_flags = lambda s, e: {("Ocean Beach", DATES[6]): False, ("Baker-China", DATES[6]): False}
     eng._feed_sample_flags = lambda s, e: {}
     live = eng._live_context(frames, probs, vols, DATES, {}, TODAY)
+    # Exercise the legacy cap arithmetic explicitly; production no longer
+    # admits a boolean 'clean' without complete station-level evidence.
+    live["samples"] = eng._sample_flags(None, None)
     pay = eng._day_payload(frames, 7, feats, probs, vols, DATES, {}, live)
     composed, rules = pay["plain"]["impact_groups"], pay["live_corrections"]["groups"]   # nothing moved stage 1, so plain = the composition
     term = {g: 0.9 * S2.group_share(spec, g, 0.5) for g in ("Ocean Beach", "Baker-China")}
@@ -293,9 +296,8 @@ def test_live_dashboard_wiring_is_the_identity_without_observations_and_moves_wi
     p_only = [dict(x) for x in live["probs"]]; p_only[7] = {b: 0.0 for b in p_only[7]}
     persist = eng._compose_impact(p_only, live["vols"], 7, DATES, {})["_groups"]["Ocean Beach"]
     assert persist > LR.RULES["samples"]["cap_clean_tail"]["ocean"], persist          # the scenario is set up so the cap bites
-    assert rules["groups"]["Ocean Beach"]["rule"] == "sample_clean_cap"
-    assert today["impact_groups"]["Ocean Beach"] == round(1 - (1 - 0.42) * (1 - live["probs"][7]["westside"]), 3)
-    assert today["impact_groups"]["Ocean Beach"] < plain["impact_groups"]["Ocean Beach"]
+    assert "Ocean Beach" not in rules["groups"]
+    assert today["impact_groups"]["Ocean Beach"] == plain["impact_groups"]["Ocean Beach"]
     assert today["predictions"]["southeast"] == today["impact_groups"]["Southeast"]      # the basin follows its (only) group
     assert today["zones"]["east"] == today["impact_groups"]["Southeast"] and today["zones"]["ocean"] == today["impact_groups"]["Ocean Beach"]
     past = eng._day_payload(frames, 4, feats, probs, vols, DATES, onsets, live)
