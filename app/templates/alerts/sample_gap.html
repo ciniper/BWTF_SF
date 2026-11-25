@@ -19,12 +19,12 @@ details{border-top:1px solid var(--line);padding-top:12px}summary{cursor:pointer
 {% include '_icons.html' %}{% from '_frame.html' import topbar, page_head, footer, tabbar with context %}
 {{ topbar() }}
 <main class="wrap">
+{{ admin_tabs('sample-gap') }}
 {% call page_head('The sample gap', 'Follow a sample from early lab numbers to the City map and DataSF. Arrival times below are when our recorders observed each feed.') %}
 <p>The collection date is when water was sampled. It is separate from when a result appeared online. A posting change alone does not establish that a new sample exists.</p>
 <p>“By” means a value was already present at the first recording, or a map timestamp is approximate. Its actual arrival could be earlier. All times are Pacific.</p>
 <p>DataSF values here come from our observation archive, not a live query. That archive keeps the first sighting of each distinct value, so later reversions may not be represented. Missing archive rows do not prove that DataSF has not published a result.</p>
 {% endcall %}
-{{ admin_tabs('sample-gap') }}
 <section class="panel health" aria-label="Collector status">
 <div><span class="eyebrow">getCSV collector · every two minutes</span><p><b>Last successful read:</b> {{ fmt_time(m.runtime.get('last_success_at')) }} PT{% if m.runtime.get('last_row_count') is not none %} · {{ m.runtime.last_row_count }} feed rows{% endif %}</p></div>
 <span class="badge{% if m.health == 'Recording' %} good{% endif %}">{{ m.health }}</span>

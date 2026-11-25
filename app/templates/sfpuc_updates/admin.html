@@ -1,76 +1,40 @@
-<!doctype html>
-<html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">
-<title>SFPUC emails — Admin · SF Beach Water</title>
-<link rel="icon" href="{{ asset('brand/favicon.ico') }}">
-<link rel="stylesheet" href="{{ asset('brand.css') }}">
-<link rel="stylesheet" href="{{ asset('sfpuc_updates.css') }}">
-<script src="{{ asset('sfpuc_updates.js') }}" defer></script>
-{% from 'alerts/_tabs.html' import admin_tab_styles, admin_tabs %}{{ admin_tab_styles() }}
-</head><body class="sfpuc-email-admin">
-{% include '_icons.html' %}{% from '_frame.html' import topbar, footer, tabbar with context %}
-{{ topbar() }}
-<main class="email-wrap">
-<h1>SFPUC emails</h1>
-<p>Capture, review, and preview SFPUC emails privately. Approved messages stay in Admin.</p>
-{{ admin_tabs('sfpuc-emails') }}
-{% if error %}<p class="email-notice" role="alert">{{ error }}</p>{% endif %}
-{% if not ready %}<p class="email-notice">Receiving address or webhook authentication still needs configuration. Existing messages can be reviewed.</p>{% endif %}
-<section class="email-panel">
-<h2>Capture status</h2>
-<p>Expected sender: <strong>{{ expected_sender }}</strong>. A matching address alone does not verify authorship.</p>
-{% if runs %}<p>Last accepted delivery: <b>{{ fmt_time(runs[0].received_at) }}</b> · {{ runs[0].inserted_count }} saved · {{ runs[0].duplicate_count }} duplicates · {{ runs[0].ignored_count }} for other recipients.</p>
-{% else %}<p>No deliveries recorded yet. This does not indicate beach conditions.</p>{% endif %}
-<p class="email-muted">Open Gmail forwarding confirmations to find the verification code in their original text. Keep setup emails out of the reviewed preview.</p>
-</section>
-{% include 'sfpuc_updates/_preview.html' %}
+{% extends 'alerts/emails/base.html' %}
+{% set source = 'sfpuc' %}
+{% block title %}SFPUC received emails{% endblock %}
+{% block content %}
+<div class="email-source-heading"><div><h2>SFPUC updates</h2><p class="email-muted">Matching beach bulletins appear on Today automatically. No approval needed.</p></div><a href="{{ url_for('sfpuc-email-today-preview') }}">Open Today viewer →</a></div>
 {% if message %}
-<section class="email-panel" aria-labelledby="email-review-heading">
-<h2 id="email-review-heading">Review: {{ message.subject }}</h2>
-<p>From {{ message.sender }} · {{ 'Email dated' if message.sent_at else 'Received' }} {{ fmt_time(message.sent_at or message.received_at) }}</p>
+<section class="email-panel" aria-labelledby="email-subject">
+<div class="email-reader-heading">
+<span class="email-badge">{% if bulletin %}{{ 'Hidden from Today' if hidden else 'Shown on Today' }}{% else %}Private · setup or other mail{% endif %}</span>
+{% if bulletin and "visibility_revision" in message %}
+<form method="post" action="{{ url_for('sfpuc-email-visibility') }}">
+<input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="message_id" value="{{ message.id }}"><input type="hidden" name="revision" value="{{ message.revision }}">
+<button class="secondary" name="action" value="{{ 'restore' if hidden else 'hide' }}">{{ 'Restore to Today' if hidden else 'Hide from Today' }}</button>
+</form>{% elif bulletin %}<span class="email-muted">Hide/Restore is temporarily unavailable.</span>{% endif %}
+</div>
+<h2 id="email-subject">{{ clean.title if clean else message.subject }}</h2>
+<p class="email-muted">{{ 'Email dated' if message.sent_at else 'Captured' }} {{ fmt_time(message.sent_at or message.received_at) }}</p>
 {% for warning in message.warnings %}<p class="email-notice">{{ warning }}</p>{% endfor %}
-{% if message.has_conflict %}<p class="email-notice">Another captured message has the same Message-ID with different content. Compare originals before approving.</p>{% endif %}
-{% if email_images %}
-<div class="email-images" aria-label="Email images">
-{% for image in email_images %}<figure class="email-image{% if image.small %} email-image-small{% endif %}">
-<img src="{{ image.src }}" alt="{{ image.alt }}" loading="eager" decoding="async" referrerpolicy="no-referrer">
-<figcaption hidden>Image unavailable — {{ image.alt }}</figcaption>
-</figure>{% endfor %}
-</div>
+{% if message.has_conflict %}<p class="email-notice">Another capture has the same Message-ID with different content. Compare the originals below.</p>{% endif %}
+{% if document %}<iframe class="email-document" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" title="SFPUC bulletin as shown on Today" srcdoc="{{ document }}"></iframe>
+{% elif bulletin %}<pre class="email-body-text">{{ clean.body }}</pre>
+{% else %}<pre class="email-body-text">{{ message.body_text }}</pre>{% endif %}
+{% if bulletin %}<p class="email-muted">This is the Today version: the City’s layout and links, with forwarding and subscription details removed. Hiding applies to the shared archive, including any environment using it.</p>{% endif %}
+<details><summary>Original message (private)</summary><p>From {{ message.sender }} · Captured {{ fmt_time(message.received_at) }}</p><pre>{{ message.body_text }}</pre><details><summary>Original payload</summary><pre>{{ message.raw_payload | tojson(indent=2) }}</pre></details></details>
+</section>
 {% endif %}
-<details><summary>Original email text and headers (private)</summary>
-<pre>{{ message.body_text }}</pre>
-<details><summary>Original payload</summary><pre>{{ message.raw_payload | tojson(indent=2) }}</pre></details>
+<section class="email-panel" aria-labelledby="email-inbox-heading"><h2 id="email-inbox-heading">Captured emails</h2>
+{% for row in rows %}<article class="email-inbox-row{% if message and row.id == message.id %} is-selected{% endif %}">
+<div><a href="{{ url_for('sfpuc-email-admin', message=row.id, offset=offset) }}"{% if message and row.id == message.id %} aria-current="true"{% endif %}>{{ row.subject }}</a><p>{{ fmt_time(row.received_at) }} · {{ row.sender }}</p></div>
+<span class="email-state">{{ 'Hidden' if row.status == 'rejected' else 'Captured' }}{% if row.has_conflict %} · Content conflict{% endif %}</span>
+</article>{% else %}{% if not error %}<p>No emails captured yet.</p>{% endif %}{% endfor %}
+<nav class="email-history-nav" aria-label="Captured email pages">{% if rows|length == 25 and offset < 1000 %}<a href="{{ url_for('sfpuc-email-admin', offset=offset+25) }}">← Older emails</a>{% else %}<span></span>{% endif %}{% if offset %}<a href="{{ url_for('sfpuc-email-admin', offset=[0,offset-25]|max) }}">Newer emails →</a>{% endif %}</nav>
+</section>
+<details class="email-panel"><summary>Capture status and setup</summary>
+<p>Expected sender: <strong>{{ expected_sender }}</strong>. A matching address alone does not verify authorship.</p>
+{% if runs %}<p>Last accepted delivery: <b>{{ fmt_time(runs[0].received_at) }}</b> · {{ runs[0].inserted_count }} saved · {{ runs[0].duplicate_count }} duplicates · {{ runs[0].ignored_count }} for other recipients.</p>{% else %}<p>No deliveries recorded yet. This does not indicate beach conditions.</p>{% endif %}
+{% if not ready %}<p class="email-notice">Receiving credentials are not configured in this environment. Preview environments can still read messages captured by production.</p>{% endif %}
+<p class="email-muted">Open Gmail forwarding confirmations in the captured email list to read their verification code. Setup emails stay private.</p>
 </details>
-{% set latest = revisions[0] if revisions else none %}
-<form method="post" action="/alerts/sfpuc-emails/review" class="email-review-form">
-<input type="hidden" name="csrf" value="{{ csrf }}">
-<input type="hidden" name="message_id" value="{{ message.id }}">
-<input type="hidden" name="revision" value="{{ latest.revision if latest else 0 }}">
-<label>Reviewed title<input name="title" maxlength="300" required value="{{ latest.title if latest else message.subject[:300] }}"></label>
-<label>Reviewed message<textarea name="body" rows="12" maxlength="30000">{{ latest.body_text if latest else message.body_text[:30000] }}</textarea></label>
-<div class="email-cleanup">
-<div class="email-actions"><button type="button" class="secondary" data-clean-forward>Remove forwarding text</button><button type="button" class="secondary" data-undo-cleanup hidden>Undo cleanup</button></div>
-<p class="email-muted">Remove the forwarding header and anything you wrote above it. The bulletin and original email stay intact. Review any remaining signatures and subscription footer before approving.</p>
-<p data-cleanup-status role="status" aria-live="polite"></p>
-</div>
-<p class="email-muted">Keep the bulletin's wording and dates. Remove personal addresses, quoted conversations, signatures, tracking links, and unsubscribe information. The reviewed text and email images appear in the private preview.</p>
-<label>Reviewed by<input name="reviewer" maxlength="100" required autocomplete="name" value=""></label>
-<label class="email-confirm"><input type="checkbox" name="verified" value="yes"> I verified this is an SFPUC beach bulletin and checked the reviewed text and images for private information.</label>
-<div class="email-actions"><button name="action" value="approved">Approve for preview</button><button name="action" value="rejected" class="secondary">{{ 'Remove from preview' if latest and latest.status == 'approved' else 'Reject' }}</button></div>
-</form>
-{% if revisions %}<details><summary>Review history · {{ revisions|length }}</summary>
-{% for revision in revisions %}<article><h3>{{ revision.status|capitalize }} · revision {{ revision.revision }}</h3>
-<p>{{ fmt_time(revision.reviewed_at) }} · {{ revision.reviewed_by }}</p><b>{{ revision.title }}</b><pre>{{ revision.body_text }}</pre></article>{% endfor %}
-</details>{% endif %}
-</section>
-{% endif %}
-<section class="email-panel" aria-labelledby="email-inbox-heading"><h2 id="email-inbox-heading">Captured messages</h2>
-{% for row in rows %}<article class="email-inbox-row">
-<div><a href="{{ url_for('sfpuc-email-admin', message=row.id) }}">{{ row.subject }}</a><p>{{ fmt_time(row.received_at) }} · {{ row.sender }}</p></div>
-<span class="email-state">{{ row.status|capitalize }}{% if row.has_conflict %} · Content conflict{% endif %}</span>
-</article>{% else %}<p>No messages captured in this view.</p>{% endfor %}
-<nav class="email-actions" aria-label="Inbox pages">{% if offset %}<a href="?offset={{ [0, offset-25]|max }}">Newer messages</a>{% endif %}{% if rows|length == 25 and offset < 1000 %}<a href="?offset={{ offset+25 }}">Older messages</a>{% endif %}</nav>
-</section>
-</main>{{ footer() }}{{ tabbar() }}
-</body></html>
+{% endblock %}

@@ -45,14 +45,13 @@
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
 {{ topbar() }}
 <div class="wrap">
+  {{ admin_tabs("costs") }}
   {% call page_head("Running costs", "What the site would cost each month at any number of subscribers: published prices, the alert record, and what the site uses today.", None, "How this is counted") %}
     <p>One alert per station posting in the State's record and one per station a reported discharge flags, per zone, averaged over {{ data.rates.years[0] }}–{{ data.rates.years[1] }}.
     The site merges changes it sees in the same minute into one message, so these counts are the high end. Email plans are sized for the busiest month, which runs {{ data.rates.busiest_month_factor }} times an average month;
     texts are billed per segment. Text segments and stored email sizes are measured from the alert renderer itself, so they follow the wording.
     Brevo turns paid at {{ data.thresholds.brevo_paid_from }} subscribers; Vercel Pro, Supabase Pro and a domain start at {{ data.thresholds.pro_from }}. Prices were checked on {{ data.prices_checked }}.</p>
   {% endcall %}
-
-  {{ admin_tabs("costs") }}
 
   {% if data.today %}<p class="today">Today: <b>{{ data.today.subscribers }}</b> subscriber{{ '' if data.today.subscribers == 1 else 's' }}, <b>{{ data.today.texting }}</b> by text, averaging <b>{{ data.today.alerts_per_year }}</b> alerts a year from the zones they chose.</p>{% endif %}
 

@@ -1,5 +1,6 @@
-"""Offline inbound/review/admin-preview contract checks. SQL behavior has a separate PGlite test."""
+"""Offline capture/history/image contract checks. SQL behavior has a separate PGlite test."""
 import copy
+import html
 import json
 import sys
 from datetime import datetime, timezone
@@ -97,9 +98,9 @@ def test_webhook_disabled_unconfigured_unauthorized_and_oversized(client, monkey
     assert authenticated_post(client, payload()).status_code == 503
     monkeypatch.setenv("SFPUC_EMAIL_ENABLED", "false")
     assert authenticated_post(client, payload()).status_code == 404
-    assert client.get("/alerts/api/sfpuc-updates").status_code == 401
+    assert b'name="passphrase"' in client.get("/alerts/sfpuc-emails").data
     unlock(client)
-    assert client.get("/alerts/api/sfpuc-updates").status_code == 404
+    assert client.get("/alerts/sfpuc-emails").status_code == 404
 
 
 def test_batch_is_validated_before_write_and_storage_failures_are_retryable(client, monkeypatch):
@@ -123,36 +124,24 @@ def test_batch_is_validated_before_write_and_storage_failures_are_retryable(clie
     assert client.post("/api/ingest/sfpuc-email", data="text", headers=headers).status_code == 415
 
 
-def test_admin_authentication_csrf_approval_confirmation_and_stale_reviews(client, monkeypatch):
+def test_admin_history_needs_auth_and_legacy_editing_routes_are_removed(client, monkeypatch):
     monkeypatch.setattr(S, "inbox", lambda offset: [])
     monkeypatch.setattr(S, "recent_runs", lambda: [])
     assert b'name="passphrase"' in client.get("/alerts/sfpuc-emails").data
-    assert client.post("/alerts/sfpuc-emails/review").status_code == 401
     unlock(client)
     page = client.get("/alerts/sfpuc-emails")
-    assert page.status_code == 200 and b'id="sfpuc-updates"' in page.data
-    assert b"sfpuc_updates.js?v=" in page.data and b"Approved messages stay in Admin" in page.data
-    form = {"message_id": MID, "revision": "0", "action": "approved", "title": "Notice", "body": "Official text", "reviewer": "Coordinator"}
-    assert client.post("/alerts/sfpuc-emails/review", data=form).status_code == 403
-    form["csrf"] = "offline-csrf"
-    assert client.post("/alerts/sfpuc-emails/review", data=form).status_code == 400
-    form["verified"] = "yes"
-    calls = []
-    monkeypatch.setattr(S, "review", lambda *args: calls.append(args) or {"ok": True, "revision": 1})
-    assert client.post("/alerts/sfpuc-emails/review", data=form).status_code == 303
-    assert calls[0] == (MID, 0, "approved", "Notice", "Official text", "Coordinator")
-    monkeypatch.setattr(S, "review", lambda *args: {"ok": False})
-    assert client.post("/alerts/sfpuc-emails/review", data=form).status_code == 409
-    monkeypatch.setattr(S, "review", lambda *args: {"ok": True})
-    form.update(action="rejected", verified="")
-    assert client.post("/alerts/sfpuc-emails/review", data=form).status_code == 303
+    assert page.status_code == 200 and b'aria-label="Email sources"' in page.data
+    assert b"No approval needed" in page.data and b"Approve for preview" not in page.data
+    assert client.post("/alerts/sfpuc-emails/review").status_code == 404
+    assert client.post("/alerts/sfpuc-emails/clean-forward").status_code == 404
+    assert client.get("/alerts/api/sfpuc-updates").status_code == 404
 
 
 def test_private_html_is_escaped_and_confirmation_can_be_read(client, monkeypatch):
     unlock(client)
     row = parse(payload(Subject="<script>bad()</script>", RawTextBody="Gmail code 123456 <img onerror=evil()>"))[0][0]
     row["id"] = MID
-    monkeypatch.setattr(S, "detail", lambda selected: (row, []))
+    monkeypatch.setattr(S, "detail", lambda selected: dict(row, status="quarantined", revision=0))
     monkeypatch.setattr(S, "inbox", lambda offset: [])
     monkeypatch.setattr(S, "recent_runs", lambda: [])
     result = client.get(f"/alerts/sfpuc-emails?message={MID}")
@@ -160,34 +149,11 @@ def test_private_html_is_escaped_and_confirmation_can_be_read(client, monkeypatc
     assert b"123456" in result.data and b"<script>bad()" not in result.data and b"<img onerror" not in result.data
 
 
-def test_private_preview_projection_dates_pagination_and_outage(client, monkeypatch):
-    row = {"id": MID, "title": "Reviewed title", "body_text": "Reviewed text", "sent_at": "2026-11-20T23:00:00+00:00",
-           "received_at": "2026-11-21T16:00:00+00:00", "reviewed_at": "2026-11-21T17:00:00+00:00",
-           "sender": "PRIVATE", "raw_payload": {"secret": "PRIVATE"}, "reviewed_by": "PRIVATE"}
-    monkeypatch.setattr(S, "reviewed", lambda offset: [row] * 6)
-    assert client.get("/api/today/sfpuc-updates").status_code == 404
-    assert client.get("/alerts/api/sfpuc-updates").status_code == 401
-    unlock(client)
-    assert client.get("/api/today/sfpuc-updates").status_code == 404
-    result = client.get("/alerts/api/sfpuc-updates")
-    assert result.status_code == 200 and len(result.json["updates"]) == 5 and result.json["next_offset"] == 5
-    assert "Nov 20, 2026" in result.json["updates"][0]["date"] and "PST" in result.json["updates"][0]["date"]
-    assert b"PRIVATE" not in result.data and result.headers["Cache-Control"] == "private, no-store"
-    assert client.get("/alerts/api/sfpuc-updates?offset=nope").status_code == 400
-    row["sent_at"] = None
-    assert client.get("/alerts/api/sfpuc-updates").json["updates"][0]["date_label"] == "Captured"
-    monkeypatch.setattr(S, "reviewed", lambda offset: [])
-    assert client.get("/alerts/api/sfpuc-updates").json["updates"] == []
-    assert "PDT" in R.fmt_time("2026-07-01T18:00:00Z")
-    monkeypatch.setattr(R.sb, "is_configured", lambda: False)
-    assert client.get("/alerts/api/sfpuc-updates").status_code == 503
-
-
 def test_today_feature_flag_does_not_fetch_emails_or_alter_board(client, monkeypatch):
     from app.landing import today_board
     from features.today import page as today
     from app.wsgi import app
-    monkeypatch.setattr(S, "reviewed", lambda *a: pytest.fail("Today rendering must not read emails"))
+    monkeypatch.setattr(S, "captured", lambda *a: pytest.fail("Today rendering must not read emails"))
     board = today_board([], now=NOW)
     original = copy.deepcopy(board)
     with app.test_request_context("/"):
@@ -299,19 +265,19 @@ def test_image_download_stops_a_slow_stream(monkeypatch):
 
 
 def test_private_images_are_gated_eager_and_never_render_source_html(client, monkeypatch):
-    row = parse(payload(RawHtmlBody=f'<img src="{IMAGE}" width="640" alt="&lt;script&gt;bad&lt;/script&gt;" onerror="evil()">'))[0][0]
+    row = parse(payload(Subject="SF BEACH POSTED", RawHtmlBody=f'<img src="{IMAGE}" width="640" alt="&lt;script&gt;bad&lt;/script&gt;" onerror="evil()">'))[0][0]
     row["id"] = MID
     monkeypatch.setattr(S, "image_payloads", lambda ids: {MID: row["raw_payload"]})
-    monkeypatch.setattr(S, "detail", lambda mid: (row, []))
+    monkeypatch.setattr(S, "detail", lambda mid: dict(row, status="captured", revision=0, visibility_revision=0))
     monkeypatch.setattr(S, "inbox", lambda offset: [])
     monkeypatch.setattr(S, "recent_runs", lambda: [])
     path = f"/alerts/sfpuc-emails/images/{MID}/0"
     assert client.get(path).status_code == 401
     unlock(client)
     page = client.get(f"/alerts/sfpuc-emails?message={MID}").data
-    assert f'src="{path}"'.encode() in page and b'loading="eager"' in page
+    assert f'src="{path}"' in html.unescape(page.decode()) and b'title="SFPUC bulletin as shown on Today"' in page
     assert b'onerror="evil()"' not in page and b'<script>bad</script>' not in page
-    assert b"Remove forwarding text" in page and b"Undo cleanup" in page
+    assert b"Hide from Today" in page and b"Remove forwarding text" not in page
     monkeypatch.setattr(V, "fetch_image", lambda url: (b"image-bytes", "image/png"))
     response = client.get(path)
     assert response.status_code == 200 and response.data == b"image-bytes"
@@ -321,17 +287,6 @@ def test_private_images_are_gated_eager_and_never_render_source_html(client, mon
     assert client.get(path[:-1] + "12").status_code == 404
     monkeypatch.setenv("SFPUC_EMAIL_ENABLED", "false")
     assert client.get(path).status_code == 404
-
-
-def test_preview_includes_only_private_image_routes(client, monkeypatch):
-    unlock(client)
-    row = {"id": MID, "title": "Notice", "body_text": "Reviewed text", "sent_at": None, "received_at": NOW.isoformat()}
-    monkeypatch.setattr(S, "reviewed", lambda offset: [row])
-    monkeypatch.setattr(S, "image_payloads", lambda ids: {MID: {"RawHtmlBody": f'<img src="{IMAGE}" alt="Beach">'}})
-    response = client.get("/alerts/api/sfpuc-updates")
-    assert response.status_code == 200
-    assert response.json["updates"][0]["images"][0]["src"] == f"/alerts/sfpuc-emails/images/{MID}/0"
-    assert b"cloudfront" not in response.data and b"RawHtmlBody" not in response.data
 
 
 def test_forwarding_cleanup_preserves_the_full_bulletin_and_handles_nested_quotes():
@@ -358,19 +313,6 @@ def test_cleanup_preserves_greater_than_thresholds_inside_the_bulletin():
     "---------- Forwarded message ---------\nFrom: source@example.test\nSubject: Empty\n\n"])
 def test_cleanup_does_not_guess_or_erase_unrecognized_and_empty_messages(body):
     assert V.clean_forward("Original title", body) == {"title": "Original title", "body": body, "removed": 0}
-
-
-def test_cleanup_requires_auth_and_csrf_and_does_not_save_a_review(client, monkeypatch):
-    monkeypatch.setattr(S, "review", lambda *args: pytest.fail("Cleanup must not save"))
-    path = "/alerts/sfpuc-emails/clean-forward"
-    draft = {"title": "Fwd: Notice", "body": FORWARDED}
-    assert client.post(path, json=draft).status_code == 401
-    unlock(client)
-    assert client.post(path, json=draft).status_code == 403
-    response = client.post(path, json=draft, headers={"X-CSRF-Token": "offline-csrf"})
-    assert response.status_code == 200 and response.json["removed"] == 1
-    assert response.json["title"] == "Notice" and "no-store" in response.headers["Cache-Control"]
-    assert client.post(path, json={"title": "x", "body": "x" * 30_001}, headers={"X-CSRF-Token": "offline-csrf"}).status_code == 400
 
 
 if __name__ == "__main__":

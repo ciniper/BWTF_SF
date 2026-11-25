@@ -42,7 +42,7 @@ import secrets
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-from flask import Flask, Response, abort, redirect, render_template, request, send_from_directory, session
+from flask import Flask, Response, abort, current_app, make_response, redirect, render_template, request, send_from_directory, session
 
 import features.about.page as about_page
 import features.data_index.page as data_index_page   # /data: the index the top bar's Data tab opens on (design/nav)
@@ -115,13 +115,11 @@ _COMPARE_GET = {
 }
 
 # ── Admin dashboard access gate ───────────────────────────────────────────────
-# The Admin dashboard manages live subscriptions and its simulator can send real
-# email, so it sits behind a shared passphrase. Besides the page itself, every
-# state-changing action and the endpoints that expose subscriber contact info
-# are gated; public-data reads (/api/status, /api/debug/sfpuc, …) stay open so
-# other pages and the landing footer keep working.
+# The main Admin login opens email history and analysis. Live subscription and
+# simulation controls require a separate passphrase, including their APIs.
+# Public beach-data reads stay open for the other pages and landing footer.
 ADMIN_DASHBOARD_PASSPHRASE = os.environ.get("ADMIN_DASHBOARD_PASSPHRASE", "")
-_GATED_API_GET = {"/api/subscriptions", "/api/watcher"}
+_CONTROL_API_GET = {"/api/subscriptions", "/api/watcher", "/api/simulations/cso"}
 
 
 def _normalize_passphrase(value: str) -> str:
@@ -137,7 +135,7 @@ _GATED_PAGES: set = set()   # every page path behind the passphrase: where the u
 # board behind the same passphrase; 2026-11-04: both are Admin, the Lab SOP one of its tabs).
 _GATE_COPY = {
     "/alerts/lab-sop": ("Lab SOP", "The lab's procedure is for Blue Water Task Force volunteers: enter the coordinators' passphrase."),
-    "/alerts": ("Admin", "The coordinators' board: live subscriptions and real email — task-force members only."),
+    "/alerts": ("Admin", "Email history and BWTF tools — enter the coordinators' admin passphrase."),
 }
 
 
@@ -174,8 +172,117 @@ def _unlock_submit():
     nxt = nxt if nxt in _GATED_PAGES else "/alerts"   # back to the page that asked, never anywhere else
     if expected and hmac.compare_digest(supplied, expected):
         session["alerts_unlocked"] = True
+        session.pop("alert_controls_grant", None)
+        session.pop("alert_controls_csrf", None)
         return redirect(nxt)
     return _unlock_page(nxt, error="That's not it — check with the coordinator and try again.", status=401)
+
+
+def _controls_secret():
+    # No fallback to the ordinary Admin passphrase, and no source-code default.
+    return os.environ.get("ADMIN_ALERT_CONTROLS_PASSPHRASE", "")
+
+
+def _controls_stamp(secret):
+    # Bind the signed-session grant to the configured secret. Removing/changing
+    # it invalidates existing grants. The cookie never contains the passphrase.
+    key = current_app.secret_key
+    if isinstance(key, str):
+        key = key.encode("utf-8")
+    return hmac.new(key, b"alert-controls-v1\0" + secret.encode("utf-8"), "sha256").hexdigest()
+
+
+def _controls_unlocked():
+    secret = _controls_secret()
+    grant = session.get("alert_controls_grant")
+    return bool(_alerts_unlocked() and secret.strip() and isinstance(grant, str)
+                and hmac.compare_digest(grant, _controls_stamp(secret)))
+
+
+def _controls_csrf():
+    if "alert_controls_csrf" not in session:
+        session["alert_controls_csrf"] = secrets.token_urlsafe(32)
+    return session["alert_controls_csrf"]
+
+
+def _controls_csrf_matches(supplied):
+    expected = session.get("alert_controls_csrf", "")
+    return bool(expected and hmac.compare_digest(expected.encode("utf-8"), supplied.encode("utf-8")))
+
+
+def _controls_unlock_page(error=None, status=200):
+    configured = bool(_controls_secret().strip())
+    return Response(render_template("alerts/unlock.html", heading="Alert controls",
+                    lead="Live alerts and simulations can change subscriptions and send real email. Enter the additional passphrase to continue.",
+                    form_action="/alerts/controls/unlock", next="/alerts/controls",
+                    passphrase_label="Additional passphrase", configured=configured,
+                    csrf=_controls_csrf() if configured else None, back_to_history=True,
+                    error=error), status=status if configured else 503,
+                    content_type="text/html; charset=utf-8",
+                    headers={"Cache-Control": "private, no-store", "X-Robots-Tag": "noindex, nofollow"})
+
+
+def _controls_page(inner_view):
+    # The ordinary Admin gate wraps this first, before either dashboard data or
+    # the extra-passphrase form is rendered.
+    def view(**kwargs):
+        if not _controls_unlocked():
+            return _controls_unlock_page()
+        response = make_response(inner_view(**kwargs))
+        response.headers["Cache-Control"] = "private, no-store"
+        response.headers["X-Robots-Tag"] = "noindex, nofollow"
+        return response
+    return view
+
+
+def _controls_api(inner_view):
+    def view(**kwargs):
+        if not _alerts_unlocked():
+            error, status = "Open Admin and enter the admin passphrase first.", 401
+        elif not _controls_unlocked():
+            error, status = "Unlock Alert controls before using these controls.", 403
+        elif request.method not in {"GET", "HEAD", "OPTIONS"} and not _controls_csrf_matches(request.headers.get("X-Alert-Controls-CSRF", "")):
+            error, status = "Reload Alert controls and try again.", 403
+        else:
+            response = make_response(inner_view(**kwargs))
+            response.headers["Cache-Control"] = "private, no-store"
+            return response
+        return Response(json.dumps({"ok": False, "error": error}), status=status,
+                        content_type="application/json", headers={"Cache-Control": "private, no-store"})
+    return view
+
+
+def _controls_unlock_submit():
+    if not _alerts_unlocked():
+        return _unlock_page("/alerts/controls", status=401)
+    if request.content_length is None or request.content_length > 4096:
+        abort(413)
+    if not _controls_csrf_matches(request.form.get("csrf", "")):
+        return _controls_unlock_page(error="Reload this page and try again.", status=403)
+    expected = _controls_secret()
+    supplied = request.form.get("passphrase", "")
+    if expected.strip() and hmac.compare_digest(supplied.encode("utf-8"), expected.encode("utf-8")):
+        session["alert_controls_grant"] = _controls_stamp(expected)
+        session.pop("alert_controls_csrf", None)
+        response = redirect("/alerts/controls", 303)
+        response.headers["Cache-Control"] = "private, no-store"
+        return response
+    session.pop("alert_controls_grant", None)
+    return _controls_unlock_page(error="That passphrase wasn't accepted. Try again or ask the coordinator.", status=401)
+
+
+def _controls_lock():
+    if not _alerts_unlocked():
+        return _unlock_page("/alerts", status=401)
+    if request.content_length is None or request.content_length > 4096:
+        abort(413)
+    if not _controls_csrf_matches(request.form.get("csrf", "")):
+        abort(403)
+    session.pop("alert_controls_grant", None)
+    session.pop("alert_controls_csrf", None)
+    response = redirect("/alerts", 303)
+    response.headers["Cache-Control"] = "private, no-store"
+    return response
 
 
 def _sop_photo(name):
@@ -301,6 +408,7 @@ def create_app():
     app.jinja_env.globals["NAV"] = nav_model()   # app/landing.py: the four sections of the shared top bar (_frame.html)
     app.jinja_env.globals["canonical_path"] = canonical_path   # /today and /index.html light the home page's tabs
     app.jinja_env.globals["asset"] = asset                     # app/assets.py: /static links stamped with their contents
+    app.jinja_env.globals["alert_controls_csrf"] = _controls_csrf
     app.after_request(cache_stamped_static)                    # …and a year-long cache only for a current stamp
     # Signs the session cookie that remembers an unlocked alerts gate. Without
     # FLASK_SECRET_KEY set, a random key is generated per boot — everything
@@ -310,6 +418,8 @@ def create_app():
     # Isolated, opt-in inbound email archive; no watcher or dispatch integration.
     from features.sfpuc_updates.routes import register as register_sfpuc_emails
     register_sfpuc_emails(app, _gated_page, _gated_api)
+    from features.alerts.email_archive import home as email_history_home, register as register_email_archive
+    register_email_archive(app, _gated_page)
 
     # Home: the root IS the Today page (2026-10-01) — served directly, no redirect; /today and
     # /index.html serve the same page (alert emails link /today), and its canonical tag names /
@@ -322,16 +432,20 @@ def create_app():
 
     # BWTF Sample Log
 
-    # Alerts page (passphrase-gated) + its GET/POST APIs
-    app.add_url_rule("/alerts", "alerts", _gated_page(_mixin_view("send_dashboard"), "/alerts"), methods=["GET"])
+    # Admin opens email history. The live dashboard sits behind both gates.
+    app.add_url_rule("/alerts", "alerts", _gated_page(email_history_home, "/alerts"), methods=["GET"])
     app.add_url_rule("/alerts/unlock", "alerts-unlock", _unlock_submit, methods=["POST"])
+    app.add_url_rule("/alerts/controls", "alert-controls",
+                     _gated_page(_controls_page(_mixin_view("send_dashboard")), "/alerts/controls"), methods=["GET"])
+    app.add_url_rule("/alerts/controls/unlock", "alert-controls-unlock", _controls_unlock_submit, methods=["POST"])
+    app.add_url_rule("/alerts/controls/lock", "alert-controls-lock", _controls_lock, methods=["POST"])
     for path, method_name in _ALERT_GET.items():
         view = _mixin_view(method_name)
-        if path in _GATED_API_GET:
-            view = _gated_api(view)
+        if path in _CONTROL_API_GET:
+            view = _controls_api(view)
         app.add_url_rule(path, f"alert-get:{path}", view, methods=["GET"])
     for path, method_name in _ALERT_POST.items():
-        app.add_url_rule(path, f"alert-post:{path}", _gated_api(_mixin_view(method_name)), methods=["POST"])
+        app.add_url_rule(path, f"alert-post:{path}", _controls_api(_mixin_view(method_name)), methods=["POST"])
     # Running costs: the alerts dashboard's third tab (features/alerts/costs.py), behind the same passphrase
     for path, handler in costs_page.GET_ROUTES.items():
         view = _gated_api(_forecast_view(handler)) if path.startswith("/alerts/api/") else _gated_page(_forecast_view(handler), path)

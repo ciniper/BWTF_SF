@@ -272,20 +272,21 @@ def build_replay_layer(now: Optional[datetime] = None, days: int = REPLAY_DAYS) 
 
 # ── routes ─────────────────────────────────────────────────────────────────────────────
 
-def render_page(ctx: dict) -> str:
+def render_page(ctx: dict, *, city_email_preview: bool = False) -> str:
     """The home page from a board_context: the Layers strip and the board. The three constants feed the board's
     "What the colors mean" key (2026-11-08), so the numbers there are the ones the layer and the grades use."""
-    return render_template("today/page.html", board=ctx["board"], generated=ctx["generated"], canonical=HOME_URL,
+    return render_template("today/page.html", board=ctx["board"], generated=ctx["generated"],
+                           canonical=None if city_email_preview else HOME_URL, city_email_preview=city_email_preview,
                            STALE_AFTER_DAYS=STALE_AFTER_DAYS, ENTERO_LIMIT=STANDARDS["ENTERO"]["single_sample_max"], ENTERO_CAUTION=ENTERO_CAUTION)
 
 
-def handle_page(query, body):
+def handle_page(query, body, *, city_email_preview: bool = False):
     sfpuc = SFPUCRealTimeAPI()
     try:   # no weather or tides (their pills moved to UI overflow), and only the facts the board reads
         ctx = board_context(sfpuc, None, fact_keys=BOARD_FACTS)
     except Exception as e:  # noqa: BLE001 — never blank the page on a flaky upstream
         return 500, "text/html; charset=utf-8", f"<!doctype html><meta charset='utf-8'><h1>Today</h1><pre>{e}</pre>".encode()
-    return 200, "text/html; charset=utf-8", render_page(ctx).encode()
+    return 200, "text/html; charset=utf-8", render_page(ctx, city_email_preview=city_email_preview).encode()
 
 
 def _layer_route(build: Callable[[], dict]):
