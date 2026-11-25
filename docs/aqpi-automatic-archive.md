@@ -135,22 +135,27 @@ Storage grows with distinct downloads; no automatic pruning is included. Measure
 actual compressed bytes per distinct run and daily new objects after activation
 before estimating retention cost. Monitor Storage quota and Actions usage.
 
-## Earlier combined-branch verification (2026-11-25)
+## Archive-only verification (2026-11-25)
 
-- 24 targeted tests pass (11 archive/recovery tests plus the Rain data and
-  sample-gap checks); the archive tests were rerun after the final CLI edit.
-- Local-only capture of both actual feeds passed validation: 96 and 168 observed
-  intervals, each with 100 forecast intervals. Every raw file was decompressed
-  and its SHA-256 matched the receipt. No cloud upload was performed.
-- Workflow YAML, immutable action pins, read-only repository permissions,
+- 12 archive/recovery tests pass in an isolated requests-only environment. The
+  import-isolation test confirms the collector loads no Flask, Admin module,
+  web app or application Supabase client.
+- Before the split, local-only capture of both actual feeds passed validation:
+  96 and 168 observed intervals, each with 100 forecast intervals. Every raw file
+  was decompressed and its SHA-256 matched the receipt. No cloud upload occurred.
+  The split changes module locations, not the capture or upload behavior.
+- Workflow command, immutable action pins, read-only repository permissions,
   main-only/opt-in activation guards and disabled `codex/` Vercel previews checked.
-- Full `scripts/check.sh`: **84 passed, 3 failed**, 87 test files, 559 seconds.
-  `test_city_email_preview.py` expects the retired `/alerts/api/sfpuc-updates`
-  route to return 401 rather than 404; the identical failure was reproduced in
-  an untouched `origin/main` (`5235090`) source copy. `test_stages_build.py` and
-  `test_stages_s1.py` retain the existing forecast source/artifact hash mismatch.
-  All forecast files match the base branch; `test_served_golden.py` passes.
-  These baseline failures are reported, not bypassed or silently repaired here.
+  The archive branch's web app and Admin files match main exactly.
+- Both independent branches include the same shared parser; Git's merge-tree
+  simulation combines them without conflicts. Neither PR depends on the other.
+- Full `scripts/check.sh` against main `ff73636`: **84 passed, 3 failed**, 87 test
+  files, 594 seconds. `test_city_email_preview.py` expects the retired
+  `/alerts/api/sfpuc-updates` route to return 401 rather than 404.
+  `test_stages_build.py` and `test_stages_s1.py` report the existing
+  `features/forecast/live_dashboard.py` source/artifact hash mismatch. These are
+  the same failures seen before the split; forecast files match main and
+  `test_served_golden.py` passes. This is not a fully green suite.
 
 ## References
 
