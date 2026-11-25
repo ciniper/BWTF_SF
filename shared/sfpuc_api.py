@@ -18,7 +18,8 @@ Status logic mirrors the SFPUC public map:
 - otherwise `posted` with `p_color` R/G means posted, including `s_color == W`
 - `s_color == W` without that posting means not routinely sampled
 - otherwise the station defaults to safe/green
-- a populated `cso` field indicates the map should show the CSO icon
+- a populated `cso` field indicates a CSO icon; cso_mapping resolves the
+  confirmed Aquatic Park carrier / Dogpatch location exception
 """
 
 import json
@@ -37,6 +38,7 @@ if __package__ in (None, ""):
 from shared.stations import STATIONS
 from shared.outfalls import OUTFALLS, STATION_OUTFALLS
 from shared.clock import now_pacific, now_pacific_naive, utc_iso
+from shared.cso_mapping import effective_cso, dogpatch_active, DOGPATCH_NOTE
 
 
 # ─── CSO Outfall-to-Beach Mapping ────────────────────────────────────────────
@@ -111,6 +113,8 @@ class SFPUCStation:
     cso_color: Optional[str]
     drainage_basin: Optional[str] = None
     cso_outfalls: List[str] = field(default_factory=list)
+    raw_cso_station_id: Optional[str] = None  # original carrier value, before attribution
+    cso_note: str = ""
 
 
 @dataclass 
@@ -201,11 +205,12 @@ class SFPUCRealTimeAPI:
     
     def _detect_cso(self, item: dict) -> bool:
         """
-        Detect if a station has an active CSO event.
+        Detect a raw feed flag (before cross-station attribution).
         
         The SFPUC map draws the CSO icon whenever the `cso` field is populated.
         
         The red triangle on the SFPUC map indicates CSO within last 24-72 hours.
+        fetch_stations uses effective_cso with the full payload for #44.
         """
         return bool(item.get("cso"))
     
@@ -256,10 +261,12 @@ class SFPUCRealTimeAPI:
             return []
         
         stations = []
+        dogpatch = dogpatch_active(data)
         for item in data:
             try:
                 # Determine if there's an active CSO
-                has_cso = self._detect_cso(item)
+                mapped_cso = effective_cso(item, data)
+                has_cso = bool(mapped_cso)
                 station_name = item.get("stationname", "")
                 
                 station = SFPUCStation(
@@ -267,7 +274,7 @@ class SFPUCRealTimeAPI:
                     station_name=station_name,
                     status=self._parse_station_status(item),
                     has_cso=has_cso,
-                    cso_station_id=item.get("cso"),
+                    cso_station_id=mapped_cso,
                     posted_station_id=item.get("posted"),
                     sample_date=self._parse_date(item.get("sample_date")),
                     latitude=float(item.get("lat", 0)),
@@ -275,7 +282,9 @@ class SFPUCRealTimeAPI:
                     raw_color=item.get("p_color"),
                     cso_color=item.get("s_color"),
                     drainage_basin=self._get_drainage_basin(station_name),
-                    cso_outfalls=self._get_cso_outfalls(station_name)
+                    cso_outfalls=self._get_cso_outfalls(station_name),
+                    raw_cso_station_id=item.get("cso"),
+                    cso_note=DOGPATCH_NOTE if str(item.get("stationid")) == "4620" and dogpatch else "",
                 )
                 stations.append(station)
             except (ValueError, TypeError) as e:

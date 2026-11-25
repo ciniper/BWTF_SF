@@ -457,7 +457,7 @@ function initMap() {
     const m = L.circleMarker([s.lat, s.lon], {pane: "st" + (RANK[s.status] || 0), radius: dotR(s.status), color: "#fff", weight: 2, fillColor: COL[s.status] || COL.unknown, fillOpacity: .95, bubblingMouseEvents: false}).addTo(MAP);
     m.__s = s; m.__z = z; ALL_ORDERED.push(m);   // the layers recolour markers by zone risk or by a replayed day; focusZone re-adds them in this order
     const sampleDetail = !bad && s.sampled ? " · " + s.sampled_text + " (" + s.sampled + ")" : "";
-    m.bindTooltip(s.full_name + " · " + s.status_text + sampleDetail, {direction: "right", offset: [9, 0], className: "st-label"});   // on hover; posted labels use refreshLabels
+    m.bindTooltip(s.full_name + " · " + s.status_text + sampleDetail + (s.cso_note ? "<br>" + s.cso_note : ""), {direction: "right", offset: [9, 0], className: "st-label"});   // on hover; posted labels use refreshLabels
     m.on("click", () => openSample(s));
     (MARKERS[z.key] = MARKERS[z.key] || []).push(m);
   }
