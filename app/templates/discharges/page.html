@@ -70,14 +70,15 @@
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
 {{ topbar() }}
 <div class="wrap">
-  {% call page_head("Discharge Ledger", "Every combined-sewer discharge SFPUC reported to state regulators since 2011: outfall, duration and volume.", "record", link=("/records#discharges", "How we get these records")) %}
+  {% call page_head("Discharge Ledger", "Every combined-sewer discharge SFPUC reported to state regulators since 2004: outfall, duration and volume.", "record", link=("/records#discharges", "How we get these records")) %}
     
     <p>Every combined-sewer discharge into San Francisco waters that SFPUC reported to state
     regulators — outfall, start, duration, and volume — extracted from monthly self-monitoring
     reports filed under the city's two sewer permits. This is the official record of what was
     actually discharged, alongside our real-time detections (<a href="/cso-history">SFPUC Alerts Timeline</a>)
     the bacteria outcomes (<a href="/analysis">Site Report Card</a>) and the signs the public saw (<a href="/postings">Beach Postings</a>).</p>
-    <p>The record goes back to March 2011. Until 2016–2018 the city filed daily totals instead of single events, and the
+    <p>The record goes back to July 2004. Reports before March 2011 come from a public records request and many months
+    are missing, so those years are incomplete. Until 2016–2018 the city filed daily totals instead of single events, and the
     Bay side reported no volumes, so older years count differently. <a href="/discharges/reporting">How reporting changed, and how we check it</a></p>
   {% endcall %}
 
@@ -90,9 +91,9 @@
 
   <div class="controls">
     <span class="ctl-label">Range:</span>
-    <input type="date" id="startDate" min="2011-03-01">
+    <input type="date" id="startDate" min="2004-07-01">
     <span style="color:#54576F">→</span>
-    <input type="date" id="endDate" min="2011-03-01">
+    <input type="date" id="endDate" min="2004-07-01">
     <button class="group-btn preset" data-years="1">1 year</button>
     <button class="group-btn preset" data-years="3">3 years</button>
     <button class="group-btn preset" data-years="5">5 years</button>
@@ -143,7 +144,8 @@
     </div>
     <div class="chart-wrap"><canvas id="chart"></canvas></div>
     <p style="font-size:12px;color:#8a949b;margin:8px 0 0">Years without volumes are left out, not drawn as zero: Bay outfalls
-    have no volumes before Oct 2016, and 2016 itself is partial. Records start March 2011.</p>
+    have no volumes before Oct 2016, and 2016 itself is partial. Pacific volumes are plotted from March 2011: the years
+    before that are missing too many months.</p>
   </div>
 
   <div class="board">
@@ -160,6 +162,8 @@
         <button class="seg-btn active" data-set="events" data-file="sf_csd_events.csv">Events, 2016 on</button>
         <button class="seg-btn" data-set="westside" data-file="westside_daily_2011-03_2017-12.csv">Pacific daily, 2011–2017</button>
         <button class="seg-btn" data-set="bayside" data-file="bayside_legacy_2011-03_2016-09.csv">Bay daily, 2011–2016</button>
+        <button class="seg-btn" data-set="west2008" data-file="westside_daily_2008-01_2010-02.csv">Pacific daily, 2008–2010</button>
+        <button class="seg-btn" data-set="bay2004" data-file="bayside_daily_2004-07_2006-08.csv">Bay daily, 2004–2006</button>
       </div>
       <input type="search" id="rawSearch" placeholder="Filter (outfall, water, date, document…)">
       <span class="legend" id="rawMeta"></span>
@@ -202,7 +206,8 @@ function render() {
   const R = rows();
   const totMG = R.reduce((a,e) => a + (e.mg||0), 0);
   const years = {};
-  for (const e of R) { const y = e.date.slice(0,4); (years[y] ??= {n:0, mg:0, g:0, be:0}).n++; years[y].mg += e.mg||0;
+  for (const e of R) { const y = e.date.slice(0,4); (years[y] ??= {n:0, mg:0, g:0, be:0, v:0}).n++; years[y].mg += e.mg||0;
+    if (e.mg != null) years[y].v++;
     if (e.kind === "G") years[y].g++; else if (e.fac === "Bayside") years[y].be++; }
   const groupRows = R.filter(e => e.kind === "G").length;
 
@@ -211,7 +216,7 @@ function render() {
   const wettest = Object.entries(years).sort((a,b)=>b[1].mg-a[1].mg)[0];
   document.getElementById("tiles").innerHTML = `
     <div class="tile"><b>${MG(totMG)}</b><span>total reported volume${STATE.water?" — "+STATE.water:""}${groupRows?" (Bay volumes before Oct 2016 not reported)":""}</span></div>
-    <div class="tile"><b>${R.length.toLocaleString()}</b><span>discharges logged${R.some(e => e.kind !== "E")?" (daily totals before 2016–2018)":""}</span></div>
+    <div class="tile"><b>${R.length.toLocaleString()}</b><span>discharges logged${R.some(e => e.kind !== "E")?" (daily totals before 2016–2018)":""}${rangeMissing(STATE.water) ? ", some months missing" : ""}</span></div>
     <div class="tile"><b>${MGshort(biggest.mg)}</b><span>largest single discharge (${biggest.date||"—"}${biggest.kind === "D" ? ", a day's total" : ""})</span></div>
     <div class="tile"><b>${wettest?wettest[0]:"—"}</b><span>biggest year in range (${wettest?MGshort(wettest[1].mg):"—"})</span></div>`;
 
@@ -219,11 +224,16 @@ function render() {
   const maxMG = Math.max(...Object.values(years).map(y=>y.mg), 1);
   const el = document.getElementById("years");
   el.className = "";
+  // every year in the range, so a year with no rows shows up instead of vanishing
+  const ya = +(STATE.start || COV.first).slice(0,4), yb = +(STATE.end || COV.through).slice(0,4);
+  for (let y = ya; y <= yb; y++) years[y] ??= {n:0, mg:0, g:0, be:0, v:0};
   el.innerHTML = Object.keys(years).sort().map(y => {
-    const partial = partialYear(y, STATE.water);
+    const partial = partialYear(y, STATE.water), miss = missingText(y, STATE.water), Y = years[y];
+    const head = !Y.n ? (eraMonths(y) && facsFor(STATE.water).every(f => missingIn(y, f) === eraMonths(y)) ? "no reports" : "no discharges")
+      : (!Y.v ? "no volumes" : MGshort(Y.mg)) + " · " + Y.n;
     return `<div class="yrrow"><span class="yl">${y}</span>
-      <span class="track"><span class="vol${partial?" partial":""}" style="width:${Math.max(1,100*years[y].mg/maxMG)}%"></span></span>
-      <span class="val">${years[y].g === years[y].n ? "no volumes" : MGshort(years[y].mg)} · ${years[y].n}${years[y].g && years[y].g < years[y].n ? (years[y].be ? " · Bay volumes partial" : " · Bay volumes not reported") : ""}</span></div>`;
+      <span class="track"><span class="vol${partial?" partial":""}" style="width:${Y.n ? Math.max(1,100*Y.mg/maxMG) : 0}%"></span></span>
+      <span class="val">${head}${Y.g && Y.g < Y.n ? (Y.be ? " · Bay volumes partial" : " · Bay volumes not reported") : ""}${miss ? " · " + miss : ""}</span></div>`;
   }).join("") || '<div class="loading">No discharges in the selected range.</div>';
 
   // by receiving water — date-filtered, all waters shown, active filter highlighted
@@ -264,7 +274,7 @@ function render() {
     <tr><td class="num">${e.date}${e.kind === "D" ? ' <span style="color:#8a949b;font-size:12px">day total</span>' : ""}</td><td class="name">${e.oid} — ${e.oname}</td><td>${e.water}</td>
     <td class="num">${MGshort(e.mg)}</td><td class="num">${DUR(e.dur)}</td></tr>`).join("");
 
-  const rangeTxt = (STATE.start || COV.bayside_from) + " → " + (STATE.end || COV.through);
+  const rangeTxt = (STATE.start || COV.first) + " → " + (STATE.end || COV.through);
   document.getElementById("metaLine").textContent =
     `${R.length.toLocaleString()} of ${EV.length.toLocaleString()} discharges shown · ${rangeTxt}`;
   updateChart();
@@ -482,12 +492,33 @@ function partialYear(y, water) {
   });
 }
 
+// Months of the records-request era (Jul 2004 – Feb 2011) with no table read, per
+// system (server: coverage.missing). A missing month is never shown as a dry one.
+const facsFor = water => !water ? ["Bayside", "Oceanside"] : water === "Pacific Ocean" ? ["Oceanside"] : ["Bayside"];
+const NAME = {Bayside: "Bay", Oceanside: "Pacific"};
+function missingIn(y, fac) { y = String(y); return ((COV.missing || {})[fac] || []).filter(m => m.slice(0, 4) === y).length; }
+function eraMonths(y) {             // months of year y inside the records-request era (Jul 2004 – Feb 2011)
+  const a = Math.max(+y * 12, +COV.first.slice(0, 4) * 12 + +COV.first.slice(5) - 1);
+  const b = Math.min(+y * 12 + 11, +COV.online_from.slice(0, 4) * 12 + +COV.online_from.slice(5) - 2);
+  return Math.max(0, b - a + 1);
+}
+function missingText(y, water) {
+  const parts = facsFor(water).map(f => [f, missingIn(y, f)]).filter(([, n]) => n);
+  if (!parts.length) return "";
+  if (parts.length === 1 && facsFor(water).length === 1) return parts[0][1] + (parts[0][1] === 1 ? " month" : " months") + " missing";
+  return "months missing: " + parts.map(([f, n]) => NAME[f] + " " + n).join(", ");
+}
+function rangeMissing(water) {
+  return facsFor(water).some(f => ((COV.missing || {})[f] || []).some(m =>
+    (!STATE.start || m >= STATE.start.slice(0, 7)) && (!STATE.end || m <= STATE.end.slice(0, 7))));
+}
+
 async function load() {
   const d = await (await fetch("/discharges/api/events")).json();
   if (d.error) { document.getElementById("years").textContent = d.error; return; }
   const [DATE,FAC,OID,ONAME,WATER,DUR_,MG_,KIND] = [0,1,2,3,4,5,6,7];
   // E = one outfall's event (Oct 2016 Bay / Jan 2018 Pacific on); D = a Pacific outfall's day total;
-  // G = a Bay outfall group's day, hours only (NOTES.md in data/csd/pre2018)
+  // G = a Bay outfall group's day, hours only (NOTES.md in data/csd/pre2018 and pre2011)
   EV = d.events.map(r => ({date:r[DATE], fac:r[FAC], oid:r[OID], oname:r[ONAME], water:r[WATER], dur:r[DUR_], mg:r[MG_], kind:"E"}))
     .concat((d.older || []).map(r => ({date:r[DATE], fac:r[FAC], oid:r[OID], oname:r[ONAME], water:r[WATER], dur:r[DUR_], mg:r[MG_], kind:r[KIND]})));
   COV = d.coverage;

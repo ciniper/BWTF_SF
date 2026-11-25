@@ -209,6 +209,14 @@ def registry(include_supabase: bool = True) -> dict:
             stored="features/forecast/data/csd/ (events + monthly coverage grid; daily totals 2011-2017 in pre2018/); the source PDFs in the chapter's data archive",
             used_by=["Discharge Ledger", "CSO Forecast (training labels, Model check: events only)", "analysis reports"],
             note="per-event tables from Oct 2016 (Bayside) and Jan 2018 (Oceanside); daily totals before that, back to Mar 2011"))
+        pre_lo = _csv_span(dp.BAY_2004, "date")[0]
+        pre_hi = max(_csv_span(dp.BAY_2004, "date")[1] or "", _csv_span(dp.WEST_2008, "event_date")[1] or "")
+        tiles["state"].append(_entry(
+            "SFPUC records request, 2004–2010", "older monthly discharge reports SFPUC sent a chapter volunteer: Bay Jul 2004 – Aug 2006, Pacific some months of 2006–2010",
+            "repo file", first=pre_lo, last=pre_hi, cadence="once (a follow-up request could fill the gaps)",
+            stored="features/forecast/data/csd/pre2011/ (daily totals + monthly coverage); the source PDFs in the chapter's data archive",
+            used_by=["Discharge Ledger"],
+            note="many months missing, every Pacific October to December among them; see /discharges/reporting"))
     except Exception:  # noqa: BLE001
         pass
     try:

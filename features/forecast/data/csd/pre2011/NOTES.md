@@ -3,7 +3,7 @@
 Added 2026-11-01. Kyle got these from SFPUC (zip "CSD History Jan 2000-2018", 99 PDFs). Despite
 the name, nothing in it predates July 2004. The originals are in the chapter's data archive,
 `~/Personal/BWTF_Data_Archive/07_kyle_csd_records_2004-2010/` (manifest with sha256 there).
-**Nothing here is read by the site or the forecast yet.**
+**The Discharge Ledger shows these (2026-11-10)**: `features/discharges/page.py` loads both daily files as older rows (kinds D and G, as for `../pre2018/`) and reads `monthly_coverage_2004-2011.csv` for the missing months. A month counts as covered when its table was read or SFPUC's count is zero; every other month is listed as missing, so the page never shows it as dry. **The forecast doesn't read them.**
 
 ## What is in the zip
 

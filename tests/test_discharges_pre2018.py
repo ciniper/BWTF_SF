@@ -92,28 +92,50 @@ def test_ledger_payload_carries_the_older_rows_with_their_kind():
     from features.discharges import page
     d = page._load()
     assert d["older_columns"][-1] == "kind" and {r[7] for r in d["older"]} == {"D", "G"}
-    assert min(r[0] for r in d["older"]) == "2011-03-18"
+    assert min(r[0] for r in d["older"]) == "2004-10-19"                    # the records request's first Bay discharge
+    assert min(r[0] for r in d["older"] if r[1] == "Oceanside") == "2008-01-04"
     assert all(r[6] is None for r in d["older"] if r[7] == "G")             # no Bay volumes before Oct 2016
     cov = d["coverage"]
-    assert cov["first"] == "2011-03" and cov["volume_from"] == {"Bayside": "2016-10", "Oceanside": "2011-03"}
-    assert "Mar 2011" in cov["note"]
+    assert cov["first"] == "2004-07" and cov["online_from"] == "2011-03"
+    assert cov["volume_from"] == {"Bayside": "2016-10", "Oceanside": "2011-03"}
+    assert "Jul 2004" in cov["note"] and "Mar 2011" in cov["note"] and "never October to December" in cov["note"]
     for s in ("events", "westside", "bayside"):
         status, ctype, body = page.handle_csv({"set": [s]}, b"")
         assert status == 200 and ctype.startswith("text/csv") and body.count(b"\n") > 100, s
+    for s in ("west2008", "bay2004"):
+        status, ctype, body = page.handle_csv({"set": [s]}, b"")
+        assert status == 200 and ctype.startswith("text/csv") and body.count(b"\n") > 20, s
     assert page.handle_csv({"set": ["nope"]}, b"")[0] == 400
+
+
+def test_records_request_months_are_missing_not_dry():
+    """A month of the records-request era with no table read must be listed as
+    missing, so the ledger never shows it as a month without discharges."""
+    from features.discharges import page
+    miss = page._coverage()["missing"]
+    assert "2005-12" in miss["Bayside"]                                    # counts known (2 / 6 / 2), no report
+    assert "2006-09" in miss["Bayside"] and "2011-02" in miss["Bayside"] and "2006-08" not in miss["Bayside"]
+    assert all(f"{y}-{m}" in miss["Oceanside"] for y in range(2004, 2011) for m in ("10", "11", "12"))
+    assert "2004-12" in miss["Oceanside"]                                  # SFPUC counted 4, no table
+    assert "2008-01" not in miss["Oceanside"] and "2010-07" not in miss["Oceanside"]   # table read; stated zero
+    older = page._load()["older"]
+    for fac, ms in miss.items():                                           # no row ever falls in a missing month
+        assert not [r for r in older if r[1] == fac and r[0][:7] in ms], fac
 
 
 def test_ledger_and_reporting_pages_render_and_link():
     from app.wsgi import app
     c = app.test_client()
     ledger = c.get("/discharges").data.decode()
-    assert 'href="/discharges/reporting"' in ledger and 'min="2011-03-01"' in ledger and 'id="rawSet"' in ledger
+    assert 'href="/discharges/reporting"' in ledger and 'min="2004-07-01"' in ledger and 'data-set="bay2004"' in ledger and 'id="rawSet"' in ledger
     rep = c.get("/discharges/reporting").data.decode()
     q = json.load(open(PRE / "qc_summary.json"))
     assert "How discharge reporting changed" in rep and 'href="/discharges"' in rep
     assert f"{q['counts']['westside']['agree']} of {q['counts']['westside']['months']} months" in rep
     assert f"{q['rain']['westside']['with_rain']} of {q['rain']['westside']['discharge_days']}" in rep
     for gap in ("Sep 2011", "Feb 2012", "Dec 2012", "Aug 2015", "Sep 2016"):
+        assert gap in rep, gap
+    for gap in ("Dec 2005", "Sep 2006 – Feb 2011", "Oct 2006 – Dec 2006", "Jul 2004 – Nov 2005"):   # the records-request years
         assert gap in rep, gap
 
 

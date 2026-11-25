@@ -39,7 +39,7 @@
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
 {{ topbar() }}
 <div class="wrap">
-  {% call page_head("How discharge reporting changed", "What SFPUC filed from 2011 to now, where the record is uneven, and how we check it.", "record", link=("/discharges", "Back to the Discharge Ledger")) %}
+  {% call page_head("How discharge reporting changed", "What SFPUC filed from 2004 to now, where the record is uneven, and how we check it.", "record", link=("/discharges", "Back to the Discharge Ledger")) %}
     <p>The Discharge Ledger joins three kinds of report. They don't all measure the same thing, so a 2013 figure and a
     2023 figure aren't always comparable. This page lists every difference we know of, then how the older records are checked.</p>
   {% endcall %}
@@ -58,7 +58,10 @@
     <div class="tblwrap"><table>
       <thead><tr><th>Period</th><th>Pacific outfalls</th><th>Bay outfalls</th></tr></thead>
       <tbody>
-        <tr><td class="when">Before Mar 2011</td><td>Nothing filed online</td><td>Nothing filed online</td></tr>
+        <tr><td class="when">Before Jul 2004</td><td>Nothing yet</td><td>Nothing yet</td></tr>
+        <tr><td class="when">Jul 2004 – Feb 2011</td><td>From a records request. Each outfall, each day: hours, and volume from Feb 2009.
+          Only {{ pre2011.Oceanside.n_have }} of {{ pre2011.Oceanside.n }} months.</td><td>From a records request. Groups of outfalls, each day:
+          hours and number of discharges. No volumes. {{ pre2011.Bayside.have|join(", ") }} only.</td></tr>
         <tr><td class="when">Mar 2011 – Sep 2016</td><td>Each outfall, each day: hours and volume</td><td>Groups of outfalls, each day: hours and number of discharges. No volumes.</td></tr>
         <tr><td class="when">Oct 2016 – Dec 2017</td><td>Each outfall, each day: hours and volume</td><td>Each outfall, each discharge: start time, duration and volume</td></tr>
         <tr><td class="when">Jan 2018 on</td><td>Each outfall, each discharge: start time, duration and volume</td><td>Each outfall, each discharge: start time, duration and volume</td></tr>
@@ -78,6 +81,17 @@
     <h2>Where the record is uneven</h2>
     <p class="rec-sub">Read from SFPUC's own filings, its annual reports, and other public records.</p>
 
+    <h3>Missing months, Jul 2004 – Feb 2011</h3>
+    <p>These reports came from SFPUC through a public records request by a chapter volunteer in 2026, not from
+    the state's database. SFPUC sent only some months. A month counts as covered when its table was read, or SFPUC's
+    own count for it is zero.</p>
+    <ul class="plain">
+      <li><b>Pacific side, missing:</b> {{ pre2011.Oceanside.missing|join(", ") }}. These include every October to December, the
+        start of the rainy season.</li>
+      <li><b>Bay side, missing:</b> {{ pre2011.Bayside.missing|join(", ") }}.</li>
+      <li><b>Oct 2004:</b> the Bay table puts a Mariposa discharge on 19 Oct; the report's narrative says it was 26 Oct. The ledger keeps the table's date.</li>
+      <li><b>Jan – Mar 2006:</b> the Bay table prints a 5.9-hour Sunnydale total three months running with no discharges behind it.</li>
+    </ul>
     <h3>Missing or partial months, Pacific side</h3>
     <ul class="plain">
       {% for g in west_gaps %}<li><b>{{ g.month }}:</b> {{ g.note }}{% if g.status == "basin_days_esmr" %}. The ledger uses the state's tabular data for that month's five discharge days, which gives a daily total for the whole basin.{% endif %}</li>{% endfor %}
@@ -180,8 +194,11 @@
       <li><a href="/discharges/api/csv?set=events" download="sf_csd_events.csv">Events, Oct 2016 on</a></li>
       <li><a href="/discharges/api/csv?set=westside" download="westside_daily_2011-03_2017-12.csv">Pacific daily totals, Mar 2011 – Dec 2017</a></li>
       <li><a href="/discharges/api/csv?set=bayside" download="bayside_legacy_2011-03_2016-09.csv">Bay daily totals, Mar 2011 – Sep 2016</a></li>
+      <li><a href="/discharges/api/csv?set=west2008" download="westside_daily_2008-01_2010-02.csv">Pacific daily totals, Jan 2008 – Feb 2010 (records request)</a></li>
+      <li><a href="/discharges/api/csv?set=bay2004" download="bayside_daily_2004-07_2006-08.csv">Bay daily totals, Jul 2004 – Aug 2006 (records request)</a></li>
       <li>Every transcription, page reference and check is in <code>features/forecast/data/csd/pre2018/</code>; the scripts are
-        <code>build_pre2018.py</code> and <code>qc_pre2018.py</code> beside the CIWQS scraper.</li>
+        <code>build_pre2018.py</code> and <code>qc_pre2018.py</code> beside the CIWQS scraper. The records-request years are in
+        <code>features/forecast/data/csd/pre2011/</code>, built by <code>csd_pre2011/build_pre2011.py</code>.</li>
     </ul>
   </section>
 

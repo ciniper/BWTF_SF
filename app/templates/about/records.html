@@ -68,7 +68,7 @@
       <div class="fact"><span>Published by</span><b>SFPUC, filed with the SF Bay Regional Water Board</b></div>
       <div class="fact"><span>Where</span><b>CIWQS (state water-quality database)</b></div>
       <div class="fact"><span>Format</span><b>Monthly PDF reports</b></div>
-      <div class="fact"><span>Covers</span><b>Mar 2011 → {{ d.through or "today" }}<br><span class="fine">single events from Oct 2016 (Bayside) and Jan 2018 (Westside), daily totals before</span></b></div>
+      <div class="fact"><span>Covers</span><b>Jul 2004 → {{ d.through or "today" }}<br><span class="fine">online from Mar 2011, earlier years from a records request with many months missing; single events from Oct 2016 (Bayside) and Jan 2018 (Westside), daily totals before</span></b></div>
       {% if d.refreshed_at %}<div class="fact"><span>Last refreshed</span><b>{{ d.refreshed_at }}</b></div>{% endif %}
       {% if d.next_due %}<div class="fact{% if d.overdue %} due{% endif %}"><span>{% if d.overdue %}Refresh overdue since{% else %}Next refresh due{% endif %}</span><b>{{ d.next_due }}</b></div>{% endif %}
     </div>
@@ -118,7 +118,7 @@ python aggregate.py                   # 5. clean, check totals, build the CSVs</
       report 4–6 weeks after the month ends, so the most recent month or two are never there yet.</p>
 
     <div class="callout"><svg class="ic"><use href="#i-circle-alert"/></svg><div><b>Known gaps.</b> Nothing is online
-      before Mar 2011. Before Jan 2018 the Westside filed daily totals per outfall, with no start times, and before Oct 2016
+      before Mar 2011. Reports from Jul 2004 to Feb 2011 came from a records request, and many of their months are missing. Before Jan 2018 the Westside filed daily totals per outfall, with no start times, and before Oct 2016
       Bayside filed hours per group of outfalls, with no volumes. Every difference is on
       <a href="/discharges/reporting">How discharge reporting changed</a>; the missing details may exist at SFPUC (see
       <a href="#requests">records that aren't public</a>). Don't use the state's data.ca.gov eSMR export to find reports:
