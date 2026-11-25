@@ -5,6 +5,18 @@ secrets, enable a job, deploy the web app, or change any model or alert input.
 Merge and activation each require the user's explicit approval. Do not bypass
 required reviews/checks or use admin merge privileges.
 
+## Independent archive proposal
+
+This PR contains only the collector, its shared CSV parser, tests, and a disabled
+workflow proposal. It does not add or change the Admin viewer. The collector runs
+without Flask or any Admin module; both features may use `shared/aqpi.py` without
+importing one another. Each PR targets main independently.
+
+The viewer can read public feeds with no archive storage or credentials. Storage
+and a scheduler are needed only to preserve history automatically. GitHub Actions
+and Supabase Storage below are the current proposal; the scheduler decision
+remains open for review. No hosted configuration has been changed.
+
 ## What is captured
 
 `.github/workflows/aqpi-archive.yml` proposes runs at :07 and :37 UTC every hour.
@@ -101,7 +113,7 @@ Install `scripts/requirements-aqpi-archive.txt` in an isolated Python environmen
 No `.env` is loaded; default operation has no remote writes:
 
 ```bash
-python -m features.alerts.aqpi_archive --output /tmp/aqpi-capture
+python -m features.aqpi_archive.collector --output /tmp/aqpi-capture
 python -m unittest discover -s tests -p test_aqpi_archive.py
 ```
 
@@ -110,21 +122,20 @@ artifact. Supply the archive environment secrets through your normal secure
 environment mechanism, then replay (no provider requests):
 
 ```bash
-python -m features.alerts.aqpi_archive --output /path/to/extracted-spool --replay --upload
+python -m features.aqpi_archive.collector --output /path/to/extracted-spool --replay --upload
 ```
 
 Successful replay means bytes and receipts are stored; it does not mean that an
 originally invalid/stale CSV became valid. Inspect the original receipt warnings.
 For analysis, deduplicate observations by product, coordinate and interval end;
 keep forecast issue time separate from valid time. Never join by CSV row number.
-The original archive calendar in Admin remains a dated inventory, not this new
-collector's coverage report.
+The collector exposes no web routes and does not supply the viewer's cache.
 
 Storage grows with distinct downloads; no automatic pruning is included. Measure
 actual compressed bytes per distinct run and daily new objects after activation
 before estimating retention cost. Monitor Storage quota and Actions usage.
 
-## PR verification (2026-11-25)
+## Earlier combined-branch verification (2026-11-25)
 
 - 24 targeted tests pass (11 archive/recovery tests plus the Rain data and
   sample-gap checks); the archive tests were rerun after the final CLI edit.

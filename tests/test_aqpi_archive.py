@@ -6,12 +6,13 @@ import io
 import json
 from pathlib import Path
 import sys
+import subprocess
 from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from features.alerts import aqpi_archive as archive
+from features.aqpi_archive import collector as archive
 
 
 def fixture(feed='surfrider', end=None):
@@ -75,6 +76,19 @@ class FakeStorage:
 
 
 class ArchiveTests(unittest.TestCase):
+    def test_collector_import_does_not_load_web_app_or_credentials(self):
+        # A fresh process catches package initialization as well as direct imports.
+        result = subprocess.run(
+            [sys.executable, '-c',
+             "import sys; from features.aqpi_archive import collector; "
+             "assert not any(name == 'flask' or name.startswith('flask.') "
+             "or name == 'app' or name.startswith('app.') "
+             "or name == 'features.alerts' or name.startswith('features.alerts.') "
+             "or name == 'shared.supabase' for name in sys.modules)"],
+            cwd=Path(__file__).resolve().parents[1], capture_output=True, text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def setUp(self):
         self.temp = TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)

@@ -35,7 +35,7 @@ jobs:
           AQPI_ARCHIVE_SUPABASE_URL: ${{ secrets.AQPI_ARCHIVE_SUPABASE_URL }}
           AQPI_ARCHIVE_SUPABASE_KEY: ${{ secrets.AQPI_ARCHIVE_SUPABASE_KEY }}
           AQPI_ARCHIVE_BUCKET: aqpi-archive
-        run: python -m features.alerts.aqpi_archive --output "$RUNNER_TEMP/aqpi-archive" --upload
+        run: python -m features.aqpi_archive.collector --output "$RUNNER_TEMP/aqpi-archive" --upload
       - name: Preserve recovery spool after failure
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

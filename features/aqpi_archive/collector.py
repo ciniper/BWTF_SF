@@ -22,7 +22,7 @@ from uuid import uuid4
 
 import requests
 
-from features.alerts.aqpi import SOURCES, parse_feed
+from shared.aqpi import SOURCES, parse_feed
 
 MAX_BYTES = 40 * 1024 * 1024
 MAX_STORED_BYTES = MAX_BYTES + 1024 * 1024
