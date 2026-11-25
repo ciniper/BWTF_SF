@@ -58,8 +58,9 @@ env vars below → Deploy. Pushes to `main` then auto-deploy (same as Railway).
 |-----|-----|
 | `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` | Everything stateful lives in Supabase |
 | `FLASK_SECRET_KEY` | **Required here** (any long random string): serverless instances each generate a random key otherwise, so the alerts passphrase cookie would bounce between instances |
-| `BREVO_API_KEY`, `ALERT_FROM_EMAIL` | Only for manual sends from the /alerts simulator — automatic alerts are dispatched by Postgres, not the web app |
+| `BREVO_API_KEY`, `ALERT_FROM_EMAIL` | Only for manual sends from Alert controls — automatic alerts are dispatched by Postgres, not the web app |
 | `ADMIN_DASHBOARD_PASSPHRASE` | Required for new Admin logins; store a strong, unique value as type **Secret** |
+| `ADMIN_ALERT_CONTROLS_PASSPHRASE` | Additional passphrase for Live, Alerts simulation, and their action APIs; type **Secret**, distinct from the Admin passphrase |
 | `ALERT_FROM_NAME` | Optional sender-name override, same as Railway |
 
 `ADMIN_DASHBOARD_PASSPHRASE` replaces `ALERTS_PASSPHRASE`; the old variable is no
@@ -70,8 +71,26 @@ access is needed. Missing, empty, or whitespace-only values reject all new login
 public pages still work. For local development, export the variable or put it in
 the gitignored `.env` file read by this Flask app.
 
-The session cookie format and `FLASK_SECRET_KEY` are unchanged, so existing signed
-sessions stay valid. Changing the passphrase alone does not sign everyone out.
+Existing signed Admin sessions stay valid. Changing the ordinary Admin
+passphrase alone does not sign everyone out.
+
+Admin now opens **Email history**. **Alert controls** (`/alerts/controls`) requires
+the Admin login plus `ADMIN_ALERT_CONTROLS_PASSPHRASE` before loading Live or
+Alerts simulation. Add the new variable as a Vercel **Secret**, scoped to
+**Preview → `codex/admin-email-viewer`** for this PR. Set a Production value before
+merging/deploying to main. A deployment must be created after setting the variable
+to use it; creating the secret does not update an already deployed preview.
+
+The additional passphrase is case-sensitive, has no default or fallback, and
+rejects missing, empty, or whitespace-only configuration. Email history and
+BWTF email analysis still work with the ordinary Admin login when controls are
+not configured. An existing Admin session does not grant access to controls.
+**Lock controls** removes the second grant from the current browser session and
+returns to Email history. Changing/removing the controls secret invalidates
+second grants on deployments using the new configuration. Passphrases are never
+stored in the session cookie. Control POSTs also require a session CSRF token;
+the dashboard includes it automatically. These gates do not change scheduled
+alert delivery, subscriber data, or the database schema.
 
 What deliberately does **not** run on Vercel:
 
@@ -218,6 +237,7 @@ Verify: `venv/bin/python db/scripts/test_forecast_cache.py` (needs 005 applied).
 | `ALERT_WATCHER_INTERVAL` | Auto-alert poll interval in seconds (default `120`; `off` disables the watcher) |
 | `ALERT_FROM_NAME` | Display name on alert emails (default "SF BWTF Alerts") |
 | `ADMIN_DASHBOARD_PASSPHRASE` | Required for new logins to the Admin dashboard (/alerts), its tabs, and protected APIs; no default |
+| `ADMIN_ALERT_CONTROLS_PASSPHRASE` | Additional, case-sensitive passphrase for /alerts/controls and subscription, simulation, watcher-status, and manual-send APIs; no default or fallback |
 | `FLASK_SECRET_KEY` | Signs the "alerts unlocked" session cookie. Optional: without it a random key is generated per boot, so everyone re-enters the passphrase after each deploy. |
 
 Without the SMTP/Twilio creds the app runs fine — dispatches (manual *and* the

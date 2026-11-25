@@ -3,7 +3,7 @@
 <link rel="icon" href="{{ asset('brand/favicon.ico') }}"><link rel="apple-touch-icon" sizes="144x144" href="{{ asset('brand/bwtf_144x144.png') }}">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Email simulator — Admin · Surfrider SF Blue Water Task Force</title>
+<title>BWTF email analysis — Admin · Surfrider SF Blue Water Task Force</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -61,15 +61,14 @@
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}
 {{ topbar() }}
 <div class="wrap">
-  {% call page_head("Email simulator", "How many alert emails one subscriber would have got over a past stretch: from the sender as it works today, and with a hold, a window rule and the same-day rule. Nothing here changes what is sent.") %}
+  {{ admin_tabs("email-sim") }}
+  {% call page_head("BWTF email analysis", "How many alert emails one subscriber would have got over a past stretch: from the sender as it works today, and with a hold, a window rule and the same-day rule. Nothing here changes what is sent.") %}
     <p><b>Today's sender</b> sends a subscriber one email for each minute in which any of their stations got worse: clear → posted, clear → discharge, or posted → discharge. Clears send nothing.</p>
     <p><b>Hold</b> waits that many minutes after a change and sends one email for everything that changed meanwhile. <b>From the first change</b> keeps the window fixed, so an alert waits at most the hold. <b>Restart on each change</b> sends once things have been quiet for the hold, which can wait longer.</p>
     <p><b>Each email lists</b>: today's email names only the stations that just got worse. A <b>running list</b> (an idea, held) adds a "Still in effect" section with the subscriber's other stations that are still posted or discharging when it goes out.</p>
     <p><b>Same-day rule</b>: a station that already had a discharge flag earlier the same Pacific day doesn't email a discharge again that day. A flag that comes back the next day emails as usual.</p>
     <p>History is the <a href="/cso-history">Online Postings Timeline</a>'s: the alert log's real (not simulated) changes, with duplicate detections merged.</p>
   {% endcall %}
-
-  {{ admin_tabs("email-sim") }}
 
   <form class="panel sim-form" method="get" action="/alerts/email-sim">
     <input type="hidden" name="go" value="1">

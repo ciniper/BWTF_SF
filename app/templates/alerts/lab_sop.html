@@ -92,8 +92,8 @@
 {% include "_icons.html" %}{% from "_frame.html" import topbar, page_head, footer, tabbar with context %}{% from "alerts/_tabs.html" import admin_tabs %}
 {{ topbar() }}
 <div class="wrap">
-  {{ page_head("Lab SOP", "How the Blue Water Task Force lab tests a water sample for Enterococcus with Enterolert and a Quanti-Tray: " ~ phases|length ~ " phases, " ~ n_steps ~ " steps, from bringing the samples in to entering the results.") }}
   {{ admin_tabs("lab-sop") }}
+  {{ page_head("Lab SOP", "How the Blue Water Task Force lab tests a water sample for Enterococcus with Enterolert and a Quanti-Tray: " ~ phases|length ~ " phases, " ~ n_steps ~ " steps, from bringing the samples in to entering the results.") }}
   <nav class="phases" aria-label="Phases">
     {%- for ph in phases %}<a href="#{{ ph.key }}" style="--a:{{ ph.accent }}"><b>Phase {{ ph.n }}</b>{{ ph.title }}</a>{% endfor %}
   </nav>

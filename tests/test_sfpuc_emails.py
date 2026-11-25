@@ -1,5 +1,6 @@
 """Offline inbound/review/admin-preview contract checks. SQL behavior has a separate PGlite test."""
 import copy
+import html
 import json
 import sys
 from datetime import datetime, timezone
@@ -130,8 +131,8 @@ def test_admin_authentication_csrf_approval_confirmation_and_stale_reviews(clien
     assert client.post("/alerts/sfpuc-emails/review").status_code == 401
     unlock(client)
     page = client.get("/alerts/sfpuc-emails")
-    assert page.status_code == 200 and b'id="sfpuc-updates"' in page.data
-    assert b"sfpuc_updates.js?v=" in page.data and b"Approval is not required for Today" in page.data
+    assert page.status_code == 200 and b'aria-label="Email sources"' in page.data
+    assert b"No approval needed" in page.data and b"Approve for preview" not in page.data
     form = {"message_id": MID, "revision": "0", "action": "approved", "title": "Notice", "body": "Official text", "reviewer": "Coordinator"}
     assert client.post("/alerts/sfpuc-emails/review", data=form).status_code == 403
     form["csrf"] = "offline-csrf"
@@ -299,7 +300,7 @@ def test_image_download_stops_a_slow_stream(monkeypatch):
 
 
 def test_private_images_are_gated_eager_and_never_render_source_html(client, monkeypatch):
-    row = parse(payload(RawHtmlBody=f'<img src="{IMAGE}" width="640" alt="&lt;script&gt;bad&lt;/script&gt;" onerror="evil()">'))[0][0]
+    row = parse(payload(Subject="SF BEACH POSTED", RawHtmlBody=f'<img src="{IMAGE}" width="640" alt="&lt;script&gt;bad&lt;/script&gt;" onerror="evil()">'))[0][0]
     row["id"] = MID
     monkeypatch.setattr(S, "image_payloads", lambda ids: {MID: row["raw_payload"]})
     monkeypatch.setattr(S, "detail", lambda mid: (row, []))
@@ -309,9 +310,9 @@ def test_private_images_are_gated_eager_and_never_render_source_html(client, mon
     assert client.get(path).status_code == 401
     unlock(client)
     page = client.get(f"/alerts/sfpuc-emails?message={MID}").data
-    assert f'src="{path}"'.encode() in page and b'loading="eager"' in page
+    assert f'src="{path}"' in html.unescape(page.decode()) and b'title="SFPUC bulletin as shown on Today"' in page
     assert b'onerror="evil()"' not in page and b'<script>bad</script>' not in page
-    assert b"Remove forwarding text" in page and b"Undo cleanup" in page
+    assert b"Hide from Today" in page and b"Remove forwarding text" not in page
     monkeypatch.setattr(V, "fetch_image", lambda url: (b"image-bytes", "image/png"))
     response = client.get(path)
     assert response.status_code == 200 and response.data == b"image-bytes"
