@@ -1,7 +1,9 @@
 """Running costs (features/alerts/costs.py, /alerts/costs): the model's thresholds and prices,
 alert rates counted from the records, text segments measured from the renderer, and the gate."""
+import os
 import pathlib
 import sys
+from unittest.mock import patch
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -59,7 +61,9 @@ def test_storage_grows_with_kept_copies_and_pruning_keeps_it_small():
 
 def test_the_page_and_its_api_sit_behind_the_alerts_passphrase():
     from app.wsgi import app
-    with app.test_client() as c:
+    # Use the model's fallback mix; this navigation check must not read subscribers.
+    with patch.object(C.sb, "is_configured", return_value=False), \
+            patch.dict(os.environ, {"SFPUC_EMAIL_ENABLED": "true"}), app.test_client() as c:
         locked = c.get("/alerts/costs").data.decode()
         assert "passphrase" in locked.lower() and 'id="curve"' not in locked
         assert c.get("/alerts/api/costs").status_code == 401
@@ -67,12 +71,13 @@ def test_the_page_and_its_api_sit_behind_the_alerts_passphrase():
             s["alerts_unlocked"] = True
         h = c.get("/alerts/costs?subscribers=2500&sms_share=0.1").data.decode()
         j = c.get("/alerts/api/costs?subscribers=2500&sms_share=0.1&email=ses&hyphen=1&prune=1").get_json()
-        d = c.get("/alerts").data.decode()
+        home = c.get("/alerts")  # Inspect the redirect without loading an inbox.
     assert 'id="curve"' in h and 'class="seg-toggle" data-k="sms_share"' in h and 'href="/alerts/costs" class="on"' in h and 'name="robots" content="noindex"' in h
     assert 'class="secnav"' not in h and 'class="subtabs"' not in h and 'title="Coordinators only — needs the passphrase">Admin</a>' in h   # Admin is in no hub; its way in is the footer (2026-11-04)
     assert j["ok"] and j["params"]["email"] == "ses" and j["params"]["plain_hyphen"] and j["month"]["subscribers"] == 2_500 and len(j["curve"]["with_texts"]) == len(C.STEPS)
     assert all(x["source"].startswith("https://") for x in j["month"]["lines"]) and j["prices_checked"] == C.PRICES_CHECKED
-    assert d.index('data-view="sim"') < d.index('href="/alerts/costs"')                 # the third tab on the dashboard
+    assert home.status_code == 302 and home.headers["Location"] == "/alerts/sfpuc-emails"
+    assert 'href="/alerts/controls"' in h and 'href="/alerts"' in h
 
 
 if __name__ == "__main__":
