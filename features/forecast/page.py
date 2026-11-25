@@ -268,7 +268,17 @@ def _with_meta(snap: dict | None, generated_at: datetime | None,
         out["forecast_expired"] = True
         out["error"] = "No forecast updated within the last four hours is available. Please try again shortly."
         out.pop("stale_note", None)
+    if any(d.get("sample_model") for d in out.get("predictions", {}).values()):
+        from shared.sfpuc_live import read_evidence_snapshot
+        from features.forecast.sample_evidence import overlay_snapshot
+        out = overlay_snapshot(out, read_evidence_snapshot(now=_utcnow()), now=_utcnow())
     return out
+
+
+def display_snapshot(row):
+    """Shared final view for Today and Forecast, including lab freshness."""
+    row = row or {}
+    return _with_meta(row.get("snapshot"), _parse_ts(row.get("generated_at")))
 
 
 def _memory_snapshot_fresh() -> bool:

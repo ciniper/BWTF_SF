@@ -190,7 +190,7 @@ FACTS_BUDGET_SECONDS = 2.5   # the landing page must stay quick; a slow source j
 def _fact_forecast() -> str:
     from features.forecast import page as fp
     row = fp._read_row()
-    snap = (row or {}).get("snapshot") or {}
+    snap = fp.display_snapshot(row)
     days = [d for d in snap.get("predictions", {}).values() if isinstance(d, dict)]
     today = next((d for d in days if d.get("is_today")), None)
     if not today:
@@ -258,7 +258,7 @@ def _forecast_risks() -> dict:
     both pages show the same number and level. Empty dict when there is no snapshot."""
     from features.forecast import page as fp
     row = fp._read_row()
-    snap = (row or {}).get("snapshot") or {}
+    snap = fp.display_snapshot(row)
     days = sorted((d for d in snap.get("predictions", {}).values() if isinstance(d, dict)), key=lambda d: d.get("day_offset") or 0)
     today = next((d for d in days if d.get("is_today")), None)
     if not today or not isinstance(today.get("zones"), dict):

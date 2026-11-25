@@ -957,6 +957,7 @@ class LiveData:
 
     def _sample_flags(self, start, end) -> dict:
         """{(group, date): elevated} from the lab results already published for [start, end]."""
+        self.last_live_samples = []
         try:
             samples = self._samples_window(start, end)
         except Exception as e:  # noqa: BLE001
@@ -1015,11 +1016,12 @@ class LiveData:
         probs2, vols2, notes = _lr.adjust_stage1(probs, vols, dates, observed or {}, flags, rain, today,
                                                  watcher_from=watcher_from, watcher_ok=bool(health.get("ok")))
         return {"enabled": True, "source": source, "probs": probs2, "vols": vols2, "notes": notes, "flags": flags,
-                "samples": samples, "sample_sources": sample_sources, "flag_groups": flag_groups,
+                "samples": samples, "feed_samples": feed, "sample_sources": sample_sources, "flag_groups": flag_groups,
                 "onsets": observed or {}, "health": health, "today": today}
 
     def _day_payload(self, frames: dict, idx: int, feats: list, probs: list, vols: list,
                      dates: list, observed: dict, live: dict | None = None) -> dict:
+        sample_model = None
         # the plain two-stage composition — the models alone, no observation of any kind (the observed-CSO
         # override is now the cso_onset rule of live_v1) — always computed so the page can show it instead
         plain_stage3 = {}
@@ -1061,6 +1063,18 @@ class LiveData:
             # the day's own term per group, after the stage 2 split — what a clean sample's capped persistence recombines with
             today_terms = _day_terms(self.BASIN_IMPACT_GROUPS, p2[idx], v2[idx], split=getattr(self, "split", None))
             probs_by_date = {d: p2[j] for j, d in enumerate(dates)}
+            # Retain immutable model inputs so an indicator arrival can update
+            # only the cheap final correction, without weather/model inference.
+            sample_model = {
+                "groups": dict(impact_groups), "persist": persist_groups, "today_terms": today_terms,
+                "probs": {str(d): p for d, p in probs_by_date.items()},
+                "onsets": {str(d): sorted(v) for d, v in live["onsets"].items()},
+                "flags": {str(d): sorted(v) for d, v in live["flags"].items()},
+                "flag_groups": {str(d): sorted(v) for d, v in live.get("flag_groups", {}).items()},
+                "feed_samples": [{"group": g, "date": str(d)} for (g, d), elevated in live.get("feed_samples", {}).items() if elevated],
+                "large_curves": {g: {str(k): large_curve(g, k) for k in range(1, _lr.RULES["cso"]["hold_max_days"] + 1)}
+                                 for g in impact_groups},
+            }
             adjusted, gnotes = _lr.adjust_groups(impact_groups, persist_groups, today_terms, dates[idx], live["samples"],
                                                  probs_by_date, live["onsets"], live["flags"], _ZONE_OF_GROUP, _BASIN_OF_GROUP, large_curve,
                                                  flag_groups=live.get("flag_groups"))
@@ -1090,6 +1104,7 @@ class LiveData:
             "discharge_probs_live": probs_live,
             "observed_cso": sorted(observed.get(dates[idx], ())),
             "live_corrections": rules_block,
+            "sample_model": sample_model,
             "plain": plain_block,
             "gauge_outage": getattr(self, "_outage_days", {}).get(str(pd.Timestamp(dates[idx]).date()), []),
             "input_rules": list(INPUT_RULES_LIVE),
@@ -1323,9 +1338,9 @@ class LiveData:
                     recs.append((r["source"], r["sample_date"], r["analyte"], r["data"]))
         out, seen = [], set()
         for station, d, analyte, raw in recs:
-            if station not in STATIONS or analyte not in STANDARDS or (station, d, analyte) in seen:
+            if station not in STATIONS or analyte not in STANDARDS or (station, d, analyte, raw) in seen:
                 continue
-            seen.add((station, d, analyte))
+            seen.add((station, d, analyte, raw))
             out.append({"date": d, "station": station, "station_name": STATION_NAMES[station],
                         "zone": ZONE_OF_SOURCE[station], "analyte": analyte, "value": parse_result(raw), "value_raw": raw})
         return flag_exceedances(out)  # shared rule, incl. the total-coliform ratio
@@ -1721,7 +1736,7 @@ class LiveData:
     def get_snapshot(self) -> dict:
         """Get current state as JSON-serializable dict"""
         with self.lock:
-            return {
+            snapshot = {
                 "last_refresh": self.last_refresh.isoformat() if self.last_refresh else None,
                 "model": self.model_stamp(),
                 "predictions": self.predictions or {},
@@ -1730,7 +1745,14 @@ class LiveData:
                 "beach_status": self.beach_status or [],
                 "error": self.error,
                 "thresholds": self.thresholds,
+                "sample_inputs": [{"source": r["station"], "sample_date": r["date"], "analyte": r["analyte"], "data": r["value_raw"]}
+                                  for r in getattr(self, "last_live_samples", [])],
             }
+        from shared.sfpuc_live import read_evidence_snapshot
+        from features.forecast.sample_evidence import overlay_snapshot
+        if any(d.get("sample_model") for d in snapshot["predictions"].values()):
+            return overlay_snapshot(snapshot, read_evidence_snapshot())
+        return snapshot
 
 
 # ─── Background refresh thread ───────────────────────────────────────────────
