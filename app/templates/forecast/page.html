@@ -123,6 +123,9 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 .card-badges .badge { font-size: 0.82em; }
 .day-card.bad { border-color: var(--discharge); } .day-card.clear { border-color: var(--safe); } .day-card.unknown { border-color: var(--line); }
 .status-line { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.lab-evidence { min-width: 0; max-width: 100%; }
+.lab-evidence summary { cursor: pointer; }
+.lab-evidence .badge { white-space: normal; overflow-wrap: anywhere; }
 .tbl { width: 100%; border-collapse: collapse; font-size: 0.85em; }
 .tbl th { text-align: left; font-size: 0.75em; letter-spacing: .08em; text-transform: uppercase; color: #54576F; padding: 6px 8px; border-bottom: 1px solid #d9e4e8; }
 .tbl td { padding: 7px 8px; border-bottom: 1px solid #eef2f5; vertical-align: top; }
@@ -268,7 +271,7 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 <p><b>Stage 2: will the combined sewer system discharge?</b> The current model uses daily rain, recent rain totals, the three-hour rain peak and south wind during rain to estimate discharge likelihood by basin. It was trained on the city's filed discharge records, including older reports from 2011. These basin probabilities feed the Stage 3 mapping shown in SewerCast.</p>
 <p><b>Stage 3: which beaches?</b> The model maps a basin's discharge chance to beach groups using the outfalls that post those beaches and the historical share of discharge days on which those outfalls discharged, grouped by estimated event size. This is a statistical mapping, not a simulation of currents or a direct observation at the beach.</p>
 <p><b>Stage 4: for how long?</b> Bacteria samples after past discharges inform how risk may linger, by beach group, event size and days since discharge. The beach forecast combines the same-day mapped discharge chance with lingering effects from the previous seven days. A discharge day counts as affected in this forecast; the percentage is not the probability of a particular lab result.</p>
-<p><b>Stage 5: live corrections.</b> SFPUC discharge advisories and elevated sample evidence can adjust the model's numbers. An advisory still posted at a beach group can hold its risk up; it does not establish that a discharge is still flowing. A passing result at one station does not clear the group. The toggle shows the model with or without these corrections.</p>
+<p><b>Stage 5: live corrections.</b> SFPUC discharge advisories and lab results can adjust the model's numbers. An advisory still posted at a beach group can hold its risk up; it does not establish that a discharge is still flowing. A reduction requires complete panels below limits at every station in the group on the same collection date, with no unresolved advisory or newer pending sample. Results arriving in batches remain partial until then. The toggle shows the model with or without these corrections.</p>
 <p><b>What is outside its scope?</b> The public beach-risk calculation has no separate background or runoff contribution. It does not independently predict other pollution sources or explain why an individual sample is elevated. Current default rules do not raise risk for elevated dry-weather samples without a recent discharge. Actual lab measurements and SFPUC postings remain separate observations; posted signs and official advisories take precedence.</p>
 <p><b>Reading the number.</b> SewerCast shows same-day mapped discharge impact scores; Water Quality Forecast also includes lingering effects. Both use a model risk scale, not a calibrated probability of contamination. The word with each percentage is a fixed risk level, the same on every page: {% for l in RISK_LEVELS.levels %}{{ l.label }} {{ l.lo }}–{{ l.hi }}%{{ ', ' if not loop.last else '.' }}{% endfor %} No alert reads this number: alerts follow what the city's beach map shows.</p>
 <p><b>Observed records.</b> Model check → Day by day → What happened keeps gauge rainfall, reported discharge volumes and sources, watcher postings and station sample links together, including days without model predictions.</p>
@@ -350,7 +353,7 @@ const RULE_BADGE = {
     no_flag_downgrade:     a => ['muted', 'trending-down', `no discharge flag${a.quiet_days ? ` · ${a.quiet_days} quiet day${a.quiet_days === 1 ? '' : 's'} after` : ' overnight'} · ${pct(a.from)}% → ${pct(a.to)}%`],
     sample_elevated_floor: a => ['danger', 'microscope', `sample elevated · held ≥ ${pct(a.to)}%`],
     sample_dry_floor:      a => ['warn', 'microscope', `sample elevated, dry weather · ≥ ${pct(a.to)}%`],
-    sample_clean_cap:      a => ['ok', 'microscope', `sample clean · ${pct(a.from)}% → ${pct(a.to)}%`],
+    sample_clean_cap:      a => ['ok', 'microscope', `complete lab panels below limits · ${pct(a.from)}% → ${pct(a.to)}%`],
     flag_hold:             a => ['danger', 'octagon-alert', `discharge advisory still posted here · held ≥ ${pct(a.to)}%`],
     // link_zone_v1 (A7): a station's CSO flag enters at its beaches; the basin's other beaches rise to how often they discharge together
     overflow_observed:     a => ['danger', 'octagon-alert', `discharge flagged here · ${pct(a.from)}% → ${pct(a.to)}%`],
@@ -364,6 +367,20 @@ function liveBadgesZone(day, zk) {
     const basins = new Set(groups.map(g => Object.keys(ZONE_GROUPS_BY_BASIN).find(b => (ZONE_GROUPS_BY_BASIN[b] || []).includes(g))).filter(Boolean));
     for (const b of basins) { const a = (live.stage1 || {})[b]; if (a) out.push(ruleBadge(a.rule, a)); }
     for (const g of groups) { const a = (live.groups || {})[g]; if (a) out.push(ruleBadge(a.rule, a)); }
+    for (const g of groups) {
+        const evidence = (day.sample_evidence || {})[g];
+        if (!evidence) continue;
+        const stations = evidence.stations || [];
+        const failed = stations.filter(s => s.failure_date);
+        const complete = stations.filter(s => s.complete).length;
+        const label = failed.length
+            ? `Lab exceedances: ${failed.map(s => s.name).join(', ')} · ${complete}/${stations.length} panels complete`
+            : evidence.clean_eligible ? `All ${stations.length} station panels below limits · sampled ${stations[0].date}`
+            : `Lab evidence incomplete or advisory unresolved · ${complete}/${stations.length} panels complete`;
+        const detail = stations.map(s => `${s.name}: ${s.date || 'no sample date'}, ${s.state}${s.pending.length ? ', pending ' + s.pending.join(', ') : ''}${s.failure_date && s.failure_date !== s.date ? ', unresolved exceedance from ' + s.failure_date : ''}${s.advisory ? ', advisory posted' : ''}; ` +
+            Object.entries(s.indicators).map(([code, vals]) => `${code}: ${vals.map(v => v.raw + ' (' + v.source + ')').join(', ')}`).join('; ')).join('\n');
+        out.push(`<details class="lab-evidence"><summary>${badge(failed.length ? 'warn' : 'muted', 'microscope', label)}</summary><div style="white-space:pre-line;text-align:left;font-size:0.85em;padding:8px">${esc(detail)}</div></details>`);
+    }
     return out.join('');
 }
 const pct = p => Math.round((p || 0) * 100);
@@ -606,6 +623,10 @@ function renderLive(data) {
     const stamp = data.last_refresh && !/([+-]\d\d:?\d\d|Z)$/.test(data.last_refresh) ? data.last_refresh + 'Z' : data.last_refresh;
     refreshEl.textContent = stamp ? 'Last updated: ' + new Date(stamp).toLocaleTimeString() + ' · auto-refreshes every 30 min'
                           + (data.stale_note ? ' · ' + data.stale_note : '') : '';
+    const lab = data.sample_evidence_status;
+    if (lab) refreshEl.textContent += lab.state === 'current'
+        ? ' · lab feed checked ' + new Date(lab.checked_at).toLocaleTimeString() + ' · lab updates checked every minute'
+        : ' · early lab feed unavailable; clean-sample reductions withheld';
     showPanels({ beaches: true });
 
     current = { mode: 'live', days, byDate: preds };
@@ -1528,7 +1549,7 @@ function setRiskLine(v) {
 
 // ─── boot ───────────────────────────────────────────────────────────────────
 if (location.hash === '#check') setMode('check'); else if (location.hash === '#cso') setMode('cso'); else loadData();   // /forecast#check opens the Model check (About's Go deeper row links there)
-setInterval(() => { if (currentMode === 'live') loadData(); }, 300000);
+setInterval(() => { if (currentMode === 'live' && !document.hidden) loadData(); }, 60000);
 </script>
 <script src="{{ asset('sample_popover.js') }}" defer></script>
 <script src="{{ asset('tables.js') }}" defer></script>

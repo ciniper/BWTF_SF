@@ -48,15 +48,12 @@ Stage 2 (per group-day, after composition — ``adjust_groups``):
   flag_hold               while the feed's CSO flag stays up after the onset,
                           the group's risk holds at the large-event curve
 
-Where the samples come from (live_v2, 2026-09-29): SFPUC's beach map, as the
-pg_cron watcher records it (Supabase ``feed_station_days``) — a station posted
-for bacteria says its latest sample, dated by the map, was over standard; a
-station clear all day with a new sample date says that sample was clean. The
-map shows a result one to two days after sampling; DataSF's lab record follows
-about five days after and overrides the map wherever it has published the same
-station-day. live_v1 read DataSF alone, which reached the three-day horizon too
-late to move a forecast day. The arithmetic is unchanged, so both replays grade
-live_v2 exactly as they graded live_v1 (``live_dashboard._feed_sample_flags``).
+Serving evidence: the watcher's bacteria postings supply positive evidence
+only. ``sample_evidence`` merges current getCSV results with DataSF per
+station/date/indicator and gates negative evidence on complete, same-date
+panels for every station in the group, with no unresolved advisory or newer
+pending sample. These eligibility checks wrap the unchanged arithmetic below;
+historical replays that supply boolean sample flags still use that arithmetic.
 
 Every adjustment is recorded (rule, from, to) so the page can say why a
 number moved; with no watcher data and no samples the output is byte-identical
@@ -114,7 +111,7 @@ RULES = {
         "tail_days": 7,
         "tail_min_p": 0.5,             # a sample day counts as "in a discharge tail" when an onset was
                                        # observed, or the (adjusted) basin probability reached this, within tail_days
-        "sources": ("feed", "datasf"), # live_v2: the SFPUC map's postings and sample dates first (1–2 days), DataSF (≈5 days) overriding where published
+        "sources": ("feed", "datasf"), # legacy context counters; current getCSV provenance lives in sample_evidence
         "floor_elevated_tail": _policy_floors(SAMPLE_RATES["floor_elevated_tail"]),   # {east: 0.80}, the rest off
         "cap_clean_tail":      dict(SAMPLE_RATES["cap_clean_tail"]),                    # caps are kept everywhere
         "floor_elevated_dry":  _policy_floors(SAMPLE_RATES["floor_elevated_dry"]),    # all under 0.5 → off

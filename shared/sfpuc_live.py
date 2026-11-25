@@ -54,11 +54,11 @@ def snapshot_records(runtime, now=None):
         return [], 'unavailable'
 
 
-def read_snapshot(now=None):
-    """One cached server-side database read shared by Today and sample popovers."""
+def _read_runtime():
+    """One cached database read, including keys whose results are still blank."""
     global _CACHE, _CACHE_UNTIL
     if not sb.is_configured():
-        return [], 'unavailable'
+        return None
     with _LOCK:
         if time.monotonic() >= _CACHE_UNTIL:
             try:
@@ -68,7 +68,33 @@ def read_snapshot(now=None):
                 _CACHE = None
             _CACHE_UNTIL = time.monotonic() + 30
         runtime = _CACHE
-    return snapshot_records(runtime, now)
+    return runtime
+
+
+def read_snapshot(now=None):
+    """Compatibility reader for the existing sample displays."""
+    return snapshot_records(_read_runtime(), now)
+
+
+def read_evidence_snapshot(now=None):
+    """Values plus collection dates, including all-pending and stale samples.
+
+    Freshness is not completeness. Retaining known dates prevents an older
+    passing panel from silently replacing a newer pending collection.
+    """
+    runtime = _read_runtime()
+    records, state = snapshot_records(runtime, now)
+    dates = {}
+    for key in ((runtime or {}).get('previous_values') or {}):
+        try:
+            source, day, code = json.loads(key)
+            datetime.strptime(day, '%Y-%m-%d')
+            if source in STATIONS and code in CODES:
+                dates[source] = max(day, dates.get(source, day))
+        except (ValueError, TypeError):
+            continue
+    return {'records': records, 'state': state, 'known_dates': dates,
+            'checked_at': (runtime or {}).get('last_success_at')}
 
 
 def merge_records(datasf, early):

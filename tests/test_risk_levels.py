@@ -124,7 +124,7 @@ def test_home_page_rising_means_the_level_goes_up():
     def snap(today, *ahead):
         days = {"d0": {"is_today": True, "day_offset": 0, "zones": {"ocean": today, "east": 0.01}}}
         days.update({f"d{i}": {"day_offset": i, "label": f"Day {i}", "zones": {"ocean": p}} for i, p in enumerate(ahead, 1)})
-        return {"snapshot": {"predictions": days}}
+        return {"snapshot": {"predictions": days}, "generated_at": fp._utcnow().isoformat()}
     saved = fp._read_row
     try:
         cases = {(0.15, 0.22): "today 15% risk · rising",     # Low → Medium
