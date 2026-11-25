@@ -52,6 +52,7 @@ import features.alerts.lab_sop as sop_page  # the Lab SOP, an Admin tab (2026-11
 import features.alerts.ui_overflow as ui_overflow_page   # Admin's UI overflow tab: what came off Today (2026-11-04)
 import features.alerts.email_sim as email_sim_page      # Admin's Email simulator tab: past emails under a proposed hold/rule (2026-11-17)
 import features.alerts.sample_gap as sample_gap_page
+import features.alerts.rain_data as rain_data_page
 import features.cso_history.page as cso_history_page
 import features.discharges.page as discharges_page
 import features.forecast.page as forecast_page
@@ -451,9 +452,11 @@ def create_app():
         view = _gated_api(_forecast_view(handler)) if path.startswith("/alerts/api/") else _gated_page(_forecast_view(handler), path)
         app.add_url_rule(path, f"costs-get:{path}", view, methods=["GET"])
     # Admin's Lab SOP and UI overflow tabs (2026-11-04), behind the same passphrase; the Lab SOP's photos with it
-    for path, handler in {**sop_page.GET_ROUTES, **ui_overflow_page.GET_ROUTES, **email_sim_page.GET_ROUTES, **sample_gap_page.GET_ROUTES}.items():
+    for path, handler in {**sop_page.GET_ROUTES, **ui_overflow_page.GET_ROUTES, **email_sim_page.GET_ROUTES, **sample_gap_page.GET_ROUTES, **rain_data_page.GET_ROUTES}.items():
         app.add_url_rule(path, f"admin-get:{path}", _gated_page(_forecast_view(handler), path), methods=["GET"])
     app.add_url_rule("/alerts/lab-sop/photos/<name>", "sop-photo", _sop_photo, methods=["GET"])
+    for path, handler in rain_data_page.API_ROUTES.items():
+        app.add_url_rule(path, f"rain-api:{path}", _gated_api(_forecast_view(handler)), methods=["GET"])
     for path, to in sop_page.REDIRECTS.items():
         app.add_url_rule(path, f"moved:{path}", lambda to=to: redirect(to, 302), methods=["GET"])   # 302, as About's moves
 
