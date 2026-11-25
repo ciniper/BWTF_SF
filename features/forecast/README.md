@@ -219,6 +219,25 @@ STAGES_DESIGN.md Part B 36): the live forecast is `icon-w38-osplit-lt2-bflags`
 2026-10-07 (`logit_v1_s2v2`, `gb_v1`) are in `lineup.RENAMED`. The old release
 label "v4" is retired (2026-09-26).
 
+## On-demand live alternative
+
+The live forecast dropdown keeps the promoted model on `/forecast/api/data`
+and its existing refresh/cache/history path. Selecting **Alternative · ECMWF**
+requests `/forecast/api/alternative?model=ecmwf-t9wind3h-osplit-lt2more-bflags`.
+Each request creates an isolated engine, fetches current inputs, and runs the
+saved candidate's five stages. Responses use `Cache-Control: no-store`; the
+alternative does not write forecast snapshots, checkpoints, or change logs.
+It does not poll automatically. **Recompute ECMWF** starts a fresh run.
+
+`live_options.py` is the explicit allowlist; `alternative_forecast.py` supplies
+the runtime. This first candidate changes S1 to ECMWF and keeps the nine-term
+discharge model, outfall split, expanded lingering table, and basin flags.
+Shared volume heads and thresholds are hash-checked: a later promotion that
+changes them requires reviewing this candidate's runtime, rather than silently
+changing its outputs. Missing inputs or an incomplete six-day forecast return
+an unavailable response. Tests cover the real composition with fixture inputs,
+storage isolation, provider selection, request races, and UI recovery.
+
 ## References
 
 - [SFPUC Beach Water Quality Map](https://webapps.sfpuc.org/sapps/beachesandbay.html)

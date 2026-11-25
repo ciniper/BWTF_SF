@@ -23,6 +23,10 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 .date-picker { font-family: inherit; background: #fff; border: 2px solid var(--line); border-radius: 10px; padding: 7px 10px; color: var(--ink); font-size: 13px; font-weight: 600; cursor: pointer; }
 .date-picker:focus { border-color: #0072BC; outline: none; }
 .historical-label { color: var(--caution); font-size: 0.85em; font-weight: 600; }
+.live-models { margin: 18px 0; }
+.live-model-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.live-model-controls select { max-width: 100%; }
+.live-model-note { color: var(--muted); font-size: 13px; margin: 8px 0; }
 
 .risk-banner { background: #fff; border: 2px solid var(--line); border-radius: var(--r-lg); padding: 16px 22px 18px; margin-bottom: 16px; color: var(--ink); }   /* the board's card: border by grade, headline in Bebas, facts underneath */
 .risk-banner .eyebrow { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin: 0 0 4px; }
@@ -263,8 +267,8 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 </nav>
 <div id="forecastHead">
 {% call page_head("Water Quality Forecast", "What’s the risk of high bacteria at the beach from current or recent combined sewer discharges?<span class='forecast-intro-note'>Effects from earlier discharges can linger. Other bacteria sources are outside scope. Risk levels summarize a model score, not measured bacteria or a calibrated chance of contamination.</span>", "today", "How this forecast works") %}
-<p><b>Two forecasts, different questions.</b> SewerCast shows same-day discharge impact risk by beach zone, using the model’s historical outfall mapping. Water Quality Forecast assigns a modeled risk level to each beach zone using same-day discharge likelihood and lingering effects from earlier discharges. Both update every 30 minutes. Its percentage is a model score used to assign a risk level, not a calibrated probability of contamination, a bacteria concentration or a measurement of the water.</p>
-<p><b>Stage 1: how much rain?</b> Daily rainfall comes from NOAA's Downtown and Oceanside gauges; recent hourly observations and ICON weather forecasts supply the live forecast's inputs.</p>
+<p><b>Two forecasts, different questions.</b> SewerCast shows same-day discharge impact risk by beach zone, using the model’s historical outfall mapping. Water Quality Forecast assigns a modeled risk level to each beach zone using same-day discharge likelihood and lingering effects from earlier discharges. The promoted forecast updates every 30 minutes. Selecting ECMWF computes an alternative on demand. Its percentage is a model score used to assign a risk level, not a calibrated probability of contamination, a bacteria concentration or a measurement of the water.</p>
+<p><b>Stage 1: how much rain?</b> Daily rainfall comes from NOAA's Downtown and Oceanside gauges; recent hourly observations and the selected weather model (ICON or ECMWF) supply the live forecast’s inputs.</p>
 <p><b>Stage 2: will the combined sewer system discharge?</b> The current model uses daily rain, recent rain totals, the three-hour rain peak and south wind during rain to estimate discharge likelihood by basin. It was trained on the city's filed discharge records, including older reports from 2011. These basin probabilities feed the Stage 3 mapping shown in SewerCast.</p>
 <p><b>Stage 3: which beaches?</b> The model maps a basin's discharge chance to beach groups using the outfalls that post those beaches and the historical share of discharge days on which those outfalls discharged, grouped by estimated event size. This is a statistical mapping, not a simulation of currents or a direct observation at the beach.</p>
 <p><b>Stage 4: for how long?</b> Bacteria samples after past discharges inform how risk may linger, by beach group, event size and days since discharge. The beach forecast combines the same-day mapped discharge chance with lingering effects from the previous seven days. A discharge day counts as affected in this forecast; the percentage is not the probability of a particular lab result.</p>
@@ -291,6 +295,16 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 </div>
 
 {# Model check: the stage builder on top; everything below it (date, timeline, zones, scorecard) folds under "Day by day" #}
+<section class="live-models" id="liveModels" aria-label="Live forecast model">
+    <div class="live-model-controls">
+        <label for="liveModel"><b>Forecast model</b></label>
+        <select class="date-picker" id="liveModel" onchange="setLiveModel(this.value)">
+            {% for model in live_models %}<option value="{{ model.id }}">{{ model.label }}</option>{% endfor %}
+        </select>
+        <button class="date-picker" id="runAlternative" type="button" hidden onclick="loadData()">Recompute ECMWF</button>
+    </div>
+    <p class="live-model-note" id="liveModelNote" role="status" aria-live="polite"></p>
+</section>
 <section class="sb" id="builder" hidden aria-label="Stage builder"></section>
 <div class="day-fold" id="dayFold" hidden>
     <button type="button" class="day-fold-btn" id="dayFoldBtn" aria-expanded="false" aria-controls="dayView" onclick="toggleDayFold()">Day by day <small>compare predictions or browse observed records</small></button>
@@ -319,7 +333,7 @@ body { font-family: 'Roboto','Segoe UI',Arial,sans-serif; background: #E3EBF2; c
 </div>
 
 <div class="foot">   {# the page's own source note; the site footer is the frame's #}
-    <p><svg class="ic"><use href="#i-info"/></svg> Rain: NOAA gauges (Downtown 047772, Oceanside 047767), KSFO hourly, ICON forecast (Open-Meteo) · Discharges: SFPUC CIWQS reports · Beach status: SFPUC · Bacteria: DataSF</p>
+    <p><svg class="ic"><use href="#i-info"/></svg> Rain: NOAA gauges (Downtown 047772, Oceanside 047767), KSFO hourly, <span id="weatherSource">ICON</span> forecast (Open-Meteo) · Discharges: SFPUC CIWQS reports · Beach status: SFPUC · Bacteria: DataSF</p>
     <p>Community-science tool, not an official advisory — posted signs and SFPUC or health-department notices take precedence. <a href="/">Back to Today</a> · <a href="/api/build" title="{{ build.message or '' }}">{{ build.label }}</a></p>
 </div>
 </div>
@@ -339,6 +353,9 @@ const BASIN_META = {
 };
 const BASIN_ORDER = ['westside', 'north_shore', 'central', 'southeast', 'citywide'];
 let SERVED_NAME = {{ served_name | tojson }};   // the served set's stored name (served.json); the live payload's model stamp updates it
+const LIVE_MODELS = {{ live_models | tojson }};
+let liveModel = '';
+const selectedLiveModel = () => LIVE_MODELS.find(m => m.id === liveModel) || LIVE_MODELS[0];
 
 const ic = name => `<svg class="ic"><use href="#i-${name}"/></svg>`;
 const esc = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -401,9 +418,35 @@ const zoneRain = (day, zk) => {
 };
 function rainSourceLabel(day) {
     const src = day.rain_source || (day.is_forecast ? 'forecast' : 'model');
+    const weather = currentMode === 'live' ? selectedLiveModel().weather : LIVE_MODELS[0].weather;
     return { gauges: ic('gauge') + ' NOAA gauges', observed: ic('gauge') + ' KSFO gauge',
-             mixed: ic('gauge') + ' gauge + ' + ic('satellite-dish') + ' ICON',
-             model: ic('satellite-dish') + ' model hindcast', forecast: ic('satellite-dish') + ' ICON forecast' }[src] || esc(src);
+             mixed: ic('gauge') + ' gauge + ' + ic('satellite-dish') + ' ' + esc(weather),
+             model: ic('satellite-dish') + ' model hindcast', forecast: ic('satellite-dish') + ' ' + esc(weather) + ' forecast' }[src] || esc(src);
+}
+
+function renderLiveModel() {
+    const model = selectedLiveModel();
+    document.getElementById('liveModels').hidden = currentMode !== 'live';
+    document.getElementById('liveModel').value = liveModel;
+    document.getElementById('runAlternative').hidden = !liveModel;
+    document.getElementById('liveModelNote').textContent = liveModel
+        ? 'Experimental alternative. Computed when selected; results are not saved. Use Recompute for a fresh run.'
+        : 'The promoted forecast follows its regular refresh schedule.';
+    document.getElementById('weatherSource').textContent = currentMode === 'live' ? model.weather : LIVE_MODELS[0].weather;
+}
+function clearForecast() {
+    current = null; lastLiveData = null;
+    for (const id of ['timeline', 'detail', 'refreshInfo', 'beachGrid']) document.getElementById(id).innerHTML = '';
+    renderLiveToggle(null); showPanels({});
+}
+function setLiveModel(id) {
+    if (!LIVE_MODELS.some(m => m.id === id) || liveModel === id) return;
+    liveModel = id;
+    clearForecast(); renderLiveModel();
+    const banner = document.getElementById('riskBanner');
+    banner.className = 'risk-banner';
+    banner.textContent = liveModel ? 'Computing ECMWF forecast…' : 'Loading promoted forecast…';
+    loadData();
 }
 
 // ─── state / mode / view ────────────────────────────────────────────────────
@@ -454,6 +497,7 @@ function setMode(mode) {
 
     const lt = document.getElementById('liveToggle'); if (lt && mode !== 'live') lt.style.display = 'none';
     currentMode = mode;
+    renderLiveModel();
     const selected = reviewing ? 'check' : isCso ? 'cso' : 'live';
     for (const [id, m] of [['btnLive', 'live'], ['btnCso', 'cso'], ['btnCheck', 'check']]) {
         const tab = document.getElementById(id), active = selected === m;
@@ -481,16 +525,33 @@ function setView(view) {
 }
 document.getElementById('datePicker').addEventListener('change', () => { if (currentMode !== 'live') loadData(); });
 
-async function getJSON(url) { const r = await fetch(url); return r.json(); }
+async function getJSON(url, options) { const r = await fetch(url, options); return r.json(); }
 
 let loadSeq = 0;   // a quick mode/date change must not let an older, slower response render last
+let alternativeRequest = null;
 async function loadData() {
     const banner = document.getElementById('riskBanner');
     const seq = ++loadSeq;
+    if (alternativeRequest) { alternativeRequest.abort(); alternativeRequest = null; }
+    document.getElementById('runAlternative').disabled = false;
+    document.getElementById('dayView').setAttribute('aria-busy', 'false');
     try {
         if (currentMode === 'live') {
-            const data = await getJSON('/forecast/api/data');
+            let data;
+            if (liveModel) {
+                clearForecast();
+                banner.className = 'risk-banner';
+                banner.innerHTML = '<h2>Computing ECMWF forecast…</h2><p class="sub">Fetching current inputs and running all five stages. This may take a little while.</p>';
+                document.getElementById('liveModelNote').textContent = 'Computing ECMWF forecast…';
+                document.getElementById('runAlternative').disabled = true;
+                document.getElementById('dayView').setAttribute('aria-busy', 'true');
+                alternativeRequest = new AbortController();
+                data = await getJSON('/forecast/api/alternative?model=' + encodeURIComponent(liveModel), { cache: 'no-store', signal: alternativeRequest.signal });
+            } else {
+                data = await getJSON('/forecast/api/data');
+            }
             if (seq !== loadSeq) return;
+            if (liveModel && (data.error || data.model?.name !== liveModel || !Object.keys(data.predictions || {}).length)) throw new Error('ECMWF is unavailable. Try again or select the promoted forecast.');
             if (data.error && !Object.keys(data.predictions || {}).length) {
                 showPanels({ beaches: true });
                 renderBeaches(data.beach_status || []);
@@ -522,16 +583,26 @@ async function loadData() {
             document.getElementById('histLabel').innerHTML = ic('calendar') + ' ' + esc(date);
         }
     } catch (e) {
-        if (seq !== loadSeq) return;
+        if (seq !== loadSeq || e.name === 'AbortError') return;
+        if (currentMode === 'live' && liveModel) {
+            clearForecast();
+            document.getElementById('liveModelNote').textContent = 'ECMWF is unavailable. Recompute to retry, or select the promoted forecast.';
+        }
         current = null;
         lastLiveData = null;
         for (const id of ['timeline', 'detail', 'refreshInfo']) document.getElementById(id).innerHTML = '';
         const section = currentMode === 'actual' ? 'Observed records' : currentMode === 'check' ? 'Model check' : forecastTitle();
-        const message = currentMode === 'live'
+        const message = currentMode === 'live' && liveModel ? 'ECMWF is temporarily unavailable. Try again or select the promoted forecast.' : currentMode === 'live'
             ? (e.forecastExpired ? 'No forecast updated within the last four hours is available. Please try again shortly.' : 'Forecast data is temporarily unavailable. Please try again shortly.')
             : (e.message || e);
         banner.className = 'risk-banner'; banner.innerHTML = '<div class="eyebrow">' + section + '</div><h2>' + (currentMode === 'live' ? 'Forecast' : section) + ' unavailable.</h2><p class="sub">' + esc(message) + '</p><button type="button" onclick="loadData()">Try again</button>';
         document.getElementById('histLabel').innerHTML = '';
+    } finally {
+        if (seq === loadSeq) {
+            alternativeRequest = null;
+            document.getElementById('runAlternative').disabled = false;
+            document.getElementById('dayView').setAttribute('aria-busy', 'false');
+        }
     }
 }
 
@@ -598,13 +669,14 @@ function renderLive(data) {
     if (!days.length) { setBanner(null, { eyebrow: forecastTitle(), sub: 'Forecast is being computed.' }); return; }
     const today = days.find(d => d.is_today) || days[0];
     lastLiveData = data;
-    if (data.model) SERVED_NAME = data.model.name || SERVED_NAME;   // the served set's descriptor (model stamp): its name for the copy
+    if (data.model && !liveModel) SERVED_NAME = data.model.name || SERVED_NAME;
+    renderLiveModel();
     renderLiveToggle(data.live_corrections);
     const refreshEl = document.getElementById('refreshInfo');
     refreshEl.title = '';
     // a stamp without an offset is UTC (snapshots written before the engine stamped aware times): say so, or the browser reads it as local
     const stamp = data.last_refresh && !/([+-]\d\d:?\d\d|Z)$/.test(data.last_refresh) ? data.last_refresh + 'Z' : data.last_refresh;
-    refreshEl.textContent = stamp ? 'Last updated: ' + new Date(stamp).toLocaleTimeString() + ' · auto-refreshes every 30 min'
+    refreshEl.textContent = stamp ? (liveModel ? 'ECMWF computed: ' : 'Last updated: ') + new Date(stamp).toLocaleTimeString() + (liveModel ? ' · on demand' : ' · auto-refreshes every 30 min')
                           + (data.stale_note ? ' · ' + data.stale_note : '') : '';
     showPanels({ beaches: true });
 
@@ -1527,8 +1599,9 @@ function setRiskLine(v) {
 }
 
 // ─── boot ───────────────────────────────────────────────────────────────────
+renderLiveModel();
 if (location.hash === '#check') setMode('check'); else if (location.hash === '#cso') setMode('cso'); else loadData();   // /forecast#check opens the Model check (About's Go deeper row links there)
-setInterval(() => { if (currentMode === 'live') loadData(); }, 300000);
+setInterval(() => { if (currentMode === 'live' && !liveModel) loadData(); }, 300000);
 </script>
 <script src="{{ asset('sample_popover.js') }}" defer></script>
 <script src="{{ asset('tables.js') }}" defer></script>

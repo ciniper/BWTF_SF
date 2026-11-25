@@ -5,11 +5,11 @@ import vm from 'node:vm';
 
 const template = fs.readFileSync(new URL('../app/templates/forecast/page.html', import.meta.url), 'utf8');
 const loader = template.slice(template.indexOf('let loadSeq = 0;'), template.indexOf('\nfunction showPanels('));
-const elements = Object.fromEntries(['riskBanner', 'histLabel', 'timeline', 'detail', 'refreshInfo'].map(id => [id, {innerHTML: 'old content'}]));
+const elements = Object.fromEntries(['riskBanner', 'histLabel', 'timeline', 'detail', 'refreshInfo', 'runAlternative', 'dayView'].map(id => [id, {innerHTML: 'old content', setAttribute() {}}]));
 let payload, rendered, beaches;
 const ctx = vm.createContext({
     document: {getElementById: id => elements[id]},
-    currentMode: 'live', current: {selected: 'old'}, lastLiveData: {},
+    currentMode: 'live', current: {selected: 'old'}, lastLiveData: {}, liveModel: '',
     getJSON: async () => payload,
     showPanels() {}, renderBeaches: value => { beaches = value; },
     renderLive: value => { rendered = value; },

@@ -375,7 +375,10 @@ def _forecast_view(handler):
     def view(**kwargs):
         params = parse_qs(urlparse(request.full_path).query)
         status, content_type, body = handler(params, request.get_data())
-        return Response(body, status=status, content_type=content_type)
+        response = Response(body, status=status, content_type=content_type)
+        if request.path == "/forecast/api/alternative":
+            response.headers["Cache-Control"] = "no-store"
+        return response
     return view
 
 
