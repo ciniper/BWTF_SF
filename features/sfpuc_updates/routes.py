@@ -1,4 +1,4 @@
-"""Opt-in capture, private coordinator review, and public bulletin projections."""
+"""Opt-in capture, private email history, and public bulletin projections."""
 from __future__ import annotations
 
 import hmac
@@ -97,32 +97,6 @@ def webhook():
     return jsonify(ok=True, **result)
 
 
-def reviewed_updates():
-    if not enabled():
-        abort(404)
-    if not sb.is_configured():
-        return _failure()
-    offset = offset_arg()
-    try:
-        rows = store.reviewed(offset)
-        payloads = store.image_payloads([str(UUID(row["id"])) for row in rows[:5]])
-        items = [reviewed_item(row, payloads.get(row["id"])) for row in rows[:5]]
-    except Exception:
-        return _failure()
-    response = jsonify(ok=True, updates=items, next_offset=offset + 5 if len(rows) > 5 and offset < 1000 else None)
-    # Withdrawal should be reflected on the next read, not retained in shared caches.
-    response.headers["Cache-Control"] = "private, no-store"
-    return response
-
-
-def reviewed_item(row, payload):
-    """Only reviewed fields and private image routes leave the server."""
-    return {"id": row["id"], "title": row["title"], "text": row["body_text"],
-            "date": fmt_time(row.get("sent_at") or row["received_at"]),
-            "date_label": "Email dated" if row.get("sent_at") else "Captured",
-            "source": "SFPUC email", "images": image_descriptors(row["id"], payload)}
-
-
 def captured_update():
     if not enabled():
         abort(404)
@@ -205,7 +179,7 @@ def admin():
     if not enabled():
         abort(404)
     offset = offset_arg()
-    message, revisions, rows, runs, error = None, [], [], [], None
+    message, rows, runs, error = None, [], [], None
     selected = request.args.get("message")
     if selected:
         try:
@@ -219,7 +193,7 @@ def admin():
             rows, runs = store.inbox(offset), store.recent_runs()
             selected = selected or (rows[0]["id"] if rows else None)
             if selected:
-                message, revisions = store.detail(selected)
+                message = store.detail(selected)
                 if message is None:
                     abort(404)
         except Exception as exc:
@@ -228,11 +202,11 @@ def admin():
                 raise
             error = "Email storage is unavailable. Check the feature's migration and connection."
     bulletin = bool(message and layout.eligible(dict(message, status=None)))
-    hidden = bool(revisions and revisions[0]["status"] == "rejected")
+    hidden = bool(message and message["status"] == "rejected")
     document = (layout.document(message, lambda index: url_for("sfpuc-email-image", message_id=message["id"], index=index))
                 if bulletin else None)
     clean = layout.clean_text(message["subject"], message["body_text"]) if bulletin else None
-    response = render_template("sfpuc_updates/admin.html", rows=rows, message=message, revisions=revisions,
+    response = render_template("sfpuc_updates/admin.html", rows=rows, message=message,
                                runs=runs, offset=offset, error=error, ready=bool(configuration()),
                                csrf=csrf_token(), fmt_time=fmt_time, expected_sender=parser.EXPECTED_SENDER,
                                bulletin=bulletin, hidden=hidden, document=document, clean=clean)
@@ -240,7 +214,7 @@ def admin():
 
 
 def set_visibility():
-    """Append a Hide/Restore decision; never edit the archived bulletin."""
+    """Change current visibility; never edit the archived bulletin."""
     if not enabled():
         abort(404)
     if request.content_length is None or request.content_length > 4096:
@@ -258,19 +232,15 @@ def set_visibility():
     except ValueError:
         abort(400)
     try:
-        message, revisions = store.detail(mid)
+        message = store.detail(mid)
         if message is None:
             abort(404)
         # Restore is not an override for the public feed's eligibility rules.
         if not layout.eligible(dict(message, status=None)):
             return "Only matching SFPUC beach bulletins can be shown on Today.", 400
-        latest = revisions[0] if revisions else None
-        clean = layout.clean_text(message["subject"], message["body_text"])
-        # Keep legacy edited text where present. Today always reads the original.
-        title = (latest.get("title") if latest else None) or clean["title"]
-        body = (latest.get("body_text") if latest else None) or clean["body"] or title
-        result = store.review(mid, revision, "rejected" if action == "hide" else "approved",
-                              title[:300], body[:30000], "Admin dashboard · " + action)
+        if "visibility_revision" not in message:
+            return "Hide/Restore is temporarily unavailable. Please try again later.", 503
+        result = store.set_visibility(mid, revision, action == "hide")
     except Exception as exc:
         from werkzeug.exceptions import HTTPException
         if isinstance(exc, HTTPException):
@@ -279,12 +249,6 @@ def set_visibility():
     if not result.get("ok"):
         return "This message changed. Reload the email and try again.", 409
     return redirect(url_for("sfpuc-email-admin", message=mid), 303)
-
-
-def image_descriptors(message_id, payload):
-    return [{"src": url_for("sfpuc-email-image", message_id=message_id, index=index),
-             "alt": image["alt"], "small": image["small"]}
-            for index, image in enumerate(presentation.images(payload))]
 
 
 def email_image(message_id, index):
@@ -309,68 +273,14 @@ def email_image(message_id, index):
         "Content-Security-Policy": "default-src 'none'; sandbox", "Referrer-Policy": "no-referrer"})
 
 
-def clean_forward():
-    if not enabled():
-        abort(404)
-    if request.content_length is None or request.content_length > 128 * 1024:
-        abort(413)
-    expected = session.get("sfpuc_email_csrf", "")
-    supplied = request.headers.get("X-CSRF-Token", "")
-    if not expected or not hmac.compare_digest(expected.encode(), supplied.encode()):
-        abort(403)
-    try:
-        data = request.get_json()
-        if not isinstance(data, dict):
-            raise ValueError()
-        title = parser.string(data.get("title"), "title", 300)
-        body = parser.string(data.get("body"), "body", 30_000)
-    except (ValueError, BadRequest):
-        return jsonify(ok=False, error="Invalid draft."), 400
-    return jsonify(ok=True, **presentation.clean_forward(title, body)), 200, {"Cache-Control": "private, no-store"}
-
-
-def save_review():
-    if not enabled():
-        abort(404)
-    if request.content_length is None or request.content_length > 128 * 1024:
-        abort(413)
-    token = request.form.get("csrf", "")
-    expected = session.get("sfpuc_email_csrf", "")
-    if not expected or not hmac.compare_digest(token.encode(), expected.encode()):
-        abort(403)
-    try:
-        message_id = str(UUID(request.form.get("message_id", "")))
-        revision = int(request.form.get("revision", "-1"))
-        action = request.form.get("action")
-        if action not in {"approved", "rejected"} or revision < 0:
-            raise ValueError()
-        title = parser.string(request.form.get("title"), "title", 300)
-        body = parser.string(request.form.get("body"), "reviewed text", 30_000)
-        reviewer = parser.string(request.form.get("reviewer"), "reviewer", 100)
-        if not reviewer or (action == "approved" and (not title or not body or request.form.get("verified") != "yes")):
-            raise ValueError()
-    except ValueError:
-        return "Check the fields and confirm the source and reviewed text before approving.", 400
-    try:
-        result = store.review(message_id, revision, action, title, body, reviewer)
-    except Exception:
-        return _failure()
-    if not result.get("ok"):
-        return "This message changed while you reviewed it. Reload the review page and try again.", 409
-    return redirect(url_for("sfpuc-email-admin", message=message_id), 303)
-
-
 def register(app, gated_page, gated_api):
     # Jinja globals are available to imported macros without changing every page.
     app.jinja_env.globals["sfpuc_email_enabled"] = enabled
     app.add_url_rule("/api/ingest/sfpuc-email", "sfpuc-email-webhook", webhook, methods=["POST"])
-    app.add_url_rule("/alerts/api/sfpuc-updates", "sfpuc-email-preview", gated_api(reviewed_updates), methods=["GET"])
     app.add_url_rule("/api/city-emails", "city-emails", captured_update, methods=["GET"])
     app.add_url_rule("/api/city-emails/<uuid:message_id>/images/<int:index>", "city-email-image", captured_image, methods=["GET"])
     app.add_url_rule("/alerts/sfpuc-emails", "sfpuc-email-admin", gated_page(admin, "/alerts/sfpuc-emails"), methods=["GET"])
     app.add_url_rule("/alerts/sfpuc-emails/visibility", "sfpuc-email-visibility", gated_api(set_visibility), methods=["POST"])
     app.add_url_rule("/alerts/sfpuc-emails/today-preview", "sfpuc-email-today-preview",
                      gated_page(today_preview, "/alerts/sfpuc-emails/today-preview"), methods=["GET"])
-    app.add_url_rule("/alerts/sfpuc-emails/review", "sfpuc-email-review", gated_api(save_review), methods=["POST"])
-    app.add_url_rule("/alerts/sfpuc-emails/clean-forward", "sfpuc-email-clean-forward", gated_api(clean_forward), methods=["POST"])
     app.add_url_rule("/alerts/sfpuc-emails/images/<uuid:message_id>/<int:index>", "sfpuc-email-image", gated_api(email_image), methods=["GET"])

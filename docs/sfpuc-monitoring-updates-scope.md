@@ -6,14 +6,12 @@ in the existing Supabase project, and show reviewed messages in an expandable
 **SFPUC updates** panel on Today. Add recorded hotline bulletins after testing
 whether they provide useful information beyond the emails.
 
-**Current rollout, updated November 21, 2026:** the user requested Admin-only
-access for now. Capture, review, and the dropdown preview are built locally at
-`/alerts/sfpuc-emails`; Today and a public read API are excluded. The isolated
-Supabase migration is applied, and DNS/Brevo inbound registration are complete.
-App deployment, Gmail forwarding, and a real delivered-email test remain pending.
-See [Email capture setup and behavior](sfpuc-email-capture.md) for the implemented
-schema, verification, and activation steps. The remaining sections preserve the
-original broader proposal; public Today display and voice capture are future work.
+**Historical proposal:** the approval/editing model below has been superseded.
+PR #39 adds automatic display of captured bulletins on Today, Admin Email
+history, and removal of legacy edited copies. See
+[Email capture setup and behavior](sfpuc-email-capture.md) for the current
+schema and the required app-before-migration rollout order. Original emails
+are retained; hotline recording capture remains outside the implemented scope.
 
 ## Sources and contacts
 

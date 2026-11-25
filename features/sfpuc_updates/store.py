@@ -14,25 +14,19 @@ def inbox(offset=0):
 def detail(message_id):
     rows = sb.select("sfpuc_email_messages", {"select": "*", "id": f"eq.{message_id}", "limit": "1"})
     if not rows:
-        return None, []
-    conflicts = sb.select("sfpuc_email_messages", {"select": "id", "source_key": f"eq.{rows[0]['source_key']}",
-                                                   "content_hash": f"neq.{rows[0]['content_hash']}", "limit": "1"})
-    rows[0]["has_conflict"] = bool(conflicts)
-    revisions = sb.select("sfpuc_email_reviews", {"select": "*", "message_id": f"eq.{message_id}",
-                                                 "order": "revision.desc", "limit": "50"})
-    return rows[0], revisions
+        return None
+    # The inbox exposes current visibility both before and after the cleanup
+    # migration. Reading an email never needs historical edited copies.
+    state = sb.select("sfpuc_email_inbox", {"select": "revision,status,has_conflict",
+                      "id": f"eq.{message_id}", "limit": "1"})
+    if not state:
+        raise RuntimeError("Email visibility is unavailable")
+    return dict(rows[0], **state[0])
 
 
-def review(message_id, expected_revision, action, title, body, reviewer):
-    return sb.rpc("sfpuc_review_email", {"message": message_id, "expected_revision": expected_revision,
-                  "decision": action, "reviewed_title": title, "reviewed_text": body, "reviewer": reviewer})
-
-
-def reviewed(offset=0, *, limit=6):
-    # View already restricts to the newest review being approved. No raw fields
-    # are selected or serialized, even though the server role can read originals.
-    return sb.select("sfpuc_email_reviewed", {"select": "id,title,body_text,sent_at,received_at,reviewed_at",
-                    "order": "sort_at.desc,id.desc", "limit": str(limit), "offset": str(offset)})
+def set_visibility(message_id, expected_revision, hidden):
+    return sb.rpc("sfpuc_set_email_visibility", {"message": message_id,
+                  "expected_revision": expected_revision, "hidden": hidden})
 
 
 def recent_runs():
@@ -49,7 +43,7 @@ def image_payloads(message_ids):
 
 
 def captured(cursor=None, *, message_id=None):
-    """Read candidates without changing reviews. Keyset pages don't shift on arrival."""
+    """Read visible candidates. Keyset pages don't shift on arrival."""
     params = {"select": "id,subject,sent_at,received_at,sender_matches,status",
               "subject": "ilike.*SF BEACH*", "status": "neq.rejected",
               "order": "received_at.desc,id.desc", "limit": "25"}

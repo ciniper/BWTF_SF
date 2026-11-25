@@ -17,7 +17,8 @@ VISIBILITY = '/alerts/sfpuc-emails/visibility'
 def bulletin(**kwargs):
     return dict(id=MID, subject='SF BEACH DE-POSTED', body_text='Official bulletin',
                 sender='beachwaterquality@sfwater.org', sender_matches=True, warnings=[],
-                sent_at=None, received_at='2026-11-24T12:00:00Z', raw_payload={}, **kwargs)
+                sent_at=None, received_at='2026-11-24T12:00:00Z', raw_payload={},
+                status='captured', revision=0, visibility_revision=0, **kwargs)
 
 
 @pytest.fixture
@@ -114,7 +115,7 @@ def test_sent_errors_invalid_ids_and_missing_message(client, monkeypatch):
 def test_sfpuc_opens_newest_without_approval_and_setup_stays_private(client, monkeypatch):
     row = bulletin()
     monkeypatch.setattr(S, 'inbox', lambda offset: [dict(row, status='pending')])
-    monkeypatch.setattr(S, 'detail', lambda mid: (row, []))
+    monkeypatch.setattr(S, 'detail', lambda mid: row)
     unlock(client)
     result = client.get('/alerts/sfpuc-emails')
     assert result.status_code == 200 and b'Shown on Today' in result.data
@@ -126,17 +127,18 @@ def test_sfpuc_opens_newest_without_approval_and_setup_stays_private(client, mon
     assert b'Hide from Today' not in result.data and b'Restore to Today' not in result.data
 
 
-def test_hide_restore_preserves_source_and_legacy_text_with_stale_protection(client, monkeypatch):
-    row, revisions, calls = bulletin(), [], []
-    monkeypatch.setattr(S, 'detail', lambda mid: (row.copy(), revisions[:]))
-    monkeypatch.setattr(S, 'captured', lambda *a, **k: [dict(row, status=revisions[0]['status'] if revisions else 'pending')])
-    def review(mid, revision, action, title, body, reviewer):
-        calls.append((mid, revision, action, title, body, reviewer))
-        if revision != len(revisions):
+def test_hide_restore_changes_only_current_state_with_stale_protection(client, monkeypatch):
+    row, calls = bulletin(), []
+    monkeypatch.setattr(S, 'detail', lambda mid: row.copy())
+    monkeypatch.setattr(S, 'captured', lambda *a, **k: [row.copy()])
+    def visibility(mid, revision, hidden):
+        calls.append((mid, revision, hidden))
+        if revision != row['revision']:
             return {'ok': False}
-        revisions.insert(0, dict(revision=revision + 1, status=action, title=title, body_text=body))
+        row.update(revision=revision + 1, visibility_revision=revision + 1,
+                   status='rejected' if hidden else 'captured')
         return {'ok': True}
-    monkeypatch.setattr(S, 'review', review)
+    monkeypatch.setattr(S, 'set_visibility', visibility)
     unlock(client)
     form = dict(message_id=MID, revision=0, action='hide')
     assert client.post(VISIBILITY, data=form).status_code == 403
@@ -148,14 +150,45 @@ def test_hide_restore_preserves_source_and_legacy_text_with_stale_protection(cli
     form.update(revision=1, action='restore')
     assert client.post(VISIBILITY, data=form).status_code == 303
     assert client.get('/api/city-emails').json['update']['id'] == MID
-    assert row['body_text'] == 'Official bulletin' and len(revisions) == 2
-    assert calls[-1][2:] == ('approved', 'SF BEACH DE-POSTED', 'Official bulletin', 'Admin dashboard · restore')
+    assert row['body_text'] == 'Official bulletin' and row['revision'] == 2
+    assert calls[-1] == (MID, 1, False)
+    page = client.get('/alerts/sfpuc-emails?message=' + MID)
+    assert b'legacy review history' not in page.data and b'Reviewed message' not in page.data
+
+
+def test_history_reads_work_before_migration_but_visibility_waits(client, monkeypatch):
+    row = bulletin()
+    del row['visibility_revision']
+    monkeypatch.setattr(S, 'detail', lambda mid: row)
+    monkeypatch.setattr(S, 'set_visibility', lambda *args: pytest.fail('Migration is not ready'))
+    unlock(client)
+    page = client.get('/alerts/sfpuc-emails?message=' + MID)
+    assert page.status_code == 200 and b'Official bulletin' in page.data
+    assert b'Hide/Restore is temporarily unavailable' in page.data
+    assert b'name="action"' not in page.data
+    assert client.post(VISIBILITY, data=dict(message_id=MID, revision=0, csrf='test-csrf', action='hide')).status_code == 503
+
+
+def test_detail_reads_original_and_current_state_without_old_edits(monkeypatch):
+    calls = []
+    def select(table, params):
+        calls.append(table)
+        if table == 'sfpuc_email_messages':
+            return [bulletin()]
+        if table == 'sfpuc_email_inbox':
+            return [dict(revision=4, status='rejected', has_conflict=False)]
+        pytest.fail('Detail must not read legacy edits')
+    monkeypatch.setattr(S.sb, 'select', select)
+    message = S.detail(MID)
+    assert message['body_text'] == 'Official bulletin' and message['status'] == 'rejected'
+    assert message['revision'] == 4
+    assert calls == ['sfpuc_email_messages', 'sfpuc_email_inbox']
 
 
 def test_visibility_cannot_publish_other_mail_or_override_validation(client, monkeypatch):
     row = bulletin()
     row['subject'] = 'Gmail forwarding confirmation'
-    monkeypatch.setattr(S, 'detail', lambda mid: (row, []))
+    monkeypatch.setattr(S, 'detail', lambda mid: row)
     unlock(client)
     form = dict(message_id=MID, revision=0, csrf='test-csrf', action='restore')
     assert client.post(VISIBILITY, data=form).status_code == 400
