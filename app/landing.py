@@ -378,6 +378,7 @@ def today_board(stations: list, risks: dict | None = None, samples_fact: str = "
                 d = datetime.strptime(lab_date, "%Y-%m-%d")
             age = (now.date() - d.date()).days if d else None   # how old the city's latest result is, in words wherever the date shows (2026-11-06)
             sts.append({"name": _short(reg.name), "full_name": reg.name, "status": status, "status_text": status_text[status],
+                        "cso_note": getattr(st, "cso_note", "") if status == "discharge" else "",
                         "source": source, "lat": reg.lat, "lon": reg.lon, "sampled": d.strftime("%Y-%m-%d") if d else "", "sampled_age_days": age,
                         "sampled_text": f"sampled {days_ago_text(d.date(), now.date())}" if d else "no sample date",
                         "map_sampled": feed_date, "pending": None})

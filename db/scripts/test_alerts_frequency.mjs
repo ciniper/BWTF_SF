@@ -28,6 +28,8 @@ await db.exec(read('021_live_status_to_today.sql'));
 await db.exec(`create function test_now() returns timestamptz language sql stable as $$
 select coalesce(nullif(current_setting('bwtf.test_now',true), '')::timestamptz, now()) $$`);
 await db.exec(read('20261118051745_alerts_frequency.sql').replaceAll('now()', 'test_now()'));
+await db.exec(read('20261121171413_sfpuc_posted_precedence.sql'));
+await db.exec(read('20261125075243_aquatic_dogpatch_cso.sql').replaceAll('now()', 'test_now()'));
 await db.exec(`insert into watcher_config(key,value) values('brevo_api_key','fake'),('alert_from_email','test@example.test'); update watcher_config set value='live' where key='mode';
 insert into subscribers(email,station_ids,region_zone) values('a@example.test',array['4608','4609','4610'],'Baker & China Beach');`);
 const payload = states => states.map((status,i)=>({stationid:String(4608+i),stationname:['Baker West','Baker East','Baker Lobos'][i],cso:status==='cso'?'yes':null,s_color:status==='posted'?'R':'G'}));
