@@ -52,6 +52,10 @@ python scripts/build_rain_snapshot.py \
 - Archive coverage, historical bias comparisons and KiWIS findings remain dated
   research context. No model, alert rules or public forecast inputs changed.
 
+A separate [automatic archive proposal](aqpi-automatic-archive.md) now preserves
+full source files and capture receipts through a scheduled collector. It is
+prepared for review, with activation disabled pending explicit approval.
+
 ### Recommended next work
 
 1. **Monitor storms now.** Use the live map to compare spatial rainfall and

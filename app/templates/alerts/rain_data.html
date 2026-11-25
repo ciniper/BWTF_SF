@@ -12,8 +12,8 @@
 {% include '_icons.html' %}{% from '_frame.html' import topbar, footer, tabbar with context %}
 {{ topbar() }}
 <main class="rain-wrap">
-<header class="rain-heading"><div><p class="rain-kicker">Admin / Data notebook</p><h1>What rain data do we have?</h1><p class="rain-intro">A field guide to the gauges, radar and forecasts behind our research.</p></div><span class="rain-stamp">Live AQPI explorer<br><b>Latest available observations</b></span></header>
 {{ admin_tabs('rain-data') }}
+<header class="rain-heading"><div><p class="rain-kicker">Admin / Data notebook</p><h1>What rain data do we have?</h1><p class="rain-intro">A field guide to the gauges, radar and forecasts behind our research.</p></div><span class="rain-stamp">Live AQPI explorer<br><b>Latest available observations</b></span></header>
 <section class="rain-takeaway"><svg class="ic" aria-hidden="true"><use href="#i-cloud-rain"/></svg><div><h2>We found rainfall over the whole city.</h2><p>AQPI gives us recent <strong>radar estimates</strong> across SF. Access to SFPUC’s actual city sewer-system rain gauges is still unconfirmed.</p></div></section>
 
 <section aria-labelledby="sources-title"><div class="rain-section-head"><h2 id="sources-title">Four different pieces of the picture</h2><span class="rain-small">Available data ≠ deployed model input</span></div>
