@@ -127,7 +127,7 @@ def test_today_board_leads_with_the_answer_and_one_tile_per_zone():
     assert ok["risk_lead"] == "" and L.today_board([], {}, "")["feed_ok"] is False and L.today_board([], {}, "", now=now)["facts"] == []
     import types as _t
     split = L.today_board([S("4601", "Fort Funston", "safe"), _t.SimpleNamespace(station_id="4602", station_name="Ocean Beach at Sloat", status=_t.SimpleNamespace(value="safe"), has_cso=False, sample_date=datetime(2026, 9, 16))], {}, "city 9/23 · 1 over", now=now)
-    assert split["facts"][0]["text"] == "Samples were collected 6–13 days ago (Sep 16–23)."
+    assert split["facts"][0]["text"] == "Samples were collected 6–13 days ago (Sep 23–16)."
     one = L.today_board([S("4612", "Crissy Field East", "posted"), S("4613", "Aquatic Park", "safe")], {}, "", now=now)
     assert one["headline"] == "Posted at 1 beach. 1 other has no warning." and one["lead"].startswith("Posted: Crissy East.")
     assert L.today_board([S("4612", "Crissy Field East", "posted")], {}, "", now=now)["headline"] == "Posted at 1 beach."
