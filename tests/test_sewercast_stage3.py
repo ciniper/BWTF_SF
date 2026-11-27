@@ -38,6 +38,9 @@ def test_stage3_paths_and_no_lingering():
     eng._sample_flags=lambda *args:{('Ocean Beach',dates[6]):False}
     eng._feed_sample_flags=lambda *args:{}
     live=eng._live_context(frames,probs,vols,dates,{},R.TODAY)
+    # Isolate Stage 3 from the legacy cap arithmetic. The serving evidence
+    # guard itself is covered by test_forecast_evidence_guard.
+    live['samples']={('Ocean Beach',dates[6]):False}
     corrected=payload(live=live)
     assert corrected['stage3_zones']==expected
     assert corrected['zones']['ocean'] != plain['zones']['ocean']

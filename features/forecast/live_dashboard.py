@@ -927,7 +927,7 @@ class LiveData:
         it (Supabase ``feed_station_days``, migration 012) — live_v2. A station
         posted for bacteria (status 'posted', not the precautionary 'cso') says
         its latest sample, dated by the map, was over standard; a station the map
-        showed clear all day with a sample date says that sample came back clean.
+        showed clear all day does NOT establish a passing laboratory result.
         A day the sign came down is ambiguous and says nothing. The map shows a
         result one to two days after sampling, DataSF about five days after, so
         this is what lets a result reach the forecast days at all."""
@@ -948,11 +948,11 @@ class LiveData:
             sd = _parse_feed_date(raw.get("sample_date"))
             if not g or sd is None or not (start <= sd <= end):
                 continue
-            last, worst = r.get("status_last"), r.get("status_max")
+            last = r.get("status_last")
             if last == "posted":                      # posted for bacteria: the latest sample was over standard
                 out[(g, sd)] = True
-            elif last == "ok" and worst == "ok":      # clear all day, with this sample date: that sample was clean
-                out.setdefault((g, sd), False)        # an elevated sibling station in the group wins
+            # The watcher's `ok` also includes unsampled stations. Neither it
+            # nor a cleared advisory is evidence of a passing laboratory panel.
         return out
 
     def _sample_flags(self, start, end) -> dict:
@@ -998,14 +998,25 @@ class LiveData:
         flags = self._cso_flag_days(start, end, today) if health.get("mode") else {}
         datasf = self._sample_flags(start, end) if str(end) >= self.DATASF_FLOOR else {}
         feed = self._feed_sample_flags(start, end)
-        samples = {**feed, **datasf}   # live_v2: the map's results first, DataSF's lab record overriding wherever it has published
+        # Until complete station-level evidence is available, never lower a
+        # group from a partial result or a map-status inference. Union positive
+        # evidence: a partial DataSF group must not erase a sibling's posting.
+        samples = {key: True for flags_by_source in (feed, datasf)
+                   for key, elevated in flags_by_source.items() if elevated}
         sample_sources = {"feed": len(feed), "datasf": len(datasf)}
+        # A basin can feed several beach groups. Baker's flag is not Ocean
+        # Beach's flag. Today's hold requires a current flag at this group;
+        # unavailable current status cannot establish that an advisory persists.
+        flag_groups = {today: {GROUP_OF_STATION[b["source"]]
+                              for b in (getattr(self, "beach_status", None) or [])
+                              if b.get("has_cso") and b.get("source") in GROUP_OF_STATION}}
         rain = {d: float(frames["avg"].iloc[i].get("precip_inches", 0.0) or 0.0) for i, d in enumerate(dates)}
         watcher_from = datetime.strptime(self.WATCHER_SINCE, "%Y-%m-%d").date()
         probs2, vols2, notes = _lr.adjust_stage1(probs, vols, dates, observed or {}, flags, rain, today,
                                                  watcher_from=watcher_from, watcher_ok=bool(health.get("ok")))
         return {"enabled": True, "source": source, "probs": probs2, "vols": vols2, "notes": notes, "flags": flags,
-                "samples": samples, "sample_sources": sample_sources, "onsets": observed or {}, "health": health, "today": today}
+                "samples": samples, "sample_sources": sample_sources, "flag_groups": flag_groups,
+                "onsets": observed or {}, "health": health, "today": today}
 
     def _day_payload(self, frames: dict, idx: int, feats: list, probs: list, vols: list,
                      dates: list, observed: dict, live: dict | None = None) -> dict:
@@ -1051,7 +1062,8 @@ class LiveData:
             today_terms = _day_terms(self.BASIN_IMPACT_GROUPS, p2[idx], v2[idx], split=getattr(self, "split", None))
             probs_by_date = {d: p2[j] for j, d in enumerate(dates)}
             adjusted, gnotes = _lr.adjust_groups(impact_groups, persist_groups, today_terms, dates[idx], live["samples"],
-                                                 probs_by_date, live["onsets"], live["flags"], _ZONE_OF_GROUP, _BASIN_OF_GROUP, large_curve)
+                                                 probs_by_date, live["onsets"], live["flags"], _ZONE_OF_GROUP, _BASIN_OF_GROUP, large_curve,
+                                                 flag_groups=live.get("flag_groups"))
             if gnotes:
                 impact_groups = adjusted
                 day_predictions = {bk: (max(adjusted[g] for g in gs if g in adjusted) if gs else 0.0) for bk, gs in self.BASIN_IMPACT_GROUPS.items()}

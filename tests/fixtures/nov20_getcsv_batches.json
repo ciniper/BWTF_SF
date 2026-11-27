@@ -1,0 +1,257 @@
+{
+  "map_days": [
+    {
+      "day": "2026-11-20",
+      "raw_last": {
+        "cso": null,
+        "lat": "37.71526",
+        "lon": "-122.50476",
+        "posted": null,
+        "p_color": null,
+        "s_color": "W",
+        "stationid": "4601",
+        "sample_date": "11/19/26",
+        "stationname": "Fort Funston"
+      },
+      "station_id": "4601",
+      "status_max": "cso",
+      "status_last": "ok"
+    },
+    {
+      "day": "2026-11-20",
+      "raw_last": {
+        "cso": null,
+        "lat": "37.73567",
+        "lon": "-122.50769",
+        "posted": null,
+        "p_color": null,
+        "s_color": null,
+        "stationid": "4602",
+        "sample_date": "11/19/26",
+        "stationname": "Ocean Beach at Sloat Boulevard"
+      },
+      "station_id": "4602",
+      "status_max": "posted",
+      "status_last": "ok"
+    },
+    {
+      "day": "2026-11-20",
+      "raw_last": {
+        "cso": "OCEAN#21_SL",
+        "lat": "37.73782",
+        "lon": "-122.50825",
+        "posted": "OCEAN#21_SL",
+        "p_color": "R",
+        "s_color": "W",
+        "stationid": "4603",
+        "sample_date": "11/19/26",
+        "stationname": "Ocean Beach at Vicente Street"
+      },
+      "station_id": "4603",
+      "status_max": "cso",
+      "status_last": "cso"
+    },
+    {
+      "day": "2026-11-20",
+      "raw_last": {
+        "cso": null,
+        "lat": "37.77492",
+        "lon": "-122.51351",
+        "posted": null,
+        "p_color": null,
+        "s_color": null,
+        "stationid": "4604",
+        "sample_date": "11/19/26",
+        "stationname": "Ocean Beach at Balboa Street"
+      },
+      "station_id": "4604",
+      "status_max": "posted",
+      "status_last": "ok"
+    },
+    {
+      "day": "2026-11-20",
+      "raw_last": {
+        "cso": "OCEAN#19_SL",
+        "lat": "37.7638",
+        "lon": "-122.511",
+        "posted": "OCEAN#19_SL",
+        "p_color": "R",
+        "s_color": null,
+        "stationid": "4605",
+        "sample_date": "11/19/26",
+        "stationname": "Ocean Beach at Lincoln Way"
+      },
+      "station_id": "4605",
+      "status_max": "cso",
+      "status_last": "cso"
+    },
+    {
+      "day": "2026-11-20",
+      "raw_last": {
+        "cso": null,
+        "lat": "37.74891",
+        "lon": "-122.50996",
+        "posted": null,
+        "p_color": null,
+        "s_color": "W",
+        "stationid": "4606",
+        "sample_date": "11/19/26",
+        "stationname": "Ocean Beach at Pacheco Street"
+      },
+      "station_id": "4606",
+      "status_max": "ok",
+      "status_last": "ok"
+    }
+  ],
+  "observations": [
+    {
+      "analyte": "ENTERO",
+      "value_raw": "41",
+      "observed_at": "2026-11-20T23:33:00.046688+00:00",
+      "sample_date": "2026-11-19",
+      "source_code": "OCEAN#18_SL",
+      "observation_kind": "appeared"
+    },
+    {
+      "analyte": "ENTERO",
+      "value_raw": "657",
+      "observed_at": "2026-11-20T23:33:00.046688+00:00",
+      "sample_date": "2026-11-19",
+      "source_code": "OCEAN#19_SL",
+      "observation_kind": "appeared"
+    },
+    {
+      "analyte": "ENTERO",
+      "value_raw": "<10",
+      "observed_at": "2026-11-20T23:33:00.046688+00:00",
+      "sample_date": "2026-11-19",
+      "source_code": "OCEAN#20_SL",
+      "observation_kind": "appeared"
+    },
+    {
+      "analyte": "ENTERO",
+      "value_raw": "1860",
+      "observed_at": "2026-11-20T23:33:00.046688+00:00",
+      "sample_date": "2026-11-19",
+      "source_code": "OCEAN#21_SL",
+      "observation_kind": "appeared"
+    },
+    {
+      "analyte": "ENTERO",
+      "value_raw": "63",
+      "observed_at": "2026-11-20T23:33:00.046688+00:00",
+      "sample_date": "2026-11-19",
+      "source_code": "OCEAN#21.1_SL",
+      "observation_kind": "appeared"
+    },
+    {
+      "analyte": "ENTERO",
+      "value_raw": "31",
+      "observed_at": "2026-11-20T23:33:00.046688+00:00",
+      "sample_date": "2026-11-19",
+      "source_code": "OCEAN#22_SL",
+      "observation_kind": "appeared"
+    },
+    {
+      "analyte": "COLI_FECAL",
+      "value_raw": "20",
+      "observed_at": "2026-11-20T23:43:00.044187+00:00",
+      "sample_date": "2026-11-19",
+      "source_code": "OCEAN#18_SL",
+      "observation_kind": "appeared"
+    },
+    {
+      "analyte": "COLI_FECAL",
+      "value_raw": "1900",
+      "observed_at": "2026-11-20T23:43:00.044187+00:00",
+      "sample_date": "2026-11-19",
+      "source_code": "OCEAN#19_SL",
+      "observation_kind": "appeared"
+    },
+    {
+      "analyte": "COLI_FECAL",
+      "value_raw": "30",
+      "observed_at": "2026-11-20T23:43:00.044187+00:00",
+      "sample_date": "2026-11-19",
+      "source_code": "OCEAN#20_SL",
+      "observation_kind": "appeared"
+    },
+    {
+      "analyte": "COLI_FECAL",
+      "value_raw": "5400",
+      "observed_at": "2026-11-20T23:43:00.044187+00:00",
+      "sample_date": "2026-11-19",
+      "source_code": "OCEAN#21_SL",
+      "observation_kind": "appeared"
+    },
+    {
+      "analyte": "COLI_FECAL",
+      "value_raw": "145",
+      "observed_at": "2026-11-20T23:43:00.044187+00:00",
+      "sample_date": "2026-11-19",
+      "source_code": "OCEAN#21.1_SL",
+      "observation_kind": "appeared"
+    },
+    {
+      "analyte": "COLI_FECAL",
+      "value_raw": "50",
+      "observed_at": "2026-11-20T23:43:00.044187+00:00",
+      "sample_date": "2026-11-19",
+      "source_code": "OCEAN#22_SL",
+      "observation_kind": "appeared"
+    },
+    {
+      "analyte": "COLI_TOTAL",
+      "value_raw": "420",
+      "observed_at": "2026-11-20T23:59:00.045991+00:00",
+      "sample_date": "2026-11-19",
+      "source_code": "OCEAN#18_SL",
+      "observation_kind": "appeared"
+    },
+    {
+      "analyte": "COLI_TOTAL",
+      "value_raw": ">16000",
+      "observed_at": "2026-11-20T23:59:00.045991+00:00",
+      "sample_date": "2026-11-19",
+      "source_code": "OCEAN#19_SL",
+      "observation_kind": "appeared"
+    },
+    {
+      "analyte": "COLI_TOTAL",
+      "value_raw": "140",
+      "observed_at": "2026-11-20T23:59:00.045991+00:00",
+      "sample_date": "2026-11-19",
+      "source_code": "OCEAN#20_SL",
+      "observation_kind": "appeared"
+    },
+    {
+      "analyte": "COLI_TOTAL",
+      "value_raw": ">16000",
+      "observed_at": "2026-11-20T23:59:00.045991+00:00",
+      "sample_date": "2026-11-19",
+      "source_code": "OCEAN#21_SL",
+      "observation_kind": "appeared"
+    },
+    {
+      "analyte": "COLI_TOTAL",
+      "value_raw": "2100",
+      "observed_at": "2026-11-20T23:59:00.045991+00:00",
+      "sample_date": "2026-11-19",
+      "source_code": "OCEAN#21.1_SL",
+      "observation_kind": "appeared"
+    },
+    {
+      "analyte": "COLI_TOTAL",
+      "value_raw": "3200",
+      "observed_at": "2026-11-20T23:59:00.045991+00:00",
+      "sample_date": "2026-11-19",
+      "source_code": "OCEAN#22_SL",
+      "observation_kind": "appeared"
+    }
+  ],
+  "provenance": {
+    "source": "bwtf-sf: sfpuc_getcsv_observations and feed_station_days",
+    "exported_on": "2026-11-25",
+    "note": "Observed arrival times, not lab publication times; map_days are end-of-day summaries."
+  }
+}
