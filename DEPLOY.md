@@ -147,6 +147,11 @@ gunicorn -w 1 --threads 8 -b 0.0.0.0:8090 app.wsgi:app
 
 ## Before every push: `scripts/check.sh`
 
+AQPI automatic archiving has a separate, approval-gated activation procedure in
+[`docs/aqpi-automatic-archive.md`](docs/aqpi-automatic-archive.md). Its GitHub
+workflow is off unless `AQPI_ARCHIVE_ENABLED=true`; preparing or merging its PR
+does not authorize provisioning Storage, setting secrets, or enabling collection.
+
 There is no CI, and Vercel deploys whatever lands on `main`. Run the whole
 suite and see it pass before every push (Chase, 2026-10-01):
 
