@@ -39,17 +39,46 @@ def test_sample_facts_start_with_sentence_case_without_changing_embedded_ages():
             assert f"sampled {age.lower()}" in h
         board = today_board([station("4601", 9), station("4602", 10)], now=datetime(2026, 11, 10))
         h = T.render_page({"board": board, "generated": "Preview"})
-        assert "<dd>Samples were collected between yesterday and today (Nov 9–10)." in h
+        assert "<dd>Samples were collected between today and yesterday (Nov 10–9)." in h
 
         first, last = station("4601", 9), station("4602", 10)
         first.sample_date = datetime(2026, 12, 31)
         last.sample_date = datetime(2027, 1, 1)
         now = datetime(2027, 1, 3)
         board = today_board([first, last], now=now)
-        assert board["facts"][0]["text"] == "Samples were collected 2–3 days ago (Dec 31, 2026–Jan 1, 2027)."
+        assert board["facts"][0]["text"] == "Samples were collected 2–3 days ago (Jan 1, 2027–Dec 31, 2026)."
         first.sample_date = datetime(2027, 1, 4)
         last.sample_date = None
         assert today_board([first, last], now=now)["facts"] == []
+
+
+def test_city_sample_summaries_ignore_gray_sites_and_keep_newest_first():
+    from app.landing import today_board
+    from shared.sfpuc_api import StationStatus
+
+    def station(sid, status, day):
+        return types.SimpleNamespace(station_id=sid, status=status, has_cso=False,
+                                     sample_date=datetime(2026, 11, day))
+
+    active = [station("4601", "safe", 8), station("4602", "posted", 3)]
+    gray = [station("4603", StationStatus.NOT_ROUTINELY_SAMPLED, 1),
+            station("4604", StationStatus.NOT_SAMPLED, 10)]
+    now = datetime(2026, 11, 10)
+    baseline = today_board(active, now=now)
+    board = today_board(active + gray, now=now)
+    assert board["facts"] == baseline["facts"] == [
+        {"label": "City samples", "text": "Samples were collected 2–7 days ago (Nov 8–3)."}]
+    assert [z["meta"] for z in board["zones"]] == [z["meta"] for z in baseline["zones"]]
+    sites = [s for z in board["zones"] for s in z["stations"]]
+    assert any(s["status"] == "unknown" and s["sampled"] == "2026-11-01" for s in sites)
+    only_gray = today_board(gray, now=now)
+    assert only_gray["facts"] == []
+    assert all("no sample date" in z["meta"] for z in only_gray["zones"])
+    active[0].sample_date = datetime(2026, 11, 9)
+    assert today_board(active, now=now)["facts"][0]["text"] == "Samples were collected between yesterday and 7 days ago (Nov 9–3)."
+    active[0].sample_date = datetime(2026, 11, 10)
+    active[1].sample_date = datetime(2026, 10, 31)
+    assert today_board(active, now=now)["facts"][0]["text"] == "Samples were collected between today and 10 days ago (Nov 10–Oct 31)."
 
 
 def test_surfrider_layer_grades_each_site_and_maps_it_to_the_city_beach():
